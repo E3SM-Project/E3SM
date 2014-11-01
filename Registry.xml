@@ -27,7 +27,7 @@
 			 description="The number three as a dimension."
 		/>
 		<dim name="SIX" definition="6" units="unitless"
-		     description="The number six as a dimension."
+			 description="The number six as a dimension."
 		/>
 		<dim name="FIFTEEN" definition="15" units="unitless"
 			 description="The number 15 as a dimension."
@@ -113,11 +113,11 @@
 					possible_values="any positive real value, but typically 0.1 to 1 m."
 		/>
 		<nml_option name="config_max_thickness_factor" type="real" default_value="6.0" units="unitless"
-					description="Maximum thickness allowed.  This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$."
+					description="Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$."
 					possible_values="any positive real value, but typically 2-4."
 		/>
 		<nml_option name="config_set_restingThickness_to_IC" type="logical" default_value=".true." units="unitless"
-					description="If true, set restingThickness to be the same as layerThickness upon start-up.  This only occurs when config_do_restart is false, i.e. on an initial run."
+					description="If true, set restingThickness to be the same as layerThickness upon start-up. This only occurs when config_do_restart is false, i.e. on an initial run."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_dzdk_positive" type="logical" default_value=".false." units="unitless"
@@ -138,7 +138,7 @@
 					description="If true, the high frequency thickness prognostic equation ($h^{hf}$) includes term 2 on the RHS, the restoring term.  The high frequency thickness is restored to zero with time scale $\tau_{hhf}$."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_highFreqThick_restore_time" type="real"  default_value="30.0" units="days"
+		<nml_option name="config_highFreqThick_restore_time" type="real" default_value="30.0" units="days"
 					description="Restoring time scale for high-frequency thickness, $\tau_{hhf}$."
 					possible_values="any positive real value, but typically 5-30 days."
 		/>
@@ -153,15 +153,15 @@
 	</nml_record>
 	<nml_record name="partial_bottom_cells" in_defaults="true">
 		<nml_option name="config_alter_ICs_for_pbcs" type="logical" default_value=".false." units="unitless"
-					description="If true, initial conditions are altered according to the config_pbc_alteration_type flag.  The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
+					description="If true, initial conditions are altered according to the config_pbc_alteration_type flag. The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_pbc_alteration_type" type="character" default_value="full_cell" units="unitless"
-					description="Determines the method of initial condition alteration for partial bottom cells.  'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction.  'full_cell' alters bottomDepth to have full cells everywhere, based on the refBottomDepth variable."
+					description="Determines the method of initial condition alteration for partial bottom cells. 'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction. 'full_cell' alters bottomDepth to have full cells everywhere, based on the refBottomDepth variable."
 					possible_values="'full_cell' or 'partial_cell'"
 		/>
 		<nml_option name="config_min_pbc_fraction" type="real" default_value="0.10" units="unitless"
-					description="Determines the minimum fraction of a cell altering the initial conditions can create.  The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
+					description="Determines the minimum fraction of a cell altering the initial conditions can create. The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
 					possible_values="Any real between 0 and 1."
 		/>
 		<nml_option name="config_check_ssh_consistency" type="logical" default_value=".true." units="unitless"
@@ -201,7 +201,7 @@
 					possible_values="Any positive real number. If set any negative real number, config_maxMeshDensity is computed during the initialization of each simulation."
 		/>
 		<nml_option name="config_apvm_scale_factor" type="real" default_value="0.0" units="unitless"
-					description="Anticipated potential vorticity (APV) method scale factor, $c_{apv}$.  When zero, APV is off."
+					description="Anticipated potential vorticity (APV) method scale factor, $c_{apv}$. When zero, APV is off."
 					possible_values="Any non-negative number, typically between zero and one."
 		/>
 	</nml_record>
@@ -259,34 +259,46 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="standard_GM" in_defaults="true">
-		<nml_option name="config_h_kappa" type="real" default_value="0.0" units=""
-					description="kappa parameter for Gent-McWilliams eddy parameterization"
+	<nml_record name="mesoscale_eddy_parameterization" in_defaults="true">
+		<nml_option name="config_use_standardGM" type="logical" default_value=".false." units="NA"
+					description="If true, the standard GM for the tracer advection and mixing is turned on."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport"
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_h_kappa_q" type="real" default_value="0.0" units=""
-					description="kappa-q parameter for Gent-McWilliams eddy parameterization"
-					possible_values="Any positive real value."
+		<nml_option name="config_Redi_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
+					description="The Redi diffusion coefficient"
+					possible_values="Positive real numbers"
+		/>
+		<nml_option name="config_gravWaveSpeed_trunc" type="real" default_value="0.3" units="m/s"
+					description="Gravity wave speed truncation threshold for the vertical BVP"
+					possible_values="Positive real numbers that represents the gravity wave speed of the first, second, etc., baroclinic modes"
+		/>
+		<nml_option name="config_max_relative_slope" type="real" default_value="0.01" units="non-dimensional"
+					description="Tapering of Redi diffusion coeffient occurs when relativeSlopeTopOfEdge > config_max_relative_slope"
+					possible_values="Positive real numbers"
 		/>
 	</nml_record>
 	<nml_record name="hmix_del2_tensor" in_defaults="true">
 		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".false." units="unitless"
-		            description="If true, tensor-based Laplacian horizontal mixing is used on the momentum equation.  The tensor-based mixing operations are provided to show the functionality of the tensor subroutines.  Tensor-based del2 mixing is not fully vetted and not recommended for production simulations."
-		            possible_values=".true. or .false."
+					description="If true, tensor-based Laplacian horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del2 mixing is not fully vetted and not recommended for production simulations."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_mom_del2_tensor" type="real" default_value="10.0" units="m^2 s^{-1}"
-		            description="Horizonal viscosity, $\nu_h$."
-		            possible_values="any positive real"
+					description="Horizonal viscosity, $\nu_h$."
+					possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="hmix_del4_tensor" in_defaults="true">
 		<nml_option name="config_use_mom_del4_tensor" type="logical" default_value=".false." units="unitless"
-		            description="If true, tensor-based biharmonic horizontal mixing is used on the momentum equation.  The tensor-based mixing operations are provided to show the functionality of the tensor subroutines.  Tensor-based del4 mixing is not fully vetted and not recommended for production simulations."
-		            possible_values=".true. or .false."
+					description="If true, tensor-based biharmonic horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del4 mixing is not fully vetted and not recommended for production simulations."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_mom_del4_tensor" type="real" default_value="5.0e13" units="m^4 s^{-1}"
-		            description="Coefficient for horizontal biharmonic operator on momentum."
-		            possible_values="any positive real"
+					description="Coefficient for horizontal biharmonic operator on momentum."
+					possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping" in_defaults="true">
@@ -392,16 +404,16 @@
 					description="Prandtl number to be used within the CVMix parameterization suite"
 					possible_values="Any non-negative real value."
 		/>
-		<nml_option name="config_use_cvmix_background" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix_background" type="logical" default_value=".true." units="NA"
 					description="If true, background diffusivity and viscosity is computed using CVMix"
 					possible_values="True or False"
 		/>
 		<nml_option name="config_cvmix_background_diffusion" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
-					description="Backround vertical diffusion applied to tracer quantities"
+					description="Background vertical diffusion applied to tracer quantities"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_cvmix_background_viscosity" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
-					description="Backround vertical viscosity applied to horizontal velocity"
+					description="Background vertical viscosity applied to horizontal velocity"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_use_cvmix_convection" type="logical" default_value=".false." units="NA"
@@ -413,20 +425,88 @@
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_cvmix_convective_viscosity" type="real" default_value="1.0" units="m^2 s^{-1}"
-					description="Convective vertical viscosity applied to horizontal velocity"
+					description="Convective vertical viscosity applied to horizontal velocity components"
 					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_convective_basedOnBVF" type="logical" default_value=".true." units="NA"
+					description="If true, convection is triggered based on value of config_cvmix_convective_triggerBVF"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_convective_triggerBVF" type="real" default_value="0.0" units="s^{-2}"
+					description="Value of Brunt Viasala frequency squared below which convective mixing is triggered"
+					possible_values="Any real value"
+		/>
+		<nml_option name="config_use_cvmix_shear" type="logical" default_value=".false." units="NA"
+					description="If true, shear-based mixing is computed using CVMix"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
+					description="Choose between Pacanowski/Philander or Large et al. shear mixing"
+					possible_values="PP or KPP"
+		/>
+		<nml_option name="config_cvmix_shear_PP_nu_zero" type="real" default_value="0.005" units="m^2 s^{-1}"
+					description="Numerator of Pacanowski and Philander (1981) Eq (1)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_PP_alpha" type="real" default_value="5.0" units="unitless"
+					description="Alpha values used in Pacanowski and Philander (1981) Eqs (1) and (2)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_PP_exp" type="real" default_value="2.0" units="unitless"
+					description="Exponent used in denominator of Pacanowski and Philander (1981) Eqs (1)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_KPP_nu_zero" type="real" default_value="0.005" units="m^2 s^{-1}"
+					description="Maximum diffusivity produced by shear-generated mixing"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_KPP_Ri_zero" type="real" default_value="0.7" units="non-dimensional"
+					description="Theshold gradient Richardson number to produced enhanced diffusivities, See Large et al. (1994) Eq (28a,b,c)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_cvmix_shear_KPP_exp" type="real" default_value="3" units="NA"
+					description="Exponent relating diffusivities to $Ri_g$. Referred to as $p_1$ in Large et al. (1994) Eq (28b)"
+					possible_values="Any positive real value"
+		/>
+		<nml_option name="config_use_cvmix_tidal_mixing" type="logical" default_value=".false." units="NA"
+					description="If true, diffusivity and viscosity is computed using CVMix tidal mixing"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_use_cvmix_double_diffusion" type="logical" default_value=".false." units="NA"
+					description="If true, diffusivity and viscosity is computed using CVMix double diffusion"
+					possible_values="True or False"
 		/>
 		<nml_option name="config_use_cvmix_kpp" type="logical" default_value=".false." units="NA"
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
 		/>
+		<nml_option name="config_cvmix_kpp_niterate" type="integer" default_value="2" units="NA"
+					description="Number of iterations used to solve for KPP ocean boundary layer depth"
+					possible_values="Any positive integer"
+		/>
 		<nml_option name="config_cvmix_kpp_criticalBulkRichardsonNumber" type="real" default_value="0.25" units="non-dimensional"
-					description="critical bulk Richardson number used to determine bottom of ocean mixed layer"
+					description="Critical bulk Richardson number used to determine bottom of ocean mixed layer"
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic" units="unitless"
-					description="determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation"
+		<nml_option name="config_cvmix_kpp_matching" type="character" default_value="SimpleShapes" units="NA"
+					description="Determines how the KPP diffusivities are matched to values at base of boundary layer"
+					possible_values="MatchBoth, MatchGradient, SimpleShapes"
+		/>
+		<nml_option name="config_cvmix_kpp_EkmanOBL" type="logical" default_value=".false." units="NA"
+					description="If true, boundary layer depth is limited by Ekman layer depth"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_kpp_MonObOBL" type="logical" default_value=".false." units="NA"
+					description="If true, boundary layer depth is limited by Monin-Obukhov layer depth"
+					possible_values="True or False"
+		/>
+		<nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic" units="NA"
+					description="Determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation"
 					possible_values="linear, quadratic, cubic"
+		/>
+		<nml_option name="config_cvmix_kpp_surface_layer_extent" type="real" default_value="0.1" units="non-dimensional"
+					description="The non-dimensional extent of the surface layer, measured as fraction of boundary layer depth"
+					possible_values="Any value between 0 and 1"
 		/>
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
@@ -505,7 +585,7 @@
 					possible_values="'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
 		/>
 		<nml_option name="config_density0" type="real" default_value="1014.65" units="kg m^{-3}"
-					description="Density used as a coefficient of the pressure gradient terms, $\rho_0$.  This is a constant due to the Boussinesq approximation."
+					description="Density used as a coefficient of the pressure gradient terms, $\rho_0$. This is a constant due to the Boussinesq approximation."
 					possible_values="any positive real, but typically 1000-1035"
 		/>
 		<nml_option name="config_common_level_weight" type="real" default_value="0.5" units="unitless"
@@ -575,15 +655,15 @@
 					possible_values="Any positive integer, but typically 1 or 2"
 		/>
 		<nml_option name="config_btr_gam1_velWt1" type="real" default_value="0.5" units="unitless"
-					description="Weighting of velocity in the SSH predictor step in stage 2.  When zero, previous subcycle time is used; when one, new subcycle time is used."
+					description="Weighting of velocity in the SSH predictor step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
 					possible_values="between 0 and 1"
 		/>
 		<nml_option name="config_btr_gam2_SSHWt1" type="real" default_value="1.0" units="unitless"
-					description="Weighting of SSH in the velocity corrector step in stage 2.  When zero, previous subcycle time is used; when one, new subcycle time is used."
+					description="Weighting of SSH in the velocity corrector step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
 					possible_values="between 0 and 1"
 		/>
 		<nml_option name="config_btr_gam3_velWt2" type="real" default_value="1.0" units="unitless"
-					description="Weighting of velocity in the SSH corrector step in stage 2.  When zero, previous subcycle time is used; when one, new subcycle time is used."
+					description="Weighting of velocity in the SSH corrector step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used."
 					possible_values="between 0 and 1"
 		/>
 		<nml_option name="config_btr_solve_SSH2" type="logical" default_value=".false." units="unitless"
@@ -593,19 +673,35 @@
 	</nml_record>
 	<nml_record name="testing" in_defaults="true">
 		<nml_option name="config_conduct_tests" type="logical" default_value=".false." units="unitless"
-		            description="If true, run testing suite.  This is the overarching control on the test suite.  Individual flags must be set to true below to conduct each test."
-		            possible_values=".true. or .false."
+					description="If true, run testing suite. This is the overarching control on the test suite. Individual flags must be set to true below to conduct each test."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_test_tensors" type="logical" default_value=".false." units="unitless"
-		            description="If true, tensor operations are tested upon start-up."
-		            possible_values=".true. or .false."
+					description="If true, tensor operations are tested upon start-up."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_tensor_test_function" type="character" default_value="sph_uCosCos" units="unitless"
-		            description="Character string to choose tensor test fuction"
-		            possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
+					description="Character string to choose tensor test fuction"
+					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
 		/>
 	</nml_record>
 	<nml_record name="debug" in_defaults="true">
+		<nml_option name="config_disable_redi_k33" type="logical" default_value=".false." units="unitless"
+					description="If true, disables k33 portion of Redi neutral surface mixing." 
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_redi_horizontal_term1" type="logical" default_value=".false." units="unitless"
+					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_redi_horizontal_term2" type="logical" default_value=".false." units="unitless"
+					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_redi_horizontal_term3" type="logical" default_value=".false." units="unitless"
+					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_check_zlevel_consistency" type="logical" default_value=".false." units="unitless"
 					description="Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean."
 					possible_values=".true. or .false."
@@ -694,6 +790,10 @@
 					description="Disables tendencies on tracer fields from surface fluxes."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_disable_tr_nonlocalflux" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the tracer fields from CVMix/KPP nonlocal fluxes."
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<packages>
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
@@ -761,6 +861,8 @@
 			<var name="salinityRestore"/>
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
+			<var name="seaSurfacePressure"/>
+			<var name="boundaryLayerDepth"/>
 		</stream>
 		<stream name="modelRestart" 
 				type="input"
@@ -826,6 +928,7 @@
 			<var name="xtime"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
+			<var name="boundaryLayerDepth"/>
 		</stream>
 
 		<stream name="modelCheckpoint" 
@@ -852,6 +955,7 @@
 			<var_array name="avgTracersSurfaceValue"/>
 			<var_array name="avgSurfaceVelocity"/>
 			<var_array name="avgSSHGradient"/>
+			<var_array name="vertNonLocalFlux"/>
 			<var name="layerThickness"/>
 			<var name="ssh"/>
 			<var name="latCell"/>
@@ -902,6 +1006,7 @@
 			<var name="fCell"/>
 			<var name="bottomDepth"/>
 			<var name="maxLevelCell"/>
+			<var name="maxLevelEdgeTop"/>
 			<var name="refBottomDepth"/>
 			<var name="vertCoordMovementWeights"/>
 			<var name="edgeMask"/>
@@ -917,25 +1022,27 @@
 			<var name="potentialDensity"/>
 			<var name="BruntVaisalaFreqTop"/>
 			<var name="pressure"/>
-			<var name="vertTransportVelocityTop"/>
+			<var name="vertAleTransportTop"/>
 			<var name="vertVelocityTop"/>
 			<var name="kineticEnergyCell"/>
 			<var name="viscosity"/>
 			<var name="divergence"/>
 			<var name="relativeVorticityCell"/>
-			<var name="normalVelocityZonal"/>
-			<var name="normalVelocityMeridional"/>
+			<var name="velocityZonal"/>
+			<var name="velocityMeridional"/>
 			<var name="RiTopOfCell"/>
 			<var name="vertViscTopOfEdge"/>
 			<var name="vertViscTopOfCell"/>
 			<var name="vertDiffTopOfCell"/>
 			<var name="bulkRichardsonNumber"/>
 			<var name="boundaryLayerDepth"/>
+			<var name="boundaryLayerDepthEdge"/>
 			<var name="indexBoundaryLayerDepth"/>
+			<var name="indexSurfaceLayerDepth"/>
 			<var name="surfaceFrictionVelocity"/>
 			<var name="windStressZonalDiag"/>
 			<var name="windStressMeridionalDiag"/>
-			<var name="buoyancyForcingOBL"/>
+			<var name="surfaceBuoyancyForcing"/>
 			<var name="areaCellGlobal"/>
 			<var name="areaEdgeGlobal"/>
 			<var name="areaTriangleGlobal"/>
@@ -943,15 +1050,25 @@
 			<var name="volumeEdgeGlobal"/>
 			<var name="CFLNumberGlobal"/>
 			<var name="nAverage"/>
-			<var name="avgSsh"/>
-			<var name="varSsh"/>
+			<var name="avgSSH"/>
+			<var name="varSSH"/>
+			<var name="avgNormalVelocity"/>
 			<var name="avgVelocityZonal"/>
 			<var name="avgVelocityMeridional"/>
+			<var name="avgVertVelocityTop"/>
+			<var name="varNormalVelocity"/>
 			<var name="varVelocityZonal"/>
 			<var name="varVelocityMeridional"/>
-			<var name="avgNormalVelocity"/>
-			<var name="varNormalVelocity"/>
-			<var name="avgVertVelocityTop"/>
+			<var name="avgNormalTransportVelocity"/>
+			<var name="avgTransportVelocityZonal"/>
+			<var name="avgTransportVelocityMeridional"/>
+			<var name="avgVertTransportVelocityTop"/>
+			<var name="avgNormalGMBolusVelocity"/>
+			<var name="avgGMBolusVelocityZonal"/>
+			<var name="avgGMBolusVelocityMeridional"/>
+			<var name="avgVertGMBolusVelocityTop"/>
+			<var name="surfaceWindStressMagnitude"/>
+			<var name="surfaceWindStress"/>
 			<var name="surfaceMassFlux"/>
 			<var name="seaSurfacePressure"/>
 			<var name="seaIceEnergy"/>
@@ -981,6 +1098,23 @@
 			<var name="nAccumulatedCoupled"/>
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
+			<var name="relativeSlopeTopOfCell"/>
+			<var name="relativeSlopeTaperingCell"/>
+			<var name="relativeSlopeTopOfCellX"/>
+			<var name="relativeSlopeTopOfCellY"/>
+			<var name="relativeSlopeTopOfCellZ"/>
+			<var name="relativeSlopeTopOfCellZonal"/>
+			<var name="relativeSlopeTopOfCellMeridional"/>
+			<var name="k33"/>
+			<var name="GMBolusVelocityX"/>
+			<var name="GMBolusVelocityY"/>
+			<var name="GMBolusVelocityZonal"/>
+			<var name="GMBolusVelocityMeridional"/>
+			<var name="normalGMBolusVelocity"/>
+			<var name="vertGMBolusVelocityTop"/>
+			<var name="gmStreamFuncTopOfEdge"/>
+			<var name="GMStreamFuncX"/>
+			<var name="GMStreamFuncY"/>
 		</stream>
 	</streams>
 	<var_struct name="state" time_levs="2">
@@ -1261,7 +1395,7 @@
 			 description="Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations."
 		/>
 		<var name="refZMid" type="real" dimensions="nVertLevels" units="m"
-			 description="Reference mid z-coordinate of ocean for each vertical level.  This has a negative value."
+			 description="Reference mid z-coordinate of ocean for each vertical level. This has a negative value."
 		/>
 		<var name="refLayerThickness" type="real" dimensions="nVertLevels" units="m"
 			 description="Reference layerThickness of ocean for each vertical level."
@@ -1285,7 +1419,7 @@
 		<var name="tendLayerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThickness"
 			 description="time tendency of layer thickness"
 		/>
-		<var name="tendSsh" type="real" dimensions="nCells Time" units="m s^{-1}" name_in_code="ssh"
+		<var name="tendSSH" type="real" dimensions="nCells Time" units="m s^{-1}" name_in_code="ssh"
 			 description="time tendency of sea-surface height"
 		/>
 		<var name="tendHighFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="highFreqThickness"
@@ -1312,21 +1446,34 @@
 				description="Tracer of 1 extrapolated to ocean surface"
 			/>
 		</var_array>
+		<var_array name="tracersSurfaceLayerValue" type="real" dimensions="nCells Time">
+			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
+				description="potential temperature averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			/>
+			<var name="salinitySurfaceLayerValue" array_group="surfaceLayerValues" units="PSU" name_in_code="salinitySurfaceLayerValue"
+				description="salinity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			/>
+			<var name="tracer1SurfaceLayerValue" array_group="surfaceLayerValues" units="na"
+				description="Tracer of 1 averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+			/>
+		</var_array>
+		<var name="normalVelocitySurfaceLayer" type="real" dimensions="nEdges Time" nits="m s^{-1}"
+			 description="normal velocity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+		/>
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time">
-			<var name="zonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
+			<var name="surfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
 				 description="Zonal surface velocity reconstructed at cell centers"
 				
 			/>
-			<var name="meridionalSurfaceVelocity" array_group="vel_meridional" units="m s^{-1}"
+			<var name="surfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
 				 description="Meridional surface velocity reconstructed at cell centers"
-				
 			/>
 		</var_array>
 		<var_array name="SSHGradient" type="real" dimensions="nCells Time">
-			<var name="zonalSSHGradient" array_group="ssh_zonal" units="m m^{-1}"
+			<var name="SSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
 				 description="Zonal gradient of SSH reconstructed at cell centers"
 			/>
-			<var name="meridionalSSHGradient" array_group="ssh_meridional" units="m m^{-1}"
+			<var name="SSHGradientMeridional" array_group="ssh_meridional" units="m m^{-1}"
 				 description="Meridional gradient of SSH reconstructed at cell centers"
 			/>
 		</var_array>
@@ -1367,19 +1514,26 @@
 			 description="pressure used in the momentum equation"
 		/>
 
-		<var name="uTransport" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="normalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="horizontal velocity used to transport mass and tracers"
 		/>
-		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+		<var name="vertAleTransportTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
 			 description="vertical transport through the layer interface at the top of the cell"
 		/>
 		<var name="vertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
 			 description="vertical velocity defined at center (horizonally) and top (vertically) of cell"
 		/>
+		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="vertical tracer-transport velocity defined at center (horizonally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
+
+		/>
+		<var name="vertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="vertical tracer-transport velocity defined at center (horizonally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
+
+		/>
 		<var name="tangentialVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="horizontal velocity, tangential to an edge"
 		/>
-
 		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
 			 description="layer thickness averaged from cell center to edges"
 		/>
@@ -1390,7 +1544,6 @@
 		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 			 description="kinetic energy of horizonal velocity on cells"
 		/>
-
 		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
 			 description="Eddy flux in Gent-McWilliams eddy parameterization"
 		/>
@@ -1425,7 +1578,6 @@
 		<var name="normalizedRelativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
 			 description="curl of horizontal velocity divided by layer thickness, averaged from vertices to cell centers"
 		/>
-
 		<var name="barotropicForcing" type="real" dimensions="nEdges Time" units="m s^{-2}"
 			 description="Barotropic tendency computed from the baroclinic equations in stage 1 of the split-explicit algorithm."
 		/>
@@ -1433,22 +1585,36 @@
 			 description="Barotropic thickness flux at each edge, used to advance sea surface height in each subcycle of stage 2 of the split-explicit algorithm."
 		/>
 
-		<var name="normalVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the x-direction (cartesian)"
 		/>
-		<var name="normalVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the y-direction (cartesian)"
 		/>
-		<var name="normalVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the z-direction (cartesian)"
 		/>
-		<var name="normalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the eastward direction"
 		/>
-		<var name="normalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="component of horizontal velocity in the northward"
+		<var name="velocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the northward direction"
 		/>
-
+		<var name="transportVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the x-direction (cartesian)"
+		/>
+		<var name="transportVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the y-direction (cartesian)"
+		/>
+		<var name="transportVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the z-direction (cartesian)"
+		/>
+		<var name="transportVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the eastward direction"
+		/>
+		<var name="transportVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity used to transport mass and tracers in the northward direction"
+		/>
 		<var name="gradSSH" type="real" dimensions="nVertLevels nEdges Time" units=""
 			 description="Gradient of sea surface height at edges."
 		/>
@@ -1468,25 +1634,24 @@
 			 description="Meridional Component of the gradient of sea surface height at cell centers."
 		/>
 
-		<var name="uBolusGM" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
 		/>
-		<var name="uBolusGMX" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
 		/>
-		<var name="uBolusGMY" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="GMBolusVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction"
 		/>
-		<var name="uBolusGMZ" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="GMBolusVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, z-direction"
 		/>
-		<var name="uBolusGMZonal" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="GMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
 		/>
-		<var name="uBolusGMMeridional" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="GMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
 		/>
-
 		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="nondimensional"
 			 description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
 		/>
@@ -1503,16 +1668,33 @@
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 		/>
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
-			 description="bulk Richardson number"
+			 description="CVMix/KPP: bulk Richardson number"
+		/>
+		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+			 description="CVMix/KPP: contribution of buoyancy to bulk Richardson number"
+		/>
+		<var name="bulkRichardsonNumberShear" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+			 description="CVMix/KPP: contribution of shear to bulk Richardson number"
 		/>
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
-			 description="diagnosed depth of the ocean surface boundary layer"
+			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer"
 		/>
-		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time" units="none"
-			 description="int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) is fractional position within that layer."
+		<var name="boundaryLayerDepthEdge" type="real" dimensions="nEdges Time" units="m"
+			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer averaged to cell edges"
 		/>
-		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^{-1}"
-			 description="diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
+		<var_array name="vertNonLocalFlux" type="real" dimensions="nVertLevelsP1 nCells Time">
+			<var name="vertNonLocalFluxTemp" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxTemp"
+				 description="CVMix/KPP: nonlocal boundary layer mixing term for temperature"
+		/>
+		</var_array>
+		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time"  units="none"
+			 description="CVMix/KPP: int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
+		/>
+		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time" units="none"
+			 description="CVMix/KPP: surface layer entirely encompasses int(indexSurfaceLayerDepth) vertical layers and fraction(indexSurfaceLayerDepth) of the int(indexSurfaceLayerDepth)+1 layer."
+		/>
+		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time"  units="m s^{-1}"
+			 description="CVMix/KPP: diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
 		/>
 		<var name="windStressZonalDiag" type="real" dimensions="nCells Time" units="N m^{-2}"
 			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
@@ -1521,10 +1703,10 @@
 			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
 		/>
 		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
-			 description="Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
+			 description="CVMix/KPP: Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
 		/>
-		<var name="buoyancyForcingOBL" type="real" dimensions="nCells Time" units="m s^{-3}"
-			 description="diagnosed buoyancy forcing due to heat, salt and freshwater fluxes averaged over ocean boundary layer depth"
+		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
+			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 		/>
 
 		<var name="areaCellGlobal" type="real" dimensions="Time" units="m^2"
@@ -1545,16 +1727,70 @@
 		<var name="CFLNumberGlobal" type="real" dimensions="Time" units="unitless"
 			 description="maximum CFL number over the full domain"
 		/>
+		<var name="relativeSlopeTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+		/>
+		<var name="relativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
+			 description="Magnitude of slope of isopycnal surface relative to constant coordinate surface averaged to cell centers"
+		/>
+		<var name="relativeSlopeTapering" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
+			 description="scalar tapering function applied to limit magnitude of isopycnal mixing in regions where relativeSlopeTopOfCell > config_gm_max_slope"
+		/>
+		<var name="relativeSlopeTaperingCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
+			 description="averaging of relativeSlopeTapering function to cell centers"
+		/>
+		<var name="relativeSlopeTopOfCellX" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+		/>
+		<var name="relativeSlopeTopOfCellY" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+		/>
+		<var name="relativeSlopeTopOfCellZ" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+		/>
+		<var name="relativeSlopeTopOfCellZonal" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+		/>
+		<var name="relativeSlopeTopOfCellMeridional" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface relative to constant coordinate surface"
+		/>
+		<var name="k33" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="The (3,3) entry of the Redi diffusion tensor. Added to the model vertical diffusion."
+		/>
+		<var name="gmStreamFuncTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+		/>
+		<var name="gmStreamFuncTopOfCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function reconstructed to the cell centers"
+		/>
+		<var name="GMStreamFuncX" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+		/>
+		<var name="GMStreamFuncY" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+		/>
+		<var name="GMStreamFuncZ" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+		/>
+		<var name="GMStreamFuncZonal" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+		/>
+		<var name="GMStreamFuncMeridional" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function"
+		/>
 	</var_struct>
 	<var_struct name="average" time_levs="1">
 		<var name="nAverage" type="real" dimensions="Time" units="unitless"
 			 description="number of timesteps in time-averaged variables"
 		/>
-		<var name="avgSsh" type="real" dimensions="nCells Time" units="m"
+		<var name="avgSSH" type="real" dimensions="nCells Time" units="m"
 			 description="time-averaged sea surface height"
 		/>
-		<var name="varSsh" type="real" dimensions="nCells Time" units="m"
+		<var name="varSSH" type="real" dimensions="nCells Time" units="m"
 			 description="variance of sea surface height"
+		/>
+		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="time-averaged velocity, normal to cell edge"
 		/>
 		<var name="avgVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="time-averaged velocity in the eastward direction"
@@ -1562,23 +1798,44 @@
 		<var name="avgVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="time-averaged velocity in the northward direction"
 		/>
+		<var name="varNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="variance of velocity, normal to cell edge"
+		/>
 		<var name="varVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="variance of velocity in the eastward direction"
 		/>
 		<var name="varVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="variance of velocity in the northward direction"
 		/>
-		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-			 description="time-averaged velocity, normal to cell edge"
+		<var name="avgNormalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="time-averaged total tracer-transport velocity, normal to cell edge"
 		/>
-		<var name="varNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-			 description="variance of velocity, normal to cell edge"
+		<var name="avgTransportVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged total tracer-transport velocity in the eastward direction"
+		/>
+		<var name="avgTransportVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged total tracer-transport velocity in the northward direction"
 		/>
 		<var name="avgVertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
 			 description="time-averaged vertical velocity at top of cell"
 		/>
+		<var name="avgVertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="time-averaged vertical total tracer-transport velocity at top of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
+		/>
+		<var name="avgNormalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="time-averaged GM Bolus velocity, normal to cell edge"
+		/>
+		<var name="avgGMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged GM Bolus velocity in the eastward direction"
+		/>
+		<var name="avgGMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="time-averaged GM Bolus velocity in the northward direction"
+		/>
+		<var name="avgVertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+			 description="time-averaged vertical GM Bolus velocity at top of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
+		/>
 	</var_struct>
-    <var_struct name="forcing" time_levs="1">
+	<var_struct name="forcing" time_levs="1">
 		<var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}"
 			 description="Wind stress at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
 		/>
@@ -1723,18 +1980,18 @@
 			/>
 		</var_array>
 		<var_array name="avgSurfaceVelocity" type="real" dimensions="nCells Time">
-			<var name="avgZonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
+			<var name="avgSurfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
 				 description="Time averaged zonal surface velocity"
-			 />
-			 <var name="avgMeridionalSurfaceVelocity" array_group="vel_meridional" units="m s^{-1}"
-				  description="Time averaged meridional surface velocity"
-			 />
+			/>
+			<var name="avgSurfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
+				 description="Time averaged meridional surface velocity"
+			/>
 		</var_array>
 		<var_array name="avgSSHGradient" type="real" dimensions="nCells Time">
-			<var name="avgZonalSSHGradient" array_group="ssh_zonal" units="m m^{-1}"
+			<var name="avgSSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
 				 description="Time averaged zonal gradient of SSH"
 			/>
-			<var name="avgMeridionalSSHGradient" array_group="ssh_meridional" units="m m^{-1}"
+			<var name="avgSSHGradientMeridional" array_group="ssh_meridional" units="m m^{-1}"
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
@@ -1785,7 +2042,7 @@
 		<var name="salineContractionCoeff" 
 			 persistence="persistent"
 			 type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
-			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient."
+			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$. This is also called the haline contraction coefficient."
 		/>
 
 		<!-- FIELDS FOR TENSOR OPERATIONS -->
@@ -1857,7 +2114,7 @@
 		<var name="normalVectorEdge" 
 			 persistence="scratch" 
 			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
-		     description="Vector component normal to an edge."
+			 description="Vector component normal to an edge."
 		/>
 		<var name="tangentialVectorEdge" 
 			 persistence="scratch" 
@@ -1887,6 +2144,73 @@
 		<var name="windStressMeridionalScratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 persistence="scratch"
 			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
+		/>
+		<var name="gradDensityEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="Normal gradient of density"
+		/>
+		<var name="gradDensityConstZTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Normal gradient of density along constant z-level surface"
+		/>
+		<var name="gradDensityTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Normal gradient of density at layer interfaces"
+		/>
+		<var name="gradTracerEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="Normal gradient of tracer field at edges"
+		/>
+		<var name="gradTracerTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Normal gradient of tracer field at layer interfaces"
+		/>
+		<var name="gradHTracerSlopedTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units="tracer m s^{-1}"
+			 description="Dot product of relative slope with gradient of tracer averaged to cell centers"
+		/>
+		<var name="dDensityDzTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
+			 description="Vertical gradient of potential density"
+		/>
+		<var name="dDensityDzTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Vertical gradient of potential density at edge and top of layer."
+		/>
+		<var name="dDispDensityDzTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
+			 description="Vertical gradient of density"
+		/>
+		<var name="dDispDensityDzTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Vertical gradient of density at edge and top of layer."
+		/>
+		<var name="dTracerdZTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
+			 description="Vertical gradient of tracer field at cell centers"
+		/>
+		<var name="dTracerdZTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Vertical gradient of tracer field at cell edges"
+		/>
+		<var name="gradZMidEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="Gradient of zMid"
+		/>
+		<var name="gradZMidTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
+			 description="Gradient of zMid at layer interfaces"
+		/>
+		<var name="tridiagA" persistence="scratch" type="real" dimensions="nVertLevels" units=""
+			 description="The lower band of a tridiagonal matrix"
+		/>
+		<var name="tridiagB" persistence="scratch" type="real" dimensions="nVertLevels" units=""
+			 description="The central band of a tridiagonal matrix"
+		/>
+		<var name="tridiagC" persistence="scratch" type="real" dimensions="nVertLevels" units=""
+			 description="The upper band of a tridiagonal matrix"
+		/>
+		<var name="areaCellSum" type="real" dimensions="nVertLevels nCells Time" units="m^{2}"
+			 persistence="scratch"
+			 description="Accumulated cell area for normalization"
+		/>
+		<var name="rightHandSide" persistence="scratch" type="real" dimensions="nVertLevels" units=""
+			 description="A vector"
+		/>
+		<var name="yRelativeSlopeSolution" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
+			 description="Slope of isopycnal surface for analytic solution"
+		/>
+		<var name="yGMStreamFuncSolution" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
+			 description="GM stream function reconstructed to the cell centers, for analytic solution"
+		/>
+		<var name="yGMBolusVelocitySolution" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction, for analytic solution"
 		/>
     </var_struct>
 

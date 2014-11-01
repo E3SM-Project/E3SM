@@ -30,6 +30,7 @@ module ocn_vmix
    use ocn_vmix_coefs_tanh
    use ocn_vmix_coefs_rich
    use ocn_vmix_cvmix
+   use ocn_vmix_coefs_redi
 
    implicit none
    private
@@ -120,7 +121,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2, err3, err4
+      integer :: err1, err2, err3, err4, err5
       integer :: timeLevel
 
       real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfEdge, vertDiffTopOfCell
@@ -148,10 +149,9 @@ contains
       call ocn_vmix_coefs_tanh_build(meshPool, statePool, diagnosticsPool, err2, timeLevel)
       call ocn_vmix_coefs_rich_build(meshPool, statePool, diagnosticsPool, err3, timeLevel)
       call ocn_vmix_coefs_cvmix_build(meshPool, statePool, diagnosticsPool, err4, timeLevel)
+      call ocn_vmix_coefs_redi_build(meshPool, statePool, diagnosticsPool, err5, timeLevel)
 
-      err = ior(err1, err2)
-      err = ior(err,  err3)
-      err = ior(err,  err4)
+      err = ior(ior(ior(err1, ior(err2, err3)), err4), err5)
 
    !--------------------------------------------------------------------
 
@@ -431,11 +431,14 @@ contains
       integer, intent(out) :: err
       integer, intent(in), optional :: timeLevelIn
 
-      integer :: timeLevel
-      integer, pointer :: nCells
+      integer :: timeLevel, k, cell1, cell2, iEdge
+      integer, pointer :: nCells, nEdges
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge, vertViscTopOfEdge, vertDiffTopOfCell, kineticEnergyCell
+      real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      logical, pointer :: config_use_cvmix
 
       err = 0
 
@@ -445,6 +448,8 @@ contains
          timeLevel = 1
       end if
 
+      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix', config_use_cvmix)
+
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
@@ -453,12 +458,28 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
                
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       call ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, err, timeLevel)
+
+      ! if using CVMix, then viscosity has to be averaged from cell centers to cell edges
+      if ( config_use_cvmix ) then
+      vertViscTopOfEdge(:,:) = 0.0
+      do iEdge=1,nEdges
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         do k=1,maxLevelEdgeTop(iEdge)
+           vertViscTopOfEdge(k,iEdge) = 0.5*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
+         enddo
+      enddo
+      endif
 
       !
       !  Implicit vertical solve for momentum
@@ -500,7 +521,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      integer :: err1, err2, err3, err4
+      integer :: err_tmp
       logical, pointer :: config_disable_vel_vmix, config_disable_tr_vmix
 
       err = 0
@@ -514,75 +535,101 @@ contains
       if(config_disable_vel_vmix) velVmixOn = .false.
       if(config_disable_tr_vmix) tracerVmixOn = .false.
 
-      call ocn_vmix_coefs_const_init(err1)
-      call ocn_vmix_coefs_tanh_init(err2)
-      call ocn_vmix_coefs_rich_init(err3)
-      call ocn_vmix_cvmix_init(domain,err4)
-
-      err = ior(err1, err2)
-      err = ior(err,  err3)
-      err = ior(err,  err4)
+      call ocn_vmix_coefs_const_init(err_tmp)
+      err = ior(err, err_tmp)
+      call ocn_vmix_coefs_tanh_init(err_tmp)
+      err = ior(err, err_tmp)
+      call ocn_vmix_coefs_rich_init(err_tmp)
+      err = ior(err, err_tmp)
+      call ocn_vmix_cvmix_init(domain,err_tmp)
+      err = ior(err, err_tmp)
+      call ocn_vmix_coefs_redi_init(err_tmp)
+      err = ior(err, err_tmp)
 
       write(6,*) 'ocn_vmix_init complete'
    !--------------------------------------------------------------------
 
    end subroutine ocn_vmix_init!}}}
 
-subroutine tridiagonal_solve(a,b,c,r,x,n)!{{{
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Solve the matrix equation Ax=r for x, where A is tridiagonal.
-! A is an nxn matrix, with:
-!   a sub-diagonal, filled from 1:n-1 (a(1) appears on row 2)
-!   b diagonal, filled from 1:n
-!   c sup-diagonal, filled from 1:n-1  (c(1) apears on row 1)
+!***********************************************************************
 !
-! Input: a,b,c,r,n
+!  routine tridiagonal_solve
 !
-! Output: x
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
-   implicit none
+!> \brief   Solve the matrix equation Ax=r for x, where A is tridiagonal.
+!> \author  Mark Petersen
+!> \date    September 2011
+!> \details 
+!>  Solve the matrix equation Ax=r for x, where A is tridiagonal.
+!>  A is an nxn matrix, with:
+!>  a sub-diagonal, filled from 1:n-1 (a(1) appears on row 2)
+!>  b diagonal, filled from 1:n
+!>  c sup-diagonal, filled from 1:n-1  (c(1) apears on row 1)
+!
+!-----------------------------------------------------------------------
+   subroutine tridiagonal_solve(a,b,c,r,x,n) !{{{
+      
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
 
-   integer,intent(in) :: n
-   real (KIND=RKIND), dimension(n), intent(in) :: a,b,c,r
-   real (KIND=RKIND), dimension(n), intent(out) :: x
-   real (KIND=RKIND), dimension(n) :: bTemp,rTemp
-   real (KIND=RKIND) :: m
-   integer i
+      integer,intent(in) :: n
+      real (KIND=RKIND), dimension(n), intent(in) :: a,b,c,r
 
-   ! Use work variables for b and r
-   bTemp(1) = b(1)
-   rTemp(1) = r(1)
- 
-   ! First pass: set the coefficients
-   do i = 2,n
-      m = a(i-1)/bTemp(i-1)
-      bTemp(i) = b(i) - m*c(i-1)
-      rTemp(i) = r(i) - m*rTemp(i-1)
-   end do 
- 
-   x(n) = rTemp(n)/bTemp(n)
-   ! Second pass: back-substition
-   do i = n-1, 1, -1
-      x(i) = (rTemp(i) - c(i)*x(i+1))/bTemp(i)
-   end do
- 
-end subroutine tridiagonal_solve!}}}
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
 
+      real (KIND=RKIND), dimension(n), intent(out) :: x
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      real (KIND=RKIND), dimension(n) :: bTemp,rTemp
+      real (KIND=RKIND) :: m
+      integer i
+
+      ! Use work variables for b and r
+      bTemp(1) = b(1)
+      rTemp(1) = r(1)
+      
+      ! First pass: set the coefficients
+      do i = 2,n
+         m = a(i-1)/bTemp(i-1)
+         bTemp(i) = b(i) - m*c(i-1)
+         rTemp(i) = r(i) - m*rTemp(i-1)
+      end do 
+      
+      x(n) = rTemp(n)/bTemp(n)
+       ! Second pass: back-substition
+      do i = n-1, 1, -1
+         x(i) = (rTemp(i) - c(i)*x(i+1))/bTemp(i)
+      end do
+
+   end subroutine tridiagonal_solve !}}}
+
+!***********************************************************************
+!
+!  routine tridiagonal_solve_mult
+!
+!> \brief   Solve multiple matrix equations Ax=r for x, where A is tridiagonal.
+!> \author  Mark Petersen
+!> \date    September 2011
+!> \details 
+!>  Solve the matrix equation Ax=r for x, where A is tridiagonal.
+!>  A is an nxn matrix, with:
+!>  a sub-diagonal, filled from 1:n-1 (a(1) appears on row 2)
+!>  b diagonal, filled from 1:n
+!>  c sup-diagonal, filled from 1:n-1  (c(1) apears on row 1)
+!
+!-----------------------------------------------------------------------
 subroutine tridiagonal_solve_mult(a,b,c,r,x,n,nDim,nSystems)!{{{
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Solve the matrix equation Ax=r for x, where A is tridiagonal.
-! A is an nxn matrix, with:
-!   a sub-diagonal, filled from 1:n-1 (a(1) appears on row 2)
-!   b diagonal, filled from 1:n
-!   c sup-diagonal, filled from 1:n-1  (c(1) apears on row 1)
-!
-! Input: a,b,c,r,n
-!
-! Output: x
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
-   implicit none
 
    integer,intent(in) :: n, nDim, nSystems
    real (KIND=RKIND), dimension(n), intent(in) :: a,b,c

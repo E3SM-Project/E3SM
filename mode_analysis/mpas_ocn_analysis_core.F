@@ -237,11 +237,11 @@ module mpas_core
       integer, dimension(:), pointer :: maxLevelEdgeBot, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: advCellsForEdge, highOrderAdvectionMask, boundaryCell
       real (kind=RKIND), dimension(:), pointer :: areaCell
-      real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, uTransport
+      real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, normalTransportVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uBolusGM, edgeTangentVectors
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityX, normalVelocityY, normalVelocityZ
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalGMBolusVelocity, edgeTangentVectors
+      real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
       real (kind=RKIND), dimension(:,:,:), pointer :: derivTwo
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
@@ -249,6 +249,7 @@ module mpas_core
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels
       integer, pointer :: config_horiz_tracer_adv_order
       logical, pointer :: config_hmix_scaleWithMesh
+      logical, pointer :: config_use_standardGM
       real (kind=RKIND), pointer :: config_maxMeshDensity
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -277,13 +278,13 @@ module mpas_core
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
-      call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
-      call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityX', normalVelocityX)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityY', normalVelocityY)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', normalVelocityZ)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velocityZ)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -292,7 +293,7 @@ module mpas_core
       call mpas_pool_get_config(block % configs, 'config_horiz_tracer_adv_order', config_horiz_tracer_adv_order)
       call mpas_pool_get_config(block % configs, 'config_hmix_scaleWithMesh', config_hmix_scaleWithMesh)
       call mpas_pool_get_config(block % configs, 'config_maxMeshDensity', config_maxMeshDensity)
-   
+      call mpas_pool_get_config(block % configs, 'config_use_standardGM', config_use_standardGM)
       call ocn_setup_sign_and_index_fields(meshPool)
       call mpas_initialize_deriv_two(meshPool, derivTwo, err)
       call mpas_tracer_advection_coefficients(meshPool, &
@@ -309,7 +310,7 @@ module mpas_core
       call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
 
       ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-      uTransport(:,:) = normalVelocity(:,:) + uBolusGM(:,:)
+      normalTransportVelocity(:,:) = normalVelocity(:,:) + normalGMBolusVelocity(:,:)
 
       call ocn_compute_mesh_scaling(meshPool, config_hmix_scaleWithMesh, config_maxMeshDensity)
  
@@ -318,12 +319,16 @@ module mpas_core
 
       call mpas_init_reconstruct(meshPool)
       call mpas_reconstruct(meshPool, normalVelocity,        &
-                       normalVelocityX,            &
-                       normalVelocityY,            &
-                       normalVelocityZ,            &
-                       normalVelocityZonal,        &
-                       normalVelocityMeridional    &
+                       velocityX,            &
+                       velocityY,            &
+                       velocityZ,            &
+                       velocityZonal,        &
+                       velocityMeridional    &
                       )
+
+      if (config_use_standardGM) then
+         call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+      end if
 
       ! initialize velocities and tracers on land to be zero.
       areaCell(nCells+1) = -1.0e34

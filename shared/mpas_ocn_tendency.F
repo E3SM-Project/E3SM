@@ -28,6 +28,7 @@ module ocn_tendency
 
    use ocn_tracer_advection
    use ocn_tracer_short_wave_absorption
+   use ocn_tracer_nonlocalflux
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -103,7 +104,8 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
       real (kind=RKIND), dimension(:), pointer :: surfaceMassFlux
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, vertTransportVelocityTop, tend_layerThickness, uTransport, transmissionCoefficients
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, &
+         vertAleTransportTop, tend_layerThickness, normalTransportVelocity, transmissionCoefficients
 
       integer :: err
 
@@ -113,9 +115,9 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
 
-      call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
+      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+      call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
 
       call mpas_pool_get_array(tendPool, 'layerThickness', tend_layerThickness)
 
@@ -138,20 +140,21 @@ contains
       ! QC Comment (3/15/12): need to make sure that uTranport is the right
       ! transport velocity here.
       call mpas_timer_start("hadv", .false., thickHadvTimer)
-      call ocn_thick_hadv_tend(meshPool, uTransport, layerThicknessEdge, tend_layerThickness, err)
+      call ocn_thick_hadv_tend(meshPool, normalTransportVelocity, layerThicknessEdge, tend_layerThickness, err)
       call mpas_timer_stop("hadv", thickHadvTimer)
 
       !
       ! height tendency: vertical advection term -d/dz(hw)
       !
       call mpas_timer_start("vadv", .false., thickVadvTimer)
-      call ocn_thick_vadv_tend(meshPool, vertTransportVelocityTop, tend_layerThickness, err)
+      call ocn_thick_vadv_tend(meshPool, vertAleTransportTop, tend_layerThickness, err)
       call mpas_timer_stop("vadv", thickVadvTimer)
 
       !
       ! surface flux tendency
       !
       call mpas_timer_start("surface flux", .false.)
+
       call ocn_thick_surface_flux_tend(meshPool, transmissionCoefficients, layerThickness, surfaceMassFlux, tend_layerThickness, err)
       call mpas_timer_stop("surface flux")
 
@@ -183,13 +186,12 @@ contains
       integer, intent(in), optional :: timeLevelIn !< Input: Time level for state fields
 
       real (kind=RKIND), dimension(:), pointer :: surfaceWindStress
-
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThicknessEdge, normalVelocity, tangentialVelocity, density, potentialDensity, zMid, pressure, &
         tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, &
         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
-        montgomeryPotential, vertTransportVelocityTop, divergence, vertViscTopOfEdge, &
-        temperature, salinity, inSituThermalExpansionCoeff, inSituSalineContractionCoeff
+        montgomeryPotential, vertAleTransportTop, divergence, vertViscTopOfEdge, &
+        inSituThermalExpansionCoeff, inSituSalineContractionCoeff
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
       integer :: timeLevel
@@ -218,7 +220,7 @@ contains
 
       call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+      call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
       call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
       call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdge)
@@ -256,7 +258,7 @@ contains
       ! velocity tendency: vertical advection term -w du/dz
       !
       call mpas_timer_start("vadv", .false., velVadvTimer)
-      call ocn_vel_vadv_tend(meshPool, normalVelocity, layerThicknessEdge, vertTransportVelocityTop, tend_normalVelocity, err)
+      call ocn_vel_vadv_tend(meshPool, normalVelocity, layerThicknessEdge, vertAleTransportTop, tend_normalVelocity, err)
       call mpas_timer_stop("vadv", velVadvTimer)
 
       !
@@ -313,7 +315,7 @@ contains
 !>  This routine computes tracer tendencies for the ocean
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, dt, timeLevelIn)!{{{
+   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, scratchPool, dt, timeLevelIn)!{{{
       implicit none
 
       type (mpas_pool_type), intent(inout) :: tendPool !< Input/Output: Tendency structure
@@ -321,20 +323,23 @@ contains
       type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
       type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostic information
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch information
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       integer, intent(in), optional :: timeLevelIn
 
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:,:), pointer :: &
-        uTransport, layerThickness,vertTransportVelocityTop, layerThicknessEdge, vertDiffTopOfCell, tend_layerThickness, normalThicknessFlux, surfaceTracerFlux, transmissionCoefficients
+        normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
+        tend_layerThickness, normalThicknessFlux, surfaceTracerFlux, transmissionCoefficients, zMid, relativeSlopeTopOfEdge, &
+        relativeSlopeTapering, relativeSlopeTaperingCell
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        tracers, tend_tr
+        tracers, tend_tr, vertNonLocalFlux
 
       integer :: err, iEdge, k
       integer, pointer :: nVertLevels, nEdges, indexTemperature
       integer :: timeLevel
 
-      logical, pointer :: config_disable_tr_all_tend
+      logical, pointer :: config_disable_tr_all_tend, config_use_cvmix_kpp
 
       call mpas_timer_start("ocn_tend_tracer")
 
@@ -345,14 +350,20 @@ contains
       end if
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
 
-      call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
+      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+      call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
+      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTapering', relativeSlopeTapering)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTaperingCell', relativeSlopeTaperingCell)
+      call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
 
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
@@ -375,11 +386,10 @@ contains
 
       allocate(normalThicknessFlux(nVertLevels, nEdges+1))
       !
-      ! QC Comment (3/15/12): need to make sure that uTransport is the right
       ! transport velocity for the tracer.
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
-            normalThicknessFlux(k, iEdge) = uTransport(k, iEdge) * layerThicknessEdge(k, iEdge)
+            normalThicknessFlux(k, iEdge) = normalTransportVelocity(k, iEdge) * layerThicknessEdge(k, iEdge)
          end do
       end do
 
@@ -389,14 +399,15 @@ contains
 
       ! Monotonoic Advection, or standard advection
       call mpas_timer_start("adv", .false., tracerHadvTimer)
-      call ocn_tracer_advection_tend(tracers, normalThicknessFlux, vertTransportVelocityTop, layerThickness, layerThickness, dt, meshPool, tend_layerThickness, tend_tr)
+      call ocn_tracer_advection_tend(tracers, normalThicknessFlux, vertAleTransportTop, layerThickness, layerThickness, dt, meshPool, tend_layerThickness, tend_tr)
       call mpas_timer_stop("adv", tracerHadvTimer)
 
       !
       ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
       !
       call mpas_timer_start("hmix", .false., tracerHmixTimer)
-      call ocn_tracer_hmix_tend(meshPool, layerThicknessEdge, tracers, tend_tr, err)
+      call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
+                                relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend_tr, err)
       call mpas_timer_stop("hmix", tracerHmixTimer)
 
       !
@@ -412,6 +423,15 @@ contains
       call mpas_timer_start("short wave", .false.)
       call ocn_tracer_short_wave_absorption_tend(meshPool, indexTemperature, layerThickness, penetrativeTemperatureFlux, tend_tr, err)
       call mpas_timer_stop("short wave")
+
+      !
+      ! Compute tracer tendency due to non-local flux computed in KPP
+      !
+      if (config_use_cvmix_kpp) then
+        call mpas_timer_start("non-local flux from KPP", .false.)
+        call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, surfaceTracerFlux, tend_tr, err)
+        call mpas_timer_stop("non-local flux from KPP")
+      endif
 
       call mpas_timer_stop("ocn_tend_tracer")
 

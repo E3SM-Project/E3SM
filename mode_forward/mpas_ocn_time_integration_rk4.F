@@ -29,6 +29,7 @@ module ocn_time_integration_rk4
    use ocn_constants
    use ocn_tendency
    use ocn_diagnostics
+   use ocn_gm
 
    use ocn_equation_of_state
    use ocn_vmix
@@ -115,6 +116,8 @@ module ocn_time_integration_rk4
       ! Config options
       logical, pointer :: config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_filter_btr_mode, config_use_freq_filtered_thickness
+      logical, pointer :: config_use_standardGM
+      logical, pointer :: config_use_cvmix_kpp
       real (kind=RKIND), pointer :: config_mom_del4
 
       ! State indices
@@ -122,8 +125,8 @@ module ocn_time_integration_rk4
       integer, pointer :: indexSalinity
 
       ! Diagnostics Indices
-      integer, pointer :: indexZonalSurfaceVelocity, indexMeridionalSurfaceVelocity
-      integer, pointer:: indexZonalSSHGradient, indexMeridionalSSHGradient
+      integer, pointer :: indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
+      integer, pointer :: indexSSHGradientZonal, indexSSHGradientMeridional
 
       ! Mesh array pointers
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
@@ -140,10 +143,10 @@ module ocn_time_integration_rk4
 
       ! Diagnostics Array Pointers
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge
-      real (kind=RKIND), dimension(:,:), pointer :: vertTransportVelocityTop
-      real (kind=RKIND), dimension(:,:), pointer :: uTransport, uBolusGM
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityX, normalVelocityY, normalVelocityZ
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: vertAleTransportTop
+      real (kind=RKIND), dimension(:,:), pointer :: normalTransportVelocity, normalGMBolusVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
       real (kind=RKIND), dimension(:,:), pointer :: gradSSH
       real (kind=RKIND), dimension(:,:), pointer :: gradSSHX, gradSSHY, gradSSHZ
       real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
@@ -162,6 +165,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
       ! Diagnostics Field Pointers
+      type (field1DReal), pointer :: boundaryLayerDepthField
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
 
       ! State/Tend Field Pointers
@@ -175,6 +179,8 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
       call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
       call mpas_pool_get_config(domain % configs, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
+      call mpas_pool_get_config(domain % configs, 'config_use_standardGM', config_use_standardGM)
+      call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
 
       !
       ! Initialize time_levs(2) with state at current time
@@ -297,10 +303,17 @@ module ocn_time_integration_rk4
       ! BEGIN RK loop 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do rk_step = 1, 4
+        call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
         ! Update halos for diagnostic variables.
+        call mpas_timer_start("RK4-boundary layer depth halo update")
+        if (config_use_cvmix_kpp) then
+           call mpas_pool_get_field(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepthField)
+           call mpas_dmpar_exch_halo_field(boundaryLayerDepthField)
+        end if
+        call mpas_timer_stop("RK4-boundary layer depth halo update")
+
         call mpas_timer_start("RK4-diagnostic halo update")
-        call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
         call mpas_pool_get_field(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdgeField)
         call mpas_pool_get_field(diagnosticsPool, 'divergence', divergenceField)
@@ -381,24 +394,24 @@ module ocn_time_integration_rk4
            call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
 
            call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
-           call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
-           call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
+           call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
+           call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
 
            call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
            call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
 
-           ! advection of u uses u, while advection of layerThickness and tracers use uTransport.
+           ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
               layerThicknessCur,layerThicknessEdge, normalVelocityProvis, &
               sshCur, highFreqThicknessProvis, rk_substep_weights(rk_step), &
-              vertTransportVelocityTop, err)
+              vertAleTransportTop, err)
 
            call ocn_tend_vel(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, scratchPool, 1)
 
            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-              layerThicknessCur, layerThicknessEdge, uTransport, &
+              layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
               sshCur, highFreqThicknessProvis, rk_substep_weights(rk_step), &
-              vertTransportVelocityTop, err)
+              vertAleTransportTop, err)
 
            call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
 
@@ -406,7 +419,7 @@ module ocn_time_integration_rk4
                call ocn_filter_btr_mode_tend_vel(tendPool, provisStatePool, diagnosticsPool, meshPool, 1)
            endif
 
-           call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, dt, 1)
+           call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, scratchPool, dt, 1)
            block => block % next
         end do
         call mpas_timer_stop("RK4-tendency computations")
@@ -458,8 +471,8 @@ module ocn_time_integration_rk4
 
               call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-              call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
-              call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
+              call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+              call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
 
               normalVelocityProvis(:,:) = normalVelocityCur(:,:) + rk_substep_weights(rk_step) * normalVelocityTend(:,:)
 
@@ -487,8 +500,22 @@ module ocn_time_integration_rk4
 
               call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, diagnosticsPool, scratchPool, 1)
 
-              ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-              uTransport(:,:) = normalVelocityProvis(:,:) + uBolusGM(:,:)
+              ! ------------------------------------------------------------------
+              ! Accumulating various parametrizations of the transport velocity
+              ! ------------------------------------------------------------------
+              normalTransportVelocity(:,:) = normalVelocityProvis(:,:)
+
+              ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
+              if (config_use_standardGM) then
+                 call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+              end if
+
+              if (config_use_standardGM) then
+                 normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
+              end if
+              ! ------------------------------------------------------------------
+              ! End: Accumulating various parametrizations of the transport velocity
+              ! ------------------------------------------------------------------
 
               block => block % next
            end do
@@ -612,6 +639,25 @@ module ocn_time_integration_rk4
         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, 2)
 
         call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, err, 2)
+
+        ! ------------------------------------------------------------------
+        ! Accumulating various parametrizations of the transport velocity
+        ! ------------------------------------------------------------------
+        normalTransportVelocity(:,:) = normalVelocityNew(:,:)
+
+        ! Compute normalGMBolusVelocity, slopeRelative and RediDiffVertCoef if respective flags are turned on
+        ! QC Note: this routine is called here to get updated k33. normalTransportVelocity probably does not need to be updated at all here.
+        if (config_use_standardGM) then
+           call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+        end if
+
+        if (config_use_standardGM) then
+           normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
+        end if
+        ! ------------------------------------------------------------------
+        ! End: Accumulating various parametrizations of the transport velocity
+        ! ------------------------------------------------------------------
+
         block => block % next
       end do
 
@@ -645,18 +691,18 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
 
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_zonalSurfaceVelocity', indexZonalSurfaceVelocity)
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_meridionalSurfaceVelocity', indexMeridionalSurfaceVelocity)
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_zonalSSHGradient', indexZonalSSHGradient)
-         call mpas_pool_get_dimension(diagnosticsPool, 'index_meridionalSSHGradient', indexMeridionalSSHGradient)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_surfaceVelocityZonal', indexSurfaceVelocityZonal)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_surfaceVelocityMeridional', indexSurfaceVelocityMeridional)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientZonal', indexSSHGradientZonal)
+         call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientMeridional', indexSSHGradientMeridional)
 
-         call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
-         call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityX', normalVelocityX)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityY', normalVelocityY)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', normalVelocityZ)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
          call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
          call mpas_pool_get_array(diagnosticsPool, 'gradSSHX', gradSSHX)
          call mpas_pool_get_array(diagnosticsPool, 'gradSSHY', gradSSHY)
@@ -676,12 +722,26 @@ module ocn_time_integration_rk4
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, 2)
 
-         ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-         uTransport(:,:) = normalVelocityNew(:,:) + uBolusGM(:,:)
+         ! ------------------------------------------------------------------
+         ! Accumulating various parameterizations of the transport velocity
+         ! ------------------------------------------------------------------
+         normalTransportVelocity(:,:) = normalVelocityNew(:,:)
+
+         ! Compute normalGMBolusVelocity and the tracer transport velocity
+         if (config_use_standardGM) then
+             call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+         end if
+
+         if (config_use_standardGM) then
+            normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
+         end if
+         ! ------------------------------------------------------------------
+         ! End: Accumulating various parameterizations of the transport velocity
+         ! ------------------------------------------------------------------
 
          call mpas_reconstruct(meshPool,  normalVelocityNew,                 &
-                          normalVelocityX, normalVelocityY, normalVelocityZ, &
-                          normalVelocityZonal, normalVelocityMeridional      &
+                          velocityX, velocityY, velocityZ, &
+                          velocityZonal, velocityMeridional      &
                          )
 
          call mpas_reconstruct(meshPool, gradSSH,         &
@@ -689,14 +749,18 @@ module ocn_time_integration_rk4
                           gradSSHZonal, gradSSHMeridional &
                          )
 
-         surfaceVelocity(indexZonalSurfaceVelocity, :) = normalVelocityZonal(1, :)
-         surfaceVelocity(indexMeridionalSurfaceVelocity, :) = normalVelocityMeridional(1, :)
+         surfaceVelocity(indexSurfaceVelocityZonal, :) = velocityZonal(1, :)
+         surfaceVelocity(indexSurfaceVelocityMeridional, :) = velocityMeridional(1, :)
 
-         SSHGradient(indexZonalSSHGradient, :) = gradSSHZonal(1, :)
-         SSHGradient(indexMeridionalSSHGradient, :) = gradSSHMeridional(1, :)
+         SSHGradient(indexSSHGradientZonal, :) = gradSSHZonal(1, :)
+         SSHGradient(indexSSHGradientMeridional, :) = gradSSHMeridional(1, :)
 
          call ocn_time_average_accumulate(averagePool, statePool, diagnosticsPool, 2)
          call ocn_time_average_coupled_accumulate(diagnosticsPool, forcingPool)
+
+         if (config_use_standardGM) then
+            call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+         end if
 
          block => block % next
       end do

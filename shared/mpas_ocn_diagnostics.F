@@ -14,7 +14,7 @@
 !> \date   23 September 2011
 !> \details
 !>  This module contains the routines for computing
-!>  diagnostic variables, and other quantities such as vertTransportVelocityTop.
+!>  diagnostic variables, and other quantities such as vertAleTransportTop.
 !
 !-----------------------------------------------------------------------
 
@@ -23,6 +23,7 @@ module ocn_diagnostics
    use mpas_grid_types
    use mpas_constants
    use mpas_timer
+   use mpas_vector_reconstruction
 
    use ocn_constants
    use ocn_gm
@@ -53,6 +54,7 @@ module ocn_diagnostics
              ocn_fuperp, &
              ocn_filter_btr_mode_vel, &
              ocn_filter_btr_mode_tend_vel, &
+             ocn_reconstruct_gm_vectors, &
              ocn_diagnostics_init
 
    !--------------------------------------------------------------------
@@ -103,26 +105,32 @@ contains
         verticesOnCell, edgeSignOnVertex, edgeSignOnCell, edgesOnCell
 
       real (kind=RKIND) :: d2fdx2_cell1, d2fdx2_cell2, coef_3rd_order, r_tmp, &
-        invAreaCell1, invAreaCell2, invAreaTri1, invAreaTri2, invLength, layerThicknessVertex, coef
+        invAreaCell1, invAreaCell2, invAreaTri1, invAreaTri2, invLength, layerThicknessVertex, coef, &
+        shearMean, shearSquared, factor, delU2, sumSurfaceLayer, surfaceLayerDepth, rSurfaceLayer
 
-      real (kind=RKIND), dimension(:), allocatable:: pTop, div_hu
+      real (kind=RKIND), dimension(:), allocatable:: pTop, div_hu,div_huTransport,div_huGMBolus
 
       real (kind=RKIND), dimension(:), pointer :: &
         bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure
       real (kind=RKIND), dimension(:,:), pointer :: &
-        weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, tangentialVelocity, pressure,&
-        circulation, kineticEnergyCell, montgomeryPotential, vertTransportVelocityTop, zMid, zTop, divergence, &
+        weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, normalTransportVelocity, normalGMBolusVelocity, tangentialVelocity, pressure,&
+        circulation, kineticEnergyCell, montgomeryPotential, vertAleTransportTop, zMid, zTop, divergence, &
         relativeVorticity, relativeVorticityCell, &
         normalizedPlanetaryVorticityEdge, normalizedPlanetaryVorticityVertex, &
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
-        density, displacedDensity, potentialDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
-        vertVelocityTop, BruntVaisalaFreqTop, &
-        vorticityGradientNormalComponent, vorticityGradientTangentialComponent, gradSSH, &
+        density, displacedDensity, potentialDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, &
+        vertVelocityTop, vertTransportVelocityTop, vertGMBolusVelocityTop, BruntVaisalaFreqTop, &
+        vorticityGradientNormalComponent, vorticityGradientTangentialComponent, gradSSH, RiTopOfCell, &
         inSituThermalExpansionCoeff, inSituSalineContractionCoeff
+
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers, derivTwo
       character :: c1*6
 
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
+      real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
+      real (kind=RKIND), dimension(:),   pointer :: boundaryLayerDepth, boundaryLayerDepthEdge
+      real (kind=RKIND), dimension(:),   pointer :: normalVelocitySurfaceLayer
+      real (kind=RKIND), dimension(:),   pointer :: indexSurfaceLayerDepth
 
       type (field2DReal), pointer :: kineticEnergyVertexField, kineticEnergyVertexOnCellsField
       type (field2DReal), pointer :: normalizedRelativeVorticityVertexField, normalizedPlanetaryVorticityVertexField
@@ -130,7 +138,8 @@ contains
 
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
-      real (kind=RKIND), pointer :: config_density0, config_apvm_scale_factor, config_h_kappa, config_coef_3rd_order
+      logical, pointer :: config_use_cvmix_kpp
+      real (kind=RKIND), pointer :: config_density0, config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_extent
       character (len=StrKIND), pointer :: config_pressure_gradient_type
 
       if (present(timeLevelIn)) then
@@ -141,9 +150,10 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
       call mpas_pool_get_config(ocnConfigs, 'config_apvm_scale_factor', config_apvm_scale_factor)
-      call mpas_pool_get_config(ocnConfigs, 'config_h_kappa', config_h_kappa)
       call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(ocnConfigs, 'config_coef_3rd_order', config_coef_3rd_order)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_extent', config_cvmix_kpp_surface_layer_extent)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
 
       call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
@@ -172,9 +182,12 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
-      call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
-      call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
+      call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+      call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', vertGMBolusVelocityTop)
+      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
+      call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
 
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
@@ -213,6 +226,11 @@ contains
       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
       call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
+      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceLayerValue', tracersSurfaceLayerValue)
+      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
+      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepthEdge', boundaryLayerDepthEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
+      call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
 
       !
       ! Compute height on cell edges at velocity locations
@@ -260,9 +278,14 @@ contains
         end do
       end do
 
-      allocate(div_hu(nVertLevels))
+      !
+      ! Compute divergence, kinetic energy, and vertical velocity
+      !
+      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels),div_huGMBolus(nVertLevels))
       do iCell = 1, nCells
          div_hu(:) = 0.0
+         div_huTransport(:) = 0.0
+         div_huGMBolus(:) = 0.0
          invAreaCell1 = 1.0 / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -272,14 +295,21 @@ contains
                divergence(k, iCell) = divergence(k, iCell) - edgeSignOnCell(i, iCell) * r_tmp
                div_hu(k)    = div_hu(k) - layerThicknessEdge(k, iEdge) * edgeSignOnCell(i, iCell) * r_tmp 
                kineticEnergyCell(k, iCell) = kineticEnergyCell(k, iCell) + 0.25 * r_tmp * dcEdge(iEdge) * normalVelocity(k,iEdge)
+
+               ! Compute vertical velocity from the horizontal total transport
+               div_huTransport(k) = div_huTransport(k) - layerThicknessEdge(k, iEdge) * edgeSignOnCell(i, iCell) * dvEdge(iEdge) * normalTransportVelocity(k, iEdge) * invAreaCell1 
+               ! Compute vertical velocity from the horizontal GM Bolus velocity
+               div_huGMBolus(k)   = div_huGMBolus(k) - layerThicknessEdge(k, iEdge) * edgeSignOnCell(i, iCell) * dvEdge(iEdge) * normalGMBolusVelocity(k, iEdge) * invAreaCell1
             end do
          end do
          ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
          do k=maxLevelCell(iCell),1,-1
             vertVelocityTop(k,iCell) = vertVelocityTop(k+1,iCell) - div_hu(k)
+            vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_huTransport(k)
+            vertGMBolusVelocityTop(k,iCell) = vertGMBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
          end do         
       end do
-      deallocate(div_hu)
+      deallocate(div_hu,div_huTransport,div_huGMBolus)
 
       do iEdge = 1, nEdges
          ! Compute v (tangential) velocities
@@ -530,7 +560,7 @@ contains
       endif
 
       !
-      ! Brunt-Vaisala frequency
+      ! Brunt-Vaisala frequency (this has units of s^{-2})
       !
       coef = -gravity / config_density0
       do iCell = 1, nCells
@@ -542,23 +572,106 @@ contains
       end do
 
       !
+      ! Gradient Richardson number
+      !
+      RiTopOfCell = 100.0
+      do iCell=1,nCells
+         invAreaCell1 = 1.0 / areaCell(iCell)
+         do k=2,maxLevelCell(iCell)
+           shearSquared = 0.0
+           do i = 1, nEdgesOnCell(iCell)
+             iEdge = edgesOnCell(i, iCell)
+             factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell1
+             delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
+             shearSquared = shearSquared + factor * delU2
+           enddo 
+           shearMean = sqrt(shearSquared)
+           shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
+           RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10)
+          end do
+          RiTopOfCell(1,iCell) = RiTopOfCell(2,iCell)
+      end do
+
+      !
       ! extrapolate tracer values to ocean surface
       ! this eventually be a modelled process
       ! at present, just copy k=1 tracer values onto surface values
+      ! field will be updated below is better approximations are available
       tracersSurfaceValue(:,:) = tracers(:,1,:)
+      normalVelocitySurfaceLayer(:) = normalVelocity(1,:)
+
+      !
+      ! average tracer values over the ocean surface layer
+      ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
+      if(config_use_cvmix_kpp) then
+        tracersSurfaceLayerValue(:,:) = 0.0
+        indexSurfaceLayerDepth(:) = -9.e30
+        do iCell=1,nCells
+          surfaceLayerDepth = boundaryLayerDepth(iCell) * config_cvmix_kpp_surface_layer_extent
+          sumSurfaceLayer=0.0
+          do k=1,maxLevelCell(iCell)
+           sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
+           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
+             sumSurfaceLayer = sumSurfaceLayer - layerThickness(k,iCell)
+             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThickness(k,iCell)
+             indexSurfaceLayerDepth(iCell) = rSurfaceLayer
+             exit
+           endif
+          end do
+          sumSurfaceLayer = 0.0
+          do k=1,int(rSurfaceLayer)
+            sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
+            tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + tracers(:,k,iCell)*layerThickness(k,iCell)
+          enddo
+          k=int(rSurfaceLayer)+1
+          sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
+          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer)*tracers(:,k,iCell)*layerThickness(k,iCell)
+          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / sumSurfaceLayer
+        enddo
+      endif
+
+      !
+      ! average normal velocity values over the ocean surface layer
+      ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
+      !
+      if (config_use_cvmix_kpp) then
+        normalVelocitySurfaceLayer(:) = 0.0
+        do iEdge=1,nEdges
+          cell1=cellsOnEdge(1,iEdge)
+          cell2=cellsOnEdge(2,iEdge)
+          boundaryLayerDepthEdge(iEdge) = 0.5*( boundaryLayerDepth(cell1)+boundaryLayerDepth(cell2) )
+          surfaceLayerDepth = boundaryLayerDepthEdge(iEdge) * config_cvmix_kpp_surface_layer_extent
+          sumSurfaceLayer=0.0
+          do k=1,maxLevelEdgeTop(iEdge)
+           rSurfaceLayer = k
+           sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
+           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
+             sumSurfaceLayer = sumSurfaceLayer - layerThicknessEdge(k,iCell)
+             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThicknessEdge(k,iCell)
+             exit
+           endif
+          end do
+          sumSurfaceLayer = 0.0
+          do k=1,int(rSurfaceLayer)
+            sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
+            normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
+          enddo
+          k=int(rSurfaceLayer)+1
+          if(k.le.maxLevelEdgeTop(iEdge)) then
+            sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
+            normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + fraction(rSurfaceLayer)*normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
+          endif
+          if (maxLevelEdgeTop(iEdge) .gt. 0) then
+             normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) / sumSurfaceLayer
+          end if
+        enddo
+      endif ! if config_use_cvmix_kpp
 
       !
       !  compute fields used as intent(in) to CVMix/KPP
-      call computeKPPInputFields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
-
-      !
-      ! Apply the GM closure as a bolus velocity
-      !
-      if (config_h_kappa .GE. epsilon(0D0)) then
-         call ocn_gm_compute_uBolus(statePool, diagnosticsPool, meshPool)
-      else
-         uBolusGM = 0.0
-      end if
+      if (config_use_cvmix_kpp) then
+        call computeKPPInputFields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
+      endif
 
 #ifdef MPAS_CESM
       do iEdge = 1, nEdgesSolve
@@ -584,7 +697,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, oldLayerThickness, layerThicknessEdge, &
-     normalVelocity, oldSSH, newHighFreqThickness, dt, vertTransportVelocityTop, err)!{{{
+     normalVelocity, oldSSH, newHighFreqThickness, dt, vertAleTransportTop, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -623,7 +736,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         vertTransportVelocityTop     !< Output: vertical transport at top of cell
+         vertAleTransportTop     !< Output: vertical transport at top of cell
 
       integer, intent(out) :: err !< Output: error flag
 
@@ -665,7 +778,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       if (config_vert_coord_movement.eq.'impermeable_interfaces') then
-        vertTransportVelocityTop = 0.0
+        vertAleTransportTop=0.0
         return
       end if
 
@@ -700,15 +813,15 @@ contains
       ! Vertical transport through layer interfaces
       !
       ! Vertical transport through layer interface at top and bottom is zero.
-      ! Here we are using solving the continuity equation for vertTransportVelocityTop ($w^t$),
+      ! Here we are using solving the continuity equation for vertAleTransportTop ($w^t$),
       ! and using ALE_Thickness for thickness at the new time.
 
-      do iCell = 1, nCells
-         vertTransportVelocityTop(1,iCell) = 0.0
-         vertTransportVelocityTop(maxLevelCell(iCell)+1,iCell) = 0.0
-         do k = maxLevelCell(iCell), 2, -1
-            vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k,iCell) &
-              - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell)) / dt
+      do iCell = 1,nCells
+         vertAleTransportTop(1,iCell) = 0.0
+         vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0
+         do k = maxLevelCell(iCell),2,-1
+            vertAleTransportTop(k,iCell) = vertAleTransportTop(k+1,iCell) - div_hu(k,iCell) &
+              - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
          end do
       end do
 
@@ -974,9 +1087,10 @@ contains
 !> \date    20 August 2013
 !> \details
 !>    CVMix/KPP requires the following fields as intent(in):
-!>       buoyancyForcingOBL
+!>       surfaceBuoyancyForcing
 !>       surfaceFrictionVelocity
-!>       bulkRichardsonNumber
+!>       bulkRichardsonNumberBuoy
+!>       bulkRichardsonNumberShear
 !>
 !
 !-----------------------------------------------------------------------
@@ -999,17 +1113,26 @@ contains
 
       ! real pointers
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
-      real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceMassFlux, surfaceWindStressMagnitude, &
-           buoyancyForcingOBL, surfaceFrictionVelocity, boundaryLayerDepth, penetrativeTemperatureFluxOBL
+      real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceMassFlux, &
+           surfaceBuoyancyForcing, surfaceFrictionVelocity, boundaryLayerDepth, penetrativeTemperatureFluxOBL, &
+           normalVelocitySurfaceLayer
+      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
-           layerThickness, zMid, zTop, bulkRichardsonNumber, tracersSurfaceValues, densitySurfaceDisplaced, density, &
+           layerThickness, zMid, zTop, tracersSurfaceValues, densitySurfaceDisplaced, density, &
            normalVelocity, surfaceTracerFlux, thermalExpansionCoeff, salineContractionCoeff
 
+      real (kind=RKIND), dimension(:), pointer :: &
+           indexSurfaceLayerDepth
+
+      real (kind=RKIND), dimension(:,:), pointer ::  & 
+           bulkRichardsonNumberBuoy, bulkRichardsonNumberShear
+
       ! local
-      integer :: iCell, iEdge, i, k, err
+      integer :: iCell, iEdge, i, k, err, timeLevel
       integer, pointer :: indexTempFlux, indexSaltFlux
-      integer :: timeLevel
-      real (kind=RKIND) :: numerator, denominator, factor, deltaVelocitySquared, turbulentVelocitySquared, delU2, invAreaCell
+      real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared
+      real (kind=RKIND) :: buoyContribution, shearContribution, factor, deltaVelocitySquared, delU2, invAreaCell
+      real (kind=RKIND), dimension(:), allocatable :: buoySmoothed, shearSmoothed
 
       type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
       real (kind=RKIND), pointer :: config_density0
@@ -1045,16 +1168,20 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
       call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
-      call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumber', bulkRichardsonNumber)
       call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue ', tracersSurfaceValues)
       call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', surfaceFrictionVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
-      call mpas_pool_get_array(diagnosticsPool, 'buoyancyForcingOBL', buoyancyForcingOBL)
+      call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberBuoy', bulkRichardsonNumberBuoy)
+      call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberShear', bulkRichardsonNumberShear)
+      call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
+      call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', surfaceBuoyancyForcing)
+      call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
 
       call mpas_pool_get_array(forcingPool, 'surfaceMassFlux', surfaceMassFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
       call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
 
       ! allocate scratch space displaced density computation
@@ -1068,12 +1195,13 @@ contains
       thermalExpansionCoeff => thermalExpansionCoeffField % array
       salineContractionCoeff => salineContractionCoeffField % array
 
+      ! allocate local work space
+      allocate(buoySmoothed(nVertLevels))
+      allocate(shearSmoothed(nVertLevels))
+
       ! compute EOS by displacing SST/SSS to every vertical layer in column
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err, &
               thermalExpansionCoeff, salineContractionCoeff, timeLevel)
-
-      ! set value to out-of-bounds
-      bulkRichardsonNumber(:,:) = -1.0e34
 
       do iCell = 1, nCells
        invAreaCell = 1.0 / areaCell(iCell)
@@ -1093,36 +1221,74 @@ contains
        !    1. Tm: temperature associated with surfaceMassFlux, C  (here we assume Tm == temperatureSurfaceValue)
        !    2. Sm: salinity associated with surfaceMassFlux, PSU (here we assume Sm == salinitySurfaceValue and account for salinity flux in surfaceTracerFlux array)
        !
-         buoyancyForcingOBL(iCell) =  thermalExpansionCoeff (1,iCell) *  &
+         surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) *  &
                (surfaceTracerFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)) &
               - salineContractionCoeff(1,iCell) *  surfaceTracerFlux(indexSaltFlux,iCell)
         
-       ! at this point, buoyancyForcingOBL has units of m/s 
-       ! change into units of m/s^3 (which can be thought of as units of buoyancy per second)
-         buoyancyForcingOBL(iCell) = buoyancyForcingOBL(iCell) * gravity / max(boundaryLayerDepth(iCell),layerThickness(1,iCell))
+       ! at this point, surfaceBuoyancyForcing has units of m/s 
+       ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
+         surfaceBuoyancyForcing(iCell) = surfaceBuoyancyForcing(iCell) * gravity
 
-       ! compute surface friction velocity
-         surfaceFrictionVelocity(iCell) = surfacewindStressMagnitude(iCell) / config_density0
-
-       ! loop over vertical to compute bulk Richardson number
-       do k = 1, maxLevelCell(iCell)
-
-        ! find deltaVelocitySquared defined at cell centers
+       ! compute magnitude of surface windstress
         deltaVelocitySquared = 0.0
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
-          delU2 = (normalVelocity(1,iEdge) - normalVelocity(k,iEdge))**2 
+          delU2 =  (surfaceWindStress(iEdge))**2
           deltaVelocitySquared = deltaVelocitySquared + factor * delU2
         enddo
+        surfacewindStressMagnitude(iCell) = sqrt(deltaVelocitySquared)
 
-        numerator = gravity * (zTop(1,iCell) - zMid(k,iCell)) * (density(k,iCell) - densitySurfaceDisplaced(k,iCell))
-        denominator = config_density0 * (deltaVelocitySquared + turbulentVelocitySquared)
+       ! compute surface friction velocity
+         surfaceFrictionVelocity(iCell) = sqrt(surfacewindStressMagnitude(iCell) / config_density0)
+
+       ! zero the bulk Richardson number within the ocean surface layer
+       ! this prevent CVMix/KPP from mis-diagnosing the OBL to be within the surface layer
+        bulkRichardsonNumberBuoy (:,iCell) = 1.0e8
+        bulkRichardsonNumberShear(:,iCell) = 1.0
+
+       ! loop over vertical to compute bulk Richardson number
+        do k=1,maxLevelCell(iCell)
+
+        ! find deltaVelocitySquared defined at cell centers based on velocity at levels 1 and k
+         deltaVelocitySquared = 0.0
+         do i = 1, nEdgesOnCell(iCell)
+           iEdge = edgesOnCell(i, iCell)
+           factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
+           delU2 = (normalVelocitySurfaceLayer(iEdge) - normalVelocity(k,iEdge))**2 
+           deltaVelocitySquared = deltaVelocitySquared + factor * delU2
+         enddo
+
+         buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / config_density0
+         shearContribution = max(deltaVelocitySquared,1.0e-10)
 
         ! compute bulk Richardson number
-        bulkRichardsonNumber(k,iCell) = numerator / denominator
+        ! we estimate the bulk Richardson number here, but its value will be updated
+        ! in the ocn_vmix_coefs_cvmix_build when we have access to the turbulent velocity scale and unresolved shear
+         bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
+         bulkRichardsonNumberShear(k,iCell) = shearContribution
 
        enddo
+
+       ! remove 2dz mode from bulkRichardsonNumber{Buoy,Shear}
+        buoySmoothed(:) = 0.0
+        shearSmoothed(:) = 0.0
+        do k=2,maxLevelCell(iCell)-1
+          buoySmoothed(k)  =  (bulkRichardsonNumberBuoy(k-1,iCell) + 2*bulkRichardsonNumberBuoy(k,iCell) + bulkRichardsonNumberBuoy(k+1,iCell)) / 4.0
+          shearSmoothed(k) =  (bulkRichardsonNumberShear(k-1,iCell) + 2*bulkRichardsonNumberShear(k,iCell) + bulkRichardsonNumberShear(k+1,iCell)) / 4.0
+        enddo
+        buoySmoothed(1) = buoySmoothed(2)
+        shearSmoothed(1) = shearSmoothed(2)
+        buoySmoothed(maxLevelCell(iCell))=buoySmoothed(maxLevelCell(iCell)-1)
+        shearSmoothed(maxLevelCell(iCell))=shearSmoothed(maxLevelCell(iCell)-1)
+
+        bulkRichardsonNumberBuoy(1:maxLevelCell(iCell),iCell) = buoySmoothed(1:maxLevelCell(iCell))
+        bulkRichardsonNumberShear(1:maxLevelCell(iCell),iCell) = shearSmoothed(1:maxLevelCell(iCell))
+
+       ! bulkRichardsonNumberBuoy to a negative value within surface layer to prevent CVMix/KPP from
+       ! incorrectly diagnosing OBL to be within surface layer
+       bulkRichardsonNumberBuoy(1:int(indexSurfaceLayerDepth(iCell)),iCell) = -1.0
+
       enddo
 
       ! deallocate scratch space
@@ -1130,8 +1296,98 @@ contains
       call mpas_deallocate_scratch_field(thermalExpansionCoeffField, .true.)
       call mpas_deallocate_scratch_field(salineContractionCoeffField, .true.)
 
+      ! deallocate local work space
+      deallocate(buoySmoothed)
+      deallocate(shearSmoothed)
+
     end subroutine computeKPPInputFields!}}}
 
+!***********************************************************************
+!
+!  routine ocn_reconstruct_gm_vectors
+!
+!> \brief   Computes cell-centered vector diagnostics
+!> \author  Mark Petersen
+!> \date    May 2014
+!> \details 
+!>  This routine computes cell-centered vector diagnostics
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostic information
+
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         normalTransportVelocity, transportVelocityX, transportVelocityY, transportVelocityZ, transportVelocityZonal, transportVelocityMeridional, &
+         normalGMBolusVelocity, GMBolusVelocityX, GMBolusVelocityY, GMBolusVelocityZ, GMBolusVelocityZonal, GMBolusVelocityMeridional, &
+         relativeSlopeTopOfEdge, relativeSlopeTopOfCellX, relativeSlopeTopOfCellY, relativeSlopeTopOfCellZ, relativeSlopeTopOfCellZonal, relativeSlopeTopOfCellMeridional, &
+         gmStreamFuncTopOfEdge, GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional
+
+         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityX', transportVelocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityY', transportVelocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZ', transportVelocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityZonal', transportVelocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'transportVelocityMeridional', transportVelocityMeridional)
+
+         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityX', GMBolusVelocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityY', GMBolusVelocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZ', GMBolusVelocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal', GMBolusVelocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
+
+         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellX', relativeSlopeTopOfCellX)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellY', relativeSlopeTopOfCellY)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellZ', relativeSlopeTopOfCellZ)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellZonal', relativeSlopeTopOfCellZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCellMeridional', relativeSlopeTopOfCellMeridional)
+
+         call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncX', GMStreamFuncX)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncY', GMStreamFuncY)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZ', GMStreamFuncZ)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZonal', GMStreamFuncZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncMeridional', GMStreamFuncMeridional)
+
+         call mpas_reconstruct(meshPool, normalTransportVelocity,          &
+                          transportVelocityX,            &
+                          transportVelocityY,            &
+                          transportVelocityZ,            &
+                          transportVelocityZonal,        &
+                          transportVelocityMeridional    &
+                         )
+
+         call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
+                          GMBolusVelocityX,            &
+                          GMBolusVelocityY,            &
+                          GMBolusVelocityZ,            &
+                          GMBolusVelocityZonal,        &
+                          GMBolusVelocityMeridional    &
+                         )
+
+         call mpas_reconstruct(meshPool, relativeSlopeTopOfEdge,          &
+                         relativeSlopeTopOfCellX,            &
+                         relativeSlopeTopOfCellY,            &
+                         relativeSlopeTopOfCellZ,            &
+                         relativeSlopeTopOfCellZonal,        &
+                         relativeSlopeTopOfCellMeridional    &
+                        )
+
+         call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
+                         GMStreamFuncX,            &
+                         GMStreamFuncY,            &
+                         GMStreamFuncZ,            &
+                         GMStreamFuncZonal,        &
+                         GMStreamFuncMeridional    &
+                        )
+
+   end subroutine ocn_reconstruct_gm_vectors!}}}
+
+!***********************************************************************
 
 end module ocn_diagnostics
 
