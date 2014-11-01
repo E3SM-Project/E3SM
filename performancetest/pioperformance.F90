@@ -4,9 +4,11 @@ program pioperformance
   use pio, only : pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c
   implicit none
   integer :: ierr, mype, npe, i
+  logical :: Mastertask
   character(len=256) :: decompfile(64)
   character(len=8) :: pio_typenames(4)
   integer :: piotypes(4), niotypes
+  
   namelist /pioperf/ decompfile, pio_typenames
 
   !
@@ -18,6 +20,12 @@ program pioperformance
   call CheckMPIreturn(__LINE__,ierr)
   call MPI_Comm_size(MPI_COMM_WORLD, npe,  ierr)
   call CheckMPIreturn(__LINE__,ierr)
+  if(mype==0) then
+     Mastertask=.true.
+  else
+     Mastertask=.false.
+  endif
+
   decompfile = ' '
   pio_typenames = ' '
   piotypes = -1
@@ -44,7 +52,7 @@ program pioperformance
 
   call MPI_Bcast(decompfile,256*64,MPI_CHAR,0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(piotypes,4, MPI_INT, 0, MPI_COMM_WORLD,ierr)
-  call t_initf('pioperf.nl', LogPrint=.false.)
+  call t_initf('pioperf.nl', LogPrint=.false., mpicom=MPI_COMM_WORLD, MasterTask=MasterTask)
   niotypes = 0
   do i=1,4
      if (piotypes(i) > -1) niotypes = niotypes+1
@@ -139,7 +147,6 @@ contains
           endif
           rearr = PIO_REARR_SUBSET
           do rearrtype=1,2
-
              do niotasks=npe,1,-1
 !       do rearrtype=1,1
 !          do niotasks=npe,2048,-1
@@ -202,7 +209,7 @@ contains
                    errorcnt = 0
                    do j=1,maplen
                       if(ifld(j) /= ifld_in(j) .and. compmap(j) /= 0) then
-                         print *,__LINE__,j,ifld(j),ifld_in(j),compmap(j)
+                         print *,__LINE__,mype,j,ifld(j),ifld_in(j),compmap(j)
                          errorcnt = errorcnt+1
                       endif
                    enddo

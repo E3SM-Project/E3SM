@@ -12,8 +12,9 @@ rm -fr CMakeCache.txt CMakeFiles */CMakeCache.txt */CmakeFiles
 cmake --debugtrycompile -D PNETCDF_DIR=/soft/libraries/pnetcdf/1.5.0/cnk-xl/V1R2M2-20140827/ \
       -D NETCDF_DIR=/soft/libraries/netcdf/4.3.0-f4.2/cnk-xl/V1R2M0-20131211/ \
       -D PIO_FILESYSTEM_HINTS="gpfs" \
-      -DPIO_BUILD_TIMING=ON \
-      -DPIO_BUILD_TESTS=ON \
+      -D PIO_BUILD_TIMING=ON \
+      -D PIO_BUILD_TESTS=ON \
+      -D bld_PIO_DEFINITIONS="-DBGQ" \
       -D ADDITIONAL_LIBS="-Wl,--relax -Wl,--allow-multiple-definition -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz " \
       -D CMAKE_VERBOSE_MAKEFILE=1 /home/jedwards/pio2_0
 

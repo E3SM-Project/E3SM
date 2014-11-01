@@ -113,8 +113,8 @@ typedef struct mapsort
 
 #ifdef BGQ
   void identity(MPI_Comm comm, int *iotask);
-  void determineiotasks(MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 
-			int *iamIOtask);
+  void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 
+			bool *iamIOtask);
 
 #endif
 

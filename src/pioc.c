@@ -251,10 +251,15 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   CheckMPIReturn(MPI_Comm_rank(comp_comm, &(iosys->comp_rank)),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_size(comp_comm, &(iosys->num_comptasks)),__FILE__,__LINE__);
   if(iosys->comp_rank==0)
-    iosys->compmaster = true;
-#ifdef BGQ
+    iosys->compmaster = true;  
+#ifdef BGQxxx
   lbase = base;
-  determineiotasks(comp_comm, stride, rearr, &(iosys->num_iotasks), &lbase, stride, rearr, &(iosys->ioproc));
+  determineiotasks(comp_comm, &(iosys->num_iotasks), &lbase, &stride, &rearr, &(iosys->ioproc));
+  if(iosys->comp_rank==0)
+    printf("%s %d %d\n",__FILE__,__LINE__,iosys->num_iotasks);
+  if(iosys->ioproc)
+    printf("%s %d %d\n",__FILE__,__LINE__,iosys->comp_rank);
+    
 #else
   if((num_iotasks < 1) || ((num_iotasks*stride) > iosys->num_comptasks)){
     return PIO_EBADID;

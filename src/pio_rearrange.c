@@ -181,12 +181,14 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 	  bsizeT[ii] = GCDblocksize(mcount[i], lindex+pos);
 	  ii++;
 	  pos+=mcount[i];
+
 	}
       }
       blocksize = (int) lgcd_array(ii ,bsizeT);
     }else{
       blocksize=1;
     }
+    
     pos = 0;
     for(int i=0;i< msgcnt; i++){
       if(mcount[i]>0){
@@ -210,7 +212,6 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 	    displace[j]= ((lindex+pos)[j*blocksize]-1);
 	  }
 	}
-	//	printf("%s %d %d %d %d\n",__FILE__,__LINE__,len,blocksize,displace[0]);
 
 	CheckMPIReturn(MPI_Type_create_indexed_block(len, blocksize, displace, basetype, mtype+i),__FILE__,__LINE__);
 	CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
@@ -246,7 +247,7 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 	create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->llen, iodesc->rindex, iodesc->rcount, NULL, iodesc->rtype);
       }
 #ifndef _MPISERIAL
-      /*      {
+      /*      if(tmpioproc==95)     {
 	MPI_Aint lb;
 	MPI_Aint extent;
 	for(i=0;i<ntypes;i++){
@@ -254,7 +255,8 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 	  printf("%s %d %d %d %d \n",__FILE__,__LINE__,i,lb,extent);
 	  
 	}
-	}*/
+	}
+      */
 #endif
     }
   }
@@ -279,14 +281,15 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 
     create_mpi_datatypes(iodesc->basetype, ntypes, iodesc->ndof, iodesc->sindex, iodesc->scount, NULL, iodesc->stype);
 #ifndef _MPISERIAL
-    /*    {
+    /*    if(tmpioproc==95)   {
       MPI_Aint lb;
       MPI_Aint extent;
       for(i=0;i<ntypes;i++){
 	MPI_Type_get_extent(iodesc->stype[i], &lb, &extent);
 	printf("%s %d %d %d %d \n",__FILE__,__LINE__,i,lb,extent);
       }
-      }*/
+      }
+    */
 #endif
   }
 
@@ -883,11 +886,9 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
 				  map+nmaplen, region->start, region->count);
 
     pioassert(region->start[0]>=0,"failed to find region",__FILE__,__LINE__);
-    /*    if(iodesc->llen==15)
-    for(i=0;i<ndims;i++){
-      printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,i,region->start[i],region->count[i], regionlen);
-    }
-    */
+    
+
+    
     nmaplen = nmaplen+regionlen;
     if(region->next==NULL && nmaplen<iodesc->llen){
       region->next = alloc_region(iodesc->ndims);
@@ -999,6 +1000,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   for(i=0;i<maplen;i++){
     if(compmap[i]>0){
       iodesc->sindex[j++]=i;
+
     }
   }
 
@@ -1075,7 +1077,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 	mptr->rfrom = i;
 	mptr->soffset = srcindex[pos+j];
 	mptr->iomap = iomap[pos+j];
-
 	k++;
       }
       pos += iodesc->rcount[i];
@@ -1107,7 +1108,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     iodesc->rindex[i]=i;
     iomap[i] = mptr->iomap;
     srcindex[ (cnt[iodesc->rfrom[i]])++   ]=mptr->soffset;
-
   }
 
   CheckMPIReturn(MPI_Scatterv((void *) srcindex, recvlths, rdispls, PIO_OFFSET, 

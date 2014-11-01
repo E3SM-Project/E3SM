@@ -26,31 +26,31 @@ void identity(const MPI_Comm comm, int *iotask)
    int *TasksPerPset;
    int *tmp;
    int i,ierr;
-  Personality_t personality;
+   Personality_t pers;
 
-  MPI_Comm_rank(comm,&rank);
-  MPI_Comm_size(comm,&np);
-  MPI_Get_processor_name(my_name, &my_name_len);
+   MPI_Comm_rank(comm,&rank);
+   MPI_Comm_size(comm,&np);
+   MPI_Get_processor_name(my_name, &my_name_len);
 
 
-  MPIX_Hardware(&hw);
-
-  Kernel_GetPersonality(&pers, sizeof(pers));
-
+   MPIX_Hardware(&hw);
+   
+   Kernel_GetPersonality(&pers, sizeof(pers));
+   
    int numIONodes,numPsets,numNodesInPset,rankInPset;
    int numpsets, psetID, psetsize, psetrank;
 
-  bgq_pset_info (comm, &numpsets, &psetID, &psetsize, &psetrank);
+   bgq_pset_info (comm, &numpsets, &psetID, &psetsize, &psetrank);
  
-  numIONodes = numpsets; 
-  numNodesInPset = psetsize; 
-  rankInPset = rank; 
-  numPsets = numpsets; 
-    
-  if(rank == 0) { printf("number of IO nodes in block: %i \n",numIONodes);}
-  if(rank == 0) { printf("number of Psets in block : %i \n",numPsets);}
-  if(rank == 0) { printf("number of compute nodes in Pset: %i \n",numNodesInPset);}
-
+   numIONodes = numpsets; 
+   numNodesInPset = psetsize; 
+   rankInPset = rank; 
+   numPsets = numpsets; 
+   
+   if(rank == 0) { printf("number of IO nodes in block: %i \n",numIONodes);}
+   if(rank == 0) { printf("number of Psets in block : %i \n",numPsets);}
+   if(rank == 0) { printf("number of compute nodes in Pset: %i \n",numNodesInPset);}
+   
    int psetNum;
    psetNum = psetID;
 
@@ -77,8 +77,8 @@ void identity(const MPI_Comm comm, int *iotask)
    free(TasksPerPset);
 }
 
-void determineiotasks(const MPI_comm comm, int *numiotasks,int *base, int *stride, int *rearr, 
-		      int *iamIOtask)
+void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 
+		      bool *iamIOtask)
 {
 
 /*  
@@ -196,7 +196,7 @@ void determineiotasks(const MPI_comm comm, int *numiotasks,int *base, int *strid
      
      /* printf("Pset #: %i has %i nodes in Pset; base = %i\n",psetNum,numNodesInPset, *base); */
      
-     (*iamIOtask) = 0;   /* initialize to zero */
+     (*iamIOtask) = false;   /* initialize to zero */
      
      if (numiotasks_per_node == numNodesInPset)(*base) = 0;  /* Reset the base to 0 if we are using all tasks */
 
@@ -209,12 +209,12 @@ void determineiotasks(const MPI_comm comm, int *numiotasks,int *base, int *strid
        if((iam % lstride == 0) && (coreId == 0) ) {  /* only io tasks indicated by stride and coreId = 0 */
 	 if((iam/lstride) < numiotasks_per_node) { 
 	   /* only set the first (numiotasks_per_node - 1) tasks */
-	   (*iamIOtask) = 1;
+	   (*iamIOtask) = true;
 	 } else if ((iam/lstride) == numiotasks_per_node) {
 	   /*  If there is an uneven number of io-clients to io-nodes 
 	       allocate the first remainder - 1 processor sets to 
 	       have a total of numiotasks_per_node */
-	   if(psetNum < remainder) {(*iamIOtask) = 1;
+	   if(psetNum < remainder) {(*iamIOtask) = true;
 	   };   
 	 }
        }
@@ -222,7 +222,7 @@ void determineiotasks(const MPI_comm comm, int *numiotasks,int *base, int *strid
      }
    }else{ 
        /* We are not doing rearrangement.... so all tasks are io-tasks */
-       (*iamIOtask) = 1;
+       (*iamIOtask) = true;
      }
    
    /*printf("comm = %d myrank = %i iotask = %i \n", comm, rank, (*iamIOtask));*/ 

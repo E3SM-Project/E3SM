@@ -317,7 +317,13 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
      //  }
 
+
      ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 0, 0);
+
+
+
+
+
    }else{
      iobuf = array;
    }
