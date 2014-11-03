@@ -50,6 +50,10 @@
 					description="Determines if the initial conditions should be read from a restart file, or an input file."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
+					description="Path to the filename for restart timestamps to be read and written from."
+					possible_values="Path to a file."
+		/>
 		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
 					description="Timestamp describing the initial time of the simulation. If it is set to 'file', the initial time is read from restart_timestamp."
 					possible_values="'YYYY-MM-DD_HH:MM:SS' or 'file'"
@@ -864,10 +868,14 @@
 			<var name="seaSurfacePressure"/>
 			<var name="boundaryLayerDepth"/>
 		</stream>
-		<stream name="modelRestart" 
-				type="input"
-				filename_template="restart.nc"
+		<stream name="restart"
+				type="input;output"
+				filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				reference_time="0000-01-01_00:00:00"
+				clobber_mode="never_modify"
 				input_interval="initial_only"
+				output_interval="0001_00:00:00"
 				immutable="true">
 
 			<var_array name="tracers"/>
@@ -931,19 +939,11 @@
 			<var name="boundaryLayerDepth"/>
 		</stream>
 
-		<stream name="modelCheckpoint" 
-				type="output"
-				filename_template="checkpoints/restart.$Y-$M-$D_$h.$m.$s.nc"
-				output_interval="0001_00:00:00"
-				immutable="true">
-
-			<stream name="modelRestart"/>
-		</stream>
-
 		<stream name="output" 
 				type="output"
 				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
 				output_interval="0001_00:00:00"
 				runtime_format="single_file">
 
