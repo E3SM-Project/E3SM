@@ -81,6 +81,7 @@ module mpas_core
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
 
+      err = 0
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
