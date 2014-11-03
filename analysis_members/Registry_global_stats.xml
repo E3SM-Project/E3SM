@@ -19,8 +19,10 @@
 		<stream name="globalStatsOutput" type="output"
 				filename_template="analysis_members/globalStats.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="0000_12:00:00"
+				clobber_mode="never_modify"
 				runtime_format="single_file">
 
+			<var name="xtime"/>
 			<var name="minGlobalStats"/>
 			<var name="maxGlobalStats"/>
 			<var name="sumGlobalStats"/>
