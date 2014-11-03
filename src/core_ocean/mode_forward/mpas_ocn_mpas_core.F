@@ -120,6 +120,8 @@ module mpas_core
       character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
       real (kind=RKIND), pointer :: config_maxMeshDensity
 
+      err = 0
+
       !
       ! Set "local" clock to point to the clock contained in the domain type
       !
