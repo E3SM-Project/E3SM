@@ -20,7 +20,9 @@
 				filename_template="analysis_members/template.$Y-$M-$D.nc"
 				filename_interval="01_00:00:00"
 				output_interval="00_06:00:00"
+				clobber_mode="never_modify"
 				runtime_format="single_file">
+			<var name="xtime"/> 
 			<var name="example_variable1"/> 
 			<var name="example_variable2"/> 
 		</stream>
