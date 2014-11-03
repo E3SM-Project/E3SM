@@ -74,9 +74,10 @@ module mpas_core
 
       integer :: err, err_tmp
 
+      type (MPAS_timeInterval_type) :: timeStep
+
       ! remove dt later
       real (kind=RKIND) :: dt
-      real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
 
@@ -95,7 +96,6 @@ module mpas_core
 
       ! Setup ocean config pool
       call ocn_constants_init(domain % configs, domain % packages)
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
       !
       ! Read input data for model
@@ -117,7 +117,8 @@ module mpas_core
 
       call ocn_compute_max_level(domain)
 
-      dt = config_dt
+      timeStep = mpas_get_clock_timestep(clock, ierr=err_tmp)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       block => domain % blocklist
       do while (associated(block))
@@ -161,9 +162,7 @@ module mpas_core
       integer :: err_tmp
       character (len=StrKIND), pointer :: config_start_time, config_stop_time
       character (len=StrKIND), pointer :: config_run_duration
-      character (len=StrKIND), pointer :: config_stats_interval
-      real(kind=RKIND), pointer :: config_dt
-
+      character (len=StrKIND), pointer :: config_stats_interval, config_dt, config_restart_timestamp_name
 
       ierr = 0
 
@@ -175,7 +174,7 @@ module mpas_core
 
       call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
 
-      call mpas_set_timeInterval(timeStep, dt=config_dt, ierr=err_tmp)
+      call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       if (trim(config_run_duration) /= "none") then
          call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=err_tmp)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=err_tmp)
@@ -388,13 +387,15 @@ module mpas_core
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: scratchPool
 
-      real (kind=RKIND), pointer :: config_dt
+      type (MPAS_timeInterval_type) :: timeStep
+      character (len=StrKIND), pointer :: config_dt
       logical, pointer :: config_write_output_on_startup
 
       call mpas_pool_get_config(ocnConfigs, 'config_dt', config_dt)
       call mpas_pool_get_config(ocnConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
    
-      dt = config_dt
+      timeStep = mpas_get_clock_timestep(clock, ierr=ierr)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)

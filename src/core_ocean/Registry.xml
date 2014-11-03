@@ -90,9 +90,9 @@
 		/>
 	</nml_record>
 	<nml_record name="time_integration" in_defaults="true">
-		<nml_option name="config_dt" type="real" default_value="300.0" units="s"
+		<nml_option name="config_dt" type="character" default_value="00:05:00" units="unitless"
 					description="Length of model time-step."
-					possible_values="Any positive real value, but limited by CFL condition."
+					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit" units="unitless"
 					description="Time integration method."
