@@ -151,12 +151,12 @@ module mpas_core
       ! Read input data for model
       !
       if ( config_do_restart ) then
-         call MPAS_stream_mgr_read(stream_manager, streamID='modelRestart', ierr=err)
+         call MPAS_stream_mgr_read(stream_manager, streamID='restart', ierr=err)
       else
          call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=err)
       end if
       call mpas_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='modelRestart', ierr=err)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err)
 
       ! Initialize submodules before initializing blocks.
       call ocn_timestep_init(err)
@@ -326,7 +326,7 @@ module mpas_core
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       character(len=StrKIND) :: restartTimeStamp
       character(len=StrKIND), pointer :: config_start_time, config_stop_time, config_run_duration
-      character(len=StrKIND), pointer :: config_stats_interval, config_dt
+      character(len=StrKIND), pointer :: config_stats_interval, config_dt, config_restart_timestamp_name
       integer :: err_tmp
 
 
@@ -337,8 +337,16 @@ module mpas_core
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
       call mpas_pool_get_config(configs, 'config_stats_interval', config_stats_interval)
+      call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
-      call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+      if ( trim(config_start_time) == "file" ) then
+         open(22,file=config_restart_timestamp_name,form='formatted',status='old')
+         read(22,*) restartTimeStamp
+         close(22)
+         call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=ierr)
+      else
+         call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+      end if
 
       call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       if (trim(config_run_duration) /= "none") then
@@ -578,9 +586,11 @@ module mpas_core
       type (mpas_pool_type), pointer :: forcingPool
 
       type (MPAS_timeInterval_type) :: timeStep
+      character(len=StrKIND), pointer :: config_restart_timestamp_name
       logical, pointer :: config_write_output_on_startup
    
       call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
+      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       ! Eventually, dt should be domain specific
       timeStep = mpas_get_clock_timestep(clock, ierr=ierr)
@@ -645,8 +655,14 @@ module mpas_core
          call mpas_stream_mgr_write(stream_manager, streamID='output', ierr=ierr)
          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='output', ierr=ierr)
 
-         call mpas_stream_mgr_write(stream_manager, streamID='modelCheckpoint', ierr=ierr)
-         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='modelCheckpoint', ierr=ierr)
+         if ( mpas_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
+            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
+            write(22, *) timeStamp
+            close(22)
+         end if
+
+         call mpas_stream_mgr_write(stream_manager, streamID='restart', ierr=ierr)
+         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=ierr)
 
          call mpas_stream_mgr_write(stream_manager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -985,7 +1001,7 @@ module mpas_core
       if (.not. associated(config_do_restart)) then
          ierr = 1
       else if (config_do_restart) then
-         write(stream,'(a)') 'modelRestart'
+         write(stream,'(a)') 'restart'
       else
          write(stream,'(a)') 'input'
       end if

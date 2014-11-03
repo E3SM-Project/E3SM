@@ -172,8 +172,16 @@ module mpas_core
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
       call mpas_pool_get_config(configs, 'config_stats_interval', config_stats_interval)
+      call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
-      call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+      if ( trim(config_start_time) == "file" ) then
+         open(22,file=config_restart_timestamp_name,form='formatted',status='old')
+         read(22,*) restartTimeStamp
+         close(22)
+         call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=err_tmp)
+      else
+         call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+      end if
 
       call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       if (trim(config_run_duration) /= "none") then
