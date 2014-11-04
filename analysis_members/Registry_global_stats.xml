@@ -24,35 +24,393 @@
 				runtime_format="single_file">
 
 			<var name="xtime"/>
-			<var name="minGlobalStats"/>
-			<var name="maxGlobalStats"/>
-			<var name="sumGlobalStats"/>
-			<var name="rmsGlobalStats"/>
-			<var name="avgGlobalStats"/>
-			<var name="vertSumMinGlobalStats"/>
-			<var name="vertSumMaxGlobalStats"/>
+			<var_array name="minGlobalStats"/>
+			<var_array name="maxGlobalStats"/>
+			<var_array name="sumGlobalStats"/>
+			<var_array name="rmsGlobalStats"/>
+			<var_array name="avgGlobalStats"/>
+			<var_array name="vertSumMinGlobalStats"/>
+			<var_array name="vertSumMaxGlobalStats"/>
 		</stream>
 	</streams>
 	<var_struct name="amGlobalStats" time_levs="1" packages="amGlobalStats">
-		<var name="minGlobalStats" type="real" dimensions="TWENTYONE Time" units="varies"
-			description="minimum over the domain of global statistics variables"
-		/>
-		<var name="maxGlobalStats" type="real" dimensions="TWENTYONE Time" units="varies"
-			description="maximum over the domain of global statistics variables"
-		/>
-		<var name="sumGlobalStats" type="real" dimensions="TWENTYONE Time" units="varies"
-			description="summation over the domain of global statistics variables"
-		/>
-		<var name="rmsGlobalStats" type="real" dimensions="TWENTYONE Time" units="varies"
-			description="root mean square over the domain of global statistics variables"
-		/>
-		<var name="avgGlobalStats" type="real" dimensions="TWENTYONE Time" units="varies"
-			description="average over the domain of global statistics variables"
-		/>
-		<var name="vertSumMinGlobalStats" type="real" dimensions="TWENTYONE Time" units="varies"
-			description="minimum vertical sum over the domain of global statistics variables"
-		/>
-		<var name="vertSumMaxGlobalStats" type="real" dimensions="TWENTYONE Time" units="varies"
-			description="maximum vertical sum over the domain of global statistics variables"
-		/>
+		<var_array name="minGlobalStats" type="real" dimensions="Time">
+			<var name="layerThicknessMin" array_group="mins" units="m"
+				 description="Minimum global value of layerThickness in ocean cells."
+			/>
+			<var name="normalVelocityMin" array_group="mins" units="m s^{-1}"
+				 description="Minimum global value of normalVelocity on ocean edges."
+			/>
+			<var name="tangentialVelocityMin" array_group="mins" units="m s^{-1}"
+				 description="Minimum global value of tangentialVelocity on ocean edges."
+			/>
+			<var name="layerThicknessEdgeMin" array_group="mins" units="m"
+				 description="Minimum global value of layerThicknessEdge on ocean edges."
+			/>
+			<var name="relativeVorticityMin" array_group="mins" units="s^{-1}"
+				 description="Minimum global value of relativeVorticity on ocean vertices."
+			/>
+			<var name="enstrophyMin" array_group="mins"
+				 description="Minimum global value of enstrophy in ocean cells."
+			/>
+			<var name="kineticEnergyCellMin" array_group="mins" units="m^2 s^{-2}"
+				 description="Minimum global value of kineticEnergy in ocean cells."
+			/>
+			<var name="normalizedAbsoluteVorticityMin" array_group="mins" units="s^{-1}"
+				 description="Minimum global value of normalizedAbsoluteVorticity on ocean vertices."
+			/>
+			<var name="pressureMin" array_group="mins" units="N m^{-2}"
+				 description="Minimum global value of pressure in ocean cells."
+			/>
+			<var name="montgomeryPotentialMin" array_group="mins" units="m^s s^{-2}"
+				 description="Minimum global value of the Montgomery Potential in ocean cells."
+			/>
+			<var name="vertVelocityTopMin" array_group="mins" units="m s^{-1}"
+				 description="Minimum global value of vertVelocityTop in ocean cells."
+			/>
+			<var name="vertAleTransportTopMin" array_group="mins" units="m s^{-1}"
+				 description="Minimum global value of vertAleTransportTop in ocean cells."
+			/>
+			<var name="lowFreqDivergenceMin" array_group="mins" units="s^{-1}"
+				 description="Minimum global value of lowFreqDivergence in ocean cells."
+			/>
+			<var name="highFreqThicknessMin" array_group="mins" units="m"
+				 description="Minimum global value of highFreqThickness in ocean cells."
+			/>
+			<var name="temperatureMin" units="^$\circ$C" array_group="mins"
+				 description="Minimum global value of temperature in ocean cells."
+			/>
+			<var name="salinityMin" units="PSU" array_group="mins"
+				 description="Minimum global value of salinity in ocean cells."
+			/>
+			<var name="tracer1Min" units="unitless" array_group="mins"
+				 description="Minimum global value of tracer 1 in ocean cells."
+			/>
+		</var_array>
+
+		<var_array name="maxGlobalStats" type="real" dimensions="Time">
+			<var name="layerThicknessMax" array_group="maxes" units="m"
+				 description="Maximum global value of layerThickness in ocean cells."
+			/>
+			<var name="normalVelocityMax" array_group="maxes" units="m s^{-1}"
+				 description="Maximum global value of normalVelocity on ocean edges."
+			/>
+			<var name="tangentialVelocityMax" array_group="maxes" units="m s^{-1}"
+				 description="Maximum global value of tangentialVelocity on ocean edges."
+			/>
+			<var name="layerThicknessEdgeMax" array_group="maxes" units="m"
+				 description="Maximum global value of layerThicknessEdge on ocean edges."
+			/>
+			<var name="relativeVorticityMax" array_group="maxes" units="s^{-1}"
+				 description="Maximum global value of relativeVorticity on ocean vertices."
+			/>
+			<var name="enstrophyMax" array_group="maxes"
+				 description="Maximum global value of enstrophy in ocean cells."
+			/>
+			<var name="kineticEnergyCellMax" array_group="maxes" units="m^2 s^{-2}"
+				 description="Maximum global value of kineticEnergy in ocean cells."
+			/>
+			<var name="normalizedAbsoluteVorticityMax" array_group="maxes" units="s^{-1}"
+				 description="Maximum global value of normalizedAbsoluteVorticity on ocean vertices."
+			/>
+			<var name="pressureMax" array_group="maxes" units="N m^{-2}"
+				 description="Maximum global value of pressure in ocean cells."
+			/>
+			<var name="montgomeryPotentialMax" array_group="maxes" units="m^s s^{-2}"
+				 description="Maximum global value of the Montgomery Potential in ocean cells."
+			/>
+			<var name="vertVelocityTopMax" array_group="maxes" units="m s^{-1}"
+				 description="Maximum global value of vertVelocityTop in ocean cells."
+			/>
+			<var name="vertAleTransportTopMax" array_group="maxes" units="m s^{-1}"
+				 description="Maximum global value of vertAleTransportTop in ocean cells."
+			/>
+			<var name="lowFreqDivergenceMax" array_group="maxes" units="s^{-1}"
+				 description="Maximum global value of lowFreqDivergence in ocean cells."
+			/>
+			<var name="highFreqThicknessMax" array_group="maxes" units="m"
+				 description="Maximum global value of highFreqThickness in ocean cells."
+			/>
+			<var name="temperatureMax" units="^$\circ$C" array_group="maxes"
+				 description="Maximum global value of temperature in ocean cells."
+			/>
+			<var name="salinityMax" units="PSU" array_group="maxes"
+				 description="Maximum global value of salinity in ocean cells."
+			/>
+			<var name="tracer1Max" units="unitless" array_group="maxes"
+				 description="Maximum global value of tracer 1 in ocean cells."
+			/>
+		</var_array>
+
+		<var_array name="sumGlobalStats" type="real" dimensions="Time">
+			<var name="layerThicknessSum" array_group="sums" units="m"
+				 description="Accumulated global value of layerThickness in ocean cells."
+			/>
+			<var name="normalVelocitySum" array_group="sums" units="m s^{-1}"
+				 description="Accumulated global value of normalVelocity on ocean edges."
+			/>
+			<var name="tangentialVelocitySum" array_group="sums" units="m s^{-1}"
+				 description="Accumulated global value of tangentialVelocity on ocean edges."
+			/>
+			<var name="layerThicknessEdgeSum" array_group="sums" units="m"
+				 description="Accumulated global value of layerThicknessEdge on ocean edges."
+			/>
+			<var name="relativeVorticitySum" array_group="sums" units="s^{-1}"
+				 description="Accumulated global value of relativeVorticity on ocean vertices."
+			/>
+			<var name="enstrophySum" array_group="sums"
+				 description="Accumulated global value of enstrophy in ocean cells."
+			/>
+			<var name="kineticEnergyCellSum" array_group="sums" units="m^2 s^{-2}"
+				 description="Accumulated global value of kineticEnergy in ocean cells."
+			/>
+			<var name="normalizedAbsoluteVorticitySum" array_group="sums" units="s^{-1}"
+				 description="Accumulated global value of normalizedAbsoluteVorticity on ocean vertices."
+			/>
+			<var name="pressureSum" array_group="sums" units="N m^{-2}"
+				 description="Accumulated global value of pressure in ocean cells."
+			/>
+			<var name="montgomeryPotentialSum" array_group="sums" units="m^s s^{-2}"
+				 description="Accumulated global value of the Montgomery Potential in ocean cells."
+			/>
+			<var name="vertVelocityTopSum" array_group="sums" units="m s^{-1}"
+				 description="Accumulated global value of vertVelocityTop in ocean cells."
+			/>
+			<var name="vertAleTransportTopSum" array_group="sums" units="m s^{-1}"
+				 description="Accumulated global value of vertAleTransportTop in ocean cells."
+			/>
+			<var name="lowFreqDivergenceSum" array_group="sums" units="s^{-1}"
+				 description="Accumulated global value of lowFreqDivergence in ocean cells."
+			/>
+			<var name="highFreqThicknessSum" array_group="sums" units="m"
+				 description="Accumulated global value of highFreqThickness in ocean cells."
+			/>
+			<var name="temperatureSum" units="^$\circ$C" array_group="sums"
+				 description="Accumulated global value of temperature in ocean cells."
+			/>
+			<var name="salinitySum" units="PSU" array_group="sums"
+				 description="Accumulated global value of salinity in ocean cells."
+			/>
+			<var name="tracer1Sum" units="unitless" array_group="sums"
+				 description="Accumulated global value of tracer 1 in ocean cells."
+			/>
+		</var_array>
+
+		<var_array name="rmsGlobalStats" type="real" dimensions="Time">
+			<var name="layerThicknessRms" array_group="rms" units="m"
+				 description="Global root mean square value of layerThickness in ocean cells."
+			/>
+			<var name="normalVelocityRms" array_group="rms" units="m s^{-1}"
+				 description="Global root mean square value of normalVelocity on ocean edges."
+			/>
+			<var name="tangentialVelocityRms" array_group="rms" units="m s^{-1}"
+				 description="Global root mean square value of tangentialVelocity on ocean edges."
+			/>
+			<var name="layerThicknessEdgeRms" array_group="rms" units="m"
+				 description="Global root mean square value of layerThicknessEdge on ocean edges."
+			/>
+			<var name="relativeVorticityRms" array_group="rms" units="s^{-1}"
+				 description="Global root mean square value of relativeVorticity on ocean vertices."
+			/>
+			<var name="enstrophyRms" array_group="rms"
+				 description="Global root mean square value of enstrophy in ocean cells."
+			/>
+			<var name="kineticEnergyCellRms" array_group="rms" units="m^2 s^{-2}"
+				 description="Global root mean square value of kineticEnergy in ocean cells."
+			/>
+			<var name="normalizedAbsoluteVorticityRms" array_group="rms" units="s^{-1}"
+				 description="Global root mean square value of normalizedAbsoluteVorticity on ocean vertices."
+			/>
+			<var name="pressureRms" array_group="rms" units="N m^{-2}"
+				 description="Global root mean square value of pressure in ocean cells."
+			/>
+			<var name="montgomeryPotentialRms" array_group="rms" units="m^s s^{-2}"
+				 description="Global root mean square value of the Montgomery Potential in ocean cells."
+			/>
+			<var name="vertVelocityTopRms" array_group="rms" units="m s^{-1}"
+				 description="Global root mean square value of vertVelocityTop in ocean cells."
+			/>
+			<var name="vertAleTransportTopRms" array_group="rms" units="m s^{-1}"
+				 description="Global root mean square value of vertAleTransportTop in ocean cells."
+			/>
+			<var name="lowFreqDivergenceRms" array_group="rms" units="s^{-1}"
+				 description="Global root mean square value of lowFreqDivergence in ocean cells."
+			/>
+			<var name="highFreqThicknessRms" array_group="rms" units="m"
+				 description="Global root mean square value of highFreqThickness in ocean cells."
+			/>
+			<var name="temperatureRms" units="^$\circ$C" array_group="rms"
+				 description="Global root mean square value of temperature in ocean cells."
+			/>
+			<var name="salinityRms" units="PSU" array_group="rms"
+				 description="Global root mean square value of salinity in ocean cells."
+			/>
+			<var name="tracer1Rms" units="unitless" array_group="rms"
+				 description="Global root mean square value of tracer 1 in ocean cells."
+			/>
+		</var_array>
+
+		<var_array name="avgGlobalStats" type="real" dimensions="Time">
+			<var name="layerThicknessAvg" array_group="avg" units="m"
+				 description="Average value of layerThickness in ocean cells."
+			/>
+			<var name="normalVelocityAvg" array_group="avg" units="m s^{-1}"
+				 description="Average value of normalVelocity on ocean edges."
+			/>
+			<var name="tangentialVelocityAvg" array_group="avg" units="m s^{-1}"
+				 description="Average value of tangentialVelocity on ocean edges."
+			/>
+			<var name="layerThicknessEdgeAvg" array_group="avg" units="m"
+				 description="Average value of layerThicknessEdge on ocean edges."
+			/>
+			<var name="relativeVorticityAvg" array_group="avg" units="s^{-1}"
+				 description="Average value of relativeVorticity on ocean vertices."
+			/>
+			<var name="enstrophyAvg" array_group="avg"
+				 description="Average value of enstrophy in ocean cells."
+			/>
+			<var name="kineticEnergyCellAvg" array_group="avg" units="m^2 s^{-2}"
+				 description="Average value of kineticEnergy in ocean cells."
+			/>
+			<var name="normalizedAbsoluteVorticityAvg" array_group="avg" units="s^{-1}"
+				 description="Average value of normalizedAbsoluteVorticity on ocean vertices."
+			/>
+			<var name="pressureAvg" array_group="avg" units="N m^{-2}"
+				 description="Average value of pressure in ocean cells."
+			/>
+			<var name="montgomeryPotentialAvg" array_group="avg" units="m^s s^{-2}"
+				 description="Average value of the Montgomery Potential in ocean cells."
+			/>
+			<var name="vertVelocityTopAvg" array_group="avg" units="m s^{-1}"
+				 description="Average value of vertVelocityTop in ocean cells."
+			/>
+			<var name="vertAleTransportTopAvg" array_group="avg" units="m s^{-1}"
+				 description="Average value of vertAleTransportTop in ocean cells."
+			/>
+			<var name="lowFreqDivergenceAvg" array_group="avg" units="s^{-1}"
+				 description="Average value of lowFreqDivergence in ocean cells."
+			/>
+			<var name="highFreqThicknessAvg" array_group="avg" units="m"
+				 description="Average value of highFreqThickness in ocean cells."
+			/>
+			<var name="temperatureAvg" units="^$\circ$C" array_group="avg"
+				 description="Average value of temperature in ocean cells."
+			/>
+			<var name="salinityAvg" units="PSU" array_group="avg"
+				 description="Average value of salinity in ocean cells."
+			/>
+			<var name="tracer1Avg" units="PSU" array_group="avg"
+				 description="Average value of salinity in ocean cells."
+			/>
+		</var_array>
+
+		<var_array name="vertSumMinGlobalStats" type="real" dimensions="Time">
+			<var name="layerThicknessMinVertSum" array_group="vertSumMin" units="m"
+				 description="Minimum vertical sum of layerThickness in ocean cells."
+			/>
+			<var name="normalVelocityMinVertSum" array_group="vertSumMin" units="m s^{-1}"
+				 description="Minimum vertical sum of normalVelocity on ocean edges."
+			/>
+			<var name="tangentialVelocityMinVertSum" array_group="vertSumMin" units="m s^{-1}"
+				 description="Minimum vertical sum of tangentialVelocity on ocean edges."
+			/>
+			<var name="layerThicknessEdgeMinVertSum" array_group="vertSumMin" units="m"
+				 description="Minimum vertical sum of layerThicknessEdge on ocean edges."
+			/>
+			<var name="relativeVorticityMinVertSum" array_group="vertSumMin" units="s^{-1}"
+				 description="Minimum vertical sum of relativeVorticity on ocean vertices."
+			/>
+			<var name="enstrophyMinVertSum" array_group="vertSumMin"
+				 description="Minimum vertical sum of enstrophy in ocean cells."
+			/>
+			<var name="kineticEnergyCellMinVertSum" array_group="vertSumMin" units="m^2 s^{-2}"
+				 description="Minimum vertical sum of kineticEnergy in ocean cells."
+			/>
+			<var name="normalizedAbsoluteVorticityMinVertSum" array_group="vertSumMin" units="s^{-1}"
+				 description="Minimum vertical sum of normalizedAbsoluteVorticity on ocean vertices."
+			/>
+			<var name="pressureMinVertSum" array_group="vertSumMin" units="N m^{-2}"
+				 description="Minimum vertical sum of pressure in ocean cells."
+			/>
+			<var name="montgomeryPotentialMinVertSum" array_group="vertSumMin" units="m^s s^{-2}"
+				 description="Minimum vertical sum of the Montgomery Potential in ocean cells."
+			/>
+			<var name="vertVelocityTopMinVertSum" array_group="vertSumMin" units="m s^{-1}"
+				 description="Minimum vertical sum of vertVelocityTop in ocean cells."
+			/>
+			<var name="vertAleTransportTopMinVertSum" array_group="vertSumMin" units="m s^{-1}"
+				 description="Minimum vertical sum of vertAleTransportTop in ocean cells."
+			/>
+			<var name="lowFreqDivergenceMinVertSum" array_group="vertSumMin" units="s^{-1}"
+				 description="Minimum vertical sum of lowFreqDivergence in ocean cells."
+			/>
+			<var name="highFreqThicknessMinVertSum" array_group="vertSumMin" units="m"
+				 description="Minimum vertical sum of highFreqThickness in ocean cells."
+			/>
+			<var name="temperatureMinVertSum" units="^$\circ$C" array_group="vertSumMin"
+				 description="Minimum vertical sum of temperature in ocean cells."
+			/>
+			<var name="salinityMinVertSum" units="PSU" array_group="vertSumMin"
+				 description="Minimum vertical sum of salinity in ocean cells."
+			/>
+			<var name="tracer1MinVertSum" units="unitless" array_group="vertSumMin"
+				 description="Minimum vertical sum of tracer 1 in ocean cells."
+			/>
+		</var_array>
+
+		<var_array name="vertSumMaxGlobalStats" type="real" dimensions="Time">
+			<var name="layerThicknessMaxVertSum" array_group="vertSumMax" units="m"
+				 description="Maximum vertical sum of layerThickness in ocean cells."
+			/>
+			<var name="normalVelocityMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
+				 description="Maximum vertical sum of normalVelocity on ocean edges."
+			/>
+			<var name="tangentialVelocityMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
+				 description="Maximum vertical sum of tangentialVelocity on ocean edges."
+			/>
+			<var name="layerThicknessEdgeMaxVertSum" array_group="vertSumMax" units="m"
+				 description="Maximum vertical sum of layerThicknessEdge on ocean edges."
+			/>
+			<var name="relativeVorticityMaxVertSum" array_group="vertSumMax" units="s^{-1}"
+				 description="Maximum vertical sum of relativeVorticity on ocean vertices."
+			/>
+			<var name="enstrophyMaxVertSum" array_group="vertSumMax"
+				 description="Maximum vertical sum of enstrophy in ocean cells."
+			/>
+			<var name="kineticEnergyCellMaxVertSum" array_group="vertSumMax" units="m^2 s^{-2}"
+				 description="Maximum vertical sum of kineticEnergy in ocean cells."
+			/>
+			<var name="normalizedAbsoluteVorticityMaxVertSum" array_group="vertSumMax" units="s^{-1}"
+				 description="Maximum vertical sum of normalizedAbsoluteVorticity on ocean vertices."
+			/>
+			<var name="pressureMaxVertSum" array_group="vertSumMax" units="N m^{-2}"
+				 description="Maximum vertical sum of pressure in ocean cells."
+			/>
+			<var name="montgomeryPotentialMaxVertSum" array_group="vertSumMax" units="m^s s^{-2}"
+				 description="Maximum vertical sum of the Montgomery Potential in ocean cells."
+			/>
+			<var name="vertVelocityTopMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
+				 description="Maximum vertical sum of vertVelocityTop in ocean cells."
+			/>
+			<var name="vertAleTransportTopMaxVertSum" array_group="vertSumMax" units="m s^{-1}"
+				 description="Maximum vertical sum of vertAleTransportTop in ocean cells."
+			/>
+			<var name="lowFreqDivergenceMaxVertSum" array_group="vertSumMax" units="s^{-1}"
+				 description="Maximum vertical sum of lowFreqDivergence in ocean cells."
+			/>
+			<var name="highFreqThicknessMaxVertSum" array_group="vertSumMax" units="m"
+				 description="Maximum vertical sum of highFreqThickness in ocean cells."
+			/>
+			<var name="temperatureMaxVertSum" units="^$\circ$C" array_group="vertSumMax"
+				 description="Maximum vertical sum of temperature in ocean cells."
+			/>
+			<var name="salinityMaxVertSum" units="PSU" array_group="vertSumMax"
+				 description="Maximum vertical sum of salinity in ocean cells."
+			/>
+			<var name="tracer1MaxVertSum" units="unitless" array_group="vertSumMax"
+				 description="Maximum vertical sum of tracer 1 in ocean cells."
+			/>
+		</var_array>
 	</var_struct>
+
+
