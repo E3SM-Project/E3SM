@@ -162,13 +162,18 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
   int ii;
   PIO_Offset i8blocksize;
   int blocksize;
-  PIO_Offset *lindex = NULL;
+  PIO_Offset *lindex;
+
+  pioassert(dlen>0,"dlen <= 0",__FILE__,__LINE__);
+
 #ifdef _MPISERIAL
   mtype[0] = basetype * blocksize;
 #else
   if(mindex != NULL){
     lindex = (PIO_Offset *) malloc(dlen * sizeof(PIO_Offset));
     memcpy(lindex, mindex, (size_t) (dlen*sizeof(PIO_Offset)));
+  }else{
+    lindex = NULL;
   }
   bsizeT[0]=0;
   mtype[0] = MPI_DATATYPE_NULL;
@@ -221,8 +226,9 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
     }
 
   }
-  
-  free(lindex);
+  if(lindex != NULL){  
+    free(lindex);
+  }
 #endif
   return PIO_NOERR;
 

@@ -394,11 +394,11 @@ contains
 !! @param method :
 !! @copydoc PIO_error_method
 !<
-  subroutine seterrorhandlingf(file, method)
+  subroutine seterrorhandlingf(file, method, oldmethod)
     type(file_desc_t), intent(inout) :: file
     integer, intent(in) :: method
-
-    call seterrorhandlingi(file%iosystem, method)
+    integer, intent(out), optional :: oldmethod
+    call seterrorhandlingi(file%iosystem, method, oldmethod)
   end subroutine seterrorhandlingf
 
 !>
@@ -409,9 +409,10 @@ contains
 !! @param method :
 !! @copydoc PIO_error_method
 !<
-  subroutine seterrorhandlingi(ios, method)
+  subroutine seterrorhandlingi(ios, method, oldmethod)
     type(iosystem_desc_t), intent(inout) :: ios
     integer, intent(in) :: method
+    integer, intent(out), optional :: oldmethod
 
     interface
        integer(c_int) function PIOc_Set_IOSystem_Error_Handling(ios, method) &
@@ -421,9 +422,11 @@ contains
          integer(c_int), value :: method
        end function PIOc_Set_IOSystem_Error_Handling
     end interface
-    integer :: ierr
+    integer ::  loldmethod
 
-    ierr = PIOc_Set_IOSystem_Error_Handling(ios%iosysid, method)
+    loldmethod = PIOc_Set_IOSystem_Error_Handling(ios%iosysid, method)
+    if(present(oldmethod)) oldmethod = loldmethod
+
 
   end subroutine seterrorhandlingi
 
