@@ -245,9 +245,13 @@ contains
 
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
 
-      logical, pointer :: thicknessFilterActive
+      logical, pointer :: thicknessFilterActive, amGlobalStatsActive
 
       err = 0
+
+      call mpas_pool_get_package(ocnPackages, 'amGlobalStatsActive', amGlobalStatsActive)
+
+      if ( .not. amGlobalStatsActive ) return
 
       dminfo = domain % dminfo
 
