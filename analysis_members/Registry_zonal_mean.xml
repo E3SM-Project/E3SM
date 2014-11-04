@@ -39,7 +39,8 @@
 		<stream name="zonalMeanOutput" type="output"
 				filename_template="analysis_members/zonalMeans.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="0000_12:00:00"
-				clobber_mode="never_modify"
+				filename_interval="01-00-00_00:00:00"
+				clobber_mode="truncate"
 				packages="amZonalMean"
 				runtime_format="single_file">
 
