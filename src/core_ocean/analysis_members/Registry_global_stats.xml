@@ -20,6 +20,7 @@
 				filename_template="analysis_members/globalStats.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="0000_12:00:00"
 				clobber_mode="never_modify"
+				packages="amGlobalStats"
 				runtime_format="single_file">
 
 			<var name="xtime"/>
