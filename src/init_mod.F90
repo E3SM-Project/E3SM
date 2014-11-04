@@ -360,6 +360,8 @@ contains
     ! =================================================================
 
     call initEdgeBuffer(par,edge1,nlev)
+    print *,'init: After first call to initEdgeBuffer'
+    stop
 #ifdef _PRIMDG
     call initEdgeBuffer(par,edge2,4*nlev)
     call initEdgeBuffer(par,edge3,11*nlev)

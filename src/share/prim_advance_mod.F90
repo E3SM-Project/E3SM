@@ -7,7 +7,7 @@
 !
 !
 module prim_advance_mod
-  use edge_mod, only : EdgeBuffer_t
+  use edge_mod, only : EdgeDescriptor_t, EdgeBuffer_t, newEdgeBuffer_t
   use kinds, only : real_kind, iulog
   use perf_mod, only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod, only : abortmp, parallel_t
@@ -20,6 +20,8 @@ module prim_advance_mod
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
   type (EdgeBuffer_t) :: edge3p1
+   
+  type (newEdgeBuffer_t) :: newedge3p1
 
   real (kind=real_kind) :: initialized_for_dt   = 0
 
@@ -27,20 +29,36 @@ module prim_advance_mod
 
 contains
 
-  subroutine prim_advance_init(par,integration)
-    use edge_mod, only : initEdgeBuffer
-    use dimensions_mod, only : nlev
+  subroutine prim_advance_init(par,elem,integration)
+    use edge_mod, only : initEdgeBuffer,initNewEdgeBuffer
+    use element_mod, only : element_t
+    use dimensions_mod, only : nlev, nelemd
     use control_mod, only : qsplit,rsplit
-    type(parallel_t) :: par
+    type (element_t), intent(inout), target   :: elem(:)
+    type (parallel_t) :: par
     character(len=*)    , intent(in) :: integration
     integer :: i
+    integer :: ie
+    type (EdgeDescriptor_t),allocatable  :: desc(:)
 
+    print *,'prim_advance_init: nelemd:= ',nelemd
+    allocate(desc(nelemd))
+    print *,'prim_advance_init: after allocate '
+    do ie=1,nelemd
+       desc(ie) = elem(ie)%desc
+    enddo
+    print *,'prim_advance_init: before call to initNewEdgeBuffer rsplit: ',rsplit
     if (rsplit==0) then
        call initEdgeBuffer(par,edge3p1,3*nlev+1)
+       call initNewEdgeBuffer(par,newedge3p1,desc,3*nlev+1)
     else
        ! need extra buffer space for dp3d
        call initEdgeBuffer(par,edge3p1,4*nlev+1)
+       call initNewEdgeBuffer(par,newedge3p1,desc,4*nlev+1)
     endif
+    print *,'prim_advance_init: rsplit := ',rsplit
+    print *,'prim_advance_init: after call first call to initEdgeBuffer'
+    stop
 
     if(integration == 'semi_imp') then
        call initEdgeBuffer(par,edge1,nlev)
@@ -61,6 +79,7 @@ contains
          ur_weights(i)=2.0d0/qsplit
        enddo
     endif
+    deallocate(desc)
 
   end subroutine prim_advance_init
 

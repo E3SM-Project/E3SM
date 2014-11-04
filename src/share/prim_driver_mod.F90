@@ -519,7 +519,7 @@ contains
     allocate(cm(0:n_domains-1))
 #endif
     allocate(cg(0:n_domains-1))
-    call prim_advance_init(par,integration)
+    call prim_advance_init(par,elem,integration)
     call Prim_Advec_Init1(par, n_domains)
     call diffusion_init(par)
     if (ntrac>0) then
