@@ -58,6 +58,11 @@ module edge_mod
 #endif
   end type EdgeBuffer_t
 
+  type, public :: newEdgeBuffer_t
+     real (kind=real_kind), dimension(:), pointer :: buf => null()
+     real (kind=real_kind), dimension(:), pointer :: receive => null()
+  end type newEdgeBuffer_t
+
   type, public :: LongEdgeBuffer_t
      integer :: nlyr
      integer :: nbuf
@@ -68,6 +73,8 @@ module edge_mod
   public :: initEdgeBuffer, initLongEdgeBuffer
   public :: FreeEdgeBuffer, FreeLongEdgeBuffer
   public :: edgeVpack,  edgeDGVpack, LongEdgeVpack
+
+  public :: initNewEdgeBuffer, FreeNewEdgeBuffer
 
   public :: edgeVunpack, edgeDGVunpack, edgeVunpackVert
   public :: edgeVunpackMIN, LongEdgeVunpackMIN
@@ -377,6 +384,103 @@ contains
 
   end subroutine initEdgeBuffer
   ! =========================================
+  ! initEdgeBuffer:
+  !
+  ! create an Real based communication buffer
+  ! =========================================
+  subroutine initNewEdgeBuffer(par,edge,desc,nlyr)
+    use dimensions_mod, only : np, nelemd, max_corner_elem
+    use schedtype_mod, only : cycle_t, schedule_t, schedule
+    implicit none
+    type (parallel_t), intent(in) :: par
+    integer,intent(in)                :: nlyr
+    type (newEdgeBuffer_t),intent(out), target :: edge
+    type (EdgeDescriptor_t),intent(in)  :: desc(:)
+
+    ! Notes about the buf_ptr/receive_ptr options:
+    !
+    ! You can pass in 1D pointers to this function. If they are not
+    ! associated, they will be allocated and used as buffer space. If they
+    ! are associated, their targets will be used as buffer space.
+    !
+    ! The pointers must not be thread-private.
+    !
+    ! If an EdgeBuffer_t object is initialized from pre-existing storage
+    ! (i.e. buf_ptr is provided and not null), it must *not* be freed,
+    ! and must not be used if the underlying storage has been deallocated.
+    !
+    ! All these restrictions also applied to the old newbuf and newreceive
+    ! options.
+
+    ! Workaround for NAG bug.
+    ! NAG 5.3.1 dies if you use pointer bounds remapping to set
+    ! a pointer that is also a component. So remap to temporary,
+    ! then use that to set component pointer.
+
+    ! Local variables
+    integer :: nbuf,ith
+    integer :: nSendCycles, nRecvCycles
+    integer :: icycle, ierr
+    integer :: iam,ie 
+    type (Cycle_t), pointer :: pCycle
+    type (Schedule_t), pointer :: pSchedule
+    integer :: dest, source, length, tag, iptr
+
+    if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
+
+#if (defined HORIZ_OPENMP)
+!JMD       !$OMP BARRIER
+#endif
+
+    iam = par%rank
+!$OMP MASTER
+    if(iam == 0) then
+       do ie=1,nelemd
+          print *,'ie: ',ie,'putmapP: ',desc(ie)%putmapP(:)
+       enddo
+    endif
+!$OMP END MASTER
+    stop 'initNewEdgeBuffer'
+!    allocate(edge%buf(nbuf))
+!    allocate(edge%receive(nbuf))
+    edge%buf    (:)=0.0D0
+    edge%receive(:)=0.0D0
+
+#ifdef MPI_PERSISTENT
+!
+!    pSchedule => Schedule(1)
+!    nSendCycles = pSchedule%nSendCycles
+!    nRecvCycles = pSchedule%nRecvCycles
+!!    print *,'iam: ',iam, ' nSendCycles: ',nSendCycles, ' nRecvCycles: ',
+!!    nRecvCycles
+!    allocate(edge%Rrequest(nRecvCycles))
+!    allocate(edge%Srequest(nSendCycles))
+!    do icycle=1,nSendCycles
+!       pCycle => pSchedule%SendCycle(icycle)
+!       dest   = pCycle%dest -1
+!       length = nlyr * pCycle%lengthP
+!       tag    = pCycle%tag
+!       iptr   = pCycle%ptrP
+!!       print *,'IAM: ',iam, ' length: ',length,' dest: ',dest,' tag: ',tag
+!       call MPI_Send_init(edge%buf(1,iptr),length,MPIreal_t,dest,tag,par%comm, edge%Srequest(icycle),ierr)
+!    enddo
+!    do icycle=1,nRecvCycles
+!       pCycle => pSchedule%RecvCycle(icycle)
+!       source   = pCycle%source -1
+!       length = nlyr * pCycle%lengthP
+!       tag    = pCycle%tag
+!       iptr   = pCycle%ptrP
+!!       print *,'IAM: ',iam, 'length: ',length,' dest: ',source,' tag: ',tag
+!       call MPI_Recv_init(edge%receive(1,iptr),length,MPIreal_t,source,tag,par%comm, edge%Rrequest(icycle),ierr)
+!    enddo
+#endif
+
+#if (defined HORIZ_OPENMP)
+!JMD       !$OMP END MASTER
+#endif
+
+  end subroutine initNewEdgeBuffer
+  ! =========================================
   ! initLongEdgeBuffer:
   !
   ! create an Integer based communication buffer
@@ -449,6 +553,28 @@ contains
 #endif
 
   end subroutine FreeEdgeBuffer
+
+  ! ===========================================
+  !  FreeEdgeBuffer:
+  !
+  !  Freed an edge communication buffer
+  ! =========================================
+  subroutine FreeNewEdgeBuffer(edge)
+    implicit none
+    type (newEdgeBuffer_t),intent(inout) :: edge
+
+#if (defined HORIZ_OPENMP)
+!$OMP BARRIER
+!$OMP MASTER
+#endif
+    deallocate(edge%buf)
+    deallocate(edge%receive)
+#if (defined HORIZ_OPENMP)
+!$OMP END MASTER
+#endif
+
+  end subroutine FreeNewEdgeBuffer
+
 
   subroutine FreeGhostBuffer3D(buffer) 
     implicit none
