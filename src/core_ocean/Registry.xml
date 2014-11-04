@@ -62,7 +62,7 @@
 					description="Timestamp descriping the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration."
 					possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none'"
 		/>
-		<nml_option name="config_run_duration" type="character" default_value="0001_00:00:00" units="unitless"
+		<nml_option name="config_run_duration" type="character" default_value="0010_00:00:00" units="unitless"
 					description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time."
 					possible_values="'DDDD_HH:MM:SS' or 'none'"
 		/>
@@ -344,11 +344,11 @@
 		/>
 	</nml_record>
 	<nml_record name="vmix_rich" in_defaults="true">
-		<nml_option name="config_use_rich_visc" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_use_rich_visc" type="logical" default_value=".false." units="unitless"
 					description="If true, Richardson-number based vertical viscosity is included in the momentum equation"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_rich_diff" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_use_rich_diff" type="logical" default_value=".false." units="unitless"
 					description="If true, Richardson-number based vertical diffusion is included in the tracer equation"
 					possible_values=".true. or .false."
 		/>
@@ -873,9 +873,9 @@
 				filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
 				reference_time="0000-01-01_00:00:00"
-				clobber_mode="never_modify"
+				clobber_mode="truncate"
 				input_interval="initial_only"
-				output_interval="0001_00:00:00"
+				output_interval="0005_00:00:00"
 				immutable="true">
 
 			<var_array name="tracers"/>
@@ -945,6 +945,7 @@
 				filename_interval="01-00-00_00:00:00"
 				reference_time="0000-01-01_00:00:00"
 				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
 				runtime_format="single_file">
 
 			<var_array name="tracers"/>
