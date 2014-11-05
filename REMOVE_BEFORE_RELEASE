@@ -1,0 +1,89 @@
+Information needs to go in proper documentation
+
+State of dev - Nov. 5 2014
+
+Key:
+
+>> shell command
+-- command output 
+# or = textual comment
+
+===== Yellowstone =====
+
+>>module load python
+>>python scripts/python/buildPio.py intel
+
+--75% tests passed, 5 tests failed out of 20
+
+--Total Test time (real) = 290.20 sec
+
+--The following tests FAILED:
+--          5 - pio_file_fail (Failed)
+--          6 - ncdf_simple_tests (Failed)
+--          7 - ncdf_get_put_1proc (Failed)
+--          8 - ncdf_get_put_2proc (Failed)
+--          9 - ncdf_fail (Failed)
+--Errors while running CTest
+
+>>cd build_yellowstone_intel/examples/f03
+
+>>bsub  -q premium -W 1:00 -n 2 -P P93300070 examplePio_f90
+
+
+
+===== Goldbach (linux cluster) =====
+
+# c examples won't build due to a lib_curl dependence for both intel and nag
+
+>>python scripts/python/buildPio.py intel
+
+
+
+
+
+
+
+
+
+
+===== Darwin =====
+
+# To run on a machine running OSX with gnu:
+
+>>python scripts/python/buildPio.py gnu
+
+# testing output ::
+
+--The following tests FAILED:
+--          5 - pio_file_fail (Failed)
+--          6 - ncdf_simple_tests (Failed)
+--          7 - ncdf_get_put_1proc (Failed)
+--          8 - ncdf_get_put_2proc (Failed)
+--          9 - ncdf_fail (Failed
+
+# examples::
+
+>>cd build_darwin_gnu/examples/f03
+>>./examplePio_f90
+--Running with 1 MPI processes and 1 PIO processes. 
+--Close file 65536 
+
+>>ncdump examplePio_c.nc | grep foo
+--        int foo(x) ;
+-- foo = 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42 ;
+
+# or 
+
+>>cd build_darwin_gnu/examples/c
+>>/opt/local/bin/mpiexec-mpich-gcc48 -np 16 examplePio_c
+--Running with 16 MPI processes and 16 PIO processes. 
+--Close file 65536
+
+>>ncdump examplePio_c.nc | grep foo
+--        int foo(x) ;
+-- foo = 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 ;
+
+
+
+
+
