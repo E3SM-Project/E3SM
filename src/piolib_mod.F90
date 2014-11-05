@@ -67,7 +67,7 @@ module piolib_mod
 !! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53945
 !! nag otoh requires that fptr has a type
 !<
-#ifndef __GFORTRAN__
+#ifdef __GFORTRAN__
     integer (PIO_OFFSET_KIND) :: ftpr
 !!#define ftpr(arg) arg
 #endif
