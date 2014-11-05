@@ -4,7 +4,7 @@ module pioExample
     ! simple example of using PIO with netcdf
     !
 
-    use pio, only : PIO_init, PIO_rearr_none, iosystem_desc_t, file_desc_t
+    use pio, only : PIO_init, PIO_rearr_subset, iosystem_desc_t, file_desc_t
     use pio, only : PIO_finalize, PIO_noerr, PIO_iotype_netcdf, PIO_createfile
     use pio, only : PIO_int,var_desc_t, PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef
     use pio, only : PIO_closefile, io_desc_t, PIO_initdecomp, PIO_write_darray
@@ -100,7 +100,7 @@ contains
             this%niotasks,              & ! Number of iotasks (ntasks/stride)
             this%numAggregator,         & ! number of aggregators to use
             this%stride,                & ! stride
-            PIO_rearr_none,             & ! do not use any form of rearrangement
+            PIO_rearr_subset,           & ! do not use any form of rearrangement
             this%pioIoSystem,           & ! iosystem
             base=this%optBase)            ! base (optional argument)
 
@@ -140,7 +140,7 @@ contains
         count(1) = this%arrIdxPerPe
 
         call PIO_initdecomp(this%pioIoSystem, PIO_int, this%dimLen, this%compdof(this%ista:this%isto), &
-            this%iodescNCells, iostart=start, iocount=count)
+            this%iodescNCells)
 
     end subroutine createDecomp
 
@@ -184,8 +184,6 @@ contains
 
         integer :: retVal
 
-        write(*,*) 'Before write ',this%dataBuffer(this%ista:this%isto)
-
         call PIO_write_darray(this%pioFileDesc, this%pioVar, this%iodescNCells, this%dataBuffer(this%ista:this%isto), retVal)
         call this%errorHandle("Could not write foo", retVal)
         call PIO_syncfile(this%pioFileDesc)
@@ -202,8 +200,6 @@ contains
 
         call PIO_read_darray(this%pioFileDesc, this%pioVar, this%iodescNCells,  this%readBuffer, retVal)
         call this%errorHandle("Could not read foo", retVal)
-
-        write(*,*) 'After read ',this%readBuffer
 
     end subroutine readVar
 

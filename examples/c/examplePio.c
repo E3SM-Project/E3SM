@@ -18,6 +18,7 @@ typedef struct examplePioClass
     struct examplePioClass* (*readVar)  (struct examplePioClass*);
     struct examplePioClass* (*closeFile)  (struct examplePioClass*);
     struct examplePioClass* (*cleanUp) (struct examplePioClass*);
+    struct examplePioClass* (*errorHandler) (struct examplePioClass*, const char*, const int);
 
     int someThing;
     
@@ -63,8 +64,6 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &this->myRank);
     ierr = MPI_Comm_size(MPI_COMM_WORLD, &this->ntasks);
     
-    printf(" examplePioClass::init %d\n",this->myRank);
-
     /*
     ** set up PIO for rest of example
     */
@@ -78,7 +77,11 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     
     this->niotasks = this->ntasks; /* keep things simple - 1 iotask per MPI process */
     
-    PIOc_Init_Intracomm(MPI_COMM_WORLD, this->niotasks, this->stride, this->optBase, PIO_REARR_NONE, &this->pioIoSystem);
+    if (this->myRank == 0){
+        printf("Running with %d MPI processes and %d PIO processes. \n",this->ntasks,this->niotasks);
+    }
+    
+    PIOc_Init_Intracomm(MPI_COMM_WORLD, this->niotasks, this->stride, this->optBase, PIO_REARR_SUBSET, &this->pioIoSystem);
     
     /*
     ** set up some data that we will write to a netcdf file
@@ -87,8 +90,7 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     this->arrIdxPerPe = LEN / this->ntasks;
     
     if (this->arrIdxPerPe < 1) {
-        printf("not enough work to do \n");
-        /*call this%errorHandle("Not enough work to distribute among pes", ERR_CODE)*/
+        this->errorHandler(this, "Not enough work to distribute among pes",ERR_CODE);
     }
         
     this->ista = this->myRank * this->arrIdxPerPe;
@@ -107,7 +109,7 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
         
         this->dataBuffer[i] = this->myRank + VAL;
         this->compdof[i] = localVal;
-        this->readBuffer[i] = 0;
+        this->readBuffer[i] = 99;
         
         if (localVal > this->isto) {
             printf("error, should ABORT \n");
@@ -121,7 +123,8 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
 struct examplePioClass* epc_createDecomp( struct examplePioClass* this )
 {
     PIOc_InitDecomp(this->pioIoSystem, PIO_INT, 1, this->dimLen, (PIO_Offset)(this->arrIdxPerPe),
-                    this->compdof, &this->iodescNCells, NULL, &this->ista, &this->arrIdxPerPe);
+                    this->compdof, &this->iodescNCells, NULL, NULL, NULL);
+    
     return this;
 }
 
@@ -135,9 +138,7 @@ struct examplePioClass* epc_defineVar( struct examplePioClass* this )
 {
     
     PIOc_def_dim(this->pioFileDesc, "x", (PIO_Offset)this->dimLen[0], &this->pioDimId);
-    
     PIOc_def_var(this->pioFileDesc, "foo", PIO_INT, 1, &this->pioDimId, &this->pioVar);
-    
     PIOc_enddef(this->pioFileDesc);
 
     return this;
@@ -148,18 +149,16 @@ struct examplePioClass* epc_writeVar( struct examplePioClass* this )
     PIOc_write_darray(this->pioFileDesc, this->pioVar, this->iodescNCells,
                       (PIO_Offset)this->arrIdxPerPe, this->dataBuffer, NULL);
     PIOc_sync(this->pioFileDesc);
+    
     return this;
 }
 
 struct examplePioClass* epc_readVar( struct examplePioClass* this )
 {
     int i;
+    
     PIOc_read_darray(this->pioFileDesc, this->pioVar, this->iodescNCells,
                      (PIO_Offset)this->arrIdxPerPe, this->readBuffer);
-    
-    for (i = 0; i < this->arrIdxPerPe; i++ ){
-        printf("after read %d %d\n", this->myRank,this->readBuffer[i]);
-    }
     
     return this;
 }
@@ -167,6 +166,7 @@ struct examplePioClass* epc_readVar( struct examplePioClass* this )
 struct examplePioClass* epc_closeFile( struct examplePioClass* this )
 {
     PIOc_closefile(this->pioFileDesc);
+    
     return this;
 }
 
@@ -185,6 +185,25 @@ struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
     return this;
 }
 
+struct examplePioClass* epc_errorHandler(struct examplePioClass* this, const char* errMsg, const int retVal)
+{
+   /* class(pioExampleClass), intent(inout) :: this
+    character(len=*),       intent(in)    :: errMsg
+    integer,                intent(in)    :: retVal*/
+    
+    if (retVal != PIO_NOERR){
+        
+        if (this->myRank == 0){
+            printf("%d %s\n",retVal,errMsg);
+        }
+    
+        PIOc_closefile(this->pioFileDesc);
+        MPI_Abort(MPI_COMM_WORLD, retVal);
+    }
+    
+    return this;
+}
+
 struct examplePioClass* epc_new()
 {
     struct examplePioClass* this = malloc((sizeof(struct examplePioClass)));
@@ -199,6 +218,7 @@ struct examplePioClass* epc_new()
     this->readVar = epc_readVar;
     this->closeFile = epc_closeFile;
     this->cleanUp = epc_cleanUp;
+    this->errorHandler = epc_errorHandler;
     
     return this;
 }
