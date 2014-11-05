@@ -805,7 +805,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 		fortprintf(fd, "            write(stderrUnit, *) 'Error while reading namelist record %s.'\n", nmlrecname);
 		fortprintf(fd, "            call mpas_dmpar_abort(dminfo)\n");
 		fortprintf(fd, "         else if (ierr < 0) then\n");
-		fortprintf(fd, "            write(stderrUnit,*) 'Namelist record %s not found; using default values for this namelist''s variables'\n", nmlrecname);
+		fortprintf(fd, "            write(stderrUnit,*) 'Namelist record %s not found; using default values for variables in this namelist'\n", nmlrecname);
 		fortprintf(fd, "         end if\n");
 		fortprintf(fd, "      end if\n");
 
