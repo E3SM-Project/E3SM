@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/repos/MCT/!svn/ver/66/trunk/mpi-serial/tests
+END
+ftest_old.F90
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/repos/MCT/!svn/ver/31/trunk/mpi-serial/tests/ftest_old.F90
+END
+ctest_old.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/repos/MCT/!svn/ver/31/trunk/mpi-serial/tests/ctest_old.c
+END
+ftest.F90
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/repos/MCT/!svn/ver/33/trunk/mpi-serial/tests/ftest.F90
+END
+ctest.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/repos/MCT/!svn/ver/56/trunk/mpi-serial/tests/ctest.c
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/repos/MCT/!svn/ver/65/trunk/mpi-serial/tests/Makefile
+END
+ftest_internal.F90
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/repos/MCT/!svn/ver/3/trunk/mpi-serial/tests/ftest_internal.F90
+END
