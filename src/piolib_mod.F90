@@ -270,9 +270,8 @@ contains
 
   end function PIO_FILE_IS_OPEN
 
-
-!> 
-!! @public 
+!>
+!! @public
 !! @ingroup PIO_get_local_array_size
 !! @brief This function returns the expected local size of an array associated with iodesc
 !! @details
@@ -735,8 +734,7 @@ contains
        cdims(i) = dims(ndims-i+1)
     end do
     maplen = size(compdof)
-!    allocate(ccompmap(maplen))
-    
+
     if(present(rearr)) then
        crearr = C_LOC(rearr)
     else
@@ -749,15 +747,20 @@ contains
           cstart(i) = iostart(ndims-i+1)-1
           ccount(i) = iocount(ndims-i+1)
        end do
+
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, C_LOC(compdof), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
+            maplen, C_LOC(fptr(compdof)), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
+
        deallocate(cstart, ccount)
     else
+
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, C_LOC(compdof), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
+            maplen, C_LOC(fptr(compdof)), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
+
     end if
+
     deallocate(cdims)
-!    deallocate(ccompmap)
+
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif
@@ -1749,9 +1752,15 @@ contains
 
   end subroutine pio_deletefile
 
-
-
-
+#ifdef __GFORTRAN__
+    pure function fptr ( inArr ) result ( ptr )
+        integer (PIO_OFFSET_KIND), dimension(:), target, intent(in) :: inArr
+        integer (PIO_OFFSET_KIND), target :: ptr
+        ptr = inArr(1)
+    end function fptr
+#else
+    #define ftpr(arg) arg
+#endif
 
 end module piolib_mod
 
