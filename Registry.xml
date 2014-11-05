@@ -935,7 +935,11 @@
 		</stream>
 		<stream name="additional_output"
 				type="none"
-				filename_template="additional_output_variables.nc" 
+				filename_template="output/additional_output.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
 				runtime_format="single_file">
 
 			<var name="normalVelocity"/>
@@ -954,9 +958,14 @@
 		</stream>
 		<stream name="real_world"
 				type="none"
-				filename_template="real_world_variables.nc" 
+				filename_template="output/real_world_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
 				runtime_format="single_file">
 
+			<stream name="mesh"/>
 			<var name="velocityZonal"/>
 			<var name="velocityMeridional"/>
 			<var name="displacedDensity"/>
@@ -973,9 +982,14 @@
 		</stream>
 		<stream name="averages"
 				type="none"
-				filename_template="average_variables.nc" 
+				filename_template="output/average_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
 				runtime_format="single_file">
 
+			<stream name="mesh"/>
 			<var name="nAverage"/>
 			<var_array name="avgTracersSurfaceValue"/>
 			<var_array name="avgSurfaceVelocity"/>
@@ -996,17 +1010,27 @@
 		</stream>
 		<stream name="Cartesian"
 				type="none"
-				filename_template="Cartesian_variables.nc" 
+				filename_template="output/Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
 				runtime_format="single_file">
 
+			<stream name="mesh"/>
 			<var name="velocityX"/>
 			<var name="velocityY"/>
 		</stream>
 		<stream name="forcing"
 				type="none"
-				filename_template="forcing_variables.nc" 
+				filename_template="output/forcing_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
 				runtime_format="single_file">
 
+			<stream name="mesh"/>
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -1045,9 +1069,14 @@
 		</stream>
 		<stream name="Gent_McWilliams_spherical"
 				type="none"
-				filename_template="Gent_McWilliams_spherical_variables.nc" 
+				filename_template="output/Gent_McWilliams_spherical_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
 				runtime_format="single_file">
 
+			<stream name="mesh"/>
 			<var name="relativeSlopeTopOfCell"/>
 			<var name="relativeSlopeTaperingCell"/>
 			<var name="relativeSlopeTopOfCellZonal"/>
@@ -1065,9 +1094,14 @@
 		</stream>
 		<stream name="Gent_McWilliams_Cartesian"
 				type="none"
-				filename_template="Gent_McWilliams_Cartesian_variables.nc" 
+				filename_template="output/Gent_McWilliams_Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
 				runtime_format="single_file">
 
+			<stream name="mesh"/>
 			<var name="relativeSlopeTopOfCell"/>
 			<var name="relativeSlopeTaperingCell"/>
 			<var name="relativeSlopeTopOfCellX"/>
