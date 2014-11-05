@@ -1,11 +1,15 @@
 
 
 #include "mpiP.h"
-
+#include "mpi.h"
+#include "type.h"
 
 /****************************************************************************/
 
 static int initialized=0;
+
+int *f_MPI_STATUS_IGNORE;
+int *f_MPI_STATUSES_IGNORE;
 
 
 /****************************************************************************/
@@ -65,14 +69,14 @@ FC_FUNC( mpi_init_fort , MPI_INIT_FORT)
 
 #define verify_eq(name)  \
   if (*f_##name != name) \
-    { fprintf(stderr,"mpi-serial: mpi_init_fort: %s not consistant " \
+    { fprintf(stderr,"mpi-serial: mpi_init_fort: %s not consistent " \
                      "between mpif.h (%d) and mpi.h (%d)\n",\
                      #name,*f_##name,name); \
       err=1; }
 
 #define verify_eq_warn(name)  \
   if (*f_##name != name) \
-    { fprintf(stderr,"mpi-serial: mpi_init_fort: warning: %s not consistant " \
+    { fprintf(stderr,"mpi-serial: mpi_init_fort: warning: %s not consistent " \
                      "between mpif.h (%d) and mpi.h (%d)\n",\
                      #name,*f_##name,name); \
     }
@@ -87,7 +91,8 @@ FC_FUNC( mpi_init_fort , MPI_INIT_FORT)
    */
 
 #define verify_size(name,p1,p2) \
-  if ( (size=((char *)(p2) - (char *)(p1))) != *f_##name ) \
+  if ( (size=((char *)(p2) - (char *)(p1))) != Simpletype_length( \
+              (*(Datatype*)mpi_handle_to_datatype(*f_##name))->pairs[0].type) ) \
     { fprintf(stderr,"mpi-serial: mpi_init_fort: mpif.h %s (%d) " \
                      "does not match actual fortran size (%d)\n", \
                      #name,*f_##name,size); \
@@ -104,7 +109,7 @@ FC_FUNC( mpi_init_fort , MPI_INIT_FORT)
   { offset= (char *)&((MPI_Status *)f_status)->name - (char *)f_status; \
     if ( offset != (*f_##name-1)*sizeof(int) ) \
     { fprintf(stderr,"mpi-serial: mpi_init_fort: mpif.h %s (%d) (%d bytes) " \
-                     "is inconsistant w/offset in MPI_Status (%d bytes)\n", \
+                     "is inconsistent w/offset in MPI_Status (%d bytes)\n", \
                     #name,*f_##name,(*f_##name-1)*sizeof(int),offset); \
       err=1; }}
 
@@ -145,8 +150,6 @@ FC_FUNC( mpi_init_fort , MPI_INIT_FORT)
     abort();
 }
 
-
-
 int MPI_Init(int *argc, char **argv[]) 
 {
   MPI_Comm my_comm_world;
@@ -165,6 +168,10 @@ int MPI_Init(int *argc, char **argv[])
       fprintf(stderr,"MPI_Init: conflicting MPI_COMM_WORLD\n");
       abort();
     }
+
+  // call this to have the fortran routine call back and save
+  // values for f_MPI_STATUS_IGNORE and f_MPI_STATUSES_IGNORE
+  FC_FUNC(mpi_get_fort_status,MPI_GET_FORT_STATUS)();  // the () are important
 
   initialized=1;
   return(MPI_SUCCESS);
@@ -280,5 +287,33 @@ int MPI_Initialized(int *flag)
   return(MPI_SUCCESS);
 }
 
+
+/**********/
+
+
+void FC_FUNC( mpi_save_fort_status, MPI_SAVE_FORT_STATUS ) (int *status, int *statuses)
+{
+  f_MPI_STATUS_IGNORE=status;
+  f_MPI_STATUSES_IGNORE=statuses;
+}
+
+
+
+MPI_Status *mpi_c_status(int *status)
+{
+  if (status==f_MPI_STATUS_IGNORE)
+    return(MPI_STATUS_IGNORE);
+
+  return((MPI_Status *)status);
+}
+
+
+MPI_Status *mpi_c_statuses(int *statuses)
+{
+  if (statuses==f_MPI_STATUSES_IGNORE)
+    return(MPI_STATUSES_IGNORE);
+
+  return((MPI_Status *)statuses);
+}
 
 
