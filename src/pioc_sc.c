@@ -35,7 +35,7 @@ typedef long long PIO_Offset;
 #endif
 
 #define default_blocksize 884736;
-//#define default_blocksize 1024
+//#define default_blocksize 512
 int blocksize = default_blocksize;
 
 
@@ -152,16 +152,25 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
 
   for(i=0;i<arrlen-1;i++){
     del_arr[i] = arr_in[i+1] - arr_in[i];
-    if(del_arr[i] > 1)
+    if(del_arr[i] != 1){
       numtimes++;
+      if(i>0 && del_arr[i-1]>1){
+	return(1);
+      }
+      //      printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,del_arr[i],arr_in[i]);
+      
+    }
   }
+
+  
+
   numblks = numtimes+1;
   if(numtimes==0)
     n = numblks;
   else
     n = numtimes;
 
-  //printf("%s %d %d\n",__FILE__,__LINE__,numblks);
+  //    printf("%s %d %d %d\n",__FILE__,__LINE__,numblks,numtimes);
   bsize = (PIO_Offset) arrlen;
   if(numblks>1){
     PIO_Offset blk_len[numblks];
@@ -358,6 +367,7 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
     for(i=0;i<ndims;i++){
       start[i]=mystart[i];
       kount[i]=mykount[i];
+      //      printf("%s %d %ld %ld\n",__FILE__,__LINE__,start[i],kount[i]);
     }
   }else{
     for(i=0;i<ndims;i++){

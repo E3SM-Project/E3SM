@@ -27,17 +27,44 @@ Key:
 
 >>cd build_yellowstone_intel/examples/f03
 
->>bsub  -q premium -W 1:00 -n 2 -P P93300070 examplePio_f90
+>>bsub -Is -q caldera -n2 -PP93300070 -W0:20 "mpirun.lsf ./examplePio_f90"
+>>ncdump examplePio_f90.nc | grep foo
+        int foo(x) ;
+ foo = 42, 42, 42, 42, 42, 42, 42, 42, 43, 43, 43, 43, 43, 43, 43, 43 ;
 
-
+# or 
+>>cd build_yellowstone_intel/examples/c
+>>bsub -Is -q caldera -n8 -PP93300070 -W0:20 "mpirun.lsf ./examplePio_c"
+--Job <115205> is submitted to queue <caldera>.
+--<<Waiting for dispatch ...>>
+--<<Starting on caldera15-ib>>
+--Execute poe command line: poe  ./examplePio_c
+--Running with 8 MPI processes and 8 PIO processes.
+--Close file 65536
+>>ncdump examplePio_c.nc | grep foo
+--        int foo(x) ;
+-- foo = 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49 ;
 
 ===== Goldbach (linux cluster) =====
 
 # c examples won't build due to a lib_curl dependence for both intel and nag
 
->>python scripts/python/buildPio.py intel
+>>python scripts/python/buildPio.py nag
+--20/20 Test #20: pio_decomp_tests_4p_2iop_1agg ....   Passed    2.45 sec
 
+--95% tests passed, 1 tests failed out of 20
 
+--Total Test time (real) =  27.88 sec
+
+--The following tests FAILED:
+--          5 - pio_file_fail (Failed)
+--Errors while running CTest
+>>cd build_goldbach_nag/examples/f03
+>>/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/mpirun -np 4 ./examplePio_f90
+Close file 65536
+>>ncdump examplePio_f90.nc | grep foo
+--        int foo(x) ;
+-- foo = 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45 ;
 
 
 

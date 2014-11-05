@@ -45,7 +45,7 @@ if(defined($filesystem)){
     $cmake_opts .= " -DPIO_FILESYSTEM_HINTS=$filesystem ";
 }
 
-$cmake_opts .= " -DPIO_BUILD_TIMING=ON --debug-trycompile ";
+$cmake_opts .= " -DPIO_BUILD_TIMING=ON -DPIO_BUILD_TESTS=ON --debug-trycompile ";
 
 
 mkdir "$scratch";

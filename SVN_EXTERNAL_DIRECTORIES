@@ -1,4 +1,3 @@
-bin                                 https://parallelio.googlecode.com/svn/genf90/trunk_tags/genf90_140121
-bin/cmake                           https://github.com/quantheory/CMake_Fortran_utils/tags/CMake_Fortran_utils_140715
+bin       https://parallelio.googlecode.com/svn/genf90/trunk_tags/genf90_140121
+bin/cmake https://github.com/quantheory/CMake_Fortran_utils/tags/CMake_Fortran_utils_141017
 scripts/python/contrib/unit_testing https://svn-ccsm-models.cgd.ucar.edu/unit_testing/trunk_tags/unit_testing_0_07/python
-

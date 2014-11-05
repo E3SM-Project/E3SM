@@ -214,7 +214,8 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_create(ios->io_comm, filename, amode, ios->info, &(file->fh));
       if(ierr == PIO_NOERR){
-	printf("%d %d Setting IO buffer %ld\n",__LINE__,ios->io_rank,PIO_BUFFER_SIZE_LIMIT);
+	if(ios->io_rank==0)
+	  printf("%d Setting IO buffer size on all iotasks to %ld\n",ios->io_rank,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
       }
       for(int i=0;i<PIO_MAX_VARS;i++)

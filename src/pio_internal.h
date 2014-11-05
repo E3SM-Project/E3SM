@@ -21,7 +21,7 @@
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
-#define MAX_GATHER_BLOCK_SIZE 32
+#define MAX_GATHER_BLOCK_SIZE -1
 
 extern PIO_Offset PIO_BUFFER_SIZE_LIMIT;
 
@@ -112,14 +112,11 @@ typedef struct mapsort
 			      const int gsize[], const int ndims, io_desc_t *iodesc);
 
 #ifdef BGQ
-  //  void identity(MPI_Fint *comm, int *iotask);
-void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, int *rearr, 
-		      int *iamIOtask);
-
+  void identity(MPI_Comm comm, int *iotask);
+  void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 
+			bool *iamIOtask);
 
 #endif
-
-
 
 #if defined(__cplusplus)
 }

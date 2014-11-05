@@ -394,11 +394,11 @@ contains
 !! @param method :
 !! @copydoc PIO_error_method
 !<
-  subroutine seterrorhandlingf(file, method)
+  subroutine seterrorhandlingf(file, method, oldmethod)
     type(file_desc_t), intent(inout) :: file
     integer, intent(in) :: method
-
-    call seterrorhandlingi(file%iosystem, method)
+    integer, intent(out), optional :: oldmethod
+    call seterrorhandlingi(file%iosystem, method, oldmethod)
   end subroutine seterrorhandlingf
 
 !>
@@ -409,9 +409,10 @@ contains
 !! @param method :
 !! @copydoc PIO_error_method
 !<
-  subroutine seterrorhandlingi(ios, method)
+  subroutine seterrorhandlingi(ios, method, oldmethod)
     type(iosystem_desc_t), intent(inout) :: ios
     integer, intent(in) :: method
+    integer, intent(out), optional :: oldmethod
 
     interface
        integer(c_int) function PIOc_Set_IOSystem_Error_Handling(ios, method) &
@@ -421,9 +422,11 @@ contains
          integer(c_int), value :: method
        end function PIOc_Set_IOSystem_Error_Handling
     end interface
-    integer :: ierr
+    integer ::  loldmethod
 
-    ierr = PIOc_Set_IOSystem_Error_Handling(ios%iosysid, method)
+    loldmethod = PIOc_Set_IOSystem_Error_Handling(ios%iosysid, method)
+    if(present(oldmethod)) oldmethod = loldmethod
+
 
   end subroutine seterrorhandlingi
 
@@ -695,14 +698,14 @@ contains
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
-    integer (PIO_OFFSET_KIND), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
+    integer (PIO_OFFSET_KIND), intent(in), target :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer, optional, target :: rearr
     integer (PIO_OFFSET_KIND), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
     integer(c_int) :: ndims
     integer(c_int), dimension(:), allocatable, target :: cdims
     integer(PIO_OFFSET_KIND), dimension(:), allocatable, target :: cstart, ccount
-    integer(PIO_OFFSET_KIND), allocatable :: ccompmap(:)
+
     type(C_PTR) :: crearr
     interface
        integer(C_INT) function PIOc_InitDecomp(iosysid,basetype,ndims,dims, &
@@ -714,7 +717,7 @@ contains
          integer(C_INT), value :: ndims
          integer(C_INT) :: dims(*)
          integer(C_INT), value :: maplen
-         integer(C_SIZE_T) :: compmap(*)
+         type(C_PTR), value :: compmap
          integer(C_INT) :: ioidp
          type(C_PTR), value :: rearr
          type(C_PTR), value :: iostart
@@ -732,15 +735,13 @@ contains
        cdims(i) = dims(ndims-i+1)
     end do
     maplen = size(compdof)
-    allocate(ccompmap(maplen))
-    ccompmap = compdof - 1
+!    allocate(ccompmap(maplen))
     
     if(present(rearr)) then
        crearr = C_LOC(rearr)
     else
        crearr = C_NULL_PTR
     endif
-
 
     if(present(iostart) .and. present(iocount)) then
        allocate(cstart(ndims), ccount(ndims))
@@ -749,14 +750,14 @@ contains
           ccount(i) = iocount(ndims-i+1)
        end do
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, ccompmap, iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
+            maplen, C_LOC(compdof), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
        deallocate(cstart, ccount)
     else
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, ccompmap, iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
+            maplen, C_LOC(compdof), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
     end if
     deallocate(cdims)
-    deallocate(ccompmap)
+!    deallocate(ccompmap)
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif

@@ -2,7 +2,7 @@
 #include <pio_internal.h>
 
 #include <execinfo.h>
-#define versno 2000
+#define versno 2001
      
 /* Obtain a backtrace and print it to stderr. */
 void print_trace (void)
@@ -192,7 +192,7 @@ int PIOc_freedecomp(int iosysid, int ioid)
     for(i=0; i<iodesc->num_rtypes; i++){
 #ifdef HAVE_MPI
       if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
-        MPI_Type_free(&(iodesc->rtype[i]));
+        MPI_Type_free(iodesc->rtype+i);
       }
 #endif
     }
@@ -203,7 +203,7 @@ int PIOc_freedecomp(int iosysid, int ioid)
     for(i=0; i<iodesc->num_stypes; i++){
 #ifdef HAVE_MPI
       if(iodesc->stype[i] != MPI_DATATYPE_NULL){
-        MPI_Type_free(&(iodesc->stype[i]));
+        MPI_Type_free(iodesc->stype+i);
       }
 #endif
     }
@@ -222,16 +222,23 @@ int PIOc_freedecomp(int iosysid, int ioid)
   if(iodesc->firstregion != NULL)
     free_region_list(iodesc->firstregion);
 
+#ifdef HAVE_MPI
+  if(iodesc->rearranger == PIO_REARR_SUBSET){
+    MPI_Comm_free(&(iodesc->subset_comm));
+  }
+#endif
+
   return pio_delete_iodesc_from_list(ioid);
 
 
 }
 
-int PIOc_readmap(const char file[], PIO_Offset *fmaplen, PIO_Offset *map[], const MPI_Comm comm)
+int PIOc_readmap(const char file[], int *ndims, int *gdims[], PIO_Offset *fmaplen, PIO_Offset *map[], const MPI_Comm comm)
 {
   int npes, myrank;  
   int rnpes, rversno;
   int j;
+  int *tdims;
   PIO_Offset *tmap;
   MPI_Status status;
   PIO_Offset maplen;
@@ -244,13 +251,21 @@ int PIOc_readmap(const char file[], PIO_Offset *fmaplen, PIO_Offset *map[], cons
     if(fp==NULL)
       piodie("Failed to open dof file",__FILE__,__LINE__);
     
-    fscanf(fp,"version %d npes %d\n",&rversno, &rnpes);
+    fscanf(fp,"version %d npes %d ndims %d\n",&rversno, &rnpes,ndims);
 
     if(rversno != versno)
       piodie("Attempt to read incompatable map file version",__FILE__,__LINE__);
 
     if(rnpes < 1 || rnpes > npes)
       piodie("Incompatable pe count in map file ",__FILE__,__LINE__);
+
+    MPI_Bcast(&rnpes, 1, MPI_INT, 0, comm);
+    MPI_Bcast(ndims, 1, MPI_INT, 0, comm);
+    tdims = (int *) calloc((*ndims), sizeof(int));
+    for(int i=0;i<(*ndims);i++)
+      fscanf(fp,"%d ",tdims+i);
+
+    MPI_Bcast(tdims, (*ndims), MPI_INT, 0, comm);
 
     for(int i=0; i< rnpes; i++){
       fscanf(fp,"%d %ld",&j,&maplen);
@@ -272,26 +287,37 @@ int PIOc_readmap(const char file[], PIO_Offset *fmaplen, PIO_Offset *map[], cons
     }
     fclose(fp);
   }else{
-    MPI_Recv(&maplen, 1, PIO_OFFSET, 0, myrank+npes, comm, &status);
-    tmap = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
-    MPI_Recv(tmap, maplen, PIO_OFFSET, 0, myrank, comm, &status);
-    *map = tmap;
+    MPI_Bcast(&rnpes, 1, MPI_INT, 0, comm);
+    MPI_Bcast(ndims, 1, MPI_INT, 0, comm);
+    tdims = (int *) calloc((*ndims), sizeof(int));
+    MPI_Bcast(tdims, (*ndims), MPI_INT, 0, comm);
+
+    if(myrank<rnpes){
+      MPI_Recv(&maplen, 1, PIO_OFFSET, 0, myrank+npes, comm, &status);
+      tmap = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
+      MPI_Recv(tmap, maplen, PIO_OFFSET, 0, myrank, comm, &status);
+      *map = tmap;
+    }else{
+      tmap=NULL;
+      maplen=0;
+    }
     *fmaplen = maplen;
   }      
+  *gdims = tdims;
   return PIO_NOERR;
 }
 
-int PIOc_readmap_from_f90(const char file[],PIO_Offset *maplen, PIO_Offset *map[], const int f90_comm)
+int PIOc_readmap_from_f90(const char file[],int *ndims, int *gdims[], PIO_Offset *maplen, PIO_Offset *map[], const int f90_comm)
 {
   int ierr;
 
-  ierr = PIOc_readmap(file, maplen, map, MPI_Comm_f2c(f90_comm));
+  ierr = PIOc_readmap(file, ndims, gdims, maplen, map, MPI_Comm_f2c(f90_comm));
 
   return(ierr);
 }
 
 
-int PIOc_writemap(const char file[], PIO_Offset maplen, PIO_Offset map[], const MPI_Comm comm)
+int PIOc_writemap(const char file[], const int ndims, const int gdims[], PIO_Offset maplen, PIO_Offset map[], const MPI_Comm comm)
 {
   int npes, myrank;
   PIO_Offset *nmaplen;
@@ -320,11 +346,15 @@ int PIOc_writemap(const char file[], PIO_Offset maplen, PIO_Offset map[], const 
       fprintf(stderr,"Failed to open file %s to write\n",file);
       return PIO_EIO;
     }
-    fprintf(fp,"version %d npes %d\n",versno, npes);
+    fprintf(fp,"version %d npes %d ndims %d \n",versno, npes,ndims);
+    for(i=0;i<ndims;i++){
+      fprintf(fp,"%d ",gdims[i]);
+    }
+    fprintf(fp,"\n");    
     fprintf(fp,"0 %ld\n",nmaplen[0]);
     for( i=0;i<nmaplen[0];i++)
       fprintf(fp,"%ld ",map[i]);
-    
+    fprintf(fp,"\n");    
     for( i=1; i<npes;i++){
       nmap = (PIO_Offset *) malloc(nmaplen[i] * sizeof(PIO_Offset));
 
@@ -347,8 +377,9 @@ int PIOc_writemap(const char file[], PIO_Offset maplen, PIO_Offset map[], const 
   return PIO_NOERR;
 }
 
-int PIOc_writemap_from_f90(const char file[], const PIO_Offset maplen, const PIO_Offset map[], const int f90_comm)
+int PIOc_writemap_from_f90(const char file[], const int ndims, const int gdims[], 
+			   const PIO_Offset maplen, const PIO_Offset map[], const int f90_comm)
 {
   // printf("%s %d %s %ld\n",__FILE__,__LINE__,file,maplen);
-  return(PIOc_writemap(file, maplen, map, MPI_Comm_f2c(f90_comm)));
+  return(PIOc_writemap(file, ndims, gdims, maplen, map, MPI_Comm_f2c(f90_comm)));
 }

@@ -1,5 +1,6 @@
 #include <pio.h>
 #include <pio_internal.h>
+#define USE_PNETCDF_VARN 1
 
 PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
@@ -37,7 +38,9 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
    PIO_Offset usage;
    MPI_Request request;
    int fndims;
+   PIO_Offset tdsize;
 
+   tdsize=0;
    ierr = PIO_NOERR;
 
    ios = file->iosystem;
@@ -220,8 +223,8 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	 for( i=0,dsize=1;i<ndims;i++){
 	   dsize*=count[i];
 	 }
+	 tdsize += dsize;
 	 //	 if(dsize==1 && ndims==2)
-	 //  printf("%s %d %ld %ld %ld %ld\n",__FILE__,__LINE__,start[0],start[1],count[0],count[1]);
 	 //	 printf("%s %d %d\n",__FILE__,__LINE__,iodesc->basetype);
 #ifdef USE_PNETCDF_VARN
 	 if(regioncnt==0){
@@ -229,14 +232,9 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	     startlist[i] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
 	     countlist[i] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
 	   }
-	     /*
-	   startlist = (PIO_Offset **) malloc(iodesc->maxregions * sizeof(PIO_Offset *));
-	   countlist = (PIO_Offset **) malloc(iodesc->maxregions * sizeof(PIO_Offset *));
-	   startlist[0] = (PIO_Offset *) calloc(iodesc->maxregions * fndims,sizeof(PIO_Offset));
-	   countlist[0] = (PIO_Offset *) calloc(iodesc->maxregions*fndims,sizeof(PIO_Offset));
-	     */
 	 }
 	 if(dsize>0){
+	   //	   printf("%s %d %d %d\n",__FILE__,__LINE__,ios->io_rank,dsize);
 	   for( i=0; i<fndims;i++){
 	     startlist[realregioncnt][i]=start[i];
 	     countlist[realregioncnt][i]=count[i];
@@ -244,7 +242,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	   realregioncnt++;
 	 }
 	 if(regioncnt==iodesc->maxregions-1){
-	   //    printf("%s %d %ld %d\n",__FILE__,__LINE__,iodesc,iodesc->llen);
+	   //printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,ios->io_rank,iodesc->llen, tdsize);
 	   ierr = ncmpi_put_varn_all(ncid, vid, realregioncnt, startlist, countlist, 
 				     IOBUF, iodesc->llen, iodesc->basetype);
 	   //	   free(startlist[0]);
@@ -303,7 +301,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
    if(iodesc->rearranger>0){
      if(rlen>0){
        vtype = (MPI_Datatype) iodesc->basetype;
-       //    printf("rlen = %ld\n",rlen);
+       //       printf("rlen = %ld\n",rlen);
        if(vtype == MPI_INTEGER){
 	 MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
        }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
@@ -319,7 +317,14 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      //    printf(" rlen = %d %ld\n",rlen,iobuf); 
 
      //  }
+
+
      ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 0, 0);
+
+
+
+
+
    }else{
      iobuf = array;
    }

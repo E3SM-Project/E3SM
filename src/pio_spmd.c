@@ -263,9 +263,10 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 
 #ifndef _MPISERIAL
   if(max_requests == 0) {
-    for(int i=0;i<nprocs;i++)
 #ifdef DEBUG
+    for(int i=0;i<nprocs;i++){
       printf("%d sndlths %d %d %d %d\n",i,sndlths[i],sdispls[i],rcvlths[i],rdispls[i]);
+    }
 #endif
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
@@ -289,19 +290,29 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 
   offset_t = nprocs;
   // send to self
-
   if(sndlths[mytask] > 0){
     void *sptr, *rptr;
-    
+    int extent, lb;
     tag = mytask + offset_t;
     sptr = (void *)((char *) sndbuf + sdispls[mytask]);
     rptr = (void *)((char *) rcvbuf  + rdispls[mytask]);
+    /*
+    MPI_Type_get_extent(stypes[mytask], &lb, &extent);
+    printf("%s %d %d %d\n",__FILE__,__LINE__,extent, lb);
+    MPI_Type_get_extent(rtypes[mytask], &lb, &extent);
+    printf("%s %d %d %d\n",__FILE__,__LINE__,extent, lb);
+    */
 
+    // printf("%s %d %ld %d %d %d %d\n",__FILE__,__LINE__,sndbuf,sndlths[mytask],stypes[mytask],rtypes[mytask],MPI_DATATYPE_NULL);
     CheckMPIReturn(MPI_Sendrecv(sptr, sndlths[mytask],stypes[mytask],
 				mytask, tag, rptr, rcvlths[mytask], rtypes[mytask],
 				mytask, tag, comm, &status),__FILE__,__LINE__);
 
   }
+  ///  printf("%s %d %d %d\n",__FILE__,__LINE__,sndlths[mytask],rcvlths[mytask]);
+  if(nprocs==1)
+    return PIO_NOERR;
+
   int swapids[nprocs];
   MPI_Request rcvids[nprocs];
   MPI_Request sndids[nprocs];
