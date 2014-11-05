@@ -67,9 +67,8 @@ module piolib_mod
 !! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53945
 !! nag otoh requires that fptr has a type
 !<
-#ifdef __GFORTRAN__
-    integer (PIO_OFFSET_KIND) :: ftpr
-!!#define ftpr(arg) arg
+#ifndef __GFORTRAN__
+    integer (PIO_OFFSET_KIND) :: fptr
 #endif
 
 #ifdef MEMCHK
@@ -252,6 +251,17 @@ module piolib_mod
   !***********************************************************************
 
 contains
+
+#ifdef __GFORTRAN__
+    pure function fptr ( inArr ) result ( ptr )
+        integer (PIO_OFFSET_KIND), dimension(:), target, intent(in) :: inArr
+        integer (PIO_OFFSET_KIND), target :: ptr
+        ptr = inArr(1)
+    end function fptr
+#else
+#define fptr(arg) arg
+#endif
+
 !> 
 !! @public 
 !! @ingroup PIO_file_is_open
@@ -1760,15 +1770,6 @@ contains
 
   end subroutine pio_deletefile
 
-#ifdef __GFORTRAN__
-    pure function fptr ( inArr ) result ( ptr )
-        integer (PIO_OFFSET_KIND), dimension(:), target, intent(in) :: inArr
-        integer (PIO_OFFSET_KIND), target :: ptr
-        ptr = inArr(1)
-    end function fptr
-#else
-    #define ftpr(arg) arg
-#endif
 
 end module piolib_mod
 
