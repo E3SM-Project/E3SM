@@ -925,7 +925,6 @@
 			<var name="zMid"/>
 			<var name="zTop"/>
 			<var name="kineticEnergyCell"/>
-			<var name="divergence"/>
 			<var name="relativeVorticityCell"/>
 			<var name="areaCellGlobal"/>
 			<var name="areaEdgeGlobal"/>
@@ -942,6 +941,7 @@
 			<var name="normalVelocity"/>
 			<var name="density"/>
 			<var name="pressure"/>
+			<var name="divergence"/>
 			<var name="viscosity"/>
 			<var name="vertViscTopOfEdge"/>
 			<var name="vertViscTopOfCell"/>
@@ -989,14 +989,18 @@
 			<var name="avgTransportVelocityZonal"/>
 			<var name="avgTransportVelocityMeridional"/>
 			<var name="avgVertTransportVelocityTop"/>
-			<var name="avgNormalGMBolusVelocity"/>
-			<var name="avgGMBolusVelocityZonal"/>
-			<var name="avgGMBolusVelocityMeridional"/>
-			<var name="avgVertGMBolusVelocityTop"/>
 			<var name="varSSH"/>
 			<var name="varNormalVelocity"/>
 			<var name="varVelocityZonal"/>
 			<var name="varVelocityMeridional"/>
+		</stream>
+		<stream name="Cartesian"
+				type="none"
+				filename_template="Cartesian_variables.nc" 
+				runtime_format="single_file">
+
+			<var name="velocityX"/>
+			<var name="velocityY"/>
 		</stream>
 		<stream name="forcing"
 				type="none"
@@ -1039,9 +1043,29 @@
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
 		</stream>
-		<stream name="Gent_McWilliams"
+		<stream name="Gent_McWilliams_spherical"
 				type="none"
-				filename_template="Gent_McWilliams_variables.nc" 
+				filename_template="Gent_McWilliams_spherical_variables.nc" 
+				runtime_format="single_file">
+
+			<var name="relativeSlopeTopOfCell"/>
+			<var name="relativeSlopeTaperingCell"/>
+			<var name="relativeSlopeTopOfCellZonal"/>
+			<var name="relativeSlopeTopOfCellMeridional"/>
+			<var name="k33"/>
+			<var name="GMBolusVelocityZonal"/>
+			<var name="GMBolusVelocityMeridional"/>
+			<var name="normalGMBolusVelocity"/>
+			<var name="vertGMBolusVelocityTop"/>
+			<var name="gmStreamFuncTopOfEdge"/>
+			<var name="avgNormalGMBolusVelocity"/>
+			<var name="avgGMBolusVelocityZonal"/>
+			<var name="avgGMBolusVelocityMeridional"/>
+			<var name="avgVertGMBolusVelocityTop"/>
+		</stream>
+		<stream name="Gent_McWilliams_Cartesian"
+				type="none"
+				filename_template="Gent_McWilliams_Cartesian_variables.nc" 
 				runtime_format="single_file">
 
 			<var name="relativeSlopeTopOfCell"/>
@@ -1049,16 +1073,13 @@
 			<var name="relativeSlopeTopOfCellX"/>
 			<var name="relativeSlopeTopOfCellY"/>
 			<var name="relativeSlopeTopOfCellZ"/>
-			<var name="relativeSlopeTopOfCellZonal"/>
-			<var name="relativeSlopeTopOfCellMeridional"/>
 			<var name="k33"/>
 			<var name="GMBolusVelocityX"/>
 			<var name="GMBolusVelocityY"/>
-			<var name="GMBolusVelocityZonal"/>
-			<var name="GMBolusVelocityMeridional"/>
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
 			<var name="gmStreamFuncTopOfEdge"/>
+			<var name="avgNormalGMBolusVelocity"/>
 			<var name="GMStreamFuncX"/>
 			<var name="GMStreamFuncY"/>
 		</stream>
