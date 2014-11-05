@@ -63,9 +63,17 @@ module piolib_mod
        PIO_get_numiotasks, &
        PIO_get_iorank
 
+!> this is in place to get around gfortran bug
+!! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53945
+!! nag otoh requires that fptr has a type
+!<
+#ifndef __GFORTRAN__
+    integer (PIO_OFFSET_KIND) :: ftpr
+!!#define ftpr(arg) arg
+#endif
 
 #ifdef MEMCHK
-!> this is an internal variable for memory leak debugging 
+!> this is an internal variable for memory leak debugging
 !! it is used when macro memchk is defined and it causes each task to print the 
 !! memory resident set size anytime it changes within pio.
 !<
