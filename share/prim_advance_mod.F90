@@ -2,6 +2,8 @@
 #include "config.h"
 #endif
 
+#define NEWBUFFER_CHECK 1
+
 !#define _DBG_ print *,"File:",__FILE__," at ",__LINE__
 !#define _DBG_ !DBG
 !
@@ -58,7 +60,7 @@ contains
     endif
     print *,'prim_advance_init: rsplit := ',rsplit
     print *,'prim_advance_init: after call first call to initEdgeBuffer'
-    stop
+!JMD    stop
 
     if(integration == 'semi_imp') then
        call initEdgeBuffer(par,edge1,nlev)
@@ -89,7 +91,7 @@ contains
     use bndry_mod, only : bndry_exchangev
     use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture, integration
     use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
-    use dimensions_mod, only : np, nlev, nlevp, nvar
+    use dimensions_mod, only : np, nlev, nlevp, nvar, nelemd
 !    use prim_state_mod, only : prim_printstate
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
     use element_mod, only : element_t
@@ -2540,11 +2542,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   ! ===================================
   use kinds, only : real_kind
-  use dimensions_mod, only : np, np, nlev
+  use dimensions_mod, only : np, np, nlev, nelemd
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use edge_mod, only : edgevpack, edgevunpack
+  use edge_mod, only : edgevpack, edgevunpack, newedgevpack, newedgevunpack
   use bndry_mod, only : bndry_exchangev
   use control_mod, only : moisture, qsplit, use_cpstar, rsplit
   use hybvcoord_mod, only : hvcoord_t
@@ -2594,9 +2596,15 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
+  real (kind=real_kind),allocatable,dimension(:,:,:)    :: ps_v_jmd
+  real (kind=real_kind),allocatable,dimension(:,:,:,:)  :: T_jmd
   integer :: i,j,k,kptr,ie
+  integer :: cnt_ps_v,cnt_T
 
 !JMD  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
+  allocate(ps_v_jmd(np,np,nelemd))
+  allocate(T_jmd(np,np,nlev,nelemd))
+
   call t_adj_detailf(+1)
   call t_startf('compute_and_apply_rhs')
   do ie=nets,nete
@@ -3076,9 +3084,17 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! =========================================================
      kptr=0
      call edgeVpack(edge3p1, elem(ie)%state%ps_v(:,:,np1),1,kptr,elem(ie)%desc)
+#ifdef NEWBUFFER_CHECK
+     call newedgeVpack(newedge3p1, elem(ie)%state%ps_v(:,:,np1),1,kptr,ie)
+     ps_v_jmd(:,:,ie) = elem(ie)%state%ps_v(:,:,np1)
+#endif
 
      kptr=1
      call edgeVpack(edge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,elem(ie)%desc)
+#ifdef NEWBUFFER_CHECK
+     call newedgeVpack(newedge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,ie)
+     T_jmd(:,:,:,ie) = elem(ie)%state%T(:,:,:,np1)
+#endif
 
      kptr=nlev+1
      call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,elem(ie)%desc)
@@ -3094,15 +3110,39 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   ! sync is required
   ! =============================================================
   call bndry_exchangeV(hybrid,edge3p1)
+#ifdef NEWBUFFER_CHECK
+  call bndry_exchangeV(hybrid,newedge3p1)
+#endif
   do ie=nets,nete
      ! ===========================================================
      ! Unpack the edges for vgrad_T and v tendencies...
      ! ===========================================================
      kptr=0
      call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, kptr, elem(ie)%desc)
+#ifdef NEWBUFFER_CHECK
+     call newedgeVunpack(newedge3p1, ps_v_jmd(:,:,ie), 1, kptr, ie)
+#endif
 
      kptr=1
      call edgeVunpack(edge3p1, elem(ie)%state%T(:,:,:,np1), nlev, kptr, elem(ie)%desc)
+#ifdef NEWBUFFER_CHECK
+     call newedgeVunpack(newedge3p1, T_jmd(:,:,:,ie), nlev, kptr, ie)
+    
+     ! note that this error checking is expense... Please remove before
+     ! performing any performance timing
+     cnt_ps_v = COUNT((ps_v_jmd(:,:,ie) - elem(ie)%state%ps_v(:,:,np1))>0.0_real_kind)
+     cnt_T    = COUNT((T_jmd(:,:,:,ie) - elem(ie)%state%T(:,:,:,np1))>0.0_real_kind)
+     if(cnt_ps_v>0) then
+         print *,'ps_v(',ie,'):= ',cnt_ps_v
+     else 
+         print *,'verified: ps_v'
+     endif
+     if(cnt_T>0) then 
+         print *,'T(',ie,'):= ',cnt_T
+     else
+         print *,'verified: T'
+     endif
+#endif
 
      kptr=nlev+1
      call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, elem(ie)%desc)
@@ -3146,6 +3186,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #endif
   call t_stopf('compute_and_apply_rhs')
+  deallocate(T_jmd,ps_v_jmd)
   call t_adj_detailf(-1)
 
   end subroutine compute_and_apply_rhs
