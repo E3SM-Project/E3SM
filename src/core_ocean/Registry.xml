@@ -1936,10 +1936,10 @@
 			 description="Number of accumulations in time averaging of coupler fields"
 		/>
 		<var_array name="avgTracersSurfaceValue" type="real" dimensions="nCells Time">
-			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
+			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" 
 				 description="Time averaged potential temperature extrapolated to ocean surface"
 			/>
-			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="PSU" name_in_code="salinitySurfaceValue"
+			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="PSU" 
 				 description="Time averaged salinity extrapolated to ocean surface"
 			/>
 			<var name="avgTracer1SurfaceValue" array_group="surfaceValues" units="percent"
