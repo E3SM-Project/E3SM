@@ -330,9 +330,20 @@ module element_mod
   public :: element_var_coordinates3D
   public :: GetColumnIdP,GetColumnIdV
   public :: allocate_element_desc
+  public :: PrintElem
 
 contains
 
+  subroutine PrintElem(arr)
+   
+    real(kind=real_kind) :: arr(:,:)
+    integer :: i,j
+
+      do j=np,1,-1
+         write(6,*) (arr(i,j), i=1,np)
+      enddo
+
+  end subroutine PrintElem
 ! ===================== ELEMENT_MOD METHODS ==========================
 
   function GetColumnIdP(elem,i,j) result(col_id)

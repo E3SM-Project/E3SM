@@ -286,9 +286,9 @@ contains
        dest            = pCycle%dest - 1
        length      = nlyr * pCycle%lengthP
        tag             = pCycle%tag
-       iptr            = pCycle%ptrP
+       iptr            = nlyr * (pCycle%ptrP - 1) + 1
        !DBG if(Debug) print *,'bndry_exchangeV: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
-       call MPI_Isend(buffer%buf(1,iptr),length,MPIreal_t,dest,tag,par%comm,Srequest(icycle),ierr)
+       call MPI_Isend(buffer%buf(iptr),length,MPIreal_t,dest,tag,par%comm,Srequest(icycle),ierr)
        if(ierr .ne. MPI_SUCCESS) then
           errorcode=ierr
           call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
@@ -304,9 +304,9 @@ contains
        source          = pCycle%source - 1
        length      = nlyr * pCycle%lengthP
        tag             = pCycle%tag
-       iptr            = pCycle%ptrP
+       iptr            = nlyr * (pCycle%ptrP -1) + 1
        !DBG if(Debug) print *,'bndry_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
-       call MPI_Irecv(buffer%receive(1,iptr),length,MPIreal_t, &
+       call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
             source,tag,par%comm,Rrequest(icycle),ierr)
        if(ierr .ne. MPI_SUCCESS) then
           errorcode=ierr
@@ -323,11 +323,11 @@ contains
 
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
-    iptr = pSchedule%MoveCycle(1)%ptrP
-    length = pSchedule%MoveCycle(1)%lengthP
+    iptr = nlyr*(pSchedule%MoveCycle(1)%ptrP - 1) + 1
+    length = nlyr*pSchedule%MoveCycle(1)%lengthP
     !$OMP DO SCHEDULE(dynamic), PRIVATE(i)
     do i=0,length-1
-      buffer%receive(1:nlyr,iptr+i) = buffer%buf(1:nlyr,iptr+i)
+      buffer%receive(iptr+i) = buffer%buf(iptr+i)
     enddo
     !$OMP END DO
 
