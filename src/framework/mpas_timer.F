@@ -34,7 +34,7 @@
         type timer_node
           character (len=StrKIND) :: timer_name
           logical :: running, printable
-          integer :: levels, calls
+          integer :: levels, calls, nlen
           real (kind=RKIND) :: start_time, end_time, total_time
           real (kind=RKIND) :: max_time, min_time, avg_time
           real (kind=RKIND) :: efficiency
@@ -74,13 +74,16 @@
           logical, optional, intent(in) :: clear_timer !< Input: flag to clear timer
           type (timer_node), optional, pointer :: timer_ptr !< Output: pointer to store timer in module
 
+          character (len=len(timer_name)) :: trimed_name
           logical :: timer_added, timer_found, string_equal, check_flag
           type (timer_node), pointer :: current, temp
 
-          integer :: clock, hz, usecs
+          integer :: clock, hz, usecs, nlen
+          trimed_name = trim(timer_name)
+          nlen = len(trimed_name)
 
 #ifdef MPAS_TAU 
-          call tau_start(timer_name)
+          call tau_start(trimed_name)
 #endif
 
           timer_added = .false.
@@ -93,12 +96,13 @@
             levels = 0
 
             all_timers%timer_name = ''
+            all_timers%nlen = 0
             current => all_timers%next
             nullify(current%next)
           else 
             current => all_timers%next
             timer_search: do while ((.not.timer_found) .and. associated(current))
-              string_equal = (trim(current%timer_name) == trim(timer_name))
+              string_equal = (current%timer_name(1:current%nlen) == trimed_name)
               if(string_equal) then
                 timer_found = .true.
               else
@@ -121,7 +125,8 @@
               current => timer_ptr
               nullify(timer_ptr%next)
               current%levels = levels
-              current%timer_name = timer_name
+              current%timer_name = trimed_name
+              current%nlen = nlen
               current%running = .false.
               current%total_time = 0.0
               current%max_time = 0.0
@@ -149,7 +154,8 @@
 
           if(timer_added .and. (.not.timer_found)) then
             current%levels = levels
-            current%timer_name = timer_name
+            current%timer_name = trimed_name
+            current%nlen = nlen
             current%running = .false.
             current%total_time = 0.0
             current%max_time = 0.0
@@ -213,15 +219,18 @@
 
           character (len=*), intent(in) :: timer_name !< Input: name of timer to stop
           type (timer_node), pointer, optional :: timer_ptr !< Input: pointer to timer, for stopping
+          character (len=len(timer_name)) :: trimed_name !< Trimed timer name
 
           type (timer_node), pointer :: current
           
           real (kind=RKIND) :: time_temp
           logical :: timer_found, string_equal, check_flag
-          integer :: clock, hz, usecs
+          integer :: clock, hz, usecs, nlen
+          trimed_name = trim(timer_name)
+          nlen = len(trimed_name)
 
 #ifdef MPAS_TAU 
-          call tau_stop(timer_name)
+          call tau_stop(trimed_name)
 #endif
  
           timer_found = .false.
@@ -236,7 +245,7 @@
           else if(.not. timer_found) then
             current => all_timers
             timer_find: do while(.not.timer_found .and. associated(current))
-              string_equal = (trim(current%timer_name) == trim(timer_name))
+              string_equal = (current%timer_name(1:current%nlen) == trimed_name)
 
               if(string_equal) then
                 timer_found = .true.
@@ -304,7 +313,7 @@
           logical :: total_found, string_equals
           type (timer_node), pointer :: current, total
           real (kind=RKIND) :: percent
-          integer :: i
+          integer :: i, nlen
 
           total_found = .false.
 
@@ -342,7 +351,7 @@
           total => all_timers
 
           find_total: do while((.not.total_found) .and. associated(total))
-            string_equals = (trim(total%timer_name) == trim("total time"))
+            string_equals = (total%timer_name(1:total%nlen) == "total time")
             if(string_equals) then
               total_found = .true.
             else
@@ -363,8 +372,8 @@
           current => all_timers
 
           print_timers: do while(associated(current))
-            string_equals = (trim(current%timer_name) == trim("total time"))
-            string_equals = string_equals .or. (trim(current%timer_name) == trim(" "))
+            string_equals = (current%timer_name(1:current%nlen) == "total time")
+            string_equals = string_equals .or. (current%timer_name(1:current%nlen) == "")
 
             if(.not.string_equals) then
               call mpas_timer_write(current, total)
