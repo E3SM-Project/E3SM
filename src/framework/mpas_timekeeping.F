@@ -1239,17 +1239,17 @@ module mpas_timekeeping
             call mpas_split_string(dateSubString, "-", subStrings)
 
             if(size(subStrings) == 3) then ! Contains year, month, and day
-               read(subStrings(1), *), year
-               read(subStrings(2), *), month
-               read(subStrings(3), *), day
+               read(subStrings(1), *) year
+               read(subStrings(2), *) month
+               read(subStrings(3), *) day
             else if(size(subStrings) == 2) then ! Contains month and day
                year = 0
-               read(subStrings(1), *), month
-               read(subStrings(2), *), day
+               read(subStrings(1), *) month
+               read(subStrings(2), *) day
             else if(size(subStrings) == 1) then ! Contains day
                year = 0
                month = 0
-               read(subStrings(1), *), day
+               read(subStrings(1), *) day
             else ! Error?
                year = 0
                month = 0
