@@ -63,14 +63,6 @@ module piolib_mod
        PIO_get_numiotasks, &
        PIO_get_iorank
 
-!> this is in place to get around gfortran bug
-!! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53945
-!! nag otoh requires that fptr has a type
-!<
-#ifndef __GFORTRAN__
-    integer (PIO_OFFSET_KIND) :: fptr
-#endif
-
 #ifdef MEMCHK
 !> this is an internal variable for memory leak debugging
 !! it is used when macro memchk is defined and it causes each task to print the 
@@ -258,6 +250,8 @@ contains
         integer (PIO_OFFSET_KIND), target :: ptr
         ptr = inArr(1)
     end function fptr
+#elif CPRNAG
+! no-op -- nothing here for nag.
 #else
 #define fptr(arg) arg
 #endif
@@ -766,14 +760,24 @@ contains
           ccount(i) = iocount(ndims-i+1)
        end do
 
-       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+#ifdef CPRNAG
+        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+            maplen, C_LOC(compdof(1)), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
+#else
+        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
             maplen, C_LOC(fptr(compdof)), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
+#endif
 
        deallocate(cstart, ccount)
     else
 
-       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+#ifdef CPRNAG
+        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+            maplen, C_LOC(compdof(1)), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
+#else
+        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
             maplen, C_LOC(fptr(compdof)), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
+#endif
 
     end if
 
