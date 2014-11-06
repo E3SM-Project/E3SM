@@ -1044,7 +1044,7 @@ end subroutine gather_global_dbl
 
          call MPI_SEND(msg_buffer, nx_block*ny_block, &
                        mpi_dbl, dst_dist%proc(n)-1, 3*mpitag_gs+n, &
-                       MPI_COMM_OCN, status, ierr)
+                       MPI_COMM_OCN, ierr)
 
        endif
      end do
@@ -1359,7 +1359,7 @@ end subroutine gather_global_dbl
 
          call MPI_SEND(msg_buffer, nx_block*ny_block, &
                        mpi_real, dst_dist%proc(n)-1, 3*mpitag_gs+n, &
-                       MPI_COMM_OCN, status, ierr)
+                       MPI_COMM_OCN, ierr)
 
        endif
      end do
@@ -1674,7 +1674,7 @@ end subroutine gather_global_dbl
 
          call MPI_SEND(msg_buffer, nx_block*ny_block, &
                        mpi_integer, dst_dist%proc(n)-1, 3*mpitag_gs+n, &
-                       MPI_COMM_OCN, status, ierr)
+                       MPI_COMM_OCN, ierr)
 
        endif
      end do
@@ -1990,7 +1990,7 @@ end subroutine gather_global_dbl
 
          call MPI_SEND(msg_buffer, nx_block*ny_block, &
                        mpi_logical, dst_dist%proc(n)-1, 3*mpitag_gs+n, &
-                       MPI_COMM_OCN, status, ierr)
+                       MPI_COMM_OCN, ierr)
 
        endif
      end do
