@@ -245,9 +245,13 @@ contains
 
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
 
-      logical, pointer :: thicknessFilterActive
+      logical, pointer :: thicknessFilterActive, amGlobalStatsActive
 
       err = 0
+
+      call mpas_pool_get_package(ocnPackages, 'amGlobalStatsActive', amGlobalStatsActive)
+
+      if ( .not. amGlobalStatsActive ) return
 
       dminfo = domain % dminfo
 
@@ -590,7 +594,7 @@ contains
       variableIndex = 0
 
       ! time, in days, using a 360 day calendar
-      read (xtime, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
+      read (xtime, '(i4,10(a1,i2))') timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
       ! subtract 31.0 because calendar starts on 00-01-01
       time_days = timeYYYY*360.0 + timeMM*30.0 + timeDD + (timeH + (timeM + timeS/60.0)/60.0)/24.0 - 31.0
 

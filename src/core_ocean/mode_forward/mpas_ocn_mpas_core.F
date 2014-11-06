@@ -113,11 +113,14 @@ module mpas_core
 
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
+      type (MPAS_TimeInterval_type) :: timeStep
 
       logical, pointer :: config_do_restart, config_filter_btr_mode, config_conduct_tests
       logical, pointer :: config_write_stats_on_startup
       character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
-      real (kind=RKIND), pointer :: config_maxMeshDensity, config_dt
+      real (kind=RKIND), pointer :: config_maxMeshDensity
+
+      err = 0
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
@@ -141,7 +144,6 @@ module mpas_core
       call mpas_pool_get_config(domain % configs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
       call mpas_pool_get_config(domain % configs, 'config_maxMeshDensity', config_maxMeshDensity)
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % configs, 'config_conduct_tests', config_conduct_tests)
       call mpas_pool_get_config(domain % configs, 'config_write_stats_on_startup', config_write_stats_on_startup)
 
@@ -149,12 +151,12 @@ module mpas_core
       ! Read input data for model
       !
       if ( config_do_restart ) then
-         call MPAS_stream_mgr_read(stream_manager, streamID='modelRestart', ierr=err)
+         call MPAS_stream_mgr_read(stream_manager, streamID='restart', ierr=err)
       else
          call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=err)
       end if
       call mpas_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='modelRestart', ierr=err)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err)
 
       ! Initialize submodules before initializing blocks.
       call ocn_timestep_init(err)
@@ -270,7 +272,8 @@ module mpas_core
       !
       ! Initialize core
       !
-      dt = config_dt
+      timeStep = mpas_get_clock_timestep(clock, ierr=err)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       block => domain % blocklist
       do while (associated(block))
@@ -323,8 +326,7 @@ module mpas_core
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       character(len=StrKIND) :: restartTimeStamp
       character(len=StrKIND), pointer :: config_start_time, config_stop_time, config_run_duration
-      character(len=StrKIND), pointer :: config_stats_interval
-      real(kind=RKIND), pointer :: config_dt
+      character(len=StrKIND), pointer :: config_stats_interval, config_dt, config_restart_timestamp_name
       integer :: err_tmp
 
 
@@ -335,10 +337,18 @@ module mpas_core
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
       call mpas_pool_get_config(configs, 'config_stats_interval', config_stats_interval)
+      call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
-      call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+      if ( trim(config_start_time) == "file" ) then
+         open(22,file=config_restart_timestamp_name,form='formatted',status='old')
+         read(22,*) restartTimeStamp
+         close(22)
+         call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=ierr)
+      else
+         call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+      end if
 
-      call mpas_set_timeInterval(timeStep, dt=config_dt, ierr=err_tmp)
+      call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       if (trim(config_run_duration) /= "none") then
          call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=err_tmp)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=err_tmp)
@@ -575,14 +585,16 @@ module mpas_core
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: forcingPool
 
-      real (kind=RKIND), pointer :: config_dt
+      type (MPAS_timeInterval_type) :: timeStep
+      character(len=StrKIND), pointer :: config_restart_timestamp_name
       logical, pointer :: config_write_output_on_startup
    
       call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       ! Eventually, dt should be domain specific
-      dt = config_dt
+      timeStep = mpas_get_clock_timestep(clock, ierr=ierr)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
@@ -643,8 +655,14 @@ module mpas_core
          call mpas_stream_mgr_write(stream_manager, streamID='output', ierr=ierr)
          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='output', ierr=ierr)
 
-         call mpas_stream_mgr_write(stream_manager, streamID='modelCheckpoint', ierr=ierr)
-         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='modelCheckpoint', ierr=ierr)
+         if ( mpas_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
+            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
+            write(22, *) timeStamp
+            close(22)
+         end if
+
+         call mpas_stream_mgr_write(stream_manager, streamID='restart', ierr=ierr)
+         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=ierr)
 
          call mpas_stream_mgr_write(stream_manager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -983,7 +1001,7 @@ module mpas_core
       if (.not. associated(config_do_restart)) then
          ierr = 1
       else if (config_do_restart) then
-         write(stream,'(a)') 'modelRestart'
+         write(stream,'(a)') 'restart'
       else
          write(stream,'(a)') 'input'
       end if

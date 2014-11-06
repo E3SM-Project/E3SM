@@ -91,7 +91,7 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
         call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
 
-        call mpas_pool_get_dimension(forcingPool, 'index_temperatureSurfaceValue', index_temperature)
+        call mpas_pool_get_dimension(forcingPool, 'index_avgTemperatureSurfaceValue', index_temperature)
         call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_SSHzonal)
         call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_SSHmeridional)
 
