@@ -102,7 +102,7 @@ contains
     
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
     
-    real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nc:nc+nhc)        :: tracer_air0   
+    real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_air
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_tracer
     real (kind=real_kind) :: q0,q1,rho0,rho1,area,diff_dbg 
