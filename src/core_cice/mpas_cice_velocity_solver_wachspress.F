@@ -54,6 +54,9 @@ contains
          cice_calc_local_coords, &
          cice_calc_variational_metric_terms
 
+    use cice_debug, only: &
+         cice_plot_cells_planar
+
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
 
@@ -71,7 +74,7 @@ contains
 
     integer, pointer :: &
          nCells, &
-         maxEdges
+         maxEdges, i1, i2
 
     integer, dimension(:), pointer :: &
          nEdgesOnCell
@@ -177,11 +180,30 @@ contains
          xLocal(:,iCell), &
          yLocal(:,iCell))
 
+    stop
+
     deallocate(xLocal)
     deallocate(yLocal)
     deallocate(wachspressKappa)
     deallocate(wachspressA)
     deallocate(wachspressB)
+
+    iCell = 4000
+    do i1 = 1, maxEdges
+       do i2 = 1, maxEdges
+          write(70,*) i1, i2, &
+               basisGradientU(i1,i2,iCell), basisGradientV(i1,i2,iCell), &
+               basisIntegralsMetric(i1,i2,iCell), &
+               basisIntegralsU(i1,i2,iCell), basisIntegralsV(i1,i2,iCell)
+       enddo
+    enddo
+
+    call cice_plot_cells_planar(mesh, basisGradientU(3,3,:), "basisGradientU_wach")
+    call cice_plot_cells_planar(mesh, basisGradientV(3,3,:), "basisGradientV_wach")
+    call cice_plot_cells_planar(mesh, basisIntegralsMetric(3,3,:), "basisIntegralsMetric_wach")
+    call cice_plot_cells_planar(mesh, basisIntegralsU(3,3,:), "basisIntegralsU_wach")
+    call cice_plot_cells_planar(mesh, basisIntegralsV(3,3,:), "basisIntegralsV_wach")
+    !stop
 
   end subroutine cice_init_velocity_solver_wachspress!}}}
 
@@ -708,9 +730,8 @@ contains
 
     integer :: &
          iCell, &
-         iVertexOnCell, &
-         jVertexOnCell, &
-         jVertex
+         iBasisVertex, &
+         iGradientVertex
 
     integer, pointer :: &
          nCells
@@ -731,36 +752,34 @@ contains
     do iCell = 1, nCells
 
        ! loop over vertices - basis function
-       do iVertexOnCell = 1, nEdgesOnCell(iCell)
+       do iBasisVertex = 1, nEdgesOnCell(iCell)
 
           ! loop over vertices again - derivative position
-          do jVertexOnCell = 1, nEdgesOnCell(iCell)
-
-             jVertex = verticesOnCell(jVertexOnCell,iCell)
+          do iGradientVertex = 1, nEdgesOnCell(iCell)
           
-             basisGradientU(jVertexOnCell,iVertexOnCell,iCell) = &
+             basisGradientU(iBasisVertex,iGradientVertex,iCell) = &
                   wachspress_basis_derivative(nEdgesOnCell(iCell), &
-                                              iVertexOnCell, &
-                                              xLocal(jVertexOnCell,iCell), &
-                                              yLocal(jVertexOnCell,iCell), &
+                                              iBasisVertex, &
+                                              xLocal(iGradientVertex,iCell), &
+                                              yLocal(iGradientVertex,iCell), &
                                               wachspressKappa(:,:,iCell), &
                                               wachspressA(:,iCell), &
                                               wachspressB(:,iCell), &
                                               1)
 
-             basisGradientV(jVertexOnCell,iVertexOnCell,iCell) = &
+             basisGradientV(iBasisVertex,iGradientVertex,iCell) = &
                   wachspress_basis_derivative(nEdgesOnCell(iCell), &
-                                              iVertexOnCell, &
-                                              xLocal(jVertexOnCell,iCell), &
-                                              yLocal(jVertexOnCell,iCell), &
+                                              iBasisVertex, &
+                                              xLocal(iGradientVertex,iCell), &
+                                              yLocal(iGradientVertex,iCell), &
                                               wachspressKappa(:,:,iCell), &
                                               wachspressA(:,iCell), &
                                               wachspressB(:,iCell), &
                                               2)
 
-           enddo ! jVertexOnCell
+           enddo ! iGradientVertex
 
-       enddo ! iVertexOnCell
+       enddo ! iBasisVertex
 
     enddo ! iCell
 
@@ -860,10 +879,10 @@ contains
        wachspressB, &
        wachspressKappa)!{{{
 
-    ! basisIntegralsUV (iVertexOnCell,jVertexOnCell,iCell)
+    ! basisIntegralsUV (iStressVertex,iVelocityVertex,iCell)
     ! iCell         : cell integrals are performed on
-    ! iVertexOnCell : vertex number of Wachspress function 
-    ! jVertexOnCell : vertex number of Wachspress derivative function 
+    ! iStressVertex : vertex number of Wachspress function 
+    ! iVelocityVertex : vertex number of Wachspress derivative function 
     ! Sij
 
     type(MPAS_pool_type), pointer, intent(in) :: &
@@ -888,8 +907,8 @@ contains
 
     integer :: &
          iCell, &
-         iVertexOnCell, &
-         jVertexOnCell, &
+         iStressVertex, &
+         iVelocityVertex, &
          iIntegrationType
 
     integer, pointer :: &
@@ -907,17 +926,17 @@ contains
 
        if (iCell == 1) then
 
-       do iVertexOnCell = 1, nEdgesOnCell(iCell)
+       do iStressVertex = 1, nEdgesOnCell(iCell)
 
-          do jVertexOnCell = 1, nEdgesOnCell(iCell)
+          do iVelocityVertex = 1, nEdgesOnCell(iCell)
 
              do iIntegrationType = 1, 3
 
                 call integrate_wachspress_polygon(&
                      integration, &
                      nEdgesOnCell(iCell), &
-                     iVertexOnCell, &
-                     jvertexOnCell, &
+                     iStressVertex, &
+                     iVelocityVertex, &
                      xLocal(:,iCell), &
                      yLocal(:,iCell), &
                      wachspressA(:,iCell), &
@@ -927,15 +946,15 @@ contains
 
                 if (iIntegrationType == 1) then
 
-                   basisIntegralsU(iVertexOnCell,jVertexOnCell,iCell) = integration
+                   basisIntegralsU(iStressVertex,iVelocityVertex,iCell) = integration
 
                 else if (iIntegrationType == 2) then
 
-                   basisIntegralsV(iVertexOnCell,jVertexOnCell,iCell) = integration
+                   basisIntegralsV(iStressVertex,iVelocityVertex,iCell) = integration
 
                 else if (iIntegrationType == 3) then
 
-                   basisIntegralsMetric(iVertexOnCell,jVertexOnCell,iCell) = integration
+                   basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) = integration
 
                 endif
 
@@ -947,8 +966,9 @@ contains
 
        else
 
-          basisIntegralsU(:,:,iCell) = basisIntegralsU(:,:,1)
-          basisIntegralsV(:,:,iCell) = basisIntegralsV(:,:,1)
+          basisIntegralsU(:,:,iCell)      = basisIntegralsU(:,:,1)
+          basisIntegralsV(:,:,iCell)      = basisIntegralsV(:,:,1)
+          basisIntegralsMetric(:,:,iCell) = basisIntegralsMetric(:,:,1)
 
        endif
 
@@ -971,8 +991,8 @@ contains
   subroutine integrate_wachspress_polygon(&
        integration, &
        nEdgesOnCell, &
-       iVertexOnCell, &
-       jvertexOnCell, &
+       iStressVertex, &
+       iVelocityVertex, &
        xLocal, &
        yLocal, &
        wachspressA, &
@@ -982,8 +1002,8 @@ contains
 
     integer, intent(in) :: &
          nEdgesOnCell, &  !< Input:
-         iVertexOnCell, & !< Input:
-         jvertexOnCell, & !< Input:
+         iStressVertex, & !< Input:
+         iVelocityVertex, & !< Input:
          iIntegrationType  !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
@@ -1029,8 +1049,8 @@ contains
        call integrate_wachspress_subtriangle(&
             integration_subtriangle, &
             nEdgesOnCell, &
-            iVertexOnCell, &
-            jvertexOnCell, &
+            iStressVertex, &
+            iVelocityVertex, &
             wachspressKappa(:,:), &
             wachspressA(:), &
             wachspressB(:), &
@@ -1058,8 +1078,8 @@ contains
   subroutine integrate_wachspress_subtriangle(&
        integration, &
        nEdgesOnCell, &
-       iVertexOnCell, &
-       jvertexOnCell, &
+       iStressVertex, &
+       iVelocityVertex, &
        wachspressKappa, &
        wachspressA, &
        wachspressB, &
@@ -1071,8 +1091,8 @@ contains
 
     integer, intent(in) :: &
          nEdgesOnCell, &  !< Input:
-         iVertexOnCell, & !< Input:
-         jvertexOnCell, & !< Input:
+         iStressVertex, & !< Input:
+         iVelocityVertex, & !< Input:
          iIntegrationType  !< Input:
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
@@ -1138,14 +1158,14 @@ contains
              if (iIntegrationType == 1 .or. iIntegrationType == 2) then
 
                 integration = integration + scaling * jacobian * &
-                     wachspress_basis_function(nEdgesOnCell, iVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB) * &
-                     wachspress_basis_derivative(nEdgesOnCell, jVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB, iIntegrationType)
+                     wachspress_basis_function  (nEdgesOnCell, iStressVertex,   x, y, wachspressKappa, wachspressA, wachspressB) * &
+                     wachspress_basis_derivative(nEdgesOnCell, iVelocityVertex, x, y, wachspressKappa, wachspressA, wachspressB, iIntegrationType)
                 
              else if (iIntegrationType == 3) then
 
                 integration = integration + scaling * jacobian * &
-                     wachspress_basis_function(nEdgesOnCell, iVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB) * &
-                     wachspress_basis_function(nEdgesOnCell, jVertexOnCell, x, y, wachspressKappa, wachspressA, wachspressB)
+                     wachspress_basis_function(nEdgesOnCell, iStressVertex,   x, y, wachspressKappa, wachspressA, wachspressB) * &
+                     wachspress_basis_function(nEdgesOnCell, iVelocityVertex, x, y, wachspressKappa, wachspressA, wachspressB)
 
              endif
 
@@ -1215,7 +1235,8 @@ contains
          i1, &
          i2, &
          iVertexOnCell, &
-         iVertex2
+         iVertex2, &
+         iObject
 
     integer, dimension(:,:), pointer :: &
          verticesOnCell
@@ -1237,6 +1258,8 @@ contains
     xmax = -1e30
     ymin =  1e30
     ymax = -1e30
+
+    iObject = 1
 
     do iVertexOnCell = 1, nEdgesOnCell
 
@@ -1275,9 +1298,9 @@ contains
                                  xLocal(i2),yLocal(i2))    
        
        ! plot from subtriangle
-       call plot_subtriangle(nEdgesOnCell, iSubTriangle, iVertex, &
+       call plot_subtriangle_2(nEdgesOnCell, iSubTriangle, iVertex, &
                              wachspressKappa, wachspressA, wachspressB, &
-                             mapping, xCell(iCell), yCell(iCell))
+                             mapping, xCell(iCell), yCell(iCell), iObject)
 
     enddo ! iSubTriangle
 
@@ -1307,12 +1330,16 @@ contains
        wachspressB, &
        mapping, &
        x0, &
-       y0)!{{{
+       y0, &
+       iObject)!{{{
 
     integer, intent(in) :: &
          nEdgesOnCell, & !< Input: 
          iSubTriangle, & !< Input: 
          iVertex         !< Input: 
+
+    integer, intent(inout) :: &
+         iObject         !< Input: 
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          wachspressKappa !< Input: 
@@ -1335,7 +1362,7 @@ contains
          wachspress1
 
     integer :: &
-         i, j, iObject
+         i, j
 
     real(kind=RKIND) :: &
          x1, x2, x3, x4, x5, &
@@ -1343,12 +1370,10 @@ contains
          d, &
          dx, dy
 
-    integer, parameter :: n = 50
+    integer, parameter :: n = 5
 
     logical, parameter :: &
          lfinitedifference = .false.
-
-    iObject = ((iSubTriangle - 1) * (n+1) * (n+2)) / 2
 
     d = 1.0_RKIND / real(n, RKIND)
 
@@ -1433,6 +1458,341 @@ contains
     enddo ! i
 
   end subroutine plot_subtriangle!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  plot_subtriangle_2
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 31 October 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine plot_subtriangle_2(&
+       nEdgesOnCell, &
+       iSubTriangle, &
+       iVertex, &
+       wachspressKappa, &
+       wachspressA, &
+       wachspressB, &
+       mapping, &
+       x0, &
+       y0, &
+       iObject)!{{{
+
+    integer, intent(in) :: &
+         nEdgesOnCell, & !< Input: 
+         iSubTriangle, & !< Input: 
+         iVertex         !< Input:
+ 
+    integer, intent(inout) :: &
+         iObject         !< Input: 
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         wachspressKappa !< Input: 
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         wachspressA, & !< Input: 
+         wachspressB    !< Input: 
+
+    real(kind=RKIND), dimension(2,2), intent(in) :: &
+         mapping !< Input: 
+
+    real(kind=RKIND), intent(in) :: &
+         x0, & !< Input: 
+         y0    !< Input: 
+
+    integer :: &
+         i, j, &
+         ii, jj
+
+    real(kind=RKIND) :: &
+         u, v, &
+         uu0, vv0, &
+         uu1, vv1, &
+         uu2, vv2, &
+         xx0, yy0, &
+         xx1, yy1, &
+         xx2, yy2, &
+         f0, f1, f2, &
+         f_avg, &
+         d, &
+         u0, u1, u2, &
+         v0, v1, v2, &
+         uuu, vvv, &
+         x, y
+
+    integer, parameter :: n = 50
+    integer, parameter :: nn = 1
+
+    logical, parameter :: &
+         lfinitedifference = .false.
+
+    d = (1.0_RKIND / real(n,RKIND))
+
+    ! loop over integration segments
+    do i = 0, n
+       do j = 0, n
+
+          ! forward integration triangle
+          if (i+j<=n-1) then
+
+             ! subtriangle starting point
+             u0 = real(i,RKIND) / real(n,RKIND)
+             v0 = real(j,RKIND) / real(n,RKIND)
+             call use_triangle_mapping(x, y, u0, v0, mapping)
+             f0 = wachspress_basis_function(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB)
+
+             u1 = real(i+1,RKIND) / real(n,RKIND)
+             v1 = real(j  ,RKIND) / real(n,RKIND)
+             call use_triangle_mapping(x, y, u1, v1, mapping)
+             f1 = wachspress_basis_function(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB)
+
+             u2 = real(i  ,RKIND) / real(n,RKIND)
+             v2 = real(j+1,RKIND) / real(n,RKIND)
+             call use_triangle_mapping(x, y, u2, v2, mapping)
+             f2 = wachspress_basis_function(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB)
+
+             u = u0
+             v = v0
+
+             ! break up the forward triangle for sub-plotting
+             do ii = 0, nn
+                do jj = 0, nn
+
+                   ! forward triangle
+                   if (ii+jj<=nn-1) then
+
+                      uu0 = real(ii  ,RKIND) / real(nn,RKIND)
+                      vv0 = real(jj  ,RKIND) / real(nn,RKIND)
+
+                      uu1 = real(ii+1,RKIND) / real(nn,RKIND)
+                      vv1 = real(jj  ,RKIND) / real(nn,RKIND)
+
+                      uu2 = real(ii  ,RKIND) / real(nn,RKIND)
+                      vv2 = real(jj+1,RKIND) / real(nn,RKIND)
+
+                      ! subtriangle location in canonical coordinates
+                      uuu = (uu0 + uu1 + uu2) / 3.0_RKIND
+                      vvv = (vv0 + vv1 + vv2) / 3.0_RKIND
+
+                      ! linear basis
+                      f_avg = f0 * (-uuu-vvv+1) + &
+                              f1 * uuu + &
+                              f2 * vvv
+
+                      uu0 = u + uu0 * d
+                      vv0 = v + vv0 * d
+                      call use_triangle_mapping(xx0, yy0, uu0, vv0, mapping)
+
+                      uu1 = u + uu1 * d
+                      vv1 = v + vv1 * d
+                      call use_triangle_mapping(xx1, yy1, uu1, vv1, mapping)
+
+                      uu2 = u + uu2 * d
+                      vv2 = v + vv2 * d
+                      call use_triangle_mapping(xx2, yy2, uu2, vv2, mapping)
+
+                      xx0 = x0 + xx0 ; yy0 = y0 + yy0
+                      xx1 = x0 + xx1 ; yy1 = y0 + yy1
+                      xx2 = x0 + xx2 ; yy2 = y0 + yy2
+
+                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0   
+
+                      write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
+
+                      iObject = iObject + 1  
+
+                   endif
+
+                   ! backward triangle
+                   if (ii+jj<=nn .and. ii/=0 .and. jj/=0) then
+
+                      uu0 = real(ii  ,RKIND) / real(nn,RKIND)
+                      vv0 = real(jj  ,RKIND) / real(nn,RKIND)
+
+                      uu1 = real(ii-1,RKIND) / real(nn,RKIND)
+                      vv1 = real(jj  ,RKIND) / real(nn,RKIND)
+
+                      uu2 = real(ii  ,RKIND) / real(nn,RKIND)
+                      vv2 = real(jj-1,RKIND) / real(nn,RKIND)
+
+                      ! subtriangle location in canonical coordinates
+                      uuu = (uu0 + uu1 + uu2) / 3.0_RKIND
+                      vvv = (vv0 + vv1 + vv2) / 3.0_RKIND
+
+                      ! linear basis
+                      f_avg = f0 * (-uuu-vvv+1) + &
+                              f1 * uuu + &
+                              f2 * vvv
+
+                      uu0 = u + uu0 * d
+                      vv0 = v + vv0 * d
+                      call use_triangle_mapping(xx0, yy0, uu0, vv0, mapping)
+
+                      uu1 = u + uu1 * d
+                      vv1 = v + vv1 * d
+                      call use_triangle_mapping(xx1, yy1, uu1, vv1, mapping)
+
+                      uu2 = u + uu2 * d
+                      vv2 = v + vv2 * d
+                      call use_triangle_mapping(xx2, yy2, uu2, vv2, mapping)
+
+                      xx0 = x0 + xx0 ; yy0 = y0 + yy0
+                      xx1 = x0 + xx1 ; yy1 = y0 + yy1
+                      xx2 = x0 + xx2 ; yy2 = y0 + yy2
+
+                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0   
+
+                      write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
+
+                      iObject = iObject + 1  
+
+                   endif
+
+                enddo ! jj
+             enddo ! ii
+
+          endif
+
+          ! backward integration triangle
+          if (i+j<=n .and. i/=0 .and. j/=0) then
+
+             ! subtriangle starting point
+             u0 = real(i,RKIND) / real(n,RKIND)
+             v0 = real(j,RKIND) / real(n,RKIND)
+             call use_triangle_mapping(x, y, u0, v0, mapping)
+             f0 = wachspress_basis_function(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB)
+
+             u1 = real(i-1,RKIND) / real(n,RKIND)
+             v1 = real(j  ,RKIND) / real(n,RKIND)
+             call use_triangle_mapping(x, y, u1, v1, mapping)
+             f1 = wachspress_basis_function(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB)
+
+             u2 = real(i  ,RKIND) / real(n,RKIND)
+             v2 = real(j-1,RKIND) / real(n,RKIND)
+             call use_triangle_mapping(x, y, u2, v2, mapping)
+             f2 = wachspress_basis_function(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB)
+
+             u = u0 - d
+             v = v0 - d
+
+             ! break up the backward triangle for sub-plotting
+             do ii = 0, nn
+                do jj = 0, nn
+
+                   ! forward triangle
+                   if (ii+jj>=nn .and. ii/=nn .and. jj/=nn) then
+
+                      uu0 = real(ii  ,RKIND) / real(nn,RKIND)
+                      vv0 = real(jj  ,RKIND) / real(nn,RKIND)
+
+                      uu1 = real(ii+1,RKIND) / real(nn,RKIND)
+                      vv1 = real(jj  ,RKIND) / real(nn,RKIND)
+
+                      uu2 = real(ii  ,RKIND) / real(nn,RKIND)
+                      vv2 = real(jj+1,RKIND) / real(nn,RKIND)
+
+                      ! subtriangle location in canonical coordinates
+                      uuu = (uu0 + uu1 + uu2) / 3.0_RKIND
+                      vvv = (vv0 + vv1 + vv2) / 3.0_RKIND
+
+                      uuu = 1.0_RKIND - uuu
+                      vvv = 1.0_RKIND - vvv
+
+                      ! linear basis
+                      f_avg = f0 * (-uuu-vvv+1) + &
+                              f1 * uuu + &
+                              f2 * vvv
+
+                      uu0 = u + uu0 * d
+                      vv0 = v + vv0 * d
+                      call use_triangle_mapping(xx0, yy0, uu0, vv0, mapping)
+
+                      uu1 = u + uu1 * d
+                      vv1 = v + vv1 * d
+                      call use_triangle_mapping(xx1, yy1, uu1, vv1, mapping)
+
+                      uu2 = u + uu2 * d
+                      vv2 = v + vv2 * d
+                      call use_triangle_mapping(xx2, yy2, uu2, vv2, mapping)
+
+                      xx0 = x0 + xx0 ; yy0 = y0 + yy0
+                      xx1 = x0 + xx1 ; yy1 = y0 + yy1
+                      xx2 = x0 + xx2 ; yy2 = y0 + yy2
+
+                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0   
+
+                      write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
+
+                      iObject = iObject + 1  
+
+                   endif
+
+                   ! backward triangle
+                   if (ii+jj>=nn+1) then
+
+                      uu0 = real(ii  ,RKIND) / real(nn,RKIND)
+                      vv0 = real(jj  ,RKIND) / real(nn,RKIND)
+
+                      uu1 = real(ii-1,RKIND) / real(nn,RKIND)
+                      vv1 = real(jj  ,RKIND) / real(nn,RKIND)
+
+                      uu2 = real(ii  ,RKIND) / real(nn,RKIND)
+                      vv2 = real(jj-1,RKIND) / real(nn,RKIND)
+
+                      ! subtriangle location in canonical coordinates
+                      uuu = (uu0 + uu1 + uu2) / 3.0_RKIND
+                      vvv = (vv0 + vv1 + vv2) / 3.0_RKIND
+
+                      uuu = 1.0_RKIND - uuu
+                      vvv = 1.0_RKIND - vvv
+
+                      ! linear basis
+                      f_avg = f0 * (-uuu-vvv+1) + &
+                              f1 * uuu + &
+                              f2 * vvv
+
+                      uu0 = u + uu0 * d
+                      vv0 = v + vv0 * d
+                      call use_triangle_mapping(xx0, yy0, uu0, vv0, mapping)
+
+                      uu1 = u + uu1 * d
+                      vv1 = v + vv1 * d
+                      call use_triangle_mapping(xx1, yy1, uu1, vv1, mapping)
+
+                      uu2 = u + uu2 * d
+                      vv2 = v + vv2 * d
+                      call use_triangle_mapping(xx2, yy2, uu2, vv2, mapping)
+
+                      xx0 = x0 + xx0 ; yy0 = y0 + yy0
+                      xx1 = x0 + xx1 ; yy1 = y0 + yy1
+                      xx2 = x0 + xx2 ; yy2 = y0 + yy2
+
+                      write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                           xx0,",",yy0," to ",xx1,",",yy1," to ",xx2,",",yy2," to ",xx0,",",yy0   
+
+                      write(55,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', f_avg, ' fillstyle solid'
+
+                      iObject = iObject + 1  
+
+                   endif
+
+                enddo ! jj
+             enddo ! ii
+
+          endif
+
+       enddo ! j
+    enddo ! i
+
+  end subroutine plot_subtriangle_2!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

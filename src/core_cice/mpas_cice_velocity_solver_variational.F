@@ -267,8 +267,8 @@ contains
 
     integer :: &
          iCell, &
-         jVertexOnCell, &
-         iVertexOnCell, &
+         iGradientVertex, &
+         iBasisVertex, &
          iVertex, &
          jVertex
 
@@ -297,32 +297,32 @@ contains
        if (solveStress(iCell) == 1) then
 
           ! loop over velocity points surrounding cell - location of stress and derivative
-          do jVertexOnCell = 1, nEdgesOnCell(iCell)
-
-             jVertex = verticesOnCell(jVertexOnCell,iCell)
+          do iGradientVertex = 1, nEdgesOnCell(iCell)
 
              ! loop over basis functions
-             do iVertexOnCell = 1, nEdgesOnCell(iCell)
+             do iBasisVertex = 1, nEdgesOnCell(iCell)
 
-                iVertex = verticesOnCell(iVertexOnCell,iCell)
+                iVertex = verticesOnCell(iBasisVertex,iCell)
 
-                strain11(jVertexOnCell,iCell) = strain11(jVertexOnCell,iCell) + &
-                     uVelocity(iVertex) * basisGradientU(jVertexOnCell,iVertexOnCell,iCell)
+                strain11(iGradientVertex,iCell) = strain11(iGradientVertex,iCell) + &
+                     uVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell)
 
-                strain22(jVertexOnCell,iCell) = strain22(jVertexOnCell,iCell) + &
-                     vVelocity(iVertex) * basisGradientV(jVertexOnCell,iVertexOnCell,iCell)
+                strain22(iGradientVertex,iCell) = strain22(iGradientVertex,iCell) + &
+                     vVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell)
 
-                strain12(jVertexOnCell,iCell) = strain12(jVertexOnCell,iCell) + 0.5_RKIND * (&
-                     uVelocity(iVertex) * basisGradientV(jVertexOnCell,iVertexOnCell,iCell) + &
-                     vVelocity(iVertex) * basisGradientU(jVertexOnCell,iVertexOnCell,iCell))
+                strain12(iGradientVertex,iCell) = strain12(iGradientVertex,iCell) + 0.5_RKIND * (&
+                     uVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell) + &
+                     vVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell))
 
              enddo ! iVertexOnCell
 
              ! metric terms
-             strain11(jVertexOnCell,iCell) = strain11(jVertexOnCell,iCell) - &
+             jVertex = verticesOnCell(iGradientVertex,iCell)
+
+             strain11(iGradientVertex,iCell) = strain11(iGradientVertex,iCell) - &
                   vVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex)
 
-             strain12(jVertexOnCell,iCell) = strain12(jVertexOnCell,iCell) + &
+             strain12(iGradientVertex,iCell) = strain12(iGradientVertex,iCell) + &
                   uVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex) * 0.5_RKIND
 
           enddo ! jVertexOnCell
@@ -517,11 +517,10 @@ contains
 
     integer :: &
          iVertex, &
-         iCellOnVertex, &
+         iSurroundingCell, &
          iCell, &
-         iVertexOnCell, &
-         jVertexOnCell, &
-         iVertex2
+         iStressVertex, &
+         iVelocityVertex
 
     integer, pointer :: &
          nVertices, &
@@ -555,44 +554,42 @@ contains
        if (solveVelocity(iVertex) == 1) then
 
           ! loop over surrounding cells
-          do iCellOnVertex = 1, vertexDegree
+          do iSurroundingCell = 1, vertexDegree
              
              ! get the cell number of this cell
-             iCell = cellsOnVertex(iCellOnVertex, iVertex)
+             iCell = cellsOnVertex(iSurroundingCell, iVertex)
              
              ! get the vertexOnCell number of the iVertex velocity point from cell iCell
-             jVertexOnCell = cellVerticesAtVertex(iCellOnVertex,iVertex)
+             iVelocityVertex = cellVerticesAtVertex(iSurroundingCell,iVertex)
 
              stressDivergenceUCell = 0.0_RKIND
              stressDivergenceVCell = 0.0_RKIND
 
              ! loop over the vertices of the surrounding cell
-             do iVertexOnCell = 1, nEdgesOnCell(iCell)
-
-                iVertex2 = verticesOnCell(iVertexOnCell,iCell)
+             do iStressVertex = 1, nEdgesOnCell(iCell)
 
                 ! normal terms
-                stressDivergenceUCell = stressDivergenceUCell + &
-                     stress11(iVertexOnCell,iCell) * basisIntegralsU(iVertexOnCell,jVertexOnCell,iCell) + &
-                     stress12(iVertexOnCell,iCell) * basisIntegralsV(iVertexOnCell,jVertexOnCell,iCell)
+                stressDivergenceUCell = stressDivergenceUCell - &
+                     stress11(iStressVertex,iCell) * basisIntegralsU(iStressVertex,iVelocityVertex,iCell) - &
+                     stress12(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell)
                 
-                stressDivergenceVCell = stressDivergenceVCell + &
-                     stress22(iVertexOnCell,iCell) * basisIntegralsV(iVertexOnCell,jVertexOnCell,iCell) + &
-                     stress12(iVertexOnCell,iCell) * basisIntegralsU(iVertexOnCell,jVertexOnCell,iCell)
+                stressDivergenceVCell = stressDivergenceVCell - &
+                     stress22(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell) - &
+                     stress12(iStressVertex,iCell) * basisIntegralsU(iStressVertex,iVelocityVertex,iCell)
                 
                 ! metric terms
-                stressDivergenceUCell = stressDivergenceUCell + &
-                     stress12(iVertexOnCell,iCell) * basisIntegralsMetric(iVertexOnCell,jVertexOnCell,iCell) * tanLatVertexRotatedOverRadius(iVertex2)
+                stressDivergenceUCell = stressDivergenceUCell - &
+                     stress12(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * tanLatVertexRotatedOverRadius(iVertex)
 
-                stressDivergenceVCell = stressDivergenceVCell - &
-                     stress11(iVertexOnCell,iCell) * basisIntegralsMetric(iVertexOnCell,jVertexOnCell,iCell) * tanLatVertexRotatedOverRadius(iVertex2)
+                stressDivergenceVCell = stressDivergenceVCell + &
+                     stress11(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * tanLatVertexRotatedOverRadius(iVertex)
 
-             enddo ! jVertex
+             enddo ! iStressVertex
 
-             stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - stressDivergenceUCell
-             stressDivergenceV(iVertex) = stressDivergenceV(iVertex) - stressDivergenceVCell
+             stressDivergenceU(iVertex) = stressDivergenceU(iVertex) + stressDivergenceUCell
+             stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + stressDivergenceVCell
              
-          enddo ! iCellOnVertex
+          enddo ! iSurroundingCell
 
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)

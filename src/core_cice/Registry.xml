@@ -341,6 +341,11 @@
 	    <var name="globalIceThickness"/>
 	    <var name="globalSnowVolume"/>
 	    <var name="globalSnowThickness"/>
+	    <var name="basisIntegralsU"/>
+	    <var name="basisIntegralsV"/>
+	    <var name="basisIntegralsMetric"/>
+	    <var name="basisGradientU"/>
+	    <var name="basisGradientV"/>
 	  </stream>
 	</streams>
 	
@@ -558,11 +563,11 @@
 		<var name="stress12var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="stress12"/>
 		<var name="tanLatVertexRotatedOverRadius"     type="real"     dimensions="nVertices"                name_in_code="tanLatVertexRotatedOverRadius"/>
 		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"/>
-		<var name="basisIntegralsU"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsU"/>
-		<var name="basisIntegralsV"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsV"/>
-		<var name="basisIntegralsMetric"              type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsMetric"/>
-		<var name="basisGradientU"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
-		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
+		<var name="basisIntegralsU"                   type="real"     dimensions="maxEdges maxEdges nCells Time" name_in_code="basisIntegralsU"/>
+		<var name="basisIntegralsV"                   type="real"     dimensions="maxEdges maxEdges nCells Time" name_in_code="basisIntegralsV"/>
+		<var name="basisIntegralsMetric"              type="real"     dimensions="maxEdges maxEdges nCells Time" name_in_code="basisIntegralsMetric"/>
+		<var name="basisGradientU"                    type="real"     dimensions="maxEdges maxEdges nCells Time" name_in_code="basisGradientU"/>
+		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells Time" name_in_code="basisGradientV"/>
 	</var_struct>
 
 	<!-- Plotting -->

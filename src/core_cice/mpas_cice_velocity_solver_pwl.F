@@ -53,6 +53,9 @@ contains
     use cice_velocity_solver_variational_shared, only: &
          cice_calc_local_coords, &
          cice_calc_variational_metric_terms
+
+    use cice_debug, only: &
+         cice_plot_cells_planar
     
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
@@ -85,6 +88,8 @@ contains
          basisIntegralsMetric, &
          basisIntegralsU, &
          basisIntegralsV
+
+    integer :: iCell, i1, i2
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
@@ -128,6 +133,23 @@ contains
 
     deallocate(xLocal)
     deallocate(yLocal)
+
+    iCell = 4000
+    do i1 = 1, maxEdges
+       do i2 = 1, maxEdges
+          write(70,*) i1, i2, &
+               basisGradientU(i1,i2,iCell), basisGradientV(i1,i2,iCell), &
+               basisIntegralsMetric(i1,i2,iCell), &
+               basisIntegralsU(i1,i2,iCell), basisIntegralsV(i1,i2,iCell)
+       enddo
+    enddo
+
+    call cice_plot_cells_planar(mesh, basisGradientU(3,3,:), "basisGradientU_pwl")
+    call cice_plot_cells_planar(mesh, basisGradientV(3,3,:), "basisGradientV_pwl")
+    call cice_plot_cells_planar(mesh, basisIntegralsMetric(3,3,:), "basisIntegralsMetric_pwl")
+    call cice_plot_cells_planar(mesh, basisIntegralsU(3,3,:), "basisIntegralsU_pwl")
+    call cice_plot_cells_planar(mesh, basisIntegralsV(3,3,:), "basisIntegralsV_pwl")
+    !stop
 
   end subroutine cice_init_velocity_solver_pwl!}}}
 
@@ -186,8 +208,12 @@ contains
          iVertexOnCell1, &
          iVertexOnCell2, &
          iSubCell, &
-         jEdgeOnCell, &
-         jEdgeOnCell2
+         iBasisVertex, &
+         iGradientVertex, &
+         iSubCell1, &
+         iSubCell2, &
+         iStressVertex, &
+         iVelocityVertex
 
     real(kind=RKIND), dimension(3,3) :: &
          leftMatrix
@@ -317,47 +343,41 @@ contains
           subBasisGradientU(iSubCell,3) = -subBasisGradientU(iSubCell,1) - subBasisGradientU(iSubCell,2)
           subBasisGradientV(iSubCell,3) = -subBasisGradientV(iSubCell,1) - subBasisGradientV(iSubCell,2)
           subBasisConstant(iSubCell,3)  = 1.0_RKIND - subBasisConstant(iSubCell,1) - subBasisConstant(iSubCell,2)
-          
-
-          write(*,*) iCell, iSubCell, &
-               subBasisGradientU(iSubCell,1), subBasisGradientV(iSubCell,1), &
-               subBasisGradientU(iSubCell,2), subBasisGradientV(iSubCell,2), &
-               subBasisGradientU(iSubCell,3), subBasisGradientV(iSubCell,3)
 
        enddo ! iSubCell
 
-       call plot_pwl(&
-            mesh, &
-            iCell, &
-            nEdgesOnCell(iCell), &
-            1, &
-            subBasisGradientU, &
-            subBasisGradientV, &
-            subBasisConstant, &
-            xLocal(:,iCell), &
-            yLocal(:,iCell))!{{{
+       !call plot_pwl(&
+       !     mesh, &
+       !     iCell, &
+       !     nEdgesOnCell(iCell), &
+       !     1, &
+       !     subBasisGradientU, &
+       !     subBasisGradientV, &
+       !     subBasisConstant, &
+       !     xLocal(:,iCell), &
+       !     yLocal(:,iCell))!{{{
        
-       stop
+       !stop
 
        ! use the linear sub area basis to calculate the PWL basis
-       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+       do iBasisVertex = 1, nEdgesOnCell(iCell)
 
           ! loop over subcells
           do iSubCell = 1, nEdgesOnCell(iCell)
 
              ! array (index of the basis vertex, subarea value)
-             subCellGradientU(iEdgeOnCell,iSubCell) = subBasisGradientU(iSubCell,3) * alphaPWL
-             subCellGradientV(iEdgeOnCell,iSubCell) = subBasisGradientV(iSubCell,3) * alphaPWL
+             subCellGradientU(iBasisVertex,iSubCell) = subBasisGradientU(iSubCell,3) * alphaPWL
+             subCellGradientV(iBasisVertex,iSubCell) = subBasisGradientV(iSubCell,3) * alphaPWL
 
-             if (iSubCell == iEdgeOnCell) then
+             if (iSubCell == iBasisVertex) then
 
-                subCellGradientU(iEdgeOnCell,iSubCell) = subCellGradientU(iEdgeOnCell,iSubCell) + subBasisGradientU(iSubCell,1)
-                subCellGradientV(iEdgeOnCell,iSubCell) = subCellGradientV(iEdgeOnCell,iSubCell) + subBasisGradientV(iSubCell,1)
+                subCellGradientU(iBasisVertex,iSubCell) = subCellGradientU(iBasisVertex,iSubCell) + subBasisGradientU(iSubCell,1)
+                subCellGradientV(iBasisVertex,iSubCell) = subCellGradientV(iBasisVertex,iSubCell) + subBasisGradientV(iSubCell,1)
 
-             else if (iSubCell == wrapped_index(iEdgeOnCell - 1, nEdgesOnCell(iCell))) then
+             else if (iSubCell == wrapped_index(iBasisVertex - 1, nEdgesOnCell(iCell))) then
 
-                subCellGradientU(iEdgeOnCell,iSubCell) = subCellGradientU(iEdgeOnCell,iSubCell) + subBasisGradientU(iSubCell,2)
-                subCellGradientV(iEdgeOnCell,iSubCell) = subCellGradientV(iEdgeOnCell,iSubCell) + subBasisGradientV(iSubCell,2)
+                subCellGradientU(iBasisVertex,iSubCell) = subCellGradientU(iBasisVertex,iSubCell) + subBasisGradientU(iSubCell,2)
+                subCellGradientV(iBasisVertex,iSubCell) = subCellGradientV(iBasisVertex,iSubCell) + subBasisGradientV(iSubCell,2)
 
              endif
 
@@ -366,72 +386,69 @@ contains
        enddo ! iEdgeOnCell
 
        ! calculate the gradients at the cell corners
-       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+       do iBasisVertex = 1, nEdgesOnCell(iCell)
 
-          do jEdgeOnCell = 1, nEdgesOnCell(iCell)
+          do iGradientVertex = 1, nEdgesOnCell(iCell)
 
-             jEdgeOnCell2 = wrapped_index(jEdgeOnCell - 1, nEdgesOnCell(iCell))
+             iSubCell1 = iGradientVertex
+             iSubCell2 = wrapped_index(iGradientVertex - 1, nEdgesOnCell(iCell))
 
-             basisGradientU(iEdgeOnCell,jEdgeOnCell,iCell) = 0.5_RKIND * &
-                  (subCellGradientU(iEdgeOnCell,jEdgeOnCell) + subCellGradientU(iEdgeOnCell,jEdgeOnCell2))
-             basisGradientV(iEdgeOnCell,jEdgeOnCell,iCell) = 0.5_RKIND * &
-                  (subCellGradientV(iEdgeOnCell,jEdgeOnCell) + subCellGradientV(iEdgeOnCell,jEdgeOnCell2))
+             basisGradientU(iBasisVertex,iGradientVertex,iCell) = 0.5_RKIND * (subCellGradientU(iBasisVertex,iSubCell1) + subCellGradientU(iBasisVertex,iSubCell2))
+             basisGradientV(iBasisVertex,iGradientVertex,iCell) = 0.5_RKIND * (subCellGradientV(iBasisVertex,iSubCell1) + subCellGradientV(iBasisVertex,iSubCell2))
 
-          enddo ! jEdgeOnCell
+          enddo ! iGradientVertex
 
-       enddo ! iEdgeOnCell
+       enddo ! iBasisVertex
 
        ! calculate the basis integrals
-       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-          
-          do jEdgeOnCell = 1, nEdgesOnCell(iCell)
+       do iStressVertex = 1, nEdgesOnCell(iCell)
+          do iVelocityVertex = 1, nEdgesOnCell(iCell)
 
-             basisIntegralsU(iEdgeOnCell,jEdgeOnCell,iCell) = 0.0_RKIND
-             basisIntegralsV(iEdgeOnCell,jEdgeOnCell,iCell) = 0.0_RKIND
+             basisIntegralsU(iStressVertex,iVelocityVertex,iCell) = 0.0_RKIND
+             basisIntegralsV(iStressVertex,iVelocityVertex,iCell) = 0.0_RKIND
 
              do iSubCell = 1, nEdgesOnCell(iCell)
 
-                if (iSubCell == iEdgeOnCell .or. iSubCell == wrapped_index(iEdgeOnCell - 1, nEdgesOnCell(iCell))) then
+                if (iSubCell == iStressVertex .or. iSubCell == wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
                    basisIntegral = ((alphaPWL + 1) * basisSubArea(iSubCell)) / 3.0_RKIND
                 else
                    basisIntegral = ( alphaPWL      * basisSubArea(iSubCell)) / 3.0_RKIND
                 endif
 
-                basisIntegralsU(iEdgeOnCell,jEdgeOnCell,iCell) = basisIntegralsU(iEdgeOnCell,jEdgeOnCell,iCell) + &
-                     subCellGradientU(jEdgeOnCell,iSubCell) * basisIntegral
+                basisIntegralsU(iStressVertex,iVelocityVertex,iCell) = basisIntegralsU(iStressVertex,iVelocityVertex,iCell) + &
+                     subCellGradientU(iVelocityVertex,iSubCell) * basisIntegral
 
-                basisIntegralsV(iEdgeOnCell,jEdgeOnCell,iCell) = basisIntegralsV(iEdgeOnCell,jEdgeOnCell,iCell) + &
-                     subCellGradientV(jEdgeOnCell,iSubCell) * basisIntegral
+                basisIntegralsV(iStressVertex,iVelocityVertex,iCell) = basisIntegralsV(iStressVertex,iVelocityVertex,iCell) + &
+                     subCellGradientV(iVelocityVertex,iSubCell) * basisIntegral
 
              enddo ! iSubCell
 
-          enddo ! jEdgeOnCell
-
-       enddo ! iEdgeOnCell
+          enddo ! iVelocityVertex
+       enddo ! iStressVertex
 
        ! basis integrals for the metric terms
-       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-          do jEdgeOnCell = 1, nEdgesOnCell(iCell)
+       do iStressVertex = 1, nEdgesOnCell(iCell)
+          do iVelocityVertex = 1, nEdgesOnCell(iCell)
 
-             basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iCell) = 0.0_RKIND
+             basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) = 0.0_RKIND
 
              do iSubCell = 1, nEdgesOnCell(iCell)
 
                 basisIntegralsMetricSubCell = alphaPWL**2
 
-                if ( (iSubCell == iEdgeOnCell .and. &
-                     iSubCell == jEdgeOnCell) .or. &
-                     (iSubCell == wrapped_index(iEdgeOnCell - 1, nEdgesOnCell(iCell)) .and. &
-                      iSubCell == wrapped_index(jEdgeOnCell - 1, nEdgesOnCell(iCell))) ) then
+                if ( (iSubCell == iStressVertex .and. &
+                      iSubCell == iVelocityVertex) .or. &
+                     (iSubCell == wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell)) .and. &
+                      iSubCell == wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) ) then
 
                    basisIntegralsMetricSubCell = 2.0_RKIND * (alphaPWL + 1)**2
 
                 endif
 
-                if ( (iSubCell == iEdgeOnCell .and. &
-                      iSubCell == wrapped_index(jEdgeOnCell - 1, nEdgesOnCell(iCell))) .or. &
-                     (iSubCell == wrapped_index(iEdgeOnCell - 1, nEdgesOnCell(iCell)) .and. &
-                      iSubCell == jEdgeOnCell) ) then
+                if ( (iSubCell == iStressVertex .and. &
+                      iSubCell == wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) .or. &
+                     (iSubCell == wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell)) .and. &
+                      iSubCell == iVelocityVertex) ) then
 
                    basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2 + 2.0_RKIND * alphaPWL + 1.0_RKIND
 
@@ -440,13 +457,13 @@ contains
                 basisIntegralsMetricSubCell = basisIntegralsMetricSubCell * &
                      basisSubArea(iSubCell) / 12.0_RKIND
 
-                basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iCell) = basisIntegralsMetric(iEdgeOnCell,jEdgeOnCell,iCell) + &
+                basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) = basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) + &
                      basisIntegralsMetricSubCell
 
              enddo ! iSubCell
 
-          enddo ! jEdgeOnCell
-       enddo ! iSubCell
+          enddo ! iVelocityVertex
+       enddo ! iStressVertex
 
     enddo ! iCell
 

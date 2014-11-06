@@ -153,7 +153,8 @@ contains
 
     use cice_debug, only: &
          cice_time_output_variable_real, &
-         cice_time_output_variable_int
+         cice_time_output_variable_int, &
+         cice_plot_vertices_planar
 
     type (block_type), intent(inout) :: &
          block !< Input/Output: 
@@ -218,6 +219,8 @@ contains
          vAirVelocity, &
          uVelocity, &
          vVelocity, &
+         stressDivergenceU, &
+         stressDivergenceV, &
          fVertex, &
          latCell, &
          airStressCellU, &
@@ -275,6 +278,8 @@ contains
     call MPAS_pool_get_array(velocity_solver, "vOceanVelocityVertex", vOceanVelocityVertex)
     call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
     call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
+    call MPAS_pool_get_array(velocity_solver, "stressDivergenceU", stressDivergenceU)
+    call MPAS_pool_get_array(velocity_solver, "stressDivergenceV", stressDivergenceV)
 
     call MPAS_pool_get_array(ocean_forcing, "uOceanVelocity", uOceanVelocity)
     call MPAS_pool_get_array(ocean_forcing, "vOceanVelocity", vOceanVelocity)
@@ -432,6 +437,8 @@ contains
          oceanStressV, &
          oceanStressCoeff, &
          solveVelocity)
+
+    call cice_plot_vertices_planar(mesh, stressDivergenceU, interiorVertex, "divergenceu.txt") ; stop
 
     !call cice_time_output_variable_real(mesh, uVelocity, clock, "uVelocity")
     !call cice_time_output_variable_real(mesh, totalMassVertex, clock, "totalMassVertex")
@@ -749,7 +756,7 @@ contains
             solveStress, &
             solveVelocity)
 
-    else if (trim(config_variational_basis) == "wachspress") then
+    else if (trim(config_stress_divergence_scheme) == "variational") then
 
        call cice_internal_stress_variational(&
             mesh, &
