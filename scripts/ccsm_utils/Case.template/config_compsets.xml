@@ -1481,6 +1481,9 @@ DOCN%COPY => docn copy mode
 <ATM_NCPL compset=".+" grid="a%ne120np4" >96</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne240np4" >144</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne0np4_arm_x8v3" >144</ATM_NCPL>
+<ATM_NCPL compset=".+" grid="a%ne0np4_conus_x4v1" >144</ATM_NCPL>
+<ATM_NCPL compset=".+" grid="a%ne0np4_svalbard_x8v1" >144</ATM_NCPL>
+<ATM_NCPL compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%T85"      >144</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%T341"     >288</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="1x1"        >48</ATM_NCPL>

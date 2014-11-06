@@ -21,7 +21,10 @@
 <dtime dyn="se"    hgrid="ne60np4" >1800</dtime>
 <dtime dyn="se"    hgrid="ne120np4">900 </dtime>
 <dtime dyn="se"    hgrid="ne240np4">600 </dtime>
-<dtime dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  >600</dtime>
+<dtime dyn="se"    hgrid="ne0np4_arm_x8v3_lowcon"  >600</dtime>
+<dtime dyn="se"    hgrid="ne0np4_conus_x4v1_lowcon"  >900</dtime>
+<dtime dyn="se"    hgrid="ne0np4_svalbard_x8v1_lowcon"  >600</dtime>
+<dtime dyn="se"    hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >600</dtime>
 
 <dtime dyn="sld"                   >3600</dtime>
 
@@ -153,6 +156,17 @@
 <ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_arm_x8v3_lowcon_np4_L30_c000000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  nlev="26" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_arm_x8v3_lowcon_np4_L26_ape_c000000.nc</ncdata>
 
+<!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c100618.nc</ncdata-->
+<!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
+<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
+
+<ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c100618.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_svalbardx8v1np4_L30_ape_c000000.nc</ncdata>
+
+<ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c100618.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_sooberingoax4x8v1np4_L30_ape_c000000.nc</ncdata>
+
 
 <ncdata dyn="se" hgrid="ne5np8"   nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne5np8_L26_ape_c061102.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_ape_c071213.nc</ncdata>
@@ -188,6 +202,10 @@
 <bnd_topo hgrid="ne120np4"  >atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne240np4"  >atm/cam/topo/USGS_gtopo30_0.23x0.31_smooth1000-50_ne240np4_c061107.nc</bnd_topo>
 
+<bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/topo/USGS-gtopo30_0.9x1.25_remap_conusx4v1_c051027.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/topo/USGS-gtopo30_0.9x1.25_remap_svalbardx8v1_c051027.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/topo/USGS-gtopo30_0.9x1.25_remap_sooberingoax4x8v1_c051027.nc</bnd_topo>
 
 <!-- Bulk aerosol physical properties (includes optics) -->
 
@@ -627,6 +645,9 @@
 <drydep_srf_file hgrid="ne120np4">atm/cam/chem/trop_mam/atmsrf_ne120np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne240np4">atm/cam/chem/trop_mam/atmsrf_ne240np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon">atm/cam/chem/trop_mam/atmsrf_conusx4v1.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_svalbard_x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_svalbardx8v1.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_sooberingoax4x8v1.nc</drydep_srf_file>
 
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>

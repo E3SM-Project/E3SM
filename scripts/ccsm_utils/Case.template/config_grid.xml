@@ -98,6 +98,9 @@ Each grid is associated with three names
 <GRID sname="ne120np4_ne120np4"     alias="ne120_ne120"  compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="ne240np4_ne240np4"     alias="ne240_ne240"  compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne240np4_l%ne240np4_oi%ne240np4_r%null_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="ne0np4_arm_x8v3_lowcon_ne0np4_arm_x8v3_lowcon"     alias="armx8v3_armx8v3"  compset="(DOCN|XOCN|SOCN|AQUAP)">    a%ne0np4_arm_x8v3_lowcon_l%ne0np4_arm_x8v3_lowcon_oi%ne0np4_arm_x8v3_lowcon_r%r01_m%gx1v6_g%null_w%null</GRID>
+<GRID sname="ne0np4_conus_x4v1_lowcon_ne0np4_conus_x4v1_lowcon"     alias="conusx4v1_conusx4v1"  compset="(DOCN|XOCN|SOCN|AQUAP)">    a%ne0np4_conus_x4v1_lowcon_l%ne0np4_conus_x4v1_lowcon_oi%ne0np4_conus_x4v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</GRID>
+<GRID sname="ne0np4_svalbard_x8v1_lowcon_ne0np4_svalbard_x8v1_lowcon"     alias="svalbardx8v1_svalbardx8v1"  compset="(DOCN|XOCN|SOCN|AQUAP)">    a%ne0np4_svalbard_x8v1_lowcon_l%ne0np4_svalbard_x8v1_lowcon_oi%ne0np4_svalbard_x8v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</GRID>
+<GRID sname="ne0np4_sooberingoa_x4x8v1_lowcon_ne0np4_sooberingoa_x4x8v1_lowcon"     alias="sooberingoax4x8v1_sooberingoax4x8v1"  compset="(DOCN|XOCN|SOCN|AQUAP)">    a%ne0np4_sooberingoa_x4x8v1_lowcon_l%ne0np4_sooberingoa_x4x8v1_lowcon_oi%ne0np4_sooberingoa_x4x8v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</GRID>
 
 
 <!--- cism grids --> 
@@ -314,6 +317,21 @@ Each grid is associated with three names
 <gridhorz name="ne0np4_arm_x8v3_lowcon">
   <nx>92558</nx> <ny>1</ny>   
   <desc>1-deg with 1/8-deg over U.S. (version 3):</desc> 
+</gridhorz>
+
+<gridhorz name="ne0np4_conus_x4v1_lowcon">
+  <nx>89147</nx> <ny>1</ny>   
+  <desc>1-deg with 1/4-deg over Cont. U.S. (version 1):</desc> 
+</gridhorz>
+
+<gridhorz name="ne0np4_svalbard_x8v1_lowcon">
+  <nx>71912</nx> <ny>1</ny>   
+  <desc>1-deg with 1/8-deg over the island if Svalbard (version 1):</desc> 
+</gridhorz>
+
+<gridhorz name="ne0np4_sooberingoa_x4x8v1_lowcon">
+  <nx>105707</nx> <ny>1</ny>   
+  <desc>1-deg with 1/4-deg to 1/8-deg over Sea of Okhotsk, Bering Sea, Gulf of Alaska to ARM-NSA site (version 1):</desc> 
 </gridhorz>
 
 
@@ -942,6 +960,27 @@ use the T62_g16 resolution instead:
   <LND_DOMAIN_FILE>domain.lnd.armx8v3_gx1v6.140517.nc</LND_DOMAIN_FILE>
   <ICE_DOMAIN_FILE>domain.ocn.armx8v3_gx1v6.140517.nc</ICE_DOMAIN_FILE>
   <OCN_DOMAIN_FILE>domain.ocn.armx8v3_gx1v6.140517.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="ne0np4_conus_x4v1_lowcon" mask="tx0.1v2">
+  <ATM_DOMAIN_FILE>domain.lnd.conusx4v1_tx0.1v2.141022.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.conusx4v1_tx0.1v2.141022.nc</LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE>domain.ocn.conusx4v1_tx0.1v2.141022.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.conusx4v1_tx0.1v2.141022.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="ne0np4_svalbard_x8v1_lowcon" mask="tx0.1v2">
+  <ATM_DOMAIN_FILE>domain.lnd.svalbardx8v1_tx0.1v2.141022.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.svalbardx8v1_tx0.1v2.141022.nc</LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE>domain.ocn.svalbardx8v1_tx0.1v2.141022.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.svalbardx8v1_tx0.1v2.141022.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="ne0np4_sooberingoa_x4x8v1_lowcon" mask="tx0.1v2">
+  <ATM_DOMAIN_FILE>domain.lnd.sooberingoax4x8v1_tx0.1v2.141022.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.sooberingoax4x8v1_tx0.1v2.141022.nc</LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE>domain.ocn.sooberingoax4x8v1_tx0.1v2.141022.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.sooberingoax4x8v1_tx0.1v2.141022.nc</OCN_DOMAIN_FILE>
 </griddom>
 
 

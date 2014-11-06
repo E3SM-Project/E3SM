@@ -296,6 +296,15 @@ lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c130313.nc</fsurdat>
 <fsurdat hgrid="ne0np4_arm_x8v3_lowcon"    sim_year="2000" irrig=".false." >
 lnd/clm2/surfdata_map/surfdata_armx8v3_simyr2000_c140518.nc</fsurdat>
 
+<fsurdat hgrid="ne0np4_conus_x4v1_lowcon"    sim_year="2000" irrig=".false." >
+lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c141024.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_svalbard_x8v1_lowcon"    sim_year="2000" irrig=".false." >
+lnd/clm2/surfdata_map/surfdata_svalbardx8v1_simyr2000_c141024.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"    sim_year="2000" irrig=".false." >
+lnd/clm2/surfdata_map/surfdata_sooberingoax4x8v1_simyr2000_c141024.nc</fsurdat>
+
 
 
 <!-- Crop and Irrigation surface datasets -->
@@ -392,6 +401,16 @@ lnd/clm2/surfdata_map/surfdata_ne240np4_simyr1850_c130313.nc</fsurdat>
 
 <fsurdat hgrid="ne0np4_arm_x8v3_lowcon"    sim_year="1850" irrig=".false." >
 lnd/clm2/surfdata_map/surfdata_armx8v3_simyr1850_c140518.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_conus_x4v1_lowcon"    sim_year="1850" irrig=".false." >
+lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c141024.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_svalbard_x8v1_lowcon"    sim_year="1850" irrig=".false." >
+lnd/clm2/surfdata_map/surfdata_svalbardx8v1_simyr1850_c141024.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"    sim_year="1850" irrig=".false." >
+lnd/clm2/surfdata_map/surfdata_sooberingoax4x8v1_simyr1850_c141024.nc</fsurdat>
+
 
 
 <!-- Single point data for year 1850 -->
