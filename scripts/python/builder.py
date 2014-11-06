@@ -392,9 +392,9 @@ class yellowstone_pgi(platformBuilder):
         """
         self.setInvariantClassAttr()
 
-        self.moduleList = ['pgi/13.3',
+        self.moduleList = ['pgi/14.7',
                            'ncarcompilers/1.0',
-                           'netcdf-mpi/4.3.0',
+                           'netcdf/4.3.0',
                            'pnetcdf/1.4.1',
                            'ncarenv/1.0',
                            'cmake',
