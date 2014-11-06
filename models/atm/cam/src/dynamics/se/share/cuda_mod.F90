@@ -280,7 +280,6 @@ contains
       allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ); _CHECK(__LINE__)
       allocate( send_nelem               (       nSendCycles                  ) , stat = ierr ); _CHECK(__LINE__)
       allocate( send_indices             (nelemd,nSendCycles                  ) , stat = ierr ); _CHECK(__LINE__)
-      allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ); _CHECK(__LINE__)
       allocate( d2h_done                 (nSendCycles                         ) , stat = ierr ); _CHECK(__LINE__)
       allocate( msg_sent                 (nSendCycles                         ) , stat = ierr ); _CHECK(__LINE__)
     endif
@@ -293,7 +292,6 @@ contains
       allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ); _CHECK(__LINE__)
       allocate( recv_nelem               (       nRecvCycles                  ) , stat = ierr ); _CHECK(__LINE__)
       allocate( recv_indices             (nelemd,nRecvCycles                  ) , stat = ierr ); _CHECK(__LINE__)
-      allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ); _CHECK(__LINE__)
       allocate( h2d_done                 (nRecvCycles                         ) , stat = ierr ); _CHECK(__LINE__)
       allocate( msg_rcvd                 (nRecvCycles                         ) , stat = ierr ); _CHECK(__LINE__)
     endif 
