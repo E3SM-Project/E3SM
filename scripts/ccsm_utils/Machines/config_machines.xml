@@ -390,6 +390,7 @@
          <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
          <GMAKE_J>12</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="lawrencium-lr3">
@@ -411,6 +412,7 @@
          <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
          <GMAKE_J>16</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="mira">
