@@ -6,7 +6,9 @@ module dimensions_mod
 #ifdef CAM
 #ifdef FVM_TRACERS
   use constituents, only : ntrac_d=>pcnst ! _EXTERNAL
+!!XXgoldyXX:
   use constituents, only : qsize_d=>pcnst ! _EXTERNAL
+!!XXgoldyXX:
 #else
   use constituents, only : qsize_d=>pcnst ! _EXTERNAL
 #endif
@@ -17,7 +19,9 @@ module dimensions_mod
 ! set MAX number of tracers.  actual number of tracers is a run time argument  
 #ifdef CAM
 #ifdef FVM_TRACERS
-!phl  integer, parameter         :: qsize_d = 1        ! SE tracers  
+!!XXgoldyXX:
+!  integer, parameter         :: qsize_d = 1        ! SE tracers  
+!!XXgoldyXX:
 #else
   integer, parameter         :: ntrac_d = 0        ! fvm tracers
 #endif
