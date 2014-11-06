@@ -117,10 +117,17 @@ class platformBuilder(object):
             return yellowstone_intel()
         if type == "yellowstone_pgi":
             return yellowstone_pgi()
+        if type == "yellowstone_gnu":
+            return yellowstone_gnu()
 
         assert 0, "build platform not supported: " + type
 
-
+""" these subclasses should probably be in their own files.
+    each platform then needs one class to extend testCmd and
+    runModuleCmd.  That in turn should be extended only for __init__
+    for each compiler...all to reduce duplicated code.
+"""
+    
 class darwin_gnu(platformBuilder):
 
     def __init__(self):
@@ -306,7 +313,6 @@ class goldbach_intel(platformBuilder):
         for cmd in self.moduleList:
             self.lmod.load(cmd)
 
-
 class yellowstone_intel(platformBuilder):
 
     def __init__(self):
@@ -405,34 +411,25 @@ class yellowstone_pgi(platformBuilder):
 
         self.FC = 'mpif90'
         self.CC = 'mpicc'
-        self.CXX = 'mpicxx'
-        self.LDFLAGS = ''
+        self.CXX = ''
+        self.LDFLAGS = ('-time -Wl,--allow-multiple-definition  -nomp ')
         self.NUMPE = '4'
 
-        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-fp-model source '
-                       '-convert '
-                       'big_endian -assume byterecl -ftz -traceback -assume '
-                       'realloc_lhs '
-                       '-xHost  -O2   -DLINUX  -DNDEBUG -DMCT_INTERFACE '
-                       '-DHAVE_MPI '
-                       '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
-                       '-DCPRINTEL '
-                       '-DHAVE_SLASHPROC -I. " ')
-        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-O2 -fp-model precise '
-                       '-xHost '
-                       '-DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
-                       '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  '
-                       '-DLINUX '
-                       '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
-        self.CXXFLAGS = (' -D CMAKE_CXX_FLAGS:STRING="-O2 -fp-model precise '
-                         '-xHost '
-                         '-DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
-                         '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  '
-                         '-DLINUX '
-                         '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
+        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-i4 -gopt -Mlist '
+                       '-time -Mextend -byteswapio -Mflushz -Kieee -O '
+                       '-nomp   -DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
+                       '-DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16   -DLINUX '
+                       '-DCPRPGI  -DHAVE_SLASHPROC -I. " ')
+        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-gopt -Mlist -time  -O  '
+                       '-nomp   -DLINUX  -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI '
+                       '-DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 '
+                       '-DLINUX -DCPRPGI  -DHAVE_SLASHPROC -I. " ')
+        self.CXXFLAGS = ''
         self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING='
-                       '/glade/apps/opt/netcdf/4.3.0/pgi/13.3 '
+                       '/glade/apps/opt/netcdf/4.3.0/pgi/default '
+                       '-D PNETCDF_DIR:STRING='
+                       '/glade/apps/opt/pnetcdf/1.4.1/pgi/default'
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
                        '-D PLATFORM:STRING=yellowstone '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
@@ -461,4 +458,74 @@ class yellowstone_pgi(platformBuilder):
         for cmd in self.moduleList:
             self.lmod.load(cmd)
 
+class yellowstone_gnu(platformBuilder):
 
+    def __init__(self):
+        """ user defined ctor so we can put stuff in a class instead of as
+            class attributes
+        """
+        self.setInvariantClassAttr()
+
+        self.moduleList = ['gnu/4.8.0',
+                           'ncarcompilers/1.0',
+                           'netcdf/4.3.0',
+                           'pnetcdf/1.4.1',
+                           'ncarenv/1.0',
+                           'cmake',
+                           'python',
+                           'ncarbinlibs/1.1']
+
+        self.CMAKE_EXE = 'cmake'
+
+        self.FC = 'mpif90'
+        self.CC = 'mpicc'
+        self.CXX = 'mpicxx'
+        self.LDFLAGS = ''
+        self.NUMPE = '4'
+
+        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O '
+                       '-fconvert=big-endian -ffree-line-length-none '
+                       '-ffixed-line-length-none -DLINUX -DNDEBUG '
+                       '-D_NETCDF -D_PNETCDF '
+                       '-DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE '
+                       '-DNO_R16 -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I. " ')
+        self.CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DLINUX  -DNDEBUG '
+                       '-DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE '
+                       '-D_NETCDF -D_PNETCDF '
+                       '-DNO_R16 -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I. " ')
+        self.CXXFLAGS = ('-D CMAKE_CXX_FLAGS:STRING=" -DLINUX  -DNDEBUG '
+                         '-D_NETCDF -D_PNETCDF '
+                         '-DMCT_INTERFACE -DHAVE_MPI -DFORTRANUNDERSCORE '
+                         '-DNO_R16 -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I. " ')
+        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+                       '-D NETCDF_DIR:STRING='
+                       '/glade/apps/opt/netcdf/4.3.0/gnu/4.8.0 '
+                       '-D PNETCDF_DIR:STRING='
+                       '/glade/apps/opt/pnetcdf/1.4.1/gnu/default '
+                       '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
+                       '-D PLATFORM:STRING=yellowstone '
+                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
+        self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
+
+    def testCmd(self):
+        """ override testCmd s.t. on yellowstone we open a caldera interactive
+            node, run the tests (same as the base class)
+            and then exit the queue.
+        """
+        self.envMod['DAV_CORES'] = self.NUMPE
+
+        p = subprocess.Popen(self.TEST_CMD,
+                             shell=True, env=self.envMod)
+        p.wait()
+
+    def runModuleCmd(self):
+        """ implement ABC...add the lmod commands for yellowstone
+        """
+        self.lmod = lmod.ModuleInterface()
+        self.lmod.python_init("/glade/apps/opt/lmod/lmod/init/"
+                              "env_modules_python.py")
+        self.lmod.purge()
+
+        for cmd in self.moduleList:
+            self.lmod.load(cmd)

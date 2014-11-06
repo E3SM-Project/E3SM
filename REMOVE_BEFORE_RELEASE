@@ -8,7 +8,7 @@ Key:
 -- command output 
 # or = textual comment
 
-===== Yellowstone =====
+===== Yellowstone_intel =====
 
 >>module load python
 >>python scripts/python/buildPio.py intel
@@ -32,7 +32,6 @@ Key:
         int foo(x) ;
  foo = 42, 42, 42, 42, 42, 42, 42, 42, 43, 43, 43, 43, 43, 43, 43, 43 ;
 
-# or 
 >>cd build_yellowstone_intel/examples/c
 >>bsub -Is -q caldera -n8 -PP93300070 -W0:20 "mpirun.lsf ./examplePio_c"
 --Job <115205> is submitted to queue <caldera>.
@@ -45,7 +44,65 @@ Key:
 --        int foo(x) ;
 -- foo = 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49 ;
 
-===== Goldbach (linux cluster) =====
+===== Yellowstone_pgi =====
+
+# no cxx build for examples since it seems like PGI's cxx compilers are broken on yellowstone?
+
+>>module load python
+>>python scripts/python/buildPio.py pgi
+
+--21/21 Test #21: piotest ..........................***Failed    0.48 sec
+
+--90% tests passed, 2 tests failed out of 21
+
+--Total Test time (real) = 279.57 sec
+
+--The following tests FAILED:
+--          5 - pio_file_fail (Failed)
+--         21 - piotest (Failed)
+--Errors while running CTest
+
+>>cd build_yellowstone_pgi/examples/f03
+>>bsub -Is -q caldera -n8 -PP93300070 -W0:20 "mpirun.lsf ./examplePio_f90"
+--Job <125873> is submitted to queue <caldera>.
+--<<Waiting for dispatch ...>>
+--<<Starting on caldera05-ib>>
+--Execute poe command line: poe  ./examplePio_f90
+--Close file 65536
+>>ncdump examplePio_f90.nc
+netcdf examplePio_f90 {
+dimensions:
+        x = 16 ;
+variables:
+        int foo(x) ;
+data:
+
+ foo = 42, 42, 43, 43, 44, 44, 45, 45, 46, 46, 47, 47, 48, 48, 49, 49 ;
+}
+
+# or
+
+>>cd build_yellowstone_pgi/examples/c
+>>ncdump examplePio_c.nc
+--netcdf examplePio_c {
+--dimensions:
+--        x = 16 ;
+--variables:
+--        int foo(x) ;
+--data:
+
+-- foo = 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, _ ;
+--}
+
+#~# NOTE looks like a problem with PGI + C with 16 pes!  Compare with darwin_gnu
+
+
+===== Yellowstone_gnu =====
+
+
+
+
+===== Goldbach_nag (linux cluster) =====
 
 # c examples won't build due to a lib_curl dependence for both intel and nag
 
@@ -60,6 +117,7 @@ Key:
 --          5 - pio_file_fail (Failed)
 --Errors while running CTest
 >>cd build_goldbach_nag/examples/f03
+
 >>/usr/local/openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907/bin/mpirun -np 4 ./examplePio_f90
 Close file 65536
 >>ncdump examplePio_f90.nc | grep foo
@@ -69,7 +127,11 @@ Close file 65536
 
 
 
-===== Darwin =====
+===== Goldbach_nag (linux cluster) =====
+
+
+
+===== Darwin_gnu =====
 
 # To run on a machine running OSX with gnu:
 
