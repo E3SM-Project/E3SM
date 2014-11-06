@@ -330,7 +330,7 @@
 					description="If true, constant vertical viscosity is included in the momentum equation"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_const_diff" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_use_const_diff" type="logical" default_value=".false." units="unitless"
 					description="If true, constant vertical diffusion is included in the tracer equation"
 					possible_values=".true. or .false."
 		/>
@@ -338,7 +338,7 @@
 					description="Vertical viscosity, applied uniformly throughout domain"
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_vert_diff" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+		<nml_option name="config_vert_diff" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
 					description="Vertical diffusion, applied uniformly throughout domain"
 					possible_values="Any positive real value."
 		/>
