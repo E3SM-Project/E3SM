@@ -12,7 +12,7 @@ module prim_advance_mod
   use edge_mod, only : EdgeDescriptor_t, EdgeBuffer_t, newEdgeBuffer_t
   use kinds, only : real_kind, iulog
   use perf_mod, only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
-  use parallel_mod, only : abortmp, parallel_t
+  use parallel_mod, only : abortmp, parallel_t, iam
   implicit none
   private
   save
@@ -42,12 +42,15 @@ contains
     integer :: i
     integer :: ie
     type (EdgeDescriptor_t),allocatable  :: desc(:)
+!    integer, allocatable :: globalid(:)
 
     print *,'prim_advance_init: nelemd:= ',nelemd
     allocate(desc(nelemd))
+!    allocate(globalid(nelemd))
     print *,'prim_advance_init: after allocate '
     do ie=1,nelemd
        desc(ie) = elem(ie)%desc
+!       globalid(ie) = elem(ie)%GlobalId
     enddo
     print *,'prim_advance_init: before call to initNewEdgeBuffer rsplit: ',rsplit
     if (rsplit==0) then
@@ -2544,7 +2547,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use kinds, only : real_kind
   use dimensions_mod, only : np, np, nlev, nelemd
   use hybrid_mod, only : hybrid_t
-  use element_mod, only : element_t
+  use element_mod, only : element_t,PrintElem
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use edge_mod, only : edgevpack, edgevunpack, newedgevpack, newedgevunpack
   use bndry_mod, only : bndry_exchangev
@@ -3092,7 +3095,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      kptr=1
      call edgeVpack(edge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,elem(ie)%desc)
 #ifdef NEWBUFFER_CHECK
-     call newedgeVpack(newedge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,ie)
+    call newedgeVpack(newedge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,ie)
      T_jmd(:,:,:,ie) = elem(ie)%state%T(:,:,:,np1)
 #endif
 
@@ -3133,12 +3136,18 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      cnt_ps_v = COUNT((ps_v_jmd(:,:,ie) - elem(ie)%state%ps_v(:,:,np1))>0.0_real_kind)
      cnt_T    = COUNT((T_jmd(:,:,:,ie) - elem(ie)%state%T(:,:,:,np1))>0.0_real_kind)
      if(cnt_ps_v>0) then
-         print *,'ps_v(',ie,'):= ',cnt_ps_v
+         print *,'IAM: ',iam, ' ps_v(',ie,'):= ',cnt_ps_v
+         if( ie == 12 ) then 
+            print *,'ps_v'
+            call PrintElem(elem(ie)%state%ps_v(:,:,np1))
+            print *,'ps_v_jmd'
+            call PrintElem(ps_v_jmd(:,:,ie))
+         endif
      else 
          print *,'verified: ps_v'
      endif
      if(cnt_T>0) then 
-         print *,'T(',ie,'):= ',cnt_T
+         print *,'IAM: ',iam,' T(',ie,'):= ',cnt_T
      else
          print *,'verified: T'
      endif
