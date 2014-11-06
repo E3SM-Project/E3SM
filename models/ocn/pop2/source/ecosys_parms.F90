@@ -56,10 +56,10 @@ MODULE ecosys_parms
         imp_calcifier,                      & ! flag set to true if this autotroph implicitly handles calcification
         exp_calcifier                         ! flag set to true if this autotroph explicitly handles calcification
      INTEGER (KIND=int_kind) :: &
-        grazee_ind                            ! which grazee category does autotroph belong to
-     REAL(KIND=r8) :: &
         Chl_ind, C_ind, Fe_ind,             & ! tracer indices for Chl, C, Fe content
         Si_ind, CaCO3_ind,                  & ! tracer indices for Si, CaCO3 content
+        grazee_ind                            ! which grazee category does autotroph belong to
+     REAL(KIND=r8) :: &
         kFe, kPO4, kDOP, kNO3, kNH4, kSiO3, & ! nutrient uptake half-sat constants
         Qp,                                 & ! P/C ratio
         gQfe_0, gQfe_min,                   & ! initial and minimum fe/C ratio
