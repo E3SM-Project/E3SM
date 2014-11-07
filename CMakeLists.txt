@@ -155,7 +155,7 @@ ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(examples)
 
 if(${PIO_BUILD_TESTS})
-   #ADD_SUBDIRECTORY(test)
+   ADD_SUBDIRECTORY(test)
   if(${PIO_BUILD_TIMING})
     ADD_SUBDIRECTORY(performancetest)
   endif()
