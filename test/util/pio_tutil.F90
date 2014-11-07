@@ -348,12 +348,7 @@ CONTAINS
     INTEGER :: i
 
     ! First find the number of io types
-    ! binary
-    num_iotypes = 1
-#ifdef _USEMPIIO
-      ! pbinary, direct_pbinary
-      num_iotypes = num_iotypes + 2
-#endif
+    num_iotypes = 0
 #ifdef _NETCDF4
       ! netcdf, netcdf4p, netcdf4c
       num_iotypes = num_iotypes + 3
@@ -371,19 +366,6 @@ CONTAINS
     ALLOCATE(iotype_descs(num_iotypes))
 
     i = 1
-    iotypes(i) = PIO_iotype_binary
-    iotype_descs(i) = "BINARY"
-    i = i + 1
-
-#ifdef _USEMPIIO
-      ! pbinary, direct_pbinary
-      iotypes(i) = PIO_iotype_pbinary
-      iotype_descs(i) = "PBINARY"
-      i = i + 1
-      iotypes(i) = PIO_iotype_direct_pbinary
-      iotype_descs(i) = "DIRECT_PBINARY"
-      i = i + 1
-#endif
 #ifdef _NETCDF4
       ! netcdf, netcdf4p, netcdf4c
       iotypes(i) = PIO_iotype_netcdf
@@ -426,12 +408,7 @@ CONTAINS
     INTEGER :: i
 
     ! First find the number of io types
-    ! binary is always defined
     num_iotypes = 0
-#ifndef _USEMPIIO
-      ! pbinary, direct_pbinary
-      num_iotypes = num_iotypes + 2
-#endif
 #ifndef _NETCDF
       ! netcdf
       num_iotypes = num_iotypes + 1
@@ -451,15 +428,6 @@ CONTAINS
     ALLOCATE(iotype_descs(num_iotypes))
 
     i = 1
-#ifndef _USEMPIIO
-      ! pbinary, direct_pbinary
-      iotypes(i) = PIO_iotype_pbinary
-      iotype_descs(i) = "PBINARY"
-      i = i + 1
-      iotypes(i) = PIO_iotype_direct_pbinary
-      iotype_descs(i) = "DIRECT_PBINARY"
-      i = i + 1
-#endif
 #ifndef _NETCDF
       ! netcdf
       iotypes(i) = PIO_iotype_netcdf

@@ -68,10 +68,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   
   if(ios->ioproc){
     switch(file->iotype){
-    case PIO_IOYTPE_DIRECT_PBINARY:
-    case PIO_IOTYPE_PBINARY:
-      //      ierr = pio_open_mpiio(file, filename, checkmpi);
-      break;
 #ifdef _NETCDF
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
@@ -186,10 +182,6 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 
   if(ios->ioproc){
     switch(file->iotype){
-    case PIO_IOYTPE_DIRECT_PBINARY:
-    case PIO_IOTYPE_PBINARY:
-      //      ierr = pio_create_mpiio(file, filename);
-      break;
 #ifdef _NETCDF
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:

@@ -329,8 +329,6 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      iobuf = array;
    }
    switch(file->iotype){
-   case PIO_IOTYPE_PBINARY:
-     break;
    case PIO_IOTYPE_PNETCDF:
    case PIO_IOTYPE_NETCDF:
    case PIO_IOTYPE_NETCDF4P:
@@ -637,8 +635,6 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   }
 
   switch(file->iotype){
-  case PIO_IOTYPE_PBINARY:
-    break;
   case PIO_IOTYPE_PNETCDF:
   case PIO_IOTYPE_NETCDF:
   case PIO_IOTYPE_NETCDF4P:

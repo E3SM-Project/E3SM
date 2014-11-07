@@ -321,9 +321,9 @@ class yellowstone_intel(platformBuilder):
         """
         self.setInvariantClassAttr()
 
-        self.moduleList = ['intel/14.0.2',
+        self.moduleList = ['intel/15.0.0',
                            'ncarcompilers/1.0',
-                           'netcdf-mpi/4.3.0',
+                           'netcdf-mpi/4.3.2',
                            'pnetcdf/1.4.1',
                            'ncarenv/1.0',
                            'cmake',
@@ -363,6 +363,8 @@ class yellowstone_intel(platformBuilder):
                        '-D NETCDF_DIR:STRING='
                        '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
+                       '-D PNETCDF_DIR:STRING='
+                       '/glade/apps/opt/pnetcdf/1.4.1/intel/default '
                        '-D PLATFORM:STRING=yellowstone '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')

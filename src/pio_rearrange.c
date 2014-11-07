@@ -147,7 +147,6 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   }
   // Share the max io buffer size with all io tasks
 #ifndef _MPISERIAL
-  //  printf("%s %d %ld\n",__FILE__,__LINE__,totiosize);
   CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
 #endif
   
@@ -162,9 +161,10 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
   int ii;
   PIO_Offset i8blocksize;
   int blocksize;
+
   PIO_Offset *lindex;
 
-  pioassert(dlen>0,"dlen <= 0",__FILE__,__LINE__);
+  pioassert(dlen>=0,"dlen < 0",__FILE__,__LINE__);
 
 #ifdef _MPISERIAL
   mtype[0] = basetype * blocksize;
@@ -386,7 +386,6 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   ierr = pio_swapm( iodesc->scount, send_counts, send_displs, sr_types, 
                     recv_buf,  recv_counts, recv_displs, sr_types,
 		    mycomm, false, false, maxreq);
-  //  printf("%s %d\n",__FILE__,__LINE__);
 
   nrecvs = 0;
   if(ios.ioproc){
@@ -478,7 +477,6 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     if(iodesc->llen>0)
       iodesc->rindex = (PIO_Offset *) calloc(iodesc->llen,sizeof(PIO_Offset));
   }
-
   //   printf("%d rbuf_size %d\n",ios.comp_rank,rbuf_size);
 
 
@@ -493,7 +491,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   //  printf("%s %d %d %d %d %d %d %d\n",__FILE__,__LINE__,send_counts[0],recv_counts[0],send_displs[0],recv_displs[0],sr_types[0],iodesc->llen);
   ierr = pio_swapm( s2rindex, send_counts, send_displs, sr_types, 
 		    iodesc->rindex, recv_counts, recv_displs, sr_types,
-  		    mycomm, true, false, maxreq);
+  		    mycomm, false, false, 0);
   // printf("%s %d\n",__FILE__,__LINE__);
 
   //  rindex is an array of the indices of the data to be sent from
@@ -930,7 +928,8 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
     color = ios.comp_rank/taskratio;
   }
   
-  //printf("%s %d %d %d %d\n",__FILE__,__LINE__,color,key,ios.io_rank);
+  //  printf("%s %d %d %d %d\n",__FILE__,__LINE__,color,key,ios.io_rank);
+
 
   // If the io tasks are not an even divisor of the compute tasks put the remainder in the last group
   if(color>=ios.num_iotasks){
