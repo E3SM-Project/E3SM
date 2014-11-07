@@ -12,14 +12,14 @@ module diffusion_mod
   ! =======================
   use parallel_mod, only : parallel_t
   ! =======================
-  use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, initedgebuffer
+  use edge_mod, only : oldEdgeBuffer_t, oldedgevpack, oldedgerotate, oldedgevunpack, initedgebuffer, newEdgeBuffer_t, newedgevpack, newedgevunpack
   ! =======================
   private
   save
   public :: diffusion_init, prim_diffusion, scalar_diffusion
-  type(EdgeBuffer_t)  :: edgeS1, edgeS2
-  type (EdgeBuffer_t) :: edge3
-  type (EdgeBuffer_t) :: edge4
+  type (oldEdgeBuffer_t)  :: edgeS1, edgeS2
+  type (oldEdgeBuffer_t) :: edge3
+  type (oldEdgeBuffer_t) :: edge4
 
 contains
   subroutine diffusion_init(par)
@@ -130,16 +130,16 @@ contains
        end do
 
        kptr=0
-       call edgeVpack(edge4,grad_T_np1(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+       call oldedgeVpack(edge4,grad_T_np1(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
 
        kptr=2*nlev
-       call edgeVpack(edge4,zeta_np1(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call oldedgeVpack(edge4,zeta_np1(1,1,1,ie),nlev,kptr,elem(ie)%desc)
 
        kptr=3*nlev
-       call edgeVpack(edge4,div_np1(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call oldedgeVpack(edge4,div_np1(1,1,1,ie),nlev,kptr,elem(ie)%desc)
 
 !       kptr=0
-!       call edgerotate(edge4,2*nlev,kptr,elem(ie)%desc)
+!       call oldedgerotate(edge4,2*nlev,kptr,elem(ie)%desc)
 
     end do
 
@@ -156,13 +156,13 @@ contains
        Dinv     => elem(ie)%Dinv
 
        kptr=0
-       call edgeVunpack(edge4, grad_T_np1(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+       call oldedgeVunpack(edge4, grad_T_np1(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
 
        kptr=2*nlev
-       call edgeVunpack(edge4, zeta_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call oldedgeVunpack(edge4, zeta_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
 
        kptr=3*nlev
-       call edgeVunpack(edge4, div_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call oldedgeVunpack(edge4, div_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -245,10 +245,10 @@ contains
        end do
 
        kptr=0
-       call edgeVpack(edge3, lap_v_np1(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+       call oldedgeVpack(edge3, lap_v_np1(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
 
        kptr=2*nlev
-       call edgeVpack(edge3, lap_T_np1(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call oldedgeVpack(edge3, lap_T_np1(1,1,1,ie),nlev,kptr,elem(ie)%desc)
 
     end do
 
@@ -261,10 +261,10 @@ contains
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
 
        kptr=0
-       call edgeVunpack(edge3, lap_v_np1(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+       call oldedgeVunpack(edge3, lap_v_np1(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
 
        kptr=2*nlev
-       call edgeVunpack(edge3, lap_T_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call oldedgeVunpack(edge3, lap_T_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
@@ -371,9 +371,9 @@ contains
 
        end do
        
-       call edgeVpack(edgeS2,grad_Q_np1(:,:,:,:,:,ie),2*nlev*qsize,0,elem(ie)%desc)
+       call oldedgeVpack(edgeS2,grad_Q_np1(:,:,:,:,:,ie),2*nlev*qsize,0,elem(ie)%desc)
 
-       call edgerotate(edgeS2,2*nlev*qsize,0,elem(ie)%desc)
+       call oldedgerotate(edgeS2,2*nlev*qsize,0,elem(ie)%desc)
 
     end do
 
@@ -389,7 +389,7 @@ contains
        D        => elem(ie)%D
        Dinv     => elem(ie)%Dinv
        
-       call edgeVunpack(edgeS2, grad_Q_np1(:,:,:,:,:,ie), 2*nlev*qsize, 0, elem(ie)%desc)
+       call oldedgeVunpack(edgeS2, grad_Q_np1(:,:,:,:,:,ie), 2*nlev*qsize, 0, elem(ie)%desc)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -429,7 +429,7 @@ contains
 
        end do
 
-       call edgeVpack(edgeS1, lap_Q_np1(1,1,1,1,ie),nlev*qsize, 0,elem(ie)%desc)
+       call oldedgeVpack(edgeS1, lap_Q_np1(1,1,1,1,ie),nlev*qsize, 0,elem(ie)%desc)
 
     end do
     call bndry_exchangeV(hybrid,edgeS1)
@@ -440,7 +440,7 @@ contains
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
 
        
-       call edgeVunpack(edgeS1, lap_Q_np1(1,1,1,1,ie), nlev*qsize, 0, elem(ie)%desc)
+       call oldedgeVunpack(edgeS1, lap_Q_np1(1,1,1,1,ie), nlev*qsize, 0, elem(ie)%desc)
 
        do q=1,qsize
 #if (defined COLUMN_OPENMP)

@@ -10,13 +10,8 @@ module edge_mod
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
   use thread_mod, only: omp_get_num_threads, omp_get_thread_num
   use coordinate_systems_mod, only : cartesian3D_t
-#ifdef MPI_PERSISTENT
-  use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
-#else
-  use parallel_mod,   only : abortmp, haltmp, parallel_t
-#endif
-
+  use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t
 
 
   implicit none
@@ -47,7 +42,7 @@ module edge_mod
   end type EdgeDescriptor_t
 
 
-  type, public :: EdgeBuffer_t
+  type, public :: oldEdgeBuffer_t
      real (kind=real_kind), dimension(:,:), pointer :: buf => null()
      real (kind=real_kind), dimension(:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
@@ -56,7 +51,7 @@ module edge_mod
      integer, public, pointer :: Rrequest(:)
      integer, public, pointer :: Srequest(:)
 #endif
-  end type EdgeBuffer_t
+  end type oldEdgeBuffer_t
 
   type, public :: newEdgeBuffer_t
      real (kind=real_kind), dimension(:), pointer :: buf => null()
@@ -75,19 +70,36 @@ module edge_mod
      integer (kind=int_kind), dimension(:,:), pointer :: receive => null()
   end type LongEdgeBuffer_t
 
-  public :: initEdgeBuffer, initLongEdgeBuffer
-  public :: FreeEdgeBuffer, FreeLongEdgeBuffer
-  public :: edgeVpack,  edgeDGVpack, LongEdgeVpack
-
-  public :: initNewEdgeBuffer, FreeNewEdgeBuffer
-  public :: newedgeVpack, newedgeVunpack 
-
-  public :: edgeVunpack, edgeDGVunpack, edgeVunpackVert
-  public :: edgeVunpackMIN, LongEdgeVunpackMIN
-  public :: edgeVunpackMAX
+  public :: initLongEdgeBuffer, FreeLongEdgeBuffer
+  public :: LongEdgeVpack
 
 
-  public :: edgerotate
+  interface initEdgeBuffer
+     module procedure initOldEdgeBuffer
+     module procedure initNewEdgeBuffer
+  end interface 
+  interface FreeEdgeBuffer
+     module procedure FreeOldEdgeBuffer
+     module procedure FreeNewEdgeBuffer
+  end interface
+  public :: initEdgeBuffer, FreeEdgeBuffer
+
+  public :: oldedgeVpack, oldedgeVunpack
+  public :: oldedgeVunpackMIN, oldedgeVunpackMAX
+  public :: oldedgeDGVpack, oldedgeDGVunpack
+
+  public :: newedgeVpack, newedgevunpack
+  public :: newedgeVunpackMIN, newedgeVunpackMAX
+  public :: newedgeDGVpack, newedgeDGVunpack
+  
+  
+
+  public :: edgeVunpackVert
+  public :: LongEdgeVunpackMIN
+
+
+  public :: newedgerotate
+  public :: oldedgerotate
   public :: buffermap
   logical, private :: threadsafe=.true.
 
@@ -236,16 +248,16 @@ module edge_mod
 contains
 
   ! =========================================
-  ! initEdgeBuffer:
+  ! initOldEdgeBuffer:
   !
   ! create an Real based communication buffer
   ! =========================================
-  subroutine initEdgeBuffer(par,edge,nlyr, buf_ptr,receive_ptr)
+  subroutine initOldEdgeBuffer(par,edge,nlyr, buf_ptr,receive_ptr)
     use dimensions_mod, only : np, nelemd, max_corner_elem
     implicit none
     type (parallel_t), intent(in) :: par
     integer,intent(in)                :: nlyr
-    type (EdgeBuffer_t),intent(out), target :: edge
+    type (oldEdgeBuffer_t),intent(out), target :: edge
     real(kind=real_kind), optional, pointer :: buf_ptr(:), receive_ptr(:)
 
     ! Notes about the buf_ptr/receive_ptr options:
@@ -388,7 +400,7 @@ contains
 #endif
     endif
 
-  end subroutine initEdgeBuffer
+  end subroutine initOldEdgeBuffer
   ! =========================================
   ! initEdgeBuffer:
   !
@@ -439,8 +451,10 @@ contains
     if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
 
 #if (defined HORIZ_OPENMP)
-!JMD       !$OMP BARRIER
+!JMD    !$OMP BARRIER
 #endif
+    pSchedule => Schedule(1)
+    moveLength = nlyr*pSchedule%MoveCycle(1)%lengthP
 
     iam = par%rank
 !$OMP MASTER
@@ -549,9 +563,9 @@ contains
   !
   ! Pack edges of v into buf for DG stencil
   ! =========================================
-  subroutine edgeDGVpack(edge,v,vlyr,kptr,desc)
+  subroutine oldedgeDGVpack(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np
-    type (EdgeBuffer_t)                      :: edge
+    type (oldEdgeBuffer_t)                      :: edge
     integer,              intent(in)   :: vlyr
     real (kind=real_kind),intent(in)   :: v(np,np,vlyr)
     integer,              intent(in)   :: kptr
@@ -559,20 +573,35 @@ contains
 
     ! =========================================
     ! This code is just a wrapper call the 
-    !   normal edgeVpack
+    !   normal oldedgeVpack
     ! =========================================
-    call edgeVpack(edge,v,vlyr,kptr,desc)
+    call oldedgeVpack(edge,v,vlyr,kptr,desc)
 
-  end subroutine edgeDGVpack
+  end subroutine oldedgeDGVpack
+  subroutine newedgeDGVpack(edge,v,vlyr,kptr,ielem)
+    use dimensions_mod, only : np
+    type (newEdgeBuffer_t)                      :: edge
+    integer,              intent(in)   :: vlyr
+    real (kind=real_kind),intent(in)   :: v(np,np,vlyr)
+    integer,              intent(in)   :: kptr
+    integer,              intent(in)   :: ielem
+
+    ! =========================================
+    ! This code is just a wrapper call the 
+    !   normal oldedgeVpack
+    ! =========================================
+    call newedgeVpack(edge,v,vlyr,kptr,ielem)
+
+  end subroutine newedgeDGVpack
 
   ! ===========================================
-  !  FreeEdgeBuffer:
+  !  FreeOldEdgeBuffer:
   !
   !  Freed an edge communication buffer
   ! =========================================
-  subroutine FreeEdgeBuffer(edge) 
+  subroutine FreeOldEdgeBuffer(edge) 
     implicit none
-    type (EdgeBuffer_t),intent(inout) :: edge
+    type (oldEdgeBuffer_t),intent(inout) :: edge
 
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -586,10 +615,10 @@ contains
 !$OMP END MASTER
 #endif
 
-  end subroutine FreeEdgeBuffer
+  end subroutine FreeOldEdgeBuffer
 
   ! ===========================================
-  !  FreeEdgeBuffer:
+  !  FreeNewEdgeBuffer:
   !
   !  Freed an edge communication buffer
   ! =========================================
@@ -663,13 +692,13 @@ contains
   !! data will be located.
   ! =========================================
 #ifdef NEW_PACK
-  subroutine edgeVpack(edge,v,vlyr,kptr,desc)
+  subroutine oldedgeVpack(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
 
 
-    type (EdgeBuffer_t)                      :: edge
+    type (oldEdgeBuffer_t)                      :: edge
     integer,              intent(in)   :: vlyr
     real (kind=real_kind),intent(in)   :: v(np,np,vlyr)
     integer,              intent(in)   :: kptr
@@ -802,15 +831,15 @@ contains
     call t_stopf('edge_pack')
     call t_adj_detailf(-2)
 
-  end subroutine edgeVpack
+  end subroutine oldedgeVpack
 #else
-  subroutine edgeVpack(edge,v,vlyr,kptr,desc)
+  subroutine oldedgeVpack(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
 
 
-    type (EdgeBuffer_t)                      :: edge
+    type (oldEdgeBuffer_t)                      :: edge
     integer,              intent(in)   :: vlyr
     real (kind=real_kind),intent(in)   :: v(np,np,vlyr)
     integer,              intent(in)   :: kptr
@@ -949,7 +978,7 @@ contains
     call t_stopf('edge_pack')
     call t_adj_detailf(-2)
 
-  end subroutine edgeVpack
+  end subroutine oldedgeVpack
 #endif
   subroutine newedgeVpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
@@ -1266,15 +1295,15 @@ contains
   end subroutine LongEdgeVpack
 
   ! ========================================
-  ! edgeVunpack:
+  ! oldedgeVunpack:
   !
   ! Unpack edges from edge buffer into v...
   ! ========================================
 #ifdef NEW_PACK
-  subroutine edgeVunpack(edge,v,vlyr,kptr,desc)
+  subroutine oldedgeVunpack(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-    type (EdgeBuffer_t),         intent(in)  :: edge
+    type (oldEdgeBuffer_t),         intent(in)  :: edge
 
     integer,               intent(in)  :: vlyr
     real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
@@ -1354,12 +1383,12 @@ contains
     call t_stopf('edge_unpack')
     call t_adj_detailf(-2)
 
-  end subroutine edgeVunpack
+  end subroutine oldedgeVunpack
 #else
-  subroutine edgeVunpack(edge,v,vlyr,kptr,desc)
+  subroutine oldedgeVunpack(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-    type (EdgeBuffer_t),         intent(in)  :: edge
+    type (oldEdgeBuffer_t),         intent(in)  :: edge
 
     integer,               intent(in)  :: vlyr
     real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
@@ -1440,7 +1469,7 @@ contains
     call t_stopf('edge_unpack')
     call t_adj_detailf(-2)
 
-  end subroutine edgeVunpack
+  end subroutine oldedgeVunpack
 #endif
   subroutine newedgeVunpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
@@ -1547,7 +1576,7 @@ contains
     use dimensions_mod, only : np, max_corner_elem, ne
     use coordinate_systems_mod, only: cartesian3D_t
 
-    type (EdgeBuffer_t),   intent(inout)  :: edge
+    type (oldEdgeBuffer_t),   intent(inout)  :: edge
     type (cartesian3D_t), intent(out) :: v(:,:,:)
     type (EdgeDescriptor_t)            :: desc
 
@@ -1730,11 +1759,11 @@ contains
   ! Unpack edges from edge buffer into v...
   ! ========================================
 
-  subroutine edgeDGVunpack(edge,v,vlyr,kptr,desc)
+  subroutine oldedgeDGVunpack(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np
     use control_mod, only : north, south, east, west
 
-    type (EdgeBuffer_t),         intent(in)  :: edge
+    type (oldEdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr
     real (kind=real_kind), intent(out) :: v(0:np+1,0:np+1,vlyr)
     integer,               intent(in)  :: kptr
@@ -1760,19 +1789,52 @@ contains
        end do
     end do
 
-  end subroutine edgeDGVunpack
+  end subroutine oldedgeDGVunpack
+
+  subroutine newedgeDGVunpack(edge,v,vlyr,kptr,ielem)
+    use dimensions_mod, only : np
+    use control_mod, only : north, south, east, west
+
+    type (newEdgeBuffer_t),         intent(in)  :: edge
+    integer,               intent(in)  :: vlyr
+    real (kind=real_kind), intent(out) :: v(0:np+1,0:np+1,vlyr)
+    integer,               intent(in)  :: kptr
+    integer,               intent(in)  :: ielem
+
+    ! Local
+
+    integer :: i,k,iptr
+    integer :: is,ie,in,iw
+
+    threadsafe=.false.
+
+    is=edge%getmap(south,ielem)
+    ie=edge%getmap(east,ielem)
+    in=edge%getmap(north,ielem)
+    iw=edge%getmap(west,ielem)
+    do k=1,vlyr
+       iptr=np*(kptr+k-1)
+       do i=1,np
+          v(i   ,0   ,k)=edge%receive(iptr+is+i)
+          v(np+1,i   ,k)=edge%receive(iptr+ie+i)
+          v(i   ,np+1,k)=edge%receive(iptr+in+i)
+          v(0   ,i   ,k)=edge%receive(iptr+iw+i)
+       end do
+    end do
+
+  end subroutine newedgeDGVunpack
 
   ! ========================================
-  ! edgeVunpackMIN/MAX:
+  ! oldedgeVunpackMIN/MAX:
   !
   ! Finds the Min/Max edges from edge buffer into v...
   ! ========================================
 
-  subroutine edgeVunpackMAX(edge,v,vlyr,kptr,desc)
+  subroutine oldedgeVunpackMAX(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
-    type (EdgeBuffer_t),         intent(in)  :: edge
+    type (oldEdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr
     real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
     integer,               intent(in)  :: kptr
@@ -1835,12 +1897,83 @@ contains
         endif
     end do
     
-  end subroutine edgeVunpackMAX
-  subroutine edgeVunpackMIN(edge,v,vlyr,kptr,desc)
+  end subroutine oldedgeVunpackMAX
+
+  subroutine newedgeVunpackMAX(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
-    type (EdgeBuffer_t),         intent(in)  :: edge
+    type (newEdgeBuffer_t),         intent(in)  :: edge
+    integer,               intent(in)  :: vlyr
+    real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
+    integer,               intent(in)  :: kptr
+    integer,               intent(in)  :: ielem
+
+
+    ! Local
+
+    integer :: i,k,l,iptr
+    integer :: is,ie,in,iw
+
+    threadsafe=.false.
+
+    is=edge%getmap(south,ielem)
+    ie=edge%getmap(east,ielem)
+    in=edge%getmap(north,ielem)
+    iw=edge%getmap(west,ielem)
+    do k=1,vlyr
+       iptr=np*(kptr+k-1)
+       do i=1,np
+          v(np ,i  ,k) = MAX(v(np ,i  ,k),edge%receive(iptr+ie+i  ))
+          v(i  ,1  ,k) = MAX(v(i  ,1  ,k),edge%receive(iptr+is+i  ))
+          v(i  ,np ,k) = MAX(v(i  ,np ,k),edge%receive(iptr+in+i  ))
+          v(1  ,i  ,k) = MAX(v(1  ,i  ,k),edge%receive(iptr+iw+i  ))
+       end do
+    end do
+
+! SWEST
+    do l=swest,swest+max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(1  ,1 ,k)=MAX(v(1 ,1 ,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! SEAST
+    do l=swest+max_corner_elem,swest+2*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(np ,1 ,k)=MAX(v(np,1 ,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! NEAST
+    do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then
+            do k=1,vlyr
+                v(np ,np,k)=MAX(v(np,np,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! NWEST
+    do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(1  ,np,k)=MAX(v(1 ,np,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+    
+  end subroutine newedgeVunpackMAX
+
+  subroutine oldedgeVunpackMIN(edge,v,vlyr,kptr,desc)
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+
+    type (oldEdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr
     real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
     integer,               intent(in)  :: kptr
@@ -1903,7 +2036,77 @@ contains
         endif
     end do
     
-  end subroutine edgeVunpackMIN
+  end subroutine oldedgeVunpackMIN
+
+  subroutine newedgeVunpackMIN(edge,v,vlyr,kptr,ielem)
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+
+    type (newEdgeBuffer_t),         intent(in)  :: edge
+    integer,               intent(in)  :: vlyr
+    real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
+    integer,               intent(in)  :: kptr
+    integer,               intent(in)  :: ielem
+
+
+    ! Local
+
+    integer :: i,k,l,iptr
+    integer :: is,ie,in,iw
+
+    threadsafe=.false.
+
+    is=edge%getmap(south,ielem)
+    ie=edge%getmap(east,ielem)
+    in=edge%getmap(north,ielem)
+    iw=edge%getmap(west,ielem)
+    do k=1,vlyr
+       iptr = np*(kptr+k-1)
+       do i=1,np
+          v(np ,i  ,k) = MIN(v(np ,i  ,k),edge%receive(iptr+ie+i  ))
+          v(i  ,1  ,k) = MIN(v(i  ,1  ,k),edge%receive(iptr+is+i  ))
+          v(i  ,np ,k) = MIN(v(i  ,np ,k),edge%receive(iptr+in+i  ))
+          v(1  ,i  ,k) = MIN(v(1  ,i  ,k),edge%receive(iptr+iw+i  ))
+       end do
+    end do
+
+! SWEST
+    do l=swest,swest+max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! SEAST
+    do l=swest+max_corner_elem,swest+2*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! NEAST
+    do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(np ,np,k)=MIN(v(np,np,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! NWEST
+    do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(1  ,np,k)=MIN(v(1 ,np,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+    
+  end subroutine newedgeVunpackMIN
   ! ========================================
   ! LongEdgeVunpackMIN:
   !
@@ -1985,9 +2188,9 @@ contains
   ! Rotate edges in buffer...
   ! =============================
 
-  subroutine edgerotate(edge,vlyr,kptr,desc)
+  subroutine oldedgerotate(edge,vlyr,kptr,desc)
     use dimensions_mod, only : np
-    type (EdgeBuffer_t)           :: edge         ! edge struct
+    type (oldEdgeBuffer_t)           :: edge         ! edge struct
     integer, intent(in)           :: vlyr         ! number of 2d vector fields to rotate
     integer, intent(in)           :: kptr         ! layer pointer into edge buffer
     type (EdgeDescriptor_t)       :: desc
@@ -2058,7 +2261,84 @@ contains
 
        endif
 
-     end subroutine edgerotate
+  end subroutine oldedgerotate
+
+  subroutine newedgerotate(edge,vlyr,kptr,desc)
+    use dimensions_mod, only : np
+    type (newEdgeBuffer_t)           :: edge         ! edge struct
+    integer, intent(in)           :: vlyr         ! number of 2d vector fields to rotate
+    integer, intent(in)           :: kptr         ! layer pointer into edge buffer
+    type (EdgeDescriptor_t), intent(in) :: desc
+
+    ! Local variables
+
+    integer :: i,k,k1,k2
+    integer :: irot,ia,nbr
+
+    real(kind=real_kind), dimension(:,:,:), pointer :: R
+    real(kind=real_kind)  :: tmp1,tmp2
+
+    print *,'entered into newedgerotate... Note that this code is currently not functional' 
+    stop 'ERROR: newedgerotate'
+#ifdef _USEASSOCIATED
+    if (associated(rot)) then
+#else
+       if (desc%use_rotation == 1) then
+#endif
+
+          do irot=1,SIZE(desc%rot)
+
+             nbr  =  desc%rot(irot)%nbr
+             R    => desc%rot(irot)%R
+
+             ia=desc%putmapP(nbr)
+
+             ! ========================================
+             ! If nbr direction is (1-4) => is an edge
+             ! ========================================
+
+             if (nbr <= 4) then
+
+                ! ========================================================
+                !  Is an edge. Rotate it in place
+                ! ========================================================
+
+!                do i=1,np
+!                   do k=1,vlyr,2
+!                      k1 = kptr + k
+!                      k2 = k1 + 1
+!                      tmp1=R(1,1,i)*edge%buf(k1,ia+i) + R(1,2,i)*edge%buf(k2,ia+i)
+!                      tmp2=R(2,1,i)*edge%buf(k1,ia+i) + R(2,2,i)*edge%buf(k2,ia+i)
+!                      edge%buf(k1,ia+i)=tmp1
+!                      edge%buf(k2,ia+i)=tmp2
+!                   end do
+!                end do
+
+             else
+
+                ! ===================================================
+                ! Is an element corner point, but not a cube corner
+                ! point, just rotate it in place.
+                ! ===================================================
+
+!                if (ia /= -1) then
+!                   do k=1,vlyr,2
+!                      k1 = kptr + k
+!                      k2 = k1+1
+!                      tmp1=R(1,1,1)*edge%buf(k1,ia+1) + R(1,2,1)*edge%buf(k2,ia+1)
+!                      tmp2=R(2,1,1)*edge%buf(k1,ia+1) + R(2,2,1)*edge%buf(k2,ia+1)
+!                      edge%buf(k1,ia+1)=tmp1
+!                      edge%buf(k2,ia+1)=tmp2
+!                   end do
+!                end if
+
+             end if
+
+          end do
+
+       endif
+
+     end subroutine newedgerotate
 
      ! =============================================
      ! buffermap:
@@ -5060,10 +5340,10 @@ End module edge_mod
 ! such as cray.  if that is the case, try compiling with -DHAVE_F2003_PTR_BND_REMAP
 !
 subroutine remap_2D_ptr_buf(edge,nlyr,nbuf,src_array)
-use edge_mod, only       : EdgeBuffer_t ! _EXTERNAL                                                   
+use edge_mod, only       : oldEdgeBuffer_t ! _EXTERNAL                                                   
 use kinds, only          : real_kind
 ! input                                                                                               
-type (EdgeBuffer_t) :: edge
+type (oldEdgeBuffer_t) :: edge
 integer :: nlyr,nbuf
 real(kind=real_kind) , target :: src_array(nlyr,nbuf)
 
@@ -5072,10 +5352,10 @@ edge%buf  => src_array
 end subroutine remap_2D_ptr_buf
 
 subroutine remap_2D_ptr_receive(edge,nlyr,nbuf,src_array)
-use edge_mod, only       : EdgeBuffer_t ! _EXTERNAL                                                   
+use edge_mod, only       : oldEdgeBuffer_t ! _EXTERNAL                                                   
 use kinds, only          : real_kind
 ! input                                                                                               
-type (EdgeBuffer_t) :: edge
+type (oldEdgeBuffer_t) :: edge
 integer :: nlyr,nbuf
 real(kind=real_kind) , target :: src_array(nlyr,nbuf)
 

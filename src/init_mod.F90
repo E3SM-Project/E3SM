@@ -39,7 +39,7 @@ contains
          assign_node_numbers_to_elem
 
     ! --------------------------------
-    use edge_mod, only : edgebuffer_t, initedgebuffer   
+    use edge_mod, only : oldedgebuffer_t, initedgebuffer   
     ! --------------------------------
     use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_flops, red_timer, &
          red_sum, red_sum_int, red_max, red_max_int, InitReductionBuffer
@@ -88,9 +88,9 @@ contains
     type (element_t), pointer :: elem(:)
     type (fvm_struct), pointer, optional :: fvm(:)
         
-    type (EdgeBuffer_t)           :: edge1
-    type (EdgeBuffer_t)           :: edge2
-    type (EdgeBuffer_t)           :: edge3
+    type (oldEdgeBuffer_t)           :: edge1
+    type (oldEdgeBuffer_t)           :: edge2
+    type (oldEdgeBuffer_t)           :: edge3
     type (ReductionBuffer_ordered_1d_t) :: red
     type (parallel_t), intent(in) :: par
     ! Local Variables

@@ -14,7 +14,7 @@ module dg_tvdrk_mod
 ! ---------------------
  use element_mod, only: element_t
 ! ---------------------
- use edge_mod, only: EdgeBuffer_t, edgevpack,edgerotate,edgevunpack,edgeDGVpack,edgeDGVunpack
+ use edge_mod, only: oldEdgeBuffer_t, edgevpack,edgerotate,edgevunpack,edgeDGVpack,edgeDGVunpack
 ! ---------------------
  use filter_mod, only:  filter_t, filter_P
 ! ---------------------
@@ -100,7 +100,7 @@ subroutine dg_tvdrk(elem, stage,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)
  implicit none
  type(element_t)      , intent(inout) :: elem(:)
  integer              , intent(in) :: stage
- type (EdgeBuffer_t)  , intent(in) :: edge3
+ type (oldEdgeBuffer_t)  , intent(in) :: edge3
  type (derivative_t)  , intent(in) :: deriv
  type (filter_t)                   :: flt
  type (hybrid_t)      , intent(in) :: hybrid
@@ -285,7 +285,7 @@ subroutine dg_tvdrk_advect(elem,stage,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,ne
  implicit none
  type(element_t)      , intent(inout) :: elem(:)
  integer              , intent(in) :: stage
- type (EdgeBuffer_t)  , intent(in) :: edge3
+ type (oldEdgeBuffer_t)  , intent(in) :: edge3
  type (derivative_t)  , intent(in) :: deriv
  type (filter_t)                   :: flt
  type (hybrid_t)      , intent(in) :: hybrid
@@ -431,7 +431,7 @@ subroutine dg_uvhrk(elem,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)
 !=======================================================================================================!
    implicit none
    type(element_t)      , intent(inout) :: elem(:)
-   type (EdgeBuffer_t)  , intent(in) :: edge3
+   type (oldEdgeBuffer_t)  , intent(in) :: edge3
    type (derivative_t)  , intent(in) :: deriv
    type (filter_t)                   :: flt
    type (hybrid_t)      , intent(in) :: hybrid
@@ -670,7 +670,7 @@ subroutine dg_ssprk2(elem,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)
 !=======================================================================================================!
    implicit none
    type(element_t)      , intent(inout) :: elem(:)
-   type (EdgeBuffer_t)  , intent(in) :: edge3
+   type (oldEdgeBuffer_t)  , intent(in) :: edge3
    type (derivative_t)  , intent(in) :: deriv
    type (filter_t)                   :: flt
    type (hybrid_t)      , intent(in) :: hybrid

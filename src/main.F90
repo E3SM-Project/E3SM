@@ -26,7 +26,7 @@ program main
   ! -----------------------------------------------
   !      use state_mod
   ! -----------------------------------------------
-  use edge_mod, only : EdgeBuffer_t
+  use edge_mod, only : oldEdgeBuffer_t
   ! -----------------------------------------------
   use reduction_mod, only : ReductionBuffer_ordered_1d_t
   ! -----------------------------------------------
@@ -38,9 +38,9 @@ program main
   type (element_t), pointer :: elem(:)
   type (fvm_struct), pointer  :: fvm(:)
   
-  type (EdgeBuffer_t)  :: edge1            ! 1 component edge buffer (1, 3d scalar field)
-  type (EdgeBuffer_t)  :: edge2            ! 2 component edge buffer (1, 3d vector field)
-  type (EdgeBuffer_t)  :: edge3            ! 3 component edge buffer (1, 3d vector + 1 3d scalar field)
+  type (oldEdgeBuffer_t)  :: edge1            ! 1 component edge buffer (1, 3d scalar field)
+  type (oldEdgeBuffer_t)  :: edge2            ! 2 component edge buffer (1, 3d vector field)
+  type (oldEdgeBuffer_t)  :: edge3            ! 3 component edge buffer (1, 3d vector + 1 3d scalar field)
   type (ReductionBuffer_ordered_1d_t)  :: red    ! reduction buffer for cg
   type (parallel_t)    :: par              ! parallel structure for distributed memory programming
   type (domain1d_t), allocatable :: dom_mt(:)

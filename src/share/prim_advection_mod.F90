@@ -850,7 +850,7 @@ module prim_advection_mod
   use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
         statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
         prescribed_wind, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
-  use edge_mod, only           : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, initedgebuffer, edgevunpackmin, ghostbuffer3D_t
+  use edge_mod, only           : EdgeDescriptor_t, newEdgeBuffer_t, newedgevpack, newedgerotate, newedgevunpack, initedgebuffer, newedgevunpackmin, ghostbuffer3D_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax
@@ -870,7 +870,7 @@ module prim_advection_mod
 #endif
   public :: vertical_remap
 
-  type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1,  edgeveloc
+  type (newEdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1,  edgeveloc
   type (ghostBuffer3D_t)   :: ghostbuf_tr
 
   integer,parameter :: DSSeta = 1
@@ -884,12 +884,16 @@ module prim_advection_mod
 
 contains
 
-  subroutine Prim_Advec_Init1(par, n_domains)
+  subroutine Prim_Advec_Init1(par, elem, n_domains)
     use dimensions_mod, only : nlev, qsize, nelemd
     use parallel_mod, only : parallel_t
     type(parallel_t) :: par
     integer, intent(in) :: n_domains
+    type (element_t) :: elem(:)
+    type (EdgeDescriptor_t), allocatable :: desc(:)
 
+
+    integer :: ie
     ! Shared buffer pointers.
     ! Using "=> null()" in a subroutine is usually bad, because it makes
     ! the variable have an implicit "save", and therefore shared between
@@ -897,19 +901,39 @@ contains
     real(kind=real_kind), pointer :: buf_ptr(:) => null()
     real(kind=real_kind), pointer :: receive_ptr(:) => null()
 
+
+    allocate(desc(nelemd))
+    do ie=1,nelemd
+       desc(ie) = elem(ie)%desc
+    enddo
+
+    !JMD KLUDGE
+    !JMD note that for not for testing of the newEdgeBuffer_t modifications I
+    !JMD setting up separate edge buffers.  We can go back and address this memory
+    !JMD saving modification later.
+    !JMD
     ! this might be called with qsize=0
     ! allocate largest one first
     ! Currently this is never freed. If it was, only this first one should
     ! be freed, as only it knows the true size of the buffer.
-    call initEdgeBuffer(par,edgeAdvQ3,max(nlev,qsize*nlev*3), buf_ptr, receive_ptr)  ! Qtens,Qmin, Qmax
+    !call initEdgeBuffer(par,edgeAdvQ3,max(nlev,qsize*nlev*3), buf_ptr, receive_ptr)  ! Qtens,Qmin, Qmax
+    call initEdgeBuffer(par,edgeAdvQ3,desc,max(nlev,qsize*nlev*3))  ! Qtens,Qmin, Qmax
 
     ! remaining edge buffers can share %buf and %receive with edgeAdvQ3
     ! (This is done through the optional 1D pointer arguments.)
-    call initEdgeBuffer(par,edgeAdv1,nlev,buf_ptr,receive_ptr)
-    call initEdgeBuffer(par,edgeAdv,qsize*nlev,buf_ptr,receive_ptr)
-    call initEdgeBuffer(par,edgeAdv_p1,qsize*nlev + nlev,buf_ptr,receive_ptr)
-    call initEdgeBuffer(par,edgeAdvQ2,qsize*nlev*2,buf_ptr,receive_ptr)  ! Qtens,Qmin, Qmax
-    call initEdgeBuffer(par,edgeveloc,2*nlev)
+    !call initEdgeBuffer(par,edgeAdv1,nlev,buf_ptr,receive_ptr)
+    !call initEdgeBuffer(par,edgeAdv,qsize*nlev,buf_ptr,receive_ptr)
+    !call initEdgeBuffer(par,edgeAdv_p1,qsize*nlev + nlev,buf_ptr,receive_ptr)
+    !call initEdgeBuffer(par,edgeAdvQ2,qsize*nlev*2,buf_ptr,receive_ptr)  ! Qtens,Qmin, Qmax
+    !call initEdgeBuffer(par,edgeveloc,2*nlev)
+
+    call initEdgeBuffer(par,edgeAdv1,desc,nlev)
+    call initEdgeBuffer(par,edgeAdv,desc,qsize*nlev)
+    call initEdgeBuffer(par,edgeAdv_p1,desc,qsize*nlev + nlev)
+    call initEdgeBuffer(par,edgeAdvQ2,desc,qsize*nlev*2)  ! Qtens,Qmin, Qmax
+    call initEdgeBuffer(par,edgeveloc,desc,2*nlev)
+
+    deallocate(desc)
 
     ! Don't actually want these saved, if this is ever called twice.
     nullify(buf_ptr)
@@ -994,11 +1018,11 @@ contains
           do k=1,nlev
              elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k)
           enddo
-          call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+          call newedgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
        enddo
        call bndry_exchangeV(hybrid,edgeAdv1)
        do ie=nets,nete
-          call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+          call newedgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
           do k=1,nlev
              elem(ie)%derived%eta_dot_dpdn(:,:,k)=elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
           enddo
@@ -1120,7 +1144,7 @@ contains
              eta_dot_dpdn(:,:,k) = elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%spheremp(:,:)
           enddo
           ! eta_dot_dpdn at nlevp is zero, so we dont boundary exchange it:
-          call edgeVpack(edgeAdv1,eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+          call newedgeVpack(edgeAdv1,eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
        enddo
        call bndry_exchangeV(hybrid,edgeAdv1)
        do ie=nets,nete
@@ -1129,7 +1153,7 @@ contains
              eta_dot_dpdn(:,:,k) = elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%spheremp(:,:)
           enddo
           ! unpack DSSed edge data
-          call edgeVunpack(edgeAdv1,eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+          call newedgeVunpack(edgeAdv1,eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
           do k=1,nlevp
              eta_dot_dpdn(:,:,k) = eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
           enddo
@@ -1541,7 +1565,7 @@ end subroutine Cobra_SLBQP
 subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl)
 
   use derivative_mod,         only : derivative_t, ugradv_sphere
-  use edge_mod      ,         only : EdgeBuffer_t, edgevpack, edgevunpack
+  use edge_mod      ,         only : newEdgeBuffer_t, newedgevpack, newedgevunpack
   use bndry_mod     ,         only : bndry_exchangev
   use kinds,                  only : real_kind
   use hybrid_mod,             only : hybrid_t
@@ -1598,11 +1622,11 @@ subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl)
       elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp(:,:)
       elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp(:,:)
     enddo
-    call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
+    call newedgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
   enddo
   call bndry_exchangeV(hy,edgeveloc)
   do ie=nets,nete
-    call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
+    call newedgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
     do k=1, nlev
       elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
       elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
@@ -1893,7 +1917,7 @@ end subroutine ALE_parametric_coords
   use hybrid_mod     , only : hybrid_t
   use element_mod    , only : element_t
   use derivative_mod , only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use edge_mod       , only : edgevpack, edgevunpack
+  use edge_mod       , only : newedgevpack, newedgevunpack
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
 #if USE_CUDA_FORTRAN
@@ -2149,9 +2173,9 @@ end subroutine ALE_parametric_coords
     enddo
 
     if ( DSSopt == DSSno_var ) then
-      call edgeVpack(edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
+      call newedgeVpack(edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie)
     else
-      call edgeVpack(edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
+      call newedgeVpack(edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
       ! also DSS extra field
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -2159,7 +2183,7 @@ end subroutine ALE_parametric_coords
       do k = 1 , nlev
         DSSvar(:,:,k) = elem(ie)%spheremp(:,:) * DSSvar(:,:,k)
       enddo
-      call edgeVpack( edgeAdv_p1 , DSSvar(:,:,1:nlev) , nlev , nlev*qsize , elem(ie)%desc )
+      call newedgeVpack( edgeAdv_p1 , DSSvar(:,:,1:nlev) , nlev , nlev*qsize , ie)
     endif
   enddo
 
@@ -2175,7 +2199,7 @@ end subroutine ALE_parametric_coords
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
     if ( DSSopt == DSSno_var ) then
-      call edgeVunpack( edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
+      call newedgeVunpack( edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,q)
 #endif
@@ -2185,7 +2209,7 @@ end subroutine ALE_parametric_coords
         enddo
       enddo
     else
-      call edgeVunpack( edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
+      call newedgeVunpack( edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
 #if (defined COLUMN_OPENMP)
       !$omp parallel do private(q,k)
 #endif
@@ -2194,7 +2218,7 @@ end subroutine ALE_parametric_coords
           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
         enddo
       enddo
-      call edgeVunpack( edgeAdv_p1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , elem(ie)%desc )
+      call newedgeVunpack( edgeAdv_p1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
 
       do k = 1 , nlev
         DSSvar(:,:,k) = DSSvar(:,:,k) * elem(ie)%rspheremp(:,:)
@@ -2234,7 +2258,7 @@ end subroutine ALE_parametric_coords
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, divergence_sphere_wk, edge_flux_u_cg, gll_to_dgmodal, dgmodal_to_gll
-  use edge_mod, only : edgevpack, edgevunpack, edgedgvunpack
+  use edge_mod, only : newedgevpack, newedgevunpack, newedgedgvunpack
   use bndry_mod, only : bndry_exchangev
   use hybvcoord_mod, only : hvcoord_t
 
@@ -2290,9 +2314,9 @@ end subroutine ALE_parametric_coords
      if ( DSSopt == DSSdiv_vdp_ave) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
      if(DSSopt==DSSno_var)then
-	call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,elem(ie)%desc)
+	call newedgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,ie)
      else
-	call edgeVpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,elem(ie)%desc)
+	call newedgeVpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,ie)
 	! also DSS extra field
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -2300,7 +2324,7 @@ end subroutine ALE_parametric_coords
 	do k=1,nlev
 	    DSSvar(:,:,k) = elem(ie)%spheremp(:,:)*DSSvar(:,:,k)
 	enddo
-	call edgeVpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,nlev*qsize,elem(ie)%desc)
+	call newedgeVpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,nlev*qsize,ie)
      endif
 
   end do
@@ -2318,10 +2342,10 @@ end subroutine ALE_parametric_coords
      if ( DSSopt == DSSdiv_vdp_ave) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
      if(DSSopt==DSSno_var)then
-	call edgeDGVunpack(edgeAdv,qedges,nlev*qsize,0,elem(ie)%desc)
+	call newedgeDGVunpack(edgeAdv,qedges,nlev*qsize,0,ie)
      else
-	call edgeDGVunpack(edgeAdv_p1,qedges,nlev*qsize,0,elem(ie)%desc)
-	call edgeVunpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,elem(ie)%desc)
+	call newedgeDGVunpack(edgeAdv_p1,qedges,nlev*qsize,0,ie)
+	call newedgeVunpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,ie)
 	do k=1,nlev
 	  DSSvar(:,:,k)=DSSvar(:,:,k)*elem(ie)%rspheremp(:,:)
 	enddo
@@ -2723,11 +2747,11 @@ end subroutine ALE_parametric_coords
   use hybrid_mod     , only : hybrid_t
   use element_mod    , only : element_t
   use derivative_mod , only : derivative_t
-  use edge_mod       , only : EdgeBuffer_t, edgevpack, edgevunpack
+  use edge_mod       , only : newEdgeBuffer_t, newedgevpack, newedgevunpack
   use bndry_mod      , only : bndry_exchangev
   use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
   implicit none
-  type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
+  type (newEdgeBuffer_t)  , intent(inout)         :: edgeAdv
   type (element_t)     , intent(inout), target :: elem(:)
   type (hvcoord_t)     , intent(in   )         :: hvcoord
   type (hybrid_t)      , intent(in   )         :: hybrid
@@ -2820,13 +2844,13 @@ end subroutine ALE_parametric_coords
         ! smooth some of the negativities introduced by diffusion:
         call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,nt_qdp))
       enddo
-      call edgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
+      call newedgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
     enddo
 
     call bndry_exchangeV( hybrid , edgeAdv )
 
     do ie = nets , nete
-      call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
+      call newedgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
       !rspheremp     => elem(ie)%rspheremp
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k)

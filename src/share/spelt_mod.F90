@@ -13,7 +13,7 @@ module spelt_mod
 
   use kinds, only : real_kind, int_kind
   use dimensions_mod, only: ne, nlev, ntrac, np, ntrac_d, nc, nhe, nip, nipm, nep
-  use edge_mod, only : ghostBuffertr_t,edgebuffer_t
+  use edge_mod, only : ghostBuffertr_t,oldedgebuffer_t
   use time_mod, only : timelevel_t
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2D_t
   use element_mod, only : element_t, timelevels
@@ -24,7 +24,7 @@ module spelt_mod
   save
   type (ghostBuffertr_t)                      :: cellghostbuf
   type (ghostbuffertr_t)                      :: factorR
-  type (EdgeBuffer_t)                         :: edgeveloc
+  type (oldEdgeBuffer_t)                         :: edgeveloc
 
   type, public :: spelt_struct
     ! spelt tracer mixing ratio: (kg/kg)

@@ -14,7 +14,7 @@ module dg_tests_mod
   ! ------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, gradient_wk, divergence, vorticity
   ! ------------------------
-  use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : oldedgebuffer_t, edgevpack, edgevunpack
   ! ------------------------
   use bndry_mod, only : bndry_exchangeV
   ! ------------------------
@@ -984,7 +984,7 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
     integer              , intent(in) :: iounit
     type (TimeLevel_t)  , intent(in)  :: tl    
     real (kind=real_kind), intent(in) :: pmean
-    type (EdgeBuffer_t)               :: edge2
+    type (oldEdgeBuffer_t)               :: edge2
     type (derivative_t)               :: deriv
     type (hybrid_t)      , intent(in) :: hybrid
     integer              , intent(in) :: nets,nete

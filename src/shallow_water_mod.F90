@@ -14,7 +14,7 @@ module shallow_water_mod
                              divergence, vorticity, laplace_sphere_wk, &
                              vlaplace_sphere_wk, divergence_sphere
   ! ------------------------
-  use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : oldedgebuffer_t, edgevpack, edgevunpack
   ! ------------------------
   use bndry_mod, only : bndry_exchangeV
   ! ------------------------
@@ -259,7 +259,7 @@ contains
     integer              , intent(in) :: iounit
     type (TimeLevel_t)  , intent(in) :: tl    
     real (kind=real_kind), intent(in) :: pmean
-    type (EdgeBuffer_t)               :: edge3
+    type (oldEdgeBuffer_t)               :: edge3
     type (derivative_t)               :: deriv
     type (hybrid_t)      , intent(in) :: hybrid
     integer              , intent(in) :: nets,nete
@@ -1872,7 +1872,7 @@ contains
     integer              , intent(in) :: iounit
     type (TimeLevel_t)  , intent(in) :: tl    
     real (kind=real_kind), intent(in) :: pmean
-    type (EdgeBuffer_t)               :: edge2
+    type (oldEdgeBuffer_t)               :: edge2
     type (derivative_t)               :: deriv
     type (hybrid_t)      , intent(in) :: hybrid
     integer              , intent(in) :: nets,nete
@@ -3183,7 +3183,7 @@ contains
     real (kind=real_kind) :: phiuv(3)
 !I am passing edge3 and hybrid because i want to test limiters
 !this is temporary change though
-    type (EdgeBuffer_t)  , intent(inout),optional :: edge3 
+    type (oldEdgeBuffer_t)  , intent(inout),optional :: edge3 
     type (hybrid_t)      , intent(in),optional :: hybrid  
 
     ! Local variables

@@ -483,7 +483,7 @@ contains
     use interpolate_mod, only : interpdata_t, interpolate_scalar, interpolate_vector, &
          get_interp_parameter,var_is_vector_vvar,var_is_vector_uvar, replace_vec_by_vordiv
     use element_mod, only : element_t
-    use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edge_mod, only : oldedgebuffer_t, oldedgevpack, oldedgevunpack, initedgebuffer, freeedgebuffer
     use dimensions_mod, only : nelemd, nlev, np
     use parallel_mod, only : parallel_t, syncmp
     use bndry_mod, only : bndry_exchangeV
@@ -496,7 +496,7 @@ contains
     type(nf_handle), intent(inout) :: outfile
     type(interpdata_t), intent(in) :: interpdata(:)
 
-    type(edgeBuffer_t) :: edge    
+    type(oldedgeBuffer_t) :: edge    
     real(kind=real_kind), pointer :: array(:,:), varray(:,:,:)
     real(kind=real_kind), pointer :: farray(:)	, fvarray(:,:), ftmp(:,:), fvtmp(:,:,:)
     real(kind=real_kind), pointer :: zeta(:,:,:,:),div(:,:,:,:)
@@ -608,13 +608,13 @@ contains
                       call putUniquePoints(elem(ie)%idxP, 2, lev, &
                            fvtmp,elem(ie)%state%v(:,:,:,:,1))
                       deallocate(fvtmp)
-                      call edgevpack(edge, elem(ie)%state%v(:,:,:,:,1),2*lev,0,elem(ie)%desc)
+                      call oldedgevpack(edge, elem(ie)%state%v(:,:,:,:,1),2*lev,0,elem(ie)%desc)
                    end do
                    deallocate(fvarray)
 
                    call bndry_exchangeV(par, edge)
                    do ie=1,nelemd
-                      call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*lev,0,elem(ie)%desc)
+                      call oldedgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*lev,0,elem(ie)%desc)
                    enddo
 
                    ! hack to get native vorticity/divergence
@@ -706,7 +706,7 @@ contains
                       offset = offset+elem(ie)%idxP%NumUniquePts
                       elem(ie)%state%Q(:,:,:,1) = 0.0d0
                       call putUniquePoints(elem(ie)%idxP, lev, ftmp, elem(ie)%state%Q(:,:,1:lev,1))
-                      call edgevpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,elem(ie)%desc)
+                      call oldedgevpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,elem(ie)%desc)
                       deallocate(ftmp)
                    end do
 
@@ -717,7 +717,7 @@ contains
                    array=0
                    do ie=1,nelemd
                       en=st+interpdata(ie)%n_interp-1
-                      call edgeVunpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,elem(ie)%desc)
+                      call oldedgeVunpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,elem(ie)%desc)
                       
                       call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,1:lev,1), &
                            np, lev, array(st:en,:))

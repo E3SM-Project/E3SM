@@ -19,7 +19,7 @@
     !=========================================!
     use element_mod, only : element_t
     !=========================================!
-    use edge_mod, only : EdgeBuffer_t, edgevpack,edgerotate,edgevunpack,edgeDGVpack,edgeDGVunpack
+    use edge_mod, only : oldEdgeBuffer_t, edgevpack,edgerotate,edgevunpack,edgeDGVpack,edgeDGVunpack
     !=========================================!
     use filter_mod, only : filter_t, filter_P
     !=========================================!
@@ -74,7 +74,7 @@
       !=======================================================================================================!
       implicit none
       type (element_t)     , intent(inout) :: elem(:)
-      type (EdgeBuffer_t)  , intent(in) :: edge3
+      type (oldEdgeBuffer_t)  , intent(in) :: edge3
       type (derivative_t)  , intent(in) :: deriv
       type (filter_t)                   :: flt
       type (hybrid_t)      , intent(in) :: hybrid
@@ -166,7 +166,7 @@
       implicit none
       !=======================================================================================================!
       type (Element_t)     , intent(inout), target :: elem(:)
-      type (EdgeBuffer_t)  , intent(in) :: edge3
+      type (oldEdgeBuffer_t)  , intent(in) :: edge3
       type (derivative_t)  , intent(in) :: deriv
       type (filter_t)                   :: flt
       type (hybrid_t)      , intent(in) :: hybrid
@@ -700,7 +700,7 @@
       implicit none
       !=======================================================================================================!
       type (Element_t)     , intent(inout), target :: elem(:)
-      type (EdgeBuffer_t)  , intent(in) :: edge3
+      type (oldEdgeBuffer_t)  , intent(in) :: edge3
       type (derivative_t)  , intent(in) :: deriv
       type (filter_t)                   :: flt
       type (hybrid_t)      , intent(in) :: hybrid
@@ -1150,7 +1150,7 @@
       implicit none
       !=======================================================================================================!
       type (Element_t)     , intent(inout), target :: elem(:)
-      type (EdgeBuffer_t)  , intent(in) :: edge3
+      type (oldEdgeBuffer_t)  , intent(in) :: edge3
       type (derivative_t)  , intent(in) :: deriv
       type (filter_t)                   :: flt
       type (hybrid_t)      , intent(in) :: hybrid
@@ -1631,7 +1631,7 @@
 !      implicit none
 !      !=======================================================================================================!
 !      type (Element_t)     , intent(inout), target :: elem(:)
-!      type (EdgeBuffer_t)  , intent(in) :: edge3
+!      type (oldEdgeBuffer_t)  , intent(in) :: edge3
 !      type (derivative_t)  , intent(in) :: deriv
 !      type (filter_t)                   :: flt
 !      type (hybrid_t)      , intent(in) :: hybrid

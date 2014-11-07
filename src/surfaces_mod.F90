@@ -20,7 +20,7 @@ module surfaces_mod
                                      cube_face_number_from_cart, distance, sphere_tri_area
 
   use parallel_mod, only   : abortmp,  global_shared_buf, global_shared_sum
-  use edge_mod, only       : EdgeBuffer_t, Ghostbuffer3d_t
+  use edge_mod, only       : oldEdgeBuffer_t, Ghostbuffer3d_t
   use bndry_mod,    only : ghost_exchangevfull
   use dimensions_mod, only : np, ne, nelemd, max_elements_attached_to_node, s_nv
   use global_norms_mod, only: wrap_repro_sum
@@ -72,7 +72,7 @@ module surfaces_mod
 #define USE_PENTAGONS
 
   type (ctrlvol_t),    public, allocatable, target  :: cvlist(:)
-  type (EdgeBuffer_t), private  :: edge1
+  type (oldEdgeBuffer_t), private  :: edge1
   type (GhostBuffer3D_t)        :: ghost_buf
 
 
@@ -174,7 +174,7 @@ contains
 
   subroutine InitControlVolumes_duel(elem, hybrid,nets,nete)
     use bndry_mod,          only : bndry_exchangev
-    use edge_mod,           only : edgeVpack, edgeVunpack, freeedgebuffer, freeghostbuffer3d
+    use edge_mod,           only : oldedgeVpack, oldedgeVunpack, freeedgebuffer, freeghostbuffer3d
     use element_mod,        only : element_t, element_var_coordinates, element_var_coordinates3d
     use hybrid_mod,         only : hybrid_t
 
@@ -238,7 +238,7 @@ contains
           enddo
        enddo
        test(:,:,1) = cvlist(ie)%vol(:,:)
-       call edgeVpack(edge1,test,1,0,elem(ie)%desc)
+       call oldedgeVpack(edge1,test,1,0,elem(ie)%desc)
     enddo
 
     _DBG_
@@ -248,7 +248,7 @@ contains
     test = 0
     do ie=nets,nete
        test(:,:,1) = cvlist(ie)%vol(:,:)
-       call edgeVunpack(edge1, test, 1, 0, elem(ie)%desc)
+       call oldedgeVunpack(edge1, test, 1, 0, elem(ie)%desc)
        cvlist(ie)%totvol(:,:) = test(:,:,1) 
        cvlist(ie)%invvol(:,:)=1.0_real_kind/cvlist(ie)%totvol(:,:)
     enddo
@@ -1655,7 +1655,7 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
     use bndry_mod, only : bndry_exchangev
     use element_mod, only : element_t
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : edgeVpack, edgeVunpack, edgeVunpackVert
+    use edge_mod, only : oldedgeVpack, oldedgeVunpack, edgeVunpackVert
     use parallel_mod, only : abortmp	
 
     implicit none
@@ -1792,7 +1792,7 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
 
        kptr=0
        test(:,:,1) = cvlist(ie)%vol(:,:)
-       call edgeVpack(edge1,test(1,1,1),1,kptr,elem(ie)%desc)
+       call oldedgeVpack(edge1,test(1,1,1),1,kptr,elem(ie)%desc)
 
        cvlist(ie)%invvol(:,:) = cvlist(ie)%vol(:,:)
 
@@ -1805,7 +1805,7 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
 
     do ie=nets,nete
        kptr=0
-       call edgeVunpack(edge1, cvlist(ie)%invvol(1,1),1, kptr, elem(ie)%desc)
+       call oldedgeVunpack(edge1, cvlist(ie)%invvol(1,1),1, kptr, elem(ie)%desc)
        cvlist(ie)%totvol(:,:)=cvlist(ie)%invvol(:,:)
        cvlist(ie)%invvol(:,:)=1.0_real_kind/cvlist(ie)%invvol(:,:)
     enddo
@@ -1876,7 +1876,7 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
        enddo
 
        kptr=0
-       call edgeVpack(edge1,vertpack,3,kptr,elem(ie)%desc)
+       call oldedgeVpack(edge1,vertpack,3,kptr,elem(ie)%desc)
     enddo
 
     call bndry_exchangeV(hybrid,edge1)

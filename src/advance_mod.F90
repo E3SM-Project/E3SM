@@ -22,7 +22,7 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : EdgeBuffer_t
+    use edge_mod, only : oldEdgeBuffer_t
     ! ---------------------
     use filter_mod, only : filter_t
     ! ---------------------
@@ -45,8 +45,8 @@ contains
     implicit none
 
     type (element_t)     , intent(inout), target :: elem(:)
-    type (EdgeBuffer_t)  , intent(in) :: edge2
-    type (EdgeBuffer_t)  , intent(inout) :: edge3
+    type (oldEdgeBuffer_t)  , intent(in) :: edge2
+    type (oldEdgeBuffer_t)  , intent(inout) :: edge3
 
     type (derivative_t)  , intent(in) :: deriv
 
@@ -195,7 +195,7 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, edgedgvunpack
+    use edge_mod, only : oldEdgeBuffer_t, edgevpack, edgevunpack, edgedgvunpack
     ! ---------------------
     use filter_mod, only : filter_t
     ! ---------------------
@@ -224,8 +224,8 @@ contains
 
     type (element_t)     , intent(inout), target :: elem(:)
     type (Rk_t)          , intent(in) :: MyRk
-    type (EdgeBuffer_t)  , intent(in) :: edge2
-    type (EdgeBuffer_t)  , intent(inout) :: edge3
+    type (oldEdgeBuffer_t)  , intent(in) :: edge2
+    type (oldEdgeBuffer_t)  , intent(inout) :: edge3
 
     type (derivative_t)  , intent(in) :: deriv
 
@@ -1404,7 +1404,7 @@ contains
     use hybrid_mod, only : hybrid_t
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : oldEdgeBuffer_t, edgevpack, edgevunpack
     use bndry_mod, only : bndry_exchangev
     use viscosity_mod, only : biharmonic_wk, neighbor_minmax
     ! ---------------------
@@ -1415,7 +1415,7 @@ contains
     integer :: nt,nets,nete
     real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
     real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
-    type (EdgeBuffer_t)  , intent(inout) :: edge3
+    type (oldEdgeBuffer_t)  , intent(inout) :: edge3
     type (derivative_t)  , intent(in) :: deriv
     real (kind=real_kind) :: dt2
 
@@ -1647,7 +1647,7 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : oldEdgeBuffer_t, edgevpack, edgevunpack
     ! ---------------------
     use filter_mod, only : filter_t, filter_P
     ! ---------------------
@@ -1674,9 +1674,9 @@ contains
     ! ---------------------
     implicit none
     type (element_t), intent(inout), target :: elem(:)
-    type (EdgeBuffer_t)               :: edge1
-    type (EdgeBuffer_t)               :: edge2
-    type (EdgeBuffer_t)               :: edge3
+    type (oldEdgeBuffer_t)               :: edge1
+    type (oldEdgeBuffer_t)               :: edge2
+    type (oldEdgeBuffer_t)               :: edge3
     type (ReductionBuffer_ordered_1d_t)     :: red
     type (derivative_t)               :: deriv
     type (filter_t)                   :: flt
@@ -2290,7 +2290,7 @@ contains
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : oldEdgeBuffer_t, edgevpack, edgevunpack
   use bndry_mod, only : bndry_exchangev
   implicit none
 
@@ -2299,7 +2299,7 @@ contains
   integer :: nm1,np1,n0,nets,nete
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
-  type (EdgeBuffer_t)  , intent(inout) :: edge3
+  type (oldEdgeBuffer_t)  , intent(inout) :: edge3
   type (derivative_t)  , intent(in) :: deriv
   real (kind=real_kind) :: dt2,pmean,real_time
 
