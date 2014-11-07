@@ -520,7 +520,7 @@ contains
 #endif
     allocate(cg(0:n_domains-1))
     call prim_advance_init(par,elem,integration)
-    call Prim_Advec_Init1(par, n_domains)
+    call Prim_Advec_Init1(par, elem,n_domains)
     call diffusion_init(par)
     if (ntrac>0) then
 #if defined(_SPELT)
@@ -1893,7 +1893,7 @@ contains
     subroutine smooth_topo_datasets(phis,sghdyn,sgh30dyn,elem,hybrid,nets,nete)
     use control_mod, only : smooth_phis_numcycle,smooth_sgh_numcycle
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : oldEdgeBuffer_t, oldedgevpack, oldedgevunpack
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use viscosity_mod, only : biharmonic_wk

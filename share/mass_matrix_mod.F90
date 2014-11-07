@@ -8,7 +8,7 @@ module mass_matrix_mod
   use quadrature_mod, only : quadrature_t, gauss ,gausslobatto
   use element_mod, only : element_t
   use parallel_mod, only : parallel_t
-  use edge_mod, only : edgebuffer_t,edgevpack,edgevunpack, &
+  use edge_mod, only : oldedgebuffer_t, oldedgevpack, oldedgevunpack, &
        freeedgebuffer,initedgebuffer  
   use bndry_mod, only : bndry_exchangev
 implicit none
@@ -29,7 +29,7 @@ contains
     type (parallel_t),intent(in) :: par
     type (element_t) :: elem(:)
 
-    type (EdgeBuffer_t)    :: edge
+    type (oldEdgeBuffer_t)    :: edge
 
     real(kind=real_kind)  da                     ! area element
 
@@ -62,7 +62,7 @@ contains
        end do
 
        kptr=0
-       call edgeVpack(edge,elem(ii)%rmp,1,kptr,elem(ii)%desc)
+       call oldedgeVpack(edge,elem(ii)%rmp,1,kptr,elem(ii)%desc)
 
     end do
 
@@ -75,7 +75,7 @@ contains
     do ii=1,nelemd
 
        kptr=0
-       call edgeVunpack(edge,elem(ii)%rmp,1,kptr,elem(ii)%desc)
+       call oldedgeVunpack(edge,elem(ii)%rmp,1,kptr,elem(ii)%desc)
 
        do j=1,np
           do i=1,np
@@ -102,12 +102,12 @@ contains
           end do
        end do
        kptr=0
-       call edgeVpack(edge,elem(ii)%rspheremp,1,kptr,elem(ii)%desc)
+       call oldedgeVpack(edge,elem(ii)%rspheremp,1,kptr,elem(ii)%desc)
     end do
     call bndry_exchangeV(par,edge)
     do ii=1,nelemd
        kptr=0
-       call edgeVunpack(edge,elem(ii)%rspheremp,1,kptr,elem(ii)%desc)
+       call oldedgeVunpack(edge,elem(ii)%rspheremp,1,kptr,elem(ii)%desc)
        do j=1,np
           do i=1,np
              elem(ii)%rspheremp(i,j)=1.0D0/elem(ii)%rspheremp(i,j)

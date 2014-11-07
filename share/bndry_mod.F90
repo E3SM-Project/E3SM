@@ -31,7 +31,7 @@ contains
 
   subroutine bndry_exchangeV_nonth(par,buffer)
     use kinds, only : log_kind
-    use edge_mod, only : Edgebuffer_t
+    use edge_mod, only : oldEdgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
@@ -41,7 +41,7 @@ contains
     use parallel_mod, only : parallel_t, abortmp
 #endif
     type (parallel_t)              :: par
-    type (EdgeBuffer_t)            :: buffer
+    type (oldEdgeBuffer_t)            :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
     type (Cycle_t),pointer                        :: pCycle
@@ -153,7 +153,7 @@ contains
 
   subroutine bndry_exchangeV_nonth_recv_buf(par,buffer)
     use kinds, only : log_kind
-    use edge_mod, only : Edgebuffer_t
+    use edge_mod, only : oldEdgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
@@ -163,7 +163,7 @@ contains
     use parallel_mod, only : parallel_t, abortmp
 #endif
     type (parallel_t)              :: par
-    type (EdgeBuffer_t)            :: buffer
+    type (oldEdgeBuffer_t)            :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
     type (Cycle_t),pointer                        :: pCycle
@@ -267,7 +267,7 @@ contains
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
-    integer        :: i
+    integer        :: i,j
 
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr
@@ -317,19 +317,21 @@ contains
     
     call MPI_Waitall(nSendCycles,Srequest,status,ierr)
     call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
-
     !$OMP END MASTER
+
 
 
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
     iptr = nlyr*(pSchedule%MoveCycle(1)%ptrP - 1) + 1
     length = nlyr*pSchedule%MoveCycle(1)%lengthP
-    !$OMP DO SCHEDULE(dynamic), PRIVATE(i)
+    !$OMP DO SCHEDULE(dynamic,384), PRIVATE(i,j)
     do i=0,length-1
-      buffer%receive(iptr+i) = buffer%buf(iptr+i)
+      j=iptr+i
+      buffer%receive(j) = buffer%buf(j)
     enddo
     !$OMP END DO
+
 
   end subroutine bndry_exchangeV_nonth_recv_newbuf
 
@@ -442,12 +444,12 @@ contains
   !********************************************************************************
   subroutine bndry_exchangeV_thsave(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : Edgebuffer_t
+    use edge_mod, only : oldEdgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
     type (hybrid_t)                   :: hybrid
-    type (EdgeBuffer_t)               :: buffer
+    type (oldEdgeBuffer_t)               :: buffer
 
     call t_adj_detailf(+2)
     call t_startf('bndry_exchange')

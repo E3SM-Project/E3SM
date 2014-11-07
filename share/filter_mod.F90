@@ -681,12 +681,12 @@ contains
 #ifdef _PRIM
   subroutine preq_filter(elem, edge3p1, flt, hybrid, nfilt, nets, nete)
     use element_mod, only : element_t
-    use edge_mod, only  : Edgebuffer_t, edgevpack, edgevunpack
+    use edge_mod, only  : newEdgebuffer_t, newedgevpack, newedgevunpack
     use bndry_mod, only : bndry_exchangev
     use hybrid_mod, only  : hybrid_t
     use dimensions_mod, only : nlev
     type (element_t),    intent(inout)  :: elem(:)
-    type (EdgeBuffer_t), intent(inout)  :: edge3p1
+    type (newEdgeBuffer_t), intent(inout)  :: edge3p1
     type (filter_t),     intent(in)     :: flt
     integer,             intent(in)     :: nfilt
     integer,             intent(in)     :: nets,nete
@@ -721,13 +721,13 @@ contains
           end do
 
           kptr=0
-          call edgeVpack(edge3p1,elem(ie)%state%v(:,:,1,1,nfilt),2*nlev,kptr,elem(ie)%desc)
+          call newedgeVpack(edge3p1,elem(ie)%state%v(:,:,1,1,nfilt),2*nlev,kptr,ie)
 
           kptr=2*nlev
-          call edgeVpack(edge3p1,elem(ie)%state%T(:,:,1,nfilt),nlev,kptr,elem(ie)%desc)
+          call newedgeVpack(edge3p1,elem(ie)%state%T(:,:,1,nfilt),nlev,kptr,ie)
 
           kptr=3*nlev
-          call edgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,nfilt),1,kptr,elem(ie)%desc)
+          call newedgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,nfilt),1,kptr,ie)
 
           !          kptr=0
           !          call edgerotate(edge3p1,2*nlev,kptr,elem(ie)%desc)
@@ -738,13 +738,13 @@ contains
 
        do ie=nets,nete
           kptr=0
-          call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,1,1,nfilt), 2*nlev, kptr, elem(ie)%desc)
+          call newedgeVunpack(edge3p1, elem(ie)%state%v(:,:,1,1,nfilt), 2*nlev, kptr, ie)
 
           kptr=2*nlev
-          call edgeVunpack(edge3p1, elem(ie)%state%T(:,:,1,nfilt), nlev, kptr, elem(ie)%desc)
+          call newedgeVunpack(edge3p1, elem(ie)%state%T(:,:,1,nfilt), nlev, kptr, ie)
 
           kptr=3*nlev
-          call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,nfilt), 1, kptr, elem(ie)%desc)
+          call newedgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,nfilt), 1, kptr, ie)
 
           do j=1,np
              do i=1,np
@@ -898,14 +898,14 @@ contains
     use element_mod, only : element_t
     use parallel_mod, only : syncmp
     use dimensions_mod, only : nlev
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : oldEdgeBuffer_t, oldedgevpack, oldedgevunpack
     use bndry_mod, only : bndry_exchangev
     use hybrid_mod, only : hybrid_t
     use physical_constants, only : rearth,rrearth
     use control_mod, only : integration
     implicit none
     type (element_t), intent(inout), target :: elem(:)
-    type (EdgeBuffer_t)           :: edge_3lp1
+    type (oldEdgeBuffer_t)           :: edge_3lp1
     type (filter_t) , intent(in)  :: flt
     integer         , intent(in)  :: nfilt
     integer         , intent(in)  :: nets,nete
@@ -964,21 +964,21 @@ contains
           end do
 
           kptr=0
-          call edgeVpack(edge_3lp1,                 &
+          call oldedgeVpack(edge_3lp1,                 &
                elem(ie)%state%lnps(:,:,nfilt), &
                1,                         &
                kptr,                      &
                elem(ie)%desc)
 
           kptr=1
-          call edgeVpack(edge_3lp1,                 &
+          call oldedgeVpack(edge_3lp1,                 &
                elem(ie)%state%T(:,:,1,nfilt),  &
                nlev,                      &
                kptr,                      &
                elem(ie)%desc)
 
           kptr=1+nlev
-          call edgeVpack(edge_3lp1,                 &
+          call oldedgeVpack(edge_3lp1,                 &
                elem(ie)%state%v(:,:,1,1,nfilt),&
                2*nlev,                    &
                kptr,                      &
@@ -995,13 +995,13 @@ contains
           mp  => elem(ie)%mp
 
           kptr=0
-          call edgeVunpack(edge_3lp1, elem(ie)%state%lnps(:,:,nfilt), 1, kptr, elem(ie)%desc)
+          call oldedgeVunpack(edge_3lp1, elem(ie)%state%lnps(:,:,nfilt), 1, kptr, elem(ie)%desc)
 
           kptr=1
-          call edgeVunpack(edge_3lp1, elem(ie)%state%T(:,:,1,nfilt), nlev, kptr, elem(ie)%desc)
+          call oldedgeVunpack(edge_3lp1, elem(ie)%state%T(:,:,1,nfilt), nlev, kptr, elem(ie)%desc)
 
           kptr=1+nlev
-          call edgeVunpack(edge_3lp1, elem(ie)%state%v(:,:,1,1,nfilt), 2*nlev, kptr, elem(ie)%desc)
+          call oldedgeVunpack(edge_3lp1, elem(ie)%state%v(:,:,1,1,nfilt), 2*nlev, kptr, elem(ie)%desc)
 
           elem(ie)%state%lnps(:,:,nfilt) = rmp*elem(ie)%state%lnps(:,:,nfilt)
 
