@@ -30,13 +30,10 @@ endif
 setenv PATH /projects/ccsm/cmake-2.8.10.2-Linux-i386/bin:$PATH
 
 # Get newer netcdf
-setenv NETCDFROOT /projects/ccsm/netcdf4.3.2-intel12
+setenv NETCDFROOT /projects/ccsm/yellowstone/netcdf-4.3.2-intel-14.0-openmpi-1.6
 setenv PATH $NETCDFROOT/bin:$PATH
 setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
 setenv NETCDF_INCLUDES $NETCDFROOT/include
 setenv NETCDF_LIBS $NETCDFROOT/lib
 
-# Get pnetcdf
-setenv PNETCDFROOT /projects/ccsm/pnetcdf1.2.0-intel
-setenv PATH $PNETCDFROOT/bin:$PATH
-setenv LD_LIBRARY_PATH $PNETCDFROOT/lib:$LD_LIBRARY_PATH
+setenv PNETCDFROOT $NETCDFROOT
