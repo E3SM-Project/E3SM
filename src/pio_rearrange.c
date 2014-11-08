@@ -623,10 +623,9 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 {
   
 
-  bool handshake=false;
+  bool handshake=true;
   bool isend = false;
   int maxreq = MAX_GATHER_BLOCK_SIZE;
-  //  int maxreq = -1;
   MPI_Comm mycomm;
 
   int ntasks ;
@@ -698,13 +697,11 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   //
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
-  printf("%s %d \n",__FILE__,__LINE__);
 
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
 
-  printf("%s %d \n",__FILE__,__LINE__);
 
   free(sendcounts);
   free(recvcounts); 

@@ -285,7 +285,6 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   int hs;
   int cnt;
   void *ptr;
-  MPI_Request rcvids[nprocs];
 
 
 
@@ -297,39 +296,25 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     tag = mytask + offset_t;
     sptr = (void *)((char *) sndbuf + sdispls[mytask]);
     rptr = (void *)((char *) rcvbuf  + rdispls[mytask]);
-
-
+    /*
     MPI_Type_get_extent(stypes[mytask], &lb, &extent);
     printf("%s %d %d %d\n",__FILE__,__LINE__,extent, lb);
     MPI_Type_get_extent(rtypes[mytask], &lb, &extent);
     printf("%s %d %d %d\n",__FILE__,__LINE__,extent, lb);
+    */
 
-
-    printf("%s %d %ld %d %d %d %d\n",__FILE__,__LINE__,sndbuf,sndlths[mytask],stypes[mytask],rtypes[mytask],MPI_DATATYPE_NULL);
-#ifdef ONEWAY
+    // printf("%s %d %ld %d %d %d %d\n",__FILE__,__LINE__,sndbuf,sndlths[mytask],stypes[mytask],rtypes[mytask],MPI_DATATYPE_NULL);
     CheckMPIReturn(MPI_Sendrecv(sptr, sndlths[mytask],stypes[mytask],
 				mytask, tag, rptr, rcvlths[mytask], rtypes[mytask],
 				mytask, tag, comm, &status),__FILE__,__LINE__);
-#else
-    printf("%s %d \n",__FILE__,__LINE__);
-    CheckMPIReturn(MPI_Irecv(rptr, rcvlths[mytask], rtypes[mytask],
-			     mytask, tag, comm, rcvids),__FILE__,__LINE__);
-    printf("%s %d \n",__FILE__,__LINE__);
-    CheckMPIReturn(MPI_Send(sptr, sndlths[mytask], stypes[mytask],
-			     mytask, tag, comm),__FILE__,__LINE__);
-
-    printf("%s %d %d\n",__FILE__,__LINE__,rcvids[0]);
-    CheckMPIReturn(MPI_Wait(rcvids, &status),__FILE__,__LINE__);
-
-#endif
-
 
   }
-  printf("%s %d %d %d\n",__FILE__,__LINE__,sndlths[mytask],rcvlths[mytask]);
+  ///  printf("%s %d %d %d\n",__FILE__,__LINE__,sndlths[mytask],rcvlths[mytask]);
   if(nprocs==1)
     return PIO_NOERR;
 
   int swapids[nprocs];
+  MPI_Request rcvids[nprocs];
   MPI_Request sndids[nprocs];
   MPI_Request hs_rcvids[nprocs];
 
