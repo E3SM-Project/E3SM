@@ -244,6 +244,17 @@ module piolib_mod
   !***********************************************************************
 
 contains
+#ifdef __GFORTRAN__
+    pure function fptr ( inArr ) result ( ptr )
+        integer (PIO_OFFSET_KIND), dimension(:), target, intent(in) :: inArr
+        integer (PIO_OFFSET_KIND), target :: ptr
+        ptr = inArr(1)
+    end function fptr
+#elif CPRNAG
+! no-op -- nothing here for nag.
+#else
+#define fptr(arg) arg
+#endif
 !> 
 !! @public 
 !! @ingroup PIO_file_is_open
@@ -429,6 +440,74 @@ contains
 
 
   end subroutine seterrorhandlingi
+
+
+!> 
+!! @public 
+!! @ingroup PIO_initdecomp
+!! @brief Implements the @ref decomp_bc for PIO_initdecomp
+!! @details  This provides the ability to describe a computational 
+!! decomposition in PIO that has a block-cyclic form.  That is 
+!! something that can be described using start and count arrays.
+!! Optional parameters for this subroutine allows for the specification
+!! of io decomposition using iostart and iocount arrays.  If iostart
+!! and iocount arrays are not specified by the user, and rearrangement 
+!! is turned on then PIO will calculate a suitable IO decomposition
+!! @param iosystem @copydoc iosystem_desc_t
+!! @param basepiotype @copydoc use_PIO_kinds
+!! @param dims An array of the global length of each dimesion of the variable(s)
+!! @param compstart The start index into the block-cyclic computational decomposition
+!! @param compcount The count for the block-cyclic computational decomposition
+!! @param iodesc @copydoc iodesc_generate
+!<
+  subroutine PIO_initdecomp_bc(iosystem,basepiotype,dims,compstart,compcount,iodesc)
+    type (iosystem_desc_t), intent(inout) :: iosystem
+    integer(i4), intent(in)               :: basepiotype
+    integer(i4), intent(in)               :: dims(:)
+    integer (kind=PIO_OFFSET_KIND)             :: compstart(:)  
+    integer (kind=PIO_OFFSET_KIND)             :: compcount(:)    
+    type (IO_desc_t), intent(out)         :: iodesc
+
+    interface
+       integer(C_INT) function PIOc_InitDecomp_bc(iosysid, basetype, ndims, dims, compstart, compcount, ioidp) &
+            bind(C,name="PIOc_InitDecomp_bc")
+         use iso_c_binding
+         integer(C_INT), value :: iosysid
+         integer(C_INT), value :: basetype
+         integer(C_INT), value :: ndims
+         integer(C_INT) :: dims(*)
+         integer(C_INT) :: ioidp
+         integer(C_SIZE_T) :: compstart(*)
+         integer(C_SIZE_T) :: compcount(*)
+       end function PIOc_InitDecomp_bc
+    end interface
+    integer :: i, ndims
+    integer, allocatable ::  cdims(:)
+    integer(PIO_Offset_kind), allocatable :: cstart(:), ccount(:)
+    integer :: ierr
+
+    ndims = size(dims)
+
+    allocate(cstart(ndims), ccount(ndims), cdims(ndims))
+
+    do i=1,ndims
+       cdims(i) = dims(ndims-i+1)
+       cstart(i)  = compstart(ndims-i+1)-1
+       cstart(i)  = compcount(ndims-i+1)
+    end do
+
+    ierr = PIOc_InitDecomp_bc(iosystem%iosysid, basepiotype, ndims, cdims, &
+         cstart, ccount, iodesc%ioid)
+
+
+    deallocate(cstart, ccount, cdims)
+
+
+  end subroutine PIO_initdecomp_bc
+
+
+
+
 
 !> 
 !! @public 
@@ -749,12 +828,22 @@ contains
           cstart(i) = iostart(ndims-i+1)-1
           ccount(i) = iocount(ndims-i+1)
        end do
-       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, C_LOC(compdof), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
+#ifdef CPRNAG
+        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+            maplen, C_LOC(compdof(1)), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
+#else
+        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+            maplen, C_LOC(fptr(compdof)), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
+#endif
        deallocate(cstart, ccount)
     else
-       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, C_LOC(compdof), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
+#ifdef CPRNAG
+        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+            maplen, C_LOC(compdof(1)), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
+#else
+        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+            maplen, C_LOC(fptr(compdof)), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
+#endif
     end if
     deallocate(cdims)
 !    deallocate(ccompmap)
