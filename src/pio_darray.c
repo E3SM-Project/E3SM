@@ -399,7 +399,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	 vdesc->record=0;
      }
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
-      //      printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
+            printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
       tmp_bufsize=1;
       if(region==NULL || iodesc->llen==0){
 	for(i=0;i<fndims;i++){
@@ -413,7 +413,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	else
 	  bufptr=(void *)((char *) IOBUF + tsize*region->loffset);
 
-	//	printf("%s %d %d %d %d\n",__FILE__,__LINE__,iodesc->llen - region->loffset, iodesc->llen, region->loffset);
+		printf("%s %d %d %d %d\n",__FILE__,__LINE__,iodesc->llen - region->loffset, iodesc->llen, region->loffset);
 
 	if(vdesc->record >= 0 && fndims>1){
 	  start[0] = vdesc->record;
@@ -551,8 +551,11 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	      realregioncnt++;
 	    }
 	    if(regioncnt==iodesc->maxregions-1){
+		printf("%s %d %d\n",__FILE__,__LINE__,realregioncnt);
+
 	      ierr = ncmpi_get_varn_all(file->fh, vid, realregioncnt, startlist, 
 					countlist, IOBUF, iodesc->llen, iodesc->basetype);
+	      printf("%s %d %d\n",__FILE__,__LINE__,ierr);
 	      for(i=0;i<iodesc->maxregions;i++){
 		free(startlist[i]);
 		free(countlist[i]);
@@ -645,7 +648,9 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
     ierr = pio_read_darray_nc(file, iodesc, vid, iobuf);
   }
   if(iodesc->rearranger > 0){
+	      printf("%s %d %d\n",__FILE__,__LINE__,ierr);
     ierr = rearrange_io2comp(*ios, iodesc, iobuf, array, 0, 0);
+	      printf("%s %d %d\n",__FILE__,__LINE__,ierr);
 
     if(rlen>0)
       free(iobuf);

@@ -224,6 +224,69 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   
   return PIO_NOERR;
 }
+//
+// This is a simplified initdecomp which can be used if the memory order of the data can be 
+// expressed in terms of start and count on the file.
+// in this case we compute the compdof and use the subset rearranger
+//
+
+
+int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, const int dims[], 
+		       const long int start[], const long int count[], int *ioidp)
+		    
+{
+  iosystem_desc_t *ios;
+  io_desc_t *iodesc;
+  int mpierr;
+  int ierr;
+  int iosize;
+  int ndisp;
+
+  
+  for(int i=0;i<ndims;i++){
+    if(dims[i]<=0){
+      piodie("Invalid dims argument",__FILE__,__LINE__);
+    }
+    if(start[i]<0 || count[i]< 0 || (start[i]+count[i])>dims[i]){
+      piodie("Invalid start or count argument ",__FILE__,__LINE__);
+    }
+  }
+  ios = pio_get_iosystem_from_id(iosysid);
+  if(ios == NULL)
+    return PIO_EBADID;
+
+  int n, i, maplen=1;
+    
+  for( i=0;i<ndims;i++){
+    maplen*=count[i];
+  }
+  PIO_Offset compmap[maplen], prod[ndims], loc[ndims];
+    
+  prod[ndims-1]=1;
+  loc[ndims-1]=0;
+  for(n=ndims-2;n>=0;n--){
+    prod[n]=prod[n+1]*dims[n+1];  
+    loc[n]=0;
+  }
+  for(i=0;i<maplen;i++){
+    compmap[i]=0;
+    for(n=ndims-1;n>=0;n--){
+      compmap[i]+=(start[n]+loc[n])*prod[n];
+    }
+    n=ndims-1;
+    loc[n]=(loc[n]+1)%count[n];
+    while(loc[n]==0 && n>0){
+      n--;
+      loc[n]=(loc[n]+1)%count[n];
+    }
+  }
+
+  PIOc_InitDecomp( iosysid, basetype,ndims, dims, 
+		   maplen,  compmap, ioidp, PIO_REARR_SUBSET, NULL, NULL);  
+
+
+  return PIO_NOERR;
+}
 
 int PIOc_Init_Intracomm(const MPI_Comm comp_comm, 
 			const int num_iotasks, const int stride, 
