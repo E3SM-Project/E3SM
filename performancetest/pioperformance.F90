@@ -164,6 +164,8 @@ contains
           endif
           do rearrtype=1,2
              rearr = rearrangers(rearrtype)
+             if(rearr /= PIO_REARR_SUBSET .and. rearr /= PIO_REARR_BOX) exit
+
              do n=niomin,niomax
                 stride = max(1,npe/niotasks)
 
