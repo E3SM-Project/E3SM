@@ -1,7 +1,8 @@
 program pioperformance
   use mpi
   use perf_mod, only : t_initf, t_finalizef
-  use pio, only : pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c
+  use pio, only : pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, &
+       pio_iotype_netcdf4c, pio_rearr_subset, pio_rearr_box
   implicit none
   integer :: ierr, mype, npe, i
   logical :: Mastertask
@@ -78,7 +79,7 @@ program pioperformance
   call MPI_Finalize(ierr)
 contains
 
-  subroutine pioperformancetest(filename, piotypes, mype, npe_base, rearrangers, niotasks)
+  subroutine pioperformancetest(filename, piotypes, mype, npe_base, rearrangers, niotasks,nframes)
     use pio
     use pio_support, only : pio_readdof
     use perf_mod
@@ -99,7 +100,7 @@ contains
     character(len=20) :: fname
     type(var_desc_t) :: vari, varr, vard
     type(iosystem_desc_t) :: iosystem
-    integer :: stride, niotasks
+    integer :: stride, n
     integer, allocatable :: ifld(:), ifld_in(:)
     real, allocatable :: rfld(:)
     double precision, allocatable :: dfld(:)
@@ -163,12 +164,12 @@ contains
           endif
           do rearrtype=1,2
              rearr = rearrangers(rearrtype)
-             do niotasks=niomin,niomax
+             do n=niomin,niomax
                 stride = max(1,npe/niotasks)
 
-                call pio_init(mype, comm, niotasks, 0, stride, PIO_REARR_SUBSET, iosystem)
+                call pio_init(mype, comm, n, 0, stride, PIO_REARR_SUBSET, iosystem)
                    
-                write(fname, '(a,i1,a,i4.4,a)') 'pioperf.',rearrtype,'-',niotasks,'.nc'
+                write(fname, '(a,i1,a,i4.4,a)') 'pioperf.',rearrtype,'-',n,'.nc'
                 ierr =  PIO_CreateFile(iosystem, File, iotype, trim(fname))
                 
                 call WriteMetadata(File, gdims, vari, varr, vard)
@@ -201,7 +202,7 @@ contains
                 call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
                 if(mype==0) then
                    ! print out performance in MB/s
-                   print *, 'write ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'write ',rearrtype, n, nframes*gmaplen*4.0/(1048576.0*wall(2))
                 end if
 
 ! Now the Read
@@ -234,7 +235,7 @@ contains
                    if(errorcnt > 0) then
                       print *,'ERROR: INPUT/OUTPUT data mismatch ',errorcnt
                    endif
-                   print *, 'read ',rearrtype, niotasks, nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'read ',rearrtype, n, nframes*gmaplen*4.0/(1048576.0*wall(2))
                 end if
 
                 
