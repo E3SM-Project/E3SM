@@ -1,0 +1,4 @@
+#! /bin/csh -f
+
+setenv P4_GLOBMEMSIZE 500000000
+
