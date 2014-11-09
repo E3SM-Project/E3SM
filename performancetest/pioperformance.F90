@@ -112,7 +112,7 @@ contains
     integer :: j, k, errorcnt
 
     double precision :: wall(2), sys(2), usr(2)
-    integer niomin, niomax
+    integer :: niomin, niomax
 
     nullify(compmap)
 
@@ -134,6 +134,9 @@ contains
     if(niotasks<0) then
        niomin = 1
        niomax = npe
+    else if(niotasks > 0 .and. niotasks <= npe) then
+       niomin = niotasks
+       niomax = niotasks
     endif
 
     if(mype < npe) then
@@ -167,6 +170,7 @@ contains
              if(rearr /= PIO_REARR_SUBSET .and. rearr /= PIO_REARR_BOX) exit
 
              do n=niomin,niomax
+                if(n==npe .and. rearr == PIO_REARR_BOX) exit
                 stride = max(1,npe/niotasks)
 
                 call pio_init(mype, comm, n, 0, stride, PIO_REARR_SUBSET, iosystem)

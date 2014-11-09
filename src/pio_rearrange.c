@@ -623,9 +623,10 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 {
   
 
-  bool handshake=true;
+  bool handshake=false;
   bool isend = false;
   int maxreq = MAX_GATHER_BLOCK_SIZE;
+  //  int maxreq = -1;
   MPI_Comm mycomm;
 
   int ntasks ;
@@ -697,11 +698,13 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   //
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
+  //  printf("%s %d \n",__FILE__,__LINE__);
 
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
 
+  //  printf("%s %d \n",__FILE__,__LINE__);
 
   free(sendcounts);
   free(recvcounts); 
@@ -923,18 +926,12 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
     key = 0;
     color= ios.io_rank;
   }else{
-    key=ios.comp_rank%taskratio+1;
-    color = ios.comp_rank/taskratio;
+    key=max(1,ios.comp_rank%taskratio+1);
+    color = min(ios.num_iotasks-1,ios.comp_rank/taskratio);
   }
+
+  //  printf("%s %d %d %d\n",__FILE__,__LINE__,key,color);
   
-  //  printf("%s %d %d %d %d\n",__FILE__,__LINE__,color,key,ios.io_rank);
-
-  // If the io tasks are not an even divisor of the compute tasks put the remainder in the last group
-  if(color>=ios.num_iotasks){
-    color=ios.num_iotasks;
-    key=key+taskratio-1;
-  }
-
   MPI_Comm_split(ios.comp_comm, color, key, &(iodesc->subset_comm));
 
 }
