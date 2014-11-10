@@ -291,6 +291,8 @@ enum PIO_ERROR_HANDLERS{
 #if defined(__cplusplus)
 extern "C" {
 #endif
+#define PIO_EBADIOTYPE  -255
+
 
 int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp); 
 int PIOc_inq_format (int ncid, int *formatp); 

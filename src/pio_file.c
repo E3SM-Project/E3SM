@@ -32,25 +32,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
   }
-  
-#ifndef _NETCDF  
-  if(file->iotype==PIO_IOTYPE_NETCDF ){
-    piodie("ERROR: netcdf not supported in build \n",__FILE__,__LINE__);
-  }
-#endif
-#ifndef _NETCDF4
-  if(file->iotype==PIO_IOTYPE_NETCDF4P || file->iotype==PIO_IOTYPE_NETCDF4C){
-    piodie("ERROR: netcdf4 not supported in build \n",__FILE__,__LINE__);
-  }
-#endif
-#ifndef _PNETCDF
-  if(file->iotype==PIO_IOTYPE_PNETCDF) {
-    piodie("ERROR: pnetcdf not supported in build \n",__FILE__,__LINE__);
-  }
-#endif    
-
-
-
+ 
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->comp_rank==0) 
@@ -145,21 +127,6 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 
   msg = PIO_MSG_CREATE_FILE;
   amode = mode;
-#ifndef _NETCDF  
-  if(file->iotype==PIO_IOTYPE_NETCDF ){
-    piodie("ERROR: netcdf not supported in build \n",__FILE__,__LINE__);
-  }
-#endif
-#ifndef _NETCDF4
-  if(file->iotype==PIO_IOTYPE_NETCDF4P || file->iotype==PIO_IOTYPE_NETCDF4C){
-    piodie("ERROR: netcdf4 not supported in build \n",__FILE__,__LINE__);
-  }
-#endif
-#ifndef _PNETCDF
-  if(file->iotype==PIO_IOTYPE_PNETCDF) {
-    piodie("ERROR: pnetcdf not supported in build \n",__FILE__,__LINE__);
-  }
-#endif    
 
 
   if(ios->async_interface && ! ios->ioproc){

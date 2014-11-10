@@ -97,7 +97,7 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
 int iotype_error(const int iotype, const char *fname, const int line)
 {
     fprintf(stderr, "ERROR: iotype %d not defined in build %s %d\n", iotype, fname,line);
-    return PIO_NOERR;
+    return(PIO_EBADIOTYPE);
 }
 
 io_region *alloc_region(const int ndims)
