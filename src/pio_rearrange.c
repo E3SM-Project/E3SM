@@ -704,7 +704,6 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
 
-  //  printf("%s %d \n",__FILE__,__LINE__);
 
   free(sendcounts);
   free(recvcounts); 
@@ -928,10 +927,9 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
   }else{
     key=max(1,ios.comp_rank%taskratio+1);
     color = min(ios.num_iotasks-1,ios.comp_rank/taskratio);
+    color = ios.comp_rank/taskratio;
   }
 
-  //  printf("%s %d %d %d\n",__FILE__,__LINE__,key,color);
-  
   MPI_Comm_split(ios.comp_comm, color, key, &(iodesc->subset_comm));
 
 }

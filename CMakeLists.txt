@@ -1,4 +1,4 @@
-PROJECT(PIO C Fortran)
+PROJECT(PIO C Fortran CXX)
 ENABLE_LANGUAGE(Fortran)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 
@@ -152,12 +152,16 @@ IF( NOT GENF90_PATH)
 ENDIF()
 
 ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(examples)
+
 if(${PIO_BUILD_TESTS})
+
   ADD_SUBDIRECTORY(test)
   ADD_SUBDIRECTORY(unittests)
 #  ADD_SUBDIRECTORY(testpio)
   if(${PIO_BUILD_TIMING})
-  ADD_SUBDIRECTORY(performancetest)
+    ADD_SUBDIRECTORY(performancetest)
   endif()
+
 endif()
 

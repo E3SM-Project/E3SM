@@ -348,12 +348,7 @@ CONTAINS
     INTEGER :: i
 
     ! First find the number of io types
-    ! binary
-    num_iotypes = 1
-#ifdef _USEMPIIO
-      ! pbinary, direct_pbinary
-      num_iotypes = num_iotypes + 2
-#endif
+    num_iotypes = 0
 #ifdef _NETCDF4
       ! netcdf, netcdf4p, netcdf4c
       num_iotypes = num_iotypes + 3
@@ -371,19 +366,6 @@ CONTAINS
     ALLOCATE(iotype_descs(num_iotypes))
 
     i = 1
-    iotypes(i) = PIO_iotype_binary
-    iotype_descs(i) = "BINARY"
-    i = i + 1
-
-#ifdef _USEMPIIO
-      ! pbinary, direct_pbinary
-      iotypes(i) = PIO_iotype_pbinary
-      iotype_descs(i) = "PBINARY"
-      i = i + 1
-      iotypes(i) = PIO_iotype_direct_pbinary
-      iotype_descs(i) = "DIRECT_PBINARY"
-      i = i + 1
-#endif
 #ifdef _NETCDF4
       ! netcdf, netcdf4p, netcdf4c
       iotypes(i) = PIO_iotype_netcdf
@@ -426,12 +408,7 @@ CONTAINS
     INTEGER :: i
 
     ! First find the number of io types
-    ! binary is always defined
     num_iotypes = 0
-#ifndef _USEMPIIO
-      ! pbinary, direct_pbinary
-      num_iotypes = num_iotypes + 2
-#endif
 #ifndef _NETCDF
       ! netcdf
       num_iotypes = num_iotypes + 1
@@ -440,7 +417,6 @@ CONTAINS
       num_iotypes = num_iotypes + 2
 #endif
 #endif
-
 #ifndef _PNETCDF
       ! pnetcdf
       num_iotypes = num_iotypes + 1
@@ -451,15 +427,6 @@ CONTAINS
     ALLOCATE(iotype_descs(num_iotypes))
 
     i = 1
-#ifndef _USEMPIIO
-      ! pbinary, direct_pbinary
-      iotypes(i) = PIO_iotype_pbinary
-      iotype_descs(i) = "PBINARY"
-      i = i + 1
-      iotypes(i) = PIO_iotype_direct_pbinary
-      iotype_descs(i) = "DIRECT_PBINARY"
-      i = i + 1
-#endif
 #ifndef _NETCDF
       ! netcdf
       iotypes(i) = PIO_iotype_netcdf
@@ -475,7 +442,6 @@ CONTAINS
       i = i + 1
 #endif
 #endif
-
 #ifndef _PNETCDF
       ! pnetcdf
       iotypes(i) = PIO_iotype_pnetcdf
@@ -557,7 +523,8 @@ CONTAINS
       CALL MPI_GATHER(lfail_info, 3, MPI_INTEGER, gfail_info, 3, MPI_INTEGER, 0, pio_tf_comm_, ierr)
       DO i=1,pio_tf_world_sz_
         IF(gfail_info(i) % idx /= -1) THEN
-          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", gfail_info(i) % idx, "]=", gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val 
+          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", gfail_info(i) % idx, "]=", &
+                   gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val
         END IF
       END DO
     END IF
@@ -639,7 +606,8 @@ CONTAINS
       CALL MPI_GATHER(lfail_info, 3, MPI_REAL, gfail_info, 3, MPI_REAL, 0, pio_tf_comm_, ierr)
       DO i=1,pio_tf_world_sz_
         IF(INT(gfail_info(i) % idx) /= -1) THEN
-          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", INT(gfail_info(i) % idx), "]=", gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val 
+          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", &
+               INT(gfail_info(i) % idx), "]=", gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val
         END IF
       END DO
     END IF
@@ -670,6 +638,9 @@ CONTAINS
     USE mpi
 #else
     include 'mpif.h'
+#endif
+#ifndef MPI_DOUBLE
+#define MPI_DOUBLE MPI_DOUBLE_PRECISION
 #endif
     REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: arr
     REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: exp_arr
@@ -716,7 +687,9 @@ CONTAINS
       CALL MPI_GATHER(lfail_info, 3, MPI_DOUBLE, gfail_info, 3, MPI_DOUBLE, 0, pio_tf_comm_, ierr)
       DO i=1,pio_tf_world_sz_
         IF(INT(gfail_info(i) % idx) /= -1) THEN
-          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", INT(gfail_info(i) % idx), "]=", gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val 
+          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", &
+                INT(gfail_info(i) % idx), "]=", gfail_info(i) % val, &
+                ", Expected = ", gfail_info(i) % exp_val
         END IF
       END DO
     END IF

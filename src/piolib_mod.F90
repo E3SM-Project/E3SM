@@ -63,9 +63,8 @@ module piolib_mod
        PIO_get_numiotasks, &
        PIO_get_iorank
 
-
 #ifdef MEMCHK
-!> this is an internal variable for memory leak debugging 
+!> this is an internal variable for memory leak debugging
 !! it is used when macro memchk is defined and it causes each task to print the 
 !! memory resident set size anytime it changes within pio.
 !<
@@ -167,7 +166,7 @@ module piolib_mod
      module procedure initdecomp_2dof_nf_i8
      module procedure initdecomp_2dof_bin_i4
      module procedure initdecomp_2dof_bin_i8
-!     module procedure PIO_initdecomp_bc
+     module procedure PIO_initdecomp_bc
 !     module procedure PIO_initdecomp_dof_dof
   end interface
 
@@ -244,17 +243,19 @@ module piolib_mod
   !***********************************************************************
 
 contains
-#ifdef __GFORTRAN__
-    pure function fptr ( inArr ) result ( ptr )
-        integer (PIO_OFFSET_KIND), dimension(:), target, intent(in) :: inArr
-        integer (PIO_OFFSET_KIND), target :: ptr
-        ptr = inArr(1)
-    end function fptr
-#elif CPRNAG
-! no-op -- nothing here for nag.
-#else
+
+!!$#ifdef __GFORTRAN__
+!!$    pure function fptr ( inArr ) result ( ptr )
+!!$        integer (PIO_OFFSET_KIND), dimension(:), target, intent(in) :: inArr
+!!$        integer (PIO_OFFSET_KIND), target :: ptr
+!!$        ptr = inArr(1)
+!!$    end function fptr
+!!$#elif CPRNAG
+!!$! no-op -- nothing here for nag.
+!!$#else
 #define fptr(arg) arg
-#endif
+!!$#endif
+
 !> 
 !! @public 
 !! @ingroup PIO_file_is_open
@@ -281,9 +282,8 @@ contains
 
   end function PIO_FILE_IS_OPEN
 
-
-!> 
-!! @public 
+!>
+!! @public
 !! @ingroup PIO_get_local_array_size
 !! @brief This function returns the expected local size of an array associated with iodesc
 !! @details
@@ -773,14 +773,16 @@ contains
   end subroutine PIO_initdecomp_dof_i4
 
 
-  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, rearr, iostart, iocount)
+  subroutine PIO_initdecomp_internal(iosystem,basepiotype,dims,maplen, compdof, iodesc, rearr, iostart, iocount)
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
-    integer (PIO_OFFSET_KIND), intent(in), target :: compdof(:)   ! global degrees of freedom for computational decomposition
+    integer, intent(in) :: maplen
+    integer (PIO_OFFSET_KIND), intent(in) :: compdof(maplen)   ! global degrees of freedom for computational decomposition
     integer, optional, target :: rearr
     integer (PIO_OFFSET_KIND), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
+
     integer(c_int) :: ndims
     integer(c_int), dimension(:), allocatable, target :: cdims
     integer(PIO_OFFSET_KIND), dimension(:), allocatable, target :: cstart, ccount
@@ -796,26 +798,21 @@ contains
          integer(C_INT), value :: ndims
          integer(C_INT) :: dims(*)
          integer(C_INT), value :: maplen
-         type(C_PTR), value :: compmap
+         integer(C_SIZE_T) :: compmap(*)
          integer(C_INT) :: ioidp
          type(C_PTR), value :: rearr
          type(C_PTR), value :: iostart
          type(C_PTR), value :: iocount
        end function PIOc_InitDecomp
     end interface
-    integer :: ierr, i, maplen
+    integer :: ierr,i 
     
-#ifdef TIMING
-    call t_startf("PIO_initdecomp_dof")
-#endif
     ndims = size(dims)
     allocate(cdims(ndims))
     do i=1,ndims
        cdims(i) = dims(ndims-i+1)
     end do
-    maplen = size(compdof)
-!    allocate(ccompmap(maplen))
-    
+
     if(present(rearr)) then
        crearr = C_LOC(rearr)
     else
@@ -828,25 +825,40 @@ contains
           cstart(i) = iostart(ndims-i+1)-1
           ccount(i) = iocount(ndims-i+1)
        end do
-#ifdef CPRNAG
-        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, C_LOC(compdof(1)), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
-#else
-        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, C_LOC(fptr(compdof)), iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
-#endif
+
+       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+            maplen, compdof, iodesc%ioid, crearr, C_LOC(cstart), C_LOC(ccount))
        deallocate(cstart, ccount)
     else
-#ifdef CPRNAG
         ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, C_LOC(compdof(1)), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
-#else
-        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            maplen, C_LOC(fptr(compdof)), iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
-#endif
+            maplen, compdof, iodesc%ioid, crearr, C_NULL_PTR, C_NULL_PTR)
     end if
+
     deallocate(cdims)
-!    deallocate(ccompmap)
+
+
+  end subroutine PIO_initdecomp_internal
+
+
+  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, rearr, iostart, iocount)
+    type (iosystem_desc_t), intent(in) :: iosystem
+    integer(i4), intent(in)           :: basepiotype
+    integer(i4), intent(in)           :: dims(:)
+    integer (PIO_OFFSET_KIND), intent(in) :: compdof(:)   ! global degrees of freedom for computational decomposition
+    integer, optional, target :: rearr
+    integer (PIO_OFFSET_KIND), optional :: iostart(:), iocount(:)
+    type (io_desc_t), intent(inout)     :: iodesc
+    integer :: maplen
+
+#ifdef TIMING
+    call t_startf("PIO_initdecomp_dof")
+#endif
+
+    maplen = size(compdof)
+
+    call PIO_initdecomp_internal(iosystem, basepiotype, dims, maplen, compdof, iodesc, rearr, iostart,iocount)
+
+
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif
@@ -1837,9 +1849,6 @@ contains
     ierr = PIOc_deletefile(ios%iosysid, trim(fname)//C_NULL_CHAR)
 
   end subroutine pio_deletefile
-
-
-
 
 
 end module piolib_mod

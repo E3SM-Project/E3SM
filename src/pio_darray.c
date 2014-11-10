@@ -159,6 +159,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
  #endif
 	   size_t tstart[ndims], tcount[ndims];
 	   if(ios->io_rank==0){
+         // FIX(SPM, 100714)  don't use i, use something like myrank and iam
 	     for(i=0;i<iodesc->num_aiotasks;i++){
 	       if(i==0){	    
 		 buflen=1;
@@ -328,8 +329,6 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      iobuf = array;
    }
    switch(file->iotype){
-   case PIO_IOTYPE_PBINARY:
-     break;
    case PIO_IOTYPE_PNETCDF:
    case PIO_IOTYPE_NETCDF:
    case PIO_IOTYPE_NETCDF4P:
@@ -639,8 +638,6 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   }
 
   switch(file->iotype){
-  case PIO_IOTYPE_PBINARY:
-    break;
   case PIO_IOTYPE_PNETCDF:
   case PIO_IOTYPE_NETCDF:
   case PIO_IOTYPE_NETCDF4P:
