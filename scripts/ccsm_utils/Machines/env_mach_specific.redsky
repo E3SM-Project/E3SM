@@ -13,7 +13,7 @@ if (-e /usr/share/Modules/init/csh) then
   module purge
 
   if ($COMPILER == "intel") then
-    module load intel/intel-14.0.3.174
+    module load intel/13.0
     module load openmpi-intel/1.6
   endif
 
@@ -30,7 +30,7 @@ endif
 setenv PATH /projects/ccsm/cmake-2.8.10.2-Linux-i386/bin:$PATH
 
 # Get newer netcdf
-setenv NETCDFROOT /projects/ccsm/yellowstone/netcdf-4.3.2-intel-14.0-openmpi-1.6
+setenv NETCDFROOT /projects/ccsm/yellowstone/netcdf-4.3.2-intel-13.0-openmpi-1.6
 setenv PATH $NETCDFROOT/bin:$PATH
 setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
 setenv NETCDF_INCLUDES $NETCDFROOT/include
