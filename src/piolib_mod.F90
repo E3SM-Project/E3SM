@@ -22,9 +22,8 @@ module piolib_mod
   use pio_kinds
   !--------------
   use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, io_desc_t, &
-	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
-        pio_noerr, pio_rearr_none
+        pio_noerr, pio_rearr_subset
   !--------------
   use pio_support, only : piodie, debug, debugio, debugasync, checkmpireturn
   !
@@ -101,7 +100,7 @@ module piolib_mod
 
 !> 
 !! @defgroup PIO_setframe PIO_setframe
-!! @brief sets the unlimited dimension for netcdf file for record number for binary files
+!! @brief sets the unlimited dimension for netcdf file
 !<
   interface PIO_setframe
      module procedure setframe
@@ -704,7 +703,6 @@ contains
   end subroutine initdecomp_1dof_nf_i4
 
   subroutine initdecomp_1dof_nf_i8(iosystem,basepiotype,dims,lenblocks,compdof,iodof,start, count, iodesc)
-!    use calcdisplace_mod, only : calcdisplace
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
@@ -722,7 +720,7 @@ contains
        call piodie( __PIO_FILE__,__LINE__, &
             'Not sure what to do here')
     else
-       call PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc,PIO_REARR_NONE, start,count)
+       call PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc,PIO_REARR_SUBSET, start,count)
     endif
 
 
@@ -764,7 +762,7 @@ contains
     
     if(present(iostart) .and. present(iocount) ) then
        call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, &
-            PIO_REARR_NONE, iostart, iocount)
+            PIO_REARR_SUBSET, iostart, iocount)
     else 
        call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, rearr)
     endif
@@ -988,7 +986,7 @@ contains
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
   subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
-    use pio_types, only : pio_internal_error, pio_rearr_none
+    use pio_types, only : pio_internal_error
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
     integer(i4), intent(in) :: num_iotasks 

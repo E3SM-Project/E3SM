@@ -146,9 +146,6 @@ module pio_types
 !! @public
 !! @brief An integer parameter which controls the iotype
 !! @details
-!!   - PIO_iotype_pbinary : Use MPI-IO to read/write C like binary file
-!!   - PIO_iotype_direct_pbinary: Use MPI-IO to read/write direct access binary files
-!!   - PIO_iotype_binary : serial read/write of binary files using 'base_node'
 !!   - PIO_iotype_pnetcdf : parallel read/write of pNetCDF files (netcdf3)
 !!   - PIO_iotype_netcdf : serial read/write of NetCDF files using 'base_node' (netcdf3)
 !!   - PIO_iotype_netcdf4c : parallel read/serial write of NetCDF4 (HDF5) files with data compression
@@ -163,9 +160,6 @@ module pio_types
 
 ! These are for backward compatability and should not be used or expanded upon
     integer(i4), public, parameter ::                       &
-        iotype_pbinary = PIO_iotype_pbinary,                &
-        iotype_direct_pbinary = PIO_iotype_direct_pbinary,  &
-        iotype_binary  = PIO_iotype_binary,                 &
         iotype_pnetcdf = PIO_iotype_pnetcdf,                &
         iotype_netcdf  = PIO_iotype_netcdf
 

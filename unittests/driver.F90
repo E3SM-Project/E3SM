@@ -59,14 +59,7 @@ Program pio_unit_test_driver
 
      ! Ignore namelist values if PIO not built with correct options
      ! (i.e. don't test pnetcdf if not built with pnetcdf)
-#ifndef USEMPIIO
-     if (ltest_bin.or.ltest_bin_direct) then
-        write(*,"(A,1x,A)") "WARNING: can not test binary files because PIO", &
-             "was not compiled with -DUSEMPIIO"
-        ltest_bin        = .false.
-        ltest_bin_direct = .false.
-     end if
-#endif
+
 #ifndef _NETCDF
      if (ltest_netcdf) then
         write(*,"(A,1x,A)") "WARNING: can not test netcdf files because PIO", &
@@ -102,8 +95,6 @@ Program pio_unit_test_driver
      call MPI_Abort(MPI_COMM_WORLD, 0, ierr)
   end if
 
-  ltest(BINARY)  = ltest_bin
-  ltest(BINDIR)  = ltest_bin_direct
   ltest(NETCDF)  = ltest_netcdf
   ltest(NETCDF4P)  = ltest_netcdf4p
   ltest(NETCDF4C)  = ltest_netcdf4c
@@ -131,12 +122,6 @@ Program pio_unit_test_driver
      if (ltest(test_id)) then
         ! Make sure i is a valid test number
         select case (test_id)
-        case (BINARY)
-           if (master_task) &
-                write(*,"(A)") "Testing PIO's binary input / output:"
-        case (BINDIR)
-           if (master_task) &
-                write(*,"(A)") "Testing PIO's direct binary input / output:"
         case (NETCDF4P)
            if (master_task) &
                 write(*,"(A)") "Testing PIO's netcdf4 parallel input / output:"
