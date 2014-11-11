@@ -1,5 +1,7 @@
 SET(SRC basic_tests.F90  driver.F90  global_vars.F90 ncdf_tests.F90 nc_set_log_level2.c)
 ADD_DEFINITIONS(${PIO_DEFINITIONS})
+FILE(COPY "./input.nl" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+FILE(COPY "./not_netcdf.ieee" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # Use to trace hdf5 errors with a special netcdf build
 OPTION(HDF5_LOGGING "Turn on hdf5 logging (requires instrumented netcdf4)" OFF)
