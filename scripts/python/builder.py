@@ -33,7 +33,8 @@ class platformBuilder(object):
 
         self.FFLAGS = ''
         self.CFLAGS = ''
-        self.OFLAGS = ''
+        self.OFLAGS = ('-D PIO_BUILD_TESTS:LOGICAL=TRUE '
+                                  '-D PIO_BUILD_TIMING:LOGICAL=TRUE ')
         self.MPIEXEC = ''
         self.EXECCA = ''
 
@@ -134,6 +135,7 @@ class darwin_gnu(platformBuilder):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
+        platformBuilder.__init__(self)
         self.setInvariantClassAttr()
 
         self.CMAKE_EXE = '/opt/local/bin/cmake'
@@ -160,11 +162,10 @@ class darwin_gnu(platformBuilder):
                          '-DNO_MPIMOD -DFORTRANUNDERSCORE '
                          '-DNO_R16 -DSYSDARWIN -DDarwin '
                          '-DCPRGNU -I. " ')
-        self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+        self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/opt/local '
                        '-D PNETCDF_DIR:STRING=/opt/local '
-                       '-D PLATFORM:STRING=darwin '
-                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                       '-D PLATFORM:STRING=darwin ')
         self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
                         '/opt/local/bin/mpiexec-mpich-gcc48 ')
         self.EXECCA = ''
@@ -177,11 +178,13 @@ class darwin_gnu(platformBuilder):
         pass
 
 class goldbach_nag(platformBuilder):
-
+    
     def __init__(self):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
+        
+        platformBuilder.__init__(self)
         self.setInvariantClassAttr()
 
         self.moduleList = ['compiler/nag/5.3.1-907']
@@ -222,11 +225,11 @@ class goldbach_nag(platformBuilder):
                          '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
                          '-DHAVE_SLASHPROC -I. '
                          '-I/usr/local/openmpi-gcc-nag/include " ')
-        self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+        self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/usr/local/netcdf-gcc-nag '
                        '-D WITH_PNETCDF:LOGICAL=FALSE '
-                       '-D PLATFORM:STRING=goldbach '
-                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                       '-D PLATFORM:STRING=goldbach ')
+
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH='
                         '/usr/local/'
                         'openmpi-1.6.5-gcc-g++-4.4.7-3-nag-5.3.1-907'
@@ -252,6 +255,7 @@ class goldbach_intel(platformBuilder):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
+        platformBuilder.__init__(self)
         self.setInvariantClassAttr()
 
         self.moduleList = ['compiler/intel/14.0.2']
@@ -280,11 +284,11 @@ class goldbach_intel(platformBuilder):
                          ' -DLINUX -DCPRINTEL '
                          '-DHAVE_SLASHPROC -I. '
                          '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include " ')
-        self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+        self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183 '
                        '-D WITH_PNETCDF:LOGICAL=FALSE '
-                       '-D PLATFORM:STRING=goldbach '
-                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                       '-D PLATFORM:STRING=goldbach ')
+
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH='
                         '/usr/mpi/intel/openmpi-1.4.3-qlc'
                         '/bin/mpirun ')
@@ -309,6 +313,7 @@ class yellowstone_intel(platformBuilder):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
+        platformBuilder.__init__(self)
         self.setInvariantClassAttr()
 
         self.moduleList = ['intel/15.0.0',
@@ -349,14 +354,13 @@ class yellowstone_intel(platformBuilder):
                          '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  '
                          '-DLINUX '
                          '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
-        self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+        self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING='
                        '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
                        '-D PNETCDF_DIR:STRING='
                        '/glade/apps/opt/pnetcdf/1.4.1/intel/default '
-                       '-D PLATFORM:STRING=yellowstone '
-                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                       '-D PLATFORM:STRING=yellowstone ')
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
 
@@ -388,6 +392,7 @@ class yellowstone_pgi(platformBuilder):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
+        platformBuilder.__init__(self)
         self.setInvariantClassAttr()
 
         self.moduleList = ['pgi/14.7',
@@ -417,14 +422,13 @@ class yellowstone_pgi(platformBuilder):
                        '-DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 '
                        '-DLINUX -DCPRPGI  -DHAVE_SLASHPROC -I. " ')
         self.CXXFLAGS = ''
-        self.OFLAGS = (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+        self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING='
                        '/glade/apps/opt/netcdf/4.3.0/pgi/default '
                        '-D PNETCDF_DIR:STRING='
                        '/glade/apps/opt/pnetcdf/1.4.1/pgi/default'
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
-                       '-D PLATFORM:STRING=yellowstone '
-                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                       '-D PLATFORM:STRING=yellowstone ')
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
 
@@ -456,6 +460,7 @@ class yellowstone_gnu(platformBuilder):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
+        platformBuilder.__init__(self)
         self.setInvariantClassAttr()
 
         self.moduleList = ['gnu/4.8.0',
@@ -489,14 +494,13 @@ class yellowstone_gnu(platformBuilder):
                          '-D_NETCDF -D_PNETCDF '
                          ' -DHAVE_MPI -DFORTRANUNDERSCORE '
                          ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I. " ')
-        self.OFLAGS = ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+        self.OFLAGS += ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING='
                        '/glade/apps/opt/netcdf/4.3.0/gnu/4.8.0 '
                        '-D PNETCDF_DIR:STRING='
                        '/glade/apps/opt/pnetcdf/1.4.1/gnu/default '
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
-                       '-D PLATFORM:STRING=yellowstone '
-                       '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
+                       '-D PLATFORM:STRING=yellowstone ')
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
 

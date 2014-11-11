@@ -12,7 +12,7 @@ LINK_DIRECTORIES(${PIO_LIB_DIR} )
 
 
 
-if(PIO_BUILD_TIMING MATCHES "ON") 
+if(PIO_BUILD_TIMING) 
   ADD_EXECUTABLE(pioperf ${SRC})
   TARGET_LINK_LIBRARIES(pioperf piof pioc timing)
 else()

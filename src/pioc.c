@@ -122,6 +122,7 @@ int PIOc_get_local_array_size(int ioid)
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios==NULL){
     fprintf(stderr,"%s %d Error setting eh method\n",__FILE__,__LINE__);
+    print_trace(stderr);
     return PIO_EBADID;
   }	
   oldmethod = ios->error_handler;
