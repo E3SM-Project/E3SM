@@ -432,7 +432,7 @@ contains
          integer(c_int), value :: method
        end function PIOc_Set_IOSystem_Error_Handling
     end interface
-    integer ::  loldmethod
+    integer(c_int) ::  loldmethod
 
     loldmethod = PIOc_Set_IOSystem_Error_Handling(ios%iosysid, method)
     if(present(oldmethod)) oldmethod = loldmethod
