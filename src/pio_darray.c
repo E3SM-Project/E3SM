@@ -550,11 +550,11 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	      realregioncnt++;
 	    }
 	    if(regioncnt==iodesc->maxregions-1){
-		printf("%s %d %d\n",__FILE__,__LINE__,realregioncnt);
+	      //		printf("%s %d %d\n",__FILE__,__LINE__,realregioncnt);
 
 	      ierr = ncmpi_get_varn_all(file->fh, vid, realregioncnt, startlist, 
 					countlist, IOBUF, iodesc->llen, iodesc->basetype);
-	      printf("%s %d %d\n",__FILE__,__LINE__,ierr);
+	      //	      printf("%s %d %d\n",__FILE__,__LINE__,ierr);
 	      for(i=0;i<iodesc->maxregions;i++){
 		free(startlist[i]);
 		free(countlist[i]);

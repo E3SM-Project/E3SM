@@ -5,20 +5,23 @@
 #define versno 2001
      
 /* Obtain a backtrace and print it to stderr. */
-void print_trace (void)
+void print_trace (FILE *fp)
 {
   void *array[10];
   size_t size;
   char **strings;
   size_t i;
   
+  if(fp==NULL)
+    fp = stderr;
+
   size = backtrace (array, 10);
   strings = backtrace_symbols (array, size);
   
-  fprintf (stderr,"Obtained %zd stack frames.\n", size);
+  fprintf (fp,"Obtained %zd stack frames.\n", size);
      
   for (i = 0; i < size; i++)
-    fprintf (stderr,"%s\n", strings[i]);
+    fprintf (fp,"%s\n", strings[i]);
      
   free (strings);
 }
@@ -27,7 +30,7 @@ void print_trace (void)
 void piodie(const char *msg,const char *fname, const int line){
   fprintf(stderr,"Abort with message %s in file %s at line %d\n",msg,fname,line);
   
-  print_trace();
+  print_trace(stderr);
 #ifdef MPI_SERIAL
   abort();
 #else
@@ -369,6 +372,10 @@ int PIOc_writemap(const char file[], const int ndims, const int gdims[], PIO_Off
       free(nmap);
       
     }
+
+    fprintf(fp,"\n");
+    print_trace(fp);
+
     fclose(fp);
   }else{
     MPI_Recv(&i, 1, MPI_INT, 0, npes+myrank, comm, &status);

@@ -155,13 +155,10 @@ module pio_types
 !!   - PIO_iotype_netcdf4p : parallel read/write of NETCDF4 (HDF5) files 
 !>
     integer(i4), public, parameter ::  &
-        PIO_iotype_pbinary = 1, &! use MPI-IO with data types to read/write C like binary files
-        PIO_iotype_direct_pbinary = 2,  & !use MPI-IO with data types to read/write direct access binary files
-        PIO_iotype_binary  = 4, &   ! serial read/write of binary files using 'base_node'
-        PIO_iotype_pnetcdf = 5, &   ! parallel read/write of pNetCDF files
-        PIO_iotype_netcdf  = 6, &   ! serial read/write of NetCDF file using 'base_node'
-        PIO_iotype_netcdf4c = 7, &  ! netcdf4 (hdf5 format) file opened for compression (serial write access only)   
-        PIO_iotype_netcdf4p = 8    ! netcdf4 (hdf5 format) file opened in parallel (all netcdf4 files for read will be opened this way)
+        PIO_iotype_pnetcdf = 1, &   ! parallel read/write of pNetCDF files
+        PIO_iotype_netcdf  = 2, &   ! serial read/write of NetCDF file using 'base_node'
+        PIO_iotype_netcdf4c = 3, &  ! netcdf4 (hdf5 format) file opened for compression (serial write access only)   
+        PIO_iotype_netcdf4p = 4    ! netcdf4 (hdf5 format) file opened in parallel (all netcdf4 files for read will be opened this way)
 
 
 ! These are for backward compatability and should not be used or expanded upon
@@ -182,7 +179,7 @@ module pio_types
 !!  - PIO_rearr_box : Use a PIO internal box rearrangement
 !! -  PIO_rearr_subset : Use a PIO internal subsetting rearrangement
 !>
-    integer(i4), public, parameter :: PIO_rearr_none = 0
+
     integer(i4), public, parameter :: PIO_rearr_box =  1
     integer(i4), public, parameter :: PIO_rearr_subset =  2
 

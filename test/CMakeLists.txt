@@ -1,6 +1,7 @@
 ###-------------------------------------------------------------------------###
 ### CMakeList.txt for tests of pio
 ###-------------------------------------------------------------------------###
+cmake_minimum_required(VERSION 2.8.5)
 
 # Adding PIO definitions - defined in the root directory
 ADD_DEFINITIONS(${PIO_DEFINITIONS})
@@ -64,7 +65,7 @@ function( add_mpi_test _testName _testExe _testArgs _numProc )
 
 endfunction(add_mpi_test)
 
-if(${PIO_BUILD_TIMING}) 
+if(PIO_BUILD_TIMING) 
   SET(TIMING_LINK_LIB timing)
 endif()
 

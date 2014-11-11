@@ -276,13 +276,11 @@ sub loadmodules{
 	print "Loading modules for $host\n";
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
 	module_check($modpath,"yellowstone");
-        module("rm netcdf");
-        module("rm intel");
-        module("load gnu/4.8.0");
-	module("load ncarcompilers/1.0");
-        module("unload netcdf");
+#        module("rm netcdf");
+#        module("rm intel");
+        module("load gnu/4.9.2");
         module("load netcdf/4.3.0");
-        module("load pnetcdf/1.3.0");
+        module("load pnetcdf/1.4.1");
         module("load ncarenv/1.0");
 	module("load ncarbinlibs/1.1");
 	module("load cmake/2.8.10.2");
@@ -352,7 +350,7 @@ sub hostmods{
     my($self,$host,$mpi) = @_;
     my ($scratch,$netcdf,$pnetcdf,$cc,$fc,$filesystem);
     print "host = $host\n";
-    if($host =~ /yellowstone/){
+    if($host =~ /yellowstone.*/){
 	$scratch = "/glade/scratch/$ENV{USER}/pio2test";
 	$netcdf = $ENV{NETCDF};
 	$pnetcdf = $ENV{PNETCDF};
