@@ -14,11 +14,9 @@ Program pio_unit_test_driver
   ! local variables
   character(len=str_len) :: err_msg
   integer :: fail_cnt, test_cnt, ios, test_id, ierr, test_val 
-  logical :: ltest_bin, ltest_bin_direct, ltest_netcdf, ltest_pnetcdf
+  logical :: ltest_netcdf, ltest_pnetcdf
   logical :: ltest_netcdf4p, ltest_netcdf4c
-  namelist/piotest_nml/ltest_bin,        &
-       ltest_bin_direct, &
-       ltest_netcdf,     &
+  namelist/piotest_nml/  ltest_netcdf,     &
        ltest_netcdf4p,     &
        ltest_netcdf4c,     &
        ltest_pnetcdf,    &
@@ -33,8 +31,6 @@ Program pio_unit_test_driver
   master_task = my_rank.eq.0
 
   if (master_task) then
-     ltest_bin        = .false.
-     ltest_bin_direct = .false.
      ltest_netcdf     = .false.
      ltest_netcdf4p     = .false.
      ltest_netcdf4c     = .false.
