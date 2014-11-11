@@ -147,10 +147,11 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   }
   // Share the max io buffer size with all io tasks
 #ifndef _MPISERIAL
-  CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Allreduce(&totiosize, &(iodesc->maxiobuflen), 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
+#else
+  iodesc->maxiobuflen = totiosize;
 #endif
   
-  iodesc->maxiobuflen = totiosize;
 }
 
 int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_Offset dlen, const PIO_Offset mindex[],const int mcount[],

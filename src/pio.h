@@ -43,7 +43,7 @@ typedef long long MPI_Offset;
 
 #endif
 #ifndef MPI_OFFSET
-#define MPI_OFFSET  ((MPI_Datatype)0x4c000844)
+#define MPI_OFFSET  MPI_LONG_LONG
 #endif
 
 #define PIO_OFFSET MPI_OFFSET

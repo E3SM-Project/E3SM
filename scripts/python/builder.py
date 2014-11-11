@@ -254,10 +254,10 @@ class goldbach_intel(platformBuilder):
         """
         self.setInvariantClassAttr()
 
-        self.moduleList = ['compiler/intel/13.1.2']
+        self.moduleList = ['compiler/intel/14.0.2']
 
         self.CMAKE_EXE = '/usr/bin/cmake'
-        self.COMPILE_PATH = ('/usr/mpi/intel-13.1.2/openmpi-1.4.3-qlc/bin/')
+        self.COMPILE_PATH = ('/usr/mpi/intel/openmpi-1.4.3-qlc/bin/')
         self.FC = self.COMPILE_PATH + 'mpif90'
         self.CC = self.COMPILE_PATH + 'mpicc'
         self.CXX = self.COMPILE_PATH + 'mpicxx'
@@ -267,13 +267,13 @@ class goldbach_intel(platformBuilder):
                        '-DHAVE_MPI -DFORTRANUNDERSCORE '
                        '-DCPRINTEL -DHAVE_SLASHPROC -I. '
                        '-I/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183/include '
-                       '-I/usr/mpi/intel-13.1.2/openmpi-1.4.3-qlc/include " ')
+                       '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include " ')
         self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-g '
                        ' -DLINUX  '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE '
                        '-DLINUX -DCPRINTEL  '
                        '-DHAVE_SLASHPROC -I. '
-                       '-I/usr/mpi/intel-13.1.2/openmpi-1.4.3-qlc/include " ')
+                       '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include " ')
         self.CXXFLAGS = (' -D CMAKE_CXX_FLAGS:STRING="-g '
                          '-DLINUX  '
                          '-DHAVE_MPI -DFORTRANUNDERSCORE  '
@@ -286,7 +286,7 @@ class goldbach_intel(platformBuilder):
                        '-D PLATFORM:STRING=goldbach '
                        '-D PIO_BUILD_TESTS:LOGICAL=TRUE ')
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH='
-                        '/usr/mpi/intel-13.1.2/openmpi-1.4.3-qlc'
+                        '/usr/mpi/intel/openmpi-1.4.3-qlc'
                         '/bin/mpirun ')
         self.EXECCA = ''
 
