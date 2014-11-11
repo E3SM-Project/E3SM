@@ -65,7 +65,7 @@
 <machine MACH="redsky">
         <DESC>SNL Redsky cluster, Linux (x86_64)</DESC>                                 <!-- can be anything -->
         <OS>LINUX</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
-        <PIO_CONFIG_OPTS> --enable-filesystem-hints=lustre </PIO_CONFIG_OPTS>
+        <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
         <COMPILERS>intel</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
         <MPILIBS>openmpi,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
         <CESMSCRATCHROOT>/gscratch1/$USER/acme_scratch</CESMSCRATCHROOT>
