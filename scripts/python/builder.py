@@ -7,7 +7,7 @@ lib_path = os.path.join('scripts/python/contrib/unit_testing')
 sys.path.append(lib_path)
 import environment as lmod
 import subprocess
-
+from pprint import pprint
 
 class platformBuilder(object):
     __metaclass__ = abc.ABCMeta
@@ -32,7 +32,7 @@ class platformBuilder(object):
         self.LDFLAGS = ''
 
         self.FFLAGS = ''
-        self.CFLAGS = ''
+        self.CFLAGS = '-I. '
         self.OFLAGS = ('-D PIO_BUILD_TESTS:LOGICAL=TRUE '
                                   '-D PIO_BUILD_TIMING:LOGICAL=TRUE ')
         self.MPIEXEC = ''
@@ -97,8 +97,12 @@ class platformBuilder(object):
         self.envMod['CXX'] = self.CXX
         self.envMod['LDFLAGS'] = self.LDFLAGS
 
-        cmakeString = (self.CMAKE_EXE + self.FFLAGS + self.CFLAGS +
-                       self.CXXFLAGS + self.OFLAGS + self.EXECCA + self.MPIEXEC + ' ..')
+        fflags = (' -D CMAKE_Fortran_FLAGS:STRING="{0}" '.format(self.FFLAGS))
+        cflags = (' -D CMAKE_C_FLAGS:STRING="{0}"  '.format(self.CFLAGS))
+        cxxflags =(' -D CMAKE_CXX_FLAGS:STRING="{0}" '.format(self.CXXFLAGS))
+
+        cmakeString = (self.CMAKE_EXE + fflags + cflags +
+                       cxxflags + self.OFLAGS + self.EXECCA + self.MPIEXEC + ' ..')
 
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
@@ -144,24 +148,24 @@ class darwin_gnu(platformBuilder):
         self.CXX = '/opt/local/bin/mpicxx-mpich-mp'
         self.LDFLAGS = '-lcurl'
 
-        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O '
+        self.FFLAGS = (' -O '
                        '-fconvert=big-endian '
                        '-ffree-line-length-none -ffixed-line-length-none '
                        '-fno-range-check '
                        '-g -Wall  -DDarwin   -DNO_MPI2 '
                        '-DNO_MPIMOD '
                        '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
-                       '-DCPRGNU -I. " ')
-        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING=" -DDarwin  '
+                       '-DCPRGNU -I.  ')
+        self.CFLAGS += (' -D CMAKE_C_FLAGS:STRING=" -DDarwin  '
                        '-DNO_MPI2 '
                        '-DNO_MPIMOD -DFORTRANUNDERSCORE '
                        '-DNO_R16 -DSYSDARWIN -DDarwin '
-                       '-DCPRGNU -I. " ')
+                       '-DCPRGNU  -I." ')
         self.CXXFLAGS = (' -D CMAKE_CXX_FLAGS:STRING=" -DDarwin  '
                          '-DNO_MPI2 '
                          '-DNO_MPIMOD -DFORTRANUNDERSCORE '
                          '-DNO_R16 -DSYSDARWIN -DDarwin '
-                         '-DCPRGNU -I. " ')
+                         '-DCPRGNU  -I." ')
         self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/opt/local '
                        '-D PNETCDF_DIR:STRING=/opt/local '
@@ -198,7 +202,7 @@ class goldbach_nag(platformBuilder):
         self.CXX = self.COMPILE_PATH + 'mpicxx'
         self.LDFLAGS = '-lcurl'
 
-        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-Wp,-macro=no_com '
+        self.FFLAGS = ('-Wp,-macro=no_com '
                        '-kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,'
                        'mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,'
                        'mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,'
@@ -212,19 +216,19 @@ class goldbach_nag(platformBuilder):
                        '-DLINUX '
                        '-DCPRNAG -DHAVE_SLASHPROC -I. '
                        '-I/usr/local/netcdf-gcc-nag/include '
-                       '-I/usr/local/openmpi-gcc-nag/include " ')
-        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-g -Wl,--as-needed,'
+                       '-I/usr/local/openmpi-gcc-nag/include  ')
+        self.CFLAGS = (' -g -Wl,--as-needed,'
                        '--allow-shlib-undefined -DLINUX  '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
                        '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
                        '-DHAVE_SLASHPROC -I. '
-                       '-I/usr/local/openmpi-gcc-nag/include " ')
-        self.CXXFLAGS = (' -D CMAKE_CXX_FLAGS:STRING="-g -Wl,--as-needed,'
+                       '-I/usr/local/openmpi-gcc-nag/include  ')
+        self.CXXFLAGS = (' -g -Wl,--as-needed,'
                          '--allow-shlib-undefined -DLINUX  '
                          '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
                          '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
                          '-DHAVE_SLASHPROC -I. '
-                         '-I/usr/local/openmpi-gcc-nag/include " ')
+                         '-I/usr/local/openmpi-gcc-nag/include  ')
         self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/usr/local/netcdf-gcc-nag '
                        '-D WITH_PNETCDF:LOGICAL=FALSE '
@@ -267,23 +271,23 @@ class goldbach_intel(platformBuilder):
         self.CXX = self.COMPILE_PATH + 'mpicxx'
         self.LDFLAGS = '-lcurl'
 
-        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING=" -g '
+        self.FFLAGS = (' -g '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE '
                        '-DCPRINTEL -DHAVE_SLASHPROC -I. '
                        '-I/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183/include '
-                       '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include " ')
-        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-g '
+                       '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include  ')
+        self.CFLAGS = (' -g '
                        ' -DLINUX  '
                        '-DHAVE_MPI -DFORTRANUNDERSCORE '
                        '-DLINUX -DCPRINTEL  '
                        '-DHAVE_SLASHPROC -I. '
-                       '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include " ')
-        self.CXXFLAGS = (' -D CMAKE_CXX_FLAGS:STRING="-g '
+                       '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include  ')
+        self.CXXFLAGS = (' -g '
                          '-DLINUX  '
                          '-DHAVE_MPI -DFORTRANUNDERSCORE  '
                          ' -DLINUX -DCPRINTEL '
                          '-DHAVE_SLASHPROC -I. '
-                         '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include " ')
+                         '-I/usr/mpi/intel/openmpi-1.4.3-qlc/include  ')
         self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING=/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183 '
                        '-D WITH_PNETCDF:LOGICAL=FALSE '
@@ -324,7 +328,7 @@ class yellowstone_intel(platformBuilder):
                            'cmake',
                            'python',
                            'ncarbinlibs/1.1']
-
+        self.runModuleCmd()
         self.CMAKE_EXE = 'cmake'
 
         self.FC = 'mpif90'
@@ -333,34 +337,35 @@ class yellowstone_intel(platformBuilder):
         self.LDFLAGS = ''
         self.NUMPE = '4'
 
-        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-fp-model source '
+        self.FFLAGS = (' -fp-model source '
                        '-convert big_endian -assume byterecl -ftz -traceback -assume '
                        'realloc_lhs '
                        '-xHost  -O2   -DLINUX  -DNDEBUG  '
                        '-DHAVE_MPI '
                        '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
                        '-DCPRINTEL '
-                       '-DHAVE_SLASHPROC -I. " ')
-        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-O2 -fp-model precise '
+                       '-DHAVE_SLASHPROC -I.  ')
+        self.CFLAGS = (' -O2 -fp-model precise '
                        '-xHost '
                        '-DLINUX  -DNDEBUG -DHAVE_MPI '
                        '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  '
                        '-DLINUX -DBIT64 -DHAVE_VPRINTF  '
                        '-DHAVE_TIMES -DHAVE_GETTIMEOFDAY  '
-                       '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
-        self.CXXFLAGS = (' -D CMAKE_CXX_FLAGS:STRING="-O2 -fp-model precise '
+                       '-DCPRINTEL  -DHAVE_SLASHPROC -I.  ')
+        self.CXXFLAGS = (' -O2 -fp-model precise '
                          '-xHost '
                          '-DLINUX  -DNDEBUG -DHAVE_MPI '
                          '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  '
                          '-DLINUX '
-                         '-DCPRINTEL  -DHAVE_SLASHPROC -I. " ')
+                         '-DCPRINTEL  -DHAVE_SLASHPROC -I.  ')
         self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
-                       '-D NETCDF_DIR:STRING='
-                       '/glade/apps/opt/netcdf-mpi/4.3.2/intel/default '
                        '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
-                       '-D PNETCDF_DIR:STRING='
-                       '/glade/apps/opt/pnetcdf/1.4.1/intel/default '
-                       '-D PLATFORM:STRING=yellowstone ')
+                       '-D PLATFORM:STRING=yellowstone '
+                       '-D PNETCDF_DIR:STRING={pnetcdf} '
+                       '-D NETCDF_DIR:STRING={netcdf} '.format(
+                        netcdf=os.environ['NETCDF'],
+                        pnetcdf=os.environ['PNETCDF']))
+
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
 
@@ -412,15 +417,15 @@ class yellowstone_pgi(platformBuilder):
         self.LDFLAGS = ('-time -Wl,--allow-multiple-definition  -nomp ')
         self.NUMPE = '4'
 
-        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-i4 -gopt -Mlist '
+        self.FFLAGS = (' -i4 -gopt -Mlist '
                        '-time -Mextend -byteswapio -Mflushz -Kieee -O '
                        '-nomp   -DLINUX  -DNDEBUG  -DHAVE_MPI '
                        '-DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16   -DLINUX '
-                       '-DCPRPGI  -DHAVE_SLASHPROC -I. " ')
-        self.CFLAGS = (' -D CMAKE_C_FLAGS:STRING="-gopt -Mlist -time  -O  '
+                       '-DCPRPGI  -DHAVE_SLASHPROC -I.  ')
+        self.CFLAGS = (' -gopt -Mlist -time  -O  '
                        '-nomp   -DLINUX  -DNDEBUG  -DHAVE_MPI '
                        '-DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 '
-                       '-DLINUX -DCPRPGI  -DHAVE_SLASHPROC -I. " ')
+                       '-DLINUX -DCPRPGI  -DHAVE_SLASHPROC -I.  ')
         self.CXXFLAGS = ''
         self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING='
@@ -480,20 +485,20 @@ class yellowstone_gnu(platformBuilder):
         self.LDFLAGS = ''
         self.NUMPE = '4'
 
-        self.FFLAGS = (' -D CMAKE_Fortran_FLAGS:STRING="-O '
+        self.FFLAGS = (' -O '
                        '-fconvert=big-endian -ffree-line-length-none '
                        '-ffixed-line-length-none -DLINUX -DNDEBUG '
                        '-D_NETCDF -D_PNETCDF '
                        ' -DHAVE_MPI -DFORTRANUNDERSCORE '
-                       ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I. " ')
-        self.CFLAGS = ('-D CMAKE_C_FLAGS:STRING=" -DLINUX  -DNDEBUG '
+                       ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I.  ')
+        self.CFLAGS = ('-DLINUX  -DNDEBUG '
                        ' -DHAVE_MPI -DFORTRANUNDERSCORE '
                        '-D_NETCDF -D_PNETCDF '
-                       ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I. " ')
-        self.CXXFLAGS = ('-D CMAKE_CXX_FLAGS:STRING=" -DLINUX  -DNDEBUG '
+                       ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I.  ')
+        self.CXXFLAGS = ('-DLINUX  -DNDEBUG '
                          '-D_NETCDF -D_PNETCDF '
                          ' -DHAVE_MPI -DFORTRANUNDERSCORE '
-                         ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I. " ')
+                         ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I.  ')
         self.OFLAGS += ('-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
                        '-D NETCDF_DIR:STRING='
                        '/glade/apps/opt/netcdf/4.3.0/gnu/4.8.0 '

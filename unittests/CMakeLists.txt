@@ -9,10 +9,13 @@ if(HDF5_LOGGING)
   ADD_DEFINITIONS(-DLOGGING)
 endif()
 
+include(mpiexec)
+
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS} )
 LINK_DIRECTORIES(${PIO_LIB_DIR} )
 
 ADD_EXECUTABLE(piotest ${SRC})
+add_mpi_test("piotest1" "./piotest" "" 1)
 
 if(${PIO_BUILD_TIMING}) 
   SET(TIMING_LINK_LIB timing)
