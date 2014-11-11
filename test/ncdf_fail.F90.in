@@ -18,7 +18,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_clob_then_no_clob
   PIO_TF_CHECK_ERR(ret, "Failed to create:" // trim(clob_fname))
 
   call PIO_closefile(pio_file)
-
+  
   ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, clob_fname, PIO_NOCLOBBER)
   PIO_TF_PASSERT(ret /= PIO_NOERR, "Create file with clobber then no clobber did not fail as expected")
 
