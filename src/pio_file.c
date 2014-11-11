@@ -15,7 +15,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 
   msg = PIO_MSG_OPEN_FILE;
   amode = mode;
-  file->iotype = *iotype;
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios==NULL){
     printf("bad iosysid %d\n",iosysid);
@@ -26,6 +25,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   if(file==NULL){
     return PIO_ENOMEM;
   }
+  file->iotype = *iotype;
   file->next = NULL;
   file->iosystem = ios;
   for(int i=0; i<PIO_MAX_VARS;i++){
