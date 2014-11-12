@@ -235,7 +235,7 @@ contains
                 errorcnt = 0
                 do j=1,maplen
                    if(ifld(j) /= ifld_in(j) .and. compmap(j) /= 0) then
-                      print *,__LINE__,mype,j,ifld(j),ifld_in(j),compmap(j)
+!                      print *,__LINE__,mype,j,ifld(j),ifld_in(j),compmap(j)
                       errorcnt = errorcnt+1
                    endif
                 enddo

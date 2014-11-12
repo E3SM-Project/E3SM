@@ -928,7 +928,6 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
   }else{
     key=max(1,ios.comp_rank%taskratio+1);
     color = min(ios.num_iotasks-1,ios.comp_rank/taskratio);
-    color = ios.comp_rank/taskratio;
   }
 
   MPI_Comm_split(ios.comp_comm, color, key, &(iodesc->subset_comm));
@@ -955,7 +954,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 
   //  int maxreq = MAX_GATHER_BLOCK_SIZE;
   int maxreq=0;
-  int rank, ntasks;
+  int rank, ntasks, rcnt;
   size_t pio_offset_size=sizeof(PIO_Offset);
 
 
@@ -979,10 +978,11 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   for(i=0;i<ndims;i++)
     totalgridsize*=gsize[i];
 
-  
+  rcnt = 0;
   iodesc->ndof = maplen;
   if(ios.ioproc){
     iodesc->rcount = (int *) malloc(ntasks *sizeof(int));
+    rcnt = 1;
   } 
   iodesc->scount = (int *) calloc(1,sizeof(int));
 
@@ -1004,9 +1004,10 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   }
 
   // Pass the reduced maplen (without holes) from each compute task to its associated IO task
-
+  //  printf("%s %d %ld\n",__FILE__,__LINE__,iodesc->scount);
+  
   pio_fc_gather( (void *) iodesc->scount, 1, MPI_INT,
-		 (void *) iodesc->rcount, 1, MPI_INT, 
+		 (void *) iodesc->rcount, rcnt, MPI_INT, 
 		 0, iodesc->subset_comm, maxreq);
 
   iodesc->llen = 0;
