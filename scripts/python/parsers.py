@@ -12,6 +12,9 @@ class cliParser():
                             help='enter the name of a '
                             'compiler for your pio build and ctests')
 
+        parser.add_argument('--test',action='store_true',help='run the ctests')
+
+
         args = parser.parse_args()
 
         return args

@@ -8,17 +8,19 @@ lib_path = os.path.join('scripts/python/contrib/unit_testing')
 sys.path.append(lib_path)
 from machine_setup import get_machine_name
 
-
-def runBuild(compiler):
+def runBuild(args):
     """ run the build and configure.  Call a factory class to
         kick off the appropriate build.
     """
     platform = resolveName()
-
-    print ("Configure, build and test for :: %s \n" %
+    compiler = args.compilerName
+    print ("Configure and build for :: %s \n" %
            (platform + "_" + compiler))
+    if args.test:
+         print ("And run tests \n" )
 
-    bld = builder.platformBuilder.factory(platform+"_"+compiler)
+
+    bld = builder.platformBuilder.factory(platform,compiler,args.test)
     bld.metaBuild()
 
 
@@ -44,7 +46,7 @@ def main(argv):
     cliP = parsers.cliParser()
     args = cliP.doCliParse(useMsg)
 
-    runBuild(args.compilerName)
+    runBuild(args)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

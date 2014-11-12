@@ -1,9 +1,14 @@
 program pioperformance
+#ifndef NO_MPIMOD
   use mpi
+#endif
   use perf_mod, only : t_initf, t_finalizef
   use pio, only : pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, &
        pio_iotype_netcdf4c, pio_rearr_subset, pio_rearr_box
   implicit none
+#ifdef NO_MPIMOD
+#include <mpif.h>
+#endif  
   integer :: ierr, mype, npe, i
   logical :: Mastertask
   character(len=256) :: decompfile(64)
@@ -175,7 +180,7 @@ contains
 
                 call pio_init(mype, comm, n, 0, stride, PIO_REARR_SUBSET, iosystem)
                    
-                write(fname, '(a,i1,a,i4.4,a)') 'pioperf.',rearrtype,'-',n,'.nc'
+                write(fname, '(a,i1,a,i4.4,a)') 'pioperf.',rearr,'-',n,'.nc'
                 ierr =  PIO_CreateFile(iosystem, File, iotype, trim(fname))
                 
                 call WriteMetadata(File, gdims, vari, varr, vard)
@@ -208,7 +213,7 @@ contains
                 call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
                 if(mype==0) then
                    ! print out performance in MB/s
-                   print *, 'write ',rearrtype, n, nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'write ',rearr, n, nframes*gmaplen*4.0/(1048576.0*wall(2))
                 end if
 
 ! Now the Read
@@ -241,7 +246,7 @@ contains
                    if(errorcnt > 0) then
                       print *,'ERROR: INPUT/OUTPUT data mismatch ',errorcnt
                    endif
-                   print *, 'read ',rearrtype, n, nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'read ',rearr, n, nframes*gmaplen*4.0/(1048576.0*wall(2))
                 end if
 
                 
