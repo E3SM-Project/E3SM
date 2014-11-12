@@ -3,8 +3,9 @@ import abc
 import os
 import sys
 # imports of NCAR scripts
-lib_path = os.path.join('scripts/python/contrib/unit_testing')
-sys.path.append(lib_path)
+#~#lib_path = os.path.join('scripts/python/contrib/unit_testing')
+#~#sys.path.append(lib_path)
+sys.path.insert(1, 'scripts/python/contrib/unit_testing')
 import environment as lmod
 import subprocess
 from pprint import pprint
