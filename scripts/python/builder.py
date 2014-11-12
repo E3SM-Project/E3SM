@@ -3,12 +3,11 @@ import abc
 import os
 import sys
 # imports of NCAR scripts
-#~#lib_path = os.path.join('scripts/python/contrib/unit_testing')
-#~#sys.path.append(lib_path)
-sys.path.insert(1, 'scripts/python/contrib/unit_testing')
+lib_path = os.path.join('scripts/python/contrib/unit_testing')
+sys.path.append(lib_path)
 import environment as lmod
 import subprocess
-from pprint import pprint
+#~#from pprint import pprint #~# not used?
 
 class platformBuilder(object):
     __metaclass__ = abc.ABCMeta
