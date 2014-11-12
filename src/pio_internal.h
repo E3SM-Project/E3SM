@@ -110,7 +110,7 @@ typedef struct mapsort
   void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, const int gdims[],const PIO_Offset map[]);
   int subset_rearrange_create(const iosystem_desc_t ios, int maplen, PIO_Offset compmap[], 
 			      const int gsize[], const int ndims, io_desc_t *iodesc);
-
+  void print_trace (FILE *fp);
 #ifdef BGQ
   void identity(MPI_Comm comm, int *iotask);
   void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 

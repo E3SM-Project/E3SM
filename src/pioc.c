@@ -281,9 +281,9 @@ int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, co
       loc[n]=(loc[n]+1)%count[n];
     }
   }
-
+  int rearr = PIO_REARR_SUBSET;
   PIOc_InitDecomp( iosysid, basetype,ndims, dims, 
-		   maplen,  compmap, ioidp, PIO_REARR_SUBSET, NULL, NULL);  
+		   maplen,  compmap, ioidp, &rearr, NULL, NULL);  
 
 
   return PIO_NOERR;

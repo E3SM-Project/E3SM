@@ -60,11 +60,11 @@ program pioperformance
 
   endif
 
-  call MPI_Bcast(decompfile,256*64,MPI_CHAR,0, MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(piotypes,4, MPI_INT, 0, MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(rearrangers, 2, MPI_INT, 0, MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(niotasks, 1, MPI_INT, 0, MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(nframes, 1, MPI_INT, 0, MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(decompfile,256*64,MPI_CHARACTER,0, MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(piotypes,4, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(rearrangers, 2, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(niotasks, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(nframes, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
 
   call t_initf('pioperf.nl', LogPrint=.false., mpicom=MPI_COMM_WORLD, MasterTask=MasterTask)
   niotypes = 0
@@ -146,7 +146,7 @@ contains
 
     if(mype < npe) then
 
-       call MPI_ALLREDUCE(maplen,gmaplen,1,MPI_OFFSET,MPI_SUM,comm,ierr)
+       call MPI_ALLREDUCE(maplen,gmaplen,1,MPI_INTEGER8,MPI_SUM,comm,ierr)
 
 !       if(gmaplen /= product(gdims)) then
 !          print *,__FILE__,__LINE__,gmaplen,gdims
@@ -210,7 +210,7 @@ contains
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(2), usr(2), sys(2))
                 wall(1) = wall(2)-wall(1)
-                call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
+                call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, comm, ierr)
                 if(mype==0) then
                    ! print out performance in MB/s
                    print *, 'write ',rearr, n, nframes*gmaplen*4.0/(1048576.0*wall(2))
@@ -231,7 +231,7 @@ contains
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(2), usr(2), sys(2))
                 wall(1) = wall(2)-wall(1)
-                call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE, MPI_MAX, 0, comm, ierr)
+                call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, comm, ierr)
                 errorcnt = 0
                 do j=1,maplen
                    if(ifld(j) /= ifld_in(j) .and. compmap(j) /= 0) then
@@ -240,7 +240,7 @@ contains
                    endif
                 enddo
                 j = errorcnt
-                call MPI_Reduce(j, errorcnt, 1, MPI_INT, MPI_SUM, 0, comm, ierr)
+                call MPI_Reduce(j, errorcnt, 1, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
                 
                 if(mype==0) then
                    if(errorcnt > 0) then

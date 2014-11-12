@@ -90,8 +90,6 @@ class platformBuilder(object):
                              ' -DHAVE_MPI -DFORTRANUNDERSCORE '
                              ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I.  ')
         if compiler == 'nag':
-            self.LDFLAGS = '-lcurl'
-
             self.FFLAGS = ('-Wp,-macro=no_com '
                            '-kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,'
                            'mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,'
@@ -266,9 +264,10 @@ class goldbach(platformBuilder):
         if compiler == 'intel':
             self.moduleList = ['compiler/intel/14.0.2']
 
+        self.BUILD_DIR = "build_goldbach_" + compiler
         self.runModuleCmd()
 
-        self.CMAKE_EXE = '/usr/bin/cmake'
+        self.CMAKE_EXE = '/usr/bin/cmake '
         self.FC = 'mpif90'
         self.CC = 'mpicc'
         self.CXX = 'mpicxx'
@@ -280,6 +279,7 @@ class goldbach(platformBuilder):
 
         self.MPIEXEC = ('mpirun ')
         self.EXECCA = ''
+        self.LDFLAGS = '-lcurl'
 
     def runModuleCmd(self):
         """ implement ABC...run module cmds

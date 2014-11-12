@@ -134,8 +134,9 @@ SUBROUTINE shr_sys_abort(string)
    call shr_sys_flush(pu_logunit)
    call mpi_abort(MPI_COMM_WORLD,0,ierr)
    call shr_sys_flush(pu_logunit)
+#ifndef CPRNAG
    call abort()
-
+#endif
    stop
 
 END SUBROUTINE shr_sys_abort
@@ -158,16 +159,8 @@ SUBROUTINE shr_sys_flush(unit)
 ! PURPOSE: an architecture independant system call
 !-------------------------------------------------------------------------------
 
-#if (defined IRIX64 || defined CRAY || defined OSF1 || defined SUNOS || defined LINUX || defined NEC_SX || defined UNICOSMP)
-   call flush(unit)
-#endif
-#if (defined AIX)
-   call flush_(unit)
-#endif
+   flush(unit)
 
-#if (!defined CRAY && !defined IRIX64 && !defined AIX && !defined OSF1 && !defined SUNOS && !defined LINUX && !defined NEC_SX && !defined UNICOSMP)
-!pw if (s_loglev > 0) write(pu_logunit,F00) 'WARNING: no implementation of flush for this architecture'
-#endif
 
 END SUBROUTINE shr_sys_flush
 
