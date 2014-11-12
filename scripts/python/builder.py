@@ -263,7 +263,7 @@ class goldbach(platformBuilder):
             self.moduleList = ['compiler/nag/5.3.1-907']
         if compiler == 'intel':
             self.moduleList = ['compiler/intel/14.0.2']
-
+            self.FFLAGS += (' -DNO_MPIMOD ')
         self.BUILD_DIR = "build_goldbach_" + compiler
         self.runModuleCmd()
 
@@ -271,7 +271,7 @@ class goldbach(platformBuilder):
         self.FC = 'mpif90'
         self.CC = 'mpicc'
         self.CXX = 'mpicxx'
-
+   
         self.OFLAGS += ('-D NETCDF_DIR:STRING={netcdf} '
                         '-D WITH_PNETCDF:LOGICAL=FALSE '
                         '-D PLATFORM:STRING=goldbach '.format(
