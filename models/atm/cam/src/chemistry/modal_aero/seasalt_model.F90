@@ -82,7 +82,8 @@ contains
     real(r8), parameter :: sst_sz_range_lo (nslt) = (/ 0.08e-6_r8, 0.02e-6_r8, 0.3e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, fine, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt) = (/ 0.3e-6_r8,  0.08e-6_r8, 1.0e-6_r8, 10.0e-6_r8 /)
 #elif( defined MODAL_AERO_3MODE )
-    real(r8), parameter :: emis_scale = 1.35_r8 
+!    real(r8), parameter :: emis_scale = 1.35_r8 
+    real(r8), parameter :: emis_scale = 0.65_r8 
     real(r8), parameter :: sst_sz_range_lo (nslt) =  (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt) =  (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8 /)
 #endif
