@@ -5,7 +5,6 @@ import sys
 import builder
 import parsers
 lib_path = os.path.join('scripts/python/contrib/unit_testing')
-lib_path = os.path.join('scripts/python')
 sys.path.append(lib_path)
 from machine_setup import get_machine_name
 
