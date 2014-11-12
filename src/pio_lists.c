@@ -71,7 +71,7 @@ file_desc_t *pio_get_file_from_id(int ncid)
   }
 
   if(cfile==NULL){
-    piodie("NULL ptr error",__FILE__,__LINE__);
+    printf("ERROR: Operation on undefined file %s %d\n",__FILE__,__LINE__);
   }
 
   return cfile;
