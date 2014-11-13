@@ -1,8 +1,54 @@
 ================================================================================
-SVN $Id: ChangeLog 60112 2014-05-09 20:40:56Z jedwards $
-SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/ChangeLog $
+SVN $Id: ChangeLog 62094 2014-07-23 15:43:17Z muszala $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140723/ChangeLog $
 ================================================================================
 This file describes what tags were created and why
+
+===========================
+Originator: muszala
+Date: 2014/07/23
+Model: share
+Version: share3_140723
+One-line summary: add shr_string_listCreateField function in support of lai streams.
+
+M       shr/shr_string_mod.F90
+
+===========================
+Originator: tcraig
+Date: 2014/06/26
+Model: share
+Version: share3_140626
+One-line summary: add shr_const_isspval and masking to avect_vecmult
+
+M       shr/mct_mod.F90
+M       shr/shr_const_mod.F90
+
+===========================
+Originator: santos
+Date: 2014/05/16
+Model: share
+Version: share3_140516
+One-line summary: New shr_sys_backtrace subroutine added, shr_sys_abort update
+
+M       shr/shr_log_mod.F90
+         - Use "output_unit" instead of the traditional "6" as the default
+           for shr_log_Unit.
+
+M       shr/shr_orb_mod.F90
+         - Remove useless URL line that often clutters diffs.
+
+M       shr/shr_sys_mod.F90
+         - Add shr_sys_backtrace, which prints a backtrace to standard
+           error if the compiler is known to support it.
+         - Make some CPP macro logic a little more uniform.
+         - Use intrinsic parameters "output_unit" and "error_unit" in
+           preference to "6" and "0".
+         - Use NAG's f90_unix_* modules to get chdir, abort, and sleep.
+         - Bring in changes to abort message printing from the
+           "abstract_error" error-handling branch.
+         - The flush statement is now supported by all compilers, so make
+           shr_sys_flush do nothing but use it.
+
 ===========================
 Originator: jedwards
 Date: 2014/05/09
