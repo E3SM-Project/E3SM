@@ -2828,6 +2828,59 @@ endif
 #endif
   end function
 
+
+ 
+
+  function subcell_dss_fluxes(dss, metdet, np, N) result(fluxes)
+
+    implicit none
+
+    integer              , intent(in)  :: np
+    integer              , intent(in)  :: N
+    real (kind=real_kind), intent(in)  :: dss     (np,np)
+    real (kind=real_kind), intent(in)  :: metdet  (np,np)
+    real (kind=real_kind)              :: fluxes  (N,N,4)
+
+    real (kind=real_kind)              :: submass(N,N)
+    integer            :: i,j
+    integer, parameter :: l = 1 
+    integer, parameter :: r = 2 
+    integer, parameter :: t = 3 
+    integer, parameter :: b = 4 
+
+    fluxes  = 0
+    submass = subcell_integration(dss, metdet, np, N)
+
+    fluxes (:,1,l) = MATMUL(integration_matrix, dss( :, 1))
+    fluxes (:,N,r) = MATMUL(integration_matrix, dss( :,np))
+    fluxes (N,:,t) = MATMUL(integration_matrix, dss(np, :))
+    fluxes (1,:,b) = MATMUL(integration_matrix, dss( 1, :))
+
+    do i = 1,N
+      do j = 1,N
+        if (1<i) fluxes(i,j,l) = fluxes(i-1,j,l) - submass(i-1,j)
+        if (1<j) fluxes(i,j,b) = fluxes(i,j-1,b) - submass(i,j-1)
+      end do
+    end do
+    do i = N,1,-1
+      do j = N,1,-1
+        if (i<N) fluxes(i,j,r) = fluxes(i+1,j,r) - submass(i+1,j)
+        if (j<N) fluxes(i,j,t) = fluxes(i+1,j,t) - submass(i,j+1)
+      end do
+    end do
+
+    do i = 1,N
+      do j = 1,N
+        if (i<N) fluxes(i,j,t) =  fluxes(i,j,t) - fluxes(i+1,j,t)
+        if (1<i)         fluxes(i,j,b) = -fluxes(i-1,j,t)
+        if (j<N) fluxes(i,j,r) =  fluxes(i,j,r) - fluxes(i,j+1,r)
+        if (1<j)         fluxes(i,j,l) = -fluxes(i,j-1,r)
+      end do
+    end do
+  end function
+
+
+
   ! Given a field defined on the unit element, [-1,1]x[-1,1]
   ! sample values, sampled_val, and integration weights, metdet,
   ! at a number, np, of Gauss-Lobatto-Legendre points. Divide
