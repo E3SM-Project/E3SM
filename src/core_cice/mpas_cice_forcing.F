@@ -1122,11 +1122,11 @@ contains
 
        ! year duration
        currentYearInterval = endYearTime - startYearTime
-       call mpas_get_timeInterval(currentYearInterval, dt=currentYearDuration)
+       call mpas_get_timeInterval(currentYearInterval, startYearTime, dt=currentYearDuration)
 
        ! epoch duration
        epochYearInterval = startYearTime - epochTime
-       call mpas_get_timeInterval(epochYearInterval, dt=currentYearEpoch)
+       call mpas_get_timeInterval(epochYearInterval, epochTime, dt=currentYearEpoch)
 
        currentYear = year
 
@@ -1134,11 +1134,11 @@ contains
 
     ! epoch time
     epochTimeDifference = currTime - epochTime
-    call mpas_get_timeInterval(epochTimeDifference, dt=forcingTimeEpoch)
+    call mpas_get_timeInterval(epochTimeDifference, epochTime, dt=forcingTimeEpoch)
 
     ! forcing time
     startYearTimeDifference = currTime - startYearTime
-    call mpas_get_timeInterval(startYearTimeDifference, dt=forcingTime)
+    call mpas_get_timeInterval(startYearTimeDifference, startYearTime, dt=forcingTime)
 
   end subroutine get_forcing_times!}}}
 
@@ -1519,7 +1519,7 @@ contains
     call mpas_set_time(startOfThisYear, YYYY=year, MM=1, DD=1)    
 
     startThisYearEpoch = startOfThisYear - epochTime
-    call mpas_get_timeInterval(startThisYearEpoch, dt=forcingTime)
+    call mpas_get_timeInterval(startThisYearEpoch, epochTime, dt=forcingTime)
 
     forcingTime = forcingTime + forcingTimeInYear(intervalNumber, positionInInterval, interval)
 
@@ -1565,7 +1565,7 @@ contains
 
     forcingTimeInterval = thisForcingTime - startOfThisYear
 
-    call mpas_get_timeInterval(forcingTimeInterval, dt=forcingTime)
+    call mpas_get_timeInterval(forcingTimeInterval, startOfThisYear, dt=forcingTime)
 
   end function forcingTimeInYearMonthly!}}}
 
@@ -1607,7 +1607,7 @@ contains
 
     forcingTimeInterval = thisForcingTime - epochTime
 
-    call mpas_get_timeInterval(forcingTimeInterval, dt=forcingTime)
+    call mpas_get_timeInterval(forcingTimeInterval, epochTime, dt=forcingTime)
 
   end function forcingTimeSinceEpochMonthly!}}}
 

@@ -23,22 +23,15 @@
 	</dims>
 	<nml_record name="cice_model" in_defaults="true">
 		<nml_option name="config_dt"                         type="real"          default_value="3600.0"/>
-		<nml_option name="config_calendar_type"              type="character"     default_value="360day"/>
+		<nml_option name="config_calendar_type"              type="character"     default_value="gregorian_noleap"/>
 		<nml_option name="config_start_time"                 type="character"     default_value="1997-01-01_00:00:00"/>
 		<nml_option name="config_stop_time"                  type="character"     default_value="none"/>
 		<nml_option name="config_run_duration"               type="character"     default_value="0000_01:00:00"/>
 		<nml_option name="config_num_halos"                  type="integer"       default_value="2"/>
 	</nml_record>
 	<nml_record name="io" in_defaults="true">
-		<nml_option name="config_input_name"                 type="character"     default_value="grid.nc"/>
-		<nml_option name="config_output_name"                type="character"     default_value="output.nc"/>
-		<nml_option name="config_restart_name"               type="character"     default_value="restart.nc"/>
-		<nml_option name="config_forcing_name"               type="character"     default_value="forcing.nc"/>
-		<nml_option name="config_output_interval"            type="character"     default_value="06:00:00"/>
-		<nml_option name="config_frames_per_outfile"         type="integer"       default_value="0"/>
 		<nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
 		<nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
-		<nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"/>
 		<nml_option name="config_test_case_diag"             type="logical"       default_value="false"/>
 		<nml_option name="config_test_case_diag_type"        type="character"     default_value="none"/>
 	</nml_record>
@@ -50,7 +43,7 @@
 	</nml_record>
 	<nml_record name="restart" in_defaults="true">
 		<nml_option name="config_do_restart"                 type="logical"       default_value="false"/>
-		<nml_option name="config_restart_interval"           type="character"     default_value="none"/>
+		<nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"/>
 	</nml_record>
 	<nml_record name="initialize" in_defaults="true">
 		<nml_option name="config_initial_condition_type"     type="character"     default_value="uniform"    possible_values="'uniform', 'circle', 'square' or 'uniform_interior'"/>
@@ -90,7 +83,7 @@
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
 					description="Method for interpolating tracer values from layer centers to layer edges"
 					possible_values="'spline' and 'stencil'"
-		/>
+c		/>
 		<nml_option name="config_vert_tracer_adv_order" type="integer" default_value="2" units="unitless"
 					description="Order of polynomial used for tracer reconstruction at layer edges"
 					possible_values="2, 3 and 4"
@@ -111,7 +104,12 @@
 
 
 	<streams>
-	  <stream name="input" type="input">
+	  <stream name="input" 
+		  type="input"
+		  filename_template="grid.nc"
+		  filename_interval="none"
+		  input_interval="initial_only"
+		  immutable="true">
 	    <var name="latCell"/>
 	    <var name="lonCell"/>
 	    <var name="xCell"/>
@@ -157,7 +155,13 @@
 	    <var name="POPindxi"/>
 	    <var name="POPindxj"/>
 	  </stream>
-	  <stream name="restart" type="restart">    
+	  <stream name="restart" 
+		  type="input;output"
+		  filename_template="restart.$Y-$M-$D_$h.$m.$s.nc"
+		  filename_interval="00_00:00:01"
+		  input_interval="initial_only"
+		  output_interval="none"
+		  immutable="true">    
 	    <var name="xtime"/>
 	    <var name="latCell"/>
 	    <var name="lonCell"/>
@@ -226,7 +230,12 @@
 	    <var name="airStressCellV"/>
 	    <var name="blockIDout"/>
 	  </stream>
-	  <stream name="output" type="output">
+	  <stream name="output" 				
+		  type="output"
+		  filename_template="output.nc"
+		  filename_interval="none"
+		  output_interval="6:00:00"
+		  runtime_format="single_file">
 	    <var name="latCell"/>
 	    <var name="lonCell"/>
 	    <var name="xCell"/>
@@ -303,8 +312,6 @@
 	    <var name="airStressVertexV"/>
 	    <var name="airTemperature"/>
 	    <var name="airPotentialTemperature"/>
-	    <var name="uAirVelocity"/>
-	    <var name="vAirVelocity"/>
 	    <var name="uAirVelocityPOP"/>
 	    <var name="vAirVelocityPOP"/>
 	    <var name="windSpeed"/>
