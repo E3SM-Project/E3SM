@@ -54,13 +54,14 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 #else
       //      amode = amode & PIO_64BIT_DATA;
       // amode = amode  & PIO_64BIT_OFFSET;
-      amode = amode |  NC_MPIIO;
+      amode = amode |  NC_MPIIO | NC_NETCDF4;
       //printf("%s %d %d  \n",__FILE__,__LINE__,amode);
 
       ierr = nc_open_par(filename, amode, ios->io_comm,ios->info, &(file->fh));
 #endif
       break;
     case PIO_IOTYPE_NETCDF4C:
+      amode = amode | NC_NETCDF4;
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
@@ -146,11 +147,12 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
     case PIO_IOTYPE_NETCDF4P:
       //         The 64 bit options are not compatable with hdf5 format files
       //      printf("%d %d %d %d %d \n",__LINE__,amode,PIO_64BIT_DATA, PIO_64BIT_OFFSET, NC_MPIIO);
-      amode = amode |  NC_MPIIO;
+      amode = amode |  NC_MPIIO | NC_NETCDF4;
 
       ierr = nc_create_par(filename, amode, ios->io_comm,ios->info  , &(file->fh));
       break;
     case PIO_IOTYPE_NETCDF4C:
+      amode = amode | NC_NETCDF4;
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){

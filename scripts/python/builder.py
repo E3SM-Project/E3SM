@@ -345,7 +345,8 @@ class yellowstone(platformBuilder):
         self.CXXFLAGS += (' -DLINUX -DHAVE_MPI -DFORTRANUNDERSCORE ')
 
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
-        self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
+#        self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
+        self.TEST_CMD = ('execca ctest --verbose')
 
     def testCmd(self):
         """ override testCmd s.t. on yellowstone we open a caldera interactive
@@ -378,3 +379,4 @@ class caldera(yellowstone):
         self.test = test
         super(caldera,self).__init__(compiler, test)
         self.EXECCA = ''
+        self.TEST_CMD = ('ctest --verbose')

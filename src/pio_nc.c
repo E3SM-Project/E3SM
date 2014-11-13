@@ -273,6 +273,13 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const i
       ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);;
       break;
     case PIO_IOTYPE_NETCDF4C:
+      if(ios->io_rank==0){
+	ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);;
+	if(ierr== PIO_NOERR){
+	  ierr = nc_def_var_deflate(file->fh, *varidp, 0, 1, 1);
+	}
+      }
+      break;
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){

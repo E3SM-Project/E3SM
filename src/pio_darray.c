@@ -85,12 +85,12 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      tsize = iodesc->basetype;
 #else
      MPI_Type_size(iodesc->basetype, &tsize);
- #endif
+#endif
      region = iodesc->firstregion;
 
      if(vdesc->record >= 0 && ndims<fndims)
        ndims++;
- #ifdef _PNETCDF
+#ifdef _PNETCDF
      if(file->iotype == PIO_IOTYPE_PNETCDF){
        // make sure we have room in the buffer ;
 	 ierr = ncmpi_inq_buffer_usage(ncid, &usage);
@@ -101,7 +101,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	 }
 
      }
- #endif
+#endif
 
      for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
        for(i=0;i<ndims;i++){
@@ -129,8 +129,8 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
        }
 
        switch(file->iotype){
- #ifdef _NETCDF
- #ifdef _NETCDF4
+#ifdef _NETCDF
+#ifdef _NETCDF4
        case PIO_IOTYPE_NETCDF4P:
 	 ierr = nc_var_par_access(ncid, vid, NC_COLLECTIVE);
 	 switch(iodesc->basetype){
@@ -148,8 +148,9 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	 default:
 	   fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	 }
+	 break;
        case PIO_IOTYPE_NETCDF4C:
- #endif
+#endif
        case PIO_IOTYPE_NETCDF:
 	 {
 #ifdef _MPISERIAL
@@ -217,6 +218,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	   }
 	   break;
 	 }
+	 break;
  #endif
  #ifdef _PNETCDF
        case PIO_IOTYPE_PNETCDF:
@@ -266,7 +268,9 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	 region = region->next;
      } //    for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
    } // if(ios->ioproc)
+
    ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+
    return ierr;
  }
 
