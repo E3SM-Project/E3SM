@@ -39,7 +39,7 @@ contains
          assign_node_numbers_to_elem
 
     ! --------------------------------
-    use edge_mod, only : oldedgebuffer_t, initedgebuffer   
+    use edge_mod, only : EdgeDescriptor_t, newedgebuffer_t, initedgebuffer   
     ! --------------------------------
     use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_flops, red_timer, &
          red_sum, red_sum_int, red_max, red_max_int, InitReductionBuffer
@@ -88,9 +88,9 @@ contains
     type (element_t), pointer :: elem(:)
     type (fvm_struct), pointer, optional :: fvm(:)
         
-    type (oldEdgeBuffer_t)           :: edge1
-    type (oldEdgeBuffer_t)           :: edge2
-    type (oldEdgeBuffer_t)           :: edge3
+    type (newEdgeBuffer_t)           :: edge1
+    type (newEdgeBuffer_t)           :: edge2
+    type (newEdgeBuffer_t)           :: edge3
     type (ReductionBuffer_ordered_1d_t) :: red
     type (parallel_t), intent(in) :: par
     ! Local Variables
@@ -119,6 +119,8 @@ contains
     integer,allocatable :: HeadPartition(:)
     real(kind=real_kind) :: approx_elements_per_task, xtmp
     type (quadrature_t)   :: gp                     ! element GLL points
+    type (EdgeDescriptor_t),allocatable  :: desc(:)
+
 
     ! =====================================
     ! Read in model control information
@@ -358,16 +360,20 @@ contains
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
     ! =================================================================
+    allocate(desc(nelemd))
+    do ie=1,nelemd
+       desc(ie) = elem(ie)%desc
+    enddo
 
-    call initEdgeBuffer(par,edge1,nlev)
-    print *,'init: After first call to initEdgeBuffer'
-    stop
+    call initEdgeBuffer(par,edge1,desc,nlev)
+!    print *,'init: After first call to initEdgeBuffer'
+!    stop
 #ifdef _PRIMDG
-    call initEdgeBuffer(par,edge2,4*nlev)
-    call initEdgeBuffer(par,edge3,11*nlev)
+    call initEdgeBuffer(par,edge2,desc,4*nlev)
+    call initEdgeBuffer(par,edge3,desc,11*nlev)
 #else
-    call initEdgeBuffer(par,edge2,2*nlev)
-    call initEdgeBuffer(par,edge3,11*nlev)
+    call initEdgeBuffer(par,edge2,desc,2*nlev)
+    call initEdgeBuffer(par,edge3,desc,11*nlev)
 #endif
     allocate(global_shared_buf(nelemd,nrepro_vars))
     call InitReductionBuffer(red,3*nlev,nthreads)
@@ -398,6 +404,7 @@ contains
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
     if (ntrac>0) call fvm_init1(par)
+    deallocate(desc)
     
     call t_stopf('init')
   end subroutine init

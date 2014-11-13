@@ -34,7 +34,7 @@ contains
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
-    use edge_mod, only : oldEdgeBuffer_t
+    use edge_mod, only : newEdgeBuffer_t
     ! ----------------
     use reduction_mod, only : ReductionBuffer_ordered_1d_t
     !-----------------
@@ -89,9 +89,9 @@ contains
     type (element_t), intent(inout) :: elem(:)
     type (fvm_struct), intent(inout) :: fvm(:)
     
-    type (oldEdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
-    type (oldEdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
-    type (oldEdgeBuffer_t), intent(inout)             :: edge3 ! edge buffer entity             (shared)
+    type (newEdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
+    type (newEdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
+    type (newEdgeBuffer_t), intent(inout)             :: edge3 ! edge buffer entity             (shared)
     type (ReductionBuffer_ordered_1d_t),intent(in)    :: red   ! reduction buffer               (shared)
     type (parallel_t), intent(in)               :: par   ! distributed parallel structure (shared)
     integer, intent(in)                         :: ithr  ! thread number                  (private)
@@ -1022,7 +1022,7 @@ contains
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
-    use edge_mod, only : oldEdgeBuffer_t
+    use edge_mod, only : newEdgeBuffer_t
     ! ----------------
     use reduction_mod, only : ReductionBuffer_ordered_1d_t
     !-----------------
@@ -1050,9 +1050,9 @@ contains
     integer, parameter :: facs = 4            ! starting face number to print
     integer, parameter :: face = 4            ! ending  face number to print
     type (element_t), intent(inout) :: elem(:)
-    type (oldEdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
-    type (oldEdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
-    type (oldEdgeBuffer_t), intent(inout)             :: edge3 ! edge buffer entity             (shared)
+    type (newEdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
+    type (newEdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
+    type (newEdgeBuffer_t), intent(inout)             :: edge3 ! edge buffer entity             (shared)
     type (ReductionBuffer_ordered_1d_t),intent(in)    :: red   ! reduction buffer               (shared)
     type (parallel_t), intent(in)               :: par   ! distributed parallel structure (shared)
     integer, intent(in)                         :: ithr  ! thread number                  (private)
@@ -1547,7 +1547,7 @@ contains
       use derivative_mod, only : divergence_sphere, ugradv_sphere
       use fvm_mod, only :  cslam_runairdensity, edgeveloc, fvm_mcgregor,fvm_mcgregordss
       use bndry_mod, only : bndry_exchangev
-      use edge_mod, only  : edgevpack, edgevunpack
+      use edge_mod, only  : newedgevpack, newedgevunpack
       use dimensions_mod, only : np, nlev
       
       implicit none

@@ -14,7 +14,7 @@ module dg_tests_mod
   ! ------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, gradient_wk, divergence, vorticity
   ! ------------------------
-  use edge_mod, only : oldedgebuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : newedgebuffer_t, newedgevpack, newedgevunpack
   ! ------------------------
   use bndry_mod, only : bndry_exchangeV
   ! ------------------------
@@ -984,7 +984,7 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
     integer              , intent(in) :: iounit
     type (TimeLevel_t)  , intent(in)  :: tl    
     real (kind=real_kind), intent(in) :: pmean
-    type (oldEdgeBuffer_t)               :: edge2
+    type (newEdgeBuffer_t)               :: edge2
     type (derivative_t)               :: deriv
     type (hybrid_t)      , intent(in) :: hybrid
     integer              , intent(in) :: nets,nete
@@ -1060,10 +1060,10 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
        end do
 
        kptr=0
-       call edgeVpack(edge2, zeta(1,1,ie), 1, kptr,elem(ie)%desc)
+       call newedgeVpack(edge2, zeta(1,1,ie), 1, kptr,ie)
 
        kptr=1
-       call edgeVpack(edge2, div(1,1,ie), 1, kptr,elem(ie)%desc)
+       call newedgeVpack(edge2, div(1,1,ie), 1, kptr,ie)
 
     end do
 !=======================================================================================================!
@@ -1072,10 +1072,10 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
     do ie=nets,nete      
 
        kptr=0
-       call edgeVunpack(edge2, zeta(1,1,ie), 1, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge2, zeta(1,1,ie), 1, kptr, ie)
 
        kptr=1
-       call edgeVunpack(edge2, div(1,1,ie), 1, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge2, div(1,1,ie), 1, kptr, ie)
 
        do j=1,np
           do i=1,np

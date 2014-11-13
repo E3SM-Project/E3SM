@@ -22,7 +22,7 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : oldEdgeBuffer_t
+    use edge_mod, only : newEdgeBuffer_t
     ! ---------------------
     use filter_mod, only : filter_t
     ! ---------------------
@@ -45,8 +45,8 @@ contains
     implicit none
 
     type (element_t)     , intent(inout), target :: elem(:)
-    type (oldEdgeBuffer_t)  , intent(in) :: edge2
-    type (oldEdgeBuffer_t)  , intent(inout) :: edge3
+    type (newEdgeBuffer_t)  , intent(in) :: edge2
+    type (newEdgeBuffer_t)  , intent(inout) :: edge3
 
     type (derivative_t)  , intent(in) :: deriv
 
@@ -195,7 +195,7 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : oldEdgeBuffer_t, edgevpack, edgevunpack, edgedgvunpack
+    use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack, newedgedgvunpack
     ! ---------------------
     use filter_mod, only : filter_t
     ! ---------------------
@@ -224,8 +224,8 @@ contains
 
     type (element_t)     , intent(inout), target :: elem(:)
     type (Rk_t)          , intent(in) :: MyRk
-    type (oldEdgeBuffer_t)  , intent(in) :: edge2
-    type (oldEdgeBuffer_t)  , intent(inout) :: edge3
+    type (newEdgeBuffer_t)  , intent(in) :: edge2
+    type (newEdgeBuffer_t)  , intent(inout) :: edge3
 
     type (derivative_t)  , intent(in) :: deriv
 
@@ -525,9 +525,9 @@ contains
              enddo
           endif
           kptr=0
-          call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+          call newedgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
           kptr=nlev
-          call edgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+          call newedgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,ie)
 
        end do
 
@@ -552,10 +552,10 @@ contains
           ! ===========================================================
           if (npdg==0) then
              kptr=0
-             call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+             call newedgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
           endif
           kptr=nlev
-          call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+          call newedgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
 
           ! ===========================================================
           ! Compute velocity and pressure tendencies for all levels
@@ -576,7 +576,7 @@ contains
 
           if (npdg>0) then
              kptr=0
-             call edgeDGVunpack(edge3, pedges, nlev, kptr, elem(ie)%desc)
+             call newedgeDGVunpack(edge3, pedges, nlev, kptr, ie)
              pedges=pedges+pmean  ! add in mean value, to get edge flux correct
              do k=1,nlev
                 plocal(:,:)=elem(ie)%state%p(:,:,k,n0)+pmean  ! add in mean value
@@ -1404,7 +1404,7 @@ contains
     use hybrid_mod, only : hybrid_t
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-    use edge_mod, only : oldEdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack
     use bndry_mod, only : bndry_exchangev
     use viscosity_mod, only : biharmonic_wk, neighbor_minmax
     ! ---------------------
@@ -1415,7 +1415,7 @@ contains
     integer :: nt,nets,nete
     real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
     real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
-    type (oldEdgeBuffer_t)  , intent(inout) :: edge3
+    type (newEdgeBuffer_t)  , intent(inout) :: edge3
     type (derivative_t)  , intent(in) :: deriv
     real (kind=real_kind) :: dt2
 
@@ -1496,9 +1496,9 @@ contains
              enddo
 
              kptr=0
-             call edgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,elem(ie)%desc)
+             call newedgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,ie)
              kptr=nlev
-             call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
+             call newedgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
           enddo
 
           call bndry_exchangeV(hybrid,edge3)
@@ -1507,9 +1507,9 @@ contains
              rspheremp     => elem(ie)%rspheremp
 
              kptr=0
-             call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, elem(ie)%desc)
+             call newedgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, ie)
              kptr=nlev
-             call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
+             call newedgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
 
              ! apply inverse mass matrix
              do k=1,nlev
@@ -1580,9 +1580,9 @@ contains
 
 
              kptr=0
-             call edgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,elem(ie)%desc)
+             call newedgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,ie)
              kptr=nlev
-             call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
+             call newedgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
           enddo
 
           call bndry_exchangeV(hybrid,edge3)
@@ -1591,9 +1591,9 @@ contains
              rspheremp     => elem(ie)%rspheremp
 
              kptr=0
-             call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, elem(ie)%desc)
+             call newedgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, ie)
              kptr=nlev
-             call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
+             call newedgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
 
              ! apply inverse mass matrix
              do k=1,nlev
@@ -1647,7 +1647,7 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : oldEdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack
     ! ---------------------
     use filter_mod, only : filter_t, filter_P
     ! ---------------------
@@ -1674,9 +1674,9 @@ contains
     ! ---------------------
     implicit none
     type (element_t), intent(inout), target :: elem(:)
-    type (oldEdgeBuffer_t)               :: edge1
-    type (oldEdgeBuffer_t)               :: edge2
-    type (oldEdgeBuffer_t)               :: edge3
+    type (newEdgeBuffer_t)               :: edge1
+    type (newEdgeBuffer_t)               :: edge2
+    type (newEdgeBuffer_t)               :: edge3
     type (ReductionBuffer_ordered_1d_t)     :: red
     type (derivative_t)               :: deriv
     type (filter_t)                   :: flt
@@ -1795,9 +1795,9 @@ contains
 
           end do
           kptr=0
-          call edgeVpack(edge3, elem(ie)%state%v(:,:,:,:,n0),2*nlev,kptr,elem(ie)%desc)
+          call newedgeVpack(edge3, elem(ie)%state%v(:,:,:,:,n0),2*nlev,kptr,ie)
           kptr=2*nlev
-          call edgeVpack(edge3, elem(ie)%state%p(:,:,:,n0),nlev,kptr,elem(ie)%desc)
+          call newedgeVpack(edge3, elem(ie)%state%p(:,:,:,n0),nlev,kptr,ie)
           kptr=0
           !DBG print *,'advance_si: point #6'
        end do
@@ -1815,9 +1815,9 @@ contains
        do ie=nets,nete
 
           kptr=0
-          call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,n0), 2*nlev, kptr, elem(ie)%desc)
+          call newedgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,n0), 2*nlev, kptr, ie)
           kptr=2*nlev
-          call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,n0), nlev, kptr, elem(ie)%desc)
+          call newedgeVunpack(edge3, elem(ie)%state%p(:,:,:,n0), nlev, kptr, ie)
 
           do k=1,nlev
              vco(:,:,1) = elem(ie)%Dinv(1,1,:,:)*elem(ie)%state%v(:,:,1,k,n0)+&
@@ -1958,10 +1958,10 @@ contains
 
        !DBG print *,'advance_si: point #14'
        kptr=0
-       call edgeVpack(edge3, vgradp(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call newedgeVpack(edge3, vgradp(1,1,1,ie),nlev,kptr,ie)
 
        kptr=nlev
-       call edgeVpack(edge3,Ru(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+       call newedgeVpack(edge3,Ru(1,1,1,1,ie),2*nlev,kptr,ie)
        !DBG print *,'advance_si: point #15'
 
        ! =============================================================
@@ -1996,10 +1996,10 @@ contains
        ! ===========================================================
 
        kptr=0
-       call edgeVunpack(edge3, vgradp(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge3, vgradp(1,1,1,ie), nlev, kptr, ie)
 
        kptr=nlev
-       call edgeVunpack(edge3, Ru(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge3, Ru(1,1,1,1,ie), 2*nlev, kptr, ie)
 
        ! ===========================================================
        ! Compute velocity and pressure tendencies for all levels
@@ -2063,7 +2063,7 @@ contains
        end do
        !DBG print *,'advance_si: point #14'
        kptr=0
-       call edgeVpack(edge1, Rs(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call newedgeVpack(edge1, Rs(1,1,1,ie),nlev,kptr,ie)
 
     end do
 
@@ -2076,7 +2076,7 @@ contains
 
        rmp     => elem(ie)%rmp
        kptr=0
-       call edgeVunpack(edge1, Rs(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge1, Rs(1,1,1,ie), nlev, kptr, ie)
        do k=1,nlev
           do j=1,np
              do i=1,np
@@ -2157,7 +2157,7 @@ contains
        enddo
 
        kptr=0
-       call edgeVpack(edge2, grad_dp(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+       call newedgeVpack(edge2, grad_dp(1,1,1,1,ie),2*nlev,kptr,ie)
     end do
 
 #if (defined HORIZ_OPENMP)
@@ -2174,7 +2174,7 @@ contains
 
        kptr=0      
 
-       call edgeVunpack(edge2, grad_dp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge2, grad_dp(1,1,1,1,ie), 2*nlev, kptr, ie)
 
        do k=1,nlev
 
@@ -2290,7 +2290,7 @@ contains
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use edge_mod, only : oldEdgeBuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack
   use bndry_mod, only : bndry_exchangev
   implicit none
 
@@ -2299,7 +2299,7 @@ contains
   integer :: nm1,np1,n0,nets,nete
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
-  type (oldEdgeBuffer_t)  , intent(inout) :: edge3
+  type (newEdgeBuffer_t)  , intent(inout) :: edge3
   type (derivative_t)  , intent(in) :: deriv
   real (kind=real_kind) :: dt2,pmean,real_time
 
@@ -2370,9 +2370,9 @@ contains
      ! Pack cube edges of tendencies, rotate velocities
      ! ===================================================
      kptr=0
-     call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+     call newedgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
      kptr=nlev
-     call edgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+     call newedgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,ie)
   end do
   
   
@@ -2391,10 +2391,10 @@ contains
      ! Unpack the edges for vgradp and vtens
      ! ===========================================================
      kptr=0
-     call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+     call newedgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
      
      kptr=nlev
-     call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+     call newedgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
      
      ! ===========================================================
      ! Compute velocity and pressure tendencies for all levels
