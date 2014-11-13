@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: shr_string_mod.F90 42357 2012-12-04 15:36:10Z jedwards $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_string_mod.F90 $
+! SVN $Id: shr_string_mod.F90 62094 2014-07-23 15:43:17Z muszala $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140723/shr/shr_string_mod.F90 $
 !===============================================================================
 !===============================================================================
 !BOP ===========================================================================
@@ -22,10 +22,11 @@
 module shr_string_mod
 
 ! !USES:
-
+#include "shr_assert.h"
    use shr_kind_mod   ! F90 kinds
    use shr_sys_mod    ! shared system calls
    use shr_timer_mod, only : shr_timer_get, shr_timer_start, shr_timer_stop
+   use shr_log_mod,   only : errMsg    => shr_log_errMsg
    use shr_log_mod,   only : s_loglev  => shr_log_Level
    use shr_log_mod,   only : s_logunit => shr_log_Unit
 
@@ -62,7 +63,8 @@ module shr_string_mod
    public :: shr_string_listPrepend     ! prepend list in front of another
    public :: shr_string_listSetDel      ! Set field delimiter in lists
    public :: shr_string_listGetDel      ! Get field delimiter in lists
-
+   public :: shr_string_listCreateField ! return colon delimited field list
+                                        ! given number of fields N and a base string
    public :: shr_string_setAbort        ! set local abort flag
    public :: shr_string_setDebug        ! set local debug flag
 
@@ -1618,6 +1620,83 @@ subroutine shr_string_listGetDel(del)
    if (debug>1) call shr_timer_stop (t01)
 
 end subroutine shr_string_listGetDel
+
+!===============================================================================
+!
+! shr_string_listCreateField 
+!                           
+!   Returns a string of colon delimited fields for use in shr_strdata_create
+!   arguments, fldListFile and fldListModel.
+!   Use to create actual args for shr_strdata_create (fldListFile and
+!   flidListModel).
+!
+!   This works for numFields up to 999.  Modify the string write if you want
+!   more range.
+!     
+!   retString = shr_string_listCreateField(numFields, strBase)
+!        given numFields = 5 and strBase = LAI, returns:
+!            LAI_1:LAI_2:LAI_3:LAI_4:LAI_5
+!
+!===============================================================================
+function shr_string_listCreateField( numFields, strBase ) result ( retString )
+
+   implicit none
+
+   integer(SHR_KIND_IN), intent(in) :: numFields   ! number of fields
+   character(len=*)    , intent(in) :: strBase     ! input string base
+   character(SHR_KIND_CXX)          :: retString   ! colon delimited field list
+
+   integer                          :: idx         ! index for looping over numFields
+   integer(SHR_KIND_IN)             :: t01 = 0     ! timer
+   character(SHR_KIND_CX)           :: tmpString   ! temporary 
+   character(SHR_KIND_CX)           :: intAsChar   ! temporary 
+   character(1), parameter          :: colonStr = ':'
+   character(1), parameter          :: underStr = '_'
+
+   !--- formats ---
+   character(*),parameter :: subName = "(shr_string_listCreateField) "
+   character(*),parameter :: F00     = "('(shr_string_listCreateField) ',a) "
+
+!-------------------------------------------------------------------------------
+
+   if ( debug > 1 .and. t01 < 1 ) call shr_timer_get( t01,subName )
+   if ( debug > 1 ) call shr_timer_start( t01 )
+
+   !
+   ! this assert isn't that accurate since it counts all integers as being one
+   ! digit, but it should catch most errors and under rather than overestimates
+   !
+   SHR_ASSERT( ( ( ( len(strBase) + 3 ) * numFields ) <= 1024 ) , errMsg(__FILE__, __LINE__) )
+
+   retString = ''
+   do idx = 1,numFields
+
+     ! reset temps per numField
+     intAsChar = ''
+     tmpString = ''
+
+     ! string conversion based on 1,2,3 digits
+     if ( idx < 10 ) then
+       write(intAsChar, "(I1)") idx 
+     else if ( idx >= 10 .and. idx < 100 ) then
+       write(intAsChar, "(I2)") idx 
+     else
+       write(intAsChar, "(I3)") idx 
+     end if
+             
+     tmpString = trim(StrBase)//trim(underStr)//trim(intAsChar)
+  
+     if ( idx > 1 ) then
+       tmpString = trim(colonStr)//trim(tmpString)
+     end if
+
+     retString = trim(retString)//trim(tmpString)
+       
+   end do
+
+   if ( debug > 1 ) call shr_timer_stop ( t01 )
+
+end function shr_string_listCreateField
 
 !===============================================================================
 !BOP ===========================================================================
