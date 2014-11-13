@@ -5,7 +5,7 @@
 #define NEW_PACK
 
 module bndry_mod
-  use parallel_mod, only : abortmp
+  use parallel_mod, only : abortmp,iam
   use edge_mod, only : Ghostbuffer3D_t
   implicit none
   private
@@ -234,7 +234,7 @@ contains
     ! buffer
     iptr = pSchedule%MoveCycle(1)%ptrP
     length = pSchedule%MoveCycle(1)%lengthP
-    !$OMP DO SCHEDULE(dynamic), PRIVATE(i)
+    !$OMP DO SCHEDULE(dynamic,8), PRIVATE(i)
     do i=0,length-1
       buffer%receive(1:nlyr,iptr+i) = buffer%buf(1:nlyr,iptr+i)
     enddo
@@ -268,6 +268,7 @@ contains
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
     integer        :: i,j
+    integer        :: ithr
 
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr
@@ -319,18 +320,24 @@ contains
     call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
     !$OMP END MASTER
 
-
+    ithr = omp_get_thread_num()+1
 
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
-    iptr = nlyr*(pSchedule%MoveCycle(1)%ptrP - 1) + 1
-    length = nlyr*pSchedule%MoveCycle(1)%lengthP
-    !$OMP DO SCHEDULE(dynamic,384), PRIVATE(i,j)
-    do i=0,length-1
-      j=iptr+i
-      buffer%receive(j) = buffer%buf(j)
-    enddo
-    !$OMP END DO
+!JMD    iptr   = nlyr*(pSchedule%MoveCycle(1)%ptrP - 1) + 1
+!JMD    length = nlyr*pSchedule%MoveCycle(1)%lengthP
+!JMD    !$OMP DO SCHEDULE(dynamic), PRIVATE(i,j)
+!JMD    do i=0,length-1
+!JMD      j=iptr+i
+!JMD      buffer%receive(j) = buffer%buf(j)
+!JMD    enddo
+!JMD    !$OMP END DO
+
+    iptr   = buffer%moveptr(ithr)
+    length = buffer%moveLength(ithr)
+    if(length>0) then 
+        buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
+    endif
 
 
   end subroutine bndry_exchangeV_nonth_recv_newbuf

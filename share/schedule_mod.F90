@@ -7,6 +7,7 @@ module schedule_mod
   use metagraph_mod, only : MetaEdge_t
   use kinds, only : int_kind, iulog
   use schedtype_mod, only : Cycle_t, Schedule_t, schedule 
+  use parallel_mod, only: iam
 
   implicit none 
   private 
@@ -85,9 +86,9 @@ contains
     iSched = PartNumber
 
     nelemd0 = MetaVertex%nmembers
-    if(VerbosePrint) then
        if(iam .eq. 1)  write(iulog,*)'genEdgeSched: Part # ',i,' has ',nelemd0, ' elements '
-    endif
+    !if(VerbosePrint) then
+    !endif
     MaxNelemd = AMAX0(MaxNelemd,nelemd0)
     MinNelemd = AMIN0(MinNelemd,nelemd0)
     if(Debug) write(iulog,*)'genEdgeSched: point #2'
@@ -131,6 +132,15 @@ contains
     !  Allocate and initalized the index translation arrays
     Global2Local = -1
     allocate(LSchedule%Local2Global(nelemd0))
+    allocate(LSchedule%pIndx(max_neigh_edges*nelemd0))
+    allocate(LSchedule%gIndx(max_neigh_edges*nelemd0))
+    LSchedule%pIndx(:)%elemId=-1
+    LSchedule%pIndx(:)%edgeId=-1
+    LSchedule%gIndx(:)%elemId=-1
+    LSchedule%gIndx(:)%edgeId=-1
+    LSchedule%pPtr=1
+    LSchedule%gPtr=1
+
     if(Debug) write(iulog,*)'genEdgeSched: point #7'
 
     do il=1,nelemd0
@@ -184,6 +194,9 @@ contains
           ir = ir+1
        endif
     enddo
+    if(iam == 1) then 
+       print *,'getMetaSchedule: tmpP: ',tmpP
+    endif
 
     deallocate(tmpP)
     deallocate(tmpP_ghost)
@@ -1008,6 +1021,12 @@ contains
           elem(il)%desc%putmapP(loc) = Edge%edgeptrP(i) + Cycle%ptrP - 1  ! offset, so start at 0
           elem(il)%desc%putmapP_ghost(loc) = Edge%edgeptrP_ghost(i) + Cycle%ptrP_ghost  ! index, start at 1
           elem(il)%desc%reverse(loc) = Edge%members(i)%reverse
+          schedule%pIndx(schedule%pPtr)%elemid=il
+          schedule%pIndx(schedule%pPtr)%edgeid=loc
+          schedule%pPtr=schedule%pPtr+1
+!NEWEDGEBUFF          if(iam == 1) then 
+!NEWEDGEBUFF            print *,'putmap: elemid,loc: ',il,loc
+!NEWEDGEBUFF          endif
        endif
 
 
@@ -1033,9 +1052,13 @@ contains
           elem(il)%desc%getmapP(loc) = Edge%edgeptrP(i) + Cycle%ptrP - 1
           elem(il)%desc%getmapP_ghost(loc) = Edge%edgeptrP_ghost(i) + Cycle%ptrP_ghost 
           elem(il)%desc%globalID(loc) = Edge%members(i)%tail%number
+          schedule%gIndx(schedule%gPtr)%elemid=il
+          schedule%gIndx(schedule%gPtr)%edgeid=loc
+          schedule%gPtr=schedule%gPtr+1
+!NEWEDGEBUFF          if(iam == 1) then 
+!NEWEDGEBUFF            print *,'getmap: elemid,loc: ',il,loc
+!NEWEDGEBUFF          endif
        endif
-
-
     enddo
 #endif
     Cycle%edge   => Edge

@@ -30,7 +30,7 @@ module prim_driver_mod
 #endif
 
   use element_mod, only : element_t, timelevels,  allocate_element_desc
-  use thread_mod, only : omp_get_num_threads
+  use thread_mod, only : nThreadsHoriz, omp_get_num_threads
   implicit none
   private
   public :: prim_init1, prim_init2 , prim_run, prim_run_subcycle, prim_finalize, leapfrog_bootstrap
@@ -81,9 +81,9 @@ contains
          MeshCubeElemCount, MeshCubeEdgeCount
     use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
     ! --------------------------------
-    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph
+    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
-    use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
+    use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs, PrintGridVertex
     ! --------------------------------
     use schedtype_mod, only : schedule
     ! --------------------------------
@@ -254,7 +254,7 @@ contains
     end if
     if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
 
-    ! if(par%masterproc) call PrintGridVertex(GridVertex)
+    if(par%masterproc) call PrintGridVertex(GridVertex)
 
 
     if(partmethod .eq. SFCURVE) then
@@ -288,6 +288,9 @@ contains
 
 
     nelemd = LocalElemCount(MetaVertex(1))
+    if((iam == 1)) then 
+        call PrintMetaVertex(MetaVertex(1))
+    endif
 
     if(nelemd .le. 0) then
        call abortmp('Not yet ready to handle nelemd = 0 yet' )
@@ -515,6 +518,8 @@ contains
     ith=0
     nets=1
     nete=nelemd
+    ! set the actual number of threads which will be used in the horizontal
+    nThreadsHoriz = n_domains
 #ifndef CAM
     allocate(cm(0:n_domains-1))
 #endif

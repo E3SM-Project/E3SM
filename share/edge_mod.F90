@@ -8,7 +8,7 @@ module edge_mod
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
-  use thread_mod, only: omp_get_num_threads, omp_get_thread_num
+  use thread_mod, only: nthreadshoriz, omp_get_num_threads, omp_get_thread_num
   use coordinate_systems_mod, only : cartesian3D_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
   use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t
@@ -55,10 +55,12 @@ module edge_mod
 
   type, public :: newEdgeBuffer_t
      real (kind=real_kind), dimension(:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:), pointer :: receive => null()
+     real (kind=real_kind), dimension(:), allocatable :: receive
      integer(kind=int_kind), pointer :: putmap(:,:) => null()
      integer(kind=int_kind), pointer :: getmap(:,:) => null() 
      logical(kind=log_kind), pointer :: reverse(:,:) => null()
+     integer(kind=int_kind), pointer :: moveLength(:) => null()
+     integer(kind=int_kind), pointer :: movePtr(:) => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! total size of message passing buffer, includes vertical levels
   end type newEdgeBuffer_t
@@ -411,9 +413,9 @@ contains
     use schedtype_mod, only : cycle_t, schedule_t, schedule
     implicit none
     type (parallel_t), intent(in) :: par
-    integer,intent(in)                :: nlyr
     type (newEdgeBuffer_t),intent(out), target :: edge
     type (EdgeDescriptor_t),intent(in)  :: desc(:)
+    integer,intent(in)                :: nlyr
     ! integer, intent(in)  :: globalid(:)
 
     ! Notes about the buf_ptr/receive_ptr options:
@@ -441,9 +443,14 @@ contains
     integer :: nSendCycles, nRecvCycles
     integer :: icycle, ierr
     integer :: iam,ie, i 
+    integer :: edgeid,elemid
+    integer :: ptr,llen,moveLength, mLen, tlen 
     type (Cycle_t), pointer :: pCycle
     type (Schedule_t), pointer :: pSchedule
     integer :: dest, source, length, tag, iptr
+
+    ! call t_adj_detailf(+3)
+    call t_startf('initnewedgebuffer')
 
     nbuf=nlyr*4*(np+max_corner_elem)*nelemd
     edge%nlyr=nlyr
@@ -451,13 +458,10 @@ contains
     if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
 
 #if (defined HORIZ_OPENMP)
-!JMD    !$OMP BARRIER
+    !$OMP MASTER
 #endif
-    pSchedule => Schedule(1)
-    moveLength = nlyr*pSchedule%MoveCycle(1)%lengthP
 
     iam = par%rank
-!$OMP MASTER
     allocate(edge%putmap(max_neigh_edges,nelemd))
     allocate(edge%getmap(max_neigh_edges,nelemd))
     allocate(edge%reverse(max_neigh_edges,nelemd))
@@ -475,18 +479,84 @@ contains
           endif
           edge%reverse(i,ie) = desc(ie)%reverse(i) 
        enddo
-!       if(ie==12) then 
-!          print *,'IAM: ',iam,'GlobalID: ',globalid(ie),' getmap(',ie,'): ', edge%getmap(:,ie)
-!       endif
-!       if(ie==2) then 
-!          print *,'IAM: ',iam,'GlobalID: ',globalid(ie),' getmap(',ie,'): ', edge%getmap(:,ie)
-!       endif
     enddo
+
+    ! Determine the most optimal way to move data in the bndry_exchange call 
+    pSchedule  => Schedule(1)
+    moveLength = nlyr*pSchedule%MoveCycle(1)%lengthP
+    ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrP -1) + 1 
+
+    do i=1,pSchedule%pPtr-1
+       elemid = pSchedule%pIndx(i)%elemid
+       edgeid = pSchedule%pIndx(i)%edgeid
+!NEWEDGEBUFF       if(iam==1) then 
+!NEWEDGEBUFF          print *,'IAM: ',iam,' elemid: ',elemid, ' ORDERED putmap: ', edge%putmap(edgeid,elemid)
+!NEWEDGEBUFF       endif
+    enddo
+    do i=1,pSchedule%gPtr-1
+       elemid = pSchedule%gIndx(i)%elemid
+       edgeid = pSchedule%gIndx(i)%edgeid
+!NEWEDGEBUFF       if(iam==1) then 
+!NEWEDGEBUFF          print *,'IAM: ',iam,' elemid: ',elemid,' ORDERED getmap: ', edge%getmap(edgeid,elemid)
+!NEWEDGEBUFF       endif
+    enddo
+
+    allocate(edge%moveLength(nthreadshoriz))
+    allocate(edge%movePtr(nthreadshoriz))
+
+    if (nthreadshoriz > 1) then 
+       ! the master thread performs no data movement because it is busy with the
+       ! MPI messaging 
+       edge%moveLength(1) = -1
+       edge%movePtr(1) = 0
+       
+       ! Calculate the length of the local copy in bndy_exchange
+       llen = ceiling(real(moveLength,kind=real_kind)/real(nthreadshoriz-1,kind=real_kind))
+       iptr = ptr
+       mLen = 0
+       do i=2,nthreadshoriz
+         if( (mLen+llen) <= moveLength)  then 
+            tlen = llen 
+         else
+            tlen = moveLength - mLen 
+         endif
+         edge%moveLength(i) = tlen
+         edge%movePtr(i)    = iptr
+         iptr = iptr + tlen
+         mLen = mLen + tLen 
+       enddo
+    else
+       edge%moveLength(1) = moveLength
+       edge%movePtr(1) = ptr
+    endif
+
     allocate(edge%buf(nbuf))
     allocate(edge%receive(nbuf))
     edge%buf    (:)=0.0D0
     edge%receive(:)=0.0D0
-!$OMP END MASTER
+
+    nSendCycles = pSchedule%nSendCycles
+    nRecvCycles = pSchedule%nRecvCycles
+    do icycle=1,nRecvCycles
+       pCycle => pSchedule%RecvCycle(icycle)
+       length = nlyr * pCycle%lengthP
+       iptr   = nlyr * (pCycle%ptrP - 1) + 1
+       print *,'IAM: ', iam, 'RecvCycle: Pointer: ',iptr,' LENGTH: ',length
+    enddo
+    do icycle=1,nSendCycles
+       pCycle => pSchedule%SendCycle(icycle)
+       length = nlyr * pCycle%lengthP
+       iptr   = nlyr * (pCycle%ptrP - 1) + 1
+       print *,'IAM: ', iam, 'SendCycle: Pointer: ',iptr,' LENGTH: ',length
+    enddo
+    iptr   = nlyr*(pSchedule%MoveCycle(1)%ptrP - 1) + 1
+    length = nlyr*pSchedule%MoveCycle(1)%lengthP
+    print *,'IAM: ',iam,'MoveCycle: Pointers: ', iptr,' LENGTH: ',length 
+!    print *,'IAM: ',iam,'MoveCycle: Pointers: ',edge%movePtr  
+!    print *,'IAM: ',iam,'MoveCycle: LENGTH: ',edge%moveLength  
+#if (defined HORIZ_OPENMP)
+    !$OMP END MASTER
+#endif
 
 !    stop 'initNewEdgeBuffer'
 !    allocate(edge%buf(nbuf))
@@ -523,9 +593,9 @@ contains
 !    enddo
 #endif
 
-#if (defined HORIZ_OPENMP)
-!JMD       !$OMP END MASTER
-#endif
+    call t_stopf('initnewedgebuffer')
+    !call t_adj_detailf(-3)
+    
 
   end subroutine initNewEdgeBuffer
   ! =========================================
@@ -995,6 +1065,7 @@ contains
     integer :: i,k,ir,ll,iptr
 
     integer :: is,ie,in,iw
+    integer :: nce
 
     call t_adj_detailf(+2)
     call t_startf('newedge_pack')
@@ -1007,10 +1078,11 @@ contains
        call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
     endif
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i)
+!$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
        iptr = np*(kptr+k-1)
+!dir$ ivdep
        do i=1,np
           edge%buf(iptr+ie+i)   = v(np ,i ,k) ! East
           edge%buf(iptr+is+i)   = v(i  ,1 ,k) ! South
@@ -1019,27 +1091,12 @@ contains
        enddo
     enddo
 
-!    do i=1,np 
-!       ! South
-!       do k=1,vlyr
-!          edge%buf(kptr+k,is+i)   = v(i  ,1 ,k)
-!       enddo
-!       ! North
-!       do k=1,vlyr
-!          edge%buf(kptr+k,in+i)   = v(i  ,np,k)
-!       enddo
-!       ! West
-!       do k=1,vlyr
-!          edge%buf(kptr+k,iw+i)   = v(1  ,i ,k)
-!       enddo
-!    end do
-
     !  This is really kludgy way to setup the index reversals
     !  But since it is so a rare event not real need to spend time optimizing
 
     if(edge%reverse(south,ielem)) then
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,ir)
+!$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
           iptr = np*(kptr+k-1)+is
@@ -1052,7 +1109,7 @@ contains
 
     if(edge%reverse(east,ielem)) then
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,ir)
+!$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
           iptr=np*(kptr+k-1)+ie
@@ -1061,17 +1118,11 @@ contains
              edge%buf(iptr+ir)=v(np,i,k)
           enddo
        enddo
-!       do i=1,np
-!          ir = np-i+1
-!          do k=1,vlyr
-!             edge%buf(kptr+k,ie+ir)=v(np,i,k)
-!          enddo
-!       enddo
     endif
 
     if(edge%reverse(north,ielem)) then
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,ir)
+!$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
           iptr=np*(kptr+k-1)+in
@@ -1080,17 +1131,11 @@ contains
              edge%buf(iptr+ir)=v(i,np,k)
           enddo
        enddo
-!       do i=1,np
-!          ir = np-i+1
-!          do k=1,vlyr
-!             edge%buf(kptr+k,in+ir)=v(i,np,k)
-!          enddo
-!       enddo
     endif
 
     if(edge%reverse(west,ielem)) then
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,ir)
+!$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
           iptr=np*(kptr+k-1)+iw
@@ -1099,19 +1144,15 @@ contains
              edge%buf(iptr+ir)=v(1,i,k)
           enddo
        enddo
-!       do i=1,np
-!          ir = np-i+1
-!          do k=1,vlyr
-!             edge%buf(kptr+k,iw+ir)=v(1,i,k)
-!          enddo
-!       enddo
     endif
 
+    !set the max_corner_elem
+    nce = max_corner_elem
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(np*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(1  ,1 ,k)
+                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(1  ,1 ,k)
             end do
         end if
     end do
@@ -1120,7 +1161,7 @@ contains
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(np*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(np ,1 ,k)
+                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(np ,1 ,k)
 !                edge%buf(kptr+k,edge%putmap(ll,ielem)+1)=v(np ,1 ,k)
             end do
         end if
@@ -1130,7 +1171,7 @@ contains
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(np*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(np ,np,k)
+                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(np ,np,k)
 !                edge%buf(kptr+k,edge%putmap(ll,ielem)+1)=v(np ,np,k)
             end do
         end if
@@ -1140,7 +1181,7 @@ contains
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(np*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(1  ,np,k)
+                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(1  ,np,k)
 !                edge%buf(kptr+k,edge%putmap(ll,ielem)+1)=v(1  ,np,k)
             end do
         end if
@@ -1478,13 +1519,19 @@ contains
 
     integer,               intent(in)  :: vlyr
     real (kind=real_kind), intent(inout) :: v(np,np,vlyr)
+!$dir assume_aligned v:64
     integer,               intent(in)  :: kptr
     integer,               intent(in)  :: ielem
     !type (EdgeDescriptor_t)            :: desc
 
+    real(kind=real_kind) :: temp(np)
+    real(kind=real_kind) :: temp1,temp2,temp3,temp4
+
     ! Local
-    integer :: i,k,ll,iptr
+    integer :: i,k,ll,iptr,nce
     integer :: is,ie,in,iw
+    integer :: ks,ke,kblock
+    logical :: done
 
     call t_adj_detailf(+2)
     call t_startf('newedge_unpack')
@@ -1494,43 +1541,83 @@ contains
     in=edge%getmap(north,ielem)
     iw=edge%getmap(west,ielem)
 
+ ks = 1
+ kblock = 52
+ ke = min(vlyr,kblock)
+ do while ((ke<=vlyr) .and. (.not. ks>vlyr)) 
+!    if((ielem==1) .and. (iam ==1)) then 
+!       print *,'newedgeVunpack: ks,ke ',ks,ke
+!    endif
+
+!    nb=ceiling(real(vlyr,kind=real_kind)/real(kblock,kind=real_kind))
+
+    
+!    if((ielem==1) .and. (iam == 1)) then 
+!       print *,'newedgeVunpack: vlyr:= ',vlyr 
+!    endif
+
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i)
 #endif
-    do k=1,vlyr
-       iptr=np*(kptr+k-1)
+#if 0
+    do k=ks,ke
+       iptr=np*(kptr+k-1)+ie
        do i=1,np
-          v(np ,i  ,k) = v(np ,i  ,k)+edge%receive(iptr+ie+i  ) ! East
-          v(i  ,1  ,k) = v(i  ,1  ,k)+edge%receive(iptr+is+i  ) ! South
-          v(i  ,np ,k) = v(i  ,np ,k)+edge%receive(iptr+in+i  ) ! North
-          v(1  ,i  ,k) = v(1  ,i  ,k)+edge%receive(iptr+iw+i  ) ! West
+          v(np ,i  ,k) = v(np ,i  ,k)+edge%receive(iptr+i) ! East
+       enddo
+    enddo
+#else
+!dec$ ivdep
+    do k=ks,ke
+       iptr=np*(kptr+k-1)+ie
+       i=1
+       temp1 = v(np,i,k)
+       v(np ,i  ,k) = temp1+edge%receive(iptr+i) ! East
+
+       i=i+1
+       temp1 = v(np,i,k)
+       v(np ,i  ,k) = temp1+edge%receive(iptr+i) ! East
+
+       i=i+1
+       temp1 = v(np,i,k)
+       v(np ,i  ,k) = temp1+edge%receive(iptr+i) ! East
+
+       i=i+1
+       temp1 = v(np,i,k)
+       v(np ,i  ,k) = temp1+edge%receive(iptr+i) ! East
+    enddo
+#endif
+
+!dir$ simd 
+    do k=ks,ke
+       iptr=np*(kptr+k-1)+is
+!dir$ unroll(4)
+       do i=1,np
+          v(i  ,1  ,k) = v(i  ,1  ,k)+edge%receive(iptr+i) ! South
+       enddo
+    enddo
+
+!dec$ ivdep 
+    do k=ks,ke
+       iptr=np*(kptr+k-1)+in
+       do i=1,np
+          v(i  ,np ,k) = v(i  ,np ,k)+edge%receive(iptr+i) ! North
+       enddo
+    enddo
+
+    do k=ks,ke
+       iptr=np*(kptr+k-1)+iw
+       do i=1,np
+          v(1  ,i  ,k) = v(1  ,i  ,k)+edge%receive(iptr+i) ! West
        enddo
     end do
 
-!    do i=1,np
-!       ! East
-!       do k=1,vlyr
-!          v(np ,i  ,k) = v(np ,i  ,k)+edge%receive(kptr+k,ie+i  )
-!       end do
-!       ! South
-!       do k=1,vlyr
-!          v(i  ,1  ,k) = v(i  ,1  ,k)+edge%receive(kptr+k,is+i  )
-!       end do
-!       ! North
-!       do k=1,vlyr
-!          v(i  ,np ,k) = v(i  ,np ,k)+edge%receive(kptr+k,in+i  )
-!       end do
-!       ! West
-!       do k=1,vlyr
-!          v(1  ,i  ,k) = v(1  ,i  ,k)+edge%receive(kptr+k,iw+i  )
-!       end do
-!    end do
-
 ! SWEST
+    nce = max_corner_elem
     do ll=swest,swest+max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
-            do k=1,vlyr
-                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive(np*(kptr+k-1)+edge%getmap(ll,ielem)+1)
+            do k=ks,ke
+                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
 !                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive(kptr+k,edge%getmap(ll,ielem)+1)
             enddo
         endif
@@ -1539,8 +1626,8 @@ contains
 ! SEAST
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
-            do k=1,vlyr
-                v(np ,1 ,k)=v(np,1 ,k)+edge%receive(np*(kptr+k-1)+edge%getmap(ll,ielem)+1)
+            do k=ks,ke
+                v(np ,1 ,k)=v(np,1 ,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
 !                v(np ,1 ,k)=v(np,1 ,k)+edge%receive(kptr+k,edge%getmap(ll,ielem)+1)
             enddo
         endif
@@ -1549,8 +1636,8 @@ contains
 ! NEAST
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
-            do k=1,vlyr
-                v(np ,np,k)=v(np,np,k)+edge%receive(np*(kptr+k-1)+edge%getmap(ll,ielem)+1)
+            do k=ks,ke
+                v(np ,np,k)=v(np,np,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
 !                v(np ,np,k)=v(np,np,k)+edge%receive(kptr+k,edge%getmap(ll,ielem)+1)
             enddo
         endif
@@ -1559,12 +1646,18 @@ contains
 ! NWEST
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
-            do k=1,vlyr
-                v(1  ,np,k)=v(1 ,np,k)+edge%receive(np*(kptr+k-1)+edge%getmap(ll,ielem)+1)
+            do k=ks,ke
+                v(1  ,np,k)=v(1 ,np,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
 !                v(1  ,np,k)=v(1 ,np,k)+edge%receive(kptr+k,edge%getmap(ll,ielem)+1)
             enddo
         endif
     end do
+    ks = ke+1
+    ke = ke+kblock
+    if(ke>vlyr) then
+       ke=vlyr
+    endif
+ enddo
 
     call t_stopf('newedge_unpack')
     call t_adj_detailf(-2)
@@ -1803,7 +1896,7 @@ contains
 
     ! Local
 
-    integer :: i,k,iptr
+    integer :: i,k,iptr,nce
     integer :: is,ie,in,iw
 
     threadsafe=.false.
@@ -1912,7 +2005,7 @@ contains
 
     ! Local
 
-    integer :: i,k,l,iptr
+    integer :: i,k,l,iptr,nce
     integer :: is,ie,in,iw
 
     threadsafe=.false.
@@ -1931,11 +2024,12 @@ contains
        end do
     end do
 
+    nce = max_corner_elem
 ! SWEST
     do l=swest,swest+max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,1 ,k)=MAX(v(1 ,1 ,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(1  ,1 ,k)=MAX(v(1 ,1 ,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1944,7 +2038,7 @@ contains
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(np ,1 ,k)=MAX(v(np,1 ,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(np ,1 ,k)=MAX(v(np,1 ,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1953,7 +2047,7 @@ contains
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then
             do k=1,vlyr
-                v(np ,np,k)=MAX(v(np,np,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(np ,np,k)=MAX(v(np,np,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1962,7 +2056,7 @@ contains
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,np,k)=MAX(v(1 ,np,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(1  ,np,k)=MAX(v(1 ,np,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2051,7 +2145,7 @@ contains
 
     ! Local
 
-    integer :: i,k,l,iptr
+    integer :: i,k,l,iptr,nce
     integer :: is,ie,in,iw
 
     threadsafe=.false.
@@ -2071,10 +2165,11 @@ contains
     end do
 
 ! SWEST
+    nce = max_corner_elem
     do l=swest,swest+max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2083,7 +2178,7 @@ contains
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2092,7 +2187,7 @@ contains
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(np ,np,k)=MIN(v(np,np,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(np ,np,k)=MIN(v(np,np,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2101,7 +2196,7 @@ contains
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,np,k)=MIN(v(1 ,np,k),edge%receive(np*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(1  ,np,k)=MIN(v(1 ,np,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
