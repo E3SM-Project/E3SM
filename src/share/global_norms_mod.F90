@@ -246,7 +246,7 @@ contains
     use physical_constants, only : rrearth, rearth,dd_pi
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
                             fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling
-    use control_mod, only : tracer_transport_type
+    use control_mod, only : tracer_transport_type, tstep_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edge_mod, only : EdgeBuffer_t, initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
@@ -565,7 +565,7 @@ contains
 !         print*, 'fine_ne = ', fine_ne
 !         print*, 'Using max_unif_dx = ', max_unif_dx
       end if
-
+      write(iulog,*) 'tstep_type = ',tstep_type
     end if
 
   end subroutine print_cfl
