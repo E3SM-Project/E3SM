@@ -66,7 +66,10 @@ module mpas_core
          call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=ierr)
       end if
       if (ierr /= MPAS_STREAM_MGR_NOERR) then
-         call mpas_dmpar_global_abort('Error reading initial conditions.') 
+         write(0,*) ' '
+         write(0,*) '********************************************************************************'
+         write(0,*) 'Error reading initial conditions'
+         call mpas_dmpar_global_abort('********************************************************************************')
       end if
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_INPUT, ierr=ierr)
@@ -326,6 +329,7 @@ module mpas_core
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
+      character (len=StrKIND), pointer :: config_restart_timestamp_name
       integer :: itimestep
       integer :: ierr
 
@@ -335,9 +339,11 @@ module mpas_core
       character (len=StrKIND) :: tempfilename
 
 
+
       ! Eventually, dt should be domain specific
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       ! Avoid writing a restart file at the initial time
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -360,6 +366,14 @@ module mpas_core
          end do
       end if
       call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+      if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
+          ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
+          ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
+         write(0,*) ' '
+         write(0,*) '********************************************************************************'
+         write(0,*) 'Error writing one or more output streams'
+         call mpas_dmpar_global_abort('********************************************************************************')
+      end if
       call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
 
@@ -379,7 +393,10 @@ module mpas_core
          !
          call MPAS_stream_mgr_read(stream_manager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=ierr)
          if (ierr /= MPAS_STREAM_MGR_NOERR) then
-            call mpas_dmpar_global_abort('Error reading one or more input files.') 
+            write(0,*) ' '
+            write(0,*) '********************************************************************************'
+            write(0,*) 'Error reading one or more input streams'
+            call mpas_dmpar_global_abort('********************************************************************************')
          end if
          call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
@@ -426,7 +443,25 @@ module mpas_core
                block_ptr => block_ptr % next
             end do
          end if
+
          call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
+             ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
+             ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
+            write(0,*) ' '
+            write(0,*) '********************************************************************************'
+            write(0,*) 'Error writing one or more output streams'
+            call mpas_dmpar_global_abort('********************************************************************************')
+         end if
+
+         ! Only after we've successfully written the restart file should we we
+         !    write the restart_timestamp file
+         if (MPAS_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+            open(22,file=trim(config_restart_timestamp_name),form='formatted',status='replace')
+            write(22,*) timeStamp
+            close(22)
+         end if
+
          call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       end do
