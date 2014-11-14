@@ -2842,6 +2842,7 @@ endif
     real (kind=real_kind)              :: fluxes  (N,N,4)
 
     real (kind=real_kind)              :: submass(N,N)
+    real (kind=real_kind)              :: sideflux(np)
     integer            :: i,j
     integer, parameter :: l = 1 
     integer, parameter :: r = 2 
@@ -2851,10 +2852,22 @@ endif
     fluxes  = 0
     submass = subcell_integration(dss, metdet, np, N)
 
-    fluxes (:,1,l) = MATMUL(integration_matrix, dss( :, 1))
-    fluxes (:,N,r) = MATMUL(integration_matrix, dss( :,np))
-    fluxes (N,:,t) = MATMUL(integration_matrix, dss(np, :))
-    fluxes (1,:,b) = MATMUL(integration_matrix, dss( 1, :))
+    sideflux     = dss(:,1)
+    sideflux(1)  = sideflux(1)/2
+    sideflux(np) = sideflux(np)/2
+    fluxes (:,1,l) = MATMUL(integration_matrix, sideflux)
+    sideflux     = dss(:,np)
+    sideflux(1)  = sideflux(1)/2
+    sideflux(np) = sideflux(np)/2
+    fluxes (:,N,r) = MATMUL(integration_matrix, sideflux)
+    sideflux     = dss(np,:)
+    sideflux(1)  = sideflux(1)/2
+    sideflux(np) = sideflux(np)/2
+    fluxes (N,:,t) = MATMUL(integration_matrix, sideflux)
+    sideflux     = dss(1,:)
+    sideflux(1)  = sideflux(1)/2
+    sideflux(np) = sideflux(np)/2
+    fluxes (1,:,b) = MATMUL(integration_matrix, sideflux)
 
     do i = 1,N
       do j = 1,N
