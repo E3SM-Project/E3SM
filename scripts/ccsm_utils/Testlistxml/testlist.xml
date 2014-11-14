@@ -189,6 +189,7 @@
         <machine compiler="pgi" testtype="prebeta">lawrencium-lr2</machine>
       </test>
       <test name="ERS_D">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
@@ -236,6 +237,7 @@
         <machine compiler="intel" testtype="aux_science">yellowstone</machine>
       </test>
       <test name="ERS_Ld7">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
@@ -364,6 +366,7 @@
     </grid>
     <grid name="ne30_g16">
       <test name="ERI">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="pgi" testtype="prebeta">lawrencium-lr2</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
@@ -377,6 +380,7 @@
       </test>
       <test name="PFS">
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
@@ -479,6 +483,7 @@
         <machine compiler="intel" testtype="aux_science">yellowstone</machine>
       </test>
       <test name="ERS_PT">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
@@ -564,6 +569,7 @@
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="SMS_D">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
     </grid>
@@ -574,6 +580,7 @@
         <machine compiler="intel" testtype="aux_science">yellowstone</machine>
       </test>
       <test name="ERS_Ld7">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="intel" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
@@ -593,6 +600,7 @@
   <compset name="B1850RMCN">
     <grid name="f09_g16">
       <test name="ERI">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
@@ -935,6 +943,7 @@
     </grid>
     <grid name="f09_g16">
       <test name="NCK">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
     </grid>
@@ -975,6 +984,7 @@
   <compset name="BGRCP26CN">
     <grid name="f09_g16">
       <test name="ERS_Ld7">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
     </grid>
@@ -1162,6 +1172,7 @@
   <compset name="BRCP85CN">
     <grid name="f09_g16">
       <test name="ERI">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
@@ -1183,6 +1194,7 @@
   <compset name="BRCP85WSCCN">
     <grid name="f19_g16">
       <test name="SMS_D">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
         <machine compiler="ibm" testtype="prerelease">mira</machine>
       </test>
@@ -1375,6 +1387,7 @@
   <compset name="ETEST">
     <grid name="f09_g16">
       <test name="ERS_Ld7">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
@@ -1630,6 +1643,7 @@
     </grid>
     <grid name="ne30_ne30">
       <test name="ERS_Ld3">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
     </grid>
@@ -1648,6 +1662,7 @@
   <compset name="FAMIPC5L60">
     <grid name="ne30_ne30">
       <test name="ERS">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
     </grid>
@@ -1781,6 +1796,7 @@
       </test>
       <test name="PFS">
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
@@ -1840,12 +1856,14 @@
   <compset name="FCN">
     <grid name="f09_f09">
       <test name="SMS_D">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
     </grid>
     <grid name="ne120_g16">
       <test name="SMS_Ld2">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
@@ -1854,6 +1872,7 @@
     </grid>
     <grid name="ne30_g16">
       <test name="SMS_D">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
@@ -1862,6 +1881,7 @@
   <compset name="FG1850CN">
     <grid name="f09_f09">
       <test name="ERS">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
       <test name="ERS_Ld3">
@@ -2049,6 +2069,7 @@
     </grid>
     <grid name="ne30_ne30">
       <test name="ERS_Ld3">
+        <machine compiler="ibm" testtype="prebeta">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
     </grid>
