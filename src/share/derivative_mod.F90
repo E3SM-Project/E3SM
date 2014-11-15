@@ -2902,10 +2902,10 @@ endif
         if (i==n) fluxes(i,j,3) =  Rn(i,j)
         if (j==n) fluxes(i,j,4) =  Tn(i,j)
 
-        if (1< i) fluxes(i,j,1) =  Rn(i-1,j) - Ln(i,j)
-        if (i< n) fluxes(i,j,3) =  Ln(i+1,j) - Rn(i,j) 
-        if (1< j) fluxes(i,j,2) =  Tn(i,j) - Bn(i,j-1)
-        if (j< n) fluxes(i,j,4) =  Bn(i,j) - Tn(i,j+1) 
+        if (1< i) fluxes(i,j,1) =  Ln(i,j) - Rn(i-1,j)
+        if (i< n) fluxes(i,j,3) =  Rn(i,j) - Ln(i+1,j) 
+        if (1< j) fluxes(i,j,2) =  Bn(i,j-1) - Tn(i,j)
+        if (j< n) fluxes(i,j,4) =  Tn(i,j+1) - Bn(i,j) 
       end do
     end do
   end function
