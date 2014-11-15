@@ -2831,63 +2831,81 @@ endif
 
  
 
-  function subcell_dss_fluxes(dss, metdet, np, N) result(fluxes)
+  function subcell_dss_fluxes(dss, p, n) result(fluxes)
 
     implicit none
 
-    integer              , intent(in)  :: np
-    integer              , intent(in)  :: N
-    real (kind=real_kind), intent(in)  :: dss     (np,np)
-    real (kind=real_kind), intent(in)  :: metdet  (np,np)
-    real (kind=real_kind)              :: fluxes  (N,N,4)
+    integer              , intent(in)  :: p
+    integer              , intent(in)  :: n
+    real (kind=real_kind), intent(in)  :: dss     (p,p)
+    real (kind=real_kind)              :: fluxes  (n,n,4)
 
-    real (kind=real_kind)              :: submass(N,N)
-    real (kind=real_kind)              :: sideflux(np)
+    real (kind=real_kind)              :: Lp(p,p)
+    real (kind=real_kind)              :: Rp(p,p)
+    real (kind=real_kind)              :: Tp(p,p)
+    real (kind=real_kind)              :: Bp(p,p)
+
+    real (kind=real_kind)              :: Ln(n,n)
+    real (kind=real_kind)              :: Rn(n,n)
+    real (kind=real_kind)              :: Tn(n,n)
+    real (kind=real_kind)              :: Bn(n,n)
+
     integer            :: i,j
-    integer, parameter :: l = 1 
-    integer, parameter :: r = 2 
-    integer, parameter :: t = 3 
-    integer, parameter :: b = 4 
+
+    if (.not.ALLOCATED(integration_matrix)      .or. &
+        SIZE(integration_matrix,1).ne.n .or. &
+        SIZE(integration_matrix,2).ne.p) then
+      call allocate_subcell_integration_matrix(p,n)
+    end if
 
     fluxes  = 0
-    submass = subcell_integration(dss, metdet, np, N)
 
-    sideflux     = dss(:,1)
-    sideflux(1)  = sideflux(1)/2
-    sideflux(np) = sideflux(np)/2
-    fluxes (:,1,l) = MATMUL(integration_matrix, sideflux)
-    sideflux     = dss(:,np)
-    sideflux(1)  = sideflux(1)/2
-    sideflux(np) = sideflux(np)/2
-    fluxes (:,N,r) = MATMUL(integration_matrix, sideflux)
-    sideflux     = dss(np,:)
-    sideflux(1)  = sideflux(1)/2
-    sideflux(np) = sideflux(np)/2
-    fluxes (N,:,t) = MATMUL(integration_matrix, sideflux)
-    sideflux     = dss(1,:)
-    sideflux(1)  = sideflux(1)/2
-    sideflux(np) = sideflux(np)/2
-    fluxes (1,:,b) = MATMUL(integration_matrix, sideflux)
+    Lp(:,1)  = dss(:,1)
+    Rp(:,p)  = dss(:,p)
+    Tp(p,:)  = dss(p,:)
+    Bp(1,:)  = dss(1,:)
+    Lp(1,1)  = Lp(1,1)/2
+    Lp(p,1)  = Lp(1,1)/2
+    Rp(1,p)  = Rp(1,p)/2
+    Rp(p,p)  = Rp(p,p)/2
+    Tp(p,1)  = Tp(p,1)/2
+    Tp(p,p)  = Tp(p,p)/2
+    Bp(1,1)  = Bp(1,1)/2
+    Bp(1,p)  = Bp(1,p)/2
 
-    do i = 1,N
-      do j = 1,N
-        if (1<i) fluxes(i,j,l) = fluxes(i-1,j,l) - submass(i-1,j)
-        if (1<j) fluxes(i,j,b) = fluxes(i,j-1,b) - submass(i,j-1)
+    Ln = MATMUL(integration_matrix, &
+         MATMUL(Lp,TRANSPOSE(integration_matrix)))
+    Rn = MATMUL(integration_matrix, &
+         MATMUL(Rp,TRANSPOSE(integration_matrix)))
+    Tn = MATMUL(integration_matrix, &
+         MATMUL(Tp,TRANSPOSE(integration_matrix)))
+    Bn = MATMUL(integration_matrix, &
+         MATMUL(Bp,TRANSPOSE(integration_matrix)))
+
+    do i = 2,n
+      do j = 2,n
+        Rn(i,j) = Rn(i,j) + Rn(i-1,j) 
+        Tn(i,j) = Tn(i,j) + Tn(i,j-1) 
       end do
     end do
-    do i = N,1,-1
-      do j = N,1,-1
-        if (i<N) fluxes(i,j,r) = fluxes(i+1,j,r) - submass(i+1,j)
-        if (j<N) fluxes(i,j,t) = fluxes(i+1,j,t) - submass(i,j+1)
+    do i = n-1,1,-1
+      do j = n-1,1,-1
+        Ln(i,j) = Ln(i,j) + Ln(i+1,j) 
+        Bn(i,j) = Bn(i,j) + Bn(i,j+1) 
       end do
     end do
 
-    do i = 1,N
-      do j = 1,N
-        if (i<N) fluxes(i,j,t) =  fluxes(i,j,t) - fluxes(i+1,j,t)
-        if (1<i)         fluxes(i,j,b) = -fluxes(i-1,j,t)
-        if (j<N) fluxes(i,j,r) =  fluxes(i,j,r) - fluxes(i,j+1,r)
-        if (1<j)         fluxes(i,j,l) = -fluxes(i,j-1,r)
+    do i = 1,n
+      do j = 1,n
+        if (1==i) fluxes(i,j,1) =  Ln(i,j)
+        if (1==j) fluxes(i,j,2) =  Bn(i,j)
+        if (i==n) fluxes(i,j,3) =  Rn(i,j)
+        if (j==n) fluxes(i,j,4) =  Tn(i,j)
+
+        if (1< i) fluxes(i,j,1) =  Rn(i-1,j) - Ln(i,j)
+        if (i< n) fluxes(i,j,3) =  Ln(i+1,j) - Rn(i,j) 
+        if (1< j) fluxes(i,j,2) =  Tn(i,j) - Bn(i,j-1)
+        if (j< n) fluxes(i,j,4) =  Bn(i,j) - Tn(i,j+1) 
       end do
     end do
   end function
