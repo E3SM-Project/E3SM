@@ -64,8 +64,9 @@ else
 endif
 
 module load cmake/2.8.11.2
+module list >& software_environment.txt
 
-module list
+
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------

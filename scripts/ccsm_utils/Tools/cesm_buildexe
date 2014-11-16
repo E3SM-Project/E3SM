@@ -274,6 +274,13 @@ if (-d $CASEROOT/SourceMods) then
   /bin/cp SourceMods.$LID.tar SourceMods.tar
 endif
 
+if (-f $CASEROOT/software_environment.txt) then
+  cd $CASEROOT
+  /bin/cp software_environment.txt $EXEROOT/build_environment.$LID.txt
+  cd $EXEROOT
+  /bin/cp build_environment.$LID.txt build_environment.txt
+endif
+
 # -------------------------------------------------------------------------
 # Save model output stdout and stderr 
 # -------------------------------------------------------------------------
