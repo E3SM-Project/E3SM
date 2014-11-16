@@ -119,6 +119,7 @@ else
     cd $LID
     cp -p $RUNDIR/timing.$LID.tar.gz timing.$LID.tar.gz
     cp -p $CASEROOT/logs/cesm.log.$LID.gz cesm.log.$LID.gz
+    cp -p $CASEROOT/logs/cpl.log.$LID.gz cpl.log.$LID.gz
     cp -p $CASEROOT/timing/*.$LID $CASEROOT/timing/*.$LID.gz .
     cp -p $CASEROOT/CaseStatus CaseStatus.$LID
 
@@ -134,8 +135,11 @@ else
     if (-f $EXEROOT/SVN_WC.DB) then
       cp -p $EXEROOT/SVN_WC.DB SVN_WC.DB.$LID
     endif
-    if (-e $EXEROOT/SourceMods.tar) then
+    if (-f $EXEROOT/SourceMods.tar) then
       cp -p $EXEROOT/SourceMods.tar SourceMods.$LID.tar
+    endif
+    if (-f $EXEROOT/build_environment.txt) then
+      cp -p $EXEROOT/build_environment.txt build_environment.$LID
     endif
 
     chmod -R a+rX *
