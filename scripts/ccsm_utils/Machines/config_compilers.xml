@@ -165,7 +165,7 @@ for mct, etc.
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
   <FFLAGS>  -i4 -gopt -Mlist -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
-  <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
+  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
 
@@ -235,7 +235,7 @@ for mct, etc.
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
   <FFLAGS>  -i4 -Mlist -time -Mextend -byteswapio -Mflushz -Kieee </FFLAGS>
-  <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
+  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
   
