@@ -7,6 +7,7 @@ DEFS            = @DEFS@
 CFLAGS          = @CFLAGS@
 AR              = @AR@
 RANLIB          = @RANLIB@
+LIBS            = @LIBS@
 CRULE           = .c.o
 F90RULE         = .F90.o
 

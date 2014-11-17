@@ -9,7 +9,7 @@ include ../Makefile.conf
 
 TINC    = -I..
 LDFLAGS = -L..
-LIBS    = -l$(MODULE)
+MYLIBS    = $(LIBS) -l$(MODULE)
 
 runtests: all
 	./ctest
@@ -20,19 +20,19 @@ runtests: all
 all: ctest ftest ctest2 ftest2
 
 ctest: ctest.c
-	$(CC) $(DEFS) $(TINC) $(ALLCFLAGS) -o $@ ctest.c $(LDFLAGS) $(LIBS)
+	$(CC) $(DEFS) $(TINC) $(ALLCFLAGS) -o $@ ctest.c $(LDFLAGS) $(MYLIBS)
 
 ftest: ftest.F90
-	$(FC) $(DEFS) $(TINC) $(MYF90FLAGS) -o $@ ftest.F90 $(LDFLAGS) $(LIBS)
+	$(FC) $(DEFS) $(TINC) $(MYF90FLAGS) -o $@ ftest.F90 $(LDFLAGS) $(MYLIBS)
 
 ctest2: ctest_old.c
-	$(CC) $(DEFS) $(TINC) $(ALLCFLAGS) -o $@ ctest_old.c $(LDFLAGS) $(LIBS)
+	$(CC) $(DEFS) $(TINC) $(ALLCFLAGS) -o $@ ctest_old.c $(LDFLAGS) $(MYLIBS)
 
 ftest2: ftest_old.F90
-	$(FC) $(DEFS) $(TINC) $(MYF90FLAGS) -o $@ ftest_old.F90 $(LDFLAGS) $(LIBS)
+	$(FC) $(DEFS) $(TINC) $(MYF90FLAGS) -o $@ ftest_old.F90 $(LDFLAGS) $(MYLIBS)
 
 stest: stest.F90 stest2.o
-	$(FC) $(DEFS) $(TINC) $(MYF90FLAGS) -o $@ stest.F90 stest2.o $(LDFLAGS) $(LIBS)
+	$(FC) $(DEFS) $(TINC) $(MYF90FLAGS) -o $@ stest.F90 stest2.o $(LDFLAGS) $(MYLIBS)
 
 
 clean:
