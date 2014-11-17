@@ -50,7 +50,7 @@
 					description="Determines if the initial conditions should be read from a restart file, or an input file."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="Restart_timestamp" units="unitless"
 					description="Path to the filename for restart timestamps to be read and written from."
 					possible_values="Path to a file."
 		/>
