@@ -76,69 +76,56 @@ if ( "$GENERATE_BASELINE" == "TRUE" ) then
     endif
 
     # coupler log file
-    if ( -e $BASEGEN_CPLLOGFILE ) then
-      echo "ERROR in ${0}:  baseline log file $BASEGEN_CPLLOGFILE already exists."
-      set genstatus = "FAIL "
-    else
-      cp $CPLLOG_GENCMP $BASEGEN_CPLLOGFILE || echo "ERROR in ${0}:  could not copy $CPLLOG_GENCMP to $BASEGEN_CPLLOGFILE " >>& $TESTSTATUS_LOG
-      chmod ug+w,a+r $BASEGEN_CPLLOGFILE
+    cp -f $CPLLOG_GENCMP $BASEGEN_CPLLOGFILE || echo "ERROR in ${0}:  could not copy $CPLLOG_GENCMP to $BASEGEN_CPLLOGFILE " >>& $TESTSTATUS_LOG
+    chmod ug+w,a+r $BASEGEN_CPLLOGFILE
 
-      # save extra files
-      if ( $?BASEGEN_FILE01 ) then
-        cp $BASEGEN_FILE01 $BASEGEN_DIR/${BASEGEN_FILE01:t}
-      endif
-      if ( $?BASEGEN_FILE02 ) then
-        cp $BASEGEN_FILE02 $BASEGEN_DIR/${BASEGEN_FILE02:t}
-      endif
-      if ( $?BASEGEN_FILE03 ) then
-        cp $BASEGEN_FILE03 $BASEGEN_DIR/${BASEGEN_FILE03:t}
-      endif
-      if ( $?BASEGEN_FILE04 ) then
-        cp $BASEGEN_FILE04 $BASEGEN_DIR/${BASEGEN_FILE04:t}
-      endif
-      if ( $?BASEGEN_FILE05 ) then
-        cp $BASEGEN_FILE05 $BASEGEN_DIR/${BASEGEN_FILE05:t}
-      endif
-      if ( $?BASEGEN_FILE06 ) then
-        cp $BASEGEN_FILE06 $BASEGEN_DIR/${BASEGEN_FILE06:t}
-      endif
-      if ( $?BASEGEN_FILE07 ) then
-        cp $BASEGEN_FILE07 $BASEGEN_DIR/${BASEGEN_FILE07:t}
-      endif
-      if ( $?BASEGEN_FILE08 ) then
-        cp $BASEGEN_FILE08 $BASEGEN_DIR/${BASEGEN_FILE08:t}
-      endif
-      if ( $?BASEGEN_FILE09 ) then
-        cp $BASEGEN_FILE09 $BASEGEN_DIR/${BASEGEN_FILE09:t}
-      endif
-      if ( $?BASEGEN_FILE10 ) then
-        cp $BASEGEN_FILE10 $BASEGEN_DIR/${BASEGEN_FILE10:t}
-      endif
-      if ( $?BASEGEN_FILE11 ) then
-        cp $BASEGEN_FILE11 $BASEGEN_DIR/${BASEGEN_FILE11:t}
-      endif
-      if ( $?BASEGEN_FILE12 ) then
-        cp $BASEGEN_FILE12 $BASEGEN_DIR/${BASEGEN_FILE12:t}
-      endif
-      chmod ug+w,a+r $BASEGEN_DIR/*
+    # save extra files
+    if ( $?BASEGEN_FILE01 ) then
+      cp $BASEGEN_FILE01 $BASEGEN_DIR/${BASEGEN_FILE01:t}
     endif
+    if ( $?BASEGEN_FILE02 ) then
+      cp $BASEGEN_FILE02 $BASEGEN_DIR/${BASEGEN_FILE02:t}
+    endif
+    if ( $?BASEGEN_FILE03 ) then
+      cp $BASEGEN_FILE03 $BASEGEN_DIR/${BASEGEN_FILE03:t}
+    endif
+    if ( $?BASEGEN_FILE04 ) then
+      cp $BASEGEN_FILE04 $BASEGEN_DIR/${BASEGEN_FILE04:t}
+    endif
+    if ( $?BASEGEN_FILE05 ) then
+      cp $BASEGEN_FILE05 $BASEGEN_DIR/${BASEGEN_FILE05:t}
+    endif
+    if ( $?BASEGEN_FILE06 ) then
+      cp $BASEGEN_FILE06 $BASEGEN_DIR/${BASEGEN_FILE06:t}
+    endif
+    if ( $?BASEGEN_FILE07 ) then
+      cp $BASEGEN_FILE07 $BASEGEN_DIR/${BASEGEN_FILE07:t}
+    endif
+    if ( $?BASEGEN_FILE08 ) then
+      cp $BASEGEN_FILE08 $BASEGEN_DIR/${BASEGEN_FILE08:t}
+    endif
+    if ( $?BASEGEN_FILE09 ) then
+      cp $BASEGEN_FILE09 $BASEGEN_DIR/${BASEGEN_FILE09:t}
+    endif
+    if ( $?BASEGEN_FILE10 ) then
+      cp $BASEGEN_FILE10 $BASEGEN_DIR/${BASEGEN_FILE10:t}
+    endif
+    if ( $?BASEGEN_FILE11 ) then
+      cp $BASEGEN_FILE11 $BASEGEN_DIR/${BASEGEN_FILE11:t}
+    endif
+    if ( $?BASEGEN_FILE12 ) then
+      cp $BASEGEN_FILE12 $BASEGEN_DIR/${BASEGEN_FILE12:t}
+    endif
+    chmod ug+w,a+r $BASEGEN_DIR/*
 
     # coupler history file
-    if ( -e $BASEGEN_CPLHISTFILE ) then
-      echo "ERROR in ${0}:  baseline history file $BASEGEN_CPLHISTFILE already exists."
-    else
-      cp $CplHistFile $BASEGEN_CPLHISTFILE || echo "ERROR in ${0}:  could not copy $CplHistFile to $BASEGEN_CPLHISTFILE " >>& $TESTSTATUS_LOG
-      chmod ug+w,a+r $BASEGEN_CPLHISTFILE
-    endif
+    cp -f $CplHistFile $BASEGEN_CPLHISTFILE || echo "ERROR in ${0}:  could not copy $CplHistFile to $BASEGEN_CPLHISTFILE " >>& $TESTSTATUS_LOG
+    chmod ug+w,a+r $BASEGEN_CPLHISTFILE
 
     # coupler timing file
-    if ( -e $BASEGEN_CPLPROFFILE ) then
-      echo "ERROR in ${0}:  baseline timing file $BASEGEN_CPLPROFFILE already exists."
-    else
-      if ($?CPLPROF_GENCMP) then
-        cp $CPLPROF_GENCMP $BASEGEN_CPLPROFFILE || echo "ERROR in ${0}:  could not copy $CPLPROF_GENCMP to $BASEGEN_CPLPROFFILE " >>& $TESTSTATUS_LOG
-        chmod ug+w,a+r $BASEGEN_CPLPROFFILE
-      endif
+    if ($?CPLPROF_GENCMP) then
+      cp -f $CPLPROF_GENCMP $BASEGEN_CPLPROFFILE || echo "ERROR in ${0}:  could not copy $CPLPROF_GENCMP to $BASEGEN_CPLPROFFILE " >>& $TESTSTATUS_LOG
+      chmod ug+w,a+r $BASEGEN_CPLPROFFILE
     endif
   else
     set genstatus = "BFAIL"
