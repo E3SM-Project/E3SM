@@ -146,6 +146,19 @@ if (\$SAVE_TIMING == 'TRUE') then
     cp -p \$CASEROOT/CaseDocs/* .
     cp -p \$CASEROOT/*.run .
     cp -p \$CASEROOT/*.xml .
+    cp -p \$CASEROOT/user_nl_* .
+    cp -p \$CASEROOT/env_mach_specific .
+    cp -p \$CASEROOT/Macros .
+    cp -p \$CASEROOT/README.case .
+    if (-f \$CASEROOT/Depends.\$MACH) then
+      cp -p \$CASEROOT/Depends.\$MACH .
+    endif
+    if (-f \$CASEROOT/Depends.\$COMPILER) then
+      cp -p \$CASEROOT/Depends.\$COMPILER .
+    endif
+    if (-f \$CASEROOT/Depends.\$MACH.\$COMPILER) then
+      cp -p \$CASEROOT/Depends.\$MACH.\$COMPILER .
+    endif
     chmod a+r *
 
     cd \$CASEROOT/Tools

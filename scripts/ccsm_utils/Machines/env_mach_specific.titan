@@ -74,7 +74,7 @@ if (-e /opt/modules/default/init/csh) then
 
 endif
 
-module list
+module list >& software_environment.txt
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------
