@@ -41,6 +41,8 @@
                 <nml_option name="config_stop_time"                  type="character"     default_value="none"        in_defaults="false"/>
                 <nml_option name="config_run_duration"               type="character"     default_value="5_00:00:00"/>
                 <nml_option name="config_number_of_sub_steps"        type="integer"       default_value="6"/>
+                <nml_option name="config_split_dynamics_transport"   type="logical"       default_value="false"/>
+                <nml_option name="config_dynamics_split_steps"       type="integer"       default_value="1"/>
                 <nml_option name="config_h_mom_eddy_visc2"           type="real"          default_value="0.0"/>
                 <nml_option name="config_h_mom_eddy_visc4"           type="real"          default_value="0.0"/>
                 <nml_option name="config_v_mom_eddy_visc2"           type="real"          default_value="0.0"/>
@@ -844,8 +846,11 @@
                 <var name="rho_base"                type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="theta_base"              type="real"     dimensions="nVertLevels nCells Time"/>
 
+                <var name="rho_zz_old_split"        type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="ruAvg"                   type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="wwAvg"                   type="real"     dimensions="nVertLevelsP1 nCells Time"/>
+                <var name="ruAvg_split"             type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="wwAvg_split"             type="real"     dimensions="nVertLevelsP1 nCells Time"/>
                 <var name="cqu"                     type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="cqw"                     type="real"     dimensions="nVertLevels nCells Time"/>
 
