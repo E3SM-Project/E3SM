@@ -79,7 +79,8 @@ contains
 
     use reduction_mod, only : parallelmax
     use mesh_mod, only : MeshUseMeshFile
-    use viscosity_mod, only : test_ibyp, check_edge_flux ! dont remove
+    use viscosity_mod, only : test_ibyp, check_edge_flux, &
+                              check_sub_integration, check_subcell_dss_fluxes ! dont remove
 
     
     implicit none
@@ -301,17 +302,18 @@ contains
 
 !   some test code
 #if 0
-!#if 1
-!#ifdef TRILINOS
-!    if (hybrid%masterthread) print *,'running CG solver test'
-!    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
-!    call solver_test_ml(elem,edge1,red,hybrid,deriv,nets,nete)
-!    stop
-!    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
-!    call test_ibyp(elem,hybrid,nets,nete)
-!    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
-!    call check_edge_flux(elem,deriv,nets,nete)
-!    stop
+    if (hybrid%masterthread) print *,'running CG solver test'
+    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
+#ifdef TRILINOS
+    call solver_test_ml(elem,edge1,red,hybrid,deriv,nets,nete)
+#endif
+    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
+    call test_ibyp(elem,hybrid,nets,nete)
+    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
+    call check_edge_flux(elem,deriv,nets,nete)
+    call check_sub_integration(elem,deriv,nets,nete)
+    call check_subcell_dss_fluxes(elem,deriv,nets,nete)
+    stop
 #endif
 
 
