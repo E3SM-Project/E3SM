@@ -1,5 +1,10 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="landice" version="2.1">
+<registry model="mpas" core="landice" version="3.0">
+
+
+<!-- ======================================================================= -->
+<!-- MODEL DIMENSIONS -->
+
 	<dims>
 		<dim name="nCells" units="unitless"
 		     description="The number of polygons in the primary grid."
@@ -33,6 +38,9 @@
 		/>
 	</dims>
 
+
+<!-- ======================================================================= -->
+<!-- NAMELIST RECORDS -->
 
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
@@ -87,20 +95,11 @@
 		/>
 	</nml_record>
 
-<!-- This option to be implemented in the future.
-	<nml_record name="forcing" in_defaults="true">
-		<nml_option name="config_forcing_frequency" type="real" default_value="0.0" units="?"
-		            description="not implemented"
-		            possible_values="Any positive real value"
-		/>
-	</nml_record>
--->
-
 
 	<nml_record name="time_integration" in_defaults="true">
 		<nml_option name="config_dt" type="character" default_value="0001-00-00_00:00:00" units="unitless"
 		            description="Length of model time step defined as a time interval."
-		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed), but limited by CFL condition."
+		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
 		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
 		            description="Time integration method."
@@ -111,20 +110,24 @@
 
 	<nml_record name="time_management" in_defaults="true">
 		<nml_option name="config_do_restart" type="logical" default_value=".false." units="unitless"
-		            description="Determines if the initial conditions should be read from a restart file, or an input file.  To perform a restart, simply set this to true in the namelist.input file and modify the start time to be the time you want restart from.  A restart will read the grid information from the input field, and the restart state from the restart file.  It will perform a run normally, i.e. do all the same init."
+		            description="Determines if the initial conditions should be read from a restart file, or an input file.  To perform a restart, simply set this to true in the namelist.input file and modify the start time to be the time you want restart from.  A restart will read the grid information from the input field, and the restart state from the restart file.  It will perform a run normally, except velocity will not be solved on a restart."
 		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
+		description="Path to the filename for restart timestamps to be read and written from."
+		possible_values="Path to a file."
 		/>
 		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
 		            description="Timestamp describing the initial time of the simulation.  If it is set to 'file', the initial time is read from restart_timestamp"
-		            possible_values="'YYYY-MM-DD_HH:MM:SS'"
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
 		<nml_option name="config_stop_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
-		            description="Timestamp describing the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration.  If config_run_duration is also specified, it takes precedence over config_stop_time.  Set config_stop_time to be equal to config_start_time (and config_run_duration to 'none') to perform a diagnostic solve of velocity."
-		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none'"
+		            description="Timestamp describing the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration.  If config_run_duration is also specified, it takes precedence over config_stop_time.  Set config_stop_time to be equal to config_start_time (and config_run_duration to 'none') to perform a diagnostic solve only."
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
 		<nml_option name="config_run_duration" type="character" default_value="none" units="unitless"
 		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time. If a time value is specified for config_run_duration, it must be greater than 0."
-		            possible_values="'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed) or 'none'"
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
 		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
 		            description="Selection of the type of calendar that should be used in the simulation."
@@ -134,14 +137,15 @@
 
 
 	<nml_record name="io" in_defaults="true">
-		<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units="unitless"
+<!--		These options to be implemented in the future.
+<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units="unitless"
 		            description="Timestamp determining how often a global statistics files should be written."
 		            possible_values="'DDDD_HH:MM:SS'"
 		/>
 		<nml_option name="config_write_stats_on_startup" type="logical" default_value=".true." units="unitless"
 		            description="Logical flag determining if statistics files should be written prior to the first time step."
 		            possible_values=".true. or .false."
-		/>
+		/> -->
 		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units="unitless"
 		            description="Logical flag determining if an output file should be written prior to the first time step."
 		            possible_values=".true. or .false."
@@ -159,6 +163,7 @@
 		            possible_values="Any positive integer value greater than 0."
 		/>
 	</nml_record>
+
 
 	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
@@ -192,16 +197,16 @@
 	</nml_record>
 
 
-	<streams>
-		<stream name="input" 
-				type="input"
-				filename_template="landice_grid.nc"
-				input_interval="initial_only"
-				immutable="true">
+<!-- ======================================================================= -->
+<!-- I/O STREAM DEFINITIONS -->
 
-			<var_array name="tracers"/>
-			<var name="thickness"/>
-			<var name="normalVelocity"/>
+	<streams>
+
+		<!-- basicmesh contains all the required MPAS mesh fields - attach this to other streams as needed -->
+		<stream name="basicmesh"
+				type="none"
+				immutable="true"
+				filename_template="not-to-be-used.nc">
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -238,67 +243,58 @@
 			<var name="cellsOnVertex"/>
 			<var name="kiteAreasOnVertex"/>
 			<var name="layerThicknessFractions"/>
+		</stream>
+
+
+		<stream name="input"
+				type="input"
+				immutable="true"
+				filename_template="landice_grid.nc"
+				input_interval="initial_only">
+
+			<stream name="basicmesh"/>
+			<var_array name="tracers"/>
+			<var name="thickness"/>
+			<var name="normalVelocity"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
 		</stream>
-		<stream name="restart" 
+
+
+		<stream name="restart"
 				type="input;output"
+				immutable="true"
 				filename_template="restart.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
 				input_interval="initial_only"
-				output_interval="10-00-00_00:00:00"
-				immutable="true">
+				output_interval="0010-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				precision="double"
+				clobber_mode="replace_files">
 
+			<stream name="basicmesh"/>
 			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
 			<var name="cellMask"/>
 			<var name="normalVelocity"/>
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="layerThicknessFractions"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
 		</stream>
-		<stream name="output" 
+
+
+		<stream name="output"
 				type="output"
 				filename_template="output.nc"
-				output_interval="00-00-01_00:00:00"
-				runtime_format="single_file">
+				filename_interval="none"
+				output_interval="0001-00-00_00:00:00"
+				runtime_format="single_file"
+				reference_time="0000-01-01_00:00:00"
+				precision="double"
+				clobber_mode="replace_files">
+				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
 
+			<stream name="basicmesh"/>
 			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
@@ -314,47 +310,13 @@
 			<var name="uReconstructZ"/>
 			<var name="uReconstructZonal"/>
 			<var name="uReconstructMeridional"/>
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="edgeNormalVectors"/>
-			<var name="localVerticalUnitVectors"/>
-			<var name="cellTangentPlane"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
 		</stream>
+
 	</streams>
 
+
+<!-- ======================================================================= -->
+<!-- INTERNAL MODEL VARIABLES -->
 
 	<var_struct name="state" time_levs="2">
 		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
@@ -547,7 +509,7 @@
 		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
 			 description="Coefficients to reconstruct velocity vectors at cells centers."
 		/>
-		<!-- Variables specific to land ice core -->
+		<!-- Mesh Variables specific to land ice core -->
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
 		/>
@@ -570,5 +532,9 @@
 		     description="Surface mass balance"
 		/>
 	</var_struct>
+
+
+<!-- ======================================================================= -->
+
 
 </registry>

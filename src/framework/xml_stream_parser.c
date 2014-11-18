@@ -27,6 +27,7 @@
  */
 void stream_mgr_create_stream_c(void *, const char *, int *, const char *, const char *, char *, char *, int *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, int *);
+void mpas_stream_mgr_add_stream_fields_c(void *, const char *, const char *, int *);
 void mpas_stream_mgr_add_pool_c(void *, const char *, const char *, int *);
 void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
 void stream_mgr_add_pkg_c(void *, const char *, const char *, int *);
@@ -1401,6 +1402,16 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
 			streamname_const = ezxml_attr(substream_xml, "name");
+
+			// Immutable streams are added through the add_stream_fields function.
+			// This is because they aren't defined in the XML file, and are instead defined in Regsitry.xml
+			for(streammatch_xml = ezxml_child(streams, "immutable_stream"); streammatch_xml; streammatch_xml = ezxml_next(streammatch_xml)) {
+				compstreamname_const = ezxml_attr(streammatch_xml, "name");
+
+				if (strcmp(streamname_const, compstreamname_const) == 0) {
+					stream_mgr_add_stream_fields_c(manager, streamID, streamname_const, &err);
+				}
+			}
 
 			for(streammatch_xml = ezxml_child(streams, "stream"); streammatch_xml; streammatch_xml = ezxml_next(streammatch_xml)) {
 				compstreamname_const = ezxml_attr(streammatch_xml, "name");

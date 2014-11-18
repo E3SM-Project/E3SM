@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="sw" version="2.1">
+<registry model="mpas" core="sw" version="3.0">
 	<dims>
 		<dim name="nCells"/>
 		<dim name="nEdges"/>

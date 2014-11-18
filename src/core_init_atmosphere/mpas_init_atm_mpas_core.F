@@ -189,6 +189,8 @@ module mpas_core
       type (MPAS_TimeInterval_type) :: dt
 
 
+      ierr = 0
+
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_fg_interval', config_fg_interval)

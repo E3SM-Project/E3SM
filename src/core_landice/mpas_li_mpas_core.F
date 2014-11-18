@@ -191,7 +191,7 @@ module mpas_core
       use mpas_timer
       use li_diagnostic_vars
       use li_setup
-!!!      use li_annual_forcing
+      use mpas_io_streams, only: MPAS_STREAM_LATEST_BEFORE
    
       implicit none
    
@@ -224,6 +224,7 @@ module mpas_core
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       logical, pointer :: config_do_restart, config_write_output_on_startup
+      character(len=StrKIND), pointer :: config_restart_timestamp_name
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
@@ -240,6 +241,7 @@ module mpas_core
       ! Get Pool stuff that will be needed
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(liConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
+      call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       call mpas_timer_start("land ice core run")
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
@@ -321,15 +323,6 @@ module mpas_core
 
          !write(6,*) '  dt (s) = ', dtSeconds
 
-!!! These lines were used previously to assign annual forcing fields.  We may want to reassess how to do that.
-!!!         call mpas_timer_start("assign forcing fields")
-!!!         block_ptr => domain % blocklist
-!!!         do while(associated(block_ptr))
-!!!           call li_assign_annual_forcing(currTime, block_ptr % mesh, ierr)
-!!!           block_ptr => block_ptr % next
-!!!         end do
-!!!         call mpas_timer_stop("assign forcing fields")
-
 
          ! ===
          ! === Perform Timestep
@@ -349,13 +342,36 @@ module mpas_core
          call mpas_timer_stop("time integration")
 
 
-         !TODO: mpas_get_clock_ringing_alarms is probably faster than multiple mpas_is_alarm_ringing...
+         ! ===
+         ! === Read time-varying inputs, if present (i.e., forcing)
+         ! ===
+         ! This should happen at the end of the time step so that if we write out
+         ! the forcing it is at the correct time level.
+         ! For an explicit time-stepping method, we want the forcing to be at the
+         ! *old* time when it is applied during time integration.  Reading it here
+         ! will allow that.
+         ! Finally, set whence to latest_before so we have piecewise-constant forcing.
+         ! Could add, e.g., linear interpolation later.
+         call mpas_stream_mgr_read(stream_manager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+         err = ior(err, err_tmp)
+
 
          ! ===
          ! === Write Output and/or Restart, if needed
          ! ===
-
          call mpas_timer_start("write output")
+         ! Update the restart_timestamp file with the new time, if needed.
+         if ( mpas_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
+            write(22, *) timeStamp
+            close(22)
+         end if
+         err = ior(err, err_tmp)
+         ! These calls will handle ALL output streams that need writing.
+         ! [Could add them individually, as the ocean does, if some other actions are needed when a
+         ! specific alarm is ringing (e.g., global stats calculated only when output stream gets written)]
          call mpas_stream_mgr_write(stream_manager, ierr=err_tmp)
          err = ior(err, err_tmp)
          call mpas_stream_mgr_reset_alarms(stream_manager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
@@ -620,11 +636,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
       call li_setup_sign_and_index_fields(meshPool)
 
-! This was needed for annual forcing, which may or not be implemented in the same way.
-!!!      currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
-!!!      err = ior(err, err_tmp)
-!!!      call li_assign_annual_forcing(currTime, mesh, err_tmp)
-!!!      err = ior(err, err_tmp)
 
 ! This was needed to init FCT once.
 !!!      ! Init for FCT tracer advection
@@ -814,6 +825,8 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval ! MPAS standard configs
       character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
+      character (len=StrKIND), pointer :: config_restart_timestamp_name
+      character (len=StrKIND) :: restartTimeStamp !< string to be read from file
       integer :: err_tmp
 
 
@@ -826,11 +839,21 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_output_interval', config_output_interval)
       call mpas_pool_get_config(configs, 'config_restart_interval', config_restart_interval)
+      call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
 
-      ! Set time to the user-specified start time
-      call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
-      ierr = ior(ierr,err_tmp)
+      ! Set time to the user-specified start time OR use a restart time from file
+      if ( trim(config_start_time) == "file" ) then
+         open(22, file=config_restart_timestamp_name, form='formatted', status='old')
+         read(22,*) restartTimeStamp
+         close(22)
+         call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=err_tmp)
+         ierr = ior(ierr,err_tmp)
+      else
+         call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+         ierr = ior(ierr,err_tmp)
+      end if
+
       ! Set interval to the user-specified time interval string
       call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)
