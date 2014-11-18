@@ -293,6 +293,7 @@ for mct, etc.
   <PNETCDF_PATH></PNETCDF_PATH>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nc-config --flibs) </ADD_SLIBS>
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+  <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
 </compiler>
 
 <compiler COMPILER="intel14">
