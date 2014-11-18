@@ -66,7 +66,7 @@ else
   module load esmf/6.2.0-defio-mpi-O
 endif
 
-module list
+module list >& software_environment.txt
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------
