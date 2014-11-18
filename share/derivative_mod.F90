@@ -2936,7 +2936,11 @@ endif
     real (kind=real_kind)              :: V          (np,np)
     integer i,j
 
-    V  = sampled_val * metdet
+    do i=1,np
+    do j=1,np
+        V(i,j)  = sampled_val(i,j) * metdet(i,j)
+    enddo
+    enddo
 
 
     if (.not.ALLOCATED(integration_matrix)      .or. &
