@@ -458,7 +458,7 @@ module mpas_core
          !    write the restart_timestamp file
          if (MPAS_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             open(22,file=trim(config_restart_timestamp_name),form='formatted',status='replace')
-            write(22,*) timeStamp
+            write(22,*) trim(timeStamp)
             close(22)
          end if
 
