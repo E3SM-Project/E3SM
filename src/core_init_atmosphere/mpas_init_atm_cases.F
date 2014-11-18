@@ -4140,6 +4140,7 @@ write(0,*) 'PROCESSING SEAICE'
 
             ! QV
             es = 6.112 * exp((17.27*(t(k,iCell) - 273.16))/(t(k,iCell) - 35.86))
+            es = min(es,0.99*0.01*pressure(k,iCell))             ! WCS 20141003, from LF; temporary fix 
             rs = 0.622 * es * 100. / (pressure(k,iCell) - es * 100.)
             scalars(index_qv,k,iCell) = 0.01 * rs * scalars(index_qv,k,iCell)
 
