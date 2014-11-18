@@ -294,6 +294,7 @@ for mct, etc.
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+  <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
 </compiler>
 
 <compiler COMPILER="intel14">
@@ -752,7 +753,7 @@ for mct, etc.
   <MPI_PATH MPILIB="mvapich2">/soft/mvapich2/2.0-pgi-13.9-psm</MPI_PATH>
   <MPI_LIB_NAME MPILIB="mvapich2">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
-  <PIO_CONFIG_OPTS> --enable-filesystem-hints=gpfs </PIO_CONFIG_OPTS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="blues">
@@ -760,7 +761,7 @@ for mct, etc.
   <MPI_PATH MPILIB="mvapich2">/soft/mvapich2/2.0-intel-13.1-psm</MPI_PATH>
   <MPI_LIB_NAME MPILIB="mvapich2">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
-  <PIO_CONFIG_OPTS> --enable-filesystem-hints=gpfs </PIO_CONFIG_OPTS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="blues">
@@ -768,7 +769,7 @@ for mct, etc.
   <MPI_PATH MPILIB="mvapich2">/soft/mvapich2/2.0-gcc-4.7.2-psm</MPI_PATH>
   <MPI_LIB_NAME MPILIB="mvapich2">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
-  <PIO_CONFIG_OPTS> --enable-filesystem-hints=gpfs </PIO_CONFIG_OPTS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="eastwind">
