@@ -44,6 +44,7 @@ private
 ! ======================================
 
   public :: subcell_integration
+  public :: subcell_dss_fluxes
 
   public :: derivinit
   public :: deriv_print
@@ -2845,69 +2846,69 @@ endif
     real (kind=real_kind)              :: Tp(p,p)
     real (kind=real_kind)              :: Bp(p,p)
 
-    real (kind=real_kind)              :: Ln(n,n)
-    real (kind=real_kind)              :: Rn(n,n)
-    real (kind=real_kind)              :: Tn(n,n)
-    real (kind=real_kind)              :: Bn(n,n)
+    real (kind=real_kind)              :: L(n,n)
+    real (kind=real_kind)              :: R(n,n)
+    real (kind=real_kind)              :: T(n,n)
+    real (kind=real_kind)              :: B(n,n)
 
     integer            :: i,j
 
-    if (.not.ALLOCATED(integration_matrix)      .or. &
-        SIZE(integration_matrix,1).ne.n .or. &
-        SIZE(integration_matrix,2).ne.p) then
-      call allocate_subcell_integration_matrix(p,n)
-    end if
-
     fluxes  = 0
+
+    Lp = 0
+    Rp = 0
+    Bp = 0
+    Tp = 0
 
     Lp(:,1)  = dss(:,1)
     Rp(:,p)  = dss(:,p)
-    Tp(p,:)  = dss(p,:)
-    Bp(1,:)  = dss(1,:)
+    Bp(p,:)  = dss(p,:)
+    Tp(1,:)  = dss(1,:)
+
     Lp(1,1)  = Lp(1,1)/2
-    Lp(p,1)  = Lp(1,1)/2
+    Tp(1,1)  = Tp(1,1)/2
+    Lp(p,1)  = Lp(p,1)/2
+    Bp(p,1)  = Bp(p,1)/2
+
     Rp(1,p)  = Rp(1,p)/2
+    Tp(1,p)  = Tp(1,p)/2
     Rp(p,p)  = Rp(p,p)/2
-    Tp(p,1)  = Tp(p,1)/2
-    Tp(p,p)  = Tp(p,p)/2
-    Bp(1,1)  = Bp(1,1)/2
-    Bp(1,p)  = Bp(1,p)/2
+    Bp(p,p)  = Bp(p,p)/2
 
-    Ln = MATMUL(integration_matrix, &
-         MATMUL(Lp,TRANSPOSE(integration_matrix)))
-    Rn = MATMUL(integration_matrix, &
-         MATMUL(Rp,TRANSPOSE(integration_matrix)))
-    Tn = MATMUL(integration_matrix, &
-         MATMUL(Tp,TRANSPOSE(integration_matrix)))
-    Bn = MATMUL(integration_matrix, &
-         MATMUL(Bp,TRANSPOSE(integration_matrix)))
+    L = subcell_integration(Lp, p, n)
+    R = subcell_integration(Rp, p, n)
+    T = subcell_integration(Tp, p, n)
+    B = subcell_integration(Bp, p, n)
 
-    do i = 2,n
-      do j = 2,n
-        Rn(i,j) = Rn(i,j) + Rn(i-1,j) 
-        Tn(i,j) = Tn(i,j) + Tn(i,j-1) 
-      end do
+    do i = 1,n
+    do j = 1,n
+      if (1<j) R(i,j) = R(i,j) + R(i,j-1) 
+      if (1<i) B(i,j) = B(i,j) + B(i-1,j) 
     end do
-    do i = n-1,1,-1
-      do j = n-1,1,-1
-        Ln(i,j) = Ln(i,j) + Ln(i+1,j) 
-        Bn(i,j) = Bn(i,j) + Bn(i,j+1) 
-      end do
     end do
+
+    do i = n,1,-1
+    do j = n,1,-1
+      if (j<n) L(i,j) = L(i,j) + L(i,j+1) 
+      if (i<n) T(i,j) = T(i,j) + T(i+1,j) 
+    end do
+    end do
+
 
     do i = 1,n
       do j = 1,n
-        if (1==i) fluxes(i,j,1) =  Ln(i,j)
-        if (1==j) fluxes(i,j,2) =  Bn(i,j)
-        if (i==n) fluxes(i,j,3) =  Rn(i,j)
-        if (j==n) fluxes(i,j,4) =  Tn(i,j)
+        if (1==j) fluxes(i,j,1) =  L(i,j)
+        if (n==i) fluxes(i,j,2) =  B(i,j)
+        if (j==n) fluxes(i,j,3) =  R(i,j)
+        if (1==i) fluxes(i,j,4) =  T(i,j)
 
-        if (1< i) fluxes(i,j,1) =  Ln(i,j) - Rn(i-1,j)
-        if (i< n) fluxes(i,j,3) =  Rn(i,j) - Ln(i+1,j) 
-        if (1< j) fluxes(i,j,2) =  Bn(i,j-1) - Tn(i,j)
-        if (j< n) fluxes(i,j,4) =  Tn(i,j+1) - Bn(i,j) 
+        if (1< j) fluxes(i,j,1) =   L(i,j) - R(i,j-1)
+        if (i< n) fluxes(i,j,2) =   B(i,j) - T(i+1,j)
+        if (j< n) fluxes(i,j,3) =   R(i,j) - L(i,j+1)
+        if (1< i) fluxes(i,j,4) =   T(i,j) - B(i-1,j)
       end do
     end do
+
   end function
 
 
@@ -2923,25 +2924,16 @@ endif
   !
   ! Efficiency is obtained by computing and caching the appropriate
   ! integration matrix the first time the function is called.
-  function subcell_integration(sampled_val, metdet, np, intervals) result(values)
+  function subcell_integration(sampled_val, np, intervals) result(values)
 
     implicit none
 
     integer              , intent(in)  :: np
     integer              , intent(in)  :: intervals
     real (kind=real_kind), intent(in)  :: sampled_val(np,np)
-    real (kind=real_kind), intent(in)  :: metdet     (np,np)
     real (kind=real_kind)              :: values(intervals,intervals)
 
-    real (kind=real_kind)              :: V          (np,np)
     integer i,j
-
-    do i=1,np
-    do j=1,np
-        V(i,j)  = sampled_val(i,j) * metdet(i,j)
-    enddo
-    enddo
-
 
     if (.not.ALLOCATED(integration_matrix)      .or. &
         SIZE(integration_matrix,1).ne.intervals .or. &
@@ -2954,7 +2946,7 @@ endif
     ! where J is a vector.  
 
     values = MATMUL(integration_matrix, &
-             MATMUL(V,TRANSPOSE(integration_matrix)))
+             MATMUL(sampled_val,TRANSPOSE(integration_matrix)))
 
   end function subcell_integration
 

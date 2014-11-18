@@ -1264,11 +1264,127 @@ end subroutine
   end subroutine test_ibyp
 
 
+  subroutine check_subcell_dss_fluxes(elem,deriv,nets,nete)
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_dss_fluxes
+    use derivative_mod, only : subcell_integration
+
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=4 
+
+    real (kind=real_kind)              :: dss(np,np)
+    real (kind=real_kind)              :: values(intervals,intervals)
+    real (kind=real_kind)              :: fluxes(intervals,intervals,4)
+    real (kind=real_kind)              :: test(intervals,intervals)
+    real (kind=real_kind)              :: p,t
+
+    integer                            :: ie,i,j,k
+    logical                            :: success
+    success = .true.
 
 
+    do ie=nets,nete
+      call random_number(p)
+
+      if (ie <= np*np) then
+        dss = 0 
+        dss(1+mod(ie,np), 1+mod(ie/np,np)) = 1
+      else
+        t = dss(1+mod((7*ie),np), 1+mod((13*ie)/np,np))
+        dss(1+mod(ie,np), 1+mod(ie/np,np)) = t + 10*p
+        dss(1+mod(INT(32147*p),np), 1+mod(INT(1123*p)/np,np)) = 0
+      end if
+
+      dss  = dss * elem(ie)%metdet
+      dss(2:np-1,2:np-1) = 0
+
+      values = subcell_integration(dss, np, intervals) 
+      fluxes = subcell_dss_fluxes (dss, np, intervals) 
+
+      test = 0
+      do i=1,np
+      do j=1,np
+      do k=1,4
+        test(i,j) = test(i,j) + fluxes(i,j,k)
+      end do
+      end do
+      end do
+
+      do i=1,np
+      do j=1,np
+      if (.00001<ABS(test(i,j)-values(i,j))) then
+        print *,"*****************",ie,i,j,test(i,j),values(i,j)
+        success = .false.
+      end if
+      end do
+      end do
+    end do
+
+    if (success) then
+      print *,__FILE__,__LINE__," check_subcell_dss_fluxes test passed."
+    else
+      print *,__FILE__,__LINE__," check_subcell_dss_fluxes test FAILED."
+    end if
+
+  end subroutine check_subcell_dss_fluxes
 
 
+  subroutine check_sub_integration(elem,deriv,nets,nete)
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_integration
 
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=4 
+
+    real (kind=real_kind)              :: values(intervals,intervals)
+    real (kind=real_kind)              :: sampled_val(np,np), V(np,np)
+    real (kind=real_kind)              :: t, p
+    integer                            :: ie,i,j
+    logical                            :: success
+
+    sampled_val = 0
+    success = .true.
+    do ie=nets,nete
+      call random_number(p)
+      if (ie <= np*np) then
+        sampled_val = 0 
+        sampled_val(1+mod(ie,np), 1+mod(ie/np,np)) = 1
+      else
+        t = sampled_val(1+mod((7*ie),np), 1+mod((13*ie)/np,np))
+        sampled_val(1+mod(ie,np), 1+mod(ie/np,np)) = t + 10*p
+        sampled_val(1+mod(INT(32147*p),np), 1+mod(INT(1123*p)/np,np)) = 0
+      end if
+
+      V = sampled_val * elem(ie)%metdet
+      values = subcell_integration(V, np, intervals) 
+
+      t = 0
+      do i = 1,np
+        t    = t + DOT_PRODUCT(sampled_val(:,i),elem(ie)%spheremp(:,i))
+      end do
+
+      if (.00001<ABS(t-SUM(values))) then
+        print *,"*****************",ie,t,SUM(values)
+        success = .false.
+      end if
+    end do
+    if (success) then
+      print *,__FILE__,__LINE__," check_sub_integration test passed."
+    else
+      print *,__FILE__,__LINE__," check_sub_integration test FAILED."
+    end if
+
+  end subroutine check_sub_integration
 
 
   subroutine check_edge_flux(elem,deriv,nets,nete)
@@ -1558,7 +1674,6 @@ end subroutine
            endif
         enddo
      enddo
-     stop
 
      do j=1,np
         do i=1,np
