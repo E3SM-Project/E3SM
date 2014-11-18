@@ -517,7 +517,7 @@ module init_atm_cases
 
       !     Metrics for hybrid coordinate and vertical stretching
 
-      str = 1.8
+      str = 1.5
       zt = 45000.
       dz = zt/float(nz1)
 
