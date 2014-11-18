@@ -42,14 +42,15 @@ module mpas_vector_reconstruction
 !>  Output: grid % coeffs_reconstruct - coefficients used to reconstruct 
 !>                                      velocity vectors at cell centers 
 !-----------------------------------------------------------------------
-  subroutine mpas_init_reconstruct(grid)!{{{
+  subroutine mpas_init_reconstruct(meshPool)!{{{
 
     implicit none
 
-    type (mesh_type), intent(inout) :: grid  !< Input/Output: Grid information
+    type (mpas_pool_type), intent(in) :: &
+         meshPool         !< Input: Mesh information
 
     ! temporary arrays needed in the (to be constructed) init procedure
-    integer :: nCellsSolve
+    integer, pointer :: nCellsSolve
     integer, dimension(:,:), pointer :: edgesOnCell
     integer, dimension(:), pointer :: nEdgesOnCell
     integer :: i, iCell, iEdge, pointCount, maxEdgeCount
@@ -65,23 +66,23 @@ module mpas_vector_reconstruction
     !========================================================
     ! arrays filled and saved during init procedure
     !========================================================
-    coeffs_reconstruct => grid % coeffs_reconstruct % array
+    call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', coeffs_reconstruct)
 
     !========================================================
     ! temporary variables needed for init procedure
     !========================================================
-    xCell       => grid % xCell % array
-    yCell       => grid % yCell % array
-    zCell       => grid % zCell % array
-    xEdge       => grid % xEdge % array
-    yEdge       => grid % yEdge % array
-    zEdge       => grid % zEdge % array
-    edgesOnCell => grid % edgesOnCell % array
-    nEdgesOnCell=> grid % nEdgesOnCell % array
-    nCellsSolve = grid % nCellsSolve
-    edgeNormalVectors => grid % edgeNormalVectors % array
-    cellTangentPlane => grid % cellTangentPlane % array
+    call mpas_pool_get_array(meshPool, 'xCell', xCell)
+    call mpas_pool_get_array(meshPool, 'yCell', yCell)
+    call mpas_pool_get_array(meshPool, 'zCell', zCell)
+    call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+    call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+    call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
+    call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+    call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+    call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
+    call mpas_pool_get_array(meshPool, 'cellTangentPlane', cellTangentPlane)
 
+    call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
     ! init arrays
     coeffs_reconstruct = 0.0
@@ -159,11 +160,11 @@ module mpas_vector_reconstruction
 !>  Input: grid meta data and vector component data residing at cell edges
 !>  Output: reconstructed vector field (measured in X,Y,Z) located at cell centers
 !-----------------------------------------------------------------------
-  subroutine mpas_reconstruct(grid, u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional)!{{{
+  subroutine mpas_reconstruct(meshPool, u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional)!{{{
 
     implicit none
 
-    type (mesh_type), intent(in) :: grid !< Input: Grid information
+    type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
     real (kind=RKIND), dimension(:,:), intent(in) :: u !< Input: Velocity field on edges
     real (kind=RKIND), dimension(:,:), intent(out) :: uReconstructX !< Output: X Component of velocity reconstructed to cell centers
     real (kind=RKIND), dimension(:,:), intent(out) :: uReconstructY !< Output: Y Component of velocity reconstructed to cell centers
@@ -172,7 +173,7 @@ module mpas_vector_reconstruction
     real (kind=RKIND), dimension(:,:), intent(out) :: uReconstructMeridional !< Output: Meridional Component of velocity reconstructed to cell centers
 
     !   temporary arrays needed in the compute procedure
-    integer :: nCellsSolve
+    integer, pointer :: nCellsSolve
     integer, dimension(:,:), pointer :: edgesOnCell
     integer, dimension(:), pointer :: nEdgesOnCell
     integer :: iCell,iEdge, i
@@ -180,22 +181,23 @@ module mpas_vector_reconstruction
 
     real (kind=RKIND), dimension(:,:,:), pointer :: coeffs_reconstruct
 
-    logical :: on_a_sphere
+    logical, pointer :: on_a_sphere
 
     real (kind=RKIND) :: clat, slat, clon, slon
 
 
     ! stored arrays used during compute procedure
-    coeffs_reconstruct => grid % coeffs_reconstruct % array
+    call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', coeffs_reconstruct)
 
     ! temporary variables
-    edgesOnCell => grid % edgesOnCell % array
-    nEdgesOnCell=> grid % nEdgesOnCell % array
-    nCellsSolve = grid % nCellsSolve
+    call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+    call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+    call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
-    latCell       => grid % latCell % array
-    lonCell       => grid % lonCell % array
-    on_a_sphere = grid % on_a_sphere
+    call mpas_pool_get_array(meshPool, 'latCell', latCell)
+    call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+
+    call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! init the intent(out)
     uReconstructX = 0.0
@@ -203,7 +205,7 @@ module mpas_vector_reconstruction
     uReconstructZ = 0.0
 
     ! loop over cell centers
-    do iCell=1,nCellsSolve
+    do iCell = 1, nCellsSolve
       ! a more efficient reconstruction where rbf_values*matrix_reconstruct has been precomputed
       ! in coeffs_reconstruct
       do i=1,nEdgesOnCell(iCell)
@@ -218,8 +220,8 @@ module mpas_vector_reconstruction
       enddo
     enddo   ! iCell
 
-    if(on_a_sphere) then
-      do iCell=1,nCellsSolve
+    if (on_a_sphere) then
+      do iCell = 1, nCellsSolve
         clat = cos(latCell(iCell))
         slat = sin(latCell(iCell))
         clon = cos(lonCell(iCell))
@@ -237,3 +239,4 @@ module mpas_vector_reconstruction
   end subroutine mpas_reconstruct!}}}
 
 end module mpas_vector_reconstruction
+

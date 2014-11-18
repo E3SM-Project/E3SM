@@ -17,7 +17,7 @@
  use mpas_kind_types
  use mpas_grid_types
  
- use mpas_atmphys_constants,only: cp,degrad,ep_2,g,R_d,R_v,stbolt
+ use mpas_atmphys_constants,only: cp,degrad,ep_2,gravity,R_d,R_v,stbolt
  use mpas_atmphys_utilities
 
 !wrf physics:
@@ -53,6 +53,11 @@
 !>    * moved the arrays pin and ozmixm from the mesh structure to the atm_input structure in
 !>      subroutine oznini.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-07-08.
+!>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+
 
 !local parameters:
  integer,parameter:: latsiz = 64
@@ -60,18 +65,21 @@
 
  contains
 
+
 !==================================================================================================
- subroutine camradinit(dminfo,mesh,atm_input,diag,state_1,state_2)
+ subroutine camradinit(dminfo,mesh,atm_input,diag,state,time_lev)
 !==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
- type(mesh_type),intent(in):: mesh
- type(diag_type),intent(in):: diag
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: diag
+
+ integer,intent(in):: time_lev
 
 !inout arguments:
- type(atm_input_type),intent(inout):: atm_input
- type(state_type),intent(inout):: state_1,state_2 
+ type(mpas_pool_type),intent(inout):: atm_input
+ type(mpas_pool_type),intent(inout):: state 
 
 !local variables:
  real(r8):: pstd
@@ -126,20 +134,20 @@
  epsqs = EP_2
 
 !initialization of some constants:
- call radini(dminfo,g,cp,ep_2,stbolt,pstd*10.0)
- write(0,*) '    end subroutine radini'
+ call radini(dminfo,gravity,cp,ep_2,stbolt,pstd*10.0)
+! write(0,*) '    end subroutine radini'
 
 !initialization of saturation vapor pressures:
  call esinti(epsqs,latvap,latice,rh2o,cpair,tmelt)
- write(0,*) '    end subroutine esinti'
+! write(0,*) '    end subroutine esinti'
  
 !initialization of ozone mixing ratios:
  call oznini(mesh,atm_input)
- write(0,*) '    end subroutine oznini'
+! write(0,*) '    end subroutine oznini'
 
 !initialization of aerosol concentrations:
- call aerosol_init(dminfo,mesh,diag,state_1,state_2)
- write(0,*) '    end subroutine aerosol_init'
+ call aerosol_init(dminfo,mesh,diag,state,time_lev)
+! write(0,*) '    end subroutine aerosol_init'
 
  end subroutine camradinit
 
@@ -386,7 +394,7 @@
  end subroutine radaeini
 
 !==================================================================================================
- subroutine aerosol_init(dminfo,mesh,diag,state_1,state_2)
+ subroutine aerosol_init(dminfo,mesh,diag,state,time_lev)
 !==================================================================================================
 
 !This subroutine assumes a uniform aerosol distribution in both time and space. It should be
@@ -394,22 +402,30 @@
 
 !input arguments:!
  type(dm_info),intent(in)  :: dminfo
- type(mesh_type),intent(in):: mesh
- type(diag_type),intent(in):: diag
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: diag
+
+ integer,intent(in):: time_lev
 
 !inout arguments:
- type(state_type),intent(inout):: state_1,state_2
+ type(mpas_pool_type),intent(inout):: state
 
-!local variables:
- integer:: max_mxaerl
- integer,dimension(:),allocatable:: mxaerl_local
- integer:: iCell,k,kk,nAerLevels,nCells,nCellsSolve,nVertLevels
-
- real(kind=RKIND):: psurf
+!local pointers:
+ integer, pointer:: nAerLevels,nCells,nCellsSolve,nVertLevels
  real(kind=RKIND),dimension(:),pointer:: m_psp,m_psn
  real(kind=RKIND),dimension(:,:),pointer:: m_hybi
  real(kind=RKIND),dimension(:,:),pointer:: pressure_b
  real(kind=RKIND),dimension(:,:,:),pointer:: aerosolcn,aerosolcp
+
+ integer,pointer:: idxSUL_l,idxSSLT_l,idxDUSTfirst_l,idxOCPHO_l,idxCARBONfirst_l, &
+                   idxBCPHO_l,idxOCPHI_l,idxBCPHI_l,idxBG_l,idxVOLC_l
+
+!local variables:
+ integer:: max_mxaerl
+ integer,dimension(:),allocatable:: mxaerl_local
+ integer:: iCell,k,kk
+
+ real(kind=RKIND):: psurf
 
  real(kind=RKIND),dimension(29) :: hybi  
  data hybi/0, 0.0065700002014637, 0.0138600002974272, 0.023089999333024 , &
@@ -425,19 +441,18 @@
 !--------------------------------------------------------------------------------------------------
 
 !initialization:
- nCells      = mesh % nCells
- nCellsSolve = mesh % nCellsSolve
- nAerLevels  = mesh % nAerLevels
- nVertLevels = mesh % nVertLevels
- m_hybi => mesh % m_hybi % array
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+ call mpas_pool_get_dimension(mesh,'nAerLevels',nAerLevels)
+ call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
 
- pressure_b => diag % pressure_base % array
+ call mpas_pool_get_array(mesh,'m_hybi',m_hybi)
+ call mpas_pool_get_array(diag,'pressure_base',pressure_b)
 
- m_psp => state_1 % m_ps % array
- m_psn => state_2 % m_ps % array
-
- aerosolcp => state_1 % aerosols % array
- aerosolcn => state_2 % aerosols % array 
+ call mpas_pool_get_array(state,'m_ps',m_psp,1)
+ call mpas_pool_get_array(state,'m_ps',m_psn,2)
+ call mpas_pool_get_array(state,'aerosols',aerosolcp,1)
+ call mpas_pool_get_array(state,'aerosols',aerosolcn,2)
 
 !initialization of aerosol levels:
  do k = 1, nAerLevels
@@ -476,17 +491,28 @@
  ixcldice = 3
 
 !initialize indices for aerosol species:
- idxSUL         = state_1 % index_sul
- idxSSLT        = state_1 % index_sslt
- idxDUSTfirst   = state_1 % index_dust1
- idxOCPHO       = state_1 % index_ocpho
- idxCARBONFIRST = state_1 % index_ocpho
- idxBCPHO       = state_1 % index_bcpho
- idxOCPHI       = state_1 % index_ocphi
- idxBCPHI       = state_1 % index_bcphi
- idxBG          = state_1 % index_bg
- idxVOLC        = state_1 % index_volc
- 
+ call mpas_pool_get_dimension(state,'index_sul'  ,idxSUL_l        )
+ call mpas_pool_get_dimension(state,'index_sslt' ,idxSSLT_l       )
+ call mpas_pool_get_dimension(state,'index_dust1',idxDUSTfirst_l  )
+ call mpas_pool_get_dimension(state,'index_ocpho',idxOCPHO_l      )
+ call mpas_pool_get_dimension(state,'index_ocpho',idxCARBONfirst_l)
+ call mpas_pool_get_dimension(state,'index_bcpho',idxBCPHO_l      )
+ call mpas_pool_get_dimension(state,'index_ocphi',idxOCPHI_l      )
+ call mpas_pool_get_dimension(state,'index_bcphi',idxBCPHI_l      )
+ call mpas_pool_get_dimension(state,'index_bg'   ,idxBG_l         )
+ call mpas_pool_get_dimension(state,'index_volc' ,idxVOLC_l       )
+
+ idxSUL         = idxSUL_l
+ idxSSLT        = idxSSLT_l
+ idxDUSTfirst   = idxDUSTfirst_l
+ idxOCPHO       = idxOCPHO_l
+ idxCARBONfirst = idxCARBONfirst_l
+ idxBCPHO       = idxBCPHO_l
+ idxOCPHI       = idxOCPHI_l
+ idxBCPHI       = idxBCPHI_l
+ idxBG          = idxBG_l
+ idxVOLC        = idxVOLC_l
+
  write(0,*) '    idxSUL         =',idxSUL
  write(0,*) '    idxSSLT        =',idxSSLT
  write(0,*) '    idxDUSTfirst   =',idxDUSTfirst
@@ -712,7 +738,7 @@
     enddo
  enddo
 
- write(0,*) '    end subroutine aer_optics_initialize:'
+! write(0,*) '    end subroutine aer_optics_initialize:'
 
  end subroutine aer_optics_initialize
 
@@ -724,10 +750,16 @@
 !with monthly climatology varying ozone distribution.
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
 
 !inout arguments:
- type(atm_input_type),intent(inout):: atm_input
+ type(mpas_pool_type),intent(inout):: atm_input
+ 
+!local pointers:
+ integer,pointer:: nCells,num_months,levsiz
+ real(kind=RKIND),dimension(:),pointer:: latCell,lonCell
+ real(kind=RKIND),dimension(:),pointer:: pin
+ real(kind=RKIND),dimension(:,:,:),pointer:: ozmixm
 
 !local variables:
  integer,parameter:: pin_unit = 27
@@ -736,12 +768,8 @@
  integer,parameter:: open_ok  = 0
 
  integer:: i,i1,i2,istat,k,j,m
- integer:: iCell,nCells,num_months,levsiz
+ integer:: iCell
  
- real(kind=RKIND),dimension(:),pointer:: latCell,lonCell
- real(kind=RKIND),dimension(:),pointer:: pin
- real(kind=RKIND),dimension(:,:,:),pointer:: ozmixm
-
  real(kind=RKIND):: lat,lon,dlat,dlatCell
  real(kind=RKIND),dimension(latsiz):: lat_ozone
 !real(Kind=RKIND),dimension(lonsiz,levsiz,latsiz,num_months):: ozmixin
@@ -749,13 +777,14 @@
 
 !--------------------------------------------------------------------------------------------------
 
- nCells     = mesh % nCells
- num_months = mesh % nMonths
- levsiz     = mesh % nOznLevels
- latCell => mesh % latCell % array
- lonCell => mesh % lonCell % array
- pin     => atm_input % pin % array
- ozmixm  => atm_input % ozmixm % array
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+ call mpas_pool_get_dimension(mesh,'nMonths',num_months)
+ call mpas_pool_get_dimension(mesh,'nOznLevels',levsiz)
+
+ call mpas_pool_get_array(mesh,'latCell',latCell)
+ call mpas_pool_get_array(mesh,'lonCell',lonCell)
+ call mpas_pool_get_array(atm_input,'pin',pin)
+ call mpas_pool_get_array(atm_input,'ozmixm',ozmixm)
 
 !-- read in ozone pressure data:
  open(pin_unit,file='OZONE_PLEV.TBL',action='READ',status='OLD',iostat=istat)

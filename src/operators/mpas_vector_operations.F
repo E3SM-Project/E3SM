@@ -16,7 +16,6 @@
 !>  This module contains the routines involving vector operations
 !
 !-----------------------------------------------------------------------
-
 module mpas_vector_operations
 
    use mpas_grid_types
@@ -111,7 +110,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine mpas_vector_R3Cell_to_2DEdge(vectorR3Cell, &
-      grid, edgeTangentVectors, includeHalo, normalVectorEdge, tangentialVectorEdge)!{{{
+      meshPool, edgeTangentVectors, includeHalo, normalVectorEdge, tangentialVectorEdge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -122,8 +121,8 @@ contains
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          vectorR3Cell  !< Input: 3-vector located at cell centers, in x,y,z coordinates
 
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: Mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          edgeTangentVectors   !< Input: unit vector tangent to an edge
@@ -149,7 +148,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesCompute, cell1, cell2, k, nVertLevels
+      integer :: iEdge, cell1, cell2, k
+      integer, pointer :: nEdgesCompute, nVertLevels
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -157,14 +157,14 @@ contains
       real(kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       if (includeHalo) then
-         nEdgesCompute = grid % nEdges
+         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
       else 
-         nEdgesCompute = grid % nEdgesSolve
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
       endif
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      edgeNormalVectors => grid % edgeNormalVectors % array
-      cellsOnEdge       => grid % cellsOnEdge % array
+      call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       do iEdge=1,nEdgesCompute
          cell1 = cellsOnEdge(1,iEdge)
@@ -197,7 +197,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine mpas_vector_R3Cell_to_normalVectorEdge(vectorR3Cell, &
-      grid, includeHalo, normalVectorEdge)!{{{
+      meshPool, includeHalo, normalVectorEdge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -208,8 +208,8 @@ contains
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          vectorR3Cell  !< Input: 3-vector located at cell centers, in x,y,z coordinates
 
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool         !< Input: Mesh information
 
       logical, intent(in) :: & 
          includeHalo !< Input: If true, halo cells and edges are included in computation
@@ -229,7 +229,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesCompute, cell1, cell2, k, nVertLevels
+      integer :: iEdge, cell1, cell2, k
+      integer, pointer :: nEdgesCompute, nVertLevels
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -237,14 +238,14 @@ contains
       real(kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       if (includeHalo) then
-         nEdgesCompute = grid % nEdges
+         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
       else 
-         nEdgesCompute = grid % nEdgesSolve
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
       endif
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      edgeNormalVectors => grid % edgeNormalVectors % array
-      cellsOnEdge       => grid % cellsOnEdge % array
+      call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       do iEdge=1,nEdgesCompute
          cell1 = cellsOnEdge(1,iEdge)
@@ -276,7 +277,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tangential_velocity(normalVelocity, grid, includeHalo, tangentialVelocity)!{{{
+   subroutine mpas_tangential_velocity(normalVelocity, meshPool, includeHalo, tangentialVelocity)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -287,8 +288,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity   !< Input: Horizontal velocity normal to edge
 
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: Mesh information
 
       logical, intent(in) :: & 
          includeHalo !< Input: If true, halo cells and edges are included in computation
@@ -308,22 +309,23 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesCompute,i,k,nVertLevels, eoe
+      integer :: iEdge, i, k, eoe
+      integer, pointer :: nEdgesCompute, nVertLevels
       integer, dimension(:), pointer :: nEdgesOnEdge
       integer, dimension(:,:), pointer :: edgesOnEdge
 
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge
 
       if (includeHalo) then
-         nEdgesCompute = grid % nEdges
+         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
       else 
-         nEdgesCompute = grid % nEdgesSolve
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
       endif
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      nEdgesOnEdge      => grid % nEdgesOnEdge % array
-      edgesOnEdge       => grid % edgesOnEdge % array
-      weightsOnEdge     => grid % weightsOnEdge % array
+      call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
 
       do iEdge = 1,nEdgesCompute
          do i=1,nEdgesOnEdge(iEdge)
@@ -539,7 +541,7 @@ contains
 !> \details 
 !> This routine computes geometric fields that will be potentially useful for calling
 !> the interpolation routines.
-!> Input: the grid
+!> Input: the mesh
 !> Output:
 !>      edgeNormalVectors - the unit vector normal to the edge and tangent to the sphere
 !>      cellTangentPlane - 2 orthogonal unit vectors in the tangent plane of each cell
@@ -548,46 +550,48 @@ contains
 !>      localVerticalUnitVectors - the unit normal vector of the tangent plane at the center 
 !>                         of each cell
 !-----------------------------------------------------------------------
-  subroutine mpas_initialize_vectors(grid)!{{{
+  subroutine mpas_initialize_vectors(meshPool)!{{{
 
     implicit none
 
-    type (mesh_type), intent(inout) :: grid  !< Input/Output: Grid information
+    type (mpas_pool_type), intent(in) :: meshPool  !< Input: Mesh information
 
-    integer :: nCells, nEdges
-    integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgesOnCell
     integer :: iEdge, iCell, cell1, cell2
+    integer, pointer :: nCells, nEdges
+    integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgesOnCell
     real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xEdge, yEdge, zEdge
     real(kind=RKIND), dimension(:,:), pointer :: localVerticalUnitVectors, edgeNormalVectors
     real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane
     real(kind=RKIND), dimension(3) :: xHatPlane, yHatPlane, rHat
     real(kind=RKIND) :: normalDotRHat
-    logical :: on_a_sphere
+    logical, pointer :: on_a_sphere
 
-    xCell       => grid % xCell % array
-    yCell       => grid % yCell % array
-    zCell       => grid % zCell % array
-    xEdge       => grid % xEdge % array
-    yEdge       => grid % yEdge % array
-    zEdge       => grid % zEdge % array
-    cellsOnEdge => grid % cellsOnEdge % array
-    verticesOnEdge => grid % verticesOnEdge % array
-    edgesOnCell => grid % edgesOnCell % array
-    nCells      = grid % nCells
-    nEdges      = grid % nEdges
-    on_a_sphere = grid % on_a_sphere
+    call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-    localVerticalUnitVectors => grid % localVerticalUnitVectors % array
-    edgeNormalVectors => grid % edgeNormalVectors % array
-    cellTangentPlane => grid % cellTangentPlane % array
+    call mpas_pool_get_array(meshPool, 'xCell', xCell)
+    call mpas_pool_get_array(meshPool, 'yCell', yCell)
+    call mpas_pool_get_array(meshPool, 'zCell', zCell)
+    call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+    call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+    call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
+    call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+    call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+    call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+
+    call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+    call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+    call mpas_pool_get_array(meshPool, 'localVerticalUnitVectors', localVerticalUnitVectors)
+    call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
+    call mpas_pool_get_array(meshPool, 'cellTangentPlane', cellTangentPlane)
 
     ! init arrays
     edgeNormalVectors = 0
     localVerticalUnitVectors = 0
 
     ! loop over all cells to be solved on this block
-    do iCell=1,nCells
-      if(on_a_sphere) then
+    do iCell = 1, nCells
+      if (on_a_sphere) then
         localVerticalUnitVectors(1,iCell) = xCell(iCell)
         localVerticalUnitVectors(2,iCell) = yCell(iCell)
         localVerticalUnitVectors(3,iCell) = zCell(iCell)
@@ -655,11 +659,11 @@ contains
 !> This routine initializes the array edgeTangentVectors.  It is not
 !> included in the mpas_initialize_vectors subroutine because the 
 !> array edgeTangentVectors is not included in all cores.
-!> Input: the grid
+!> Input: the mesh
 !> Output:
 !>      edgeTangentVectors - the unit vector tangent to the edge and tangent to the sphere
 !-----------------------------------------------------------------------
-   subroutine mpas_initialize_tangent_vectors(grid, edgeTangentVectors)!{{{
+   subroutine mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -667,8 +671,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: Mesh information
 
       !-----------------------------------------------------------------
       !
@@ -679,15 +683,16 @@ contains
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          edgeTangentVectors   !< Output: unit vector tangent to an edge
 
-      integer :: iEdge, nEdges, vertex1, vertex2
+      integer :: iEdge, vertex1, vertex2
+      integer, pointer :: nEdges
       integer, dimension(:,:), pointer :: verticesOnEdge
       real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
 
-      nEdges      = grid % nEdges
-      verticesOnEdge => grid % verticesOnEdge % array
-      xVertex     => grid % xVertex % array
-      yVertex     => grid % yVertex % array
-      zVertex     => grid % zVertex % array
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
 
       do iEdge = 1,nEdges
          vertex1 = verticesOnEdge(1,iEdge) 

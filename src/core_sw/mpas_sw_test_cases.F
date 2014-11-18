@@ -31,6 +31,12 @@ module sw_test_cases
       integer :: i
       type (block_type), pointer :: block_ptr
 
+      type (mpas_pool_type), pointer :: statePool, meshPool
+
+      integer, pointer :: config_test_case
+
+      call mpas_pool_get_config(domain % configs, 'config_test_case', config_test_case)
+
       if (config_test_case == 0) then
          write(0,*) 'Using initial conditions supplied in input file'
 
@@ -40,10 +46,12 @@ module sw_test_cases
 
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
-            call sw_test_case_1(block_ptr % mesh, block_ptr % state % time_levs(1) % state)
-            do i=2,nTimeLevs
-               call mpas_copy_state(block_ptr % state % time_levs(i) % state, block_ptr % state % time_levs(1) % state)
-            end do
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+
+            call sw_test_case_1(meshPool, statePool)
+
+            call mpas_pool_initialize_time_levels(statePool)
 
             block_ptr => block_ptr % next
          end do
@@ -54,10 +62,12 @@ module sw_test_cases
 
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
-            call sw_test_case_2(block_ptr % mesh, block_ptr % state % time_levs(1) % state)
-            do i=2,nTimeLevs
-               call mpas_copy_state(block_ptr % state % time_levs(i) % state, block_ptr % state % time_levs(1) % state)
-            end do
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+
+            call sw_test_case_2(meshPool, statePool)
+
+            call mpas_pool_initialize_time_levels(statePool)
 
             block_ptr => block_ptr % next
          end do
@@ -68,10 +78,12 @@ module sw_test_cases
 
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
-            call sw_test_case_5(block_ptr % mesh, block_ptr % state % time_levs(1) % state)
-            do i=2,nTimeLevs
-               call mpas_copy_state(block_ptr % state % time_levs(i) % state, block_ptr % state % time_levs(1) % state)
-            end do
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+
+            call sw_test_case_5(meshPool, statePool)
+
+            call mpas_pool_initialize_time_levels(statePool)
 
             block_ptr => block_ptr % next
          end do
@@ -82,10 +94,12 @@ module sw_test_cases
 
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
-            call sw_test_case_6(block_ptr % mesh, block_ptr % state % time_levs(1) % state)
-            do i=2,nTimeLevs
-               call mpas_copy_state(block_ptr % state % time_levs(i) % state, block_ptr % state % time_levs(1) % state)
-            end do
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+
+            call sw_test_case_6(meshPool, statePool)
+
+            call mpas_pool_initialize_time_levels(statePool)
 
             block_ptr => block_ptr % next
          end do
@@ -98,7 +112,7 @@ module sw_test_cases
    end subroutine setup_sw_test_case
 
 
-   subroutine sw_test_case_1(grid, state)
+   subroutine sw_test_case_1(meshPool, statePool)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Setup shallow water test case 1: Advection of Cosine Bell over the Pole
    !
@@ -109,8 +123,8 @@ module sw_test_cases
 
       implicit none
 
-      type (mesh_type), intent(inout) :: grid
-      type (state_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: meshPool
+      type (mpas_pool_type), intent(inout) :: statePool
 
       real (kind=RKIND), parameter :: u0 = 2.0 * pii * a / (12.0 * 86400.0)
       real (kind=RKIND), parameter :: h0 = 1000.0
@@ -119,61 +133,100 @@ module sw_test_cases
       real (kind=RKIND), parameter :: alpha = pii/4.0
 
       integer :: iCell, iEdge, iVtx
-      real (kind=RKIND) :: r, u, v
+      integer, pointer :: nVertices, nEdges, nCells
+      real (kind=RKIND) :: r, v
       real (kind=RKIND), allocatable, dimension(:) :: psiVertex
+
+      integer, dimension(:,:), pointer :: verticesOnEdge
+
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex, xEdge, yEdge, zEdge, dvEdge, dcEdge
+      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
+      real (kind=RKIND), dimension(:), pointer :: latVertex, lonVertex
+      real (kind=RKIND), dimension(:), pointer :: areaCell, areaTriangle
+      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+
+      real (kind=RKIND), dimension(:,:), pointer :: u, h
 
       !
       ! Scale all distances and areas from a unit sphere to one with radius a
       !
-      grid % xCell % array = grid % xCell % array * a
-      grid % yCell % array = grid % yCell % array * a
-      grid % zCell % array = grid % zCell % array * a
-      grid % xVertex % array = grid % xVertex % array * a
-      grid % yVertex % array = grid % yVertex % array * a
-      grid % zVertex % array = grid % zVertex % array * a
-      grid % xEdge % array = grid % xEdge % array * a
-      grid % yEdge % array = grid % yEdge % array * a
-      grid % zEdge % array = grid % zEdge % array * a
-      grid % dvEdge % array = grid % dvEdge % array * a
-      grid % dcEdge % array = grid % dcEdge % array * a
-      grid % areaCell % array = grid % areaCell % array * a**2.0
-      grid % areaTriangle % array = grid % areaTriangle % array * a**2.0
-      grid % kiteAreasOnVertex % array = grid % kiteAreasOnVertex % array * a**2.0
+
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+      call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+      call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+      call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'latVertex', latVertex)
+      call mpas_pool_get_array(meshPool, 'lonVertex', lonVertex)
+
+      call mpas_pool_get_array(statePool, 'u', u, 1)
+      call mpas_pool_get_array(statePool, 'h', h, 1)
+
+      xCell = xCell * a
+      yCell = yCell * a
+      zCell = zCell * a
+      xVertex = xVertex * a
+      yVertex = yVertex * a
+      zVertex = zVertex * a
+      xEdge = xEdge * a
+      yEdge = yEdge * a
+      zEdge = zEdge * a
+      dvEdge = dvEdge * a
+      dcEdge = dcEdge * a
+      areaCell = areaCell * a**2.0
+      areaTriangle = areaTriangle * a**2.0
+      kiteAreasOnVertex = kiteAreasOnVertex * a**2.0
 
       !
       ! Initialize wind field
       !
-      allocate(psiVertex(grid % nVertices))
-      do iVtx=1,grid % nVertices
+      allocate(psiVertex(nVertices))
+      do iVtx = 1, nVertices
          psiVertex(iVtx) = -a * u0 * ( &
-                                       sin(grid%latVertex%array(iVtx)) * cos(alpha) - &
-                                       cos(grid%lonVertex%array(iVtx)) * cos(grid%latVertex%array(iVtx)) * sin(alpha) &
+                                       sin(latVertex(iVtx)) * cos(alpha) - &
+                                       cos(lonVertex(iVtx)) * cos(latVertex(iVtx)) * sin(alpha) &
                                      )
       end do
-      do iEdge=1,grid % nEdges
-         state % u % array(1,iEdge) = -1.0 * ( &
-                                               psiVertex(grid%verticesOnEdge%array(2,iEdge)) - &
-                                               psiVertex(grid%verticesOnEdge%array(1,iEdge)) &
-                                             ) / grid%dvEdge%array(iEdge)
+      do iEdge = 1, nEdges
+         u(1,iEdge) = -1.0 * ( &
+                                               psiVertex(verticesOnEdge(2,iEdge)) - &
+                                               psiVertex(verticesOnEdge(1,iEdge)) &
+                                             ) / dvEdge(iEdge)
       end do
       deallocate(psiVertex)
 
       !
       ! Initialize cosine bell at (theta_c, lambda_c)
       !
-      do iCell=1,grid % nCells
-         r = sphere_distance(theta_c, lambda_c, grid % latCell % array(iCell), grid % lonCell % array(iCell), a) 
+      do iCell = 1, nCells
+         r = sphere_distance(theta_c, lambda_c, latCell(iCell), lonCell(iCell), a) 
          if (r < a/3.0) then
-            state % h % array(1,iCell) = (h0 / 2.0) * (1.0 + cos(pii*r*3.0/a))
+            h(1,iCell) = (h0 / 2.0) * (1.0 + cos(pii*r*3.0/a))
          else
-            state % h % array(1,iCell) = 0.0
+            h(1,iCell) = h0 / 2.0
          end if
       end do
 
    end subroutine sw_test_case_1
 
 
-   subroutine sw_test_case_2(grid, state)
+   subroutine sw_test_case_2(meshPool, statePool)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Setup shallow water test case 2: Global Steady State Nonlinear Zonal 
    !                                  Geostrophic Flow
@@ -185,78 +238,122 @@ module sw_test_cases
 
       implicit none
 
-      type (mesh_type), intent(inout) :: grid
-      type (state_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: meshPool
+      type (mpas_pool_type), intent(inout) :: statePool
 
       real (kind=RKIND), parameter :: u0 = 2.0 * pii * a / (12.0 * 86400.0)
       real (kind=RKIND), parameter :: gh0 = 29400.0
       real (kind=RKIND), parameter :: alpha = 0.0
 
       integer :: iCell, iEdge, iVtx
-      real (kind=RKIND) :: u, v
+      integer, pointer :: nVertices, nEdges, nCells
+      real (kind=RKIND) :: v
       real (kind=RKIND), allocatable, dimension(:) :: psiVertex
+
+      integer, dimension(:,:), pointer :: verticesOnEdge
+
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex, xEdge, yEdge, zEdge, dvEdge, dcEdge
+      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
+      real (kind=RKIND), dimension(:), pointer :: latVertex, lonVertex
+      real (kind=RKIND), dimension(:), pointer :: latEdge, lonEdge
+      real (kind=RKIND), dimension(:), pointer :: areaCell, areaTriangle, fEdge, fVertex
+      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+
+      real (kind=RKIND), dimension(:,:), pointer :: u, h
 
 
       !
       ! Scale all distances and areas from a unit sphere to one with radius a
       !
-      grid % xCell % array = grid % xCell % array * a
-      grid % yCell % array = grid % yCell % array * a
-      grid % zCell % array = grid % zCell % array * a
-      grid % xVertex % array = grid % xVertex % array * a
-      grid % yVertex % array = grid % yVertex % array * a
-      grid % zVertex % array = grid % zVertex % array * a
-      grid % xEdge % array = grid % xEdge % array * a
-      grid % yEdge % array = grid % yEdge % array * a
-      grid % zEdge % array = grid % zEdge % array * a
-      grid % dvEdge % array = grid % dvEdge % array * a
-      grid % dcEdge % array = grid % dcEdge % array * a
-      grid % areaCell % array = grid % areaCell % array * a**2.0
-      grid % areaTriangle % array = grid % areaTriangle % array * a**2.0
-      grid % kiteAreasOnVertex % array = grid % kiteAreasOnVertex % array * a**2.0
+
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+      call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+      call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+      call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+      call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
+      call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'latVertex', latVertex)
+      call mpas_pool_get_array(meshPool, 'lonVertex', lonVertex)
+      call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
+      call mpas_pool_get_array(meshPool, 'lonEdge', lonEdge)
+
+      call mpas_pool_get_array(statePool, 'u', u, 1)
+      call mpas_pool_get_array(statePool, 'h', h, 1)
+
+      xCell = xCell * a
+      yCell = yCell * a
+      zCell = zCell * a
+      xVertex = xVertex * a
+      yVertex = yVertex * a
+      zVertex = zVertex * a
+      xEdge = xEdge * a
+      yEdge = yEdge * a
+      zEdge = zEdge * a
+      dvEdge = dvEdge * a
+      dcEdge = dcEdge * a
+      areaCell = areaCell * a**2.0
+      areaTriangle = areaTriangle * a**2.0
+      kiteAreasOnVertex = kiteAreasOnVertex * a**2.0
       
 
       !
       ! Initialize wind field
       !
-      allocate(psiVertex(grid % nVertices))
-      do iVtx=1,grid % nVertices
+      allocate(psiVertex(nVertices))
+      do iVtx = 1, nVertices
          psiVertex(iVtx) = -a * u0 * ( &
-                                       sin(grid%latVertex%array(iVtx)) * cos(alpha) - &
-                                       cos(grid%lonVertex%array(iVtx)) * cos(grid%latVertex%array(iVtx)) * sin(alpha) &
-                                     )
+                                 sin(latVertex(iVtx)) * cos(alpha) - &
+                                 cos(lonVertex(iVtx)) * cos(latVertex(iVtx)) * sin(alpha) &
+                               )
       end do
-      do iEdge=1,grid % nEdges
-         state % u % array(1,iEdge) = -1.0 * ( &
-                                               psiVertex(grid%verticesOnEdge%array(2,iEdge)) - &
-                                               psiVertex(grid%verticesOnEdge%array(1,iEdge)) &
-                                             ) / grid%dvEdge%array(iEdge)
+      do iEdge = 1,nEdges
+         u(1,iEdge) = -1.0 * ( &
+                                 psiVertex(verticesOnEdge(2,iEdge)) - &
+                                 psiVertex(verticesOnEdge(1,iEdge)) &
+                               ) / dvEdge(iEdge)
       end do
       deallocate(psiVertex)
 
       !
       ! Generate rotated Coriolis field
       !
-      do iEdge=1,grid % nEdges
-         grid % fEdge % array(iEdge) = 2.0 * omega * &
-                                       ( -cos(grid%lonEdge%array(iEdge)) * cos(grid%latEdge%array(iEdge)) * sin(alpha) + &
-                                         sin(grid%latEdge%array(iEdge)) * cos(alpha) &
-                                       )
+      do iEdge = 1, nEdges
+         fEdge(iEdge) = 2.0 * omega * &
+                            ( -cos(lonEdge(iEdge)) * cos(latEdge(iEdge)) * sin(alpha) + &
+                              sin(latEdge(iEdge)) * cos(alpha) &
+                            )
       end do
-      do iVtx=1,grid % nVertices
-         grid % fVertex % array(iVtx) = 2.0 * omega * &
-                                         (-cos(grid%lonVertex%array(iVtx)) * cos(grid%latVertex%array(iVtx)) * sin(alpha) + &
-                                          sin(grid%latVertex%array(iVtx)) * cos(alpha) &
+      do iVtx = 1, nVertices
+         fVertex(iVtx) = 2.0 * omega * &
+                                         (-cos(lonVertex(iVtx)) * cos(latVertex(iVtx)) * sin(alpha) + &
+                                          sin(latVertex(iVtx)) * cos(alpha) &
                                          )
       end do
 
       !
       ! Initialize height field (actually, fluid thickness field)
       !
-      do iCell=1,grid % nCells
-         state % h % array(1,iCell) = (gh0 - (a * omega * u0 + 0.5 * u0**2.0) * &
-                                             (-cos(grid%lonCell%array(iCell)) * cos(grid%latCell%array(iCell)) * sin(alpha) + &
-                                              sin(grid%latCell%array(iCell)) * cos(alpha) &
+      do iCell = 1, nCells
+         h(1,iCell) = (gh0 - (a * omega * u0 + 0.5 * u0**2.0) * &
+                                             (-cos(lonCell(iCell)) * cos(latCell(iCell)) * sin(alpha) + &
+                                              sin(latCell(iCell)) * cos(alpha) &
                                              )**2.0 &
                                       ) / &
                                       gravity
@@ -265,7 +362,7 @@ module sw_test_cases
    end subroutine sw_test_case_2
 
 
-   subroutine sw_test_case_5(grid, state)
+   subroutine sw_test_case_5(meshPool, statePool)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Setup shallow water test case 5: Zonal Flow over an Isolated Mountain
    !
@@ -276,8 +373,8 @@ module sw_test_cases
 
       implicit none
 
-      type (mesh_type), intent(inout) :: grid
-      type (state_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: meshPool
+      type (mpas_pool_type), intent(inout) :: statePool
 
       real (kind=RKIND), parameter :: u0 = 20.
       real (kind=RKIND), parameter :: gh0 = 5960.0*gravity
@@ -287,106 +384,153 @@ module sw_test_cases
       real (kind=RKIND), parameter :: rr = pii/9.0
       real (kind=RKIND), parameter :: alpha = 0.0
 
-      integer :: iCell, iEdge, iVtx
-      real (kind=RKIND) :: r, u, v
+      integer :: iCell, iEdge, iVtx, nTracers
+      integer, pointer :: nVertices, nEdges, nCells
+      real (kind=RKIND) :: r, v
       real (kind=RKIND), allocatable, dimension(:) :: psiVertex
 
+      integer, dimension(:,:), pointer :: verticesOnEdge
+
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex, xEdge, yEdge, zEdge, dvEdge, dcEdge
+      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
+      real (kind=RKIND), dimension(:), pointer :: latVertex, lonVertex
+      real (kind=RKIND), dimension(:), pointer :: latEdge, lonEdge
+      real (kind=RKIND), dimension(:), pointer :: areaCell, areaTriangle, h_s, fEdge, fVertex
+      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+
+      real (kind=RKIND), dimension(:,:), pointer :: u, h
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
       !
       ! Scale all distances and areas from a unit sphere to one with radius a
       !
-      grid % xCell % array = grid % xCell % array * a
-      grid % yCell % array = grid % yCell % array * a
-      grid % zCell % array = grid % zCell % array * a
-      grid % xVertex % array = grid % xVertex % array * a
-      grid % yVertex % array = grid % yVertex % array * a
-      grid % zVertex % array = grid % zVertex % array * a
-      grid % xEdge % array = grid % xEdge % array * a
-      grid % yEdge % array = grid % yEdge % array * a
-      grid % zEdge % array = grid % zEdge % array * a
-      grid % dvEdge % array = grid % dvEdge % array * a
-      grid % dcEdge % array = grid % dcEdge % array * a
-      grid % areaCell % array = grid % areaCell % array * a**2.0
-      grid % areaTriangle % array = grid % areaTriangle % array * a**2.0
-      grid % kiteAreasOnVertex % array = grid % kiteAreasOnVertex % array * a**2.0
+
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+      call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+      call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+      call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'latVertex', latVertex)
+      call mpas_pool_get_array(meshPool, 'lonVertex', lonVertex)
+      call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
+      call mpas_pool_get_array(meshPool, 'lonEdge', lonEdge)
+      call mpas_pool_get_array(meshPool, 'h_s', h_s)
+      call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+      call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
+
+      call mpas_pool_get_array(statePool, 'u', u, 1)
+      call mpas_pool_get_array(statePool, 'h', h, 1)
+      call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+      nTracers = size(tracers, dim=1)
+
+      xCell = xCell * a
+      yCell = yCell * a
+      zCell = zCell * a
+      xVertex = xVertex * a
+      yVertex = yVertex * a
+      zVertex = zVertex * a
+      xEdge = xEdge * a
+      yEdge = yEdge * a
+      zEdge = zEdge * a
+      dvEdge = dvEdge * a
+      dcEdge = dcEdge * a
+      areaCell = areaCell * a**2.0
+      areaTriangle = areaTriangle * a**2.0
+      kiteAreasOnVertex = kiteAreasOnVertex * a**2.0
 
       !
       ! Initialize wind field
       !
-      allocate(psiVertex(grid % nVertices))
-      do iVtx=1,grid % nVertices
+      allocate(psiVertex(nVertices))
+      do iVtx = 1, nVertices
          psiVertex(iVtx) = -a * u0 * ( &
-                                       sin(grid%latVertex%array(iVtx)) * cos(alpha) - &
-                                       cos(grid%lonVertex%array(iVtx)) * cos(grid%latVertex%array(iVtx)) * sin(alpha) &
+                                       sin(latVertex(iVtx)) * cos(alpha) - &
+                                       cos(lonVertex(iVtx)) * cos(latVertex(iVtx)) * sin(alpha) &
                                      )
       end do
-      do iEdge=1,grid % nEdges
-         state % u % array(1,iEdge) = -1.0 * ( &
-                                               psiVertex(grid%verticesOnEdge%array(2,iEdge)) - &
-                                               psiVertex(grid%verticesOnEdge%array(1,iEdge)) &
-                                             ) / grid%dvEdge%array(iEdge)
+      do iEdge = 1, nEdges
+         u(1,iEdge) = -1.0 * ( &
+                                               psiVertex(verticesOnEdge(2,iEdge)) - &
+                                               psiVertex(verticesOnEdge(1,iEdge)) &
+                                             ) / dvEdge(iEdge)
       end do
       deallocate(psiVertex)
 
       !
       ! Generate rotated Coriolis field
       !
-      do iEdge=1,grid % nEdges
-         grid % fEdge % array(iEdge) = 2.0 * omega * &
-                                        (-cos(grid%lonEdge%array(iEdge)) * cos(grid%latEdge%array(iEdge)) * sin(alpha) + &
-                                         sin(grid%latEdge%array(iEdge)) * cos(alpha) &
+      do iEdge = 1, nEdges
+         fEdge(iEdge) = 2.0 * omega * &
+                                        (-cos(lonEdge(iEdge)) * cos(latEdge(iEdge)) * sin(alpha) + &
+                                          sin(latEdge(iEdge)) * cos(alpha) &
                                         )
       end do
-      do iVtx=1,grid % nVertices
-         grid % fVertex % array(iVtx) = 2.0 * omega * &
-                                         (-cos(grid%lonVertex%array(iVtx)) * cos(grid%latVertex%array(iVtx)) * sin(alpha) + &
-                                          sin(grid%latVertex%array(iVtx)) * cos(alpha) &
+      do iVtx = 1, nVertices
+         fVertex(iVtx) = 2.0 * omega * &
+                                         (-cos(lonVertex(iVtx)) * cos(latVertex(iVtx)) * sin(alpha) + &
+                                           sin(latVertex(iVtx)) * cos(alpha) &
                                          )
       end do
 
       !
       ! Initialize mountain
       !
-      do iCell=1,grid % nCells
-         if (grid % lonCell % array(iCell) < 0.0) grid % lonCell % array(iCell) = grid % lonCell % array(iCell) + 2.0 * pii
-         r = sqrt(min(rr**2.0, (grid % lonCell % array(iCell) - lambda_c)**2.0 + (grid % latCell % array(iCell) - theta_c)**2.0))
-         grid % h_s % array(iCell) = hs0 * (1.0 - r/rr)
+      do iCell = 1, nCells
+         if (lonCell(iCell) < 0.0) lonCell(iCell) = lonCell(iCell) + 2.0 * pii
+         r = sqrt(min(rr**2.0, (lonCell(iCell) - lambda_c)**2.0 + (latCell(iCell) - theta_c)**2.0))
+         h_s(iCell) = hs0 * (1.0 - r/rr)
       end do
 
       !
       ! Initialize tracer fields
       !
-      do iCell=1,grid % nCells
-         r = sqrt(min(rr**2.0, (grid % lonCell % array(iCell) - lambda_c)**2.0 + (grid % latCell % array(iCell) - theta_c)**2.0))
-         state % tracers % array(1,1,iCell) = 1.0 - r/rr
+      do iCell = 1, nCells
+         r = sqrt(min(rr**2.0, (lonCell(iCell) - lambda_c)**2.0 + (latCell(iCell) - theta_c)**2.0))
+         tracers(1,1,iCell) = 1.0 - r/rr
       end do
-      if (grid%nTracers > 1) then
-         do iCell=1,grid % nCells
-            r = sqrt(min(rr**2.0, (grid % lonCell % array(iCell) - lambda_c)**2.0 + &
-                         (grid % latCell % array(iCell) - theta_c - pii/6.0)**2.0 &
+      if (nTracers > 1) then
+         do iCell = 1, nCells
+            r = sqrt(min(rr**2.0, (lonCell(iCell) - lambda_c)**2.0 + &
+                         (latCell(iCell) - theta_c - pii/6.0)**2.0 &
                         ) &
                     )
-            state % tracers % array(2,1,iCell) = 1.0 - r/rr
+            tracers(2,1,iCell) = 1.0 - r/rr
          end do
       end if
 
       !
       ! Initialize height field (actually, fluid thickness field)
       !
-      do iCell=1,grid % nCells
-         state % h % array(1,iCell) = (gh0 - (a * omega * u0 + 0.5 * u0**2.0) * &
-                                         (-cos(grid%lonCell%array(iCell)) * cos(grid%latCell%array(iCell)) * sin(alpha) + &
-                                          sin(grid%latCell%array(iCell)) * cos(alpha) &
+      do iCell = 1, nCells
+         h(1,iCell) = (gh0 - (a * omega * u0 + 0.5 * u0**2.0) * &
+                                         (-cos(lonCell(iCell)) * cos(latCell(iCell)) * sin(alpha) + &
+                                           sin(latCell(iCell)) * cos(alpha) &
                                          )**2.0 &
                                       ) / &
                                       gravity
-         state % h % array(1,iCell) = state % h % array(1,iCell) - grid % h_s % array(iCell)
+         h(1,iCell) = h(1,iCell) - h_s(iCell)
       end do
 
    end subroutine sw_test_case_5
 
 
-   subroutine sw_test_case_6(grid, state)
+   subroutine sw_test_case_6(meshPool, statePool)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Setup shallow water test case 6: Rossby-Haurwitz Wave
    !
@@ -397,61 +541,106 @@ module sw_test_cases
 
       implicit none
 
-      type (mesh_type), intent(inout) :: grid
-      type (state_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: meshPool
+      type (mpas_pool_type), intent(inout) :: statePool
 
       real (kind=RKIND), parameter :: h0 = 8000.0
       real (kind=RKIND), parameter :: w = 7.848e-6
       real (kind=RKIND), parameter :: K = 7.848e-6
       real (kind=RKIND), parameter :: R = 4.0
 
-      integer :: iCell, iEdge, iVtx
-      real (kind=RKIND) :: u, v
+      integer :: iCell, iEdge, iVtx, nTracers
+      integer, pointer :: nVertices, nEdges, nCells
+      real (kind=RKIND) :: v
       real (kind=RKIND), allocatable, dimension(:) :: psiVertex
+
+      integer, dimension(:,:), pointer :: verticesOnEdge
+
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex, xEdge, yEdge, zEdge, dvEdge, dcEdge
+      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
+      real (kind=RKIND), dimension(:), pointer :: latVertex, lonVertex
+      real (kind=RKIND), dimension(:), pointer :: areaCell, areaTriangle, h_s
+      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+
+      real (kind=RKIND), dimension(:,:), pointer :: u, h
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+
 
 
       !
       ! Scale all distances and areas from a unit sphere to one with radius a
       !
-      grid % xCell % array = grid % xCell % array * a
-      grid % yCell % array = grid % yCell % array * a
-      grid % zCell % array = grid % zCell % array * a
-      grid % xVertex % array = grid % xVertex % array * a
-      grid % yVertex % array = grid % yVertex % array * a
-      grid % zVertex % array = grid % zVertex % array * a
-      grid % xEdge % array = grid % xEdge % array * a
-      grid % yEdge % array = grid % yEdge % array * a
-      grid % zEdge % array = grid % zEdge % array * a
-      grid % dvEdge % array = grid % dvEdge % array * a
-      grid % dcEdge % array = grid % dcEdge % array * a
-      grid % areaCell % array = grid % areaCell % array * a**2.0
-      grid % areaTriangle % array = grid % areaTriangle % array * a**2.0
-      grid % kiteAreasOnVertex % array = grid % kiteAreasOnVertex % array * a**2.0
+
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+      call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+      call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+      call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'latVertex', latVertex)
+      call mpas_pool_get_array(meshPool, 'lonVertex', lonVertex)
+      call mpas_pool_get_array(meshPool, 'h_s', h_s)
+
+      call mpas_pool_get_array(statePool, 'u', u, 1)
+      call mpas_pool_get_array(statePool, 'h', h, 1)
+      call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+      nTracers = size(tracers, dim=1)
+
+
+      xCell = xCell * a
+      yCell = yCell * a
+      zCell = zCell * a
+      xVertex = xVertex * a
+      yVertex = yVertex * a
+      zVertex = zVertex * a
+      xEdge = xEdge * a
+      yEdge = yEdge * a
+      zEdge = zEdge * a
+      dvEdge = dvEdge * a
+      dcEdge = dcEdge * a
+      areaCell = areaCell * a**2.0
+      areaTriangle = areaTriangle * a**2.0
+      kiteAreasOnVertex = kiteAreasOnVertex * a**2.0
 
       !
       ! Initialize wind field
       !
-      allocate(psiVertex(grid % nVertices))
-      do iVtx=1,grid % nVertices
-         psiVertex(iVtx) = -a * a * w * sin(grid%latVertex%array(iVtx)) + &
-                            a *a * K * (cos(grid%latVertex%array(iVtx))**R) * &
-                            sin(grid%latVertex%array(iVtx)) * cos(R * grid%lonVertex%array(iVtx))
+      allocate(psiVertex(nVertices))
+      do iVtx = 1, nVertices
+         psiVertex(iVtx) = -a * a * w * sin(latVertex(iVtx)) + &
+                            a *a * K * (cos(latVertex(iVtx))**R) * &
+                            sin(latVertex(iVtx)) * cos(R * lonVertex(iVtx))
       end do
-      do iEdge=1,grid % nEdges
-         state % u % array(1,iEdge) = -1.0 * ( &
-                                               psiVertex(grid%verticesOnEdge%array(2,iEdge)) - &
-                                               psiVertex(grid%verticesOnEdge%array(1,iEdge)) &
-                                             ) / grid%dvEdge%array(iEdge)
+      do iEdge = 1, nEdges
+         u(1,iEdge) = -1.0 * ( &
+                                               psiVertex(verticesOnEdge(2,iEdge)) - &
+                                               psiVertex(verticesOnEdge(1,iEdge)) &
+                                             ) / dvEdge(iEdge)
       end do
       deallocate(psiVertex)
 
       !
       ! Initialize height field (actually, fluid thickness field)
       !
-      do iCell=1,grid % nCells
-         state % h % array(1,iCell) = (gravity * h0 + a*a*aa(grid%latCell%array(iCell)) + &
-                                                      a*a*bb(grid%latCell%array(iCell)) * cos(R*grid%lonCell%array(iCell)) + &
-                                                      a*a*cc(grid%latCell%array(iCell)) * cos(2.0*R*grid%lonCell%array(iCell)) &
+      do iCell = 1, nCells
+         h(1,iCell) = (gravity * h0 + a*a*aa(latCell(iCell)) + &
+                                                      a*a*bb(latCell(iCell)) * cos(R*lonCell(iCell)) + &
+                                                      a*a*cc(latCell(iCell)) * cos(2.0*R*lonCell(iCell)) &
                                       ) / gravity
       end do
 

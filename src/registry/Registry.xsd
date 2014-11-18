@@ -49,6 +49,65 @@
 						<xs:attribute name="name"  type="xs:string" use="required"/>
 					</xs:complexType>
 				</xs:element>
+				<!-- The streams element contains all I/O stream definitions for a core. -->
+				<xs:element name="streams"  maxOccurs="unbounded" >
+					<xs:complexType>
+						<xs:sequence>
+							<!-- The var element defines a variable that is member of the I/O stream. -->
+							<xs:element name="var"  maxOccurs="unbounded" minOccurs="0" >
+								<xs:complexType>
+									<!-- The name attribute is the name of the variable in the file, not the name of the variable in the code. -->
+									<xs:attribute name="name"  type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:sequence>
+							<!-- The var_array element defines a variable array that is member of the I/O stream. -->
+							<xs:element name="var_array"  maxOccurs="unbounded" minOccurs="0" >
+								<xs:complexType>
+									<!-- The name attribute is the name of the variable array in the file, not the name of the variable array in the code. -->
+									<xs:attribute name="name"  type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:sequence>
+							<!-- The var_struct element defines a variable that is member of the I/O stream. -->
+							<xs:element name="var_struct"  maxOccurs="unbounded" minOccurs="0" >
+								<xs:complexType>
+									<!-- The name attribute is the name of the variable structure in the file, not the name of the variable structure in the code. -->
+									<xs:attribute name="name"  type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:sequence>
+							<!-- The stream element defines a stream that is expanded within the I/O stream. -->
+							<xs:element name="stream"  maxOccurs="unbounded" minOccurs="0" >
+								<xs:complexType>
+									<!-- The name attribute is the name of the stream to expand. -->
+									<xs:attribute name="name"  type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<!-- The name attribute is the name of the stream, which can be referenced by other streams. -->
+						<xs:attribute name="name"  type="xs:string" use="required"/>
+						<!-- The type attribute defines the type of the stream. Valid options are input, ouput, none, and input;output -->
+						<xs:attribute name="type"  type="xs:string" use="required"/>
+						<!-- The filename_template attribute defines the template used for either opening files, or creating new files. -->
+						<xs:attribute name="filename_template"  type="xs:string" use="required"/>
+						<!-- The filename_interval attribute defines the interval between two subsequent files. Valid options are "YY-MM-DD_hh:mm:ss" or "none"-->
+						<xs:attribute name="filename_interval"  type="xs:string" use="optional"/>
+						<!-- The immutable attribute defines if this stream is immutable or not. Valid options are "true" or "false", and "false" is the default. -->
+						<xs:attribute name="immutable"  type="xs:string" use="optional"/>
+						<!-- The immutable attribute defines if this stream is immutable or not. Valid options are "true" or "false", and "false" is the default. -->
+						<xs:attribute name="immutable"  type="xs:string" use="optional"/>
+						<!-- The output_interval is required if type contains output. It defines the standard interval for how often the stream manager should handle this stream.
+							 Valid options are "YYYY-MM-DD_hh:mm:ss", "initial_only", or "none" -->
+						<xs:attribute name="output_interval"  type="xs:string" use="optional"/>
+						<!-- The input_interval is required if type contains output. It defines the standard interval for how often the stream manager should handle this stream.
+							 Valid options are "YYYY-MM-DD_hh:mm:ss", "initial_only", or "none" -->
+						<xs:attribute name="input_interval"  type="xs:string" use="optional"/>
+					</xs:complexType>
+				</xs:element>
 				<!-- The var_struct element defines a grouping of variables. This is similar to mesh, or state and lives at the domain % blocklist level. -->
 				<xs:element name="var_struct"  maxOccurs="unbounded" >
 					<xs:complexType>
@@ -66,9 +125,7 @@
 												<xs:attribute name="name"  type="xs:string" use="required"/>
 												<!-- The array_group attribute is used to group variables within the var_array for ease of use. -->
 												<xs:attribute name="array_group"  type="xs:string" use="required"/>
-												<!-- The streams attribute defines the streams this variable is included in. Allowable values are omitted, i, r, o and any combination of i, r, and o. -->
-												<xs:attribute name="streams"  type="xs:string" use="optional"/>
-												<!-- The name_in_code attribute defines the name of the variable in the code, if it should be different then in the input/output/restart streams. -->
+												<!-- The name_in_code attribute defines the name of the variable in the code, if it should be different than in the input/output/restart streams. -->
 												<xs:attribute name="name_in_code"  type="xs:string" use="optional"/>
 												<!-- The units attribute defines the units of the particular variable -->
 												<xs:attribute name="units"  type="xs:string" use="optional"/>
@@ -102,8 +159,6 @@
 									<xs:attribute name="type"  type="xs:string" use="required"/>
 									<!-- The dimensions attribute defines the dimensions of the variable. -->
 									<xs:attribute name="dimensions"  type="xs:string" use="required"/>
-									<!-- The streams attribute defines the streams this variable is included in. -->
-									<xs:attribute name="streams"  type="xs:string" use="optional"/>
 									<!-- The name_in_code attribute defines the name of the variable within MPAS (if different from name). -->
 									<xs:attribute name="name_in_code"  type="xs:string" use="optional"/>
 									<!-- The units attribute defines the units of the variable. -->

@@ -25,6 +25,7 @@ module li_sia
    use mpas_configure
    use mpas_dmpar
    use li_mask
+   use li_setup
 
    implicit none
    private
@@ -172,7 +173,7 @@ contains
 !>  on an edge using the average of the two neighboring cells (2nd order).
 !
 !-----------------------------------------------------------------------
-   subroutine li_sia_solve(mesh, state, err)
+   subroutine li_sia_solve(meshPool, statePool, timeLevel, err)
       use mpas_constants, only: gravity
 
       !-----------------------------------------------------------------
@@ -181,8 +182,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      integer, intent(in) :: &
+         timeLevel     !< Input: time level from which to calculate velocity
 
       !-----------------------------------------------------------------
       !
@@ -190,8 +194,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         state          !< Input: state information 
+      type (mpas_pool_type), intent(inout) :: &
+         statePool          !< Input: state information 
 
       !-----------------------------------------------------------------
       !
@@ -207,39 +211,47 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), pointer :: thickness, layerCenterSigma, dcEdge
+      real (kind=RKIND), dimension(:), pointer :: thickness, layerCenterSigma, dcEdge, dvEdge, upperSurface, upperSurfaceVertex
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
-      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
       integer, dimension(:), pointer :: edgeMask
-      integer :: nVertLevels, nEdges, iLevel, iEdge, cell1, cell2
+      integer, pointer :: nVertLevels, nEdges, nVertices, vertexDegree
+      integer :: iLevel, iEdge, iCell, iVertex, cell1, cell2, cellIndex
       real (kind=RKIND) :: basalVelocity, slopeOnEdge, &
-               layerCenterHeightOnEdge, thicknessEdge
-      real (kind=RKIND) :: rhoi         ! ice density
-      real (kind=RKIND) :: ratefactor   ! flow law parameter, A
-      real (kind=RKIND) :: n            ! flow law exponent, n
+               normalSlopeOnEdge, tangentSlopeOnEdge,  &
+               layerCenterHeightOnEdge, thicknessEdge, hVertexAccum
+      real (kind=RKIND), pointer :: rhoi         ! ice density
+      real (kind=RKIND), pointer :: ratefactor   ! flow law parameter, A
+      real (kind=RKIND), pointer :: n            ! flow law exponent, n
 
       err = 0
 
       ! Set needed variables and pointers
-      nEdges = mesh % nEdges
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
-      dcEdge => mesh % dcEdge % array
-      cellsOnEdge => mesh % cellsOnEdge % array
-      layerCenterSigma => mesh % layerCenterSigma % array
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
 
-      normalVelocity => state % normalVelocity % array
-      thickness => state % thickness % array
-      edgeMask => state % edgeMask % array
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
+
 
       ! Get parameters specified in the namelist
-      rhoi = config_ice_density
-      n = config_flowLawExponent
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
+      call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', n)
+      call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', ratefactor)  ! units of s^{-1} Pa^{-n}
       ! Calculate ratefactor (A) at edge - TODO This should be calculated external to this subroutine and as a function of temperature
-      ratefactor = config_default_flowParamA  ! units of s^{-1} Pa^{-n}
 
       basalVelocity = 0.0_RKIND  ! Assume no sliding
-
 
       ! Loop over edges
       do iEdge = 1, nEdges
@@ -250,7 +262,9 @@ contains
              cell2 = cellsOnEdge(2,iEdge)
              ! Calculate slope at edge
              ! This could/should be calculated externally to this subroutine
-             slopeOnEdge = (thickness(cell1) - thickness(cell2) ) / dcEdge(iEdge) 
+             normalSlopeOnEdge = (upperSurface(cell1) - upperSurface(cell2) ) / dcEdge(iEdge) 
+             tangentSlopeOnEdge = ( upperSurfaceVertex(verticesOnEdge(1,iEdge)) - upperSurfaceVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
+             slopeOnEdge = (normalSlopeOnEdge**2 + tangentSlopeOnEdge**2)**0.5
              ! Calculate thickness on edge - 2nd order
              thicknessEdge = (thickness(cell1) + thickness(cell2) ) * 0.5_RKIND
              ! Loop over layers
@@ -259,13 +273,13 @@ contains
                 layerCenterHeightOnEdge = thicknessEdge * (1.0_RKIND - layerCenterSigma(iLevel) )
                 ! Calculate SIA velocity
                 normalVelocity(iLevel,iEdge) = basalVelocity + &
-                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeOnEdge**n * &
+                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeOnEdge**(n-1) * normalSlopeOnEdge * &
                     (thicknessEdge**(n+1) - (thicknessEdge - layerCenterHeightOnEdge)**(n+1))
              end do  ! Levels
+         else
+             normalVelocity(:,iEdge) = 0.0_RKIND
          endif
       end do  ! edges  
-      
-
 
      ! === error check
      if (err > 0) then

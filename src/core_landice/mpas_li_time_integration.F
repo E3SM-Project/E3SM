@@ -26,6 +26,7 @@ module li_time_integration
    use mpas_constants
    use mpas_dmpar
    use li_time_integration_fe
+   use li_setup
 
    implicit none
    private
@@ -64,9 +65,8 @@ module li_time_integration
 !> \date    20 April 2012
 !> \details
 !>  This routine advances model state forward in time by the specified time step.
-!> Input: domain - current model state in time level 1 (e.g., time_levs(1)state%h(:,:)) 
-!>                 plus mesh data
-!> Output: domain - upon exit, time level 2 (e.g., time_levs(2)%state%h(:,:)) contains 
+!> Input: domain - current model state in time level 1 plus mesh data
+!> Output: domain - upon exit, time level 2 contains
 !>                  model state advanced forward in time by dt seconds
 !-----------------------------------------------------------------------
    subroutine li_timestep(domain, dt, timeStamp, err)
@@ -99,11 +99,15 @@ module li_time_integration
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
-      type (state_type), pointer :: state
+      type (mpas_pool_type), pointer :: statePool
+      character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: config_time_integration
       integer :: err_tmp
 
       err = 0
       err_tmp = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
 
       !write(*,*) 'Using ', trim(config_time_integration), ' time integration.'
       select case (config_time_integration)
@@ -122,7 +126,9 @@ module li_time_integration
       block => domain % blocklist
       do while (associated(block))
          ! Assign the time stamp for this time step
-         block % state % time_levs(2) % state % xtime % scalar = timeStamp
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_array(statePool, 'xtime', xtime, timeLevel=1)  ! xtime only has one time level, but stating is explicitly here to avoid confusion later.
+         xtime = timeStamp
 
 !         ! Abort the simulation if NaNs occur in the velocity field
 !         if (isNaN(sum(block % state % time_levs(2) % state % u % array))) then

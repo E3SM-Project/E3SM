@@ -1,16 +1,17 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_atm_time_integration.o \
-       mpas_atm_advection.o
+OBJS = mpas_atm_time_integration.o
 
 all: $(OBJS)
 
 mpas_atm_time_integration.o: 
 
-mpas_atm_advection.o: 
 
 clean:
 	$(RM) *.o *.mod *.f90
+	@# Certain systems with intel compilers generate *.i files
+	@# This removes them during the clean process
+	$(RM) *.i
 
 .F.o:
 	$(RM) $@ $*.mod

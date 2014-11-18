@@ -310,6 +310,8 @@ module init_atm_read_met
                                                     fg_data % deltalat, &
                                                     fg_data % deltalon, &
                                                     fg_data % earth_radius
+            fg_data % dx = 0.0
+            fg_data % dy = 0.0
 
          ! Mercator
          else if (fg_data % iproj == 1) then
@@ -344,6 +346,8 @@ module init_atm_read_met
                                                     fg_data % deltalat, &
                                                     fg_data % deltalon, &
                                                     fg_data % earth_radius
+            fg_data % dx = 0.0
+            fg_data % dy = 0.0
 
          ! Polar stereographic
          else if (fg_data % iproj == 5) then

@@ -7,7 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_control
- use mpas_configure
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_utilities
@@ -15,7 +15,6 @@
  implicit none
  private
  public:: physics_namelist_check, &
-          physics_idealized_init, &
           physics_registry_init
 
  logical,public:: moist_physics
@@ -39,18 +38,56 @@
 !>    * removed the namelist option config_eddy_scheme and associated sourcecode.
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
 !>    * removed controls to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in 
+!>      core_init_atmosphere.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-08-11.
+!>    * renamed config_conv_deep_scheme to config_convection_scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+
 
  contains
 
+
 !==================================================================================================
- subroutine physics_namelist_check
+ subroutine physics_namelist_check(mesh,configs)
 !==================================================================================================
 
- write(0,*)
- write(0,*) '--- enter subroutine physics_namelist_check:'
+!input arguments:
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: config_microp_scheme,     &
+                                  config_convection_scheme, &
+                                  config_lsm_scheme,        &
+                                  config_pbl_scheme,        &
+                                  config_gwdo_scheme,       &
+                                  config_radt_cld_scheme,   &
+                                  config_radt_lw_scheme,    &
+                                  config_radt_sw_scheme,    &
+                                  config_sfclayer_scheme
+
+!--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
+ call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
+ call mpas_pool_get_config(configs,'config_pbl_scheme'       ,config_pbl_scheme       )
+ call mpas_pool_get_config(configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme'  ,config_radt_cld_scheme  )
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
+
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_namelist_check:'
  write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
- write(0,*) '    config_conv_deep_scheme    = ', trim(config_conv_deep_scheme)
+ write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
  write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
  write(0,*) '    config_pbl_scheme          = ', trim(config_pbl_scheme)
  write(0,*) '    config_gwdo_scheme         = ', trim(config_gwdo_scheme)
@@ -70,13 +107,13 @@
 
  endif
 
-!deep convection scheme:
- if(.not. (config_conv_deep_scheme .eq. 'off'                  .or. &
-           config_conv_deep_scheme .eq. 'kain_fritsch'         .or. &
-           config_conv_deep_scheme .eq. 'tiedtke'              )) then
+!convection scheme:
+ if(.not. (config_convection_scheme .eq. 'off'          .or. &
+           config_convection_scheme .eq. 'kain_fritsch' .or. &
+           config_convection_scheme .eq. 'tiedtke'      )) then
 
-    write(mpas_err_message,'(A,A10)') 'illegal value for config_deep_conv_scheme: ', &
-          trim(config_conv_deep_scheme)
+    write(mpas_err_message,'(A,A10)') 'illegal value for config_convection_scheme: ', &
+          trim(config_convection_scheme)
     call physics_error_fatal(mpas_err_message)
 
  endif
@@ -182,31 +219,47 @@
 !checks if any physics process is called. if not, return:
  moist_physics = .true.
  
- if(config_microp_scheme       .eq. 'off' .and. &
-    config_conv_deep_scheme    .eq. 'off' .and. &
-    config_lsm_scheme          .eq. 'off' .and. & 
-    config_pbl_scheme          .eq. 'off' .and. & 
-    config_radt_lw_scheme      .eq. 'off' .and. &
-    config_radt_sw_scheme      .eq. 'off' .and. &
-    config_sfclayer_scheme     .eq. 'off') moist_physics = .false.
+ if(config_microp_scheme     .eq. 'off' .and. &
+    config_convection_scheme .eq. 'off' .and. &
+    config_lsm_scheme        .eq. 'off' .and. &
+    config_pbl_scheme        .eq. 'off' .and. &
+    config_radt_lw_scheme    .eq. 'off' .and. &
+    config_radt_sw_scheme    .eq. 'off' .and. &
+    config_sfclayer_scheme   .eq. 'off') moist_physics = .false.
 
- write(0,*) '--- end subroutine physics_namelist_check:'
+! write(0,*) '--- end subroutine physics_namelist_check:'
 
  end subroutine physics_namelist_check
 
 !==================================================================================================
- subroutine physics_registry_init(config_do_restart,mesh,sfc_input)
+ subroutine physics_registry_init(mesh,configs,sfc_input)
 !==================================================================================================
 
-!input and output arguments:
- logical,intent(in):: config_do_restart
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(inout):: sfc_input
+!input and inout arguments:
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(inout):: sfc_input
+
+!local pointers:
+ logical,pointer:: config_do_restart
+ character(len=StrKIND),pointer:: config_lsm_scheme
+ integer,pointer:: nCells
+ integer,dimension(:),pointer:: landmask
+
+ real(kind=RKIND),dimension(:,:),pointer:: dzs
 
 !local variables:
  integer:: iCell
- 
+
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
+ call mpas_pool_get_config(configs,'config_lsm_scheme',config_lsm_scheme)
+
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+
+ call mpas_pool_get_array(sfc_input,'landmask',landmask)
+ call mpas_pool_get_array(sfc_input,'dzs'     , dzs    )
 
 !initialization of input variables, if needed:
 
@@ -216,12 +269,12 @@
 
        case("noah")
        !initialize the thickness of the soil layers for the Noah scheme:
-          do iCell = 1, mesh % nCells
-             if(sfc_input % landmask % array(iCell) == 1) then  
-                sfc_input % dzs % array(1,iCell) = 0.10
-                sfc_input % dzs % array(2,iCell) = 0.30
-                sfc_input % dzs % array(3,iCell) = 0.60
-                sfc_input % dzs % array(4,iCell) = 1.00
+          do iCell = 1, nCells
+             if(landmask(iCell) == 1) then  
+                dzs(1,iCell) = 0.10_RKIND
+                dzs(2,iCell) = 0.30_RKIND
+                dzs(3,iCell) = 0.60_RKIND
+                dzs(4,iCell) = 1.00_RKIND
              endif
           enddo
 
@@ -232,62 +285,6 @@
  endif
 
  end subroutine physics_registry_init
-
-!==================================================================================================
- subroutine physics_idealized_init(mesh,sfc_input)
-!==================================================================================================
-
-!input and output arguments:
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(inout):: sfc_input
-
-!local variables:
- integer:: iCell,iMonth,iSoil
- 
-!--------------------------------------------------------------------------------------------------
-
-!initialization of surface input variables that are not needed if we run the current set of
-!idealized test cases:
-
- do iCell = 1, mesh % nCells
-    !terrain,soil type, and vegetation:
-    sfc_input % ter      % array(iCell) = 0.
-    sfc_input % xice     % array(iCell) = 0.
-    sfc_input % landmask % array(iCell) = 0
-    sfc_input % ivgtyp   % array(iCell) = 0
-    sfc_input % isltyp   % array(iCell) = 0
-    sfc_input % shdmin   % array(iCell) = 0.
-    sfc_input % shdmax   % array(iCell) = 0.
-    sfc_input % vegfra   % array(iCell) = 0.
-
-    !snow coverage:    
-    sfc_input % snow     % array(iCell) = 0.
-    sfc_input % snowc    % array(iCell) = 0.
-    sfc_input % snoalb   % array(iCell) = 0.08 
-    
-    !surface and sea-surface temperatures:
-    sfc_input % skintemp % array(iCell) = 288.0
-    sfc_input % sst      % array(iCell) = 288.0
-    
-    !soil layers:
-    sfc_input % tmn % array(iCell) = 288.0
-    do iSoil = 1, mesh % nSoilLevels
-       sfc_input % tslb % array(iSoil,iCell)   = 288.0
-       sfc_input % smcrel % array(iSoil,iCell) =   0.0
-       sfc_input % sh2o   % array(iSoil,iCell) =   0.0
-       sfc_input % smois  % array(iSoil,iCell) =   0.0
-       sfc_input % dzs    % array(iSoil,iCell) =   0.0
-    enddo
-
-    !monthly climatological surface albedo and greeness fraction:
-    do iMonth = 1, mesh % nMonths
-       sfc_input % albedo12m % array(iMonth,iCell) = 0.08
-       sfc_input % greenfrac % array(iMonth,iCell) = 0.
-    enddo
-
- enddo   
-
- end subroutine physics_idealized_init
 
 !==================================================================================================
  end module mpas_atmphys_control

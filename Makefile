@@ -1,5 +1,4 @@
-#MODEL_FORMULATION = -DNCAR_FORMULATION
-MODEL_FORMULATION = -DLANL_FORMULATION
+MODEL_FORMULATION = 
 
 
 dummy:
@@ -31,6 +30,20 @@ ftn:
 	"FFLAGS_OPT = -i4 -r8 -gopt -O2 -Mvect=nosse -Kieee -convert big_endian" \
 	"CFLAGS_OPT = -fast" \
 	"LDFLAGS_OPT = " \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+
+titan-cray:
+	( $(MAKE) all \
+	"FC_PARALLEL = ftn" \
+	"CC_PARALLEL = cc" \
+	"FC_SERIAL = ftn" \
+	"CC_SERIAL = gcc" \
+	"FFLAGS_OPT = -s integer32 -default64 -O3 -f free -N 255 -em -ef" \
+	"CFLAGS_OPT = -O3" \
+	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
@@ -108,7 +121,7 @@ ifort-gcc:
 	"CFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -g -traceback" \
+	"CFLAGS_DEBUG = -g" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -197,7 +210,7 @@ intel-nersc:
 	"CC_PARALLEL = cc" \
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
-	"FFLAGS_OPT = -real-size 64 -O3 -FR" \
+	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
 	"CFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
@@ -226,28 +239,56 @@ CPPINCLUDES =
 FCINCLUDES = 
 LIBS = 
 ifneq ($(wildcard $(PIO)/lib), ) # Check for newer PIO version
-	CPPINCLUDES = -I$(NETCDF)/include -I$(PIO)/include -I$(PNETCDF)/include
-	FCINCLUDES = -I$(NETCDF)/include -I$(PIO)/include -I$(PNETCDF)/include
-	LIBS = -L$(PIO)/lib -L$(PNETCDF)/lib -L$(NETCDF)/lib -lpio -lpnetcdf
+	CPPINCLUDES = -I$(PIO)/include
+	FCINCLUDES = -I$(PIO)/include
+	LIBS = -L$(PIO)/lib -lpio
 else
-	CPPINCLUDES = -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-	FCINCLUDES = -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-	LIBS = -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -lpio -lpnetcdf
+	CPPINCLUDES = -I$(PIO)
+	FCINCLUDES = -I$(PIO)
+	LIBS = -L$(PIO) -lpio
 endif
 
-NCLIB = -lnetcdf
-NCLIBF = -lnetcdff
-ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
-	LIBS += $(NCLIBF)
-endif # CHECK FOR NETCDF4
-LIBS += $(NCLIB)
+ifneq "$(PNETCDF)" ""
+	CPPINCLUDES += -I$(PNETCDF)/include
+	FCINCLUDES += -I$(PNETCDF)/include
+	LIBS += -L$(PNETCDF)/lib -lpnetcdf
+endif
+
+ifneq "$(NETCDF)" ""
+	CPPINCLUDES += -I$(NETCDF)/include
+	FCINCLUDES += -I$(NETCDF)/include
+	LIBS += -L$(NETCDF)/lib
+	NCLIB = -lnetcdf
+	NCLIBF = -lnetcdff
+	ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
+		LIBS += $(NCLIBF)
+	endif # CHECK FOR NETCDF4
+	LIBS += $(NCLIB)
+endif
 
 RM = rm -f
 CPP = cpp -P -traditional
 RANLIB = ranlib
 
-
 ifdef CORE
+
+ifneq ($(wildcard src/core_$(CORE)), ) # CHECK FOR EXISTENCE OF CORE DIRECTORY
+
+ifneq ($(wildcard src/core_$(CORE)/build_options.mk), ) # Check for build_options.mk
+include src/core_$(CORE)/build_options.mk
+else # ELSE Use Default Options
+EXE_NAME=$(CORE)_model
+NAMELIST_SUFFIX=$(CORE)
+endif
+
+override CPPFLAGS += -DMPAS_NAMELIST_SUFFIX=$(NAMELIST_SUFFIX)
+override CPPFLAGS += -DMPAS_EXE_NAME=$(EXE_NAME)
+
+else # ELSE CORE DIRECTORY CHECK
+
+report_builds: all
+
+endif # END CORE DIRECTORY CHECK
 
 ifeq "$(DEBUG)" "true"
 
@@ -302,7 +343,6 @@ else
 	GEN_F90_MESSAGE="MPAS was built with .F files."
 endif
 
-
 ifneq ($(wildcard .mpas_core_*), ) # CHECK FOR BUILT CORE
 
 ifneq ($(wildcard .mpas_core_$(CORE)), ) # CHECK FOR SAME CORE AS ATTEMPTED BUILD.
@@ -326,9 +366,31 @@ else
 	CONTINUE=true
 endif # END IF BUILT CORE CHECK
 
+ifneq ($(wildcard namelist.$(NAMELIST_SUFFIX)), ) # Check for generated namelist file.
+	NAMELIST_MESSAGE="A default namelist file (namelist.$(NAMELIST_SUFFIX).defaults) has been generated, but namelist.$(NAMELIST_SUFFIX) has not been modified."
+else
+	NAMELIST_MESSAGE="A default namelist file (namelist.$(NAMELIST_SUFFIX).defaults) has been generated and copied to namelist.$(NAMELIST_SUFFIX)."
+endif
+
+ifneq ($(wildcard streams.$(NAMELIST_SUFFIX)), ) # Check for generated streams file.
+	STREAM_MESSAGE="A default streams file (streams.$(NAMELIST_SUFFIX).defaults) has been generated, but streams.$(NAMELIST_SUFFIX) has not been modified."
+else
+	STREAM_MESSAGE="A default streams file (streams.$(NAMELIST_SUFFIX).defaults) has been generated and copied to streams.$(NAMELIST_SUFFIX)."
+endif
+
+
 ifeq "$(findstring clean, $(MAKECMDGOALS))" "clean" # CHECK FOR CLEAN TARGET
 	override AUTOCLEAN=false
 endif # END OF CLEAN TARGET CHECK
+
+VER=$(shell git describe --dirty 2> /dev/null)
+#override CPPFLAGS += -DMPAS_GIT_VERSION=$(VER)
+
+ifeq "$(findstring v, $(VER))" "v"
+	override CPPFLAGS += -DMPAS_GIT_VERSION=$(VER)
+else
+	override CPPFLAGS += -DMPAS_GIT_VERSION="unknown"
+endif # END OF GIT DESCRIBE VERSION
 
 ####################################################
 # Section for adding external libraries and includes
@@ -348,6 +410,11 @@ all: core_error
 
 else
 
+ifeq ($(wildcard src/core_$(CORE)/build_options.mk), ) # Check for build_options.mk
+report_builds:
+	@echo "CORE=$(CORE)"
+endif
+
 ifeq "$(CONTINUE)" "true"
 all: mpas_main
 else
@@ -356,7 +423,8 @@ endif
 
 endif
 
-mpas_main: 
+
+mpas_main:
 ifeq "$(AUTOCLEAN)" "true"
 	$(RM) .mpas_core_*
 endif
@@ -376,10 +444,17 @@ endif
                  FCINCLUDES="$(FCINCLUDES)" \
                  CORE="$(CORE)"\
                  AUTOCLEAN="$(AUTOCLEAN)" \
-                 GEN_F90="$(GEN_F90)"
-	@echo "$(CORE)" > .mpas_core_$(CORE)
-	if [ -e src/$(CORE)_model ]; then mv src/$(CORE)_model .; fi
-	@echo ""
+                 GEN_F90="$(GEN_F90)" \
+                 NAMELIST_SUFFIX="$(NAMELIST_SUFFIX)" \
+                 EXE_NAME="$(EXE_NAME)"
+
+	@echo "$(EXE_NAME)" > .mpas_core_$(CORE)
+	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
+	if [ -e src/inc/namelist.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/namelist.$(NAMELIST_SUFFIX).defaults .; fi
+	if [ ! -e namelist.$(NAMELIST_SUFFIX) ]; then cp namelist.$(NAMELIST_SUFFIX).defaults namelist.$(NAMELIST_SUFFIX); fi
+	if [ -e src/inc/streams.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/streams.$(NAMELIST_SUFFIX).defaults .; fi
+	if [ ! -e streams.$(NAMELIST_SUFFIX) ]; then cp streams.$(NAMELIST_SUFFIX).defaults streams.$(NAMELIST_SUFFIX); fi
+	for f in `find src/inc -name "stream_list.*"`; do mv $$f .; done
 	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
@@ -389,11 +464,15 @@ ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
 endif
 	@echo $(GEN_F90_MESSAGE)
+	@echo $(NAMELIST_MESSAGE)
+	@echo $(STREAM_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
-	$(RM) .mpas_core_*
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
-	$(RM) $(CORE)_model
+	$(RM) .mpas_core_*
+	$(RM) $(EXE_NAME)
+	$(RM) namelist.$(NAMELIST_SUFFIX).defaults
+	$(RM) streams.$(NAMELIST_SUFFIX).defaults
 core_error:
 	@echo ""
 	@echo "*******************************************************************************"

@@ -11725,10 +11725,6 @@ CONTAINS
       ENDIF
 #endif
 
-  write(0,*)
-  write(0,*) '--- enter subroutine RRTMG_LWRAD:'
-  write(0,*) '--- o3input = ',o3input
-
 !-----CALCULATE LONG WAVE RADIATION
 !                                                              
 ! All fields are ordered vertically from bottom to top

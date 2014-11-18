@@ -7,10 +7,10 @@
 !
 !==================================================================================================
  module mpas_atmphys_manager
- use mpas_configure
  use mpas_kind_types
  use mpas_grid_types
  use mpas_timekeeping
+ use mpas_stream_manager
 
  use mpas_atmphys_constants
  use mpas_atmphys_vars
@@ -31,40 +31,40 @@
 
 !defines alarms for calling the long- and short-wave radiation codes, for calling the convec-
 !tion scheme:
- integer, parameter:: radtlwAlarmID = 11
- integer, parameter:: radtswAlarmID = 12
- integer, parameter:: convAlarmID   = 13
- integer, parameter:: pblAlarmID    = 14
+ character(len=*), parameter:: radtlwAlarmID = 'radtlw'
+ character(len=*), parameter:: radtswAlarmID = 'radtsw'
+ character(len=*), parameter:: convAlarmID   = 'conv'
+ character(len=*), parameter:: pblAlarmID    = 'pbl'
 
 !defines alarm to update the surface boundary conditions:
- integer, parameter:: sfcbdyAlarmID = 15
+ character(len=*), parameter:: sfcbdyAlarmID = 'sfcbdy'
 
 !defines alarm to update the background surface albedo and the greeness fraction:
- integer, parameter:: greenAlarmID  = 16
+ character(len=*), parameter:: greenAlarmID  = 'green'
 
 !defines alarm to update the ozone path length,the trace gas path length,the total emissivity,
 !and the total absorptivity in the "CAM" long-wave radiation codes. The default time interval
 !between updates is 6 hours and is set with config_camrad_abs_update (00:30:00).
- integer, parameter:: camAlarmID    = 17
+ character(len=*), parameter:: camAlarmID    = 'cam'
 
 !defines alarm to save the CAM arrays absnst, absnxt, and emstot to restart files. When the
 !alarm rings, the local arrays absnt_p, absnxt_p, and emstot_p are copied to the MPAS arrays
 !for writing to restart files at the bottom of the time-step:
- integer, parameter:: camlwAlarmID  = 18
+ character(len=*), parameter:: camlwAlarmID  = 'camlw'
  type(MPAS_TimeInterval_Type):: camlwTimeStep
 
 !defines alarm to check if the accumulated rain due to cloud microphysics and convection is
 !greater than its maximum allowed value:
- integer, parameter:: acrainAlarmID   = 19
+ character(len=*), parameter:: acrainAlarmID   = 'acrain'
  type(MPAS_TimeInterval_Type):: acrainTimeStep
 
 !defines alarm to check if the accumulated radiation diagnostics due to long- and short-wave
 !radiation is greater than its maximum allowed value:
- integer, parameter:: acradtAlarmID   = 20
+ character(len=*), parameter:: acradtAlarmID   = 'acradt'
  type(MPAS_TimeInterval_Type):: acradtTimeStep
 
 !defines alarm to compute some physics diagnostics, such as radar reflectivity:
- integer, parameter:: diagAlarmID     = 21
+ character(len=*), parameter:: diagAlarmID     = 'diag'
 
  integer :: h, m, s, s_n, s_d, DoY, yr
  real(kind=RKIND) :: utc_h
@@ -85,18 +85,23 @@
 !> ----------------------------------------
 !>    * added initialization of variable sf_surface_physics in subroutine physics_run_init. see
 !>      definition of sf_surface_physics in mpas_atmphys_vars.F
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-03-11.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-03-11.
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
 !>    * added call to subroutine o3climatology_from_MPAS to interpolate the climatological ozone
 !>      mixing ratios to the current julian day.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-03.
 !>    * added domain%dminfo in call to subroutine physics_update_sst to print local and global
 !>      min and max values of the updated sea-surface temperatures and sea-ice fractions.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-24.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-24.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * renamed config_conv_deep_scheme to config_convection_scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains
+
 
 !==================================================================================================
  subroutine physics_timetracker(domain,dt,clock,itimestep,xtime_s)
@@ -111,8 +116,31 @@
  type(MPAS_Clock_type),intent(inout):: clock
  type(domain_type),intent(inout)    :: domain
 
+!local pointers:
+ logical,pointer:: config_frac_seaice,        &
+                   config_o3climatology,      &
+                   config_sfc_albedo,         &
+                   config_sst_update,         &
+                   config_sstdiurn_update,    &
+                   config_deepsoiltemp_update
+
+ character(len=StrKIND),pointer:: config_convection_scheme, &
+                                  config_radt_lw_scheme,    &
+                                  config_radt_sw_scheme
+
+ character(len=StrKIND),pointer:: config_conv_interval,    &
+                                  config_radtlw_interval,  &
+                                  config_radtsw_interval
+
+ type(block_type),pointer    :: block
+ type(mpas_pool_type),pointer:: mesh
+ type(mpas_pool_type),pointer:: configs
+ type(mpas_pool_type),pointer:: diag_physics
+ type(mpas_pool_type),pointer:: sfc_input
+ type(mpas_pool_type),pointer:: atm_input
+
 !local variables:
- type(block_type),pointer:: block
+
  type(MPAS_Time_Type):: currTime
  type (MPAS_TimeInterval_type) :: dtInterval
 
@@ -123,8 +151,23 @@
  real(kind=RKIND):: xtime_m
 
 !==================================================================================================
- write(0,*)
- write(0,*) '--- enter subroutine physics_timetracker: itimestep = ', itimestep
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_timetracker: itimestep = ', itimestep
+
+ call mpas_pool_get_config(domain%blocklist%configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(domain%blocklist%configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme  )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme  )
+
+ call mpas_pool_get_config(domain%blocklist%configs,'config_conv_interval'   ,config_conv_interval   )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_radtlw_interval' ,config_radtlw_interval )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_radtsw_interval' ,config_radtsw_interval )
+
+ call mpas_pool_get_config(domain%blocklist%configs,'config_frac_seaice'        ,config_frac_seaice        )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_o3climatology'      ,config_o3climatology      )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_sfc_albedo'         ,config_sfc_albedo         )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_sst_update'         ,config_sst_update         )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_sstdiurn_update'    ,config_sstdiurn_update    )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_deepsoiltemp_update',config_deepsoiltemp_update)
 
 !update the current julian day and current year:
  100 format('     YEAR        =', i5   ,/, &
@@ -145,17 +188,23 @@
  julday = DoY
  curr_julday = real(julday-1) + utc_h / 24.0
  LeapYear = isLeapYear(year)
- write(0,100) year,julday,gmt,utc_h,curr_julday,LeapYear,timeStamp
+! write(0,100) year,julday,gmt,utc_h,curr_julday,LeapYear,timeStamp
 
  block => domain % blocklist
  do while(associated(block))
+
+    call mpas_pool_get_subpool(block%structs,'mesh'        ,mesh        )
+    call mpas_pool_get_subpool(block%structs,'sfc_input'   ,sfc_input   )
+    call mpas_pool_get_subpool(block%structs,'atm_input'   ,atm_input   )
+    call mpas_pool_get_subpool(block%structs,'diag_physics',diag_physics)
+
 
     !update the background surface albedo and greeness of vegetation: interpolation of input
     !monthly values to current day:
     if(mpas_is_alarm_ringing(clock,greenAlarmID,ierr=ierr)) then
        call mpas_reset_clock_alarm(clock,greenAlarmID,ierr=ierr)
        write(0,*) '--- time to update background surface albedo, greeness fraction.'
-       call physics_update_surface(timeStamp,block%mesh,block%sfc_input)
+       call physics_update_surface(timeStamp,config_sfc_albedo,mesh,sfc_input)
     endif
 
     !update surface boundary conditions with input sea-surface temperatures and fractional
@@ -163,17 +212,17 @@
     if(mpas_is_alarm_ringing(clock,sfcbdyAlarmID,ierr=ierr)) then
        call mpas_reset_clock_alarm(clock,sfcbdyAlarmID,ierr=ierr)
        if(config_sst_update) &
-          call physics_update_sst(domain%dminfo,block%mesh,block%sfc_input,block%diag_physics)
+          call physics_update_sst(domain%dminfo,config_frac_seaice,mesh,sfc_input,diag_physics)
     endif   
 
     !apply a diurnal cycle to the sea-surface temperature:
     if(config_sstdiurn_update) &
-       call physics_update_sstskin(dt_dyn,block%mesh,block%diag_physics,block%sfc_input)
+       call physics_update_sstskin(dt_dyn,mesh,diag_physics,sfc_input)
 
     !update the deep soil temperature:
     if(config_deepsoiltemp_update) &
-       call physics_update_deepsoiltemp(LeapYear,dt_dyn,curr_julday,block%mesh, &
-                    block%sfc_input,block%diag_physics)
+       call physics_update_deepsoiltemp(LeapYear,dt_dyn,curr_julday,mesh, &
+                    sfc_input,diag_physics)
 
     block => block % next
  end do 
@@ -208,7 +257,7 @@
  endif
 
 !check to see if it is time to run the parameterization of convection:
- if(trim(config_conv_deep_scheme) /= "off") then
+ if(trim(config_convection_scheme) /= "off") then
     l_conv = .false.
 
     if(config_conv_interval /= "none") then
@@ -229,7 +278,7 @@
 
        if((l_radtlw .and. trim(config_radt_lw_scheme) .eq. "rrtmg_lw") .or. &
            l_radtsw .and. trim(config_radt_sw_scheme) .eq. "rrtmg_sw" ) then
-          call o3climatology_from_MPAS(curr_julday,block%mesh,block%atm_input,block%diag_physics)
+          call o3climatology_from_MPAS(curr_julday,mesh,atm_input,diag_physics)
           write(0,*) '--- time to update the ozone climatology for RRTMG radiation codes'
        endif
     
@@ -263,7 +312,7 @@
 
 !check to see if it is time to apply limit to the accumulated rain due to cloud microphysics
 !and convection:
- if(trim(config_conv_deep_scheme) /= "off") then
+ if(trim(config_convection_scheme) /= "off") then
     l_acrain = .false.
     if(mpas_is_alarm_ringing(clock,acrainAlarmID,acrainTimeStep,ierr=ierr)) then
        call mpas_reset_clock_alarm(clock,acrainAlarmID,acrainTimeStep,ierr=ierr)
@@ -297,22 +346,88 @@
  end subroutine physics_timetracker
 
 !==================================================================================================
- subroutine physics_run_init(mesh,state,clock)
+ subroutine physics_run_init(configs,mesh,state,clock,stream_manager)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
- type(state_type),intent(in):: state
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: state
  type(MPAS_Clock_type):: clock
+ type (MPAS_streamManager_type), intent(inout) :: stream_manager
+
+!local pointers:
+ character(len=StrKIND),pointer:: config_convection_scheme,      &
+                                  config_gwdo_scheme,            &
+                                  config_lsm_scheme,             &
+                                  config_microp_scheme,          &
+                                  config_pbl_scheme,             &
+                                  config_radt_cld_scheme,        &
+                                  config_radt_lw_scheme,         &
+                                  config_radt_sw_scheme,         &
+                                  config_sfclayer_scheme
+
+ character(len=StrKIND),pointer:: config_conv_interval,          &
+                                  config_pbl_interval,           &
+                                  config_radtlw_interval,        &
+                                  config_radtsw_interval,        &
+                                  config_bucket_update,          &
+                                  config_camrad_abs_update,      &
+                                  config_greeness_update
+
+ logical,pointer:: config_frac_seaice
+
+ integer,pointer:: config_n_microp
+ integer,pointer:: cam_dim1
+ integer,pointer:: nMonths
+ integer,pointer:: nAerosols,nAerLevels,nOznLevels
+ integer,pointer:: nCellsSolve,nSoilLevels,nVertLevels
+
+ real(kind=RKIND),pointer:: config_dt
 
 !local variables:
  type(MPAS_Time_Type):: startTime,alarmStartTime
  type(MPAS_TimeInterval_Type):: alarmTimeStep, alarmTimeStepHi
+ character(len=StrKIND) :: stream_interval
  integer:: ierr
 
 !==================================================================================================
- write(0,*)
- write(0,*) '--- enter subroutine physics_run_init:'
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_run_init:'
+
+ call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
+ call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
+ call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
+ call mpas_pool_get_config(configs,'config_pbl_scheme'       ,config_pbl_scheme       )
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme'  ,config_radt_cld_scheme  )
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
+
+ call mpas_pool_get_config(configs,'config_conv_interval'         ,config_conv_interval         )
+ call mpas_pool_get_config(configs,'config_pbl_interval'          ,config_pbl_interval          )
+ call mpas_pool_get_config(configs,'config_radtlw_interval'       ,config_radtlw_interval       )
+ call mpas_pool_get_config(configs,'config_radtsw_interval'       ,config_radtsw_interval       )
+ call mpas_pool_get_config(configs,'config_bucket_update'         ,config_bucket_update         )
+ call mpas_pool_get_config(configs,'config_camrad_abs_update'     ,config_camrad_abs_update     )
+ call mpas_pool_get_config(configs,'config_greeness_update'       ,config_greeness_update       )
+ call mpas_pool_get_config(configs,'config_frac_seaice'           ,config_frac_seaice           )
+ call mpas_pool_get_config(configs,'config_n_microp'              ,config_n_microp              )
+
+ call mpas_pool_get_config(configs,'config_dt',config_dt)
+
+
+ call mpas_pool_get_dimension(mesh,'cam_dim1'   ,cam_dim1   )
+ call mpas_pool_get_dimension(mesh,'nMonths'    ,nMonths    )
+ call mpas_pool_get_dimension(mesh,'nAerLevels' ,nAerLevels )
+ call mpas_pool_get_dimension(mesh,'nOznLevels' ,nOznLevels )
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+ call mpas_pool_get_dimension(mesh,'nSoilLevels',nSoilLevels)
+ call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
+
+ call mpas_pool_get_dimension(state,'num_aerosols',nAerosols)
 
 !initialization of gmt, julian day, and alarms:
  101 format('     YEAR        =', i5   ,/, &
@@ -343,7 +458,7 @@
  gmt    = utc_h
  julday = DoY
  curr_julday = real(julday-1)
- write(0,101) year,julday,gmt,utc_h,curr_julday
+! write(0,101) year,julday,gmt,utc_h,curr_julday
 
 !set alarms for calling the longwave and shortwave radiation schemes, the convection schemes,
 !and the PBL schemes at intervals different (greater) than the dynamical time-step:
@@ -432,8 +547,10 @@
        call physics_error_fatal('subroutine physics_init: error creating alarm greeness')
 
 !set alarm for updating the surface boundary conditions:
- if(trim(config_sfc_update_interval) /= "none") then
-    call mpas_set_timeInterval(alarmTimeStep,timeString=config_sfc_update_interval,ierr=ierr)
+ call MPAS_stream_mgr_get_property(stream_manager, 'surface', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                   direction=MPAS_STREAM_INPUT, ierr=ierr)
+ if(trim(stream_interval) /= 'none') then
+    call mpas_set_timeInterval(alarmTimeStep,timeString=stream_interval,ierr=ierr)
     alarmStartTime = startTime
     call mpas_add_clock_alarm(clock,sfcbdyAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
     if(ierr /= 0) &
@@ -455,11 +572,15 @@
 !for writing to the restart file at the bottom of the time-step:
  if(trim(config_radt_lw_scheme) .eq. "cam_lw" ) then
     call mpas_set_timeInterval(camlwTimeStep,dt=config_dt,ierr=ierr)
-    call mpas_set_timeInterval(alarmTimeStep,timeString=config_restart_interval,ierr=ierr)
-    alarmStartTime = startTime + alarmTimeStep
-    call mpas_add_clock_alarm(clock,camlwAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
-    if(ierr /= 0) &
-       call physics_error_fatal('subroutine physics_init: error creating alarm CAMLW')
+    call MPAS_stream_mgr_get_property(stream_manager, 'restart', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                      direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+    if(trim(stream_interval) /= 'none') then
+       call mpas_set_timeInterval(alarmTimeStep,timeString=stream_interval,ierr=ierr)
+       alarmStartTime = startTime + alarmTimeStep
+       call mpas_add_clock_alarm(clock,camlwAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
+       if(ierr /= 0) &
+          call physics_error_fatal('subroutine physics_init: error creating alarm CAMLW')
+    endif
  endif
 
 !set alarm to check if the accumulated rain due to cloud microphysics and convection is
@@ -485,22 +606,42 @@
  endif
 
 !set alarm to calculate physics diagnostics on IO outpt only:
- call mpas_set_timeInterval(alarmTimeStep,timeString=config_output_interval,ierr=ierr)
- if (trim(config_hifreq_output_interval) /= 'none') then
-    call mpas_set_timeInterval(alarmTimeStepHi,timeString=config_hifreq_output_interval,ierr=ierr)
-    if (alarmTimeStepHi < alarmTimeStep) then
-       alarmTimeStep = alarmTimeStepHi
+ call MPAS_stream_mgr_get_property(stream_manager, 'output', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                   direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+ if(trim(stream_interval) /= 'none') then
+    call mpas_set_timeInterval(alarmTimeStep,timeString=stream_interval,ierr=ierr)
+    
+    ! If the diagnostic interval is higher in resolution, use it instead
+    call MPAS_stream_mgr_get_property(stream_manager, 'diagnostics', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                      direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+    if(trim(stream_interval) /= 'none') then
+       call mpas_set_timeInterval(alarmTimeStepHi,timeString=stream_interval,ierr=ierr)
+       if (alarmTimeStepHi < alarmTimeStep) then
+          alarmTimeStep = alarmTimeStepHi
+       end if
     end if
- end if
- alarmStartTime = startTime
- call mpas_add_clock_alarm(clock,diagAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
+    alarmStartTime = startTime
+    call mpas_add_clock_alarm(clock,diagAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
+    if(ierr /= 0) &
+       call physics_error_fatal('subroutine physics_init: error creating alarm diag')
+ else
+    call MPAS_stream_mgr_get_property(stream_manager, 'diagnostics', MPAS_STREAM_PROPERTY_RECORD_INTV, stream_interval, &
+                                      direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+    if(trim(stream_interval) /= 'none') then
+       call mpas_set_timeInterval(alarmTimeStep,timeString=stream_interval,ierr=ierr)
+       alarmStartTime = startTime
+       call mpas_add_clock_alarm(clock,diagAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
+       if(ierr /= 0) &
+          call physics_error_fatal('subroutine physics_init: error creating alarm diag')
+    end if
+ endif
 
  write(0,102) dt_radtlw,dt_radtsw,dt_cu,dt_pbl
 
 !initialization of physics dimensions to mimic a rectangular grid:
- ims=1   ; ime = mesh % nCellsSolve
+ ims=1   ; ime = nCellsSolve
  jms=1   ; jme=1
- kms=1   ; kme = mesh % nVertLevels+1
+ kms=1   ; kme = nVertLevels+1
 
  ids=ims ; ide=ime
  jds=jms ; jde=jme
@@ -515,18 +656,18 @@
               its,ite,jts,jte,kts,kte
 
 !initialization local physics variables:
- num_months = mesh % nMonths
- num_soils  = mesh% nSoilLevels
+ num_months = nMonths
+ num_soils  = nSoilLevels
 
- conv_deep_scheme    = trim(config_conv_deep_scheme)
- lsm_scheme          = trim(config_lsm_scheme)
- microp_scheme       = trim(config_microp_scheme)
- pbl_scheme          = trim(config_pbl_scheme)
- gwdo_scheme         = trim(config_gwdo_scheme)
- radt_cld_scheme     = trim(config_radt_cld_scheme)
- radt_lw_scheme      = trim(config_radt_lw_scheme)
- radt_sw_scheme      = trim(config_radt_sw_scheme)
- sfclayer_scheme     = trim(config_sfclayer_scheme)
+ convection_scheme = trim(config_convection_scheme)
+ lsm_scheme        = trim(config_lsm_scheme)
+ microp_scheme     = trim(config_microp_scheme)
+ pbl_scheme        = trim(config_pbl_scheme)
+ gwdo_scheme       = trim(config_gwdo_scheme)
+ radt_cld_scheme   = trim(config_radt_cld_scheme)
+ radt_lw_scheme    = trim(config_radt_lw_scheme)
+ radt_sw_scheme    = trim(config_radt_sw_scheme)
+ sfclayer_scheme   = trim(config_sfclayer_scheme)
 
  if(trim(config_lsm_scheme) .eq. "noah") sf_surface_physics = 2 
 
@@ -557,18 +698,24 @@
     !radiation code. these arrays are calculated once if it is the beginning of a
     !new run or if it is a restart run:
     doabsems     = .false.
-    cam_abs_dim1 = mesh % cam_dim1
-    cam_abs_dim2 = mesh % nVertLevels + 1
+    cam_abs_dim1 = cam_dim1
+    cam_abs_dim2 = nVertLevels + 1
 
     !initializes the number of aerosols, and the prescribed vertical dimensions for
     !aerosols and ozone mixing ratios:
-    num_aerosols  = state % num_aerosols
-    num_aerLevels = mesh % naerLevels
+    write(0,*)
+    write(0,*) '--- doabsems     = ',doabsems
+    write(0,*) '--- cam_abs_dim1 = ', cam_abs_dim1
+    write(0,*) '--- cam_abs_dim2 = ', cam_abs_dim2
+    write(0,*) '--- nAerosols    = ', nAerosols
+    write(0,*) '--- naerLevels   = ', naerLevels 
+    num_aerosols  = nAerosols
+    num_aerLevels = naerLevels
 
  endif 
 
 !initialization of number of ozone levels:
- num_oznlevels = mesh % noznLevels
+ num_oznlevels = noznLevels
 
 !initialization of sea-ice threshold:
  if(.not. config_frac_seaice) then

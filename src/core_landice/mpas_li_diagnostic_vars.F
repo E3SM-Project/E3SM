@@ -109,8 +109,10 @@ contains
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
-      type (mesh_type), pointer :: mesh
-      type (state_type), pointer :: state
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: statePool
+      type (field2DReal), pointer :: normalVelocityField, layerThicknessEdgeField
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       integer :: err_tmp
 !!!      integer :: blockVertexMaskChanged, procVertexMaskChanged, anyVertexMaskChanged
 
@@ -162,17 +164,14 @@ contains
           ! LifeV does not support multiple blocks but the MPAS SIA could.
           block => domain % blocklist
           do while (associated(block))
-             ! Mesh information
-             mesh => block % mesh
-             ! State at desired time level 
-             state => block % state % time_levs(timeLevel) % state
+             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+             call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
 !!!             ! Assign the vertex-changed flag to each block
 !!!             stateNew % anyVertexMaskChanged % scalar = anyVertexMaskChanged
 !!!             !print *, 'anyVertexMaskChanged: ', anyVertexMaskChanged
 
-
-             call li_velocity_solve(mesh, state, err_tmp)    ! ****** Calculate Velocity ******
+             call li_velocity_solve(meshPool, statePool, timeLevel, err_tmp)    ! ****** Calculate Velocity ******
              err = ior(err, err_tmp)
 
              block => block % next
@@ -180,7 +179,9 @@ contains
 
           ! update halos on velocity
           call mpas_timer_start("halo updates")
-          call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(timeLevel) % state % normalVelocity)
+          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+          call mpas_pool_get_field(statePool, 'normalVelocity', normalVelocityField, timeLevel=timeLevel)
+          call mpas_dmpar_exch_halo_field(normalVelocityField)
           call mpas_timer_stop("halo updates")
 
           call mpas_timer_stop("velocity solve")
@@ -198,16 +199,19 @@ contains
       ! Still do this even if we didn't calculate velocity because on a restart these will be defined at the initial time.
       block => domain % blocklist
       do while (associated(block))
-         mesh => block % mesh
-         state => block % state % time_levs(timeLevel) % state
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
-         call mpas_reconstruct(mesh, state % normalVelocity % array,&
-                       state % uReconstructX % array,            &
-                       state % uReconstructY % array,            &
-                       state % uReconstructZ % array,            &
-                       state % uReconstructZonal % array,        &
-                       state % uReconstructMeridional % array    &
-                      )
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+         call mpas_pool_get_array(statePool, 'uReconstructX', uReconstructX, timeLevel=timeLevel)
+         call mpas_pool_get_array(statePool, 'uReconstructY', uReconstructY, timeLevel=timeLevel)
+         call mpas_pool_get_array(statePool, 'uReconstructZ', uReconstructZ, timeLevel=timeLevel)
+         call mpas_pool_get_array(statePool, 'uReconstructZonal', uReconstructZonal, timeLevel=timeLevel)
+         call mpas_pool_get_array(statePool, 'uReconstructMeridional', uReconstructMeridional, timeLevel=timeLevel)
+
+         call mpas_reconstruct(meshPool, normalVelocity,               &
+                          uReconstructX, uReconstructY, uReconstructZ, &
+                          uReconstructZonal, uReconstructMeridional )
 
          block => block % next
       end do
@@ -215,18 +219,18 @@ contains
 
       block => domain % blocklist
       do while (associated(block))
-         ! Mesh information
-         mesh => block % mesh
-         ! State at desired time level 
-         state => block % state % time_levs(timeLevel) % state
-         call diagnostic_solve_after_velocity(mesh, state, err)  ! Some diagnostic variables require velocity to compute
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call diagnostic_solve_after_velocity(meshPool, statePool, timeLevel, err)  ! Some diagnostic variables require velocity to compute
          err = ior(err, err_tmp)
 
          block => block % next
       end do
 
       call mpas_timer_start("halo updates")
-      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(timeLevel) % state % layerThicknessEdge)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+      call mpas_pool_get_field(statePool, 'layerThicknessEdge', layerThicknessEdgeField, timeLevel=timeLevel)
+      call mpas_dmpar_exch_halo_field(layerThicknessEdgeField)
       call mpas_timer_stop("halo updates")
 
       call mpas_timer_stop("calc. diagnostic vars except vel")
@@ -294,14 +298,18 @@ contains
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
-      type (mesh_type), pointer :: mesh
-      type (state_type), pointer :: state
-      integer :: iCell, iLevel, nCells
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: statePool
       real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
-        lowerSurface, bedTopography
+        lowerSurface, bedTopography, upperSurfaceVertex
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField
+      integer, pointer :: nCells
+      real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
       real (kind=RKIND) :: thisThk
+      integer :: iCell, iLevel
       integer :: err_tmp
 
 
@@ -311,12 +319,11 @@ contains
       block => domain % blocklist
       do while (associated(block))
          ! Mesh information
-         mesh => block % mesh
-         ! State at desired time level 
-         state => block % state % time_levs(timeLevel) % state
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
          ! Calculate masks - needs to happen before calculating lower surface so we know where the ice is floating
-         call li_calculate_mask(mesh, state, err_tmp)
+         call li_calculate_mask(meshPool, statePool, timeLevel, err_tmp)
          err = ior(err, err_tmp)
 
          block => block % next
@@ -324,9 +331,13 @@ contains
 
       ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
       call mpas_timer_start("halo updates")
-      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(timeLevel) % state % cellMask)
-      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(timeLevel) % state % edgeMask)
-      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(timeLevel) % state % vertexMask)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+      call mpas_pool_get_field(statePool, 'cellMask', cellMaskField, timeLevel=timeLevel)
+      call mpas_pool_get_field(statePool, 'edgeMask', edgeMaskField, timeLevel=timeLevel)
+      call mpas_pool_get_field(statePool, 'vertexMask', vertexMaskField, timeLevel=timeLevel)
+      call mpas_dmpar_exch_halo_field(cellMaskField)
+      call mpas_dmpar_exch_halo_field(edgeMaskField)
+      call mpas_dmpar_exch_halo_field(vertexMaskField)
       call mpas_timer_stop("halo updates")
 
 !!!      ! Update beta before the velocity solve occurs, now that we have the new state and its mask.
@@ -346,18 +357,23 @@ contains
 
       block => domain % blocklist
       do while (associated(block))
-          ! Mesh information
-          mesh => block % mesh
-          ! State at desired time level 
-          state => block % state % time_levs(timeLevel) % state
+          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
-          nCells = mesh % nCells
-          cellMask => state % cellMask % array
-          thickness => state % thickness % array
-          upperSurface => state % upperSurface % array
-          lowerSurface => state % lowerSurface % array
-          bedTopography => mesh % bedTopography % array
-          layerThickness => state % layerThickness % array
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+          call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+          call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+
+          call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
+          call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
+          call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
+          call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
+          call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=timeLevel)
+          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLevel)
+          call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel=timeLevel)
+          call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography)
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
@@ -375,9 +391,11 @@ contains
 
           ! Upper surface is the lower surface plus the thickness
           upperSurface(:) = lowerSurface(:) + thickness(:)
+          call cells_to_vertices_2dfield(meshPool, upperSurface, upperSurfaceVertex)  ! (Needed only for SIA solver)
+          ! Note: the outer halo may be wrong, but that's ok as long as numhalos>1 because the velocity on the 0-halo will still be correct.
 
           ! Do vertical remapping of layerThickness and tracers
-          call vertical_remap(thickness, cellMask, mesh, layerThickness, state % tracers % array, err)
+          call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
           err = ior(err, err_tmp)
 
           block => block % next
@@ -405,32 +423,31 @@ contains
 !> This routine computes the diagnostic variables that require knowing velocity for land ice
 !
 !-----------------------------------------------------------------------
-   subroutine diagnostic_solve_after_velocity(mesh, state, err)!{{{
+   subroutine diagnostic_solve_after_velocity(meshPool, statePool, timeLevel, err)
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      integer, intent(in) :: timeLevel  !< Input: Time level on which to calculate diagnostic variables
 
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-
-      type (state_type), intent(inout) :: &
-         state         !< Input/Output: state for which to update diagnostic variables
+      type (mpas_pool_type), intent(inout) :: &
+         statePool         !< Input/Output: state for which to update diagnostic variables
 
       !-----------------------------------------------------------------
       !
       ! output variables
       !
       !-----------------------------------------------------------------
-
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -440,19 +457,22 @@ contains
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, normalVelocity
       integer, dimension(:,:), pointer :: cellsOnEdge
-      integer :: nVertLevels, iEdge, nEdges, cell1, cell2, k
+      integer, pointer :: nEdges, nVertLevels
+      character (len=StrKIND), pointer :: config_thickness_advection
+      integer :: iEdge, cell1, cell2, k
       real (kind=RKIND) :: VelSign
 
       err = 0
 
-      nEdges = mesh % nEdges
-      nVertLevels = mesh % nVertLevels
-      cellsOnEdge => mesh % cellsOnEdge % array
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
-      layerThickness => state % layerThickness % array
-      normalVelocity => state % normalVelocity % array
-      layerThicknessEdge => state % layerThicknessEdge % array
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
 
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'layerThicknessEdge', layerThicknessEdge, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
 
       ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.  
       ! Note: FO-Upwind thickness advection does not explicitly use h_edge but a FO h_edge is implied.
@@ -472,6 +492,8 @@ contains
                layerThicknessEdge(k,iEdge) = max(VelSign * layerThickness(k, cell1), VelSign * (-1.0_RKIND) * layerThickness(k, cell2)) 
                ! + velocity goes from index 1 to 2 in the cellsOnEdge array.  
                !  Doug does the calculation as: h_edge = max(VelSign, 0.0) * h1 - min(VelSign, 0.0) * h2
+               !!! ! Calculate h on edges using second order
+               !!! layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k, cell1) + layerThickness(k, cell2))
             end do
             ! thickness_edge is not currently in registry and not currenly needed.  If it is, uncomment the next line
             !h_edge = max(thickness(cell1), thickness(cell2))
@@ -509,7 +531,7 @@ contains
 !>  version until tracer advection exists!)
 !
 !-----------------------------------------------------------------------
-   subroutine vertical_remap_cism_loops(layerThickness, thickness, tracers, mesh, err)
+   subroutine vertical_remap_cism_loops(layerThickness, thickness, tracers, meshPool, err)
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -519,8 +541,8 @@ contains
       real (kind=RKIND), dimension(:), intent(in) :: &
          thickness    !< Input: 
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -529,10 +551,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         layerThickness    !< Input: 
+         layerThickness    !< Input:
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tracers    !< Input: 
+         tracers    !< Input:
 
       !-----------------------------------------------------------------
       !
@@ -554,19 +576,19 @@ contains
       real (kind=RKIND), dimension(:,:), allocatable :: layerInterfaceSigma_Input
       real (kind=RKIND), dimension(:,:,:), allocatable :: hTsum
       ! counters, mesh variables, index variables
-      integer :: nTracers, nCells, nVertLevels
-      integer :: iCell, k, k1, k2, nt
+      integer, pointer :: nCells, nVertLevels
+      integer :: nTracers, iCell, k, k1, k2, nt
       ! stuff for making calculations
       real(kind=RKIND) :: thisThk, zhi, zlo, hOverlap
 
       err = 0
 
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, 1)
 
-      layerThicknessFractions => mesh % layerThicknessFractions % array
-      layerInterfaceSigma => mesh % layerInterfaceSigma % array
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
       allocate(recipThickness(nCells+1))
       allocate(layerInterfaceSigma_Input(nVertLevels+1, nCells+1))
@@ -665,7 +687,7 @@ contains
 !>  rather than using if/where-statements.
 !
 !-----------------------------------------------------------------------
-   subroutine vertical_remap(thickness, cellMask, mesh, layerThickness, tracers, err)
+   subroutine vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
 
       !-----------------------------------------------------------------
       !
@@ -679,8 +701,8 @@ contains
       integer, dimension(:), intent(in) :: &
          cellMask    !< Input: mask for cells (needed for determining presence/absence of ice)
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -713,25 +735,23 @@ contains
       real (kind=RKIND), dimension(:), allocatable :: layerInterfaceSigma_Input
       real (kind=RKIND), dimension(:,:), allocatable :: hTsum
       ! counters, mesh variables, index variables
-      integer :: nTracers, nCells, nVertLevels
-      integer :: iCell, k, k1, k2, nt
+      integer, pointer :: nCells, nVertLevels
+      integer :: nTracers, iCell, k, k1, k2, nt
       ! stuff for making calculations
       real(kind=RKIND) :: thisThk, zhi, zlo, hOverlap
       real(kind=RKIND), parameter :: eps = 1.0d-30  ! Make a tiny value so we don't corrupt any cells with ice
 
       err = 0
 
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, 1)
 
-      layerThicknessFractions => mesh % layerThicknessFractions % array
-      layerInterfaceSigma => mesh % layerInterfaceSigma % array
-
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
       allocate(layerInterfaceSigma_Input(nVertLevels+1))
       allocate(hTsum(nTracers, nVertLevels))
-
 
       do iCell = 1, nCells  ! Do all calculations column-wise
 
@@ -798,6 +818,80 @@ contains
    end subroutine vertical_remap
 
 
+
+!***********************************************************************
+!
+!  subroutine cells_to_vertices_2dfield
+!
+!> \brief   Converts a 2d scalar field from cells to vertices
+!> \author  Matt Hoffman
+!> \date    21 May 2012
+!> \details 
+!>  This routine converts a 2d scalar field from cells to vertices.
+!-----------------------------------------------------------------------
+   subroutine cells_to_vertices_2dfield(meshPool, fieldCells, fieldVertices)
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         fieldCells    !< Input: field on cells
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         fieldVertices    !< Input: field on vertices
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+      integer, dimension(:,:), pointer :: cellsOnVertex
+      integer, pointer :: nVertices, vertexDegree
+      integer :: iCell, icell2, iVertex, cellIndex
+      real (kind=RKIND) :: fVertexAccum, baryweight, weightAccum
+
+      ! Get needed items from mesh pool
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+
+      call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+
+      ! Calculate h on vertices using barycentric interpolation
+      do iVertex = 1, nVertices  ! Loop over vertices
+        fVertexAccum = 0.0_RKIND
+        weightAccum = 0.0_RKIND
+        ! Loop over cells on this vertex
+        do iCell = 1, vertexDegree
+          cellIndex = cellsOnVertex(iCell, iVertex)
+          baryweight = 0.0_RKIND
+          do iCell2 = 1, vertexDegree
+            if (iCell2 /= icell) baryweight = baryweight + 0.5 * kiteAreasOnVertex(iCell2, iVertex)
+          enddo
+          fVertexAccum = fVertexAccum + baryweight * fieldCells(cellIndex)  ! add the contribution from this cell's kite
+          weightAccum = weightAccum + kiteAreasOnVertex(iCell, iVertex)  ! This doesn't match areaTriangle for some weird vertices
+        enddo
+        fieldVertices(iVertex) = fVertexAccum / weightAccum  ! I assume this should never be 0...
+      enddo
+
+   end subroutine cells_to_vertices_2dfield
 
 end module li_diagnostic_vars
 

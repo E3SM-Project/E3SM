@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_cloudiness
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_constants, only: ep_2
@@ -37,12 +38,16 @@
 !> calc_cldincidence    : calculates the cloud fraction as 0 or 1, depending on cloud condensates.
 !> calc_cldfraction     : calculates the cloud fraction as a function of the relative humidity.
 !>
-!> comments:
-!> The subroutine calc_cldfraction has not been testted in MPAS. The default is to use subroutine
-!> calc_cldincidence.
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_cloudiness
@@ -65,14 +70,14 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
 !--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    cldfrac_p(i,k,j) = 0.
+    cldfrac_p(i,k,j) = 0._RKIND
  enddo
  enddo
  enddo
@@ -84,14 +89,19 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+
+!local pointers:
+ real(kind=RKIND),dimension(:,:),pointer:: cldfrac
 
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_array(diag_physics,'cldfrac',cldfrac)
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    diag_physics % cldfrac % array(k,i) = cldfrac_p(i,k,j)
+    cldfrac(k,i) = cldfrac_p(i,k,j)
  enddo
  enddo
  enddo
@@ -103,11 +113,11 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine driver_cloudiness:'
+! write(0,*)
+! write(0,*) '--- enter subroutine driver_cloudiness:'
 
 !copy MPAS arrays to local arrays:
  call cloudiness_from_MPAS(diag_physics)
@@ -116,16 +126,16 @@
     case("cld_incidence")
 
       !calculate the incidence of clouds:
-      write(0,*) '--- enter subroutine calc_cldincidence:'
+!      write(0,*) '--- enter subroutine calc_cldincidence:'
       call calc_cldincidence(cldfrac_p,qc_p,qi_p,f_qc,f_qi)
-      write(0,*) '--- exit subroutine calc_cldincidence'
+!      write(0,*) '--- exit subroutine calc_cldincidence'
 
     case("cld_fraction")
 
       !calculate the cloud fraction based on the relative humidity:
-      write(0,*) '--- enter subroutine calc_cldfraction:'
+!      write(0,*) '--- enter subroutine calc_cldfraction:'
       call calc_cldfraction(cldfrac_p,t_p,pres_p,qv_p,qc_p,qi_p,qs_p)
-      write(0,*) '--- exit subroutine calc_cldfraction'
+!      write(0,*) '--- exit subroutine calc_cldfraction'
 
     case default
 
@@ -134,7 +144,7 @@
 !copy local arrays to MPAS grid:
  call cloudiness_to_MPAS(diag_physics)
 
- write(0,*) '--- exit subroutine driver_cloudiness'
+! write(0,*) '--- exit subroutine driver_cloudiness'
 
  end subroutine driver_cloudiness
 

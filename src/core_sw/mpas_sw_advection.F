@@ -16,7 +16,7 @@ module sw_advection
    contains
 
 
-   subroutine sw_initialize_advection_rk( grid )
+   subroutine sw_initialize_advection_rk( meshPool )
                                       
 !
 ! compute the cell coefficients for the polynomial fit.
@@ -25,16 +25,16 @@ module sw_advection
 !
       implicit none
 
-      type (mesh_type), intent(in) :: grid
+      type (mpas_pool_type), intent(in) :: meshPool
 
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       integer, dimension(:,:), pointer :: advCells
 
 !  local variables
 
-      real (kind=RKIND), dimension(2, grid % nEdges) :: thetae
-      real (kind=RKIND), dimension(grid % nEdges) :: xe, ye
-      real (kind=RKIND), dimension(grid % nCells) :: theta_abs
+      real (kind=RKIND), dimension(:,:), allocatable :: thetae
+      real (kind=RKIND), dimension(:), allocatable :: xe, ye
+      real (kind=RKIND), dimension(:), allocatable :: theta_abs
 
       real (kind=RKIND), dimension(25) :: xc, yc, zc ! cell center coordinates
       real (kind=RKIND), dimension(25) :: thetav, thetat, dl_sphere
@@ -54,8 +54,8 @@ module sw_advection
       integer :: ma,na, cell_add, mw, nn
       integer, dimension(25) :: cell_list
 
-
       integer :: cell1, cell2
+      integer, pointer :: maxEdges, nEdges, nCells
       integer, parameter :: polynomial_order = 2
 !      logical, parameter :: debug = .true.
       logical, parameter :: debug = .false.
@@ -66,28 +66,61 @@ module sw_advection
       logical, parameter :: reset_poly = .true.
 
       real (kind=RKIND) :: rcell, cos2t, costsint, sin2t
-      real (kind=RKIND), dimension(grid%maxEdges) :: angle_2d
+      real (kind=RKIND), dimension(:), allocatable :: angle_2d
+
+      logical, pointer :: on_a_sphere
+      real (kind=RKIND), pointer :: sphere_radius
+
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnCell, edgesOnCell, cellsOnEdge, verticesOnEdge
+
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, angleEdge
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, xVertex, yVertex, zVertex
 
 !---
 
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+
+      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+      allocate(angle_2d(maxEdges))
+      allocate(thetae(2, nEdges))
+      allocate(xe(nEdges))
+      allocate(ye(nEdges))
+      allocate(theta_abs(nCells))
+
       pii = 2.*asin(1.0)
 
-      advCells => grid % advCells % array
-      deriv_two => grid % deriv_two % array
+      call mpas_pool_get_array(meshPool, 'advCells', advCells)
+      call mpas_pool_get_array(meshPool, 'deriv_two', deriv_two)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       deriv_two(:,:,:) = 0.
 
-      do iCell = 1, grid % nCells !  is this correct? - we need first halo cell also...
+      do iCell = 1, nCells !  is this correct? - we need first halo cell also...
 
          cell_list(1) = iCell
-         do i=2, grid % nEdgesOnCell % array(iCell)+1
-            cell_list(i) = grid % CellsOnCell % array(i-1,iCell)
+         do i = 2, nEdgesOnCell(iCell)+1
+            cell_list(i) = cellsOnCell(i-1,iCell)
          end do
-         n = grid % nEdgesOnCell % array(iCell) + 1
+         n = nEdgesOnCell(iCell) + 1
 
          if ( polynomial_order > 2 ) then
-            do i=2,grid % nEdgesOnCell % array(iCell) + 1
-               do j=1,grid % nEdgesOnCell % array ( cell_list(i) )
-                  cell_add = grid % CellsOnCell % array (j,cell_list(i))
+            do i = 2, nEdgesOnCell(iCell) + 1
+               do j = 1, nEdgesOnCell( cell_list(i) )
+                  cell_add = CellsOnCell(j,cell_list(i))
                   add_the_cell = .true.
                   do k=1,n
                      if ( cell_add == cell_list(k) ) add_the_cell = .false.
@@ -105,8 +138,8 @@ module sw_advection
 !  check to see if we are reaching outside the halo
 
          do_the_cell = .true.
-         do i=1,n
-            if (cell_list(i) > grid % nCells) do_the_cell = .false.
+         do i = 1, n
+            if (cell_list(i) > nCells) do_the_cell = .false.
          end do
 
 
@@ -114,13 +147,13 @@ module sw_advection
 
 
 !  compute poynomial fit for this cell if all needed neighbors exist
-         if ( grid % on_a_sphere ) then
+         if ( on_a_sphere ) then
 
-            do i=1,n
+            do i = 1, n
                advCells(i+1,iCell) = cell_list(i)
-               xc(i) = grid % xCell % array(advCells(i+1,iCell))/a
-               yc(i) = grid % yCell % array(advCells(i+1,iCell))/a
-               zc(i) = grid % zCell % array(advCells(i+1,iCell))/a
+               xc(i) = xCell(advCells(i+1,iCell)) / sphere_radius
+               yc(i) = yCell(advCells(i+1,iCell)) / sphere_radius
+               zc(i) = zCell(advCells(i+1,iCell)) / sphere_radius
             end do
 
             theta_abs(iCell) =  pii/2. - sphere_angle( xc(1), yc(1), zc(1),  &
@@ -129,7 +162,7 @@ module sw_advection
 
 ! angles from cell center to neighbor centers (thetav)
 
-            do i=1,n-1
+            do i = 1, n-1
    
                ip2 = i+2
                if (ip2 > n) ip2 = 2
@@ -143,8 +176,8 @@ module sw_advection
             end do
 
             length_scale = 1.
-            do i=1,n-1
-               dl_sphere(i) = dl_sphere(i)/length_scale
+            do i = 1, n-1
+               dl_sphere(i) = dl_sphere(i) / length_scale
             end do
 
 !            thetat(1) = 0.  !  this defines the x direction, cell center 1 -> 
@@ -160,18 +193,18 @@ module sw_advection
 
          else     ! On an x-y plane
 
-            do i=1,n-1
+            do i = 1, n-1
 
-               angle_2d(i) = grid%angleEdge%array(grid % EdgesOnCell % array(i,iCell))
-               iEdge = grid % EdgesOnCell % array(i,iCell)
-               if ( iCell .ne. grid % CellsOnEdge % array(1,iEdge)) &
+               iEdge = edgesOnCell(i,iCell)
+               angle_2d(i) = angleEdge(iEdge)
+               if ( iCell .ne. cellsOnEdge(1,iEdge)) &
                   angle_2d(i) = angle_2d(i) - pii
 
 !               xp(i) = grid % xCell % array(cell_list(i)) - grid % xCell % array(iCell)
 !               yp(i) = grid % yCell % array(cell_list(i)) - grid % yCell % array(iCell)
 
-               xp(i) = grid % dcEdge % array(grid % EdgesOnCell % array(i,iCell)) * cos(angle_2d(i))
-               yp(i) = grid % dcEdge % array(grid % EdgesOnCell % array(i,iCell)) * sin(angle_2d(i))
+               xp(i) = dcEdge(iEdge) * cos(angle_2d(i))
+               yp(i) = dcEdge(iEdge) * sin(angle_2d(i))
 
             end do
 
@@ -179,7 +212,7 @@ module sw_advection
 
 
          ma = n-1
-         mw = grid % nEdgesOnCell % array (iCell)
+         mw = nEdgesOnCell(iCell)
 
          bmatrix = 0.
          amatrix = 0.
@@ -264,19 +297,19 @@ module sw_advection
  
          call sw_poly_fit_2( amatrix, bmatrix, wmatrix, ma, na, 25 )
 
-         do i=1,grid % nEdgesOnCell % array (iCell)
+         do i = 1, nEdgesOnCell(iCell)
             ip1 = i+1
             if (ip1 > n-1) ip1 = 1
   
-            iEdge = grid % EdgesOnCell % array (i,iCell)
-            xv1 = grid % xVertex % array(grid % verticesOnEdge % array (1,iedge))/a
-            yv1 = grid % yVertex % array(grid % verticesOnEdge % array (1,iedge))/a
-            zv1 = grid % zVertex % array(grid % verticesOnEdge % array (1,iedge))/a
-            xv2 = grid % xVertex % array(grid % verticesOnEdge % array (2,iedge))/a
-            yv2 = grid % yVertex % array(grid % verticesOnEdge % array (2,iedge))/a
-            zv2 = grid % zVertex % array(grid % verticesOnEdge % array (2,iedge))/a
+            iEdge = edgesOnCell(i,iCell)
+            xv1 = xVertex(verticesOnEdge(1, iEdge)) / sphere_radius
+            yv1 = yVertex(verticesOnEdge(1, iEdge)) / sphere_radius
+            zv1 = zVertex(verticesOnEdge(1, iEdge)) / sphere_radius
+            xv2 = xVertex(verticesOnEdge(2, iEdge)) / sphere_radius
+            yv2 = yVertex(verticesOnEdge(2, iEdge)) / sphere_radius
+            zv2 = zVertex(verticesOnEdge(2, iEdge)) / sphere_radius
   
-            if ( grid % on_a_sphere ) then
+            if ( on_a_sphere ) then
                call sw_arc_bisect( xv1, yv1, zv1,  &
                                 xv2, yv2, zv2,  &
                                 xec, yec, zec   )
@@ -285,15 +318,15 @@ module sw_advection
                                           xc(i+1), yc(i+1), zc(i+1),  &
                                           xec,     yec,     zec       )
                thetae_tmp = thetae_tmp + thetat(i)
-               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
-                  thetae(1,grid % EdgesOnCell % array (i,iCell)) = thetae_tmp
+               if (iCell == cellsOnEdge(1,iEdge)) then
+                  thetae(1, iEdge) = thetae_tmp
                else
-                  thetae(2,grid % EdgesOnCell % array (i,iCell)) = thetae_tmp
+                  thetae(2, iEdge) = thetae_tmp
                end if
 !            else
 !
-!               xe(grid % EdgesOnCell % array (i,iCell)) = 0.5 * (xv1 + xv2)
-!               ye(grid % EdgesOnCell % array (i,iCell)) = 0.5 * (yv1 + yv2)
+!               xe(iEdge) = 0.5 * (xv1 + xv2)
+!               ye(iEdge) = 0.5 * (yv1 + yv2)
 
             end if
   
@@ -301,28 +334,28 @@ module sw_advection
 
 !  fill second derivative stencil for rk advection 
 
-         do i=1, grid % nEdgesOnCell % array (iCell)
-            iEdge = grid % EdgesOnCell % array (i,iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i,iCell)
   
   
-            if ( grid % on_a_sphere ) then
-               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
+            if ( on_a_sphere ) then
+               if (iCell == cellsOnEdge(1,iEdge)) then
   
-                  cos2t = cos(thetae(1,grid % EdgesOnCell % array (i,iCell)))
-                  sin2t = sin(thetae(1,grid % EdgesOnCell % array (i,iCell)))
+                  cos2t = cos(thetae(1, iEdge))
+                  sin2t = sin(thetae(1, iEdge))
                   costsint = cos2t*sin2t
                   cos2t = cos2t**2
                   sin2t = sin2t**2
    
-                  do j=1,n
+                  do j = 1, n
                      deriv_two(j,1,iEdge) =   2.*cos2t*bmatrix(4,j)  &
                                             + 2.*costsint*bmatrix(5,j)  &
                                             + 2.*sin2t*bmatrix(6,j)
                   end do
                else
      
-                  cos2t = cos(thetae(2,grid % EdgesOnCell % array (i,iCell)))
-                  sin2t = sin(thetae(2,grid % EdgesOnCell % array (i,iCell)))
+                  cos2t = cos(thetae(2, iEdge))
+                  sin2t = sin(thetae(2, iEdge))
                   costsint = cos2t*sin2t
                   cos2t = cos2t**2
                   sin2t = sin2t**2
@@ -349,14 +382,14 @@ module sw_advection
 !                                         + 2.*ye(iEdge)*ye(iEdge)*bmatrix(6,j)
 !               end do
 
-               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
-                  do j=1,n
+               if (iCell == cellsOnEdge(1,iEdge)) then
+                  do j = 1, n
                      deriv_two(j,1,iEdge) =   2.*cos2t*bmatrix(4,j)  &
                                             + 2.*costsint*bmatrix(5,j)  &
                                             + 2.*sin2t*bmatrix(6,j)
                   end do
                else
-                  do j=1,n
+                  do j = 1, n
                      deriv_two(j,2,iEdge) =   2.*cos2t*bmatrix(4,j)  &
                                             + 2.*costsint*bmatrix(5,j)  &
                                             + 2.*sin2t*bmatrix(6,j)
@@ -750,7 +783,7 @@ end subroutine sw_elgs
 
 !-------------------------------------------------------------
 
-   subroutine sw_initialize_deformation_weights( grid )
+   subroutine sw_initialize_deformation_weights( meshPool )
                                       
 !
 ! compute the cell coefficients for the deformation calculations
@@ -758,16 +791,13 @@ end subroutine sw_elgs
 !
       implicit none
 
-      type (mesh_type), intent(in) :: grid
-
-      real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
+      type (mpas_pool_type), intent(in) :: meshPool
 
 !  local variables
 
-      real (kind=RKIND), dimension(2, grid % nEdges) :: thetae
-      real (kind=RKIND), dimension(grid % nEdges) :: xe, ye
-      real (kind=RKIND), dimension(grid % nCells) :: theta_abs
+      real (kind=RKIND), dimension(:,:), allocatable :: thetae
+      real (kind=RKIND), dimension(:), allocatable :: xe, ye
+      real (kind=RKIND), dimension(:), allocatable :: theta_abs
 
       real (kind=RKIND), dimension(25) :: xc, yc, zc ! cell center coordinates
       real (kind=RKIND), dimension(25) :: thetav, thetat, dl_sphere
@@ -792,12 +822,41 @@ end subroutine sw_elgs
 
       logical, parameter :: debug = .false.
 
+      logical, pointer :: on_a_sphere
+      real (kind=RKIND), pointer :: sphere_radius
+
+      integer, pointer :: nCells, nEdges
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+      real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, cellsOnCell, verticesOnCell
+
       if (debug) write(0,*) ' in def weight calc '
 
-      defc_a => grid % defc_a % array
-      defc_b => grid % defc_b % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      edgesOnCell => grid % edgesOnCell % array
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+      call mpas_pool_get_array(meshPool, 'defc_a', defc_a)
+      call mpas_pool_get_array(meshPool, 'defc_b', defc_b)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+
+      allocate(thetae(2, nEdges))
+      allocate(xe(nEdges))
+      allocate(ye(nEdges))
+      allocate(theta_abs(nCells))
 
       defc_a(:,:) = 0.
       defc_b(:,:) = 0.
@@ -806,23 +865,23 @@ end subroutine sw_elgs
 
       if (debug) write(0,*) ' beginning cell loop '
 
-      do iCell = 1, grid % nCells
+      do iCell = 1, nCells
 
          if (debug) write(0,*) ' cell loop ', iCell
 
          cell_list(1) = iCell
-         do i=2, grid % nEdgesOnCell % array(iCell)+1
-            cell_list(i) = grid % CellsOnCell % array(i-1,iCell)
+         do i = 2, nEdgesOnCell(iCell)+1
+            cell_list(i) = CellsOnCell(i-1,iCell)
          end do
-         n = grid % nEdgesOnCell % array(iCell) + 1
+         n = nEdgesOnCell(iCell) + 1
 
 !  check to see if we are reaching outside the halo
 
          if (debug) write(0,*) ' points ', n
 
          do_the_cell = .true.
-         do i=1,n
-            if (cell_list(i) > grid % nCells) do_the_cell = .false.
+         do i = 1, n
+            if (cell_list(i) > nCells) do_the_cell = .false.
          end do
 
 
@@ -830,27 +889,27 @@ end subroutine sw_elgs
 
 
 !  compute poynomial fit for this cell if all needed neighbors exist
-         if (grid % on_a_sphere) then
+         if (on_a_sphere) then
 
-            xc(1) = grid % xCell % array(iCell)/a
-            yc(1) = grid % yCell % array(iCell)/a
-            zc(1) = grid % zCell % array(iCell)/a
+            xc(1) = xCell(iCell) / sphere_radius
+            yc(1) = yCell(iCell) / sphere_radius
+            zc(1) = zCell(iCell) / sphere_radius
 
 
-            do i=2,n
-               iv = grid % verticesOnCell % array(i-1,iCell)
-               xc(i) = grid % xVertex % array(iv)/a
-               yc(i) = grid % yVertex % array(iv)/a
-               zc(i) = grid % zVertex % array(iv)/a
+            do i = 2, n
+               iv = verticesOnCell(i-1,iCell)
+               xc(i) = xVertex(iv) / sphere_radius
+               yc(i) = yVertex(iv) / sphere_radius
+               zc(i) = zVertex(iv) / sphere_radius
             end do
 
-            theta_abs(iCell) =  pii/2. - sphere_angle( xc(1), yc(1), zc(1),  &
+            theta_abs(iCell) =  pii / 2. - sphere_angle( xc(1), yc(1), zc(1),  &
                                                        xc(2), yc(2), zc(2),  &
                                                        0.0_RKIND, 0.0_RKIND, 1.0_RKIND ) 
 
 ! angles from cell center to neighbor centers (thetav)
 
-            do i=1,n-1
+            do i = 1, n-1
    
                ip2 = i+2
                if (ip2 > n) ip2 = 2
@@ -864,38 +923,38 @@ end subroutine sw_elgs
             end do
 
             length_scale = 1.
-            do i=1,n-1
-               dl_sphere(i) = dl_sphere(i)/length_scale
+            do i = 1, n-1
+               dl_sphere(i) = dl_sphere(i) / length_scale
             end do
 
             thetat(1) = 0.  !  this defines the x direction, cell center 1 -> 
 !            thetat(1) = theta_abs(iCell)  !  this defines the x direction, longitude line
-            do i=2,n-1
+            do i = 2, n-1
                thetat(i) = thetat(i-1) + thetav(i-1)
             end do
    
-            do i=1,n-1
+            do i = 1, n-1
                xp(i) = cos(thetat(i)) * dl_sphere(i)
                yp(i) = sin(thetat(i)) * dl_sphere(i)
             end do
 
          else     ! On an x-y plane
 
-            xp(1) = grid % xCell % array(iCell)
-            yp(1) = grid % yCell % array(iCell)
+            xp(1) = xCell(iCell)
+            yp(1) = yCell(iCell)
 
 
-            do i=2,n
-               iv = grid % verticesOnCell % array(i-1,iCell)
-               xp(i) = grid % xVertex % array(iv)
-               yp(i) = grid % yVertex % array(iv)
+            do i = 2, n
+               iv = verticesOnCell(i-1,iCell)
+               xp(i) = xVertex(iv)
+               yp(i) = yVertex(iv)
             end do
 
          end if
 
 !         thetat(1) = 0.
          thetat(1) = theta_abs(iCell)
-         do i=2,n-1
+         do i = 2, n-1
             ip1 = i+1
             if (ip1 == n) ip1 = 1
             thetat(i) = plane_angle( 0.0_RKIND, 0.0_RKIND, 0.0_RKIND,  &
@@ -907,7 +966,7 @@ end subroutine sw_elgs
 
          area_cell = 0.
          area_cellt = 0.
-         do i=1,n-1
+         do i = 1, n-1
             ip1 = i+1
             if (ip1 == n) ip1 = 1
             dl = sqrt((xp(ip1)-xp(i))**2 + (yp(ip1)-yp(i))**2)
@@ -916,7 +975,7 @@ end subroutine sw_elgs
          end do
          if (debug) write(0,*) ' area_cell, area_cellt ',area_cell, area_cellt,area_cell-area_cellt
 
-         do i=1,n-1
+         do i = 1, n-1
             ip1 = i+1
             if (ip1 == n) ip1 = 1
             dl = sqrt((xp(ip1)-xp(i))**2 + (yp(ip1)-yp(i))**2)
@@ -925,7 +984,7 @@ end subroutine sw_elgs
             sint_cost = sin(thetat(i))*cos(thetat(i))
             defc_a(i,iCell) = dl*(cost2 - sint2)/area_cell
             defc_b(i,iCell) = dl*2.*sint_cost/area_cell
-            if (cellsOnEdge(1,EdgesOnCell(i,iCell)) /= iCell) then
+            if (cellsOnEdge(1,edgesOnCell(i,iCell)) /= iCell) then
                defc_a(i,iCell) = - defc_a(i,iCell)
                defc_b(i,iCell) = - defc_b(i,iCell)
             end if

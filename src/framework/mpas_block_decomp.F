@@ -54,7 +54,7 @@ module mpas_block_decomp
 !>  This routine determines a list of cells for each processor, and what blocks the live in.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_block_decomp_cells_for_proc(dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, block_count)!{{{
+   subroutine mpas_block_decomp_cells_for_proc(dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, block_count, numBlocks, explicitProcDecomp, blockFilePrefix, procFilePrefix)!{{{
 
       use mpas_configure
 
@@ -66,6 +66,11 @@ module mpas_block_decomp
       integer, dimension(:), pointer :: block_id !< Output: list of global block id's this processor owns
       integer, dimension(:), pointer :: block_start !< Output: offset in local_cell_list for this blocks list of cells
       integer, dimension(:), pointer :: block_count !< Output: number of cells in blocks
+
+      integer, intent(in) :: numBlocks !< Input: Number of blocks (from config_num_blocks)
+      logical, intent(in) :: explicitProcDecomp !< Input: Logical flag controlling if blocks are explicitly assigned to processors
+      character (len=*), intent(in) :: blockFilePrefix, & !< Input: File prefix for block decomposition
+                                       procFilePrefix !< Input: File prefix for processor decomposition
 
       integer, dimension(:), pointer :: global_block_list
       integer, dimension(:), pointer :: global_cell_list
@@ -83,15 +88,15 @@ module mpas_block_decomp
 
       no_blocks = .false.
 
-      if(config_number_of_blocks == 0) then
+      if (numBlocks == 0) then
         total_blocks = dminfo % nProcs
       else
-        total_blocks = config_number_of_blocks 
+        total_blocks = numBlocks 
       end if
 
-      explicitDecomp = config_explicit_proc_decomp
+      explicitDecomp = explicitProcDecomp
 
-      call mpas_build_block_proc_list(dminfo)
+      call mpas_build_block_proc_list(dminfo, procFilePrefix)
       call mpas_get_blocks_per_proc(dminfo, dminfo % my_proc_id, blocks_per_proc)
 
       if(total_blocks > 1) then
@@ -104,15 +109,15 @@ module mpas_block_decomp
   
            iunit = 50 + dminfo % my_proc_id
            if (total_blocks < 10) then
-              write(filename,'(a,i1)') trim(config_block_decomp_file_prefix), total_blocks
+              write(filename,'(a,i1)') trim(blockFilePrefix), total_blocks
            else if (total_blocks < 100) then
-              write(filename,'(a,i2)') trim(config_block_decomp_file_prefix), total_blocks
+              write(filename,'(a,i2)') trim(blockFilePrefix), total_blocks
            else if (total_blocks < 1000) then
-              write(filename,'(a,i3)') trim(config_block_decomp_file_prefix), total_blocks
+              write(filename,'(a,i3)') trim(blockFilePrefix), total_blocks
            else if (total_blocks < 10000) then
-              write(filename,'(a,i4)') trim(config_block_decomp_file_prefix), total_blocks
+              write(filename,'(a,i4)') trim(blockFilePrefix), total_blocks
            else if (total_blocks < 100000) then
-              write(filename,'(a,i5)') trim(config_block_decomp_file_prefix), total_blocks
+              write(filename,'(a,i5)') trim(blockFilePrefix), total_blocks
            end if
          
            open(unit=iunit, file=trim(filename), form='formatted', status='old', iostat=istatus)
@@ -188,7 +193,7 @@ module mpas_block_decomp
            allocate(block_start(blocks_per_proc))
            allocate(block_count(blocks_per_proc))
 
-           block_id(1) = config_number_of_blocks + 1
+           block_id(1) = numBlocks + 1
            block_start(1) = 0
            block_count(1) = 0
         else
@@ -249,7 +254,7 @@ module mpas_block_decomp
            allocate(block_start(1))
            allocate(block_count(1))
            local_cell_list(1) = 0
-           block_id(1) = config_number_of_blocks + 1
+           block_id(1) = numBlocks + 1
            block_start(1) = 0
            block_count(1) = 0
         end if
@@ -611,13 +616,14 @@ module mpas_block_decomp
 !>  This routine builds the mapping of blocks to processors. Most useful when using an explicit decomposition.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_build_block_proc_list(dminfo)!{{{
+   subroutine mpas_build_block_proc_list(dminfo, procFilePrefix)!{{{
 
      use mpas_configure
 
      implicit none
 
      type(dm_info), intent(in) :: dminfo !< Input: Domain information
+     character (len=*), intent(in) :: procFilePrefix
 
      integer :: iounit, istatus, i, owning_proc
      character (len=StrKIND) :: filename
@@ -635,15 +641,15 @@ module mpas_block_decomp
 
          iounit = 51 + dminfo % my_proc_id
          if (dminfo % nProcs < 10) then
-            write(filename,'(a,i1)') trim(config_proc_decomp_file_prefix), dminfo % nProcs
+            write(filename,'(a,i1)') trim(procFilePrefix), dminfo % nProcs
          else if (dminfo % nProcs < 100) then
-            write(filename,'(a,i2)') trim(config_proc_decomp_file_prefix), dminfo % nProcs
+            write(filename,'(a,i2)') trim(procFilePrefix), dminfo % nProcs
          else if (dminfo % nProcs < 1000) then
-            write(filename,'(a,i3)') trim(config_proc_decomp_file_prefix), dminfo % nProcs
+            write(filename,'(a,i3)') trim(procFilePrefix), dminfo % nProcs
          else if (dminfo % nProcs < 10000) then
-            write(filename,'(a,i4)') trim(config_proc_decomp_file_prefix), dminfo % nProcs
+            write(filename,'(a,i4)') trim(procFilePrefix), dminfo % nProcs
          else if (dminfo % nProcs < 100000) then
-            write(filename,'(a,i5)') trim(config_proc_decomp_file_prefix), dminfo % nProcs
+            write(filename,'(a,i5)') trim(procFilePrefix), dminfo % nProcs
          end if        
 
          open(unit=iounit, file=trim(filename), form='formatted', status='old', iostat=istatus)

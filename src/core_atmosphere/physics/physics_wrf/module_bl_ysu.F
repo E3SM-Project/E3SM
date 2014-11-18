@@ -219,7 +219,7 @@ contains
 #endif
 
 !
-   qv2d(:,:) = 0.0
+   qv2d(its:ite,:) = 0.0
    do j = jts,jte
       if(present(mut))then
 ! For ARW we will replace p and p8w with dry hydrostatic pressure
@@ -395,8 +395,8 @@ contains
 !-------------------------------------------------------------------
 !
    real,parameter    ::  xkzmin = 0.01,xkzmax = 1000.,rimin = -100.
-   real,parameter    ::  rlam = 150.,prmin = 0.25,prmax = 4.
-!  real,parameter    ::  rlam = 30.,prmin = 0.25,prmax = 4.
+!  real,parameter    ::  rlam = 150.,prmin = 0.25,prmax = 4.
+   real,parameter    ::  rlam = 30.,prmin = 0.25,prmax = 4.
    real,parameter    ::  brcr_ub = 0.0,brcr_sb = 0.25,cori = 1.e-4
    real,parameter    ::  afac = 6.8,bfac = 6.8,pfac = 2.0,pfac_q = 2.0
    real,parameter    ::  phifac = 8.,sfcfrac = 0.1
@@ -627,10 +627,10 @@ contains
 !
 !-----initialize vertical tendencies and
 !
-   utnp(:,:) = 0.
-   vtnp(:,:) = 0.
-   ttnp(:,:) = 0.
-   qtnp(:,:) = 0.
+   utnp(its:ite,:) = 0.
+   vtnp(its:ite,:) = 0.
+   ttnp(its:ite,:) = 0.
+   qtnp(its:ite,:) = 0.
 !
    do i = its,ite
      wspd1(i) = sqrt(ux(i,1)*ux(i,1)+vx(i,1)*vx(i,1))+1.e-9

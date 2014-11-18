@@ -47,7 +47,8 @@ module mpas_block_creator
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_block_creator_setup_blocks_and_0halo_cells(domain, indexToCellID, cellList, blockID, blockStart, blockCount)!{{{
+   subroutine mpas_block_creator_setup_blocks_and_0halo_cells(nHalos, domain, indexToCellID, cellList, blockID, blockStart, blockCount)!{{{
+     integer, intent(in) :: nHalos !< Input: Number of halos for cell fields
      type (domain_type), pointer :: domain !< Input: Domain information
      type (field1dInteger), pointer :: indexToCellID !< Input/Output: indexToCellID field
      integer, dimension(:), intent(in) :: cellList !< Input: List of cell indices owned by this processor
@@ -55,7 +56,6 @@ module mpas_block_creator
      integer, dimension(:), intent(in) :: blockStart !< Input: Indices of starting cell id in cellList for each block
      integer, dimension(:), intent(in) :: blockCount !< Input: Number of cells from cellList owned by each block.
  
-     integer :: nHalos
      type (block_type), pointer :: blockCursor
      type (field1dInteger), pointer :: fieldCursor
  
@@ -63,7 +63,6 @@ module mpas_block_creator
      integer :: nBlocks
  
      nBlocks = size(blockID)
-     nHalos = config_num_halos
 
      ! Setup first block
      allocate(domain % blocklist)
@@ -129,7 +128,11 @@ module mpas_block_creator
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_block_creator_build_0halo_cell_fields(indexToCellIDBlock, nEdgesOnCellBlock, cellsOnCellBlock, verticesOnCellBlock, edgesOnCellBlock, indexToCellID_0Halo, nEdgesOnCell_0Halo, cellsOnCell_0Halo, verticesOnCell_0Halo, edgesOnCell_0Halo)!{{{
+   subroutine mpas_block_creator_build_0halo_cell_fields(nHalos, indexToCellIDBlock, &
+              nEdgesOnCellBlock, cellsOnCellBlock, verticesOnCellBlock, edgesOnCellBlock, &
+              indexToCellID_0Halo, nEdgesOnCell_0Halo, cellsOnCell_0Halo, &
+              verticesOnCell_0Halo, edgesOnCell_0Halo)!{{{
+     integer, intent(in) :: nHalos !< Input: Number of halos for cell fields
      type(field1dInteger), pointer :: indexToCellIDBlock !< Input: Block of read in indexToCellID field
      type(field1dInteger), pointer :: nEdgesOnCellBlock !< Input: Block of read in nEdgesOnCell field
      type(field2dInteger), pointer :: cellsOnCellBlock !< Input: Block of read in cellsOnCell field
@@ -147,9 +150,7 @@ module mpas_block_creator
 
      integer, dimension(:), pointer :: sendingHaloLayers
 
-     integer :: nCellsInBlock, maxEdges, nHalos
-
-     nHalos = config_num_halos
+     integer :: nCellsInBlock, maxEdges
 
      ! Only sending from halo layer 1 for setup
      allocate(sendingHaloLayers(1))
@@ -267,7 +268,8 @@ module mpas_block_creator
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_block_creator_build_0_and_1halo_edge_fields(indexToEdgeIDBlock, cellsOnEdgeBlock, indexToCellID_0Halo, nEdgesOnCell_0Halo, edgesOnCell_0Halo, indexToEdgeID_0Halo, cellsOnEdge_0Halo, nEdgesSolve)!{{{
+   subroutine mpas_block_creator_build_0_and_1halo_edge_fields(nHalos, indexToEdgeIDBlock, cellsOnEdgeBlock, indexToCellID_0Halo, nEdgesOnCell_0Halo, edgesOnCell_0Halo, indexToEdgeID_0Halo, cellsOnEdge_0Halo, nEdgesSolve)!{{{
+     integer, intent(in) :: nHalos !< Input: Number of halos for cell fields
      type (field1dInteger), pointer :: indexToEdgeIDBlock !< Input: indexToEdgeID read in field
      type (field2dInteger), pointer :: cellsOnEdgeBlock !< Input: cellsOnEdge read in field
      type (field1dInteger), pointer :: indexToCellID_0Halo !< Input: indexToCellID field on 0 halo
@@ -286,7 +288,7 @@ module mpas_block_creator
 
      integer, dimension(:), pointer :: localEdgeList
      integer, dimension(:), pointer :: sendingHaloLayers
-     integer :: nEdgesLocal, nCellsInBlock, maxEdges, edgeDegree, nHalos
+     integer :: nEdgesLocal, nCellsInBlock, maxEdges, edgeDegree
      integer :: haloStart
 
      ! Setup sendingHaloLayers
@@ -296,7 +298,6 @@ module mpas_block_creator
      ! Get dimension information
      maxEdges = edgesOnCell_0Halo % dimSizes(1)
      edgeDegree = cellsOnEdgeBlock % dimSizes(1)
-     nHalos = config_num_halos
 
      ! Setup initial block for each field
      allocate(cellsOnEdge_0Halo)
@@ -479,7 +480,8 @@ module mpas_block_creator
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_block_creator_build_cell_halos(indexToCellID, nEdgesOnCell, cellsOnCell, verticesOnCell, edgesOnCell, nCellsSolve)!{{{
+   subroutine mpas_block_creator_build_cell_halos(nHalos, indexToCellID, nEdgesOnCell, cellsOnCell, verticesOnCell, edgesOnCell, nCellsSolve)!{{{
+     integer, intent(in) :: nHalos !< Input: Number of halos for cell fields
      type (field1dInteger), pointer :: indexToCellID !< Input/Output: indexToCellID field for all halos
      type (field1dInteger), pointer :: nEdgesOnCell !< Input/Output: nEdgesOnCell field for all halos
      type (field2dInteger), pointer :: cellsOnCell !< Input/Output: cellsOnCell field for all halos
@@ -504,10 +506,9 @@ module mpas_block_creator
 
      type (graph), pointer :: blockGraph, blockGraphWithHalo
 
-     integer :: nHalos, nCellsInBlock, nCellsInHalo, maxEdges
+     integer :: nCellsInBlock, nCellsInHalo, maxEdges
      integer :: iHalo
 
-     nHalos = config_num_halos
      dminfo => indexToCellID % block % domain % dminfo
      allocate(sendingHaloLayers(1))
 
@@ -747,7 +748,8 @@ module mpas_block_creator
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_block_creator_build_edge_halos(indexToCellID, nEdgesOnCell, nCellsSolve, edgesOnCell, indexToEdgeID, cellsOnEdge, nEdgesSolve)!{{{
+   subroutine mpas_block_creator_build_edge_halos(nHalos, indexToCellID, nEdgesOnCell, nCellsSolve, edgesOnCell, indexToEdgeID, cellsOnEdge, nEdgesSolve)!{{{
+     integer, intent(in) :: nHalos !< Input: Number of halos for cell fields
      type (field1dInteger), pointer :: indexToCellID !< Input: indexToCellID field for all halos
      type (field1dInteger), pointer :: nEdgesOnCell !< Input: nEdgesOnCell field for all halos
      type (field1dInteger), pointer :: nCellsSolve !< Input: nCellsSolve field for all halos
@@ -768,13 +770,12 @@ module mpas_block_creator
      integer, dimension(:,:), pointer :: array2dHolder
 
      integer :: iHalo, iBlock, i, j
-     integer :: nHalos, nBlocks, nCellsInBlock, nEdgesLocal, haloSize
+     integer :: nBlocks, nCellsInBlock, nEdgesLocal, haloSize
      integer :: maxEdges, edgeDegree
 
      type (hashtable), dimension(:), pointer :: edgeList
 
      ! Determine dimensions
-     nHalos = config_num_halos
      maxEdges = edgesOnCell % dimSizes(1)
      edgeDegree = cellsOnEdge % dimSizes(1)
 
@@ -974,11 +975,12 @@ module mpas_block_creator
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_block_creator_finalize_block_init(blocklist, &  !{{{
+   subroutine mpas_block_creator_finalize_block_init(nHalos, blocklist, &  !{{{
 #include "dim_dummy_args.inc"
                                                      , nCellsSolve, nEdgesSolve, nVerticesSolve, indexToCellID, indexToEdgeID, indexToVertexID)
+     integer, intent(in) :: nHalos !< Input: Number of halos for cell fields
      type (block_type), pointer :: blocklist !< Input/Output: Linked List of blocks
-#include "dim_dummy_decls_inout.inc"
+#include "dim_dummy_defines_inout.inc"
      type (field1dInteger), pointer :: nCellsSolve !< Input: nCellsSolve field information
      type (field1dInteger), pointer :: nEdgesSolve !< Input: nEdgesSolve field information
      type (field1dInteger), pointer :: nVerticesSolve !< Input: nVerticesSolve field information
@@ -988,15 +990,15 @@ module mpas_block_creator
 
      type (domain_type), pointer :: domain
 
+     integer, dimension(:), pointer :: indexToCellIDPool, indexToEdgeIDPool, indexToVertexIDPool
+
      type (block_type), pointer :: block_ptr
      type (field1dInteger), pointer :: nCellsCursor, nEdgesCursor, nVerticesCursor
      type (field1dInteger), pointer :: indexToCellCursor, indexToEdgeCursor, indexToVertexCursor
 
-     integer :: nHalos
      integer :: nCellsSolve_0Halo, nVerticesSolve_0Halo, nEdgesSolve_0Halo
      integer :: blockID, localBlockID
 
-     nHalos = config_num_halos
      domain => blocklist % domain
 
      ! Loop over blocks
@@ -1026,26 +1028,31 @@ module mpas_block_creator
 #include "dim_dummy_args.inc"
                                )
 
-       allocate(block_ptr % mesh % nCellsArray(0:nHalos))
-       allocate(block_ptr % mesh % nEdgesArray(0:nHalos+1))
-       allocate(block_ptr % mesh % nVerticesArray(0:nHalos+1))
+#include "add_dims_to_pool.inc"
 
-       block_ptr % mesh % nCellsArray(:) = nCellsCursor % array(:)
-       block_ptr % mesh % nEdgesArray(:) = nEdgesCursor % array(:)
-       block_ptr % mesh % nVerticesArray(:) = nVerticesCursor % array(:)
+       ! Set block's *Solve dimensions
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nCellsSolve', nCellsSolve_0Halo)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nEdgesSolve', nEdgesSolve_0Halo)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nVerticesSolve', nVerticesSolve_0Halo)
+
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nCellsArray', nCellsCursor % array(:))
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nEdgesArray', nEdgesCursor % array(:))
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nVerticesArray', nVerticesCursor % array(:))
+
+       call mpas_define_derived_dimensions(block_ptr % dimensions, block_ptr % configs)
+
+       call mpas_generate_structs(block_ptr, block_ptr % structs, block_ptr % dimensions, block_ptr % packages)
 
        ! Set block's local id
        block_ptr % localBlockID = localBlockID
 
-       ! Set block's *Solve dimensions
-       block_ptr % mesh % nCellsSolve = nCellsSolve_0Halo
-       block_ptr % mesh % nEdgesSolve = nEdgesSolve_0Halo
-       block_ptr % mesh % nVerticesSolve = nVerticesSolve_0Halo
-
        ! Set block's 0 halo indices
-       block_ptr % mesh % indexToCellID % array(1:nCellsSolve_0Halo) = indexToCellCursor % array(1:nCellsSolve_0Halo)
-       block_ptr % mesh % indexToEdgeID % array(1:nEdgesSolve_0Halo) = indexToEdgeCursor % array(1:nEdgesSolve_0Halo)
-       block_ptr % mesh % indexToVertexID % array(1:nVerticesSolve_0Halo) = indexToVertexCursor % array(1:nVerticesSolve_0Halo)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToCellID', indexToCellIDPool)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToEdgeID', indexToEdgeIDPool)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToVertexID', indexToVertexIDPool)
+       indexToCellIDPool(1:nCellsSolve_0Halo) = indexToCellCursor % array(1:nCellsSolve_0Halo)
+       indexToEdgeIDPool(1:nEdgesSolve_0Halo) = indexToEdgeCursor % array(1:nEdgesSolve_0Halo)
+       indexToVertexIDPool(1:nVerticesSolve_0Halo) = indexToVertexCursor % array(1:nVerticesSolve_0Halo)
 
        ! Set block's exchange lists and nullify unneeded exchange lists
        block_ptr % parinfo % cellsToSend => indexToCellCursor % sendList
@@ -1111,13 +1118,6 @@ module mpas_block_creator
        indexToVertexCursor => indextoVertexcursor % next
      end do
 
-     ! Link fields between blocks
-     block_ptr => blocklist
-     do while(associated(block_ptr))
-       call mpas_create_field_links(block_ptr)
-
-       block_ptr => block_ptr % next
-     end do
    end subroutine mpas_block_creator_finalize_block_init!}}}
 
 !***********************************************************************
@@ -1143,113 +1143,131 @@ module mpas_block_creator
      integer :: i, j, k
      integer, dimension(:,:), pointer :: cellIDSorted, edgeIDSorted, vertexIDSorted
 
+     integer, pointer :: nCells, nEdges, nVertices, vertexDegree
+     integer, dimension(:), pointer :: indexToCellID, indexToEdgeID, indexToVertexID
+     integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge
+     integer, dimension(:,:), pointer :: cellsOnCell, cellsOnVertex, cellsOnEdge
+     integer, dimension(:,:), pointer :: edgesOnCell, edgesOnVertex, edgesOnEdge
+     integer, dimension(:,:), pointer :: verticesOnCell, verticesOnEdge
+
      ! Loop over blocks
      block_ptr => blocklist
      do while(associated(block_ptr))
+       call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
+       call mpas_pool_get_dimension(block_ptr % dimensions, 'nEdges', nEdges)
+       call mpas_pool_get_dimension(block_ptr % dimensions, 'nVertices', nVertices)
+       call mpas_pool_get_dimension(block_ptr % dimensions, 'vertexDegree', vertexDegree)
+
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToCellID', indexToCellID)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToEdgeID', indexToEdgeID)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToVertexID', indexToVertexID)
+       call mpas_pool_get_array(block_ptr % allFields, 'nEdgesOnCell', nEdgesOnCell)
+       call mpas_pool_get_array(block_ptr % allFields, 'nEdgesOnEdge', nEdgesOnEdge)
+       call mpas_pool_get_array(block_ptr % allFields, 'cellsOnCell', cellsOnCell)
+       call mpas_pool_get_array(block_ptr % allFields, 'cellsOnVertex', cellsOnVertex)
+       call mpas_pool_get_array(block_ptr % allFields, 'cellsOnEdge', cellsOnEdge)
+       call mpas_pool_get_array(block_ptr % allFields, 'edgesOnCell', edgesOnCell)
+       call mpas_pool_get_array(block_ptr % allFields, 'edgesOnVertex', edgesOnVertex)
+       call mpas_pool_get_array(block_ptr % allFields, 'verticesOnCell', verticesOnCell)
+       call mpas_pool_get_array(block_ptr % allFields, 'verticesOnEdge', verticesOnEdge)
+       call mpas_pool_get_array(block_ptr % allFields, 'edgesOnEdge', edgesOnEdge)
+
        !
        ! Rename vertices in cellsOnCell, edgesOnCell, etc. to local indices
        !
-       allocate(cellIDSorted(2, block_ptr % mesh % nCells))
-       allocate(edgeIDSorted(2, block_ptr % mesh % nEdges))
-       allocate(vertexIDSorted(2, block_ptr % mesh % nVertices))
+       allocate(cellIDSorted(2, nCells))
+       allocate(edgeIDSorted(2, nEdges))
+       allocate(vertexIDSorted(2, nVertices))
  
-       do i=1,block_ptr % mesh % nCells
-         cellIDSorted(1,i) = block_ptr % mesh % indexToCellID % array(i)
+       do i = 1, nCells
+         cellIDSorted(1,i) = indexToCellID(i)
          cellIDSorted(2,i) = i
        end do
-       call mpas_quicksort(block_ptr % mesh % nCells, cellIDSorted)
+       call mpas_quicksort(nCells, cellIDSorted)
  
-       do i=1,block_ptr % mesh % nEdges
-         edgeIDSorted(1,i) = block_ptr % mesh % indexToEdgeID % array(i)
+       do i = 1, nEdges
+         edgeIDSorted(1,i) = indexToEdgeID(i)
          edgeIDSorted(2,i) = i
        end do
-       call mpas_quicksort(block_ptr % mesh % nEdges, edgeIDSorted)
+       call mpas_quicksort(nEdges, edgeIDSorted)
  
-       do i=1,block_ptr % mesh % nVertices
-         vertexIDSorted(1,i) = block_ptr % mesh % indexToVertexID % array(i)
+       do i = 1, nVertices
+         vertexIDSorted(1,i) = indexToVertexID(i)
          vertexIDSorted(2,i) = i
        end do
-       call mpas_quicksort(block_ptr % mesh % nVertices, vertexIDSorted)
+       call mpas_quicksort(nVertices, vertexIDSorted)
  
  
-       do i=1,block_ptr % mesh % nCells
-         do j=1,block_ptr % mesh % nEdgesOnCell % array(i)
-           k = mpas_binary_search(cellIDSorted, 2, 1, block_ptr % mesh % nCells, &
-                                  block_ptr % mesh % cellsOnCell % array(j,i))
-           if (k <= block_ptr % mesh % nCells) then
-             block_ptr % mesh % cellsOnCell % array(j,i) = cellIDSorted(2,k)
+       do i = 1, nCells
+         do j = 1, nEdgesOnCell(i)
+           k = mpas_binary_search(cellIDSorted, 2, 1, nCells, cellsOnCell(j,i))
+           if (k <= nCells) then
+             cellsOnCell(j,i) = cellIDSorted(2,k)
            else
-             block_ptr % mesh % cellsOnCell % array(j,i) = block_ptr % mesh % nCells + 1
+             cellsOnCell(j,i) = nCells + 1
            end if
  
-           k = mpas_binary_search(edgeIDSorted, 2, 1, block_ptr % mesh % nEdges, &
-                                  block_ptr % mesh % edgesOnCell % array(j,i))
-           if (k <= block_ptr % mesh % nEdges) then
-             block_ptr % mesh % edgesOnCell % array(j,i) = edgeIDSorted(2,k)
+           k = mpas_binary_search(edgeIDSorted, 2, 1, nEdges, edgesOnCell(j,i))
+           if (k <= nEdges) then
+             edgesOnCell(j,i) = edgeIDSorted(2,k)
            else
-             block_ptr % mesh % edgesOnCell % array(j,i) = block_ptr % mesh % nEdges + 1
+             edgesOnCell(j,i) = nEdges + 1
            end if
   
-           k = mpas_binary_search(vertexIDSorted, 2, 1, block_ptr % mesh % nVertices, &
-                                  block_ptr % mesh % verticesOnCell % array(j,i))
-           if (k <= block_ptr % mesh % nVertices) then
-             block_ptr % mesh % verticesOnCell % array(j,i) = vertexIDSorted(2,k)
+           k = mpas_binary_search(vertexIDSorted, 2, 1, nVertices, verticesOnCell(j,i))
+           if (k <= nVertices) then
+             verticesOnCell(j,i) = vertexIDSorted(2,k)
            else
-             block_ptr % mesh % verticesOnCell % array(j,i) = block_ptr % mesh % nVertices + 1
+             verticesOnCell(j,i) = nVertices + 1
            end if
          end do
        end do
   
-       do i=1,block_ptr % mesh % nEdges
-         do j=1,2
+       do i = 1, nEdges
+         do j = 1, 2
   
-           k = mpas_binary_search(cellIDSorted, 2, 1, block_ptr % mesh % nCells, &
-                                  block_ptr % mesh % cellsOnEdge % array(j,i))
-           if (k <= block_ptr % mesh % nCells) then
-             block_ptr % mesh % cellsOnEdge % array(j,i) = cellIDSorted(2,k)
+           k = mpas_binary_search(cellIDSorted, 2, 1, nCells, cellsOnEdge(j,i))
+           if (k <= nCells) then
+             cellsOnEdge(j,i) = cellIDSorted(2,k)
            else
-             block_ptr % mesh % cellsOnEdge % array(j,i) = block_ptr % mesh % nCells + 1
+             cellsOnEdge(j,i) = nCells + 1
            end if
   
-           k = mpas_binary_search(vertexIDSorted, 2, 1, block_ptr % mesh % nVertices, &
-                                  block_ptr % mesh % verticesOnEdge % array(j,i))
-           if (k <= block_ptr % mesh % nVertices) then
-             block_ptr % mesh % verticesOnEdge % array(j,i) = vertexIDSorted(2,k)
+           k = mpas_binary_search(vertexIDSorted, 2, 1, nVertices, verticesOnEdge(j,i))
+           if (k <= nVertices) then
+             verticesOnEdge(j,i) = vertexIDSorted(2,k)
            else
-             block_ptr % mesh % verticesOnEdge % array(j,i) = block_ptr % mesh % nVertices + 1
+             verticesOnEdge(j,i) = nVertices + 1
            end if
   
          end do
   
-         do j=1,block_ptr % mesh % nEdgesOnEdge % array(i)
+         do j = 1, nEdgesOnEdge(i)
   
-           k = mpas_binary_search(edgeIDSorted, 2, 1, block_ptr % mesh % nEdges, &
-                                  block_ptr % mesh % edgesOnEdge % array(j,i))
-           if (k <= block_ptr % mesh % nEdges) then
-             block_ptr % mesh % edgesOnEdge % array(j,i) = edgeIDSorted(2,k)
+           k = mpas_binary_search(edgeIDSorted, 2, 1, nEdges, edgesOnEdge(j,i))
+           if (k <= nEdges) then
+             edgesOnEdge(j,i) = edgeIDSorted(2,k)
            else
-             block_ptr % mesh % edgesOnEdge % array(j,i) = block_ptr % mesh % nEdges + 1
+             edgesOnEdge(j,i) = nEdges + 1
            end if
          end do
        end do
   
-       do i=1,block_ptr % mesh % nVertices
-         do j=1,block_ptr % mesh % vertexDegree
+       do i = 1, nVertices
+         do j = 1, vertexDegree
   
-           k = mpas_binary_search(cellIDSorted, 2, 1, block_ptr % mesh % nCells, &
-                                  block_ptr % mesh % cellsOnVertex % array(j,i))
-           if (k <= block_ptr % mesh % nCells) then
-             block_ptr % mesh % cellsOnVertex % array(j,i) = cellIDSorted(2,k)
+           k = mpas_binary_search(cellIDSorted, 2, 1, nCells, cellsOnVertex(j,i))
+           if (k <= nCells) then
+             cellsOnVertex(j,i) = cellIDSorted(2,k)
            else
-             block_ptr % mesh % cellsOnVertex % array(j,i) = block_ptr % mesh % nCells + 1
+             cellsOnVertex(j,i) = nCells + 1
            end if
   
-           k = mpas_binary_search(edgeIDSorted, 2, 1, block_ptr % mesh % nEdges, &
-                             block_ptr % mesh % edgesOnVertex % array(j,i))
-           if (k <= block_ptr % mesh % nEdges) then
-             block_ptr % mesh % edgesOnVertex % array(j,i) = edgeIDSorted(2,k)
+           k = mpas_binary_search(edgeIDSorted, 2, 1, nEdges, edgesOnVertex(j,i))
+           if (k <= nEdges) then
+             edgesOnVertex(j,i) = edgeIDSorted(2,k)
            else
-             block_ptr % mesh % edgesOnVertex % array(j,i) = block_ptr % mesh % nEdges + 1
+             edgesOnVertex(j,i) = nEdges + 1
            end if
          end do
        end do

@@ -204,9 +204,9 @@ module mpas_geometry_utils
       integer, dimension(n) :: indx
 !      integer :: i,j
    
-      if ( (ne<n) .or. (ne<m) ) then
-         write(stdoutUnit,*) ' error in poly_fit_2 inversion ',m,n,ne
-         stop
+      if ( (ne < n) .or. (ne < m) ) then
+         write(stderrUnit,*) ' error in poly_fit_2 inversion ',m,n,ne
+         call mpas_dmpar_global_abort('ERROR: in subroutine poly_fit_2()')
       end if
    
 !      a(1:m,1:n) = a_in(1:n,1:m) 
