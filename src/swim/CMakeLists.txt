@@ -80,6 +80,7 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_SHARE_DIR}/thread_mod.F90
                ${SRC_SHARE_DIR}/time_mod.F90
                ${SRC_SHARE_DIR}/viscosity_mod.F90
+               ${SRC_SHARE_DIR}/unit_tests_mod.F90
                ${UTILS_SHARE_DIR}/shr_file_mod.F90
                ${UTILS_SHARE_DIR}/shr_kind_mod.F90
                ${UTILS_SHARE_DIR}/shr_mpi_mod.F90

@@ -39,6 +39,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/bndry_mod.F90
   ${SRC_SHARE_DIR}/derivative_mod.F90
   ${SRC_SHARE_DIR}/viscosity_mod.F90
+  ${SRC_SHARE_DIR}/unit_tests_mod.F90
   ${SRC_SHARE_DIR}/spacecurve_mod.F90
   ${SRC_SHARE_DIR}/cube_mod.F90
   ${SRC_SHARE_DIR}/interpolate_mod.F90
