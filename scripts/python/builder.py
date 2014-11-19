@@ -251,6 +251,14 @@ class darwin(platformBuilder):
         # ~# somthing similar)
         pass
 
+class elm(Darwin):
+
+    def __init__(self, compiler, test):
+        """ user defined ctor so we can put stuff in a class instead of as
+            class attributes
+        """
+        super(elm,self).__init__(compiler, test)
+
 class goldbach(platformBuilder):
     
     def __init__(self, compiler, test):
