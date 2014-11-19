@@ -18,7 +18,7 @@ module inidat
   use element_mod, only : element_t
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmd_utils,   only: iam, masterproc
-  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim
+  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock
   implicit none
   private
   public read_inidat
@@ -150,7 +150,12 @@ contains
       do ie=1,nelemd
         ! seed random number generator based on element ID
         ! (possibly include a flag to allow clock-based random seeding)
-        rndm_seed = elem(ie)%GlobalId
+        rndm_seed(:) = elem(ie)%GlobalId
+        if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
+        if (seed_clock) then
+          call system_clock(sysclk)
+          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk) )
+        endif
         call random_seed(put=rndm_seed)
         do i=1,np
           do j=1,np
