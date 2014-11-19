@@ -117,6 +117,10 @@ class platformBuilder(object):
                              '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
                              '-DHAVE_SLASHPROC -I. '
                              '-I/usr/local/openmpi-gcc-nag/include  ')
+        if compiler == 'ibm':
+            self.FFLAGS = ('-g')
+            self.CFLAGS = ('-g')
+            self.CXXFLAGS = ('-g')
 
     @classmethod
     def _raise_not_implemented(cls, method_name):
@@ -195,6 +199,10 @@ class platformBuilder(object):
             return yellowstone(compiler,test)
         if platform == "caldera":
             return caldera(compiler,test)
+        if platform == "mira":
+            return cetus(compiler,test)
+        if platform == "cetus":
+            return cetus(compiler,test)
 #        return platformBuilder(compiler)
 
 
@@ -251,7 +259,7 @@ class darwin(platformBuilder):
         # ~# somthing similar)
         pass
 
-class elm(Darwin):
+class elm(darwin):
 
     def __init__(self, compiler, test):
         """ user defined ctor so we can put stuff in a class instead of as
@@ -388,3 +396,130 @@ class caldera(yellowstone):
         super(caldera,self).__init__(compiler, test)
         self.EXECCA = ''
         self.TEST_CMD = ('ctest --verbose')
+
+
+class cetus(platformBuilder):
+
+    def __init__(self, compiler, test):
+        """ user defined ctor so we can put stuff in a class instead of as
+            class attributes
+        """
+        super(cetus,self).__init__( compiler, test)
+
+        self.moduleList = ['+mpiwrapper-xl ',
+                           '@ibm-compilers-2014-02 ',
+                           '+cmake ']
+
+        self.BUILD_DIR = "build_cetus_" + compiler
+        self.runModuleCmd()
+
+        self.OFLAGS += ('-D PNETCDF_DIR:STRING={pnetcdf} '
+                       '-D NETCDF_DIR:STRING={netcdf} '.format(
+                        netcdf=os.environ['NETCDF'],
+                        pnetcdf=os.environ['PNETCDF']))
+
+        self.CMAKE_EXE = 'cmake'
+
+        self.FC = 'mpixlf2003_r'
+        self.CC = 'mpixlc_r'
+        self.CXX = 'mpixlcxx_r'
+        self.LDFLAGS = ''
+        self.NUMPE = '4'
+
+        self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
+                       '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
+                       '-D PLATFORM:STRING=cetus '
+                        '-D ADDITIONAL_LIBS=\"-Wl,--relax -Wl,--allow-multiple-definition -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz\"')
+#        self.CXXFLAGS += (' -DLINUX -DHAVE_MPI -DFORTRANUNDERSCORE ')
+
+#        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="runjob " ')
+#        self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
+        """ qsub on Cetus does not allow specifying scripts or executables
+            when submitting interactive jobs. So we only have two options,
+            1. Open an interactive shell and ask user to type "ctest" from
+              the interactive shell
+            2. Submit the test as a script job
+            Option 1 is not feasible since we don't know how long the user 
+            might have to wait for the interactive command prompt. So we
+            go with Option 2
+        """
+        self.TEST_CMD = ('qsub -t 15 -n 1 --mode script ../scripts/cetus_test.sh')
+        self.MAKE_CMD = ("/bin/csh -c \"" + "source ../scripts/cetus_env.sh && " +
+                          "make all " + "\"")
+
+    def buildCmd(self):
+        """ run build
+        """
+        p = subprocess.Popen(self.MAKE_CMD,
+                             shell=True, env=self.envMod)
+        p.wait()
+
+    def testCmd(self):
+
+        p = subprocess.Popen(self.TEST_CMD,
+                             shell=True, env=self.envMod)
+        p.wait()
+
+    def runModuleCmd(self):
+        """ Using the soft environment requires sourcing the soft
+            environment script file - this is not possible right now
+            with the current framework. So the next best option is
+            to source an environment file everytime we run a command
+            (cmake, make) - cetus_env.sh
+            This module sources the cetus environment script and grabs
+            the PNETCDF and NETCDF installation directories set by
+            the script. Note that there are no soft environments for
+            these libraries on Cetus
+        """
+        cmd = ("/bin/csh -c \"" + "source ./scripts/cetus_env.sh && " +
+                          "env " + "\"")
+        p = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE)
+        p.wait()
+        for line in p.stdout:
+          line = line.decode("UTF-8")
+          (key, _, val) = line.partition("=")
+          if key == "PNETCDF" or key == "NETCDF":
+            os.environ[key] = val.rstrip()
+          else:
+            pass
+				
+#        self.lmod = lmod.SoftEnvInterface()
+
+#        for module in self.moduleList:
+#            self.lmod.load_str(module)
+
+    def cmakeCmd(self):
+        """ cmake command to run
+            For cetus the cetus environment script, cetus_env.sh,
+            is sourced before running cmake. Overriding this function
+            makes this workflow easier.
+        """
+        # ~# make build directory and move to it.
+        if not os.path.exists(self.BUILD_DIR):
+            os.makedirs(self.BUILD_DIR)
+
+        os.chdir(self.BUILD_DIR)
+
+        # ~# change environemnt, first get existing env
+        self.envMod = dict(os.environ)
+        # ~# add to env
+        self.envMod['FC'] = self.FC
+        self.envMod['CC'] = self.CC
+        self.envMod['CXX'] = self.CXX
+        self.envMod['LDFLAGS'] = self.LDFLAGS
+
+        fflags = (' -D CMAKE_Fortran_FLAGS:STRING="{0}" '.format(self.FFLAGS))
+        cflags = (' -D CMAKE_C_FLAGS:STRING="{0}"  '.format(self.CFLAGS))
+        cxxflags =(' -D CMAKE_CXX_FLAGS:STRING="{0}" '.format(self.CXXFLAGS))
+
+        cmakeString = (self.CMAKE_EXE + fflags + cflags +
+                       cxxflags + self.OFLAGS + " ..")
+        cmakeString = ("/bin/csh -c \"" + "source ../scripts/cetus_env.sh && " +
+                        cmakeString.replace('"', r'\"') +
+                       "\"")
+#        print(cmakeString)
+
+        p = subprocess.Popen(cmakeString,
+                             shell=True, env=self.envMod)
+        p.wait()
+
