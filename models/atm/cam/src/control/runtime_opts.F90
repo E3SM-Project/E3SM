@@ -194,6 +194,12 @@ character(len=256) :: cam_branch_file = ' '
 ! pertlim = n.n        Max size of perturbation to apply to initial
 !                      temperature field.
 !
+! seed_custom          integer: if > 0, use new seeding mechanism that uses a
+!                      custom seed rather than a custom limit. Default 0
+!
+! seed_clock           logical: if .true., XOR the system_clock with the seed,
+!                      wheter it includes a custom seed or not. Default .false.
+!
 ! phys_alltoall        Dynamics/physics transpose option. See phys_grid module.
 !
 integer :: phys_alltoall
@@ -439,6 +445,8 @@ contains
                     dtime, &
                     nlvdry,  &
                     pertlim ,&
+                    seed_custom ,&
+                    seed_clock ,&
                     readtrace, rayk0, raykrange, raytau0, &
                     tracers_flag, &
                     inithist, indirect, &
@@ -900,7 +908,9 @@ subroutine distnl
    call mpibcast (use_64bit_nc,1,mpilog,0,mpicom)
    call mpibcast (print_step_cost,1,mpilog,0,mpicom)
    call mpibcast (inithist_all   ,1,mpilog,0,mpicom)
-   call mpibcast (pertlim     ,1, mpir8,  0, mpicom )
+   call mpibcast (pertlim     ,1, mpir8 , 0, mpicom )
+   call mpibcast (seed_custom ,1, mpiint, 0, mpicom )
+   call mpibcast (seed_clock  ,1, mpilog, 0, mpicom )
 
    call mpibcast (caseid  ,len(caseid) ,mpichar,0,mpicom)
    call mpibcast (avgflag_pertape, ptapes, mpichar,0,mpicom)
