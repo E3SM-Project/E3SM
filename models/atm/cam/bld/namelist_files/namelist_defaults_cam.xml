@@ -161,10 +161,14 @@
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
 
-<ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c100618.nc</ncdata>
+<!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c100618.nc</ncdata-->
+<!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
+<ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c141107.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_svalbardx8v1np4_L30_ape_c000000.nc</ncdata>
 
-<ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c100618.nc</ncdata>
+<!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c100618.nc</ncdata-->
+<!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
+<ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c141110.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_sooberingoax4x8v1np4_L30_ape_c000000.nc</ncdata>
 
 
