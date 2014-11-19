@@ -18,109 +18,35 @@ class platformBuilder(object):
         tests.
     """
 
-    def __init__(self, compiler,test):
+    def __init__(self, compiler,test,mpi,debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes.  Override this in platform specific classes
         """
         self.test = test
         self.CMAKE_EXE = ''
+        if mpi is True:
+            self.FC = 'mpifort'
+            self.CC = 'mpicc'
+            self.CXX = 'mpiCC'
+        else:
+            self.CC = 'cc'
+            self.FC = 'f90'
 
-        self.FC = ''
-        self.CC = ''
-        self.CXX = ''
-        self.LDFLAGS = ''
+
+        if debug is True:
+            bldtype = "PIO_DEBUG"
+        else:
+            bldtype = "PIO"
 
 
-        self.CXXFLAGS = ''
-        self.CFLAGS = '-I. '
-        self.OFLAGS = ('-D PIO_BUILD_TESTS:LOGICAL=TRUE '
-                                  '-D PIO_BUILD_TIMING:LOGICAL=TRUE ')
+        self.OFLAGS = ('-D CMAKE_BUILD_TYPE:STRING={0} '
+                                  '-D PIO_BUILD_TESTS:LOGICAL=TRUE '
+                                  '-D PIO_BUILD_TIMING:LOGICAL=TRUE '.format(bldtype))
         self.MPIEXEC = ''
         self.EXECCA = ''
         self.TEST_CMD = 'ctest --verbose'
         self.MAKE_CMD = 'make all'
         self.envMod = {}
-        if compiler == 'pgi':
-            self.LDFLAGS = ('-time -Wl,--allow-multiple-definition  -nomp ')
-            self.FFLAGS = (' -i4 -gopt -Mlist '
-                           '-time -Mextend -byteswapio -Mflushz -Kieee -O '
-                           '-nomp   -DLINUX  -DNDEBUG  -DHAVE_MPI '
-                           '-DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16   -DLINUX '
-                           '-DCPRPGI  -DHAVE_SLASHPROC -I.  ')
-            self.CFLAGS = (' -gopt -Mlist -time  -O  '
-                           '-nomp   -DLINUX  -DNDEBUG  -DHAVE_MPI '
-                           '-DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 '
-                           '-DLINUX -DCPRPGI  -DHAVE_SLASHPROC -I.  ')
-            self.CXXFLAGS = ''
-        if compiler == 'intel':
-            self.FFLAGS = (' -fp-model source '
-                            '-convert big_endian -assume byterecl -ftz -traceback -assume '
-                            'realloc_lhs '
-                            '-xHost  -O2   -DLINUX  -DNDEBUG  '
-                            '-DHAVE_MPI '
-                            '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  -DLINUX '
-                            '-DCPRINTEL '
-                            '-DHAVE_SLASHPROC -I.  ')
-            self.CFLAGS = (' -O2 -fp-model precise '
-                            '-xHost '
-                            '-DLINUX  -DNDEBUG -DHAVE_MPI '
-                            '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  '
-                            '-DLINUX -DBIT64 -DHAVE_VPRINTF  '
-                            '-DHAVE_TIMES -DHAVE_GETTIMEOFDAY  '
-                            '-DCPRINTEL  -DHAVE_SLASHPROC -I.  ')
-            self.CXXFLAGS = (' -O2 -fp-model precise '
-                              '-xHost '
-                              '  -DNDEBUG -DHAVE_MPI '
-                              '-DFORTRANUNDERSCORE -DNO_R16 -DHAVE_NANOTIME  '
-                              '-DLINUX '
-                              '-DCPRINTEL  -DHAVE_SLASHPROC -I.  ')
-        if compiler == 'gnu':
-            self.FFLAGS = (' -O '
-                           '-fconvert=big-endian -ffree-line-length-none '
-                           '-ffixed-line-length-none -DLINUX -DNDEBUG '
-                           '-D_NETCDF -D_PNETCDF '
-                           ' -DHAVE_MPI -DFORTRANUNDERSCORE '
-                           ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I.  ')
-            self.CFLAGS = ('-DLINUX  -DNDEBUG '
-                           ' -DHAVE_MPI -DFORTRANUNDERSCORE '
-                           '-D_NETCDF -D_PNETCDF '
-                           ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I.  ')
-            self.CXXFLAGS = ('-DLINUX  -DNDEBUG '
-                             '-D_NETCDF -D_PNETCDF '
-                             ' -DHAVE_MPI -DFORTRANUNDERSCORE '
-                             ' -DLINUX -DCPRGNU -DHAVE_SLASHPROC -I.  ')
-        if compiler == 'nag':
-            self.FFLAGS = ('-Wp,-macro=no_com '
-                           '-kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,'
-                           'mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,'
-                           'mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,'
-                           'mpi_scatterv,'
-                           'mpi_allgather,mpi_alltoallv,mpi_file_read_all,'
-                           'mpi_file_write_all,mpibcast,mpiscatterv '
-                           '-convert=BIG_ENDIAN '
-                           '-gline  -C=all -g -time -f2003 -ieee=stop -DLINUX '
-                           ' -DHAVE_MPI -DFORTRANUNDERSCORE '
-                           '-DNO_CRAY_POINTERS -DNO_SHR_VMATH -DNO_C_SIZEOF '
-                           '-DLINUX '
-                           '-DCPRNAG -DHAVE_SLASHPROC -I. '
-                           '-I/usr/local/netcdf-gcc-nag/include '
-                           '-I/usr/local/openmpi-gcc-nag/include  ')
-            self.CFLAGS = (' -g -Wl,--as-needed,'
-                           '--allow-shlib-undefined -DLINUX  '
-                           '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
-                           '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
-                           '-DHAVE_SLASHPROC -I. '
-                           '-I/usr/local/openmpi-gcc-nag/include  ')
-            self.CXXFLAGS = (' -g -Wl,--as-needed,'
-                             '--allow-shlib-undefined -DLINUX  '
-                             '-DHAVE_MPI -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS '
-                             '-DNO_SHR_VMATH -DNO_C_SIZEOF -DLINUX -DCPRNAG  '
-                             '-DHAVE_SLASHPROC -I. '
-                             '-I/usr/local/openmpi-gcc-nag/include  ')
-        if compiler == 'ibm':
-            self.FFLAGS = ('-g')
-            self.CFLAGS = ('-g')
-            self.CXXFLAGS = ('-g')
 
     @classmethod
     def _raise_not_implemented(cls, method_name):
@@ -166,43 +92,36 @@ class platformBuilder(object):
 
         os.chdir(self.BUILD_DIR)
 
-        # ~# change environemnt, first get existing env
+        # ~# change environment, first get existing env
         self.envMod = dict(os.environ)
-        # ~# add to env
+        # ~# add to env-        
         self.envMod['FC'] = self.FC
         self.envMod['CC'] = self.CC
         self.envMod['CXX'] = self.CXX
-        self.envMod['LDFLAGS'] = self.LDFLAGS
 
-        fflags = (' -D CMAKE_Fortran_FLAGS:STRING="{0}" '.format(self.FFLAGS))
-        cflags = (' -D CMAKE_C_FLAGS:STRING="{0}"  '.format(self.CFLAGS))
-        cxxflags =(' -D CMAKE_CXX_FLAGS:STRING="{0}" '.format(self.CXXFLAGS))
-
-        cmakeString = (self.CMAKE_EXE + fflags + cflags +
-                       cxxflags + self.OFLAGS + self.EXECCA + self.MPIEXEC + ' ..')
-
+        cmakeString = (self.CMAKE_EXE +' '+ self.OFLAGS + ' '+ self.EXECCA + ' '+self.MPIEXEC + ' ..')
+        print(cmakeString)
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
         p.wait()
 
     @staticmethod
-    def factory(platform,compiler,test):
+    def factory(platform,compiler,test,mpi,debug):
         """ factory method for instantiating the appropriate class
         """
 
-#        type = platform + '_' + compiler
         if platform == "darwin":
-            return darwin(compiler,test)
+            return darwin(compiler,test,mpi,debug)
         if platform == "goldbach":
-            return goldbach(compiler,test)
+            return goldbach(compiler,test,mpi,debug)
         if platform == "yellowstone":
-            return yellowstone(compiler,test)
+            return yellowstone(compiler,test,mpi,debug)
         if platform == "caldera":
-            return caldera(compiler,test)
+            return caldera(compiler,test,mpi,debug)
         if platform == "mira":
-            return cetus(compiler,test)
+            return cetus(compiler,test,mpi,debug)
         if platform == "cetus":
-            return cetus(compiler,test)
+            return cetus(compiler,test,mpi,debug)
 #        return platformBuilder(compiler)
 
 
@@ -214,42 +133,17 @@ class platformBuilder(object):
     
 class darwin(platformBuilder):
 
-    def __init__(self, compiler, test):
+    def __init__(self, compiler, test,mpi,debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
-        super(darwin,self).__init__(compiler, test)
+        super(darwin,self).__init__(compiler, test,mpi,debug)
         
         self.CMAKE_EXE = '/opt/local/bin/cmake'
-        self.FC = '/opt/local/bin/mpifort-mpich-gcc48'
-        self.CC = '/opt/local/bin/mpicc-mpich-mp'
-        self.CXX = '/opt/local/bin/mpicxx-mpich-mp'
-        self.LDFLAGS = '-lcurl'
-
-        self.FFLAGS = (' -O '
-                       '-fconvert=big-endian '
-                       '-ffree-line-length-none -ffixed-line-length-none '
-                       '-fno-range-check '
-                       '-g -Wall  -DDarwin   -DNO_MPI2 '
-                       '-DNO_MPIMOD '
-                       '-DFORTRANUNDERSCORE -DNO_R16 -DSYSDARWIN  -DDarwin '
-                       '-DCPRGNU -I.  ')
-        self.CFLAGS += (' -D CMAKE_C_FLAGS:STRING=" -DDarwin  '
-                       '-DNO_MPI2 '
-                       '-DNO_MPIMOD -DFORTRANUNDERSCORE '
-                       '-DNO_R16 -DSYSDARWIN -DDarwin '
-                       '-DCPRGNU  -I." ')
-        self.CXXFLAGS = (' -D CMAKE_CXX_FLAGS:STRING=" -DDarwin  '
-                         '-DNO_MPI2 '
-                         '-DNO_MPIMOD -DFORTRANUNDERSCORE '
-                         '-DNO_R16 -DSYSDARWIN -DDarwin '
-                         '-DCPRGNU  -I." ')
-        self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
-                       '-D NETCDF_DIR:STRING=/opt/local '
-                       '-D PNETCDF_DIR:STRING=/opt/local '
-                       '-D PLATFORM:STRING=darwin ')
-        self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
-                        '/opt/local/bin/mpiexec-mpich-gcc48 ')
+        self.OFLAGS += ('-D PLATFORM:STRING=darwin ')
+        if mpi is True:
+            self.MPIEXEC = ('-D  MPIEXEC:FILEPATH='
+                            '/opt/local/bin/mpiexec-mpich-gcc48 ')
         self.EXECCA = ''
     
     def runModuleCmd(self):
@@ -261,41 +155,34 @@ class darwin(platformBuilder):
 
 class elm(darwin):
 
-    def __init__(self, compiler, test):
+    def __init__(self, compiler, test,mpi,debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
-        super(elm,self).__init__(compiler, test)
+        super(elm,self).__init__(compiler, test,mpi,debug)
 
 class goldbach(platformBuilder):
     
-    def __init__(self, compiler, test):
+    def __init__(self, compiler, test,mpi,debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
         
-        super(goldbach, self).__init__(compiler, test)
+        super(goldbach, self).__init__(compiler, test,debug)
         if compiler == 'nag':
             self.moduleList = ['compiler/nag/5.3.1-907']
         if compiler == 'intel':
             self.moduleList = ['compiler/intel/14.0.2']
-            self.FFLAGS += (' -DNO_MPIMOD ')
+
         self.BUILD_DIR = "build_goldbach_" + compiler
         self.runModuleCmd()
 
         self.CMAKE_EXE = '/usr/bin/cmake '
-        self.FC = 'mpif90'
-        self.CC = 'mpicc'
-        self.CXX = 'mpicxx'
    
-        self.OFLAGS += ('-D NETCDF_DIR:STRING={netcdf} '
-                        '-D WITH_PNETCDF:LOGICAL=FALSE '
-                        '-D PLATFORM:STRING=goldbach '.format(
-                        netcdf=os.environ['NETCDF_PATH']))
-
-        self.MPIEXEC = ('mpirun ')
+        self.OFLAGS += ( '-D PLATFORM:STRING=goldbach ')
+        if mpi is True:
+            self.MPIEXEC = ('mpirun ')
         self.EXECCA = ''
-        self.LDFLAGS = '-lcurl'
 
     def runModuleCmd(self):
         """ implement ABC...run module cmds
@@ -313,11 +200,11 @@ class goldbach(platformBuilder):
   
 class yellowstone(platformBuilder):
 
-    def __init__(self, compiler, test):
+    def __init__(self, compiler, test, mpi, debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
-        super(yellowstone,self).__init__( compiler, test)
+        super(yellowstone,self).__init__( compiler, test, mpi,debug)
 
         self.moduleList = ['ncarenv/1.0 ',
                                            'cmake ',
@@ -325,43 +212,39 @@ class yellowstone(platformBuilder):
                            'ncarbinlibs/1.1 ']
         if compiler == 'intel':
             self.moduleList += ['intel/15.0.0',
-                           'ncarcompilers/1.0',
-                           'netcdf-mpi/4.3.2',
-                           'pnetcdf/1.4.1']
+                           'ncarcompilers/1.0']
+            if mpi is True:
+                self.moduleList += ['netcdf-mpi/4.3.2']
+            else:
+                self.moduleList += ['netcdf/4.3.2']
+                self.CC = 'icc'
+                self.FC = 'ifort'
+
         if compiler == 'pgi':
             self.moduleList += ['pgi/14.7',
                            'netcdf/4.3.0',
-                           'pnetcdf/1.4.1',
                             'ncarcompilers/1.0']
+
         if compiler == 'gnu':
             self.moduleList += ['gnu/4.8.0',
                            'ncarcompilers/1.0',
-                           'netcdf/4.3.0',
-                           'pnetcdf/1.4.1']
+                           'netcdf/4.3.0']
+
+        if mpi is True:
+            self.moduleList += ['pnetcdf/1.4.1']
+            self.FC = 'mpif90'
+            self.CXX = 'mpiCC'
 
         self.BUILD_DIR = "build_yellowstone_" + compiler
         self.runModuleCmd()
 
-        self.OFLAGS += ('-D PNETCDF_DIR:STRING={pnetcdf} '
-                       '-D NETCDF_DIR:STRING={netcdf} '.format(
-                        netcdf=os.environ['NETCDF'],
-                        pnetcdf=os.environ['PNETCDF']))
-
         self.CMAKE_EXE = 'cmake'
 
-        self.FC = 'mpif90'
-        self.CC = 'mpicc'
-        self.CXX = 'mpicxx'
-        self.LDFLAGS = ''
         self.NUMPE = '4'
 
-        self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
-                       '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
-                       '-D PLATFORM:STRING=yellowstone ')
-        self.CXXFLAGS += (' -DLINUX -DHAVE_MPI -DFORTRANUNDERSCORE ')
+        self.OFLAGS += ('-D PLATFORM:STRING=yellowstone ')
 
         self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
-#        self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
         self.TEST_CMD = ('execca ctest --verbose')
 
     def testCmd(self):
@@ -388,23 +271,23 @@ class yellowstone(platformBuilder):
 
 
 class caldera(yellowstone):
-    def __init__(self, compiler, test):
+    def __init__(self, compiler, test,mpi,debug):
         """ user defined ctor so we can put stuff in a class instead of as
         class attributes
         """
         self.test = test
-        super(caldera,self).__init__(compiler, test)
+        super(caldera,self).__init__(compiler, test,mpi,debug)
         self.EXECCA = ''
         self.TEST_CMD = ('ctest --verbose')
 
 
 class cetus(platformBuilder):
 
-    def __init__(self, compiler, test):
+    def __init__(self, compiler, test, mpi, debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
-        super(cetus,self).__init__( compiler, test)
+        super(cetus,self).__init__( compiler, test, mpi, debug)
 
         self.moduleList = ['+mpiwrapper-xl ',
                            '@ibm-compilers-2014-02 ',
@@ -413,27 +296,15 @@ class cetus(platformBuilder):
         self.BUILD_DIR = "build_cetus_" + compiler
         self.runModuleCmd()
 
-        self.OFLAGS += ('-D PNETCDF_DIR:STRING={pnetcdf} '
-                       '-D NETCDF_DIR:STRING={netcdf} '.format(
-                        netcdf=os.environ['NETCDF'],
-                        pnetcdf=os.environ['PNETCDF']))
-
         self.CMAKE_EXE = 'cmake'
 
         self.FC = 'mpixlf2003_r'
         self.CC = 'mpixlc_r'
         self.CXX = 'mpixlcxx_r'
-        self.LDFLAGS = ''
         self.NUMPE = '4'
 
-        self.OFLAGS += (' -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON '
-                       '-D PIO_FILESYSTEM_HINTS:STRING=gpfs '
-                       '-D PLATFORM:STRING=cetus '
-                        '-D ADDITIONAL_LIBS=\"-Wl,--relax -Wl,--allow-multiple-definition -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz\"')
-#        self.CXXFLAGS += (' -DLINUX -DHAVE_MPI -DFORTRANUNDERSCORE ')
+        self.OFLAGS += ('-D PLATFORM:STRING=cetus ')
 
-#        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="runjob " ')
-#        self.EXECCA = ('-D EXECCA:FILEPATH="execca " ')
         """ qsub on Cetus does not allow specifying scripts or executables
             when submitting interactive jobs. So we only have two options,
             1. Open an interactive shell and ask user to type "ctest" from
@@ -483,11 +354,6 @@ class cetus(platformBuilder):
           else:
             pass
 				
-#        self.lmod = lmod.SoftEnvInterface()
-
-#        for module in self.moduleList:
-#            self.lmod.load_str(module)
-
     def cmakeCmd(self):
         """ cmake command to run
             For cetus the cetus environment script, cetus_env.sh,
@@ -506,14 +372,8 @@ class cetus(platformBuilder):
         self.envMod['FC'] = self.FC
         self.envMod['CC'] = self.CC
         self.envMod['CXX'] = self.CXX
-        self.envMod['LDFLAGS'] = self.LDFLAGS
 
-        fflags = (' -D CMAKE_Fortran_FLAGS:STRING="{0}" '.format(self.FFLAGS))
-        cflags = (' -D CMAKE_C_FLAGS:STRING="{0}"  '.format(self.CFLAGS))
-        cxxflags =(' -D CMAKE_CXX_FLAGS:STRING="{0}" '.format(self.CXXFLAGS))
-
-        cmakeString = (self.CMAKE_EXE + fflags + cflags +
-                       cxxflags + self.OFLAGS + " ..")
+        cmakeString = (self.CMAKE_EXE + self.OFLAGS + " ..")
         cmakeString = ("/bin/csh -c \"" + "source ../scripts/cetus_env.sh && " +
                         cmakeString.replace('"', r'\"') +
                        "\"")

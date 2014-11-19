@@ -8,12 +8,26 @@ class cliParser():
         """
         parser = argparse.ArgumentParser(description=useMsg)
 
-        parser.add_argument('compilerName', metavar='compiler', type=str,
-                            help='enter the name of a '
-                            'compiler for your pio build and ctests')
-
         parser.add_argument('--test',action='store_true',help='run the ctests')
 
+        parser.add_argument('--backtrace', action='store_true',
+                            help='show exception backtraces as extra debugging '
+                            'output')
+
+        parser.add_argument('--debug', action='store_true',
+                            help='extra debugging output')
+
+        parser.add_argument('--mach', nargs=1, 
+                            help='target machine name')
+
+        parser.add_argument('--compiler', nargs=1, required=False,
+                            help='target compiler name')
+
+        parser.add_argument('--xmlpath', nargs=1, required=True,
+                            help='path to CESM machines directory')
+
+        parser.add_argument('--mpi', action='store_true',
+                            help='Use mpi')
 
         args = parser.parse_args()
 
