@@ -111,7 +111,12 @@ module atm_time_integration
       integer :: small_step
       logical, parameter :: debug = .false.
 !      logical, parameter :: debug = .true.
-      logical, parameter :: debug_mass_conservation = .true.
+
+      !  additions for splitting scalar transport from dynamics, WCS 18 November 2014
+      logical, pointer :: config_split_dynamics_transport
+      integer, pointer :: config_dynamics_split
+      integer :: dynamics_substep, dynamics_split
+      real (kind=RKIND) :: dt_dynamics
 
       real (kind=RKIND) :: scalar_min, scalar_max
       real (kind=RKIND) :: global_scalar_min, global_scalar_max
@@ -154,7 +159,6 @@ module atm_time_integration
 
       real (kind=RKIND), dimension(:,:), pointer :: rqvdynten
 
-
       !
       ! Retrieve configuration options
       !
@@ -166,6 +170,10 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_microp_scheme', config_microp_scheme)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_vel', config_print_global_minmax_vel)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_sca', config_print_global_minmax_sca)
+
+      !  config variables for dynamics-transport splitting, WCS 18 November 2014
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_split_dynamics_transport', config_split_dynamics_transport)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_dynamics_split_steps', config_dynamics_split)
 
       !
       ! Retrieve field structures
@@ -186,17 +194,28 @@ module atm_time_integration
       ! Initialize RK weights
       !
 
-      number_of_sub_steps = config_number_of_sub_steps
-      rk_timestep(1) = dt/3.
-      rk_timestep(2) = dt/2.
-      rk_timestep(3) = dt
+      dynamics_split = config_dynamics_split
+      if (config_split_dynamics_transport) then
+        dt_dynamics = dt/real(dynamics_split)
+        write(0,*) ' split dynamics-transport integration ',dynamics_split
+      else
+        dynamics_split = 1
+        dt_dynamics = dt
+        write(0,*) ' coupled RK3 dynamics-transport integration '
+      end if
+      if (.not. config_scalar_advection )  write(0,*) ' scalar advection turned off '
 
-      rk_sub_timestep(1) = dt/3.
-      rk_sub_timestep(2) = dt/real(number_of_sub_steps)
-      rk_sub_timestep(3) = dt/real(number_of_sub_steps)
+      number_of_sub_steps = config_number_of_sub_steps
+      rk_timestep(1) = dt_dynamics/3.
+      rk_timestep(2) = dt_dynamics/2.
+      rk_timestep(3) = dt_dynamics
+
+      rk_sub_timestep(1) = dt_dynamics/3.
+      rk_sub_timestep(2) = dt_dynamics/real(number_of_sub_steps)
+      rk_sub_timestep(3) = dt_dynamics/real(number_of_sub_steps)
 
       number_sub_steps(1) = 1
-      number_sub_steps(2) = number_of_sub_steps/2
+      number_sub_steps(2) = max(1,number_of_sub_steps/2)
       number_sub_steps(3) = number_of_sub_steps
 
       if(debug) write(0,*) ' copy step in rk solver '
@@ -222,97 +241,76 @@ module atm_time_integration
          block => block % next
       end do
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-      ! BEGIN Runge-Kutta loop 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+      DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
 
-      do rk_step = 1, 3  ! Runge-Kutta loop
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+         ! BEGIN Runge-Kutta loop 
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
-         if(debug) write(0,*) ' rk substep ', rk_step
+         RK3_DYNAMICS : do rk_step = 1, 3  ! Runge-Kutta loop
 
-         block => domain % blocklist
-         do while (associated(block))
-            ! The coefficients are set for owned cells (cqw) and for all edges of owned cells, 
-            call mpas_pool_get_subpool(block % structs, 'state', state)
-            call mpas_pool_get_subpool(block % structs, 'diag', diag)
-            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-            call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh )    !MGD could do away with dimensions arg
-            block => block % next
-         end do
+            if(debug) write(0,*) ' rk substep ', rk_step
+
+            block => domain % blocklist
+            do while (associated(block))
+               ! The coefficients are set for owned cells (cqw) and for all edges of owned cells, 
+               call mpas_pool_get_subpool(block % structs, 'state', state)
+               call mpas_pool_get_subpool(block % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+               call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh )    !MGD could do away with dimensions arg
+               block => block % next
+            end do
 
 
-         if (debug) write(0,*) ' compute_dyn_tend '
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'state', state)
-            call mpas_pool_get_subpool(block % structs, 'diag', diag)
-            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-            call mpas_pool_get_subpool(block % structs, 'tend', tend)
+            if (debug) write(0,*) ' compute_dyn_tend '
+            block => domain % blocklist
+            do while (associated(block))
+               call mpas_pool_get_subpool(block % structs, 'state', state)
+               call mpas_pool_get_subpool(block % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+               call mpas_pool_get_subpool(block % structs, 'tend', tend)
 
-            call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+               call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
-            call atm_compute_dyn_tend( tend, state, diag, mesh, block % configs, nVertLevels, rk_step, dt )
+               call atm_compute_dyn_tend( tend, state, diag, mesh, block % configs, nVertLevels, rk_step, dt )
 
-            block => block % next
-         end do
-         if (debug) write(0,*) ' finished compute_dyn_tend '
+               block => block % next
+            end do
+            if (debug) write(0,*) ' finished compute_dyn_tend '
 
 #ifdef DO_PHYSICS
-         if (debug) write(0,*) ' add physics tendencies '
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-            call mpas_pool_get_subpool(block % structs, 'state', state)
-            call mpas_pool_get_subpool(block % structs, 'diag', diag)
-            call mpas_pool_get_subpool(block % structs, 'tend', tend)
-            call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
-            call physics_addtend( block, &
-                         mesh, &
-                         state, &     
-                         diag, &
-                         tend, &
-                         tend_physics, &
-                         block % configs, &
-                         rk_step )
-            block => block % next
-         end do
-         if (debug) write(0,*) ' finished add physics tendencies '
+            if (debug) write(0,*) ' add physics tendencies '
+            block => domain % blocklist
+            do while (associated(block))
+               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+               call mpas_pool_get_subpool(block % structs, 'state', state)
+               call mpas_pool_get_subpool(block % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block % structs, 'tend', tend)
+               call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
+               call physics_addtend( block, &
+                                      mesh, &
+                                     state, &     
+                                      diag, &
+                                      tend, &
+                              tend_physics, &
+                           block % configs, &
+                                   rk_step )
+               block => block % next
+            end do
+            if (debug) write(0,*) ' finished add physics tendencies '
 #endif
 
-         !***********************************
-         !  need tendencies at all edges of owned cells -
-         !  we are solving for all edges of owned cells to minimize communications
-         !  during the acoustic substeps
-         !***********************************
+            !***********************************
+            !  need tendencies at all edges of owned cells -
+            !  we are solving for all edges of owned cells to minimize communications
+            !  during the acoustic substeps
+            !***********************************
 
-! tend_u
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tend)
-         call mpas_pool_get_field(tend, 'u', tend_u_field)
-         call mpas_dmpar_exch_halo_field(tend_u_field, (/ 1 /))
+            ! tend_u
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tend)
+            call mpas_pool_get_field(tend, 'u', tend_u_field)
+            call mpas_dmpar_exch_halo_field(tend_u_field, (/ 1 /))
 
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-            call mpas_pool_get_subpool(block % structs, 'state', state)
-            call mpas_pool_get_subpool(block % structs, 'diag', diag)
-            call mpas_pool_get_subpool(block % structs, 'tend', tend)
-
-            call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
-
-            call atm_set_smlstep_pert_variables( tend, diag, mesh, block % configs )
-            call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step) )
-
-            block => block % next
-         end do
-
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         ! begin acoustic steps loop
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-         do small_step = 1, number_sub_steps(rk_step)
-
-            if(debug) write(0,*) ' acoustic step ',small_step
-      
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -320,130 +318,213 @@ module atm_time_integration
                call mpas_pool_get_subpool(block % structs, 'diag', diag)
                call mpas_pool_get_subpool(block % structs, 'tend', tend)
 
-               call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
-               call atm_advance_acoustic_step( state, diag, tend,  mesh, block % configs, nCells, nVertLevels, rk_sub_timestep(rk_step) )
+               call atm_set_smlstep_pert_variables( tend, diag, mesh, block % configs )
+               call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step) )
 
                block => block % next
             end do
 
-            if(debug) write(0,*) ' acoustic step complete '
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            ! begin acoustic steps loop
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            do small_step = 1, number_sub_steps(rk_step)
+
+               if(debug) write(0,*) ' acoustic step ',small_step
+      
+               block => domain % blocklist
+               do while (associated(block))
+                  call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+                  call mpas_pool_get_subpool(block % structs, 'state', state)
+                  call mpas_pool_get_subpool(block % structs, 'diag', diag)
+                  call mpas_pool_get_subpool(block % structs, 'tend', tend)
+
+                  call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+                  call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+                  call atm_advance_acoustic_step( state, diag, tend,  mesh, block % configs, nCells, nVertLevels, rk_sub_timestep(rk_step) )
+
+                  block => block % next
+               end do
+
+               if(debug) write(0,*) ' acoustic step complete '
   
 ! rtheta_pp
 ! This is the only communications needed during the acoustic steps because we solve for u on all edges of owned cells
 
+               call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
+               call mpas_pool_get_field(diag, 'rtheta_pp', rtheta_pp_field)
+               call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 1 /))
+ 
+            end do  ! end of acoustic steps loop
+
+            !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % diag % rw_p, (/ 1 /))
             call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
+            call mpas_pool_get_field(diag, 'rw_p', rw_p_field)
+            call mpas_dmpar_exch_halo_field(rw_p_field)
+
+            !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % diag % ru_p, (/ 2 /))
+            call mpas_pool_get_field(diag, 'ru_p', ru_p_field)
+            call mpas_dmpar_exch_halo_field(ru_p_field)
+
+            call mpas_pool_get_field(diag, 'rho_pp', rho_pp_field)
+            call mpas_dmpar_exch_halo_field(rho_pp_field)
+
+            ! the second layer of halo cells must be exchanged before calling atm_recover_large_step_variables
             call mpas_pool_get_field(diag, 'rtheta_pp', rtheta_pp_field)
-            call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 1 /))
- 
-         end do  ! end of acoustic steps loop
+            call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 2 /))
 
-         !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % diag % rw_p, (/ 1 /))
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
-         call mpas_pool_get_field(diag, 'rw_p', rw_p_field)
-         call mpas_dmpar_exch_halo_field(rw_p_field)
+            block => domain % blocklist
+            do while (associated(block))
+               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+               call mpas_pool_get_subpool(block % structs, 'state', state)
+               call mpas_pool_get_subpool(block % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block % structs, 'tend', tend)
 
-         !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % diag % ru_p, (/ 2 /))
-         call mpas_pool_get_field(diag, 'ru_p', ru_p_field)
-         call mpas_dmpar_exch_halo_field(ru_p_field)
+               call atm_recover_large_step_variables( state, diag, tend, mesh, block % configs, rk_timestep(rk_step), number_sub_steps(rk_step), rk_step  )
 
-         call mpas_pool_get_field(diag, 'rho_pp', rho_pp_field)
-         call mpas_dmpar_exch_halo_field(rho_pp_field)
+               block => block % next
+            end do
 
-         ! the second layer of halo cells must be exchanged before calling atm_recover_large_step_variables
-         call mpas_pool_get_field(diag, 'rtheta_pp', rtheta_pp_field)
-         call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 2 /))
+            ! u
+            !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % state % time_levs(2) % state % u, (/ 3 /))
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+            call mpas_pool_get_field(state, 'u', u_field, 2)
+            call mpas_dmpar_exch_halo_field(u_field)
 
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-            call mpas_pool_get_subpool(block % structs, 'state', state)
-            call mpas_pool_get_subpool(block % structs, 'diag', diag)
-            call mpas_pool_get_subpool(block % structs, 'tend', tend)
+            ! scalar advection: RK3 scheme of Skamarock and Gassmann (2011). 
+            ! PD or monotonicity constraints applied only on the final Runge-Kutta substep.
 
-            call atm_recover_large_step_variables( state, diag, tend, mesh, block % configs, rk_timestep(rk_step), number_sub_steps(rk_step), rk_step  )
+            if (config_scalar_advection .and. (.not. config_split_dynamics_transport) ) then
 
-            block => block % next
-         end do
+               block => domain % blocklist
+               do while (associated(block))
+                  call mpas_pool_get_subpool(block % structs, 'tend', tend)
+                  call mpas_pool_get_subpool(block % structs, 'state', state)
+                  call mpas_pool_get_subpool(block % structs, 'diag', diag)
+                  call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
 
-! u
-         !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % state % time_levs(2) % state % u, (/ 3 /))
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
-         call mpas_pool_get_field(state, 'u', u_field, 2)
-         call mpas_dmpar_exch_halo_field(u_field)
+                  call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+                  call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+                  call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+                  call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
-         ! scalar advection: RK3 scheme of Skamarock and Gassmann (2011). 
-         ! PD or monotonicity constraints applied only on the final Runge-Kutta substep.
+                  !
+                  ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
+                  !       the functionality of the advance_scalars routine; however, it is noticeably slower, 
+                  !       so we use the advance_scalars routine for the first two RK substeps.
+                  !
+                  if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
+                     call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nVertLevels, rk_timestep(rk_step) )
+                  else
+                     block % domain = domain 
+                     call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step) )
+                  end if
+                  block => block % next
+               end do
 
-         if (config_scalar_advection) then
-
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'tend', tend)
-            call mpas_pool_get_subpool(block % structs, 'state', state)
-            call mpas_pool_get_subpool(block % structs, 'diag', diag)
-            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-
-            call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-            call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
-            call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
-            call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
-
-            !
-            ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
-            !       the functionality of the advance_scalars routine; however, it is noticeably slower, 
-            !       so we use the advance_scalars routine for the first two RK substeps.
-            !
-            if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-               call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nVertLevels, rk_timestep(rk_step) )
-            else
-               block % domain = domain 
-               call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step) )
             end if
-            block => block % next
-         end do
 
-         else
- 
-            write(0,*) ' no scalar advection '
+            block => domain % blocklist
+            do while (associated(block))
+               call mpas_pool_get_subpool(block % structs, 'state', state)
+               call mpas_pool_get_subpool(block % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
 
-         end if
+               call atm_compute_solve_diagnostics( dt, state, 2, diag, mesh, block % configs )
+
+               block => block % next
+            end do
+
+            if(debug) write(0,*) ' diagnostics complete '
+
+            ! w
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+            call mpas_pool_get_field(state, 'w', w_field, 2)
+            call mpas_dmpar_exch_halo_field(w_field)
+
+            ! pv_edge
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
+            call mpas_pool_get_field(diag, 'pv_edge', pv_edge_field)
+            call mpas_dmpar_exch_halo_field(pv_edge_field)
+
+            ! rho_edge
+            call mpas_pool_get_field(diag, 'rho_edge', rho_edge_field)
+            call mpas_dmpar_exch_halo_field(rho_edge_field)
+
+            ! scalars
+            if (config_scalar_advection .and. (.not. config_split_dynamics_transport) ) then
+               call mpas_pool_get_field(state, 'scalars', scalars_field, 2)
+               call mpas_dmpar_exch_halo_field(scalars_field)
+            end if
+
+         end do RK3_DYNAMICS
+
+         !  dynamics-transport split, WCS 18 November 2014
+         !  (1) time level 1 needs to be set to time level 2
+         !  (2) need to accumulate ruAvg and wwAvg over the dynamics substeps, prepare for use in transport
+         !  Notes:  physics tendencies for scalars should be OK coming out of dynamics
 
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'state', state)
             call mpas_pool_get_subpool(block % structs, 'diag', diag)
-            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-
-            call atm_compute_solve_diagnostics( dt, state, 2, diag, mesh, block % configs )
-
+            call atm_rk_dynamics_substep_finish(state, diag, dynamics_substep, dynamics_split)
             block => block % next
          end do
 
-         if(debug) write(0,*) ' diagnostics complete '
+      end do DYNAMICS_SUBSTEPS
 
-! w
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
-         call mpas_pool_get_field(state, 'w', w_field, 2)
-         call mpas_dmpar_exch_halo_field(w_field)
+      !
+      !  split transport, at present RK3
+      !
 
-! pv_edge
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
-         call mpas_pool_get_field(diag, 'pv_edge', pv_edge_field)
-         call mpas_dmpar_exch_halo_field(pv_edge_field)
+      if (config_scalar_advection .and. config_split_dynamics_transport) then
 
-! rho_edge
-         call mpas_pool_get_field(diag, 'rho_edge', rho_edge_field)
-         call mpas_dmpar_exch_halo_field(rho_edge_field)
+         rk_timestep(1) = dt/3.
+         rk_timestep(2) = dt/2.
+         rk_timestep(3) = dt
 
-! scalars
-         if (rk_step < 3) then
-            call mpas_pool_get_field(state, 'scalars', scalars_field, 2)
-            call mpas_dmpar_exch_halo_field(scalars_field)
-         end if
+         RK3_SPLIT_TRANSPORT : do rk_step = 1, 3  ! Runge-Kutta loop
 
-      end do ! rk_step loop
+            if(debug) write(0,*) ' rk split transport substep ', rk_step
+
+            block => domain % blocklist
+            do while (associated(block))
+               call mpas_pool_get_subpool(block % structs, 'tend', tend)
+               call mpas_pool_get_subpool(block % structs, 'state', state)
+               call mpas_pool_get_subpool(block % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+
+               call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+               call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+               call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+               call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
+
+               !
+               ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
+               !       the functionality of the advance_scalars routine; however, it is noticeably slower, 
+               !       so we use the advance_scalars routine for the first two RK substeps.
+               !
+               if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
+                  call atm_advance_scalars_1( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step) )
+               else
+                  block % domain = domain 
+                  call atm_advance_scalars_mono_1( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step) )
+               end if
+               block => block % next
+            end do
+
+            if (rk_step < 3) then
+               call mpas_pool_get_field(state, 'scalars', scalars_field, 2)
+               call mpas_dmpar_exch_halo_field(scalars_field)
+            end if
+
+         end do RK3_SPLIT_TRANSPORT
+
+      end if
 
 !...  compute full velocity vectors at cell centers:
       block => domain % blocklist
@@ -599,6 +680,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: rtheta_p_save
       real (kind=RKIND), dimension(:,:), pointer :: rho_p
       real (kind=RKIND), dimension(:,:), pointer :: rho_p_save
+      real (kind=RKIND), dimension(:,:), pointer :: rho_zz_old_split
 
       real (kind=RKIND), dimension(:,:), pointer :: u_1, u_2
       real (kind=RKIND), dimension(:,:), pointer :: w_1, w_2
@@ -614,6 +696,7 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'rtheta_p_save', rtheta_p_save)
       call mpas_pool_get_array(diag, 'rho_p', rho_p)
       call mpas_pool_get_array(diag, 'rho_p_save', rho_p_save)
+      call mpas_pool_get_array(diag, 'rho_zz_old_split', rho_zz_old_split)
 
       call mpas_pool_get_array(state, 'u', u_1, 1)
       call mpas_pool_get_array(state, 'u', u_2, 2)
@@ -635,6 +718,7 @@ module atm_time_integration
       w_2(:,:) = w_1(:,:)
       theta_m_2(:,:) = theta_m_1(:,:)
       rho_zz_2(:,:) = rho_zz_1(:,:)
+      rho_zz_old_split(:,:) =  rho_zz_1(:,:)
       scalars_2(:,:,:) = scalars_1(:,:,:)
 
    end subroutine atm_rk_integration_setup
@@ -4289,7 +4373,7 @@ module atm_time_integration
       ! next, do one scalar at a time
 
       do iScalar = 1, num_scalars
-         write(0,*) ' mono transport for scalar ',iScalar
+!         write(0,*) ' mono transport for scalar ',iScalar
 
          do iCell = 1, nCells
          do k = 1, nVertLevels
