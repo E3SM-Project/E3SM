@@ -36,6 +36,8 @@ module cam_control_mod
 
 ! from perturb.h
       real(r8) :: pertlim = 0.0_r8
+      integer  :: seed_custom = 0
+      logical  :: seed_clock  = .false.
 
 ! from comadj.h
       integer :: nlvdry = 3
