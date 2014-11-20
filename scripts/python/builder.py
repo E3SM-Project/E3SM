@@ -195,13 +195,13 @@ class goldbach(platformBuilder):
         # ~# not implemented for a system without lmod (or
         # ~# somthing similar)
         self.lmod = lmod.ModuleInterface()
-        self.lmod.python_init("scripts/python/contrib/standAlone/"
-                              "env_modules_python_goldbach.py")
+        self.lmod.python_init("/usr/share/Modules/init/python.py")
+
         self.lmod.purge()
 
         for cmd in self.moduleList:
             self.lmod.load(cmd)
-
+        
   
 class yellowstone(platformBuilder):
 
