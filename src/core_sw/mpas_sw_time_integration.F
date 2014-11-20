@@ -198,7 +198,7 @@ module sw_time_integration
 ! --- update halos for diagnostic variables
         call mpas_pool_get_subpool(domain % blocklist % structs, 'provis_state', provisStatePool)
 
-        call mpas_pool_get_field(provisStatePool, 'pv_edge', pvEdgeField, 2)
+        call mpas_pool_get_field(provisStatePool, 'pv_edge', pvEdgeField, 1)
 
         call mpas_dmpar_exch_halo_field(pvEdgeField)
 

@@ -166,6 +166,8 @@ module li_time_integration_fe
 
    subroutine calculate_tendencies(domain, deltat, err)
 
+      use mpas_timekeeping
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -195,6 +197,11 @@ module li_time_integration_fe
       integer :: allowableDtProcNumber, allowableDtMinProcNumber
       real (kind=RKIND) :: allowableDt, allowableDtMin
       logical, pointer :: config_print_thickness_advection_info
+      type (MPAS_TimeInterval_type) :: allowableDtMinStringInterval
+      character (len=StrKIND) :: allowableDtMinString
+      integer :: err_tmp
+
+      integer :: y, m, d, hh, mm, ss
 
       err = 0
 
@@ -213,7 +220,8 @@ module li_time_integration_fe
          call mpas_pool_get_array(tendPool, 'layerThickness', layerThickness_tend)
 
          ! Calculate thickness tendency using state at time n =========
-         call li_tendency_thickness(meshPool, statePool, layerThickness_tend, deltat, dminfo, allowableDt, err)
+         call li_tendency_thickness(meshPool, statePool, layerThickness_tend, deltat, dminfo, allowableDt, err_tmp)
+         err = ior(err,err_tmp)
 
          block => block % next
       end do
@@ -239,7 +247,11 @@ module li_time_integration_fe
             allowableDtProcNumber = -1
           endif
           call mpas_dmpar_max_int(dminfo, allowableDtProcNumber, allowableDtMinProcNumber)
-          write(6,*) '  Maximum allowable time step (yr) for all processors is:', allowableDtMin/li_secondsInYear,  '  Time step is limited by processor number ', allowableDtMinProcNumber  ! TODO seconds in a year should come from the calendar or a parameter
+          call mpas_set_timeInterval(allowableDtMinStringInterval, dt=allowableDtMin, ierr=err_tmp)
+          err = ior(err,err_tmp)
+          call mpas_get_timeInterval(allowableDtMinStringInterval, timeString=allowableDtMinString, ierr=err_tmp)
+          err = ior(err,err_tmp)
+          write(6,*) '  Maximum allowable time step (yr) for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString) //  '  Time step is limited by processor number ', allowableDtMinProcNumber
       endif
 
       if (err .gt. 0) then

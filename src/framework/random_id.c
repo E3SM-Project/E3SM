@@ -11,11 +11,17 @@
 
 #ifdef UNDERSCORE
 #define gen_random gen_random_
+#define seed_random seed_random_
 #else
 #ifdef DOUBLEUNDERSCORE
 #define gen_random gen_random__
+#define seed_random seed_random__
 #endif
 #endif
+
+void seed_random() {
+	srand(time(NULL));
+}
 
 void gen_random(int * len, char * id) {/*{{{*/
 	int i;
@@ -23,8 +29,6 @@ void gen_random(int * len, char * id) {/*{{{*/
 	static const char alphanum[] =
 		"0123456789"
 		"abcdefghijklmnopqrstuvwxyz";
-
-	srand(time(NULL));
 
 	for (i = 0; i < *len; ++i) {
 		r = rand();

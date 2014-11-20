@@ -19,15 +19,15 @@ module mpas_framework
 
    use mpas_dmpar
    use mpas_grid_types
-   use mpas_io_input
-   use mpas_io_output
    use mpas_timer
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
+   use mpas_configure
 
 
    contains
+
 
 !-----------------------------------------------------------------------
 !  routine mpas_framework_init
@@ -36,7 +36,8 @@ module mpas_framework
 !> \author Michael Duda, Doug Jacobsen
 !> \date   03/26/13
 !> \details
-!>  This routine initializes the MPAS framework. It calls routines related to initializing different parts of MPAS, that are housed within the framework.
+!>  This routine initializes the MPAS framework. It calls routines related 
+!>  to initializing different parts of MPAS, that are housed within the framework.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system, calendar, stdoutUnit, stderrUnit)!{{{
@@ -47,16 +48,17 @@ module mpas_framework
       type (domain_type), pointer :: domain
       integer, intent(in), optional :: mpi_comm
 
-      character (len=*), optional :: nml_filename
+      character(len=*), optional :: nml_filename
       type (iosystem_desc_t), optional, pointer :: io_system
       character(len=*), intent(in), optional :: calendar
 
       integer, intent(in), optional :: stdoutUnit, stderrUnit
 
-      character (len=StrKIND), pointer :: config_calendar_type
+      character(len=StrKIND), pointer :: config_calendar_type
       integer, pointer :: config_pio_num_iotasks, config_pio_stride
       integer :: pio_num_iotasks
       integer :: pio_stride
+
 
       allocate(dminfo)
       call mpas_io_units_init(stdoutUnit, stderrUnit)
@@ -80,10 +82,10 @@ module mpas_framework
 
       call mpas_generate_packages(domain % packages)
       
-      if(present(calendar)) then
-        call mpas_timekeeping_init(calendar)
+      if (present(calendar)) then
+         call mpas_timekeeping_init(calendar)
       else
-        call mpas_timekeeping_init(config_calendar_type)
+         call mpas_timekeeping_init(config_calendar_type)
       end if
 
       pio_num_iotasks = config_pio_num_iotasks

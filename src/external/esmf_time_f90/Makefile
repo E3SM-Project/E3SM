@@ -1,108 +1,60 @@
-# To build this by itself, use the make target esmf_time_f90_only 
-# from the top-level WRF Makefile.  
-# > cd ../..
-# configure
-# make esmf_time_f90_only
+.SUFFIXES: .F90 .o
 
-.SUFFIXES: .F90 .o .f
+OBJS = ESMF_AlarmClockMod.o \
+	   ESMF_AlarmMod.o \
+	   ESMF_BaseMod.o \
+	   ESMF_BaseTimeMod.o \
+	   ESMF_CalendarMod.o \
+	   ESMF_ClockMod.o \
+	   ESMF.o \
+	   ESMF_FractionMod.o \
+	   ESMF_ShrTimeMod.o \
+	   ESMF_Stubs.o \
+	   ESMF_TimeIntervalMod.o \
+	   ESMF_TimeMod.o \
+	   MeatMod.o \
+	   wrf_error_fatal.o \
+	   wrf_message.o
 
-# get rid of single quotes after comments
-# WARNING:  This will break if a quoted string is followed by a comment that has
-#           a single quote.
-SED_FTN = sed -e "/\!.*'/s/'//g"
+all: $(OBJS)
+	ar -ru libesmf_time.a *.o
+	
+ESMF_AlarmClockMod.o: ESMF_AlarmMod.o ESMF_ClockMod.o ESMF_TimeIntervalMod.o ESMF_TimeMod.o
 
-RM = /bin/rm -f
-AR = ar
-RANLIB = ranlib
-FGREP = fgrep -iq
+ESMF_AlarmMod.o: ESMF_BaseMod.o ESMF_TimeIntervalMod.o ESMF_TimeMod.o
 
-OBJS = ESMF_Alarm.o ESMF_BaseTime.o ESMF_Clock.o ESMF_Time.o \
-        Meat.o ESMF_Base.o ESMF_Calendar.o ESMF_Fraction.o   \
-        ESMF_TimeInterval.o ESMF_Stubs.o ESMF_Mod.o \
-        module_symbols_util.o \
-	module_utility.o ESMF_AlarmClock.o
+ESMF_BaseMod.o:
 
-default: libesmf_time.a
+ESMF_BaseTimeMod.o: ESMF_BaseMod.o
 
-tests: Test1_ESMF.exe Test1_WRFU.exe
+ESMF_CalendarMod.o: ESMF_BaseMod.o ESMF_BaseTimeMod.o
 
-libesmf_time.a : $(OBJS)
-	$(RM) libesmf_time.a
-	if [ "$(AR)" != "lib.exe" ] ; then \
-          $(AR) ru libesmf_time.a $(OBJS) ; \
-        else \
-          $(AR) /out:libesmf_time.a $(OBJS) ; \
-        fi
-	$(RANLIB) libesmf_time.a
+ESMF_ClockMod.o: ESMF_BaseMod.o ESMF_TimeIntervalMod.o ESMF_TimeMod.o ESMF_AlarmMod.o ESMF_TimeMod.o
 
-Test1_ESMF.f : Test1.F90
-	$(RM) Test1_ESMF.b Test1_ESMF.f
-	cp Test1.F90 Test1_ESMF.b
-	$(CPP) -P -I. Test1_ESMF.b > Test1_ESMF.f
+ESMF.o: ESMF_AlarmMod.o ESMF_BaseMod.o ESMF_BaseTimeMod.o \
+		ESMF_CalendarMod.o ESMF_ClockMod.o ESMF_FractionMod.o \
+		ESMF_TimeIntervalMod.o ESMF_TimeMod.o ESMF_ShrTimeMod.o \
+		ESMF_AlarmClockMod.o ESMF_Stubs.o MeatMod.o 
 
-Test1_ESMF.exe : libesmf_time.a Test1_ESMF.o
-	$(FC) -o Test1_ESMF.exe Test1_ESMF.o libesmf_time.a
+ESMF_FractionMod.o:
 
-Test1_WRFU.f : Test1.F90
-	$(RM) Test1_WRFU.b Test1_WRFU.f
-	sed -e "s/ESMF_Mod/module_utility/g" -e "s/ESMF_/WRFU_/g" Test1.F90 > Test1_WRFU.b
-	$(CPP) -P -I. Test1_WRFU.b > Test1_WRFU.f
+ESMF_ShrTimeMod.o: ESMF_BaseMod.o ESMF_BaseTimeMod.o ESMF_CalendarMod.o
 
-Test1_WRFU.exe : libesmf_time.a Test1_WRFU.o
-	$(FC) -o Test1_WRFU.exe Test1_WRFU.o libesmf_time.a
+ESMF_Stubs.o: ESMF_BaseMod.o ESMF_CalendarMod.o
 
-.F90.o :
-	$(RM) $@
-	$(SED_FTN) $*.F90 > $*.b
-ifeq "$(GEN_F90)" "true"
-	$(CPP) -P -I. $*.b > $*.f
-	$(FC) -o $@ -c $*.f
-else
-	$(FC) -o $@ -c $*.F90 -I.
-endif
-	$(RM) $*.b
+ESMF_TimeIntervalMod.o: ESMF_BaseMod.o ESMF_BaseTimeMod.o ESMF_FractionMod.o ESMF_CalendarMod.o ESMF_ShrTimeMod.o
 
-.F90.f :
-	$(RM) $@
-	$(SED_FTN) $*.F90 > $*.b
-	$(CPP) -P -I. $*.b > $*.f
-	$(RM) $*.b
+ESMF_TimeMod.o: ESMF_BaseMod.o ESMF_BaseTimeMod.o ESMF_TimeIntervalMod.o ESMF_CalendarMod.o ESMF_ShrTimeMod.o ESMF_Stubs.o
 
-.f.o :
-	$(RM) $@
-	$(RM) $*.b
-	$(FC) -c $*.f
+MeatMod.o: ESMF_BaseMod.o
 
-clean : testclean
+wrf_error_fatal.o:
 
-testclean: 
-	$(RM) *.b *.f *.o *.obj *.i libesmf_time.a *.mod Test1*.exe
+wrf_message.o:
 
-superclean: testclean
-	$(RM) Test1*.out make_tests.out
+clean:
+	rm -rf *.o *.mod *.a
 
-# DEPENDENCIES : only dependencies after this line 
-
-#$$$ update dependencies!  
-
-ESMF_Alarm.o : ESMF_BaseTime.o ESMF_Time.o ESMF_TimeInterval.o
-ESMF_BaseTime.o : ESMF_Base.o
-ESMF_Clock.o : ESMF_BaseTime.o ESMF_Time.o ESMF_TimeInterval.o
-ESMF_AlarmClock.o : ESMF_Alarm.o ESMF_Clock.o
-ESMF_Time.o : ESMF_BaseTime.o ESMF_TimeInterval.o ESMF_Calendar.o \
-              ESMF_Stubs.o
-ESMF_Base.o :
-ESMF_Calendar.o : ESMF_BaseTime.o
-ESMF_Fraction.o : ESMF_BaseTime.o
-ESMF_TimeInterval.o : ESMF_BaseTime.o ESMF_Calendar.o ESMF_Fraction.o
-ESMF_Mod.o : ESMF_Alarm.o ESMF_BaseTime.o ESMF_Clock.o ESMF_Time.o \
-        ESMF_Base.o ESMF_Calendar.o ESMF_Fraction.o    \
-        ESMF_TimeInterval.o Meat.o ESMF_Stubs.o ESMF_AlarmClock.o
-Meat.o : ESMF_Alarm.o ESMF_BaseTime.o ESMF_Clock.o ESMF_Time.o \
-        ESMF_Base.o ESMF_Calendar.o ESMF_Fraction.o    \
-        ESMF_TimeInterval.o
-ESMF_Stubs.o : ESMF_Base.o ESMF_Calendar.o
-module_utility.o :  ESMF_Mod.o module_symbols_util.o
-module_symbols_util.o :  ESMF_Mod.o
-Test1.o :  module_utility.o
-
+.F90.o:
+	$(RM) $@ $*.mod
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F90 $(CPPINCLUDES) $(FCINCLUDES) -I.

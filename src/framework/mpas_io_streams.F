@@ -7,6 +7,9 @@
 !
 module mpas_io_streams
 
+#define COMMA ,
+#define STREAM_DEBUG_WRITE(M) write(stderrUnit,*) M
+
 #ifdef SINGLE_PRECISION
 #define REAL_IO_TYPE MPAS_IO_REAL
 #else
@@ -15,6 +18,7 @@ module mpas_io_streams
 
    use mpas_attlist
    use mpas_grid_types
+   use mpas_kind_types, only : StrKIND
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
@@ -44,7 +48,9 @@ module mpas_io_streams
       logical :: isInitialized = .false.
       integer :: ioFormat
       integer :: ioDirection
-      integer :: framesPerFile
+      integer :: defaultPrecision = MPAS_IO_NATIVE_PRECISION
+      logical :: clobberRecords = .false.
+      character(len=StrKIND) :: filename
       type (MPAS_IO_Handle_type) :: fileHandle
       type (att_list_type), pointer :: attList => null()
       type (field_list_type), pointer :: fieldList => null()
@@ -65,6 +71,20 @@ module mpas_io_streams
       module procedure MPAS_streamAddField_0dChar
    end interface MPAS_streamAddField
 
+   interface MPAS_streamUpdateField
+      module procedure MPAS_streamUpdateField_0dInteger
+      module procedure MPAS_streamUpdateField_1dInteger
+      module procedure MPAS_streamUpdateField_2dInteger
+      module procedure MPAS_streamUpdateField_3dInteger
+      module procedure MPAS_streamUpdateField_0dReal
+      module procedure MPAS_streamUpdateField_1dReal
+      module procedure MPAS_streamUpdateField_2dReal
+      module procedure MPAS_streamUpdateField_3dReal
+      module procedure MPAS_streamUpdateField_4dReal
+      module procedure MPAS_streamUpdateField_5dReal
+      module procedure MPAS_streamUpdateField_0dChar
+   end interface MPAS_streamUpdateField
+
    interface MPAS_readStreamAtt
       module procedure MPAS_readStreamAtt_0dInteger
       module procedure MPAS_readStreamAtt_1dInteger
@@ -81,16 +101,21 @@ module mpas_io_streams
       module procedure MPAS_writeStreamAtt_text
    end interface MPAS_writeStreamAtt
 
-   integer, parameter :: MPAS_STREAM_EXACT_TIME     = 100, &
-                         MPAS_STREAM_NEAREST        = 101, &
-                         MPAS_STREAM_LATEST_BEFORE  = 102, &
-                         MPAS_STREAM_EARLIEST_AFTER = 103
+   integer, parameter :: MPAS_STREAM_EXACT_TIME              = 100, &
+                         MPAS_STREAM_NEAREST                 = 101, &
+                         MPAS_STREAM_LATEST_BEFORE           = 102, &
+                         MPAS_STREAM_EARLIEST_AFTER          = 103, &
+                         MPAS_STREAM_LATEST_STRICTLY_BEFORE  = 104, &
+                         MPAS_STREAM_EARLIEST_STRICTLY_AFTER = 105
 
 
    ! Error codes
    integer, parameter :: MPAS_STREAM_NOERR              =  0, &
                          MPAS_STREAM_NOT_INITIALIZED    = -1, &
-                         MPAS_IO_ERR                    = -2
+                         MPAS_STREAM_FIELD_NOT_FOUND    = -2, &
+                         MPAS_STREAM_CLOBBER_FILE       = -3, &
+                         MPAS_STREAM_CLOBBER_RECORD     = -4, &
+                         MPAS_IO_ERR                    = -5
 
    integer, parameter :: FIELD_0D_INT   =  1, &
                          FIELD_1D_INT   =  2, &
@@ -108,10 +133,11 @@ module mpas_io_streams
    private mergeArrays
 
 
-contains
+   contains
 
 
-   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, framesPerFile, ierr)
+   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, precision, &
+                                clobberRecords, clobberFiles, truncateFiles, ierr)
 
       implicit none
 
@@ -119,14 +145,28 @@ contains
       character (len=*), intent(in) :: fileName
       integer, intent(in) :: ioFormat
       integer, intent(in) :: ioDirection
-      integer, intent(in) :: framesPerFile
+      integer, intent(in), optional :: precision
+      logical, intent(in), optional :: clobberRecords
+      logical, intent(in), optional :: clobberFiles
+      logical, intent(in), optional :: truncateFiles
       integer, intent(out), optional :: ierr
 
       integer :: io_err
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
-      stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, io_err) 
+
+      stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, clobber_file=clobberFiles, truncate_file=truncateFiles, &
+                                         ierr=io_err) 
+      !
+      ! Catch a few special errors
+      !
+      if (io_err == MPAS_IO_ERR_WOULD_CLOBBER) then
+         if (present(ierr)) ierr = MPAS_STREAM_CLOBBER_FILE
+         return
+      end if
+
+      ! General error
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
@@ -135,14 +175,20 @@ contains
 
       stream % ioDirection = ioDirection
       stream % ioFormat = ioFormat
-      stream % framesPerFile = framesPerFile
+      stream % filename = fileName
+      if (present(clobberRecords)) then
+         stream % clobberRecords = clobberRecords
+      else
+         stream % clobberRecords = .false.
+      end if
+      if (present(precision)) stream % defaultPrecision = precision
 
       stream % isInitialized = .true.
 
    end subroutine MPAS_createStream
 
 
-   integer function MPAS_seekStream(stream, seekTime, seekPosition, actualTime, ierr)
+   integer function MPAS_seekStream(stream, seekTime, seekPosition, actualTime, maxRecords, ierr)
 
       implicit none
 
@@ -150,6 +196,7 @@ contains
       character (len=*), intent(in) :: seekTime
       integer, intent(in) :: seekPosition
       character (len=*), intent(out) :: actualTime
+      integer, intent(out), optional :: maxRecords
       integer, intent(out), optional :: ierr
       
       integer :: io_err
@@ -168,6 +215,7 @@ contains
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
       MPAS_seekStream = 0
 
+      if (present(maxRecords)) maxRecords = 0
 
       !
       ! Sanity checks
@@ -183,11 +231,14 @@ contains
          return
       end if
 
+      if (present(maxRecords)) maxRecords = timeDim
+
 !write(stderrUnit,*) 'Found ', timeDim, ' times in file' 
 
       call MPAS_io_inq_var(stream % fileHandle, 'xtime', ierr=io_err)
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
+         if (present(maxRecords)) maxRecords = 0
          return
       end if
 
@@ -240,6 +291,22 @@ contains
                   MPAS_seekStream = i
                end if
             end if
+         else if (seekPosition == MPAS_STREAM_LATEST_STRICTLY_BEFORE) then
+            if (sliceTime < startTime) then
+               timeDiff = abs(sliceTime - startTime)
+               if (timeDiff < minTimeDiff) then
+                  minTimeDiff = timeDiff
+                  MPAS_seekStream = i
+               end if
+            end if
+         else if (seekPosition == MPAS_STREAM_EARLIEST_STRICTLY_AFTER) then
+            if (sliceTime > startTime) then
+               timeDiff = abs(sliceTime - startTime)
+               if (timeDiff < minTimeDiff) then
+                  minTimeDiff = timeDiff
+                  MPAS_seekStream = i
+               end if
+            end if
          else
             write(stderrUnit,*) 'Error in MPAS_seekStream: unrecognized seekPosition'
             deallocate(xtimes)
@@ -259,6 +326,52 @@ contains
       deallocate(xtimes)
 
    end function MPAS_seekStream
+
+
+   subroutine MPAS_streamTime(stream, frame, frameValidTime, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      integer, intent(in) :: frame
+      character (len=*), intent(out) :: frameValidTime
+      integer, intent(out), optional :: ierr
+      
+      integer :: io_err
+      integer :: timeDim
+
+
+!      write(stderrUnit,*) 'Called MPAS_streamTime'
+
+      !
+      ! Initialize output arguments
+      !
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_IO_ERR
+         return
+      end if
+
+      call MPAS_io_inq_var(stream % fileHandle, 'xtime', ierr=io_err)
+      if (io_err /= MPAS_IO_NOERR) then
+         if (present(ierr)) ierr = MPAS_IO_ERR
+         return
+      end if
+
+!write(stderrUnit,*) 'Found xtime variable'
+
+      call MPAS_io_set_frame(stream % fileHandle, frame, io_err)
+      call MPAS_io_get_var(stream % fileHandle, 'xtime', frameValidTime, io_err)
+      if (io_err /= MPAS_IO_NOERR) then
+         if (present(ierr)) ierr = MPAS_IO_ERR
+         return
+      end if
+
+   end subroutine MPAS_streamTime
 
 
    subroutine MPAS_streamAddField_0dInteger(stream, field, ierr)
@@ -311,7 +424,7 @@ contains
       totalDimSize = 0
 
       call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, dimNames, dimSizes, &
-                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
 
       deallocate(indices)
       deallocate(dimSizes)
@@ -402,7 +515,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, dimNames0, &
                                              dimSizes0, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -411,7 +524,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -510,7 +623,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -519,7 +632,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -617,7 +730,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -626,7 +739,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -663,12 +776,13 @@ contains
    end subroutine MPAS_streamAddField_3dInteger
 
 
-   subroutine MPAS_streamAddField_0dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_0dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field0DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -683,6 +797,7 @@ contains
       integer, dimension(:), pointer :: dimSizes
       type (field_list_type), pointer :: field_list_cursor
       type (field_list_type), pointer :: new_field_list_node
+      integer :: local_precision
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
@@ -692,6 +807,13 @@ contains
       if (.not. stream % isInitialized) then
          if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
          return
+      end if
+
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
       end if
 
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
@@ -713,7 +835,7 @@ contains
       totalDimSize = 0
 
       call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , dimNames, dimSizes, &
-                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
 
       deallocate(indices)
       deallocate(dimSizes)
@@ -741,12 +863,13 @@ contains
    end subroutine MPAS_streamAddField_0dReal
 
 
-   subroutine MPAS_streamAddField_1dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_1dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field1DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -765,6 +888,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -781,7 +905,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -805,7 +936,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , dimNames0, &
                                              dimSizes0, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -814,7 +945,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -851,12 +982,13 @@ contains
    end subroutine MPAS_streamAddField_1dReal
 
 
-   subroutine MPAS_streamAddField_2dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_2dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field2DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -873,6 +1005,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -889,7 +1022,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -913,7 +1053,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -922,7 +1062,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -959,12 +1099,13 @@ contains
    end subroutine MPAS_streamAddField_2dReal
 
 
-   subroutine MPAS_streamAddField_3dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_3dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field3DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -981,6 +1122,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -997,7 +1139,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -1022,7 +1171,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -1031,7 +1180,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1069,12 +1218,13 @@ contains
    end subroutine MPAS_streamAddField_3dReal
 
 
-   subroutine MPAS_streamAddField_4dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_4dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field4DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -1091,6 +1241,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -1107,7 +1258,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -1132,7 +1290,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -1141,7 +1299,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1179,12 +1337,13 @@ contains
    end subroutine MPAS_streamAddField_4dReal
 
 
-   subroutine MPAS_streamAddField_5dReal(stream, field, ierr)
+   subroutine MPAS_streamAddField_5dReal(stream, field, precision, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       type (field5DReal), intent(in), target :: field
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -1201,6 +1360,7 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+      integer :: local_precision
 
       type (mpas_pool_type), pointer :: meshPool
       integer, dimension(:), pointer :: indexArray
@@ -1217,7 +1377,14 @@ contains
          return
       end if
 
-      if(.not. field % isPersistent .or. .not. field % isActive) then
+     
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = stream % defaultPrecision
+      end if
+
+      if (.not. field % isPersistent .or. .not. field % isActive) then
         return
       end if
 
@@ -1242,7 +1409,7 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
                any_success = .true.
@@ -1251,7 +1418,7 @@ contains
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1345,11 +1512,11 @@ contains
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_CHAR, dimNames(1:1), &
                                              dimSizes, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
-                                             indices, io_err)
+                                             indices, ierr=io_err)
          end do
       else
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_CHAR, dimNames(1:1), dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, io_err)
+                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
       end if
 
       deallocate(indices)
@@ -1384,7 +1551,7 @@ contains
 
 
    subroutine MPAS_streamAddField_generic(stream, fieldName, fieldType, dimNames, dimSizes, hasTimeDimension, isDecomposed, &
-                                          totalDimSize, globalDimSize, indices, ierr)
+                                          totalDimSize, globalDimSize, indices, precision, ierr)
 
       implicit none
 
@@ -1398,6 +1565,7 @@ contains
       integer, intent(in) :: totalDimSize
       integer, intent(in) :: globalDimSize
       integer, dimension(:), intent(in) :: indices
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -1484,7 +1652,7 @@ contains
          !
 !write(stderrUnit,*) '... defining var to low-level interface with ndims ', ndims
 
-         call MPAS_io_def_var(stream % fileHandle, trim(fieldName), fieldType, dimNamesLocal(1:ndims), io_err)
+         call MPAS_io_def_var(stream % fileHandle, trim(fieldName), fieldType, dimNamesLocal(1:ndims), precision=precision, ierr=io_err)
          call MPAS_io_err_mesg(io_err, .false.)
          if (io_err /= MPAS_IO_NOERR) then
             if (present(ierr)) ierr = MPAS_IO_ERR
@@ -1584,6 +1752,532 @@ contains
       end if
 
    end subroutine MPAS_streamAddField_generic
+
+
+   subroutine MPAS_streamUpdateField_0dInteger(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field0DInteger), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 0d integer field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_0D_INT) then
+            if (field_cursor % int0dField % fieldname == field % fieldname) then
+               STREAM_DEBUG_WRITE( '... found 0d integer named '//trim(field_cursor % int0dField % fieldname) )
+               field_cursor % int0dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 0d integer field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_0dInteger
+
+
+   subroutine MPAS_streamUpdateField_1dInteger(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field1DInteger), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 1d integer field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_1D_INT) then
+            if (field_cursor % int1dField % fieldname == field % fieldname .and. &
+                field_cursor % int1dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % int1dField % dimNames(1) == field % dimNames(1)) then
+               STREAM_DEBUG_WRITE( '... found 1d integer named '//trim(field_cursor % int1dField % fieldname) )
+               field_cursor % int1dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 1d integer field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_1dInteger
+
+
+   subroutine MPAS_streamUpdateField_2dInteger(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field2DInteger), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 2d integer field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_2D_INT) then
+            if (field_cursor % int2dField % fieldname == field % fieldname .and. &
+                field_cursor % int2dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % int2dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % int2dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % int2dField % dimNames(2) == field % dimNames(2)) then
+               STREAM_DEBUG_WRITE( '... found 2d integer named '//trim(field_cursor % int2dField % fieldname) )
+               field_cursor % int2dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 2d integer field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_2dInteger
+
+
+   subroutine MPAS_streamUpdateField_3dInteger(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field3DInteger), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 3d integer field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_3D_INT) then
+            if (field_cursor % int3dField % fieldname == field % fieldname .and. &
+                field_cursor % int3dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % int3dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % int3dField % dimSizes(3) == field % dimSizes(3) .and. &
+                field_cursor % int3dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % int3dField % dimNames(2) == field % dimNames(2) .and. &
+                field_cursor % int3dField % dimNames(3) == field % dimNames(3)) then
+               STREAM_DEBUG_WRITE( '... found 3d integer named '//trim(field_cursor % int3dField % fieldname) )
+               field_cursor % int3dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 3d integer field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_3dInteger
+
+
+   subroutine MPAS_streamUpdateField_0dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field0DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 0d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_0D_REAL) then
+            if (field_cursor % real0dField % fieldname == field % fieldname) then
+               STREAM_DEBUG_WRITE( '... found 0d real named '//trim(field_cursor % real0dField % fieldname) )
+               field_cursor % real0dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 0d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_0dReal
+
+
+   subroutine MPAS_streamUpdateField_1dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field1DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 1d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_1D_REAL) then
+            if (field_cursor % real1dField % fieldname == field % fieldname .and. &
+                field_cursor % real1dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real1dField % dimNames(1) == field % dimNames(1)) then
+               STREAM_DEBUG_WRITE( '... found 1d real named '//trim(field_cursor % real1dField % fieldname) )
+               field_cursor % real1dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 1d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_1dReal
+
+
+   subroutine MPAS_streamUpdateField_2dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field2DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 2d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_2D_REAL) then
+            if (field_cursor % real2dField % fieldname == field % fieldname .and. &
+                field_cursor % real2dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real2dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % real2dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % real2dField % dimNames(2) == field % dimNames(2)) then
+               STREAM_DEBUG_WRITE( '... found 2d real named '//trim(field_cursor % real2dField % fieldname) )
+               field_cursor % real2dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 2d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_2dReal
+
+
+   subroutine MPAS_streamUpdateField_3dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field3DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 3d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_3D_REAL) then
+            if (field_cursor % real3dField % fieldname == field % fieldname .and. &
+                field_cursor % real3dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real3dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % real3dField % dimSizes(3) == field % dimSizes(3) .and. &
+                field_cursor % real3dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % real3dField % dimNames(2) == field % dimNames(2) .and. &
+                field_cursor % real3dField % dimNames(3) == field % dimNames(3)) then
+               STREAM_DEBUG_WRITE( '... found 3d real named '//trim(field_cursor % real3dField % fieldname) )
+               field_cursor % real3dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 3d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_3dReal
+
+
+   subroutine MPAS_streamUpdateField_4dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field4DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 4d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_4D_REAL) then
+            if (field_cursor % real4dField % fieldname == field % fieldname .and. &
+                field_cursor % real4dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real4dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % real4dField % dimSizes(3) == field % dimSizes(3) .and. &
+                field_cursor % real4dField % dimSizes(4) == field % dimSizes(4) .and. &
+                field_cursor % real4dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % real4dField % dimNames(2) == field % dimNames(2) .and. &
+                field_cursor % real4dField % dimNames(3) == field % dimNames(3) .and. &
+                field_cursor % real4dField % dimNames(4) == field % dimNames(4)) then
+               STREAM_DEBUG_WRITE( '... found 4d real named '//trim(field_cursor % real4dField % fieldname) )
+               field_cursor % real4dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 4d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_4dReal
+
+
+   subroutine MPAS_streamUpdateField_5dReal(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field5DReal), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 5d real field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_5D_REAL) then
+            if (field_cursor % real5dField % fieldname == field % fieldname .and. &
+                field_cursor % real5dField % dimSizes(1) == field % dimSizes(1) .and. &
+                field_cursor % real5dField % dimSizes(2) == field % dimSizes(2) .and. &
+                field_cursor % real5dField % dimSizes(3) == field % dimSizes(3) .and. &
+                field_cursor % real5dField % dimSizes(4) == field % dimSizes(4) .and. &
+                field_cursor % real5dField % dimSizes(5) == field % dimSizes(5) .and. &
+                field_cursor % real5dField % dimNames(1) == field % dimNames(1) .and. &
+                field_cursor % real5dField % dimNames(2) == field % dimNames(2) .and. &
+                field_cursor % real5dField % dimNames(3) == field % dimNames(3) .and. &
+                field_cursor % real5dField % dimNames(4) == field % dimNames(4) .and. &
+                field_cursor % real5dField % dimNames(5) == field % dimNames(5)) then
+               STREAM_DEBUG_WRITE( '... found 5d real named '//trim(field_cursor % real5dField % fieldname) )
+               field_cursor % real5dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 5d real field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_5dReal
+
+
+   subroutine MPAS_streamUpdateField_0dChar(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field0DChar), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 0d char field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_0D_CHAR) then
+            if (field_cursor % char0dField % fieldname == field % fieldname) then
+               STREAM_DEBUG_WRITE( '... found 0d char named '//trim(field_cursor % char0dField % fieldname) )
+               field_cursor % char0dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 0d char field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_0dChar
 
 
    subroutine MPAS_readStream(stream, frame, ierr)
@@ -2438,6 +3132,19 @@ contains
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
          return
+      end if
+
+      !
+      ! Check whether we will clobber any records
+      !
+      if (MPAS_io_would_clobber_records(stream % fileHandle, io_err)) then
+         if (.not. stream % clobberRecords) then
+            if (present(ierr)) ierr = MPAS_STREAM_CLOBBER_RECORD
+            return
+         else
+            write(stderrUnit,'(a,i4,a)') 'MPAS I/O: Overwriting existing record ', frame, &
+                                         ' in output file '//trim(stream % filename)
+         end if
       end if
 
       !

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="ocean" version="2.1">
+<registry model="mpas" core="ocean" version="3.0">
 
 	<dims>
 		<dim name="nCells" units="unitless"
@@ -50,6 +50,10 @@
 					description="Determines if the initial conditions should be read from a restart file, or an input file."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="Restart_timestamp" units="unitless"
+					description="Path to the filename for restart timestamps to be read and written from."
+					possible_values="Path to a file."
+		/>
 		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
 					description="Timestamp describing the initial time of the simulation. If it is set to 'file', the initial time is read from restart_timestamp."
 					possible_values="'YYYY-MM-DD_HH:MM:SS' or 'file'"
@@ -58,40 +62,16 @@
 					description="Timestamp descriping the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration."
 					possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none'"
 		/>
-		<nml_option name="config_run_duration" type="character" default_value="0001_00:00:00" units="unitless"
+		<nml_option name="config_run_duration" type="character" default_value="0010_00:00:00" units="unitless"
 					description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time."
 					possible_values="'DDDD_HH:MM:SS' or 'none'"
 		/>
-		<nml_option name="config_calendar_type" type="character" default_value="360day" units="unitless"
+		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
 					description="Selection of the type of calendar that should be used in the simulation."
-					possible_values="'gregorian', 'gregorian_noleap', or '360day'"
+					possible_values="'gregorian', 'gregorian_noleap'"
 		/>
 	</nml_record>
 	<nml_record name="io" in_defaults="true">
-		<nml_option name="config_input_name" type="character" default_value="grid.nc" units="unitless"
-					description="The path to the input file for the simulation."
-					possible_values="path/to/grid.nc"
-		/>
-		<nml_option name="config_output_name" type="character" default_value="output.nc" units="unitless"
-					description="The template path and name to the output file from the simulation. A time stamp is prepended to the extension of the file (.nc)."
-					possible_values="path/to/output.nc"
-		/>
-		<nml_option name="config_restart_name" type="character" default_value="restart.nc" units="unitless"
-					description="The template path and name to the restart file for the simulation. A time stamp is prepended to the extension of the file (.nc) both for input and output."
-					possible_values="path/to/restart.nc"
-		/>
-		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
-					description="The name of the file timestamps for latest restart files are written to. This file is also read when config_start_time is set to 'file' and config_do_restart is set to .true."
-					possible_values="path/to/restart_timestamp"
-		/>
-		<nml_option name="config_restart_interval" type="character" default_value="0001_00:00:00" units="unitless"
-					description="Timestamp determining how often a restart file should be written."
-					possible_values="'DDDD_HH:MM:SS'"
-		/>
-		<nml_option name="config_output_interval" type="character" default_value="0001_00:00:00" units="unitless"
-					description="Timestamp determining how often an output file should be written."
-					possible_values="'DDDD_HH:MM:SS'"
-		/>
 		<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units="unitless"
 					description="Timestamp determining how often a global statistics files should be written."
 					possible_values="'DDDD_HH:MM:SS'"
@@ -104,10 +84,6 @@
 					description="Logical flag determining if an output file should be written prior to the first time step."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_frames_per_outfile" type="integer" default_value="1000" units="unitless"
-					description="Integer specifying how many time frames should be included in an output file. Once the maximum is reached, a new output file is created."
-					possible_values="Any positive integer value greater than 0"
-		/>
 		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
 					description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are requried to write contiguous blocks of data to a file."
 					possible_values="Any positive integer value greater than or equal to 0."
@@ -118,9 +94,9 @@
 		/>
 	</nml_record>
 	<nml_record name="time_integration" in_defaults="true">
-		<nml_option name="config_dt" type="real" default_value="300.0" units="s"
+		<nml_option name="config_dt" type="character" default_value="00:05:00" units="unitless"
 					description="Length of model time-step."
-					possible_values="Any positive real value, but limited by CFL condition."
+					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit" units="unitless"
 					description="Time integration method."
@@ -208,7 +184,7 @@
 		/>
 		<nml_option name="config_number_of_blocks" type="integer" default_value="0" units="unitless"
 					description="Determines the number of blocks a simulation should be run with. If it is set to 0, the number of blocks is the same as the number of MPI tasks at run-time."
-					possible_values="Any integer $>=$ 0."
+					possible_values="Any integer greater than or equal to 0."
 		/>
 		<nml_option name="config_explicit_proc_decomp" type="logical" default_value=".false." units="unitless"
 					description="Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used."
@@ -293,7 +269,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
-					description="Coefficient of standard GM parametrization of eddy transport"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_Redi_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
@@ -301,11 +277,11 @@
 					possible_values="Positive real numbers"
 		/>
 		<nml_option name="config_gravWaveSpeed_trunc" type="real" default_value="0.3" units="m/s"
-					description="Gravity wave speed truncation threshold for the vertical BVP"
+					description="Gravity wave speed truncation threshold for the vertical stream function boundary value problem, $c$"
 					possible_values="Positive real numbers that represents the gravity wave speed of the first, second, etc., baroclinic modes"
 		/>
 		<nml_option name="config_max_relative_slope" type="real" default_value="0.01" units="non-dimensional"
-					description="Tapering of Redi diffusion coeffient occurs when relativeSlopeTopOfEdge > config_max_relative_slope"
+					description="Tapering parameter for Redi diffusion coeffient.  Tapering occurs when relativeSlopeTopOfEdge is greater than config_max_relative_slope"
 					possible_values="Positive real numbers"
 		/>
 	</nml_record>
@@ -354,7 +330,7 @@
 					description="If true, constant vertical viscosity is included in the momentum equation"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_const_diff" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_use_const_diff" type="logical" default_value=".false." units="unitless"
 					description="If true, constant vertical diffusion is included in the tracer equation"
 					possible_values=".true. or .false."
 		/>
@@ -362,17 +338,17 @@
 					description="Vertical viscosity, applied uniformly throughout domain"
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_vert_diff" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+		<nml_option name="config_vert_diff" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
 					description="Vertical diffusion, applied uniformly throughout domain"
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="vmix_rich" in_defaults="true">
-		<nml_option name="config_use_rich_visc" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_use_rich_visc" type="logical" default_value=".false." units="unitless"
 					description="If true, Richardson-number based vertical viscosity is included in the momentum equation"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_rich_diff" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_use_rich_diff" type="logical" default_value=".false." units="unitless"
 					description="If true, Richardson-number based vertical diffusion is included in the tracer equation"
 					possible_values=".true. or .false."
 		/>
@@ -832,14 +808,11 @@
 		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 	</packages>
 	<streams>
-		<stream name="input" type="input">
-			<var name="temperature"/>
-			<var name="salinity"/>
-			<var name="tracer1"/>
-			<var name="normalVelocity"/>
-			<var name="layerThickness"/>
-			<var name="highFreqThickness"/>
-			<var name="lowFreqDivergence"/>
+		<stream name="mesh" 
+				type="none"
+				filename_template="mesh_variables.nc"
+				immutable="true">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -882,6 +855,19 @@
 			<var name="bottomDepth"/>
 			<var name="maxLevelCell"/>
 			<var name="refBottomDepth"/>
+		</stream>
+		<stream name="input" 
+				type="input"
+				filename_template="grid.nc"
+				input_interval="initial_only"
+				immutable="true">
+
+			<stream name="mesh"/>
+			<var_array name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="highFreqThickness"/>
+			<var name="lowFreqDivergence"/>
 			<var name="temperatureRestore"/>
 			<var name="salinityRestore"/>
 			<var name="restingThickness"/>
@@ -889,60 +875,23 @@
 			<var name="seaSurfacePressure"/>
 			<var name="boundaryLayerDepth"/>
 		</stream>
-		<stream name="restart" type="restart">
-			<var name="temperature"/>
-			<var name="salinity"/>
-			<var name="tracer1"/>
+		<stream name="restart"
+				type="input;output"
+				filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				reference_time="0000-01-01_00:00:00"
+				clobber_mode="truncate"
+				input_interval="initial_only"
+				output_interval="0005_00:00:00"
+				immutable="true">
+
+			<stream name="mesh"/>
+			<var_array name="tracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
 			<var name="lowFreqDivergence"/>
 			<var name="normalBarotropicVelocity"/>
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="meshDensity"/>
-			<var name="meshScalingDel2"/>
-			<var name="meshScalingDel4"/>
-			<var name="meshScaling"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="fEdge"/>
-			<var name="fVertex"/>
-			<var name="fCell"/>
-			<var name="bottomDepth"/>
-			<var name="maxLevelCell"/>
-			<var name="refBottomDepth"/>
 			<var name="vertCoordMovementWeights"/>
 			<var name="temperatureRestore"/>
 			<var name="salinityRestore"/>
@@ -952,96 +901,75 @@
 			<var name="seaSurfacePressure"/>
 			<var name="boundaryLayerDepth"/>
 		</stream>
-		<stream name="output" type="output">
-			<var name="temperature"/>
-			<var name="salinity"/>
-			<var name="tracer1"/>
+		<stream name="output" 
+				type="output"
+				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
+			<var_array name="tracers"/>
 			<var name="layerThickness"/>
 			<var name="ssh"/>
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="meshDensity"/>
-			<var name="meshScalingDel2"/>
-			<var name="meshScalingDel4"/>
-			<var name="meshScaling"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="edgeNormalVectors"/>
-			<var name="edgeTangentVectors"/>
-			<var name="localVerticalUnitVectors"/>
-			<var name="cellTangentPlane"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="fEdge"/>
-			<var name="fVertex"/>
-			<var name="fCell"/>
-			<var name="bottomDepth"/>
-			<var name="maxLevelCell"/>
 			<var name="maxLevelEdgeTop"/>
-			<var name="refBottomDepth"/>
 			<var name="vertCoordMovementWeights"/>
 			<var name="edgeMask"/>
 			<var name="vertexMask"/>
 			<var name="cellMask"/>
 			<var name="refZMid"/>
 			<var name="refLayerThickness"/>
-			<var name="temperatureSurfaceValue"/>
-			<var name="salinitySurfaceValue"/>
-			<var name="tracer1SurfaceValue"/>
-			<var name="surfaceVelocityZonal"/>
-			<var name="surfaceVelocityMeridional"/>
-			<var name="SSHGradientZonal"/>
-			<var name="SSHGradientMeridional"/>
 			<var name="xtime"/>
 			<var name="zMid"/>
 			<var name="zTop"/>
-			<var name="density"/>
-			<var name="displacedDensity"/>
-			<var name="potentialDensity"/>
-			<var name="BruntVaisalaFreqTop"/>
-			<var name="pressure"/>
-			<var name="vertAleTransportTop"/>
-			<var name="vertVelocityTop"/>
 			<var name="kineticEnergyCell"/>
-			<var name="viscosity"/>
-			<var name="divergence"/>
 			<var name="relativeVorticityCell"/>
-			<var name="velocityZonal"/>
-			<var name="velocityMeridional"/>
-			<var name="RiTopOfCell"/>
+			<var name="areaCellGlobal"/>
+			<var name="areaEdgeGlobal"/>
+			<var name="areaTriangleGlobal"/>
+			<var name="volumeCellGlobal"/>
+			<var name="volumeEdgeGlobal"/>
+			<var name="CFLNumberGlobal"/>
+		</stream>
+		<stream name="additional_output"
+				type="none"
+				filename_template="output/additional_output.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<var name="normalVelocity"/>
+			<var name="density"/>
+			<var name="pressure"/>
+			<var name="divergence"/>
+			<var name="viscosity"/>
 			<var name="vertViscTopOfEdge"/>
 			<var name="vertViscTopOfCell"/>
 			<var name="vertDiffTopOfCell"/>
+			<var name="BruntVaisalaFreqTop"/>
+			<var name="RiTopOfCell"/>
 			<var name="bulkRichardsonNumber"/>
+			<var name="vertAleTransportTop"/>
+			<var name="vertVelocityTop"/>
+		</stream>
+		<stream name="real_world"
+				type="none"
+				filename_template="output/real_world_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
+			<var name="velocityZonal"/>
+			<var name="velocityMeridional"/>
+			<var name="displacedDensity"/>
+			<var name="potentialDensity"/>
 			<var name="boundaryLayerDepth"/>
 			<var name="boundaryLayerDepthEdge"/>
 			<var name="indexBoundaryLayerDepth"/>
@@ -1050,43 +978,67 @@
 			<var name="windStressZonalDiag"/>
 			<var name="windStressMeridionalDiag"/>
 			<var name="surfaceBuoyancyForcing"/>
-			<var name="areaCellGlobal"/>
-			<var name="areaEdgeGlobal"/>
-			<var name="areaTriangleGlobal"/>
-			<var name="volumeCellGlobal"/>
-			<var name="volumeEdgeGlobal"/>
-			<var name="CFLNumberGlobal"/>
+			<var name="seaSurfacePressure"/>
+		</stream>
+		<stream name="averages"
+				type="none"
+				filename_template="output/average_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
 			<var name="nAverage"/>
+			<var_array name="avgTracersSurfaceValue"/>
+			<var_array name="avgSurfaceVelocity"/>
+			<var_array name="avgSSHGradient"/>
 			<var name="avgSSH"/>
-			<var name="varSSH"/>
 			<var name="avgNormalVelocity"/>
 			<var name="avgVelocityZonal"/>
 			<var name="avgVelocityMeridional"/>
 			<var name="avgVertVelocityTop"/>
-			<var name="varNormalVelocity"/>
-			<var name="varVelocityZonal"/>
-			<var name="varVelocityMeridional"/>
 			<var name="avgNormalTransportVelocity"/>
 			<var name="avgTransportVelocityZonal"/>
 			<var name="avgTransportVelocityMeridional"/>
 			<var name="avgVertTransportVelocityTop"/>
-			<var name="avgNormalGMBolusVelocity"/>
-			<var name="avgGMBolusVelocityZonal"/>
-			<var name="avgGMBolusVelocityMeridional"/>
-			<var name="avgVertGMBolusVelocityTop"/>
-			<var name="surfaceTemperatureFlux"/>
-			<var name="surfaceSalinityFlux"/>
-			<var name="surfaceTracer1Flux"/>
-			<var name="avgTemperatureSurfaceValue"/>
-			<var name="avgSalinitySurfaceValue"/>
-			<var name="avgSurfaceVelocityZonal"/>
-			<var name="avgSurfaceVelocityMeridional"/>
-			<var name="avgSSHGradientZonal"/>
-			<var name="avgSSHGradientMeridional"/>
+			<var name="varSSH"/>
+			<var name="varNormalVelocity"/>
+			<var name="varVelocityZonal"/>
+			<var name="varVelocityMeridional"/>
+		</stream>
+		<stream name="Cartesian"
+				type="none"
+				filename_template="output/Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
+			<var name="velocityX"/>
+			<var name="velocityY"/>
+		</stream>
+		<stream name="forcing"
+				type="none"
+				filename_template="output/forcing_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
+			<var_array name="tracersSurfaceValue"/>
+			<var_array name="surfaceVelocity"/>
+			<var_array name="SSHGradient"/>
+			<var_array name="surfaceTracerFlux"/>
+			<var_array name="vertNonLocalFlux"/>
 			<var name="surfaceWindStressMagnitude"/>
 			<var name="surfaceWindStress"/>
 			<var name="surfaceMassFlux"/>
-			<var name="seaSurfacePressure"/>
 			<var name="seaIceEnergy"/>
 			<var name="penetrativeTemperatureFlux"/>
 			<var name="transmissionCoefficients"/>
@@ -1114,24 +1066,56 @@
 			<var name="nAccumulatedCoupled"/>
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
+		</stream>
+		<stream name="Gent_McWilliams_spherical"
+				type="none"
+				filename_template="output/Gent_McWilliams_spherical_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
 			<var name="relativeSlopeTopOfCell"/>
 			<var name="relativeSlopeTaperingCell"/>
-			<var name="relativeSlopeTopOfCellX"/>
-			<var name="relativeSlopeTopOfCellY"/>
-			<var name="relativeSlopeTopOfCellZ"/>
 			<var name="relativeSlopeTopOfCellZonal"/>
 			<var name="relativeSlopeTopOfCellMeridional"/>
 			<var name="k33"/>
-			<var name="GMBolusVelocityX"/>
-			<var name="GMBolusVelocityY"/>
 			<var name="GMBolusVelocityZonal"/>
 			<var name="GMBolusVelocityMeridional"/>
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
 			<var name="gmStreamFuncTopOfEdge"/>
+			<var name="avgNormalGMBolusVelocity"/>
+			<var name="avgGMBolusVelocityZonal"/>
+			<var name="avgGMBolusVelocityMeridional"/>
+			<var name="avgVertGMBolusVelocityTop"/>
+		</stream>
+		<stream name="Gent_McWilliams_Cartesian"
+				type="none"
+				filename_template="output/Gent_McWilliams_Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+			<stream name="mesh"/>
+			<var name="relativeSlopeTopOfCell"/>
+			<var name="relativeSlopeTaperingCell"/>
+			<var name="relativeSlopeTopOfCellX"/>
+			<var name="relativeSlopeTopOfCellY"/>
+			<var name="relativeSlopeTopOfCellZ"/>
+			<var name="k33"/>
+			<var name="GMBolusVelocityX"/>
+			<var name="GMBolusVelocityY"/>
+			<var name="normalGMBolusVelocity"/>
+			<var name="vertGMBolusVelocityTop"/>
+			<var name="gmStreamFuncTopOfEdge"/>
+			<var name="avgNormalGMBolusVelocity"/>
 			<var name="GMStreamFuncX"/>
 			<var name="GMStreamFuncY"/>
-			<var name="vertNonLocalFluxTemp"/>
 		</stream>
 	</streams>
 	<var_struct name="state" time_levs="2">
@@ -1464,17 +1448,17 @@
 			/>
 		</var_array>
 		<var_array name="tracersSurfaceLayerValue" type="real" dimensions="nCells Time">
-			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" streams="o" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
+			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
 				description="potential temperature averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
 			/>
-			<var name="salinitySurfaceLayerValue" array_group="surfaceLayerValues" streams="o" units="PSU" name_in_code="salinitySurfaceLayerValue"
+			<var name="salinitySurfaceLayerValue" array_group="surfaceLayerValues" units="PSU" name_in_code="salinitySurfaceLayerValue"
 				description="salinity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
 			/>
-			<var name="tracer1SurfaceLayerValue" array_group="surfaceLayerValues" streams="o" units="na"
+			<var name="tracer1SurfaceLayerValue" array_group="surfaceLayerValues" units="na"
 				description="Tracer of 1 averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
 			/>
 		</var_array>
-		<var name="normalVelocitySurfaceLayer" type="real" dimensions="nEdges Time" streams="" units="m s^{-1}"
+		<var name="normalVelocitySurfaceLayer" type="real" dimensions="nEdges Time" nits="m s^{-1}"
 			 description="normal velocity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
 		/>
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time">
@@ -1707,7 +1691,7 @@
 		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time"  units="none"
 			 description="CVMix/KPP: int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
 		/>
-		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time" streams="o" units="none"
+		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time" units="none"
 			 description="CVMix/KPP: surface layer entirely encompasses int(indexSurfaceLayerDepth) vertical layers and fraction(indexSurfaceLayerDepth) of the int(indexSurfaceLayerDepth)+1 layer."
 		/>
 		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time"  units="m s^{-1}"
@@ -1751,7 +1735,7 @@
 			 description="Magnitude of slope of isopycnal surface relative to constant coordinate surface averaged to cell centers"
 		/>
 		<var name="relativeSlopeTapering" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
-			 description="scalar tapering function applied to limit magnitude of isopycnal mixing in regions where relativeSlopeTopOfCell > config_gm_max_slope"
+			 description="scalar tapering function applied to limit magnitude of isopycnal mixing in regions where relativeSlopeTopOfCell is greater than config_gm_max_slope"
 		/>
 		<var name="relativeSlopeTaperingCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
 			 description="averaging of relativeSlopeTapering function to cell centers"
@@ -1986,10 +1970,10 @@
 			 description="Number of accumulations in time averaging of coupler fields"
 		/>
 		<var_array name="avgTracersSurfaceValue" type="real" dimensions="nCells Time">
-			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
+			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" 
 				 description="Time averaged potential temperature extrapolated to ocean surface"
 			/>
-			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="PSU" name_in_code="salinitySurfaceValue"
+			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="PSU" 
 				 description="Time averaged salinity extrapolated to ocean surface"
 			/>
 			<var name="avgTracer1SurfaceValue" array_group="surfaceValues" units="percent"
@@ -1997,12 +1981,12 @@
 			/>
 		</var_array>
 		<var_array name="avgSurfaceVelocity" type="real" dimensions="nCells Time">
-		<var name="avgSurfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
-			 description="Time averaged zonal surface velocity"
-		/>
-		<var name="avgSurfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
-			 description="Time averaged meridional surface velocity"
-		/>
+			<var name="avgSurfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
+				 description="Time averaged zonal surface velocity"
+			/>
+			<var name="avgSurfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
+				 description="Time averaged meridional surface velocity"
+			/>
 		</var_array>
 		<var_array name="avgSSHGradient" type="real" dimensions="nCells Time">
 			<var name="avgSSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
@@ -2229,7 +2213,7 @@
 		<var name="yGMBolusVelocitySolution" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction, for analytic solution"
 		/>
-    </var_struct>
+	</var_struct>
 
 #include "analysis_members/Registry_analysis_members.xml"
 </registry>

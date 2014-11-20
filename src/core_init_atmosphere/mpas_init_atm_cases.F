@@ -28,7 +28,7 @@ module init_atm_cases
    contains
 
 
-   subroutine init_atm_setup_case(domain)
+   subroutine init_atm_setup_case(domain, stream_manager)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Configure grid metadata and model state for the hydrostatic test case
    !   specified in the namelist
@@ -37,9 +37,12 @@ module init_atm_cases
    !                 initialized
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      use mpas_stream_manager
+
       implicit none
 
       type (domain_type), intent(inout) :: domain
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
 
 
       integer :: i
@@ -54,6 +57,8 @@ module init_atm_cases
       integer, pointer :: config_init_case
       logical, pointer :: config_static_interp
       logical, pointer :: config_met_interp
+
+      character(len=StrKIND), pointer :: mminlu
 
       integer, pointer :: nCells
       integer, pointer :: nEdges
@@ -197,6 +202,21 @@ module init_atm_cases
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
                call init_atm_static_orogwd(mesh, block_ptr % dimensions, block_ptr % configs)
             end if
+
+            !
+            ! If at this point the mminlu variable is blank, we assume that the static interp step was
+            !   not run, and that we are working with a static file created before there was a choice
+            !   of land use datasets; in this case, the dataset was almost necessarily USGS
+            !
+            call mpas_pool_get_array(mesh, 'mminlu', mminlu)
+            if (len_trim(mminlu) == 0) then
+                  write(0,*) '****************************************************************'
+                  write(0,*) 'No information on land use dataset is available.'
+                  write(0,*) 'Assume that we are using ''USGS''.'
+                  write(0,*) '****************************************************************'
+                  write(mminlu,'(a)') 'USGS'
+            end if
+
             call init_atm_case_gfs(block_ptr, mesh, nCells, nEdges, nVertLevels, fg, state, &
                                    diag, diag_physics, config_init_case, block_ptr % dimensions, block_ptr % configs)
             if (config_met_interp) call physics_initialize_real(mesh, fg, domain % dminfo, block_ptr % dimensions, block_ptr % configs)
@@ -214,7 +234,7 @@ module init_atm_cases
             call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
 
             ! Defined in mpas_init_atm_surface.F
-            call init_atm_case_sfc(domain, domain % dminfo, mesh, fg, state, block_ptr % dimensions, block_ptr % configs)
+            call init_atm_case_sfc(domain, domain % dminfo, stream_manager, mesh, fg, state, block_ptr % dimensions, block_ptr % configs)
             block_ptr => block_ptr % next
          end do
 
@@ -497,7 +517,7 @@ module init_atm_cases
 
       !     Metrics for hybrid coordinate and vertical stretching
 
-      str = 1.8
+      str = 1.5
       zt = 45000.
       dz = zt/float(nz1)
 
@@ -3989,6 +4009,7 @@ write(0,*) 'PROCESSING SEAICE'
 !           scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
             scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
                                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+            if (target_z < z_fg(1,iCell)) scalars(index_qv,k,iCell) = scalars(index_qv,k+1,iCell) 
             rh(k,iCell) = scalars(index_qv,k,iCell)
          end do
 
@@ -4120,6 +4141,7 @@ write(0,*) 'PROCESSING SEAICE'
 
             ! QV
             es = 6.112 * exp((17.27*(t(k,iCell) - 273.16))/(t(k,iCell) - 35.86))
+            es = min(es,0.99*0.01*pressure(k,iCell))             ! WCS 20141003, from LF; temporary fix 
             rs = 0.622 * es * 100. / (pressure(k,iCell) - es * 100.)
             scalars(index_qv,k,iCell) = 0.01 * rs * scalars(index_qv,k,iCell)
 

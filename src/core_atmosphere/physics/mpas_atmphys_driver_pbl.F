@@ -49,11 +49,11 @@
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 !>    * in call to subroutine ysu, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 
 
  contains
@@ -277,8 +277,8 @@
  type(mpas_pool_type),intent(inout):: tend_physics
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine driver_pbl: dt_pbl=',dt_pbl
+! write(0,*)
+! write(0,*) '--- enter subroutine driver_pbl: dt_pbl=',dt_pbl
 
 !copy MPAS arrays to local arrays:
  call pbl_from_MPAS(sfc_input,diag_physics)
@@ -315,7 +315,7 @@
 
 !copy local arrays to MPAS grid:
  call pbl_to_MPAS(diag_physics,tend_physics)
- write(0,*) '--- end subroutine driver_pbl'
+! write(0,*) '--- end subroutine driver_pbl'
 
  end subroutine driver_pbl
 

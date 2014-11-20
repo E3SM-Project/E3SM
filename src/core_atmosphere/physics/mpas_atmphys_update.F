@@ -10,7 +10,7 @@
  use mpas_kind_types
  use mpas_grid_types
 
- use mpas_atmphys_driver_convection_deep
+ use mpas_atmphys_driver_convection
  use mpas_atmphys_vars
 
  implicit none
@@ -33,12 +33,15 @@
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * renamed config_conv_deep_scheme to config_convection_scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains
+
  
 !==================================================================================================
  subroutine physics_update(domain,dt)
@@ -54,8 +57,8 @@
 
 !--------------------------------------------------------------------------------------------------
 
- write(0,*)
- write(0,*) '--- begin physics_update:'
+! write(0,*)
+! write(0,*) '--- begin physics_update:'
  block => domain % blocklist
  do while(associated(block))
 
@@ -64,7 +67,7 @@
 
     block => block % next
  end do
- write(0,*) '--- end physics_update:'
+! write(0,*) '--- end physics_update:'
 
  end subroutine physics_update
 
