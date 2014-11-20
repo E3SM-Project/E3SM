@@ -194,6 +194,9 @@ character(len=256) :: cam_branch_file = ' '
 ! pertlim = n.n        Max size of perturbation to apply to initial
 !                      temperature field.
 !
+! new_random           logical: if .true., use RNG in dynamics/se/random_xgc.F90
+!                      instead of the fortran intrinsic.
+!
 ! seed_custom          integer: if > 0, use new seeding mechanism that uses a
 !                      custom seed rather than a custom limit. Default 0
 !
@@ -445,6 +448,7 @@ contains
                     dtime, &
                     nlvdry,  &
                     pertlim ,&
+                    new_random ,&
                     seed_custom ,&
                     seed_clock ,&
                     readtrace, rayk0, raykrange, raytau0, &
@@ -909,6 +913,7 @@ subroutine distnl
    call mpibcast (print_step_cost,1,mpilog,0,mpicom)
    call mpibcast (inithist_all   ,1,mpilog,0,mpicom)
    call mpibcast (pertlim     ,1, mpir8 , 0, mpicom )
+   call mpibcast (new_random  ,1, mpilog, 0, mpicom )
    call mpibcast (seed_custom ,1, mpiint, 0, mpicom )
    call mpibcast (seed_clock  ,1, mpilog, 0, mpicom )
 
