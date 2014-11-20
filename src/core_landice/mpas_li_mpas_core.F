@@ -642,6 +642,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       !-----------------------------------------------------------------
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
+      integer, dimension(:), pointer :: vertexMask
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: currTime
       integer :: err, err_tmp
@@ -652,6 +653,15 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       ! Get pool stuff
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+
+      ! Copy data from first time level into all other time levels
+      call mpas_pool_initialize_time_levels(statePool)
+
+      ! Initialize vertexMask on time level 2 to junk, so diagnostic_solve_before_velocity in li_diagnostic_vars says that the vertexMask has changed (needed by external dycore)
+      call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel = 2)
+      vertexMask = -9999
+
 
       ! ===
       ! === Call init routines ===
