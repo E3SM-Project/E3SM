@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-#
-# This script recreates the acme_developer suite within the CESM testlist.xml 
-# file, which should be given as the only argument. It deletes any existing 
-# "acme_developer" category from the XML file, draws from information within 
-# this file to create new test entries, and then inserts these entries into 
-# the XML file.
+
+"""This script recreates the acme_developer suite within the CESM testlist.xml 
+file, which should be given as the only argument. It deletes any existing 
+"acme_developer" category from the XML file, draws from information within 
+this file to create new test entries, and then inserts these entries into 
+the XML file."""
 
 # First off, we need a non-ancient Python.
 import sys
@@ -32,7 +32,9 @@ acme_developer_tests = [
   'PEA_P1_M.f45_g37_rx1.A',
   'SMS.ne30_f19_g16_rx1.A']
 
+###############################################################################
 def find_all_machines(xml_file):
+###############################################################################
     f = open(xml_file, 'r')
     lines = f.readlines()
     f.close()
@@ -48,7 +50,9 @@ def find_all_machines(xml_file):
             machine_set.add((machine, compiler))
     return [m for m in machine_set]
 
+###############################################################################
 def replace_testlist_xml(output, xml_file):
+###############################################################################
     # manage_xml_entries creates a temporary file intended for people to manually check the 
     # changes. This made sense before revision control, but not anymore.
     import shutil
@@ -58,7 +62,9 @@ def replace_testlist_xml(output, xml_file):
         new_xml_file = output[i1:i2]
         shutil.move(new_xml_file, xml_file)
 
+###############################################################################
 def generate_acme_developer_entries(tests, machines):
+###############################################################################
     import tempfile
     test_file = tempfile.NamedTemporaryFile(mode='w', delete = False)
     for test in tests:
@@ -67,6 +73,8 @@ def generate_acme_developer_entries(tests, machines):
     name = test_file.name
     test_file.close()
     return name
+
+###############################################################################
 
 import os.path
 if len(sys.argv) == 1:
