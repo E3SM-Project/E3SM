@@ -296,8 +296,8 @@
 !  First on the global root, post a receive for each component
   if(myGid == 0) then
     do i=1,ncomps
-       apoint => tmparray(0:Gsize-1,i)
-       call MPI_IRECV(apoint(1), root_nprocs(i),MP_INTEGER, &
+       apoint => tmparray(0:root_nprocs(i)-1,i)
+       call MPI_IRECV(apoint, root_nprocs(i),MP_INTEGER, &
        MP_ANY_SOURCE,i,globalcomm, reqs(i), ier)
        if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV()',ier)
     enddo
@@ -569,6 +569,7 @@
 !
 ! !USES:
 !
+      use m_mpif90
       use m_die
 
       implicit none
@@ -589,6 +590,9 @@
 
   deallocate(ThisMCTWorld%nprocspid,ThisMCTWorld%idGprocid,stat=ier)
   if(ier /= 0) call warn(myname_,'deallocate(MCTW,...)',ier)
+
+  call MP_comm_free(ThisMCTWorld%MCT_comm, ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_free()',ier)
 
   ThisMCTWorld%ncomps = 0
   ThisMCTWorld%mygrank = 0
