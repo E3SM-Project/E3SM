@@ -4,6 +4,7 @@ import platform
 import sys
 import datetime
 import subprocess
+import shlex
 sys.path.append('/home/muszala/python/lib/python')
 #~# NCAR based imports here
 lib_path = os.path.join('scripts/python/contrib/unit_testing')
@@ -51,12 +52,13 @@ class nightlyBuilder(object):
       if self.platform == "goldbach":
          self.compilers = ['intel','nag']
          self.subject='Nightly Build: pio 2.0 - '+self.platform
-         self.buildDir='/home/muszala/nightlyPioBuild'
+         self.buildDir='/home/jedwards/nightlyPioBuild'
+         self.python = '/usr/local/anaconda-2.0.1/bin/python'
       if self.platform == "yellowstone":
          self.compilers = ['intel','pgi','gnu']
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/glade/scratch/jedwards/nightlyPioBuild'
-
+         self.python = '/usr/local/anaconda-2.0.1/bin/python'
       os.chdir(self.buildDir)
       os.mkdir(self.dirName)
       os.chdir(self.dirName)
@@ -91,8 +93,10 @@ class nightlyBuilder(object):
       self.outTest=''
       for comp in self.compilers:
          print comp
-         proc = subprocess.Popen(['/usr/bin/python', 'scripts/python/buildPio.py','--compiler=',  
-                                  comp, '--test --mpi', '--mach=',self.platform,'--xmlpath=Machines'], 
+         args = shlex.split(self.python + ' scripts/python/buildPio.py --compiler '+comp
+                     +'  --test --mpi --mach '+self.platform+' --xmlpath Machines')
+         print(args)
+         proc = subprocess.Popen(args,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
          out,err = proc.communicate() 

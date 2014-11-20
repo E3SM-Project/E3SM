@@ -25,7 +25,7 @@ class platformBuilder(object):
         self.test = test
         self.CMAKE_EXE = ''
         if mpi is True:
-            self.FC = 'mpifort'
+            self.FC = 'mpif90'
             self.CC = 'mpicc'
             self.CXX = 'mpiCC'
         else:
@@ -168,7 +168,7 @@ class goldbach(platformBuilder):
             class attributes
         """
         
-        super(goldbach, self).__init__(compiler, test,debug)
+        super(goldbach, self).__init__(compiler, test,mpi, debug)
         if compiler == 'nag':
             self.moduleList = ['compiler/nag/5.3.1-907']
         if compiler == 'intel':

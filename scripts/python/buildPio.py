@@ -17,7 +17,7 @@ def runBuild(args):
         kick off the appropriate build.
     """
     if args.mach:
-        machine_name = args.mach
+        machine_name = args.mach[0]
     else:
         machine_name = resolveName()
 
@@ -33,6 +33,8 @@ def runBuild(args):
     compiler = None
     if args.compiler:    
         compiler = args.compiler[0]    
+
+    print(machine_name)
      
     mtree = etree.parse(xmlfile).getroot()
     mach_tree = mtree.findall(".//machine[@MACH='{0}']/".format(machine_name))
