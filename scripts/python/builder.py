@@ -33,6 +33,8 @@ class platformBuilder(object):
             self.FC = 'f90'
             self.CXX=''
 
+        self.LDFLAGS=''
+
         if debug is True:
             bldtype = "PIO_DEBUG"
         else:
@@ -99,6 +101,8 @@ class platformBuilder(object):
         self.envMod['CC'] = self.CC
         if not self.CXX == '':
             self.envMod['CXX'] = self.CXX
+        if not self.LDFLAGS == '':
+            self.envMod['LDFLAGS'] = self.LDFLAGS
 
         cmakeString = (self.CMAKE_EXE +' '+ self.OFLAGS + ' '+ self.EXECCA + ' '+self.MPIEXEC + ' ..')
         print(cmakeString)
@@ -178,13 +182,13 @@ class goldbach(platformBuilder):
         self.BUILD_DIR = "build_goldbach_" + compiler
         self.runModuleCmd()
 
-        self.CMAKE_EXE = '/usr/bin/cmake '
+        self.CMAKE_EXE = '/usr/bin/cmake --debug-trycompile'
    
         self.OFLAGS += ( '-D PLATFORM:STRING=goldbach ')
         if mpi is True:
             self.MPIEXEC = ('mpirun ')
         self.EXECCA = ''
-
+        self.LDFLAGS = '-lcurl'
     def runModuleCmd(self):
         """ implement ABC...run module cmds
         """
@@ -302,6 +306,9 @@ class cetus(platformBuilder):
         self.FC = 'mpixlf2003_r'
         self.CC = 'mpixlc_r'
         self.CXX = 'mpixlcxx_r'
+
+        self.LDFLAGS = '-L/soft/libraries/netcdf/4.3.0-f4.2/cnk-xl/V1R2M0-20131211/lib -L/soft/libraries/hdf5/1.8.10/cnk-xl/V1R2M0-20130405/lib -L/soft/libraries/alcf/current/xl/ZLIB/lib -lnetcdf -lhdf5_hl -lhdf5 -lm -lz'
+
         self.NUMPE = '4'
 
         self.OFLAGS += (' -D PLATFORM:STRING=cetus ')
