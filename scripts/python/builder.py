@@ -77,7 +77,7 @@ class platformBuilder(object):
             self.envMod['LDFLAGS'] = self.LDFLAGS
 
 
-        p = subprocess.Popen('printenv',
+        p = subprocess.Popen(self.FC+' /home/jedwards/pio2_0/bin/cmake/TryMPISERIAL.f90',
                              shell=True, env=self.envMod)
         p.wait()
         self.cmakeCmd()
