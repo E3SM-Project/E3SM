@@ -90,7 +90,7 @@ class platformBuilder(object):
     def testCmd(self):
         """ run tests
         """
-        p = subprocess.Popen(self.TEST_CMD,self.envMod)
+        p = subprocess.Popen(self.TEST_CMD, shell=True, env=self.envMod)
         p.wait()
 
     def cmakeCmd(self):
