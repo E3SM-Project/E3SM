@@ -181,7 +181,7 @@ class goldbach(platformBuilder):
 
         self.BUILD_DIR = "build_goldbach_" + compiler
         self.runModuleCmd()
-
+        
         self.CMAKE_EXE = '/usr/bin/cmake --debug-trycompile'
    
         self.OFLAGS += ( '-D PLATFORM:STRING=goldbach ')
@@ -201,7 +201,7 @@ class goldbach(platformBuilder):
 
         for cmd in self.moduleList:
             self.lmod.load(cmd)
-        
+        self.lmod.list()
   
 class yellowstone(platformBuilder):
 
