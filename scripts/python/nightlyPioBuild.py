@@ -41,11 +41,21 @@ class nightlyBuilder(object):
       """ setup base information
       """
       #self.buildDir='/scratch/cluster/nightlyPioBuild'
-      self.buildDir='/home/muszala/nightlyPioBuild'
+
       self.dirName=datetime.datetime.now().isoformat()
       self.repoName='pio2_0'
 
       self.url='http://parallelio.googlecode.com/svn/branches/pio2_0'
+      self.machurl = 'https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/'
+
+      if self.platform == "goldbach":
+         self.compilers = ['intel','nag']
+         self.subject='Nightly Build: pio 2.0 - '+self.platform
+         self.buildDir='/home/muszala/nightlyPioBuild'
+      if self.platform == "yellowstone":
+         self.compilers = ['intel','pgi','gnu']
+         self.subject='Nightly Build: pio 2.0 - '+self.platform
+         self.buildDir='/glade/scratch/jedwards/nightlyPioBuild'
 
       os.chdir(self.buildDir)
       os.mkdir(self.dirName)
@@ -53,12 +63,6 @@ class nightlyBuilder(object):
    
       self.halfPath = self.buildDir+'/'+self.dirName+'/'
 
-      if self.platform == "goldbach":
-         self.compilers = ['intel','nag']
-         self.subject='Nightly Build: pio 2.0 - '+self.platform
-      if self.platform == "yellowstone":
-         self.compilers = ['intel','pgi','gnu']
-         self.subject='Nightly Build: pio 2.0 - '+self.platform
 
 
    def svnCO(self):
@@ -72,7 +76,12 @@ class nightlyBuilder(object):
       out, err = proc.communicate()
       self.svnLog = out + err
       os.chdir(self.repoName)
-
+      # Checkout the machines directory
+      self.cmd = ['svn','co',self.machurl, 'Machines']
+      proc = subprocess.Popen(self.cmd,
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+      out, err = proc.communicate()
+      self.svnLog += out + err
 
    def runBuild(self):
       """ kick of the builds and tests
@@ -82,7 +91,9 @@ class nightlyBuilder(object):
       self.outTest=''
       for comp in self.compilers:
          print comp
-         proc = subprocess.Popen(['/usr/bin/python', 'scripts/python/buildPio.py',  comp, '--test'], stdout=subprocess.PIPE,
+         proc = subprocess.Popen(['/usr/bin/python', 'scripts/python/buildPio.py','--compiler=',  
+                                  comp, '--test --mpi', '--mach=',self.platform,'--xmlpath=Machines'], 
+                                 stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
          out,err = proc.communicate() 
          if err == None:
@@ -98,7 +109,7 @@ class nightlyBuilder(object):
       """
 
       #~#self.addr='muszala@ucar.edu stefan.muszala@gmail.com jedwards@ucar.edu jayshkrishna@gmail.com'
-      self.addr='muszala@ucar.edu stefan.muszala@gmail.com'
+      self.addr='jedwards@ucar.edu '
       self.messageFoo=self.halfPath+'toSend.txt'
 
       #~# want to dump file in case mailer fails so we still have a recor
