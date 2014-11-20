@@ -1,19 +1,12 @@
 import abc
 import os
-import platform
 import sys
 import datetime
 import subprocess
 import shlex
-#~# NCAR based imports here
-lib_path = os.path.join('scripts/python/contrib/unit_testing')
-sys.path.append(lib_path)
-from machine_setup import get_machine_name
-#import buildPio
 
 """ stand alone python script that is called from a cron job.
-   1) makes directory in /scratch/cluster/nightlyPioBuild with the current
-      date and time
+   1) makes directory  with the current date and time
    2) checks out the repository
    3) checks if this file is up to date
    4) runs tests on specificed compilers
@@ -25,24 +18,22 @@ class nightlyBuilder(object):
    """ deals with builds and running tests every night at midnight
    """
 
-   def runNightly(self):
+   def runNightly(self, platform):
       """ routine where everything gets kicked off from
       """
-      self.platform = get_machine_name()
-
-      self.setup()
+      self.setup(platform)
       self.svnCO()
       self.runBuild()
       self.reporting()
       self.mailer()
  
 
-   def setup(self):
+   def setup(self,platform):
       """ setup base information
       """
       #self.buildDir='/scratch/cluster/nightlyPioBuild'
-
-      self.dirName=datetime.datetime.now().strftime("%a%b%d%H%M%S")
+      self.platform = platform
+      self.dirName=datetime.datetime.now().strftime("%a%b%d_%H%M%S")
       self.repoName='pio2_0'
 
       self.url='http://parallelio.googlecode.com/svn/branches/pio2_0'
@@ -53,7 +44,7 @@ class nightlyBuilder(object):
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/home/jedwards/nightlyPioBuild'
          self.python = '/usr/local/anaconda-2.0.1/bin/python'
-      if self.platform == "yellowstone":
+      if self.platform == "caldera":
          self.compilers = ['intel','pgi','gnu']
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/glade/scratch/jedwards/nightlyPioBuild'
@@ -116,9 +107,9 @@ class nightlyBuilder(object):
       #~# want to dump file in case mailer fails so we still have a recor
       f = open(self.messageFoo, 'w')
       f.write('Testing Pio 2.0 nightly build\n\n')
-      f.write('\n\n === START svn checkout ===\n\n')
-      f.write(self.svnLog)
-      f.write('\n\n === DONE svn checkout ===\n\n')
+#      f.write('\n\n === START svn checkout ===\n\n')
+#      f.write(self.svnLog)
+#      f.write('\n\n === DONE svn checkout ===\n\n')
       f.write('\n\n === START builds ===\n\n')
       f.write(self.outTest)
       f.write('\n\n === DONE builds ===\n\n')
@@ -132,18 +123,19 @@ class nightlyBuilder(object):
    def mailer(self):
       """
       """
-#      self.readBody = subprocess.Popen(["/bin/echo", self.fullMessage],
-#                                      stdout=subprocess.PIPE)
+      self.readBody = subprocess.Popen(["/bin/echo", self.fullMessage],
+                                      stdout=subprocess.PIPE)
 
-#      mail = subprocess.Popen(["/bin/mail", "-s", self.subject, self.addr],
-#                              stdin=self.readBody.stdout, stdout=subprocess.PIPE)
+      mail = subprocess.Popen(["/bin/mail", "-s", self.subject, self.addr],
+                              stdin=self.readBody.stdout, stdout=subprocess.PIPE)
 
 
 def main(argv):
    """ everything starts here
    """
+
    nb = nightlyBuilder()
-   nb.runNightly()
+   nb.runNightly(sys.argv[1])
 
 if __name__ == "__main__":
    main(sys.argv[1:]) 
