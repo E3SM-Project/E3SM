@@ -31,7 +31,7 @@ class platformBuilder(object):
         else:
             self.CC = 'cc'
             self.FC = 'f90'
-
+            self.CXX=''
 
         if debug is True:
             bldtype = "PIO_DEBUG"
@@ -97,7 +97,8 @@ class platformBuilder(object):
         # ~# add to env-        
         self.envMod['FC'] = self.FC
         self.envMod['CC'] = self.CC
-        self.envMod['CXX'] = self.CXX
+        if not self.CXX == '':
+            self.envMod['CXX'] = self.CXX
 
         cmakeString = (self.CMAKE_EXE +' '+ self.OFLAGS + ' '+ self.EXECCA + ' '+self.MPIEXEC + ' ..')
         print(cmakeString)

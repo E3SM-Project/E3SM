@@ -5,12 +5,11 @@ import sys
 import datetime
 import subprocess
 import shlex
-sys.path.append('/home/muszala/python/lib/python')
 #~# NCAR based imports here
 lib_path = os.path.join('scripts/python/contrib/unit_testing')
 sys.path.append(lib_path)
 from machine_setup import get_machine_name
-import buildPio
+#import buildPio
 
 """ stand alone python script that is called from a cron job.
    1) makes directory in /scratch/cluster/nightlyPioBuild with the current
@@ -58,7 +57,7 @@ class nightlyBuilder(object):
          self.compilers = ['intel','pgi','gnu']
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/glade/scratch/jedwards/nightlyPioBuild'
-         self.python = '/usr/local/anaconda-2.0.1/bin/python'
+         self.python = '/glade/apps/opt/python/2.7.7/gnu-westmere/4.8.2/bin/python'
       os.chdir(self.buildDir)
       os.mkdir(self.dirName)
       os.chdir(self.dirName)
@@ -94,7 +93,7 @@ class nightlyBuilder(object):
       for comp in self.compilers:
          print comp
          args = shlex.split(self.python + ' scripts/python/buildPio.py --compiler '+comp
-                     +'  --test --mpi --mach '+self.platform+' --xmlpath Machines')
+                     +'  --mach '+self.platform+' --xmlpath Machines --test')
          print(args)
          proc = subprocess.Popen(args,
                                  stdout=subprocess.PIPE,

@@ -21,6 +21,11 @@ def runBuild(args):
     else:
         machine_name = resolveName()
 
+    if args.nompi:
+        mpi = False
+    else:
+        mpi = True
+
     if machine_name is None:
         raise RuntimeError("Could not resolve machine name.")
 
@@ -55,12 +60,12 @@ def runBuild(args):
         print ("And run tests \n" )
 
     xmlcompiler = MachineCompilerSettings(compiler, compilerfilename, 
-                                          machine=machine_name,use_mpi=args.mpi)
+                                          machine=machine_name,use_mpi=mpi)
 
     with open('PIO_Macros.cmake', "w") as macros_file:
         xmlcompiler.write_cmake_macros(macros_file,"PIO")
 
-    bld = builder.platformBuilder.factory(machine_name,compiler,args.test,args.mpi,args.debug)
+    bld = builder.platformBuilder.factory(machine_name,compiler,args.test,mpi,args.debug)
     bld.metaBuild()
 
 

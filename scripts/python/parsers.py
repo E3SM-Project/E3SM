@@ -26,8 +26,8 @@ class cliParser():
         parser.add_argument('--xmlpath', nargs=1, required=True,
                             help='path to CESM machines directory')
 
-        parser.add_argument('--mpi', action='store_true',
-                            help='Use mpi')
+        parser.add_argument('--nompi', action='store_true',
+                            help='Do not use mpi')
 
         args = parser.parse_args()
 
