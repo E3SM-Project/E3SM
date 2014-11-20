@@ -91,7 +91,7 @@ class nightlyBuilder(object):
       #~# using subprocess instead
       self.outTest=''
       for comp in self.compilers:
-         print comp
+         print os.environ
          args = shlex.split(self.python + ' scripts/python/buildPio.py --compiler '+comp
                      +'  --mach '+self.platform+' --xmlpath Machines --test')
          print(args)

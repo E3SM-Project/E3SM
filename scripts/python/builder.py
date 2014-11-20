@@ -66,6 +66,7 @@ class platformBuilder(object):
         """
         shutil.rmtree(self.BUILD_DIR, True)
         self.runModuleCmd()
+        print os.environ
         self.cmakeCmd()
         self.buildCmd()
         if self.test:
@@ -182,7 +183,7 @@ class goldbach(platformBuilder):
         self.BUILD_DIR = "build_goldbach_" + compiler
         self.runModuleCmd()
         
-        self.CMAKE_EXE = '/usr/bin/cmake --debug-trycompile  --trace '
+        self.CMAKE_EXE = '/usr/bin/cmake --debug-trycompile '
    
         self.OFLAGS += ( '-D PLATFORM:STRING=goldbach ')
         if mpi is True:
