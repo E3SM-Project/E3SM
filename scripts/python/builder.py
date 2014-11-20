@@ -76,10 +76,6 @@ class platformBuilder(object):
         if not self.LDFLAGS == '':
             self.envMod['LDFLAGS'] = self.LDFLAGS
 
-
-        p = subprocess.Popen(self.FC+' /home/jedwards/pio2_0/bin/cmake/TryMPISERIAL.f90',
-                             shell=True, env=self.envMod)
-        p.wait()
         self.cmakeCmd()
         self.buildCmd()
         if self.test:
@@ -107,7 +103,7 @@ class platformBuilder(object):
         os.chdir(self.BUILD_DIR)
 
         cmakeString = (self.CMAKE_EXE +' '+ self.OFLAGS + ' '+ self.EXECCA + ' '+self.MPIEXEC + ' ..')
-        print(cmakeString)
+
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
         p.wait()

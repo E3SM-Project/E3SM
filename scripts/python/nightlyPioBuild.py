@@ -42,7 +42,7 @@ class nightlyBuilder(object):
       """
       #self.buildDir='/scratch/cluster/nightlyPioBuild'
 
-      self.dirName=datetime.datetime.now().isoformat()
+      self.dirName=datetime.datetime.now().strftime("%a%b%d%H%M%S")
       self.repoName='pio2_0'
 
       self.url='http://parallelio.googlecode.com/svn/branches/pio2_0'
@@ -134,11 +134,11 @@ class nightlyBuilder(object):
    def mailer(self):
       """
       """
-      self.readBody = subprocess.Popen(["/bin/echo", self.fullMessage],
-                                      stdout=subprocess.PIPE)
+#      self.readBody = subprocess.Popen(["/bin/echo", self.fullMessage],
+#                                      stdout=subprocess.PIPE)
 
-      mail = subprocess.Popen(["/bin/mail", "-s", self.subject, self.addr],
-                              stdin=self.readBody.stdout, stdout=subprocess.PIPE)
+#      mail = subprocess.Popen(["/bin/mail", "-s", self.subject, self.addr],
+#                              stdin=self.readBody.stdout, stdout=subprocess.PIPE)
 
 
 def main(argv):
