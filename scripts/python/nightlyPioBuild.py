@@ -4,7 +4,7 @@ import sys
 import datetime
 import subprocess
 import shlex
-
+import re
 """ stand alone python script that is called from a cron job.
    1) makes directory  with the current date and time
    2) checks out the repository
@@ -44,6 +44,9 @@ class nightlyBuilder(object):
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/home/jedwards/nightlyPioBuild'
          self.python = '/usr/local/anaconda-2.0.1/bin/python'
+         os.environ["MODULESHOME"] = "/usr/share/Modules"
+         os.environ["MODULEPATH"]="/usr/share/Modules/modulefiles:/etc/modulefiles"
+
       if self.platform == "caldera":
          self.compilers = ['intel','pgi','gnu']
          self.subject='Nightly Build: pio 2.0 - '+self.platform
@@ -107,9 +110,9 @@ class nightlyBuilder(object):
       #~# want to dump file in case mailer fails so we still have a recor
       f = open(self.messageFoo, 'w')
       f.write('Testing Pio 2.0 nightly build\n\n')
-#      f.write('\n\n === START svn checkout ===\n\n')
-#      f.write(self.svnLog)
-#      f.write('\n\n === DONE svn checkout ===\n\n')
+      f.write('\n\n === START svn checkout ===\n\n')
+      f.write(self.svnLog)
+      f.write('\n\n === DONE svn checkout ===\n\n')
       f.write('\n\n === START builds ===\n\n')
       f.write(self.outTest)
       f.write('\n\n === DONE builds ===\n\n')
@@ -118,14 +121,19 @@ class nightlyBuilder(object):
       f=open(self.messageFoo, 'r')
       self.fullMessage = f.read()
       f.close()
+      self.mailMessage = ''
+      iter = 0
+      for m in re.finditer("\d+% tests passed, \d+ tests failed out of \d+",self.fullMessage):
+         print m.group(0)
+         self.mailMessage += self.compilers[iter] + ':  ' + m.group(0)  + "\n"
+         iter += 1
 
 
    def mailer(self):
       """
       """
-      self.readBody = subprocess.Popen(["/bin/echo", self.fullMessage],
+      self.readBody = subprocess.Popen(["/bin/echo", self.mailMessage],
                                       stdout=subprocess.PIPE)
-
       mail = subprocess.Popen(["/bin/mail", "-s", self.subject, self.addr],
                               stdin=self.readBody.stdout, stdout=subprocess.PIPE)
 
