@@ -440,6 +440,7 @@ module ocn_time_integration_rk4
               call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
               call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
               call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
+              call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
               call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
               call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
