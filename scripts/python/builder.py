@@ -48,7 +48,6 @@ class platformBuilder(object):
         self.EXECCA = ''
         self.TEST_CMD = 'ctest --verbose'
         self.MAKE_CMD = 'make all'
-        self.envMod = {}
 
     @classmethod
     def _raise_not_implemented(cls, method_name):
@@ -65,8 +64,22 @@ class platformBuilder(object):
         """ routine where everything gets kicked off from
         """
         shutil.rmtree(self.BUILD_DIR, True)
+
         self.runModuleCmd()
-        print os.environ
+        # ~# change environment, first get existing env
+        self.envMod = dict(os.environ)
+        # ~# add to env-        
+        self.envMod['FC'] = self.FC
+        self.envMod['CC'] = self.CC
+        if not self.CXX == '':
+            self.envMod['CXX'] = self.CXX
+        if not self.LDFLAGS == '':
+            self.envMod['LDFLAGS'] = self.LDFLAGS
+
+
+        p = subprocess.Popen('printenv',
+                             shell=True, env=self.envMod)
+        p.wait()
         self.cmakeCmd()
         self.buildCmd()
         if self.test:
@@ -75,15 +88,13 @@ class platformBuilder(object):
     def buildCmd(self):
         """ run build
         """
-        p = subprocess.Popen(self.MAKE_CMD,
-                             shell=True, env=self.envMod)
+        p = subprocess.Popen(self.MAKE_CMD,shell=True,env=self.envMod)
         p.wait()
 
     def testCmd(self):
         """ run tests
         """
-        p = subprocess.Popen(self.TEST_CMD,
-                             shell=True, env=self.envMod)
+        p = subprocess.Popen(self.TEST_CMD,self.envMod)
         p.wait()
 
     def cmakeCmd(self):
@@ -94,16 +105,6 @@ class platformBuilder(object):
             os.makedirs(self.BUILD_DIR)
 
         os.chdir(self.BUILD_DIR)
-
-        # ~# change environment, first get existing env
-        self.envMod = dict(os.environ)
-        # ~# add to env-        
-        self.envMod['FC'] = self.FC
-        self.envMod['CC'] = self.CC
-        if not self.CXX == '':
-            self.envMod['CXX'] = self.CXX
-        if not self.LDFLAGS == '':
-            self.envMod['LDFLAGS'] = self.LDFLAGS
 
         cmakeString = (self.CMAKE_EXE +' '+ self.OFLAGS + ' '+ self.EXECCA + ' '+self.MPIEXEC + ' ..')
         print(cmakeString)
@@ -176,12 +177,12 @@ class goldbach(platformBuilder):
         
         super(goldbach, self).__init__(compiler, test,mpi, debug)
         if compiler == 'nag':
-            self.moduleList = ['compiler/nag/5.3.1-907']
+            self.moduleList = ['compiler/nag/6.0']
         if compiler == 'intel':
             self.moduleList = ['compiler/intel/14.0.2']
 
         self.BUILD_DIR = "build_goldbach_" + compiler
-        self.runModuleCmd()
+#        self.runModuleCmd()
         
         self.CMAKE_EXE = '/usr/bin/cmake --debug-trycompile '
    
