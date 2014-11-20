@@ -1799,6 +1799,9 @@ contains
     call mpi_group_incl(mpi_group_world,n_iotasks,iosystem%ioranks,mpi_group_io,ierr)
     if(check) call checkmpireturn('init: after call to group_range_incl: ',ierr)
 
+    call mpi_group_free(mpi_group_world,ierr)
+    if(check) call checkmpireturn('init: after call to group_world: ',ierr)
+
     if(DebugAsync) print *,__PIO_FILE__,__LINE__,'n: ',n_iotasks, ' r: ', &
      iosystem%ioranks, ' g: ',mpi_group_io
 
@@ -2198,7 +2201,7 @@ contains
         iosystem%info=mpi_info_null
         !print *,'IAM: ',iosystem%comp_rank, ' finalize (1) error = ', ierr
      endif
-     if(iosystem%io_comm .ne. mpi_comm_null) then 
+     if(iosystem%io_comm .ne. mpi_comm_null .and. .not. iosystem%async_interface) then 
         call mpi_comm_free(iosystem%io_comm,ierr)
         iosystem%io_comm=mpi_comm_null
         !print *,'IAM: ',iosystem%comp_rank, ' finalize (2) error = ', ierr

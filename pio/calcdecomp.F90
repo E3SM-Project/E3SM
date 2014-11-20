@@ -220,9 +220,9 @@ program sandctest
 !  integer, parameter :: ndims=3
 !  integer, parameter :: gdims(ndims) = (/1024,1024,1024/)
 !  integer, parameter :: num_io_procs=16
-  integer, parameter :: ndims=4
-  integer, parameter :: gdims(ndims) = (/720,360,3,2/)
-  integer :: num_io_procs=14
+  integer, parameter :: ndims=2
+  integer, parameter :: gdims(ndims) = (/777602,31/)
+  integer :: num_io_procs=24
   logical :: converged=.false.
 !  integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
@@ -254,7 +254,7 @@ program sandctest
 !                                        write(*,'(i2,a,3i5,a,3i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                     !                 else if(ndims==4) then
                     if(sum(count)>0) then
-                       write(*,'(i2,a,4i8,a,4i8,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
+                       write(*,'(i2,a,2i8,a,2i8,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                        if(any(start<0)) then
                           print *, gdims
                           stop 

@@ -165,8 +165,8 @@ void identity(MPI_Fint *comm, int *iotask)
 
 }
 
-void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, int *rearr, 
-		      int *iamIOtask)
+void determineiotasks(const MPI_Comm comm, const int stride, const int rearr, 
+		      int *numiotasks,int *base, bool *iamIOtask)
 {
 
 /*  
@@ -188,19 +188,15 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
    int coreId;
    int iam;
    int task_count;
-   MPI_Comm comm2;
 
 #ifdef BGQ
    MPIX_Hardware_t hw;
    MPIX_Hardware(&hw);
 #endif
 
-   comm2 = MPI_Comm_f2c(*comm);
+   MPI_Comm_rank(comm, &rank);
 
-
-   MPI_Comm_rank(comm2, &rank);
-
-   MPI_Comm_size(comm2, &np);
+   MPI_Comm_size(comm, &np);
 
    MPI_Get_processor_name(my_name, &my_name_len);
 
@@ -209,9 +205,9 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
    Personality pers;
    char message[100];
 
-   /* printf("Determine io tasks: proc %i: tasks= %i numiotasks=%i stride= %i \n", rank, np, (*numiotasks), (*stride)); */
+   /* printf("Determine io tasks: proc %i: tasks= %i numiotasks=%i stride= %i \n", rank, np, (*numiotasks), stride); */
 
-   if((*rearr) > 0) {
+   if(rearr > 0) {
 
 #ifdef BGQ
     Personality personality;
@@ -227,7 +223,7 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
      /* Number of computational nodes in processor set */
      #ifdef BGQ  
      int numpsets, psetID, psetsize, psetrank;
-    bgq_pset_info (comm2,&numpsets, &psetID, &psetsize, &psetrank);
+    bgq_pset_info (comm,&numpsets, &psetID, &psetsize, &psetrank);
      numIONodes = numpsets; 
      numNodesInPset = psetsize;
      #else
@@ -258,8 +254,8 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
        }
        remainder = (*numiotasks) - numiotasks_per_node * numIONodes;
      } else if ((*numiotasks) == 0 ) {
-       if((*stride) > 0) {
-	 numiotasks_per_node = numNodesInPset/(*stride);
+       if(stride > 0) {
+	 numiotasks_per_node = numNodesInPset/stride;
 	 if (numiotasks_per_node < 1) {
 	     numiotasks_per_node = 1;
 	     *numiotasks = numIONodes;
@@ -314,11 +310,11 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
      rankInPset--;
 #endif
      
-     /* printf("Pset #: %i has %i nodes in Pset; base = %i\n",psetNum,numNodesInPset, *base); */
+     /* printf("Pset #: %i has %i nodes in Pset; base = %i\n",psetNum,numNodesInPset, base); */
      
      (*iamIOtask) = 0;   /* initialize to zero */
      
-     if (numiotasks_per_node == numNodesInPset)(*base) = 0;  /* Reset the base to 0 if we are using all tasks */
+     if (numiotasks_per_node == numNodesInPset) base = 0;  /* Reset the base to 0 if we are using all tasks */
 
 
      /* start stridding MPI tasks from base task */ 
@@ -348,7 +344,7 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
    /*printf("comm = %d myrank = %i iotask = %i \n", comm2, rank, (*iamIOtask));*/ 
    
    /* now we need to correctly determine the numiotasks */
-   MPI_Allreduce(iamIOtask, &task_count, 1, MPI_INT, MPI_SUM, comm2);
+   MPI_Allreduce(iamIOtask, &task_count, 1, MPI_INT, MPI_SUM, comm);
 
    (*numiotasks) = task_count;
  
