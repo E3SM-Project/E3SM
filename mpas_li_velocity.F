@@ -25,7 +25,7 @@ module li_velocity
 
    use mpas_grid_types
    use mpas_configure
-!!!   use li_lifev
+   use li_velocity_external
    use li_sia
    use li_setup
 
@@ -112,22 +112,16 @@ contains
       select case (config_velocity_solver)
       case ('sia')
           call li_sia_init(domain, err)
-!!!      case ('L1L2')
-!!!          call li_lifev_init(domain, err)
-!!!      case ('FO')
-!!!          call li_lifev_init(domain, err)
-!!!      case ('Stokes')
-!!!          call li_lifev_init(domain, err)
-!!!          call li_phg_init(domain, err)
+      case ('L1L2', 'FO', 'Stokes')
+          call li_velocity_external_init(domain, err)
       case default
-          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          write(0,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
-          return
       end select
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_timestep."
+          write (0,*) "An error has occurred in li_velocity_init."
       endif
 
    !--------------------------------------------------------------------
@@ -185,12 +179,8 @@ contains
       select case (config_velocity_solver)
       case ('sia')
           call li_sia_block_init(block, err)
-!!!      case ('L1L2')
-!!!          call li_lifev_block_init(block, err)
-!!!      case ('FO')
-!!!          call li_lifev_block_init(block, err)
-!!!      case ('Stokes')
-!!!          call li_lifev_block_init(block, err)
+      case ('L1L2', 'FO', 'Stokes')
+          call li_velocity_external_block_init(block, err)
       case default
           write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
@@ -221,7 +211,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine li_velocity_solve(meshPool, statePool, timeLevel, err)
 
-      use li_sia
+      use li_mask
 
       !-----------------------------------------------------------------
       !
@@ -256,45 +246,48 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+      ! pointers to get from pools
       character (len=StrKIND), pointer :: config_velocity_solver
-!      integer :: iEdge, nEdges
-!      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
-!      integer, dimension(:), pointer :: edgeMask
+      integer, pointer :: nEdges
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
+      integer, dimension(:), pointer :: edgeMask
+      ! truly local variables
+      integer :: iEdge
 
       err = 0
 
+      ! Get variables from pools
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
 
-!      nEdges = mesh % nEdges
-!      normalVelocity => state % normalVelocity % array
-!      edgeMask => state % edgeMask % array
 
       select case (config_velocity_solver)
       case ('sia')
           call li_sia_solve(meshPool, statePool, timeLevel, err)
-!!!      case ('L1L2')
-!!!          call li_lifev_solve(mesh, state, timeLevel, err)
-!!!      case ('FO')
-!!!          call li_lifev_solve(mesh, state, timeLevel, err)
-!!!      case ('Stokes')
-!!!          call li_lifev_solve(mesh, state, timeLevel, err)
+      case ('L1L2', 'FO', 'Stokes')
+          call li_velocity_external_solve(meshPool, statePool, timeLevel, err)
       case default
-          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          write(0,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
           return
       end select
 
-
-!!!      do iEdge = 1, nEdges
-!!!         if ( MASK_IS_THIN_ICE(edgeMask(iEdge)) .and. (maxval(abs(normalVelocity(:,iEdge))) /= 0.0_RKIND) ) then
-!!!            err = 1
-!!!            normalVelocity(:,iEdge) = 0.0_RKIND  ! this is a hack because the rest of the code requires this, but this condition should really cause a fatal error.
-!!!         endif
-!!!      enddo
-!!!      if (err == 1) then
-!!!         write(0,*) 'Velocity has been calculated on non-dynamic edges.  There is a problem with the velocity solver.  Velocity on those edges have been set to 0, but this should be a fatal error.'
-!!!         err = 0  ! a hack to let the code continue until this can be fixed in the velocity solver
-!!!      end if
+      ! Check if the velocity solver has returned a velocity on any non-dynamic edges
+      do iEdge = 1, nEdges
+         if ( li_mask_is_ice(edgeMask(iEdge)) .and.                    &
+              (.not.(li_mask_is_dynamic_ice(edgeMask(iEdge)))) .and.   &
+              (maxval(abs(normalVelocity(:,iEdge))) /= 0.0_RKIND)      &
+            ) then
+            err = 1
+            !!!normalVelocity(:,iEdge) = 0.0_RKIND  ! this is a hack because the rest of the code requires this, but this condition should really cause a fatal error.
+         endif
+      enddo
+      if (err == 1) then
+         write(0,*) 'Error: Velocity has been calculated on non-dynamic edges.  There is a problem with the velocity solver.' !!!  Velocity on those edges have been set to 0, but this should be a fatal error.'
+         err = 1  ! a hack to let the code continue until this can be fixed in the velocity solver
+      end if
 
       ! === error check
       if (err > 0) then
@@ -356,12 +349,8 @@ contains
       select case (config_velocity_solver)
       case ('sia')
           call li_sia_finalize(domain, err)
-!!!      case ('L1L2')
-!!!          call li_lifev_finalize(domain, err)
-!!!      case ('FO')
-!!!          call li_lifev_finalize(domain, err)
-!!!      case ('Stokes')
-!!!          call li_lifev_finalize(domain, err)
+      case ('L1L2', 'FO', 'Stokes')
+          call li_velocity_external_finalize(err)
       case default
           write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1

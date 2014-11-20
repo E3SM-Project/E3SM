@@ -650,7 +650,7 @@ module li_tendency
             layerNormalVelocity = 0.5_RKIND * (normalVelocity(k, iEdge) + normalVelocity(k+1, iEdge))
 
             if (abs(layerNormalVelocity) > 0.0_RKIND) then
-               maxAllowableDt = (0.5_RKIND * dcEdge(iEdge)) / abs(layerNormalVelocity)  ! in years 
+               maxAllowableDt = (0.5_RKIND * dcEdge(iEdge)) / abs(layerNormalVelocity)
             else
                maxAllowableDt = 1.0e36_RKIND
             endif

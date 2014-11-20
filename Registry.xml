@@ -45,7 +45,7 @@
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
 		            description="Selection of the method for solving ice velocity."
-		            possible_values="'sia'"
+		            possible_values="'sia', 'L1L2', 'FO', 'Stokes'"
 		/>
 		<nml_option name="config_sia_tangent_slope_calculation" type="character" default_value="from_vertex_barycentric" units="unitless"
 		            description="Selection of the method for calculating the tangent component of surface slope at edges needed by the SIA velocity solver.
@@ -204,6 +204,10 @@
 		            description="Prints additional information about thickness advection."
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_always_compute_fem_grid" type="logical" default_value=".false." units="unitless"
+		            description="Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes."
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 
@@ -265,9 +269,9 @@
 			<stream name="basicmesh"/>
 			<var_array name="tracers"/>
 			<var name="thickness"/>
-			<var name="normalVelocity"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
+			<var name="beta"/>
 		</stream>
 
 
@@ -380,7 +384,6 @@
 		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge"
 		/>
-			<!-- normalVelocity needs to be input/restart for iterative velocity solvers -->
 		<var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers"
 		/>
@@ -414,6 +417,9 @@
 		/>
 		<var name="slopeEdge"            type="real"     dimensions="nEdges Time"
 		     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
+		/>
+		<var name="anyVertexMaskChanged"              type="integer"  dimensions="Time"
+		     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
 		/>
 	</var_struct>
 
@@ -546,7 +552,7 @@
 		     description="Area of the portions of each dual cell that are part of each cellsOnVertex."
 		/>
 		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
-			 description="Coefficients to reconstruct velocity vectors at cells centers."
+		     description="Coefficients to reconstruct velocity vectors at cell centers."
 		/>
 		<!-- Mesh Variables specific to land ice core -->
 		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
@@ -576,6 +582,10 @@
 		<var name="sfcMassBal" type="real" dimensions="nCells" units="kg m^2 s^{-1}"
 		     description="Surface mass balance"
 		/>
+		<var name="beta" type="real" dimensions="nCells" units="Pa s m^{−1}"
+		     description="higher-order basal traction parameter"
+		/>
+		<!-- Note: beta should be moved to diagnostic fields when a process model is added -->
 	</var_struct>
 
 	<!-- Scratch Variables -->
