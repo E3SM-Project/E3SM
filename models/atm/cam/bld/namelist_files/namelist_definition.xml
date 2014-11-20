@@ -1318,6 +1318,27 @@ amount. Only applied for initial simulations.
 Default: 0.0
 </entry>
 
+<entry id="new_random" type="logical"  category="initial_conditions"
+       group="cam_inparm" valid_values="" >
+Use a new RNG that is more robust and repeatable than the compiler-dependent
+fortran intrinsic random_number.
+Default: FALSE
+</entry>
+
+<entry id="seed_custom" type="integer"  category="initial_conditions"
+       group="cam_inparm" valid_values="" >
+Specify a custom seed value for RNG when pertlim /= 0.0. If seed_custom == 0,
+Then the default seed is used, which is the same from run to run, based only
+on a unique column index
+Default: 0
+</entry>
+
+<entry id="seed_clock" type="logical"  category="initial_conditions"
+       group="cam_inparm" valid_values="" >
+bitwise XOR the system_clock with the existing seed value to ensure it is unique.
+Default: FALSE
+</entry>
+
 <entry id="readtrace" type="logical"  category="initial_conditions"
        group="cam_inparm" valid_values="" >
 If TRUE, try to initialize data for all consituents by reading from the
