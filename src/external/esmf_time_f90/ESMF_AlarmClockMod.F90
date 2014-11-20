@@ -1,3 +1,4 @@
+! $Id$
 !
 ! Earth System Modeling Framework
 ! Copyright 2002-2003, University Corporation for Atmospheric Research,
@@ -5,7 +6,7 @@
 ! Laboratory, University of Michigan, National Centers for Environmental
 ! Prediction, Los Alamos National Laboratory, Argonne National Laboratory,
 ! NASA Goddard Space Flight Center.
-! Licensed under the University of Illinois-NCSA license.
+! Licensed under the GPL.
 !
 !==============================================================================
 !
@@ -14,7 +15,7 @@
 !
 !==============================================================================
 !
-! This file contains the AlarmCreate method.
+! This file contains the AlarmCreae method.
 !
 !------------------------------------------------------------------------------
 ! INCLUDES
@@ -54,6 +55,11 @@
 ! !PUBLIC MEMBER FUNCTIONS:
       public ESMF_AlarmCreate
 
+!------------------------------------------------------------------------------
+! The following line turns the CVS identifier string into a printable variable.
+      character(*), parameter, private :: version = &
+      '$Id$'
+
 !==============================================================================
 
       contains
@@ -62,13 +68,14 @@
 
 
 ! Create ESMF_Alarm using ESMF 2.1.0+ semantics
-      FUNCTION ESMF_AlarmCreate( clock, RingTime, RingInterval, &
+      FUNCTION ESMF_AlarmCreate( name, clock, RingTime, RingInterval, &
                                  StopTime, Enabled, rc )
 
         ! return value
         type(ESMF_Alarm) :: ESMF_AlarmCreate
         ! !ARGUMENTS:
-        type(ESMF_Clock), intent(inout), optional :: clock
+        character(len=*), intent(in) :: name
+        type(ESMF_Clock), intent(inout) :: clock
         type(ESMF_Time), intent(in), optional :: RingTime
         type(ESMF_TimeInterval), intent(in), optional :: RingInterval
         type(ESMF_Time), intent(in), optional :: StopTime
@@ -79,14 +86,13 @@
          ! TBH:  ignore allocate errors, for now
         ALLOCATE( alarmtmp%alarmint )
         CALL ESMF_AlarmSet( alarmtmp,                  &
+                            name=name,                 &
                             RingTime=RingTime,         &
                             RingInterval=RingInterval, &
                             StopTime=StopTime,         &
                             Enabled=Enabled,           &
                             rc=rc )
-        IF ( PRESENT ( clock ) ) THEN
-          CALL ESMF_ClockAddAlarm( clock, alarmtmp, rc )
-        ENDIF
+        CALL ESMF_ClockAddAlarm( clock, alarmtmp, rc )
         ESMF_AlarmCreate = alarmtmp
       END FUNCTION ESMF_AlarmCreate
 

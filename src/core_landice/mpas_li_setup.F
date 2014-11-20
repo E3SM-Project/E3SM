@@ -35,22 +35,9 @@ module li_setup
    !
    !--------------------------------------------------------------------
 
-   real (kind=RKIND) :: li_deltat  !< Public parameter: Time step used by model
    type (mpas_pool_type), pointer :: liConfigs  !< Public parameter: pool of config options
-   real (kind=RKIND) :: li_secondsInYear  !< Public parameter: seconds in a year (depends on calendar)
 
-   public :: li_deltat, liConfigs, li_secondsInYear
-
-   ! Note: li_deltat is a public module level variable so it can be used by other
-   ! modules.  This was necessitated because deltat needs to be set during mpas_core_init
-   ! but used in mpas_core_run and there is currently no way to pass it between those
-   ! subroutines in the existing driver.  Note: if we create an adaptive time-stepper
-   ! then we will need to write an accessor subroutine to modify deltat as needed.
-   ! I first considered just making deltat a module level variable in li_mpas_core
-   ! but that seemed kind of messy and would not work if deltat becomes adaptive.
-   ! I also considered making a new moduled called li_parameters where this and 
-   ! any other landice-specific constants could live as public variables, but for
-   ! now I am keeping it here.
+   public :: liConfigs
 
    !--------------------------------------------------------------------
    !
@@ -89,6 +76,8 @@ contains
 
    subroutine li_setup_config_options( domain, err )
 
+      use mpas_timekeeping
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -106,33 +95,20 @@ contains
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), pointer :: config_dt_seconds, config_dt_years
+      integer, pointer :: config_year_digits
 
       err = 0
 
       ! Make config pool publicly available in this module
       liConfigs => domain % configs
 
+      ! ---
+      ! Config-specific setup occurs below
+      ! ---
 
-      ! This section initializes the time step based on whether
-      ! config_dt or config_dt_years has been set in the namelist.
-
-      ! If dt in years is supplied, convert it to seconds and use it.  Otherwise use dt in seconds
-      ! li_deltat is a module variable
-      call mpas_pool_get_config(liConfigs, 'config_dt_seconds', config_dt_seconds)
-      call mpas_pool_get_config(liConfigs, 'config_dt_years', config_dt_years)
-      if (config_dt_years == 0.0_RKIND) then
-         li_deltat = config_dt_seconds
-      else
-         li_deltat = config_dt_years * (365.0 * 24.0 * 3600.0)
-         ! TODO Should seconds in a year be dependent on calendar used?
-         ! TODO Should seconds in a year be a parameter/module variable somewhere
-      endif
-
-      if (li_deltat < 0.0_RKIND) then
-         err = 1
-         write(0,*) 'Error: negative time step was specified.'
-      endif
+      ! Adjust number of digits representing the year
+      call mpas_pool_get_config(liConfigs, 'config_year_digits', config_year_digits)
+      call mpas_timekeeping_set_year_width(config_year_digits)
 
    !--------------------------------------------------------------------
    end subroutine li_setup_config_options
@@ -316,86 +292,6 @@ contains
 
    !--------------------------------------------------------------------
    end subroutine li_setup_sign_and_index_fields
-
-
-
-!***********************************************************************
-!
-!  routine li_setup_timestep
-!
-!> \brief   Initializes time step
-!> \author  Matt Hoffman
-!> \date    24 September 2013
-!> \details
-!>  This routine initializes the time step based on whether
-!>   config_dt or config_dt_years has been set in the namelist.
-!
-!-----------------------------------------------------------------------
-
-   subroutine li_setup_timestep( err )
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err            !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      character (len=StrKIND), pointer :: config_calendar_type
-      real (kind=RKIND), pointer :: config_dt_seconds, config_dt_years
-
-
-      err = 0
-
-      call mpas_pool_get_config(liConfigs, 'config_dt_years', config_dt_years)
-      call mpas_pool_get_config(liConfigs, 'config_calendar_type', config_calendar_type)
-
-      ! First setup li_secondsInYear
-      select case (config_calendar_type)
-      case ('gregorian')
-        li_secondsInYear = 3600.0 * 24.0 * 365.25
-      case('gregorian_noleap')
-        li_secondsInYear = 3600.0 * 24.0 * 365.0
-      case('360day')
-        li_secondsInYear = 3600.0 * 24.0 * 360.0
-      end select
-      write(6,*) 'Selected calendar is ', trim(config_calendar_type), '. Seconds in year has been set to ', li_secondsInYear
-
-      ! If dt in years is supplied, convert it to seconds and use it.  Otherwise use dt in seconds
-      ! li_deltat is a module variable
-      if (config_dt_years == 0.0_RKIND) then
-         li_deltat = config_dt_seconds
-      else
-         li_deltat = config_dt_years * li_secondsInYear
-         ! TODO Should seconds in a year be dependent on calendar used?
-         ! TODO Should seconds in a year be a parameter/module variable somewhere
-      endif
-
-      if (li_deltat < 0.0_RKIND) then
-         err = 1
-         write(0,*) 'Error: negative time step was specified.'
-      endif
-
-   !--------------------------------------------------------------------
-   end subroutine li_setup_timestep
 
 
 

@@ -49,6 +49,7 @@ module mpas_core
    use ocn_tracer_hmix
    use ocn_tracer_surface_flux
    use ocn_tracer_short_wave_absorption
+   use ocn_tracer_nonlocalflux
    use ocn_gm
 
    use ocn_high_freq_thickness_hmix_del2
@@ -64,16 +65,10 @@ module mpas_core
 
    use ocn_constants
 
-   type (io_output_object), save :: restart_obj
+   type (MPAS_Clock_type), pointer :: clock
 
-   integer :: current_outfile_frames
-
-   type (MPAS_Clock_type) :: clock
-
-   integer, parameter :: outputAlarmID = 1
-   integer, parameter :: restartAlarmID = 2
-   integer, parameter :: statsAlarmID = 3
-   integer, parameter :: coupleAlarmID = 4
+   character (len=*), parameter :: statsAlarmID = 'stats'
+   character (len=*), parameter :: coupleAlarmID = 'coupling'
 
    type (timer_node), pointer :: globalDiagTimer, timeIntTimer, testSuiteTimer
    type (timer_node), pointer :: initDiagSolveTimer
@@ -93,14 +88,16 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, startTimeStamp)!{{{
+   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)!{{{
 
       use mpas_grid_types
+      use mpas_stream_manager
       use ocn_tracer_advection
 
       implicit none
 
       type (domain_type), intent(inout) :: domain
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
 
       real (kind=RKIND) :: dt
@@ -115,11 +112,27 @@ module mpas_core
       type (mpas_pool_type), pointer :: diagnosticsPool
 
       character (len=StrKIND), pointer :: xtime
+      type (MPAS_Time_Type) :: startTime
+      type (MPAS_TimeInterval_type) :: timeStep
 
       logical, pointer :: config_do_restart, config_filter_btr_mode, config_conduct_tests
       logical, pointer :: config_write_stats_on_startup
       character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
-      real (kind=RKIND), pointer :: config_maxMeshDensity, config_dt
+      real (kind=RKIND), pointer :: config_maxMeshDensity
+
+      err = 0
+
+      !
+      ! Set "local" clock to point to the clock contained in the domain type
+      !
+      clock => domain % clock
+
+      !
+      ! Set startTimeStamp based on the start time of the simulation clock
+      !
+      startTime = mpas_get_clock_time(clock, MPAS_START_TIME, err_tmp)
+      call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
+      err = ior(err, err_tmp)
 
       ! Setup ocean config pool
       call ocn_constants_init(domain % configs, domain % packages)
@@ -131,9 +144,19 @@ module mpas_core
       call mpas_pool_get_config(domain % configs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
       call mpas_pool_get_config(domain % configs, 'config_maxMeshDensity', config_maxMeshDensity)
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % configs, 'config_conduct_tests', config_conduct_tests)
       call mpas_pool_get_config(domain % configs, 'config_write_stats_on_startup', config_write_stats_on_startup)
+
+      !
+      ! Read input data for model
+      !
+      if ( config_do_restart ) then
+         call MPAS_stream_mgr_read(stream_manager, streamID='restart', ierr=err)
+      else
+         call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=err)
+      end if
+      call mpas_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
+      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err)
 
       ! Initialize submodules before initializing blocks.
       call ocn_timestep_init(err)
@@ -165,6 +188,10 @@ module mpas_core
       call ocn_tracer_advection_init(err_tmp)
       err = ior(err,err_tmp)
       call ocn_tracer_short_wave_absorption_init(err_tmp)
+      err = ior(err,err_tmp)
+      call ocn_gm_init(err_tmp)
+      err = ior(err,err_tmp)
+      call ocn_tracer_nonlocalflux_init(err_tmp)
       err = ior(err,err_tmp)
 
       call ocn_vmix_init(domain, err_tmp)
@@ -245,9 +272,8 @@ module mpas_core
       !
       ! Initialize core
       !
-      dt = config_dt
-
-      call ocn_simulation_clock_init(domain, dt, startTimeStamp)
+      timeStep = mpas_get_clock_timestep(clock, ierr=err)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       block => domain % blocklist
       do while (associated(block))
@@ -274,8 +300,6 @@ module mpas_core
          call mpas_timer_stop("global diagnostics", globalDiagTimer)
       endif
 
-      current_outfile_frames = 0
-
    end subroutine mpas_core_init!}}}
 
 !***********************************************************************
@@ -290,83 +314,64 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_simulation_clock_init(domain, dt, startTimeStamp)!{{{
+   subroutine ocn_simulation_clock_init(core_clock, configs, ierr)!{{{
 
       implicit none
 
-      type (domain_type), intent(inout) :: domain
-      real (kind=RKIND), intent(in) :: dt
-      character(len=*), intent(out) :: startTimeStamp
+      type (MPAS_Clock_type), intent(inout) :: core_clock
+      type (mpas_pool_type), intent(inout) :: configs
+      integer, intent(out) :: ierr
 
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       character(len=StrKIND) :: restartTimeStamp
       character(len=StrKIND), pointer :: config_start_time, config_stop_time, config_run_duration
-      character(len=StrKIND), pointer :: config_restart_timestamp_name
-      character(len=StrKIND), pointer :: config_output_interval, config_restart_interval, config_stats_interval
-      integer :: ierr
+      character(len=StrKIND), pointer :: config_stats_interval, config_dt, config_restart_timestamp_name
+      integer :: err_tmp
 
-      call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
-      call mpas_pool_get_config(domain % configs, 'config_stop_time', config_stop_time)
-      call mpas_pool_get_config(domain % configs, 'config_run_duration', config_run_duration)
-      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
-      call mpas_pool_get_config(domain % configs, 'config_output_interval', config_output_interval)
-      call mpas_pool_get_config(domain % configs, 'config_restart_interval', config_restart_interval)
-      call mpas_pool_get_config(domain % configs, 'config_stats_interval', config_stats_interval)
 
-      if(trim(config_start_time) == 'file') then
-        open(22,file=config_restart_timestamp_name,form='formatted',status='old')
-        read(22,*) restartTimeStamp
-        close(22)
-        call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=ierr)
+      ierr = 0
+
+      call mpas_pool_get_config(configs, 'config_dt', config_dt)
+      call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
+      call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
+      call mpas_pool_get_config(configs, 'config_stats_interval', config_stats_interval)
+      call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+
+      if ( trim(config_start_time) == "file" ) then
+         open(22,file=config_restart_timestamp_name,form='formatted',status='old')
+         read(22,*) restartTimeStamp
+         close(22)
+         call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=ierr)
       else
-        call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=ierr)
+         call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
       end if
 
-      call mpas_set_timeInterval(timeStep, dt=dt, ierr=ierr)
+      call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       if (trim(config_run_duration) /= "none") then
-         call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=ierr)
-         call mpas_create_clock(clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=ierr)
+         call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=err_tmp)
+         call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=err_tmp)
 
          if (trim(config_stop_time) /= "none") then
-            call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=ierr)
+            call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
             if(startTime + runduration /= stopTime) then
                write(stderrUnit,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
-         call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=ierr)
-         call mpas_create_clock(clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=ierr)
+         call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
+         call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=err_tmp)
       else
           write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
-          call mpas_dmpar_finalize(domain % dminfo)
+          ierr = 1
       end if
 
-      ! set output alarm
-      call mpas_set_timeInterval(alarmTimeStep, timeString=config_output_interval, ierr=ierr)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(clock, outputAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-print *, 'output alarmTimeStep', alarmTimeStep, ierr
-
-      ! set restart alarm, if necessary
-      if (trim(config_restart_interval) /= "none") then
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_restart_interval, ierr=ierr)
-         alarmStartTime = startTime + alarmTimeStep
-         call mpas_add_clock_alarm(clock, restartAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-      end if
-
-      !TODO: use this code if we desire to convert config_stats_interval to alarms 
-      !(must also change config_stats_interval type to character) 
-      ! set stats alarm, if necessary
       if (trim(config_stats_interval) /= "none") then      
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_stats_interval, ierr=ierr)
+         call mpas_set_timeInterval(alarmTimeStep, timeString=config_stats_interval, ierr=err_tmp)
          alarmStartTime = startTime + alarmTimeStep
-         call mpas_add_clock_alarm(clock, statsAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
+         call mpas_add_clock_alarm(core_clock, statsAlarmID, alarmStartTime, alarmTimeStep, ierr=err_tmp)
       end if
-
-      call mpas_get_time(curr_time=startTime, dateTimeString=startTimeStamp, ierr=ierr)
-
-      call ocn_analysis_init_alarms(clock,startTime,ierr)
 
    end subroutine ocn_simulation_clock_init!}}}
 
@@ -405,19 +410,20 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell
       integer, dimension(:), pointer :: maxLevelEdgeBot, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: advCellsForEdge, highOrderAdvectionMask, boundaryCell
-      real (kind=RKIND), dimension(:), pointer :: areaCell
-      real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, uTransport
+      real (kind=RKIND), dimension(:), pointer :: areaCell, boundaryLayerDepth
+      real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, normalTransportVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uBolusGM, edgeTangentVectors
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityX, normalVelocityY, normalVelocityZ
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalGMBolusVelocity, edgeTangentVectors
+      real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
       real (kind=RKIND), dimension(:,:,:), pointer :: derivTwo
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels
       integer, pointer :: config_horiz_tracer_adv_order
-      logical, pointer :: config_hmix_scaleWithMesh
+      logical, pointer :: config_hmix_scaleWithMesh, config_do_restart
+      logical, pointer :: config_use_standardGM
       real (kind=RKIND), pointer :: config_maxMeshDensity
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -446,13 +452,14 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
-      call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
-      call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityX', normalVelocityX)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityY', normalVelocityY)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', normalVelocityZ)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-      call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velocityZ)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
+      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -461,6 +468,8 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       call mpas_pool_get_config(block % configs, 'config_horiz_tracer_adv_order', config_horiz_tracer_adv_order)
       call mpas_pool_get_config(block % configs, 'config_hmix_scaleWithMesh', config_hmix_scaleWithMesh)
       call mpas_pool_get_config(block % configs, 'config_maxMeshDensity', config_maxMeshDensity)
+      call mpas_pool_get_config(block % configs, 'config_use_standardGM', config_use_standardGM)
+      call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
    
       call ocn_setup_sign_and_index_fields(meshPool)
       call mpas_initialize_deriv_two(meshPool, derivTwo, err)
@@ -472,27 +481,16 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       err = ior(err, err1)
 
       call ocn_time_average_init(averagePool)
-   
+
+      if (.not. config_do_restart) then
+         do iCell=1,nCells
+            boundaryLayerDepth(iCell) = layerThickness(1, iCell) * 0.5
+         end do
+      end if
+
       call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
       call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, diagnosticsPool, scratchPool)
       call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
-
-      ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-      uTransport(:,:) = normalVelocity(:,:) + uBolusGM(:,:)
-
-      call ocn_compute_mesh_scaling(meshPool, config_hmix_scaleWithMesh, config_maxMeshDensity)
- 
-      call mpas_rbf_interp_initialize(meshPool)
-      call mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)
-
-      call mpas_init_reconstruct(meshPool)
-      call mpas_reconstruct(meshPool, normalVelocity,        &
-                       normalVelocityX,            &
-                       normalVelocityY,            &
-                       normalVelocityZ,            &
-                       normalVelocityZonal,        &
-                       normalVelocityMeridional    &
-                      )
 
       ! initialize velocities and tracers on land to be zero.
       areaCell(nCells+1) = -1.0e34
@@ -508,6 +506,42 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       do iCell=1,nCells
          tracers(:, maxLevelCell(iCell)+1:nVertLevels,iCell) =  -1.0e34
       end do
+
+      ! ------------------------------------------------------------------
+      ! Accumulating various parametrizations of the transport velocity
+      ! ------------------------------------------------------------------
+      normalTransportVelocity(:,:) = normalVelocity(:,:)
+
+      ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
+      if (config_use_standardGM) then
+          call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+      end if
+ 
+      if (config_use_standardGM) then
+         normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
+       end if
+      ! ------------------------------------------------------------------
+      ! End: Accumulating various parametrizations of the transport velocity
+      ! ------------------------------------------------------------------
+
+      call ocn_compute_mesh_scaling(meshPool, config_hmix_scaleWithMesh, config_maxMeshDensity)
+ 
+      call mpas_rbf_interp_initialize(meshPool)
+      call mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)
+
+      call mpas_init_reconstruct(meshPool)
+
+      call mpas_reconstruct(meshPool, normalVelocity,        &
+                       velocityX,            &
+                       velocityY,            &
+                       velocityZ,            &
+                       velocityZonal,        &
+                       velocityMeridional    &
+                      )
+
+      if (config_use_standardGM) then
+         call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+      end if
 
       call mpas_pool_initialize_time_levels(statePool)
 
@@ -526,18 +560,17 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain, output_obj, output_frame)!{{{
+   subroutine mpas_core_run(domain, stream_manager)!{{{
    
       use mpas_kind_types
       use mpas_grid_types
-      use mpas_io_output
+      use mpas_stream_manager
       use mpas_timer
    
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (io_output_object), intent(inout) :: output_obj
-      integer, intent(inout) :: output_frame
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
    
       integer :: itimestep, err
       real (kind=RKIND) :: dt
@@ -552,23 +585,25 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: forcingPool
 
-      real (kind=RKIND), pointer :: config_dt
+      type (MPAS_timeInterval_type) :: timeStep
+      character(len=StrKIND), pointer :: config_restart_timestamp_name
       logical, pointer :: config_write_output_on_startup
    
       call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       ! Eventually, dt should be domain specific
-      dt = config_dt
+      timeStep = mpas_get_clock_timestep(clock, ierr=ierr)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
-      call ocn_analysis_compute_startup(domain, err) 
+      call ocn_analysis_compute_startup(domain, stream_manager, err) 
 
       if (config_write_output_on_startup) then
-         call ocn_write_output_frame(output_obj, output_frame, domain)
+          call mpas_stream_mgr_write(stream_manager, 'output', forceWriteNow=.true., ierr=ierr)
       endif
 
       block_ptr => domain % blocklist
@@ -582,6 +617,8 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
       itimestep = 0
       do while (.not. mpas_is_clock_stop_time(clock))
+         call mpas_stream_mgr_read(stream_manager, ierr=ierr)
+         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
          itimestep = itimestep + 1
          call mpas_advance_clock(clock)
@@ -612,174 +649,26 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
             block_ptr => block_ptr % next
          end do
       
-         call ocn_analysis_compute_w_alarms(clock, domain, err) 
+         call ocn_analysis_compute_w_alarms(stream_manager, domain, err) 
+         call ocn_analysis_write(stream_manager, err)
 
-         if (mpas_is_alarm_ringing(clock, outputAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, outputAlarmID, ierr=ierr)
-            ! output_frame will always be > 1 here unless it was reset after the 
-            ! maximum number of frames per outfile was reached.
-            if(output_frame == 1) then
-               call mpas_output_state_finalize(output_obj, domain % dminfo)
-               call mpas_output_state_init(output_obj, domain, "OUTPUT", trim(timeStamp))
-            end if
+         call mpas_stream_mgr_write(stream_manager, streamID='output', ierr=ierr)
+         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='output', ierr=ierr)
 
-            block_ptr => domain % blocklist
-            do while (associated(block_ptr))
-                call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
-                call ocn_time_average_normalize(averagePool)
-                block_ptr => block_ptr % next
-            end do
-
-            call ocn_write_output_frame(output_obj, output_frame, domain)
-
-            block_ptr => domain % blocklist
-            do while (associated(block_ptr))
-                call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
-                call ocn_time_average_init(averagePool)
-                block_ptr => block_ptr % next
-            end do
+         if ( mpas_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
+            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
+            write(22, *) trim(timeStamp)
+            close(22)
          end if
 
-         if (mpas_is_alarm_ringing(clock, restartAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, restartAlarmID, ierr=ierr)
+         call mpas_stream_mgr_write(stream_manager, streamID='restart', ierr=ierr)
+         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=ierr)
 
-            ! Write one restart time per file
-            call mpas_output_state_init(restart_obj, domain, "RESTART", trim(timeStamp))
-            call mpas_output_state_for_domain(restart_obj, domain, 1)
-            call mpas_output_state_finalize(restart_obj, domain % dminfo)
-
-            call ocn_analysis_restart(domain, err)
-         end if
-
+         call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
       end do
 
    end subroutine mpas_core_run!}}}
-   
-   subroutine ocn_write_output_frame(output_obj, output_frame, domain)!{{{
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain and write model state to output file
-   !
-   ! Input/Output: domain - contains model state; diagnostic field are computed
-   !                        before returning
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_grid_types
-      use mpas_io_output
-      use mpas_vector_reconstruction
-   
-      implicit none
-   
-      integer, intent(inout) :: output_frame
-      type (domain_type), intent(inout) :: domain
-      type (io_output_object), intent(inout) :: output_obj
-   
-      integer :: i, j, k
-      integer :: eoe
-      type (block_type), pointer :: block_ptr
-
-      type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: statePool
-      type (mpas_pool_type), pointer :: forcingPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: scratchPool
-
-      type (field2DReal), pointer :: windStressFull, windStressX, windStressY, windStressZ, windStressZonal, windStressMeridional
-
-      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, windStressZonalDiag, windStressMeridionalDiag
-
-      integer, pointer :: config_frames_per_outfile
-
-      call mpas_pool_get_config(domain % configs, 'config_frames_per_outfile', config_frames_per_outfile)
-   
-      ! Compute output diagnostics
-      block_ptr => domain % blocklist
-      do while (associated(block_ptr))
-         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-
-         call mpas_pool_get_field(scratchPool, 'windStressFullScratch', windStressFull)
-         call mpas_pool_get_field(scratchPool, 'windStressXScratch', windStressX)
-         call mpas_pool_get_field(scratchPool, 'windStressYScratch', windStressY)
-         call mpas_pool_get_field(scratchPool, 'windStressZScratch', windStressZ)
-         call mpas_pool_get_field(scratchPool, 'windStressZonalScratch', windStressZonal)
-         call mpas_pool_get_field(scratchPool, 'windStressMeridionalScratch', windStressMeridional)
-
-         call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
-
-         call mpas_pool_get_array(diagnosticsPool, 'windStressZonalDiag', windStressZonalDiag)
-         call mpas_pool_get_array(diagnosticsPool, 'windStressMeridionalDiag', windStressMeridionalDiag)
-
-         call ocn_compute_output_diagnostics(statePool, meshPool, block_ptr % dimensions)
-
-         call mpas_allocate_scratch_field(windStressFull, .true.)
-         call mpas_allocate_scratch_field(windStressX, .true.)
-         call mpas_allocate_scratch_field(windStressY, .true.)
-         call mpas_allocate_scratch_field(windStressZ, .true.)
-         call mpas_allocate_scratch_field(windStressZonal, .true.)
-         call mpas_allocate_scratch_field(windStressMeridional, .true.)
-
-         windStressFull % array = 0.0_RKIND
-         windStressFull % array(1,:) = surfaceWindStress
-
-         call mpas_reconstruct(meshPool, windStressFull % array, &
-                               windStressX % array, &
-                               windStressY % array, &
-                               windStressZ % array, &
-                               windStressZonal % array, &
-                               windStressMeridional % array)
-
-         windStressZonalDiag(:) = windStressZonal % array(1,:)
-         windStressMeridionalDiag(:) = windStressMeridional % array(1,:)
-
-         call mpas_deallocate_scratch_field(windStressFull, .true.)
-         call mpas_deallocate_scratch_field(windStressX, .true.)
-         call mpas_deallocate_scratch_field(windStressY, .true.)
-         call mpas_deallocate_scratch_field(windStressZ, .true.)
-         call mpas_deallocate_scratch_field(windStressZonal, .true.)
-         call mpas_deallocate_scratch_field(windStressMeridional, .true.)
-
-         block_ptr => block_ptr % next
-      end do
-   
-      call mpas_output_state_for_domain(output_obj, domain, output_frame)
-      output_frame = output_frame + 1
-
-      ! reset frame if the maximum number of frames per outfile has been reached
-      if (config_frames_per_outfile > 0) then
-         current_outfile_frames = current_outfile_frames + 1            
-         if(current_outfile_frames >= config_frames_per_outfile) then
-            current_outfile_frames = 0
-            output_frame = 1
-         end if
-      end if
-   
-   end subroutine ocn_write_output_frame!}}}
-   
-   subroutine ocn_compute_output_diagnostics(statePool, meshPool, dimensionsPool)!{{{
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain
-   !
-   ! Input: state - contains model prognostic fields
-   !        mesh  - contains mesh metadata
-   !
-   ! Output: state - upon returning, diagnostic fields will have be computed
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_grid_types
-   
-      implicit none
-
-      type (mpas_pool_type), intent(in) :: statePool
-      type (mpas_pool_type), intent(in) :: meshPool
-      type (mpas_pool_type), intent(in) :: dimensionsPool
-   
-      integer :: i, eoe
-      integer :: iEdge, k
-   
-   end subroutine ocn_compute_output_diagnostics!}}}
    
 !***********************************************************************
 !
@@ -955,13 +844,15 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 
    end subroutine ocn_init_split_timestep!}}}
  
-   subroutine mpas_core_finalize(domain)!{{{
+   subroutine mpas_core_finalize(domain, stream_manager)!{{{
    
       use mpas_grid_types
+      use mpas_stream_manager
    
       implicit none
 
       type (domain_type), intent(inout) :: domain 
+      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       integer :: ierr
 
       call ocn_analysis_finalize(domain, ierr) 
@@ -1049,6 +940,73 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       ierr = ior(ierr, err_tmp)
 
    end subroutine mpas_core_setup_packages!}}}
+
+!***********************************************************************
+!
+!  routine mpas_core_setup_clock
+!
+!> \brief   Pacakge setup routine
+!> \author  Michael Duda
+!> \date    6 August 2014
+!> \details 
+!>  The purpose of this routine is to allow the core to set up a simulation
+!>  clock that will be used by the I/O subsystem for timing reads and writes
+!>  of I/O streams.
+!>  This routine is called from the superstructure after the framework 
+!>  has been initialized but before any fields have been allocated and 
+!>  initial fields have been read from input files. However, all namelist
+!>  options are available.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_core_setup_clock(core_clock, configs, ierr)!{{{
+
+      implicit none
+
+      type (MPAS_Clock_type), intent(inout) :: core_clock
+      type (mpas_pool_type), intent(inout) :: configs
+      integer, intent(out) :: ierr
+
+      call ocn_simulation_clock_init(core_clock, configs, ierr)
+
+   end subroutine mpas_core_setup_clock!}}}
+
+!***********************************************************************
+!
+!  routine mpas_core_get_mesh_stream
+!
+!> \brief   Returns the name of the stream containing mesh information
+!> \author  Michael Duda
+!> \date    8 August 2014
+!> \details 
+!>  This routine returns the name of the I/O stream containing dimensions,
+!>  attributes, and mesh fields needed by the framework bootstrapping 
+!>  routine. At the time this routine is called, only namelist options 
+!>  are available.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_core_get_mesh_stream(configs, stream, ierr)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: configs
+      character(len=*), intent(out) :: stream
+      integer, intent(out) :: ierr
+
+      logical, pointer :: config_do_restart
+
+      ierr = 0
+
+      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
+
+      if (.not. associated(config_do_restart)) then
+         ierr = 1
+      else if (config_do_restart) then
+         write(stream,'(a)') 'restart'
+      else
+         write(stream,'(a)') 'input'
+      end if
+
+   end subroutine mpas_core_get_mesh_stream!}}}
 
 end module mpas_core
 

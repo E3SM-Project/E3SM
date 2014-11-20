@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vadv_tend(meshPool, u, layerThicknessEdge, vertTransportVelocityTop, tend, err)!{{{
+   subroutine ocn_vel_vadv_tend(meshPool, normalVelocity, layerThicknessEdge, vertAleTransportTop, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -78,10 +78,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         u     !< Input: Horizontal velocity
+         normalVelocity    !< Input: Horizontal velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge,&!< Input: thickness at edge
-         vertTransportVelocityTop  !< Input: Vertical velocity on top layer
+         vertAleTransportTop  !< Input: Vertical velocity on top layer
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
@@ -114,7 +114,7 @@ contains
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge, edgeMask
 
-      real (kind=RKIND) :: vertTransportVelocityTopEdge
+      real (kind=RKIND) :: vertAleTransportTopEdge
       real (kind=RKIND), dimension(:), allocatable :: w_dudzTopEdge
 
       if (.not. velVadvOn) return
@@ -135,10 +135,10 @@ contains
 
         do k = 2, maxLevelEdgeTop(iEdge)
           ! Average w from cell center to edge
-          vertTransportVelocityTopEdge = 0.5*(vertTransportVelocityTop(k,cell1) + vertTransportVelocityTop(k,cell2))
+          vertAleTransportTopEdge = 0.5*(vertAleTransportTop(k,cell1) + vertAleTransportTop(k,cell2))
 
           ! compute dudz at vertical interface with first order derivative.
-          w_dudzTopEdge(k) = vertTransportVelocityTopEdge * (u(k-1,iEdge)-u(k,iEdge)) &
+          w_dudzTopEdge(k) = vertAleTransportTopEdge * (normalVelocity(k-1,iEdge)-normalVelocity(k,iEdge)) &
                        / (0.5*(layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)))
         end do
         w_dudzTopEdge(maxLevelEdgeTop(iEdge)+1) = 0.0

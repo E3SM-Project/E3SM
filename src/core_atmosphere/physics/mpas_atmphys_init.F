@@ -11,7 +11,7 @@
  use mpas_grid_types
  use mpas_timekeeping
 
- use mpas_atmphys_driver_convection_deep, only: init_convection_deep
+ use mpas_atmphys_driver_convection, only: init_convection
  use mpas_atmphys_driver_lsm,only: init_lsm
  use mpas_atmphys_driver_microphysics
  use mpas_atmphys_driver_radiation_lw, only: init_radiation_lw
@@ -40,25 +40,30 @@
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
 !>    * added structure diag in calls to subroutine init_radiation_lw and init_radiation_sw.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-01.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-01.
 !>    * added call to subroutine init_o3climatology. reads monthly-mean climatological ozone data
 !>      and interpolates ozone data to the MPAS grid.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-03.
 !>    * added the calculation of the mean distance between cell centers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-22.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-22.
 !>    * added initialization of variable xicem.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-24.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * added initialization of the accumulated surface pressure. Added initialization of the 
+!>      tendency and accumulated tendency of the surface pressure.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * renamed config_conv_deep_scheme to config_convection_scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains
 
 
 !==================================================================================================
- subroutine physics_init(dminfo,clock,configs,mesh,diag,state,time_lev,diag_physics, &
+ subroutine physics_init(dminfo,clock,configs,mesh,diag,tend,state,time_lev,diag_physics, &
                          atm_input,sfc_input)
 !==================================================================================================
 
@@ -66,13 +71,14 @@
  type(dm_info),intent(in):: dminfo
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
- type(mpas_pool_type),intent(in):: diag
  type(MPAS_Clock_type),intent(in):: clock
 
  integer,intent(in):: time_lev
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: state
+ type(mpas_pool_type),intent(inout):: diag
+ type(mpas_pool_type),intent(inout):: tend
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: atm_input
  type(mpas_pool_type),intent(inout):: sfc_input
@@ -81,12 +87,12 @@
  logical,pointer:: config_do_restart,       &
                    config_o3climatology
 
- character(len=StrKIND),pointer::           &
-                   config_lsm_scheme,       &
-                   config_microp_scheme,    &
-                   config_conv_deep_scheme, &
-                   config_sfclayer_scheme,  &
-                   config_radt_lw_scheme,   &
+ character(len=StrKIND),pointer::            &
+                   config_lsm_scheme,        &
+                   config_microp_scheme,     &
+                   config_convection_scheme, &
+                   config_sfclayer_scheme,   &
+                   config_radt_lw_scheme,    &
                    config_radt_sw_scheme
 
  integer,pointer:: nCellsSolve,nLags
@@ -117,17 +123,17 @@
  integer:: iCell,iLag,iEdge,nEdges_m
 
 !--------------------------------------------------------------------------------------------------
- write(0,*)
- write(0,*) '--- enter subroutine physics_init:'
+! write(0,*)
+! write(0,*) '--- enter subroutine physics_init:'
 
- call mpas_pool_get_config(configs,'config_do_restart'      ,config_do_restart      )
- call mpas_pool_get_config(configs,'config_o3climatology'   ,config_o3climatology   )
- call mpas_pool_get_config(configs,'config_lsm_scheme'      ,config_lsm_scheme      )
- call mpas_pool_get_config(configs,'config_microp_scheme'   ,config_microp_scheme   )
- call mpas_pool_get_config(configs,'config_conv_deep_scheme',config_conv_deep_scheme)
- call mpas_pool_get_config(configs,'config_sfclayer_scheme' ,config_sfclayer_scheme )
- call mpas_pool_get_config(configs,'config_radt_lw_scheme'  ,config_radt_lw_scheme  )
- call mpas_pool_get_config(configs,'config_radt_sw_scheme'  ,config_radt_sw_scheme  )
+ call mpas_pool_get_config(configs,'config_do_restart'       ,config_do_restart       )
+ call mpas_pool_get_config(configs,'config_o3climatology'    ,config_o3climatology    )
+ call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
+ call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
+ call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme'   ,config_radt_lw_scheme   )
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nLags'      ,nLags      )
@@ -263,7 +269,7 @@
 
 !initialization of xicem:
  if(.not.config_do_restart) then
-    write(0,*) '--- initialization of xicem:'
+!    write(0,*) '--- initialization of xicem:'
     do iCell = 1, nCellsSolve
        xicem(iCell) = xice(iCell)
     enddo
@@ -273,7 +279,7 @@
 !sea-surface temperature is applied. This avoids having the array sstsk equal to
 !zero over land:
  if(.not. config_do_restart) then
-    write(0,*) '--- initialization of sstsk:'
+!    write(0,*) '--- initialization of sstsk:'
     do iCell = 1, nCellsSolve
        sstsk(iCell) = sst(iCell)
     enddo
@@ -301,9 +307,9 @@
 !manager is implemented:
  call landuse_init_forMPAS(dminfo,julday,mesh,configs,diag_physics,sfc_input)
 
-!initialization of parameterized deep convective processes:
- if(config_conv_deep_scheme .ne. 'off') &
-    call init_convection_deep(mesh,configs,diag_physics)
+!initialization of parameterized convective processes:
+ if(config_convection_scheme .ne. 'off') &
+    call init_convection(mesh,configs,diag_physics)
 
 !initialization of cloud microphysics processes:
  if(config_microp_scheme .ne. 'off') call microphysics_init
@@ -336,17 +342,17 @@
        if(.not. init_done) then
           call init_radiation_lw(dminfo,mesh,atm_input,diag,state,time_lev)
        else
-          write(0,*)
-          write(0,*) '--- camrad lw initialization done above'
+!          write(0,*)
+!          write(0,*) '--- camrad lw initialization done above'
        endif
     else
        call init_radiation_lw(dminfo)
     endif
  endif
 
- write(0,*)
- write(0,*) '--- end subroutine physics_init'
- write(0,*)
+! write(0,*)
+! write(0,*) '--- end subroutine physics_init'
+! write(0,*)
 
  end subroutine physics_init
 

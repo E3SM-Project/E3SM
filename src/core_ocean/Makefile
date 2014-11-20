@@ -1,7 +1,5 @@
 .SUFFIXES: .F .c .o
 
-CVMIX_REPO_ADDRESS=http://cvmix.googlecode.com/svn/trunk/src/shared
-
 OCEAN_SHARED_INCLUDES=-I../shared -I../analysis_members -I../cvmix -I../../framework -I../../external/esmf_time_f90 -I../../operators
 
 OCEAN_LIBRARIES=cvmix/*.o analysis_members/*.o shared/*.o
@@ -41,12 +39,15 @@ error_msg: error_head
 
 endif # IFDEF MODE
 
-libcvmix:
-	if [ ! -d cvmix ]; then \
-		(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
-	fi
+cvmix_source: get_cvmix.sh
+	(chmod a+x get_cvmix.sh; ./get_cvmix.sh)
+	(cd cvmix; make clean)
+
+libcvmix: cvmix_source
 	if [ -d cvmix ]; then \
-		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+		(cd cvmix; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+	else \
+		(exit 1) \
 	fi
 
 shared: libcvmix
@@ -73,8 +74,6 @@ error_tail: error_head error_msg
 
 exit: error_head error_msg error_tail
 	@exit 1
-
-
 
 clean:
 	if [ -d cvmix ]; then \

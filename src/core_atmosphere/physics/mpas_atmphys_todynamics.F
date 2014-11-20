@@ -32,9 +32,11 @@
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * renamed config_conv_deep_scheme to config_convection_scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 
 
  contains
@@ -60,8 +62,6 @@
 
 !local variables:
 !----------------
-
-
  integer:: i,iCell,k,n
  integer,pointer:: index_qv, index_qc, index_qr, index_qi, index_qs, index_qg
  integer,pointer:: nCells,nCellsSolve,nEdges,nEdgesSolve,nVertLevels
@@ -84,7 +84,8 @@
  real(kind=RKIND):: tem
  real(kind=RKIND),dimension(:,:),allocatable:: rublten_Edge,rucuten_Edge
 
- character(len=StrKIND), pointer :: config_pbl_scheme, config_conv_deep_scheme, config_radt_lw_scheme, config_radt_sw_scheme
+ character(len=StrKIND), pointer :: config_pbl_scheme, config_convection_scheme, &
+                                    config_radt_lw_scheme, config_radt_sw_scheme
 
 !ldf (2011-12-16):
  real(kind=RKIND),dimension(:,:),allocatable:: theta,tend_th
@@ -98,7 +99,7 @@
  call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
  call mpas_pool_get_config(configs, 'config_pbl_scheme', config_pbl_scheme)
- call mpas_pool_get_config(configs, 'config_conv_deep_scheme', config_conv_deep_scheme)
+ call mpas_pool_get_config(configs, 'config_convection_scheme', config_convection_scheme)
  call mpas_pool_get_config(configs, 'config_radt_lw_scheme', config_radt_lw_scheme)
  call mpas_pool_get_config(configs, 'config_radt_sw_scheme', config_radt_sw_scheme)
 
@@ -179,9 +180,9 @@
  endif
 
 !add coupled tendencies due to convection:
- if(config_conv_deep_scheme .ne. 'off') then
+ if(config_convection_scheme .ne. 'off') then
 
-    if(config_conv_deep_scheme .eq. 'tiedtke') then
+    if(config_convection_scheme .eq. 'tiedtke') then
        allocate(rucuten_Edge(nVertLevels,nEdges))
        rucuten_Edge(:,:) = 0.
        call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
@@ -237,18 +238,18 @@
  deallocate(tend_th)
 
  if(rk_step .eq. 3) then
-    write(0,*)
-    write(0,*) '--- enter subroutine physics_addtend:'
-    write(0,*) 'max rthblten   = ',maxval(rthblten(:,1:nCellsSolve))
-    write(0,*) 'min rthblten   = ',minval(rthblten(:,1:nCellsSolve))
-    write(0,*) 'max rthcuten   = ',maxval(rthcuten(:,1:nCellsSolve))
-    write(0,*) 'min rthcuten   = ',minval(rthcuten(:,1:nCellsSolve))
-    write(0,*) 'max rthratenlw = ',maxval(rthratenlw(:,1:nCellsSolve))
-    write(0,*) 'min rthratenlw = ',minval(rthratenlw(:,1:nCellsSolve))
-    write(0,*) 'max rthratensw = ',maxval(rthratensw(:,1:nCellsSolve))
-    write(0,*) 'min rthratensw = ',minval(rthratensw(:,1:nCellsSolve))
-    write(0,*) '--- end subroutine physics_addtend'
-    write(0,*)
+!    write(0,*)
+!    write(0,*) '--- enter subroutine physics_addtend:'
+!    write(0,*) 'max rthblten   = ',maxval(rthblten(:,1:nCellsSolve))
+!    write(0,*) 'min rthblten   = ',minval(rthblten(:,1:nCellsSolve))
+!    write(0,*) 'max rthcuten   = ',maxval(rthcuten(:,1:nCellsSolve))
+!    write(0,*) 'min rthcuten   = ',minval(rthcuten(:,1:nCellsSolve))
+!    write(0,*) 'max rthratenlw = ',maxval(rthratenlw(:,1:nCellsSolve))
+!    write(0,*) 'min rthratenlw = ',minval(rthratenlw(:,1:nCellsSolve))
+!    write(0,*) 'max rthratensw = ',maxval(rthratensw(:,1:nCellsSolve))
+!    write(0,*) 'min rthratensw = ',minval(rthratensw(:,1:nCellsSolve))
+!    write(0,*) '--- end subroutine physics_addtend'
+!    write(0,*)
  endif
 
 !formats:

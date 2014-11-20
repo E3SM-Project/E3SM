@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="init_atmosphere" version="2.1">
+<registry model="mpas" core="init_atmosphere" version="3.0">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -53,6 +53,7 @@
                 <nml_option name="config_met_prefix"            type="character"     default_value="CFSR"/>
                 <nml_option name="config_sfc_prefix"            type="character"     default_value="SST"/>
                 <nml_option name="config_fg_interval"           type="integer"       default_value="21600"/>
+                <nml_option name="config_landuse_data"          type="character"     default_value="USGS"/>
         </nml_record>
 
         <nml_record name="vertical_grid" in_defaults="true">
@@ -70,11 +71,6 @@
         </nml_record>
 
         <nml_record name="io" in_defaults="true">
-                <nml_option name="config_input_name"            type="character"     default_value="x1.40962.grid.nc"/>
-                <nml_option name="config_sfc_update_name"       type="character"     default_value="x1.40962.sfc_update.nc"/>
-                <nml_option name="config_output_name"           type="character"     default_value="x1.40962.init.nc"/>
-                <nml_option name="config_restart_name"          type="character"     default_value="restart.nc"           in_defaults="false"/>
-                <nml_option name="config_restart_timestamp_name" type="character"     default_value="restart_timestamp"   in_defaults="false"/>
                 <nml_option name="config_frames_per_outfile"    type="integer"       default_value="0"                    in_defaults="false"/>
                 <nml_option name="config_pio_num_iotasks"       type="integer"       default_value="0"/>
                 <nml_option name="config_pio_stride"            type="integer"       default_value="1"/>
@@ -87,11 +83,14 @@
                 <nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graph.info.part." in_defaults="false"/>
         </nml_record>
 
-        <nml_record name="restart" in_defaults="true">
-                <nml_option name="config_restart_interval"      type="integer"       default_value="0"         in_defaults="false"/>
-                <nml_option name="config_do_restart"            type="logical"       default_value="false"     in_defaults="false"/>
-                <nml_option name="config_restart_time"          type="real"          default_value="172800.0"  in_defaults="false"/>
-        </nml_record>
+
+<!-- **************************************************************************************** -->
+<!-- **************************************  Packages  ************************************** -->
+<!-- **************************************************************************************** -->
+        <packages>
+                <package name="initial_conds" description="Used by test cases that produce initial conditions."/>
+                <package name="sfc_update" description="Used by test cases that produce surface updates."/>
+        </packages>
 
 
 <!-- **************************************************************************************** -->
@@ -99,7 +98,12 @@
 <!-- **************************************************************************************** -->
 
 	<streams>
-		<stream name="input" type="input">
+		<stream name="input" 
+                        type="input" 
+                        filename_template="x1.40962.grid.nc"
+                        input_interval="initial_only" 
+                        immutable="true">
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -147,6 +151,7 @@
 			<var name="ter"/>
 			<var name="landmask"/>
 			<var name="ivgtyp"/>
+			<var name="mminlu"/>
 			<var name="isltyp"/>
 			<var name="soilcat_bot"/>
 			<var name="snoalb"/>
@@ -217,11 +222,13 @@
 			<var name="surface_pressure"/>
 		</stream>
 
-		<stream name="restart" type="restart">
-			<var name="meshDensity"/>
-		</stream>
+		<stream name="output" 
+                        type="output" 
+                        filename_template="x1.40962.init.nc"
+                        output_interval="initial_only"
+                        packages="initial_conds"
+                        runtime_format="separate_file">
 
-		<stream name="output" type="output">
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -269,6 +276,7 @@
 			<var name="ter"/>
 			<var name="landmask"/>
 			<var name="ivgtyp"/>
+			<var name="mminlu"/>
 			<var name="isltyp"/>
 			<var name="soilcat_bot"/>
 			<var name="snoalb"/>
@@ -308,9 +316,7 @@
 			<var name="defc_a"/>
 			<var name="defc_b"/>
 			<var name="coeffs_reconstruct"/>
-			<var name="qv"/>
-			<var name="qc"/>
-			<var name="qr"/>
+			<var_array name="scalars"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -360,11 +366,20 @@
 			<var name="surface_pressure"/>
 			<var name="precipw"/>
 		</stream>
-		<stream name="surface" type="input;output">
+
+		<stream name="surface" 
+                        type="output" 
+                        filename_template="x1.40962.sfc_update.nc"
+                        output_interval="none" 
+                        filename_interval="none"
+                        packages="sfc_update"
+                        immutable="true">
+
 			<var name="xtime"/>
 			<var name="sst"/>
 			<var name="xice"/>
 		</stream>
+
 	</streams>
 
 
@@ -416,14 +431,15 @@
                 <var name="meshDensity"                  type="real"     dimensions="nCells"/>
 
                 <!-- coefficients for vertical extrapolation to the surface -->
-                <var name="cf1"                          type="real"     dimensions=/>
-                <var name="cf2"                          type="real"     dimensions=/>
-                <var name="cf3"                          type="real"     dimensions=/>
+                <var name="cf1"                          type="real"     dimensions=""/>
+                <var name="cf2"                          type="real"     dimensions=""/>
+                <var name="cf3"                          type="real"     dimensions=""/>
 
                 <!-- static terrestrial fields -->
                 <var name="ter"                                  type="real"     dimensions="nCells"/>
                 <var name="landmask"                             type="integer"  dimensions="nCells"/>
                 <var name="ivgtyp"   name_in_code="lu_index"     type="integer"  dimensions="nCells"/>
+                <var name="mminlu"                               type="text"     dimensions=""/>
                 <var name="isltyp"   name_in_code="soilcat_top"  type="integer"  dimensions="nCells"/>
                 <var name="soilcat_bot"                          type="integer"  dimensions="nCells"/>
                 <var name="snoalb"                               type="real"     dimensions="nCells"/>
