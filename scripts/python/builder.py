@@ -296,14 +296,14 @@ class cetus(platformBuilder):
         self.BUILD_DIR = "build_cetus_" + compiler
         self.runModuleCmd()
 
-        self.CMAKE_EXE = 'cmake'
+        self.CMAKE_EXE = 'cmake '
 
         self.FC = 'mpixlf2003_r'
         self.CC = 'mpixlc_r'
         self.CXX = 'mpixlcxx_r'
         self.NUMPE = '4'
 
-        self.OFLAGS += ('-D PLATFORM:STRING=cetus ')
+        self.OFLAGS += (' -D PLATFORM:STRING=cetus ')
 
         """ qsub on Cetus does not allow specifying scripts or executables
             when submitting interactive jobs. So we only have two options,
