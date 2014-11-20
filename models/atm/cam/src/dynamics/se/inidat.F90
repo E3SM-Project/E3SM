@@ -18,7 +18,8 @@ module inidat
   use element_mod, only : element_t
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmd_utils,   only: iam, masterproc
-  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock
+  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
+  use random_xgc, only: init_ranx, ranx
   implicit none
   private
   public read_inidat
@@ -71,6 +72,7 @@ contains
     integer :: rndm_seed_sz
     integer, allocatable :: rndm_seed(:)
     real(r8) :: pertval
+    integer :: sysclk
     integer :: i
     real(r8), parameter :: D0_0 = 0.0_r8
     real(r8), parameter :: D0_5 = 0.5_r8
@@ -86,7 +88,7 @@ contains
 
     call get_dyn_decomp(elem, nlev, pio_double, iodesc)
 
-    lsize = pio_get_local_array_size(iodesc)	
+    lsize = pio_get_local_array_size(iodesc)
 
     tlncols = lsize/nlev
 
@@ -144,7 +146,11 @@ contains
                        'by +/- ', pertlim, ' to initial temperature field'
       end if
 
-      call random_seed(size=rndm_seed_sz)
+      if (new_random) then
+        rndm_seed_sz = 1
+      else
+        call random_seed(size=rndm_seed_sz)
+      endif
       allocate(rndm_seed(rndm_seed_sz))
 
       do ie=1,nelemd
@@ -154,13 +160,21 @@ contains
         if (seed_custom > 0) rndm_seed(:) = ieor( rndm_seed(1) , int(seed_custom,kind(rndm_seed(1))) )
         if (seed_clock) then
           call system_clock(sysclk)
-          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk) )
+          rndm_seed(:) = ieor( sysclk , int(rndm_seed(1),kind(sysclk)) )
         endif
-        call random_seed(put=rndm_seed)
+        if (new_random) then
+          call init_ranx(rndm_seed(1))
+        else
+          call random_seed(put=rndm_seed)
+        endif
         do i=1,np
           do j=1,np
             do k=1,nlev
-              call random_number(pertval)
+              if (new_random) then
+                pertval = ranx()
+              else
+                call random_number(pertval)
+              endif
               pertval = D2_0*pertlim*(D0_5 - pertval)
               elem(ie)%state%T(i,j,k,1) = elem(ie)%state%T(i,j,k,1)*(D1_0 + pertval)
             end do
