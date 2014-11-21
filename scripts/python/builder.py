@@ -378,6 +378,7 @@ class cetus(platformBuilder):
         self.envMod['FC'] = self.FC
         self.envMod['CC'] = self.CC
         self.envMod['CXX'] = self.CXX
+        self.envMod['LDFLAGS'] = self.LDFLAGS
 
         cmakeString = (self.CMAKE_EXE + self.OFLAGS + " ..")
         cmakeString = ("/bin/csh -c \"" + "source ../scripts/cetus_env.sh && " +
