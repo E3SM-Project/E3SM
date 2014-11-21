@@ -311,6 +311,7 @@ class cetus(platformBuilder):
 
         self.OFLAGS += (' -D PLATFORM:STRING=cetus ')
 
+        os.environ['BGQ_RUNJOB'] = os.getcwd().strip() + '/scripts/pio_runjob.sh'
         """ qsub on Cetus does not allow specifying scripts or executables
             when submitting interactive jobs. So we only have two options,
             1. Open an interactive shell and ask user to type "ctest" from
