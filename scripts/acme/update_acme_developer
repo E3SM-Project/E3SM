@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-"""This script recreates the acme_developer suite within the CESM testlist.xml 
-file, which should be given as the only argument. It deletes any existing 
-"acme_developer" category from the XML file, draws from information within 
-this file to create new test entries, and then inserts these entries into 
+"""This script recreates the acme_developer suite within the CESM testlist.xml
+file, which should be given as the only argument. It deletes any existing
+"acme_developer" category from the XML file, draws from information within
+this file to create new test entries, and then inserts these entries into
 the XML file."""
 
 # First off, we need a non-ancient Python.
@@ -15,15 +15,15 @@ if (sys.version_info.major != 2) or (sys.version_info.minor < 7):
 
 # Here are the tests belonging to the acme_developer suite. Format is
 # <test>.<grid>.<compset>
-acme_developer_tests = [ 
-  'ERS.f19_g16_rx1.A', 
-  'ERS.f45_g37.B1850C5', 
+acme_developer_tests = [
+  'ERS.f19_g16_rx1.A',
+  'ERS.f45_g37.B1850C5',
   'ERS.f45_g37_rx1.DTEST',
   'ERS.ne30_g16_rx1.A',
   'ERS_D.f45_g37.B1850C5',
   'ERS_IOP.f19_g16_rx1.A',
   'ERS_IOP.f45_g37_rx1.DTEST',
-  'ERS_IOP.ne30_g16_rx1.A', 
+  'ERS_IOP.ne30_g16_rx1.A',
   'ERS_IOP4c.f19_g16_rx1.A',
   'ERS_IOP4c.ne30_g16_rx1.A',
   'ERS_IOP4p.f19_g16_rx1.A',
@@ -53,7 +53,7 @@ def find_all_machines(xml_file):
 ###############################################################################
 def replace_testlist_xml(output, xml_file):
 ###############################################################################
-    # manage_xml_entries creates a temporary file intended for people to manually check the 
+    # manage_xml_entries creates a temporary file intended for people to manually check the
     # changes. This made sense before revision control, but not anymore.
     import shutil
     if 'now writing the new test list to' in output:
@@ -75,9 +75,7 @@ def generate_acme_developer_entries(tests, machines):
     return name
 
 ###############################################################################
-
-###############################################################################
-def main_func():
+def _main_func():
 ###############################################################################
     import os.path
     if len(sys.argv) == 1:
@@ -91,34 +89,34 @@ def main_func():
     if not os.path.exists(xml_file):
         print('Invalid XML file: %s'%xml_file)
         exit(-1)
-    
+
     # Fish all of the existing machine/compiler combos out of the XML file.
     machines = find_all_machines(xml_file)
-    
+
     # Try to find the manage_xml_entries script. Too fancy?
     manage_xml_entries = None
-    for root, dirs, files in os.walk('.'):
+    for root, _, files in os.walk('.'):
         for name in files:
             if name == 'manage_xml_entries':
                 manage_xml_entries = os.path.abspath(os.path.join(root, name))
     if manage_xml_entries is None:
         print('Couldn\'t find manage_xml_entries. You might be too deep in the source tree.')
         exit(-1)
-    
+
     # Remove any existing acme_developer category from the file.
     import subprocess
     output = subprocess.check_output([manage_xml_entries, '-removetests', '-category', 'acme_developer'])
     replace_testlist_xml(output, xml_file)
-    
-    # Generate a list of test entries corresponding to our suite at the top 
+
+    # Generate a list of test entries corresponding to our suite at the top
     # of the file.
     import os
     new_test_file = generate_acme_developer_entries(acme_developer_tests, machines)
-    output = subprocess.check_output([manage_xml_entries, '-addlist', 
-                                     '-file', new_test_file, 
+    output = subprocess.check_output([manage_xml_entries, '-addlist',
+                                     '-file', new_test_file,
                                      '-category', 'acme_developer'])
     os.unlink(new_test_file)
     replace_testlist_xml(output, xml_file)
-    
+
 if __name__ == "__main__":
-    main_func()
+    _main_func()
