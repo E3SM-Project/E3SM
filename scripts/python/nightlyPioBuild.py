@@ -47,8 +47,8 @@ class nightlyBuilder(object):
          os.environ["MODULESHOME"] = "/usr/share/Modules"
          os.environ["MODULEPATH"]="/usr/share/Modules/modulefiles:/etc/modulefiles"
 
-      if self.platform == "caldera":
-         self.compilers = ['intel','pgi','gnu']
+      if self.platform == "yellowstone":
+         self.compilers = ['gnu','pgi','intel']
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/glade/scratch/jedwards/nightlyPioBuild'
          self.python = '/glade/apps/opt/python/2.7.7/gnu-westmere/4.8.2/bin/python'

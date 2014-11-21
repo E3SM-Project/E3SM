@@ -127,7 +127,7 @@ CONTAINS
           pio_tf_num_io_tasks_,       &
           pio_tf_num_aggregators_,    &
           pio_tf_stride_,             &
-          PIO_rearr_box,              &
+          PIO_rearr_subset,              &
           pio_tf_iosystem_,           &
           base=1)
 

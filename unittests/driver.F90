@@ -106,7 +106,7 @@ Program pio_unit_test_driver
        niotasks,       & ! Number of iotasks (ntasks/stride)
        0,              & ! num_aggregator (?)
        stride,         & ! Stride
-       PIO_rearr_box,  & ! rearr
+       PIO_rearr_subset,  & ! rearr
        pio_iosystem, base=1)     ! iosystem
 
   call PIO_seterrorhandling(pio_iosystem, PIO_BCAST_ERROR)

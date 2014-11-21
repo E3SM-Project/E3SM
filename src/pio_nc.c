@@ -1053,7 +1053,6 @@ int PIOc_redef (int ncid)
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
       ierr = nc_redef(file->fh);;
-      printf("%s %d %d\n",__FILE__,__LINE__,ierr);
       break;
     case PIO_IOTYPE_NETCDF4C:
 #endif
