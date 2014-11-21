@@ -14,8 +14,10 @@ include(mpiexec)
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS} )
 LINK_DIRECTORIES(${PIO_LIB_DIR} )
 
+# Default test timeout = 4 min (240s)
+SET(DEFAULT_TEST_TIMEOUT 240)
 ADD_EXECUTABLE(piotest ${SRC})
-add_mpi_test("piotest" "./piotest" "" 4)
+add_mpi_test("piotest" "./piotest" "" 4 ${DEFAULT_TEST_TIMEOUT})
 
 if(${PIO_BUILD_TIMING}) 
   SET(TIMING_LINK_LIB timing)
