@@ -210,6 +210,7 @@ class yellowstone(platformBuilder):
             class attributes
         """
         super(yellowstone,self).__init__( compiler, test, mpilib,debug)
+        os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ys/compilers:/glade/apps/opt/modulefiles/ys/idep" 
 
         self.moduleList = ['ncarenv/1.0 ',
                                            'cmake ',
@@ -241,7 +242,6 @@ class yellowstone(platformBuilder):
             self.CXX = 'mpiCC'
 
         self.BUILD_DIR = "build_yellowstone_" + compiler
-        os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ys/compilers:/glade/apps/opt/modulefiles/ys/idep" 
         os.environ["LMOD_CMD"]="/glade/apps/opt/lmod/lmod/libexec/lmod"
         os.environ["LMOD_DIR"]="/glade/apps/opt/lmod/lmod/libexec/"
 
@@ -293,6 +293,7 @@ class caldera(yellowstone):
         super(caldera,self).__init__(compiler, test,mpilib,debug)
         self.EXECCA = ''
         self.TEST_CMD = ('ctest --verbose')
+        os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ca/compilers:/glade/apps/opt/modulefiles/ca/idep" 
 
 
 class cetus(platformBuilder):
