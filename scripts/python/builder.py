@@ -183,7 +183,7 @@ class goldbach(platformBuilder):
         self.CMAKE_EXE = '/usr/bin/cmake --debug-trycompile '
    
         self.OFLAGS += ( '-D PLATFORM:STRING=goldbach ')
-        if mpi is True:
+        if mpilib isi not "mpi-serial":
             self.MPIEXEC = ('mpirun ')
         self.EXECCA = ''
         self.LDFLAGS = '-lcurl'
