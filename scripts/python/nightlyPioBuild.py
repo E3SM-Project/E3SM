@@ -44,17 +44,12 @@ class nightlyBuilder(object):
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/home/jedwards/nightlyPioBuild'
          self.python = '/usr/local/anaconda-2.0.1/bin/python'
-         os.environ["MODULESHOME"] = "/usr/share/Modules"
-         os.environ["MODULEPATH"]="/usr/share/Modules/modulefiles:/etc/modulefiles"
 
       if self.platform == "yellowstone":
          self.compilers = ['gnu','pgi','intel']
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/glade/scratch/jedwards/nightlyPioBuild'
          self.python = '/glade/apps/opt/python/2.7.7/gnu-westmere/4.8.2/bin/python'
-         os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ys/compilers:/glade/apps/opt/modulefiles/ys/idep" 
-         os.environ["LMOD_CMD"]="/glade/apps/opt/lmod/lmod/libexec/lmod"
-         os.environ["LMOD_DIR"]="/glade/apps/opt/lmod/lmod/libexec/"
       os.chdir(self.buildDir)
       os.mkdir(self.dirName)
       os.chdir(self.dirName)
@@ -113,12 +108,12 @@ class nightlyBuilder(object):
       #~# want to dump file in case mailer fails so we still have a recor
       f = open(self.messageFoo, 'w')
       f.write('Testing Pio 2.0 nightly build\n\n')
-      f.write('\n\n === START svn checkout ===\n\n')
-      f.write(self.svnLog)
-      f.write('\n\n === DONE svn checkout ===\n\n')
       f.write('\n\n === START builds ===\n\n')
       f.write(self.outTest)
       f.write('\n\n === DONE builds ===\n\n')
+      f.write('\n\n === START svn checkout ===\n\n')
+      f.write(self.svnLog)
+      f.write('\n\n === DONE svn checkout ===\n\n')
       f.close()
 
       f=open(self.messageFoo, 'r')

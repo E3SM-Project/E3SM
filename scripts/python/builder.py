@@ -187,6 +187,8 @@ class goldbach(platformBuilder):
             self.MPIEXEC = ('mpirun ')
         self.EXECCA = ''
         self.LDFLAGS = '-lcurl'
+        os.environ["MODULESHOME"] = "/usr/share/Modules"
+        os.environ["MODULEPATH"]="/usr/share/Modules/modulefiles:/etc/modulefiles"
     def runModuleCmd(self):
         """ implement ABC...run module cmds
         """
@@ -239,6 +241,10 @@ class yellowstone(platformBuilder):
             self.CXX = 'mpiCC'
 
         self.BUILD_DIR = "build_yellowstone_" + compiler
+        os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ys/compilers:/glade/apps/opt/modulefiles/ys/idep" 
+        os.environ["LMOD_CMD"]="/glade/apps/opt/lmod/lmod/libexec/lmod"
+        os.environ["LMOD_DIR"]="/glade/apps/opt/lmod/lmod/libexec/"
+
         self.runModuleCmd()
 
         self.CMAKE_EXE = 'cmake'
