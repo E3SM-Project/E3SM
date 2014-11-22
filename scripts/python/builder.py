@@ -265,8 +265,7 @@ class yellowstone(platformBuilder):
         """ implement ABC...add the lmod commands for yellowstone
         """
         self.lmod = lmod.ModuleInterface()
-        self.lmod.python_init("/glade/apps/opt/lmod/lmod/init/"
-                              "env_modules_python.py")
+        self.lmod.python_init("/glade/apps/opt/lmod/lmod/init/env_modules_python.py")
         self.lmod.purge()
 
         for cmd in self.moduleList:
