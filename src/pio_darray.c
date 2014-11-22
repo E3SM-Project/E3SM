@@ -2,13 +2,13 @@
 #include <pio_internal.h>
 #define USE_PNETCDF_VARN 1
 
-PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
+static PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
 #define MALLOC_FILL_ARRAY(type, n, fill, arr) \
    arr = malloc(n * sizeof (type));	      \
-   if(fill != NULL)                                       \
-     for(int _i=0; _i<n; _i++)			\
-       ((type *) arr)[_i] = *((type *) fill)
+   if(fill != NULL){				\
+   for(int _i=0; _i<n; _i++){			\
+     ((type *) arr)[_i] = *((type *) fill)}}
 
 
 
@@ -110,7 +110,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
        }
        if(region != NULL){
 	 bufptr = (void *)((char *) IOBUF+tsize*region->loffset);
-	 // this is a time dependent multidimensional array
+	 // this is a record based multidimensional array
 	 if(vdesc->record >= 0){
 	   start[0] = vdesc->record;
 	   for(i=1;i<ndims;i++){
@@ -673,7 +673,6 @@ int flush_output_buffer(file_desc_t *file)
   if(file->nreq>PIO_MAX_REQUESTS){
     fprintf(stderr,"Need to increase PIO_MAX_REQUESTS %d\n",file->nreq);
   }
-
 
   ierr = ncmpi_wait_all(file->fh,file->nreq,  file->request,status);
   for(int i=0;i<file->nreq;i++){

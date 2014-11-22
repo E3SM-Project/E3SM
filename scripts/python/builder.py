@@ -306,7 +306,7 @@ class cetus(platformBuilder):
         self.CXX = 'mpixlcxx_r'
 
         self.LDFLAGS = '-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib'
-
+        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.NUMPE = '4'
 
         self.OFLAGS += (' -D PLATFORM:STRING=cetus ')
