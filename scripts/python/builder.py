@@ -305,7 +305,7 @@ class cetus(platformBuilder):
         self.CC = 'mpixlc_r'
         self.CXX = 'mpixlcxx_r'
 
-        self.LDFLAGS = '-L/soft/libraries/netcdf/4.3.0-f4.2/cnk-xl/V1R2M0-20131211/lib -L/soft/libraries/hdf5/1.8.10/cnk-xl/V1R2M0-20130405/lib -L/soft/libraries/alcf/current/xl/ZLIB/lib -lnetcdf -lhdf5_hl -lhdf5 -lm -lz'
+        self.LDFLAGS = '-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib'
 
         self.NUMPE = '4'
 
