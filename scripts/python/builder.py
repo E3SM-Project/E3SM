@@ -18,20 +18,20 @@ class platformBuilder(object):
         tests.
     """
 
-    def __init__(self, compiler,test,mpi,debug):
+    def __init__(self, compiler,test,mpilib,debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes.  Override this in platform specific classes
         """
         self.test = test
         self.CMAKE_EXE = ''
-        if mpi is True:
-            self.FC = 'mpif90'
-            self.CC = 'mpicc'
-            self.CXX = 'mpiCC'
-        else:
+        if mpilib == 'mpi-serial':
             self.CC = 'cc'
             self.FC = 'f90'
             self.CXX=''
+        else:
+            self.FC = 'mpif90'
+            self.CC = 'mpicc'
+            self.CXX = 'mpiCC'
 
         self.LDFLAGS=''
 
@@ -109,22 +109,22 @@ class platformBuilder(object):
         p.wait()
 
     @staticmethod
-    def factory(platform,compiler,test,mpi,debug):
+    def factory(platform,compiler,test,mpilib,debug):
         """ factory method for instantiating the appropriate class
         """
 
         if platform == "darwin":
-            return darwin(compiler,test,mpi,debug)
+            return darwin(compiler,test,mpilib,debug)
         if platform == "goldbach":
-            return goldbach(compiler,test,mpi,debug)
+            return goldbach(compiler,test,mpilib,debug)
         if platform == "yellowstone":
-            return yellowstone(compiler,test,mpi,debug)
+            return yellowstone(compiler,test,mpilib,debug)
         if platform == "caldera":
-            return caldera(compiler,test,mpi,debug)
+            return caldera(compiler,test,mpilib,debug)
         if platform == "mira":
-            return cetus(compiler,test,mpi,debug)
+            return cetus(compiler,test,mpilib,debug)
         if platform == "cetus":
-            return cetus(compiler,test,mpi,debug)
+            return cetus(compiler,test,mpilib,debug)
 #        return platformBuilder(compiler)
 
 
@@ -136,11 +136,11 @@ class platformBuilder(object):
     
 class darwin(platformBuilder):
 
-    def __init__(self, compiler, test,mpi,debug):
+    def __init__(self, compiler, test,mpilib,debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
-        super(darwin,self).__init__(compiler, test,mpi,debug)
+        super(darwin,self).__init__(compiler, test,mpilib,debug)
         
         self.CMAKE_EXE = '/opt/local/bin/cmake'
         self.OFLAGS += ('-D PLATFORM:STRING=darwin ')
@@ -158,20 +158,20 @@ class darwin(platformBuilder):
 
 class elm(darwin):
 
-    def __init__(self, compiler, test,mpi,debug):
+    def __init__(self, compiler, test,mpilib,debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
-        super(elm,self).__init__(compiler, test,mpi,debug)
+        super(elm,self).__init__(compiler, test,mpilib,debug)
 
 class goldbach(platformBuilder):
     
-    def __init__(self, compiler, test,mpi,debug):
+    def __init__(self, compiler, test,mpilib,debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
         
-        super(goldbach, self).__init__(compiler, test,mpi, debug)
+        super(goldbach, self).__init__(compiler, test,mpilib, debug)
         if compiler == 'nag':
             self.moduleList = ['compiler/nag/6.0']
         if compiler == 'intel':
@@ -203,11 +203,11 @@ class goldbach(platformBuilder):
   
 class yellowstone(platformBuilder):
 
-    def __init__(self, compiler, test, mpi, debug):
+    def __init__(self, compiler, test, mpilib, debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
-        super(yellowstone,self).__init__( compiler, test, mpi,debug)
+        super(yellowstone,self).__init__( compiler, test, mpilib,debug)
 
         self.moduleList = ['ncarenv/1.0 ',
                                            'cmake ',
@@ -216,7 +216,7 @@ class yellowstone(platformBuilder):
         if compiler == 'intel':
             self.moduleList += ['intel/15.0.0',
                            'ncarcompilers/1.0']
-            if mpi is True:
+            if mpilib is not "mpi-serial":
                 self.moduleList += ['netcdf-mpi/4.3.2']
             else:
                 self.moduleList += ['netcdf/4.3.2']
@@ -233,7 +233,7 @@ class yellowstone(platformBuilder):
                            'ncarcompilers/1.0',
                            'netcdf/4.3.0']
 
-        if mpi is True:
+        if mpilib is not 'mpi-serial':
             self.moduleList += ['pnetcdf/1.4.1']
             self.FC = 'mpif90'
             self.CXX = 'mpiCC'
@@ -274,23 +274,23 @@ class yellowstone(platformBuilder):
 
 
 class caldera(yellowstone):
-    def __init__(self, compiler, test,mpi,debug):
+    def __init__(self, compiler, test,mpilib,debug):
         """ user defined ctor so we can put stuff in a class instead of as
         class attributes
         """
         self.test = test
-        super(caldera,self).__init__(compiler, test,mpi,debug)
+        super(caldera,self).__init__(compiler, test,mpilib,debug)
         self.EXECCA = ''
         self.TEST_CMD = ('ctest --verbose')
 
 
 class cetus(platformBuilder):
 
-    def __init__(self, compiler, test, mpi, debug):
+    def __init__(self, compiler, test, mpilib, debug):
         """ user defined ctor so we can put stuff in a class instead of as
             class attributes
         """
-        super(cetus,self).__init__( compiler, test, mpi, debug)
+        super(cetus,self).__init__( compiler, test, mpilib, debug)
 
         self.moduleList = ['+mpiwrapper-xl ',
                            '@ibm-compilers-2014-02 ',

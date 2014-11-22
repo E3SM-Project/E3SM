@@ -52,6 +52,9 @@ class nightlyBuilder(object):
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/glade/scratch/jedwards/nightlyPioBuild'
          self.python = '/glade/apps/opt/python/2.7.7/gnu-westmere/4.8.2/bin/python'
+         os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ys/compilers:/glade/apps/opt/modulefiles/ys/idep" 
+         os.environ["LMOD_CMD"]="/glade/apps/opt/lmod/lmod/libexec/lmod"
+         os.environ["LMOD_DIR"]="/glade/apps/opt/lmod/lmod/libexec/"
       os.chdir(self.buildDir)
       os.mkdir(self.dirName)
       os.chdir(self.dirName)

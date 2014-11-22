@@ -21,10 +21,10 @@ def runBuild(args):
     else:
         machine_name = resolveName()
 
-    if args.nompi:
-        mpi = False
+    if args.mpilib:
+        mpilib = args.mpilib
     else:
-        mpi = True
+        mpilib = None
 
     if machine_name is None:
         raise RuntimeError("Could not resolve machine name.")
@@ -52,7 +52,7 @@ def runBuild(args):
                 compiler = compiler_list[0]
             if(compiler not in compiler_list):
                 print("ERROR: compiler {0} not supported on machine {1}".format(compiler,machine_name))
-        else if e.tag == "MPILIBS":
+        if e.tag == "MPILIBS":
             mpilibs_list = e.text.split(',')
             if mpilib is None:
                 mpilib = mpilibs_list[0]
@@ -65,12 +65,12 @@ def runBuild(args):
         print ("And run tests \n" )
 
     xmlcompiler = MachineCompilerSettings(compiler, compilerfilename, 
-                                          machine=machine_name,mpilib)
+                                          machine=machine_name,mpilib=mpilib)
 
     with open('PIO_Macros.cmake', "w") as macros_file:
         xmlcompiler.write_cmake_macros(macros_file,"PIO")
 
-    bld = builder.platformBuilder.factory(machine_name,compiler,args.test,mpi,args.debug)
+    bld = builder.platformBuilder.factory(machine_name,compiler,args.test,mpilib,args.debug)
     bld.metaBuild()
 
 

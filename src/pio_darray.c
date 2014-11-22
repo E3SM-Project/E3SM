@@ -2,13 +2,13 @@
 #include <pio_internal.h>
 #define USE_PNETCDF_VARN 1
 
-static PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
+PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
 #define MALLOC_FILL_ARRAY(type, n, fill, arr) \
    arr = malloc(n * sizeof (type));	      \
-   if(fill != NULL){				\
-   for(int _i=0; _i<n; _i++){			\
-     ((type *) arr)[_i] = *((type *) fill)}}
+   if(fill != NULL){			\
+     for(int _i=0; _i<n; _i++){			\
+       ((type *) arr)[_i] = *((type *) fill);}}
 
 
 
