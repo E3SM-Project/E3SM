@@ -52,15 +52,20 @@ def runBuild(args):
                 compiler = compiler_list[0]
             if(compiler not in compiler_list):
                 print("ERROR: compiler {0} not supported on machine {1}".format(compiler,machine_name))
-
+        else if e.tag == "MPILIBS":
+            mpilibs_list = e.text.split(',')
+            if mpilib is None:
+                mpilib = mpilibs_list[0]
+            if(mpilib not in mpilibs_list):
+                print("ERROR: mpilib {0} not supported on machine {1}".format(mpilib,machine_name))
 
     print ("Configure and build for :: %s \n" %
-           (machine_name + " " + compiler))
+           (machine_name + " " + compiler + " " + mpilib))
     if args.test:
         print ("And run tests \n" )
 
     xmlcompiler = MachineCompilerSettings(compiler, compilerfilename, 
-                                          machine=machine_name,use_mpi=mpi)
+                                          machine=machine_name,mpilib)
 
     with open('PIO_Macros.cmake', "w") as macros_file:
         xmlcompiler.write_cmake_macros(macros_file,"PIO")
