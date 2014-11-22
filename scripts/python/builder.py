@@ -210,7 +210,7 @@ class yellowstone(platformBuilder):
             class attributes
         """
         super(yellowstone,self).__init__( compiler, test, mpilib,debug)
-        os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ys/compilers:/glade/apps/opt/modulefiles/ys/idep" 
+        os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ca/compilers:/glade/apps/opt/modulefiles/ca/idep" 
 
         self.moduleList = ['ncarenv/1.0 ',
                                            'cmake ',
