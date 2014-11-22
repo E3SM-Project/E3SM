@@ -245,6 +245,11 @@ class yellowstone(platformBuilder):
         os.environ["LMOD_CMD"]="/glade/apps/opt/lmod/lmod/libexec/lmod"
         os.environ["LMOD_DIR"]="/glade/apps/opt/lmod/lmod/libexec/"
 
+        for key in os.environ.keys():
+            print "%30s %s \n" % (key,os.environ[key])
+
+
+
         self.runModuleCmd()
 
         self.CMAKE_EXE = 'cmake'
@@ -270,6 +275,7 @@ class yellowstone(platformBuilder):
     def runModuleCmd(self):
         """ implement ABC...add the lmod commands for yellowstone
         """
+
         self.lmod = lmod.ModuleInterface()
         self.lmod.python_init("/glade/apps/opt/lmod/lmod/init/env_modules_python.py")
         self.lmod.purge()

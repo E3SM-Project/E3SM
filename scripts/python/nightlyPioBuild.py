@@ -122,7 +122,7 @@ class nightlyBuilder(object):
       self.mailMessage = ''
       iter = 0
       for m in re.finditer("\d+% tests passed, \d+ tests failed out of \d+",self.fullMessage):
-         print m.group(0)
+#         print m.group(0)
          self.mailMessage += self.compilers[iter] + ':  ' + m.group(0)  + "\n"
          iter += 1
 
