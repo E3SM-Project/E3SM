@@ -10,7 +10,7 @@
 
 if (-e /usr/share/Modules/init/csh) then
   source /usr/share/Modules/init/csh
-  module purge
+  module unload
 
   if ($COMPILER == "intel") then
     module load intel/13.0
