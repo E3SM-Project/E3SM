@@ -1,4 +1,5 @@
 from __future__ import generators
+from __future__ import print_function
 import abc
 import os
 import sys
@@ -246,7 +247,7 @@ class yellowstone(platformBuilder):
         os.environ["LMOD_DIR"]="/glade/apps/opt/lmod/lmod/libexec/"
 
         for key in os.environ.keys():
-            print "%30s %s \n" % (key,os.environ[key])
+            print("%30s %s\n" % (key,os.environ[key]))
 
 
 
