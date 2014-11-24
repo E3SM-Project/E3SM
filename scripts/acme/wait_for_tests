@@ -6,13 +6,14 @@ If the test passes, 0 is returned, otherwise a non-zero error code
 is returned.
 """
 
-import argparse, sys, os, doctest, time, threading, Queue
+import argparse, sys, os, doctest, time, threading, Queue, signal
 
 VERBOSE = False
 TEST_STATUS_FILENAME = "TestStatus"
 TEST_NOT_FINISHED_STATUS = ["GEN", "BUILD", "RUN", "PEND"]
 TEST_PASSED_STATUS = "PASS"
-SLEEP_INTERVAL_SEC = 5
+SLEEP_INTERVAL_SEC = 1
+SIGNAL_RECEIVED = False
 
 ###############################################################################
 def expect(condition, error_msg):
@@ -25,6 +26,12 @@ def verbose_print(msg):
 ###############################################################################
     if (VERBOSE):
         print msg
+
+###############################################################################
+def signal_handler(signum, frame):
+###############################################################################
+    global SIGNAL_RECEIVED
+    SIGNAL_RECEIVED = True
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -95,7 +102,7 @@ def parse_test_status_file(file_contents, test_path):
     return real_test_name, TEST_PASSED_STATUS
 
 ###############################################################################
-def wait_for_test(test_path, results, no_wait):
+def wait_for_test(test_path, results, wait):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
@@ -108,27 +115,32 @@ def wait_for_test(test_path, results, no_wait):
             test_status_fd = open(test_status_filepath, "r")
             test_status_contents = test_status_fd.read()
             test_name, test_status = parse_test_status_file(test_status_contents, test_path)
-            if (test_status in TEST_NOT_FINISHED_STATUS and not no_wait):
+            if (test_status in TEST_NOT_FINISHED_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
                 verbose_print("Waiting for test to finish")
             else:
                 results.put( (test_status, test_path) )
                 break
         else:
-            if (no_wait):
-                results.put( ("File '%s' doesn't exist" % test_status_filepath, test_path) )
-                break
-            else:
+            if (wait and not SIGNAL_RECEIVED):
                 verbose_print("File '%s' does not yet exist" % test_status_filepath)
                 time.sleep(SLEEP_INTERVAL_SEC)
+            else:
+                results.put( ("File '%s' doesn't exist" % test_status_filepath, test_path) )
+                break
 
 ###############################################################################
 def wait_for_tests(test_paths, no_wait):
 ###############################################################################
+    # Set up signal handling, we want to print results before the program
+    # is terminated
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
     results = Queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, no_wait))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait))
         t.daemon = True
         t.start()
 
