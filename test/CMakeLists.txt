@@ -64,9 +64,9 @@ TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc ${TIMING_LINK_LIB} )
 # Default timeout 4 min = 240s
 SET(DEFAULT_TEST_TIMEOUT 240)
 
-add_mpi_test("init_finialize_1_proc" "./pio_init_finalize" "" 1 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("init_finialize_2_proc" "./pio_init_finalize" "" 2 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("init_finalize_2_proc_with_args" "./pio_init_finalize" "--pio-tf-stride=2 --pio-tf-num-aggregators=2" 2 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("init_finialize_1_proc" "${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize" "" 1 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("init_finialize_2_proc" "${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize" "" 2 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("init_finalize_2_proc_with_args" "${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize" "--pio-tf-stride=2 --pio-tf-num-aggregators=2" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###
 # test pio_file_simple_tests
@@ -75,7 +75,7 @@ add_mpi_test("init_finalize_2_proc_with_args" "./pio_init_finalize" "--pio-tf-st
 ADD_EXECUTABLE(pio_file_simple_tests pio_file_simple_tests.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_file_simple_tests  piof pioc ${TIMING_LINK_LIB} )
 
-add_mpi_test("pio_file_simple_tests" "./pio_file_simple_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_file_simple_tests" "${CMAKE_CURRENT_BINARY_DIR}/pio_file_simple_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###
 # test pio_file_fail
@@ -84,7 +84,7 @@ add_mpi_test("pio_file_simple_tests" "./pio_file_simple_tests" "" 2 ${DEFAULT_TE
 ADD_EXECUTABLE(pio_file_fail pio_file_fail.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_file_fail  piof pioc ${TIMING_LINK_LIB} )
 
-add_mpi_test("pio_file_fail" "./pio_file_fail" "" 2 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_file_fail" "${CMAKE_CURRENT_BINARY_DIR}/pio_file_fail" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###
 # test ncdf_simple_tests
@@ -93,7 +93,7 @@ add_mpi_test("pio_file_fail" "./pio_file_fail" "" 2 ${DEFAULT_TEST_TIMEOUT})
 ADD_EXECUTABLE(ncdf_simple_tests ncdf_simple_tests.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(ncdf_simple_tests  piof pioc ${TIMING_LINK_LIB} )
 
-add_mpi_test("ncdf_simple_tests" "./ncdf_simple_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("ncdf_simple_tests" "${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###
 # test ncdf_get_put
@@ -102,8 +102,8 @@ add_mpi_test("ncdf_simple_tests" "./ncdf_simple_tests" "" 2 ${DEFAULT_TEST_TIMEO
 ADD_EXECUTABLE(ncdf_get_put ncdf_get_put.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(ncdf_get_put  piof pioc ${TIMING_LINK_LIB} )
 
-add_mpi_test("ncdf_get_put_1proc" "./ncdf_simple_tests" "" 1 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("ncdf_get_put_2proc" "./ncdf_simple_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("ncdf_get_put_1proc" "${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests" "" 1 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("ncdf_get_put_2proc" "${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###
 # test ncdf_fail
@@ -112,7 +112,7 @@ add_mpi_test("ncdf_get_put_2proc" "./ncdf_simple_tests" "" 2 ${DEFAULT_TEST_TIME
 ADD_EXECUTABLE(ncdf_fail ncdf_fail.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(ncdf_fail  piof pioc ${TIMING_LINK_LIB} )
 
-add_mpi_test("ncdf_fail" "./ncdf_fail" "" 2 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("ncdf_fail" "${CMAKE_CURRENT_BINARY_DIR}/ncdf_fail" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###
 # test pio_decomp_tests
@@ -121,17 +121,17 @@ add_mpi_test("ncdf_fail" "./ncdf_fail" "" 2 ${DEFAULT_TEST_TIMEOUT})
 ADD_EXECUTABLE(pio_decomp_tests pio_decomp_tests.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_decomp_tests  piof pioc ${TIMING_LINK_LIB} )
 
-add_mpi_test("pio_decomp_tests_1p" "./pio_decomp_tests" "" 1 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("pio_decomp_tests_2p" "./pio_decomp_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("pio_decomp_tests_3p" "./pio_decomp_tests" "" 3 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_1p" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "" 1 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_2p" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_3p" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "" 3 ${DEFAULT_TEST_TIMEOUT})
 
-add_mpi_test("pio_decomp_tests_4p_1agg" "./pio_decomp_tests" "--pio-tf-num-aggregators=1" 4 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("pio_decomp_tests_4p_2agg" "./pio_decomp_tests" "--pio-tf-num-aggregators=2" 4 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("pio_decomp_tests_4p_3agg" "./pio_decomp_tests" "--pio-tf-num-aggregators=3" 4 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_4p_1agg" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-aggregators=1" 4 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_4p_2agg" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-aggregators=2" 4 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_4p_3agg" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-aggregators=3" 4 ${DEFAULT_TEST_TIMEOUT})
 
-add_mpi_test("pio_decomp_tests_4p_1iop" "./pio_decomp_tests" "--pio-tf-num-io-tasks=1" 4 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("pio_decomp_tests_4p_2iop" "./pio_decomp_tests" "--pio-tf-num-io-tasks=2" 4 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("pio_decomp_tests_4p_3iop" "./pio_decomp_tests" "--pio-tf-num-io-tasks=3" 4 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_4p_1iop" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-io-tasks=1" 4 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_4p_2iop" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-io-tasks=2" 4 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_4p_3iop" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-io-tasks=3" 4 ${DEFAULT_TEST_TIMEOUT})
 
-add_mpi_test("pio_decomp_tests_4p_2iop_2str" "./pio_decomp_tests" "--pio-tf-num-io-tasks=2 --pio-tf-stride=2" 4 ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test("pio_decomp_tests_4p_2iop_1agg" "./pio_decomp_tests" "--pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1" 4 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_4p_2iop_2str" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-io-tasks=2 --pio-tf-stride=2" 4 ${DEFAULT_TEST_TIMEOUT})
+add_mpi_test("pio_decomp_tests_4p_2iop_1agg" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1" 4 ${DEFAULT_TEST_TIMEOUT})
