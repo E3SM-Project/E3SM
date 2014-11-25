@@ -400,8 +400,8 @@ contains
          !-------------------------------------------------------
          ! Put in a check for a negative rdirc value and abort.
          !-------------------------------------------------------
-         if ( tempr(i,j) .lt. 0 ) call shr_sys_abort( trim(subname)//' ERROR: Found a negative RTM_FLOW_DIRECTION. &
-              This is currently not supported. ' )
+         if ( tempr(i,j) .lt. 0 ) call shr_sys_abort( trim(subname)// &
+              ' ERROR: Found a negative RTM_FLOW_DIRECTION. This is currently not supported. ' )
          n = (j-1)*rtmlon + i
          rdirc(n) = nint(tempr(i,j))
       enddo
