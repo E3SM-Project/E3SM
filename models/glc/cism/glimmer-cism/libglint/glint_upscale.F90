@@ -167,6 +167,8 @@ contains
     ! Output fields are only valid on the main task.
     ! The upscaled fields are passed to the GCM land surface model, which has the option
     !  of updating the fractional area and surface elevation of glaciated gridcells.
+    ! If instance%zero_gcm_fluxes is true, then the upscaled versions of grofi, grofl and
+    ! ghflx are zeroed out
 
     use glimmer_paramets, only: thk0, GLC_DEBUG
     use glimmer_log
@@ -445,6 +447,12 @@ contains
           endif
        enddo
     enddo
+
+    if (instance%zero_gcm_fluxes == ZERO_GCM_FLUXES_TRUE) then
+       ghflx(:,:,0:nec) = 0.d0
+       grofi(:,:)   = 0.d0
+       grofl(:,:)   = 0.d0
+    end if
     
   end subroutine glint_upscaling_gcm
 

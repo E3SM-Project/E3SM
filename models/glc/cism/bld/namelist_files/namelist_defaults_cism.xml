@@ -136,6 +136,9 @@ now, it gives reasonable enough results for testing purposes. -->
 
 <test_coupling>.false.</test_coupling>
 
+<zero_gcm_fluxes glc_two_way_coupling="TRUE">0</zero_gcm_fluxes>
+<zero_gcm_fluxes glc_two_way_coupling="FALSE">1</zero_gcm_fluxes>
+
 <!-- =============================================================  -->
 <!-- group: cism.config: projection                                 -->
 <!-- =============================================================  -->

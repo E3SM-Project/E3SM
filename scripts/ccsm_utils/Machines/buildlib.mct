@@ -59,7 +59,7 @@ echo MCT_LIBDIR $MCT_LIBDIR
   #if ($runconf == 1) then
     echo "Running configure..."
     echo "for OS=$OS MACH=$MACH"
-    $GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf 
+    $GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf MODEL=mct
     #if($? != 0) then
     #  rm mct_conf*
     #endif 

@@ -1,6 +1,6 @@
 !
 ! Sample input file of global datasets to extract a region from. Only works
-! on standard 2D CLM files such as: fatmlndfrc, fsurdat, fpftdyn, 
+! on standard 2D CLM files such as: fatmlndfrc, fsurdat, flanduse_timeseries, 
 ! stream_fldfilename_ndep, stream_fldfilename_lightng, and/or 
 ! stream_fldfilename_popdens.
 !
@@ -15,7 +15,7 @@
 ! fatmlndfrc is REQUIRED!
  fatmlndfrc = '/glade/p/cesmdata/cseg/inputdata/share/domains/domain.lnd.fv1.9x2.5_gx1v6.090206.nc'
  fsurdat = '/glade/p/cesmdata/cseg/inputdata/lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr2000_c130927.nc'
- fpftdyn = '/glade/p/cesmdata/cseg/inputdata/lnd/clm2/surfdata_map/surfdata.pftdyn_1.9x2.5_rcp8.5_simyr1850-2100_c130524.nc'
+ flanduse_timeseries = '/glade/p/cesmdata/cseg/inputdata/lnd/clm2/surfdata_map/surfdata.pftdyn_1.9x2.5_rcp8.5_simyr1850-2100_c130524.nc'
 !
 ! The following files are interpolated by default so technically do NOT need
 ! to be extracted, but it will help performance.

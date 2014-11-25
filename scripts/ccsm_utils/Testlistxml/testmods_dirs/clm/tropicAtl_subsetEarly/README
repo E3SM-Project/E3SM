@@ -2,11 +2,5 @@ This testmods directory is meant to be used in conjunction with a 20th
 century transient case at resolution 1x1_tropicAtl. 
 
 This starts the simulation prior to the first year defined on that
-file, in order to test the logic for starting before the first pftdyn
+file, in order to test the logic for starting before the first landuse_timeseries
 year.
-
-NOTE: The fpftdyn path is currently set up to be yellowstone-specific,
-due to a limitation in CLM's build-namelist. Erik is adding
-functionality to build-namelist to allow putting $DIN_LOC_ROOT in the
-fpftdyn variable; once that's done, the user_nl_clm file can be made
-machine-agnostic.

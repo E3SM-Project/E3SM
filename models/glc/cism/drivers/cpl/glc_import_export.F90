@@ -58,7 +58,7 @@ contains
 
     !-------------------------------------------------------------------
     use glc_global_fields   , only: gfrac, gtopo, grofi, grofl, ghflx, &
-                                    ice_sheet_grid_mask   ! to coupler
+                                    ice_sheet_grid_mask, icemask_coupled_fluxes   ! to coupler
     use glc_route_ice_runoff, only: route_ice_runoff    
     use glc_override_frac   , only: frac_overrides_enabled, do_frac_overrides
     
@@ -104,8 +104,9 @@ contains
              g2x(index_g2x_Flgg_hflx(elev_class), g) = ghflx(i,jj,elev_class)
           enddo
 	  
-	  g2x(index_g2x_Sg_icemask, g) = ice_sheet_grid_mask(i,jj)
-	  
+          g2x(index_g2x_Sg_icemask, g) = ice_sheet_grid_mask(i,jj)
+          g2x(index_g2x_Sg_icemask_coupled_fluxes, g) = icemask_coupled_fluxes(i,jj)
+          
        enddo
     enddo
 

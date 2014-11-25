@@ -1,10 +1,26 @@
 Tag                   Who      Date  Summary
 ============================================================================================================================
+   clm4_5_1_r085    sacks 09/19/2014 replace conditionals with polymorphism for soil water retention curve
+   clm4_5_1_r084    sacks 09/18/2014 make glc_dyn_runoff_routing spatially-varying, based on input from glc
+   clm4_5_1_r083  muszala 09/17/2014 only update scripts and run new baselines.  this due to an error in yellowstone pgi test naming (clm_aux45 changed to aux_clm45)
+   clm4_5_1_r082  muszala 09/11/2014 Merge in a number of ED changes to address science bugs and infrastructure (partiulararly restarts)
+   clm4_5_1_r081 mvertens 08/24/2014 major infrastructure changes and directory reorganization under src
+   clm4_5_1_r080     erik 08/16/2014 Update externals to trunk version, allow eighth degree as a valid resolution
+   clm4_5_1_r079    andre 07/31/2014 G. Bisht (LBL) soil temperature refactor; machines update for goldbach-intel
+   clm4_5_1_r078  muszala 07/23/2014 add lai stream capability and the ability to run with V5 cruncep data
+   clm4_5_1_r077    andre 07/10/2014 Refactor from Jinyun Tang (LBL) to make hydrology more modular.
+   clm4_5_1_r076     erik 07/07/2014 Answer changes for fire code from Fang Li
+   clm4_5_75      muszala 05/30/2014 update externals to rtm1_0_38 and esmf_wrf_timemgr_140523
+   clm4_5_74        sacks 05/28/2014 misc. bfb changes - see detailed summary below
+   clm4_5_73         erik 05/28/2014 Add the stub ability for clm5_0 physics to CLM build system
+   clm4_5_72      muszala 05/05/2014 Introduce code for Ecosystem Demography (CLM(ED)) Model
    clm4_5_71        sacks 05/02/2014 2-way feedbacks for glacier, veg columns compute glacier SMB, and related changes
    clm4_5_70      muszala 04/18/2014 bring in SHR_ASSERT macros
    clm4_5_69        andre 03/18/2014 start unit testing build-namelist
    clm4_5_68         erik 03/07/2014 Update scripts to version that turns on transient CO2 streams for transient compsets, and update CISM (changes answers)
-   clm4_5_65     mvertens 03/06/2014 Turn off MEGAN vocs when crops is running
+   clm4_5_67     mvertens 03/06/2014 removed initSurfAlb as part of the initialization
+   clm4_5_66     mvertens 03/03/2014 refactoring of initialization and introduction of run-time finidat interpolation
+   clm4_5_65     mvertens 02/25/2014 Turn off MEGAN vocs when crops is running
    clm4_5_64      muszala 02/19/2014 fix and clean ncdio_pio.F90.in.  clean clm_time_manager.  update externals.
    clm4_5_63        sacks 02/14/2014 add some code needed for dynamic landunits; activate 0-weight veg landunit sometimes
    clm4_5_62         erik 02/10/2014 Get PTCLM working robustly, US-UMB test working, add CO2 streams to datm, add more consistency testing between compsets and user settings

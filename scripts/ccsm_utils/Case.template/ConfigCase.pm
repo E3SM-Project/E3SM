@@ -341,7 +341,7 @@ sub write_file
     } elsif ($filename =~ "env_test") {
        @groups = qw(case_test);
     } elsif ($filename =~ "env_archive") {
-       @groups = qw(case_archive run_dout);
+       @groups = qw(case_archive);
     }
 
     my $fh;
@@ -471,12 +471,17 @@ EOD
 <!-- ========================================================================== -->
 <!--                                                                            -->
 <!--       These are the variables specific to the short and long term          -->
-<!--       archiver. We recommend that users *NEVER* run diagnostics            -->
+<!--       archivers, and the variable time series file generation.             -->
+<!--       We recommend that users *NEVER* run diagnostics                      -->
 <!--       or post-processing packages in the same location as the short-term   -->
 <!--       (DOUT_S_ROOT.locked) archiver when the model job is running.         -->
 <!--       Instead, You may run these packages in the (DOUT_S_ROOT)             -->
 <!--       location which contains hard-links back to the files in the          -->
 <!--       (DOUT_S_ROOT.locked) directory.                                      -->
+<!--       For a detailed listing of the env_archive.xml file, run              -->
+<!--       ./st_archive -help                                                   -->
+<!--       To validate the env_archive.xml file using xmllint, run              -->
+<!--       xmllint -schema ./Tools/config_archive.xsd env_archive.xml           -->
 <!--                                                                            -->
 <!-- ========================================================================== -->
 

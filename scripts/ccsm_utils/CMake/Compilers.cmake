@@ -73,6 +73,8 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL XL)
   set(compiler_name ibm)
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
   set(compiler_name intel)
+elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
+  set(compiler_name pgi)
 endif()
 
 # Define CPP macro for the compiler.
@@ -145,6 +147,7 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
 
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL XL)
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
+elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
 endif()
 
 # Define C flags, analogous to the above Fortran block.

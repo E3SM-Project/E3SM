@@ -3,7 +3,7 @@
 #
 # clm build-namelist driver
 #
-# Placing all of build-namelist into BuildNamelist.pm means we can unit test the module.
+# Placing all of build-namelist into CLMBuildNamelist.pm means we can unit test the module.
 #
 require 5;
 
@@ -21,4 +21,3 @@ BEGIN {
 use CLMBuildNamelist qw(main);
 
 CLMBuildNamelist::main();
-

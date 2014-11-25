@@ -139,14 +139,6 @@ Only works when glc_nec is greater than 0.
        group="clm_inparm" valid_values="" >
 If TRUE, dynamically change areas and topographic heights over glacier points.
 Only works when glc_nec is greater than zero, and when coupled to CISM.
-Generally should agree with glc_dyn_runoff_routing.
-</entry>
-
-<entry id="glc_dyn_runoff_routing" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
-If TRUE, handle snow capping and runoff appropriately for dynamic glacier areas.
-Only works when glc_nec is greater than zero.
-Generally should agree with glc_do_dynglacier.
 </entry>
 
 <entry id="glc_snow_persistence_max_days" type="integer" category="clm_physics"
@@ -197,13 +189,25 @@ This downscaling is conservative.
 <default>Default: .true.</default>
 </entry>
 
+
+<entry id="use_ed" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the ED
+(ED = 'on' is EXPERIMENTAL NOT SUPPORTED!)
+</entry>
+
+<entry id="use_ed_spit_fire" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on spit fire (only relevant if ED is being used).
+</entry>
+
 <entry id="paramfile" type="char*256" category="datasets"
        input_pathname="abs" group="clm_inparm" valid_values="" >
 Full pathname datafile with plant function type (PFT) constants combined with
 constants for biogeochem modules
 </entry>
 
-<entry id="fpftdyn" type="char*256" category="datasets"
+<entry id="flanduse_timeseries" type="char*256" category="datasets"
        input_pathname="abs" group="clm_inparm" valid_values="" >
 Full pathname of time varying PFT data file. This causes the land-use types of
 the initial surface dataset to vary over time.
@@ -822,6 +826,48 @@ Mapping method from Nitrogen deposition input file to the model resolution
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- lai_streams streams Namelist (when phys = CLM4_5)                              -->
+<!-- ========================================================================================  -->
+
+<!-- LAI -->
+<entry id="use_lai_streams" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on use of LAI streams in place of the LAI on the surface dataset when using Satellite Phenology mode.
+(EXPERIMENTAL and NOT tested)
+</entry>
+
+<entry id="stream_year_first_lai" type="integer" category="datasets"
+       group="lai_streams" valid_values="" >
+First year to loop over for LAI data
+</entry>
+
+<entry id="stream_year_last_lai" type="integer" category="datasets"
+       group="lai_streams" valid_values="" >
+Last year to loop over for LAI data
+</entry>
+
+<entry id="model_year_align_lai" type="integer" category="datasets"
+       group="lai_streams" valid_values="" >
+Simulation year that aligns with stream_year_first_lai value
+</entry>
+
+<entry id="stream_fldfilename_lai" type="char*256(30)" category="datasets"
+       input_pathname="abs" group="lai_streams" valid_values="" >
+Filename of input stream data for LAI
+</entry>
+
+<entry id="lai_mapalgo" type="char*256" category="datasets"
+       group="lai_streams" valid_values="bilinear,nn,nnoni,nnonj,spval,copy" >
+Mapping method from LAI input file to the model resolution
+    bilinear = bilinear interpolation
+    nn       = nearest neighbor
+    nnoni    = nearest neighbor on the "i" (longitude) axis
+    nnonj    = nearest neighbor on the "j" (latitude) axis
+    spval    = set to special value
+    copy     = copy using the same indices
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- light_streams streams Namelist (when CN an CLM4_5 is active)                              -->
 <!-- ========================================================================================  -->
 
@@ -957,7 +1003,7 @@ CLM run type.
 <entry id="res" type="char*30" category="default_settings"
        group="default_settings"  
        valid_values=
-"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne16np4,ne30np4,ne60np4,ne120np4,ne240np4,1km-merge-10min">
+"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,0.125x0.125,ne4np4,ne16np4,ne30np4,ne60np4,ne120np4,ne240np4,1km-merge-10min">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
 </entry> 
@@ -1211,7 +1257,7 @@ Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes wi
 <!-- ========================================================================================  -->
 
 <entry id="oldfflag" type="integer" category="clm_physics"
-       group="clm_hydrology1_inparm" valid_values="0,1" >
+       group="clm_canopyhydrology_inparm" valid_values="0,1" >
 Use old snow cover fraction from Niu et al. 2007
 (deprecated -- will be removed)
 </entry>

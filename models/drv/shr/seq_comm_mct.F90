@@ -51,6 +51,7 @@ module seq_comm_mct
   public seq_comm_setnthreads
   public seq_comm_getnthreads
   public seq_comm_printcomms
+  public seq_comm_get_ncomps
 #ifdef USE_ESMF_LIB
   public seq_comm_getcompstates
   public seq_comm_setcompstates
@@ -182,7 +183,11 @@ module seq_comm_mct
 
 !=======================================================================
 contains
-!=======================================================================
+!======================================================================
+  integer function seq_comm_get_ncomps() 
+    seq_comm_get_ncomps = ncomps
+  end function seq_comm_get_ncomps
+
   
   subroutine seq_comm_init(Comm_in, nmlfile)
       

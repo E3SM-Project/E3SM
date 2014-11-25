@@ -62,6 +62,9 @@ module glint_type
   integer, parameter :: PRECIP_STANDARD = 1    ! use large-scale precip field as is
   integer, parameter :: PRECIP_RL = 2          ! use Roe-Lindzen paramterization
   
+  integer, parameter :: ZERO_GCM_FLUXES_FALSE = 0 ! send true fluxes to the GCM
+  integer, parameter :: ZERO_GCM_FLUXES_TRUE  = 1 ! zero out all fluxes sent to the GCM
+
   !TODO - Add other Glint options here to avoid hardwiring of case numbers?
 
   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -174,6 +177,14 @@ module glint_type
      integer :: use_mpint = 0
    
      !*FD Flag to control if mean-preserving interpolation is used
+
+     integer :: zero_gcm_fluxes = ZERO_GCM_FLUXES_FALSE
+     
+     !*FD Whether to zero out the fluxes (e.g., calving flux) sent to the GCM
+     !*FD \begin{description}
+     !*FD \item[0] send true fluxes to the GCM
+     !*FD \item[1] zero out all fluxes sent to the GCM
+     !*FD \end{description}
 
      ! Climate parameters ----------------------------------------------------------
 
@@ -400,6 +411,7 @@ contains
        call GetValue(section,'mbal_accum_time',mbal_time_temp)
        call GetValue(section,'ice_tstep_multiply',instance%ice_tstep_multiply)
        call GetValue(section,'mean_preserving',instance%use_mpint)
+       call GetValue(section,'zero_gcm_fluxes',instance%zero_gcm_fluxes)
     end if
 
     if (mbal_time_temp > 0.0) then
@@ -527,6 +539,9 @@ contains
        write(message,*) 'Unrecognised value of instance%use_mpint'
        call write_log(message,GM_FATAL)
     end select
+
+    write(message,*) 'zero_gcm_fluxes: ', instance%zero_gcm_fluxes
+    call write_log(message)
 
   end subroutine glint_i_printconfig
 

@@ -5,6 +5,7 @@
 #===================================================================
 use strict;
 use warnings;
+#use diagnostics;
 use Cwd qw( getcwd abs_path chdir);
 use English;
 use Getopt::Long;
@@ -99,7 +100,7 @@ SYNOPSIS
                           $scriptsroot/ccsm_utils/Testlistxml/testlist.xml]
       [-xml_mach          target machine for xml list of tests]
       [-xml_compiler      target compiler for xml list of tests]
-      [-xml_category      one of prealpha,prebeta or prerelease]
+      [-xml_category      one of the valid test categories (such as prealpha,prebeta,aux_scripts or prerelease)]
 
 REQUIRED ARGUMENTS:
 
@@ -115,14 +116,22 @@ REQUIRED ARGUMENTS:
 
       -xml_mach     <MACHINE>   The name of the machine the test suite is to be
                                 run on.  To run tests for EVERY machine in 
-                                testlist.xml, 'all' can be specified. 
+                                testlist.xml, 'all' can be specified (will run with
+                                the machine given in -mach option). 
 
       -xml_compiler <COMPILER>  The name of the compiler that the suite is 
-                                to be built with.  
+                                to be built with.  To run tests for EVERY compiler in 
+                                testlist.xml, 'all' can be specified (will run with
+                                the compiler given in -compiler option). Also
+                                you can use a valid perl regular expression to
+                                match multiple compilers (i.e. .+).
 
       -xml_category <CATEGORY>  The 'category' of the test suite being run.  
                                 Examples include: prealpha, prebeta, prerelease,
-                                aux_clm, etc. 
+                                aux_clm45, etc. To run tests for EVERY category in 
+                                testlist.xml, 'all' can be specified. Also
+                                you can use a valid perl regular expression to
+                                match multiple categories (i.e. aux_clm.+).
 
       For using the legacy text-based test lists:
    
@@ -197,7 +206,7 @@ OPTIONS:
  
       -xml_compiler <name> Specify a compiler name to parse the xml_list with
 
-      -xml_category <name> Specify either prealpha, prebeta, prerelease, etc. 
+      -xml_category <name> Specify either prealpha, prebeta, aux_scripts, prerelease, etc. 
 
       -mach_dir <dir>      Specify an alternate Machines directory.  
 
@@ -301,7 +310,6 @@ EXAMPLES
       Just like 3, but the tests will be built.  Useful if one wants to check 
       that the mode builds for the specified test suite, or to build a test 
       suite to be run later.  
-
 
       Creating single tests:
   
@@ -543,7 +551,7 @@ sub checkOptions
   # check whether the specified options are set to either on or off.  
   # If not, die with a warning. 
   my @onoff = ( "on", "off");
-  my @fields = qw/ clean autosubmit nobatch nobuild reruntests /;
+  my @fields = qw/ clean autosubmit nobatch nobuild reruntests/;
   foreach my $field(@fields)
   {
     if (defined $opts{'field'} && $opts{$field} !~ /^(on|off)$/)
@@ -588,10 +596,16 @@ sub checkOptions
     # otherwise use the supplied machine value. 
     if( defined $opts{'nlcompareonly'})
 	{
+        # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
+        #$cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", "yellowstone", 0);
+        ###############################################################################################
         $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", "yellowstone");
 	}
 	else
 	{
+        # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
+        #$cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine, 0);
+        ###############################################################################################
         $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine);
 	}
 
@@ -616,7 +630,8 @@ sub checkOptions
   {
     print "----------------------------------------------------------------------------\n";
     print "Offline namelist comparision option invoked\n";
-    print "Setting autosubmit, nobatch, nobuild, and reruntests to off!\n";
+    print "Setting autosubmit and reruntests to off!\n";
+    print "And nobatch and nobuild to on!\n";
     print "----------------------------------------------------------------------------\n";
 
     $opts{'autosubmit'} = 'off';
@@ -782,7 +797,16 @@ sub ExpandXmlList
 	      
 	      my $test_val;
 	      if($opts{'nlcompareonly'}){
-		  $test_val="SBN";
+                # Replace the test type with SBN, see error below...
+                $test_val = "SBN";
+                ############ WARNING: The following code causes a panic later on in the system #####
+                #                     See bug 2024. Erik Kluzek perl5.10, Aug/14/2014              #
+                # Replace the test type with SBN, but keep the options with the underscores.       #
+                #my $optidx = index( $test_attr{'name'}, "_" );
+                #if ( $optidx >= 0 ) {
+                   #$test_val .= substr( $test_attr{'name'}, $optidx );
+                #}
+                ############ WARNING: ##############################################################
 	      }else{
 		  $test_val = $test_attr{'name'}; 
 	      }
@@ -800,7 +824,7 @@ sub ExpandXmlList
 
 		      my $machine_val  = $mach_elem->get_text();
 		      my $testname = "$test_val" . ".$grid_val" . ".$compset_val." ;
-		      if ($testcategory eq "all" or $testtype_val eq $testcategory) 
+		      if ($testcategory eq "all" or $testtype_val =~ /^${testcategory}$/) 
 		      {
 			  if ($testmach eq "all" or $machine_val eq $testmach )
 			  {
@@ -813,7 +837,7 @@ sub ExpandXmlList
 			      }else{
 				  $testname .= $machine_val;
 			      }
-			      if($testcompiler eq "all" or $compiler_val eq $testcompiler)
+			      if($testcompiler eq "all" or $compiler_val =~ /^${testcompiler}$/)
 			      {
 				  if($testcompiler eq "all"){
 				      if($opts{'compiler'}){
@@ -1080,6 +1104,13 @@ sub checkTestCase
         $testhash->{'compset_file'} = $opts{'compset_file'};
      }
   } 
+  # Finally, if the test directory already exists, inform the user and exit.
+  my $testdirectory = "$opts{'testroot'}/$testhash->{'case'}";
+  if( -e  $testdirectory)
+  {
+    print "The test directory $testdirectory already exists! Aborting..\n";
+	exit(1);
+  }
 }
 
 
@@ -1279,6 +1310,26 @@ sub writeEnvTestXML
   $cfg_ref->set('TEST_TESTID', $opts{'testid'});
   $cfg_ref->set('TEST_ARGV', $test->{'test_argv'});
   $cfg_ref->set('CASEBASEID', $test->{'casebaseid'});
+
+  ### WARNING : ######################################################################################
+  # The following calls are wrong, but the right calls (just below) causes problems -- see bug 2024
+  #if(defined $opts{'generate'})
+  #{
+    #$cfg_ref->set('BASELINE_NAME_GEN', $opts{'generate'});
+  #}
+  #if(defined $opts{'compare'})
+  #{
+    #$cfg_ref->set('BASELINE_NAME_CMP', $opts{'compare'});
+  #}
+  #if(defined $opts{'basegen_case'})
+  #{
+    #$cfg_ref->set('BASEGEN_CASE', $opts{'basegen_case'});
+  #}
+  #if(defined $opts{'basecmp_case'})
+  #{
+    #$cfg_ref->set('BASECMP_CASE', $opts{'basecmp_case'});
+  #}
+  ### WARNING : ######################################################################################
   $cfg_ref->set('BASELINE_NAME_GEN', $opts{'generate'});
   $cfg_ref->set('BASELINE_NAME_CMP', $opts{'compare'});
   $cfg_ref->set('BASEGEN_CASE', $test->{'basegen_case'});
@@ -1317,6 +1368,8 @@ sub writeEnvTestXML
   {
     $cfg_ref->set('MODEL_GEN_COMP',    $opts{'model_gen_comp'});
   }
+  # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
+  #$cfg_ref->write_file("$caseroot/env_test.xml", "xml", $opts{'cesmroot'} );
   $cfg_ref->write_file("$caseroot/env_test.xml");
   
 }
@@ -1826,9 +1879,7 @@ sub main
 	}
 	writeTestListXML(\@testspec, $cfg_ref);
 	namelistCompareSuite(@testspec);
-	if(! $opts{'nlcompareonly'}){
-	    testBuildSubmit();
-	}
+	testBuildSubmit();
 	if($opts{'compare'} or $opts{'generate'}){
 	    my $cnt=0;
 	    my $pass=0;

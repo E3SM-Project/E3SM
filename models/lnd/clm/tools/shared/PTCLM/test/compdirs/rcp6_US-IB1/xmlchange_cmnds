@@ -1,12 +1,12 @@
 # xmlchange commands written by PTCLMmkdata:
-# ../PTCLMmkdata --verbose --pftgrid --clmnmlusecase=1850-2100_rcp6_transient --cesm_root ../../../../../../.. -s US-IB1 -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/rcp6grd_file_creation 
+# ../PTCLMmkdata --verbose --pftgrid --clmnmlusecase=1850-2100_rcp6_transient --cesm_root ../../../../../../.. -s US-IB1 -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/rcp6grd_file_creation 
 ./xmlchange CLM_USRDAT_NAME=1x1pt_US-IB1
 ./xmlchange DATM_CLMNCEP_YR_START=2005
 ./xmlchange DATM_CLMNCEP_YR_END=2007
 ./xmlchange CLM_BLDNML_OPTS='-mask navy'
 ./xmlchange MPILIB=mpi-serial
-./xmlchange ATM_DOMAIN_PATH=/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/rcp6grd_file_creation/1x1pt_US-IB1
-./xmlchange LND_DOMAIN_PATH=/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/rcp6grd_file_creation/1x1pt_US-IB1
+./xmlchange ATM_DOMAIN_PATH=/glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/rcp6grd_file_creation/1x1pt_US-IB1
+./xmlchange LND_DOMAIN_PATH=/glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/rcp6grd_file_creation/1x1pt_US-IB1
 ./xmlchange ATM_DOMAIN_FILE=domain.lnd.1x1pt_US-IB1_navy.140204.nc
 ./xmlchange LND_DOMAIN_FILE=domain.lnd.1x1pt_US-IB1_navy.140204.nc
 ./xmlchange CALENDAR=GREGORIAN
@@ -15,3 +15,4 @@
 ./xmlchange RUN_STARTDATE=2005-01-01
 ./xmlchange DATM_CLMNCEP_YR_ALIGN=2005
 ./xmlchange DIN_LOC_ROOT=/glade/p/cesmdata/cseg/inputdata
+./xmlchange DIN_LOC_ROOT_CLMFORC=/glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/rcp6grd_file_creation

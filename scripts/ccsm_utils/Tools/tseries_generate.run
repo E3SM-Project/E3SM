@@ -1,0 +1,113 @@
+#! /bin/tcsh -f
+#BSUB -n 4
+#BSUB -R "span[ptile=15]"
+#BSUB -q regular
+#BSUB -N
+#BSUB -a poe
+#BSUB -x
+#BSUB -o tseries_cesm.stdout.%J
+#BSUB -e tseries_cesm.stderr.%J
+#BSUB -J cesm_tseries_generator
+#BSUB -W 1:00
+#BSUB -P P93300014
+set maxthrds = 2
+source /glade/apps/opt/lmod/lmod/init/csh
+module load perlmods
+# ---------------------------------------- 
+# PE LAYOUT FOR TSERIES GENERATION
+#   total number of tasks  = 210 
+#   maximum threads per task = 2 
+# CURRENLTY TSERIES GENERATION ONLY WORKING ON YELLOWSTONE 
+# WITH MONTHLY HISTORY SLICE INPUT DATA.
+# This script is for debugging only.
+# ---------------------------------------- 
+cd /glade/u/home/aliceb/sandboxes/runs/b.e13.B1850CN.f19_g16.001
+
+./Tools/ccsm_check_lockedfiles || exit -1
+source ./Tools/ccsm_getenv     || exit -2
+
+if ($BUILD_COMPLETE != "TRUE") then
+  echo "BUILD_COMPLETE is not TRUE"
+  echo "Please rebuild the model interactively"
+  exit -2
+endif
+
+# BATCHQUERY is in env_run.xml
+setenv LBQUERY "TRUE"
+if !($?BATCHQUERY) then
+  setenv LBQUERY "FALSE"
+  setenv BATCHQUERY "undefined"
+else if ( "$BATCHQUERY" == 'UNSET' ) then
+  setenv LBQUERY "FALSE"
+  setenv BATCHQUERY "undefined"
+endif
+
+# BATCHSUBMIT is in env_run.xml
+setenv LBSUBMIT "TRUE"
+if !($?BATCHSUBMIT) then
+  setenv LBSUBMIT "FALSE"
+  setenv BATCHSUBMIT "undefined"
+else if ( "$BATCHSUBMIT" == 'UNSET' ) then
+  setenv LBSUBMIT "FALSE"
+  setenv BATCHSUBMIT "undefined"
+endif
+
+# --- Determine time-stamp/file-ID string ---
+setenv LID "`date +%y%m%d-%H%M%S`"
+
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+echo "tseries_generate.run started $sdate" >>& $CASEROOT/CaseStatus
+setenv MP_LABELIO yes
+setenv OMP_NUM_THREADS $maxthrds
+if ( "$MPILIB" == "mpi-serial" ) then
+##    $EXEROOT/cesm.exe >&! cesm.log.$LID
+else
+##   mpirun.lsf  $EXEROOT/cesm.exe >&! cesm.log.$LID
+    if( $maxthrds > 1 ) then
+      unsetenv MP_PE_AFFINITY
+      unsetenv MP_TASK_AFFINITY
+      unsetenv MP_CPU_BIND_LIST 
+##      mpirun.lsf $CESMDATAROOT/tools/bin/hybrid_launch  $EXEROOT/cesm.exe >&! cesm.log.$LID
+    else
+      setenv TARGET_PROCESSOR_LIST AUTO_SELECT
+##      mpirun.lsf $CESMDATAROOT/tools/bin/launch  $EXEROOT/cesm.exe >&! cesm.log.$LID
+   endif
+endif
+
+##wait
+
+# -------------------------------------------------------------------------
+# For Postprocessing
+# -------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# TODO - check successful run and st_archive completed - look in an st_archive.log file
+# -------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# Generate time series variable files - currently only working on yellowstone
+# -------------------------------------------------------------------------
+if ($DOUT_S == 'TRUE' && $DOUT_S_GENERATE_TSERIES == 'TRUE') then
+    if ($DOUT_S_SAVE_ALL_ON_DISK == 'TRUE' && $MACH == 'yellowstone') then
+	echo "Generating variable time series files to $DOUT_S_ROOT"
+	if ($DOUT_S_SAVE_HISTORY_FILES == 'FALSE') then
+	    echo "*WARNING* successful generation of the variable time series files"
+	    echo "will delete all the time slice history files in $DOUT_S_ROOT"
+	else
+	    echo "History time slice files will be saved after variable time series files"
+	    echo "are generated. Please manually remove history files in order to"
+	    echo "conserve disk space."
+	 endif
+	 cd $CASEROOT/Tools
+	 mpirun.lsf ./cesm_tseries_generator.py >>& $CASEROOT/tseriesStatus
+	 cd $CASEROOT
+         echo "Completed generating variable time series files to $DOUT_S_ROOT"
+     else
+	 echo "Variable time series file generation depends on $DOUT_S and $DOUT_S_SAVE_ALL_ON_DISK set to TRUE"
+	 echo "Variable time series files were not generated."   
+     endif
+endif
+
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+echo "tseries_generate.run ended $sdate" >>& $CASEROOT/CaseStatus
+echo "see $CASEROOT/tseriesStatus for details"

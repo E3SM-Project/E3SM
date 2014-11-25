@@ -1,4 +1,3174 @@
 ===============================================================
+Tag name:  clm4_5_1_r085
+Originator(s):  sacks (Bill Sacks)
+Date: Fri Sep 19 10:22:30 MDT 2014
+One-line Summary: replace conditionals with polymorphism for soil water retention curve
+
+Purpose of changes:
+
+The main motivation for this tag was the need to introduce a
+soil_suction_inverse routine, which will be used for irrigation. It is important
+that soil_suction_inverse remains consistent with soil_suction for every soil
+water retention curve method. In talking with Ben Andre and Erik, we felt the
+best way to ensure this consistency was to have a separate, small module for
+each soil retention curve method. We felt the best way to implement this was via
+polymorphism. Polymorphism is arguably overkill in this simple case, but we
+thought it would be good to convert it to polymorphism partly as an example that
+we and others can follow in more complex cases where it will provide greater
+benefit.
+
+To add a new soil retention curve method:
+
+   (1) Create a module similar to
+   SoilWaterRetentionCurveClappHornberg1978Mod.F90
+   
+   (2) Modify the select case statement in SoilWaterRetentionCurveFactoryMod.F90
+   so that it is able to create an instance of your new type
+
+Note that this refactor also combines the soil_suction and soil_hk
+parameterization options into a single option. Dave Lawrence and Rosie Fisher
+felt that was preferable, and Jinyun Tang was okay with this.
+
+Requirements for tag: N/A
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID):
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: none
+
+Describe any changes made to the namelist: none
+
+List any changes to the defaults for the boundary datasets: none
+
+Describe any substantial timing or memory changes: none
+
+Code reviewed by: andre, muszala, Jinyun Tang
+
+List any svn externals directories updated (csm_share, mct, etc.): none
+
+List all files eliminated:
+
+========= Replaced with the 3 new files noted below
+D       models/lnd/clm/src/biogeophys/SoiWatRetCurveParMod.F90
+
+List all files added and what they do:
+
+========= Replacement for SoiWatRetCurveParMod, implemented using
+          polymorphism. Note that I have also added a soil_suction_inverse
+          routine, which is not yet used or tested. I'll be using (and testing)
+          this in an upcoming tag, where I refactor the irrigation code to use this.
+A       models/lnd/clm/src/biogeophys/SoilWaterRetentionCurveMod.F90
+A       models/lnd/clm/src/biogeophys/SoilWaterRetentionCurveFactoryMod.F90
+A       models/lnd/clm/src/biogeophys/SoilWaterRetentionCurveClappHornberg1978Mod.F90
+
+List all existing files that have been modified, and describe the changes:
+
+========= Minor changes to accommodate the refactored code
+M       models/lnd/clm/src/main/clm_initializeMod.F90
+M       models/lnd/clm/src/main/init_hydrology.F90
+M       models/lnd/clm/src/main/clm_driver.F90
+M       models/lnd/clm/src/biogeophys/CanopyFluxesMod.F90
+M       models/lnd/clm/src/biogeophys/SoilWaterMovementMod.F90
+M       models/lnd/clm/src/biogeophys/SoilMoistStressMod.F90
+M       models/lnd/clm/src/biogeophys/HydrologyNoDrainageMod.F90
+
+
+CLM testing:
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel: ok
+    yellowstone_pgi: ok
+    yellowstone_gnu: NOT RUN
+    goldbach_nag: ok
+    goldbach_intel: ok
+
+CLM tag used for the baseline comparisons: clm4_5_1_r084
+
+Changes answers relative to baseline: NO - bfb
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_1_r084
+Originator(s):  sacks (Bill Sacks)
+Date: Thu Sep 18 14:39:44 MDT 2014
+One-line Summary: make glc_dyn_runoff_routing spatially-varying, based on input from glc
+
+Purpose of changes:
+
+Dave Lawrence, Bill Lipscomb and Jeremy Fyke have pointed out that
+glc_dyn_runoff_routing needs to be spatially-varying: Even when we're coupling
+to CISM, we should continue to use the old scheme in regions that don't have an
+active icesheet model underneath (which currently includes Antarctica and all of
+the world's smaller glaciers - i.e., everything except Greenland). Furthermore,
+we have introduced a new ability into CISM to run in diagnostic mode, without
+sending calving/runoff fluxes to the coupler. In this case, too, CLM should
+revert to using the old scheme (glc_dyn_runoff_routing = .false.).
+
+To accomplish both of these things, I have introduced a new coupling field,
+through which GLC tells CLM which areas have an icesheet that is "active" in the
+sense of sending fluxes to the coupler. In this CLM tag, CLM sets a
+spatially-varying version of glc_dyn_runoff_routing based on this new coupler
+field - replacing the old, namelist-settable version of this flag.
+
+Requirements for tag:
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID):
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: none
+
+Describe any changes made to the namelist:
+
+  - removed glc_dyn_runoff_routing
+
+List any changes to the defaults for the boundary datasets: none
+
+Describe any substantial timing or memory changes: none
+
+Code reviewed by: self
+
+List any svn externals directories updated (csm_share, mct, etc.):
+
+  drv: drvseq5_0_15 -> drvseq5_0_17
+    - fix for some multi-instance runs
+    - add icemask_coupled_fluxes field
+
+  cism: cism1_140602 -> cism1_140914
+    - Add zero_gcm_fluxes option; send icemask_coupled_fluxes field to coupler
+
+  scripts: scripts4_140916b -> scripts4_140916c
+    - Rename CLM_UPDATE_GLC_AREAS to GLC_TWO_WAY_COUPLING
+
+List all files eliminated: none
+
+List all files added and what they do: none
+
+List all existing files that have been modified, and describe the changes:
+
+========= Rename CLM_UPDATE_GLC_AREAS xml variable to GLC_TWO_WAY_COUPLING.
+          Remove glc_dyn_runoff_routing namelist variable (this is now a
+          spatially-varying field, tied more tightly to CISM).
+M       models/lnd/clm/bld/namelist_files/namelist_definition_clm4_5.xml
+M       models/lnd/clm/bld/CLMBuildNamelist.pm
+M       models/lnd/clm/bld/unit_testers/build-namelist_test.pl
+M       models/lnd/clm/bld/user_nl_clm
+M       models/lnd/clm/bld/env_run.xml
+
+========= Receive icemask_coupled_fluxes from CISM
+M       models/lnd/clm/src/cpl/lnd_import_export.F90
+M       models/lnd/clm/src/cpl/clm_cpl_indices.F90
+
+========= Set spatially-varying glc_dyn_runoff_routing field based on
+          icemask_coupled_fluxes, and use this in place of the old scalar
+          glc_dyn_runoff_routing flag
+M       models/lnd/clm/src/main/glc2lndMod.F90
+M       models/lnd/clm/src/main/clm_driver.F90
+M       models/lnd/clm/src/main/clm_varctl.F90
+M       models/lnd/clm/src/main/controlMod.F90
+M       models/lnd/clm/src/biogeophys/BalanceCheckMod.F90
+M       models/lnd/clm/src/biogeophys/HydrologyDrainageMod.F90
+M       models/lnd/clm/src/dyn_subgrid/dynSubgridDriverMod.F90
+
+========= Add write statement to workaround a pgi compiler problem
+M       models/lnd/clm/src/main/restFileMod.F90
+
+CLM testing:
+
+  build-namelist tests:
+
+    yellowstone: ok (baseline comparisons fail for clm45 & clm50, as expected)
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel: ok
+    yellowstone_pgi: ok
+    yellowstone_gnu: NOT RUN
+    goldbach_nag: ok
+    goldbach_intel: ok
+
+    Note: Most testing was run on glc_runoff_routing_n06_clm4_5_1_r083. After
+    that tag, I added the following write statement in restFileMod, as a
+    workaround for a PGI compiler bug:
+
+       write(iulog,*) 'about to call aerosol_vars%restart: ', ubound(waterstate_vars%h2osoi_ice_col)    
+
+    After that addition, I just reran a subset of tests: 6 yellowstone-intel
+    tests, 10 yellowstone-pgi tests (including the 2 that had failed due to the
+    compiler bug), and 5 goldbach-nag tests. 
+
+NOTE: Unit test build is currently failing due to a change in r082. Stefan is
+working on a fix.
+
+CLM tag used for the baseline comparisons: clm4_5_1_r083
+
+Changes answers relative to baseline: YES
+
+  Summarize any changes to answers, i.e.,
+    - what code configurations: CLM45 with CISM (i.e., IG)
+    - what platforms/compilers: all
+    - nature of change (roundoff; larger than roundoff/same climate; new climate): 
+
+    (1) Large changes in runoff from glaciers in IG compsets, due to setting
+    glc_dyn_runoff_routing to .false. outside of Greenland.
+
+    (2) Roundoff-level changes in icemask for some resolutions and compilers,
+    due to changes in the cism external.
+
+   If bitwise differences were observed, how did you show they were no worse
+   than roundoff? For icemask changes: examined cprnc RMS errors. For other
+   changes, diffs are greater than roundoff.
+
+   If this tag changes climate describe the run(s) done to evaluate the new
+   climate (put details of the simulations in the experiment database)
+       - casename: N/A
+
+   URL for LMWG diagnostics output used to validate new climate: N/A
+	
+===============================================================
+===============================================================
+Tag name:  clm4_5_1_r083
+Originator(s):  muszala (Stefan Muszala)
+Date: Wed Sep 17 09:21:31 MDT 2014
+One-line Summary: only update scripts and run new baselines.  this due to an error in yellowstone pgi test naming (clm_aux45 changed to aux_clm45)
+
+Purpose of changes: Update scripts due to an error in a previous scripts tag in which I named pgi tests as clm_aux45 instead
+of aux_clm45.  These were for tests moved from goldbach to yellowstone.
+
+Requirements for tag: N/A
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID): N/A
+
+Known bugs (include bugzilla ID): N/A
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: N/A
+
+Describe any changes made to the namelist: N/A
+
+List any changes to the defaults for the boundary datasets: N/A
+
+Describe any substantial timing or memory changes: N/A
+
+Code reviewed by: self
+
+List any svn externals directories updated (csm_share, mct, etc.): scripts4_140910 -> scripts4_140916b
+
+List all files eliminated: N/A
+
+List all files added and what they do: N/A
+
+List all existing files that have been modified, and describe the changes: N/A
+
+- update test list failures
+M       models/lnd/clm/bld/unit_testers/xFail/expectedClmTestFails.xml
+
+CLM testing:
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    WJS: note: Stef told me that he actually ran all the yellowstone tests, and
+    all were okay
+
+    yellowstone_intel - 40 OK 
+    yellowstone_pgi
+
+    goldbach_nag      - 40 OK, 45 OK 
+    goldbach_intel    - 40 OK, 45 OK
+
+Note 1:  Due to the fact that in older baselines component_gen_comp was failing due to a scripts error (now fixed)
+some older baselines don't have the clm history files.  As one example:
+
+   BFAIL ERI_D.f10_f10.ICRUCLM50BGC.goldbach_intel.clm-reduceOutput.compare_hist.clm4_5_1_r082 
+   - rerun.  compare against clm4_5_1_r081, then it passes.
+   PASS  ERI_D.f10_f10.ICRUCLM50BGC.goldbach_intel.clm-reduceOutput 
+   PASS  ERI_D.f10_f10.ICRUCLM50BGC.goldbach_intel.clm-reduceOutput.memleak
+   PASS  ERI_D.f10_f10.ICRUCLM50BGC.goldbach_intel.clm-reduceOutput.compare_hist.clm4_5_1_r082_oldPgi 
+   PASS  ERI_D.f10_f10.ICRUCLM50BGC.goldbach_intel.clm-reduceOutput.memcomp.clm4_5_1_r082_oldPgi 
+   PASS  ERI_D.f10_f10.ICRUCLM50BGC.goldbach_intel.clm-reduceOutput.tputcomp.clm4_5_1_r082_oldPgi 
+   PASS ERI_D.f10_f10.ICRUCLM50BGC.goldbach_intel.clm-reduceOutput.C.140917-082253.nlcomp
+
+   For these tests, I made sure that clm2 history files were in the clm4_5_1_r083 baseline dirs.  They
+   should pass going forward.
+
+   ERI_D.f10_f10.ICRUCLM50BGC.goldbach_intel.clm-reduceOutput
+   PEM.f10_f10.ICLM45BGCCROP.goldbach_intel.clm-crop
+   SSP.f19_g16.I1850CLM45BGC.yellowstone_pgi.clm-default
+
+Note 2: For these N2 tests, there was a scripts problem with st_archiver in the previous tag.  These should pass next time.
+   BFAIL ERI_N2.f19_g16.ICRUCLM45BGCCROP.yellowstone_intel.compare_hist.clm4_5_1_r082 
+   BFAIL ERI_N2.f19_g16.ICRUCLM45BGCCROP.yellowstone_intel.clm-default.compare_hist.clm4_5_1_r082 
+   BFAIL ERI_N2.f19_g16.ICRUCLM45BGCCROP.yellowstone_intel.clm-default.clm2.h0.compare_hist.clm4_5_1_r082 
+   BFAIL ERI_N2.f19_g16.ICRUCLM45BGCCROP.yellowstone_intel.clm-default.clm2.h1.compare_hist.clm4_5_1_r082
+
+CLM tag used for the baseline comparisons: clm4_5_1_r082
+
+Changes answers relative to baseline: No
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_1_r082
+Originator(s):  muszala (Stefan Muszala)
+Date: Thu Sep 11 14:07:58 MDT 2014
+One-line Summary: Merge in a number of ED changes to address science bugs and infrastructure (particularly restarts)
+
+Purpose of changes: Merge in ED changes.  Most of these have to do with science changes from rfisher.  There
+is also a refactor and added functionality for ED restarts.
+
+Requirements for tag: N/A
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID): N/A
+
+Known bugs (include bugzilla ID): Bug 2041, 2042
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: N/A
+
+Describe any changes made to the namelist: N/A
+
+List any changes to the defaults for the boundary datasets: N/A
+
+Describe any substantial timing or memory changes: N/A
+
+Code reviewed by: self, rfisher
+
+List any svn externals directories updated (csm_share, mct, etc.): 
+    scripts4_140814a -> scripts4_140910
+
+List all files eliminated: N/A
+
+List all files added and what they do: N/A
+
+List all existing files that have been modified, and describe the changes:
+
+M       models/lnd/clm/bld/unit_testers/xFail/expectedClmTestFails.xml
+-- add failing N2 tests (due to scripts, see below).
+
+M       models/lnd/clm/bld/build-namelist
+-- documentation at top of file should reference CLMBuildNamelist.pm
+
+M       models/lnd/clm/src/main/clm_driver.F90
+-- add call to SurfaceAlbedo for use_ed logical branch, add EDBioVars as 
+-- argument to temperature_vars%UpdateAccVars and add canopystate_vars as 
+-- argument to BalanceCheck (for ED)
+M       models/lnd/clm/src/main/decompMod.F90
+-- added openMP output...remove mods after getting ED working with openMP
+
+M       models/lnd/clm/src/ED/biogeochem/EDCanopyStructureMod.F90
+-- change handling of CWD_AG and CWD_BG
+M       models/lnd/clm/src/ED/biogeochem/EDGrowthFunctionsMod.F90
+-- added tree_sai function
+M       models/lnd/clm/src/ED/biogeochem/EDCohortDynamicsMod.F90
+-- signifcant reworking of entire module 
+M       models/lnd/clm/src/ED/biogeochem/EDPhysiologyMod.F90
+-- minor code clean up 
+M       models/lnd/clm/src/ED/biogeochem/EDPatchDynamicsMod.F90
+-- change an error check to: if (( areatot - area ) > 0._r8 ) then 
+
+M       models/lnd/clm/src/ED/main/EDBioType.F90
+-- add infrastrucutre (define, allocate, etc...) 
+M       models/lnd/clm/src/ED/main/EDMainMod.F90
+-- major update for updating canopy biomass pools 
+M       models/lnd/clm/src/ED/main/EDCLMLinkMod.F90
+-- modify calls for history file output and error checking
+M       models/lnd/clm/src/ED/main/EDRestVectorMod.F90
+-- add resp_clm as restart variable and use SHR_ASSERT instead of call assert.  major refactor
+-- of createPatchCohortStructure to handle arbitrary number of cohorts and patches
+M       models/lnd/clm/src/ED/main/EDInitMod.F90
+-- add logical to deal with different values of assignemnt dc%laimemory
+M       models/lnd/clm/src/ED/main/EDTypesMod.F90
+-- add cohort_type and change paramters: numCohortsPerPatch, cohorts_per_gcell and fire_threshold
+
+M       models/lnd/clm/src/ED/fire/SFMainMod.F90
+-- clean up write statemnts and a bug fix:  change tau_b(dg_sf) -> tau_b(c)
+
+M       models/lnd/clm/src/ED/biogeophys/EDPhotosynthesisMod.F90
+-- change  tpu25top(FT)  = 0.06_r8   * jmax25top(FT) to tpu25top(FT)  = 0.167_r8   * jmax25top(FT), some cleanup
+
+M       models/lnd/clm/src/biogeophys/SnowHydrologyMod.F90
+-- clean up a use statement
+M       models/lnd/clm/src/biogeophys/BareGroundFluxesMod.F90
+-- remove whitespaces after a statement
+M       models/lnd/clm/src/biogeophys/SurfaceAlbedoMod.F90
+-- add a use_ed block to prevent some unassigned pointer errors
+M       models/lnd/clm/src/biogeophys/BalanceCheckMod.F90
+-- add canopystate_vars as argument for elai and esai for more verbose error
+-- reporting added by rfisher
+M       models/lnd/clm/src/biogeophys/TemperatureType.F90
+-- add arg. for UpdateAccVars for new calculations, split out use_ed and use_crop
+M       models/lnd/clm/src/biogeophys/SurfaceRadiationMod.F90
+-- add associate statement to tlai for error reporting
+
+M       UpDateChangeLog.pl
+-- fix tiny typo
+
+M       SVN_EXTERNAL_DIRECTORIES
+-- for scripts update
+
+CLM testing:
+
+  build-namelist tests:
+
+    yellowstone - N/A, no namelist changes made in this tag
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel - 45 OK , 40 OK
+
+    Changes due to update of scripts from scripts4_140814a -> scripts4_140910 (this change came with scripts4_140828)
+    FAIL namelist compare:  user_nl_clm differs
+    These should pass next time.
+
+       NEW:        flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata.pftdyn_1x1_tropicAtl_TEST_simyr1939-1943_c140108.nc'
+       BASELINE: flanduse_timeseries = '/glade/p/cesmdata/cseg/inputdata/lnd/clm2/surfdata_map/surfdata.pftdyn_1x1_tropicAtl_TEST_simyr1939-1943_c140108.nc'
+
+          FAIL SMS_Ly3.1x1_tropicAtl.I20TRCLM45BGC.yellowstone_intel.clm-tropicAtl_subsetLate.GC.newPgi_45_intel.nlcomp
+          FAIL SMS_Ly5.1x1_tropicAtl.I20TRCLM45BGC.yellowstone_intel.clm-tropicAtl_subsetMid.GC.newPgi_45_intel.nlcomp
+          FAIL SMS_Ly8.1x1_tropicAtl.I20TRCLM45BGC.yellowstone_intel.clm-tropicAtl_subsetEarly.GC.newPgi_45_intel.nlcomp
+
+    These fail due to a bug in scripts4_140905c.  Alice is aware of this and will provide a fix for a future CLM tag (but 2041):
+       FAIL  ERI_N2.f19_g16.ICRUCLM45BGCCROP.yellowstone_intel 
+       FAIL  ERI_N2.f19_g16.ICRUCLM45BGCCROP.yellowstone_intel.clm-default 
+
+    Failure that looks like a hardware problem and that Erik is looking into (bug 2042):
+       RUN   ERI_D.ne30_g16.ICLM45BGC.yellowstone_intel.GC.newPgi_45_intel
+
+    yellowstone_pgi   - 45 OK , 40 OK
+
+    New PGI tests brought over from goldbach.  These are expected as there are no baselines for this on yellowstone
+
+       BFAIL ERI_D.f10_f10.ICLM45BGC.yellowstone_pgi.clm-reduceOutput.compare_hist.clm4_5_1_r081 
+       BFAIL ERI_D.f10_f10.ICRUCLM50BGC.yellowstone_pgi.clm-reduceOutput.compare_hist.clm4_5_1_r081 
+       BFAIL ERI_D.f19_g16.ICLM45BGC.yellowstone_pgi.clm-reduceOutput.compare_hist.clm4_5_1_r081 
+       BFAIL ERI_D.f19_g16.ICLM45.yellowstone_pgi.clm-reduceOutput.compare_hist.clm4_5_1_r081 
+       BFAIL ERI_D.f19_g16.ICRUCLM50BGC.yellowstone_pgi.clm-reduceOutput.compare_hist.clm4_5_1_r081 
+       BFAIL ERI.f10_f10.ICLM45BGC.yellowstone_pgi.clm-reduceOutput.compare_hist.clm4_5_1_r081 
+       BFAIL ERI.f10_f10.ICRUCLM50BGC.yellowstone_pgi.clm-reduceOutput.compare_hist.clm4_5_1_r081 
+       BFAIL ERI.f19_g16.ICLM45BGC.yellowstone_pgi.clm-reduceOutput.compare_hist.clm4_5_1_r081 
+       BFAIL ERI.f19_g16.ICRUCLM50BGC.yellowstone_pgi.clm-reduceOutput.compare_hist.clm4_5_1_r081 
+       BFAIL ERS_D.f10_f10.I20TRCLM45BGC.yellowstone_pgi.clm-decStart.clm2.h0.compare_hist.clm4_5_1_r081 
+       BFAIL ERS_D.f10_f10.I20TRCLM45BGC.yellowstone_pgi.clm-decStart.clm2.h1.compare_hist.clm4_5_1_r081 
+       BFAIL ERS_D.f10_f10.I20TRCLM45BGC.yellowstone_pgi.clm-decStart.compare_hist.clm4_5_1_r081 
+       BFAIL ERS_D.f10_f10.ICLM45BGC.yellowstone_pgi.clm-ciso.clm2.h0.compare_hist.clm4_5_1_r081 
+       BFAIL ERS_D.f10_f10.ICLM45BGC.yellowstone_pgi.clm-ciso.clm2.h1.compare_hist.clm4_5_1_r081 
+       BFAIL ERS_D.f10_f10.ICLM45BGC.yellowstone_pgi.clm-ciso.compare_hist.clm4_5_1_r081 
+       BFAIL ERS.f10_f10.I1850CLM45BGC.yellowstone_pgi.clm-default.clm2.h0.compare_hist.clm4_5_1_r081 
+       BFAIL ERS.f10_f10.I1850CLM45BGC.yellowstone_pgi.clm-default.clm2.h1.compare_hist.clm4_5_1_r081 
+       BFAIL ERS.f10_f10.I1850CLM45BGC.yellowstone_pgi.clm-default.compare_hist.clm4_5_1_r081 
+       BFAIL ERS_Lm3.1x1_smallvilleIA.ICLM45BGCCROP.yellowstone_pgi.clm2.h0.compare_hist.clm4_5_1_r081 
+       BFAIL ERS_Lm3.1x1_smallvilleIA.ICLM45BGCCROP.yellowstone_pgi.compare_hist.clm4_5_1_r081 
+       BFAIL SMS_D.1x1_vancouverCAN.ICLM45.yellowstone_pgi.clm-default.clm2.h0.compare_hist.clm4_5_1_r081 
+       BFAIL SMS_D.1x1_vancouverCAN.ICLM45.yellowstone_pgi.clm-default.clm2.h1.compare_hist.clm4_5_1_r081 
+       BFAIL SMS_D.1x1_vancouverCAN.ICLM45.yellowstone_pgi.clm-default.compare_hist.clm4_5_1_r081 
+       BFAIL SMS.f45_f45.ICLM45.yellowstone_pgi.clm-ptsRLB.clm2.h0.compare_hist.clm4_5_1_r081 
+       BFAIL SMS.f45_f45.ICLM45.yellowstone_pgi.clm-ptsRLB.clm2.h1.compare_hist.clm4_5_1_r081 
+       BFAIL SMS.f45_f45.ICLM45.yellowstone_pgi.clm-ptsRLB.compare_hist.clm4_5_1_r081 
+       BFAIL SMS.f45_f45.ICLM45.yellowstone_pgi.clm-ptsROA.compare_hist.clm4_5_1_r081 
+       BFAIL SMS_Ld5.f19_g16.IRCP45CLM45BGC.yellowstone_pgi.clm-decStart.clm2.h0.compare_hist.clm4_5_1_r081 
+       BFAIL SMS_Ld5.f19_g16.IRCP45CLM45BGC.yellowstone_pgi.clm-decStart.clm2.h1.compare_hist.clm4_5_1_r081 
+       BFAIL SMS_Ld5.f19_g16.IRCP45CLM45BGC.yellowstone_pgi.clm-decStart.compare_hist.clm4_5_1_r081 
+
+    goldbach_nag - 45 OK , 40 OK
+
+    Baseline missing from previous tag:
+       ERI_D.f19_g16.ICLM45BGC.goldbach_nag.clm-reduceOutput-  
+          file /fs/cgd/csm/ccsm_baselines/clm4_5_1_r081/ERI_D.f19_g16.ICLM45BGC.goldbach_nag.clm-reduceOutput/cpl.hi.nc does not exis
+       SMS.f09_g16.ICRUCLM45.goldbach_nag.clm-af_bias_v5
+          file /fs/cgd/csm/ccsm_baselines/clm4_5_1_r081/SMS.f09_g16.ICRUCLM45.goldbach_nag.clm-af_bias_v5/cpl.hi.nc does not exist
+       SMS_Ly1.f19_g16.ICLM45BGCCROP.goldbach_nag.clm-reduceOutput 
+          file /fs/cgd/csm/ccsm_baselines/clm4_5_1_r081/SMS_Ly1.f19_g16.ICLM45BGCCROP.goldbach_nag.clm-reduceOutput/cpl.hi.nc does no
+       SMS_Ly1.f19_g16.ICLM45BGCCROP.goldbach_nag.clm-reduceOutput
+          file /fs/cgd/csm/ccsm_baselines/clm4_5_1_r081/SMS_Ly1.f19_g16.ICLM45BGCCROP.goldbach_nag.clm-reduceOutput/cpl.hi.nc does no    t exist
+
+    goldbach_intel - 45 OK , 40 OK
+
+    goldbach_pgi (These have been moved to yellowstone due to PGI 14.1 throwing and ICE on goldbach)
+
+CLM tag used for the baseline comparisons: clm4_5_1_r081
+
+Changes answers relative to baseline: Only for ED compsets
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_1_r081
+Originator(s):  mvertens (Mariana Vertenstein)
+Date: Sun Aug 24 19:39:50 MDT 2014
+One-line Summary: major infrastructure changes and directory reorganization under src
+
+Purpose of changes:
+
+   Overview of previous code design
+   ==========================================
+   - data structures arranged by subgrid type (pps, cps, lps, grc)
+   - all functional categorization lumped in that one subgrid type which led to
+   - centralization rather than modularization of all data
+   - definition and instantiation in ONE big module (clmtype.F90)
+   - allocation and initialization in ONE big module (clmtypeInitMod.F90)
+   - history variables all in ONE big module (histFldsMod.F90)
+   - restart variables in effectively TWO big modules (biogeophysicsRestMod.F90 and CNRestMod.F90)
+   - time constant initialization in ONE complex module (initTimeConst.F90)
+   - time varying cold start initialization in ONE module (initColdMod.F90)
+   - accumulation variables in ONE module (accumulMod.F90)
+
+   Overview of new code design
+   ==========================================
+   data structures arranged by scientific functional categories
+     (e.g. temperature_type, waterstate_type, energyflux_type, etc)
+   - a given data structure now contains ALL subgrid levels are in the data structure -
+     and variables in the data structure are now appended with a unique suffix to
+     indicate their subgrid levels (new suffixes: _patch, _col, _lun, _grc)
+   - this does NOT effect the science code base, ONLY the associate statements
+   - there are separate module for each data type definition
+     (e.g. TemperatureType.F90, WaterstateType.F90, EnergyFluxType.F90, etc)
+   - each data type has associated methods for
+     - Allocation:
+       variables now initialized as NaNs upon allocation
+     - Cold Start Initialization:
+       cold start initialization of variables is now ALWAYS done
+       and overwritten if finidat is read in as spun up dataset (also now
+       have on line interpolation of initial conditions as part of this refactor as well)
+     - History initialization of variables
+       All history fields now initialized as spval
+     - Restart initialization of variables
+     - Accumulation Initialization 
+       initialization and accumulation update of variables
+   - Instantiation of datatypes is now separate from their declaration
+     (for now in clm_initialize.F90 - will be moved in the future)
+
+   Centralized routines that no longer exist:
+   ==========================================
+   Data types  	  : clmtype.F90, clmtypeInitMod.F90
+   Initialization : initTimeConst.F90, initCold.F90
+   History	  : histFldsMod.F90
+   Accumulation	  : accumulMod.F90
+   Restart        : biogeophysRestMod.F90, CNRestMod.F90
+   Biogeochemistry: CNSetValue.F90
+
+   New Type modules that now replace clmtype.F90
+   ==========================================
+   main/atm2lndType.F90
+   main/lnd2atmType.F90
+   main/ColumnType.F90
+   main/EcophysConType.F90
+   main/GridcellType.F90
+   main/LandunitType.F90
+   main/PatchType.F90
+
+   biogeochem/CNCarbonFluxType.F90
+   biogeochem/CNCarbonStateType.F90
+   biogeochem/CNDecompCascadeConType.F90
+   biogeochem/CNDVType.F90
+   biogeochem/CNNitrogenFluxType.F90
+   biogeochem/CNNitrogenStateType.F90
+   biogeochem/CNStateType.F90
+   biogeochem/CropType.F90
+
+   biogeophys/AerosolType.F90
+   biogeophys/CanopyStateType.F90
+   biogeophys/EnergyFluxType.F90
+   biogeophys/FrictionVelocityType.F90
+   biogeophys/LakeStateType.F90
+   biogeophys/PhotosynthesisType.F90
+   biogeophys/SoilHydrologyType.F90
+   biogeophys/SoilStateType.F90
+   biogeophys/SolarAbsorbedType.F90
+   biogeophys/SurfaceAlbedoType.F90
+   biogeophys/TemperatureType.F90
+   biogeophys/UrbanParamsType.F90
+   biogeophys/WaterfluxType.F90
+   biogeophys/WaterStateType.F90
+
+   ED/main/EDBioType.F90
+   ED/main/EDEcophysConType.F90
+   ED/main/EDVecCohortType.F90
+   ED/main/EDVecPatchType.F90
+
+
+   Instantiation of Types
+
+2) Public Types:
+
+   - the following are public types that can BE PASSED AS ARGUMENTS 
+   - the type instances FOR NOW are clm_initialized and then used by the driver
+   - this will be generalized in the future	
+
+  type(ch4_type)              :: ch4_vars
+  type(carbonstate_type)      :: carbonstate_vars
+  type(carbonstate_type)      :: c13_carbonstate_vars
+  type(carbonstate_type)      :: c14_carbonstate_vars
+  type(carbonflux_type)       :: carbonflux_vars
+  type(carbonflux_type)       :: c13_carbonflux_vars
+  type(carbonflux_type)       :: c14_carbonflux_vars
+  type(nitrogenstate_type)    :: nitrogenstate_vars
+  type(nitrogenflux_type)     :: nitrogenflux_vars
+  type(dgvs_type)             :: dgvs_vars
+  type(crop_type)             :: crop_vars
+  type(cnstate_type)          :: cnstate_vars
+  type(dust_type)             :: dust_vars
+  type(vocemis_type)          :: vocemis_vars
+  type(drydepvel_type)        :: drydepvel_vars
+  type(aerosol_type)          :: aerosol_vars
+  type(canopystate_type)      :: canopystate_vars
+  type(energyflux_type)       :: energyflux_vars
+  type(frictionvel_type)      :: frictionvel_vars
+  type(lakestate_type)        :: lakestate_vars
+  type(photosyns_type)        :: photosyns_vars
+  type(soilstate_type)        :: soilstate_vars
+  type(soilhydrology_type)    :: soilhydrology_vars
+  type(solarabs_type)         :: solarabs_vars
+  type(surfalb_type)          :: surfalb_vars
+  type(surfrad_type)          :: surfrad_vars
+  type(temperature_type)      :: temperature_vars
+  type(urbanparams_type)      :: urbanparams_vars
+  type(waterflux_type)        :: waterflux_vars
+  type(waterstate_type)       :: waterstate_vars
+  type(atm2lnd_type)          :: atm2lnd_vars
+  type(glc2lnd_type)          :: glc2lnd_vars
+  type(lnd2atm_type)          :: lnd2atm_vars
+  type(lnd2glc_type)          :: lnd2glc_vars
+  type(glc_diagnostics_type)  :: glc_diagnostics_vars
+  type(EDbio_type)            :: EDbio_vars
+
+  - private Types (now som modules have their own PRIVATE types) 
+ 
+   DUSTMod.F90       :    type(dust_type)     
+   VOCEmissionMod.F90:    type(vocemis_type)  
+   ch4Mod.F90        :    type(ch4_type)      
+
+   API Changes:
+   ==========================================
+   Original APIs:
+   clmtype was in effect a global common block and all routines had use statements into it
+   difficult to track any intent or flow through system
+   difficult to set up functional unit testing (.e.g. CanopyFluxesMod.F90, etc)
+	
+   Refactorized APIs:
+   all new datatype instances are passed as arguments
+   science code is effectively the same since only the associate statements have been modified
+
+   New Directory Structure under clm/
+   ==========================================
+   bld/
+   doc/	
+   src/biogeochem/
+   src/biogeophys/
+   src/cpl/
+   src/dyn_subgrid/
+   src/ED/
+   src/ED/biogeochem
+   src/ED/biogeophys
+   src/ED/fire
+   src/ED/main	
+   src/main/
+   src/unit_test_mocks/
+   src/unit_test_shr/
+   src/utils/
+   src_clm4_0/
+   test/
+   tools/  	
+	
+   Advantages of refactorization:
+   ==========================================
+   - Lets compiler enforce intent attributes
+   - Makes functional unit testing easier since module drivers can be
+     constructed with relevant mock data more easily
+   - Makes more sense scientifically since now easier to extend code logic as
+     to where you want to introduce new variables
+   - Easier to maintain code since code flow is easier to follow and to modify
+   - Easy to move variables around from one data type to another since now
+     know everything that is logically connected to that variable that
+     needs to be moved Offers new modularity for trading in and out new
+     formulations of targeted functionality
+
+Requirements for tag: N.A.
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID): N.A.
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system:
+    directory restructuring has been reflected in changes to configure in setting up the Filepath
+
+Describe any changes made to the namelist:
+    clm_hydrology1_inparm changed to clm_canopyhydrology_inparm
+
+List any changes to the defaults for the boundary datasets: None
+
+Describe any substantial timing or memory changes: None
+
+Code reviewed by: myself, Bill Sacks
+
+List any svn externals directories updated (csm_share, mct, etc.): None
+
+List all files eliminated: 
+
+D       clm/src/clm4_5
+D       clm/src/clm4_5/biogeochem
+D       clm/src/clm4_5/biogeochem/CNCStateUpdate2Mod.F90
+D       clm/src/clm4_5/biogeochem/CNGapMortalityMod.F90
+D       clm/src/clm4_5/biogeochem/CNRestMod.F90
+D       clm/src/clm4_5/biogeochem/CropRestMod.F90
+D       clm/src/clm4_5/biogeochem/CNGRespMod.F90
+D       clm/src/clm4_5/biogeochem/CNNitrifDenitrifMod.F90
+D       clm/src/clm4_5/biogeochem/CNNStateUpdate1Mod.F90
+D       clm/src/clm4_5/biogeochem/CNBalanceCheckMod.F90
+D       clm/src/clm4_5/biogeochem/CNNStateUpdate3Mod.F90
+D       clm/src/clm4_5/biogeochem/CNFireMod.F90
+D       clm/src/clm4_5/biogeochem/CNMRespMod.F90
+D       clm/src/clm4_5/biogeochem/MEGANFactorsMod.F90
+D       clm/src/clm4_5/biogeochem/SatellitePhenologyMod.F90
+D       clm/src/clm4_5/biogeochem/CNVerticalProfileMod.F90
+D       clm/src/clm4_5/biogeochem/ch4RestMod.F90
+D       clm/src/clm4_5/biogeochem/CNPrecisionControlMod.F90
+D       clm/src/clm4_5/biogeochem/CNCIsoFluxMod.F90
+D       clm/src/clm4_5/biogeochem/CNWoodProductsMod.F90
+D       clm/src/clm4_5/biogeochem/CNSummaryMod.F90
+D       clm/src/clm4_5/biogeochem/ch4Mod.F90
+D       clm/src/clm4_5/biogeochem/DUSTMod.F90
+D       clm/src/clm4_5/biogeochem/CNDVLightMod.F90
+D       clm/src/clm4_5/biogeochem/CNInitMod.F90
+D       clm/src/clm4_5/biogeochem/CNPhenologyMod.F90
+D       clm/src/clm4_5/biogeochem/ch4varcon.F90
+D       clm/src/clm4_5/biogeochem/CNCStateUpdate1Mod.F90
+D       clm/src/clm4_5/biogeochem/CNDecompMod.F90
+D       clm/src/clm4_5/biogeochem/CNCStateUpdate3Mod.F90
+D       clm/src/clm4_5/biogeochem/CNDVMod.F90
+D       clm/src/clm4_5/biogeochem/ED
+D       clm/src/clm4_5/biogeochem/ED/EDCanopyStructureMod.F90
+D       clm/src/clm4_5/biogeochem/ED/EDSetValuesMod.F90
+D       clm/src/clm4_5/biogeochem/ED/EDGrowthFunctionsMod.F90
+D       clm/src/clm4_5/biogeochem/ED/EDPhysiologyMod.F90
+D       clm/src/clm4_5/biogeochem/ED/EDCohortDynamicsMod.F90
+D       clm/src/clm4_5/biogeochem/ED/EDPatchDynamicsMod.F90
+D       clm/src/clm4_5/biogeochem/CNSharedParamsMod.F90
+D       clm/src/clm4_5/biogeochem/VOCEmissionMod.F90
+D       clm/src/clm4_5/biogeochem/ch4InitMod.F90
+D       clm/src/clm4_5/biogeochem/CNAnnualUpdateMod.F90
+D       clm/src/clm4_5/biogeochem/CNNStateUpdate2Mod.F90
+D       clm/src/clm4_5/biogeochem/DryDepVelocity.F90
+D       clm/src/clm4_5/biogeochem/CNAllocationMod.F90
+D       clm/src/clm4_5/biogeochem/CNNDynamicsMod.F90
+D       clm/src/clm4_5/biogeochem/CNEcosystemDynMod.F90
+D       clm/src/clm4_5/biogeochem/CNDecompCascadeBGCMod.F90
+D       clm/src/clm4_5/biogeochem/CNSetValueMod.F90
+D       clm/src/clm4_5/biogeochem/CNVegStructUpdateMod.F90
+D       clm/src/clm4_5/biogeochem/CNDecompCascadeCNMod.F90
+D       clm/src/clm4_5/biogeochem/CNDVEstablishmentMod.F90
+D       clm/src/clm4_5/biogeochem/CNSoilLittVertTranspMod.F90
+D       clm/src/clm4_5/biogeochem/CNDVInitMod.F90
+D       clm/src/clm4_5/biogeochem/CNC14DecayMod.F90
+	
+D       clm/src/clm4_5/main
+D       clm/src/clm4_5/main/clm_varcon.F90
+D       clm/src/clm4_5/main/initInterp.F90
+D       clm/src/clm4_5/main/clm_varpar.F90
+D       clm/src/clm4_5/main/landunit_varcon.F90
+D       clm/src/clm4_5/main/initTimeConstMod.F90
+D       clm/src/clm4_5/main/subgridWeightsMod.F90
+D       clm/src/clm4_5/main/decompInitMod.F90
+D       clm/src/clm4_5/main/clm_initializeMod.F90
+D       clm/src/clm4_5/main/subgridRestMod.F90
+D       clm/src/clm4_5/main/clm_glclnd.F90
+D       clm/src/clm4_5/main/paramUtilMod.F90
+D       clm/src/clm4_5/main/accFldsMod.F90
+D       clm/src/clm4_5/main/subgridMod.F90
+D       clm/src/clm4_5/main/clmtypeInitMod.F90
+D       clm/src/clm4_5/main/ndepStreamMod.F90
+D       clm/src/clm4_5/main/init_hydrology.F90
+D       clm/src/clm4_5/main/initColdMod.F90
+D       clm/src/clm4_5/main/column_varcon.F90
+D       clm/src/clm4_5/main/histFileMod.F90
+D       clm/src/clm4_5/main/pft2colMod.F90
+D       clm/src/clm4_5/main/clm_atmlnd.F90
+D       clm/src/clm4_5/main/findHistFields.pl
+D       clm/src/clm4_5/main/clm_varsur.F90
+D       clm/src/clm4_5/main/restFileMod.F90
+D       clm/src/clm4_5/main/CMakeLists.txt
+D       clm/src/clm4_5/main/controlMod.F90
+D       clm/src/clm4_5/main/spitfireSF
+D       clm/src/clm4_5/main/spitfireSF/SFParamsMod.F90
+D       clm/src/clm4_5/main/spitfireSF/SFMainMod.F90
+D       clm/src/clm4_5/main/test
+D       clm/src/clm4_5/main/test/subgridWeights_test
+D       clm/src/clm4_5/main/test/subgridWeights_test/test_subgridWeights.pf
+D       clm/src/clm4_5/main/test/subgridWeights_test/CMakeLists.txt
+D       clm/src/clm4_5/main/test/clm_glclnd_test
+D       clm/src/clm4_5/main/test/clm_glclnd_test/test_clm_glclnd.pf
+D       clm/src/clm4_5/main/test/clm_glclnd_test/CMakeLists.txt
+D       clm/src/clm4_5/main/test/CMakeLists.txt
+D       clm/src/clm4_5/main/initSubgridMod.F90
+D       clm/src/clm4_5/main/filterMod.F90
+D       clm/src/clm4_5/main/clm_varctl.F90
+D       clm/src/clm4_5/main/clm_driver.F90
+D       clm/src/clm4_5/main/surfrdUtilsMod.F90
+D       clm/src/clm4_5/main/ED
+D       clm/src/clm4_5/main/ED/EDInitTimeConst.F90
+D       clm/src/clm4_5/main/ED/EDCLMLinkMod.F90
+D       clm/src/clm4_5/main/ED/EDClmType.F90
+D       clm/src/clm4_5/main/ED/EDRestVectorMod.F90
+D       clm/src/clm4_5/main/ED/EDHistFldsMod.F90
+D       clm/src/clm4_5/main/ED/EDClmTypeInitMod.F90
+D       clm/src/clm4_5/main/ED/EDPftvarcon.F90
+D       clm/src/clm4_5/main/ED/EDParamsMod.F90
+D       clm/src/clm4_5/main/ED/EDInitMod.F90
+D       clm/src/clm4_5/main/ED/EDTypesMod.F90
+D       clm/src/clm4_5/main/ED/EDMainMod.F90
+D       clm/src/clm4_5/main/subgridAveMod.F90
+D       clm/src/clm4_5/main/initGridCellsMod.F90
+D       clm/src/clm4_5/main/initSoilParVICMod.F90
+D       clm/src/clm4_5/main/pftvarcon.F90
+D       clm/src/clm4_5/main/surfrdMod.F90
+D       clm/src/clm4_5/main/decompMod.F90
+D       clm/src/clm4_5/main/FuncPedotransferMod.F90
+D       clm/src/clm4_5/main/clmtype.F90
+D       clm/src/clm4_5/main/reweightMod.F90
+D       clm/src/clm4_5/main/readParamsMod.F90
+D       clm/src/clm4_5/main/histFldsMod.F90
+	
+D       clm/src/clm4_5/biogeophys
+D       clm/src/clm4_5/biogeophys/BalanceCheckMod.F90
+D       clm/src/clm4_5/biogeophys/SLakeInitMod.F90
+D       clm/src/clm4_5/biogeophys/SoilTemperatureMod.F90
+D       clm/src/clm4_5/biogeophys/SLakeFluxesMod.F90
+D       clm/src/clm4_5/biogeophys/UrbanInputMod.F90
+D       clm/src/clm4_5/biogeophys/SnowHydrologyMod.F90
+D       clm/src/clm4_5/biogeophys/Biogeophysics1Mod.F90
+D       clm/src/clm4_5/biogeophys/FrictionVelocityMod.F90
+D       clm/src/clm4_5/biogeophys/TridiagonalMod.F90
+D       clm/src/clm4_5/biogeophys/SLakeHydrologyMod.F90
+D       clm/src/clm4_5/biogeophys/Hydrology1Mod.F90
+D       clm/src/clm4_5/biogeophys/BiogeophysRestMod.F90
+D       clm/src/clm4_5/biogeophys/UrbanMod.F90
+D       clm/src/clm4_5/biogeophys/QSatMod.F90
+D       clm/src/clm4_5/biogeophys/ActiveLayerMod.F90
+D       clm/src/clm4_5/biogeophys/SurfaceResistanceMod.F90
+D       clm/src/clm4_5/biogeophys/clm_driverInitMod.F90
+D       clm/src/clm4_5/biogeophys/CLMVICMapMod.F90
+D       clm/src/clm4_5/biogeophys/SLakeTemperatureMod.F90
+D       clm/src/clm4_5/biogeophys/SNICARMod.F90
+D       clm/src/clm4_5/biogeophys/BareGroundFluxesMod.F90
+D       clm/src/clm4_5/biogeophys/CMakeLists.txt
+D       clm/src/clm4_5/biogeophys/CanopyFluxesMod.F90
+D       clm/src/clm4_5/biogeophys/RootBiophysMod.F90
+D       clm/src/clm4_5/biogeophys/test
+D       clm/src/clm4_5/biogeophys/test/CMakeLists.txt
+D       clm/src/clm4_5/biogeophys/test/Daylength_test
+D       clm/src/clm4_5/biogeophys/test/Daylength_test/test_daylength.pf
+D       clm/src/clm4_5/biogeophys/test/Daylength_test/CMakeLists.txt
+D       clm/src/clm4_5/biogeophys/SurfaceRadiationMod.F90
+D       clm/src/clm4_5/biogeophys/SoilWaterMovementMod.F90
+D       clm/src/clm4_5/biogeophys/H2OSfcMod.F90
+D       clm/src/clm4_5/biogeophys/SoilMoistStressMod.F90
+D       clm/src/clm4_5/biogeophys/Biogeophysics2Mod.F90
+D       clm/src/clm4_5/biogeophys/SoiWatRetCurveParMod.F90
+D       clm/src/clm4_5/biogeophys/ED
+D       clm/src/clm4_5/biogeophys/ED/EDAccumulateFluxesMod.F90
+D       clm/src/clm4_5/biogeophys/ED/EDSurfaceAlbedoMod.F90
+D       clm/src/clm4_5/biogeophys/ED/EDPhotosynthesisMod.F90
+D       clm/src/clm4_5/biogeophys/ED/EDBtranMod.F90
+D       clm/src/clm4_5/biogeophys/FracWetMod.F90
+D       clm/src/clm4_5/biogeophys/UrbanInitMod.F90
+D       clm/src/clm4_5/biogeophys/SLakeRestMod.F90
+D       clm/src/clm4_5/biogeophys/SurfaceAlbedoMod.F90
+D       clm/src/clm4_5/biogeophys/SLakeCon.F90
+D       clm/src/clm4_5/biogeophys/Hydrology2Mod.F90
+D       clm/src/clm4_5/biogeophys/BandDiagonalMod.F90
+D       clm/src/clm4_5/biogeophys/SoilHydrologyMod.F90
+D       clm/src/clm4_5/biogeophys/DaylengthMod.F90
+	
+D       clm/src/clm4_5/dyn_subgrid
+D       clm/src/clm4_5/dyn_subgrid/test
+D       clm/src/clm4_5/dyn_subgrid/test/dynLandunitArea_test
+D       clm/src/clm4_5/dyn_subgrid/test/dynLandunitArea_test/test_update_landunit_weights_one_gcell.pf
+D       clm/src/clm4_5/dyn_subgrid/test/dynLandunitArea_test/test_update_landunit_weights.pf
+D       clm/src/clm4_5/dyn_subgrid/test/dynLandunitArea_test/CMakeLists.txt
+D       clm/src/clm4_5/dyn_subgrid/test/dynVar_test
+D       clm/src/clm4_5/dyn_subgrid/test/dynVar_test/test_dynVarShared.F90
+D       clm/src/clm4_5/dyn_subgrid/test/dynVar_test/test_dynVarTimeInterp.pf
+D       clm/src/clm4_5/dyn_subgrid/test/dynVar_test/test_dynVarTimeUninterp.pf
+D       clm/src/clm4_5/dyn_subgrid/test/dynVar_test/CMakeLists.txt
+D       clm/src/clm4_5/dyn_subgrid/test/dynTimeInfo_test
+D       clm/src/clm4_5/dyn_subgrid/test/dynTimeInfo_test/test_dynTimeInfo.pf
+D       clm/src/clm4_5/dyn_subgrid/test/dynTimeInfo_test/CMakeLists.txt
+D       clm/src/clm4_5/dyn_subgrid/test/CMakeLists.txt
+D       clm/src/clm4_5/dyn_subgrid/test/dynInitColumns_test
+D       clm/src/clm4_5/dyn_subgrid/test/dynInitColumns_test/test_init_columns.pf
+D       clm/src/clm4_5/dyn_subgrid/test/dynInitColumns_test/CMakeLists.txt
+D       clm/src/clm4_5/dyn_subgrid/dynLandunitAreaMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynTimeInfoMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynSubgridDriverMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynHarvestMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynFileMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynConsBiogeochemMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynPriorWeightsMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynVarMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynEDMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynVarTimeInterpMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynpftFileMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynCNDVMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynConsBiogeophysMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynVarTimeUninterpMod.F90
+D       clm/src/clm4_5/dyn_subgrid/dynVarMod.F90.in
+D       clm/src/clm4_5/dyn_subgrid/dynVarTimeInterpMod.F90.in
+D       clm/src/clm4_5/dyn_subgrid/dynVarTimeUninterpMod.F90.in
+D       clm/src/clm4_5/dyn_subgrid/do_genf90
+D       clm/src/clm4_5/dyn_subgrid/dynInitColumnsMod.F90
+D       clm/src/clm4_5/dyn_subgrid/CMakeLists.txt
+	
+D       clm/src/util_share
+D       clm/src/util_share/organicFileMod.F90
+D       clm/src/util_share/spmdGathScatMod.F90
+D       clm/src/util_share/clm_time_manager.F90
+D       clm/src/util_share/clm_nlUtilsMod.F90
+D       clm/src/util_share/clm_varorb.F90
+D       clm/src/util_share/abortutils.F90
+D       clm/src/util_share/accumulMod.F90
+D       clm/src/util_share/getdatetime.F90
+D       clm/src/util_share/fileutils.F90
+D       clm/src/util_share/dtypes.h
+D       clm/src/util_share/ncdio_pio.F90
+D       clm/src/util_share/SimpleMathMod.F90
+D       clm/src/util_share/spmdMod.F90
+D       clm/src/util_share/domainMod.F90
+D       clm/src/util_share/ncdio_pio.F90.in
+D       clm/src/util_share/restUtilMod.F90
+D       clm/src/util_share/quadraticMod.F90
+D       clm/src/util_share/restUtilMod.F90.in
+D       clm/src/util_share/CMakeLists.txt
+D       clm/src/util_share/GetGlobalValuesMod.F90
+	
+D       clm/src/clm4_0
+D       clm/src/clm4_0/biogeochem
+D       clm/src/clm4_0/biogeochem/CNCStateUpdate2Mod.F90
+D       clm/src/clm4_0/biogeochem/CNC13StateUpdate2Mod.F90
+D       clm/src/clm4_0/biogeochem/CNGapMortalityMod.F90
+D       clm/src/clm4_0/biogeochem/CropRestMod.F90
+D       clm/src/clm4_0/biogeochem/CNGRespMod.F90
+D       clm/src/clm4_0/biogeochem/CNNStateUpdate1Mod.F90
+D       clm/src/clm4_0/biogeochem/CNBalanceCheckMod.F90
+D       clm/src/clm4_0/biogeochem/CNNStateUpdate3Mod.F90
+D       clm/src/clm4_0/biogeochem/CNFireMod.F90
+D       clm/src/clm4_0/biogeochem/CNMRespMod.F90
+D       clm/src/clm4_0/biogeochem/MEGANFactorsMod.F90
+D       clm/src/clm4_0/biogeochem/CNPrecisionControlMod.F90
+D       clm/src/clm4_0/biogeochem/CNWoodProductsMod.F90
+D       clm/src/clm4_0/biogeochem/CNSummaryMod.F90
+D       clm/src/clm4_0/biogeochem/DUSTMod.F90
+D       clm/src/clm4_0/biogeochem/CNDVLightMod.F90
+D       clm/src/clm4_0/biogeochem/CNPhenologyMod.F90
+D       clm/src/clm4_0/biogeochem/CNCStateUpdate1Mod.F90
+D       clm/src/clm4_0/biogeochem/CNDecompMod.F90
+D       clm/src/clm4_0/biogeochem/STATICEcosysDynMod.F90
+D       clm/src/clm4_0/biogeochem/CNCStateUpdate3Mod.F90
+D       clm/src/clm4_0/biogeochem/CNDVMod.F90
+D       clm/src/clm4_0/biogeochem/CNC13StateUpdate1Mod.F90
+D       clm/src/clm4_0/biogeochem/CNrestMod.F90
+D       clm/src/clm4_0/biogeochem/CNC13StateUpdate3Mod.F90
+D       clm/src/clm4_0/biogeochem/VOCEmissionMod.F90
+D       clm/src/clm4_0/biogeochem/CNDVEcosystemDynIniMod.F90
+D       clm/src/clm4_0/biogeochem/CNAnnualUpdateMod.F90
+D       clm/src/clm4_0/biogeochem/CNNStateUpdate2Mod.F90
+D       clm/src/clm4_0/biogeochem/C13SummaryMod.F90
+D       clm/src/clm4_0/biogeochem/DryDepVelocity.F90
+D       clm/src/clm4_0/biogeochem/CNC13FluxMod.F90
+D       clm/src/clm4_0/biogeochem/CNAllocationMod.F90
+D       clm/src/clm4_0/biogeochem/CNNDynamicsMod.F90
+D       clm/src/clm4_0/biogeochem/CNEcosystemDynMod.F90
+D       clm/src/clm4_0/biogeochem/CNSetValueMod.F90
+D       clm/src/clm4_0/biogeochem/CNVegStructUpdateMod.F90
+D       clm/src/clm4_0/biogeochem/CNDVEstablishmentMod.F90
+	
+D       clm/src/clm4_0/main
+D       clm/src/clm4_0/main/clm_varcon.F90
+D       clm/src/clm4_0/main/clm_varpar.F90
+D       clm/src/clm4_0/main/CNiniTimeVar.F90
+D       clm/src/clm4_0/main/dynlandMod.F90
+D       clm/src/clm4_0/main/decompInitMod.F90
+D       clm/src/clm4_0/main/clm_initializeMod.F90
+D       clm/src/clm4_0/main/subgridRestMod.F90
+D       clm/src/clm4_0/main/clm_glclnd.F90
+D       clm/src/clm4_0/main/accFldsMod.F90
+D       clm/src/clm4_0/main/subgridMod.F90
+D       clm/src/clm4_0/main/clmtypeInitMod.F90
+D       clm/src/clm4_0/main/ndepStreamMod.F90
+D       clm/src/clm4_0/main/pftdynMod.F90
+D       clm/src/clm4_0/main/iniTimeConst.F90
+D       clm/src/clm4_0/main/histFileMod.F90
+D       clm/src/clm4_0/main/pft2colMod.F90
+D       clm/src/clm4_0/main/clm_atmlnd.F90
+D       clm/src/clm4_0/main/findHistFields.pl
+D       clm/src/clm4_0/main/restFileMod.F90
+D       clm/src/clm4_0/main/clm_varsur.F90
+D       clm/src/clm4_0/main/controlMod.F90
+D       clm/src/clm4_0/main/initSurfAlbMod.F90
+D       clm/src/clm4_0/main/filterMod.F90
+D       clm/src/clm4_0/main/clm_driver.F90
+D       clm/src/clm4_0/main/clm_varctl.F90
+D       clm/src/clm4_0/main/subgridAveMod.F90
+D       clm/src/clm4_0/main/initGridCellsMod.F90
+D       clm/src/clm4_0/main/CNiniSpecial.F90
+D       clm/src/clm4_0/main/pftvarcon.F90
+D       clm/src/clm4_0/main/surfrdMod.F90
+D       clm/src/clm4_0/main/decompMod.F90
+D       clm/src/clm4_0/main/clmtype.F90
+D       clm/src/clm4_0/main/histFldsMod.F90
+D       clm/src/clm4_0/main/mkarbinitMod.F90
+D       clm/src/clm4_0/biogeophys
+D       clm/src/clm4_0/biogeophys/BalanceCheckMod.F90
+D       clm/src/clm4_0/biogeophys/SurfaceRadiationMod.F90
+D       clm/src/clm4_0/biogeophys/SoilTemperatureMod.F90
+D       clm/src/clm4_0/biogeophys/SnowHydrologyMod.F90
+D       clm/src/clm4_0/biogeophys/UrbanInputMod.F90
+D       clm/src/clm4_0/biogeophys/Biogeophysics1Mod.F90
+D       clm/src/clm4_0/biogeophys/Biogeophysics2Mod.F90
+D       clm/src/clm4_0/biogeophys/FracWetMod.F90
+D       clm/src/clm4_0/biogeophys/UrbanInitMod.F90
+D       clm/src/clm4_0/biogeophys/FrictionVelocityMod.F90
+D       clm/src/clm4_0/biogeophys/TridiagonalMod.F90
+D       clm/src/clm4_0/biogeophys/SurfaceAlbedoMod.F90
+D       clm/src/clm4_0/biogeophys/Hydrology1Mod.F90
+D       clm/src/clm4_0/biogeophys/Hydrology2Mod.F90
+D       clm/src/clm4_0/biogeophys/BiogeophysicsLakeMod.F90
+D       clm/src/clm4_0/biogeophys/BiogeophysRestMod.F90
+D       clm/src/clm4_0/biogeophys/UrbanMod.F90
+D       clm/src/clm4_0/biogeophys/SoilHydrologyMod.F90
+D       clm/src/clm4_0/biogeophys/QSatMod.F90
+D       clm/src/clm4_0/biogeophys/clm_driverInitMod.F90
+D       clm/src/clm4_0/biogeophys/HydrologyLakeMod.F90
+D       clm/src/clm4_0/biogeophys/BareGroundFluxesMod.F90
+D       clm/src/clm4_0/biogeophys/SNICARMod.F90
+D       clm/src/clm4_0/biogeophys/CanopyFluxesMod.F90
+	
+List all files added and what they do:
+
+A       clm/src_clm40
+A       clm/src_clm40/biogeochem
+A       clm/src_clm40/biogeochem/CNCStateUpdate2Mod.F90
+A       clm/src_clm40/biogeochem/CNC13StateUpdate2Mod.F90
+A       clm/src_clm40/biogeochem/CNGRespMod.F90
+A       clm/src_clm40/biogeochem/CNBalanceCheckMod.F90
+A       clm/src_clm40/biogeochem/CNNStateUpdate3Mod.F90
+A       clm/src_clm40/biogeochem/CNSummaryMod.F90
+A       clm/src_clm40/biogeochem/CNPhenologyMod.F90
+A       clm/src_clm40/biogeochem/STATICEcosysDynMod.F90
+A       clm/src_clm40/biogeochem/CNCStateUpdate1Mod.F90
+A       clm/src_clm40/biogeochem/CNC13StateUpdate1Mod.F90
+A       clm/src_clm40/biogeochem/CNrestMod.F90
+A       clm/src_clm40/biogeochem/VOCEmissionMod.F90
+A       clm/src_clm40/biogeochem/CNAnnualUpdateMod.F90
+A       clm/src_clm40/biogeochem/CNNStateUpdate2Mod.F90
+A       clm/src_clm40/biogeochem/C13SummaryMod.F90
+A       clm/src_clm40/biogeochem/CNAllocationMod.F90
+A       clm/src_clm40/biogeochem/DryDepVelocity.F90
+A       clm/src_clm40/biogeochem/CNNDynamicsMod.F90
+A       clm/src_clm40/biogeochem/CNSetValueMod.F90
+A       clm/src_clm40/biogeochem/CNGapMortalityMod.F90
+A       clm/src_clm40/biogeochem/CropRestMod.F90
+A       clm/src_clm40/biogeochem/CNNStateUpdate1Mod.F90
+A       clm/src_clm40/biogeochem/CNFireMod.F90
+A       clm/src_clm40/biogeochem/CNMRespMod.F90
+A       clm/src_clm40/biogeochem/MEGANFactorsMod.F90
+A       clm/src_clm40/biogeochem/CNWoodProductsMod.F90
+A       clm/src_clm40/biogeochem/CNPrecisionControlMod.F90
+A       clm/src_clm40/biogeochem/DUSTMod.F90
+A       clm/src_clm40/biogeochem/CNDVLightMod.F90
+A       clm/src_clm40/biogeochem/CNDecompMod.F90
+A       clm/src_clm40/biogeochem/CNDVMod.F90
+A       clm/src_clm40/biogeochem/CNCStateUpdate3Mod.F90
+A       clm/src_clm40/biogeochem/CNC13StateUpdate3Mod.F90
+A       clm/src_clm40/biogeochem/CNDVEcosystemDynIniMod.F90
+A       clm/src_clm40/biogeochem/CNC13FluxMod.F90
+A       clm/src_clm40/biogeochem/CNEcosystemDynMod.F90
+A       clm/src_clm40/biogeochem/CNVegStructUpdateMod.F90
+A       clm/src_clm40/biogeochem/CNDVEstablishmentMod.F90
+	
+A       clm/src_clm40/main
+A       clm/src_clm40/main/spmdGathScatMod.F90
+A       clm/src_clm40/main/organicFileMod.F90
+A       clm/src_clm40/main/clm_varcon.F90
+A       clm/src_clm40/main/clm_varpar.F90
+A       clm/src_clm40/main/CNiniTimeVar.F90
+A       clm/src_clm40/main/abortutils.F90
+A       clm/src_clm40/main/accumulMod.F90
+A       clm/src_clm40/main/decompInitMod.F90
+A       clm/src_clm40/main/clm_glclnd.F90
+A       clm/src_clm40/main/accFldsMod.F90
+A       clm/src_clm40/main/subgridMod.F90
+A       clm/src_clm40/main/pftdynMod.F90
+A       clm/src_clm40/main/pft2colMod.F90
+A       clm/src_clm40/main/clm_atmlnd.F90
+A       clm/src_clm40/main/quadraticMod.F90
+A       clm/src_clm40/main/GetGlobalValuesMod.F90
+A       clm/src_clm40/main/clm_time_manager.F90
+A       clm/src_clm40/main/filterMod.F90
+A       clm/src_clm40/main/clm_varctl.F90
+A       clm/src_clm40/main/subgridAveMod.F90
+A       clm/src_clm40/main/dtypes.h
+A       clm/src_clm40/main/CNiniSpecial.F90
+A       clm/src_clm40/main/surfrdMod.F90
+A       clm/src_clm40/main/domainMod.F90
+A       clm/src_clm40/main/lnd_import_export.F90
+A       clm/src_clm40/main/restUtilMod.F90
+A       clm/src_clm40/main/clmtype.F90
+A       clm/src_clm40/main/mkarbinitMod.F90
+A       clm/src_clm40/main/restUtilMod.F90.in
+A       clm/src_clm40/main/dynlandMod.F90
+A       clm/src_clm40/main/getdatetime.F90
+A       clm/src_clm40/main/clm_initializeMod.F90
+A       clm/src_clm40/main/subgridRestMod.F90
+A       clm/src_clm40/main/fileutils.F90
+A       clm/src_clm40/main/clmtypeInitMod.F90
+A       clm/src_clm40/main/ndepStreamMod.F90
+A       clm/src_clm40/main/SimpleMathMod.F90
+A       clm/src_clm40/main/iniTimeConst.F90
+A       clm/src_clm40/main/lnd_comp_esmf.F90
+A       clm/src_clm40/main/histFileMod.F90
+A       clm/src_clm40/main/clm_cpl_indices.F90
+A       clm/src_clm40/main/findHistFields.pl
+A       clm/src_clm40/main/restFileMod.F90
+A       clm/src_clm40/main/clm_varsur.F90
+A       clm/src_clm40/main/controlMod.F90
+A       clm/src_clm40/main/CMakeLists.txt
+A       clm/src_clm40/main/initSurfAlbMod.F90
+A       clm/src_clm40/main/clm_nlUtilsMod.F90
+A       clm/src_clm40/main/clm_driver.F90
+A       clm/src_clm40/main/clm_varorb.F90
+A       clm/src_clm40/main/initGridCellsMod.F90
+A       clm/src_clm40/main/lnd_comp_mct.F90
+A       clm/src_clm40/main/pftvarcon.F90
+A       clm/src_clm40/main/ncdio_pio.F90
+A       clm/src_clm40/main/spmdMod.F90
+A       clm/src_clm40/main/decompMod.F90
+A       clm/src_clm40/main/ncdio_pio.F90.in
+A       clm/src_clm40/main/histFldsMod.F90
+	
+A       clm/src_clm40/biogeophys
+A       clm/src_clm40/biogeophys/BalanceCheckMod.F90
+A       clm/src_clm40/biogeophys/SoilTemperatureMod.F90
+A       clm/src_clm40/biogeophys/UrbanInputMod.F90
+A       clm/src_clm40/biogeophys/SnowHydrologyMod.F90
+A       clm/src_clm40/biogeophys/Biogeophysics1Mod.F90
+A       clm/src_clm40/biogeophys/FrictionVelocityMod.F90
+A       clm/src_clm40/biogeophys/TridiagonalMod.F90
+A       clm/src_clm40/biogeophys/Hydrology1Mod.F90
+A       clm/src_clm40/biogeophys/BiogeophysRestMod.F90
+A       clm/src_clm40/biogeophys/UrbanMod.F90
+A       clm/src_clm40/biogeophys/QSatMod.F90
+A       clm/src_clm40/biogeophys/clm_driverInitMod.F90
+A       clm/src_clm40/biogeophys/HydrologyLakeMod.F90
+A       clm/src_clm40/biogeophys/BareGroundFluxesMod.F90
+A       clm/src_clm40/biogeophys/SNICARMod.F90
+A       clm/src_clm40/biogeophys/CanopyFluxesMod.F90
+A       clm/src_clm40/biogeophys/SurfaceRadiationMod.F90
+A       clm/src_clm40/biogeophys/Biogeophysics2Mod.F90
+A       clm/src_clm40/biogeophys/UrbanInitMod.F90
+A       clm/src_clm40/biogeophys/FracWetMod.F90
+A       clm/src_clm40/biogeophys/SurfaceAlbedoMod.F90
+A       clm/src_clm40/biogeophys/Hydrology2Mod.F90
+A       clm/src_clm40/biogeophys/BiogeophysicsLakeMod.F90
+A       clm/src_clm40/biogeophys/SoilHydrologyMod.F90
+	
+A       clm/src/main
+A       clm/src/main/organicFileMod.F90
+A       clm/src/main/clm_varcon.F90
+A       clm/src/main/initInterp.F90
+A       clm/src/main/landunit_varcon.F90
+A       clm/src/main/clm_varpar.F90
+A       clm/src/main/abortutils.F90
+A       clm/src/main/accumulMod.F90
+A       clm/src/main/subgridWeightsMod.F90
+A       clm/src/main/decompInitMod.F90
+A       clm/src/main/subgridMod.F90
+A       clm/src/main/atm2lndType.F90
+A       clm/src/main/lnd2atmType.F90
+A       clm/src/main/column_varcon.F90
+A       clm/src/main/EcophysConType.F90
+A       clm/src/main/GetGlobalValuesMod.F90
+A       clm/src/main/initSubgridMod.F90
+A       clm/src/main/lnd2glcMod.F90
+A       clm/src/main/glc2lndMod.F90
+A       clm/src/main/filterMod.F90
+A       clm/src/main/surfrdUtilsMod.F90
+A       clm/src/main/clm_varctl.F90
+A       clm/src/main/subgridAveMod.F90
+A       clm/src/main/initVerticalMod.F90
+A       clm/src/main/glcDiagnosticsMod.F90
+A       clm/src/main/lnd2atmMod.F90
+A       clm/src/main/atm2lndMod.F90
+A       clm/src/main/surfrdMod.F90
+A       clm/src/main/FuncPedotransferMod.F90
+A       clm/src/main/readParamsMod.F90
+A       clm/src/main/clm_initializeMod.F90
+A       clm/src/main/subgridRestMod.F90
+A       clm/src/main/paramUtilMod.F90
+A       clm/src/main/ColumnType.F90
+A       clm/src/main/PatchType.F90
+A       clm/src/main/ndepStreamMod.F90
+A       clm/src/main/init_hydrology.F90
+A       clm/src/main/histFileMod.F90
+A       clm/src/main/findHistFields.pl
+A       clm/src/main/restFileMod.F90
+A       clm/src/main/clm_varsur.F90
+A       clm/src/main/controlMod.F90
+A       clm/src/main/LandunitType.F90
+A       clm/src/main/CMakeLists.txt
+A       clm/src/main/test
+A       clm/src/main/test/subgridWeights_test
+A       clm/src/main/test/subgridWeights_test/test_subgridWeights.pf
+A       clm/src/main/test/subgridWeights_test/CMakeLists.txt
+A       clm/src/main/test/clm_glclnd_test
+A       clm/src/main/test/clm_glclnd_test/test_clm_glclnd.pf
+A       clm/src/main/test/clm_glclnd_test/CMakeLists.txt
+A       clm/src/main/test/CMakeLists.txt
+A       clm/src/main/clm_driver.F90
+A       clm/src/main/GridcellType.F90
+A       clm/src/main/initGridCellsMod.F90
+A       clm/src/main/pftvarcon.F90
+A       clm/src/main/ncdio_pio.F90
+A       clm/src/main/decompMod.F90
+A       clm/src/main/ncdio_pio.F90.in
+A       clm/src/main/reweightMod.F90
+
+A       clm/src/ED
+A       clm/src/ED/biogeochem
+A       clm/src/ED/biogeochem/EDCanopyStructureMod.F90
+A       clm/src/ED/biogeochem/EDGrowthFunctionsMod.F90
+A       clm/src/ED/biogeochem/EDPhysiologyMod.F90
+A       clm/src/ED/biogeochem/EDCohortDynamicsMod.F90
+A       clm/src/ED/biogeochem/EDPatchDynamicsMod.F90
+A       clm/src/ED/main
+A       clm/src/ED/main/EDBioType.F90
+A       clm/src/ED/main/EDEcophysConType.F90
+A       clm/src/ED/main/EDParamsMod.F90
+A       clm/src/ED/main/EDMainMod.F90
+A       clm/src/ED/main/EDCLMLinkMod.F90
+A       clm/src/ED/main/EDVecCohortType.F90
+A       clm/src/ED/main/EDVecPatchType.F90
+A       clm/src/ED/main/EDRestVectorMod.F90
+A       clm/src/ED/main/EDPftvarcon.F90
+A       clm/src/ED/main/EDInitMod.F90
+A       clm/src/ED/main/EDTypesMod.F90
+A       clm/src/ED/fire
+A       clm/src/ED/fire/SFParamsMod.F90
+A       clm/src/ED/fire/SFMainMod.F90
+A       clm/src/ED/biogeophys
+A       clm/src/ED/biogeophys/EDAccumulateFluxesMod.F90
+A       clm/src/ED/biogeophys/EDSurfaceAlbedoMod.F90
+A       clm/src/ED/biogeophys/EDPhotosynthesisMod.F90
+A       clm/src/ED/biogeophys/EDBtranMod.F90
+A       clm/src/Notes
+M       clm/src/unit_test_shr/unittestSubgridMod.F90
+
+A       clm/src/utils
+A       clm/src/utils/spmdGathScatMod.F90
+A       clm/src/utils/clm_time_manager.F90
+A       clm/src/utils/clm_nlUtilsMod.F90
+A       clm/src/utils/clm_varorb.F90
+A       clm/src/utils/accumulMod.F90
+A       clm/src/utils/getdatetime.F90
+A       clm/src/utils/fileutils.F90
+A       clm/src/utils/dtypes.h
+A       clm/src/utils/spmdMod.F90
+A       clm/src/utils/SimpleMathMod.F90
+A       clm/src/utils/domainMod.F90
+A       clm/src/utils/restUtilMod.F90
+A       clm/src/utils/quadraticMod.F90
+A       clm/src/utils/CMakeLists.txt
+A       clm/src/utils/restUtilMod.F90.in
+
+A       clm/src/biogeochem
+A       clm/src/biogeochem/CNCStateUpdate2Mod.F90
+A       clm/src/biogeochem/CNDecompCascadeConType.F90
+A       clm/src/biogeochem/CNNitrifDenitrifMod.F90
+A       clm/src/biogeochem/CNGRespMod.F90
+A       clm/src/biogeochem/CNBalanceCheckMod.F90
+A       clm/src/biogeochem/CNNStateUpdate3Mod.F90
+A       clm/src/biogeochem/CNDVDriverMod.F90
+A       clm/src/biogeochem/SatellitePhenologyMod.F90
+A       clm/src/biogeochem/CNPhenologyMod.F90
+A       clm/src/biogeochem/CNCarbonFluxType.F90
+A       clm/src/biogeochem/CNCarbonStateType.F90
+A       clm/src/biogeochem/CNCStateUpdate1Mod.F90
+A       clm/src/biogeochem/VOCEmissionMod.F90
+A       clm/src/biogeochem/CNAnnualUpdateMod.F90
+A       clm/src/biogeochem/CNNStateUpdate2Mod.F90
+A       clm/src/biogeochem/CropType.F90
+A       clm/src/biogeochem/CNAllocationMod.F90
+A       clm/src/biogeochem/CNNDynamicsMod.F90
+A       clm/src/biogeochem/DryDepVelocity.F90
+A       clm/src/biogeochem/CNDecompCascadeBGCMod.F90
+A       clm/src/biogeochem/CNSoilLittVertTranspMod.F90
+A       clm/src/biogeochem/CNDecompCascadeCNMod.F90
+A       clm/src/biogeochem/CNC14DecayMod.F90
+A       clm/src/biogeochem/CNGapMortalityMod.F90
+A       clm/src/biogeochem/CNNStateUpdate1Mod.F90
+A       clm/src/biogeochem/CNFireMod.F90
+A       clm/src/biogeochem/CNNitrogenFluxType.F90
+A       clm/src/biogeochem/CNMRespMod.F90
+A       clm/src/biogeochem/MEGANFactorsMod.F90
+A       clm/src/biogeochem/CNVerticalProfileMod.F90
+A       clm/src/biogeochem/CNCIsoFluxMod.F90
+A       clm/src/biogeochem/CNWoodProductsMod.F90
+A       clm/src/biogeochem/CNPrecisionControlMod.F90
+A       clm/src/biogeochem/ch4Mod.F90
+A       clm/src/biogeochem/DUSTMod.F90
+A       clm/src/biogeochem/CNDVLightMod.F90
+A       clm/src/biogeochem/ch4varcon.F90
+A       clm/src/biogeochem/CNDecompMod.F90
+A       clm/src/biogeochem/CNCStateUpdate3Mod.F90
+A       clm/src/biogeochem/CNSharedParamsMod.F90
+A       clm/src/biogeochem/CNDVType.F90
+A       clm/src/biogeochem/CNStateType.F90
+A       clm/src/biogeochem/CNEcosystemDynMod.F90
+A       clm/src/biogeochem/CNNitrogenStateType.F90
+A       clm/src/biogeochem/CNVegStructUpdateMod.F90
+A       clm/src/biogeochem/CNDVEstablishmentMod.F90
+	
+A       clm/src/biogeophys
+A       clm/src/biogeophys/SnowSnicarMod.F90
+A       clm/src/biogeophys/SnowHydrologyMod.F90
+A       clm/src/biogeophys/TridiagonalMod.F90
+A       clm/src/biogeophys/FrictionVelocityType.F90
+A       clm/src/biogeophys/LakeFluxesMod.F90
+A       clm/src/biogeophys/PhotosynthesisMod.F90
+A       clm/src/biogeophys/AerosolType.F90
+A       clm/src/biogeophys/ActiveLayerMod.F90
+A       clm/src/biogeophys/QSatMod.F90
+A       clm/src/biogeophys/SoilHydrologyType.F90
+A       clm/src/biogeophys/HydrologyDrainageMod.F90
+A       clm/src/biogeophys/LakeStateType.F90
+A       clm/src/biogeophys/BareGroundFluxesMod.F90
+A       clm/src/biogeophys/SolarAbsorbedType.F90
+A       clm/src/biogeophys/CanopyHydrologyMod.F90
+A       clm/src/biogeophys/UrbanFluxesMod.F90
+A       clm/src/biogeophys/SurfaceAlbedoMod.F90
+A       clm/src/biogeophys/UrbanRadiationMod.F90
+A       clm/src/biogeophys/PhotosynthesisType.F90
+A       clm/src/biogeophys/CanopyTemperatureMod.F90
+A       clm/src/biogeophys/HydrologyNoDrainageMod.F90
+A       clm/src/biogeophys/DaylengthMod.F90
+A       clm/src/biogeophys/WaterfluxType.F90
+A       clm/src/biogeophys/BalanceCheckMod.F90
+A       clm/src/biogeophys/SoilTemperatureMod.F90
+A       clm/src/biogeophys/WaterStateType.F90
+A       clm/src/biogeophys/LakeTemperatureMod.F90
+A       clm/src/biogeophys/FrictionVelocityMod.F90
+A       clm/src/biogeophys/SoilFluxesMod.F90
+A       clm/src/biogeophys/TemperatureType.F90
+A       clm/src/biogeophys/SurfaceAlbedoType.F90
+A       clm/src/biogeophys/AerosolMod.F90
+A       clm/src/biogeophys/SoilStateType.F90
+A       clm/src/biogeophys/SurfaceResistanceMod.F90
+A       clm/src/biogeophys/UrbanAlbedoMod.F90
+A       clm/src/biogeophys/CanopyFluxesMod.F90
+A       clm/src/biogeophys/CMakeLists.txt
+A       clm/src/biogeophys/RootBiophysMod.F90
+A       clm/src/biogeophys/test
+A       clm/src/biogeophys/test/CMakeLists.txt
+A       clm/src/biogeophys/test/Daylength_test
+A       clm/src/biogeophys/test/Daylength_test/test_daylength.pf
+A       clm/src/biogeophys/test/Daylength_test/CMakeLists.txt
+A       clm/src/biogeophys/SurfaceRadiationMod.F90
+A       clm/src/biogeophys/SoilWaterMovementMod.F90
+A       clm/src/biogeophys/SoilMoistStressMod.F90
+A       clm/src/biogeophys/SoiWatRetCurveParMod.F90
+A       clm/src/biogeophys/EnergyFluxType.F90
+A       clm/src/biogeophys/CanopyStateType.F90
+A       clm/src/biogeophys/BandDiagonalMod.F90
+A       clm/src/biogeophys/SoilHydrologyMod.F90
+A       clm/src/biogeophys/LakeCon.F90
+A       clm/src/biogeophys/LakeHydrologyMod.F90
+A       clm/src/biogeophys/UrbanParamsType.F90
+A       clm/src/dyn_subgrid
+A       clm/src/dyn_subgrid/dynLandunitAreaMod.F90
+A       clm/src/dyn_subgrid/dynTimeInfoMod.F90
+A       clm/src/dyn_subgrid/dynSubgridDriverMod.F90
+A       clm/src/dyn_subgrid/dynFileMod.F90
+A       clm/src/dyn_subgrid/dynConsBiogeochemMod.F90
+A       clm/src/dyn_subgrid/dynEDMod.F90
+A       clm/src/dyn_subgrid/dynVarMod.F90
+A       clm/src/dyn_subgrid/dynVarTimeUninterpMod.F90
+A       clm/src/dyn_subgrid/dynVarMod.F90.in
+A       clm/src/dyn_subgrid/dynVarTimeInterpMod.F90.in
+A       clm/src/dyn_subgrid/dynVarTimeUninterpMod.F90.in
+A       clm/src/dyn_subgrid/do_genf90
+A       clm/src/dyn_subgrid/CMakeLists.txt
+A       clm/src/dyn_subgrid/test
+A       clm/src/dyn_subgrid/test/dynLandunitArea_test
+A       clm/src/dyn_subgrid/test/dynLandunitArea_test/test_update_landunit_weights_one_gcell.pf
+A       clm/src/dyn_subgrid/test/dynLandunitArea_test/CMakeLists.txt
+A       clm/src/dyn_subgrid/test/dynLandunitArea_test/test_update_landunit_weights.pf
+A       clm/src/dyn_subgrid/test/dynVar_test
+A       clm/src/dyn_subgrid/test/dynVar_test/test_dynVarShared.F90
+A       clm/src/dyn_subgrid/test/dynVar_test/test_dynVarTimeInterp.pf
+A       clm/src/dyn_subgrid/test/dynVar_test/test_dynVarTimeUninterp.pf
+A       clm/src/dyn_subgrid/test/dynVar_test/CMakeLists.txt
+A       clm/src/dyn_subgrid/test/dynTimeInfo_test
+A       clm/src/dyn_subgrid/test/dynTimeInfo_test/test_dynTimeInfo.pf
+A       clm/src/dyn_subgrid/test/dynTimeInfo_test/CMakeLists.txt
+A       clm/src/dyn_subgrid/test/CMakeLists.txt
+A       clm/src/dyn_subgrid/test/dynInitColumns_test
+A       clm/src/dyn_subgrid/test/dynInitColumns_test/test_init_columns.pf
+A       clm/src/dyn_subgrid/test/dynInitColumns_test/CMakeLists.txt
+A       clm/src/dyn_subgrid/dynHarvestMod.F90
+A       clm/src/dyn_subgrid/dynPriorWeightsMod.F90
+A       clm/src/dyn_subgrid/dynpftFileMod.F90
+A       clm/src/dyn_subgrid/dynVarTimeInterpMod.F90
+A       clm/src/dyn_subgrid/dynCNDVMod.F90
+A       clm/src/dyn_subgrid/dynConsBiogeophysMod.F90
+A       clm/src/dyn_subgrid/dynInitColumnsMod.F90
+A       clm/src/unit_test_mocks/util_share/restUtilMod_mock.F90
+A       clm/src/unit_test_mocks/util_share/restUtilMod_mock.F90.in
+	
+List all existing files that have been modified, and describe the changes:
+	ALL files have been modified - see the general description for an
+	overview of what was done - the following files have not had their directories
+	changed - so the summary is below
+
+M       clm/bld/configure
+	- needed to account for change in filepath
+
+M       clm/bld/CLMBuildNamelist.pm
+M       clm/bld/namelist_files/namelist_definition_clm4_5.xml
+	- see namelist changes mentioned above
+
+M       clm/src/unit_test_mocks/util_share/clm_time_manager_mock.F90
+M       clm/src/unit_test_mocks/util_share/ncdio_var.F90
+M       clm/src/unit_test_mocks/util_share/ncdio_pio_mock.F90
+M       clm/src/unit_test_mocks/util_share/do_genf90
+M       clm/src/unit_test_mocks/util_share/CMakeLists.txt
+M       clm/src/unit_test_mocks/util_share/ncdio_pio_mock.F90.in
+M       clm/src/unit_test_mocks/main/histFileMod_mock.F90
+M       clm/src/CMakeLists.txt
+	- unit test changes needed to account for introduction of new data types and
+	directory structure
+
+M       clm/src/cpl/lnd_comp_esmf.F90
+M       clm/src/cpl/lnd_import_export.F90
+M       clm/src/cpl/lnd_comp_mct.F90
+	- coupling interface changes needed to account for introduction of new data types
+
+CLM testing:
+
+  build-namelist tests:
+
+    yellowstone yes
+    goldbach yes
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel yes
+    yellowstone_pgi   yes
+    yellowstone_gnu   yes
+    goldbach_nag      yes
+    goldbach_intel    yes
+    goldbach_pgi      yes
+
+    NOTE for goldbach_nag - four ED compare_hist tests fail with small bit for bit differences. 
+    In fact - looking more closely, these tests are also run for pgi and intel on goldbach - and
+    values for 	LITTER_IN and LITTER_OUT are 0. for those compilers but non-zero for nag.
+    With the refactoring code - those fields are again 0. for intel and pgi - but totally different
+    and non-zero for nag. Apparently, this is known problem that will get resolved in when new ED changes
+    are brount in
+
+    ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.goldbach_nag.clm-edTest
+    ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.goldbach_nag.clm-edTest
+    SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_nag.clm-edTest
+    SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_nag.clm-edTest
+
+
+  short tests (aux_clm_short) (generally these are NOT used when making a tag): N/A
+
+  tools testing: N/A
+
+CLM tag used for the baseline comparisons: clm4_5_1_r080
+
+Changes answers relative to baseline: No - BFB
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_1_r080
+Originator(s):  erik (Erik)
+Date: Sat Aug 16 15:01:35 MDT 2014
+One-line Summary: Update externals to CESM trunk versions, allow eighth degree as a valid resolution
+
+Purpose of changes:
+
+Update all the externals to the very latest CESM trunk versions (based off of current
+cesm1_3_alpha13a).
+
+Requirements for tag: Get working with trunk externals
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID):
+
+   2012 Problem with mksurfdata_map for eighth degree grid...
+  Scripts issues as follows:
+   2024 nlcompareonly option to create_test not working correctly for reporting
+   2019 ERH tests don't save the base env_run.xml, so have trouble when resubmitted...
+   2018 Failed tests in cesm1_3_beta11 needed for CLM
+   2005 Remove untested named compsets and grids
+   1999 T85_g16 has inconsistent land domain and surface datasets
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: 
+   Archiving updated in support of time series generation
+   Running test suite now builds some shared libraries built only once
+
+Describe any changes made to the namelist: 
+   Resolve env and xml vars used in user_nl_*
+
+   Default for drv_in profile_timer changed from 4 to 1
+   Some PE layours change: f10_f10 change from 15x1 to 30x1
+
+List any changes to the defaults for the boundary datasets: Add 0.125x0.125 mapping files
+
+Describe any substantial timing or memory changes: None
+
+Code reviewed by: self
+
+List any svn externals directories updated (csm_share, mct, etc.): Update to cesm1_3_alpha13a externals
+
+    scripts      to scripts4_140814a
+    scripts/doc  to doc_140519
+    Machines     to Machines_140811
+    CMake        to CMake_Fortran_utils_140715
+    drv          to drvseq5_0_15
+    cism         to cism1_140602
+    timing       to timing_140416
+    pio          to pio1_8_12
+    cprnc        to cprnc_140625
+    mapping      to mapping_140702b       (note: gen_domain changes answers)
+    unit_testing to unit_testing_0_07
+
+    PTCLM        to PTCLM2_140816
+
+List all files eliminated: None
+
+List all files added and what they do: None
+
+List all existing files that have been modified, and describe the changes:
+
+   M    models/lnd/clm/tools/clm4_5/mksurfdata_map/src/mkgridmapMod.F90 -- decrease tolerance
+   M    models/lnd/clm/tools/shared/ncl_scripts/getregional_datasets.ncl - Loop over variables
+           and then cat the files together at the end. This makes the process possible for
+           high resolution and speeds up lower resolution sub-setting as well.
+   M    models/lnd/clm/tools/clm4_0/mksurfdata_map/src/mkgridmapMod.F90 -- decrease tolerance
+   M    models/lnd/clm/tools/shared/mkmapdata/README --------------------- Fix/update documentation
+   M    models/lnd/clm/bld/unit_testers/build-namelist_test.pl ----------- Correct test count
+   M    models/lnd/clm/bld/namelist_files/namelist_defaults_clm4_5.xml --- Add 0.125x0.125
+           mapping files
+   M    models/lnd/clm/bld/namelist_files/namelist_definition_clm4_5.xml - Add 0.125x0.125
+           as a valid resolution
+   M    models/lnd/clm/bld/namelist_files/createMapEntry.pl --- Correct path, get working again
+
+CLM testing:
+
+  build-namelist tests:
+
+    yellowstone yes
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel   yes
+    yellowstone_pgi     yes
+    yellowstone_gnu     yes
+    goldbach_nag        yes
+    goldbach_intel      yes
+    goldbach_pgi        yes
+
+  short tests (aux_clm_short) (generally these are NOT used when making a tag):
+
+    yellowstone_intel   yes
+    yellowstone_pgi     yes
+    goldbach_nag        yes
+
+  tools testing:
+
+    yellowstone interactive  yes
+
+CLM tag used for the baseline comparisons:  clm4_5_1_r079
+
+Changes answers relative to baseline: Yes! (PE layouts that change)
+
+  Summarize any changes to answers, i.e.,
+    - what code configurations: non single-point configurations, where PE layout
+        changes (f10_f10)
+    - what platforms/compilers: all
+    - nature of change (roundoff)
+       x2l_Flrr_volr changes to roundoff
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_1_r079
+Originator(s):  andre (Benjamin Andre,LAWRENCE BERKELEY NATIONAL LABORATORY,510-486-4617)
+Date:  Thu Jul 31 17:09:57 MDT 2014
+One-line Summary: G. Bisht (LBL) soil temperature refactor; machines update for goldbach-intel
+
+Purpose of changes: Refactor soil temperature module to break the construction of the linear system LHS matrix and RHS vector into small physics based routines. Update machines external to fix compiling with goldbach-intel.
+
+Requirements for tag: regular
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID): N/A
+
+Known bugs (include bugzilla ID): N/A
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: N/A
+
+Describe any changes made to the namelist: N/A
+
+List any changes to the defaults for the boundary datasets: N/A
+
+Describe any substantial timing or memory changes: N/A
+
+Code reviewed by: gbisht, self, muszala
+
+List any svn externals directories updated (csm_share, mct, etc.): Machines
+
+List all files eliminated: N/A
+
+List all files added and what they do: N/A
+
+List all existing files that have been modified, and describe the changes:
+
+M models/lnd/clm/src/clm4_5/biogeophys/SoilTemperatureMod.F90 - break creation of linear system into small physics based routines.
+
+
+CLM testing: regular
+
+  build-namelist tests: N/A
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel - 4.0 ok, 4.5 ok
+    yellowstone_pgi - 4.0 ok, 4.5 ok
+    goldbach_nag - 4.0 ok, 4.5 ok (see note below)
+    goldbach_intel - 4.0 ok, 4.5 ok
+    goldbach_pgi - 4.0 ok, 4.5 ok
+
+    NOTE for goldbach_nag - four ED compare_hist tests fail with small non bit for bit differences. This is the same issue described in clm4_5_1_r078 tag notes.
+
+    ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.goldbach_nag.clm-edTest
+    ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.goldbach_nag.clm-edTest
+    SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_nag.clm-edTest
+    SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_nag.clm-edTest
+
+  tools testing: N/A
+
+CLM tag used for the baseline comparisons: clm4_5_1_r078
+
+Changes answers relative to baseline: No, bit for bit
+
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_1_r078
+Originator(s):  muszala (Stefan Muszala)
+Date: Wed Jul 23 20:42:00 MDT 2014
+One-line Summary: Add lai stream capability and the ability to run with V5 cruncep data.  Code written by swenson, 
+modified and tested by muszala.
+
+Purpose of changes: Add lai stream capability with use_lai_streams namelist variable.  Also add a datm_mode option
+s.t. we can use cruncep V5 data if a user wants.  Move anomaly focing code out of CLM and into DATM.
+
+Requirements for tag: N/A
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID):
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: N/A
+
+Describe any changes made to the namelist: add setup_logic_lai_streams which controls use_lai_streams namelist variable 
+
+List any changes to the defaults for the boundary datasets: added option to use V5 cruncep data sets.  V4 is default.
+
+Describe any substantial timing or memory changes: N/A
+
+Code reviewed by: kluzek, swenson, self
+
+List any svn externals directories updated (csm_share, mct, etc.):
+
+-scripts  https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/addclm50_tags/addclm50_n06_ED_scripts_015_140305_rev
++scripts  https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/addclm50_tags/addclm50_n09_ED_scripts_015_140305_rev
+
+-models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_140312
++models/atm/datm                 https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_140723
+
+-models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140418
++models/csm_share                https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140723
+
+List all files eliminated: N/A
+
+List all files added and what they do: N/A
+
+List all existing files that have been modified, and describe the changes:
+
+! add setup_logic_lai_streams function
+M       models/lnd/clm/bld/CLMBuildNamelist.pm
+! add entries for: stream_year_first_lai, stream_year_last_lai, model_year_align_lai, stream_fldfilename_lai, lai_mapalgo
+M       models/lnd/clm/bld/namelist_files/namelist_definition_clm4_5.xml
+! add default values for items added in namelist_definition_clm4_5.xml
+M       models/lnd/clm/bld/namelist_files/namelist_defaults_clm4_5.xml
+! add use_lai_streams code.   lai_init, lai_interp
+M       models/lnd/clm/src/clm4_5/biogeochem/SatellitePhenologyMod.F90
+! some comment clean up.  add use_lai_streams logical
+M       models/lnd/clm/src/clm4_5/main/clm_varctl.F90
+! add use_lai_streams namelist handling and mpi_bcast call
+M       models/lnd/clm/src/clm4_5/main/controlMod.F90
+! remove snomaly forcing streams since they are now in the datm
+M       models/lnd/clm/src/cpl/clm_cpl_indices.F90
+! remove anomaly forcing code since it is now in datm
+M       models/lnd/clm/src/cpl/lnd_import_export.F90
+
+CLM testing:
+
+  build-namelist tests:
+
+  yellowstone - failed  20 tests of 537.  This is expected due to the addition of the use_lai_streams namelist variable.
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+   -- nlcomp tests for 45 will fail --
+
+    yellowstone_intel - 40 OK  - 45 OK
+    yellowstone_pgi   - 40 OK  - 45 OK
+
+    goldbach_nag      - 40 OK  - 45 OK 
+    goldbach_intel    - 40 OK  - 45 OK
+    goldbach_pgi      - 40 OK  - 45 OK
+
+Both NAG tests on goldbach for ED compsets failed BFB.  All other compilers and machines pass.  Error probably related to a non-BFB error that I (spm) see with varying numbers of
+time-steps on an ERS test and am currently trying to fix.
+
+FAIL  ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.goldbach_nag.clm-edTest.GC.again_45_nag.compare_hist.clm4_5_1_r077_redo 
+FAIL ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.goldbach_nag.clm-edTest.GC.again_45_nag.clm2.h0.compare_hist.clm4_5_1_r077_redo 
+FAIL  SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_nag.clm-edTest.GC.again_45_nag.compare_hist.clm4_5_1_r077_redo 
+FAIL SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_nag.clm-edTest.GC.again_45_nag.clm2.h0.compare_hist.clm4_5_1_r077_redo 
+CLM tag used for the baseline comparisons:  clm4_5_1_r077
+
+Changes answers relative to baseline: No
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_1_r077
+Originator(s):  andre (Benjamin Andre,LAWRENCE BERKELEY NATIONAL LABORATORY,510-486-4617)
+Date: Thu Jul 10 21:55:11 MDT 2014
+One-line Summary: Refactor from Jinyun Tang (LBL) to make hydrology more modular and eventually allow runtime selection of different physics implementations.
+
+Purpose of changes: Refactor a number of routines in clm45 hydrology to move duplicate code into reusable routines, make the code more modular for eventual unit testing and run time selection of different physics.
+
+Requirements for tag: bit for bit, regular testing
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID):
+
+Known bugs (include bugzilla ID):
+	http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: none
+
+Describe any changes made to the namelist: none
+
+List any changes to the defaults for the boundary datasets: none
+
+Describe any substantial timing or memory changes: none
+
+Code reviewed by: self, clm-cmt
+
+List any svn externals directories updated (csm_share, mct, etc.): none
+
+List all files eliminated: none
+
+List all files added and what they do:
+
+  models/lnd/clm/src/util_share/SimpleMathMod.F90 - reuseable array functions
+  models/lnd/clm/src/clm4_5/main/init_hydrology.F90 - initialize different hydrology submodules.
+  models/lnd/clm/src/clm4_5/main/FuncPedotransferMod.F90 - modularize
+  models/lnd/clm/src/clm4_5/biogeophys/SurfaceResistanceMod.F90 - modularize
+  models/lnd/clm/src/clm4_5/biogeophys/RootBiophysMod.F90 - modularize
+  models/lnd/clm/src/clm4_5/biogeophys/SoilWaterMovementMod.F90 - modularize
+  models/lnd/clm/src/clm4_5/biogeophys/SoilMoistStressMod.F90 - modularize
+  models/lnd/clm/src/clm4_5/biogeophys/SoiWatRetCurveParMod.F90 - modularize
+
+
+List all existing files that have been modified, and describe the changes:
+
+  models/lnd/clm/bld/query-xFail - check python version and provide an error message of it is too old.
+  models/lnd/clm/src/clm4_5/biogeochem/CNC14DecayMod.F90 - remove unused min/max variables that conflict with intrinsics with gfortran.
+
+
+  models/lnd/clm/src/clm4_5/main/initTimeConstMod.F90 - modularize
+  models/lnd/clm/src/clm4_5/main/clmtypeInitMod.F90 - allocate new variable, fix bounds on porosity
+  models/lnd/clm/src/clm4_5/main/controlMod.F90 - initialize new hydrology modules
+  models/lnd/clm/src/clm4_5/main/clmtype.F90 - add new variable
+  models/lnd/clm/src/clm4_5/biogeophys/Biogeophysics1Mod.F90 - modularize
+  models/lnd/clm/src/clm4_5/biogeophys/BareGroundFluxesMod.F90 - modularize
+  models/lnd/clm/src/clm4_5/biogeophys/CanopyFluxesMod.F90 - modularize
+  models/lnd/clm/src/clm4_5/biogeophys/Hydrology2Mod.F90 - modularize
+  models/lnd/clm/src/clm4_5/biogeophys/SoilHydrologyMod.F90 - modularize
+
+CLM testing: regular
+
+  build-namelist tests:
+
+    yellowstone - n/a
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel - OK clm40, OK clm45
+    yellowstone_pgi - OK clm40, OK clm45
+    goldbach_nag - OK clm40, OK clm45
+    goldbach_intel - OK clm40, OK clm45
+    goldbach_pgi - OK clm40, OK clm45
+
+  short tests (aux_clm_short) (generally these are NOT used when making a tag):
+
+    yellowstone_intel - n/a
+    yellowstone_pgi - n/a
+    goldbach_nag - n/a
+
+  tools testing:
+
+    yellowstone interactive - n/a
+    goldbach interactive - n/a
+
+CLM tag used for the baseline comparisons: clm4_5_1_r076
+
+Changes answers relative to baseline: No, bit for bit
+
+  Note: SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_nag.clm-edTest is not bit for bit. This is the same test Stef had problems with in clm4_5_75. He has looked at it and given the ok make the tag as is.
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_1_r076
+Originator(s):  erik (Erik)
+Date: Mon Jul  7 14:24:07 MDT 2014
+Orig Date: Wed Jun 25 13:49:49 MDT 2014 (Date of what was tagged as clm4_6_0, before we changed naming convention)
+One-line Summary: Answer changes for fire code from Fang Li
+
+Purpose of changes:
+
+Several changes to CN Fire model. Some fixes for non-transient, as well as limiting of fire for high tropical
+forest coverage. Change some units from per time-step to per second. Change Lightning input dataset from just
+cloud to ground to total lightning. Some fire parameters were also changed and re-tuned for Qian forcing.
+Some more documentation on fire fields was added.
+
+When -ed_mode is sent to CLM build-namelist, a particular ED params dataset is used over the default. Make
+a simple change that allows ED to run when CN is off. Add a 1850 and transient 20thC and rcp=8.5 datasets
+for 1x1_brazil.
+
+Requirements for tag: Fix bugs 1805 and 1719, lower fire amount in amazon
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID):
+    1996 -- change cloud to ground lightning dataset to total lightning
+    1995 -- change units from per time-step to per second
+    1805 -- fire fix for non-transient
+    1719 -- remove double counting of baf in fire area
+    1992 -- allow ED to run when use_cn=.false.
+    1988 -- Add ED params dataset.
+    1991 -- transient datasets for 1x1_brazil
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: None
+
+Describe any changes made to the namelist: None
+
+List any changes to the defaults for the boundary datasets:
+  specific rparams file for ED
+  add 1850 and 20thC, rcp8.5 datasets for 1x1_brazil
+  use lightning file that is total lightning not just cloud-to-ground
+
+Describe any substantial timing or memory changes: 
+    The test SMS.f19_g16.IRCP45CN.yellowstone_pgi showed a memory increase
+
+Code reviewed by: self, lifang
+
+List any svn externals directories updated (csm_share, mct, etc.): scripts
+    scripts to addclm50_n06_ED_scripts_015_140305_rev
+
+List all files eliminated: None
+
+List all files added and what they do: None
+
+List all existing files that have been modified, and describe the changes:
+
+       M models/lnd/clm/bld/unit_testers/build-namelist_test.pl --------- Add some ED tests
+       M models/lnd/clm/bld/namelist_files/namelist_defaults_clm4_5.xml - Different
+             params file for ED, and add 1850 and 20thC, rcp8.5 datasets for 1x1_brazil
+             and use lightning file that is total lightning not just cloud-to-ground
+       M models/lnd/clm/bld/CLMBuildNamelist.pm ------------------------- Pass use_ed
+             when getting paramfile
+       M models/lnd/clm/src/clm4_5/biogeochem/CNFireMod.F90 ------------- Revisions from
+             Fang Li (2014), change parameters, add documentation, tropical forests will
+             only burn if > 60% coverage, change some fields units to per second rather than
+             per time-step, 
+       M models/lnd/clm/src/clm4_5/biogeochem/CNInitMod.F90 ------------- change units
+             for nfire, and farea_burned
+       M models/lnd/clm/src/clm4_5/main/clmtype.F90 --------------------- Change units
+             for nfire, lfc, lfc2, baf_crop, baf_peatf, fbac, fbac1, farea_burned
+       M models/lnd/clm/src/clm4_5/main/histFldsMod.F90 ----------------- Change units for:
+             LFC2, NFIRE, FAREA_BURNED, BAF_CROP, BAF_PEATF
+       M models/lnd/clm/src/clm4_5/biogeophys/ED/EDPhotosynthesisMod.F90  Allow to work
+             when use_cn is .false., use c3psn+1 in finding index for dr array.
+
+CLM testing:
+
+ build-namelist tests:  yes
+
+    NOTE: 191 of the 537 compare tests fail, compared to clm4_5_75, because of changes in the namelist.
+
+    yellowstone        yes
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel  yes
+    yellowstone_pgi    yes
+    goldbach_nag       yes
+    goldbach_intel     yes
+    goldbach_pgi       yes
+
+CLM tag used for the baseline comparisons:  clm4_5_75
+
+Changes answers relative to baseline:
+
+  If a tag changes answers relative to baseline comparison the
+  following should be filled in (otherwise remove this section):
+
+  Summarize any changes to answers, i.e.,
+    - what code configurations: CN and BGC with CLM4.5 physics
+          CLM4.0 for all modes, and CLM4.5 with SP or ED should be identical
+    - what platforms/compilers: All
+    - nature of change: new climate
+
+   Fang Li, ran simulations with Qian forcing on yellowstone and tuned fire parameters to that forcing.
+   However, her simulations had a minor bug in the conversion of total lightning to just cloud-to-ground
+   (latitude in degree's was used for a cosine, rather than latitude in radians -- see bug 1996).
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_75
+Originator(s):  muszala (Stefan Muszala,UCAR/TSS,303-497-1320)
+Date: Fri May 30 11:18:35 MDT 2014
+One-line Summary: update externals to rtm1_0_38 and esmf_wrf_timemgr_140529
+
+Purpose of changes: update externals to rtm1_0_38 and esmf_wrf_timemgr_140529.  These modifications
+are based on valgrind errors that orginated in src/riverroute.  Tested in clm4_5_72 to make sure
+everything was still BFB (at least w.r.t. CLM testing).  Retested (results below) against clm4_5_73.  
+
+Requirements for tag: N/A
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID):N/A
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: N/A
+
+Describe any changes made to the namelist: N/A
+
+List any changes to the defaults for the boundary datasets: N/A
+
+Describe any substantial timing or memory changes: N/A
+
+Code reviewed by: self
+
+List any svn externals directories updated (csm_share, mct, etc.): 
+
+-models/rof/rtm                  https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_37
++models/rof/rtm                  https://svn-ccsm-models.cgd.ucar.edu/rivrtm/trunk_tags/rtm1_0_38
+
+-models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_130213
++models/utils/esmf_wrf_timemgr   https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_140529
+
+List all files eliminated: N/A
+
+List all files added and what they do: N/A
+
+List all existing files that have been modified, and describe the changes: N/A
+
+CLM testing:
+
+in addition to other clm tests I updated the rtm and esmf externals in cesm1_3_alpha09c and
+ran two B cases.
+
+Note:  There is one ED test (SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_nag.clm-edTestGb) that failed for me in my
+testing but passed for Bill with the same checkout.  We will keep an eye on this, but it's not super-critical at the moment.
+Differences are very small in cpl. voc fields (largest RMS difference is 1e-13).
+
+>>more TestStatus
+PASS  ERS_PT.T31_g37.B1850CN.yellowstone_gnu 
+PASS  ERS_PT.T31_g37.B1850CN.yellowstone_gnu.memleak
+
+>>more TestStatus
+PASS  ERS.ne30_g16.B1850C5CN.yellowstone_intel 
+PASS  ERS.ne30_g16.B1850C5CN.yellowstone_intel.memleak
+
+  build-namelist tests: N/A
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel - 40 OK - 45 OK - component gen comp - OK
+    yellowstone_pgi   - 40 OK - 45 OK - component gen comp - OK
+
+    goldbach_nag      - 40 OK - 45 OK
+    goldbach_intel    - 40 OK - 45 OK
+    goldbach_pgi      - 40 OK - 45 OK
+
+CLM tag used for the baseline comparisons: clm4_5_73
+
+Changes answers relative to baseline: No
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_74
+Originator(s):  sacks (sacks)
+Date: Wed May 28 16:05:36 MDT 2014
+One-line Summary: misc. bfb changes - see detailed summary below
+
+Purpose of changes:
+
+  (1) Rename fpftdyn to flanduse_timeseries, and make related changes to names
+      throughout the code. This rename is in preparation for an upcoming tag
+      where this file will take on more general uses (e.g., transient crop
+      areas).
+
+  (2) Decrease thresholds for water, snow and energy balance checks (these were
+      too permissive)
+
+  (3) Move stuff out of clm_varcon into landunit_varcon (for constants specific
+      to CLM's landunits) and column_varcon (for constants specific to CLM's
+      columns) - analogous to the existing pftvarcon
+
+  (4) Move some routines out of initGridCellsMod into a new initSubgridMod
+
+  (5) Make time_info a public member of dyn_file_type, which allows removing a
+      bunch of delegation methods. And rename some things in time_info_type for
+      clarity.
+
+  (6) Rework metadata for the description of landunit, column and pft types
+      on the history and restart files, to centralize these descriptions to the
+      appropriate place in the code.
+
+  (7) Add general-purpose functionality for setting up subgrid structure for
+      unit tests
+
+  (8) Move unit tests into source tree, rather than being in
+      test/unit_testers. Now the top-level script is in models/lnd/clm/src.
+
+  (9) Fix baseline comparisons for PTCLM tests
+
+Requirements for tag: N/A
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID):
+  - 1928 (create landunit_varcon.F90 and column_varcon.F90 from parts of clm_varcon.F90)
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: None
+
+Describe any changes made to the namelist: fpftdyn renamed to flanduse_timeseries
+
+List any changes to the defaults for the boundary datasets: None
+
+Describe any substantial timing or memory changes: None
+
+Code reviewed by: self
+
+List any svn externals directories updated (csm_share, mct, etc.):
+
+   scripts: addclm50_n03_ED_scripts_015_140305_rev -> addclm50_n04_ED_scripts_015_140305_rev
+     - Rename CLM's fpftdyn to flanduse_timeseries in tests; update perl5lib
+
+   tools/unit_testing: unit_testing_0_04 -> unit_testing_0_05
+     - the major change here is allowing rebuilds with intel without needing to
+       specify --clean
+
+   models/lnd/clm/tools/PTCLM: PTCLM2_140423 -> PTCLM2_140521
+     - rename fpftdyn -> flanduse_timeseries, and other related renames
+
+List all files eliminated:
+
+========= Renamed
+D       models/lnd/clm/tools/clm4_5/mksurfdata_map/pftdyn_hist_simyr1850-2005.txt
+D       models/lnd/clm/tools/clm4_0/mksurfdata_map/pftdyn_hist_simyr1850-2005.txt
+
+========= Move unit tests into source tree
+D       models/lnd/clm/test/unit_testers/clm4_5/biogeophys/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/biogeophys/Daylength_test/test_daylength.pf
+D       models/lnd/clm/test/unit_testers/clm4_5/biogeophys/Daylength_test/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/biogeophys/Daylength_test
+D       models/lnd/clm/test/unit_testers/clm4_5/biogeophys
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynLandunitArea_test/test_update_landunit_weights_one_gcell.pf
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynLandunitArea_test/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynLandunitArea_test/test_update_landunit_weights.pf
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynLandunitArea_test
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynVar_test/test_dynVarShared.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynVar_test/test_dynVarTimeInterp.pf
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynVar_test/test_dynVarTimeUninterp.pf
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynVar_test/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynVar_test
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynTimeInfo_test/test_dynTimeInfo.pf
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynTimeInfo_test/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynTimeInfo_test
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynInitColumns_test/test_init_columns.pf
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynInitColumns_test/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid/dynInitColumns_test
+D       models/lnd/clm/test/unit_testers/clm4_5/dyn_subgrid
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share/ncdio_var.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share/GetGlobalValuesMod_mock.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share/ncdio_var.F90.in
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share/clm_time_manager_mock.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share/ncdio_pio_mock.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share/spmdMod_mock.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share/do_genf90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share/ncdio_pio_mock.F90.in
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/util_share
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/csm_share/shr_sys_mod_mock.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/csm_share/mct_mod_mock.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/csm_share/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/csm_share
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/main/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/main/histFileMod_mock.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/main
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/dyn_subgrid/dynFileMod_mock.F90
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/dyn_subgrid/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/dyn_subgrid
+D       models/lnd/clm/test/unit_testers/clm4_5/mock/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/mock
+D       models/lnd/clm/test/unit_testers/clm4_5/CMakeLists.txt
+D       models/lnd/clm/test/unit_testers/clm4_5/README
+D       models/lnd/clm/test/unit_testers/clm4_5
+D       models/lnd/clm/test/unit_testers
+
+
+List all files added and what they do:
+
+========= Renamed
+A       models/lnd/clm/tools/clm4_5/mksurfdata_map/landuse_timeseries_hist_simyr1850-2005.txt
+A       models/lnd/clm/tools/clm4_0/mksurfdata_map/landuse_timeseries_hist_simyr1850-2005.txt
+
+========= Move stuff out of clm_varcon into landunit_varcon (for constants
+          specific to CLM's landunits) and column_varcon (for constants specific
+          to CLM's columns) - analogous to the existing pftvarcon.
+A       models/lnd/clm/src/clm4_5/main/landunit_varcon.F90
+A       models/lnd/clm/src/clm4_5/main/column_varcon.F90
+
+
+========= Move some routines out of initGridCellsMod - these are lower-level
+          routines that can also be used by unit test code. So initGridCellsMod
+          contains higher-level stuff that is specific to how the subgrid
+          structure is set up in a production run; and initSubgridMod contains
+          lower-level stuff that doesn't know or care how things are actually
+          set up, conceptually.
+A       models/lnd/clm/src/clm4_5/main/initSubgridMod.F90
+
+========= Add general-purpose functionality for setting up subgrid structure for unit tests
+A       models/lnd/clm/src/unit_test_shr/unittestSubgridMod.F90
+A       models/lnd/clm/src/unit_test_shr/CMakeLists.txt
+A       models/lnd/clm/src/unit_test_shr
+
+
+========= Move unit tests into source tree; also modify some unit tests to take
+          advantage of the new unittestSubgridMod; also add tests of
+          subgridWeightsMod and clm_glclnd
+A       models/lnd/clm/src/clm4_5/main/test/subgridWeights_test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/main/test/subgridWeights_test/test_subgridWeights.pf
+A       models/lnd/clm/src/clm4_5/main/test/subgridWeights_test
+A       models/lnd/clm/src/clm4_5/main/test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/main/test/clm_glclnd_test/test_clm_glclnd.pf
+A       models/lnd/clm/src/clm4_5/main/test/clm_glclnd_test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/main/test/clm_glclnd_test
+A       models/lnd/clm/src/clm4_5/main/test
+A       models/lnd/clm/src/clm4_5/biogeophys/test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/biogeophys/test/Daylength_test/test_daylength.pf
+A       models/lnd/clm/src/clm4_5/biogeophys/test/Daylength_test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/biogeophys/test/Daylength_test
+A       models/lnd/clm/src/clm4_5/biogeophys/test
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynLandunitArea_test/test_update_landunit_weights_one_gcell.pf
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynLandunitArea_test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynLandunitArea_test/test_update_landunit_weights.pf
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynLandunitArea_test
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynVar_test/test_dynVarShared.F90
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynVar_test/test_dynVarTimeInterp.pf
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynVar_test/test_dynVarTimeUninterp.pf
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynVar_test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynVar_test
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynTimeInfo_test/test_dynTimeInfo.pf
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynTimeInfo_test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynTimeInfo_test
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynInitColumns_test/test_init_columns.pf
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynInitColumns_test/CMakeLists.txt
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test/dynInitColumns_test
+A       models/lnd/clm/src/clm4_5/dyn_subgrid/test
+A       models/lnd/clm/src/README.unit_testing
+A       models/lnd/clm/src/unit_test_mocks/util_share/ncdio_var.F90
+A       models/lnd/clm/src/unit_test_mocks/util_share/GetGlobalValuesMod_mock.F90
+A       models/lnd/clm/src/unit_test_mocks/util_share/ncdio_var.F90.in
+A       models/lnd/clm/src/unit_test_mocks/util_share/clm_time_manager_mock.F90
+        - also add a routine to this mock, needed because of refactor of
+          dyn_file_type / dyn_time_inof
+A       models/lnd/clm/src/unit_test_mocks/util_share/ncdio_pio_mock.F90
+A       models/lnd/clm/src/unit_test_mocks/util_share/spmdMod_mock.F90
+A       models/lnd/clm/src/unit_test_mocks/util_share/do_genf90
+A       models/lnd/clm/src/unit_test_mocks/util_share/CMakeLists.txt
+A       models/lnd/clm/src/unit_test_mocks/util_share/ncdio_pio_mock.F90.in
+A       models/lnd/clm/src/unit_test_mocks/util_share
+A       models/lnd/clm/src/unit_test_mocks/csm_share/shr_sys_mod_mock.F90
+A       models/lnd/clm/src/unit_test_mocks/csm_share/mct_mod_mock.F90
+A       models/lnd/clm/src/unit_test_mocks/csm_share/CMakeLists.txt
+A       models/lnd/clm/src/unit_test_mocks/csm_share
+A       models/lnd/clm/src/unit_test_mocks/main/CMakeLists.txt
+A       models/lnd/clm/src/unit_test_mocks/main/histFileMod_mock.F90
+A       models/lnd/clm/src/unit_test_mocks/main
+A       models/lnd/clm/src/unit_test_mocks/dyn_subgrid/dynFileMod_mock.F90
+A       models/lnd/clm/src/unit_test_mocks/dyn_subgrid/CMakeLists.txt
+A       models/lnd/clm/src/unit_test_mocks/dyn_subgrid
+A       models/lnd/clm/src/unit_test_mocks/CMakeLists.txt
+A       models/lnd/clm/src/unit_test_mocks
+A       models/lnd/clm/src/CMakeLists.txt
+
+List all existing files that have been modified, and describe the changes:
+
+========= Renamed fpftdyn -> flanduse_timeseries, and other related changes to
+          variable names
+          (NOTE: Some source files are listed both here and elsewhere in the
+          ChangeLog entry)
+M       models/lnd/clm/tools/clm4_5/mksurfdata_map/mksurfdata_map.namelist
+M       models/lnd/clm/tools/clm4_5/mksurfdata_map/mksurfdata.pl
+M       models/lnd/clm/tools/clm4_5/mksurfdata_map/README
+M       models/lnd/clm/tools/shared/ncl_scripts/sample_inlist
+M       models/lnd/clm/tools/shared/ncl_scripts/sample_outlist
+M       models/lnd/clm/tools/clm4_0/mksurfdata_map/src/clm_varctl.F90
+M       models/lnd/clm/tools/clm4_0/mksurfdata_map/mksurfdata_map.namelist
+M       models/lnd/clm/tools/clm4_0/mksurfdata_map/mksurfdata.pl
+M       models/lnd/clm/tools/clm4_0/mksurfdata_map/README
+M       models/lnd/clm/bld/CLMBuildNamelist.pm
+M       models/lnd/clm/bld/unit_testers/build-namelist_test.pl
+M       models/lnd/clm/bld/test_build_namelist/t/input/namelist_defaults_clm4_5_test.xml
+M       models/lnd/clm/bld/test_build_namelist/t/input/namelist_definition_clm4_5_test.xml
+M       models/lnd/clm/bld/namelist_files/namelist_defaults_clm4_0.xml
+M       models/lnd/clm/bld/namelist_files/namelist_definition_clm4_0.xml
+M       models/lnd/clm/bld/namelist_files/namelist_defaults_clm4_5.xml
+M       models/lnd/clm/bld/namelist_files/namelist_definition_clm4_5.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/20thC_glacierMEC_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/2000-2100_rcp8.5_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp2.6_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp6_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp4.5_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp8.5_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/20thC_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp2.6_glacierMEC_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp6_glacierMEC_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp4.5_glacierMEC_transient.xml
+M       models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp8.5_glacierMEC_transient.xml
+M       models/lnd/clm/bld/namelist_files/namelist_defaults_usr_files.xml
+M       models/lnd/clm/doc/UsersGuide/trouble_shooting.xml
+M       models/lnd/clm/doc/UsersGuide/single_point.xml
+M       models/lnd/clm/doc/UsersGuide/tools.xml
+M       models/lnd/clm/doc/UsersGuide/adding_files.xml
+M       models/lnd/clm/doc/UsersGuide/custom.xml
+M       models/lnd/clm/doc/UsersGuide/ptclm.xml
+M       models/lnd/clm/src/clm4_5/biogeochem/CNFireMod.F90
+M       models/lnd/clm/src/clm4_5/biogeochem/CNEcosystemDynMod.F90
+M       models/lnd/clm/src/clm4_5/main/clm_varpar.F90
+M       models/lnd/clm/src/clm4_5/main/subgridRestMod.F90
+M       models/lnd/clm/src/clm4_5/main/restFileMod.F90
+M       models/lnd/clm/src/clm4_5/main/controlMod.F90
+M       models/lnd/clm/src/clm4_5/main/surfrdUtilsMod.F90
+M       models/lnd/clm/src/clm4_5/main/clm_varctl.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/BiogeophysRestMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynSubgridDriverMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynHarvestMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynpftFileMod.F90
+M       models/lnd/clm/src/clm4_0/biogeochem/CNEcosystemDynMod.F90
+M       models/lnd/clm/src/clm4_0/main/clm_initializeMod.F90
+M       models/lnd/clm/src/clm4_0/main/pftdynMod.F90
+M       models/lnd/clm/src/clm4_0/main/controlMod.F90
+M       models/lnd/clm/src/clm4_0/main/clm_varctl.F90
+M       models/lnd/clm/src/clm4_0/main/clm_driver.F90
+M       models/lnd/clm/src/clm4_0/biogeophys/BiogeophysRestMod.F90
+
+========= Updated PTCLM external to rename fpftdyn -> flanduse_timeseries
+M       models/lnd/clm/tools/SVN_EXTERNAL_DIRECTORIES
+
+========= Decrease threshold for water & snow balance checks by 3 orders of
+          magnitude; decrease threshold for energy balance checks by 2 orders of
+          magnitude
+M       models/lnd/clm/src/clm4_5/biogeophys/BalanceCheckMod.F90
+
+========= Separate clm_varcon into clm_varcon, column_varcon and landunit_varcon
+M       models/lnd/clm/src/clm4_5/main/clm_varcon.F90
+M       models/lnd/clm/src/clm4_5/main/CMakeLists.txt
+
+========= Move some routines out of initGridCellsMod, into a new initSubgridMod
+          (see detailed notes above)
+M       models/lnd/clm/src/clm4_5/main/initGridCellsMod.F90
+
+========= Make time_info a public member of dyn_file_type. This allows us to
+          remove all methods from dyn_file_type (which were just delegating
+          responsibility to time_info_type). Also rename some methods and
+          variables in time_info_type.
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynFileMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynTimeInfoMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynHarvestMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynpftFileMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynVarMod.F90.in
+         - also change intent(in) to intent(inout), fixing a gfortran problem
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynVarMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynVarTimeUninterpMod.F90.in
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynVarTimeUninterpMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynVarTimeInterpMod.F90.in
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynVarTimeInterpMod.F90
+
+========= Rework metadata for the description of landunit, column and pft types
+          on the history and restart files. Point is to centralize the
+          definition of these different types as much as possible (rather than,
+          e.g., having restFileMod know about the translation between landunit
+          indices and names). For the history file, I am removing the metadata
+          from the PCT_LANDUNIT long name, instead putting it in global
+          metadata, as is done for the restart file.
+M       models/lnd/clm/src/clm4_5/main/subgridWeightsMod.F90
+M       models/lnd/clm/src/clm4_5/main/histFileMod.F90
+M       models/lnd/clm/src/clm4_5/main/restFileMod.F90
+M       models/lnd/clm/src/clm4_5/main/pftvarcon.F90
+
+========= Change 'use' statements based on my split of clm_varcon into
+          clm_varcon, landunit_varcon and column_varcon
+M       models/lnd/clm/src/clm4_5/biogeochem/CNWoodProductsMod.F90
+M       models/lnd/clm/src/clm4_5/biogeochem/DUSTMod.F90
+M       models/lnd/clm/src/clm4_5/biogeochem/CNInitMod.F90
+M       models/lnd/clm/src/clm4_5/biogeochem/ch4InitMod.F90
+M       models/lnd/clm/src/clm4_5/biogeochem/CNAllocationMod.F90
+M       models/lnd/clm/src/clm4_5/biogeochem/DryDepVelocity.F90
+M       models/lnd/clm/src/clm4_5/biogeochem/CNDVEstablishmentMod.F90
+M       models/lnd/clm/src/clm4_5/main/initTimeConstMod.F90
+M       models/lnd/clm/src/clm4_5/main/clm_initializeMod.F90
+M       models/lnd/clm/src/clm4_5/main/subgridRestMod.F90
+M       models/lnd/clm/src/clm4_5/main/clm_glclnd.F90
+M       models/lnd/clm/src/clm4_5/main/subgridMod.F90
+M       models/lnd/clm/src/clm4_5/main/clmtypeInitMod.F90
+M       models/lnd/clm/src/clm4_5/main/initColdMod.F90
+M       models/lnd/clm/src/clm4_5/main/clm_atmlnd.F90
+M       models/lnd/clm/src/clm4_5/main/filterMod.F90
+M       models/lnd/clm/src/clm4_5/main/ED/EDCLMLinkMod.F90
+M       models/lnd/clm/src/clm4_5/main/subgridAveMod.F90
+M       models/lnd/clm/src/clm4_5/main/surfrdMod.F90
+M       models/lnd/clm/src/clm4_5/main/clmtype.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/SLakeInitMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/SoilTemperatureMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/SnowHydrologyMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/UrbanInputMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/Biogeophysics1Mod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/TridiagonalMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/Hydrology1Mod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/BiogeophysRestMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/UrbanMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/clm_driverInitMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/BareGroundFluxesMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/SurfaceRadiationMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/H2OSfcMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/Biogeophysics2Mod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/UrbanInitMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/SurfaceAlbedoMod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/Hydrology2Mod.F90
+M       models/lnd/clm/src/clm4_5/biogeophys/SoilHydrologyMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynLandunitAreaMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynConsBiogeochemMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynEDMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynCNDVMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynConsBiogeophysMod.F90
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynInitColumnsMod.F90
+
+========= Fix baseline comparisons for PTCLM tests
+M       models/lnd/clm/test/tools/TSMscript_tools.sh
+M       models/lnd/clm/test/tools/TBLscript_tools.sh
+
+========= Just changes in whitespace
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/CMakeLists.txt
+M       models/lnd/clm/src/clm4_5/biogeophys/CMakeLists.txt
+
+
+CLM testing:
+
+  Most testing done on dynlu_crops_n01_addclm50bld_n06_clm4_5_72; PTCLM and
+  tools testing done on dynlu_crops_n03_addclm50bld_n06_clm4_5_72
+
+  Note that the branch was up-to-date with addclm50bld_n06_clm4_5_72; this is
+  identical to clm4_5_73 except for a fix to the build-namelist tests (see below)
+
+  build-namelist tests:
+
+    yellowstone: ok
+      compared against addclm50bld_n06_clm4_5_72 (essentially clm4_5_73)
+      expected diffs for transient cases
+
+      The following tests also failed when comparing the baseline against
+      itself (NOTE: this is apparently fixed in clm4_5_73):
+
+      466/497 < FAIL> <Test Id: 466> <Desc: compare file lnd_in DNE for phys-crop.clm4_5 and -res+1.9x2.5+-irrig+.true.+-crop+-bgc+cn++-envxml_dir+.>  
+      467/497 < FAIL> <Test Id: 467> <Desc: compare file temp_file.txt DNE for phys-crop.clm4_5 and -res+1.9x2.5+-irrig+.true.+-crop+-bgc+cn++-envxml_dir+.>  
+      496/497 < FAIL> <Test Id: 496> <Desc: compare file lnd_in DNE for phys-crop.clm5_0 and -res+1.9x2.5+-irrig+.true.+-crop+-bgc+cn++-envxml_dir+.>  
+      497/497 < FAIL> <Test Id: 497> <Desc: compare file temp_file.txt DNE for phys-crop.clm5_0 and -res+1.9x2.5+-irrig+.true.+-crop+-bgc+cn++-envxml_dir+.>  
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel: ok
+    yellowstone_pgi: ok
+    goldbach_nag: ok
+    goldbach_intel: ok
+    goldbach_pgi: ok
+
+      Most comparisons were done against clm4_5_72.
+
+      These comparisons failed due to a problem with component_gen_comp and the
+      SSP test; manual comparisons show these to be identical to Erik's tests (for
+      clm4_5_73):
+
+        FAIL SSP.f19_g16.I1850CLM45BGC.yellowstone_pgi.clm-default.GC.0520-2021.45.p.clm2.h0.compare_hist.clm4_5_72 
+        FAIL SSP.f19_g16.I1850CLM45BGC.yellowstone_pgi.clm-default.GC.0520-2021.45.p.clm2.h1.compare_hist.clm4_5_72     
+
+      For new tests added in Erik's upcoming tag (clm4_5_73), I did manual
+      comparisons against Erik's baselines (cpl & clm hist for the yellowstone
+      tests, just cpl for goldbach tests) - all PASS.
+
+      Note that CLM hist files were NOT compared for any goldbach tests, because
+      there were no CLM hist file baselines for clm4_5_72.
+
+  tools testing:
+
+    yellowstone interactive: ok
+
+      Compared against addclm50bld_n06_clm4_5_72 (essentially clm4_5_73)
+
+      Failures in the following baseline comparisons, due to changed name of output
+      file (surfdata.pftdyn -> landuse.timeseries). Manual comparisons showed the
+      output files to be identical in all cases:
+
+      010 bl754 TBLtools.sh clm4_0 mksurfdata_map tools__s namelist ...................................\c
+       rc=7 FAIL
+      012 blg54 TBLtools.sh clm4_5 mksurfdata_map tools__s namelist ...................................\c
+       rc=7 FAIL
+      018 bl974 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850-2000^tools_\c
+       rc=7 FAIL
+      030 bli74 TBLscript_tools.sh clm4_5 mksurfdata_map mksurfdata.pl mksrfdt_1x1_brazil_1850-2000^tools_\c
+       rc=7 FAIL
+      040 blfg4 TBLscript_tools.sh shared PTCLM PTCLMmkdata PTCLM_USUMB_Global_clm4_5^buildtools ......\c
+       rc=7 FAIL
+
+       Other than that, all tests & baseline comparisons passed
+
+CLM tag used for the baseline comparisons: clm4_5_72, except where noted above
+
+Changes answers relative to baseline: NO - bfb
+	
+===============================================================
+===============================================================
+Tag name:  clm4_5_73
+Originator(s):  erik (Erik Kluzek,UCAR/TSS,303-497-1326)
+Date: Wed May 28 15:33:10 MDT 2014
+One-line Summary: Add the stub ability for clm5_0 physics to CLM build system
+
+Purpose of changes:
+
+Add phys=clm5_0 as an option to the build. Currently, nothing is different in the code, this just
+adds the capability to do clm5_0 as a seperate configuration. The one thing that is different between
+clm4_5 and clm5_0 is the setting of urban_hac.
+
+Fix several issues needed for CAM: problem in DryDeposition (reoccurance of bug 1883, that was fixed and then
+unfixed in clm4_5_48), fix for internal compiler errors. CAM has been using the branch version of this
+since: cam5_3_29.
+
+Work on updates for PTCLM. Add some new sites for Rosie and Jinyun. Correct the call to mkmapdata.sh.
+Have CLM1PT forcing directory to use DIN_LOC_ROOT_CLMFORC so you can point it to a location seperate
+from DIN_LOC_ROOT. Add a new support script to PTCLM to submit a list of sites to batch: PTCLMsublist.
+Also allow release_tags in version find. Get buildtools to work on edison/hopper.
+
+Get tools to work on hopper and edison, and update mapping to use ESMF6.3.0.
+
+Fix various bugs: internal compiler error on janus, trigger an error if user_datm.streams.txt file is 
+                  readonly (rather than hang). Use DIN_LOC_ROOT_CLMFORC for CLM1PT.
+
+Requirements for tag: Fix bug 1883 and 1985 for Cheryl and CAM, fix PTCLM, add clm5_0, tools on hopper/edison
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID):
+
+   1985  Internal compiler error on yellowstone with CLM in CAM standalone build
+   1965	 Internal compiler error on janus with CLM on janus
+   1938  Upgrade mkmapdata to ESMF6.3.0 
+   1937  Using a read-only user_datm.streams.txt file causes cesm_setup to hang 
+   1936  CLM1PT forcing directory needs to use DIN_LOC_ROOT_CLMFORC
+   1935  Changes needed to get tools to build on hopper... 
+   1933  Correct call to mkmapdata.sh in PTCLM 
+   1925  Add more sites to PTCLM 
+   1904  check for LSF_PJL_TYPE in regridbatch.sh doesn't work correctly 
+   1883	 uninitialized variable in DryDepVelocity.F90
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system: Add clm5_0 as a new supported physics type
+
+Describe any changes made to the namelist: Set urban_hac according to physics
+    clm5_0=ON_WASTEHEAT, and clm4_5=ON
+
+List any changes to the defaults for the boundary datasets: N/A
+
+Describe any substantial timing or memory changes: N/A
+
+Code reviewed by: self (clm_phys perl object reviewed by team: bandre, muszala, sacks)
+
+List any svn externals directories updated (csm_share, mct, etc.): scripts, datm
+   scripts       to addclm50_n03_ED_scripts_015_140305_rev
+   datm          to datm8_140312
+   csm_share     to share3_140418        Use trunk version rather than branch
+   tools/mapping to mapping_131217a 
+   PTCLM         to PTCLM2_140423
+
+List all files eliminated:
+
+ D    models/lnd/clm/bld/unit_testers/env_run.xml -- This file is now built dynamically when the tester is run.
+
+List all files added and what they do:
+
+ A    models/lnd/clm/bld/query-xFail --- Add a script from Ben Andre to read and report on expected fails.
+ A    models/lnd/clm/bld/env_run.xml --- envxml_dir option is now required, so this provides a env_*.xml
+            file that can be read by default, when build-namelist is called outside of CESM for testing.
+ A    models/lnd/clm/bld/config_files/clm_phys_vers.pm - Enter physics version as a string i.e.: clm4_0
+            and then have the ability to interpret it as different types so you can do logical operations
+            on physics versions
+
+List all existing files that have been modified, and describe the changes:
+
+  M    models/lnd/clm/tools/shared/mkmapdata/regridbatch.sh ------- Add ability to run on hopper
+  M    models/lnd/clm/tools/shared/mkmapdata/mkmapdata.sh --------- Add ability to run on hopper/edison
+            remove jaguarpf, and upgrade to ESMF6.3.0
+  M    models/lnd/clm/tools/shared/ncl_scripts/getregional_datasets.ncl - New version of NCL requires
+            load before "begin" statement
+
+  M    models/lnd/clm/bld/configure ------------- Allow phys=clm5_0 and add in new clm_phys_vers object
+  M    models/lnd/clm/bld/README ---------------- Update info on files
+  M    models/lnd/clm/bld/CLMBuildNamelist.pm --- Put list of required options at top of help, and make envxml_dir
+           a required option. Add in use of clm_phys_vers object. Make sure use_ed_spitfire is only on if use_ed is
+           on.  If CLM_UPDATE_GLC_AREAS=TRUE and phys=clm4_0 trigger an error
+  M    models/lnd/clm/bld/config_files/config_definition_clm4_5.xml - Add all three physics version options
+  M    models/lnd/clm/bld/config_files/config_definition_clm4_0.xml - Add info. about clm4_5/clm5_0 options
+
+  M    models/lnd/clm/bld/unit_testers/build-namelist_test.pl - Add use of clm_phys_vers, and create env_run.xml
+            on the fly. Also add new tests for glacier update areas, and ED: usespitfireButNOTED, useEDclm40, useEDContradict2
+            useEDContradict, clm40andUpdateGlc, clm40andUpdateGlc, UpdateGlcContradict, UpdateGlcNoGLCMe, and tests
+            for clm5_0
+
+  M    models/lnd/clm/bld/test_build_namelist/t/test_vichydro.pm ----- Needs to use clm_phys_vers object
+  M    models/lnd/clm/bld/test_build_namelist/test_build_namelist.pl - Needs to use clm_phys_vers object
+
+  M    models/lnd/clm/bld/namelist_files/namelist_defaults_clm4_5.xml - urban_hac depends on clm4_5/clm5_0
+  
+-------------- Add phys=clm5_0 for all use-cases that test on phys
+  M    models/lnd/clm/bld/namelist_files/use_cases/2000_control.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/20thC_glacierMEC_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/2000-2100_rcp8.5_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/2000_glacierMEC_control.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850_control.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp2.6_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp6_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp4.5_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp8.5_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/20thC_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850_glacierMEC_control.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp2.6_glacierMEC_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp6_glacierMEC_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp4.5_glacierMEC_transient.xml
+  M    models/lnd/clm/bld/namelist_files/use_cases/1850-2100_rcp8.5_glacierMEC_transient.xml
+
+------------- Fix bugs 1883 (rs over lake) and 1983 (CAM internal compiler error) and 1965 
+-------------  (janus internal compiler error)
+  M    models/lnd/clm/src/clm4_5/biogeochem/DryDepVelocity.F90 ----- Set rs over lake
+  M    models/lnd/clm/src/clm4_5/main/clm_initializeMod.F90 -------- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_5/main/restFileMod.F90 -------------- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_5/main/surfrdMod.F90 ---------------- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_5/biogeophys/UrbanInputMod.F90 ------ Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_5/biogeophys/BiogeophysRestMod.F90 -- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_5/dyn_subgrid/dynHarvestMod.F90 ----- Add use only for clmtype and dynVarTimeUninterpMod
+           fixes internal compiler error on janus (1965)
+  M    models/lnd/clm/src/clm4_0/biogeochem/DryDepVelocity.F90 ----- Set rs over lake
+  M    models/lnd/clm/src/clm4_0/main/clm_initializeMod.F90 -------- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_0/main/subgridRestMod.F90 ----------- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_0/main/pftdynMod.F90 ---------------- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_0/main/iniTimeConst.F90 ------------- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_0/main/restFileMod.F90 -------------- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_0/main/surfrdMod.F90 ---------------- Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_0/biogeophys/UrbanInputMod.F90 ------ Add use only for ncd_pio
+  M    models/lnd/clm/src/clm4_0/biogeophys/BiogeophysRestMod.F90 -- Add use only for ncd_pio
+
+CLM testing:
+
+    a) regular
+    b) build_namelist
+    c) tools
+
+  build-namelist tests:
+
+    yellowstone    yes
+
+  regular tests (aux_clm40, aux_clm45, with '-model_gen_comp clm2'):
+
+    yellowstone_intel yes
+    yellowstone_pgi   yes
+    goldbach_nag      yes
+    goldbach_intel    yes
+    goldbach_pgi      yes
+
+  tools testing:
+
+    yellowstone interactive   yes
+
+CLM tag used for the baseline comparisons:  clm4_5_72
+
+Changes answers relative to baseline: No (bit-for-bit)
+
+===============================================================
+===============================================================
+Tag name:  clm4_5_72
+Originator(s):  muszala (Stefan Muszala)
+Date: Mon May  5 17:47:52 MDT 2014
+One-line Summary: Introduce code for Ecosystem Demography (CLM(ED)) Model
+
+Purpose of changes: Introduce code for Ecosystem Demography (CLM(ED)) Model - first functional tag.
+
+A large chunk of this code was written and re-written by Rosie Fisher.
+
+"Introduce code for Ecosystem Demography (CLM(ED)) Model.  Adds capability to allow plant functional
+types to compete for light, to represent recovery from disturbance, and to allow disturbances
+(i.e. fire) to only afflict some fraction of the canopy, and to represent vegetation at the scale
+of cohorts of trees. Note that this is a large change and includes:
+
+1. Significant alterations to canopy albedo and surface radiation calculations
+2. New photosynthesis scheme, based on existing science but to allow for more complex canopy structure
+3. Introduction of a new allocation and growth scheme, (no consistent with that in CLM(CN)
+4. Removal, for now, of Nitrogen limitation capabilities
+5. Introduction of the SPITFIRE fire model, which interacts with ED via it's representation of
+   size-structured mortality and removal of litter pools. 
+6. Introduction of a simple seed bank model to allow persistence of vegetation through fire events.
+7. For ED compsets there exists a cohort dimension on the restart files.
+
+Cold starts and restarts work for the following.  The 1x1_brazil is the most heavily tested case both from 
+science and SE standpoint:
+
+1x1_brazil.ICLM45CNED.yellowstone_[intel | pgi]
+5x5_amazon.ICLM45CNED.yellowstone_[intel | pgi]
+1x1_brazil.ICLM45CNED.goldbach_[nag | intel | pgi ]
+5x5_amazon.ICLM45CNED.goldbach_[nag | intel | pgi ]
+
+Cold starts work for:
+
+f10_f10.ICLM45CNED.yellowstone_[intel | pgi].
+f19_g16.ICLM45CNED.yellowstone_[intel | pgi]
+
+Code Origins:
+
+The ED code in CLM is originally based on code by Moorcroft (www.oeb.harvard.edu/faculty/moorcroft/code_and_data/index.html)
+and has been heavily modified in regards to both scientific implementation and assumptions.  Fom a software engineering
+perspective, ED was rewritten from C into F2003 and the structure of the code has been significantly altered to fit into
+the CESM/CLM framework.
+
+The SPITFIRE code is based on (http://www.biogeosciences.net/7/1991/2010/bg-7-1991-2010.pdf) and has been significantly 
+altered and extended to fit into the CESM/CLM framework.
+
+Other points:
+   1. removed many unused variables and module uses as reported by nag
+	2. changing text wrapping on comments so they end at 139 characters
+   3. changed many text based logical operators (.ne., .lt., .ge.) with their math. equivlanet (/=, > , <=)
+
+Requirements for tag: N/A
+
+Test level of tag: regular
+
+Bugs fixed (include bugzilla ID): N/A
+
+Known bugs (include bugzilla ID):
+    http://bugs.cgd.ucar.edu/
+
+Known Limitations:
+                                 1147 (mkgriddata can't straddle over Greenwich)
+                                 1025 (SCM mode can NOT use a global finidat file)
+                                 1017 (SCM mode can NOT restart)
+                                  896 (T62 mode does not work)
+                                  701 (svn keyword)
+                                  452 (Problem with support of soil-colors != 8 or 20)
+
+Describe any changes made to build system:  ED functionality brought in.  Does not change existing
+configurations.  For ED, there are now a CNED and BGCED compset.  Use CNED until BGC issues are worked
+out.
+
+Describe any changes made to the namelist: ED functionality brought in.  Does not change existing
+configurations.  For ED compsets, there are two new namelist variables.  They are:
+
+use_ed = .true.
+use_ed_spit_fire = .true.
+
+use_ed_spit_fire is set to true by default if use_ed is on.  Unless you are running our ED tests, you will
+have to change your user_nl_clm to something like:
+
+paramfile ='/glade/p/cesmdata/cseg/inputdata/lnd/clm2/edParams/CLMPARAMS_ED_011514.nc'
+finidat = ''
+hist_mfilt             = 365
+hist_nhtfrq            = -24
+
+hist_empty_htapes = .true.
+
+hist_fincl1='NPP','GPP','BTRAN','TOTVEGC','H2OSOI','TLAI','LITTER_IN','LITTER_OUT',
+'STORVEGC','FIRE_AREA','SCORCH_HEIGHT','FIRE_INTENSITY','FIRE_TFC_ROS','fire_fuel_mef',
+'LITTERC','fire_fuel_bulkd','fire_fuel_sav','FIRE_NESTEROV_INDEX','PFTbiomass',
+'PFTleafbiomass','FIRE_ROS','WIND','TFC_ROS','DISPVEGC','AREA_TREES','AREA_PLANT' 
+
+If on goldbach, use:
+
+paramfile ='/fs/cgd/csm/inputdata/lnd/clm2/edParams/CLMPARAMS_ED_011514.nc'
+
+List any changes to the defaults for the boundary datasets: N/A.  
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Stefan Muszala and Rosie Fisher. Detailed code review by Bill Sacks, Mariana Vertenstein,
+Ben Andre, and Erik Kluzek. Discussion of code review included Dave Lawrence, Forrest Hoffmann
+and Ryan Knox.
+
+List any svn externals directories updated (csm_share, mct, etc.): 
+
+Changed externals to a branch_tag that supports ED compsets.  We are using branch_tags because trunk
+scripts does not work with all of the current CLM tests:
+
+-scripts https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/add_dynlu_tests_tags/add_dynlu_tests_n03_scripts4_140305
++scripts https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/ED_scripts_tags/ED_scripts_015_140305_rev
+
+List all files eliminated: N/A
+
+List all files added and what they do:
+
+### SPITFIRE code
+# new SPITEFIRE directory
+A  +    models/lnd/clm/src/clm4_5/main/spitfireSF
+# main SPITFIRE code
+A  +    models/lnd/clm/src/clm4_5/main/spitfireSF/SFParamsMod.F90
+# handle SPITFIRE parameters
+A  +    models/lnd/clm/src/clm4_5/main/spitfireSF/SFMainMod.F90
+
+# pull out, move to a shared location, place in own module
+A  +    models/lnd/clm/src/util_share/quadraticMod.F90 
+
+### new source and directories for ED
+## ED code required for biogeophysics
+# ED directory in biogeophys
+A  +    models/lnd/clm/src/clm4_5/biogeophys/ED
+# Calculates daily carbon flux drivers from hourly calculations. 
+A  +    models/lnd/clm/src/clm4_5/biogeophys/ED/EDAccumulateFluxesMod.F90
+# Calculates absorbed, reflected and transmitted radiation in diffuse and direct streams for
+# each of the canopy layer x PFT x leaf layer three-dimensional matrix.  Uses iterative Norman
+# radiation transfer scheme.
+A  +    models/lnd/clm/src/clm4_5/biogeophys/ED/EDSurfaceAlbedoMod.F90
+# Main photosynthesis model. Calculates leaf level fluxes on a canopy layer x PFT x leaf layer
+# three-dimensional matrix. Sums to canopy to produce overall canopy conductance. Unpacks leaf-
+# level fluxes into cohort level fluxes.   Uses same scientific assumptions as CLM4.5. 
+A  +    models/lnd/clm/src/clm4_5/biogeophys/ED/EDPhotosynthesisMod.F90
+# Generates PFT specific BTRAN vector for each ED patch. Includes option for SPA-like calculations. 
+A  +    models/lnd/clm/src/clm4_5/biogeophys/ED/EDBtranMod.F90
+
+## ED code required for biogeochemistry
+# ED directory in biogeochem
+A  +    models/lnd/clm/src/clm4_5/biogeochem/ED
+# Determines which cohorts are in the upper and lower canopy layers. Sets leaf area index inputs to biogeophysics calculations.
+A  +    models/lnd/clm/src/clm4_5/biogeochem/ED/EDCanopyStructureMod.F90
+# Initializes some ED-specific variables to zero at startup.
+A  +    models/lnd/clm/src/clm4_5/biogeochem/ED/EDSetValuesMod.F90
+# Contains allometric relationships between vegetation properties (height, dbh, LAI, dead biomass, live biomass, crown area) biogeochem/ED/EDPatchDynamicsMod.F90 : Creates patches, fuses similar patches, controls disturbance and generation of area. 
+A  +    models/lnd/clm/src/clm4_5/biogeochem/ED/EDGrowthFunctionsMod.F90
+# Creates, fuses, terminates, sorts, counts and copies cohort structures. 
+A  +    models/lnd/clm/src/clm4_5/biogeochem/ED/EDCohortDynamicsMod.F90
+# Contains all calculations of derivatives of biomass, litter and seed pools.  Also includes phenology model, seed and litter production and decay models, and canopy optimization model. 
+A  +    models/lnd/clm/src/clm4_5/biogeochem/ED/EDPhysiologyMod.F90
+# Creates, fuses, terminates, sorts, counts and copies patch structures. 
+A  +    models/lnd/clm/src/clm4_5/biogeochem/ED/EDPatchDynamicsMod.F90
+
+## ED core functionality and types that interact with CLM (generally not science)
+# ED directory in main
+A  +    models/lnd/clm/src/clm4_5/main/ED
+# Transmits required information for CLM (tlai, htop, tile weights). Updates ED-specific history field variables. 
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDCLMLinkMod.F90
+#  Initializes ED PFT parameter structure. 
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDInitTimeConst.F90
+# Contains ED-specific variables for CLM
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDClmType.F90
+# Adds history field variables specific to ED to history file. 
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDHistFldsMod.F90
+#  Prints out and reads in ED state vector to/from history files. 
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDRestVectorMod.F90
+# Initializes ED-specific variables for CLM 
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDClmTypeInitMod.F90
+# Allocates ED PFT specific variables.
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDPftvarcon.F90
+# Initializes ED site, patch and cohort structures, either to restarting or bare ground values. 
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDInitMod.F90
+# Allocates and initializes ED parameters (that are not PFT specific). 
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDParamsMod.F90
+# Main ED model routine. Calls all other daily ED dynamics, integrates variables, checks carbon balance.
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDMainMod.F90
+# Contains ED type structures (cohort, site, patch) and static values.
+A  +    models/lnd/clm/src/clm4_5/main/ED/EDTypesMod.F90
+
+# utility routine to help in reading parameter files
+A  +    models/lnd/clm/src/clm4_5/main/paramUtilMod.F90
+# transfers weights calculated internally by ED into wtcol.
+A  +    models/lnd/clm/src/clm4_5/dyn_subgrid/dynEDMod.F90
+
+List all existing files that have been modified, and describe the changes:
+
+### build modifications
+# add ED source directories for build
+M       models/lnd/clm/bld/configure
+# build namelist additions for ED
+M       models/lnd/clm/bld/namelist_files/namelist_definition_clm4_5.xml
+# setup_cmdl_ed_mode addition.  sets namelist vars
+M       models/lnd/clm/bld/CLMBuildNamelist.pm
+
+### util_share modifications
+# add function is_beg_curr_day()
+M       models/lnd/clm/src/util_share/clm_time_manager.F90
+# modify get_proc_bounds to include beg, end cohort
+M       models/lnd/clm/src/util_share/accumulMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/util_share/ncdio_pio.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/util_share/ncdio_pio.F90.in
+
+### 4_5 Modifications
+# change text based logical with math style (.gt. to >, .ne. to /=)
+# modify get_proc_bounds to include beg, end cohort
+M       models/lnd/clm/src/clm4_5/biogeochem/CNRestMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNNitrifDenitrifMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNNStateUpdate1Mod.F90
+# add use_ed logical(s)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNBalanceCheckMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNFireMod.F90
+# add use_ed logical(s)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNMRespMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNVerticalProfileMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNPrecisionControlMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNSummaryMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/ch4Mod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNInitMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNCStateUpdate1Mod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNDecompMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNAnnualUpdateMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNNDynamicsMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNAllocationMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/DryDepVelocity.F90
+# add use_ed logical(s) 
+M       models/lnd/clm/src/clm4_5/biogeochem/CNEcosystemDynMod.F90
+# move some variables from stack to heap.  
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNDecompCascadeBGCMod.F90
+# add use_ed logical(s)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNSetValueMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+# change spacing, text wrapping
+M       models/lnd/clm/src/clm4_5/biogeochem/CNSoilLittVertTranspMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNDecompCascadeCNMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeochem/CNC14DecayMod.F90
+
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/main/initInterp.F90
+# change spacing, text wrapping
+M       models/lnd/clm/src/clm4_5/main/clm_varpar.F90
+# add call to call EDInitTimeConst 
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/main/initTimeConstMod.F90
+# add decomposition for cohort dimension
+M       models/lnd/clm/src/clm4_5/main/decompInitMod.F90
+# add call for ed_init
+M       models/lnd/clm/src/clm4_5/main/clm_initializeMod.F90
+# add use_ed logical(s)
+M       models/lnd/clm/src/clm4_5/main/subgridRestMod.F90
+# add code for cohort dimension
+M       models/lnd/clm/src/clm4_5/main/subgridMod.F90
+# add use_ed logical(s)
+M       models/lnd/clm/src/clm4_5/main/accFldsMod.F90
+# add use_ed logical(s)
+M       models/lnd/clm/src/clm4_5/main/clmtypeInitMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/main/initColdMod.F90
+# change get_proc_global to support cohort dimension
+M       models/lnd/clm/src/clm4_5/main/histFileMod.F90
+# add use_ed logical to support cohort dimension
+M       models/lnd/clm/src/clm4_5/main/restFileMod.F90
+# broadcast ed namelist variables
+M       models/lnd/clm/src/clm4_5/main/controlMod.F90
+# use_ed logical to call edmodel
+M       models/lnd/clm/src/clm4_5/main/clm_driver.F90
+# change spacing, text wrapping
+M       models/lnd/clm/src/clm4_5/main/clm_varctl.F90
+# clean up unsued variables from nag compiler warnings
+M       models/lnd/clm/src/clm4_5/main/subgridAveMod.F90
+# add routine set_cohort_decomp
+# add use_ed logical(s)
+M       models/lnd/clm/src/clm4_5/main/initGridCellsMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/main/initSoilParVICMod.F90
+# change spacing, text wrapping
+# add use_ed logical(s)
+M       models/lnd/clm/src/clm4_5/main/pftvarcon.F90
+# add support for cohort dimension
+M       models/lnd/clm/src/clm4_5/main/decompMod.F90
+# change spacing, text wrapping
+M       models/lnd/clm/src/clm4_5/main/clmtype.F90
+# add call to read ED and SPITFIRE params
+R  +    models/lnd/clm/src/clm4_5/main/readParamsMod.F90
+# add routine set_cohort_decomp
+# add use_ed logical(s)
+M       models/lnd/clm/src/clm4_5/main/histFldsMod.F90
+
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeophys/SLakeInitMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeophys/BalanceCheckMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeophys/UrbanInputMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeophys/Biogeophysics1Mod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeophys/FrictionVelocityMod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeophys/Hydrology1Mod.F90
+# change get_proc_global to support cohort dimension
+M       models/lnd/clm/src/clm4_5/biogeophys/BiogeophysRestMod.F90
+# change get_proc_global to support cohort dimension
+M       models/lnd/clm/src/clm4_5/biogeophys/UrbanMod.F90
+# change get_proc_global to support cohort dimension
+M       models/lnd/clm/src/clm4_5/biogeophys/ActiveLayerMod.F90
+# change get_proc_global to support cohort dimension
+M       models/lnd/clm/src/clm4_5/biogeophys/BareGroundFluxesMod.F90
+# change spacing, text wrapping
+# add use_ed logical(s)
+# calculate ed root fractionation
+M       models/lnd/clm/src/clm4_5/biogeophys/CanopyFluxesMod.F90
+# add use_ed logical(s) for forc_solai and parsun
+# use_ed  reporting
+M       models/lnd/clm/src/clm4_5/biogeophys/SurfaceRadiationMod.F90
+# add use_ed logical(s) for norman_radiation
+# change spacing
+M       models/lnd/clm/src/clm4_5/biogeophys/SurfaceAlbedoMod.F90
+# remove unused variable
+M       models/lnd/clm/src/clm4_5/biogeophys/SLakeCon.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeophys/Hydrology2Mod.F90
+# change text based logical with math style (.gt. to >, .ne. to /=)
+M       models/lnd/clm/src/clm4_5/biogeophys/SoilHydrologyMod.F90
+# add use_ed logical(s) for call dyn_ED
+M       models/lnd/clm/src/clm4_5/dyn_subgrid/dynSubgridDriverMod.F90
+
+### 4_0 Modifications
+# add optional cohort argument for new ED dimension to get_proc_global and
+# get_proc_bounds_old for 40 backward compatibility
+M       models/lnd/clm/src/clm4_0/main/decompMod.F90
+
+CLM testing:
+
+--SNICARFRC - moved ERI_D.T31_g37.ICLM45.goldbach_nag.clm-SNICARFRC to goldbach and nag.  This is a BFAIL.
+
+--Testing for new ED compsets.  All compare hist portions were BFAIL's since this is the first time
+the tests are being put in place.
+
+--ED and yellowstone [ intel | pgi ]
+  PASS  ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.yellowstone_[intel | pgi].clm-edTest 
+  PASS  SMS.f10_f10.ICLM45CNED.yellowstone_[intel | pgi].clm-edTest
+  PASS  SMS.f19_g16.ICLM45CNED.yellowstone_[intel | pgi].clm-edTest
+  PASS  SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.yellowstone_[intel | pgi].clm-edTest
+
+--ED and goldbach [nag | intel | pgi ]
+  PASS  ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.goldbach_[nag | intel | pgi ].clm-edTestGb
+  PASS  SMS_D_Mmpi-serial.5x5_amazon.ICLM45CNED.goldbach_[nag | intel | pgi ].clm-edTestGb
+
+--CLM history file comparison:
+
+yellowstone [intel | pgi] - OK
+
+I ran without the -model_gen_comp option, but ran component_gen_comp and summarize_cprnc_diffs
+by hand for both yellowstone_intel and yellowstone_pgi.  These are both OK
+
+--Regular tests (aux_clm testlist)
+
+    yellowstone_intel - OK
+    yellowstone_pgi   - OK
+    goldbach_nag      - OK
+    goldbach_intel    - OK
+    goldbach_pgi      - OK
+
+CLM tag used for the baseline comparisons:  clm4_5_71
+
+Changes answers relative to baseline: No.  Existing compsets do not change.
+If you run with an *ED* compset, then results will differ, but that is expected.
+
+===============================================================
+===============================================================
 Tag name:  clm4_5_71
 Originator(s):  Bill Sacks & Jeremy Fyke
 Date: Fri May  2 13:00:10 MDT 2014

@@ -103,6 +103,13 @@
          opts="--verbose --cycle_forcing"        />
    <test id="cycling_file_creation"       type="RUN"   site="TS-Ts3" compdir="cyc_TS-Ts3"
          opts="--verbose --cycle_forcing"        />
+
+   <test id="std_file_creation"           type="RUN"   site="LTER-Sev" compdir="std_LTER-Sev"
+         opts="--verbose"        />
+   <test id="grid_file_creation"           type="RUN"   site="RF-Bra" compdir="std_RF-Bra"
+         opts="--verbose --pftgrid --soilgrid --donot_use_tower_yrs"        />
+   <test id="std_file_creation"           type="RUN"   site="LBA-Cax" compdir="std_LBA-Cax"
+         opts="--verbose"        />
    <!-- tests of options that should fail -->
    <failtest id="fail-no-datadir"     type="Fail" opts="-s test"/>
    <failtest id="fail-no-site"        type="Fail" opts="-d test"/>
@@ -115,4 +122,7 @@
    <failtest id="fail-bad_ctlusecase" type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s US-UMB --clmnmlusecase=thing_control --debug"/>
    <failtest id="fail-bad_trnusecase" type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s US-UMB --clmnmlusecase=thing_transient --debug"/>
    <failtest id="fail-no_dynpftdata"  type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s US-UMB --clmnmlusecase=20thC_transient --debug"/>
+   <failtest id="fail-no_towerdata"   type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s RF-Bra --debug --pftgrid --soilgrid"/>
+   <failtest id="fail-no_soildata"   type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s RF-Bra --debug --pftgrid --donot_use_tower_yrs"/>
+   <failtest id="fail-no_pftdata"   type="Fail" opts="-d /glade/p/cesmdata/cseg/inputdata  -s RF-Bra --debug --soilgrid --donot_use_tower_yrs"/>
 </PTCLMtestlist>

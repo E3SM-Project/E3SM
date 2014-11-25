@@ -58,7 +58,7 @@ and generate the surface dataset:
 
 Lists of input files for range of dates historical or future scenarios:
 
-  pftdyn_hist_simyr1850-2005.txt --- List of historical input PFT files from 1850 to 2005
+  landuse_timeseries_hist_simyr1850-2005.txt --- List of historical input PFT files from 1850 to 2005
 
 (Historical period from 1850-2005 datafiles all point to the historical files, while
  the future scenarios 2006-2100 are the scenario datasets)

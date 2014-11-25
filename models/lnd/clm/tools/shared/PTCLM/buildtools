@@ -33,18 +33,18 @@ fi
 toolsmake=""
 if [[  "$host" =~ ys ]]; then
   echo "Setup for yellowstone"
-  module load netcdf/4.3.0-rc4
+  module load netcdf/4.3.0
   module load ncl
   gmake="gmake"
   parcmp=32
   machine="yellowstone"
   compiler="intel"
   netcdf=$NETCDF
-elif [[ "$host" =~ frankfurt ]]; then
-  echo "Setup for frankfurt"
+elif [[ "$host" =~ goldbach ]]; then
+  echo "Setup for goldbach"
   gmake="gmake"
   parcmp=2
-  machine="frankfurt"
+  machine="goldbach"
   compiler="intel"
   netcdf=/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183
   export PATH="${PATH}:/usr/bin"
@@ -58,8 +58,34 @@ elif [[ "$host" =~ yongi ]] || [[ "$host" =~ vpn ]]; then
   toolsmake="USER_FC=ifort USER_LINKER=ifort USER_CC=icc "
   case='$CASE'
   export NETCDF_PATH=$netcdf
+elif [[  "$host" =~ hopper ]]; then
+  echo "Setup for hopper"
+  .  /opt/modules/default/init/bash
+  module load netcdf
+  module load ncl/6.1.2
+  gmake="gmake"
+  parcmp=32
+  machine="hopper"
+  compiler="pgi"
+  USER_LDFLAGS="-L$NETCDF_DIR/lib -lnetcdff"
+  export USER_LDFLAGS
+  toolsmake="USER_FC=pgf90"
+  netcdf=$NETCDF_DIR
+elif [[  "$host" =~ edison ]]; then
+  echo "Setup for edison"
+  .  /opt/modules/default/init/bash
+  module load netcdf
+  module load ncl
+  gmake="gmake"
+  parcmp=32
+  machine="edison"
+  compiler="intel"
+  USER_LDFLAGS="-L$LIB_NETCDF -lnetcdff"
+  export USER_LDFLAGS
+  toolsmake="USER_FC=ftn"
+  netcdf=$NETCDF_DIR
 else
-  echo "Bad host to run on: know about yellowstone, frankfurt, or yongi"
+  echo "Bad host to run on: know about yellowstone, goldbach, hopper, edison or yongi"
   exit -3
 fi
 export INC_NETCDF=${netcdf}/include

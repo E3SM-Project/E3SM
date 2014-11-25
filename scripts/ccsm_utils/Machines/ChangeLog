@@ -4,6 +4,319 @@ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/ChangeLog $
 
 This file describes what tags were created and why
 =================================================================================
+Originator: sacks
+Date: Aug 11, 2014
+Model: Machines
+Version: Machines_140811
+One-line: workaround for messages about array temporaries with yellowstone-intel
+
+For some reason, yellowstone-intel has starting giving lots of
+messages about array temporaries, leading to a ton of standard output,
+and sometimes causing runs to die. Adding '-check noarg_temp_created'
+to suppress these diagnostics. This is a band-aid fix, which should
+really be addressed at the system-level. (Note: I could not add this
+in the yellowstone-specific section, beacuse apparently that overrides
+rather than adds to this ADD_FFLAGS list.)
+
+M       config_compilers.xml
+
+=================================================================================
+Originator: jshollen
+Date: Aug 10, 2014
+Model: Machines
+Version: Machines_140810
+One-line: CSL pe layout updates, ne30@ICLM45BGC, f09@B1850BPRPC5CLM45
+
+M       config_pes.xml
+
+=================================================================================
+Originator: muszala
+Date: Aug 7, 2014
+Model: Machines
+Version: Machines_140807
+One-line: make sure nag with DEBUG gets -g
+
+M       config_compilers.xml
+
+=================================================================================
+Originator: jshollen
+Date: Aug 6, 2014
+Model: Machines
+Version: Machines_140806
+One-line: Logan port
+
+A       mkbatch.logan
+M       config_machines.xml
+M       config_compilers.xml
+A       env_mach_specific.logan
+
+=================================================================================
+Originator: jshollen
+Date: Aug  5, 2014
+Model: Machines
+Version: Machines_140805
+One-line: LDFLAGS updates for goldbach, should be able to run the model on
+goldbach without LD_LIBRARY_PATH in shell startup files. 
+
+M       config_compilers.xml
+
+=================================================================================
+Originator: erik
+Date: Jul 23, 2014
+Model: Machines
+Version: Machines_140723
+One-line: Move the default setting for dead atm or CLM/DATM higher up
+
+This resolves the PE count issue for bug 2018. And gives ne30 and f19 for I 
+compsets a higher PE count again (back to before 140514 machines tag).
+
+M       config_pes.xml
+
+=================================================================================
+Originator: santos
+Date: Jul 17, 2014
+Model: Machines
+Version: Machines_140717a
+One-line: Remove last mentions of Lahey compiler.
+
+M       Makefile
+M       config_machines.xml
+        - Replace mentions of Lahey with NAG, remove dead logic.
+
+=================================================================================
+Originator: cacraig
+Date: Jul 17, 2014
+Model: Machines
+Version: Machines_140717
+One-line: CAM's abortutils is now cam_abortutils
+
+M       Makefile
+        - cosp now depends on cam_abortutils
+
+=================================================================================
+Originator: santos
+Date: Jul 10, 2014
+Model: Machines
+Version: Machines_140710a
+One-line: Add USE_CONTIGUOUS macro.
+
+M       buildlib.mct
+M       config_compilers.xml
+M       Makefile
+        - Add the USE_CONTIGUOUS macro. This can be used to turn on the
+          contiguous attribute for performance reasons on compilers that
+          support it, like so:
+
+real(r8), USE_CONTIGUOUS intent(in) :: x(:)
+
+          Currently the implementation requires that some other attribute
+          must follow USE_CONTIGUOUS, since the macro contains a comma.
+
+=================================================================================
+Originator: sacks
+Date: Jul 10, 2014
+Model: Machines
+Version: Machines_140710
+One-line: move location for titan builds
+
+Jim moved the titan EXEROOT into the case directory a few months ago,
+because it apparently sped build time significantly. However, I'm
+reverting that change, moving EXEROOT back to being a sibling of the
+run directory (in scratch space). My motivation is that your home
+directory quickly fills up if builds are placed there.
+
+Testing done: I just did this testing on the cesm1.2.2 release branch:
+
+PASS  SMS_Ld3.ne30_g16.B20TRC5CN.titan_pgi 
+PASS  SMS_Ld3.ne30_g16.B20TRC5CN.titan_pgi.memleak
+
+I also checked the build time of the above case before and after this
+change. Build time before the change (with builds going in
+/autofs/na3_home1/sacks/cesm_code/cesm1_2_2.newMach/scripts/SMS_Ld3.ne30_g16.B20TRC5CN.titan_pgi.140710-120712/bld)
+was 46 min. Build time after the change (with builds going in
+/lustre/atlas/scratch/sacks/cli107/SMS_Ld3.ne30_g16.B20TRC5CN.titan_pgi.140710-122430/bld)
+was 42 min. This just is a single data point (on two different login
+nodes), but it at least indicates that moving this back doesn't
+significantly hurt build time.
+
+M       config_machines.xml
+
+=================================================================================
+Originator: santos
+Date: Jul 7, 2014
+Model: Machines
+Version: Machines_140707
+One-line: Fix (compiler-specific?) driver compilation error with cvmix.
+
+M       Makefile
+        - Add cvmix to included directories for all components if pop2 is
+          the ocean component. At least with NAG, the cvmix module files
+          must be found to compile the *driver* modules, so it's not enough
+          to provide the "-I" option just for compiling the ocean.
+
+=================================================================================
+Originator:  mlevy
+Date: Jul 2,2014
+Model: Machines
+Version: Machines_140702
+One-line: Makefile update for building CVMix with POP
+
+M       Makefile
+
+
+=================================================================================
+Originator:  jedwards
+Date: Jun 30,2014
+Model: Machines
+Version: Machines_140630
+One-line: further Updates for edison
+
+M    env_mach_specific.edison
+
+
+=================================================================================
+Originator:  jedwards
+Date: Jun 27,2014
+Model: Machines
+Version: Machines_140627
+One-line: Updates for edison
+
+M    env_mach_specific.edison
+
+
+=================================================================================
+Originator:  jedwards
+Date: Jun 25,2014
+Model: Machines
+Version: Machines_140625b
+One-line: add convert option for nag binary file read 
+
+M    config_compilers.xml
+
+=================================================================================
+Originator:  jshollen
+Date: Jun 25,2014
+Model: Machines
+Version: Machines_140625a
+One-line: Switch Janus to Slurm queuing system
+
+M       mkbatch.janus
+M       env_mach_specific.janus
+
+=================================================================================
+Originator:  jedwards
+Date: Jun 25,2014
+Model: Machines
+Version: Machines_140625a
+One-line: add convert option for nag binary file read 
+
+M    config_compilers.xml
+
+=================================================================================
+Originator:  jedwards
+Date: Jun 25,2014
+Model: Machines
+Version: Machines_140625
+One-line: Improve dependancies for support libraries
+
+M    Makefile
+
+=================================================================================
+Originator:  jedwards
+Date: Jun 24,2014
+Model: Machines
+Version: Machines_140624
+One-line: Improve dependancies test for csm_share
+
+M    Makefile
+
+=================================================================================
+Originator:  jedwards
+Date: Jun 9,2014
+Model: Machines
+Version: Machines_140609
+One-line: Changes suggested by Helen He of NERSC
+
+M env_mach_specific.hopper
+M env_mach_specific.edison
+
+
+=================================================================================
+Originator:  jedwards
+Date: Jun 2,2014
+Model: Machines
+Version: Machines_140602
+One-line: avoid module conflicts on edison (need to choose between mkl and libsci)
+
+M config_compilers.xml
+M env_mach_specific.edison
+
+=================================================================================
+Originator:  jedwards
+Date: May 28,2014
+Model: Machines
+Version: Machines_140528a
+One-line: fix issues on edison - reduce compiler level
+
+M env_mach_specific.edison
+M config_compilers.xml
+
+
+=================================================================================
+Originator: mlevy / jedwards
+Date: May 28, 2014
+Model: Machines
+Version: Machines_140528
+One-line: mlevy - Set NTHRDS_OCN = 1 when using Darwin (POP2 tracer module)
+          jedwards - include patch for edison regarding $CRAY_CPU_TARGET
+
+M       env_mach_specific.edison
+M       config_pes.xml
+
+=================================================================================
+Originator: erik
+Date: May 21, 2014
+Model: Machines
+Version: Machines_140521
+One-line: Change PE count for CLM single-point grids
+
+M       config_pes.xml -- Put PE layout for CLM single-point grids last
+                          Remove use of pt1_pt1 grid as never used.
+
+=================================================================================
+Originator: jedwards
+Date: May 20, 2014
+Model: Machines
+Version: Machines_140520
+One-line: Fix modules for edison
+
+M env_mach_specific.edison
+
+
+=================================================================================
+Originator: jedwards
+Date: May 16, 2014
+Model: Machines
+Version: Machines_140516a
+One-line: Performance improvements for Mira
+
+M    Depends.mira
+M    config_compilers.xml
+
+
+=================================================================================
+Originator: santos
+Date: May 16, 2014
+Model: Machines
+Version: Machines_140516
+One-line: Remove -fno-range-check from Depends.gnu
+
+M       Depends.gnu
+        - Remove lines that add -fno-range-check; as of share3_140418, this
+          is unnecessary for shr_infnan_mod, and the other files have been
+          fixed or removed long ago.
+
+=================================================================================
 Originator: jedwards
 Date: May 14, 2014
 Model: Machines

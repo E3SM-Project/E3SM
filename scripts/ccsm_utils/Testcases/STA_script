@@ -1,0 +1,183 @@
+
+#======================================================================
+# Clear coupler log files for comparison tests
+#======================================================================
+
+unsetenv CPLLOG_INIT
+unsetenv CPLLOG_REST
+# turn on memory leak check and baseline memory compare
+setenv DETECT_MEMORY_LEAK
+# if comparing with baseline also compare memory highwater mark from baseline 
+if ($?COMPARE_BASELINE ) then
+  setenv COMPARE_MEMORY
+  setenv COMPARE_THROUGHPUT
+endif
+
+if (${STOP_N} < 3) then
+  echo "ERROR in ${0}:  stop_n too short" >>& $TESTSTATUS_LOG
+  echo "TFAIL ${CASEBASEID} " >&! $TESTSTATUS_OUT
+  exit -1
+endif
+
+@ stopn1 = ${STOP_N}
+@ restn1 = ${stopn1} / 2 + 1
+@ histn  = ${stopn1}
+#@ stopn2 = $stopn1 - $restn1
+
+#======================================================================
+# do an initial run test
+#======================================================================
+
+cd $CASEROOT
+echo "doing a ${stopn1} ${STOP_OPTION} initial test" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
+./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id REST_N       -val ${stopn1}
+./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+
+./$CASE.run
+
+#gunzip $RUNDIR/cpl.log*.gz
+set CplLogFile = `ls -1t $DOUT_S_ROOT/cpl/logs/cpl.log* | head -1`
+setenv CPLLOG_INIT $CplLogFile
+setenv BASEGEN_FILE01 $CplLogFile
+set cplhist_init = `ls -1t $DOUT_S_ROOT/cpl/hist/*.cpl.hi.*.nc | head -1`
+mv ${cplhist_init} ${cplhist_init}.base
+set cplhist_init = ${cplhist_init}.base
+
+if (-e $CplLogFile) then
+   set pass = `zgrep "SUCCESSFUL TERMINATION OF CPL7-CCSM" $CplLogFile | wc -l`
+   echo "pass = $pass" >>& $TESTSTATUS_LOG
+   if ($pass != 1) then
+      echo "initial run failed."
+      echo "ERROR in ${0}: coupler log indicates that inital model run failed" >>& $TESTSTATUS_LOG
+      exit -1;
+    endif
+else
+      echo "ERROR in ${0}: no coupler log created, inital model run failed" >>& $TESTSTATUS_LOG
+      exit -1;
+endif
+
+# copy the last restart set back to the run directory...
+
+#======================================================================
+# do a restart run
+#======================================================================
+
+cd $CASEROOT
+echo "doing a ${stopn1} ${STOP_OPTION} restart test" >>& $TESTSTATUS_LOG 
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
+./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+
+./$CASE.run
+
+set CplLogFile = `ls -1t $DOUT_S_ROOT/cpl/logs/cpl.log* | head -1`
+echo "First restart CplLogFile: $CplLogFile" >>& $TESTSTATUS_OUT
+gunzip -c $CplLogFile > $RUNDIR/cpllog.rest1
+setenv CPLLOG_REST $RUNDIR/cpllog.rest1
+setenv BASEGEN_FILE02 $CplLogFile
+set cplhist_rest = `ls -1t $DOUT_S_ROOT/cpl/hist/*.cpl.hi.*.nc | head -1`
+set FirstRestSet = `ls -1v $DOUT_S_ROOT/rest/|head -1`
+echo "Restart set: $FirstRestSet" >>& $TESTSTATUS_LOG
+echo "Restart set path is $DOUT_S_ROOT/rest/$FirstRestSet" >>& $TESTSTATUS_LOG
+# Remove the current restart files, and copy the first set of restart files back to the rundir..
+rm -rf $RUNDIR/${CASE}*.r*
+rm -rf $RUNDIR/rpointer*
+cp -Rp $DOUT_S_ROOT/rest/$FirstRestSet/* $RUNDIR/
+
+#======================================================================
+# do a second restart run, using the first restart set generated
+#======================================================================
+
+cd $CASEROOT
+echo "doing a ${stopn1} ${STOP_OPTION} second restart test, using the first restart set copied from" >>& $TESTSTATUS_LOG
+echo "the short-term archive directory" >>& $TESTSTATUS_LOG
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
+./xmlchange -file env_run.xml -id REST_OPTION  -val never
+./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+
+./$CASE.run
+
+set CplLogFile = `ls -1t $DOUT_S_ROOT/cpl/logs/cpl.log* | head -1`
+echo "Second restart CplLogFile: $CplLogFile" >>& $TESTSTATUS_OUT
+gunzip -c $CplLogFile > $RUNDIR/cpllog.rest2sta
+setenv CPLLOG_REST_STA $RUNDIR/cpllog.rest2sta
+setenv BASEGEN_FILE03 $CplLogFile
+set cplhist_reststa = `ls -1t $DOUT_S_ROOT/cpl/hist/*.cpl.hi.*.nc | head -1`
+
+
+
+#======================================================================
+# runs complete, reset
+#======================================================================
+
+./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
+./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
+./xmlchange -file env_run.xml -id REST_N       -val ${stopn1}
+./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+
+setenv CPLLOG_GENCMP $CPLLOG_REST
+echo "First Restart Test log is $CPLLOG_REST " >>& $TESTSTATUS_LOG 
+echo "Second Restart Test log is $CPLLOG_REST_STA" >>& $TESTSTATUS_LOG 
+echo "First Restart Test hist is $cplhist_rest " >>& $TESTSTATUS_LOG 
+echo "Second Restart Test hist is $cplhist_reststa" >>& $TESTSTATUS_LOG 
+
+#======================================================================
+# Check case validation first
+#======================================================================
+
+set basestatus = "UNDEF"
+
+if ( $?CPLLOG_REST ) then
+  if ( $?CPLLOG_REST_STA ) then
+    echo "Comparing first restart log file with second restart log file" >>& $TESTSTATUS_LOG
+    $CASETOOLS/check_exactrestart.pl $CPLLOG_REST $CPLLOG_REST_STA >>& $TESTSTATUS_LOG
+    set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+    if ( $pass != 0 ) then
+      set basestatus = "PASS "
+    else
+      set basestatus = "FAIL "
+    endif
+  else
+    echo "ERROR in ${0}:  restart coupler log file NOT set" >>& $TESTSTATUS_LOG
+    set basestatus = "ERROR"
+  endif
+else
+  echo "ERROR in ${0}:  initial coupler log file NOT set" >>& $TESTSTATUS_LOG
+  set basestatus = "ERROR"
+endif
+
+if ($basestatus == "PASS") then
+if ( $?cplhist_rest ) then
+  if ( $?cplhist_reststa ) then
+    echo "Comparing initial hist file with second hist file" >>& $TESTSTATUS_LOG
+    cd $RUNDIR
+    $CASETOOLS/hist_compare.csh $cplhist_rest $cplhist_reststa >>& $TESTSTATUS_LOG
+    cd $CASEROOT
+    set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
+    if ( $pass != 0 ) then
+      set basestatus = "PASS "
+    else
+      set basestatus = "FAIL "
+    endif
+  else
+    echo "ERROR in ${0}:  Short-term archiving restart coupler hist file NOT set" >>& $TESTSTATUS_LOG
+    set basestatus = "ERROR"
+  endif
+else
+  echo "ERROR in ${0}:  First restart coupler hist file NOT set" >>& $TESTSTATUS_LOG
+  set basestatus = "ERROR"
+endif
+endif
+
+echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+

@@ -61,8 +61,19 @@
      gtopo       ,&! glacier surface elevation (m)
      ghflx         ! heat flux from glacier interior, positive down (W/m^2)
 
+  ! Note that there are two separate mask fields. Both of them provide information about
+  ! where CISM is running. The difference is that ice_sheet_grid_mask includes icesheet
+  ! areas that are diagtostic-only, whereas icemask_coupled_fluxes excludes icesheet
+  ! areas where we are zeroing the fluxes sent to the coupler (thus, icesheets that are
+  ! "diagnostic" in some sense). We need two separate maps, as opposed to a single map
+  ! plus a scalar logical variable, in case we're running with multiple icesheet
+  ! instances (e.g., Greenland & Antarctica), one of which is fully prognostic and one of
+  ! which is diagnostic-only: in that case, ice_sheet_grid_mask would be non-zero over
+  ! both Greenland and Antarctica, whereas icemask_coupled_fluxes would be non-zero over
+  ! (e.g.) Greenland, but 0 over Antarctica.
   real(r8),dimension(:,:), allocatable :: &
-     ice_sheet_grid_mask
+     ice_sheet_grid_mask, &  ! mask of ice sheet grid coverage
+     icemask_coupled_fluxes  ! mask of ice sheet grid coverage where we are potentially sending non-zero fluxes
 
   type(glint_params) :: ice_sheet   ! Parameters relevant to all model instances, 
                                     ! i.e. pertaining to the global model 
@@ -151,6 +162,7 @@
    allocate(gtopo(nx,ny,0:glc_nec))
    allocate(ghflx(nx,ny,0:glc_nec))
    allocate(ice_sheet_grid_mask(nx,ny))
+   allocate(icemask_coupled_fluxes(nx,ny))
    
  ! Other fields
 
@@ -203,6 +215,7 @@
    deallocate(grofl)
    deallocate(ghflx)
    deallocate(ice_sheet_grid_mask)
+   deallocate(icemask_coupled_fluxes)
  ! Other fields
 !lipscomb - TO DO - Some of these are not needed
   deallocate(temp)

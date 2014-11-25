@@ -4,11 +4,11 @@
 ;
 ;  Erik Kluzek
 ;  Aug/28/2009
-;  $Id: getregional_datasets.ncl 55580 2013-11-23 18:40:57Z erik $
+;  $Id: getregional_datasets.ncl 62740 2014-08-16 20:58:21Z erik $
 ;  $HeadURL;
 ;
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl";
 begin
-  load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl";
   ; ===========================================================================================================
   ;
   ; IMPORTANT NOTE: EDIT THE FOLLOWING TO CUSTOMIZE or use ENV VARIABLE SETTINGS
@@ -158,7 +158,6 @@ begin
           delete( dimnames );
        end if
      end do
-     delete( varnames );
      if ( filelatnm .eq. "" )then
         print( "Could not find a recognizable latitude dimension name" )
         status_exit(-1);
@@ -166,14 +165,28 @@ begin
      ;
      ; Run ncks on it over the region of interest
      ;
-     cmd = "ncks -O -d "+filelatnm+","+indx(0)+","+indx(1)+" -d "+filelonnm+","+indx(2)+","+indx(3);
-     cmd = cmd + " " + globalfile + " "+regfile;
-     print( "Execute:"+cmd );
-     if ( debug .eq. False )then
-        if (  systemfunc( cmd+"; echo $?" ) .ne. 0 )then
-           print( "Command did not complete successfully: " );
-           status_exit( -1 )
+     do v = 0, dimsizes(varnames)-1
+        cmd = "ncks -O -d "+filelatnm+","+indx(0)+","+indx(1)+" -d "+filelonnm+","+indx(2)+","+indx(3);
+        cmd = cmd + " -v " + varnames(v) + " " + globalfile + " "+regfile+"_VAR"+varnames(v)+".nc"
+        print( "Execute:"+cmd );
+        if ( debug .eq. False )then
+           if (  systemfunc( cmd+"; echo $?" ) .ne. 0 )then
+              print( "Command did not complete successfully: " );
+              status_exit( -1 )
+           end if
         end if
+        cmd = "ncks -A  "+regfile+"_VAR"+varnames(v)+".nc "+regfile
+        print( "Execute:"+cmd );
+        if ( debug .eq. False )then
+           if (  systemfunc( cmd+"; echo $?" ) .ne. 0 )then
+              print( "Command did not complete successfully: " );
+              status_exit( -1 )
+           end if
+           system( "/bin/rm "+regfile+"_VAR"+varnames(v)+".nc" )
+        end if
+     end do
+     delete( varnames );
+     if ( debug .eq. False )then
         ;
         ; Open up resultant file for writing
         ;

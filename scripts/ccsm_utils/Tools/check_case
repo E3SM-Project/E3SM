@@ -5,6 +5,7 @@ if ($#argv < 1) then
 #-----------------------------------------
 ./Tools/ccsm_check_lockedfiles || exit -1
 source ./Tools/ccsm_getenv || exit -2
+./preview_namelists  || exit -3
 
 if ($BUILD_COMPLETE != "TRUE") then
   echo "BUILD_COMPLETE is not TRUE"

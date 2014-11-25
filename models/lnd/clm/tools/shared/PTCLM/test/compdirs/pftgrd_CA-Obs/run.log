@@ -1,26 +1,27 @@
-/glade/apps/opt/ncl/6.1.2/gnu/4.4.6/bin/ncl
+/glade/apps/opt/ncl/6.2.0/intel/12.1.5/bin/ncl
 ! user_nl_clm namelist options written by PTCLMmkdata:
-! ../PTCLMmkdata --verbose --pftgrid --cesm_root ../../../../../../.. -s CA-Obs -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/pftgrid_file_creation 
- fsurdat = '/glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_clm4_5_pftgrd_c140204.nc'
+! ../PTCLMmkdata --verbose --pftgrid --cesm_root ../../../../../../.. -s CA-Obs -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/pftgrid_file_creation 
+ fsurdat = '/glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_clm4_5_pftgrd_c140204.nc'
  hist_nhtfrq = 0
  hist_mfilt  = 1200
 ---------------- PTCLMmkdata version PTCLM2.0_scripts_trunk-----------------------------
 
-   ../PTCLMmkdata --verbose --pftgrid --cesm_root ../../../../../../.. -s CA-Obs -d /glade/p/cesmdata/cseg/inputdata --debug --mydatadir testing_dir/pftgrid_file_creation 
+   ../PTCLMmkdata --verbose --pftgrid --cesm_root ../../../../../../.. -s CA-Obs -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/pftgrid_file_creation 
 
    OPTIONS:
 
 Site name:						CA-Obs
 
-Root CLM directory:					/glade/p/work/erik/clm_transCO2
+Root CLM directory:					/glade/p/work/erik/clm_trunk
 ** Surface data file will be built using site-level data when available unless otherwise specified ** 
 
 	Extract PFT data from gridded files:		True
 	Extract soil data from gridded files:		False
 
-Open Site data file: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata/PTCLMDATA_sitedata.txt
+Open Site data file: /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata/PTCLMDATA_sitedata.txt
 
  site = site_code name: name                                                    Region:        state Campaign: campaign
+ site =    US-Blo name: Blodgett Forest                                         Region:           CA Campaign: AmeriFlux
  site =  US-CHATS name: Cilker Chandler walnut orchard                          Region:           CA Campaign: CHATS
  site =    US-FPe name: Fort Peck                                               Region:           MT Campaign: AmeriFlux
  site =    CA-Let name: Lethbridge                                              Region:          CAN Campaign: Fluxnet-Canada
@@ -59,20 +60,23 @@ Open Site data file: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared
  site =    TS-Ts1 name: Test short yrs                                          Region:         TEST Campaign: PTCLMTestSite
  site =    TS-Ts2 name: Test short yrs start on leap-year                       Region:         TEST Campaign: PTCLMTestSite
  site =    TS-Ts3 name: Test long yrs                                           Region:         TEST Campaign: PTCLMTestSite
+ site =  LTER-Sev name: Sevilleta Long Term Ecological Research (LTER) project (Meteorology from LTER Cerro Montoso #42) Region:           NM Campaign: LTER
+ site =    RF-Bra name: Brasillia arbitrary site, no met-data                   Region:           BR Campaign: RFisher
+ site =   LBA-Cax name: Caxiauna Rainforest 'throughfall exclusion’ (TFE) experiment Region:           BR Campaign: LBA
 CESM input data directory:				/glade/p/cesmdata/cseg/inputdata
 ----------------------------------------------------------------
 
-Write /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/README.PTCLM with command line
+Write /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/README.PTCLM with command line
 CLM Physics Version: clm4_5
-Run command: /bin/chmod +x /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/xmlchange_cmnds
+Run command: /bin/chmod +x /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/xmlchange_cmnds
 Making input files for the point (this may take a while if creating transient datasets)
 Creating map file for a point with no ocean
 lat=53.9872
-Run command: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapdata/mknoocnmap.pl -p 53.9872,254.8822 -name 1x1pt_CA-Obs > /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/mknoocnmap.log
-mapfile = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_CA-Obs_noocean_to_1x1pt_CA-Obs_nomask_aave_da_140204.nc
-scripgridfile = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_CA-Obs_nomask_c140204.nc
+Run command: /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/mkmapdata/mknoocnmap.pl -p 53.9872,254.8822 -name 1x1pt_CA-Obs > /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/mknoocnmap.log
+mapfile = /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_CA-Obs_noocean_to_1x1pt_CA-Obs_nomask_aave_da_140204.nc
+scripgridfile = /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_CA-Obs_nomask_c140204.nc
 Creating data domain
-Run command: /glade/p/work/erik/clm_transCO2/tools/mapping/gen_domain_files/gen_domain -m /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_CA-Obs_noocean_to_1x1pt_CA-Obs_nomask_aave_da_140204.nc -o navy -l 1x1pt_CA-Obs -c 'Running gen_domain from PTCLMmkdata' > /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/gen_domain.log
+Run command: /glade/p/work/erik/clm_trunk/tools/mapping/gen_domain_files/gen_domain -m /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_CA-Obs_noocean_to_1x1pt_CA-Obs_nomask_aave_da_140204.nc -o navy -l 1x1pt_CA-Obs -c 'Running gen_domain from PTCLMmkdata' > /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/gen_domain.log
 domainfile = domain.lnd.1x1pt_CA-Obs_navy.140204.nc
 
 
@@ -80,9 +84,10 @@ Re-create surface dataset:
 
 
 Re-create mapping files for surface dataset:
-Run command: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapdata/mkmapdata.sh --gridfile /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_CA-Obs_nomask_c140204.nc --res 1x1pt_CA-Obs --gridtype regional --phys clm4_5 > /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/mkmapdata.log
+Run command: /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/mkmapdata/mkmapdata.sh --gridfile /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_CA-Obs_nomask_c140204.nc --res 1x1pt_CA-Obs --gridtype regional -v --phys clm4_5 > /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/mkmapdata.log
 Replacing soil information in surface data file
  site = site_code
+ site =    US-Blo
  site =  US-CHATS
  site =    US-FPe
  site =    CA-Let
@@ -121,11 +126,14 @@ Replacing soil information in surface data file
  site =    TS-Ts1
  site =    TS-Ts2
  site =    TS-Ts3
+ site =  LTER-Sev
+ site =    RF-Bra
+ site =   LBA-Cax
  sandpct=80.89 claypct=4.12
-Run command: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/clm4_5/mksurfdata_map/mksurfdata.pl -res usrspec -usr_gname 1x1pt_CA-Obs -usr_gdate 140204 -usr_mapdir /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs -dinlc /glade/p/cesmdata/cseg/inputdata -y 2000 -rcp -999.9 -soil_cly 4.12 -soil_snd 80.89  > /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/mksurfdata_map.log
-surface file = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_140204.nc
-surface log file = /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_140204.log
-Run command: /bin/mv -f /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_140204.nc surfdata_1x1pt_CA-Obs_simyr2000_clm4_5_pftgrd_c140204.nc
-Run command: /bin/mv -f /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_140204.log surfdata_1x1pt_CA-Obs_simyr2000_clm4_5_pftgrd_c140204.log
-Data created successfully in /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs
+Run command: /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/clm4_5/mksurfdata_map/mksurfdata.pl -res usrspec -usr_gname 1x1pt_CA-Obs -usr_gdate 140204 -usr_mapdir /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs -dinlc /glade/p/cesmdata/cseg/inputdata -y 2000 -rcp -999.9 -soil_cly 4.12 -soil_snd 80.89  > /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/mksurfdata_map.log
+surface file = /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_140204.nc
+surface log file = /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_140204.log
+Run command: /bin/mv -f /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_140204.nc surfdata_1x1pt_CA-Obs_simyr2000_clm4_5_pftgrd_c140204.nc
+Run command: /bin/mv -f /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs/surfdata_1x1pt_CA-Obs_simyr2000_140204.log surfdata_1x1pt_CA-Obs_simyr2000_clm4_5_pftgrd_c140204.log
+Data created successfully in /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/test/testing_dir/pftgrid_file_creation/1x1pt_CA-Obs
 

@@ -407,6 +407,18 @@ If this is set to true, it sets the mass balance timestep to 1 day.
 This means the ice dynamics is called after one day of climate simulation.
 THIS IS ONLY FOR TESTING OF COUPLING PROCEDURES, NOT TO BE USED FOR SCIENCE.
 </entry>
+
+<entry
+id="zero_gcm_fluxes"
+type="integer"
+category="cism_config_climate"
+group="cism_config_climate"
+valid_values="0,1" >
+0: Send true fluxes to the GCM
+1: Zero out all fluxes sent to the GCM
+Default: Depends on GLC_TWO_WAY_COUPLING xml variable
+</entry>
+
 <!-- =============================================================  -->
 <!-- group: cism.config: projection                                 -->
 <!-- =============================================================  -->
