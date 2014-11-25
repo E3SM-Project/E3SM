@@ -4012,7 +4012,7 @@ write(0,*) 'PROCESSING SEAICE'
             sorted_arr(2,k) = rh_fg(k,iCell)
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,nVertLevels
+         do k=nVertLevels,1,-1
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
 !           scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
             scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
