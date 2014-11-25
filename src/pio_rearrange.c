@@ -148,9 +148,8 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   // Share the max io buffer size with all io tasks
 #ifndef _MPISERIAL
   CheckMPIReturn(MPI_Allreduce(&totiosize, &(iodesc->maxiobuflen), 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
-#else
-  iodesc->maxiobuflen = totiosize;
 #endif
+  iodesc->maxiobuflen = totiosize;
   
 }
 
