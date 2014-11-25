@@ -485,6 +485,7 @@ contains
 
       call get_clmlevel_gsmap(clmlevel='cohort', gsmap=gsmap)
       call mct_gsmap_OP(gsmap, iam, gsmOP)
+      if (allocated(gsmOP)) deallocate(gsmOP)
 
       !
       ! cohort level vars
