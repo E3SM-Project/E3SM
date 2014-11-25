@@ -40,20 +40,17 @@ contains
     !
     ! !USES:
     use abortutils       , only : endrun
-    use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, &
-                                  set_nextsw_cday
-    use clm_atmlnd       , only : clm_l2a
-    use clm_glclnd       , only : clm_s2x
-    use clm_initializeMod, only : initialize1, initialize2
-    use clm_varctl       , only : finidat,single_column, clm_varctl_set, iulog, noland, &
-                                  inst_index, inst_suffix, inst_name
+    use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
+    use clm_initializeMod, only : initialize1, initialize2, lnd2atm_vars, lnd2glc_vars
+    use clm_varctl       , only : finidat,single_column, clm_varctl_set, iulog, noland
+    use clm_varctl       , only : inst_index, inst_suffix, inst_name
     use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use decompMod        , only : get_proc_bounds
     use domainMod        , only : ldomain
-    use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel, &
-                                  shr_file_getLogUnit, shr_file_getLogLevel, &
-                                  shr_file_getUnit, shr_file_setIO
+    use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel
+    use shr_file_mod     , only : shr_file_getLogUnit, shr_file_getLogLevel
+    use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO
     use seq_cdata_mod    , only : seq_cdata, seq_cdata_setptrs
     use seq_timemgr_mod  , only : seq_timemgr_EClockGetData
     use seq_infodata_mod , only : seq_infodata_type, seq_infodata_GetData, seq_infodata_PutData, &
@@ -249,7 +246,7 @@ contains
 
     ! Create land export state 
 
-    call lnd_export(bounds, clm_l2a, clm_s2x, l2x_l%rattr)
+    call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
 
     ! Fill in infodata settings
 
@@ -285,26 +282,24 @@ contains
     ! Run clm model
     !
     ! !USES:
-    use shr_kind_mod    ,only : r8 => shr_kind_r8
-    use clmtype
-    use clm_atmlnd      ,only : clm_l2a, clm_a2l, a2l_not_downscaled_gcell
-    use clm_glclnd      ,only : clm_s2x, clm_x2s
-    use clm_driver      ,only : clm_drv
-    use clm_time_manager,only : get_curr_date, get_nstep, get_curr_calday, get_step_size, &
-                                advance_timestep, set_nextsw_cday,update_rad_dtime
-    use decompMod       ,only : get_proc_bounds
-    use abortutils      ,only : endrun
-    use clm_varctl      ,only : iulog
-    use clm_varorb      ,only : eccen, obliqr, lambm0, mvelpp
-    use shr_file_mod    ,only : shr_file_setLogUnit, shr_file_setLogLevel, &
-                                shr_file_getLogUnit, shr_file_getLogLevel
-    use seq_cdata_mod   ,only : seq_cdata, seq_cdata_setptrs
-    use seq_timemgr_mod ,only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn, &
-                                seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
-    use seq_infodata_mod,only : seq_infodata_type, seq_infodata_GetData
-    use spmdMod         ,only : masterproc, mpicom
-    use perf_mod        ,only : t_startf, t_stopf, t_barrierf
-    use shr_orb_mod     ,only : shr_orb_decl
+    use shr_kind_mod    ,  only : r8 => shr_kind_r8
+    use clm_initializeMod, only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use clm_driver      ,  only : clm_drv
+    use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
+    use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
+    use decompMod       ,  only : get_proc_bounds
+    use abortutils      ,  only : endrun
+    use clm_varctl      ,  only : iulog
+    use clm_varorb      ,  only : eccen, obliqr, lambm0, mvelpp
+    use shr_file_mod    ,  only : shr_file_setLogUnit, shr_file_setLogLevel
+    use shr_file_mod    ,  only : shr_file_getLogUnit, shr_file_getLogLevel
+    use seq_cdata_mod   ,  only : seq_cdata, seq_cdata_setptrs
+    use seq_timemgr_mod ,  only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn
+    use seq_timemgr_mod ,  only : seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
+    use seq_infodata_mod,  only : seq_infodata_type, seq_infodata_GetData
+    use spmdMod         ,  only : masterproc, mpicom
+    use perf_mod        ,  only : t_startf, t_stopf, t_barrierf
+    use shr_orb_mod     ,  only : shr_orb_decl
     use mct_mod
     use ESMF
     !
@@ -388,7 +383,7 @@ contains
     ! Map to clm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
-    call lnd_import( bounds, x2l_l%rattr, clm_a2l, a2l_not_downscaled_gcell, clm_x2s)
+    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars )
     call t_stopf ('lc_lnd_import')
 
     ! Use infodata to set orbital values if updated mid-run
@@ -445,7 +440,7 @@ contains
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
        
        call t_startf ('lc_lnd_export')
-       call lnd_export(bounds, clm_l2a, clm_s2x, l2x_l%rattr)
+       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
        call t_stopf ('lc_lnd_export')
 
        ! Advance clm time step
@@ -493,8 +488,8 @@ contains
     ! Finalize land surface model
 
     use seq_cdata_mod   ,only : seq_cdata, seq_cdata_setptrs
-    use seq_timemgr_mod ,only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn, &
-                                seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
+    use seq_timemgr_mod ,only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn
+    use seq_timemgr_mod ,only : seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
     use mct_mod
     use esmf
     !

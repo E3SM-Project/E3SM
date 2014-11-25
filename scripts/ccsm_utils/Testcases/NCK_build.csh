@@ -3,6 +3,9 @@
 ./Tools/ccsm_check_lockedfiles || exit -1
 source ./Tools/ccsm_getenv     || exit -2
 
+cp -f env_mach_pes.xml env_mach_pes.xml.nck0
+cp -f env_build.xml env_build.xml.nck0
+
 cd $CASEROOT
 ./$CASE.clean_build
 

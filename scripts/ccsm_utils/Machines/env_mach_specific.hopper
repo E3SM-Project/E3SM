@@ -32,6 +32,7 @@ endif
 if ( $COMPILER == "intel" ) then
     module load PrgEnv-intel 
     module switch intel      intel/12.1.5.339
+    setenv MKL "-mkl=cluster"
 endif    
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
@@ -47,8 +48,9 @@ if ( $COMPILER == "gnu" ) then
 endif    
 module switch xt-asyncpe xt-asyncpe/5.23
 module load cray-mpich/6.2.0
-module switch cray-libsci cray-libsci/12.1.3
-
+if ( $COMPILER != "intel" ) then
+  module switch cray-libsci cray-libsci/12.1.3
+endif
 
 if ( $MPILIB == "mpi-serial") then
   module load cray-netcdf/4.3.0

@@ -1,20 +1,21 @@
 ---------------- PTCLMmkdata version PTCLM2.0_scripts_trunk-----------------------------
 
-   ../PTCLMmkdata --cesm_root ../../../../../../.. -s list -d /glade/p/cesmdata/cseg/inputdata --debug 
+   ../PTCLMmkdata --cesm_root ../../../../../../.. -s list -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 
 
    OPTIONS:
 
 Site name:						list
 
-Root CLM directory:					/glade/p/work/erik/clm_transCO2
+Root CLM directory:					/glade/p/work/erik/clm_trunk
 ** Surface data file will be built using site-level data when available unless otherwise specified ** 
 
 	Extract PFT data from gridded files:		False
 	Extract soil data from gridded files:		False
 
-Open Site data file: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata/PTCLMDATA_sitedata.txt
+Open Site data file: /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata/PTCLMDATA_sitedata.txt
 
  site = site_code name: name                                                    Region:        state Campaign: campaign
+ site =    US-Blo name: Blodgett Forest                                         Region:           CA Campaign: AmeriFlux
  site =  US-CHATS name: Cilker Chandler walnut orchard                          Region:           CA Campaign: CHATS
  site =    US-FPe name: Fort Peck                                               Region:           MT Campaign: AmeriFlux
  site =    CA-Let name: Lethbridge                                              Region:          CAN Campaign: Fluxnet-Canada
@@ -53,3 +54,6 @@ Open Site data file: /glade/p/work/erik/clm_transCO2/models/lnd/clm/tools/shared
  site =    TS-Ts1 name: Test short yrs                                          Region:         TEST Campaign: PTCLMTestSite
  site =    TS-Ts2 name: Test short yrs start on leap-year                       Region:         TEST Campaign: PTCLMTestSite
  site =    TS-Ts3 name: Test long yrs                                           Region:         TEST Campaign: PTCLMTestSite
+ site =  LTER-Sev name: Sevilleta Long Term Ecological Research (LTER) project (Meteorology from LTER Cerro Montoso #42) Region:           NM Campaign: LTER
+ site =    RF-Bra name: Brasillia arbitrary site, no met-data                   Region:           BR Campaign: RFisher
+ site =   LBA-Cax name: Caxiauna Rainforest 'throughfall exclusion’ (TFE) experiment Region:           BR Campaign: LBA

@@ -57,7 +57,7 @@ include(genf90_utils)
 #=================================================
 
 # pFUnit and its preprocessor
-find_package(pFUnit REQUIRED)
+find_package(pFUnit)
 
 # Preprocessor and driver handling.
 include(pFUnit_utils)

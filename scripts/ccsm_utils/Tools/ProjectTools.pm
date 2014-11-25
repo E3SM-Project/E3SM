@@ -16,9 +16,16 @@ my $pkg_nm = 'ProjectTools';
 # set_project(project, cfg_ref)
 #   Sets the PROJECT xml variable in cfg_ref
 
+# Note that entities prefixed with an underscore (_) should be treated as
+# private to this module, and are not meant to be accessed by other code.
+
 use strict;
 require ConfigCase;
 
+# Note that this is variable should only be used internally to this module.
+# External code that wants to check whether the PROJECT xml variable has been
+# set should check against the default specified in config_definition.xml
+# (currently "PROJECT_UNSET").
 use constant _PROJECT_UNSET => "";
 
 # ------------------------------------------------------------------------

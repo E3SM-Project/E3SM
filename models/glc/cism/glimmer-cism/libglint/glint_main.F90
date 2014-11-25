@@ -134,6 +134,7 @@ module glint_main
   private glint_allocate_arrays
   private glint_readconfig, calc_bounds, check_init_args
   private compute_ice_sheet_grid_mask
+  private compute_icemask_coupled_fluxes
 
     !---------------------------------------------------------------------------------------
     ! Some notes on coupling to the Community Earth System Model (CESM).  These may be applicable
@@ -589,6 +590,7 @@ contains
                                   gfrac,        gtopo,            &
                                   grofi,        grofl,            &
                                   ice_sheet_grid_mask,            &
+                                  icemask_coupled_fluxes,         &
                                   ghflx,        gmask,            &
                                   gcm_restart,  gcm_restart_file, &
                                   gcm_debug,    gcm_fileunit)
@@ -597,6 +599,13 @@ contains
     ! For a multi-processor run, the main task should specify lats & longs spanning
     !  the full global domain; the other tasks should give 0-size lats & longs arrays
     ! Output arrays on the global grid are only valid on the main task
+    !
+    ! Note about ice_sheet_grid_mask and icemask_coupled_fluxes: ice_sheet_grid_mask is
+    ! non-zero wherever CISM is operating - i.e., grid cells with icesheet or bare land
+    ! (but not ocean). icemask_coupled_fluxes is similar, but is 0 for icesheet instances
+    ! that have zero_gcm_fluxes = .true. Thus, icemask_coupled_fluxes can be used to
+    ! determine the regions of the world in which CISM is operating and potentially
+    ! sending non-zero fluxes to the climate model.
 
     use glimmer_config
     use glint_initialise
@@ -626,6 +635,7 @@ contains
     real(dp),dimension(:,:),  optional,intent(out) :: grofi       !*FD ice runoff (kg/m^2/s = mm H2O/s)
     real(dp),dimension(:,:),  optional,intent(out) :: grofl       !*FD liquid runoff (kg/m^2/s = mm H2O/s)
     real(dp),dimension(:,:),  optional,intent(out) :: ice_sheet_grid_mask !mask of ice sheet grid coverage
+    real(dp),dimension(:,:),  optional,intent(out) :: icemask_coupled_fluxes !mask of ice sheet grid coverage where we are potentially sending non-zero fluxes
     integer, dimension(:,:),  optional,intent(in)  :: gmask       !*FD mask = 1 where global data are valid
     logical,                  optional,intent(in)  :: gcm_restart ! logical flag to restart from a GCM restart file
     character(*),             optional,intent(in)  :: gcm_restart_file ! restart filename for a GCM restart
@@ -650,7 +660,7 @@ contains
                gfrac_temp, gtopo_temp, ghflx_temp ! Temporary output arrays
 
     real(dp),dimension(:,:),allocatable ::   &
-               grofi_temp, grofl_temp             ! Temporary output arrays
+               grofi_temp, grofl_temp, ice_sheet_grid_mask_temp, icemask_coupled_fluxes_temp  ! Temporary output arrays
 
     integer :: n
     integer :: nec       ! number of elevation classes
@@ -862,6 +872,7 @@ contains
     if (present(grofi)) grofi(:,:)   = 0.d0
     if (present(grofl)) grofl(:,:)   = 0.d0
     if (present(ice_sheet_grid_mask))  ice_sheet_grid_mask(:,:)   = 0.d0
+    if (present(icemask_coupled_fluxes))  icemask_coupled_fluxes(:,:)   = 0.d0
 
     ! Allocate arrays
 
@@ -870,6 +881,8 @@ contains
     allocate(ghflx_temp(params%g_grid%nx, params%g_grid%ny, 0:params%g_grid%nec))
     allocate(grofi_temp(params%g_grid%nx, params%g_grid%ny))
     allocate(grofl_temp(params%g_grid%nx, params%g_grid%ny))
+    allocate(ice_sheet_grid_mask_temp(params%g_grid%nx, params%g_grid%ny))
+    allocate(icemask_coupled_fluxes_temp(params%g_grid%nx, params%g_grid%ny))
 
     if (GLC_DEBUG .and. main_task) then
        write(stdout,*) 'Upscale and splice the initial fields'
@@ -895,6 +908,11 @@ contains
                                 ghflx_temp,                             &
                                 init_call = .true.)
 
+       call compute_ice_sheet_grid_mask(ice_sheet_grid_mask_temp, gfrac_temp)
+       call compute_icemask_coupled_fluxes(icemask_coupled_fluxes_temp, &
+                                           ice_sheet_grid_mask_temp, &
+                                           params%instances(i))
+
        ! Splice together with the global output
 
        if (GLC_DEBUG .and. main_task) then
@@ -904,21 +922,22 @@ contains
        call splice_fields_gcm(gfrac_temp, gtopo_temp,    &
                               grofi_temp, grofl_temp,    &
                               ghflx_temp,                &
+                              ice_sheet_grid_mask_temp,  &
+                              icemask_coupled_fluxes_temp, &
                               gfrac,      gtopo,         &
                               grofi,      grofl,         &
                               ghflx,                     &
+                              ice_sheet_grid_mask,       &
+                              icemask_coupled_fluxes,    &
                               params%g_grid%nec,         &
                               params%instances(i)%frac_coverage)
 
     end do       ! ninstances
 
-    if (present(ice_sheet_grid_mask)) then
-       call compute_ice_sheet_grid_mask(ice_sheet_grid_mask, gfrac)
-    end if
-    
     ! Deallocate
 
     deallocate(gfrac_temp, gtopo_temp, grofi_temp, grofl_temp, ghflx_temp)
+    deallocate(ice_sheet_grid_mask_temp, icemask_coupled_fluxes_temp)
 
     ! Set output flag       !TODO - Is this ever used?
     if (present(output_flag)) output_flag = .true.
@@ -1331,6 +1350,7 @@ contains
                        gfrac,          gtopo,           &
                        grofi,          grofl,           &
                        ice_sheet_grid_mask,             &
+                       icemask_coupled_fluxes,          &
                        ghflx)
 
     ! Main Glint subroutine for GCM coupling.
@@ -1344,6 +1364,13 @@ contains
     ! Global output fields are only valid on the main task. Fields that are integrated
     ! over the whole domain are only valid in single-task runs; trying to compute these 
     ! in multi-task runs will generate a fatal error.
+    !
+    ! Note about ice_sheet_grid_mask and icemask_coupled_fluxes: ice_sheet_grid_mask is
+    ! non-zero wherever CISM is operating - i.e., grid cells with icesheet or bare land
+    ! (but not ocean). icemask_coupled_fluxes is similar, but is 0 for icesheet instances
+    ! that have zero_gcm_fluxes = .true. Thus, icemask_coupled_fluxes can be used to
+    ! determine the regions of the world in which CISM is operating and potentially
+    ! sending non-zero fluxes to the climate model.
 
     use glimmer_utils
     use glint_interp
@@ -1376,6 +1403,7 @@ contains
     real(dp),dimension(:,:),  optional,intent(inout) :: grofi         ! output ice runoff (kg/m^2/s = mm H2O/s)
     real(dp),dimension(:,:),  optional,intent(inout) :: grofl         ! output liquid runoff (kg/m^2/s = mm H2O/s)
     real(dp),dimension(:,:),  optional,intent(inout) :: ice_sheet_grid_mask !mask of ice sheet grid coverage
+    real(dp),dimension(:,:),  optional,intent(inout) :: icemask_coupled_fluxes !mask of ice sheet grid coverage where we are potentially sending non-zero fluxes
 
     ! Internal variables ----------------------------------------------------------------------------
 
@@ -1391,7 +1419,9 @@ contains
 
     real(dp), dimension(:,:), allocatable ::   &
        grofi_temp    ,&! grofi for a single instance
-       grofl_temp      ! grofl for a single instance
+       grofl_temp    ,&! grofl for a single instance
+       ice_sheet_grid_mask_temp, &    ! ice_sheet_grid_mask for a single instance
+       icemask_coupled_fluxes_temp    ! icemask_coupled_fluxes for a single instance
 
     if (GLC_DEBUG .and. main_task) then
        if (params%new_av) then
@@ -1465,6 +1495,8 @@ contains
        allocate(ghflx_temp(params%g_grid%nx, params%g_grid%ny, 0:params%g_grid%nec))
        allocate(grofi_temp(params%g_grid%nx, params%g_grid%ny))
        allocate(grofl_temp(params%g_grid%nx, params%g_grid%ny))
+       allocate(ice_sheet_grid_mask_temp(params%g_grid%nx, params%g_grid%ny))
+       allocate(icemask_coupled_fluxes_temp(params%g_grid%nx, params%g_grid%ny))
 
        ! Zero global outputs if present
 
@@ -1474,6 +1506,7 @@ contains
        if (present(grofi)) grofi(:,:)   = 0.d0
        if (present(grofl)) grofl(:,:)   = 0.d0
        if (present(ice_sheet_grid_mask))  ice_sheet_grid_mask(:,:)   = 0.d0
+       if (present(icemask_coupled_fluxes))  icemask_coupled_fluxes(:,:)   = 0.d0
 
        ! Calculate averages by dividing by number of steps elapsed
        ! since last model timestep.
@@ -1530,25 +1563,30 @@ contains
                                       gfrac_temp,          gtopo_temp,        &
                                       grofi_temp,          grofl_temp,        &
                                       ghflx_temp )
+             
+             call compute_ice_sheet_grid_mask(ice_sheet_grid_mask_temp, gfrac_temp)
+             call compute_icemask_coupled_fluxes(icemask_coupled_fluxes_temp, &
+                                                 ice_sheet_grid_mask_temp, &
+                                                 params%instances(i))
 
              ! Add the contribution from this instance to the global output
 
              call splice_fields_gcm(gfrac_temp, gtopo_temp,    & !gfrac_temp here is fractional area, for each elevation level, of the total land+ice area.
                                     grofi_temp, grofl_temp,    &
                                     ghflx_temp,                &
+                                    ice_sheet_grid_mask_temp,  &
+                                    icemask_coupled_fluxes_temp, &
                                     gfrac,      gtopo,         & !gfrac here is the fractional area, for each elevation level, of the fractional area of the total grid cell that is covered by CISM-owned land.
                                     grofi,      grofl,         &
                                     ghflx,                     &
+                                    ice_sheet_grid_mask,       &
+                                    icemask_coupled_fluxes,    &
                                     params%g_grid%nec,         &
                                     params%instances(i)%frac_coverage)
                          
           endif   ! time = next_time
 
        enddo    ! ninstances
-
-       if (present(ice_sheet_grid_mask)) then
-          call compute_ice_sheet_grid_mask(ice_sheet_grid_mask, gfrac)
-       end if
 
        ! ---------------------------------------------------------
        ! Reset averaging fields, flags and counters
@@ -1563,6 +1601,7 @@ contains
        params%next_av_start = time + params%time_step
 
        deallocate(gfrac_temp, gtopo_temp, grofi_temp, grofl_temp, ghflx_temp)
+       deallocate(ice_sheet_grid_mask_temp, icemask_coupled_fluxes_temp)
 
        write(stdout,*) 'Done in glint_gcm'
 
@@ -1672,9 +1711,13 @@ contains
   subroutine splice_fields_gcm(gfrac_temp, gtopo_temp,    &
                                grofi_temp, grofl_temp,    &
                                ghflx_temp,                &
+                               ice_sheet_grid_mask_temp,  &
+                               icemask_coupled_fluxes_temp, &
                                gfrac,      gtopo,         &
                                grofi,      grofl,         &
                                ghflx,                     &
+                               ice_sheet_grid_mask,       &
+                               icemask_coupled_fluxes,    &
                                nec,                       &
                                frac_coverage)
 
@@ -1687,12 +1730,16 @@ contains
      real(dp), dimension(:,:,0:), intent(in) :: ghflx_temp  ! output fields for this instance
      real(dp), dimension(:,:),   intent(in) :: grofi_temp  ! output fields for this instance
      real(dp), dimension(:,:),   intent(in) :: grofl_temp  ! output fields for this instance
+     real(dp), dimension(:,:),   intent(in) :: ice_sheet_grid_mask_temp  ! output fields for this instance
+     real(dp), dimension(:,:),   intent(in) :: icemask_coupled_fluxes_temp  ! output fields for this instance
 
      real(dp), dimension(:,:,0:), intent(inout) :: gfrac    ! spliced global output field
      real(dp), dimension(:,:,0:), intent(inout) :: gtopo    ! spliced global output field
      real(dp), dimension(:,:,0:), intent(inout) :: ghflx    ! spliced global output field
      real(dp), dimension(:,:),   intent(inout) :: grofi    ! spliced global output field
      real(dp), dimension(:,:),   intent(inout) :: grofl    ! spliced global output field
+     real(dp), dimension(:,:),   intent(inout) :: ice_sheet_grid_mask    ! spliced global output field
+     real(dp), dimension(:,:),   intent(inout) :: icemask_coupled_fluxes ! spliced global output field
 
      integer, intent(in) :: nec   ! number of elevation classes
 
@@ -1742,6 +1789,19 @@ contains
                                   grofl_temp(:,:),         &
                                   frac_coverage,           &
                                   area_weighting=.false.)
+
+        ! area_weighting for ice_sheet_grid_mask agrees with area_weighting for gfrac,
+        ! since they are similar variables
+
+        ice_sheet_grid_mask(:,:) = splice_field(ice_sheet_grid_mask(:,:), &
+                                                ice_sheet_grid_mask_temp(:,:), &
+                                                frac_coverage, &
+                                                area_weighting = .true.)
+
+        icemask_coupled_fluxes(:,:) = splice_field(icemask_coupled_fluxes(:,:), &
+                                                   icemask_coupled_fluxes_temp(:,:), &
+                                                   frac_coverage, &
+                                                   area_weighting = .true.)
 
      endif  ! main_task
 
@@ -2138,6 +2198,29 @@ contains
     ice_sheet_grid_mask=sum(gfrac,3)
 
   end subroutine compute_ice_sheet_grid_mask
+
+  !========================================================
+
+  subroutine compute_icemask_coupled_fluxes(icemask_coupled_fluxes, ice_sheet_grid_mask, instance)
+
+    ! Given an already-computed ice_sheet_grid_mask array, compute
+    ! icemask_coupled_fluxes. The latter is similar to the former, but is 0 for icesheet
+    ! instances that have zero_gcm_fluxes = .true. Thus, icemask_coupled_fluxes can be
+    ! used to determine the regions of the world in which CISM is operating and
+    ! potentially sending non-zero fluxes to the climate model.
+
+    real(dp) ,dimension(:,:), intent(out)  :: icemask_coupled_fluxes ! mask of ice sheet grid coverage where we are potentially sending non-zero fluxes
+    real(dp), dimension(:,:), intent(in)   :: ice_sheet_grid_mask    ! mask of ice sheet grid coverage
+    type(glint_instance), intent(in)       :: instance               ! the model instance
+
+
+    if (instance%zero_gcm_fluxes == ZERO_GCM_FLUXES_TRUE) then
+       icemask_coupled_fluxes(:,:) = 0.d0
+    else
+       icemask_coupled_fluxes(:,:) = ice_sheet_grid_mask(:,:)
+    end if
+
+  end subroutine compute_icemask_coupled_fluxes
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

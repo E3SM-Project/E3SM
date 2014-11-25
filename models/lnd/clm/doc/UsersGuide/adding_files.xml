@@ -295,7 +295,7 @@ advantage of this to create customized datasets as well, see the chapter on &ptc
 at <xref linkend="PTCLMDOC"></xref>.</para></entry>
 </row>
 <row>
-   <entry morerows="1" valign="middle">fpftdyn</entry>
+   <entry morerows="1" valign="middle">flanduse_timeseries</entry>
    <entry>ALL</entry>
    <entry><para>transient land-use land-cover change</para></entry>
    <entry>Yes</entry>

@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+"""Print human readable expected fail list to the screen.
+
+Author: Ben Andre <bandre@lbl.gov>
+
+"""
+
+from __future__ import print_function
+
+import sys
+
+if sys.hexversion < 0x02070000:
+    print(70*"*")
+    print("ERROR: query-xFail for CLM requires python >= 2.7.x. ")
+    print("It appears that you are running python {0}.{1}.{2}".format(
+        sys.version_info[0], sys.version_info[1], sys.version_info[2]))
+    print(70*"*")
+    sys.exit(1)
+
+import argparse
+import os
+import traceback
+import xml.etree.ElementTree as ET
+
+def commandline_options():
+    """
+    Process the command line arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description='Dump a human readable version of the clm expected fail list.')
+
+    parser.add_argument('--backtrace', action='store_true',
+                        help='show exception backtraces as extra debugging '
+                        'output')
+
+    parser.add_argument('--debug', action='store_true',
+                        help='extra debugging output')
+
+    parser.add_argument('--xfail', default="unit_testers/xFail/expectedClmTestFails.xml",
+                        help='path to expected fails file')
+
+    parser.add_argument('--mach', nargs=1, required=True,
+                        help='machine name')
+
+    parser.add_argument('--compiler', nargs=1, required=True,
+                        help='compiler name')
+
+
+    options = parser.parse_args()
+    return options
+
+
+def get_expected_fail_list(thisdir, xfail_file, mach, compiler):
+    """Check if the expected fail file exists, and extract the list for
+    the specified machine/compiler.
+
+    """
+    xfail_path  = os.path.abspath(thisdir+"/"+xfail_file)
+    if not os.path.isfile(xfail_path):
+        raise RuntimeError("Could not find expected fail file: {0}".format(xfail_path))
+
+    print("Expected failures from:")
+    print("  {0}".format(xfail_path))
+
+    tree = ET.parse(xfail_path)
+    group = "cesm/auxTests/{0}/{1}".format(mach, compiler.upper())
+
+    xfails = {}
+    xfail_aux = tree.findall(group)[0]
+    for test in xfail_aux.iter("entry"):
+        testid = test.attrib["testId"].strip()
+        xfails[testid] = {}
+        xfails[testid]['type'] = test.attrib["failType"].strip()
+
+    return xfails
+
+def print_expected_fails(xfails):
+    for t in xfails:
+        print("  {0} : {1}".format(xfails[t]['type'], t))
+
+def get_thisdir():
+    stdout    = os.popen("pwd")
+    cwd       = os.path.abspath( stdout.read().rstrip( ) )
+    dirname   = os.path.dirname(sys.argv[0])
+    if ( dirname == "" ):
+       thisdir = cwd
+    else:
+       thisdir = os.path.abspath(dirname)
+
+    return(thisdir)
+
+def main(thisdir,options):
+    print("-"*80)
+    xfails = get_expected_fail_list(
+        thisdir,options.xfail, options.mach[0], options.compiler[0])
+    print("-"*80)
+    print("CLM Expected fails for {0}_{1}".format(options.mach[0], options.compiler[0]))
+    print_expected_fails(xfails)
+    return 0
+
+
+if __name__ == "__main__":
+    thisdir = get_thisdir()
+    options = commandline_options()
+    try:
+        status = main(thisdir,options)
+        sys.exit(status)
+    except Exception as error:
+        print(str(error))
+        if options.backtrace:
+            traceback.print_exc()
+        sys.exit(1)
+

@@ -90,6 +90,7 @@ my $dirs = "$caseroot/Tools";
 unshift @INC, $dirs;
 require XML::Lite;
 require SetupTools;
+require ConfigCase;
 
 #-----------------------------------------------------------------------------------------------
 # Read $caseroot xml files - put restuls in %xmlvars hash
@@ -100,16 +101,38 @@ SetupTools::getxmlvars($caseroot, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
     $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
 }
-
+ 
 my $casename = $xmlvars{CASE};
 my $testroot = "$caseroot/..";
 my $testname = "${casename}_${test}";
 my $ccsmroot = $xmlvars{CCSMROOT};
 
-
 print "\nCreating test $testname\n";
 
 system("$ccsmroot/scripts/create_clone -case $testroot/$testname -clone $caseroot -testname $test");
+
+# Write env_test.xml, needed by testcase_setup.csh for the test environment setup 
+my $casename = $xmlvars{CASE};
+my $testroot = "$caseroot/..";
+my $testname = "${casename}_${test}";
+my $ccsmroot = $xmlvars{CCSMROOT};
+my $testenv = ConfigCase->new("$xmlvars{CCSMROOT}/scripts/ccsm_utils/Case.template/config_definition.xml");
+$testenv->set('TESTCASE', $test);
+my $testid = `date +%y%m%d-%H%M%S`;
+chomp $testid;
+$testenv->set('TEST_TESTID', $testid);
+$testenv->set('TEST_ARGV' , 'UNSET');
+$testenv->set('CASEBASEID', 'UNSET');
+$testenv->set('BASELINE_NAME_GEN', 'UNSET');
+$testenv->set('BASELINE_NAME_CMP', 'UNSET');
+$testenv->set('BASEGEN_CASE', 'UNSET');
+$testenv->set('BASECMP_CASE', 'UNSET');
+$testenv->set('CLEANUP', 'FALSE');
+$testenv->set('BASELINE_ROOT', 'UNSET');
+$testenv->set('GENERATE_BASELINE', 'FALSE');
+$testenv->set('COMPARE_BASELINE', 'FALSE');
+$testenv->set('MODEL_GEN_COMP', 'UNSET');
+$testenv->write_file("$testroot/$testname/env_test.xml");
 
 chdir("$testroot/$testname");
 
@@ -117,7 +140,5 @@ $ENV{TESTCASE}=$test;
 $ENV{CASEROOT}="$testroot/$testname";
 $ENV{CCSMROOT}=$ccsmroot;
 
-
 system("$ccsmroot/scripts/ccsm_utils/Tools/testcase_setup.csh");
-
 

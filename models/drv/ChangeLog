@@ -1,8 +1,66 @@
 ================================================================================
- SVN $Id: ChangeLog 60249 2014-05-14 21:38:20Z tcraig $
- SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_12/ChangeLog $
+ SVN $Id: ChangeLog 63489 2014-09-13 01:29:05Z sacks $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_0_17/ChangeLog $
 ================================================================================
 Information on changes to cpl7
+================================================================================
+Originator: sacks
+Date: 12 Sep 2014
+Model: cpl7
+Version: drvseq5_0_17
+One-line summary: add Sg_icemask_coupled_fluxes field
+
+This field, sent from glc -> lnd, will be used by upcoming CISM & CLM tags
+
+M      shr/seq_flds_mod.F90
+
+================================================================================
+Originator: tcraig
+Date: 03 Sep 2014
+Model: cpl7
+Version: drvseq5_0_16
+One-line summary: fix bug in infodata buffer communication for multi-instance.
+  bug introduced 2013 refactor that communicated x2c infodata only to the first
+  instance, not to all instances.
+
+M       driver/component_mod.F90
+
+================================================================================
+Originator: jedwards
+Date: 03 Jul 2014
+Model: cpl7
+Version: drvseq5_0_15
+One-line summary: add helper function for dead model refactoring
+
+M  shr/seq_comm_mct
+
+
+================================================================================
+Originator: tcraig
+Date: 26 Jun 2014
+Model: cpl7
+Version: drvseq5_0_14
+One-line summary: Add cpl_seq_option, RASM_OPTION1, RASM_OPTION2, code cleanup
+
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_drv.xml
+M       bld/namelist_files/namelist_definition_drv.xml
+M       shr_esmf/esmfshr_infodata_mod.F90
+M       driver/prep_glc_mod.F90
+M       driver/component_mod.F90
+M       driver/ccsm_comp_mod.F90
+M       driver/seq_diag_mct.F90
+M       shr/seq_infodata_mod.F90
+
+================================================================================
+Originator: fvitt
+Date: 24 Jun 2014
+Model: cpl7
+Version: drvseq5_0_13
+One-line summary: Correction to Henry's Law parameters for SO2
+
+M      shr/seq_drydep_mod.F90
+
 ================================================================================
 Originator: tcraig
 Date: 14 May 2014

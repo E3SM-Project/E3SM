@@ -136,7 +136,7 @@ Full pathname of PFT data file.
 Default: set by build-namelist.
 </entry>
 
-<entry id="fpftdyn" type="char*256" input_pathname="abs" catagory="clm"
+<entry id="flanduse_timeseries" type="char*256" input_pathname="abs" catagory="clm"
        group="clm_inparm" valid_values="" >
 Full pathname of time varying PFT data file.
 Default: set by build-namelist.

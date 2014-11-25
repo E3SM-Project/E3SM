@@ -25,7 +25,10 @@
 				<xs:element name="dispose" type="xs:string"/>
 				<xs:element name="keepLast" type="xs:string"/>
 				<xs:element name="tseries_create" type="xs:string" minOccurs="0"/>
-				<xs:element name="tseries_format" type="xs:string" minOccurs="0"/>
+				<xs:element name="tseries_output_format" type="xs:string" minOccurs="0"/>
+				<xs:element name="tseries_output_subdir" type="xs:string" minOccurs="0"/>
+				<xs:element name="tseries_tper" type="xs:string" minOccurs="0"/>
+				<xs:element name="tseries_filecat_years" type="xs:integer" minOccurs="0"/>
 			      </xs:sequence>
 			      <xs:attribute name="suffix" type="xs:string" use="required"/>
 			    </xs:complexType>
@@ -49,41 +52,6 @@
 	      </xs:element>
 
 	    </xs:sequence>
-	  </xs:complexType>
-	</xs:element>
-
-	<xs:element name="tseries_specs">
-	  <xs:complexType>
-	    <xs:sequence>
-
-	      <xs:element name="tseries_archive_spec" maxOccurs="unbounded">
-		<xs:complexType>
-		  <xs:sequence>
-		    <xs:element name="subdir" type="xs:string"/>
-
-		    <xs:element name="in_time_formats" maxOccurs="unbounded">
-		      <xs:complexType>
-			<xs:sequence>
-			  <xs:element name="in_time_format" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
-			</xs:sequence>
-		      </xs:complexType>
-		    </xs:element>
-
-		    <xs:element name="out_time_format" type="xs:string"/>
-		    <xs:element name="filecat_years" type="xs:integer"/>
-		  </xs:sequence>
-		  <xs:attribute name="tper" type="xs:string" use="required"/>
-		</xs:complexType>
-	      </xs:element>
-
-	    </xs:sequence>
-	  </xs:complexType>
-	</xs:element>
-
-	<xs:element name="entry" maxOccurs="unbounded">
-	  <xs:complexType>
-	    <xs:attribute name="id" type="xs:string" use="required"/>
-	    <xs:attribute name="value" type="xs:string" use="required"/>
 	  </xs:complexType>
 	</xs:element>
 

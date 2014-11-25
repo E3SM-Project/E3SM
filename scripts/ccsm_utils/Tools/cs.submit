@@ -3,6 +3,8 @@
 # Run the build and/or submit for each test. 
 # If nobuild is off, run the build for each test. 
 # If autosubmit is on, run the submit script for each test. 
+# If nobatch is on, run the test interactively rather than
+# submitting to the batch queue.
 use strict;
 use warnings;
 use Data::Dumper;
@@ -11,7 +13,10 @@ use File::Basename;
 
 # find the testspec.xml. 
 my $testroot =  getcwd;
-$0 =~ /cs.submit\.(.*)$/;
+if ( $0 !~ /cs.submit\.(.*)$/ ) { 
+    die "Bad name for cs.submit script, no job-id: $0\n";
+}
+my $csstatus = "cs.status.$1";
 my $testspec = "$testroot/testspec.$1.xml";
 
 
@@ -109,4 +114,15 @@ foreach my $case(@casedirs)
     
     chdir $testroot;
   }
+  if( $nobatch eq "on" )
+  {
+    chdir($testdir);
+    print "running $case\n";
+    system("./$case.test");
+    chdir $testroot;
+  }
+}
+if( $nobatch eq "on" )
+{
+    system("./$csstatus");
 }

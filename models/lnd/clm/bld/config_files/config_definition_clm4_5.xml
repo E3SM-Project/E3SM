@@ -5,10 +5,10 @@
 <config_definition>
 
 <entry id="phys" 
-       valid_values="clm4_0,clm4_5"
-       value="clm4_0"
+       valid_values="clm4_0,clm4_5,clm5_0"
+       value="clm4_5"
        category="physics">
-Specifies either clm4_0 or clm4_5 physics
+Specifies either clm4_0, clm4_5, or clm5_0 physics
 </entry>
 
 <entry id="clm_root" 

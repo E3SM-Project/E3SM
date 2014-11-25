@@ -1,0 +1,18 @@
+#! /bin/csh -f
+
+source ./Tools/ccsm_getenv || exit -2
+
+./check_case || echo "check_case failed" && exit -2
+set sdate = `date +"%Y-%m-%d %H:%M:%S"`
+
+cat > templar <<EOF
+  ${BATCHSUBMIT} ./tseries_generate.run
+EOF
+source templar
+if ($status != 0) then
+  echo "ERROR: tseries_generate.submit problem sourcing templar " 
+endif
+rm templar
+echo "tseries_generate.run submitted $sdate" >>& tseriesStatus
+
+

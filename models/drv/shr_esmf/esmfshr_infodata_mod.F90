@@ -562,13 +562,13 @@ subroutine esmfshr_infodata_convert(infodata,ID,state,direction,rc)
     endif
 
     if (i2s) then
-       call seq_infodata_Getdata(infodata, ocean_tight_coupling=log_buf)
-       call ESMF_AttributeSet(state, name="ocean_tight_coupling", value=log_buf, rc=localrc)
+       call seq_infodata_Getdata(infodata, cpl_seq_option=char_buf)
+       call ESMF_AttributeSet(state, name="cpl_seq_option", value=char_buf, rc=localrc)
        if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     else
-        call ESMF_AttributeGet(state, name="ocean_tight_coupling", value=log_buf, rc=localrc)
+        call ESMF_AttributeGet(state, name="cpl_seq_option", value=char_buf, rc=localrc)
         if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-        call seq_infodata_Putdata(infodata, ocean_tight_coupling=log_buf)
+        call seq_infodata_Putdata(infodata, cpl_seq_option=char_buf)
     endif
 
     if (i2s) then

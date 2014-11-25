@@ -1,5 +1,2 @@
 ! user_nl_clm namelist options written by PTCLMmkdata:
-! ./PTCLMmkdata -s US-UMB -d /glade/p/cesmdata/cseg/inputdata --map_gdate 140121 --mydatadir /glade/p/cesmdata/cseg/inputdata/lnd/clm2/PTCLMmydatafiles/ 
- fsurdat = '/glade/p/cesmdata/cseg/inputdata/lnd/clm2/PTCLMmydatafiles//1x1pt_US-UMB/surfdata_1x1pt_US-UMB_simyr2000_clm4_5_c131122.nc'
- hist_nhtfrq = 0
- hist_mfilt  = 1200
+! ../PTCLMmkdata -d /glade/p/cesmdata/cseg/inputdata -s US-UMB --clmnmlusecase=20thC_transient --debug --cesm_root ../../../../../../.. 

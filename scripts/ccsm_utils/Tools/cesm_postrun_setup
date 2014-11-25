@@ -45,6 +45,30 @@ if ($DOUT_S == 'TRUE') then
   echo "Archiving ccsm output to $DOUT_S_ROOT"
   echo "Calling the short-term archiving script st_archive"
    ./st_archive 
+
+# -------------------------------------------------------------------------
+# Generate time series variable files - currently only working on yellowstone
+# -------------------------------------------------------------------------
+  if ($DOUT_S_GENERATE_TSERIES == 'TRUE') then
+     if ($DOUT_S_SAVE_ALL_ON_DISK == 'TRUE' && $MACH == 'yellowstone') then
+	if ($DOUT_S_SAVE_HISTORY_FILES == 'FALSE') then
+	    echo "*WARNING* successful generation of the variable time series files"
+	    echo "will delete all the time slice history files in $DOUT_S_ROOT"
+	 else
+	    echo "History time slice files will be saved after variable time series files"
+	    echo "are generated. Please manually remove history files in order to"
+	    echo "conserve disk space."
+	 endif
+         echo "Starting generating variable time series files to $DOUT_S_ROOT"
+	 cd $CASEROOT/Tools
+	 mpirun.lsf ./cesm_tseries_generator.py >>& $CASEROOT/tseriesStatus
+	 cd $CASEROOT
+         echo "Completed generating variable time series files to $DOUT_S_ROOT"
+     else
+	 echo "Variable time series file generation depends on $DOUT_S and $DOUT_S_SAVE_ALL_ON_DISK set to TRUE"
+	 echo "Variable time series files were not generated."   
+     endif
+  endif
 endif
 
 # -------------------------------------------------------------------------

@@ -5,6 +5,7 @@
 unsetenv CPLLOG_INIT
 unsetenv CPLNML_INIT
 unsetenv COMPARE_NAMELISTS
+setenv COMPARE_BASELINE FALSE
 
 set stat = "PASS"
 #======================================================================

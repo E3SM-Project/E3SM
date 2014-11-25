@@ -14,7 +14,6 @@
 ./xmlchange GLC_NY=0
 ./xmlchange WAV_NX=0
 ./xmlchange WAV_NY=0
-./xmlchange ROOTPE_ATM=0
 ./xmlchange NTASKS_ATM=1
 ./xmlchange NTASKS_LND=1
 ./xmlchange NTASKS_ICE=1

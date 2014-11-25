@@ -1,0 +1,76 @@
+module test_clm_glclnd
+
+  ! Tests of clm_glclnd
+
+  use pfunit_mod
+  use unittestSubgridMod
+  use shr_kind_mod, only : r8 => shr_kind_r8
+  use lnd2glcMod
+  use landunit_varcon, only : istsoil, istice_mec
+  
+  implicit none
+  save
+
+  real(r8), parameter :: tol = 1.e-14_r8
+
+contains
+  
+  ! ------------------------------------------------------------------------
+  ! Tests of bareland_normalization
+  ! ------------------------------------------------------------------------
+  
+  @Test
+  subroutine test_bareland_normalization_glacier100()
+    ! glacier 100% of grid cell
+    integer :: c_soil  ! column index of soil column
+
+    call unittest_subgrid_setup_start()
+    call unittest_add_gridcell()
+    call unittest_add_landunit(my_gi=gi, ltype=istsoil, wtgcell=0.0_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    c_soil = ci
+    call unittest_add_landunit(my_gi=gi, ltype=istice_mec, wtgcell=1.0_r8)
+    call unittest_subgrid_setup_end()
+
+    @assertEqual(1.0_r8, bareland_normalization(c_soil))
+
+    call unittest_subgrid_teardown()
+  end subroutine test_bareland_normalization_glacier100
+
+  @Test
+  subroutine test_bareland_normalization_not1()
+    ! glacier < 100% of grid cell, natural veg < 100% of the remainder
+    integer :: c_soil  ! column index of soil column
+    
+    call unittest_subgrid_setup_start()
+    call unittest_add_gridcell()
+    call unittest_add_landunit(my_gi=gi, ltype=istsoil, wtgcell=0.3_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    c_soil = ci
+    call unittest_add_landunit(my_gi=gi, ltype=istice_mec, wtgcell=0.6_r8)
+    call unittest_subgrid_setup_end()
+
+    @assertEqual(0.75_r8, bareland_normalization(c_soil), tolerance=tol)
+
+    call unittest_subgrid_teardown()
+  end subroutine test_bareland_normalization_not1
+
+  @Test
+  subroutine test_bareland_normalization_1()
+    ! glacier < 100% of grid cell, natural veg 100% of the remainder
+    integer :: c_soil  ! column index of soil column
+    
+    call unittest_subgrid_setup_start()
+    call unittest_add_gridcell()
+    call unittest_add_landunit(my_gi=gi, ltype=istsoil, wtgcell=0.4_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    c_soil = ci
+    call unittest_add_landunit(my_gi=gi, ltype=istice_mec, wtgcell=0.6_r8)
+    call unittest_subgrid_setup_end()
+
+    @assertEqual(1.0_r8, bareland_normalization(c_soil))
+
+    call unittest_subgrid_teardown()
+  end subroutine test_bareland_normalization_1
+
+end module test_clm_glclnd

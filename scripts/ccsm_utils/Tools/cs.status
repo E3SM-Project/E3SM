@@ -7,10 +7,15 @@ use warnings;
 use Cwd;
 use File::Basename;
 use Data::Dumper;
+use Getopt::Long;
+
 my $cwd;
 my $testroot;
 my $scriptsroot;
+my %opts;
 my $testspec;
+my $banner = '-' x 120;
+
 
 # Open the testspec.xml,  get the scriptsroot, 
 # import XML::Lite. 
@@ -18,8 +23,7 @@ sub init
 {
   $cwd = getcwd;
   $testroot =  getcwd;
-  $0 =~ /cs.status\.(.*)$/;
-  $testspec = "$testroot/testspec.$1.xml";
+  my $testspec = getCwdTestSpec($testroot);
 
   open my $SPEC, "<", $testspec or die $!;
   my @speclines = grep (/scriptsroot/, <$SPEC>);
@@ -37,36 +41,312 @@ sub init
   return $testspec;
 }
 
-# Parse the testspec.xml, get the full path to each test
-# directory, and print out TestStatus. 
+sub getCwdTestSpec
+{
+	my $testroot = shift;
+        if ( $0 !~ /cs.status\.(.*)$/ ) {
+            die "Bad name for cs.status script, no job-id: $0\n";
+        }
+	$testspec = "$testroot/testspec.$1.xml";
+	chdir $cwd;
+	return $testspec;
+}
+
+sub getCompareTestSpec
+{
+	my $comparespec = glob("$opts{'comparedir'}/testspec.$opts{'compareid'}.*.xml");
+	#print "Compare test spec: $comparespec\n";
+	return $comparespec;
+}
+
+# Take the testspec.$machine.$testid.xml file, parse it, 
+# and get the names of the case directories
+sub getCaseDirsFromSpec
+{
+	my $testspec = shift;
+	
+	my $xml = XML::Lite->new($testspec);
+	my @tests = $xml->elements_by_name("test");
+	my @casedirs;
+	#print "Casedirs: \n";
+	#map {print "$_\n"} @casedirs;
+	
+	foreach my $test(@tests)
+	{
+		my %attrs = $test->attributes;
+		foreach my $attr(keys %attrs)
+		{
+			push(@casedirs, $attrs{$attr});
+		}
+	}
+	#print Dumper(\@casedirs);
+	return @casedirs;
+}
+
+# Given an array of case directories, get the test status for 
+# all the testcase directories found.  
 sub getTestStatus
 {
   my $testspec = shift;
-  my $xml = XML::Lite->new($testspec);
-  my @tests = $xml->elements_by_name("test");
-  my @casedirs;
+  my $testdir = shift;
 
-  foreach my $test(@tests)
-  {
-    my %attrs = $test->attributes;
-    foreach my $attr(keys %attrs)
-    {
-      push(@casedirs, $attrs{$attr});
-    }
-  }
+  my @casedirs = getCaseDirsFromSpec($testspec);
+  my @tests;
 
   foreach my $testcase(@casedirs)
   {
-     my $teststatusfile = "$testroot/$testcase/TestStatus";
+	 my %testhash;
+     my $teststatusfile = "$testdir/$testcase/TestStatus";
+	 next if (! -e $teststatusfile);
      open my $STATUS, "<", $teststatusfile or die $!;
-     my @status = <$STATUS>;
-     map { print "$_" } @status;
+	 my @lines = <$STATUS>;
      close $STATUS;
+	 $testhash{'casedirectory'} = $testcase;
+	 $testhash{'fullpath'} = "$testdir/$testcase";
+	 
+     $testhash{'rawstatus'} = join('',  @lines);
+	 $testhash{'status'} = (split('\s+', $lines[0]))[0];
+	 $testhash{'test'} = (split('\s+', $lines[0]))[1];
+	 my $memleakline = (grep { /memleak/ } @lines)[0];
+	 $testhash{'memleak'} =  (split('\s+', $memleakline))[0] if (defined $memleakline && length $memleakline > 0);
+	 my $tputline = (grep { /tput/ } @lines)[0];
+	 $testhash{'throughput'} =  (split('\s+', $tputline))[0] if (defined $tputline && length $tputline > 0);
+	 my $genline = (grep { /generate/ } @lines)[0];
+	 $testhash{'generate'} =  (split('\s+', $genline))[0] if (defined $genline && length $genline > 0);
+	 my $compline = (grep { /compare_hist/ } @lines)[0];
+	 $testhash{'compare'} =  (split('\s+', $compline))[0] if (defined $compline && length $compline > 0);
+	 push(@tests, \%testhash);
   }
-  
   chdir $cwd;
+  return @tests;
 }
 
-$testspec = init();
-getTestStatus($testspec);
+sub printStatus
+{
+	my ($tests) = @_;
+	foreach my $test(@$tests)
+	{
+		print $$test{'rawstatus'};
+	}
+}
+
+# Compare the performance of two arbitrary test suites..
+# We will only compare performance for tests that PASSed in 
+# both suites..
+#
+sub comparePerformance
+{
+	my $currentTestRoot = shift;
+	my $compareTestRoot = shift;
+	
+	my $currentTestSpec = getCwdTestSpec($currentTestRoot);
+	my $compareTestSpec = getCompareTestSpec($compareTestRoot);
+
+	my @allCurrentTests = getTestStatus($currentTestSpec, $currentTestRoot);
+	my @allCompareTests = getTestStatus($compareTestSpec, $compareTestRoot);
+
+	# We only want to compare passing tests..
+	my @passingCurrentTests = grep { $$_{'status'} eq 'PASS' } @allCurrentTests;
+	my @passingCompareTests = grep { $$_{'status'} eq 'PASS' } @allCompareTests;
+	
+	foreach my $current(@passingCurrentTests)
+	{
+		getTimingForTest($current);
+	}
+	foreach my $compare(@passingCompareTests)
+	{
+		getTimingForTest($compare);
+	}
+
+	# Print the report
+	print "$banner\n";
+	print "Performance Comparision Report\n";
+	print "$banner\n";
+	printf "%-40s %-20s\n", "Current Test root:",  "$currentTestRoot";
+	printf "%-40s %-20s\n", "Current Passing Tests: ",  scalar @passingCurrentTests;
+	print "$banner\n";
+	printf "%-40s %-20s\n", "Comparing against this test root:",  "$compareTestRoot";
+	printf "%-40s %-20s\n", "Passing Comparison Tests: ",  scalar @passingCurrentTests;
+	foreach my $currenttest(@passingCurrentTests)
+	{
+		my @compares = grep { $$_{'test'} eq $$currenttest{'test'}} @passingCompareTests;
+		next if ! @compares;
+		my $comparetest = $compares[0];
+		printf "$banner\n";
+		printf "%-70s %-20s\n", $$currenttest{'casedirectory'}, $$comparetest{'casedirectory'};
+		#printf "$banner\n";
+		printf "%-70s %-20s\n", "Throughput:", "Throughput:";
+		printf "%-70s %-20s\n", $$currenttest{'throughput'}, $$comparetest{'throughput'};
+
+	}
+	
+}
+
+sub getTimingForTest
+{
+	my $test = shift;
+	my $timingdir = "$$test{'fullpath'}/timing";
+	
+	opendir(DIR, $timingdir) or warn "cannot open $timingdir, $!";
+	my @timingfiles = grep(/[0-9]$/, readdir(DIR));
+	closedir(DIR);
+	
+	foreach my $timingfile(@timingfiles)
+	{
+		$timingfile = "$timingdir/$timingfile";
+		open my $tfile, "<", $timingfile or warn "cannot open the timing file $timingfile, $!";
+		my @tlines = <$tfile>;
+		close $tfile;
+	
+		my $modelcost = (grep(/Model Cost/i, @tlines))[0];
+		my $modeltput = (grep(/Model Throughput/i, @tlines))[0];
+		my $init = (grep (/Init Time/, @tlines))[0];
+		my $run  = (grep (/^\s+Run Time/, @tlines))[0];
+		my $final = (grep (/Final Time/, @tlines))[0];
+		chomp $init;
+		chomp $run;
+        chomp $final;
+		my $inittime = (split(/\s+/, $init))[4];
+		my $runtime = (split(/\s+/, $run))[4];
+		my $finaltime = (split(/\s+/, $final))[4];
+		#print "init time: $inittime\n";
+		#print "run time: $runtime\n";
+		#print "final time: $finaltime\n";
+		
+		my $totaltime = $inittime + $runtime + $finaltime;
+		my $timeinhours = $totaltime / 3600;
+		$modelcost =~ s/^\s+//;
+		$modeltput =~ s/^\s+//;
+		my @mc = split(/\s+/, $modelcost);
+		my @mt = split(/\s+/, $modeltput);
+	
+		my $cost = $mc[2];
+		my $tput = $mt[2];
+		my $actualcost = $cost * $timeinhours;
+		#print "actual cost for $timingdir: $actualcost\n";
+		#print "throughput for $timingdir: $tput\n";
+		$$test{'cost'} = $cost;
+		$$test{'throughput'} = $tput;
+	}
+	
+	
+}
+
+sub getTotalCost
+{
+	my $tests = shift;
+	my $totalcost = 0.0;
+	my $costmsg;
+	$costmsg .= "$banner\n";
+	$costmsg .= "Test suite at $opts{'testroot'}\n";
+	$costmsg .= "Passing tests included in this sum: ". scalar @$tests . "\n";
+		
+	foreach my $test(@$tests)
+	{
+		getTimingForTest($test);
+		$totalcost += $$test{'cost'};
+	}
+	$costmsg .= "Total Cost for this suite: $totalcost\n";
+	$costmsg .= "$banner\n";
+	return $costmsg;
+}
+
+sub getOpts
+{
+	GetOptions(
+		"cost|c"        => \$opts{'cost'},
+		"compareperf|p" => \$opts{'compareperformance'},
+    	"testroot=s"    => \$opts{'testroot'},
+    	"testid=s"      => \$opts{'testid'},
+		"comparedir=s"    => \$opts{'comparedir'},
+		"compareid=s"    => \$opts{'compareid'},
+		"help|h"           => \$opts{'help'},
+	);
+ 
+}
+
+sub usage()
+{
+my $usage = <<EOF;
+SYNOPSIS
+
+    ./cs.status.testid.machine
+	Running the script with no arguments currently gives you the classic TestStatus CaseDirectory output. 
+
+
+    ./cs.status.testid.machine [-p|-compareperf]  -testroot `pwd` \
+	-comparedir /scratch/cluster/jshollen/tests/cesm1_3_alpha10aintel/ -compareid cesm13a10aintel
+
+        Meant to compare throughput from one test run to another.  Only passing tests will be compared 
+        against each other.  
+
+	Mandatory Arguments: 
+	-testroot     The current directory one wishes to compare.
+	-comparedir     The comparison directory, i.e. the directory one wishes to compare against.
+	-compareid      The testid of the -comparedir directory
+
+    
+   	./cs.status.testid.machine -cost
+
+    Will calculate the PE-hours/year divided by the actual runtime of the test, and sum the 
+    results for every passing test in the suite. 
+
+EOF
+print $usage;
+exit(0);
+}
+
+sub main
+{
+	getOpts();
+	usage() if defined $opts{'help'};
+
+	if(! defined $opts{'cost'} && ! defined $opts{'compareperformance'})
+	{
+		my $testspec = init();
+		my $testroot = getcwd();
+		my @tests = getTestStatus($testspec, $testroot);
+		printStatus(\@tests);
+	}
+	elsif(defined $opts{'cost'})
+	{
+		#if(! defined $opts{'testroot'} || ! defined $opts{'testid'})
+		if(! defined $opts{'testroot'} )
+		{
+			print "The testroot and the testid are necessary to calculate the total cost in\n";
+			print "PE-hours / actual test time. \n";
+			exit(1);
+		}
+		else
+		{
+			my $testspec = init();
+			my $testroot = getcwd();
+			my @tests = getTestStatus($testspec, $testroot);
+			my @passingTests = grep { $$_{'status'} eq 'PASS' } @tests;
+
+    		foreach my $current(@passingTests)
+    		{
+    		    getTimingForTest($current);
+    		}
+			my $totalcostmsg = getTotalCost(\@passingTests);
+			print "$totalcostmsg\n";
+		}
+	}
+	elsif(defined $opts{'compareperformance'})
+	{
+		if(! defined $opts{'testroot'} || ! defined $opts{'comparedir'} || ! defined $opts{'compareid'})
+		{
+			print "The current test directory, compare directory, and compare test id must be\n";
+			print "given as -testroot and -comparedir\n";
+			exit(1);
+		}
+		else
+		{
+			my $testspec = init();
+			comparePerformance($opts{'testroot'}, $opts{'comparedir'});
+		}
+	}
+	
+}
+main(@ARGV) unless caller;
 
