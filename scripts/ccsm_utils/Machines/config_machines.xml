@@ -578,7 +578,7 @@
          <DESC>PNL cluster, os is Linux (pgi), batch system is SLURM</DESC>
          <OS>LINUX</OS>
          <COMPILERS>intel,nag</COMPILERS>
-         <MPILIBS>mvapich2</MPILIBS>
+         <MPILIBS>mpich</MPILIBS>
          <RUNDIR>/dtemp/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
          <EXEROOT>/dtemp/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/dtemp/sing201/inputdata/CAM/CSMDATA_CAM/aerocom/csmdata</DIN_LOC_ROOT>
