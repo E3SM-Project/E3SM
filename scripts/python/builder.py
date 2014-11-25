@@ -243,11 +243,11 @@ class yellowstone(platformBuilder):
             self.CXX = 'mpiCC'
 
         self.BUILD_DIR = "build_yellowstone_" + compiler
-        os.environ["LMOD_CMD"]="/glade/apps/opt/lmod/lmod/libexec/lmod"
-        os.environ["LMOD_DIR"]="/glade/apps/opt/lmod/lmod/libexec/"
+#        os.environ["LMOD_CMD"]="/glade/apps/opt/lmod/lmod/libexec/lmod"
+#        os.environ["LMOD_DIR"]="/glade/apps/opt/lmod/lmod/libexec/"
 
-        for key in os.environ.keys():
-            print("%30s %s\n" % (key,os.environ[key]))
+#        for key in os.environ.keys():
+#            print("%30s %s\n" % (key,os.environ[key]))
 
 
 
@@ -282,7 +282,9 @@ class yellowstone(platformBuilder):
         self.lmod.purge()
 
         for cmd in self.moduleList:
+            print("Loading module "+cmd)
             self.lmod.load(cmd)
+        self.lmod.list()
 
 
 class caldera(yellowstone):
@@ -294,7 +296,7 @@ class caldera(yellowstone):
         super(caldera,self).__init__(compiler, test,mpilib,debug)
         self.EXECCA = ''
         self.TEST_CMD = ('ctest --verbose')
-        os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ca/compilers:/glade/apps/opt/modulefiles/ca/idep" 
+#        os.environ["LMOD_DEFAULT_MODULEPATH"]="/glade/apps/opt/modulefiles/ca/compilers:/glade/apps/opt/modulefiles/ca/idep" 
 
 
 class cetus(platformBuilder):
