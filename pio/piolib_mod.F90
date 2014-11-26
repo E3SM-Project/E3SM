@@ -118,6 +118,7 @@ module piolib_mod
 !<
   interface PIO_setframe
      module procedure setframe
+     module procedure setframe_pio2
   end interface
 
 !> 
@@ -323,6 +324,13 @@ contains
     integer(kind=PIO_offset), intent(in) :: frame
     vardesc%rec=frame
   end subroutine setframe
+
+  subroutine setframe_pio2(pioid,vardesc,frame)
+    type(file_desc_t), intent(in) :: pioid
+    type(var_desc_t), intent(inout) :: vardesc
+    integer(kind=PIO_offset), intent(in) :: frame
+    call setframe(vardesc,frame)
+  end subroutine setframe_pio2
 
 !>  
 !! @public
@@ -978,7 +986,7 @@ contains
   end subroutine PIO_initdecomp_dof_i4
 
 
-  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, rearr)
     use calcdisplace_mod, only : calcdisplace_box
     use calcdecomp, only : calcstartandcount
     type (iosystem_desc_t), intent(inout) :: iosystem
@@ -987,6 +995,7 @@ contains
     integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
+    integer, intent(in), optional :: rearr
 
     integer(i4) :: length,n_iotasks
     integer(i4) :: ndims
@@ -1043,6 +1052,12 @@ contains
 
     if (iosystem%comp_rank == 0 .and. debug) &
          print *,iosystem%comp_rank,': invoking PIO_initdecomp_dof'
+
+    if (iosystem%comp_rank == 0 .and.  present(rearr)) then
+       print *,'WARNING: Rearr optional argument is a pio2 feature, ignored in pio1'
+    endif
+    
+
 
     if(DebugAsync) print*,__PIO_FILE__,__LINE__
     piotype=PIO_type_to_mpi_type(basepiotype)

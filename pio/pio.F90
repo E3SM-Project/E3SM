@@ -63,11 +63,12 @@ module pio
   use pionfget_mod, only : PIO_get_var   => get_var
 
   use calcdecomp, only : pio_set_blocksize
-   
-
-
   implicit none
   public
+! Added for pio2 compatability
+  integer, parameter :: pio_offset_kind = pio_offset
+  integer, parameter :: pio_rearr_subset = pio_rearr_box
+
 contains
   function pio_iam_iotask(iosystem) result(task)
     type(iosystem_desc_t), intent(in) :: iosystem

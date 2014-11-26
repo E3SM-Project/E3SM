@@ -82,7 +82,9 @@ module nf_mod
 !<
   interface pio_inq_att
      module procedure inq_att_vid, &
-          inq_att_vardesc
+          inq_att_vardesc, &
+          inq_att_vardesc_pio2, &
+          inq_att_vid_pio2
   end interface
 
 !>
@@ -90,7 +92,9 @@ module nf_mod
 !<
   interface pio_inq_attlen
      module procedure inq_attlen_vid, &
-          inq_attlen_vardesc
+          inq_attlen_vardesc, &
+          inq_attlen_vardesc_pio2, &
+          inq_attlen_vid_pio2
   end interface
 
 !>
@@ -406,6 +410,30 @@ contains
     ierr = pio_inq_att(file, vardesc%varid, name, xtype, len)
 
   end function inq_att_vardesc
+  integer function inq_att_vardesc_pio2(File,vardesc,name,xtype,len) result(ierr)
+
+    type (File_desc_t), intent(inout) :: File
+    type(var_desc_t), intent(in)           :: vardesc
+    character(len=*), intent(in)      :: name
+    integer, intent(out)              :: xtype
+    integer(pio_offset), intent(out)              :: len !Attribute length
+
+    ierr = inq_att_vid_pio2(file, vardesc%varid, name, xtype, len)
+
+  end function inq_att_vardesc_pio2
+  integer function inq_att_vid_pio2(File,vid,name,xtype,len) result(ierr)
+
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: vid
+    character(len=*), intent(in)      :: name
+    integer, intent(out)              :: xtype
+    integer(pio_offset), intent(out)              :: len !Attribute length
+    integer :: ilen
+
+    ierr = inq_att_vid(file, vid, name, xtype, ilen)
+    len = int(ilen, pio_offset)
+
+  end function inq_att_vid_pio2
 
 !>
 !! @public 
@@ -489,6 +517,18 @@ contains
     end if
 
   end function inq_attlen_vid
+  integer function inq_attlen_vid_pio2(File,vid,name,len) result(ierr)
+
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: vid
+    character(len=*), intent(in)      :: name
+    integer(pio_offset), intent(out),optional     :: len !Attribute length
+    
+    integer :: ilen
+    ierr = inq_attlen_vid(file, vid, name, ilen)
+    if(present(len)) len = int(ilen,pio_offset)
+
+  end function inq_attlen_vid_pio2
 
 !>
 !! @public 
@@ -511,6 +551,17 @@ contains
     ierr = pio_inq_attlen(file, vardesc%varid, name, len)
 
   end function inq_attlen_vardesc
+
+  integer function inq_attlen_vardesc_pio2(File,vardesc,name,len) result(ierr)
+
+    type (File_desc_t), intent(inout) :: File
+    type (Var_desc_t), intent(in)            :: vardesc
+    character(len=*), intent(in)      :: name
+    integer(kind=pio_offset), intent(out),optional     :: len !Attribute length
+
+    ierr = inq_attlen_vid_pio2(file, vardesc%varid, name, len)
+
+  end function inq_attlen_vardesc_pio2
 
 !> 
 !! @public 
