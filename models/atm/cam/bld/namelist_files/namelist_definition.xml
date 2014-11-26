@@ -4714,7 +4714,7 @@ baseline ne for scalar hypervis tuning
 Default: Set by build-namelist.
 </entry>
 
-<entry id="mesh_file" type="char*256" category="se"
+<entry id="mesh_file" type="char*256" input_pathname="abs" category="se"
        group="ctl_nl" valid_values="" >
 Exodus format grid file
 Default: Set by build-namelist.
