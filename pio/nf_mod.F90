@@ -522,11 +522,11 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: vid
     character(len=*), intent(in)      :: name
-    integer(pio_offset), intent(out),optional     :: len !Attribute length
+    integer(pio_offset), intent(out)     :: len !Attribute length
     
     integer :: ilen
     ierr = inq_attlen_vid(file, vid, name, ilen)
-    if(present(len)) len = int(ilen,pio_offset)
+    len = int(ilen,pio_offset)
 
   end function inq_attlen_vid_pio2
 
@@ -546,7 +546,7 @@ contains
     type (File_desc_t), intent(inout) :: File
     type (Var_desc_t), intent(in)            :: vardesc
     character(len=*), intent(in)      :: name
-    integer, intent(out),optional     :: len !Attribute length
+    integer, intent(out)     :: len !Attribute length
 
     ierr = pio_inq_attlen(file, vardesc%varid, name, len)
 
@@ -557,7 +557,7 @@ contains
     type (File_desc_t), intent(inout) :: File
     type (Var_desc_t), intent(in)            :: vardesc
     character(len=*), intent(in)      :: name
-    integer(kind=pio_offset), intent(out),optional     :: len !Attribute length
+    integer(kind=pio_offset), intent(out) :: len !Attribute length
 
     ierr = inq_attlen_vid_pio2(file, vardesc%varid, name, len)
 

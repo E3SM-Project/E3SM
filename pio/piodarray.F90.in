@@ -71,7 +71,10 @@ module piodarray
 ! DIMS 1,2,3,4,5,6,7
      module procedure read_darray_{DIMS}d_{TYPE}
   end interface
-
+  interface pio_set_buffer_size_limit
+    module procedure pio_set_buffer_size_limit_i4
+    module procedure pio_set_buffer_size_limit_i8
+  end interface
 !>
 !! @private
 !<
@@ -111,15 +114,27 @@ integer :: msize, rss, mshare, mtext, mstack, lastrss=0
 
 contains
 
-  subroutine pio_set_buffer_size_limit(limit)
-    integer, intent(in) :: limit 
+  subroutine pio_set_buffer_size_limit_i4(limit)
+    integer, intent(in) :: limit
 
     if(limit<0) then
-       call piodie(__PIO_FILE__,__LINE__,' bad value to buffer_size_limit',limit)
+       call piodie(__PIO_FILE__,__LINE__,&
+       ' bad value to pio_set_buffer_size_limit')
     end if
     pio_buffer_size_limit=limit
 
-  end subroutine pio_set_buffer_size_limit
+  end subroutine pio_set_buffer_size_limit_i4
+
+  subroutine pio_set_buffer_size_limit_i8(limit)
+    integer(pio_offset), intent(in) :: limit 
+
+    if(limit<0) then
+       call piodie(__PIO_FILE__,__LINE__,' bad value to pio_set_buffer_size_limit')
+    end if
+    pio_buffer_size_limit=int(limit)
+
+  end subroutine pio_set_buffer_size_limit_i8
+
 
 ! TYPE real,int,double
 !> 
