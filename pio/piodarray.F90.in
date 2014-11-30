@@ -831,6 +831,8 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
   subroutine read_darray_nf_{TYPE} (File,varDesc,ioDesc,array, iostat)
+    use nf_mod, only : pio_inq_varndims
+
     !
     ! !DESCRIPTION:
     !  Reads a 2-d horizontal slice of integers from a binary file
@@ -874,7 +876,7 @@ contains
 
     logical(log_kind), parameter :: Debug = .FALSE.
     logical(log_kind) :: UseRearranger
-
+    integer :: fndims
     integer(i4) :: ierr
 #if DEBUG_REARR
     {VTYPE}, dimension(:), pointer :: iobuf2
@@ -899,7 +901,14 @@ contains
     start=0
     count=0
 
+    ierr = pio_inq_varndims(File,vardesc,fndims)
+
+
     if (IOproc) then
+! This is for pio2 compatablity
+       if(fndims > size(iodesc%start) .and. vardesc%rec<0) then
+          vardesc%rec =  1_PIO_OFFSET
+       endif
 
        !-----------------------------
        ! allocate temporary IO buffer 
@@ -926,7 +935,6 @@ contains
           count(1:ndims-1)=iodesc%count
           start(ndims:ndims)=vardesc%rec
           count(ndims:ndims)=1
-
 	  ! this is a timedependent single value
        else if(vardesc%rec>=0) then
           ndims=1
@@ -945,6 +953,7 @@ contains
           call alloc_check(IOBUF,0,'IOBUF')
        end if
     endif
+    print *,__FILE__,__LINE__,ndims, fndims, start(1:fndims),count(1:fndims),vardesc%rec
 
 #ifdef TIMING
     call t_startf("pio_read_nf")

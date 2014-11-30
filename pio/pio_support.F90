@@ -57,6 +57,11 @@ module pio_support
 contains
 
   subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3, mpirank)
+#ifdef CPRINTEL
+  ! tracebackqq uses optional arguments, so *must* have an explicit
+  ! interface.
+  use ifcore, only: tracebackqq
+#endif
     !-----------------------------------------------------------------------
     ! Purpose:
     !
@@ -107,6 +112,13 @@ contains
 #if defined(CPRXLF) && !defined(BGx)
   close(5)    ! needed to prevent batch jobs from hanging in xl__trbk
   call xl__trbk()
+#elif defined(CPRINTEL)
+
+
+  ! An exit code of -1 is a special value that prevents this subroutine
+  ! from aborting the run.
+  call tracebackqq(user_exit_code=-1)
+
 #endif
 
     ! passing an argument of 1 to mpi_abort will lead to a STOPALL output 
