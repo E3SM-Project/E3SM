@@ -223,10 +223,11 @@ baro2d.sh   Test case from Jablonowski and Williamson 2006
             monotone limiter            
             Output using PIO_INTERP
             NE=15, NP=4, PLEV=26, dt=180
-            Run the configuration in this script, visually
-            compare plots produced in q.pdf (either run
-            in branch AND trunk or compare to plots in
-            baro2d-ref.pdf in ref_sol/)
+            Regression test runs for 1 day.  
+            To rebaseline regression test, run for 9 days and then:   
+            plot and visually compare tracers (Q and C) and vorticity
+            using NCL scripts from baro2b.sh 
+
                            
 baro2[bd].sh Verification:
              run both tests.  compute l2 error in PS against EUL result

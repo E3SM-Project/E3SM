@@ -9,6 +9,11 @@ load "$NCARG_NCARG/nclscripts/csm/contributed.ncl"
 
 begin
 
+if (.not. isvar("np")) then
+   np=4
+   print("NPTS not specified on command line. Using default 4.")
+end if
+
 template = name + "_tmp.nc"
 output = name + "_latlon.nc"
 system("rm -f "+output)
@@ -43,13 +48,14 @@ end if
 
 
 ; write the 'title' global attribute
-fout@title = "ne"+ne+"np4"
+fout@title = "ne"+ne+"np"+np
 fout@Created_by = "HOMME2META.ncl mt 2011"
 fout@history = "HOMME2META.ncl mt 2011"
 
 ; write all the data to the output field:
 fout->lat = fin->lat
 fout->lon = fin->lon
+fout->area = fin->area
 if (isfilevar(fin,"corners")) then
   fout->element_corners = corners
 end if

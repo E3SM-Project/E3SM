@@ -483,7 +483,7 @@ contains
           write(iulog,'(A36)') "                                   "
 
        end if
-    endif
+    end if
  
 
     if ( test_case(1:10) == "baroclinic" ) then

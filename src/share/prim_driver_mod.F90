@@ -20,7 +20,7 @@ module prim_driver_mod
   use solver_mod, only : blkjac_t
   use filter_mod, only : filter_t
   use derivative_mod, only : derivative_t
-  use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, &
+  use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
          red_sum, red_sum_int, red_flops, initreductionbuffer
 
   use fvm_mod, only : fvm_init1,fvm_init2, fvm_init3
@@ -62,7 +62,7 @@ contains
                            vert_num_threads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, filter_counter, integration, topology, &
-         partmethod, while_iter
+         partmethod, while_iter, use_semi_lagrange_transport
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
@@ -111,6 +111,8 @@ contains
     use domain_mod, only : domain1d_t, decompose
     ! --------------------------------
     use physical_constants, only : dd_pi
+    ! --------------------------------
+    use bndry_mod, only : sort_neighbor_buffer_mapping
     ! --------------------------------
 #ifndef CAM
     use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, &
@@ -354,6 +356,7 @@ contains
     call InitReductionBuffer(red_sum,5)
     call InitReductionBuffer(red_sum_int,1)
     call InitReductionBuffer(red_max,1)
+    call InitReductionBuffer(red_max_int,1)
     call InitReductionBuffer(red_min,1)
     call initReductionBuffer(red_flops,1)
 
@@ -528,6 +531,11 @@ contains
       call fvm_init1(par)
 #endif
     endif
+
+    if ( use_semi_lagrange_transport) then
+      call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
+    end if
+
     call TimeLevel_init(tl)
     if(par%masterproc) write(iulog,*) 'end of prim_init'
   end subroutine prim_init1
@@ -546,14 +554,13 @@ contains
          s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
          sub_case, &
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-         hypervis_subcycle_q, use_semi_lagrange_transport
+         hypervis_subcycle_q
     use control_mod, only : tracer_transport_type
     use fvm_control_volume_mod, only : fvm_supercycling
 #ifndef CAM
     use control_mod, only : pertlim                     !used for homme temperature perturbations
 #endif
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
-    use bndry_mod, only : sort_neighbor_buffer_mapping
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
@@ -1080,9 +1087,6 @@ contains
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
 
-    if ( use_semi_lagrange_transport) then
-      call sort_neighbor_buffer_mapping(hybrid, elem,nets,nete)
-    end if
   end subroutine prim_init2
 
 !=======================================================================================================!
@@ -1359,7 +1363,7 @@ contains
     type (TimeLevel_t), intent(inout)       :: tl
     integer, intent(in)                     :: nsubstep  ! nsubstep = 1 .. nsplit
     real(kind=real_kind) :: st, st1, dp, dt_q, dt_remap
-    integer :: ie, t, q,k,i,j,n, n_Q
+    integer :: ie, t, q,k,i,j,n
     integer :: n0_qdp,np1_qdp,r, nstep_end
 
     real (kind=real_kind)                          :: maxcflx, maxcfly
@@ -1583,7 +1587,7 @@ contains
     integer, intent(in)                     :: rstep ! vertical remap subcycling step
 
     real(kind=real_kind) :: st, st1, dp, dt_q
-    integer :: ie, t, q,k,i,j,n, n_fvm
+    integer :: ie, t, q,k,i,j,n, n_Q
 
     real (kind=real_kind)                          :: maxcflx, maxcfly
 
@@ -1652,6 +1656,9 @@ contains
     ! ===============
     ! Dynamical Step
     ! ===============
+    n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
+                 ! FV tracers still carry 3 timelevels
+                 ! SE tracers only carry 2 timelevels
     call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
          hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
@@ -1683,18 +1690,29 @@ contains
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
     ! ===============
-    if (qsize>0) &
-         call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
-         dt_q,tl,nets,nete)
+    ! Advect tracers if their count is > 0.  
+    ! special case in CAM: if CSLAM tracers are turned on , qsize=1 but this tracer should 
+    ! not be advected.  This will be cleaned up when the physgrid is merged into CAM trunk
+    ! Currently advecting all species
+    if (qsize > 0) then
+      call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
+           dt_q,tl,nets,nete)
+    end if
     !
     ! only run fvm transport every fvm_supercycling rstep
     !
-    if (ntrac>0.and.mod(rstep,fvm_supercycling)==0) then
+    if ((ntrac > 0) .and. (mod(rstep,fvm_supercycling) == 0)) then
        !
        ! FVM transport
        !
-       !
-       !
+
+      if ( n_Q /= tl%n0 ) then
+        ! make sure tl%n0 contains tracers at start of timestep
+        do ie=nets,nete
+          fvm(ie)%c     (:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c     (:,:,:,1:ntrac,n_Q)
+          fvm(ie)%dp_fvm(:,:,:,        tl%n0)  = fvm(ie)%dp_fvm(:,:,:,        n_Q)
+        end do
+      end if
 #if defined(_SPELT)
        !
        call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&

@@ -39,6 +39,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/bndry_mod.F90
   ${SRC_SHARE_DIR}/derivative_mod.F90
   ${SRC_SHARE_DIR}/viscosity_mod.F90
+  ${SRC_SHARE_DIR}/unit_tests_mod.F90
   ${SRC_SHARE_DIR}/spacecurve_mod.F90
   ${SRC_SHARE_DIR}/cube_mod.F90
   ${SRC_SHARE_DIR}/interpolate_mod.F90
@@ -163,19 +164,6 @@ ENDIF ()
 IF (${PREQX_USE_OPENACC})
   SET(USE_OPENACC TRUE)
   MESSAGE(STATUS "  Using OpenACC")
-ENDIF ()
-
-IF (${ENABLE_HORIZ_OPENMP})
-  # Set this as global so it is picked up by other executables
-  SET(HORIZ_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
-  MESSAGE(STATUS "  Using HORIZ_OPENMP")
-ENDIF ()
-
-IF (${ENABLE_COLUMN_OPENMP})
-  # Set this as global so it is picked up by other executables
-  #SET(COLUMN_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
-  SET(COLUMN_OPENMP TRUE)
-  MESSAGE(STATUS "  Using COLUMN_OPENMP")
 ENDIF ()
 
 IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})

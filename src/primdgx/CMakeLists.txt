@@ -35,6 +35,7 @@ SET(PRIMDGX_SRCS
     ${SRC_SHARE}/bndry_mod.F90
     ${SRC_SHARE}/derivative_mod.F90
     ${SRC_SHARE}/viscosity_mod.F90
+    ${SRC_SHARE}/unit_tests_mod.F90
     ${SRC_SHARE}/spacecurve_mod.F90
     ${SRC_SHARE}/cube_mod.F90
     ${SRC_SHARE}/interpolate_mod.F90

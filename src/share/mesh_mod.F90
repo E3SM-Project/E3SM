@@ -1303,8 +1303,8 @@ contains
       else
          call sphere_to_cube_coordinates (cube_coor, coordinates, face_no)
       end if
-      elem(k)%node_numbers         = node_num 
-      elem(k)%node_multiplicity(:) = node_multiplicity(node_num(:))
+!      elem(k)%node_numbers         = node_num 
+!      elem(k)%node_multiplicity(:) = node_multiplicity(node_num(:))
       elem(k)%corners(:)%x         = cube_coor(:,1)
       elem(k)%corners(:)%y         = cube_coor(:,2)
     end do

@@ -79,7 +79,8 @@ contains
 
     use reduction_mod, only : parallelmax
     use mesh_mod, only : MeshUseMeshFile
-    use viscosity_mod, only : test_ibyp, check_edge_flux ! dont remove
+    use unit_tests_mod, only : test_ibyp, test_edge_flux, &
+                              test_sub_integration, test_subcell_dss_fluxes ! dont remove
 
     
     implicit none
@@ -210,7 +211,7 @@ contains
           call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
           call test_ghost(hybrid,elem,nets,nete)
        endif
-       call sort_neighbor_buffer_mapping(hybrid,elem,nets,nete)
+       call sort_neighbor_buffer_mapping(hybrid%par,elem,nets,nete)
     end if
 
     if(Debug) print *,'homme: point #2'
@@ -301,17 +302,18 @@ contains
 
 !   some test code
 #if 0
-!#if 1
-!#ifdef TRILINOS
-!    if (hybrid%masterthread) print *,'running CG solver test'
-!    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
-!    call solver_test_ml(elem,edge1,red,hybrid,deriv,nets,nete)
-!    stop
-!    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
-!    call test_ibyp(elem,hybrid,nets,nete)
-!    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
-!    call check_edge_flux(elem,deriv,nets,nete)
-!    stop
+    if (hybrid%masterthread) print *,'running CG solver test'
+    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
+#ifdef TRILINOS
+    call solver_test_ml(elem,edge1,red,hybrid,deriv,nets,nete)
+#endif
+    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
+    call test_ibyp(elem,hybrid,nets,nete)
+    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
+    call test_edge_flux(elem,deriv,nets,nete)
+    call test_sub_integration(elem,deriv,nets,nete)
+    call test_subcell_dss_fluxes(elem,deriv,nets,nete)
+    stop
 #endif
 
 
@@ -1630,7 +1632,7 @@ contains
       ! from c(n0) compute c(np1): 
       ! call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
       
-      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
+      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete,0.0_real_kind)
 
       call t_stopf('shal_advec_tracers_fvm')
     end subroutine shal_advec_tracers_fvm  

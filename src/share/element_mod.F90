@@ -275,8 +275,8 @@ module element_mod
      real (kind=real_kind)    :: tensorVisc(2,2,np,np)                !og, matrix V for tensor viscosity
 
      ! Edge connectivity information
-     integer(kind=int_kind)   :: node_numbers(4)
-     integer(kind=int_kind)   :: node_multiplicity(4)                 ! number of elements sharing corner node
+!     integer(kind=int_kind)   :: node_numbers(4)
+!     integer(kind=int_kind)   :: node_multiplicity(4)                 ! number of elements sharing corner node
 
      type (GridVertex_t)      :: vertex                               ! element grid vertex information
      type (EdgeDescriptor_t)  :: desc
