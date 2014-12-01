@@ -296,7 +296,8 @@
          pnicu(jk)=0._r8
          pnifu(jk)=0._r8
       enddo
-
+      pbbfsu(:,:) = 0.0_r8 !BSINGH(10/15/2014): uninitialized variable, setting it to zero
+      pbbfsd(:,:) = 0.0_r8 !BSINGH(10/15/2014): uninitialized variable, setting it to zero
 
 ! Calculate the optical depths for gaseous absorption and Rayleigh scattering
 
