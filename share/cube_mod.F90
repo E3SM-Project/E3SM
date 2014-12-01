@@ -485,60 +485,7 @@ contains
 
   end subroutine metric_atomic
 
-  ! =======================================
-  ! solver_weights:
-  !
-  ! For nonstaggered GaussLobatto elements,
-  ! compute weights for redundant points in 
-  ! cg solver.
-  !
-  ! =======================================
-#if 0
-  subroutine solver_weights_atomic(elem)
-    use element_mod, only : element_t
-    use dimensions_mod, only : np
 
-    type (element_t) :: elem
-    real (kind=real_kind) :: x 
-
-    ! Local variables
-
-    integer :: i, j
-    ! =========================================
-    ! compute cube face coordinates of element
-    ! =========================================
-
-    do i=1,np
-      do j=1,np
-        if (i==1) then
-          if (j==1) then
-             x = 1.0_real_kind/elem%node_multiplicity(1)
-          else if (j==np) then
-             x = 1.0_real_kind/elem%node_multiplicity(4)
-          else
-             x = 0.5_real_kind
-          end if
-        else if (i==np) then
-          if (j==1) then
-             x = 1.0_real_kind/elem%node_multiplicity(2)
-          else if (j==np) then
-             x = 1.0_real_kind/elem%node_multiplicity(3)
-          else
-             x = 0.5_real_kind
-          end if
-        else if (j==1 .or. j==np) then
-           x = 0.5_real_kind
-        else
-           x = 1.0_real_kind
-        end if
-        elem%solver_wts(i,j) = x
-      end do
-    end do
-
-  end subroutine solver_weights_atomic
-#endif
-
-#if 1
   ! ========================================
   ! covariant_rot:
   !
@@ -563,34 +510,6 @@ contains
     R(2,2)=(Da(1,1)*Db(2,2) - Da(2,1)*Db(1,2))/detDa
 
   end function covariant_rot
-#else
-
-  ! ========================================
-  ! covariant_rot:
-  !
-  ! 2 x 2 matrix multiply:  Db * Da^-1
-  ! for edge rotations: maps face a to face b
-  !
-  ! ========================================
-
-  function covariant_rot(Da,Db) result(R)
-
-    real (kind=real_kind) :: Da(2,2)
-    real (kind=real_kind) :: Db(2,2)
-    real (kind=real_kind) :: R(2,2)
-
-    real (kind=real_kind) :: detDa
-
-    detDa = Da(2,2)*Da(1,1) - Da(1,2)*Da(2,1)
-
-    R(1,1)=(Da(2,2)*Db(1,1) - Da(2,1)*Db(1,2))/detDa
-    R(1,2)=(Da(1,1)*Db(1,2) - Da(1,2)*Db(1,1))/detDa
-    R(2,1)=(Da(2,2)*Db(2,1) - Da(2,1)*Db(2,2))/detDa
-    R(2,2)=(Da(1,1)*Db(2,2) - Da(1,2)*Db(2,1))/detDa
-
-  end function covariant_rot
-
-#endif
 
   ! ========================================
   ! contravariant_rot:
@@ -1392,6 +1311,7 @@ contains
     elem%corners(4)%x = startx   
     elem%corners(4)%y = starty+dy
 
+#if 0
     do i=1,4
        elem%node_multiplicity(i) = 4
     end do  
@@ -1406,7 +1326,7 @@ contains
     else if (ie ==  1 .and. je == ne) then
        elem%node_multiplicity(4) = 3
     end if  
-
+#endif
   end subroutine set_corner_coordinates
 
 
@@ -1483,9 +1403,9 @@ contains
     if (current_node_num /= (6*ne*ne+2)) then
        call abortmp('Error in assignment of node numbers: Failed Euler test')
     end if
-    do el = 1,SIZE(elements)
-      elements(el)%node_numbers = connectivity(elements(el)%vertex%number, :)
-    end do
+!    do el = 1,SIZE(elements)
+!      elements(el)%node_numbers = connectivity(elements(el)%vertex%number, :)
+!    end do
   end subroutine assign_node_numbers_to_elem
 
 
