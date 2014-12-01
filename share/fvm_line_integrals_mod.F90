@@ -1870,33 +1870,28 @@ end subroutine getdep_cellboundariesxyvec
       !
       ! DBG
       !
-      tmp=0.0
-      !       WRITE(*,*) "max area",maxval(weights(1:jcollect,1))
-      !       WRITE(*,*) "min area",minval(weights(1:jcollect,1))
-      !       stop
-      do i=1,jcollect     
-        IF (weights(i,1)<0.0) THEN
-           write(*,*) "weights from compute_weights_cell:",weights(i,1)
-           write(*,*) "index jx,jy ",jx,jy
-          IF (weights(i,1)<-1.0E-10) THEN
-            WRITE(*,*) "negative cell area",weights(i,1)
-!            STOP
-          END IF
-          !           weights(i,2:nreconstruction) = 0.0
-        END IF
-        !       end do
-        
-        tmp=tmp+weights(i,1)
-      enddo
-
-      IF (abs(tmp)>0.04) THEN
-        WRITE(*,*) "sum of weights seems too large",tmp
-!dbg        stop
-      END IF
-      IF (tmp<-1.0E-9) THEN
-        WRITE(*,*) "sum of weights is negative - negative area?",tmp,jx,jy
- !       stop
-      END IF
+!      tmp=0.0
+!      !       WRITE(*,*) "max area",maxval(weights(1:jcollect,1))
+!      !       WRITE(*,*) "min area",minval(weights(1:jcollect,1))
+!      !       stop
+!      do i=1,jcollect     
+!        IF (weights(i,1)<-tiny) THEN
+!           write(*,*) "weights from compute_weights_cell negative:",weights(i,1),i
+!           write(*,*) "index jx,jy ",jx,jy
+!        END IF
+!        !       end do
+!        
+!        tmp=tmp+weights(i,1)
+!      enddo
+!
+!      IF (abs(tmp)>0.04) THEN
+!        WRITE(*,*) "sum of weights seems too large",tmp
+!!dbg        stop
+!      END IF
+!      IF (tmp<-1.0E-9) THEN
+!        WRITE(*,*) "sum of weights is negative - negative area?",tmp,jx,jy
+! !       stop
+!      END IF
     else
       jcollect = 0
     end if

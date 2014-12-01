@@ -10,7 +10,7 @@
 module fvm_filter_mod
 
   use kinds, only                  : int_kind, real_kind
-  use dimensions_mod, only         : nc,nhe
+  use dimensions_mod, only         : nc,nhe,nhc
   use coordinate_systems_mod, only : cartesian2D_t,cartesian3D_t
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   use parallel_mod, only : haltmp
@@ -708,8 +708,8 @@ end subroutine minmax_patch_halo
 subroutine recons_val_cart(fcube, cartx, carty, centroid, recons, a, b, value)
 
   implicit none
-  real (kind=real_kind), dimension(1-nc:nc+nc, 1-nc:nc+nc), intent(in) :: fcube
-  real (kind=real_kind), intent(in)                                   :: cartx, carty 
+  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in) :: fcube
+  real (kind=real_kind), intent(in)                                        :: cartx, carty 
   !
   ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
   !
