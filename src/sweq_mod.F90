@@ -1632,7 +1632,7 @@ contains
       ! from c(n0) compute c(np1): 
       ! call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
       
-      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
+      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete,0.0_real_kind)
 
       call t_stopf('shal_advec_tracers_fvm')
     end subroutine shal_advec_tracers_fvm  

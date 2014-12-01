@@ -33,6 +33,8 @@ program prim_main
   use element_mod, only : element_t
   !-----------------------------------------------
   use fvm_control_volume_mod, only : fvm_struct
+  use fvm_control_volume_mod, only : n0_fvm
+  use fvm_mod, only : fvm_init3
   use spelt_mod, only : spelt_struct
   ! -----------------------------------------------
   use common_io_mod, only:  output_dir
@@ -281,6 +283,7 @@ program prim_main
      ithr=omp_get_thread_num()
      hybrid = hybrid_create(par,ithr,1)
 #ifdef PIO_INTERP
+     if (ntrac>0) call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm)
      call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)

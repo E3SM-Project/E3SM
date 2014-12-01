@@ -81,7 +81,7 @@ contains
   subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete, fvm)
     use physical_constants, only : dd_pi
     use control_mod, only : tracer_transport_type
-    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
+    use fvm_control_volume_mod, only : n0_fvm, np1_fvm
 
     type (element_t), intent(in) :: elem(:)
     
@@ -373,15 +373,13 @@ contains
     ! fvm diagnostics
     !
     if (ntrac>0) then
-    if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
-        tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
        do q=1,ntrac
           do ie=nets,nete
-             tmp1(ie) = MINVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0))
+             tmp1(ie) = MINVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0_fvm)) 
           enddo
           cmin(q) = ParallelMin(tmp1,hybrid)
           do ie=nets,nete
-             tmp1(ie) = MAXVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0))
+             tmp1(ie) = MAXVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0_fvm))
           enddo
           cmax(q) = ParallelMax(tmp1,hybrid)
           !
@@ -391,8 +389,8 @@ contains
           do k=1,nlev
              do ie=nets,nete
                 global_shared_buf(ie,1) = global_shared_buf(ie,1)+&
-                     SUM(fvm(ie)%c(1:nc,1:nc,k,q,n0)*&
-                         fvm(ie)%dp_fvm(1:nc,1:nc,k,n0)*&
+                     SUM(fvm(ie)%c(1:nc,1:nc,k,q,n0_fvm)*&
+                         fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)*&
                          fvm(ie)%area_sphere(1:nc,1:nc))
              end do
           enddo
@@ -422,11 +420,11 @@ contains
        ! dp_fvm
        !
        do ie=nets,nete
-          tmp1(ie) = MINVAL(fvm(ie)%dp_fvm(1:nc,1:nc,:,n0))
+          tmp1(ie) = MINVAL(fvm(ie)%dp_fvm(1:nc,1:nc,:,n0_fvm))
        enddo
        dp_fvm_min = ParallelMin(tmp1,hybrid)
        do ie=nets,nete
-          tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(1:nc,1:nc,:,n0))
+          tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(1:nc,1:nc,:,n0_fvm))
        enddo
        dp_fvm_max = ParallelMax(tmp1,hybrid)
        
@@ -434,12 +432,11 @@ contains
        do k=1,nlev
           do ie=nets,nete
              global_shared_buf(ie,1) = global_shared_buf(ie,1)+&
-                  SUM(fvm(ie)%dp_fvm(1:nc,1:nc,k,n0)*fvm(ie)%area_sphere(1:nc,1:nc))
+                  SUM(fvm(ie)%dp_fvm(1:nc,1:nc,k,n0_fvm)*fvm(ie)%area_sphere(1:nc,1:nc))
           end do
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
        dp_fvm_mass = global_shared_sum(1)/(4.0D0*DD_PI)
-    end if
     end if
 
 
@@ -472,8 +469,6 @@ contains
        ! fvm diagnostics
        !
        if (ntrac>0) then
-       if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
-           tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
           write(iulog,'(A36)') "-----------------------------------"
           write(iulog,'(A36)') "fvm diagnostics                    "
           write(iulog,'(A36)') "-----------------------------------"
@@ -488,8 +483,7 @@ contains
           write(iulog,'(A36)') "                                   "
 
        end if
-       end if
-    endif
+    end if
  
 
     if ( test_case(1:10) == "baroclinic" ) then
