@@ -964,7 +964,7 @@ contains
 !! @param iostart   The start index for the block-cyclic io decomposition
 !! @param iocount   The count for the block-cyclic io decomposition
 !<
-  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize)
+  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize, rearr)
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
@@ -972,16 +972,15 @@ contains
     type (io_desc_t), intent(inout)     :: iodesc
     integer(kind=PIO_OFFSET), pointer :: internal_compdof(:)
     integer(i4), intent(in)           :: dims(:)
+    integer, intent(in), optional :: rearr
     !vdf optionals
     integer(i4), intent(in), optional:: num_ts, bsize(3)
     allocate(internal_compdof(size(compdof)))
     internal_compdof = int(compdof,kind=pio_offset)
     
-    if(present(iostart) .and. present(iocount) ) then
-       call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, iostart, iocount)
-    else 
-       call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc)
-    endif
+    call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, &
+         iodesc, iostart, iocount,rearr)
+
     deallocate(internal_compdof)
 
   end subroutine PIO_initdecomp_dof_i4
