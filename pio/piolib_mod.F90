@@ -74,8 +74,9 @@ module piolib_mod
        PIO_set_hint,      &
        PIO_getnum_OST,    &
        PIO_setnum_OST,    &
-       PIO_FILE_IS_OPEN
-
+       PIO_FILE_IS_OPEN,  &
+       pio_iotask_rank
+ 
 #ifdef MEMCHK
 !> this is an internal variable for memory leak debugging 
 !! it is used when macro memchk is defined and it causes each task to print the 
@@ -2905,6 +2906,13 @@ contains
 
   end subroutine read_ascii
 
+  integer function pio_iotask_rank(pio_subsystem)
+    type(iosystem_desc_t), intent(in) :: pio_subsystem
+
+    pio_iotask_rank = pio_subsystem%io_rank
+
+
+  end function pio_iotask_rank
 
 
 
