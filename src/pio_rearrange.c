@@ -704,6 +704,7 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
 
+  //  printf("%s %d \n",__FILE__,__LINE__);
 
   free(sendcounts);
   free(recvcounts); 

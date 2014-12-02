@@ -1396,9 +1396,9 @@ contains
 
    end subroutine getnumiotasks
 
-   subroutine PIO_get_iorank(iosystem, iorank)
+   integer function PIO_iotask_rank(iosystem) result(iorank)
      type(iosystem_desc_t), intent(in) :: iosystem
-     integer, intent(out) :: iorank
+     integer :: iorank
        integer :: ierr
        interface
           integer(C_INT) function PIOc_get_iorank(iosysid,iorank) &
@@ -1410,7 +1410,8 @@ contains
        end interface
 
        ierr = PIOc_get_iorank(iosystem%iosysid, iorank)
-     end subroutine PIO_get_iorank
+       return iorank
+     end function PIO_iotask_rank
 
   !=============================================
   !  dupiodesc:
