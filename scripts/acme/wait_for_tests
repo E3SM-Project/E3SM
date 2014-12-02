@@ -7,6 +7,7 @@ is returned.
 """
 
 import argparse, sys, os, doctest, time, threading, Queue, signal
+import distutils.spawn, subprocess, getpass
 
 VERBOSE = False
 TEST_STATUS_FILENAME = "TestStatus"
@@ -14,6 +15,13 @@ TEST_NOT_FINISHED_STATUS = ["GEN", "BUILD", "RUN", "PEND"]
 TEST_PASSED_STATUS = "PASS"
 SLEEP_INTERVAL_SEC = 1
 SIGNAL_RECEIVED = False
+
+CLEANUP_ROUTINES = \
+{
+    "slurm" : "scancel --user=%s" % getpass.getuser(),
+    "pbs"   : "qdel $(qselect -u %s)" % getpass.getuser()
+}
+CLEANUP = False
 
 ###############################################################################
 def expect(condition, error_msg):
@@ -28,10 +36,41 @@ def verbose_print(msg):
         print msg
 
 ###############################################################################
+def warning(msg):
+###############################################################################
+    print >> sys.stderr, "WARNING:", msg
+
+###############################################################################
+def run_cmd(cmd):
+###############################################################################
+    proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+    _, errput = proc.communicate()
+    stat = proc.wait()
+    expect(stat == 0, "Command: '%s' failed with error '%s'" % (cmd, errput))
+
+###############################################################################
+def probe_batch_system():
+###############################################################################
+    for batch_system, cmd in CLEANUP_ROUTINES.iteritems():
+        exe = cmd.split()[0]
+        exe_path = distutils.spawn.find_executable(exe)
+        if (exe_path is not None):
+            return batch_system
+
+    warning("No batch system found, skipping job cleanup")
+    return None
+
+###############################################################################
 def signal_handler(signum, frame):
 ###############################################################################
     global SIGNAL_RECEIVED
     SIGNAL_RECEIVED = True
+
+    # Kill all queue'd jobs
+    if (CLEANUP):
+        batch_system = probe_batch_system()
+        if (batch_system is not None):
+            run_cmd(CLEANUP_ROUTINES[batch_system])
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -65,10 +104,17 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-n", "--no-wait", action="store_true", dest="no_wait", default=False,
                         help="Do not wait for tests to finish")
 
+    parser.add_argument("-c", "--cleanup", action="store_true", dest="cleanup",
+                        default=False,
+                        help="Cancel all queued jobs on exit")
+
     args = parser.parse_args(args[1:])
 
     global VERBOSE
     VERBOSE = args.verbose
+
+    global CLEANUP
+    CLEANUP = args.cleanup
 
     return args.paths, args.no_wait
 
