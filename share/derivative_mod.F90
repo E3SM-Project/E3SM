@@ -37,6 +37,7 @@ private
   end type derivative_stag_t
 
   real (kind=real_kind), allocatable :: integration_matrix(:,:)
+  real (kind=real_kind), allocatable :: boundary_interp_matrix(:,:,:)
   private :: allocate_subcell_integration_matrix
 
 ! ======================================
@@ -45,6 +46,7 @@ private
 
   public :: subcell_integration
   public :: subcell_dss_fluxes
+  public :: subcell_div_fluxes
 
   public :: derivinit
   public :: deriv_print
@@ -2909,16 +2911,51 @@ endif
       end do
     end do
 
-  end function
+  end function subcell_dss_fluxes
 
+  function subcell_div_fluxes(u, p, n) result(fluxes)
+
+    implicit none
+
+    integer              , intent(in)  :: p
+    integer              , intent(in)  :: n
+    real (kind=real_kind), intent(in)  :: u(p,p,2)
+    real (kind=real_kind)              :: fluxes(n,n,4)
+    real (kind=real_kind)              :: lr(n,p)
+    real (kind=real_kind)              :: tb(p,n)
+    real (kind=real_kind)              :: flux_l(n,n)
+    real (kind=real_kind)              :: flux_r(n,n)
+    real (kind=real_kind)              :: flux_b(n,n)
+    real (kind=real_kind)              :: flux_t(n,n)
+    
+    integer i,j
+
+    if (.not.ALLOCATED(boundary_interp_matrix)) then
+      call allocate_subcell_integration_matrix(p,n)
+    end if
+
+    lr = MATMUL(integration_matrix, u(:,:,2))
+    flux_l(:,:) = MATMUL(lr,TRANSPOSE(boundary_interp_matrix(:,1,:)))
+    flux_r(:,:) = MATMUL(lr,TRANSPOSE(boundary_interp_matrix(:,2,:)))
+
+    tb = MATMUL(u(:,:,1),TRANSPOSE(integration_matrix))
+    flux_b(:,:) = MATMUL(boundary_interp_matrix(:,1,:),tb)
+    flux_t(:,:) = MATMUL(boundary_interp_matrix(:,2,:),tb)
+
+    fluxes(:,:,1) = -flux_b(:,:)*rrearth
+    fluxes(:,:,2) =  flux_r(:,:)*rrearth
+    fluxes(:,:,3) =  flux_t(:,:)*rrearth
+    fluxes(:,:,4) = -flux_l(:,:)*rrearth
+
+  end function subcell_div_fluxes
 
 
   ! Given a field defined on the unit element, [-1,1]x[-1,1]
-  ! sample values, sampled_val, and integration weights, metdet,
-  ! at a number, np, of Gauss-Lobatto-Legendre points. Divide
+  ! sample values, sampled_val, premultiplied by integration weights,
+  ! and a number, np, of Gauss-Lobatto-Legendre points. Divide
   ! the square up into intervals by intervals sub-squares so that
   ! there are now intervals**2 sub-cells.  Integrate the 
-  ! function defined by sampled_val and metdet over each of these
+  ! function defined by sampled_val over each of these
   ! sub-cells and return the integrated values as an 
   ! intervals by intervals matrix.
   !
@@ -2986,6 +3023,8 @@ endif
 
     if (ALLOCATED(integration_matrix)) deallocate(integration_matrix)
     allocate(integration_matrix(intervals,np))
+    if (ALLOCATED(boundary_interp_matrix)) deallocate(boundary_interp_matrix)
+    allocate(boundary_interp_matrix(intervals,2,np))
 
     gll = gausslobatto(np)
  
@@ -3058,6 +3097,7 @@ endif
     ! they are defined for a 2x2 square
     integration_matrix = integration_matrix/intervals
 
+    boundary_interp_matrix(:,:,:) = Lagrange_interp(:,(/1,np/),:)
   end subroutine allocate_subcell_integration_matrix
 
 

@@ -8,6 +8,7 @@ implicit none
 
 public ::  test_ibyp
 public ::  test_subcell_dss_fluxes
+public ::  test_subcell_div_fluxes
 public ::  test_sub_integration
 public ::  test_edge_flux
 
@@ -335,16 +336,16 @@ contains
       fluxes = subcell_dss_fluxes (dss, np, intervals) 
 
       test = 0
-      do i=1,np
-      do j=1,np
+      do i=1,intervals
+      do j=1,intervals
       do k=1,4
         test(i,j) = test(i,j) + fluxes(i,j,k)
       end do
       end do
       end do
 
-      do i=1,np
-      do j=1,np
+      do i=1,intervals
+      do j=1,intervals
       if (.00001<ABS(test(i,j)-values(i,j))) then
         print *,"*****************",ie,i,j,test(i,j),values(i,j)
         success = .false.
@@ -361,6 +362,89 @@ contains
 
   end subroutine test_subcell_dss_fluxes
 
+
+  subroutine test_subcell_div_fluxes(elem,deriv,nets,nete)
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_div_fluxes
+    use derivative_mod, only : subcell_integration
+    use derivative_mod, only : divergence_sphere, element_boundary_integral
+    use element_mod,    only : element_t
+    use derivative_mod, only : derivative_t
+    use kinds,          only : real_kind
+    use coordinate_systems_mod, only: spherical_polar_t, change_coordinates
+    use quadrature_mod, only : gausslobatto, quadrature_t
+
+
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=6 
+
+    real (kind=real_kind)              :: u(np,np,2), v(np,np,2)
+    real (kind=real_kind)              :: div(np,np)
+    real (kind=real_kind)              :: values(intervals,intervals)
+    real (kind=real_kind)              :: fluxes(intervals,intervals,4)
+    real (kind=real_kind)              :: test(intervals,intervals)
+    real (kind=real_kind)              :: p,t
+
+    type (quadrature_t)   :: gll
+
+    type(spherical_polar_t)            :: s
+    integer                            :: ie,i,j
+    logical                            :: success
+    success = .true.
+
+    gll = gausslobatto(np)
+
+    do ie=nets,nete
+
+      call random_number(p)
+
+      if (ie <= np*np) then
+        u = 0 
+        u(1+mod(ie,np), 1+mod(ie/np,np),1) = 1
+      else
+        t = u(1+mod((7*ie),np), 1+mod((13*ie)/np,np),1)
+        u(1+mod(ie,np), 1+mod(ie/np,np),1) = t + 10*p
+        u(1+mod(INT(32147*p),np), 1+mod(INT(1123*p)/np,np),1) = 0
+      end if
+
+      div  = divergence_sphere(u, deriv, elem(ie))
+      div  = div * elem(ie)%metdet
+   
+      v(:,:,1) = elem(ie)%Dinv(1,1,:,:)*u(:,:,1) + elem(ie)%Dinv(1,2,:,:)*u(:,:,2)
+      v(:,:,2) = elem(ie)%Dinv(2,1,:,:)*u(:,:,1) + elem(ie)%Dinv(2,2,:,:)*u(:,:,2)
+
+      v(:,:,1) = v(:,:,1)*elem(ie)%metdet(:,:)
+      v(:,:,2) = v(:,:,2)*elem(ie)%metdet(:,:)
+
+      values = subcell_integration(div, np, intervals) 
+      fluxes = subcell_div_fluxes(v, np, intervals) 
+
+      test = SUM(fluxes,3)
+
+      do i=1,intervals
+      do j=1,intervals
+        t = ABS(test(i,j)-values(i,j))/MAX(ABS(test(i,j)),ABS(values(i,j)))
+        if (.0000001<t) then
+          print *,"*****************",ie,i,j,test(i,j),values(i,j),t
+          success = .false.
+          stop
+        end if
+      end do
+      end do
+    end do
+
+    if (success) then
+      print *,__FILE__,__LINE__," test_subcell_div_fluxes test passed."
+    else
+      print *,__FILE__,__LINE__," test_subcell_div_fluxes test FAILED."
+    end if
+
+  end subroutine test_subcell_div_fluxes
 
   subroutine test_sub_integration(elem,deriv,nets,nete)
     use dimensions_mod, only : np
