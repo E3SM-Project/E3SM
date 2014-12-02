@@ -70,14 +70,13 @@ contains
     integer :: iobuf_size, max_iobuf_size
     integer :: status(MPI_STATUS_SIZE)
     integer, dimension(PIO_MAX_VAR_DIMS) :: temp_start, temp_count
-    integer :: i, mpierr, ndims, sdims
+    integer :: i, mpierr, ndims
 
 #ifdef TIMING
     call t_startf("pio_read_nfdarray_{TYPE}")
 #endif
     iotype = File%iotype
     ierr=PIO_noerr
-
 
     ndims = size(start)
     if (File%iosystem%IOproc) then
@@ -86,11 +85,11 @@ contains
        case(pio_iotype_pnetcdf)
           if(DebugIO) print *,__PIO_FILE__,__LINE__, &
                '  IAM: ',File%iosystem%io_rank
-
-          if(Debug) print *,__PIO_FILE__,__LINE__, &
+          if(Debug) &
+          print *,__PIO_FILE__,__LINE__, &
                '  IAM: ',File%iosystem%io_rank,' start: ', &
                start,' count: ', &
-               count, ' iobuf size: ',size(iobuf)
+               count, ' iobuf size: ',size(iobuf), vardesc%varid
 
           ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &
                start, &
