@@ -59,8 +59,7 @@ module piolib_mod
        PIO_set_hint,      &
        PIO_FILE_IS_OPEN, &
        PIO_deletefile, &
-       PIO_get_numiotasks, &
-       PIO_get_iorank
+       PIO_get_numiotasks
 
 #ifdef MEMCHK
 !> this is an internal variable for memory leak debugging
@@ -1396,22 +1395,6 @@ contains
 
    end subroutine getnumiotasks
 
-   integer function PIO_iotask_rank(iosystem) result(iorank)
-     type(iosystem_desc_t), intent(in) :: iosystem
-     integer :: iorank
-       integer :: ierr
-       interface
-          integer(C_INT) function PIOc_get_iorank(iosysid,iorank) &
-               bind(C,name="PIOc_get_iorank")
-            use iso_c_binding
-            integer(C_INT), intent(in), value :: iosysid
-            integer(C_INT), intent(out) :: iorank
-          end function PIOc_get_iorank
-       end interface
-
-       ierr = PIOc_get_iorank(iosystem%iosysid, iorank)
-       return iorank
-     end function PIO_iotask_rank
 
   !=============================================
   !  dupiodesc:
