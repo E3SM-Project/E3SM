@@ -497,7 +497,7 @@ void test_indexed_struct()
   int i_disps[3] = {0, 5, 7};
   MPI_Datatype i_struct_indexed;
   int index_test [6] = {0,1,2,5,7,8};
-  void* sadd;
+  char* sadd;
   typedef struct
     {char a; long b; char c; int d; int e;}
     struct_t;
@@ -521,11 +521,11 @@ void test_indexed_struct()
   }
   
   //set the displacements by using address differences
-  sadd = &send[0];
-  s_disps[0] = (void*)&(send[0].a) - sadd;
-  s_disps[1] = (void*)&(send[0].b) - sadd;
-  s_disps[2] = (void*)&(send[0].c) - sadd;
-  s_disps[3] = (void*)&(send[0].d) - sadd;
+  sadd = (char *)&send[0];
+  s_disps[0] = (char*)&(send[0].a) - sadd;
+  s_disps[1] = (char*)&(send[0].b) - sadd;
+  s_disps[2] = (char*)&(send[0].c) - sadd;
+  s_disps[3] = (char*)&(send[0].d) - sadd;
   //e is "contiguous" of d
 
 
@@ -649,8 +649,8 @@ void test_multiple_struct()
   MPI_Datatype struct_type, contig_struct;
 
   disps[0] = 0;
-  disps[1] = (void*) &(s1[0].b) - (void*) &s1[0];
-  disps[2] = (void*) &(s1[0].c) - (void*) &s1[0];
+  disps[1] = (char*) &(s1[0].b) - (char*) &s1[0];
+  disps[2] = (char*) &(s1[0].c) - (char*) &s1[0];
 
   for (i=0; i<5; i++)
   {
@@ -740,8 +740,8 @@ void test_packed_complex()
   MPI_Datatype struct_type;
 
   disps[0] = 0;
-  disps[1] = (void*) &s1.b - (void*)&s1.a;
-  disps[2] = (void*) &s1.d - (void*)&s1.a;
+  disps[1] = (char*) &s1.b - (char*)&s1.a;
+  disps[2] = (char*) &s1.d - (char*)&s1.a;
 
   printf("\nComplex packed type\n");
 
@@ -803,8 +803,8 @@ void test_collectives()
   MPI_Datatype types[3] = {MPI_INT, MPI_DOUBLE, MPI_LONG};
 
   disps[0] = 0;
-  disps[1] = (void*)&s1.c - (void*) &s1.a;
-  disps[2] = (void*)&s1.d - (void*) &s1.a;
+  disps[1] = (char*)&s1.c - (char*) &s1.a;
+  disps[2] = (char*)&s1.d - (char*) &s1.a;
 
   MPI_Type_struct(3, blens, disps, types, &struct_type);
   MPI_Type_commit(&struct_type);
