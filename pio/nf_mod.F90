@@ -421,16 +421,16 @@ contains
     ierr = inq_att_vid_pio2(file, vardesc%varid, name, xtype, len)
 
   end function inq_att_vardesc_pio2
-  integer function inq_att_vid_pio2(File,vid,name,xtype,len) result(ierr)
+  integer function inq_att_vid_pio2(File,varid,name,xtype,len) result(ierr)
 
     type (File_desc_t), intent(inout) :: File
-    integer, intent(in) :: vid
+    integer, intent(in) :: varid
     character(len=*), intent(in)      :: name
     integer, intent(out)              :: xtype
     integer(pio_offset), intent(out)              :: len !Attribute length
     integer :: ilen
 
-    ierr = inq_att_vid(file, vid, name, xtype, ilen)
+    ierr = inq_att_vid(file, varid, name, xtype, ilen)
     len = int(ilen, pio_offset)
 
   end function inq_att_vid_pio2
