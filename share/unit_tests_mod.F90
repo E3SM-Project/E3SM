@@ -9,6 +9,7 @@ implicit none
 public ::  test_ibyp
 public ::  test_subcell_dss_fluxes
 public ::  test_subcell_div_fluxes
+public ::  test_subcell_div_fluxes_again
 public ::  test_subcell_Laplace_fluxes
 public ::  test_sub_integration
 public ::  test_edge_flux
@@ -305,7 +306,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=4 
+    integer              , parameter :: intervals=6 
 
     real (kind=real_kind)              :: dss(np,np)
     real (kind=real_kind)              :: values(intervals,intervals)
@@ -363,17 +364,15 @@ contains
 
   end subroutine test_subcell_dss_fluxes
 
-
   subroutine test_subcell_div_fluxes(elem,deriv,nets,nete)
     use dimensions_mod, only : np
     use derivative_mod, only : subcell_div_fluxes
     use derivative_mod, only : subcell_integration
-    use derivative_mod, only : divergence_sphere, element_boundary_integral
+    use derivative_mod, only : divergence_sphere
     use element_mod,    only : element_t
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
-    use coordinate_systems_mod, only: spherical_polar_t, change_coordinates
-    use quadrature_mod, only : gausslobatto, quadrature_t
+    use coordinate_systems_mod, only: spherical_polar_t
 
 
     implicit none
@@ -382,7 +381,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=6 
+    integer              , parameter :: intervals=5 
 
     real (kind=real_kind)              :: u(np,np,2), v(np,np,2)
     real (kind=real_kind)              :: div(np,np)
@@ -448,6 +447,174 @@ contains
 
   end subroutine test_subcell_div_fluxes
 
+  subroutine test_subcell_div_fluxes_again(elem,deriv,nets,nete)
+    use physical_constants, only : rearth
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_div_fluxes
+    use derivative_mod, only : subcell_integration
+    use derivative_mod, only : divergence_sphere
+    use element_mod,    only : element_t
+    use derivative_mod, only : derivative_t
+    use kinds,          only : real_kind
+    use coordinate_systems_mod, only: spherical_polar_t
+    use quadrature_mod, only : gausslobatto, quadrature_t
+
+
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=6 
+
+    real (kind=real_kind)              :: u(np,np,2), v(np,np,2)
+    real (kind=real_kind)              :: div(np,np)
+    real (kind=real_kind)              :: fluxes(intervals,intervals,4)
+    real (kind=real_kind)              :: p,t
+
+    type (quadrature_t)                :: gll
+    integer                            :: ie,i,j
+    logical                            :: success
+    real (kind=real_kind),   parameter :: EPS=.0000001
+    success = .true.
+
+    gll = gausslobatto(np)
+
+    do ie=nets,nete
+
+      call random_number(p)
+
+      if (ie <= np*np) then
+        v = 0 
+        do i = 1,np
+          v(i,:,2) = gll%points(:)
+        end do
+      else if (ie <= 2*np*np) then
+        v = 0 
+        do j = 1,np
+          v(:,j,1) = gll%points(:)
+        end do
+      else if (ie <= 3*np*np) then
+        v = 0 
+        do i = 1,np
+          v(i,:,2) = 1+gll%points(:)
+        end do
+      else if (ie <= 4*np*np) then
+        v = 0 
+        do j = 1,np
+          v(:,j,1) = 1+gll%points(:)
+        end do
+      else
+        v = 0 
+      end if
+
+      fluxes = subcell_div_fluxes(v, np, intervals) 
+      fluxes = rearth*fluxes
+
+      if (ie <= np*np) then
+        t = 4./(intervals*intervals)
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the bottom to the top
+          if (EPS < ABS(fluxes(i,j,1)+fluxes(i,j,3)-t)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,2)),ABS(fluxes(i,j,4)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (1.lt.i) then
+            if (EPS < ABS(fluxes(i-1,j,1)-fluxes(i,j,1))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+              success = .false.
+            end if
+            if (EPS < ABS(fluxes(i-1,j,3)-fluxes(i,j,3))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+              success = .false.
+            end if
+          end if
+        end do
+        end do
+      else if (ie <= 2*np*np) then
+        t = 4./(intervals*intervals)
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the left to the right
+          if (EPS < ABS(fluxes(i,j,2)+fluxes(i,j,4)-t)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,1)),ABS(fluxes(i,j,3)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (1.lt.j) then
+            if (EPS < ABS(fluxes(i,j-1,2)-fluxes(i,j,2))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+              success = .false.
+            end if
+            if (EPS < ABS(fluxes(i,j-1,4)-fluxes(i,j,4))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+              success = .false.
+            end if
+          end if
+        end do
+        end do
+      else if (ie <= 3*np*np) then
+        t = 4./(intervals*intervals)
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the bottom to the top
+          if (EPS < fluxes(i,j,1)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+            success = .false.
+          end if
+          if (EPS < ABS(fluxes(i,j,1)+fluxes(i,j,3)-t)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,2)),ABS(fluxes(i,j,4)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+        end do
+        end do
+      else if (ie <= 4*np*np) then
+        t = 4./(intervals*intervals)
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the left to the right
+          if (EPS < fluxes(i,j,4)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+            success = .false.
+          end if
+          if (EPS < ABS(fluxes(i,j,2)+fluxes(i,j,4)-t)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,1)),ABS(fluxes(i,j,3)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+        end do
+        end do
+      endif
+
+      if (.not.success) then
+        print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test FAILED."
+      end if
+    end do
+
+    if (success) then
+      print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test passed."
+    else
+      print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test FAILED."
+    end if
+
+  end subroutine test_subcell_div_fluxes_again
+
   subroutine test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
@@ -458,9 +625,7 @@ contains
     use element_mod,    only : element_t
     use derivative_mod, only : derivative_t
     use kinds,          only : real_kind
-    use coordinate_systems_mod, only: spherical_polar_t, change_coordinates
-    use quadrature_mod, only : gausslobatto, quadrature_t
-
+    use coordinate_systems_mod, only: spherical_polar_t
 
     implicit none
 
@@ -468,7 +633,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=4 
+    integer              , parameter :: intervals=5 
 
     real (kind=real_kind)              :: u(np,np)
     real (kind=real_kind)              :: laplace(np,np)
@@ -477,15 +642,11 @@ contains
     real (kind=real_kind)              :: laplace_test(intervals,intervals)
     real (kind=real_kind)              :: p,t
 
-    type (quadrature_t)   :: gll
-
     type(spherical_polar_t)            :: s
     integer                            :: ie,i,j
     logical                            :: success
     success = .true.
 
-
-    gll = gausslobatto(np)
 
     do ie=nets,nete
 
