@@ -10,8 +10,8 @@
 if ( ${CASE} =~ *_IOP* && $basestatus == "PASS") then
   gunzip $CASEROOT/logs/cpl.log*.gz
   set cpllogi = `ls -1t $CASEROOT/logs/cpl.log* | head -1`
-  gunzip $CASEROOT/../${iopbase_case}/logs/cpl.log*.gz
-  set cpllogn = `ls -1t $CASEROOT/../${iopbase_case}/logs/cpl.log* | head -1`
+  gunzip $CASEROOT/${iopbase_case}/logs/cpl.log*.gz
+  set cpllogn = `ls -1t $CASEROOT/${iopbase_case}/logs/cpl.log* | head -1`
   $CASETOOLS/check_exactrestart.pl $cpllogn $cpllogi >>& $TESTSTATUS_LOG
   set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
   if ( $pass != 0 ) then
@@ -302,7 +302,7 @@ if ( "$memleak" !~ "" || "$pesmaxmem_incr" != "" || "$tput_decr" !~ "" || "$tput
 endif
 
 if ( ${CASE} =~ *_IOP* ) then
-  cat ../${iopbase_case}/TestStatus >> $TESTSTATUS_OUT
+  cat ${iopbase_case}/TestStatus >> $TESTSTATUS_OUT
 endif
 
 #======================================================================
