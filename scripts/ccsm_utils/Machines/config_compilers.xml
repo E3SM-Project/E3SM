@@ -533,6 +533,13 @@ for mct, etc.
   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf</ADD_SLIBS>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="melvin">
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>
+  <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+</compiler>
+
 <compiler>
   <ADD_CPPDEFS MODEL="pop2"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
