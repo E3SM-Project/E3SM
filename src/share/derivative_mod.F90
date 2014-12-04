@@ -2922,8 +2922,8 @@ endif
     integer              , intent(in)  :: n
     real (kind=real_kind), intent(in)  :: u(p,p,2)
     real (kind=real_kind)              :: fluxes(n,n,4)
-    real (kind=real_kind)              :: lr(n,p)
-    real (kind=real_kind)              :: tb(p,n)
+    real (kind=real_kind)              :: tb(n,p)
+    real (kind=real_kind)              :: lr(p,n)
     real (kind=real_kind)              :: flux_l(n,n)
     real (kind=real_kind)              :: flux_r(n,n)
     real (kind=real_kind)              :: flux_b(n,n)
@@ -2931,17 +2931,19 @@ endif
     
     integer i,j
 
-    if (.not.ALLOCATED(boundary_interp_matrix)) then
+    if (.not.ALLOCATED(integration_matrix)      .or. &
+        SIZE(integration_matrix,1).ne.n .or. &
+        SIZE(integration_matrix,2).ne.p) then
       call allocate_subcell_integration_matrix(p,n)
     end if
 
-    lr = MATMUL(integration_matrix, u(:,:,2))
-    flux_l(:,:) = MATMUL(lr,TRANSPOSE(boundary_interp_matrix(:,1,:)))
-    flux_r(:,:) = MATMUL(lr,TRANSPOSE(boundary_interp_matrix(:,2,:)))
+    tb = MATMUL(integration_matrix, u(:,:,2))
+    flux_b(:,:) = MATMUL(tb,TRANSPOSE(boundary_interp_matrix(:,1,:)))
+    flux_t(:,:) = MATMUL(tb,TRANSPOSE(boundary_interp_matrix(:,2,:)))
 
-    tb = MATMUL(u(:,:,1),TRANSPOSE(integration_matrix))
-    flux_b(:,:) = MATMUL(boundary_interp_matrix(:,1,:),tb)
-    flux_t(:,:) = MATMUL(boundary_interp_matrix(:,2,:),tb)
+    lr = MATMUL(u(:,:,1),TRANSPOSE(integration_matrix))
+    flux_l(:,:) = MATMUL(boundary_interp_matrix(:,1,:),lr)
+    flux_r(:,:) = MATMUL(boundary_interp_matrix(:,2,:),lr)
 
     fluxes(:,:,1) = -flux_b(:,:)*rrearth
     fluxes(:,:,2) =  flux_r(:,:)*rrearth

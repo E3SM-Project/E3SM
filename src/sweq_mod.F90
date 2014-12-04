@@ -83,6 +83,7 @@ contains
                               test_sub_integration,       &
                               test_subcell_dss_fluxes,    &
                               test_subcell_div_fluxes,    &
+                              test_subcell_div_fluxes_again, &
                               test_subcell_Laplace_fluxes  ! dont remove
 
     
@@ -318,6 +319,7 @@ contains
     call test_subcell_dss_fluxes(elem,deriv,nets,nete)
     call test_subcell_div_fluxes(elem,deriv,nets,nete)
     call test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
+    call test_subcell_div_fluxes_again(elem,deriv,nets,nete)
     stop
 #endif
 
