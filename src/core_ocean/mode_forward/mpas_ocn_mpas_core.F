@@ -154,6 +154,7 @@ module mpas_core
       end if
       call mpas_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='modelRestart', ierr=err)
+      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err)
 
       ! Initialize submodules before initializing blocks.
       call ocn_timestep_init(err)
