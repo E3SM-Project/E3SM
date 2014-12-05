@@ -10,6 +10,7 @@ include ../Makefile.conf
 TINC    = -I..
 LDFLAGS = -L..
 MYLIBS    = $(LIBS) -l$(MODULE)
+MYF90FLAGS=$(INCPATH) $(DEFS) $(FCFLAGS)  $(MPEUFLAGS)
 
 runtests: all
 	./ctest
@@ -17,7 +18,7 @@ runtests: all
 	./ftest
 	@echo
 
-all: ctest ftest ctest2 ftest2
+all: ctest ftest
 
 ctest: ctest.c
 	$(CC) $(DEFS) $(TINC) $(ALLCFLAGS) -o $@ ctest.c $(LDFLAGS) $(MYLIBS)
