@@ -102,7 +102,8 @@ contains
                count, IOBUF , &
                iodesc%Write%n_ElemTYPE, &
                iodesc%Write%ElemTYPE, request)
-          if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
+          if(Debug.or.ierr/=PIO_noerr) &
+               print *,subname,__LINE__, &
                '  IAM: ',File%iosystem%io_rank,' start: ',start,' count: ',count,&
                ' size :',iodesc%Write%n_ElemTYPE, ' error: ',ierr, &
                iodesc%Write%ElemTYPE, request
@@ -145,6 +146,8 @@ contains
           temp_start(1:ndims)=int(start(1:ndims))
 
           temp_count(1:ndims)=int(count(1:ndims))
+
+          if(Debug) print *,__FILE__,__LINE__,ndims,temp_start(1:ndims),temp_count(1:ndims)
 
           ! Every i/o proc send data to root
 

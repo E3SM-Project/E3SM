@@ -14,6 +14,7 @@ module piodarray
   use pio_support
   use pionfwrite_mod, only : write_nf
   use pionfread_mod, only : read_nf
+  use nf_mod, only : pio_inq_varndims
   use iompi_mod
   use alloc_mod
   use rearrange
@@ -447,6 +448,7 @@ contains
 
     integer(i4), intent(out) :: iostat
     integer :: request
+    integer :: fndims
     !EOP
     !BOC
     !-----------------------------------------------------------------------
@@ -489,8 +491,13 @@ contains
     ! ---------------------------------------------------------
     ! pull information out of the decomposition data structure 
     ! ---------------------------------------------------------
-
     len        = iodesc%IOmap%length
+
+    !
+    ! added for pio2 compatability
+    !
+    ierr = pio_inq_varndims(file,vardesc,fndims)
+
 
     if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ', &
     File%iosystem%comp_rank,' UseRearranger: ',UseRearranger,iodesc%glen, iodesc%iomap%start, len
@@ -580,13 +587,27 @@ contains
 
        ! this is a time dependent multidimensional array
        if(vardesc%rec>=0 .and. iodesc%start(1)>=0) then
-          ndims = size(iodesc%start)+1
-          call alloc_check(start,ndims)
-          call alloc_check(count,ndims)
-          start(1:ndims-1)=iodesc%start
-          count(1:ndims-1)=iodesc%count
-          start(ndims:ndims)=vardesc%rec
-          count(ndims:ndims)=1
+          ndims = size(iodesc%start)
+          if(fndims> ndims) then
+             ndims = ndims+1
+             call alloc_check(start,ndims)
+             call alloc_check(count,ndims)
+             
+             start(1:ndims-1)=iodesc%start
+             count(1:ndims-1)=iodesc%count
+             start(ndims:ndims)=vardesc%rec
+             count(ndims:ndims)=1
+          else
+             ndims = fndims
+             call alloc_check(start,ndims)
+             call alloc_check(count,ndims)
+             start(1:ndims-1)=iodesc%start(1:ndims-1)
+             start(ndims) = vardesc%rec
+             count(1:ndims)=iodesc%count
+          endif
+
+
+
           if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start, &
            ' count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
           ! this is a timedependent single value
@@ -846,7 +867,6 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
   subroutine read_darray_nf_{TYPE} (File,varDesc,ioDesc,array, iostat)
-    use nf_mod, only : pio_inq_varndims
 
     !
     ! !DESCRIPTION:
