@@ -2844,71 +2844,71 @@ endif
     real (kind=real_kind), intent(in)  :: dss     (p,p)
     real (kind=real_kind)              :: fluxes  (n,n,4)
 
+    real (kind=real_kind)              :: Bp(p,p)
+    real (kind=real_kind)              :: Tp(p,p)
     real (kind=real_kind)              :: Lp(p,p)
     real (kind=real_kind)              :: Rp(p,p)
-    real (kind=real_kind)              :: Tp(p,p)
-    real (kind=real_kind)              :: Bp(p,p)
 
+    real (kind=real_kind)              :: B(n,n)
+    real (kind=real_kind)              :: T(n,n)
     real (kind=real_kind)              :: L(n,n)
     real (kind=real_kind)              :: R(n,n)
-    real (kind=real_kind)              :: T(n,n)
-    real (kind=real_kind)              :: B(n,n)
 
     integer            :: i,j
 
     fluxes  = 0
 
-    Lp = 0
-    Rp = 0
     Bp = 0
     Tp = 0
+    Rp = 0
+    Lp = 0
 
-    Lp(:,1)  = dss(:,1)
-    Rp(:,p)  = dss(:,p)
-    Bp(p,:)  = dss(p,:)
-    Tp(1,:)  = dss(1,:)
+    Bp(:,1)  = dss(:,1)  ! bottom
+    Tp(:,p)  = dss(:,p)  ! top
+    Rp(p,:)  = dss(p,:)  ! right
+    Lp(1,:)  = dss(1,:)  ! left
 
+    Bp(1,1)  = Bp(1,1)/2
     Lp(1,1)  = Lp(1,1)/2
-    Tp(1,1)  = Tp(1,1)/2
-    Lp(p,1)  = Lp(p,1)/2
     Bp(p,1)  = Bp(p,1)/2
+    Rp(p,1)  = Rp(p,1)/2
 
-    Rp(1,p)  = Rp(1,p)/2
     Tp(1,p)  = Tp(1,p)/2
+    Lp(1,p)  = Lp(1,p)/2
+    Tp(p,p)  = Tp(p,p)/2
     Rp(p,p)  = Rp(p,p)/2
-    Bp(p,p)  = Bp(p,p)/2
 
+    B = subcell_integration(Bp, p, n)
+    T = subcell_integration(Tp, p, n)
     L = subcell_integration(Lp, p, n)
     R = subcell_integration(Rp, p, n)
-    T = subcell_integration(Tp, p, n)
-    B = subcell_integration(Bp, p, n)
 
     do i = 1,n
     do j = 1,n
-      if (1<j) R(i,j) = R(i,j) + R(i,j-1) 
-      if (1<i) B(i,j) = B(i,j) + B(i-1,j) 
+      if (1<j) T(i,j) = T(i,j) + T(i,j-1) 
+      if (1<i) R(i,j) = R(i,j) + R(i-1,j) 
     end do
     end do
 
     do i = n,1,-1
     do j = n,1,-1
-      if (j<n) L(i,j) = L(i,j) + L(i,j+1) 
-      if (i<n) T(i,j) = T(i,j) + T(i+1,j) 
+      if (j<n) B(i,j) = B(i,j) + B(i,j+1) 
+      if (i<n) L(i,j) = L(i,j) + L(i+1,j) 
     end do
     end do
 
 
     do i = 1,n
       do j = 1,n
-        if (1==j) fluxes(i,j,1) =  L(i,j)
-        if (n==i) fluxes(i,j,2) =  B(i,j)
-        if (j==n) fluxes(i,j,3) =  R(i,j)
-        if (1==i) fluxes(i,j,4) =  T(i,j)
+        if (1==j) fluxes(i,j,1) =  B(i,j)
+        if (n==i) fluxes(i,j,2) =  R(i,j)
+        if (j==n) fluxes(i,j,3) =  T(i,j)
+        if (1==i) fluxes(i,j,4) =  L(i,j)
 
-        if (1< j) fluxes(i,j,1) =   L(i,j) - R(i,j-1)
-        if (i< n) fluxes(i,j,2) =   B(i,j) - T(i+1,j)
-        if (j< n) fluxes(i,j,3) =   R(i,j) - L(i,j+1)
-        if (1< i) fluxes(i,j,4) =   T(i,j) - B(i-1,j)
+        if (1< j) fluxes(i,j,1) =   B(i,j) - T(i,j-1)
+        if (i< n) fluxes(i,j,2) =   R(i,j) - L(i+1,j)
+        if (j< n) fluxes(i,j,3) =   T(i,j) - B(i,j+1)
+        if (1< i) fluxes(i,j,4) =   L(i,j) - R(i-1,j)
       end do
     end do
 
