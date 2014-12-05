@@ -75,6 +75,10 @@ elif echo $ac_fc_version_output | grep -i workshop >/dev/null 2>&1; then
 elif echo $ac_fc_version_output | grep -i pgf >/dev/null 2>&1; then
    echo "Fortran Compiler is Portland Group"
    LIBS="$LIBS -pgf90libs"
+elif echo $ac_fc_version_output | grep -i nag >/dev/null 2>&1; then
+   echo "Fortran Compiler is NAG"
+   CPRDEF="NAG"
+   FCFLAGS="-mismatch"
 fi
 # INCLUDE FLAG IF NOT ALREADY SET IS MOST LIKELY -I
 if test -z "$INCLUDEFLAG"; then
