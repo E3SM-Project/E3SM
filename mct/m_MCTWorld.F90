@@ -35,10 +35,10 @@
       integer :: ncomps	                           ! Total number of components
       integer :: mygrank                           ! Rank of this processor in 
                                                    ! global communicator.
-      integer,dimension(:),pointer :: nprocspid	   ! Number of processes 
+      integer,dimension(:),pointer :: nprocspid => null()   ! Number of processes
                                                    ! each component is on (e.g. rank of its
 						   ! local communicator.
-      integer,dimension(:,:),pointer :: idGprocid  ! Translate between local component rank
+      integer,dimension(:,:),pointer :: idGprocid => null() ! Translate between local component rank
                                                    ! rank in global communicator.
 						   ! idGprocid(modelid,localrank)=globalrank
     end type MCTWorld
