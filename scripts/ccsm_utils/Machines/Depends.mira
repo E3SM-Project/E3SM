@@ -37,5 +37,5 @@ uwshcu.o \
 wetdep.o 
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
-	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -qnostrict  $<
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qnostrict  $<
 endif
