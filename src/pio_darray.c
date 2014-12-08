@@ -69,6 +69,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      io_region *region;
      int ncid = file->fh;
      int regioncnt;
+     int rrcnt;
      void *bufptr;
      void *tmp_buf=NULL;
      int tsize;
@@ -95,6 +96,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	 ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	 usage += tsize*(iodesc->maxiobuflen);
 	 MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
+	 //         if(ios->io_rank==0) printf("%s %d %d %d\n",__FILE__,__LINE__,iodesc->maxregions,usage);
 	 if(usage >= PIO_BUFFER_SIZE_LIMIT){
 	   flush_output_buffer(file);
 	 }
@@ -102,6 +104,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      }
 #endif
 
+     rrcnt=0;
      for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
        for(i=0;i<ndims;i++){
 	 start[i] = 0;
@@ -228,32 +231,31 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	 //	 if(dsize==1 && ndims==2)
 	 //	 printf("%s %d %d\n",__FILE__,__LINE__,iodesc->basetype);
 #ifdef USE_PNETCDF_VARN
-	 if(regioncnt==0){
+	 /*	 if(regioncnt==0){
 	   for(i=0;i<iodesc->maxregions;i++){
 	     startlist[i] = (PIO_Offset *) calloc(fndims, sizeof(PIO_Offset));
 	     countlist[i] = (PIO_Offset *) calloc(fndims, sizeof(PIO_Offset));
 	   }
 	 }
+	 */
 	 if(dsize>0){
 	   //	   printf("%s %d %d %d\n",__FILE__,__LINE__,ios->io_rank,dsize);
+	   startlist[rrcnt] = (PIO_Offset *) calloc(fndims, sizeof(PIO_Offset));
+	   countlist[rrcnt] = (PIO_Offset *) calloc(fndims, sizeof(PIO_Offset));
 	   for( i=0; i<fndims;i++){
-	     startlist[regioncnt][i]=start[i];
-	     countlist[regioncnt][i]=count[i];
+	     startlist[rrcnt][i]=start[i];
+	     countlist[rrcnt][i]=count[i];
 	   }
-	 }else{
-	   for( i=0; i<fndims;i++){
-	     startlist[regioncnt][i]=0;
-	     countlist[regioncnt][i]=0;
-	   }
-	 }
-	 
+	   rrcnt++;
+	 }	 
 	 if(regioncnt==iodesc->maxregions-1){
 	   //printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,ios->io_rank,iodesc->llen, tdsize);
-	   ierr = ncmpi_put_varn_all(ncid, vid, iodesc->maxregions, startlist, countlist, 
-				     IOBUF, iodesc->llen, iodesc->basetype);
-	   //	   free(startlist[0]);
-	   // free(countlist[0]);
-	   for(i=0;i<iodesc->maxregions;i++){
+	   //	   ierr = ncmpi_put_varn_all(ncid, vid, iodesc->maxregions, startlist, countlist, 
+	   //			     IOBUF, iodesc->llen, iodesc->basetype);
+	   ierr = ncmpi_bput_varn(ncid, vid, rrcnt, startlist, countlist, 
+				  IOBUF, iodesc->llen, iodesc->basetype, &request);
+	   pio_push_request(file,request);
+	   for(i=0;i<rrcnt;i++){
 	     free(startlist[i]);
 	     free(countlist[i]);
 	   }

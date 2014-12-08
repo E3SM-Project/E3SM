@@ -170,6 +170,7 @@ typedef struct file_desc_t
   struct var_desc_t varlist[PIO_MAX_VARS];
   MPI_Request request[PIO_MAX_REQUESTS];   // request associated with buffered data for pnetcdf
   int nreq;   // next empty request slot to fill.
+  int indep_rank;
   struct file_desc_t *next;
 } file_desc_t;
 

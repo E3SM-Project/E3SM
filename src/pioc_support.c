@@ -390,3 +390,28 @@ int PIOc_writemap_from_f90(const char file[], const int ndims, const int gdims[]
   // printf("%s %d %s %ld\n",__FILE__,__LINE__,file,maplen);
   return(PIOc_writemap(file, ndims, gdims, maplen, map, MPI_Comm_f2c(f90_comm)));
 }
+
+#define BGQ
+#ifdef BGQ
+#include <stdio.h>
+#include <spi/include/kernel/memory.h>
+void print_memusage()
+{
+  uint64_t shared, persist, heapavail, stackavail, stack, heap, guard, mmap;
+
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_SHARED, &shared);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_PERSIST, &persist);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAPAVAIL, &heapavail);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_STACKAVAIL, &stackavail);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_STACK, &stack);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_GUARD, &guard);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_MMAP, &mmap);
+
+  printf("Allocated heap: %.2f MB, avail. heap: %.2f MB\n", (double)heap/(1024*1024), (double)heapavail/(1024*1024));
+  printf("Allocated stack: %.2f MB, avail. stack: %.2f MB\n", (double)stack/(1024*1024), (double)stackavail/(1024*1024));
+  printf("Memory: shared: %.2f MB, persist: %.2f MB, guard: %.2f MB, mmap: %.2f MB\n", (double)shared/(1024*1024), (double)persist/(1024*1024), (double)guard/(1024*1024), (double)mmap/(1024*1024));
+
+  return; 
+}
+#endif

@@ -54,7 +54,8 @@ print F
 * \@date     Feburary 2014 
 * \@brief    PIO interfaces to netcdf support functions
 *
-* This file provides an interface to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf support functions.</A>
+
+* This file provides an interface to the <A HREF=\"http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html\"> netcdf support functions.</A>
 *  It calls the underlying netcdf or pnetcdf or netcdf4 functions from the appropriate subset of mpi tasks (io_comm), it must be called collectively from union_comm
 *  
 */
@@ -83,6 +84,7 @@ foreach my $func (keys %{$functions}){
   next if($func=~/copy_att/);
   next if($func=~/abort/);
   next if($func=~/string/);
+  next if($func=~/t_att$/); # skip void versions of get and put att
   next if($functions->{$func}{pnetcdf} =~ /\(void\)/);
 
   my @tmptmp = @template;
@@ -145,13 +147,21 @@ foreach my $func (keys %{$functions}){
 		  $line =~ s/\(\)/$args/;
 	      }
 	  }
-#	  if($line =~ /chkerr =/ && $func =~ /def_var/){
-#	      print F "  file->varlist[*varidp].record=-1;\n";
-#	      print F "  file->varlist[*varidp].buffer=NULL;\n";
-#	  }
+
 	  print F $line;
 	  if($func =~ /sync/ && $line =~   /case PIO_IOTYPE_PNETCDF/){
 	      printf F "      flush_output_buffer(file);\n";
+	  }
+	  if($func =~ /def_var/ && $line =~ /NETCDF4C/){
+	      printf F "      if(ios->io_rank==0){\n";
+	      printf F "        ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);\n";
+	      printf F "        if(ierr == PIO_NOERR){\n";
+	      printf F "          ierr = nc_def_var_deflate(file->fh, *varidp, 0,1,1);\n";
+	      printf F "        }\n";  
+	      printf F "      }\n";  
+	      printf F "      break;\n";  
+
+
 	  }
 	  if($line =~ /msg =/){
 	      if($func =~ /inq_varndims/){
@@ -194,8 +204,8 @@ foreach my $func (keys %{$functions}){
 	      }elsif($func =~ /inq_attid/ || $func =~ /inq_dimid/){
 		  print F "    mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_att$/){
-		  print F "    if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
-		  print F "    if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
+		  print F "  if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_var$/){
 		  print F "    if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "    if(ndimsp != NULL){ mpierr = MPI_Bcast(ndimsp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";

@@ -80,6 +80,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       for(int i=0;i<PIO_MAX_VARS;i++)
 	file->request[i]=MPI_REQUEST_NULL;
       file->nreq=0;
+      file->indep_rank=0;
       break;
 #endif
     default:
@@ -93,7 +94,8 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     *ncidp = file->fh;
   }
   if(ios->io_rank==0){
-    printf("Open file %s\n",filename); //,file->fh,file->id,ios->io_rank,ierr);
+    printf("Open file %s %d\n",filename,file->fh); //,file->fh,file->id,ios->io_rank,ierr);
+//    if(file->fh==5) print_trace(stdout);
   }
   return ierr;
 }
@@ -171,7 +173,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
       for(int i=0;i<PIO_MAX_VARS;i++)
 	file->request[i]=MPI_REQUEST_NULL;
       file->nreq=0;
-
+      file->indep_rank=0;
       break;
 #endif
     default:
@@ -184,6 +186,10 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   if(ierr == PIO_NOERR){
     pio_add_to_file_list(file);
     *ncidp = file->fh;
+  }
+  if(ios->io_rank==0){
+    printf("Create file %s %d\n",filename,file->fh); //,file->fh,file->id,ios->io_rank,ierr);
+//    if(file->fh==5) print_trace(stdout);
   }
   return ierr;
 }
@@ -239,6 +245,7 @@ int PIOc_closefile(int ncid)
   }
   if(ios->io_rank==0){
     printf("Close file %d \n",file->fh);
+//    if(file->fh==5) print_trace(stdout);
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);

@@ -47,13 +47,17 @@ int PIOc_get_var1_schar (int ncid, int varid, const PIO_Offset index[], signed c
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_schar(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_schar_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -128,7 +132,7 @@ int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_ulonglong_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_ulonglong_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -147,7 +151,7 @@ int PIOc_get_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   return ierr;
 }
 
-int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned char *buf)  
+int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned char *buf) 
 {
   int ierr;
   int msg;
@@ -200,12 +204,12 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm_uchar(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_uchar(file->fh, varid, start, count, stride, imap,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_uchar_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_uchar_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -224,7 +228,7 @@ int PIOc_get_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], signed char *buf)  
+int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], signed char *buf) 
 {
   int ierr;
   int msg;
@@ -277,12 +281,12 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm_schar(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_schar(file->fh, varid, start, count, stride, imap,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_schar_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_schar_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -301,7 +305,7 @@ int PIOc_get_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], short *buf)  
+int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], short *buf) 
 {
   int ierr;
   int msg;
@@ -354,12 +358,12 @@ int PIOc_get_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vars_short(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_short(file->fh, varid, start, count, stride,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_short_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_short_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -517,7 +521,7 @@ int PIOc_get_vara_double (int ncid, int varid, const PIO_Offset start[], const P
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_double_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_double_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -698,7 +702,7 @@ int PIOc_get_var_ushort (int ncid, int varid, unsigned short *buf)
   return ierr;
 }
 
-int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], char *buf)  
+int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], char *buf) 
 {
   int ierr;
   int msg;
@@ -751,12 +755,12 @@ int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vara_text(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_text(file->fh, varid, start, count,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_text_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_text_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -775,7 +779,7 @@ int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], int *buf)  
+int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], int *buf) 
 {
   int ierr;
   int msg;
@@ -828,12 +832,12 @@ int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vara_int(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_int(file->fh, varid, start, count,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_int_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_int_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -898,13 +902,17 @@ int PIOc_get_var1_float (int ncid, int varid, const PIO_Offset index[], float *b
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_float(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_float_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -967,13 +975,17 @@ int PIOc_get_var1_short (int ncid, int varid, const PIO_Offset index[], short *b
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_short(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_short_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -990,7 +1002,7 @@ int PIOc_get_var1_short (int ncid, int varid, const PIO_Offset index[], short *b
   return ierr;
 }
 
-int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], int *buf)  
+int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], int *buf) 
 {
   int ierr;
   int msg;
@@ -1043,12 +1055,12 @@ int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vars_int(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_int(file->fh, varid, start, count, stride,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_int_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_int_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -1206,7 +1218,7 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_double_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_double_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -1225,7 +1237,7 @@ int PIOc_get_varm_double (int ncid, int varid, const PIO_Offset start[], const P
   return ierr;
 }
 
-int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], signed char *buf)  
+int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], signed char *buf) 
 {
   int ierr;
   int msg;
@@ -1278,12 +1290,12 @@ int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vars_schar(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_schar(file->fh, varid, start, count, stride,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_schar_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_schar_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -1360,7 +1372,7 @@ int PIOc_get_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_ushort_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_ushort_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -1425,13 +1437,17 @@ int PIOc_get_var1_ushort (int ncid, int varid, const PIO_Offset index[], unsigne
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_ushort(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_ushort_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -1587,7 +1603,7 @@ int PIOc_get_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_uchar_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_uchar_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -1725,13 +1741,17 @@ int PIOc_get_var1_longlong (int ncid, int varid, const PIO_Offset index[], long 
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_longlong(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_longlong_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -1806,7 +1826,7 @@ int PIOc_get_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_ushort_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_ushort_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -1952,13 +1972,17 @@ int PIOc_get_var1_double (int ncid, int varid, const PIO_Offset index[], double 
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_double(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_double_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -2033,7 +2057,7 @@ int PIOc_get_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_uint_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_uint_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -2110,7 +2134,7 @@ int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_longlong_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_longlong_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -2210,7 +2234,7 @@ int PIOc_get_var_longlong (int ncid, int varid, long long *buf)
   return ierr;
 }
 
-int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], short *buf)  
+int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], short *buf) 
 {
   int ierr;
   int msg;
@@ -2263,12 +2287,12 @@ int PIOc_get_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vara_short(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_short(file->fh, varid, start, count,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_short_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_short_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -2345,7 +2369,7 @@ int PIOc_get_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_long_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_long_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -2410,13 +2434,17 @@ int PIOc_get_var1_int (int ncid, int varid, const PIO_Offset index[], int *buf)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_int(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_int_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -2479,13 +2507,17 @@ int PIOc_get_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], unsi
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_ulonglong(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_ulonglong_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -2641,7 +2673,7 @@ int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_uchar_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_uchar_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -2660,7 +2692,7 @@ int PIOc_get_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], float *buf)  
+int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], float *buf) 
 {
   int ierr;
   int msg;
@@ -2713,12 +2745,12 @@ int PIOc_get_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vars_float(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_float(file->fh, varid, start, count, stride,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_float_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_float_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -2795,7 +2827,7 @@ int PIOc_get_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_long_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_long_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -2860,13 +2892,17 @@ int PIOc_get_var1 (int ncid, int varid, const PIO_Offset index[], void *buf, PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1(file->fh, varid, index, buf, bufcount, buftype);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_all(file->fh, varid, index, buf, bufcount, buftype);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -3160,13 +3196,17 @@ int PIOc_get_var1_uint (int ncid, int varid, const PIO_Offset index[], unsigned 
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_uint(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_uint_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -3241,7 +3281,7 @@ int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_uint_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_uint_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -3260,7 +3300,7 @@ int PIOc_get_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], float *buf)  
+int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], float *buf) 
 {
   int ierr;
   int msg;
@@ -3313,7 +3353,7 @@ int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vara_float(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_float(file->fh, varid, start, count,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
@@ -3337,7 +3377,7 @@ int PIOc_get_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], char *buf)  
+int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], char *buf) 
 {
   int ierr;
   int msg;
@@ -3390,12 +3430,12 @@ int PIOc_get_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm_text(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_text(file->fh, varid, start, count, stride, imap,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_text_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_text_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -3460,13 +3500,17 @@ int PIOc_get_var1_text (int ncid, int varid, const PIO_Offset index[], char *buf
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_text(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_text_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -3483,7 +3527,7 @@ int PIOc_get_var1_text (int ncid, int varid, const PIO_Offset index[], char *buf
   return ierr;
 }
 
-int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], int *buf)  
+int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], int *buf) 
 {
   int ierr;
   int msg;
@@ -3536,12 +3580,12 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm_int(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_int(file->fh, varid, start, count, stride, imap,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_int_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_int_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -3560,7 +3604,7 @@ int PIOc_get_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   return ierr;
 }
 
-int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned int *buf)  
+int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned int *buf) 
 {
   int ierr;
   int msg;
@@ -3613,12 +3657,12 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm_uint(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_uint(file->fh, varid, start, count, stride, imap,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_uint_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_uint_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -3637,7 +3681,7 @@ int PIOc_get_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype)  
+int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -3686,12 +3730,12 @@ int PIOc_get_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm(file->fh, varid, start, count, stride, imap, buf, bufcount, buftype); ;
+      ierr = ncmpi_get_varm(file->fh, varid, start, count, stride, imap, buf, bufcount, buftype);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_all(file->fh, varid, start, count, stride, imap, buf, bufcount, buftype); ;
+      ierr = ncmpi_get_varm_all(file->fh, varid, start, count, stride, imap, buf, bufcount, buftype);;
 #endif
       break;
 #endif
@@ -3768,7 +3812,7 @@ int PIOc_get_vars_double (int ncid, int varid, const PIO_Offset start[], const P
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_double_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_double_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -3845,7 +3889,7 @@ int PIOc_get_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_longlong_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_longlong_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -4003,7 +4047,7 @@ int PIOc_get_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vara_ulonglong_all(file->fh, varid, start, count,  buf); ;
+      ierr = ncmpi_get_vara_ulonglong_all(file->fh, varid, start, count,  buf);;
 #endif
       break;
 #endif
@@ -4103,7 +4147,7 @@ int PIOc_get_var_short (int ncid, int varid, short *buf)
   return ierr;
 }
 
-int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], float *buf)  
+int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], float *buf) 
 {
   int ierr;
   int msg;
@@ -4156,12 +4200,12 @@ int PIOc_get_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm_float(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_float(file->fh, varid, start, count, stride, imap,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_float_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_float_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -4226,13 +4270,17 @@ int PIOc_get_var1_long (int ncid, int varid, const PIO_Offset index[], long *buf
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_long(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_long_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -4307,7 +4355,7 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_long_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_long_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -4326,7 +4374,7 @@ int PIOc_get_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned short *buf)  
+int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned short *buf) 
 {
   int ierr;
   int msg;
@@ -4379,12 +4427,12 @@ int PIOc_get_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm_ushort(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_ushort(file->fh, varid, start, count, stride, imap,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_ushort_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_ushort_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -4461,7 +4509,7 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_longlong_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_longlong_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -4480,7 +4528,7 @@ int PIOc_get_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
   return ierr;
 }
 
-int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], char *buf)  
+int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], char *buf) 
 {
   int ierr;
   int msg;
@@ -4533,12 +4581,12 @@ int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vars_text(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_text(file->fh, varid, start, count, stride,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_text_all(file->fh, varid, start, count, stride,  buf); ;
+      ierr = ncmpi_get_vars_text_all(file->fh, varid, start, count, stride,  buf);;
 #endif
       break;
 #endif
@@ -4603,13 +4651,17 @@ int PIOc_get_var1_uchar (int ncid, int varid, const PIO_Offset index[], unsigned
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+#ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
       ierr = ncmpi_get_var1_uchar(file->fh, varid, index,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
-       break;
+#else
+      ierr = ncmpi_get_var1_uchar_all(file->fh, varid, index,  buf);;
+#endif
+      break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
@@ -4626,7 +4678,7 @@ int PIOc_get_var1_uchar (int ncid, int varid, const PIO_Offset index[], unsigned
   return ierr;
 }
 
-int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype)  
+int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
 {
   int ierr;
   int msg;
@@ -4675,12 +4727,12 @@ int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_vars(file->fh, varid, start, count, stride, buf, bufcount, buftype); ;
+      ierr = ncmpi_get_vars(file->fh, varid, start, count, stride, buf, bufcount, buftype);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_vars_all(file->fh, varid, start, count, stride, buf, bufcount, buftype); ;
+      ierr = ncmpi_get_vars_all(file->fh, varid, start, count, stride, buf, bufcount, buftype);;
 #endif
       break;
 #endif
@@ -4699,7 +4751,7 @@ int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   return ierr;
 }
 
-int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], short *buf)  
+int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], short *buf) 
 {
   int ierr;
   int msg;
@@ -4752,12 +4804,12 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm_short(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_short(file->fh, varid, start, count, stride, imap,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_short_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_short_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif
@@ -4776,7 +4828,7 @@ int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned long long *buf)  
+int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned long long *buf) 
 {
   int ierr;
   int msg;
@@ -4829,12 +4881,12 @@ int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 #ifdef PNET_READ_AND_BCAST
         ncmpi_begin_indep_data(file->fh);
         if(ios->iomaster){
-      ierr = ncmpi_get_varm_ulonglong(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_ulonglong(file->fh, varid, start, count, stride, imap,  buf);;
         };
          ncmpi_end_indep_data(file->fh);
         bcast=true;
 #else
-      ierr = ncmpi_get_varm_ulonglong_all(file->fh, varid, start, count, stride, imap,  buf); ;
+      ierr = ncmpi_get_varm_ulonglong_all(file->fh, varid, start, count, stride, imap,  buf);;
 #endif
       break;
 #endif

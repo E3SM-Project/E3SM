@@ -1,4 +1,4 @@
-#if defined(BGQ)
+#if defined(BGQDONT)
 
 #include <pio.h>
 #include <pio_internal.h>

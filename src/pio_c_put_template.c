@@ -1,3 +1,10 @@
+///
+/// PIO interface to nc_function
+///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+///
 int PIO_function()
 {
   int ierr;
@@ -6,6 +13,7 @@ int PIO_function()
   iosystem_desc_t *ios;
   file_desc_t *file;
   MPI_Request request;
+  PIO_Offset usage;
 
   ierr = PIO_NOERR;
 
@@ -40,8 +48,22 @@ int PIO_function()
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_function();
-      pio_push_request(file, request);
+      ncmpi_begin_indep_data(file->fh);
+      usage = 0;
+      if(ios->io_rank==file->indep_rank){
+	ierr = ncmpi_function();
+	pio_push_request(file, request);
+	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
+	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
+      }
+      ncmpi_end_indep_data(file->fh);
+      MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
+      file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
+      if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
+	flush_output_buffer(file);
+      }
+
+
       break;
 #endif
     default:
