@@ -1,7 +1,7 @@
 #include <pio.h>
 #include <pio_internal.h>
 #define USE_PNETCDF_VARN 1
-
+#define USE_PNETCDF_VARN_ON_READ 1
 PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
 #define MALLOC_FILL_ARRAY(type, n, fill, arr) \
@@ -388,6 +388,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     void *bufptr;
     int tsize;
 #ifdef USE_PNETCDF_VARN_ON_READ
+    int rrlen;
     PIO_Offset *startlist[iodesc->maxregions];
     PIO_Offset *countlist[iodesc->maxregions];
 #endif
@@ -401,6 +402,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 #else
     MPI_Type_size(iodesc->basetype, &tsize);
  #endif
+    rrlen = 0;
     if(fndims>ndims){
       ndims++;
       if(vdesc->record<0) 
@@ -544,30 +546,22 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    tmp_bufsize *= count[j];
 	  }
 #ifdef USE_PNETCDF_VARN_ON_READ
-	  if(regioncnt==0){
-	    for(i=0;i<iodesc->maxregions;i++){
-	      startlist[i] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
-	      countlist[i] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
-	    }
-	  }
-
 	  if(tmp_bufsize>0){
+             startlist[rrlen] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
+             countlist[rrlen] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
+
 	    for(int j=0;j<fndims; j++){
-	      startlist[regioncnt][j] = start[j];
-	      countlist[regioncnt][j] = count[j];
+	      startlist[rrlen][j] = start[j];
+	      countlist[rrlen][j] = count[j];
 	      //	      printf("%s %d %d %d %d %ld %ld %ld\n",__FILE__,__LINE__,realregioncnt,iodesc->maxregions, j,start[j],count[j],tmp_bufsize);
 	    }
-	  }else{
-	    for(int j=0;j<fndims; j++){
-	      startlist[regioncnt][j] = 0;
-	      countlist[regioncnt][j] = 0;
-	    }
+            rrlen++;
 	  }
 
 	  if(regioncnt==iodesc->maxregions-1){
-	    ierr = ncmpi_get_varn_all(file->fh, vid, iodesc->maxregions, startlist, 
+	    ierr = ncmpi_get_varn_all(file->fh, vid, rrlen, startlist, 
 				      countlist, IOBUF, iodesc->llen, iodesc->basetype);
-	    for(i=0;i<iodesc->maxregions;i++){
+	    for(i=0;i<rrlen;i++){
 	      free(startlist[i]);
 	      free(countlist[i]);
 	    }

@@ -390,8 +390,7 @@ int PIOc_writemap_from_f90(const char file[], const int ndims, const int gdims[]
   // printf("%s %d %s %ld\n",__FILE__,__LINE__,file,maplen);
   return(PIOc_writemap(file, ndims, gdims, maplen, map, MPI_Comm_f2c(f90_comm)));
 }
-
-#define BGQ
+/*
 #ifdef BGQ
 #include <stdio.h>
 #include <spi/include/kernel/memory.h>
@@ -415,3 +414,4 @@ void print_memusage()
   return; 
 }
 #endif
+*/
