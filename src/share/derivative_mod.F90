@@ -2965,12 +2965,12 @@ endif
     real (kind=real_kind)              :: g(p,p,2)
     real (kind=real_kind)              :: v(p,p,2)
     real (kind=real_kind)              :: div(p,p,2)
-    real (kind=real_kind)              :: sub_div(n,n,2)
+    real (kind=real_kind)              :: sub_int(n,n,2)
     real (kind=real_kind)              :: fluxes(n,n,4)
     
     integer i,j
 
-    g=gradient_sphere(u,deriv,elem%Dinv)
+    g = gradient_sphere(u,deriv,elem%Dinv)
 
     v(:,:,1) = elem%Dinv(1,1,:,:)*g(:,:,1) + elem%Dinv(1,2,:,:)*g(:,:,2)
     v(:,:,2) = elem%Dinv(2,1,:,:)*g(:,:,1) + elem%Dinv(2,2,:,:)*g(:,:,2)
@@ -2985,23 +2985,23 @@ endif
     div(:,:,1) = div(:,:,1) * elem%metdet(:,:) / elem%spheremp(:,:)
     div(:,:,2) = div(:,:,2) * elem%metdet(:,:) / elem%spheremp(:,:)
 
-    sub_div(:,:,1)  = subcell_integration(div(:,:,1), p, n)
-    sub_div(:,:,2)  = subcell_integration(div(:,:,2), p, n)
+    sub_int(:,:,1)  = subcell_integration(div(:,:,1), p, n)
+    sub_int(:,:,2)  = subcell_integration(div(:,:,2), p, n)
 
     do i=1,n
     do j=2,n
-      sub_div(j,i,1) = sub_div(j,i,1) + sub_div(j-1,i,1) 
-      sub_div(i,j,2) = sub_div(i,j,2) + sub_div(i,j-1,2) 
+      sub_int(j,i,1) = sub_int(j,i,1) + sub_int(j-1,i,1) 
+      sub_int(i,j,2) = sub_int(i,j,2) + sub_int(i,j-1,2) 
     end do
     end do
 
     fluxes = 0
     do i=1,n
     do j=1,n
-      if (i.lt.n) fluxes(i,j,1) =  sub_div(i,j,1)
-      if (j.lt.n) fluxes(i,j,2) =  sub_div(i,j,2)
-      if (1.lt.i) fluxes(i,j,3) = -sub_div(i-1,j,1)
-      if (1.lt.j) fluxes(i,j,4) = -sub_div(i,j-1,2)
+      if (1.lt.j) fluxes(i,j,1) = -sub_int(i,  j-1,2)
+      if (i.lt.n) fluxes(i,j,2) =  sub_int(i,  j,  1)
+      if (j.lt.n) fluxes(i,j,3) =  sub_int(i,  j,  2)
+      if (1.lt.i) fluxes(i,j,4) = -sub_int(i-1,j,  1)
     end do
     end do
 
