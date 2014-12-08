@@ -277,15 +277,22 @@
         ESMF_ClockCreate = clocktmp
       END FUNCTION ESMF_ClockCreate
 
-
-! Deallocate memory for ESMF_Clock
+      !
+      ! Deallocate memory for ESMF_Clock
+      !
       SUBROUTINE ESMF_ClockDestroy( clock, rc )
+
          TYPE(ESMF_Clock), INTENT(INOUT) :: clock
          INTEGER,          INTENT(  OUT), OPTIONAL :: rc
+
+         if (associated(clock%clockint)) then
+            if (associated(clock%clockint%AlarmList)) deallocate(clock%clockint%AlarmList)
+            deallocate(clock%clockint)
+         endif
+
          ! TBH:  ignore deallocate errors, for now
-         DEALLOCATE( clock%clockint%AlarmList )
-         DEALLOCATE( clock%clockint )
          IF ( PRESENT( rc ) ) rc = ESMF_SUCCESS
+
       END SUBROUTINE ESMF_ClockDestroy
 
 
