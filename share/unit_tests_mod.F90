@@ -9,9 +9,10 @@ implicit none
 public ::  test_ibyp
 public ::  test_subcell_dss_fluxes
 public ::  test_subcell_div_fluxes
+public ::  test_subcell_Laplace_fluxes
 public ::  test_subcell_div_fluxes_again
 public ::  test_subcell_dss_fluxes_again
-public ::  test_subcell_Laplace_fluxes
+public ::  test_subcell_Laplace_fluxes_again
 public ::  test_sub_integration
 public ::  test_edge_flux
 
@@ -697,6 +698,84 @@ contains
 
   end subroutine test_subcell_dss_fluxes_again
 
+
+  subroutine test_subcell_Laplace_fluxes_again(elem,deriv,nets,nete)
+    use physical_constants, only : rearth
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_Laplace_fluxes
+    use element_mod,    only : element_t
+    use derivative_mod, only : derivative_t
+    use kinds,          only : real_kind
+    use quadrature_mod, only : gausslobatto, quadrature_t
+
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=5 
+
+    real (kind=real_kind)              :: laplace(np,np)
+    real (kind=real_kind)              :: fluxes(intervals,intervals,4)
+    real (kind=real_kind)              :: t
+
+    type (quadrature_t)                :: gll
+    integer                            :: ie,i,j
+    logical                            :: success
+    real (kind=real_kind),   parameter :: EPS=.0000001
+    success = .true.
+
+    gll = gausslobatto(np)
+
+    do ie=nets,nete
+
+      laplace = 0 
+      if (ie <= np*np) then
+        do i=1,np
+          laplace(i,1) = 1
+        end do
+      else if (ie <= 2*np*np) then
+        do j=2,np-1
+          laplace(1,j) = 1
+        end do
+      end if
+
+      fluxes = subcell_Laplace_fluxes (laplace, deriv, elem(ie), np, intervals)
+
+      do i=1,intervals
+        j = 1
+        if (fluxes(i,j,1).ne.0) then
+          print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+          success = .false.
+        end if
+        j = intervals
+        if (fluxes(i,j,3).ne.0) then
+          print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+          success = .false.
+        end if
+
+        j = 1
+        if (fluxes(j,i,4).ne.0) then
+          print *,__FILE__,__LINE__,ie,j,i,fluxes(j,i,:)
+          success = .false.
+        end if
+        j = intervals
+        if (fluxes(j,i,2).ne.0) then
+          print *,__FILE__,__LINE__,ie,j,i,fluxes(j,i,:)
+          success = .false.
+        end if
+      end do
+    end do
+
+    if (success) then
+      print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test passed."
+    else
+      print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test FAILED."
+    end if
+
+  end subroutine test_subcell_Laplace_fluxes_again
+
   subroutine test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
@@ -744,10 +823,12 @@ contains
       end if
 
       laplace = laplace_sphere_wk(u,deriv,elem(ie),.false.)
-
       laplace = laplace / elem(ie)%spheremp
       laplace = laplace * elem(ie)%metdet
       laplace_values = subcell_integration(laplace, np, intervals) 
+
+
+
 
       laplace_fluxes = subcell_Laplace_fluxes(u, deriv, elem(ie), np, intervals) 
 
