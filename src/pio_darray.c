@@ -1,7 +1,7 @@
 #include <pio.h>
 #include <pio_internal.h>
-#define USE_PNETCDF_VARN 1
-#define USE_PNETCDF_VARN_ON_READ 1
+//#define USE_PNETCDF_VARN 1
+//#define USE_PNETCDF_VARN_ON_READ 1
 PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
 #define MALLOC_FILL_ARRAY(type, n, fill, arr) \
