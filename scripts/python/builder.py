@@ -222,23 +222,29 @@ class yellowstone(platformBuilder):
                            'ncarcompilers/1.0']
             if mpilib is not "mpi-serial":
                 self.moduleList += ['netcdf-mpi/4.3.2']
+                os.environ["PNETCDF"]="/glade/u/home/jedwards/pnetcdf/svn1920/intel"
             else:
                 self.moduleList += ['netcdf/4.3.2']
                 self.CC = 'icc'
                 self.FC = 'ifort'
 
         if compiler == 'pgi':
-            self.moduleList += ['pgi/14.7',
+            self.moduleList += ['pgi/14.10',
                            'netcdf/4.3.0',
                             'ncarcompilers/1.0']
+            if mpilib is not "mpi-serial":
+                os.environ["PNETCDF"]="/glade/u/home/jedwards/pnetcdf/svn1920/pgi"
+
 
         if compiler == 'gnu':
-            self.moduleList += ['gnu/4.8.0',
+            self.moduleList += ['gnu/4.9.2',
                            'ncarcompilers/1.0',
                            'netcdf/4.3.0']
+            if mpilib is not "mpi-serial":
+                os.environ["PNETCDF"]="/glade/u/home/jedwards/pnetcdf/svn1920/gnu"
 
         if mpilib is not 'mpi-serial':
-            self.moduleList += ['pnetcdf/1.4.1']
+#            self.moduleList += ['pnetcdf/1.4.1']
             self.FC = 'mpif90'
             self.CXX = 'mpiCC'
 
