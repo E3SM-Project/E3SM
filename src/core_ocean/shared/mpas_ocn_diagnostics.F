@@ -441,7 +441,7 @@ contains
       call mpas_timer_start("equation of state", .false., diagEOSTimer)
 
       ! compute in-place density
-      if (config_pressure_gradient_type.eq.'common_level_eos') then
+      if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          ! only compute EOS derivatives if needed.
          call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
          call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)

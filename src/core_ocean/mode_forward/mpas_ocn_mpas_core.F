@@ -1041,7 +1041,7 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
          frazilIceActive = .true.
       end if
 
-      if (config_pressure_gradient_type.eq.'common_level_eos') then
+      if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          inSituEOSActive = .true.
       end if
 
