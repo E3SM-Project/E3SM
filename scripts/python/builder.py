@@ -322,12 +322,12 @@ class cetus(platformBuilder):
 
         self.CMAKE_EXE = 'cmake '
 
-        self.FC = 'mpixlf2003_r'
-        self.CC = 'mpixlc_r'
-        self.CXX = 'mpixlcxx_r'
+        self.FC = '/home/pkcoff/mpich-opensrc/install-xl.legacy.ndebug/bin/mpif2003'
+        self.CC = '/home/pkcoff/mpich-opensrc/install-xl.legacy.ndebug/bin/mpicc'
+        self.CXX = '/home/pkcoff/mpich-opensrc/install-xl.legacy.ndebug/bin/mpic++'
 
         self.LDFLAGS = '-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib'
-        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
+#        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.NUMPE = '4'
 
         self.OFLAGS += (' -D PLATFORM:STRING=cetus ')

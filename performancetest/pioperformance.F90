@@ -22,7 +22,9 @@ program pioperformance
   integer :: niotasks(max_io_task_array_size)
   integer :: nframes
   namelist /pioperf/ decompfile, pio_typenames, rearrangers, niotasks, nframes
-
+#ifdef BGQ
+  external :: print_memusage
+#endif
   !
   ! Initialize MPI
   !
@@ -37,6 +39,10 @@ program pioperformance
   else
      Mastertask=.false.
   endif
+#ifdef BGQ
+  call print_memusage()
+#endif
+
   niotasks = -1 ! loop over all possible values
   rearrangers(1) = PIO_REARR_SUBSET
   rearrangers(2) = PIO_REARR_BOX
@@ -167,6 +173,9 @@ contains
        do j=1,maplen
           ifld(j) = mype*1000000 + compmap(j)
        enddo
+#ifdef BGQ
+  call print_memusage()
+#endif
 
        do k=1,size(piotypes)
           iotype = piotypes(k)
@@ -184,7 +193,7 @@ contains
                 if(ntasks<=0 .or. ntasks>npe) exit
                 stride = max(1,npe/ntasks)
 
-                call pio_init(mype, comm, n, 0, stride, PIO_REARR_SUBSET, iosystem)
+                call pio_init(mype, comm, ntasks, 0, stride, PIO_REARR_SUBSET, iosystem)
                    
                 write(fname, '(a,i1,a,i4.4,a,i1,a)') 'pioperf.',rearr,'-',ntasks,'-',iotype,'.nc'
                 ierr =  PIO_CreateFile(iosystem, File, iotype, trim(fname))
@@ -225,6 +234,9 @@ contains
                 if(mype==0) then
                    ! print out performance in MB/s
                    print *, 'write ',rearr, ntasks, nframes*gmaplen*4.0/(1048576.0*wall(2))
+#ifdef BGQ
+  call print_memusage()
+#endif
                 end if
 
 ! Now the Read
@@ -258,6 +270,9 @@ contains
                       print *,'ERROR: INPUT/OUTPUT data mismatch ',errorcnt
                    endif
                    print *, 'read ',rearr, ntasks, nframes*gmaplen*4.0/(1048576.0*wall(2))
+#ifdef BGQ
+  call print_memusage()
+#endif
                 end if
 
                 
