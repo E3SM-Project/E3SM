@@ -1029,4 +1029,64 @@ for mct, etc.
   <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
 </compiler>
 
+<compiler MACH="mustang" COMPILER="pgi">
+	<MPICC>mpicc</MPICC>
+	<MPIFC>mpif90</MPIFC>
+	<MPICXX>mpic++</MPICXX>
+	<SFC>pgfortran</SFC>
+	<SCC>pgcc</SCC>
+	<SCXX>pgc++</SCXX>
+	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+</compiler>
+
+<compiler MACH="mustang" COMPILER="intel">
+	<MPICC>mpicc</MPICC>
+	<MPIFC>mpif90</MPIFC>
+	<MPICXX>mpic++</MPICXX>
+	<SFC>ifort</SFC>
+	<SCC>icc</SCC>
+	<SCXX>icpc</SCXX>
+	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+</compiler>
+
+<compiler MACH="mustang" COMPILER="gnu">
+	<MPICC>mpicc</MPICC>
+	<MPIFC>mpif90</MPIFC>
+	<MPICXX>mpic++</MPICXX>
+	<SFC>gfortran</SFC>
+	<SCC>gcc</SCC>
+	<SCXX>g++</SCXX>
+	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+</compiler>
+
+<compiler MACH="wolf" COMPILER="pgi">
+	<MPICC>mpicc</MPICC>
+	<MPIFC>mpif90</MPIFC>
+	<MPICXX>mpic++</MPICXX>
+	<SFC>pgfortran</SFC>
+	<SCC>pgcc</SCC>
+	<SCXX>pgc++</SCXX>
+	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+</compiler>
+
+<compiler MACH="wolf" COMPILER="intel">
+	<MPICC>mpicc</MPICC>
+	<MPIFC>mpif90</MPIFC>
+	<MPICXX>mpic++</MPICXX>
+	<SFC>ifort</SFC>
+	<SCC>icc</SCC>
+	<SCXX>icpc</SCXX>
+	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+</compiler>
+
+<compiler MACH="wolf" COMPILER="gnu">
+	<MPICC>mpicc</MPICC>
+	<MPIFC>mpif90</MPIFC>
+	<MPICXX>mpic++</MPICXX>
+	<SFC>gfortran</SFC>
+	<SCC>gcc</SCC>
+	<SCXX>g++</SCXX>
+	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+</compiler>
+
 </config_compilers>
