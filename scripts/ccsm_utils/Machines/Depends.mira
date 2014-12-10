@@ -1,8 +1,15 @@
 # These routines have problems with stacksize when omp is invoked add -qsmallstack to resolve
-SSOBJS = shr_reprosum_mod.o mo_sethet.o mo_drydep.o time_management.o
+SSOBJS = mo_sethet.o mo_drydep.o time_management.o
 
 $(SSOBJS): %.o: %.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmallstack $<
+
+QSMPFLAGS:=
+ifeq ($(compile_threaded), true)
+  QSMPFLAGS += -qsmp=noauto:noomp
+endif
+shr_reprosum_mod.o: shr_reprosum_mod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(QSMPFLAGS) $<
 
 # These routines benefit from -qnostrict without violating the bfb test
 PERFOBJS=\
@@ -15,5 +22,5 @@ uwshcu.o \
 wetdep.o 
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
-	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -qnostrict  $<
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qnostrict  $<
 endif
