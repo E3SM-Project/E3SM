@@ -44,8 +44,7 @@ program pioperformance
 #endif
 
   niotasks = -1 ! loop over all possible values
-  rearrangers(1) = PIO_REARR_SUBSET
-  rearrangers(2) = PIO_REARR_BOX
+  rearrangers = 0
   nframes = 5
   decompfile = ' '
   pio_typenames = ' '
@@ -82,7 +81,10 @@ program pioperformance
   do i=1,4
      if (piotypes(i) > -1) niotypes = niotypes+1
   enddo
-  
+  if(rearrangers(1)==0) then
+    rearrangers(1)=1
+    rearrangers(2)=2
+  endif  
 
   do i=1,max_decomp_files
      if(len_trim(decompfile(i))==0) exit

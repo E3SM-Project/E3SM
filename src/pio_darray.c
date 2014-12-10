@@ -388,7 +388,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     void *bufptr;
     int tsize;
 #ifdef USE_PNETCDF_VARN_ON_READ
-    int rrlen;
+    int rrlen=0;
     PIO_Offset *startlist[iodesc->maxregions];
     PIO_Offset *countlist[iodesc->maxregions];
 #endif
@@ -397,12 +397,11 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     // We can potentially allow for one iodesc to have multiple datatypes by allowing the
     // calling program to change the basetype.   
     region = iodesc->firstregion;
- #ifdef _MPISERIAL
+#ifdef _MPISERIAL
     tsize = iodesc->basetype;
 #else
     MPI_Type_size(iodesc->basetype, &tsize);
- #endif
-    rrlen = 0;
+#endif
     if(fndims>ndims){
       ndims++;
       if(vdesc->record<0) 
