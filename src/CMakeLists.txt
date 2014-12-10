@@ -51,7 +51,6 @@ ENDMACRO(CAR)
 if(PNETCDF_LIBRARY)
   MESSAGE("Adding pnetcdf  library")
   TARGET_LINK_LIBRARIES(pioc ${PNETCDF_LIBRARY})
-#  LINK_DIRECTORIES(${PNETCDF_LIBRARY})
 ENDIF()
 if(NETCDF_FOUND)
 # Need to jump through some hoops to get hdf5 link correct on mira
