@@ -206,23 +206,28 @@ int uniqueness_check(ezxml_t stream1, ezxml_t stream2)
 {
 	const char *name, *name2;
 	const char *filename, *filename2;
+	const char *type, *type2;
 	char msgbuf[MSGSIZE];
 
 	if (stream1 != stream2) {
 		name = ezxml_attr(stream1, "name");
 		filename = ezxml_attr(stream1, "filename_template");
+		type = ezxml_attr(stream1, "type");
 		name2 = ezxml_attr(stream2, "name");
 		filename2 = ezxml_attr(stream2, "filename_template");
+		type2 = ezxml_attr(stream2, "type");
 
 		if (strcmp(name, name2) == 0) {
 			snprintf(msgbuf, MSGSIZE, "stream \"%s\" is define more than once.", name);
 			fmt_err(msgbuf);
 			return 1;
 		}
-		if (strcmp(filename, filename2) == 0) {
-			snprintf(msgbuf, MSGSIZE, "streams \"%s\" and \"%s\" cannot share the filename_template \"%s\".", name, name2, filename);
-			fmt_err(msgbuf);
-			return 1;
+		if (strstr(type, "output") != NULL || strstr(type2, "output") != NULL){
+			if (strcmp(filename, filename2) == 0) {
+				snprintf(msgbuf, MSGSIZE, "Output streams \"%s\" and \"%s\" cannot share the filename_template \"%s\".", name, name2, filename);
+				fmt_err(msgbuf);
+				return 1;
+			}
 		}
 	}
 
