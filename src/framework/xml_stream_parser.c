@@ -714,6 +714,7 @@ int build_stream_path(const char *stream, const char *template, int *mpi_comm)
 	int i, len;
 	char msgbuf[MSGSIZE];
 	int err, retval;
+	int writable_parent;
 	int rank;
 
 
@@ -748,23 +749,30 @@ int build_stream_path(const char *stream, const char *template, int *mpi_comm)
 		}
 
 		if (create_dir) {
+			writable_parent = 1;
 			for(i=0; i < len; i++) {
 				if (filename_path[i] == '/') {
 					directory[i] = '\0';
 					err = mkdir(directory, S_IRWXU | S_IRWXG | S_IRWXO);
-					if ( errno == EEXIST ) {
-						/* directory exists, need to check permissions */
-						if (access(directory, W_OK) != 0) {
-							snprintf(msgbuf, MSGSIZE, "definition of stream \"%s\" references directory %s without write permission.", stream, directory);
+					if ( err != 0 ) {
+						if ( errno == EEXIST ) {
+							/* directory exists, need to check permissions */
+							writable_parent = 1;
+							if (access(directory, W_OK) != 0) {
+								writable_parent = 0;
+							}
+						} else if ( !writable_parent ) {
+							snprintf(msgbuf, MSGSIZE, "cannot create directory %s needed by stream \"%s\": parent directory is not writable.", directory, stream);
 							fmt_err(msgbuf);
 							free(filename_path);
 							free(directory);
-	
+							writable_parent = 0;
+
 							retval = 1;
 #ifdef _MPI
 							err = MPI_Bcast(&retval, 1, MPI_INT, 0, comm);
 #endif
-							return retval;
+							return retval;						
 						}
 					} 
 				}
@@ -788,6 +796,19 @@ int build_stream_path(const char *stream, const char *template, int *mpi_comm)
 #endif
 					return retval;
 				}
+			}
+			else if ( !writable_parent ) {
+					snprintf(msgbuf, MSGSIZE, "cannot create directory %s needed by stream \"%s\": parent directory is not writable.", directory, stream);
+					fmt_err(msgbuf);
+					free(filename_path);
+					free(directory);
+					writable_parent = 0;
+
+					retval = 1;
+#ifdef _MPI
+					err = MPI_Bcast(&retval, 1, MPI_INT, 0, comm);
+#endif
+					return retval;						
 			}
 		}
 
