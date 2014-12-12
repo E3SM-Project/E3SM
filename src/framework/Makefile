@@ -23,6 +23,7 @@ OBJS = mpas_kind_types.o \
        mpas_io_units.o \
        mpas_stream_manager.o \
        mpas_stream_list.o \
+       mpas_forcing.o \
        mpas_c_interfacing.o \
        random_id.o \
        streams.o \
@@ -81,6 +82,8 @@ mpas_io_units.o:
 mpas_stream_list.o: mpas_grid_types.o mpas_kind_types.o mpas_io_units.o mpas_io_streams.o mpas_timekeeping.o
 
 mpas_stream_manager.o: mpas_io_streams.o mpas_timekeeping.o mpas_grid_types.o mpas_io_units.o mpas_kind_types.o mpas_c_interfacing.o mpas_stream_list.o mpas_dmpar.o mpas_io.o
+
+mpas_forcing.o: mpas_grid_types.o mpas_timekeeping.o mpas_io_streams.o mpas_stream_manager.o
 
 xml_stream_parser.o: xml_stream_parser.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPINCLUDES) -I../registry -c xml_stream_parser.c
