@@ -23,6 +23,8 @@ CLEANUP_ROUTINES = \
 }
 CLEANUP = False
 
+THROUGHPUT_TEST_STR = ".tputcomp."
+
 ###############################################################################
 def expect(condition, error_msg):
 ###############################################################################
@@ -104,6 +106,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-n", "--no-wait", action="store_true", dest="no_wait", default=False,
                         help="Do not wait for tests to finish")
 
+    parser.add_argument("-t", "--check-throughput", action="store_true", dest="check_throughput", default=False,
+                        help="Fail if throughput check fails (fail if tests slow down)")
+
     parser.add_argument("-c", "--cleanup", action="store_true", dest="cleanup",
                         default=False,
                         help="Cancel all queued jobs on exit")
@@ -116,18 +121,22 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     global CLEANUP
     CLEANUP = args.cleanup
 
-    return args.paths, args.no_wait
+    return args.paths, args.no_wait, args.check_throughput
 
 ###############################################################################
-def parse_test_status_file(file_contents, test_path):
+def parse_test_status_file(file_contents, test_path, check_throughput):
 ###############################################################################
     r"""
-    >>> parse_test_status_file('PASS testname')
+    >>> parse_test_status_file('PASS testname', '', False)
     ('testname', 'PASS')
-    >>> parse_test_status_file('PASS testname \nGEN testname2')
+    >>> parse_test_status_file('PASS testname \nGEN testname2', '', False)
     ('testname', 'GEN')
-    >>> parse_test_status_file('PASS testname\nPASS testname2')
+    >>> parse_test_status_file('PASS testname\nPASS testname2', '', False)
     ('testname', 'PASS')
+    >>> parse_test_status_file('PASS testname\nFAIL testname2.tputcomp.foo', '', False)
+    ('testname', 'PASS')
+    >>> parse_test_status_file('PASS testname\nFAIL testname2.tputcomp.foo', '', True)
+    ('testname', 'FAIL')
     """
     real_test_name = None
     for line in file_contents.splitlines():
@@ -137,7 +146,8 @@ def parse_test_status_file(file_contents, test_path):
                 real_test_name = test_name # just take the first one
 
             verbose_print("Test: '%s' has status '%s'" % (test_name, status))
-            if (status != TEST_PASSED_STATUS):
+            if (status != TEST_PASSED_STATUS and not
+                (not check_throughput and THROUGHPUT_TEST_STR in test_name)):
                 return real_test_name, status
         else:
             print "WARNING: For '%s', line '%s' not in expected format" % (test_path, line)
@@ -148,7 +158,7 @@ def parse_test_status_file(file_contents, test_path):
     return real_test_name, TEST_PASSED_STATUS
 
 ###############################################################################
-def wait_for_test(test_path, results, wait):
+def wait_for_test(test_path, results, wait, check_throughput):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
@@ -160,7 +170,7 @@ def wait_for_test(test_path, results, wait):
         if (os.path.exists(test_status_filepath)):
             test_status_fd = open(test_status_filepath, "r")
             test_status_contents = test_status_fd.read()
-            test_name, test_status = parse_test_status_file(test_status_contents, test_path)
+            test_name, test_status = parse_test_status_file(test_status_contents, test_path, check_throughput)
             if (test_status in TEST_NOT_FINISHED_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
                 verbose_print("Waiting for test to finish")
@@ -176,7 +186,7 @@ def wait_for_test(test_path, results, wait):
                 break
 
 ###############################################################################
-def wait_for_tests(test_paths, no_wait):
+def wait_for_tests(test_paths, no_wait, check_throughput):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
@@ -186,7 +196,7 @@ def wait_for_tests(test_paths, no_wait):
     results = Queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput))
         t.daemon = True
         t.start()
 
@@ -215,9 +225,9 @@ def _main_func(description):
         doctest.testmod()
         return
 
-    test_paths, no_wait = parse_command_line(sys.argv, description)
+    test_paths, no_wait, check_throughput = parse_command_line(sys.argv, description)
 
-    sys.exit(0 if wait_for_tests(test_paths, no_wait) else 1)
+    sys.exit(0 if wait_for_tests(test_paths, no_wait, check_throughput) else 1)
 
 ###############################################################################
 
