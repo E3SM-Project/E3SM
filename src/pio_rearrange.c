@@ -570,22 +570,24 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   if(ios.ioproc && iodesc->nrecvs>0){
     //    printf("%d: rindex[%d] %d\n",ios.comp_rank,0,iodesc->rindex[0]);
     for( i=0;i<iodesc->nrecvs;i++){
-      if(iodesc->rearranger==PIO_REARR_SUBSET){
-	recvcounts[ i ] = 1;
-	recvtypes[ i ] = iodesc->rtype[i];
-      }else{
-	recvcounts[ iodesc->rfrom[0] ] = 1;
-	recvtypes[ iodesc->rfrom[0] ] = iodesc->rtype[0];
-	rdispls[ iodesc->rfrom[0] ] = 0;
-	//    printf("%d: rindex[%d] %d\n",ios.comp_rank,0,iodesc->rindex[0]);
-	for( i=1;i<iodesc->nrecvs;i++){
-	  recvcounts[ iodesc->rfrom[i] ] = 1;
-	  recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
-
+      if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
+	if(iodesc->rearranger==PIO_REARR_SUBSET){
+	  recvcounts[ i ] = 1;
+	  recvtypes[ i ] = iodesc->rtype[i];
+	}else{
+	  recvcounts[ iodesc->rfrom[0] ] = 1;
+	  recvtypes[ iodesc->rfrom[0] ] = iodesc->rtype[0];
+	  rdispls[ iodesc->rfrom[0] ] = 0;
+	  //    printf("%d: rindex[%d] %d\n",ios.comp_rank,0,iodesc->rindex[0]);
+	  for( i=1;i<iodesc->nrecvs;i++){
+	    recvcounts[ iodesc->rfrom[i] ] = 1;
+	    recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
+	    
+	  }
 	}
       }
       //   printf("%d: rindex[%d] %d\n",ios.comp_rank,i,iodesc->rindex[i]);
-
+      
     }
   }
 
@@ -675,12 +677,14 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   }
   if(ios.ioproc){
     for( i=0;i< iodesc->nrecvs;i++){
-      if(iodesc->rearranger==PIO_REARR_SUBSET){
-	sendcounts[ i ] = 1;
-	sendtypes[ i ] = iodesc->rtype[i];
-      }else{
-	sendcounts[ iodesc->rfrom[i] ] = 1;
-	sendtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
+      if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
+	if(iodesc->rearranger==PIO_REARR_SUBSET){
+	  sendcounts[ i ] = 1;
+	  sendtypes[ i ] = iodesc->rtype[i];
+	}else{
+	  sendcounts[ iodesc->rfrom[i] ] = 1;
+	  sendtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
+	}
       }
     }
   }
@@ -689,7 +693,7 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
     int io_comprank = ios.ioranks[i];
     if(iodesc->rearranger==PIO_REARR_SUBSET)
       io_comprank=0;
-    if(scount[i] > 0) {
+    if(scount[i] > 0 && iodesc->stype[i] != MPI_DATATYPE_NULL) {
       recvcounts[io_comprank]=1;
       recvtypes[io_comprank]=iodesc->stype[i];
     }
