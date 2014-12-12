@@ -146,6 +146,9 @@ def parse_test_status_file(file_contents, test_path, check_throughput):
                 real_test_name = test_name # just take the first one
 
             verbose_print("Test: '%s' has status '%s'" % (test_name, status))
+
+            # A non-pass is OK if the failure is due to throughput and we
+            # aren't checking throughput
             if (status != TEST_PASSED_STATUS and not
                 (not check_throughput and THROUGHPUT_TEST_STR in test_name)):
                 return real_test_name, status
