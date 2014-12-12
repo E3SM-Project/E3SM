@@ -245,12 +245,6 @@
                   deallocate(dptr % l0)
                else if (associated(dptr % r0a)) then
                   do j=1,dptr % contentsTimeLevs
-                     dptr % r0 => dptr % r0a(j)
-                     call mpas_deallocate_field(dptr % r0)
-                  end do
-                  deallocate(dptr % r0a)
-               else if (associated(dptr % r0a)) then
-                  do j=1,dptr % contentsTimeLevs
                      if (associated(dptr % r0a(j) % ioinfo)) then
                         deallocate(dptr % r0a(j) % ioinfo)
                      end if
