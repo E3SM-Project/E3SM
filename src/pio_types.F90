@@ -1,7 +1,6 @@
-#define __PIO_FILE__ "pio_types.F90"
 !>
 !! @file 
-!! @brief Derived datatypes and constants for PIO
+!! @brief Derived datatypes and constants for PIO Fortran API
 !! 
 !! $Revision$
 !! $LastChangedDate$
@@ -27,7 +26,7 @@ module pio_types
     !------------------------------------
 !>
 !! @public
-!! @defgroup iosystem_desc_t 
+!! @struct iosystem_desc_t 
 !! @brief A defined PIO system descriptor created by @ref PIO_init (see pio_types)
 !<
     type, public :: IOSystem_desc_t
@@ -49,8 +48,9 @@ module pio_types
 
      
 !> 
-!! @defgroup file_desc_t
-!! File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
+!! @public
+!! @struct file_desc_t
+!! @brief File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
 !! 
 !>
     type, public :: File_desc_t
@@ -58,19 +58,6 @@ module pio_types
        type(iosystem_desc_t), pointer :: iosystem => null()
     end type File_desc_t
 
-
-    !------------------------------------------------------
-    !  data structure to describe a data movement operator
-    !------------------------------------------------------
-!    type, public :: IO_desc2_t
-#ifdef SEQUENCE
-!	sequence
-#endif
-!        integer(i4)         ::  fileTYPE   ! MPI data types for file
-!        integer(i4)         ::  elemTYPE
-!        integer(i4)         :: n_words
-!        integer(kind=pio_offset)         :: n_elemTYPE
-!    end type IO_desc2_t
 
 !>
 !! @private
@@ -90,47 +77,12 @@ module pio_types
 #ifdef SEQUENCE
 	sequence
 #endif
-!        type(IO_desc2_t)    :: Read
-!        type(IO_desc2_t)    :: Write
-!	integer(kind=PIO_Offset), pointer :: start(:) => NULL()
-!	integer(kind=PIO_Offset), pointer :: count(:) => NULL()
-
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ! fields for box-based rearranger
-        ! should put this in its own derived type later
-
-!        integer :: baseTYPE
-
-!        integer, pointer :: dest_ioproc(:)=> NULL()     ! for each dof
-!        integer(kind=pio_offset), pointer :: dest_ioindex(:)=> NULL()    ! for each dof
-
-
-        ! Values needed only on io procs
-!        integer,pointer :: rfrom(:)=> NULL()   ! rfrom(nrecvs)= rank of ith sender
-!        integer,pointer :: rtype(:)=> NULL()   ! rtype(nrecvs)=mpi types for receives
-
-        
-        ! needed on all procs
-!        integer,pointer :: scount(:)=> NULL()  ! scount(num_iotasks)= # sends to ith ioproc
-!        integer,pointer :: stype(:)=> NULL()   ! stype(num_iotasks)=mpi type for sends
-
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!        integer(i4) :: async_id
-
-
-!        type (DecompMap_t)  :: IOmap      ! IO decomposition map
-!        type (DecompMap_t)  :: COMPmap    ! Computational decomposition map
-!        integer :: nrecvs                      ! valid for io procs
-!        integer(kind=PIO_OFFSET)         :: glen       ! global length of array in words
-!	integer(i4)         :: compsize   ! size of expected comp buffer
-!        integer(i4)         :: maxiobuflen   ! size of largest iobuffer
-!        integer(i4)         :: ndof
         integer(i4)         :: ioid
     end type
 
 !>
 !! @public
-!! @defgroup var_desc_t 
+!! @struct var_desc_t 
 !! @brief A variable descriptor returned from @ref PIO_def_var (see pio_types) 
 !<
     type, public :: Var_desc_t

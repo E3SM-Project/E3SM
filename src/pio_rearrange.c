@@ -12,11 +12,15 @@
 #include <pio.h>
 #include <pio_internal.h>
 #include <limits.h>
+/** internal variable used for debugging */
+int tmpioproc=-1;  
 
-int tmpioproc=-1;
 
-// Convert an index into a list of dimensions. E.g., for index 4 into a
-// array defined as a[3][2], will return 1 1.
+/** @internal
+ ** Convert an index into a list of dimensions. E.g., for index 4 into a
+ ** array defined as a[3][2], will return 1 1.
+ ** @endinternal
+*/
 void idx_to_dim_list(const int ndims, const int gdims[], const PIO_Offset idx,
                      PIO_Offset dim_list[])
 {
@@ -30,14 +34,17 @@ void idx_to_dim_list(const int ndims, const int gdims[], const PIO_Offset idx,
     curr_idx = next_idx;
   }
 }
-
-// Expand a region along dimension dim, by incrementing count[i] as much as
-// possible, consistent with the map.
-//
-// Once max_size is reached, the map is exhausted, or the next entries fail
-// to match, expand_region updates the count and calls itself with the next
-// outermost dimension, until the region has been expanded as much as
-// possible along all dimensions.
+/**
+ ** @internal
+ ** Expand a region along dimension dim, by incrementing count[i] as much as
+ ** possible, consistent with the map.
+ **
+ ** Once max_size is reached, the map is exhausted, or the next entries fail
+ ** to match, expand_region updates the count and calls itself with the next
+ ** outermost dimension, until the region has been expanded as much as
+ ** possible along all dimensions.
+ ** @endinternal
+ */
 void expand_region(const int dim, const int gdims[], const int maplen,
                    const PIO_Offset map[], const int region_size,
                    const int region_stride, const int max_size[],
@@ -78,8 +85,11 @@ void expand_region(const int dim, const int gdims[], const int maplen,
                   region_stride*gdims[dim], max_size, count);
   }
 }
-
-// Set start and count so that they describe the first region in map.
+/**
+ ** @internal
+ ** Set start and count so that they describe the first region in map.
+ ** @endinternal
+ */
 PIO_Offset find_region(const int ndims, const int gdims[],
                        const int maplen, const PIO_Offset map[],
                        PIO_Offset start[], PIO_Offset count[])
@@ -112,8 +122,11 @@ PIO_Offset find_region(const int ndims, const int gdims[],
 
 }
 
-
-/// Convert a global coordinate value into a local array index
+/**
+ ** @internal
+** Convert a global coordinate value into a local array index
+** @endinternal
+*/
 PIO_Offset coord_to_lindex(const int ndims, const PIO_Offset lcoord[], const PIO_Offset count[])
 {
   PIO_Offset lindex=0;
@@ -127,6 +140,11 @@ PIO_Offset coord_to_lindex(const int ndims, const PIO_Offset lcoord[], const PIO
 
 }
 
+/**
+ ** @internal
+** Compute the max io buffersize needed for a given variable
+** @endinternal
+*/
 void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
 {
   PIO_Offset iosize, totiosize;
@@ -152,7 +170,11 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   iodesc->maxiobuflen = totiosize;
   
 }
-
+/**
+ ** @internal
+** Create the derived MPI datatypes used for comp2io and io2comp transfers
+** @endinternal
+*/
 int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_Offset dlen, const PIO_Offset mindex[],const int mcount[],
 			 int *mfrom, MPI_Datatype mtype[])
 {
@@ -233,7 +255,11 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 
 }
 
-
+/**
+ ** @internal
+** Create the derived MPI datatypes used for comp2io and io2comp transfers
+** @endinternal
+*/
 int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 {
   int i;
@@ -303,7 +329,11 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 }
 
 
-
+/**
+ ** @internal
+**  Completes the mapping for the box rearranger
+** @endinternal
+*/
 
 int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maplen, 
 		   const int dest_ioproc[], const PIO_Offset dest_ioindex[], MPI_Comm mycomm)
@@ -507,6 +537,14 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
 
 }
 
+/** 
+ ** @internal
+ ** Moves data from compute tasks to IO tasks.
+ ** @endinternal
+ **
+ */
+
+
 int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options)
 {
@@ -619,6 +657,12 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 #endif
   return PIO_NOERR;
 }
+/** 
+ ** @internal
+ ** Moves data from compute tasks to IO tasks.
+ ** @endinternal
+ **
+ */
 
 int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options)
@@ -721,6 +765,15 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   return PIO_NOERR;
 
 }
+/** 
+ ** @internal
+ ** The box rearranger computes a mapping between IO tasks and compute tasks such that the data
+ ** on io tasks can be written with a single call to the underlying netcdf library.   This 
+ ** may involve an all to all rearrangement in the mapping, but should minimize data movement in 
+ ** lower level libraries
+ ** @endinternal
+ **
+ */
 
 int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
 			 const int ndims, io_desc_t *iodesc)
@@ -856,7 +909,11 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   }
   return PIO_NOERR;
 }
-
+/** 
+ ** @internal
+ ** compare offsets is used by the sort in the subset rearrange
+ ** @endinternal
+ */
 int compare_offsets(const void *a,const void *b) 
 {
   mapsort *x = (mapsort *) a;
@@ -864,9 +921,12 @@ int compare_offsets(const void *a,const void *b)
   return (int) (x->iomap - y->iomap);
 }    
 
-//
-// Find all regions. 
-//
+/**
+ ** @internal
+ ** Each region is a block of output which can be represented in a single call to the underlying 
+ ** netcdf library.  This can be as small as a single data point, but we hope we've aggrigated better than that. 
+ ** @endinternal
+ */
 void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, const int gdims[],const PIO_Offset map[])
 {
   int i;
@@ -917,6 +977,14 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
 #endif
 }
 
+/** 
+ ** @internal
+ ** The subset rearranger needs a mapping from compute tasks to IO task, the only requirement is 
+ ** that each compute task map to one and only one IO task.   This mapping groups by mpi task id
+ ** others are possible and may be better for certain decompositions
+ ** @endinternal
+ **
+ */
 void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
 {
   int taskratio = ios.num_comptasks/ios.num_iotasks;
@@ -938,6 +1006,13 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
 
 }
 
+/** 
+ ** @internal
+ ** The subset rearranger computes a mapping between IO tasks and compute tasks such that each compute
+ ** task communicates with one and only one IO task.  
+ ** @endinternal
+ **
+ */
 
 
 int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offset compmap[], 

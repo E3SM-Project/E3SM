@@ -31,17 +31,12 @@
 #ifdef _MPISERIAL
 typedef int MPI_Info;
 typedef long long MPI_Offset;
-/*#define MPI_OFFSET  ((MPI_Datatype)0x4c000844)
-#define MPI_LONG_LONG ((MPI_Datatype)0x4c000809)
-#define  MPI_UNSIGNED_LONG_LONG ((MPI_Datatype)0x4c000819)
-#define MPI_CHARACTER ((MPI_Datatype)1275068698)
-*/
 #define MPI_OFFSET (sizeof(size_t))
 #define MPI_LONG_LONG (sizeof(long long))
 #define MPI_UNSIGNED_LONG_LONG (sizeof(unsigned long long))
 #define MPI_CHARACTER (sizeof(char))
-
 #endif
+// In some MPI implementations MPI_OFFSET is not properly defined.  
 #ifndef MPI_OFFSET
 #define MPI_OFFSET  MPI_LONG_LONG
 #endif
@@ -51,7 +46,6 @@ typedef long long MPI_Offset;
 #define PIO_MAX_VARS NC_MAX_VARS
 #define PIO_MAX_REQUESTS 100*PIO_MAX_VARS
 
-int PIOc_freedecomp(int iosysid, int ioid);
 
 /**
  * @brief Variable description structure
@@ -161,6 +155,12 @@ typedef struct iosystem_desc_t
   struct iosystem_desc_t *next;
 } iosystem_desc_t;
 
+/**
+ * @brief io system descriptor structure
+ *
+ * This structure holds information associated with each open file
+ * 
+*/
 typedef struct file_desc_t
 {
   iosystem_desc_t *iosystem;
@@ -174,22 +174,35 @@ typedef struct file_desc_t
   struct file_desc_t *next;
 } file_desc_t;
 
+/**
+ * @brief These are the supported output formats
+ *
+*/
+
 enum PIO_IOTYPE{
-  PIO_IOTYPE_PNETCDF=1,
-  PIO_IOTYPE_NETCDF=2,
-  PIO_IOTYPE_NETCDF4C=3,
-  PIO_IOTYPE_NETCDF4P=4
+  PIO_IOTYPE_PNETCDF=1,   //< Parallel Netcdf  (parallel)
+  PIO_IOTYPE_NETCDF=2,    //< Netcdf3 Classic format (serial)
+  PIO_IOTYPE_NETCDF4C=3, //<  NetCDF4 (HDF5) compressed format (serial)
+  PIO_IOTYPE_NETCDF4P=4  //<  NetCDF4 (HDF5) parallel 
 };
 
+/**
+ * @brief These are the supported output data rearrangement methods
+ *
+*/
 enum PIO_REARRANGERS{
   PIO_REARR_BOX = 1,
   PIO_REARR_SUBSET = 2
 };
 
+/**
+ * @brief These are the supported error handlers
+ *
+*/
 enum PIO_ERROR_HANDLERS{
-  PIO_INTERNAL_ERROR=(-51),
-  PIO_BCAST_ERROR=(-52),
-  PIO_RETURN_ERROR=(-53)
+  PIO_INTERNAL_ERROR=(-51),   //< Errors cause abort
+  PIO_BCAST_ERROR=(-52),      //< Error codes are broadcast to all tasks
+  PIO_RETURN_ERROR=(-53)      //< Errors are returned to caller with no internal action 
 };
 
 #if defined( _PNETCDF) || defined(_NETCDF)
@@ -294,7 +307,7 @@ extern "C" {
 #endif
 #define PIO_EBADIOTYPE  -255
 
-
+int PIOc_freedecomp(int iosysid, int ioid);
 int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp); 
 int PIOc_inq_format (int ncid, int *formatp); 
 int PIOc_inq_varid (int ncid, const char *name, int *varidp); 

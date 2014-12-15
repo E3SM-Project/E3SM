@@ -17,7 +17,9 @@
 
 static int counter=0;
 static bool PIO_Save_Decomps=false;
-
+/**
+ ** @brief Check to see if PIO has been initialized.
+ */
 int PIOc_iosystem_is_active(const int iosysid, bool *active)
 {
   iosystem_desc_t *ios;
@@ -32,6 +34,9 @@ int PIOc_iosystem_is_active(const int iosysid, bool *active)
   }
   return PIO_NOERR;
 }
+/**
+ ** @brief Check to see if PIO file is open.
+ */
 
 int PIOc_File_is_Open(int ncid)
 {
@@ -43,6 +48,10 @@ int PIOc_File_is_Open(int ncid)
     return 1;
 }
 
+/**
+ ** @brief Set the error handling method to be used for subsequent 
+ ** pio library calls, returns the previous method setting
+ */
 int PIOc_Set_File_Error_Handling(int ncid, int method)
 {
   file_desc_t *file;
@@ -53,6 +62,9 @@ int PIOc_Set_File_Error_Handling(int ncid, int method)
   return(oldmethod);
 } 
 
+/**
+ ** @brief Increment the unlimited dimension of the given variable
+ */
 int PIOc_advanceframe(int ncid, int varid)
 {
   file_desc_t *file;
@@ -65,6 +77,9 @@ int PIOc_advanceframe(int ncid, int varid)
   return(PIO_NOERR);
 } 
 
+/**
+ ** @brief Set the unlimited dimension of the given variable
+ */
 int PIOc_setframe(const int ncid, const int varid,const int frame)
 {
   file_desc_t *file;
@@ -78,7 +93,9 @@ int PIOc_setframe(const int ncid, const int varid,const int frame)
   return(PIO_NOERR);
 } 
 
-
+/**
+ ** @brief Get the number of IO tasks set.
+ */
 int PIOc_get_numiotasks(int iosysid, int *numiotasks)
 {
   iosystem_desc_t *ios;
@@ -93,6 +110,9 @@ int PIOc_get_numiotasks(int iosysid, int *numiotasks)
 }
 
 
+/**
+ ** @brief Get the IO rank on the current task
+ */
 int PIOc_get_iorank(int iosysid, int *iorank)
 {
   iosystem_desc_t *ios;
@@ -106,6 +126,9 @@ int PIOc_get_iorank(int iosysid, int *iorank)
 
 }
 
+/**
+ ** @brief Get the local size of the variable
+ */
 
 int PIOc_get_local_array_size(int ioid)
 {
@@ -114,6 +137,10 @@ int PIOc_get_local_array_size(int ioid)
   return(iodesc->ndof);
 }
 
+/**
+ ** @ingroup PIO_error_method
+ ** @brief Set the error handling method used for subsequent calls
+ */
 
  int PIOc_Set_IOSystem_Error_Handling(int iosysid, int method)
 {
@@ -129,6 +156,21 @@ int PIOc_get_local_array_size(int ioid)
   ios->error_handler = method;
   return(oldmethod);
 }  
+
+/**
+ ** @ingroup PIO_initdecomp
+ ** @brief C interface to the initdecomp
+ ** @param  iosysid @copydoc iosystem_desc_t (input)
+ ** @param  basetype the basic PIO data type used (input)
+ ** @param  ndims the number of dimensions in the variable (input)
+ ** @param  dims[] the global size of each dimension (input)
+ ** @param  maplen the local length of the compmap array (input)
+ ** @param  compmap[] a 1 based array of offsets into the array record on file.  A 0 in this array indicates a value which should not be transfered. (input)
+ ** @param ioidp  the io description pointer (output)
+ ** @param rearranger the rearranger to be used for this decomp or NULL to use the default (optional input)
+ ** @param iostart An optional array of start values for block cyclic decompositions  (optional input)
+ ** @param iocount An optional array of count values for block cyclic decompositions  (optional input)
+ */
 
 
 int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const int dims[], 
@@ -225,11 +267,13 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   
   return PIO_NOERR;
 }
-//
-// This is a simplified initdecomp which can be used if the memory order of the data can be 
-// expressed in terms of start and count on the file.
-// in this case we compute the compdof and use the subset rearranger
-//
+
+/**
+ ** @ingroup PIO_initdecomp
+ ** This is a simplified initdecomp which can be used if the memory order of the data can be 
+ ** expressed in terms of start and count on the file.
+ ** in this case we compute the compdof and use the subset rearranger
+ */
 
 
 int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, const int dims[], 
@@ -288,6 +332,17 @@ int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, co
 
   return PIO_NOERR;
 }
+
+/** 
+ ** @ingroup PIO_init
+ ** @brief library initialization used when IO tasks are a subset of compute tasks
+ ** @param comp_comm the MPI_Comm of the compute tasks
+ ** @param num_iotasks the number of io tasks to use
+ ** @param stride the offset between io tasks in the comp_comm
+ ** @param base the comp_comm index of the first io task
+ ** @param rearr the rearranger to use by default, this may be overriden in the @ref PIO_initdecomp
+ ** @param iosysidp index of the defined system descriptor
+ */
 
 int PIOc_Init_Intracomm(const MPI_Comm comp_comm, 
 			const int num_iotasks, const int stride, 
@@ -367,14 +422,22 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 
   return PIO_NOERR;
 }
-  
+
+/**
+ ** @internal 
+ ** interface to call from pio_init from fortran
+ ** @endinternal
+ */
 int PIOc_Init_Intracomm_from_F90(int f90_comp_comm, 
 			const int num_iotasks, const int stride, 
 				 const int base, const int rearr, int *iosysidp){
   return PIOc_Init_Intracomm(MPI_Comm_f2c(f90_comp_comm), num_iotasks, stride,base,rearr, iosysidp);
 }
   
-
+/**
+ ** @brief Send a hint to the MPI-IO library 
+ **
+ */
 int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
 {
   iosystem_desc_t *ios;
@@ -389,6 +452,10 @@ int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
   return PIO_NOERR;
 
 }
+
+/**
+ ** @brief Clean up data structures and exit the pio library
+ */
 
 int PIOc_finalize(const int iosysid)
 {
@@ -414,7 +481,9 @@ int PIOc_finalize(const int iosysid)
   
 }
 
-
+/**
+ ** @brief return a logical indicating whether this task is an iotask 
+ */
 int PIOc_iam_iotask(const int iosysid, bool *ioproc)
 {
   iosystem_desc_t *ios;
@@ -426,6 +495,10 @@ int PIOc_iam_iotask(const int iosysid, bool *ioproc)
   return PIO_NOERR;
 }
 
+/**
+ ** @brief return the rank of this task in the io comm or
+ ** -1 if this task is not in the comm
+ */
 int PIOc_iotask_rank(const int iosysid, int *iorank)
 {
   iosystem_desc_t *ios;

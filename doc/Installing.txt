@@ -18,35 +18,27 @@
 <ol>
 <li>Download the code from the following Google code subversion location using either a subversion export:
 
-> svn export http://parallelio.googlecode.com/svn/trunk_tags/pio1_7_1
+> svn export http://parallelio.googlecode.com/svn/trunk_tags/pio1_8_12  <<<< need to correct
 </li>
 
-<li>Configure - PIO uses the gnu autoconf tools, for historical reasons the configure
-script is in the pio subdirectory.  A complete set of configure arguments, options and flags is available by running:
+<li>PIO uses <a href="http://www.cmake.org> cmake </a> to configure and build 
 
-> configure --help.   
+Before running cmake, you will need to know the location of some supporting libraries. 
 
-Before running configure, you will need to know the location of some supporting libraries. 
+- Set the NETCDF_DIR environment variable to the netcdf install directory.
 
-- Set the NETCDF_PATH environment variable to the netcdf install directory or --disable-netcdf to
-disable serial NetCDF support.
-
-- Use the flag --enable-netcdf4 to enable the NetCDF4/HDF5 parallel interface.
-
-- Set the PNETCDF_PATH environment variable to the pnetcdf install directory, This will enable support
+- Set the PNETCDF_DIR environment variable to the pnetcdf install directory, This will enable support
 for parallel-netcdf
 
 - Set the CC, FC, MPICC, and MPIFC environment variables to the serial and parallel C and Fortran 90 compiler names.
 
-- Use the --prefix=$PREFIX argument to set the correct installation directory. The default is /usr/local.
-
 This should be the minimal set of flags required to build pio.
 
-One additional flag of interest is --enable-filesystem-hints which can
+One additional flag of interest is -PIO_FILESYSTEM_HINTS which can
 be set to gpfs or lustre.  You should only use this flag if you are sure that the
 file system you are using is either gpfs or lustre respectively. If you are unsure, then do not use this flag. </li>
 
-<li>After configure completes use gmake in the pio subdirectory to complete the build.   
+<li>After cmake completes use gmake in the build directory to complete the build.   
 
 > gmake
 
@@ -55,8 +47,7 @@ all of the module files be located in the install directory. If that is the case
 
 > gmake install 
 
-will move the compiled library and module files to the directory specified
-by $PREFIX.</li>
+will move the compiled library and module files to the directory specified by $PREFIX.</li>
 </ol>
 
 */

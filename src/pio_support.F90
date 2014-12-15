@@ -1,4 +1,3 @@
-#define __PIO_FILE__ "pio_support.F90"
 !>
 !! @file pio_support.F90
 !! @brief internal code for compiler workarounds, aborts and debug functions
@@ -6,27 +5,6 @@
 !! $Revision$
 !! $LastChangedDate$
 !<
-!>
-!! \def _NO_MPI_RSEND
-!! Code added as a work around for poor rsend performance on cray systems with
-!! Gemini interconnect
-!<
-#ifdef BGP
-#define BGx
-#endif
-#ifdef BGL
-#define BGx
-#endif
-#ifdef BGQ
-#define BGx
-#endif
-#ifdef _NO_MPI_RSEND
-#define MPI_RSEND MPI_SEND
-#define mpi_rsend mpi_send
-#define MPI_IRSEND MPI_ISEND
-#define mpi_irsend mpi_isend
-#endif
-
 module pio_support
   use pio_kinds
   use iso_c_binding
@@ -44,10 +22,6 @@ module pio_support
   public :: pio_writedof
   public :: pio_fc_gather_offset
   public :: replace_c_null
-#ifdef NO_MPI2
-  public :: MPI_TYPE_CREATE_INDEXED_BLOCK
-#endif
-
 
   logical, public :: Debug=.FALSE.
   logical, public :: DebugIO=.FALSE.
@@ -114,7 +88,7 @@ contains
     endif
 
 
-#if defined(CPRXLF) && !defined(BGx)
+#if defined(CPRXLF) && !defined(BGQ)
   close(5)    ! needed to prevent batch jobs from hanging in xl__trbk
   call xl__trbk()
 #endif
@@ -158,6 +132,12 @@ contains
      end if
   end subroutine CheckMPIreturn
 
+!>
+!! @defgroup pio_writedof MAPtools 
+!!  Fortran interface to write a mapping file
+!!
+!<
+
   subroutine pio_writedof (file, gdims, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -198,6 +178,11 @@ contains
     err = PIOc_writemap_from_f90(trim(file)//C_NULL_CHAR, ndims, gdims, int(size(dof),C_SIZE_T), dof, comm)
 
   end subroutine pio_writedof
+!>
+!! @addtogroup pio_readdof MAPtools
+!!  Fortran interface to read a mapping file
+!!
+!<
 
   subroutine pio_readdof (file, ndims, gdims, DOF, comm, punit)
     !-----------------------------------------------------------------------
@@ -247,187 +232,6 @@ contains
 !    DOF = DOF+1
   end subroutine pio_readdof
 
-#ifdef NO_MPI2
 
-  subroutine MPI_TYPE_CREATE_INDEXED_BLOCK(count, blen, disp, oldtype, newtype, ierr)
-    integer, intent(in)  :: count
-    integer, intent(in)  :: blen
-    integer, intent(in)  :: disp(:)
-    integer, intent(in)  :: oldtype
-    integer, intent(out) :: newtype
-    integer :: ierr
-
-    integer :: dblens(count)
-
-    dblens = blen
-#ifndef _MPISERIAL
-    call mpi_type_indexed(count, dblens, disp, oldtype, newtype, ierr)
-#endif
-  end subroutine MPI_TYPE_CREATE_INDEXED_BLOCK
-#endif
-
-!
-!========================================================================
-!
-
-   subroutine pio_fc_gather_offset ( sendbuf, sendcnt, sendtype, &
-                                  recvbuf, recvcnt, recvtype, &
-                                  root, comm, flow_cntl )
-
-!----------------------------------------------------------------------- 
-! 
-!> Purpose: 
-!!   Gather collective with additional flow control, so as to 
-!!   be more robust when used with high process counts. 
-!!
-!! Method: 
-!!   If flow_cntl optional parameter 
-!!     < 0: use MPI_Gather
-!!     >= 0: use point-to-point with handshaking messages and 
-!!           preposting receive requests up to 
-!!           max(min(1,flow_cntl),max_gather_block_size) 
-!!           ahead if optional flow_cntl parameter is present.
-!!           Otherwise, fc_gather_flow_cntl is used in its place.
-!!     Default value is 64.
-!! 
-!! Author of original version:  P. Worley
-!! Ported from CAM: P. Worley, Jan 2010
-!< 
-!-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-   implicit none
-
-!---------------------------Parameters ---------------------------------
-!
-   integer, parameter :: max_gather_block_size = 64
-
-!---------------------------Input arguments--------------------------
-!
-   integer(PIO_OFFSET_KIND), intent(in)  :: sendbuf(:)       ! outgoing message buffer
-   integer, intent(in)  :: sendcnt          ! size of send buffer
-   integer, intent(in)  :: sendtype         ! MPI type of send buffer
-   integer, intent(in)  :: recvcnt          ! size of receive buffer
-   integer, intent(in)  :: recvtype         ! MPI type of receive buffer
-   integer, intent(in)  :: root             ! gather destination
-   integer, intent(in)  :: comm             ! MPI communicator
-   integer,optional, intent(in):: flow_cntl ! flow control variable
-
-!---------------------------Output arguments--------------------------
-!
-   integer(PIO_OFFSET_KIND), intent(out) :: recvbuf(*)       ! incoming message buffer
-!
-!---------------------------Local workspace---------------------------------
-!
-   character(len=*), parameter :: subName=modName//'::pio_fc_gather_int'
-
-   logical :: fc_gather                     ! use explicit flow control?
-   integer :: hs                            ! handshake variable
-   integer :: gather_block_size             ! number of preposted receive requests
-
-   integer :: nprocs                        ! size of communicator
-   integer :: mytask                        ! MPI task id with communicator
-   integer :: mtag                          ! MPI message tag
-   integer :: p, i                          ! loop indices
-   integer :: displs                        ! offset into receive buffer
-   integer :: count, preposts, head, tail   ! variables controlling recv-ahead logic
-
-   integer :: rcvid(max_gather_block_size)  ! receive request ids
-
-   integer :: ier                           ! return error status    
-   integer :: status(MPI_STATUS_SIZE)       ! MPI status 
-
-!
-!-------------------------------------------------------------------------------------
-!
-   if ( present(flow_cntl) ) then
-      if (flow_cntl >= 0) then
-         gather_block_size = min(max(1,flow_cntl),max_gather_block_size)
-         fc_gather = .true.
-      else
-         fc_gather = .false.
-      endif
-   else
-#ifndef _NO_FLOW_CONTROL
-      gather_block_size = max(1,max_gather_block_size)
-      fc_gather = .true.
-#else
-      fc_gather = .false.
-#endif
-   endif
-
-   if (fc_gather) then
- 
-      ! Determine task id and size of communicator
-      call mpi_comm_rank (comm, mytask, ier)
-      call mpi_comm_size (comm, nprocs, ier)
-
-      ! Initialize tag and hs variable
-#ifdef _NO_PIO_SWAPM_TAG_OFFSET
-      mtag = 0
-#else
-      mtag = 2*nprocs
-#endif
-      hs = 1
-
-      if (root .eq. mytask) then
-
-! prepost gather_block_size irecvs, and start receiving data
-         preposts = min(nprocs-1, gather_block_size)
-         head = 0
-         count = 0
-         do p=0, nprocs-1
-            if (p .ne. root) then
-               if (recvcnt > 0) then
-                  count = count + 1
-                  if (count > preposts) then
-                     tail = mod(head,preposts) + 1
-                     call mpi_wait (rcvid(tail), status, ier)
-                  end if
-                  head = mod(head,preposts) + 1
-                  displs = p*recvcnt
-                  call mpi_irecv ( recvbuf(displs+1), recvcnt, &
-                                   recvtype, p, mtag, comm, rcvid(head), &
-                                   ier )
-                  call mpi_send ( hs, 1, recvtype, p, mtag, comm, ier )
-               end if
-            end if
-         end do
-
-! copy local data
-         displs = mytask*recvcnt
-         do i=1,sendcnt
-            recvbuf(displs+i) = sendbuf(i)
-         enddo
-
-! wait for final data
-         do i=1,min(count,preposts)
-            call mpi_wait (rcvid(i), status, ier)
-         enddo
-
-      else
-
-         if (sendcnt > 0) then
-            call mpi_recv  ( hs, 1, sendtype, root, mtag, comm, &
-                             status, ier )
-            call mpi_rsend ( sendbuf, sendcnt, sendtype, root, mtag, &
-                             comm, ier )
-         end if
-
-      endif
-      call CheckMPIReturn(subName,ier)
-
-   else
- 
-      call mpi_gather (sendbuf, sendcnt, sendtype, &
-                       recvbuf, recvcnt, recvtype, &
-                       root, comm, ier)
-      call CheckMPIReturn(subName,ier)
-
-   endif
-
-   return
-
-   end subroutine pio_fc_gather_offset
 
 end module pio_support

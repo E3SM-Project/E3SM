@@ -50,12 +50,11 @@ open(F,">pio_nc.c");
 print F 
 "/**
 * \@file   pio_nc.c
-* \@Author Jim Edwards (jedwards\@ucar.edu)
+* \@author Jim Edwards (jedwards\@ucar.edu)
 * \@date     Feburary 2014 
-* \@brief    PIO interfaces to netcdf support functions
-*
-
-* This file provides an interface to the <A HREF=\"http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html\"> netcdf support functions.</A>
+* \@brief    PIO interfaces to  <A HREF=\"http://www.unidata.ucar.edu/software/netcdf/docs/modules.html\" target=\"_blank\">netcdf</A> support functions
+* \@details
+* This file provides an interface to the <A HREF=\"http://www.unidata.ucar.edu/software/netcdf/docs/modules.html\" target=\"_blank\"> netcdf </A> support functions.
 *  It calls the underlying netcdf or pnetcdf or netcdf4 functions from the appropriate subset of mpi tasks (io_comm), it must be called collectively from union_comm
 *  
 */

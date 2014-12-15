@@ -34,13 +34,21 @@ typedef long long PIO_Offset;
 #include <pio_internal.h>
 #endif
 
-
+/**
+ ** The default target blocksize for each io task when the box rearranger is used.
+ */
 #define default_blocksize 884736;
 //#define default_blocksize 512
-
+/**
+ ** The target blocksize for each io task when the box rearranger is used.
+ */
 int blocksize = default_blocksize;
 
-
+/**
+ ** @ingroup PIO_set_blocksize
+ ** @brief Set the target blocksize for the box rearranger.
+ **
+ */
 int PIOc_set_blocksize(const int newblocksize)
 {
   if(newblocksize > 0)

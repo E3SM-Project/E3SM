@@ -65,6 +65,11 @@ module pio
   implicit none
   public
 contains
+!>
+!! @public
+!! ingroup PIO_set_blocksize
+!! @brief Set the target blocksize for the box rearranger
+!<
   subroutine pio_set_blocksize(blocksize)
     integer :: blocksize
     integer :: ierr
@@ -79,6 +84,10 @@ contains
   end subroutine pio_set_blocksize
 
 
+!>
+!! @public
+!! @brief Logical function returns true if the task is an IO task.
+!<
   function pio_iam_iotask(iosystem) result(task)
     use iso_c_binding
     type(iosystem_desc_t), intent(in) :: iosystem

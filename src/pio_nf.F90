@@ -1024,7 +1024,7 @@ contains
 
   !> 
   !! @public 
-  !! @ingroup PIO_def_var
+  !! @defgroup PIO_def_var PIO_def_var
   !! @brief Defines a netcdf variable
   !! @details
   !! @param File @copydoc file_desc_t

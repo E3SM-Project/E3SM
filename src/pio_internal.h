@@ -29,7 +29,9 @@ extern PIO_Offset PIO_BUFFER_SIZE_LIMIT;
 extern "C" {
 #endif
 
-
+/**
+ ** @brief Used to sort map points in the subset rearranger
+*/
 typedef struct mapsort
 {
   int rfrom;
@@ -59,6 +61,9 @@ typedef struct mapsort
   int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype,
 		     void *recvbuf, const int recvcnt, const MPI_Datatype recvtype, const int root, 
 		     MPI_Comm comm, const int flow_cntl);
+  int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype,
+		      void *recvbuf, const int recvcnts[], const int recvdispl[], const MPI_Datatype recvtype, const int root, 
+		      MPI_Comm comm, const int flow_cntl);
   
   int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype,
 		      void *recvbuf, const int recvcnts[], const int rdispls[], const MPI_Datatype recvtype, const int root, 

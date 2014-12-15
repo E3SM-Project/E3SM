@@ -1,14 +1,6 @@
 #define __PIO_FILE__ "piolib_mod.f90"
 #define debug_rearr 0
-#ifdef BGP
-#define BGx
-#endif
-#ifdef BGL
-#define BGx
-#endif
-#ifdef BGQ
-#define BGx
-#endif
+
 !>
 !! @file 
 !! @brief Initialization Routines for PIO
@@ -169,31 +161,6 @@ module piolib_mod
   end interface
 
 !> 
-!! @defgroup PIO_dupiodesc PIO_dupiodesc
-!! duplicates an eisting io descriptor
-!<
-!  interface PIO_dupiodesc
-!     module procedure dupiodesc
-!  end interface
-
-
-
-!> 
-!! @defgroup PIO_numtoread PIO_numtoread
-!! returns the total number of words to read
-!<
-!  interface PIO_numtoread
-!     module procedure numtoread
-!  end interface
-
-!> 
-!! @defgroup PIO_numtowrite PIO_numtowrite
-!! returns the total number of words to write
-!<
-!  interface PIO_numtowrite
-!     module procedure numtowrite
-!  end interface
-
 
 !> 
 !! @defgroup PIO_getnumiotasks PIO_getnumiotasks
@@ -664,7 +631,6 @@ contains
 
     call initdecomp_1dof_nf_i8(iosystem, basepiotype, dims, lenblocks, compdof, iodofw, start, count, tmp)
     call mpi_abort(mpi_comm_world, 0, ierr)
-!    call dupiodesc2(iodesc%write,tmp%write)
 
   end subroutine initdecomp_2dof_nf_i8
 
@@ -863,20 +829,7 @@ contains
   end subroutine PIO_initdecomp_dof_i8
 
 
-  !************************************
-  ! dupiodesc2
-  !
 
-!  subroutine dupiodesc2(src, dest)
-!    use pio_types, only : io_desc2_t
-!    type(io_desc2_t), intent(in) :: src
-!    type(io_desc2_t), intent(out) :: dest
-
-!    dest%filetype = src%filetype
-!    dest%elemtype = src%elemtype
-!    dest%n_elemtype = src%n_elemtype
-!    dest%n_words = src%n_words
-!  end subroutine dupiodesc2
 
 
 
@@ -1218,7 +1171,7 @@ contains
 !       call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%union_comm, ierr)
 !       if(itmp .gt. 0) then 
 !          write(cb_nodes,('(i5)')) itmp
-!#ifdef BGx
+!#ifdef BGQ
 !          call PIO_set_hint(iosystem(i),"bgl_nodes_pset",trim(adjustl(cb_nodes)))
 !#else
 !          call PIO_set_hint(iosystem(i),"cb_nodes",trim(adjustl(cb_nodes)))
@@ -1253,68 +1206,6 @@ contains
 #endif
   end subroutine init_intercom
 
-!>
-!! @public
-!! @defgroup PIO_recommend_iotasks PIO_recommend_iotasks
-!! @brief Recommend a subset of tasks in comm to use as IO tasks
-!! @details  This subroutine will give PIO's best recommendation for the number and
-!!    location of iotasks for a given system there is no requirement to follow this recommendation.
-!!    Using the recommendation requires that PIO_BOX_RERRANGE be used
-!! @param A communicator of mpi tasks to choose from
-!! @param miniotasks \em optional The minimum number of IO tasks the caller desires
-!! @param maxiotasks \em optional The maximum number of IO tasks the caller desires
-!! @param iotask if true pio recommends that this task be used as an iotask
-!<
-#ifdef DOTHIS
-  subroutine pio_recommend_iotasks(comm, ioproc, numiotasks, miniotasks, maxiotasks )
-    integer, intent(in) :: comm
-    logical, intent(out) :: ioproc
-    integer, intent(out) :: numiotasks
-    integer, optional, intent(in) :: miniotasks, maxiotasks
-
-    integer :: num_tasks, ierr, iotask, iotasks, iam
-
-    integer(i4), pointer :: iotmp(:),iotmp2(:)
-
-    call mpi_comm_size(comm,num_tasks,ierr)
-    call mpi_comm_rank(comm,iam,ierr)
-
-#ifdef BGx    
-!    call alloc_check(iotmp,num_tasks,'init:num_tasks')
-!    call alloc_check(iotmp2,num_tasks,'init:num_tasks')
-     allocate(iotmp(num_tasks), iotmp2(num_tasks))
-    !---------------------------------------------------
-    ! Note for Blue Gene n_iotasks get overwritten in 
-    ! determineiotasks   
-    !
-    ! Entry: it is the number of IO-clients per IO-node
-    ! Exit:  is is the total number of IO-tasks
-    !---------------------------------------------------
-
-    numiotasks=-(miniotasks+maxiotasks)/2
-    call determineiotasks(comm,numiotasks,1,0,1,iotask)
-
-    iotmp(:)=0
-    if(iotask==1) then 
-       ioproc = .true.
-       iotmp(iam+1) = 1
-    endif
-    iotmp2(:)=0 
-    call MPI_allreduce(iotmp,iotmp2,num_tasks,MPI_INTEGER,MPI_SUM,comm,ierr)
-    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
-
-    numiotasks=SUM(iotmp2)
-
-!    call dealloc_check(iotmp)
-!    call dealloc_check(iotmp2)
-     deallocate(iotmp, iotmp2)
-
-    call identity(comm,iotask)
-#endif
-
-
-  end subroutine pio_recommend_iotasks
-#endif
 
 !> 
 !! @public
@@ -1397,97 +1288,6 @@ contains
 
 
   !=============================================
-  !  dupiodesc:
-  !
-  !   duplicate the io descriptor
-  !
-  !=============================================
-
-
-  ! rml: possible problem here wrt dubbing the box rearranger
-  ! data, as well as maybe the mct rearranger???
-
-!> 
-!! @public 
-!! @ingroup PIO_dupiodesc
-!! @brief duplicates an existing io descriptor
-!! @details
-!! @param src :  an io description handle returned from @ref PIO_initdecomp (see PIO_types)
-!! @param dest : the newly created io descriptor with the same characteristcs as src.
-!<
-
-#ifdef WHAT_REASON_FOR_THIS_IN_THE_API
-  subroutine dupiodesc(src,dest)
-
-    integer :: n
-    type (io_desc_t), intent(in) :: src
-    type (io_desc_t), intent(inout) :: dest
-
-    dest%glen        =  src%glen
-    if(associated(src%start)) then
-       n = size(src%start)
-       allocate(dest%start(n))
-       dest%start(:)       =  src%start(:)
-    endif
-
-    if(associated(src%count)) then
-       n = size(src%count)
-       allocate(dest%count(n))
-       dest%count(:)       =  src%count(:)
-    endif
-
-    !dbg    print *,'before dupiodesc2'
-    call dupiodesc2(src%read, dest%read)
-    call dupiodesc2(src%write, dest%write)
-    !dbg    print *,'after dupiodesc2'
-
-    dest%basetype = src%basetype
-
-    if(associated(src%dest_ioproc)) then 
-       n = size(src%dest_ioproc)
-       allocate(dest%dest_ioproc(n))
-       dest%dest_ioproc(:) = src%dest_ioproc(:)
-    endif
-
-    if(associated(src%dest_ioindex)) then 
-       n = size(src%dest_ioindex)
-       allocate(dest%dest_ioindex(n))
-       dest%dest_ioindex(:) = src%dest_ioindex(:)
-    endif
-
-    if(associated(src%rfrom)) then 
-       n = size(src%rfrom)
-       allocate(dest%rfrom(n))
-       dest%rfrom(:) = src%rfrom(:)
-    endif
-
-    if(associated(src%rtype)) then 
-       n = size(src%rtype)
-       allocate(dest%rtype(n))
-       dest%rtype(:) = src%rtype(:)
-    endif
-
-    if(associated(src%scount)) then 
-       n = size(src%scount)
-       allocate(dest%scount(n))
-       dest%scount(:) = src%scount(:)
-    endif
-
-    if(associated(src%stype)) then 
-       n = size(src%stype)
-       allocate(dest%stype(n))
-       dest%stype(:) = src%stype(:)
-    endif
-
-    call copy_decompmap(src%iomap,dest%iomap)
-    call copy_decompmap(src%compmap,dest%compmap)
-
-    dest%compsize = src%compsize
-
-
-  end subroutine dupiodesc
-
-  !=============================================
   !  copy_decompmap:
   !
   !   copy decompmap_t data structures
@@ -1525,37 +1325,8 @@ contains
 
   end subroutine setiotype
 
-!>
-!! @public
-!! @ingroup PIO_numtoread
-!! @brief returns the global number of words to read for this io descriptor
-!! @details
-!! @param iodesc : @copydoc io_desc_t
-!! @retval num   :  the number of words to read 
-!<
-  integer function numtoread(iodesc) result(num)
 
-    type (io_desc_t) :: iodesc
 
-    num = iodesc%read%n_words
-
-  end function numtoread
-
-!>
-!! @public
-!! @ingroup PIO_numtowrite
-!! @brief returns the global number of words to write for this io descriptor
-!! @details
-!! @param iodesc : @copydoc io_desc_t
-!<
-  integer function numtowrite(iodesc) result(num)
-
-    type (io_desc_t) :: iodesc
-
-    num = iodesc%write%n_words
-
-  end function numtowrite
-#endif
 !> 
 !! @public
 !! @ingroup PIO_createfile 
@@ -1625,7 +1396,7 @@ contains
 !! variables, and attributes, or deleting attributes.) 
 !! @retval ierr @copydoc error_return
 !<
-  integer function PIO_openfile(iosystem, file, iotype, fname,mode, CheckMPI) result(ierr)
+  integer function PIO_openfile(iosystem, file, iotype, fname,mode) result(ierr)
 
 !    use ifcore, only: tracebackqq
     type (iosystem_desc_t), intent(inout), target :: iosystem
@@ -1633,10 +1404,9 @@ contains
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: mode
-    logical, optional, intent(in) :: CheckMPI
     integer :: iorank
     interface
-       integer(C_INT) function PIOc_openfile(iosysid, fh, iotype, fname,mode, CheckMPI) &
+       integer(C_INT) function PIOc_openfile(iosysid, fh, iotype, fname,mode) &
          bind(C,NAME='PIOc_openfile')
          use iso_c_binding
          implicit none
@@ -1645,16 +1415,13 @@ contains
          integer(c_int) :: iotype
          character(kind=c_char) :: fname(*)
          integer(c_int), value :: mode
-         logical(c_bool), value :: CheckMPI
        end function PIOc_openfile
     end interface
-    logical(c_bool) :: iCheckMPI=.true.
     integer :: imode=0, i, nl
     character, allocatable :: cfname(:)
 #ifdef TIMING
     call t_startf("PIO_openfile")
 #endif
-    if(present(Checkmpi)) icheckmpi=logical(Checkmpi,c_bool)
     if(present(mode)) imode = mode
     nl = len_trim(fname)
     allocate(cfname(nl+1))
@@ -1662,23 +1429,13 @@ contains
        cfname(i) = fname(i:i)
     enddo
     cfname(nl+1)=C_NULL_CHAR
-    ierr = PIOc_openfile( iosystem%iosysid, file%fh, iotype, &
-         cfname, imode, iCheckMPI)
+    ierr = PIOc_openfile( iosystem%iosysid, file%fh, iotype, cfname, imode)
     deallocate(cfname)
     file%iosystem => iosystem
-   
-
-!    call PIO_get_iorank(iosystem, iorank)
-!    if(iorank==0) then
-!       call tracebackqq(user_exit_code=-1)
-!    endif
 
 #ifdef TIMING
     call t_stopf("PIO_openfile")
 #endif
-
-    
-
   end function PIO_openfile
 
 !> 
@@ -1815,6 +1572,14 @@ contains
 
   end subroutine read_ascii
 
+!>
+!! @public 
+!! @ingroup PIO_deletefile
+!! @brief Delete a file 
+!! @details
+!! @param ios : a pio system handle
+!! @param fname : a filename
+!<
   subroutine pio_deletefile(ios, fname)
     type(iosystem_desc_t) :: ios
     character(len=*) :: fname

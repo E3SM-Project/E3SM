@@ -1,11 +1,10 @@
 /**
 * @file   pio_nc.c
-* @Author Jim Edwards (jedwards@ucar.edu)
+* @author Jim Edwards (jedwards@ucar.edu)
 * @date     Feburary 2014 
-* @brief    PIO interfaces to netcdf support functions
-*
-
-* This file provides an interface to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf support functions.</A>
+* @brief    PIO interfaces to  <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank">netcdf</A> support functions
+* @details
+* This file provides an interface to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> support functions.
 *  It calls the underlying netcdf or pnetcdf or netcdf4 functions from the appropriate subset of mpi tasks (io_comm), it must be called collectively from union_comm
 *  
 */
@@ -17,7 +16,7 @@
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_att
@@ -82,7 +81,7 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_format
@@ -146,7 +145,7 @@ int PIOc_inq_format (int ncid, int *formatp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_varid
@@ -210,7 +209,7 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_varnatts
@@ -274,7 +273,7 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_def_var
@@ -345,7 +344,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_var
@@ -423,7 +422,7 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_varname
@@ -493,7 +492,7 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_double
@@ -556,7 +555,7 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_int
@@ -619,7 +618,7 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_rename_att
@@ -682,7 +681,7 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_ubyte
@@ -750,7 +749,7 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_del_att
@@ -813,7 +812,7 @@ int PIOc_del_att (int ncid, int varid, const char *name)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_natts
@@ -877,7 +876,7 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq
@@ -948,7 +947,7 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_text
@@ -1016,7 +1015,7 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_short
@@ -1084,7 +1083,7 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_long
@@ -1147,7 +1146,7 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_redef
@@ -1210,7 +1209,7 @@ int PIOc_redef (int ncid)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_set_fill
@@ -1273,7 +1272,7 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_enddef
@@ -1336,7 +1335,7 @@ int PIOc_enddef (int ncid)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_rename_var
@@ -1399,7 +1398,7 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_short
@@ -1462,7 +1461,7 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_text
@@ -1525,7 +1524,7 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_attname
@@ -1595,7 +1594,7 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_ulonglong
@@ -1663,7 +1662,7 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_ushort
@@ -1731,7 +1730,7 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_ulonglong
@@ -1794,7 +1793,7 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_dimlen
@@ -1858,7 +1857,7 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_uint
@@ -1926,7 +1925,7 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_longlong
@@ -1994,7 +1993,7 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_schar
@@ -2057,7 +2056,7 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_float
@@ -2120,7 +2119,7 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_nvars
@@ -2184,7 +2183,7 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_rename_dim
@@ -2247,7 +2246,7 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_varndims
@@ -2316,7 +2315,7 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_long
@@ -2384,7 +2383,7 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_dim
@@ -2455,7 +2454,7 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_dimid
@@ -2519,7 +2518,7 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_unlimdim
@@ -2582,7 +2581,7 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_vardimid
@@ -2650,7 +2649,7 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_attlen
@@ -2714,7 +2713,7 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_dimname
@@ -2784,7 +2783,7 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_ushort
@@ -2847,7 +2846,7 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_float
@@ -2915,7 +2914,7 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_sync
@@ -2979,7 +2978,7 @@ int PIOc_sync (int ncid)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_longlong
@@ -3042,7 +3041,7 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_uint
@@ -3105,7 +3104,7 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_schar
@@ -3173,7 +3172,7 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_attid
@@ -3237,7 +3236,7 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_def_dim
@@ -3301,7 +3300,7 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_ndims
@@ -3365,7 +3364,7 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_vartype
@@ -3429,7 +3428,7 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_int
@@ -3497,7 +3496,7 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_double
@@ -3565,7 +3564,7 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_ubyte
@@ -3628,7 +3627,7 @@ int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PI
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_inq_atttype
@@ -3692,7 +3691,7 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_put_att_uchar
@@ -3755,7 +3754,7 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
 /// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
 ///
 /** 
 * @name    PIOc_get_att_uchar

@@ -18,18 +18,22 @@
 
 \mainpage Parallel I/O library (PIO)
 
-\author John M. Dennis
 \author Jim Edwards
-\author Robert Jacob
-\author Ray Loy
-\author Art Mirin
+\author John M. Dennis
 \author Mariana Vertenstein
 
-The Parallel I/O (PIO) library has been developed over several years to improve the 
-ability of component models of the Community Earth System Model (CESM) to perform I/O.  However, we 
-believe that the interface is sufficiently general to be useful to a broader spectrum of applications.
-Although PIO has a binary output capability the focus of development has been on backend tools that
-use the NetCDF file format.   
+The Parallel I/O (PIO) library has been developed over several years
+to improve the ability of component models of the Community Earth
+System Model (CESM) to perform I/O.  We believe that the interface is
+sufficiently general to be useful to a broader spectrum of
+applications.  The focus of development has been on backend tools that
+use the NetCDF file format.  PIO currently supports NetCDF and PnetCDF
+as backend libraries, both can be linked and used with runtime options
+controlling which is used for a given file.
+
+PIO2 represents a significant rewrite of the PIO library and includes
+a C API as well as the original F90 API.  A new decomposition strategy
+has been introduced which gives the user more ability to tune io communications.
 
 This user's guide provides information about the PIO library and examples on how it can be used. 
 Please review the ChangeLog that is included with the distribution for up-to-date release information.
