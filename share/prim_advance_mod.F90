@@ -70,7 +70,7 @@ contains
     use bndry_mod, only : bndry_exchangev
     use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture, integration
     use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
-    use dimensions_mod, only : np, nlev, nlevp, nvar
+    use dimensions_mod, only : np, nlev, nlevp, nvar, nc
 !    use prim_state_mod, only : prim_printstate
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
     use element_mod, only : element_t
@@ -105,9 +105,12 @@ contains
     ! =================
     ! Local
     ! =================
-    real (kind=real_kind) ::  dt2, time, dt_vis, eta_ave_w
+    real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) ::  eta_dot_dpdn(np,np,nlevp)
     real (kind=real_kind) ::  dp(np,np)
+    real (kind=real_kind) ::  tempdp3d(np,np)
+    real (kind=real_kind) ::  tempmass(nc,nc)
+    real (kind=real_kind) ::  tempflux(nc,nc,4)
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
     integer :: n,i,j,lx,lenx
 
@@ -1956,16 +1959,18 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use dimensions_mod, only : np, np, nlev
+  use dimensions_mod, only : np, np, nlev, nc, ntrac
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis
   use hybrid_mod, only : hybrid_t
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
+  use derivative_mod, only : subcell_Laplace_fluxes, subcell_dss_fluxes
   use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk_dp3d
   use physical_constants, only: Cp
+  use derivative_mod, only : subcell_Laplace_fluxes
 !  use time_mod, only : TimeLevel_t
   implicit none
 
@@ -1986,6 +1991,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: ttens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: dptens
+  real (kind=real_kind), dimension(nc,nc,4,nlev,nets:nete)      :: dpflux
   real (kind=real_kind), dimension(np,np,nlev) :: p
   real (kind=real_kind), dimension(np,np) :: dptemp1,dptemp2
 
@@ -1999,6 +2005,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np) :: lap_t,lap_dp
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp
+
+  real (kind=real_kind)                     :: temp      (np,np,nlev)
+  real (kind=real_kind)                     :: laplace_fluxes(nc,nc,4)
+
 
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
@@ -2085,7 +2095,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !
   if (hypervis_order == 2) then
      do ic=1,hypervis_subcycle
-        call biharmonic_wk_dp3d(elem,dptens,ttens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+        call biharmonic_wk_dp3d(elem,dptens,dpflux,ttens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+
         do ie=nets,nete
 
            ! comptue mean flux
@@ -2133,6 +2144,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                     vtens(i,j,2,k,ie)=vtens_tmp
                  enddo
               enddo
+              if (0<ntrac) then
+                dpflux(:,:,:,k,ie) = -nu_p*dpflux(:,:,:,k,ie)
+                if (nu_top>0 .and. k<=3) then
+                  laplace_fluxes=subcell_Laplace_fluxes(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),np,nc)
+                  dpflux(:,:,:,k,ie) = dpflux(:,:,:,k,ie) + nu_scale_top*nu_top*laplace_fluxes
+                endif
+              endif
            enddo
 
 
@@ -2154,6 +2172,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            kptr=nlev
            call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, elem(ie)%desc)
            kptr=3*nlev
+           if (0<ntrac) then
+             do k=1,nlev
+               temp(:,:,k) = dptens(:,:,k,ie) / elem(ie)%spheremp
+             enddo
+           endif
            call edgeVunpack(edge3, dptens(:,:,:,ie), nlev, kptr, elem(ie)%desc)
 
 
@@ -2167,6 +2190,14 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               ttens(:,:,k,ie)=dt*ttens(:,:,k,ie)*elem(ie)%rspheremp(:,:)
               dptens(:,:,k,ie)=dt*dptens(:,:,k,ie)*elem(ie)%rspheremp(:,:)
            enddo
+
+           if (0<ntrac) then
+             temp =  dptens(:,:,:,ie)/dt - temp
+             do k=1,nlev
+               temp(:,:,k) = temp(:,:,k) * elem(ie)%metdet
+               dpflux(:,:,:,k,ie) = dpflux(:,:,:,k,ie) + subcell_dss_fluxes(temp(:,:,k), np, nc)
+             end do
+           endif
 
            ! apply hypervis to u -> u+utens:
            ! E0 = dpdn * .5*u dot u + dpdn * T  + dpdn*PHIS
@@ -2194,6 +2225,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  enddo
               enddo
            enddo
+           if (0<ntrac) then
+             elem(ie)%sub_elem_mass_flux = &
+                elem(ie)%sub_elem_mass_flux + eta_ave_w*dpflux(:,:,:,:,ie)
+           endif
         enddo
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
@@ -2521,10 +2556,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   ! ===================================
   use kinds, only : real_kind
-  use dimensions_mod, only : np, np, nlev
+  use dimensions_mod, only : np, np, nc, nlev, ntrac
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
+  use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
   use edge_mod, only : edgevpack, edgevunpack
   use bndry_mod, only : bndry_exchangev
   use control_mod, only : moisture, qsplit, use_cpstar, rsplit
@@ -2556,6 +2592,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,nlev+1)   :: eta_dot_dpdn  ! half level vertical velocity on p-grid
   real (kind=real_kind), dimension(np,np)      :: sdot_sum   ! temporary field
   real (kind=real_kind), dimension(np,np,2)    :: vtemp     ! generic gradient storage
+  real (kind=real_kind), dimension(np,np,2,nlev):: vdp       !                            
+  real (kind=real_kind), dimension(np,np,2     ):: v         !                            
   real (kind=real_kind), dimension(np,np)      :: vgrad_T    ! v.grad(T)
   real (kind=real_kind), dimension(np,np)      :: Ephi       ! kinetic energy + PHI term
   real (kind=real_kind), dimension(np,np,2)      :: grad_ps    ! lat-lon coord version
@@ -2572,6 +2610,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind) ::  vtens1(np,np,nlev)
   real (kind=real_kind) ::  vtens2(np,np,nlev)
   real (kind=real_kind) ::  ttens(np,np,nlev)
+  real (kind=real_kind) ::  stashdp3d (np,np,nlev)
+  real (kind=real_kind) ::  tempdp3d  (np,np)
+  real (kind=real_kind) ::  tempflux  (nc,nc,4)
 
   real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
@@ -2649,8 +2690,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !              vgrad_p(i,j,k) = &
 !                   hvcoord%hybm(k)*(v1*grad_ps(i,j,1) + v2*grad_ps(i,j,2))
               vgrad_p(i,j,k) = (v1*grad_p(i,j,1,k) + v2*grad_p(i,j,2,k))
-              vtemp(i,j,1) = v1*dp(i,j,k)
-              vtemp(i,j,2) = v2*dp(i,j,k)
+              vdp(i,j,1,k) = v1*dp(i,j,k)
+              vdp(i,j,2,k) = v2*dp(i,j,k)
            end do
         end do
 
@@ -2659,7 +2700,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! ================================
         ! Accumulate mean Vel_rho flux in vn0
         ! ================================
-        elem(ie)%derived%vn0(:,:,:,k)=elem(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vtemp(:,:,:)
+        elem(ie)%derived%vn0(:,:,:,k)=elem(ie)%derived%vn0(:,:,:,k)+eta_ave_w*vdp(:,:,:,k)
 
 
         ! =========================================
@@ -2667,7 +2708,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! Compute relative vorticity and divergence
         !
         ! =========================================
-        divdp(:,:,k)=divergence_sphere(vtemp,deriv,elem(ie))
+        divdp(:,:,k)=divergence_sphere(vdp(:,:,:,k),deriv,elem(ie))
         vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
 
      enddo
@@ -3028,8 +3069,16 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*vtens2(:,:,k)
            elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*ttens(:,:,k)
            if (rsplit>0) &
-                elem(ie)%state%dp3d(:,:,k,np1) = -elem(ie)%spheremp(:,:)*&
-                (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k))
+              elem(ie)%state%dp3d(:,:,k,np1) = -elem(ie)%spheremp(:,:)*&
+              (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k))
+           if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
+              v(:,:,1) =  elem(ie)%Dinv(1,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(1,2,:,:)*vdp(:,:,2,k)
+              v(:,:,2) =  elem(ie)%Dinv(2,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(2,2,:,:)*vdp(:,:,2,k)
+              v(:,:,1) = v(:,:,1)*elem(ie)%metdet(:,:)
+              v(:,:,2) = v(:,:,2)*elem(ie)%metdet(:,:)
+              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc)
+              elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
+           end if
         enddo
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
@@ -3041,9 +3090,19 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,2,k,nm1) + dt2*vtens2(:,:,k) )
            elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*(elem(ie)%state%T(:,:,k,nm1) + dt2*ttens(:,:,k))
            if (rsplit>0) &
-                elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%spheremp(:,:)*&
-                (elem(ie)%state%dp3d(:,:,k,nm1)-dt2*&
-                (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
+                elem(ie)%state%dp3d(:,:,k,np1) = &
+                  elem(ie)%spheremp(:,:) * (elem(ie)%state%dp3d(:,:,k,nm1) - &
+                  dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
+
+
+           if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
+              v(:,:,1) =  elem(ie)%Dinv(1,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(1,2,:,:)*vdp(:,:,2,k)
+              v(:,:,2) =  elem(ie)%Dinv(2,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(2,2,:,:)*vdp(:,:,2,k)
+              v(:,:,1) = v(:,:,1)*elem(ie)%metdet(:,:)
+              v(:,:,2) = v(:,:,2)*elem(ie)%metdet(:,:)
+              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc)
+              elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
+           end if
         enddo
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%ps_v(:,:,nm1) - dt2*sdot_sum )
 
@@ -3089,8 +3148,24 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, elem(ie)%desc)
 
      if (rsplit>0) then
+        if (0<ntrac.and.eta_ave_w.ne.0.) then
+          do k=1,nlev
+             stashdp3d(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)/elem(ie)%spheremp(:,:)
+          end do
+        endif
+
         kptr=kptr+2*nlev
         call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
+
+        if  (0<ntrac.and.eta_ave_w.ne.0.) then
+          do k=1,nlev
+            tempdp3d(:,:) = &
+               elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1) - stashdp3d(:,:,k)
+            tempdp3d = tempdp3d * elem(ie)%metdet/dt2
+            tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc)
+            elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + tempflux
+          end do
+        end if   
      endif
 
      ! ====================================================
