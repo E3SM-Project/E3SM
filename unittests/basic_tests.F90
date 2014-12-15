@@ -160,7 +160,7 @@ module basic_tests
       if(master_task) write(*,"(6x,A)") "trying to open nonexistant file error expected ... "
       call mpi_barrier(MPI_COMM_WORLD,ret_val)
       ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, "FAKE.FILE", &
-                             PIO_nowrite, CheckMPI=.false.)
+                             PIO_nowrite)
       if (ret_val.eq.PIO_NOERR) then
         ! Error in PIO_openfile
         err_msg = "Successfully opened file that doesn't exist"

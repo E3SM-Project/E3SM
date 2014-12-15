@@ -1287,45 +1287,6 @@ contains
    end subroutine getnumiotasks
 
 
-  !=============================================
-  !  copy_decompmap:
-  !
-  !   copy decompmap_t data structures
-  !
-  !=============================================
-
-  subroutine copy_decompmap(src,dest)
-    use pio_types, only : decompmap_t
-    type (decompmap_t), intent(in) :: src
-    type (decompmap_t), intent(inout) :: dest
-
-
-    dest%start    = src%start
-    dest%length   = src%length
-
-  end subroutine copy_decompmap
-
-!> 
-!! @public 
-!! @ingroup PIO_setiotype
-!! @brief sets the desired type of io to perform
-!! @details
-!! @param file @copydoc file_desc_t
-!! @param iotype : @copydoc PIO_iotype
-!! @param rearr : @copydoc PIO_rearr_method
-!<
-  subroutine setiotype(file,iotype,rearr)
-
-    type (file_desc_t), intent(inout) :: file
-    integer(i4), intent(in) :: iotype 
-    integer(i4), intent(in) :: rearr
-
-    file%iotype = iotype
-    file%iosystem%rearr = rearr
-
-  end subroutine setiotype
-
-
 
 !> 
 !! @public

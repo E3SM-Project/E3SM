@@ -20,7 +20,6 @@ module pio_support
   public :: CheckMPIreturn
   public :: pio_readdof
   public :: pio_writedof
-  public :: pio_fc_gather_offset
   public :: replace_c_null
 
   logical, public :: Debug=.FALSE.

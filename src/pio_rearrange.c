@@ -1014,7 +1014,6 @@ void default_subset_partition(const iosystem_desc_t ios, io_desc_t *iodesc)
  **
  */
 
-
 int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offset compmap[], 
 			    const int gsize[], const int ndims, io_desc_t *iodesc)
 {
@@ -1031,8 +1030,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   PIO_Offset *srcindex=NULL;
 
 
-  //  int maxreq = MAX_GATHER_BLOCK_SIZE;
-  int maxreq=0;
+  int maxreq = MAX_GATHER_BLOCK_SIZE;
   int rank, ntasks, rcnt;
   size_t pio_offset_size=sizeof(PIO_Offset);
 
