@@ -26,3 +26,5 @@ soft add @ibm-compilers-2014-02
 soft add +cmake
 
 
+# Capture user's software environment for archiving with performance data
+printenv >& software_environment.txt
