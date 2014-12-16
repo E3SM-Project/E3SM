@@ -1958,6 +1958,15 @@ contains
        unitVectorNorth(2) = unitVectorNorth(2) / vectorMagnitude
        unitVectorNorth(3) = unitVectorNorth(3) / vectorMagnitude
 
+       if (zPoint < 0.0_RKIND) then
+
+          ! have calculated due south vector if in southern hemisphere
+          unitVectorNorth(1) = -unitVectorNorth(1)
+          unitVectorNorth(2) = -unitVectorNorth(2)
+          unitVectorNorth(3) = -unitVectorNorth(3)
+       
+       endif
+
     else   
 
        unitVectorNorth(1) = 0.0_RKIND

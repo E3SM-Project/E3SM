@@ -21,6 +21,8 @@ module cice_velocity_solver_variational
 
   public :: &
        cice_init_velocity_solver_variational, &
+       cice_strain_tensor_variational, &
+       cice_stress_divergence_variational, &
        cice_internal_stress_variational
 
 contains
@@ -90,7 +92,6 @@ contains
     endif
 
   end subroutine cice_init_velocity_solver_variational
-
 
 !-----------------------------------------------------------------------
 ! time step

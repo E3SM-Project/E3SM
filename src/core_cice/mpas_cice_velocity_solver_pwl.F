@@ -198,7 +198,8 @@ contains
          alphaPWL, &
          a, b, c, s, &
          basisIntegral, &
-         basisIntegralsMetricSubCell
+         basisIntegralsMetricSubCell, &
+         basisSubAreaSum
 
     integer :: &
          iCell, &
@@ -213,8 +214,10 @@ contains
          iSubCell1, &
          iSubCell2, &
          iStressVertex, &
-         iVelocityVertex
-
+         iVelocityVertex, &
+         subCellTypeStress, &
+         subCellTypeVelocity
+         
     real(kind=RKIND), dimension(3,3) :: &
          leftMatrix
 
@@ -234,7 +237,8 @@ contains
          edgesOnCell
 
     real(kind=RKIND), dimension(:), pointer :: &
-         dvEdge
+         dvEdge, &
+         areaCell
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          subBasisGradientU, &
@@ -254,6 +258,7 @@ contains
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
     call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
+    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     allocate(subBasisGradientU(maxEdges,3))
     allocate(subBasisGradientV(maxEdges,3))
@@ -279,6 +284,8 @@ contains
        enddo ! iVertexOnCell
 
        ! calculate the area of the subcells
+       basisSubAreaSum = 0.0_RKIND 
+
        do iSubCell = 1, nEdgesOnCell(iCell)
 
           iEdge = edgesOnCell(iSubCell,iCell)
@@ -296,7 +303,12 @@ contains
           ! Heron's formula 
           basisSubArea(iSubCell) = sqrt(s * (s-a) * (s-b) * (s-c))
 
+          basisSubAreaSum = basisSubAreaSum + basisSubArea(iSubCell)
+
        enddo ! iSubCell
+
+       ! ensure sum of subareas equals the area of the cell
+       basisSubArea(:) = basisSubArea(:) * (areaCell(iCell) / basisSubAreaSum)
 
        ! calculate the linear basis on the sub triangle
        do iSubCell = 1, nEdgesOnCell(iCell)
@@ -434,25 +446,47 @@ contains
 
              do iSubCell = 1, nEdgesOnCell(iCell)
 
-                basisIntegralsMetricSubCell = alphaPWL**2
-
-                if ( (iSubCell == iStressVertex .and. &
-                      iSubCell == iVelocityVertex) .or. &
-                     (iSubCell == wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell)) .and. &
-                      iSubCell == wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) ) then
-
-                   basisIntegralsMetricSubCell = 2.0_RKIND * (alphaPWL + 1)**2
-
+                ! determine stress subcell type
+                if (iSubCell == iStressVertex) then
+                   subCellTypeStress = 1
+                else if (iSubCell == wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
+                   subCellTypeStress = 2
+                else
+                   subCellTypeStress = 3
                 endif
 
-                if ( (iSubCell == iStressVertex .and. &
-                      iSubCell == wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) .or. &
-                     (iSubCell == wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell)) .and. &
-                      iSubCell == iVelocityVertex) ) then
+                ! determine velocity subcell type
+                if (iSubCell == iVelocityVertex) then
+                   subCellTypeVelocity = 1
+                else if (iSubCell == wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) then
+                   subCellTypeVelocity = 2
+                else
+                   subCellTypeVelocity = 3
+                endif
 
+                ! set the subcell integral value
+                if      ((subCellTypeStress == 1 .and. subCellTypeVelocity == 1) .or. &
+                         (subCellTypeStress == 2 .and. subCellTypeVelocity == 2)) then
+                   
+                   basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2 + 2.0_RKIND * alphaPWL + 2.0_RKIND
+                   
+                else if ((subCellTypeStress == 1 .and. subCellTypeVelocity == 2) .or. &
+                         (subCellTypeStress == 2 .and. subCellTypeVelocity == 1)) then
+                   
                    basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2 + 2.0_RKIND * alphaPWL + 1.0_RKIND
+                   
+                else if ((subCellTypeStress == 1 .and. subCellTypeVelocity == 3) .or. &
+                         (subCellTypeStress == 3 .and. subCellTypeVelocity == 1) .or. &
+                         (subCellTypeStress == 2 .and. subCellTypeVelocity == 3) .or. &
+                         (subCellTypeStress == 3 .and. subCellTypeVelocity == 2)) then
+                   
+                   basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2 + alphaPWL
 
-                endif
+                else if  (subCellTypeStress == 3 .and. subCellTypeVelocity == 3) then
+                   
+                   basisIntegralsMetricSubCell = 2.0_RKIND * alphaPWL**2
+
+                end if
 
                 basisIntegralsMetricSubCell = basisIntegralsMetricSubCell * &
                      basisSubArea(iSubCell) / 12.0_RKIND

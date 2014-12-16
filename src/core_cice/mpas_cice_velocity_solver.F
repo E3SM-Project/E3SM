@@ -110,6 +110,11 @@ contains
             config_include_metric_terms, &
             config_variational_basis)
 
+    else 
+
+       write(stderrUnit,*) "Error: config_stress_divergence_scheme unknown: ", trim(config_stress_divergence_scheme)
+       stop
+
     endif
 
   end subroutine cice_init_velocity_solver!}}}
