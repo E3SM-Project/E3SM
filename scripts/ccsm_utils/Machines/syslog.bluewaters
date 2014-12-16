@@ -24,7 +24,7 @@ $remaining $sample_interval
 EOF1
 /bin/cp -p $run/cesm.log.$lid $dir/cesm.log.$lid.$remaining
 
-while (1)
+while ($remaining > 0)
   grep -a -i "nstep" $run/*atm.log.$lid | tail > $dir/atm.log.$lid.nstep.$remaining
 #  grep -a -i "nstep" $run/cesm.log.$lid | tail > $dir/cesm.log.$lid.nstep.$remaining
   grep -a -i "timestep" $run/*lnd.log.$lid | tail > $dir/lnd.log.$lid.timestep.$remaining
@@ -37,6 +37,7 @@ while (1)
   chmod a+r $dir/*
   sleep $sample_interval
   set remaining = `qstat -f $jid | grep Walltime.Remaining | sed 's/ *Walltime.Remaining = *\([0-9]*\) */\1/' `
+  if ("X$remaining" == "X") set remaining = 0
   cat > $run/Walltime.Remaining << EOF2
 $remaining $sample_interval
 EOF2

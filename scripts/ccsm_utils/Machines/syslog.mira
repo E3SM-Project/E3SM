@@ -30,7 +30,7 @@ $remaining $sample_interval
 EOF1
 /bin/cp -p $run/cesm.log.$lid $dir/cesm.log.$lid.$remaining
 
-while (1)
+while ($remaining > 0)
   grep -a -i "nstep" $run/*atm.log.$lid | tail > $dir/atm.log.$lid.nstep.$remaining
 #  grep -a -i "nstep" $run/cesm.log.$lid | tail > $dir/cesm.log.$lid.nstep.$remaining
   grep -a -i "timestep" $run/*lnd.log.$lid | tail > $dir/lnd.log.$lid.timestep.$remaining
