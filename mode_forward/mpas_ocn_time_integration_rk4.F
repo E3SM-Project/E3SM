@@ -401,17 +401,31 @@ module ocn_time_integration_rk4
            call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
 
            ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
-           call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-              layerThicknessCur,layerThicknessEdge, normalVelocityProvis, &
-              sshCur, highFreqThicknessProvis, rk_substep_weights(rk_step), &
-              vertAleTransportTop, err)
+           if (associated(highFreqThicknessProvis)) then
+              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+                 layerThicknessCur,layerThicknessEdge, normalVelocityProvis, &
+                 sshCur, rk_substep_weights(rk_step), &
+                 vertAleTransportTop, err, highFreqThicknessProvis)
+           else
+              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+                 layerThicknessCur,layerThicknessEdge, normalVelocityProvis, &
+                 sshCur, rk_substep_weights(rk_step), &
+                 vertAleTransportTop, err)
+           endif
 
            call ocn_tend_vel(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, scratchPool, 1)
 
-           call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-              layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
-              sshCur, highFreqThicknessProvis, rk_substep_weights(rk_step), &
-              vertAleTransportTop, err)
+           if (associated(highFreqThicknessProvis)) then
+              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+                 layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
+                 sshCur, rk_substep_weights(rk_step), &
+                 vertAleTransportTop, err, highFreqThicknessProvis)
+           else
+              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+                 layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
+                 sshCur, rk_substep_weights(rk_step), &
+                 vertAleTransportTop, err)
+           endif
 
            call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
 
