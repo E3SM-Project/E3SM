@@ -166,7 +166,7 @@ void identity(MPI_Fint *comm, int *iotask)
 }
 
 void determineiotasks(const MPI_Comm comm, const int stride, const int rearr, 
-		      int *numiotasks,int *base, bool *iamIOtask)
+		      int *numiotasks,int *base, int *iamIOtask)
 {
 
 /*  
