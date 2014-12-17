@@ -420,9 +420,15 @@ module ocn_time_integration_split
 
            ! compute vertAleTransportTop.  Use u (rather than normalTransportVelocity) for momentum advection.
            ! Use the most recent time level available.
-           call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-              layerThicknessCur, layerThicknessEdge, normalVelocityCur, &
-              sshCur, highFreqThicknessNew, dt, vertAleTransportTop, err)
+           if (associated(highFreqThicknessNew)) then
+              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+                 layerThicknessCur, layerThicknessEdge, normalVelocityCur, &
+                 sshCur, dt, vertAleTransportTop, err, highFreqThicknessNew)
+            else
+               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+                  layerThicknessCur, layerThicknessEdge, normalVelocityCur, &
+                  sshCur, dt, vertAleTransportTop, err)
+            endif
 
             call ocn_tend_vel(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, scratchPool, stage1_tend_time)
 
@@ -1178,9 +1184,15 @@ module ocn_time_integration_split
             ! compute vertAleTransportTop.  Use normalTransportVelocity for advection of layerThickness and tracers.
             ! Use time level 1 values of layerThickness and layerThicknessEdge because 
             ! layerThickness has not yet been computed for time level 2.
-            call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-               layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
-               sshCur, highFreqThicknessNew, dt, vertAleTransportTop, err)
+           if (associated(highFreqThicknessNew)) then
+              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+                 layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
+                 sshCur, dt, vertAleTransportTop, err, highFreqThicknessNew)
+            else
+               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+                 layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
+                 sshCur, dt, vertAleTransportTop, err)
+            endif
 
             call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
 
