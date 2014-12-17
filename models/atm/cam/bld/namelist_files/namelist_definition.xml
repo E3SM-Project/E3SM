@@ -2038,6 +2038,74 @@ Goff and Gratch (1946); 'MurphyKoop' for Murphy & Koop (2005)
 Default: GoffGratch
 </entry>
 
+<!-- Switches for turning on/off individual parameterizations -->
+
+<entry id="l_tracer_aero" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Turn on aerosol related processes (emissions, chemistry, deposition, etc.)
+Default: TRUE
+</entry>
+
+<entry id="l_vdiff" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Calculate turbulent transport.
+Default: TRUE
+</entry>
+
+<entry id="l_rayleigh" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Calculate Rayleigh friction.
+Default: TRUE
+</entry>
+
+<entry id="l_gw_drag" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Calculate gravity wave drag.
+Default: TRUE
+</entry>
+
+<entry id="l_ac_energy_chk" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Turn on energy budget checks in tphysac.
+Default: TRUE
+</entry>
+
+<entry id="l_bc_energy_fix" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Turn on energy fixer in tphysbc.
+Default: TRUE
+</entry>
+
+<entry id="l_dry_adj" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Calculate dry adjustment.
+Default: TRUE
+</entry>
+
+<entry id="l_st_mac" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Calculate stratiform cloud macrophysics.
+When the CAM4 Rasch-Kristjansson scheme is in use, 
+l_st_mac = .true. also swiches on the microphysics. 
+Default: TRUE
+</entry>
+
+<entry id="l_st_mic" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Calculate stratiform cloud microphysics. Note that this switch 
+is implemented only for the Morrison-Gettelman scheme. 
+For Rasch-Kristjansson, the mac-only option has not been implemented 
+(i.e., depending on what is chosen for l_st_mac,
+macro and microphysics are either both on or both off.)
+Default: TRUE
+</entry>
+
+<entry id="l_rad" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Do radiative transfer and heating/cooling calculation.
+Default: TRUE
+</entry>
+
 <!-- Physics sub-column switches -->
 
 <entry id="use_subcol_microp" type="logical" category="conv"
@@ -2154,7 +2222,7 @@ Default: FALSE
 </entry>
 
 <entry id="shallow_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="Hack,UW,CLUBB_SGS" >
+       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS" >
 Type of shallow convection scheme employed.  'Hack' for Hack shallow convection;
 'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'CLUBB_SGS'
 for CLUBB_SGS.

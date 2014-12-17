@@ -262,16 +262,16 @@ subroutine convect_deep_tend( &
     call pbuf_get_field(pbuf, prec_dp_idx,     prec )
     call pbuf_get_field(pbuf, snow_dp_idx,     snow )
 
+   !cld = 0  !!HuiWan 2014-05. Bugfix. cld is an input variable to zm_conv_tend.
+    ql = 0
+    rprd = 0
+    fracis = 0
+    evapcdp = 0
     prec=0
     snow=0
 
     jctop = pver
     jcbot = 1._r8
-    cld = 0
-    ql = 0
-    rprd = 0
-    fracis = 0
-    evapcdp = 0
 
   case('ZM') !    1 ==> Zhang-McFarlane (default)
      call pbuf_get_field(pbuf, pblh_idx,  pblh)
