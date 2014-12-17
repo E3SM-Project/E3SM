@@ -1320,7 +1320,7 @@ Default: 0.0
 
 <entry id="new_random" type="logical"  category="initial_conditions"
        group="cam_inparm" valid_values="" >
-Use a new RNG that is more robust and repeatable than the compiler-dependent
+Use a new RNG in dynamics/se/random_xgc.F90 that is more robust and repeatable than the compiler-dependent
 fortran intrinsic random_number.
 Default: FALSE
 </entry>
