@@ -160,3 +160,20 @@ if(${PIO_BUILD_TESTS})
 	ADD_SUBDIRECTORY(scripts)
 endif()
 
+# Build documentation
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc")
+  configure_file(${CMAKE_SOURCE_DIR}/Doxyfile.rbuild ${CMAKE_BINARY_DIR}/Doxyfile.rbuild.cmake @ONLY)
+  add_custom_target(doc
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/customdoxygen.css ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/DoxygenLayout.xml ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/doxygen.sty ${CMAKE_BINARY_DIR}
+    COMMAND cat ${CMAKE_SOURCE_DIR}/Doxyfile > ${CMAKE_BINARY_DIR}/Doxyfile.cmake
+    COMMAND cat ${CMAKE_BINARY_DIR}/Doxyfile.rbuild.cmake >> ${CMAKE_BINARY_DIR}/Doxyfile.cmake
+    COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile.cmake
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating API documentation"
+  )
+endif(DOXYGEN_FOUND)
+
