@@ -69,7 +69,7 @@ contains
 !>  (z-tilde), and imposes a minimum layer thickness.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_ALE_thickness(meshPool, verticalMeshPool, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)!{{{
+   subroutine ocn_ALE_thickness(meshPool, verticalMeshPool, oldSSH, div_hu_btr, dt, ALE_thickness, err, newHighFreqThickness)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -87,7 +87,7 @@ contains
          oldSSH,   &!< Input: sea surface height at old time
          div_hu_btr !< Input: thickness-weighted barotropic divergence
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: &
          newHighFreqThickness   !< Input: high frequency thickness.  Alters ALE thickness.
 
       real (kind=RKIND), intent(in) :: &
