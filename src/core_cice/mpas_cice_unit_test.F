@@ -75,8 +75,6 @@ contains
        write(*,*) "config_unit_test_type:", trim(config_unit_test_type)
     end select
 
-    stop
-
   end subroutine cice_perform_unit_test!}}}
 
 !-----------------------------------------------------------------------

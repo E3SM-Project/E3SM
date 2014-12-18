@@ -21,7 +21,8 @@ module cice_velocity_solver_variational_shared
 
   public :: &
        cice_calc_local_coords, &
-       cice_calc_variational_metric_terms
+       cice_calc_variational_metric_terms, &
+       cice_wrapped_index
 
 contains
 
@@ -333,6 +334,33 @@ contains
     endif
 
   end subroutine cice_calc_variational_metric_terms
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_wrapped_index
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  function cice_wrapped_index(&
+       input, &
+       nelements) &
+       result(output)!{{{
+
+    integer, intent(in) :: &
+         input, &  !< Input: 
+         nelements !< Input: 
+
+    integer :: output
+
+    output = modulo(input - 1, nelements) + 1
+
+  end function cice_wrapped_index!}}}
 
 !-----------------------------------------------------------------------
 

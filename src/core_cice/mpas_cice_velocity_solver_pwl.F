@@ -178,6 +178,9 @@ contains
     use cice_numerics, only: &
          cice_solve_linear_basis_system
 
+    use cice_velocity_solver_variational_shared, only: &
+         cice_wrapped_index
+
     type(MPAS_pool_type), pointer :: &
          mesh !< Input: 
 
@@ -290,7 +293,7 @@ contains
 
           iEdge = edgesOnCell(iSubCell,iCell)
           iVertexOnCell1 = iSubCell
-          iVertexOnCell2 = wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
+          iVertexOnCell2 = cice_wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
 
           c = dvEdge(iEdge)
           a = sqrt((xLocal(iVertexOnCell1,iCell) - xPWLCentre)**2 + &
@@ -314,7 +317,7 @@ contains
        do iSubCell = 1, nEdgesOnCell(iCell)
 
           iVertexOnCell1 = iSubCell
-          iVertexOnCell2 = wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
+          iVertexOnCell2 = cice_wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
 
           ! set up left hand matrix
           leftMatrix(1,1) = xLocal(iVertexOnCell1,iCell) - xPWLCentre
@@ -386,7 +389,7 @@ contains
                 subCellGradientU(iBasisVertex,iSubCell) = subCellGradientU(iBasisVertex,iSubCell) + subBasisGradientU(iSubCell,1)
                 subCellGradientV(iBasisVertex,iSubCell) = subCellGradientV(iBasisVertex,iSubCell) + subBasisGradientV(iSubCell,1)
 
-             else if (iSubCell == wrapped_index(iBasisVertex - 1, nEdgesOnCell(iCell))) then
+             else if (iSubCell == cice_wrapped_index(iBasisVertex - 1, nEdgesOnCell(iCell))) then
 
                 subCellGradientU(iBasisVertex,iSubCell) = subCellGradientU(iBasisVertex,iSubCell) + subBasisGradientU(iSubCell,2)
                 subCellGradientV(iBasisVertex,iSubCell) = subCellGradientV(iBasisVertex,iSubCell) + subBasisGradientV(iSubCell,2)
@@ -403,7 +406,7 @@ contains
           do iGradientVertex = 1, nEdgesOnCell(iCell)
 
              iSubCell1 = iGradientVertex
-             iSubCell2 = wrapped_index(iGradientVertex - 1, nEdgesOnCell(iCell))
+             iSubCell2 = cice_wrapped_index(iGradientVertex - 1, nEdgesOnCell(iCell))
 
              basisGradientU(iBasisVertex,iGradientVertex,iCell) = 0.5_RKIND * (subCellGradientU(iBasisVertex,iSubCell1) + subCellGradientU(iBasisVertex,iSubCell2))
              basisGradientV(iBasisVertex,iGradientVertex,iCell) = 0.5_RKIND * (subCellGradientV(iBasisVertex,iSubCell1) + subCellGradientV(iBasisVertex,iSubCell2))
@@ -421,7 +424,7 @@ contains
 
              do iSubCell = 1, nEdgesOnCell(iCell)
 
-                if (iSubCell == iStressVertex .or. iSubCell == wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
+                if (iSubCell == iStressVertex .or. iSubCell == cice_wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
                    basisIntegral = ((alphaPWL + 1) * basisSubArea(iSubCell)) / 3.0_RKIND
                 else
                    basisIntegral = ( alphaPWL      * basisSubArea(iSubCell)) / 3.0_RKIND
@@ -449,7 +452,7 @@ contains
                 ! determine stress subcell type
                 if (iSubCell == iStressVertex) then
                    subCellTypeStress = 1
-                else if (iSubCell == wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
+                else if (iSubCell == cice_wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
                    subCellTypeStress = 2
                 else
                    subCellTypeStress = 3
@@ -458,7 +461,7 @@ contains
                 ! determine velocity subcell type
                 if (iSubCell == iVelocityVertex) then
                    subCellTypeVelocity = 1
-                else if (iSubCell == wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) then
+                else if (iSubCell == cice_wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) then
                    subCellTypeVelocity = 2
                 else
                    subCellTypeVelocity = 3
@@ -530,6 +533,9 @@ contains
        iSubCell) &
        result(grad)!{{{
     
+    use cice_velocity_solver_variational_shared, only: &
+         cice_wrapped_index
+
     integer, intent(in) :: &
          nEdgesOnCell, &      !< Input: 
          basisVertexOnCell, & !< Input: basis function vertex
@@ -546,36 +552,9 @@ contains
     grad = basisGradient(1,iSubCell) * &
            (alphaPWL + merge(1.0_RKIND, 0.0_RKIND, iSubCell == basisVertexOnCell)) + &
            basisGradient(2,iSubCell) * &
-           (alphaPWL + merge(1.0_RKIND, 0.0_RKIND, iSubCell == wrapped_index(basisVertexOnCell - 1, nEdgesOnCell)))
+           (alphaPWL + merge(1.0_RKIND, 0.0_RKIND, iSubCell == cice_wrapped_index(basisVertexOnCell - 1, nEdgesOnCell)))
 
   end function pwl_basis_gradient!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  wrapped_index
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  function wrapped_index(&
-       input, &
-       nelements) &
-       result(output)!{{{
-
-    integer, intent(in) :: &
-         input, &  !< Input: 
-         nelements !< Input: 
-
-    integer :: output
-
-    output = modulo(input - 1, nelements) + 1
-
-  end function wrapped_index!}}}
 
 !-----------------------------------------------------------------------
 ! Hex specific plotting stuff
@@ -737,6 +716,9 @@ contains
        x0, &
        y0)!{{{
 
+    use cice_velocity_solver_variational_shared, only: &
+         cice_wrapped_index
+
     integer, intent(in) :: &
          nEdgesOnCell, & !< Input: 
          iSubTriangle, & !< Input: 
@@ -796,7 +778,7 @@ contains
                             subBasisGradientV(iSubTriangle,3) * y + &
                             subBasisConstant(iSubTriangle,3))
 
-             write(*,*) iVertex, nEdgesOnCell, wrapped_index(iVertex - 1, nEdgesOnCell)
+             write(*,*) iVertex, nEdgesOnCell, cice_wrapped_index(iVertex - 1, nEdgesOnCell)
 
              if (iSubTriangle == iVertex) then
 
@@ -805,7 +787,7 @@ contains
                       subBasisGradientV(iSubTriangle,1) * y + &
                       subBasisConstant(iSubTriangle,1))
                 
-             else if (iSubTriangle == wrapped_index(iVertex - 1, nEdgesOnCell)) then
+             else if (iSubTriangle == cice_wrapped_index(iVertex - 1, nEdgesOnCell)) then
 
                 pwl = pwl + &
                      (subBasisGradientU(iSubTriangle,2) * x + &
