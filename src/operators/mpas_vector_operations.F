@@ -43,6 +43,7 @@ module mpas_vector_operations
              mpas_unit_vec_in_r3, &
              mpas_cross_product_in_r3, &
              mpas_tangential_velocity, &
+             mpas_tangential_vector_1d, &
              mpas_vector_R3Cell_to_2DEdge, &
              mpas_vector_R3Cell_to_normalVectorEdge, &
              mpas_vector_R3_to_LonLatR, &
@@ -355,6 +356,81 @@ contains
       end do
 
    end subroutine mpas_tangential_velocity!}}}
+
+
+
+!***********************************************************************
+!
+!  routine mpas_tangential_vector_1d
+!
+!> \brief   compute tangential vector magnitude at an edge from the normal vector magnitudes
+!> \author  Matt Hoffman/Mark Petersen
+!> \date    December 2014
+!> \details
+!>  Compute tangential vector magnitude at an edge from the normal vector magnitude on the
+!>  edges of the two neighboring cells.
+!>  Based off of mpas_tangential_velocity().
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_tangential_vector_1d(normalVector, meshPool, includeHalo, tangentialVector)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         normalVector   !< Input: Horizontal vector magnitude normal to edge
+
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: Mesh information
+
+      logical, intent(in) :: &
+         includeHalo !< Input: If true, halo cells and edges are included in computation
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         tangentialVector   !< Output: Horizontal vector magnitude tangent to edge
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iEdge, i, k, eoe
+      integer, pointer :: nEdgesCompute
+      integer, dimension(:), pointer :: nEdgesOnEdge
+      integer, dimension(:,:), pointer :: edgesOnEdge
+
+      real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge
+
+      if (includeHalo) then
+         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
+      else
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
+      endif
+
+      call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
+
+      tangentialVector = 0.0_RKIND
+      do iEdge = 1,nEdgesCompute
+         do i=1,nEdgesOnEdge(iEdge)
+            eoe = edgesOnEdge(i,iEdge)
+            tangentialVector(iEdge) = tangentialVector(iEdge) + weightsOnEdge(i,iEdge) * normalVector(eoe)
+         end do
+      end do
+
+   end subroutine mpas_tangential_vector_1d!}}}
 
 
 !***********************************************************************
