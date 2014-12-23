@@ -47,9 +47,12 @@
 		            description="Selection of the method for solving ice velocity."
 		            possible_values="'sia'"
 		/>
-		<nml_option name="config_upperSurfaceVertex_method" type="character" default_value="barycentric" units="unitless"
-		            description="Selection of the method for calculating upperSurfaceVertex. 'barycentric' works for obtuse triangles, but will not work correctly across the edges of periodic meshes.  'barycentric_kiteareas' will work across the edges of periodic meshes, but will not work correctly for obtuse triangles."
-		            possible_values="'barycentric','barycentric_kiteareas'"
+		<nml_option name="config_sia_tangent_slope_calculation" type="character" default_value="from_vertex_barycentric" units="unitless"
+		            description="Selection of the method for calculating the tangent component of surface slope at edges needed by the SIA velocity solver.
+'from_vertex_barycentric' interpolates upperSurface values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes.
+'from_vertex_barycentric_kiteareas' interpolates upperSurface values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles.
+'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method."
+		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
 		/>
 	</nml_record>
 
@@ -320,6 +323,13 @@
 
 
 <!-- ======================================================================= -->
+<!-- PACKAGES -->
+<packages>
+<package name="SIAvelocity" description="Variables only needed by the SIA velocity solver"/>
+</packages>
+
+
+<!-- ======================================================================= -->
 <!-- INTERNAL MODEL VARIABLES -->
 
 	<var_struct name="state" time_levs="2">
@@ -349,9 +359,6 @@
 		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
 		     description="layer thickness on cell edges"
 		/>
-		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
-		     description="elevation at top of ice on vertices (currently only needed by shallow ice solver)"
-		/>
 		<var name="cellMask" type="integer" dimensions="nCells Time" units="none"
 		     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
 		/>
@@ -379,6 +386,19 @@
 		/>
 		<var name="uReconstructMeridional"            type="real"     dimensions="nVertLevels nCells Time"    
 		     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
+		/>
+		<!-- Variables related to the sia_velocity package (only needed by SIA solver) -->
+		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
+		     description="elevation at top of ice on vertices" packages="SIAvelocity"
+		/>
+		<var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
+		     units="m m^{-1}"  description="normal surface slope on edges" packages="SIAvelocity"
+		/>
+		<var name="tangentSlopeEdge"            type="real"     dimensions="nEdges Time"
+		     units="m m^{-1}"  description="tangent surface slope on edges" packages="SIAvelocity"
+		/>
+		<var name="slopeEdge"            type="real"     dimensions="nEdges Time"
+		     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
 		/>
 	</var_struct>
 

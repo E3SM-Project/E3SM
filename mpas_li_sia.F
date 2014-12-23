@@ -211,14 +211,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), pointer :: thickness, layerCenterSigma, dcEdge, dvEdge, upperSurface, upperSurfaceVertex
+      real (kind=RKIND), dimension(:), pointer :: thickness, layerCenterSigma, dcEdge, dvEdge
+      real (kind=RKIND), dimension(:), pointer :: slopeEdge, normalSlopeEdge
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
       integer, dimension(:), pointer :: edgeMask
       integer, pointer :: nVertLevels, nEdges, nVertices, vertexDegree
       integer :: iLevel, iEdge, iCell, iVertex, cell1, cell2, cellIndex
-      real (kind=RKIND) :: basalVelocity, slopeOnEdge, &
-               normalSlopeOnEdge, tangentSlopeOnEdge,  &
+      real (kind=RKIND) :: basalVelocity, &
                layerCenterHeightOnEdge, thicknessEdge, hVertexAccum
       real (kind=RKIND), pointer :: rhoi         ! ice density
       real (kind=RKIND), pointer :: ratefactor   ! flow law parameter, A
@@ -241,8 +241,8 @@ contains
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'slopeEdge', slopeEdge, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
 
 
       ! Get parameters specified in the namelist
@@ -260,11 +260,6 @@ contains
          if ( li_mask_is_dynamic_ice(edgeMask(iEdge)) ) then
              cell1 = cellsOnEdge(1,iEdge)
              cell2 = cellsOnEdge(2,iEdge)
-             ! Calculate slope at edge
-             ! This could/should be calculated externally to this subroutine
-             normalSlopeOnEdge = (upperSurface(cell1) - upperSurface(cell2) ) / dcEdge(iEdge) 
-             tangentSlopeOnEdge = ( upperSurfaceVertex(verticesOnEdge(1,iEdge)) - upperSurfaceVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
-             slopeOnEdge = (normalSlopeOnEdge**2 + tangentSlopeOnEdge**2)**0.5
              ! Calculate thickness on edge - 2nd order
              thicknessEdge = (thickness(cell1) + thickness(cell2) ) * 0.5_RKIND
              ! Loop over layers
@@ -273,7 +268,7 @@ contains
                 layerCenterHeightOnEdge = thicknessEdge * (1.0_RKIND - layerCenterSigma(iLevel) )
                 ! Calculate SIA velocity
                 normalVelocity(iLevel,iEdge) = basalVelocity + &
-                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeOnEdge**(n-1) * normalSlopeOnEdge * &
+                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeEdge(iEdge)**(n-1) * normalSlopeEdge(iEdge) * &
                     (thicknessEdge**(n+1) - (thicknessEdge - layerCenterHeightOnEdge)**(n+1))
              end do  ! Levels
          else

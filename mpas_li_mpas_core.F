@@ -480,8 +480,16 @@ module mpas_core
       type (mpas_pool_type), intent(in) :: configPool
       type (mpas_pool_type), intent(in) :: packagePool
       integer, intent(out) :: ierr
+      ! Locals
+      character (len=StrKIND), pointer :: config_velocity_solver
+      logical, pointer :: SIAvelocityActive
 
       ierr = 0
+
+      call mpas_pool_get_config(configPool, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
+
+      if(trim(config_velocity_solver) == 'sia') SIAvelocityActive = .true.
 
    end subroutine mpas_core_setup_packages
 
@@ -622,7 +630,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       integer :: err, err_tmp
       integer :: iCell, iLevel, i, iVertex
       integer, pointer :: nVertices
-      character (len=StrKIND), pointer :: config_velocity_solver
+      character (len=StrKIND), pointer :: config_sia_tangent_slope_calculation
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
       real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
@@ -640,7 +648,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
       call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
       call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
-      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
       call mpas_pool_get_field(scratchPool, 'vertexIndices', vertexIndicesField)
       call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
 
@@ -654,7 +662,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       call li_setup_sign_and_index_fields(meshPool)
 
       ! The SIA solver needs to setup these weights for calculating upperSurfaceVertex
-      if (trim(config_velocity_solver) == 'sia') then
+      if (trim(config_sia_tangent_slope_calculation) == 'from_vertex_barycentric') then
          call mpas_allocate_scratch_field(vertexIndicesField, .true.)
          do iVertex = 1, nVertices
             vertexIndicesField % array(iVertex) = iVertex
