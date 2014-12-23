@@ -269,6 +269,7 @@ contains
    subroutine diagnostic_solve_before_velocity(domain, timeLevel, err)!{{{
 
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
+      use mpas_vector_operations, only: mpas_tangential_vector_1d
 
       !-----------------------------------------------------------------
       !
@@ -303,17 +304,19 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
       real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
-        lowerSurface, bedTopography, upperSurfaceVertex
-      integer, dimension(:), pointer :: cellMask
+        lowerSurface, bedTopography, upperSurfaceVertex, slopeEdge, &
+        normalSlopeEdge, tangentSlopeEdge, dcEdge, dvEdge
+      integer, dimension(:), pointer :: cellMask, edgeMask
+      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, baryWeightsOnVertex
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField
-      integer, pointer :: nCells, nVertices
+      integer, pointer :: nCells, nVertices, nEdges
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
-      character (len=StrKIND), pointer :: config_velocity_solver, config_upperSurfaceVertex_method
+      character (len=StrKIND), pointer :: config_velocity_solver, config_sia_tangent_slope_calculation
       real (kind=RKIND) :: thisThk
-      integer :: iCell, iLevel
+      integer :: iCell, iLevel, iEdge, cell1, cell2
       integer :: err_tmp
 
 
@@ -375,13 +378,10 @@ contains
           call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
-          call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel=timeLevel)
           call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography)
-          call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
-          call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
@@ -400,22 +400,76 @@ contains
           ! Upper surface is the lower surface plus the thickness
           upperSurface(:) = lowerSurface(:) + thickness(:)
 
-          ! Upper surface on vertices only needed for SIA solver
-          if (trim(config_velocity_solver) == 'sia') then
-             call mpas_pool_get_config(liConfigs, 'config_upperSurfaceVertex_method', config_upperSurfaceVertex_method)
-             select case (trim(config_upperSurfaceVertex_method))
-             case ('barycentric')
+
+          ! Calculate SIA-related variables, if needed
+          if(trim(config_velocity_solver) == 'sia') then
+             call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+             call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
+             call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+             call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+             call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+             call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+             call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+
+             call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+             call mpas_pool_get_array(statePool, 'slopeEdge', slopeEdge, timeLevel=timeLevel)
+             call mpas_pool_get_array(statePool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
+             call mpas_pool_get_array(statePool, 'tangentSlopeEdge', tangentSlopeEdge, timeLevel=timeLevel)
+             call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
+             call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
+             call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
+
+
+             ! Calculate normal slope
+             do iEdge = 1, nEdges
+                ! Only calculate slope for edges that have ice on at least one side.
+                if ( li_mask_is_dynamic_ice(edgeMask(iEdge)) ) then
+                   cell1 = cellsOnEdge(1,iEdge)
+                   cell2 = cellsOnEdge(2,iEdge)
+                   ! Calculate slope at edge
+                   normalSlopeEdge(iEdge) = (upperSurface(cell1) - upperSurface(cell2) ) / dcEdge(iEdge)
+                else
+                   normalSlopeEdge(iEdge) = 0.0_RKIND
+                endif
+             end do  ! edges
+
+             ! Calculate upperSurfaceVertex if needed
+             select case (trim(config_sia_tangent_slope_calculation))
+             case ('from_vertex_barycentric')
                 call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
                    baryWeightsOnVertex(:, 1:nVertices), upperSurface, upperSurfaceVertex(1:nVertices), err_tmp)
                 err = ior(err, err_tmp)
-             case ('barycentric_kiteareas')
-                call cells_to_vertices_2dfield_using_kiteAreas(meshPool, upperSurface, upperSurfaceVertex)
+             case ('from_vertex_barycentric_kiteareas')
+                call cells_to_vertices_1dfield_using_kiteAreas(meshPool, upperSurface, upperSurfaceVertex)
+             end select
+
+             ! Calculate tangent slope
+             select case (trim(config_sia_tangent_slope_calculation))
+             case ('from_vertex_barycentric', 'from_vertex_barycentric_kiteareas')
+                do iEdge = 1, nEdges
+                   ! Only calculate slope for edges that have ice on at least one side.
+                   if ( li_mask_is_dynamic_ice(edgeMask(iEdge)) ) then
+                      tangentSlopeEdge(iEdge) = ( upperSurfaceVertex(verticesOnEdge(1,iEdge)) -  &
+                            upperSurfaceVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
+                   else
+                      tangentSlopeEdge(iEdge) = 0.0_RKIND
+                   endif
+                end do  ! edges
+             case ('from_normal_slope')
+                call mpas_tangential_vector_1d(normalSlopeEdge, meshPool, &
+                       includeHalo=.true., tangentialVector=tangentSlopeEdge)
              case default
-                write (stdErrUnit,*) 'Error: Invalid value for config_upperSurface_method.'
+                write (stdErrUnit,*) 'Error: Invalid value for config_sia_tangent_slope_calculation.'
                 err = 1
              end select
+
+             ! Now calculate the slope magnitude
+             slopeEdge = sqrt(normalSlopeEdge**2 + tangentSlopeEdge**2)
+
              ! Note: the outer halo may be wrong, but that's ok as long as numhalos>1 because the velocity on the 0-halo will still be correct.
-          endif
+
+          end if ! SIA variables
+
 
           ! Do vertical remapping of layerThickness and tracers
           call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
@@ -843,19 +897,19 @@ contains
 
 !***********************************************************************
 !
-!  subroutine cells_to_vertices_2dfield_using_kiteAreas
+!  subroutine cells_to_vertices_1dfield_using_kiteAreas
 !
-!> \brief   Converts a 2d scalar field from cells to vertices
+!> \brief   Converts a 1d scalar field from cells to vertices
 !> \author  Matt Hoffman
 !> \date    21 May 2012
 !> \details
-!>  This routine converts a 2d scalar field from cells to vertices.
+!>  This routine converts a 1d scalar field from cells to vertices.
 !>  It will give garbage values on obtuse triangles!  But it does work
 !>  on periodic meshes.
 !>  TODO: It would be more efficient to calculate the weights once on init and then only
 !>  perform the interp. in this routine.
 !-----------------------------------------------------------------------
-   subroutine cells_to_vertices_2dfield_using_kiteAreas(meshPool, fieldCells, fieldVertices)
+   subroutine cells_to_vertices_1dfield_using_kiteAreas(meshPool, fieldCells, fieldVertices)
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -907,7 +961,7 @@ contains
         fieldVertices(iVertex) = fVertexAccum / weightAccum  ! I assume this should never be 0...
       enddo
 
-   end subroutine cells_to_vertices_2dfield_using_kiteAreas
+   end subroutine cells_to_vertices_1dfield_using_kiteAreas
 
 end module li_diagnostic_vars
 
