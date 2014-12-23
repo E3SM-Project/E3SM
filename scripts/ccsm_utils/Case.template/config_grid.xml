@@ -1229,6 +1229,9 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <gridmap rof_grid="rx1" ocn_grid="tx0.1v2" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_tx0.1v2_e1000r200_090624.nc</ROF2OCN_RMAPNAME>
 </gridmap>
+<gridmap rof_grid="rx1" ocn_grid="mpas120" >
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_mpas120_nn_131217.nc</ROF2OCN_RMAPNAME>
+</gridmap>
 
 <gridmap rof_grid="r05" ocn_grid="gx3v7" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_gx3v7_e1000r500_090903.nc</ROF2OCN_RMAPNAME>
