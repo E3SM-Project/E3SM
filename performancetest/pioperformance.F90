@@ -20,8 +20,8 @@ program pioperformance
   integer :: rearrangers(2)
   
   integer :: niotasks(max_io_task_array_size)
-  integer :: nframes
-  namelist /pioperf/ decompfile, pio_typenames, rearrangers, niotasks, nframes
+  integer :: nframes, nvars
+  namelist /pioperf/ decompfile, pio_typenames, rearrangers, niotasks, nframes, nvars
 #ifdef BGQ
   external :: print_memusage
 #endif
@@ -42,7 +42,7 @@ program pioperformance
 #ifdef BGQ
   call print_memusage()
 #endif
-
+  nvars = 1
   niotasks = -1 ! loop over all possible values
   rearrangers = 0
   nframes = 5
@@ -75,6 +75,7 @@ program pioperformance
   call MPI_Bcast(rearrangers, 2, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(niotasks, max_io_task_array_size, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(nframes, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(nvars, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
 
   call t_initf('pioperf.nl', LogPrint=.false., mpicom=MPI_COMM_WORLD, MasterTask=MasterTask)
   niotypes = 0
@@ -90,14 +91,14 @@ program pioperformance
      if(len_trim(decompfile(i))==0) exit
      if(mype == 0) print *, decompfile(i)
 
-     call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, rearrangers, niotasks, nframes)
+     call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, rearrangers, niotasks, nframes, nvars)
   enddo
   call t_finalizef()
 
   call MPI_Finalize(ierr)
 contains
 
-  subroutine pioperformancetest(filename, piotypes, mype, npe_base, rearrangers, niotasks,nframes)
+  subroutine pioperformancetest(filename, piotypes, mype, npe_base, rearrangers, niotasks,nframes, nvars)
     use pio
     use pio_support, only : pio_readdof
     use perf_mod
@@ -107,6 +108,8 @@ contains
     integer, intent(in) :: rearrangers(:)
     integer, intent(inout) :: niotasks(:)
     integer, intent(in) :: nframes 
+    integer, intent(in) :: nvars
+
     integer(kind=PIO_Offset_kind), pointer :: compmap(:)
     integer :: ntasks
     integer :: comm
@@ -116,7 +119,7 @@ contains
     integer :: ndims
     integer, pointer :: gdims(:)
     character(len=20) :: fname
-    type(var_desc_t) :: vari, varr, vard
+    type(var_desc_t) :: vari(nvars), varr, vard
     type(iosystem_desc_t) :: iosystem
     integer :: stride, n
     integer, allocatable :: ifld(:), ifld_in(:)
@@ -128,9 +131,10 @@ contains
     integer(pio_offset_kind) :: frame=1
     integer :: iotype, rearr, rearrtype
     integer :: j, k, errorcnt
-
+    character(len=8) :: varname
     double precision :: wall(2), sys(2), usr(2)
     integer :: niomin, niomax
+    integer :: nv
 
     nullify(compmap)
 
@@ -164,16 +168,19 @@ contains
 !          print *,__FILE__,__LINE__,gmaplen,gdims
 !       endif
     
-       allocate(ifld(maplen))
-       allocate(ifld_in(maplen))
+       allocate(ifld(maplen*nvars))
+       allocate(ifld_in(maplen*nvars))
        allocate(rfld(maplen))
        allocate(dfld(maplen))
 
 !       ifld = mype
        rfld = mype
        dfld = mype
-       do j=1,maplen
-          ifld(j) = mype*1000000 + compmap(j)
+       do nv=1,nvars
+          do j=1,maplen
+             ifld(j+(nv-1)*maplen) = mype*1000000 + compmap(j)
+!+(nv-1)*maplen
+          enddo
        enddo
 #ifdef BGQ
   call print_memusage()
@@ -204,13 +211,16 @@ contains
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
                 call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
-                call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
-                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
+!                call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
+!                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
                    
 
                 do frame=1,nframes
-                      
-                   call PIO_setframe(File, vari, frame)
+                   do nv=1,nvars   
+                      call PIO_setframe(File, vari(nv), frame)
+                   enddo
+
+!                   call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
 
                    call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
 
@@ -235,7 +245,7 @@ contains
                 call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, comm, ierr)
                 if(mype==0) then
                    ! print out performance in MB/s
-                   print *, 'write ',rearr, ntasks, nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'write ',rearr, ntasks, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQ
   call print_memusage()
 #endif
@@ -243,13 +253,18 @@ contains
 
 ! Now the Read
                 ierr = PIO_OpenFile(iosystem, File, iotype, trim(fname), mode=PIO_NOWRITE);
-                ierr =  pio_inq_varid(File, 'vari', vari)
+                do nv=1,nvars
+                   write(varname,'(a,i4.4)') 'vari',nv
+                   ierr =  pio_inq_varid(File, varname, vari(nv))
+                enddo
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
                 
                 do frame=1,nframes                   
-                   call PIO_setframe(File, vari, frame)
-                   call pio_read_darray(File, vari, iodesc_i4, ifld_in, ierr)
+                   do nv=1,nvars
+                      call PIO_setframe(File, vari(nv), frame)
+                      call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in, ierr)
+                   enddo
                 enddo
                 
                 call pio_closefile(File)
@@ -271,7 +286,7 @@ contains
                    if(errorcnt > 0) then
                       print *,'ERROR: INPUT/OUTPUT data mismatch ',errorcnt
                    endif
-                   print *, 'read ',rearr, ntasks, nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'read ',rearr, ntasks, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQ
   call print_memusage()
 #endif
@@ -299,11 +314,15 @@ contains
     use pio
     type(file_desc_t) :: File
     integer, intent(in) :: gdims(:)
-    type(var_desc_t),intent(out) :: vari, varr, vard
+    type(var_desc_t),intent(out) :: vari(:), varr, vard
     integer :: ndims
     character(len=12) :: dimname
+    character(len=8) :: varname
     integer, allocatable :: dimid(:)
-    integer :: i, iostat
+    integer :: i, iostat, nv
+    integer :: nvars
+
+    nvars = size(vari)
 
     ndims = size(gdims)
     
@@ -315,8 +334,10 @@ contains
     enddo
     iostat = PIO_def_dim(File, 'time', PIO_UNLIMITED, dimid(ndims+1))
 
-    iostat = PIO_def_var(File, 'vari', PIO_INT, dimid, vari)
-    
+    do nv=1,nvars
+       write(varname,'(a,i4.4)') 'vari',nv
+       iostat = PIO_def_var(File, varname, PIO_INT, dimid, vari(nv))
+    enddo
     iostat = PIO_def_var(File, 'varr', PIO_REAL, dimid, varr)
     
     iostat = PIO_def_var(File, 'vard', PIO_DOUBLE, dimid, vard)

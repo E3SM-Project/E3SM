@@ -282,6 +282,86 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
    return ierr;
  }
 
+int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, void *fillvalue)
+ {
+   iosystem_desc_t *ios;
+   file_desc_t *file;
+   io_desc_t *iodesc;
+   void *iobuf;
+   size_t vsize, rlen;
+   int ierr;
+   MPI_Datatype vtype;
+
+   ierr = PIO_NOERR;
+
+   file = pio_get_file_from_id(ncid);
+   if(file == NULL){
+     fprintf(stderr,"File handle not found %d %d\n",ncid,__LINE__);
+     return PIO_EBADID;
+   }
+   iodesc = pio_get_iodesc_from_id(ioid);
+   if(iodesc == NULL){
+     fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
+     return PIO_EBADID;
+   }
+   iobuf = NULL;
+
+   pioassert(nvars>0,"nvars <= 0",__FILE__,__LINE__);
+
+   ios = file->iosystem;
+
+   rlen = iodesc->llen*nvars;
+   if(iodesc->rearranger>0){
+     if(rlen>0){
+       vtype = (MPI_Datatype) iodesc->basetype;
+       //       printf("rlen = %ld\n",rlen);
+       if(vtype == MPI_INTEGER){
+	 MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
+	 vsize=4;
+       }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
+	 MALLOC_FILL_ARRAY(float, rlen, fillvalue, iobuf);
+	 vsize=4;
+       }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
+	 MALLOC_FILL_ARRAY(double, rlen, fillvalue, iobuf);
+	 vsize=8;
+       }else if(vtype == MPI_CHARACTER){
+	 MALLOC_FILL_ARRAY(char, rlen, fillvalue, iobuf);
+	 vsize=1;
+       }else{
+	 fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
+       }
+     }
+     //    printf(" rlen = %d %ld\n",rlen,iobuf); 
+
+     //  }
+
+
+     ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, nvars);
+
+
+
+
+
+   }else{
+     iobuf = array;
+   }
+   switch(file->iotype){
+   case PIO_IOTYPE_PNETCDF:
+   case PIO_IOTYPE_NETCDF:
+   case PIO_IOTYPE_NETCDF4P:
+   case PIO_IOTYPE_NETCDF4C:
+     for(int ivar=0; ivar < nvars; ivar ++){
+       ierr = pio_write_darray_nc(file, iodesc, vid[ivar], iobuf+vsize*ivar*(iodesc->llen), fillvalue);
+     }
+   }
+
+   if(iodesc->rearranger>0 && rlen>0)
+     free(iobuf);
+
+   return ierr;
+
+ }
+
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -331,7 +411,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
      //  }
 
 
-     ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 0, 0);
+     ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 1);
 
 
 

@@ -546,7 +546,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
 
 
 int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
-			  void *rbuf, const int comm_option, const int fc_options)
+			  void *rbuf, const int nvars)
 {
 
   bool handshake=false;
@@ -555,7 +555,7 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   int ntasks;
   int niotasks;
   int *scount = iodesc->scount;
-
+  int ivar;
   int i, tsize;
   int *sendcounts;
   int *recvcounts;
@@ -576,13 +576,14 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   }  
   MPI_Comm_size(mycomm, &ntasks);
 
+  pioassert(nvars>0,"nvars must be > 0",__FILE__,__LINE__);
+
 #ifdef _MPISERIAL
-  if(iodesc->basetype == 4){
-    for(i=0;i<iodesc->llen;i++)
-      ((int *) rbuf)[ iodesc->rindex[i] ] = ((int *)sbuf)[ iodesc->sindex[i]];
-  }else{
-    for(i=0;i<iodesc->llen;i++){
-      ((double *) rbuf)[ iodesc->rindex[i] ] = ((double *)sbuf)[ iodesc->sindex[i]];   
+  /* in mpiserial iodesc->basetype is the byte length of the basic type */
+  for(ivar = 0; ivar < nvars; ivar++){
+    int voffset = ivar * iodesc->llen * iodesc->basetype;
+    for(i=0;i<iodesc->llen; i++){
+      memcpy((char *) rbuf + voffset + iodesc->rindex[i],(char *) sbuf + voffset + iodesc->sindex[i], (size_t) (iodesc->basetype));
     }
   }
 #else
@@ -610,15 +611,15 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
     for( i=0;i<iodesc->nrecvs;i++){
       if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
 	if(iodesc->rearranger==PIO_REARR_SUBSET){
-	  recvcounts[ i ] = 1;
+	  recvcounts[ i ] = nvars;
 	  recvtypes[ i ] = iodesc->rtype[i];
 	}else{
-	  recvcounts[ iodesc->rfrom[0] ] = 1;
+	  recvcounts[ iodesc->rfrom[0] ] = nvars;
 	  recvtypes[ iodesc->rfrom[0] ] = iodesc->rtype[0];
 	  rdispls[ iodesc->rfrom[0] ] = 0;
 	  //    printf("%d: rindex[%d] %d\n",ios.comp_rank,0,iodesc->rindex[0]);
 	  for( i=1;i<iodesc->nrecvs;i++){
-	    recvcounts[ iodesc->rfrom[i] ] = 1;
+	    recvcounts[ iodesc->rfrom[i] ] = nvars;
 	    recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
 	    
 	  }
@@ -635,7 +636,7 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
       io_comprank=0;
     //    printf("scount[%d]=%d\n",i,scount[i]);
     if(scount[i] > 0) {
-      sendcounts[io_comprank]=1;
+      sendcounts[io_comprank]=nvars;
       sendtypes[io_comprank]=iodesc->stype[i];
     }else{
       sendcounts[io_comprank]=0;

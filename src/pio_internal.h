@@ -89,7 +89,7 @@ typedef struct mapsort
   int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			void *rbuf, const int comm_option, const int fc_options);
   int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
-			void *rbuf, const int comm_option, const int fc_options);
+			void *rbuf, const int nvars);
   int calcdisplace(const int bsize, const int numblocks,const PIO_Offset map[],int displace[]);
   io_desc_t *malloc_iodesc(const int piotype, const int ndims);
   
