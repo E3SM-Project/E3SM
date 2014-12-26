@@ -6,7 +6,7 @@
 #ifdef BGL
 #define BGx
 #endif
-#ifdef BGQ
+#ifdef BGQbroken
 #define BGx
 #endif
 !>

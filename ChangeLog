@@ -4,6 +4,26 @@ SVN $URL: https://parallelio.googlecode.com/svn/trunk $
 ================================================================================
 This file describes what tags were created and why
 ===========================
+Originator: jedwards
+Date: Dec 26, 2014
+Model: pio
+Version: pio1_9_9
+One-line : remove broken BGQ opt
+
+M  pio/piolib_mod.F90
+
+===========================
+Originator: jedwards
+Date: Nov 26, 2014
+Model: pio
+Version: pio1_9_0
+One-line : Add code for pio2 api compatability
+
+M        pio/nf_mod.F90
+M        pio/pio.F90
+M        pio/piolib_mod.F90
+	
+===========================
 Originator: jedwards/santos
 Date: Nov 19, 2014
 Model: pio
