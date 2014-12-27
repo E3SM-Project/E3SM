@@ -187,6 +187,7 @@ contains
 !             endif
           enddo
        enddo
+
 #ifdef BGQ
   call print_memusage()
 #endif
@@ -203,7 +204,7 @@ contains
 
              do n=niomin,niomax
                 ntasks = niotasks(n)
-!                if(ntasks==npe .and. rearr == PIO_REARR_BOX) exit
+
                 if(ntasks<=0 .or. ntasks>npe) exit
                 stride = max(1,npe/ntasks)
 
@@ -224,8 +225,6 @@ contains
                    do nv=1,nvars   
                       call PIO_setframe(File, vari(nv), frame)
                    enddo
-
-!                   call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
 
                    call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
 
@@ -250,7 +249,7 @@ contains
                 call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, comm, ierr)
                 if(mype==0) then
                    ! print out performance in MB/s
-                   print *, 'write ',rearr, ntasks, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'write ',rearr, ntasks, nvars, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQ
   call print_memusage()
 #endif
@@ -291,7 +290,7 @@ contains
                    if(errorcnt > 0) then
                       print *,'ERROR: INPUT/OUTPUT data mismatch ',errorcnt
                    endif
-                   print *, 'read ',rearr, ntasks, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'read ',rearr, ntasks,nvars, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQ
   call print_memusage()
 #endif
