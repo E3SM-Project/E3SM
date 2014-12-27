@@ -18,9 +18,9 @@ program pioperformance
   character(len=8) :: pio_typenames(4)
   integer :: piotypes(4), niotypes
   integer :: rearrangers(2)
-  
+  integer, parameter :: max_nvars=12
   integer :: niotasks(max_io_task_array_size)
-  integer :: nframes, nvars
+  integer :: nv, nframes, nvars(max_nvars)
   namelist /pioperf/ decompfile, pio_typenames, rearrangers, niotasks, nframes, nvars
 #ifdef BGQ
   external :: print_memusage
@@ -42,7 +42,7 @@ program pioperformance
 #ifdef BGQ
   call print_memusage()
 #endif
-  nvars = 1
+  nvars = 0
   niotasks = -1 ! loop over all possible values
   rearrangers = 0
   nframes = 5
@@ -75,7 +75,7 @@ program pioperformance
   call MPI_Bcast(rearrangers, 2, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(niotasks, max_io_task_array_size, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(nframes, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(nvars, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(nvars, max_nvars, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
 
   call t_initf('pioperf.nl', LogPrint=.false., mpicom=MPI_COMM_WORLD, MasterTask=MasterTask)
   niotypes = 0
@@ -90,8 +90,11 @@ program pioperformance
   do i=1,max_decomp_files
      if(len_trim(decompfile(i))==0) exit
      if(mype == 0) print *, decompfile(i)
-
-     call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, rearrangers, niotasks, nframes, nvars)
+     do nv=1,max_nvars
+       if(nvars(nv)>0) then
+         call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, rearrangers, niotasks, nframes, nvars(nv))
+     endif
+   enddo
   enddo
   call t_finalizef()
 
