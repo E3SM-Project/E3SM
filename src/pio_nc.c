@@ -2304,8 +2304,8 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-    mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);
-    file->varlist[varid].ndims = (*ndimsp);
+  mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);
+  file->varlist[varid].ndims = (*ndimsp);
 
   return ierr;
 }

@@ -179,7 +179,12 @@ contains
        do nv=1,nvars
           do j=1,maplen
              ifld(j+(nv-1)*maplen) = mype*1000000 + compmap(j)
-!+(nv-1)*maplen
+
+!             if(nv==2) then
+!                ifld(j+(nv-1)*maplen) = -(mype*1000000 + compmap(j))
+!             else
+!                ifld(j+(nv-1)*maplen) = mype*1000000 + compmap(j)
+!             endif
           enddo
        enddo
 #ifdef BGQ

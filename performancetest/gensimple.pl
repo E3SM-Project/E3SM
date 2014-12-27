@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 use strict;
-my @dims= qw(18 36);
+my @dims= qw(10);
 my $ndims = $#dims+1;
-my $nprocs = 4;
+my $nprocs = 2;
 
 print "version 2001 npes $nprocs ndims $ndims \n";
 
@@ -12,7 +12,7 @@ foreach(@dims){
     print "$_ ";
 }
 print "\n";
-my $prevval = 0;
+my $prevval = 1;
 for(my $i=0;$i<$nprocs;$i++){
     my $lsize = int($size/$nprocs);
     my $remainder = $size - $lsize*$nprocs;

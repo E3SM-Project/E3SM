@@ -253,7 +253,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 	   //	   ierr = ncmpi_put_varn_all(ncid, vid, iodesc->maxregions, startlist, countlist, 
 	   //			     IOBUF, iodesc->llen, iodesc->basetype);
 	   
-	   //printf("%s %d %d %d\n",__FILE__,__LINE__,rrcnt, iodesc->rearranger);
+	   printf("%s %d %ld \n",__FILE__,__LINE__,IOBUF);
 	   ierr = ncmpi_bput_varn(ncid, vid, rrcnt, startlist, countlist, 
 				  IOBUF, iodesc->llen, iodesc->basetype, &request);
 	   pio_push_request(file,request);
@@ -288,9 +288,8 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    file_desc_t *file;
    io_desc_t *iodesc;
    void *iobuf;
-   size_t vsize, rlen;
+   int vsize, rlen;
    int ierr;
-   MPI_Datatype vtype;
 
    ierr = PIO_NOERR;
 
@@ -309,12 +308,17 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    pioassert(nvars>0,"nvars <= 0",__FILE__,__LINE__);
 
    ios = file->iosystem;
+   //   rlen = iodesc->llen*nvars;
+   
+   rlen = iodesc->maxiobuflen*nvars;
 
-   rlen = iodesc->llen*nvars;
    if(iodesc->rearranger>0){
      if(rlen>0){
-       vtype = (MPI_Datatype) iodesc->basetype;
        //       printf("rlen = %ld\n",rlen);
+       MPI_Type_size(iodesc->basetype, &vsize);	
+       iobuf = malloc( vsize * rlen);
+		
+/*
        if(vtype == MPI_INTEGER){
 	 MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
 	 vsize=4;
@@ -330,15 +334,16 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        }else{
 	 fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
        }
+*/
      }
-     //    printf(" rlen = %d %ld\n",rlen,iobuf); 
+     //    printf("%s %d rlen = %d 0x%.16X 0x%.16X\n",__FILE__,__LINE__,rlen,array,iobuf); 
 
      //  }
 
 
      ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, nvars);
 
-
+   //printf("%s %d %ld\n",__FILE__,__LINE__,iobuf);
 
 
 
@@ -354,7 +359,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        ierr = pio_write_darray_nc(file, iodesc, vid[ivar], iobuf+vsize*ivar*(iodesc->llen), fillvalue);
      }
    }
-
+   //printf("%s %d %ld\n",__FILE__,__LINE__,iobuf);
    if(iodesc->rearranger>0 && rlen>0)
      free(iobuf);
 

@@ -278,7 +278,7 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 	create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->llen, iodesc->rindex, iodesc->rcount, NULL, iodesc->rtype);
       }
 #ifndef _MPISERIAL
-      /*      if(tmpioproc==95)     {
+            /*      if(tmpioproc==95)     {
 	MPI_Aint lb;
 	MPI_Aint extent;
 	for(i=0;i<ntypes;i++){
@@ -286,8 +286,8 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 	  printf("%s %d %d %d %d \n",__FILE__,__LINE__,i,lb,extent);
 	  
 	}
-	}
-      */
+		}
+	      */
 #endif
     }
   }
@@ -312,15 +312,15 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 
     create_mpi_datatypes(iodesc->basetype, ntypes, iodesc->ndof, iodesc->sindex, iodesc->scount, NULL, iodesc->stype);
 #ifndef _MPISERIAL
-    /*    if(tmpioproc==95)   {
+       /*    if(tmpioproc==95)   {
       MPI_Aint lb;
       MPI_Aint extent;
       for(i=0;i<ntypes;i++){
 	MPI_Type_get_extent(iodesc->stype[i], &lb, &extent);
 	printf("%s %d %d %d %d \n",__FILE__,__LINE__,i,lb,extent);
       }
-      }
-    */
+            }
+      */
 #endif
   }
 
@@ -564,6 +564,8 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   MPI_Datatype *sendtypes;
   MPI_Datatype *recvtypes;
   MPI_Comm mycomm;
+
+  //  maxreq = 0;
   
   if(iodesc->rearranger == PIO_REARR_BOX){
     mycomm = ios.union_comm;
@@ -586,16 +588,19 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
       memcpy((char *) rbuf + voffset + iodesc->rindex[i],(char *) sbuf + voffset + iodesc->sindex[i], (size_t) (iodesc->basetype));
     }
   }
+  tsize = iodesc->basetype;
 #else
+  MPI_Type_size(iodesc->basetype, &tsize);
+
   define_iodesc_datatypes(ios, iodesc);
-  
+
   sendcounts = (int *) malloc(ntasks*sizeof(int));
   recvcounts = (int *) malloc(ntasks*sizeof(int));
   sdispls = (int *) malloc(ntasks*sizeof(int));
   rdispls = (int *) malloc(ntasks*sizeof(int));
   sendtypes = (MPI_Datatype *) malloc(ntasks*sizeof(MPI_Datatype));
   recvtypes = (MPI_Datatype *) malloc(ntasks*sizeof(MPI_Datatype));
-
+  //printf("%s %d %ld %ld\n",__FILE__,__LINE__,sendtypes,recvtypes);
   for(i=0;i<ntasks;i++){
     sendcounts[i] = 0;
     recvcounts[i] = 0; 
@@ -611,18 +616,18 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
     for( i=0;i<iodesc->nrecvs;i++){
       if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
 	if(iodesc->rearranger==PIO_REARR_SUBSET){
-	  recvcounts[ i ] = nvars;
-	  recvtypes[ i ] = iodesc->rtype[i];
+	  recvcounts[ i ] = 1;
+	  // The stride here is the length of the collected array (llen)
+          MPI_Type_hvector(nvars, 1, (MPI_Aint) iodesc->llen*tsize, iodesc->rtype[i], recvtypes+i);
+          MPI_Type_commit(recvtypes+i);
+	  //recvtypes[ i ] = iodesc->rtype[i];
 	}else{
-	  recvcounts[ iodesc->rfrom[0] ] = nvars;
-	  recvtypes[ iodesc->rfrom[0] ] = iodesc->rtype[0];
-	  rdispls[ iodesc->rfrom[0] ] = 0;
+	  recvcounts[ iodesc->rfrom[i] ] = 1;
+          MPI_Type_vector(nvars, 1, iodesc->nrecvs,iodesc->rtype[i], recvtypes+iodesc->rfrom[i]);
+          MPI_Type_commit(recvtypes+i);
+	  // recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
+	  rdispls[ iodesc->rfrom[i] ] = 0;
 	  //    printf("%d: rindex[%d] %d\n",ios.comp_rank,0,iodesc->rindex[0]);
-	  for( i=1;i<iodesc->nrecvs;i++){
-	    recvcounts[ iodesc->rfrom[i] ] = nvars;
-	    recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
-	    
-	  }
 	}
       }
       //   printf("%d: rindex[%d] %d\n",ios.comp_rank,i,iodesc->rindex[i]);
@@ -634,25 +639,42 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
     int io_comprank = ios.ioranks[i];
     if(iodesc->rearranger==PIO_REARR_SUBSET)
       io_comprank=0;
+    
     //    printf("scount[%d]=%d\n",i,scount[i]);
     if(scount[i] > 0) {
-      sendcounts[io_comprank]=nvars;
-      sendtypes[io_comprank]=iodesc->stype[i];
+      sendcounts[io_comprank]=1;
+      MPI_Type_vector(nvars, 1, 1, iodesc->stype[i], sendtypes+io_comprank);
+      MPI_Type_commit(sendtypes+io_comprank);
     }else{
       sendcounts[io_comprank]=0;
     }
   }      
-
+  //  printf("%s %d %d\n",__FILE__,__LINE__,((int *)sbuf)[5]);
+//printf("%s %d %ld %ld %ld %ld\n",__FILE__,__LINE__,sendtypes[0],recvtypes,sbuf,rbuf);
   // Data in sbuf on the compute nodes is sent to rbuf on the ionodes
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake, isend, maxreq);
-  
+  //  if(ios.ioproc)
+  //   printf("%s %d %d %d\n",__FILE__,__LINE__,((int *)rbuf)[10],((int *)rbuf)[15]);
+//printf("%s %d %ld %ld\n",__FILE__,__LINE__,sendtypes[0],recvtypes);  
 
   free(sendcounts);
   free(recvcounts); 
   free(sdispls);
   free(rdispls);
+//printf("%s %d %ld %ld\n",__FILE__,__LINE__,sendtypes[0],recvtypes);
+  for( i=0;i<ntasks; i++){
+    if(sendtypes[i] != MPI_DATATYPE_NULL){
+      //printf("%s %d %d %ld\n",__FILE__,__LINE__,i,sendtypes[i]);
+      MPI_Type_free(sendtypes+i);
+    }
+    if(recvtypes[i] != MPI_DATATYPE_NULL){     
+      //printf("%s %d %d\n",__FILE__,__LINE__,i);    
+      MPI_Type_free(recvtypes+i);
+    }
+  }
+  
   free(sendtypes);
   free(recvtypes);
 #endif
