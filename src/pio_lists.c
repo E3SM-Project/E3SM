@@ -191,14 +191,21 @@ io_desc_t *pio_get_iodesc_from_id(int ioid)
 
   ciodesc = NULL;
 
-  if(current_iodesc != NULL && current_iodesc->ioid == ioid)
+  if(current_iodesc != NULL && current_iodesc->ioid == abs(ioid))
     ciodesc=current_iodesc;
   for(ciodesc=pio_iodesc_list; ciodesc != NULL; ciodesc=ciodesc->next){
-    if(ciodesc->ioid == ioid){
+    if(ciodesc->ioid == abs(ioid)){
       current_iodesc = ciodesc;
       break;
     }
   }
+  if(ciodesc==NULL){
+    for(ciodesc=pio_iodesc_list; ciodesc != NULL; ciodesc=ciodesc->next){
+      printf("%s %d %d %d\n",__FILE__,__LINE__,ioid,ciodesc->ioid);
+    }
+  }
+
+
   return ciodesc;
 }
   

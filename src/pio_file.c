@@ -258,6 +258,10 @@ int PIOc_closefile(int ncid)
       wmb->validvars=0;
       free(wmb->vid);
       free(wmb->data);
+      if(wmb->fillvalue != NULL)
+	free(wmb->fillvalue);
+      if(wmb->frame != NULL)
+	free(wmb->frame);
     }
     twmb = wmb;
     wmb = wmb->next;

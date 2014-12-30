@@ -442,19 +442,22 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 		   if(vdesc->record >= 0){
 		     tstart[0] = frame[nv];
 		   }
-		   mpierr = MPI_Recv( IOBUF, buflen, iodesc->basetype, iorank, iorank, ios->io_comm, &status);
+		   bufptr = (void *)((char *) IOBUF + nv*iodesc->llen + tsize*region->loffset);
+		   if(iorank>0){
+		     mpierr = MPI_Recv( bufptr, buflen, iodesc->basetype, iorank, iorank, ios->io_comm, &status);
+		   }
 		   if(iodesc->basetype == MPI_INTEGER){
-		     ierr = nc_put_vara_int (ncid, vid[nv], tstart, tcount, (const int *) IOBUF); 
+		     ierr = nc_put_vara_int (ncid, vid[nv], tstart, tcount, (const int *) bufptr); 
 		   }else if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
-		     ierr = nc_put_vara_double (ncid, vid[nv], tstart, tcount, (const double *) IOBUF); 
+		     ierr = nc_put_vara_double (ncid, vid[nv], tstart, tcount, (const double *) bufptr); 
 		   }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
-		     ierr = nc_put_vara_float (ncid,vid[nv], tstart, tcount, (const float *) IOBUF); 
+		     ierr = nc_put_vara_float (ncid,vid[nv], tstart, tcount, (const float *) bufptr); 
 		   }else{
 		     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 		   }
-		   if(ierr == PIO_EEDGE){
-		     for(i=0;i<ndims;i++)
-		       fprintf(stderr,"dim %d start %ld count %ld\n",i,tstart[i],tcount[i]);
+		   if(ierr != PIO_NOERR){
+		     for(i=0;i<fndims;i++)
+		       fprintf(stderr,"vid %d dim %d start %ld count %ld\n",vid[nv],i,tstart[i],tcount[i]);
 		   }
 	         }
 	       }
@@ -571,9 +574,26 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    if(iodesc->rearranger>0){
      if(rlen>0){
        //       printf("rlen = %ld\n",rlen);
+#ifdef _MPISERIAL
+       vsize = iodesc->basetype;
+#else
        MPI_Type_size(iodesc->basetype, &vsize);	
+#endif
        iobuf = malloc( vsize * rlen);
-		
+       if(fillvalue != NULL){
+	 for(int nv=0;nv<nvars;nv++){
+	   void *bufptr = (void *)((char *) iobuf + nv*vsize*iodesc->llen);
+	   if(vsize == 4){
+	     for(int _i=0; _i<iodesc->llen; _i++){		
+	       ((float *) bufptr)[_i] = ((float *) fillvalue)[nv];
+	     }
+	   }else{
+	     for(int _i=0; _i<iodesc->llen; _i++){		
+	       ((double *) bufptr)[_i] = ((double *) fillvalue)[nv];
+	     }
+	   }
+	 }
+       }
 /*
        if(vtype == MPI_INTEGER){
 	 MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
@@ -596,8 +616,6 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 
      //  }
      
-
-
      ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, nvars);
 
 
@@ -639,6 +657,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    int *tptr;
    void *bptr;
    void *fptr;
+   bool recordvar;
 
    ierr = PIO_NOERR;
 
@@ -658,30 +677,51 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
   if(vdesc == NULL)
     return PIO_EBADID;
 
+  if(vdesc->record<0){
+    recordvar=false;
+  }else{
+    recordvar=true;
+  }
 
 
    wmb = &(file->buffer);
    if(wmb->ioid == -1){
-     wmb->ioid = ioid;
+     if(recordvar){
+       wmb->ioid = ioid;
+     }else{
+       wmb->ioid = -(ioid);
+     }
    }else{
-     while(wmb->next != NULL && wmb->ioid != ioid){
-       if(wmb->next!=NULL)
-         wmb = wmb->next;
+     // separate record and non-record variables
+     if(recordvar){
+       while(wmb->next != NULL && wmb->ioid!=ioid){
+	 if(wmb->next!=NULL)
+	   wmb = wmb->next;
+       }
+     }else{
+       while(wmb->next != NULL && wmb->ioid!= -(ioid)){
+	 if(wmb->next!=NULL)
+	   wmb = wmb->next;
+       }
      }
    }
 
-
-
-   if(wmb->ioid != ioid){
+   if(wmb->ioid != abs(ioid) ){
      wmb->next = (wmulti_buffer *) malloc(sizeof(wmulti_buffer));
      wmb=wmb->next;
      wmb->next=NULL;
-     wmb->ioid=ioid;
+     if(recordvar){
+       wmb->ioid = ioid;
+     }else{
+       wmb->ioid = -(ioid);
+     }
      wmb->totalvars=0;
      wmb->validvars=0;
      wmb->arraylen=arraylen;
      wmb->vid=NULL;
      wmb->data=NULL;
+     wmb->frame=NULL;
+     wmb->fillvalue=NULL;
    }
 
 #ifdef _MPISERIAL
@@ -707,12 +747,14 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        }else{
 	 wmb->vid = tptr;
        }
-       tptr = (int *) realloc( wmb->frame,sizeof(int)*( 1+wmb->validvars));
-       if(tptr==NULL){
-	 // bad things
-	 printf("%s %d %d %d %d\n",__FILE__,__LINE__,ioid,wmb->validvars,arraylen);
-       }else{
-	 wmb->frame = tptr;
+       if(vdesc->record>=0){
+	 tptr = (int *) realloc( wmb->frame,sizeof(int)*( 1+wmb->validvars));
+	 if(tptr==NULL){
+	   // bad things
+	   printf("%s %d %d %d %d\n",__FILE__,__LINE__,ioid,wmb->validvars,arraylen);
+	 }else{
+	   wmb->frame = tptr;
+	 }
        }
        if(fillvalue != NULL){
 	 fptr = realloc( wmb->fillvalue,tsize*( 1+wmb->validvars));
@@ -735,7 +777,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    if(fillvalue != NULL){
      memcpy((char *) wmb->fillvalue+tsize*wmb->validvars,fillvalue, tsize); 
    }     
-   wmb->frame[wmb->validvars]=vdesc->record;
+   if(wmb->frame!=NULL){
+     wmb->frame[wmb->validvars]=vdesc->record;
+   }
    wmb->validvars++;
 
 #ifdef _PNETCDF

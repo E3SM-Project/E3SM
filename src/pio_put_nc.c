@@ -51,7 +51,7 @@ int PIOc_put_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_uchar(file->fh, varid, start, count, stride, op, &request);;
@@ -59,7 +59,7 @@ int PIOc_put_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -129,7 +129,7 @@ int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_ushort(file->fh, varid, start, count, stride, op, &request);;
@@ -137,7 +137,7 @@ int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -207,7 +207,7 @@ int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_ulonglong(file->fh, varid, start, count, stride, op, &request);;
@@ -215,7 +215,7 @@ int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -285,7 +285,7 @@ int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm(file->fh, varid, start, count, stride, imap, buf, bufcount, buftype, &request);;
@@ -293,7 +293,7 @@ int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -363,7 +363,7 @@ int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_uint(file->fh, varid, start, count, stride, op, &request);;
@@ -371,7 +371,7 @@ int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -441,7 +441,7 @@ int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_uchar(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -449,7 +449,7 @@ int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -519,7 +519,7 @@ int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_ushort(file->fh, varid, op, &request);;
@@ -527,7 +527,7 @@ int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -597,7 +597,7 @@ int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_longlong(file->fh, varid, index, op, &request);;
@@ -605,7 +605,7 @@ int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -675,7 +675,7 @@ int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_uchar(file->fh, varid, start, count, op, &request);;
@@ -683,7 +683,7 @@ int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -753,7 +753,7 @@ int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_short(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -761,7 +761,7 @@ int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -831,7 +831,7 @@ int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const lon
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_long(file->fh, varid, index, ip, &request);;
@@ -839,7 +839,7 @@ int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const lon
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -909,7 +909,7 @@ int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_long(file->fh, varid, start, count, stride, op, &request);;
@@ -917,7 +917,7 @@ int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -987,7 +987,7 @@ int PIOc_put_var_short (int ncid, int varid, const short *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_short(file->fh, varid, op, &request);;
@@ -995,7 +995,7 @@ int PIOc_put_var_short (int ncid, int varid, const short *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1065,7 +1065,7 @@ int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_int(file->fh, varid, start, count, op, &request);;
@@ -1073,7 +1073,7 @@ int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1143,7 +1143,7 @@ int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const u
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_ushort(file->fh, varid, index, op, &request);;
@@ -1151,7 +1151,7 @@ int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const u
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1221,7 +1221,7 @@ int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_text(file->fh, varid, start, count, op, &request);;
@@ -1229,7 +1229,7 @@ int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1299,7 +1299,7 @@ int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_text(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -1307,7 +1307,7 @@ int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1377,7 +1377,7 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_ushort(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -1385,7 +1385,7 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1455,7 +1455,7 @@ int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_ulonglong(file->fh, varid, op, &request);;
@@ -1463,7 +1463,7 @@ int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1533,7 +1533,7 @@ int PIOc_put_var_int (int ncid, int varid, const int *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_int(file->fh, varid, op, &request);;
@@ -1541,7 +1541,7 @@ int PIOc_put_var_int (int ncid, int varid, const int *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1611,7 +1611,7 @@ int PIOc_put_var_longlong (int ncid, int varid, const long long *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_longlong(file->fh, varid, op, &request);;
@@ -1619,7 +1619,7 @@ int PIOc_put_var_longlong (int ncid, int varid, const long long *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1689,7 +1689,7 @@ int PIOc_put_var_schar (int ncid, int varid, const signed char *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_schar(file->fh, varid, op, &request);;
@@ -1697,7 +1697,7 @@ int PIOc_put_var_schar (int ncid, int varid, const signed char *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1767,7 +1767,7 @@ int PIOc_put_var_uint (int ncid, int varid, const unsigned int *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_uint(file->fh, varid, op, &request);;
@@ -1775,7 +1775,7 @@ int PIOc_put_var_uint (int ncid, int varid, const unsigned int *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1845,7 +1845,7 @@ int PIOc_put_var (int ncid, int varid, const void *buf, PIO_Offset bufcount, MPI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var(file->fh, varid, buf, bufcount, buftype, &request);;
@@ -1853,7 +1853,7 @@ int PIOc_put_var (int ncid, int varid, const void *buf, PIO_Offset bufcount, MPI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -1923,7 +1923,7 @@ int PIOc_put_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_ushort(file->fh, varid, start, count, op, &request);;
@@ -1931,7 +1931,7 @@ int PIOc_put_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2001,7 +2001,7 @@ int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_short(file->fh, varid, start, count, stride, op, &request);;
@@ -2009,7 +2009,7 @@ int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2079,7 +2079,7 @@ int PIOc_put_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_uint(file->fh, varid, start, count, op, &request);;
@@ -2087,7 +2087,7 @@ int PIOc_put_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2157,7 +2157,7 @@ int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_schar(file->fh, varid, start, count, op, &request);;
@@ -2165,7 +2165,7 @@ int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2235,7 +2235,7 @@ int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_ulonglong(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -2243,7 +2243,7 @@ int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2313,7 +2313,7 @@ int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const un
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_uchar(file->fh, varid, index, op, &request);;
@@ -2321,7 +2321,7 @@ int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const un
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2391,7 +2391,7 @@ int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_int(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -2399,7 +2399,7 @@ int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2469,7 +2469,7 @@ int PIOc_put_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_schar(file->fh, varid, start, count, stride, op, &request);;
@@ -2477,7 +2477,7 @@ int PIOc_put_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2547,7 +2547,7 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1(file->fh, varid, index, buf, bufcount, buftype, &request);;
@@ -2555,7 +2555,7 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2625,7 +2625,7 @@ int PIOc_put_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_float(file->fh, varid, start, count, op, &request);;
@@ -2633,7 +2633,7 @@ int PIOc_put_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2703,7 +2703,7 @@ int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const fl
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_float(file->fh, varid, index, op, &request);;
@@ -2711,7 +2711,7 @@ int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const fl
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2781,7 +2781,7 @@ int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_float(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -2789,7 +2789,7 @@ int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2859,7 +2859,7 @@ int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const cha
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_text(file->fh, varid, index, op, &request);;
@@ -2867,7 +2867,7 @@ int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const cha
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -2937,7 +2937,7 @@ int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_text(file->fh, varid, start, count, stride, op, &request);;
@@ -2945,7 +2945,7 @@ int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3015,7 +3015,7 @@ int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_long(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -3023,7 +3023,7 @@ int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3093,7 +3093,7 @@ int PIOc_put_vars_double (int ncid, int varid, const PIO_Offset start[], const P
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_double(file->fh, varid, start, count, stride, op, &request);;
@@ -3101,7 +3101,7 @@ int PIOc_put_vars_double (int ncid, int varid, const PIO_Offset start[], const P
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3171,7 +3171,7 @@ int PIOc_put_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_longlong(file->fh, varid, start, count, op, &request);;
@@ -3179,7 +3179,7 @@ int PIOc_put_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3249,7 +3249,7 @@ int PIOc_put_var_double (int ncid, int varid, const double *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_double(file->fh, varid, op, &request);;
@@ -3257,7 +3257,7 @@ int PIOc_put_var_double (int ncid, int varid, const double *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3327,7 +3327,7 @@ int PIOc_put_var_float (int ncid, int varid, const float *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_float(file->fh, varid, op, &request);;
@@ -3335,7 +3335,7 @@ int PIOc_put_var_float (int ncid, int varid, const float *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3405,7 +3405,7 @@ int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], cons
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_ulonglong(file->fh, varid, index, op, &request);;
@@ -3413,7 +3413,7 @@ int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], cons
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3483,7 +3483,7 @@ int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_uint(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -3491,7 +3491,7 @@ int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3561,7 +3561,7 @@ int PIOc_put_var1_uint (int ncid, int varid, const PIO_Offset index[], const uns
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_uint(file->fh, varid, index, op, &request);;
@@ -3569,7 +3569,7 @@ int PIOc_put_var1_uint (int ncid, int varid, const PIO_Offset index[], const uns
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3639,7 +3639,7 @@ int PIOc_put_var1_int (int ncid, int varid, const PIO_Offset index[], const int 
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_int(file->fh, varid, index, op, &request);;
@@ -3647,7 +3647,7 @@ int PIOc_put_var1_int (int ncid, int varid, const PIO_Offset index[], const int 
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3717,7 +3717,7 @@ int PIOc_put_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_float(file->fh, varid, start, count, stride, op, &request);;
@@ -3725,7 +3725,7 @@ int PIOc_put_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3795,7 +3795,7 @@ int PIOc_put_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_short(file->fh, varid, start, count, op, &request);;
@@ -3803,7 +3803,7 @@ int PIOc_put_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3873,7 +3873,7 @@ int PIOc_put_var1_schar (int ncid, int varid, const PIO_Offset index[], const si
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_schar(file->fh, varid, index, op, &request);;
@@ -3881,7 +3881,7 @@ int PIOc_put_var1_schar (int ncid, int varid, const PIO_Offset index[], const si
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -3951,7 +3951,7 @@ int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_ulonglong(file->fh, varid, start, count, op, &request);;
@@ -3959,7 +3959,7 @@ int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4029,7 +4029,7 @@ int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const P
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_double(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -4037,7 +4037,7 @@ int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const P
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4107,7 +4107,7 @@ int PIOc_put_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara(file->fh, varid, start, count, buf, bufcount, buftype, &request);;
@@ -4115,7 +4115,7 @@ int PIOc_put_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4185,7 +4185,7 @@ int PIOc_put_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_long(file->fh, varid, start, count, op, &request);;
@@ -4193,7 +4193,7 @@ int PIOc_put_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4263,7 +4263,7 @@ int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const d
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_double(file->fh, varid, index, op, &request);;
@@ -4271,7 +4271,7 @@ int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const d
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4341,7 +4341,7 @@ int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_schar(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -4349,7 +4349,7 @@ int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4419,7 +4419,7 @@ int PIOc_put_var_text (int ncid, int varid, const char *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_text(file->fh, varid, op, &request);;
@@ -4427,7 +4427,7 @@ int PIOc_put_var_text (int ncid, int varid, const char *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4497,7 +4497,7 @@ int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_int(file->fh, varid, start, count, stride, op, &request);;
@@ -4505,7 +4505,7 @@ int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4575,7 +4575,7 @@ int PIOc_put_var1_short (int ncid, int varid, const PIO_Offset index[], const sh
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var1_short(file->fh, varid, index, op, &request);;
@@ -4583,7 +4583,7 @@ int PIOc_put_var1_short (int ncid, int varid, const PIO_Offset index[], const sh
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4653,7 +4653,7 @@ int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars_longlong(file->fh, varid, start, count, stride, op, &request);;
@@ -4661,7 +4661,7 @@ int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4731,7 +4731,7 @@ int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const P
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vara_double(file->fh, varid, start, count, op, &request);;
@@ -4739,7 +4739,7 @@ int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const P
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4809,7 +4809,7 @@ int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_vars(file->fh, varid, start, count, stride, buf, bufcount, buftype, &request);;
@@ -4817,7 +4817,7 @@ int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4887,7 +4887,7 @@ int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_uchar(file->fh, varid, op, &request);;
@@ -4895,7 +4895,7 @@ int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -4965,7 +4965,7 @@ int PIOc_put_var_long (int ncid, int varid, const long *op)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_var_long(file->fh, varid, op, &request);;
@@ -4973,7 +4973,7 @@ int PIOc_put_var_long (int ncid, int varid, const long *op)
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
@@ -5043,7 +5043,7 @@ int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ncmpi_begin_indep_data(file->fh);
+      //      ncmpi_begin_indep_data(file->fh);
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_bput_varm_longlong(file->fh, varid, start, count, stride, imap, op, &request);;
@@ -5051,7 +5051,7 @@ int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
-      ncmpi_end_indep_data(file->fh);
+      // ncmpi_end_indep_data(file->fh);
       MPI_Bcast(&usage, 1,  MPI_LONG_LONG, file->indep_rank, ios->io_comm);
       file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       if(usage >= 0.8*PIO_BUFFER_SIZE_LIMIT){
