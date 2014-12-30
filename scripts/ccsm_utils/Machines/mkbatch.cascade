@@ -5,6 +5,8 @@ if ($PHASE == set_batch) then
 #################################################################################
 
 source ./Tools/ccsm_getenv || exit -1
+#BSINGH - set BFBFLAG to TRUE so that tests using "create_test" and "create_prod_test" scripts pass
+./xmlchange -file env_run.xml   -id BFBFLAG          -val TRUE
 
 set ntasks  = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
 set maxthrds = `${CASEROOT}/Tools/taskmaker.pl -maxthrds`

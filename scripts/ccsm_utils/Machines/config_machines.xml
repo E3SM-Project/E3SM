@@ -601,14 +601,14 @@
          <DESC>PNL cluster, os is Linux (pgi), batch system is SLURM</DESC>
          <OS>LINUX</OS>
          <COMPILERS>intel,nag</COMPILERS>
-         <MPILIBS>mvapich2</MPILIBS>
+         <MPILIBS>mpich</MPILIBS>
          <RUNDIR>/dtemp/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
          <EXEROOT>/dtemp/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/dtemp/sing201/inputdata/CAM/CSMDATA_CAM/aerocom/csmdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/dtemp/sing201/inputdata/CAM/CSMDATA_CAM/aerocom/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/dtemp/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/dtemp/sing201/ACME_testing/acme_baselines/</CCSM_BASELINE>
+         <CCSM_BASELINE>/dtemp/sing201/acme_testing/acme_baselines/</CCSM_BASELINE>
 	     <CESMSCRATCHROOT>/dtemp/$USER/csmruns</CESMSCRATCHROOT>
          <CCSM_CPRNC>/home/sing201/CAM/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>showq</BATCHQUERY>
