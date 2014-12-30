@@ -2802,6 +2802,7 @@ int push_attributes(ezxml_t currentPosition){/*{{{*/
 
 int merge_structs_and_var_arrays(ezxml_t currentPosition){/*{{{*/
 	ezxml_t old_child, new_child;
+	ezxml_t next_child;
 	ezxml_t childStruct1, childStruct2, lastStruct;
 
 	const char *name, *name2;
@@ -2829,15 +2830,18 @@ int merge_structs_and_var_arrays(ezxml_t currentPosition){/*{{{*/
 
 				if(strcmp(name, name2) == 0){
 					// Merge children into childStruct1, and "remove" childStruct2
-					for(old_child = ezxml_child(childStruct2, "var"); old_child; old_child = old_child->next){
+					for(old_child = ezxml_child(childStruct2, "var"); old_child; old_child = next_child){
+						next_child = ezxml_next(old_child);
 						new_child = ezxml_insert(old_child, childStruct1, strlen(childStruct1->txt));
 					}
 
-					for(old_child = ezxml_child(childStruct2, "var_array"); old_child; old_child = old_child->next){
+					for(old_child = ezxml_child(childStruct2, "var_array"); old_child; old_child = next_child){
+						next_child = ezxml_next(old_child);
 						new_child = ezxml_insert(old_child, childStruct1, strlen(childStruct1->txt));
 					}
 
-					for(old_child = ezxml_child(childStruct2, "var_struct"); old_child; old_child = old_child->next){
+					for(old_child = ezxml_child(childStruct2, "var_struct"); old_child; old_child = next_child){
+						next_child = ezxml_next(old_child);
 						new_child = ezxml_insert(old_child, childStruct1, strlen(childStruct1->txt));
 					}
 
@@ -2872,7 +2876,8 @@ int merge_structs_and_var_arrays(ezxml_t currentPosition){/*{{{*/
 
 				if(strcmp(name, name2) == 0){
 					// Merge var_arrays and remove childStruct2
-					for(old_child = ezxml_child(childStruct2, "var"); old_child; old_child = old_child->next){
+					for(old_child = ezxml_child(childStruct2, "var"); old_child; old_child = next_child){
+						next_child = ezxml_next(old_child);
 						new_child = ezxml_insert(old_child, childStruct1, strlen(childStruct1->txt));
 					}
 
