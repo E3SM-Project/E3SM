@@ -135,7 +135,7 @@ CONTAINS
     ierr = get_var1_id_{TYPE} (file%fh, varid, index, ival)
 
   end function get_var1_{TYPE}
-
+! TYPE int,real,double
   integer function get_var1_id_{TYPE} (ncid,varid, index, ival) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid, index(:)
@@ -168,6 +168,74 @@ CONTAINS
     call t_stopf("pio_get_var1_{TYPE}")
 #endif
   end function get_var1_id_{TYPE}
+
+
+
+  integer function get_var1_id_text_internal(ncid,varid, index, vlen, ival) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid, index(:)
+    integer,intent(in) :: vlen
+    character, intent(out) :: ival(vlen)
+
+    integer(C_SIZE_T), allocatable :: cindex(:)
+    integer(C_SIZE_T), allocatable :: count(:)
+    integer :: i, clen
+!!$    interface
+!!$       integer(C_INT) function PIOc_get_var1_text (ncid, varid, index, ival) &
+!!$            bind(C,name="PIOc_get_var1_text")
+!!$         use iso_c_binding
+!!$         integer(C_INT), value :: ncid
+!!$         integer(C_INT), value :: varid
+!!$         integer(C_SIZE_T) :: index(*)
+!!$         character :: ival(*)
+!!$       end function PIOc_get_var1_text
+!!$    end interface
+
+#ifdef TIMING
+    call t_startf("pio_get_var1_text")
+#endif
+    clen = size(index)
+    allocate(cindex(clen))
+    do i=1,clen
+       cindex(i)=index(clen-i+1)-1
+    end do
+    allocate(count(clen))
+    count=1
+    count(clen) = vlen
+    ierr = PIOc_get_vara_text (ncid, varid-1, cindex, count, ival)
+!    print *,__FILE__,__LINE__,vlen, ival(1:vlen)
+    deallocate(cindex)
+    deallocate(count)
+#ifdef TIMING
+    call t_stopf("pio_get_var1_text")
+#endif
+  end function get_var1_id_text_internal
+
+  integer function get_var1_id_text (ncid,varid, index, ival) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid, index(:)
+    character(len=*), intent(out) :: ival
+    character, allocatable :: cval(:)
+    integer :: clen, i
+
+    clen = len(ival)
+    allocate(cval(clen))
+    cval=C_NULL_CHAR
+    ival=''
+    ierr = get_var1_id_text_internal(ncid,varid,index,clen,cval)
+    i=1
+    do while(i<=clen )
+       if(cval(i) == C_NULL_CHAR ) exit
+       ival(i:i) = cval(i)
+       i=i+1
+    enddo
+   deallocate(cval)
+!   print *,__FILE__,__LINE__,trim(ival)
+
+
+  end function get_var1_id_text
+
+
 
 !>
 !! @public
@@ -302,7 +370,7 @@ CONTAINS
     ival =C_NULL_CHAR
     ierr = PIOc_get_var_text(File%fh, varid-1, ival)
     call replace_c_null(ival)
-
+!    print *,__FILE__,__LINE__,trim(ival)
   end function Get_var_0d_text
 
 
@@ -330,7 +398,7 @@ CONTAINS
     ierr = get_var_text_internal(File%fh, varid, size(ival), ival)
 
   end function get_var_{DIMS}d_text
-
+ 
   integer function get_var_text_internal (ncid,varid, nstrs, ival) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
@@ -401,6 +469,7 @@ CONTAINS
     deallocate(ccount, cstart)
     do j=1,nstrs
        call replace_c_null(ival(j))
+!       print *,__FILE__,__LINE__,trim(ival(j))
     end do
   end function get_vara_text_internal
 

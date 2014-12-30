@@ -243,6 +243,9 @@ contains
     character(len=*), intent(in) :: name
     integer, intent(in) :: arrlen
     character(len=*), intent(in) :: values(arrlen)
+    integer :: vallen
+
+    
     ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, int(arrlen,C_SIZE_T),values(1))
         
 
@@ -260,7 +263,6 @@ contains
     values = ' '
     ierr = PIOc_get_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, values)
     call replace_c_null(values)
-
   end function get_att_id_text
 
   !pl The next line is needed by genf90.pl, do not remove it.
@@ -444,7 +446,6 @@ contains
 
   end function get_att_1d_{TYPE}
 
-  ! TYPE real,int,double
 
   ! TYPE real,int,double
   integer function get_att_1d_id_{TYPE} (ncid,varid,name,values) result(ierr)

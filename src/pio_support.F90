@@ -35,8 +35,9 @@ contains
     character(len=*),intent(inout) :: istr
     integer :: i
     do i=1,len(istr)
-       if(istr(i:i) == C_NULL_CHAR) istr(i:i)=''
+       if(istr(i:i) == C_NULL_CHAR) exit
     end do
+    istr(i:len(istr))=''
   end subroutine replace_c_null
 
   subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3, mpirank)
