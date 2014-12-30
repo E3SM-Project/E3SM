@@ -155,6 +155,21 @@ typedef struct iosystem_desc_t
   struct iosystem_desc_t *next;
 } iosystem_desc_t;
 
+typedef struct wmulti_buffer
+{
+  int ioid;
+  int totalvars;
+  int validvars;
+  int arraylen;
+  int *vid;
+  int *frame;
+  void *fillvalue;
+  void *data;
+  struct wmulti_buffer *next;
+} wmulti_buffer;
+
+
+
 /**
  * @brief io system descriptor structure
  *
@@ -171,6 +186,7 @@ typedef struct file_desc_t
   MPI_Request request[PIO_MAX_REQUESTS];   // request associated with buffered data for pnetcdf
   int nreq;   // next empty request slot to fill.
   int indep_rank;
+  struct wmulti_buffer buffer;
   struct file_desc_t *next;
 } file_desc_t;
 
@@ -376,7 +392,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 		  const char *fname, const int mode);
 int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue);
-int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, void *fillvalue);
+  int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, const int frame[], void *fillvalue);
 
 int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip);
 int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op) ;

@@ -43,7 +43,14 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
   }
- 
+
+  file->buffer.validvars=0;
+  file->buffer.totalvars=0;
+  file->buffer.vid=NULL;
+  file->buffer.data=NULL;
+  file->buffer.next=NULL;
+  file->buffer.frame=NULL;
+  file->buffer.fillvalue=NULL;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->comp_rank==0) 
@@ -143,6 +150,15 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   file->iosystem = ios;
   file->iotype = *iotype;
 
+  file->buffer.validvars=0;
+  file->buffer.totalvars=0;
+  file->buffer.data=NULL;
+  file->buffer.next=NULL;
+  file->buffer.vid=NULL;
+  file->buffer.ioid=-1;
+  file->buffer.frame=NULL;
+  file->buffer.fillvalue=NULL;
+
   for(int i=0; i<PIO_MAX_VARS;i++){
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
@@ -226,6 +242,7 @@ int PIOc_closefile(int ncid)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  wmulti_buffer *wmb, *twmb;
 
   ierr = PIO_NOERR;
 
@@ -234,12 +251,33 @@ int PIOc_closefile(int ncid)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = 0;
+  wmb = &(file->buffer); 
+  while(wmb != NULL){
+    if(wmb->validvars>0){
+      PIOc_write_darray_multi(ncid, wmb->vid,  wmb->ioid, wmb->validvars, wmb->arraylen, wmb->data, wmb->frame, wmb->fillvalue);
+      wmb->validvars=0;
+      free(wmb->vid);
+      free(wmb->data);
+    }
+    twmb = wmb;
+    wmb = wmb->next;
+    if(twmb == &(file->buffer)){
+      twmb->ioid=-1;
+      twmb->next=NULL;
+    }else{
+      free(twmb);
+    }
+  }
+
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
+
+  
+
 
 
   if(ios->ioproc){

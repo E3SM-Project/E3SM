@@ -227,9 +227,10 @@ contains
                 do frame=1,nframes
                    do nv=1,nvars   
                       call PIO_setframe(File, vari(nv), frame)
+                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld((nv-1)*maplen+1:nv*maplen)    , ierr)
                    enddo
-
-                   call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
+! multiversion  
+!                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
 
 !!$
 !!$                   
