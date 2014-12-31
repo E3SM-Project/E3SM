@@ -240,8 +240,9 @@ sub transform_src
   # reset otherwise
   $$ref_modif = 1;
   if(/^(\s*)(PIO_TF_TEST_SUB_BEGIN)(.*)$/s){
-    $out_line = $1 . "SUBROUTINE" . $3 . "\n";
-    $out_line = $out_line . $1 . "  USE pio_tutil\n";
+      $out_line = "# $template_line_no $template_fname\n";
+      $out_line .= $1 . "SUBROUTINE" . $3 . "\n";
+      $out_line .= $1 . "  USE pio_tutil\n";
   }
   elsif(/^(\s*)(PIO_TF_TEST_SUB_END)(.*)$/s){
     if($template_disable_wr == 0){

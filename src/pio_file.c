@@ -242,7 +242,6 @@ int PIOc_closefile(int ncid)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  wmulti_buffer *wmb, *twmb;
 
   ierr = PIO_NOERR;
 
@@ -251,28 +250,8 @@ int PIOc_closefile(int ncid)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = 0;
-  wmb = &(file->buffer); 
-  while(wmb != NULL){
-    if(wmb->validvars>0){
-      PIOc_write_darray_multi(ncid, wmb->vid,  wmb->ioid, wmb->validvars, wmb->arraylen, wmb->data, wmb->frame, wmb->fillvalue);
-      wmb->validvars=0;
-      free(wmb->vid);
-      free(wmb->data);
-      if(wmb->fillvalue != NULL)
-	free(wmb->fillvalue);
-      if(wmb->frame != NULL)
-	free(wmb->frame);
-    }
-    twmb = wmb;
-    wmb = wmb->next;
-    if(twmb == &(file->buffer)){
-      twmb->ioid=-1;
-      twmb->next=NULL;
-    }else{
-      free(twmb);
-    }
-  }
 
+  PIOc_sync(ncid);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->comp_rank==0) 
@@ -370,3 +349,90 @@ int PIOc_deletefile(const int iosysid, const char filename[])
 
   return ierr;
 }
+
+///
+/// PIO interface to nc_sync
+///
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
+/// 
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
+///
+/** 
+* @name    PIOc_sync
+*/
+int PIOc_sync (int ncid) 
+{
+  int ierr;
+  int msg;
+  int mpierr;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+  wmulti_buffer *wmb, *twmb;
+
+  ierr = PIO_NOERR;
+
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+  ios = file->iosystem;
+  msg = PIO_MSG_SYNC;
+
+  if(ios->async_interface && ! ios->ioproc){
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+  }
+
+  wmb = &(file->buffer); 
+  while(wmb != NULL){
+    if(wmb->validvars>0){
+      PIOc_write_darray_multi(ncid, wmb->vid,  wmb->ioid, wmb->validvars, wmb->arraylen, wmb->data, wmb->frame, wmb->fillvalue);
+      wmb->validvars=0;
+      free(wmb->vid);
+      free(wmb->data);
+      if(wmb->fillvalue != NULL)
+	free(wmb->fillvalue);
+      if(wmb->frame != NULL)
+	free(wmb->frame);
+    }
+    twmb = wmb;
+    wmb = wmb->next;
+    if(twmb == &(file->buffer)){
+      twmb->ioid=-1;
+      twmb->next=NULL;
+    }else{
+      free(twmb);
+    }
+  }
+
+  if(ios->ioproc){
+    switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+      ierr = nc_sync(file->fh);;
+      break;
+    case PIO_IOTYPE_NETCDF4C:
+#endif
+    case PIO_IOTYPE_NETCDF:
+      if(ios->io_rank==0){
+	ierr = nc_sync(file->fh);;
+      }
+      break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+      flush_output_buffer(file);
+      ierr = ncmpi_sync(file->fh);;
+      break;
+#endif
+    default:
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+    }
+  }
+
+  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+
+  return ierr;
+}
+

@@ -129,7 +129,7 @@ CONTAINS
           pio_tf_stride_,             &
           PIO_rearr_subset,              &
           pio_tf_iosystem_,           &
-          base=1)
+          base=0)
 
     ! Set PIO to bcast error
     CALL PIO_seterrorhandling(pio_tf_iosystem_, PIO_BCAST_ERROR)
@@ -171,9 +171,9 @@ CONTAINS
     CALL MPI_ALLREDUCE(local_result, global_result, 1, MPI_LOGICAL, MPI_LAND, pio_tf_comm_, ierr)
     IF (.NOT. global_result) THEN
       failed = .NOT. local_result
-      IF (pio_tf_world_rank_ == 0) THEN
+!      IF (pio_tf_world_rank_ == 0) THEN
         ALLOCATE(failed_ranks(pio_tf_world_sz_))
-      END IF
+!      END IF
       ! Gather the ranks where assertion failed
       CALL MPI_GATHER(failed, 1, MPI_LOGICAL, failed_ranks, 1, MPI_LOGICAL, 0, pio_tf_comm_, ierr)
 
@@ -199,10 +199,9 @@ CONTAINS
           END DO
           PRINT *, ""
         END IF
-        DEALLOCATE(failed_ranks)
       END IF
+      DEALLOCATE(failed_ranks)
     END IF
-
     PIO_TF_Passert_ = global_result
   END FUNCTION PIO_TF_Passert_
 
@@ -516,19 +515,19 @@ CONTAINS
         lfail_info % val     = arr(nequal_idx)
         lfail_info % exp_val = exp_arr(nequal_idx)
       END IF
-      IF (pio_tf_world_rank_ == 0) THEN
-        ALLOCATE(gfail_info(pio_tf_world_sz_))
-      END IF
+      ALLOCATE(gfail_info(pio_tf_world_sz_))
       ! Gather the ranks where assertion failed
       CALL MPI_GATHER(lfail_info, 3, MPI_INTEGER, gfail_info, 3, MPI_INTEGER, 0, pio_tf_comm_, ierr)
-      DO i=1,pio_tf_world_sz_
-        IF(gfail_info(i) % idx /= -1) THEN
-          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", gfail_info(i) % idx, "]=", &
-                   gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val
-        END IF
-      END DO
-    END IF
-
+      IF (pio_tf_world_rank_ == 0) THEN
+         DO i=1,pio_tf_world_sz_
+            IF(gfail_info(i) % idx /= -1) THEN
+               PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", gfail_info(i) % idx, "]=", &
+                    gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val
+            END IF
+         END DO
+      END IF
+      deallocate(gfail_info)
+   end if
     PIO_TF_Check_int_arr_arr = gequal
   END FUNCTION
 
@@ -599,9 +598,7 @@ CONTAINS
         lfail_info % val     = arr(INT(nequal_idx))
         lfail_info % exp_val = exp_arr(INT(nequal_idx))
       END IF
-      IF (pio_tf_world_rank_ == 0) THEN
-        ALLOCATE(gfail_info(pio_tf_world_sz_))
-      END IF
+      ALLOCATE(gfail_info(pio_tf_world_sz_))
       ! Gather the ranks where assertion failed
       CALL MPI_GATHER(lfail_info, 3, MPI_REAL, gfail_info, 3, MPI_REAL, 0, pio_tf_comm_, ierr)
       DO i=1,pio_tf_world_sz_
@@ -610,7 +607,8 @@ CONTAINS
                INT(gfail_info(i) % idx), "]=", gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val
         END IF
       END DO
-    END IF
+      DEALLOCATE(gfail_info)
+   END IF
 
     PIO_TF_Check_real_arr_arr_tol = gequal
   END FUNCTION
@@ -680,9 +678,9 @@ CONTAINS
         lfail_info % val     = arr(INT(nequal_idx))
         lfail_info % exp_val = exp_arr(INT(nequal_idx))
       END IF
-      IF (pio_tf_world_rank_ == 0) THEN
-        ALLOCATE(gfail_info(pio_tf_world_sz_))
-      END IF
+
+      ALLOCATE(gfail_info(pio_tf_world_sz_))
+
       ! Gather the ranks where assertion failed
       CALL MPI_GATHER(lfail_info, 3, MPI_DOUBLE, gfail_info, 3, MPI_DOUBLE, 0, pio_tf_comm_, ierr)
       DO i=1,pio_tf_world_sz_
@@ -692,7 +690,8 @@ CONTAINS
                 ", Expected = ", gfail_info(i) % exp_val
         END IF
       END DO
-    END IF
+      DEALLOCATE(gfail_info)
+   END IF
 
     PIO_TF_Check_double_arr_arr_tol = gequal
   END FUNCTION

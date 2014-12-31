@@ -76,6 +76,7 @@ foreach my $func (keys %{$functions}){
   next if($func=~/get_v/ or $func=~/put_v/);
   next if($func=~/strerror/);
   next if($func=~/delete/);
+  next if($func=~/sync/);
   next if($func=~/open/);
   next if($func=~/close/);
   next if($func=~/create/);

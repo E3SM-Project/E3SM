@@ -320,7 +320,6 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
      int regioncnt;
      int rrcnt;
      void *bufptr;
-     void *tmp_buf=NULL;
      int tsize;
      size_t start[fndims];
      size_t count[fndims];
@@ -385,7 +384,9 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	   if(vdesc->record >= 0){
 	     start[0] = frame[nv];
 	   }
-	   bufptr = (void *)((char *) IOBUF + nv*iodesc->llen + tsize*region->loffset);
+	   if(region != NULL){
+	     bufptr = (void *)((char *) IOBUF + nv*iodesc->llen + tsize*region->loffset);
+	   }
 	   ierr = nc_var_par_access(ncid, vid[nv], NC_COLLECTIVE);
 
 	   switch(iodesc->basetype){
@@ -423,7 +424,6 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 		   tstart[j] =  start[j];
 		   tcount[j] =  count[j];
 		   buflen *= tcount[j];
-		   tmp_buf = bufptr;
 		 }
 	       }else{
 		 mpierr = MPI_Send( &ierr, 1, MPI_INT, iorank, 0, ios->io_comm);  // handshake - tell the sending task I'm ready
@@ -431,9 +431,6 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 		 if(buflen>0){
 		   mpierr = MPI_Recv( tstart, ndims, MPI_OFFSET, iorank, ios->num_iotasks+iorank, ios->io_comm, &status);
 		   mpierr = MPI_Recv( tcount, ndims, MPI_OFFSET, iorank,2*ios->num_iotasks+iorank, ios->io_comm, &status);
-		   // tmp_buf = malloc(buflen * dsize);	
-
-
 		 }
 	       }
 
@@ -442,9 +439,15 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 		   if(vdesc->record >= 0){
 		     tstart[0] = frame[nv];
 		   }
-		   bufptr = (void *)((char *) IOBUF + nv*iodesc->llen + tsize*region->loffset);
+
+		   //		   printf("%s %d %d %d %d %d %ld\n",__FILE__,__LINE__,iodesc->llen, buflen, iodesc->maxiobuflen, nvars, tcount[0]);
+
+
 		   if(iorank>0){
+		     bufptr = malloc(buflen*tsize) ;
 		     mpierr = MPI_Recv( bufptr, buflen, iodesc->basetype, iorank, iorank, ios->io_comm, &status);
+		   }else{
+		     bufptr = IOBUF+ nv*iodesc->llen + tsize*region->loffset;
 		   }
 		   if(iodesc->basetype == MPI_INTEGER){
 		     ierr = nc_put_vara_int (ncid, vid[nv], tstart, tcount, (const int *) bufptr); 
@@ -454,6 +457,9 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 		     ierr = nc_put_vara_float (ncid,vid[nv], tstart, tcount, (const float *) bufptr); 
 		   }else{
 		     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
+		   }
+		   if(iorank>0){
+		     free(bufptr);
 		   }
 		   if(ierr != PIO_NOERR){
 		     for(i=0;i<fndims;i++)
@@ -468,7 +474,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	       tstart[i] = (size_t) start[i];
 	       tcount[i] = (size_t) count[i];
 	       buflen*=tcount[i];
-	       //               printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,tstart[i],tcount[i]);
+	       //	                      printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,tstart[i],tcount[i]);
 	     }
 	     //	     printf("%s %d %d %d %d %d %d %d %d %d\n",__FILE__,__LINE__,ios->io_rank,tstart[0],tstart[1],tcount[0],tcount[1],buflen,ndims,fndims);
 	     mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
@@ -580,6 +586,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        MPI_Type_size(iodesc->basetype, &vsize);	
 #endif
        iobuf = malloc( vsize * rlen);
+       //     printf("%s %d 0x%.16X\n",__FILE__,__LINE__,iobuf);
        if(fillvalue != NULL){
 	 for(int nv=0;nv<nvars;nv++){
 	   void *bufptr = (void *)((char *) iobuf + nv*vsize*iodesc->llen);
@@ -617,9 +624,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      //  }
      
      ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, nvars);
-
-
-
+     
    }else{
      iobuf = array;
    }
@@ -635,9 +640,11 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      ierr = pio_write_darray_multi_nc(file, iodesc, nvars, vid, iobuf, frame, fillvalue);
    }
    //printf("%s %d %ld\n",__FILE__,__LINE__,iobuf);
-   if(iodesc->rearranger>0 && rlen>0)
+   if(iobuf != NULL && iobuf != array){
+     //     printf("%s %d 0x%.16X\n",__FILE__,__LINE__,iobuf);
      free(iobuf);
-
+     //  printf("%s %d\n",__FILE__,__LINE__);
+   }
    return ierr;
 
  }
