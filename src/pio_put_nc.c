@@ -15,7 +15,7 @@ int PIOc_put_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -93,7 +93,7 @@ int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -171,7 +171,7 @@ int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -249,7 +249,7 @@ int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -327,7 +327,7 @@ int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -405,7 +405,7 @@ int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -483,7 +483,7 @@ int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -561,7 +561,7 @@ int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -639,7 +639,7 @@ int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -717,7 +717,7 @@ int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -795,7 +795,7 @@ int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const lon
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -873,7 +873,7 @@ int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -951,7 +951,7 @@ int PIOc_put_var_short (int ncid, int varid, const short *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1029,7 +1029,7 @@ int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1107,7 +1107,7 @@ int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const u
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1185,7 +1185,7 @@ int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1263,7 +1263,7 @@ int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1341,7 +1341,7 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1419,7 +1419,7 @@ int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1497,7 +1497,7 @@ int PIOc_put_var_int (int ncid, int varid, const int *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1575,7 +1575,7 @@ int PIOc_put_var_longlong (int ncid, int varid, const long long *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1653,7 +1653,7 @@ int PIOc_put_var_schar (int ncid, int varid, const signed char *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1731,7 +1731,7 @@ int PIOc_put_var_uint (int ncid, int varid, const unsigned int *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1809,7 +1809,7 @@ int PIOc_put_var (int ncid, int varid, const void *buf, PIO_Offset bufcount, MPI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1887,7 +1887,7 @@ int PIOc_put_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -1965,7 +1965,7 @@ int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2043,7 +2043,7 @@ int PIOc_put_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2121,7 +2121,7 @@ int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2199,7 +2199,7 @@ int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2277,7 +2277,7 @@ int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const un
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2355,7 +2355,7 @@ int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2433,7 +2433,7 @@ int PIOc_put_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2511,7 +2511,7 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2589,7 +2589,7 @@ int PIOc_put_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2667,7 +2667,7 @@ int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const fl
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2745,7 +2745,7 @@ int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2823,7 +2823,7 @@ int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const cha
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2901,7 +2901,7 @@ int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -2979,7 +2979,7 @@ int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3057,7 +3057,7 @@ int PIOc_put_vars_double (int ncid, int varid, const PIO_Offset start[], const P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3135,7 +3135,7 @@ int PIOc_put_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3213,7 +3213,7 @@ int PIOc_put_var_double (int ncid, int varid, const double *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3291,7 +3291,7 @@ int PIOc_put_var_float (int ncid, int varid, const float *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3369,7 +3369,7 @@ int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], cons
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3447,7 +3447,7 @@ int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3525,7 +3525,7 @@ int PIOc_put_var1_uint (int ncid, int varid, const PIO_Offset index[], const uns
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3603,7 +3603,7 @@ int PIOc_put_var1_int (int ncid, int varid, const PIO_Offset index[], const int 
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3681,7 +3681,7 @@ int PIOc_put_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3759,7 +3759,7 @@ int PIOc_put_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3837,7 +3837,7 @@ int PIOc_put_var1_schar (int ncid, int varid, const PIO_Offset index[], const si
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3915,7 +3915,7 @@ int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -3993,7 +3993,7 @@ int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4071,7 +4071,7 @@ int PIOc_put_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4149,7 +4149,7 @@ int PIOc_put_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4227,7 +4227,7 @@ int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const d
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4305,7 +4305,7 @@ int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4383,7 +4383,7 @@ int PIOc_put_var_text (int ncid, int varid, const char *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4461,7 +4461,7 @@ int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4539,7 +4539,7 @@ int PIOc_put_var1_short (int ncid, int varid, const PIO_Offset index[], const sh
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4617,7 +4617,7 @@ int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4695,7 +4695,7 @@ int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4773,7 +4773,7 @@ int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4851,7 +4851,7 @@ int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -4929,7 +4929,7 @@ int PIOc_put_var_long (int ncid, int varid, const long *op)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
@@ -5007,7 +5007,7 @@ int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;
