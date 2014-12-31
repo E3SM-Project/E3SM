@@ -46,7 +46,7 @@ void pio_add_to_file_list(file_desc_t *file)
 }
 
 
-void pio_push_request(file_desc_t *file, MPI_Request request)
+void pio_push_request(file_desc_t *file, int request)
 {
   file->request[file->nreq++] = request;
   if(file->nreq>= PIO_MAX_REQUESTS)

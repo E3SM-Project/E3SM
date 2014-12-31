@@ -12,7 +12,7 @@ int PIO_function()
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  MPI_Request request;
+  int request;
   PIO_Offset usage;
 
   ierr = PIO_NOERR;

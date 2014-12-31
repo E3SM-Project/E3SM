@@ -46,7 +46,7 @@ typedef struct mapsort
   file_desc_t *pio_get_file_from_id(int ncid);
   int pio_delete_file_from_list(int ncid);
   void pio_add_to_file_list(file_desc_t *file);
-  void pio_push_request(file_desc_t *file, MPI_Request request);
+  void pio_push_request(file_desc_t *file, int request);
 
   iosystem_desc_t *pio_get_iosystem_from_id(int iosysid);
   int pio_add_to_iosystem_list(iosystem_desc_t *ios);

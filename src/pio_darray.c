@@ -31,7 +31,7 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
    int dsize;
    MPI_Status status;
    PIO_Offset usage;
-   MPI_Request request;
+   int request;
    int fndims;
    PIO_Offset tdsize;
 
@@ -285,7 +285,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
    int dsize;
    MPI_Status status;
    PIO_Offset usage;
-   MPI_Request request;
+   int request;
    int fndims;
    PIO_Offset tdsize;
 
@@ -1127,7 +1127,7 @@ int flush_output_buffer(file_desc_t *file)
 
   ierr = ncmpi_wait_all(file->fh,file->nreq,  file->request,status);
   for(int i=0;i<file->nreq;i++){
-    file->request[i]=MPI_REQUEST_NULL;
+    file->request[i]=NC_REQ_NULL;
   }
   file->nreq = 0;
 
