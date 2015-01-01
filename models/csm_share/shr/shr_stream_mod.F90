@@ -1,6 +1,6 @@
 !===============================================================================
 ! SVN $Id: shr_stream_mod.F90 43642 2013-01-31 19:22:00Z sacks $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_stream_mod.F90 $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140723/shr/shr_stream_mod.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !
@@ -717,8 +717,8 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
       strm%filePath = trim(filePath)
    endif
    if (present(filename)) then
-      write(s_logunit,F01) "size of filename = ",size(filename)
-      write(s_logunit,F00) "filename = ",filename
+!      write(s_logunit,F01) "size of filename = ",size(filename)
+!      write(s_logunit,F00) "filename = ",filename
       do n = 1,size(filename)
          if (trim(filename(n)) == trim(shr_stream_file_null)) then
             ! ignore it

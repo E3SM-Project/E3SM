@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: shr_const_mod.F90 6749 2007-10-04 20:58:20Z jwolfe $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_const_mod.F90 $
+! SVN $Id: shr_const_mod.F90 61510 2014-06-26 21:58:56Z tcraig $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140723/shr/shr_const_mod.F90 $
 !===============================================================================
 
 MODULE shr_const_mod
@@ -56,6 +56,27 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_OCN_REF_SAL = 34.7_R8     ! ocn ref salinity (psu)
    real(R8),parameter :: SHR_CONST_ICE_REF_SAL =  4.0_R8     ! ice ref salinity (psu)
 
-   real(R8),parameter :: SHR_CONST_SPVAL   = 1.0e30_R8       ! special missing value
+   real(R8),parameter :: SHR_CONST_SPVAL      = 1.0e30_R8     ! special missing value
+   real(R8),parameter :: SHR_CONST_SPVAL_TOLMIN = 0.99_R8 * SHR_CONST_SPVAL  ! min spval tolerance
+   real(R8),parameter :: SHR_CONST_SPVAL_TOLMAX = 1.01_R8 * SHR_CONST_SPVAL  ! max spval tolerance
+
+contains
+
+!-----------------------------------------------------------------------------
+
+  logical function shr_const_isspval(rval)
+
+     real(r8), intent(in) :: rval
+
+     if (rval > SHR_CONST_SPVAL_TOLMIN .and. &
+         rval < SHR_CONST_SPVAL_TOLMAX) then
+        shr_const_isspval = .true.
+     else
+        shr_const_isspval = .false.
+     endif
+
+  end function shr_const_isspval
+
+!-----------------------------------------------------------------------------
 
 END MODULE shr_const_mod

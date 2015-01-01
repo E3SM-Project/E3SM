@@ -299,9 +299,7 @@ my $ROF_GRID        = $xmlvars{'ROF_GRID'};
 my $LND_GRID        = $xmlvars{'LND_GRID'};
 my $ROF_NCPL        = $xmlvars{'ROF_NCPL'};
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CCSM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
+(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { 
     print "CESM inputdata root directory: $DIN_LOC_ROOT \n"; 
 }

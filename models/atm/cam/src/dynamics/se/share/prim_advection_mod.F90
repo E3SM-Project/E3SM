@@ -79,7 +79,7 @@ module vertremap_mod
   use spelt_mod, only              : spelt_struct 
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp
-  use control_mod, only : vert_remap_q_alg
+  use control_mod, only            : vert_remap_q_alg
 
   public remap1                  ! remap any field, splines, monotone
   public remap1_nofilter         ! remap any field, splines, no filter
@@ -956,7 +956,11 @@ contains
           enddo
           call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
        enddo
+
+       call t_startf('pat_spelt_bexchV')
        call bndry_exchangeV(hybrid,edgeAdv1)
+       call t_stopf('pat_spelt_bexchV')
+
        do ie=nets,nete
           call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
           do k=1,nlev
@@ -1057,7 +1061,11 @@ contains
           enddo
           call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
        enddo
+
+       call t_startf('pat_fvm_bexchV')
        call bndry_exchangeV(hybrid,edgeAdv1)
+       call t_stopf('pat_fvm_bexchV')
+
        do ie=nets,nete
           call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
           do k=1,nlev
@@ -1188,14 +1196,21 @@ contains
 
     !rhs_multiplier is for obtaining dp_tracers at each stage:
     !dp_tracers(stage) = dp - rhs_multiplier*dt*divdp_proj
+
+    call t_startf('euler_step_0')
     rhs_multiplier = 0
     call euler_step( np1_qdp , n0_qdp  , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSdiv_vdp_ave , rhs_multiplier )
+    call t_stopf('euler_step_0')
 
+    call t_startf('euler_step_1')
     rhs_multiplier = 1
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSeta         , rhs_multiplier )
+    call t_stopf('euler_step_1')
 
+    call t_startf('euler_step_2')
     rhs_multiplier = 2
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSomega       , rhs_multiplier )
+    call t_stopf('euler_step_2')
 
     !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.  
     call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
@@ -1510,11 +1525,13 @@ contains
     endif
   enddo
 
+  call t_startf('eus_bexchV')
   if ( DSSopt == DSSno_var ) then
     call bndry_exchangeV( hybrid , edgeAdv    )
   else
     call bndry_exchangeV( hybrid , edgeAdv_p1 )
   endif
+  call t_stopf('eus_bexchV')
 
   do ie = nets , nete
     if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
@@ -1652,11 +1669,13 @@ contains
 
   end do
 
+  call t_startf('eus_dg_bexchV')
   if(DSSopt==DSSno_var)then
      call bndry_exchangeV(hybrid,edgeAdv)
   else
      call bndry_exchangeV(hybrid,edgeAdv_p1)
   endif
+  call t_stopf('eus_dg_bexchV')
 
   do ie=nets,nete
 
@@ -2171,7 +2190,9 @@ contains
       call edgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
     enddo
 
+    call t_startf('ah_scalar_bexchV')
     call bndry_exchangeV( hybrid , edgeAdv )
+    call t_stopf('ah_scalar_bexchV')
     
     do ie = nets , nete
       call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
@@ -2222,9 +2243,9 @@ contains
 #else
   use fvm_control_volume_mod, only : fvm_struct
 #endif    
-#if USE_CUDA_FORTRAN
-  use cuda_mod, only: vertical_remap_cuda
-#endif
+!#if USE_CUDA_FORTRAN
+!  use cuda_mod, only: vertical_remap_cuda
+!#endif
   
 #if defined(_SPELT)
   type(spelt_struct), intent(inout) :: fvm(:)
@@ -2245,10 +2266,10 @@ contains
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
 
-#if USE_CUDA_FORTRAN
-  call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
-  return
-#endif
+!#if USE_CUDA_FORTRAN
+!  call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
+!  return
+!#endif
 
   call t_startf('vertical_remap')
   

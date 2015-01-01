@@ -1,7 +1,41 @@
-shr_reprosum_mod.o: shr_reprosum_mod.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=noauto:noomp $<	
-mo_sethet.o: mo_sethet.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=noauto:noomp $<
-mo_drydep.o: mo_drydep.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=noauto:noomp $<
+# These routines have problems with stacksize when omp is invoked add -qsmallstack to resolve
+SSOBJS = mo_sethet.o mo_drydep.o time_management.o
 
+## lnd files taking more than a minute to compile
+# this takes 4 mins to compile with -O3 -qsmp=omp
+BiogeophysRestMod.o: BiogeophysRestMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
+
+# this takes 17 mins to compile with -O3 -qsmp=omp
+CNrestMod.o: CNrestMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
+
+# this takes 4 mins to compile with -qsmp=omp
+clmtypeInitMod.o: clmtypeInitMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
+
+# this takes 2 mins to compile with -qsmp=omp
+clmtype.o: clmtype.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
+### end
+
+QSMPFLAGS:=
+ifeq ($(compile_threaded), true)
+  QSMPFLAGS += -qsmp=noauto:noomp
+endif
+shr_reprosum_mod.o: shr_reprosum_mod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(QSMPFLAGS) $<
+
+# These routines benefit from -qnostrict without violating the bfb test
+PERFOBJS=\
+prim_advection_mod.o \
+edge_mod.o \
+derivative_mod.o \
+bndry_mod.o \
+prim_advance_mod.o \
+uwshcu.o \
+wetdep.o 
+ifeq ($(DEBUG),FALSE)
+  $(PERFOBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qnostrict  $<
+endif

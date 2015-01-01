@@ -49,7 +49,7 @@ echo "test started $sdate" >>& CaseStatus
 #======================================================================
 
 if ( ${CASE} =~ *_IOP*) then
-  set iopbase_argv = `echo ${TEST_ARGV} |  sed 's/_IOP[A-Z4cp]*//'`
+  set iopbase_argv = "`echo ${TEST_ARGV} |  sed 's/_IOP[A-Z4cp]*//' | sed 's/ -testroot [^ ]* / /'` -testroot $CASEROOT"
   set iopbase_case = `echo ${CASE} |  sed 's/_IOP[A-Z4cp]*//'`
   set iopflags = `echo $CASE | sed 's/^.*_IOP\([A-Z4cp]*\).*/\1/'`
   echo "running create_test ${iopbase_argv}  -clean off -testid ${TEST_TESTID}" >>& $TESTSTATUS_LOG
@@ -62,7 +62,7 @@ if ( ${CASE} =~ *_IOP*) then
   cd $CASEROOT  || exit -9
   ./xmlchange  HIST_OPTION='$STOP_OPTION'
   ./xmlchange  HIST_N='$STOP_N'
-  cd ../${iopbase_case}  || exit -9
+  cd ${iopbase_case}  || exit -9
   cp $CASEROOT/env_build.xml* .
   cp $CASEROOT/env_run.xml* .
   foreach file (env_build.xml*)

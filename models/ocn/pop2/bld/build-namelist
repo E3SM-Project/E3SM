@@ -493,9 +493,7 @@ if ($tmp > 0) {
 print "POP2 build-namelist: ocn_grid is $OCN_GRID \n";
 print "POP2 build-namelist: ocn_tracer_modules are @OCN_TRACER_MODULES \n";
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CCSM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
+(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 #-----------------------------------------------------------------------------------------------

@@ -1248,9 +1248,9 @@
       WORK0(:,:,km+1) =       WORK0(:,:,km)
  
       do k=1,km
-         !DIR$ NODEP
+!        !DIR$ NODEP
          do j=1,ny_block
-         !DIR$ NODEP
+!        !DIR$ NODEP
          do i=1,nx_block
             RI_LOC(i,j) = WORK0(i,j,k)
             if (KMT(i,j,bid) >= 3) then
@@ -1455,10 +1455,10 @@
 !
 !-----------------------------------------------------------------------
 
-      !DIR$ NODEP
-      !DIR$ COLLAPSE
+!     !DIR$ NODEP
+!     !DIR$ COLLAPSE
       do j=1,ny_block
-      !DIR$ NODEP
+!     !DIR$ NODEP
       do i=1,nx_block
          if ( k >= KMT(i,j,bid) ) then
             VISC(i,j,k  ) = c0
@@ -1738,7 +1738,7 @@
          ZKL = -zgrid(kl)
       endif
 
-      !DIR$ COLLAPSE
+!     !DIR$ COLLAPSE
       do j=1,ny_block
       do i=1,nx_block
          if (kl == KBL(i,j)) HBLT(i,j) = ZKL(i,j)
@@ -1916,7 +1916,7 @@
 
       if (lcheckekmo) then
 
-         !DIR$ COLLAPSE
+!        !DIR$ COLLAPSE
          do j=1,ny_block
          do i=1,nx_block
             if ( STABLE(i,j) > p5 .and. HEKMAN(i,j) >= -zgrid(km) ) then
@@ -1929,7 +1929,7 @@
          HMONOB(:,:,kdn) = STABLE*cmonob*USTAR*USTAR*USTAR/vonkar/BFSFC + &
                           (STABLE-c1)*zgrid(km)
 
-         !DIR$ COLLAPSE
+!        !DIR$ COLLAPSE
          do j=1,ny_block
          do i=1,nx_block
             if (HMONOB(i,j,kdn) <= ZKL(i,j) .and. &
@@ -2289,7 +2289,7 @@
 !-----------------------------------------------------------------------
 
    if (partial_bottom_cells) then
-      !DIR$ COLLAPSE
+!     !DIR$ COLLAPSE
       do j=1,ny_block
       do i=1,nx_block
          k = KBL(i,j)
@@ -2302,7 +2302,7 @@
       enddo
       enddo
    else
-      !DIR$ COLLAPSE
+!     !DIR$ COLLAPSE
       do j=1,ny_block
       do i=1,nx_block
          k = KBL(i,j)
@@ -2338,7 +2338,7 @@
             WORK2 = DZT(:,:,k+1,bid)
          end if
 
-         !DIR$ COLLAPSE
+!        !DIR$ COLLAPSE
          do j=1,ny_block
          do i=1,nx_block
             if (k == KN(i,j)) then
@@ -2387,7 +2387,7 @@
 
       else
 
-         !DIR$ COLLAPSE
+!        !DIR$ COLLAPSE
          do j=1,ny_block
          do i=1,nx_block
             if (k == KN(i,j)) then
@@ -2466,7 +2466,7 @@
 
       call wscale(F1, HBLT, USTAR, BFSFC, 3, WM, WS)
 
-      !DIR$ COLLAPSE
+!     !DIR$ COLLAPSE
       do j=1,ny_block
       do i=1,nx_block
          BLMC(i,j,k,1) = HBLT(i,j)*WM(i,j)*SIGMA(i,j)*       &
@@ -2494,7 +2494,7 @@
 !
 !-----------------------------------------------------------------------
 
-   !DIR$ COLLAPSE
+!  !DIR$ COLLAPSE
    do j=1,ny_block
    do i=1,nx_block
       k = KBL(i,j) - 1
@@ -2505,7 +2505,7 @@
    F1 = min(SIGMA,epssfc)        
    call wscale(F1, HBLT, USTAR, BFSFC, 3, WM, WS)
 
-   !DIR$ COLLAPSE
+!  !DIR$ COLLAPSE
    do j=1,ny_block
    do i=1,nx_block
       DKM1(i,j,1) = HBLT(i,j)*WM(i,j)*SIGMA(i,j)*     &
@@ -2547,7 +2547,7 @@
             DELHAT = (HBLT + zgrid(k))/(zgrid(k)-zgrid(k+1))
       endif
 
-      !DIR$ COLLAPSE
+!     !DIR$ COLLAPSE
       do j=1,ny_block
       do i=1,nx_block
          if (k == (KBL(i,j) - 1)) then
@@ -2585,9 +2585,9 @@
 
    !DIR$ NOVECTOR
    do k=1,km
-      !DIR$ NODEP
+!     !DIR$ NODEP
       do j=1,ny_block
-      !DIR$ NODEP
+!     !DIR$ NODEP
       do i=1,nx_block
          if (k < KBL(i,j)) then 
             VISC(i,j,k)  = BLMC(i,j,k,1)

@@ -350,7 +350,7 @@ elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
 contains
 
   ! Use gamma function to implement rising factorial extended to the reals.
-  pure function rising_factorial(x, n)
+  elemental function rising_factorial(x, n)
     real(r8), intent(in) :: x, n
     real(r8) :: rising_factorial
 

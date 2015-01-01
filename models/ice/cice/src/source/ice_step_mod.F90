@@ -663,9 +663,11 @@
       !-----------------------------------------------------------------
 
 !      call t_barrierf ('cice_step_evp_BARRIER',MPI_COMM_ICE)
-      call t_startf ('cice_step_evp')
-      if (kdyn == 1) call evp (dt_dyn)
-      call t_stopf ('cice_step_evp')
+      if (kdyn == 1) then
+         call t_startf ('cice_step_evp')
+         call evp (dt_dyn)
+         call t_stopf ('cice_step_evp')
+      endif
 
       !-----------------------------------------------------------------
       ! Horizontal ice transport

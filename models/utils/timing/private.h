@@ -122,8 +122,10 @@ extern int GPTLis_initialized (void);          /* needed by MPI_Init wrapper */
 extern "C" {
 #endif
 
+#ifdef AUTO_INST
 extern void __cyg_profile_func_enter (void *, void *);
 extern void __cyg_profile_func_exit (void *, void *);
+#endif
 
 #ifdef __cplusplus
 };

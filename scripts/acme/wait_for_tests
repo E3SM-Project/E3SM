@@ -1,0 +1,238 @@
+#!/usr/bin/env python
+
+"""
+Wait for a queued ACME test to finish by watching the TestStatus file.
+If the test passes, 0 is returned, otherwise a non-zero error code
+is returned.
+"""
+
+import argparse, sys, os, doctest, time, threading, Queue, signal
+import distutils.spawn, subprocess, getpass
+
+VERBOSE = False
+TEST_STATUS_FILENAME = "TestStatus"
+TEST_NOT_FINISHED_STATUS = ["GEN", "BUILD", "RUN", "PEND"]
+TEST_PASSED_STATUS = "PASS"
+SLEEP_INTERVAL_SEC = 1
+SIGNAL_RECEIVED = False
+
+CLEANUP_ROUTINES = \
+{
+    "slurm" : "scancel --user=%s" % getpass.getuser(),
+    "pbs"   : "qdel $(qselect -u %s)" % getpass.getuser()
+}
+CLEANUP = False
+
+THROUGHPUT_TEST_STR = ".tputcomp."
+
+###############################################################################
+def expect(condition, error_msg):
+###############################################################################
+    if (not condition):
+        raise SystemExit(error_msg)
+
+###############################################################################
+def verbose_print(msg):
+###############################################################################
+    if (VERBOSE):
+        print msg
+
+###############################################################################
+def warning(msg):
+###############################################################################
+    print >> sys.stderr, "WARNING:", msg
+
+###############################################################################
+def run_cmd(cmd):
+###############################################################################
+    proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+    _, errput = proc.communicate()
+    stat = proc.wait()
+    expect(stat == 0, "Command: '%s' failed with error '%s'" % (cmd, errput))
+
+###############################################################################
+def probe_batch_system():
+###############################################################################
+    for batch_system, cmd in CLEANUP_ROUTINES.iteritems():
+        exe = cmd.split()[0]
+        exe_path = distutils.spawn.find_executable(exe)
+        if (exe_path is not None):
+            return batch_system
+
+    warning("No batch system found, skipping job cleanup")
+    return None
+
+###############################################################################
+def signal_handler(signum, frame):
+###############################################################################
+    global SIGNAL_RECEIVED
+    SIGNAL_RECEIVED = True
+
+    # Kill all queue'd jobs
+    if (CLEANUP):
+        batch_system = probe_batch_system()
+        if (batch_system is not None):
+            run_cmd(CLEANUP_ROUTINES[batch_system])
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s [<Path to TestStatus> <Path to TestStatus> ...]  [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Wait for test in current dir\033[0m
+    > %s
+    \033[1;32m# Wait for test in user specified tests\033[0m
+    > %s path/to/testdir
+    \033[1;32m# Wait for all tests in a test area\033[0m
+    > %s path/to/testarea/*/TestStatus
+""" % ((os.path.basename(args[0]), ) * 6),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("paths", default=".", nargs="*", help="Paths to test directories or status file. Pwd default.")
+
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                        help="Print shell commands as they are executed")
+
+    parser.add_argument("-n", "--no-wait", action="store_true", dest="no_wait", default=False,
+                        help="Do not wait for tests to finish")
+
+    parser.add_argument("-t", "--check-throughput", action="store_true", dest="check_throughput", default=False,
+                        help="Fail if throughput check fails (fail if tests slow down)")
+
+    parser.add_argument("-c", "--cleanup", action="store_true", dest="cleanup",
+                        default=False,
+                        help="Cancel all queued jobs on exit")
+
+    args = parser.parse_args(args[1:])
+
+    global VERBOSE
+    VERBOSE = args.verbose
+
+    global CLEANUP
+    CLEANUP = args.cleanup
+
+    return args.paths, args.no_wait, args.check_throughput
+
+###############################################################################
+def parse_test_status_file(file_contents, test_path, check_throughput):
+###############################################################################
+    r"""
+    >>> parse_test_status_file('PASS testname', '', False)
+    ('testname', 'PASS')
+    >>> parse_test_status_file('PASS testname \nGEN testname2', '', False)
+    ('testname', 'GEN')
+    >>> parse_test_status_file('PASS testname\nPASS testname2', '', False)
+    ('testname', 'PASS')
+    >>> parse_test_status_file('PASS testname\nFAIL testname2.tputcomp.foo', '', False)
+    ('testname', 'PASS')
+    >>> parse_test_status_file('PASS testname\nFAIL testname2.tputcomp.foo', '', True)
+    ('testname', 'FAIL')
+    """
+    real_test_name = None
+    for line in file_contents.splitlines():
+        if (len(line.split()) == 2):
+            status, test_name = line.split()
+            if (real_test_name is None):
+                real_test_name = test_name # just take the first one
+
+            verbose_print("Test: '%s' has status '%s'" % (test_name, status))
+
+            # A non-pass is OK if the failure is due to throughput and we
+            # aren't checking throughput
+            if (status != TEST_PASSED_STATUS and not
+                (not check_throughput and THROUGHPUT_TEST_STR in test_name)):
+                return real_test_name, status
+        else:
+            print "WARNING: For '%s', line '%s' not in expected format" % (test_path, line)
+
+    if (real_test_name is None):
+        print "WARNING: Empty status file for test", test_path
+
+    return real_test_name, TEST_PASSED_STATUS
+
+###############################################################################
+def wait_for_test(test_path, results, wait, check_throughput):
+###############################################################################
+    if (os.path.isdir(test_path)):
+        test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
+    else:
+        test_status_filepath = test_path
+    verbose_print("Watching file: '%s'" % test_status_filepath)
+
+    while (True):
+        if (os.path.exists(test_status_filepath)):
+            test_status_fd = open(test_status_filepath, "r")
+            test_status_contents = test_status_fd.read()
+            test_name, test_status = parse_test_status_file(test_status_contents, test_path, check_throughput)
+            if (test_status in TEST_NOT_FINISHED_STATUS and (wait and not SIGNAL_RECEIVED)):
+                time.sleep(SLEEP_INTERVAL_SEC)
+                verbose_print("Waiting for test to finish")
+            else:
+                results.put( (test_status, test_path) )
+                break
+        else:
+            if (wait and not SIGNAL_RECEIVED):
+                verbose_print("File '%s' does not yet exist" % test_status_filepath)
+                time.sleep(SLEEP_INTERVAL_SEC)
+            else:
+                results.put( ("File '%s' doesn't exist" % test_status_filepath, test_path) )
+                break
+
+###############################################################################
+def wait_for_tests(test_paths, no_wait, check_throughput):
+###############################################################################
+    # Set up signal handling, we want to print results before the program
+    # is terminated
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    results = Queue.Queue()
+
+    for test_path in test_paths:
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput))
+        t.daemon = True
+        t.start()
+
+    while threading.active_count() > 1:
+        time.sleep(1)
+
+    tests_with_results = dict()
+    while (not results.empty()):
+        test_status, test_path = results.get()
+        tests_with_results[test_path] = test_status
+
+    expect(set(test_paths) == set(tests_with_results),
+           "Missing results for tests: %s" % (set(test_paths) - set(tests_with_results)) )
+
+    all_pass = True
+    for test_path, test_status in sorted(tests_with_results.iteritems()):
+        print "Test '%s' finished with status '%s'" % (test_path, test_status)
+        all_pass &= test_status == TEST_PASSED_STATUS
+
+    return all_pass
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        doctest.testmod()
+        return
+
+    test_paths, no_wait, check_throughput = parse_command_line(sys.argv, description)
+
+    sys.exit(0 if wait_for_tests(test_paths, no_wait, check_throughput) else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

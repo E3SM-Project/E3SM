@@ -29,12 +29,13 @@ cat >! $file << EOF1
 #SBATCH --job-name=${CASE}
 #SBATCH --time=$tlimit
 #SBATCH --nodes=$nodes
-##SBATCH --ntasks=$ntasks
+#SBATCH --ntasks=$ntasks
 #SBATCH --cpus-per-task=$maxthrds
 #SBATCH --exclusive
 ###SBATCH --mail-type=END
 ###SBATCH --mail-user=xyz@abc.com
 #SBATCH --output=slurm.out
+#SBATCH --error=slurm.err
 
 EOF1
 

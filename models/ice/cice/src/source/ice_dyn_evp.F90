@@ -268,7 +268,9 @@
       !-----------------------------------------------------------------
 
       call to_ugrid(tmass,umass)
-      call to_ugrid(aice, aiu)
+!EH and MM recommendation: 
+      call to_ugrid(aice, aiu)        ! use this line when subcycling ice thermo
+!      call to_ugrid(aice_init, aiu)  ! use this line without subcycling
 
 #ifdef CICE_IN_NEMO
       !----------------------------------------------------------------
@@ -1861,12 +1863,20 @@
          i = indxui(ij)
          j = indxuj(ij)
 
+!maltrud implemeent Adrians fix
+!        vrel = dragw*sqrt((uocn(i,j) - uvel(i,j))**2 + &
+!                          (vocn(i,j) - vvel(i,j))**2)  ! m/s
+!        strocnx(i,j) = strocnx(i,j) &
+!                     - vrel*(uvel(i,j)*cosw - vvel(i,j)*sinw) * aiu(i,j)
+!        strocny(i,j) = strocny(i,j) &
+!                     - vrel*(vvel(i,j)*cosw + uvel(i,j)*sinw) * aiu(i,j)
          vrel = dragw*sqrt((uocn(i,j) - uvel(i,j))**2 + &
                            (vocn(i,j) - vvel(i,j))**2)  ! m/s
-         strocnx(i,j) = strocnx(i,j) &
+         strocnx(i,j) = vrel*(uocn(i,j)*cosw - vocn(i,j)*sinw) * aiu(i,j) &
                       - vrel*(uvel(i,j)*cosw - vvel(i,j)*sinw) * aiu(i,j)
-         strocny(i,j) = strocny(i,j) &
+         strocny(i,j) = vrel*(vocn(i,j)*cosw + uocn(i,j)*sinw) * aiu(i,j) &
                       - vrel*(vvel(i,j)*cosw + uvel(i,j)*sinw) * aiu(i,j)
+
          ! Prepare to convert to T grid
          ! divide by aice for coupling
          strocnxT(i,j) = strocnx(i,j) / aiu(i,j)

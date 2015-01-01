@@ -1,0 +1,25 @@
+#! /bin/csh -f
+
+alias soft 'eval "`/soft/softenv/1.6.2/bin/soft-dec csh \!*`"'
+
+setenv P4_GLOBMEMSIZE 500000000
+
+soft add +cmake-2.8.12
+
+if ( $COMPILER == "intel" ) then
+  soft add +intel-13.1
+  soft add +netcdf-4.3.1-serial-intel
+  soft add +mvapich2-2.0-intel-13.1-psm
+endif
+
+if ( $COMPILER == "pgi" ) then
+  soft add +pgi-13.9
+  soft add +mvapich2-2.0-pgi-13.9-psm
+  soft add +netcdf-4.3.1-serial-pgi
+endif
+
+if ( $COMPILER == "gnu" ) then
+  soft add +gcc-4.7.2
+  soft add +mvapich2-2.0-gcc-4.7.2-psm
+  soft add +netcdf-4.3.1-serial-gcc
+endif

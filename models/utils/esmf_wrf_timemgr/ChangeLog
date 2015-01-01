@@ -1,4 +1,46 @@
 ===============================================================
+Originator: jshollen
+Date: Oct 28, 2014
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_141028
+One-line Summary: ESMF_TimeMod fix, line 838 broke nag build.  
+
+M       ESMF_TimeMod.F90
+
+===============================================================
+Originator: douglasj
+Date: Oct 6, 2014
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_141006
+One-line Summary: Add variable width years and standalone Makefile
+
+On Oct 6, 2014 at 15:50 MT (at ~revision 64105)
+  svn merge $SVNREPO/esmf_wrf_timemgr/trunk $SVNREPO//esmf_wrf_timemgr/branches/esmf_variable_width_year
+  svn merge $SVNREPO/esmf_wrf_timemgr/trunk https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/branches/esmf_library_makefile/
+
+M       ESMF_TimeMod.F90
+A       Makefile
+
+===============================================================
+Originator: muszala
+Date: May 29, 2014
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_140529
+One-line Summary: change deallocate statements in ESMF_ClockMod.F90
+
+M       ESMF_ClockMod.F90
+===============================================================
+Originator: muszala
+Date: May 23, 2014
+Model: esmf_wrf_timemgr
+Version: esmf_wrf_timemgr_140523
+One-line Summary: add if(associated) to ESMF_ClockDestroy
+
+Note: use with rtm1_0_38 and tested with clm4_5_72.  this should work with older
+versions of clm and rtm however.
+
+M       ESMF_ClockMod.F90
+===============================================================
 Originator: santos
 Date: Feb 13, 2012
 Model: esmf_wrf_timemgr
