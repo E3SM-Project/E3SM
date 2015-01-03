@@ -84,17 +84,17 @@ Program pio_unit_test_driver
 #endif
      write(*,"(A)") "------"
 
+     ltest(NETCDF)  = ltest_netcdf
+     ltest(NETCDF4P)  = ltest_netcdf4p
+     ltest(NETCDF4C)  = ltest_netcdf4c
+     ltest(PNETCDF) = ltest_pnetcdf
+
   end if
 
   call MPI_Bcast(ios,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
   if (ios.ne.0) then
      call MPI_Abort(MPI_COMM_WORLD, 0, ierr)
   end if
-
-  ltest(NETCDF)  = ltest_netcdf
-  ltest(NETCDF4P)  = ltest_netcdf4p
-  ltest(NETCDF4C)  = ltest_netcdf4c
-  ltest(PNETCDF) = ltest_pnetcdf
 
   call MPI_Bcast(ltest,ntest,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(stride,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
