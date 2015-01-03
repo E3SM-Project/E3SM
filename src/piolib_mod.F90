@@ -1366,6 +1366,8 @@ contains
     type (file_desc_t) :: file
     type (io_desc_t) :: iodesc
 
+    call syncfile(file)
+
     call freedecomp_ios(file%iosystem, iodesc)
 
   end subroutine freedecomp_file

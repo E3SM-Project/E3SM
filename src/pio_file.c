@@ -386,6 +386,7 @@ int PIOc_sync (int ncid)
   wmb = &(file->buffer); 
   while(wmb != NULL){
     if(wmb->validvars>0){
+      printf("%s %d %d %d\n",__FILE__,__LINE__,wmb->ioid, wmb->validvars);
       PIOc_write_darray_multi(ncid, wmb->vid,  wmb->ioid, wmb->validvars, wmb->arraylen, wmb->data, wmb->frame, wmb->fillvalue);
       wmb->validvars=0;
       free(wmb->vid);

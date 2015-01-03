@@ -180,7 +180,7 @@ int pio_add_to_iodesc_list(io_desc_t *iodesc)
   }
   iodesc->ioid = imax;
   current_iodesc = iodesc;
-  //  printf("In add to list %d\n",iodesc->ioid);
+  printf("In add to list %d\n",iodesc->ioid);
   return iodesc->ioid;
 }
 
@@ -215,6 +215,7 @@ int pio_delete_iodesc_from_list(int ioid)
   io_desc_t *ciodesc, *piodesc;
 
   piodesc = NULL;
+  //  if(abs(ioid)==518) printf("In delete from list %d\n", ioid);
   for(ciodesc=pio_iodesc_list; ciodesc != NULL; ciodesc=ciodesc->next){
     if(ciodesc->ioid == ioid){
       if(piodesc == NULL){

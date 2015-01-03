@@ -565,6 +565,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
    iodesc = pio_get_iodesc_from_id(ioid);
    if(iodesc == NULL){
+     print_trace(NULL);
      fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
      return PIO_EBADID;
    }

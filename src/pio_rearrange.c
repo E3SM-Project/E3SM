@@ -566,6 +566,7 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   MPI_Comm mycomm;
 
   //  maxreq = 0;
+  //  printf("%s %d %d %d\n",__FILE__,__LINE__,nvars,iodesc->ndof);
   
   if(iodesc->rearranger == PIO_REARR_BOX){
     mycomm = ios.union_comm;
