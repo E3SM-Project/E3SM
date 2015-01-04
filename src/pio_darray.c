@@ -449,6 +449,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 		   }else{
 		     bufptr = IOBUF+ nv*iodesc->llen + tsize*region->loffset;
 		   }
+		   //		   printf("%s %d %d %X %X\n",__FILE__,__LINE__,vid[nv],IOBUF,bufptr);
 		   if(iodesc->basetype == MPI_INTEGER){
 		     ierr = nc_put_vara_int (ncid, vid[nv], tstart, tcount, (const int *) bufptr); 
 		   }else if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
@@ -714,7 +715,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      }
    }
 
-   if(wmb->ioid != abs(ioid) ){
+   if(ioid != abs(wmb->ioid) ){
      wmb->next = (wmulti_buffer *) malloc(sizeof(wmulti_buffer));
      wmb=wmb->next;
      wmb->next=NULL;
@@ -740,6 +741,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    // At this point wmb should be pointing to a new or existing buffer 
    // so we can add the data
    if(wmb->totalvars <= wmb->validvars){
+     //     printf("%s %d %X %d %d %d\n",__FILE__,__LINE__,wmb->data,wmb->validvars,arraylen,tsize);
      bptr = (void *) realloc( wmb->data, (1+wmb->validvars)*arraylen*tsize);
      if(bptr==NULL){
        // need to flush first
@@ -782,6 +784,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    wmb->vid[wmb->validvars]=vid;
    bufptr = (void *)((char *) wmb->data + arraylen*tsize*wmb->validvars);
    memcpy(bufptr, array, arraylen*tsize);
+
+   //   printf("%s %d %d %d %d %X\n",__FILE__,__LINE__,wmb->validvars,wmb->ioid,vid,bufptr);
+
    if(fillvalue != NULL){
      memcpy((char *) wmb->fillvalue+tsize*wmb->validvars,fillvalue, tsize); 
    }     
