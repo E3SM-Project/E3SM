@@ -247,10 +247,7 @@ module basic_tests
         ! Try to write (should fail)
         if(master_task) write(*,"(6x,A)") "trying to write to readonly file, error expected ... "
         call mpi_barrier(MPI_COMM_WORLD,ret_val)
-!! write_darray wont work here because it buffers the data and doesnt write until close        
-!!        call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_buffer, ret_val)
-        ret_val =  pio_put_var(pio_file,pio_var,data_buffer)
-
+        call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_buffer, ret_val)
 
         if (ret_val.eq.PIO_NOERR) then
           ! Error in PIO_write_darray

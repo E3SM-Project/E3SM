@@ -564,6 +564,11 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      fprintf(stderr,"File handle not found %d %d\n",ncid,__LINE__);
      return PIO_EBADID;
    }
+   if(! (file->mode & PIO_WRITE)){
+     fprintf(stderr,"ERROR:  Attempt to write to read-only file\n");
+     return PIO_EPERM;
+   }
+       
    iodesc = pio_get_iodesc_from_id(ioid);
    if(iodesc == NULL){
      print_trace(NULL);
@@ -675,6 +680,11 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      fprintf(stderr,"File handle not found %d %d\n",ncid,__LINE__);
      return PIO_EBADID;
    }
+   if(! (file->mode & PIO_WRITE)){
+     fprintf(stderr,"ERROR:  Attempt to write to read-only file\n");
+     return PIO_EPERM;
+   }
+      
    iodesc = pio_get_iodesc_from_id(ioid);
    if(iodesc == NULL){
      fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);

@@ -186,6 +186,7 @@ typedef struct file_desc_t
   int request[PIO_MAX_REQUESTS];   // request associated with buffered data for pnetcdf (not an MPI_Request)
   int nreq;   // next empty request slot to fill.
   int indep_rank;
+  int mode;
   struct wmulti_buffer buffer;
   struct file_desc_t *next;
 } file_desc_t;

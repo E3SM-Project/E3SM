@@ -17,7 +17,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   int ierr;
   int msg;
   int mpierr;
-  int amode;
   size_t len;
   iosystem_desc_t *ios;
   file_desc_t *file;
@@ -25,7 +24,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   ierr = PIO_NOERR;
 
   msg = PIO_MSG_OPEN_FILE;
-  amode = mode;
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios==NULL){
     printf("bad iosysid %d\n",iosysid);
@@ -39,6 +37,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   file->iotype = *iotype;
   file->next = NULL;
   file->iosystem = ios;
+  file->mode = mode;
   for(int i=0; i<PIO_MAX_VARS;i++){
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
@@ -58,7 +57,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     len = strlen(filename);
     mpierr = MPI_Bcast((void *) filename,len, MPI_CHAR, ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&(file->iotype), 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&amode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    mpierr = MPI_Bcast(&(file->mode), 1, MPI_INT,  ios->compmaster, ios->intercomm);
   }
   
   if(ios->ioproc){
@@ -67,30 +66,28 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
 #ifdef _MPISERIAL      
-      ierr = nc_open(filename, amode, &(file->fh));
+      ierr = nc_open(filename, file->mode, &(file->fh));
 #else
-      //      amode = amode & PIO_64BIT_DATA;
-      // amode = amode  & PIO_64BIT_OFFSET;
-      amode = amode |  NC_MPIIO | NC_NETCDF4;
-      //printf("%s %d %d  \n",__FILE__,__LINE__,amode);
+      file->mode = file->mode |  NC_MPIIO | NC_NETCDF4;
+      //printf("%s %d %d  \n",__FILE__,__LINE__,file->mode);
 
-      ierr = nc_open_par(filename, amode, ios->io_comm,ios->info, &(file->fh));
+      ierr = nc_open_par(filename, file->mode, ios->io_comm,ios->info, &(file->fh));
 #endif
       break;
     case PIO_IOTYPE_NETCDF4C:
-      amode = amode | NC_NETCDF4;
+      file->mode = file->mode | NC_NETCDF4;
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
-	ierr = nc_open(filename, amode, &(file->fh));
+	ierr = nc_open(filename, file->mode, &(file->fh));
       }
       break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_open(ios->io_comm, filename, amode, ios->info, &(file->fh));
+      ierr = ncmpi_open(ios->io_comm, filename, file->mode, ios->info, &(file->fh));
       // This should only be done with a file opened to append
-      if(ierr == PIO_NOERR && (amode & PIO_WRITE)){
+      if(ierr == PIO_NOERR && (file->mode & PIO_WRITE)){
 	if(ios->iomaster) printf("%d Setting IO buffer %ld\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
       }
@@ -107,6 +104,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   if(ierr==PIO_NOERR){
+    mpierr = MPI_Bcast(&(file->mode), 1, MPI_INT,  ios->ioroot, ios->union_comm);
     pio_add_to_file_list(file);
     *ncidp = file->fh;
   }
@@ -135,7 +133,6 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   int ierr;
   int msg;
   int mpierr;
-  int amode;
   
   size_t len;
   iosystem_desc_t *ios;
@@ -165,7 +162,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   }
 
   msg = PIO_MSG_CREATE_FILE;
-  amode = mode;
+  file->mode = mode;
 
 
   if(ios->async_interface && ! ios->ioproc){
@@ -174,7 +171,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
     len = strlen(filename);
     mpierr = MPI_Bcast((void *) filename,len, MPI_CHAR, ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&(file->iotype), 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&amode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    mpierr = MPI_Bcast(&file->mode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
   }
   
 
@@ -184,23 +181,23 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
       //         The 64 bit options are not compatable with hdf5 format files
-      //      printf("%d %d %d %d %d \n",__LINE__,amode,PIO_64BIT_DATA, PIO_64BIT_OFFSET, NC_MPIIO);
-      amode = amode |  NC_MPIIO | NC_NETCDF4;
+      //      printf("%d %d %d %d %d \n",__LINE__,file->mode,PIO_64BIT_DATA, PIO_64BIT_OFFSET, NC_MPIIO);
+      file->mode = file->mode |  NC_MPIIO | NC_NETCDF4;
 
-      ierr = nc_create_par(filename, amode, ios->io_comm,ios->info  , &(file->fh));
+      ierr = nc_create_par(filename, file->mode, ios->io_comm,ios->info  , &(file->fh));
       break;
     case PIO_IOTYPE_NETCDF4C:
-      amode = amode | NC_NETCDF4;
+      file->mode = file->mode | NC_NETCDF4;
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
-	ierr = nc_create(filename, amode, &(file->fh));
+	ierr = nc_create(filename, file->mode, &(file->fh));
       }
       break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_create(ios->io_comm, filename, amode, ios->info, &(file->fh));
+      ierr = ncmpi_create(ios->io_comm, filename, file->mode, ios->info, &(file->fh));
       if(ierr == PIO_NOERR){
 	if(ios->io_rank==0)
 	  printf("%d Setting IO buffer size on all iotasks to %ld\n",ios->io_rank,PIO_BUFFER_SIZE_LIMIT);
@@ -220,6 +217,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   if(ierr == PIO_NOERR){
+    mpierr = MPI_Bcast(&(file->mode), 1, MPI_INT,  ios->ioroot, ios->union_comm);
     pio_add_to_file_list(file);
     *ncidp = file->fh;
   }
