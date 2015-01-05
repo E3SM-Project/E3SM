@@ -523,13 +523,13 @@
          <RUNDIR>/p/lscratchd/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/p/lscratchd/$CCSMUSER/$CASE/bld</EXEROOT>
          <CESMSCRATCHROOT>/p/lscratchd/$USER</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>/p/lscratchd/mirin/ccsm3data/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/mirin/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/p/lscratchd/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/p/lscratchd/mirin/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+         <CCSM_CPRNC>/usr/gdata/climdat/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <BATCHQUERY>mshow</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>

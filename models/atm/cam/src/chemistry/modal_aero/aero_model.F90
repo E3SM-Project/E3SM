@@ -72,6 +72,7 @@ module aero_model
   character(len=16) :: wetdep_list(pcnst) = ' '
   character(len=16) :: drydep_list(pcnst) = ' '
   real(r8)          :: sol_facti_cloud_borne = 1._r8
+  real(r8)          :: seasalt_emis_scale
 
   integer :: ndrydep = 0
   integer,allocatable :: drydep_indices(:)
@@ -79,6 +80,7 @@ module aero_model
   integer,allocatable :: wetdep_indices(:)
   logical :: drydep_lq(pcnst)
   logical :: wetdep_lq(pcnst)
+
 
 contains
   
@@ -101,7 +103,7 @@ contains
     character(len=16) :: aer_wetdep_list(pcnst) = ' '
     character(len=16) :: aer_drydep_list(pcnst) = ' '
 
-    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list, sol_facti_cloud_borne
+    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list, sol_facti_cloud_borne, seasalt_emis_scale
 
     !-----------------------------------------------------------------------------
 
@@ -118,6 +120,7 @@ contains
        end if
        close(unitn)
        call freeunit(unitn)
+
     end if
 
 #ifdef SPMD
@@ -125,6 +128,7 @@ contains
     call mpibcast(aer_wetdep_list,   len(aer_wetdep_list(1))*pcnst, mpichar, 0, mpicom)
     call mpibcast(aer_drydep_list,   len(aer_drydep_list(1))*pcnst, mpichar, 0, mpicom)
     call mpibcast(sol_facti_cloud_borne, 1,                         mpir8,   0, mpicom)
+    call mpibcast(seasalt_emis_scale, 1, mpir8,   0, mpicom)
 #endif
 
     wetdep_list = aer_wetdep_list
@@ -1642,7 +1646,7 @@ contains
 
        sflx(:)=0._r8
 
-       call seasalt_emis( u10cubed, cam_in%sst, cam_in%ocnfrac, ncol, cam_in%cflx )
+       call seasalt_emis( u10cubed, cam_in%sst, cam_in%ocnfrac, ncol, cam_in%cflx, seasalt_emis_scale )
 
        do m=1,seasalt_nbin
           mm = seasalt_indices(m)

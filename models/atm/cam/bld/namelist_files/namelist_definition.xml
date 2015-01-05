@@ -1647,6 +1647,12 @@ Switch to control whether MG microphysics performs a uniform calculation or not
 Default: .false.
 </entry>
 
+<entry id="micro_mg_dcs" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Autoconversion size threshold for cloud ice to snow (m)
+Default: set by build-namelist
+</entry>
+
 <!-- micro_aero -->
 <entry id="microp_aero_bulk_scale" type="real" category="conv"
        group="microp_aero_nl" valid_values="" >
@@ -3129,6 +3135,12 @@ Default: set by build-namelist.
 <entry id="sol_facti_cloud_borne" type="real" category="cam_chem"
        group="aerosol_nl" valid_values="" >
 In-cloud scav for cloud-borne aerosol tuning factor
+Default: set by build-namelist.
+</entry>
+
+<entry id="seasalt_emis_scale" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Seasalt aerosol emission tuning factor
 Default: set by build-namelist.
 </entry>
 
