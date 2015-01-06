@@ -80,7 +80,13 @@ contains
     use reduction_mod, only : parallelmax
     use mesh_mod, only : MeshUseMeshFile
     use unit_tests_mod, only : test_ibyp, test_edge_flux, &
-                              test_sub_integration, test_subcell_dss_fluxes ! dont remove
+                              test_sub_integration,       &
+                              test_subcell_dss_fluxes,    &
+                              test_subcell_div_fluxes,    &
+                              test_subcell_Laplace_fluxes, &
+                              test_subcell_div_fluxes_again, &
+                              test_subcell_dss_fluxes_again, &
+                              test_subcell_Laplace_fluxes_again  ! dont remove
 
     
     implicit none
@@ -313,6 +319,11 @@ contains
     call test_edge_flux(elem,deriv,nets,nete)
     call test_sub_integration(elem,deriv,nets,nete)
     call test_subcell_dss_fluxes(elem,deriv,nets,nete)
+    call test_subcell_div_fluxes(elem,deriv,nets,nete)
+    call test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
+    call test_subcell_div_fluxes_again(elem,deriv,nets,nete)
+    call test_subcell_dss_fluxes_again(elem,deriv,nets,nete)
+    call test_subcell_Laplace_fluxes_again(elem,deriv,nets,nete)
     stop
 #endif
 

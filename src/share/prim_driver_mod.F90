@@ -1560,6 +1560,7 @@ contains
     use fvm_bsp_mod, only : get_boomerang_velocities_gll, get_solidbody_velocities_gll
     use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
     use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm, deriv
+    use derivative_mod, only : subcell_integration
 #if defined(_SPELT)
     use prim_advection_mod, only : prim_advec_tracers_spelt
 #endif
@@ -1591,6 +1592,10 @@ contains
 
     real (kind=real_kind)                          :: maxcflx, maxcfly
 
+    real (kind=real_kind) ::  tempdp3d(np,np), x
+    real (kind=real_kind) ::  tempmass(nc,nc)
+    real (kind=real_kind) ::  tempflux(nc,nc,4)
+
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
 
@@ -1612,6 +1617,7 @@ contains
       elem(ie)%derived%eta_dot_dpdn=0     ! mean vertical mass flux
       elem(ie)%derived%vn0=0              ! mean horizontal mass flux
       elem(ie)%derived%omega_p=0
+      elem(ie)%sub_elem_mass_flux=0
       if (nu_p>0) then
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
@@ -1667,6 +1673,31 @@ contains
             hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
+#if HOMME_TEST_SUB_ELEMENT_MASS_FLUX
+    if (0<ntrac) then
+      do ie=nets,nete
+      do k=1,nlev
+        tempdp3d = elem(ie)%state%dp3d(:,:,k,tl%np1) - &
+                   elem(ie)%derived%dp(:,:,k) 
+        tempdp3d = tempdp3d * elem(ie)%metdet
+        tempmass = subcell_integration(tempdp3d, np, nc)
+        tempflux = dt*elem(ie)%sub_elem_mass_flux(:,:,:,k)
+        do i=1,nc
+        do j=1,nc
+          x = SUM(tempflux(i,j,:))
+          if (ABS(tempmass(i,j)).lt.1e-11 .and. 1e-11.lt.ABS(x)) then
+            print *,__FILE__,__LINE__,"**********",ie,k,i,j,tempmass(i,j),x
+          elseif (1e-5.lt.ABS((tempmass(i,j)-x)/tempmass(i,j))) then
+            print *,__FILE__,__LINE__,"**********",ie,k,i,j,tempmass(i,j),x,&
+                   ABS((tempmass(i,j)-x)/tempmass(i,j))
+          endif
+        end do
+        end do
+      end do
+      end do
+    end if
+#endif
+
     ! current dynamics state variables:
     !    derived%dp              =  dp at start of timestep
     !    derived%vstar           =  velocity at start of tracer timestep
