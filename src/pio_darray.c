@@ -385,7 +385,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	     start[0] = frame[nv];
 	   }
 	   if(region != NULL){
-	     bufptr = (void *)((char *) IOBUF + nv*iodesc->llen + tsize*region->loffset);
+	     bufptr = (void *)((char *) IOBUF + tsize*(nv*iodesc->llen + region->loffset));
 	   }
 	   ierr = nc_var_par_access(ncid, vid[nv], NC_COLLECTIVE);
 
@@ -447,7 +447,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 		     bufptr = malloc(buflen*tsize) ;
 		     mpierr = MPI_Recv( bufptr, buflen, iodesc->basetype, iorank, iorank, ios->io_comm, &status);
 		   }else{
-		     bufptr = IOBUF+ nv*iodesc->llen + tsize*region->loffset;
+		     bufptr = (void *)((char *) IOBUF+ tsize*(nv*iodesc->llen + region->loffset));
 		   }
 		   //		   printf("%s %d %d %X %X\n",__FILE__,__LINE__,vid[nv],IOBUF,bufptr);
 		   if(iodesc->basetype == MPI_INTEGER){
@@ -485,7 +485,9 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	       mpierr = MPI_Rsend( tcount, ndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
 
 	       for(int nv=0; nv<nvars; nv++){
-       	         bufptr = (void *)((char *) IOBUF + nv*iodesc->llen + tsize*region->loffset);
+       	         bufptr = (void *)((char *) IOBUF + tsize*(nv*iodesc->llen + region->loffset));
+		 //		 printf("%d %d %d\n",__LINE__,iodesc->llen,region->loffset);
+		 // printf("%d %d %d %d %d %d\n",__LINE__,((int *)bufptr)[0],((int *)bufptr)[1],((int *)bufptr)[2],((int *)bufptr)[3],((int *)bufptr)[4]);
 	         mpierr = MPI_Rsend( bufptr, buflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
 	       }
 	     }

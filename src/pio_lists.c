@@ -199,12 +199,13 @@ io_desc_t *pio_get_iodesc_from_id(int ioid)
       break;
     }
   }
+  /*
   if(ciodesc==NULL){
     for(ciodesc=pio_iodesc_list; ciodesc != NULL; ciodesc=ciodesc->next){
       printf("%s %d %d %d\n",__FILE__,__LINE__,ioid,ciodesc->ioid);
     }
   }
-
+  */
 
   return ciodesc;
 }

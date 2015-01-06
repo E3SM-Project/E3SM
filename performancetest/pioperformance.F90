@@ -125,7 +125,7 @@ contains
     type(var_desc_t) :: vari(nvars), varr, vard
     type(iosystem_desc_t) :: iosystem
     integer :: stride, n
-    integer, allocatable :: ifld(:), ifld_in(:)
+    integer, allocatable :: ifld(:,:), ifld_in(:,:)
     real, allocatable :: rfld(:)
     double precision, allocatable :: dfld(:)
     type(file_desc_t) :: File
@@ -171,8 +171,8 @@ contains
 !          print *,__FILE__,__LINE__,gmaplen,gdims
 !       endif
     
-       allocate(ifld(maplen*nvars))
-       allocate(ifld_in(maplen*nvars))
+       allocate(ifld(maplen,nvars))
+       allocate(ifld_in(maplen,nvars))
        allocate(rfld(maplen))
        allocate(dfld(maplen))
 
@@ -181,7 +181,7 @@ contains
        dfld = mype
        do nv=1,nvars
           do j=1,maplen
-             ifld(j+(nv-1)*maplen) = mype*1000000 + compmap(j)
+             ifld(j,nv) = nv*100000000 +mype*1000000 + compmap(j)
 
 !             if(nv==2) then
 !                ifld(j+(nv-1)*maplen) = -(mype*1000000 + compmap(j))
@@ -227,7 +227,7 @@ contains
                 do frame=1,nframes
                    do nv=1,nvars   
                       call PIO_setframe(File, vari(nv), frame)
-                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld((nv-1)*maplen+1:nv*maplen)    , ierr)
+                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr)
                    enddo
 ! multiversion  
 !                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
@@ -271,7 +271,7 @@ contains
                 do frame=1,nframes                   
                    do nv=1,nvars
                       call PIO_setframe(File, vari(nv), frame)
-                      call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in, ierr)
+                      call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv), ierr)
                    enddo
                 enddo
                 
@@ -281,11 +281,13 @@ contains
                 wall(1) = wall(2)-wall(1)
                 call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, comm, ierr)
                 errorcnt = 0
-                do j=1,maplen
-                   if(ifld(j) /= ifld_in(j) .and. compmap(j) /= 0) then
-!                      print *,__LINE__,mype,j,ifld(j),ifld_in(j),compmap(j)
-                      errorcnt = errorcnt+1
-                   endif
+                do nv=1,nvars
+                   do j=1,maplen
+                      if(ifld(j,nv) /= ifld_in(j,nv) .and. compmap(j) /= 0) then
+!                         print *,__LINE__,mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
+                         errorcnt = errorcnt+1
+                      endif
+                   enddo
                 enddo
                 j = errorcnt
                 call MPI_Reduce(j, errorcnt, 1, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
