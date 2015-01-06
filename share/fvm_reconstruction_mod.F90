@@ -1530,7 +1530,7 @@ subroutine debug_halo_neighbor_recons(fvm,recons,recons_trunk)
                       .or.recons(k,i,j).ne.recons(k,i,j).or.&
                       recons(k,i,j).ne.recons(k,i,j)) then
                     write(*,*) "recons difference neighbor h,k,i,j",h,k,i,j,  &
-                         recons(k,i,j)-recons_trunk(k,i,j),recons(k,i,j),recons_trunk(k,i,j)
+                         recons(k,i,j)-recons_trunk(k,i,j),recons(k,i,j), recons_trunk(k,i,j)
                     stop
                  else
 !                    write(*,*) "recons pass test neighbor h,k,i,j",h,k,i,j,recons(k,i,j)-recons_trunk(k,i,j),recons(k,i,j),recons_trunk(k,i,j)

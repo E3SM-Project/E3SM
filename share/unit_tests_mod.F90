@@ -8,6 +8,11 @@ implicit none
 
 public ::  test_ibyp
 public ::  test_subcell_dss_fluxes
+public ::  test_subcell_div_fluxes
+public ::  test_subcell_Laplace_fluxes
+public ::  test_subcell_div_fluxes_again
+public ::  test_subcell_dss_fluxes_again
+public ::  test_subcell_Laplace_fluxes_again
 public ::  test_sub_integration
 public ::  test_edge_flux
 
@@ -303,7 +308,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=4 
+    integer              , parameter :: intervals=6 
 
     real (kind=real_kind)              :: dss(np,np)
     real (kind=real_kind)              :: values(intervals,intervals)
@@ -334,19 +339,12 @@ contains
       values = subcell_integration(dss, np, intervals) 
       fluxes = subcell_dss_fluxes (dss, np, intervals) 
 
-      test = 0
-      do i=1,np
-      do j=1,np
-      do k=1,4
-        test(i,j) = test(i,j) + fluxes(i,j,k)
-      end do
-      end do
-      end do
+      test = SUM(fluxes,3)
 
-      do i=1,np
-      do j=1,np
+      do i=1,intervals
+      do j=1,intervals
       if (.00001<ABS(test(i,j)-values(i,j))) then
-        print *,"*****************",ie,i,j,test(i,j),values(i,j)
+        print *,__FILE__,__LINE__,ie,i,j,test(i,j),values(i,j)
         success = .false.
       end if
       end do
@@ -361,6 +359,502 @@ contains
 
   end subroutine test_subcell_dss_fluxes
 
+  subroutine test_subcell_div_fluxes(elem,deriv,nets,nete)
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_div_fluxes
+    use derivative_mod, only : subcell_integration
+    use derivative_mod, only : divergence_sphere
+    use element_mod,    only : element_t
+    use derivative_mod, only : derivative_t
+    use kinds,          only : real_kind
+    use coordinate_systems_mod, only: spherical_polar_t
+
+
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=5 
+
+    real (kind=real_kind)              :: u(np,np,2), v(np,np,2)
+    real (kind=real_kind)              :: div(np,np)
+    real (kind=real_kind)              :: values(intervals,intervals)
+    real (kind=real_kind)              :: fluxes(intervals,intervals,4)
+    real (kind=real_kind)              :: test(intervals,intervals)
+    real (kind=real_kind)              :: p,t
+
+    type(spherical_polar_t)            :: s
+    integer                            :: ie,i,j
+    logical                            :: success
+    success = .true.
+
+
+    do ie=nets,nete
+
+      call random_number(p)
+
+      if (ie <= np*np) then
+        u = 0 
+        u(1+mod(ie,np), 1+mod(ie/np,np),1) = 1
+      else if (ie <= 2*np*np) then
+        u = 0 
+        u(1+mod(ie,np), 1+mod(ie/np,np),2) = 1
+      else
+        t = u(1+mod((7*ie),np), 1+mod((13*ie)/np,np),1)
+        u(1+mod(ie,np), 1+mod(ie/np,np),1) = t + 10*p
+        u(1+mod(ie,np), 1+mod(ie/np,np),2) = t/2 + 15*p
+        u(1+mod(INT(32147*p),np), 1+mod(INT(1123*p)/np,np),1) = 0
+        u(1+mod(INT(23583*p),np), 1+mod(INT(1317*p)/np,np),2) = 0
+      end if
+
+      div  = divergence_sphere(u, deriv, elem(ie))
+      div  = div * elem(ie)%metdet
+   
+      v(:,:,1) = elem(ie)%Dinv(1,1,:,:)*u(:,:,1) + elem(ie)%Dinv(1,2,:,:)*u(:,:,2)
+      v(:,:,2) = elem(ie)%Dinv(2,1,:,:)*u(:,:,1) + elem(ie)%Dinv(2,2,:,:)*u(:,:,2)
+
+      v(:,:,1) = v(:,:,1)*elem(ie)%metdet(:,:)
+      v(:,:,2) = v(:,:,2)*elem(ie)%metdet(:,:)
+
+      values = subcell_integration(div, np, intervals) 
+      fluxes = subcell_div_fluxes(v, np, intervals) 
+
+      test = SUM(fluxes,3)
+
+      do i=1,intervals
+      do j=1,intervals
+        t = ABS(test(i,j)-values(i,j))/MAX(ABS(test(i,j)),ABS(values(i,j)))
+        if (.0000001<t) then
+          print *,__FILE__,__LINE__,ie,i,j,test(i,j),values(i,j),t
+          success = .false.
+        end if
+      end do
+      end do
+    end do
+
+    if (success) then
+      print *,__FILE__,__LINE__," test_subcell_div_fluxes test passed."
+    else
+      print *,__FILE__,__LINE__," test_subcell_div_fluxes test FAILED."
+    end if
+
+  end subroutine test_subcell_div_fluxes
+
+
+  subroutine test_subcell_div_fluxes_again(elem,deriv,nets,nete)
+    use physical_constants, only : rearth
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_div_fluxes
+    use element_mod,    only : element_t
+    use derivative_mod, only : derivative_t
+    use kinds,          only : real_kind
+    use quadrature_mod, only : gausslobatto, quadrature_t
+
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=6 
+
+    real (kind=real_kind)              :: v(np,np,2)
+    real (kind=real_kind)              :: fluxes(intervals,intervals,4)
+    real (kind=real_kind)              :: t
+
+    type (quadrature_t)                :: gll
+    integer                            :: ie,i,j
+    logical                            :: success
+    real (kind=real_kind),   parameter :: EPS=.0000001
+    success = .true.
+
+    gll = gausslobatto(np)
+
+    do ie=nets,nete
+
+      v = 0 
+      if (ie <= np*np) then
+        do i = 1,np
+          v(i,:,2) = gll%points(:)
+        end do
+      else if (ie <= 2*np*np) then
+        do j = 1,np
+          v(:,j,1) = gll%points(:)
+        end do
+      else if (ie <= 3*np*np) then
+        do i = 1,np
+          v(i,:,2) = 1+gll%points(:)
+        end do
+      else if (ie <= 4*np*np) then
+        do j = 1,np
+          v(:,j,1) = 1+gll%points(:)
+        end do
+      end if
+
+      fluxes = subcell_div_fluxes(v, np, intervals) 
+      fluxes = rearth*fluxes
+
+      if (ie <= np*np) then
+        t = 4./(intervals*intervals)
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the bottom to the top
+          if (EPS < ABS(fluxes(i,j,1)+fluxes(i,j,3)-t)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,2)),ABS(fluxes(i,j,4)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (1.lt.i) then
+            if (EPS < ABS(fluxes(i-1,j,1)-fluxes(i,j,1))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+              success = .false.
+            end if
+            if (EPS < ABS(fluxes(i-1,j,3)-fluxes(i,j,3))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+              success = .false.
+            end if
+          end if
+        end do
+        end do
+      else if (ie <= 2*np*np) then
+        t = 4./(intervals*intervals)
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the left to the right
+          if (EPS < ABS(fluxes(i,j,2)+fluxes(i,j,4)-t)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,1)),ABS(fluxes(i,j,3)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (1.lt.j) then
+            if (EPS < ABS(fluxes(i,j-1,2)-fluxes(i,j,2))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+              success = .false.
+            end if
+            if (EPS < ABS(fluxes(i,j-1,4)-fluxes(i,j,4))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+              success = .false.
+            end if
+          end if
+        end do
+        end do
+      else if (ie <= 3*np*np) then
+        t = 4./(intervals*intervals)
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the bottom to the top
+          if (EPS < fluxes(i,j,1)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+            success = .false.
+          end if
+          if (EPS < ABS(fluxes(i,j,1)+fluxes(i,j,3)-t)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,2)),ABS(fluxes(i,j,4)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+        end do
+        end do
+      else if (ie <= 4*np*np) then
+        t = 4./(intervals*intervals)
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the left to the right
+          if (EPS < fluxes(i,j,4)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+            success = .false.
+          end if
+          if (EPS < ABS(fluxes(i,j,2)+fluxes(i,j,4)-t)) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,1)),ABS(fluxes(i,j,3)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+        end do
+        end do
+      endif
+
+      if (.not.success) then
+        print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test FAILED."
+      end if
+    end do
+
+    if (success) then
+      print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test passed."
+    else
+      print *,__FILE__,__LINE__," test_subcell_div_fluxes_again test FAILED."
+    end if
+
+  end subroutine test_subcell_div_fluxes_again
+
+  subroutine test_subcell_dss_fluxes_again(elem,deriv,nets,nete)
+    use physical_constants, only : rearth
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_dss_fluxes
+    use element_mod,    only : element_t
+    use derivative_mod, only : derivative_t
+    use kinds,          only : real_kind
+    use quadrature_mod, only : gausslobatto, quadrature_t
+
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=5 
+
+    real (kind=real_kind)              :: dss(np,np)
+    real (kind=real_kind)              :: fluxes(intervals,intervals,4)
+    real (kind=real_kind)              :: t
+
+    type (quadrature_t)                :: gll
+    integer                            :: ie,i,j
+    logical                            :: success
+    real (kind=real_kind),   parameter :: EPS=.0000001
+    success = .true.
+
+    gll = gausslobatto(np)
+
+    do ie=nets,nete
+
+      dss = 0 
+      if (ie <= np*np) then
+        do i=2,np-1
+          dss(i,1) = 1
+        end do
+      else if (ie <= 2*np*np) then
+        do j=2,np-1
+          dss(1,j) = 1
+        end do
+      end if
+
+      fluxes = subcell_dss_fluxes (dss, np, intervals)
+
+      if (ie <= np*np) then
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the bottom to the top
+          if (ABS(fluxes(i,j,1)).lt.ABS(fluxes(i,j,3))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,2)),ABS(fluxes(i,j,4)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+            success = .false.
+          end if
+          if (intervals.eq.j) then
+            if (EPS < ABS(fluxes(i,j,3))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+              success = .false.
+            end if
+          end if
+        end do
+        end do
+      else if (ie <= 2*np*np) then
+        do i=1,intervals
+        do j=1,intervals
+        ! check for fluxes from the left to the right
+          if (ABS(fluxes(i,j,4)).lt.ABS(fluxes(i,j,2))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+            success = .false.
+          end if
+          if (EPS < MAX(ABS(fluxes(i,j,1)),ABS(fluxes(i,j,3)))) then
+            print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+            success = .false.
+          end if
+          if (intervals.eq.i) then
+            if (EPS < ABS(fluxes(i,j,2))) then
+              print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:),t
+              success = .false.
+            end if
+          end if
+        end do
+        end do
+      endif
+
+      if (.not.success) then
+        print *,__FILE__,__LINE__," test_subcell_dss_fluxes_again test FAILED."
+      end if
+    end do
+
+    if (success) then
+      print *,__FILE__,__LINE__," test_subcell_dss_fluxes_again test passed."
+    else
+      print *,__FILE__,__LINE__," test_subcell_dss_fluxes_again test FAILED."
+    end if
+
+  end subroutine test_subcell_dss_fluxes_again
+
+
+  subroutine test_subcell_Laplace_fluxes_again(elem,deriv,nets,nete)
+    use physical_constants, only : rearth
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_Laplace_fluxes
+    use element_mod,    only : element_t
+    use derivative_mod, only : derivative_t
+    use kinds,          only : real_kind
+    use quadrature_mod, only : gausslobatto, quadrature_t
+
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=5 
+
+    real (kind=real_kind)              :: laplace(np,np)
+    real (kind=real_kind)              :: fluxes(intervals,intervals,4)
+    real (kind=real_kind)              :: t
+
+    type (quadrature_t)                :: gll
+    integer                            :: ie,i,j
+    logical                            :: success
+    real (kind=real_kind),   parameter :: EPS=.0000001
+    success = .true.
+
+    gll = gausslobatto(np)
+
+    do ie=nets,nete
+
+      laplace = 0 
+      if (ie <= np*np) then
+        do i=1,np
+          laplace(i,1) = 1
+        end do
+      else if (ie <= 2*np*np) then
+        do j=2,np-1
+          laplace(1,j) = 1
+        end do
+      end if
+
+      fluxes = subcell_Laplace_fluxes (laplace, deriv, elem(ie), np, intervals)
+
+      do i=1,intervals
+        j = 1
+        if (fluxes(i,j,1).ne.0) then
+          print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+          success = .false.
+        end if
+        j = intervals
+        if (fluxes(i,j,3).ne.0) then
+          print *,__FILE__,__LINE__,ie,i,j,fluxes(i,j,:)
+          success = .false.
+        end if
+
+        j = 1
+        if (fluxes(j,i,4).ne.0) then
+          print *,__FILE__,__LINE__,ie,j,i,fluxes(j,i,:)
+          success = .false.
+        end if
+        j = intervals
+        if (fluxes(j,i,2).ne.0) then
+          print *,__FILE__,__LINE__,ie,j,i,fluxes(j,i,:)
+          success = .false.
+        end if
+      end do
+    end do
+
+    if (success) then
+      print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test passed."
+    else
+      print *,__FILE__,__LINE__," test_subcell_laplace_fluxes_again test FAILED."
+    end if
+
+  end subroutine test_subcell_Laplace_fluxes_again
+
+  subroutine test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
+    use physical_constants, only : rearth
+    use dimensions_mod, only : np
+    use derivative_mod, only : subcell_Laplace_fluxes, subcell_div_fluxes
+    use derivative_mod, only : subcell_integration
+    use derivative_mod, only : laplace_sphere_wk, gradient_sphere
+    use derivative_mod, only : divergence_sphere, divergence_sphere_wk
+    use element_mod,    only : element_t
+    use derivative_mod, only : derivative_t
+    use kinds,          only : real_kind
+    use coordinate_systems_mod, only: spherical_polar_t
+
+    implicit none
+
+    type (element_t)     , intent(in) :: elem(:)
+    type (derivative_t)  , intent(in) :: deriv
+    integer              , intent(in) :: nets,nete
+
+    integer              , parameter :: intervals=5 
+
+    real (kind=real_kind)              :: u(np,np)
+    real (kind=real_kind)              :: laplace(np,np)
+    real (kind=real_kind)              :: laplace_values(intervals,intervals)
+    real (kind=real_kind)              :: laplace_fluxes(intervals,intervals,4)
+    real (kind=real_kind)              :: laplace_test(intervals,intervals)
+    real (kind=real_kind)              :: p,t
+
+    type(spherical_polar_t)            :: s
+    integer                            :: ie,i,j
+    logical                            :: success
+    success = .true.
+
+
+    do ie=nets,nete
+
+      call random_number(p)
+
+      if (ie <= np*np) then
+        u = 0 
+        u(1+mod(ie,np), 1+mod(ie/np,np)) = 1
+      else
+        t = u(1+mod((7*ie),np), 1+mod((13*ie)/np,np))
+        u(1+mod(ie,np), 1+mod(ie/np,np)) = t + 10*p
+        u(1+mod(INT(32147*p),np), 1+mod(INT(1123*p)/np,np)) = 0
+      end if
+
+      laplace = laplace_sphere_wk(u,deriv,elem(ie),.false.)
+      laplace = laplace / elem(ie)%spheremp
+      laplace = laplace * elem(ie)%metdet
+      laplace_values = subcell_integration(laplace, np, intervals) 
+
+
+
+
+      laplace_fluxes = subcell_Laplace_fluxes(u, deriv, elem(ie), np, intervals) 
+
+      laplace_test = SUM(laplace_fluxes,3)
+
+      laplace_test   = rearth*rearth*laplace_test
+      laplace_values = rearth*rearth*laplace_values
+      do i=1,intervals
+      do j=1,intervals
+        t = ABS(laplace_test(i,j)-laplace_values(i,j))/ &
+            MAX(ABS(laplace_test(i,j)),ABS(laplace_values(i,j)))
+        if (.0000001<t) then
+          print *,__FILE__,__LINE__,ie,i,j,laplace_test(i,j),laplace_values(i,j),t
+          success = .false.
+        end if
+      end do
+      end do
+    end do
+
+    if (success) then
+      print *,__FILE__,__LINE__," test_subcell_Laplace_fluxes test passed."
+    else
+      print *,__FILE__,__LINE__," test_subcell_Laplace_fluxes test FAILED."
+    end if
+
+  end subroutine test_subcell_Laplace_fluxes
 
   subroutine test_sub_integration(elem,deriv,nets,nete)
     use dimensions_mod, only : np
@@ -405,7 +899,7 @@ contains
       end do
 
       if (.00001<ABS(t-SUM(values))) then
-        print *,"*****************",ie,t,SUM(values)
+        print *,__FILE__,__LINE__,ie,t,SUM(values)
         success = .false.
       end if
     end do
