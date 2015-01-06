@@ -2840,6 +2840,8 @@ module mpas_stream_manager
         character (len=*), intent(out), optional :: actualWhen
         integer, intent(out) :: ierr
 
+        character (len=StrKIND) :: err_string
+
         type (MPAS_stream_list_type), pointer :: alarm_cursor
         type (MPAS_Time_type) :: now_time, ref_time, temp_time
         type (MPAS_TimeInterval_type) :: temp_interval
@@ -2928,7 +2930,13 @@ module mpas_stream_manager
             call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, &
                                    precision=stream % precision, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
-                ierr = MPAS_STREAM_MGR_ERROR
+                if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
+                    write(err_string,'(a)') 'Stream '''//trim(stream % name)//''' attempted to read non-existent file '''//trim(stream % filename)//''''
+                    STREAM_ERROR_WRITE(trim(err_string))
+                    ierr = MPAS_STREAM_MGR_ERROR
+                else
+                    ierr = MPAS_STREAM_MGR_ERROR
+                end if
                 return
             end if
 
@@ -2959,7 +2967,13 @@ module mpas_stream_manager
            !
            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
-               ierr = MPAS_STREAM_MGR_ERROR
+               if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
+                   write(err_string,'(a)') 'Stream '''//trim(stream % name)//''' attempted to read non-existent file '''//trim(stream % filename)//''''
+                   STREAM_ERROR_WRITE(trim(err_string))
+                   ierr = MPAS_STREAM_MGR_ERROR
+               else
+                   ierr = MPAS_STREAM_MGR_ERROR
+               end if
                return
            end if
 
