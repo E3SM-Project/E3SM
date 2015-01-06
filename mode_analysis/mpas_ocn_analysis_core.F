@@ -101,8 +101,12 @@ module mpas_core
       !
       ! Read input data for model
       !
+      call mpas_timer_start('io_read', .false.)
       call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=err)
+      call mpas_timer_stop('io_read')
+      call mpas_timer_start('io_reset_alarms', .false.)
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
+      call mpas_timer_stop('io_reset_alarms')
 
       dminfo = domain % dminfo
       err = 0
@@ -427,7 +431,9 @@ module mpas_core
 
       if (config_write_output_on_startup) then
          call ocn_analysis_compute(domain, err) 
+         call mpas_timer_start('io_write', .false.)
          call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         call mpas_timer_stop('io_write')
       endif
 
    end subroutine mpas_core_run!}}}
