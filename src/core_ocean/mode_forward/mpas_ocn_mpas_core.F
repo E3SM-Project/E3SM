@@ -151,13 +151,19 @@ module mpas_core
       ! Read input data for model
       !
       if ( config_do_restart ) then
+         call mpas_timer_start('io_read', .false.)
          call MPAS_stream_mgr_read(stream_manager, streamID='restart', ierr=err)
+         call mpas_timer_stop('io_read')
       else
+         call mpas_timer_start('io_read', .false.)
          call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=err)
+         call mpas_timer_stop('io_read')
       end if
+      call mpas_timer_start('reset_io_alarms', .false.)
       call mpas_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
       call mpas_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err)
       call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err)
+      call mpas_timer_stop('reset_io_alarms')
 
       ! Initialize submodules before initializing blocks.
       call ocn_timestep_init(err)
@@ -604,7 +610,9 @@ module mpas_core
       call ocn_analysis_compute_startup(domain, stream_manager, err) 
 
       if (config_write_output_on_startup) then
+          call mpas_timer_start('io_write', .false.)
           call mpas_stream_mgr_write(stream_manager, 'output', forceWriteNow=.true., ierr=ierr)
+          call mpas_timer_stop('io_write')
       endif
 
       block_ptr => domain % blocklist
@@ -618,8 +626,12 @@ module mpas_core
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
       itimestep = 0
       do while (.not. mpas_is_clock_stop_time(clock))
+         call mpas_timer_start('io_read', .false.)
          call mpas_stream_mgr_read(stream_manager, ierr=ierr)
+         call mpas_timer_stop('io_read')
+         call mpas_timer_start('reset_io_alarms', .false.)
          call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+         call mpas_timer_stop('reset_io_alarms')
 
          itimestep = itimestep + 1
          call mpas_advance_clock(clock)
@@ -653,8 +665,12 @@ module mpas_core
          call ocn_analysis_compute_w_alarms(stream_manager, domain, err) 
          call ocn_analysis_write(stream_manager, err)
 
+         call mpas_timer_start('io_write', .false.)
          call mpas_stream_mgr_write(stream_manager, streamID='output', ierr=ierr)
+         call mpas_timer_stop('io_write')
+         call mpas_timer_start('reset_io_alarms', .false.)
          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='output', ierr=ierr)
+         call mpas_timer_stop('reset_io_alarms')
 
          if ( mpas_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
@@ -662,11 +678,19 @@ module mpas_core
             close(22)
          end if
 
+         call mpas_timer_start('io_write', .false.)
          call mpas_stream_mgr_write(stream_manager, streamID='restart', ierr=ierr)
+         call mpas_timer_stop('io_write')
+         call mpas_timer_start('reset_io_alarms', .false.)
          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=ierr)
+         call mpas_timer_stop('reset_io_alarms')
 
+         call mpas_timer_start('io_write', .false.)
          call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         call mpas_timer_stop('io_write')
+         call mpas_timer_start('reset_io_alarms', .false.)
          call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+         call mpas_timer_stop('reset_io_alarms')
       end do
 
    end subroutine mpas_core_run!}}}
