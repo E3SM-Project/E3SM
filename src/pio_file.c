@@ -69,8 +69,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       ierr = nc_open(filename, file->mode, &(file->fh));
 #else
       file->mode = file->mode |  NC_MPIIO | NC_NETCDF4;
-      //printf("%s %d %d  \n",__FILE__,__LINE__,file->mode);
-
       ierr = nc_open_par(filename, file->mode, ios->io_comm,ios->info, &(file->fh));
 #endif
       break;
@@ -218,6 +216,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 
   if(ierr == PIO_NOERR){
     mpierr = MPI_Bcast(&(file->mode), 1, MPI_INT,  ios->ioroot, ios->union_comm);
+    file->mode = file->mode | PIO_WRITE;  // This flag is implied by netcdf create functions but we need to know if its set
     pio_add_to_file_list(file);
     *ncidp = file->fh;
   }
