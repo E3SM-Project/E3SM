@@ -1679,8 +1679,7 @@ contains
       do k=1,nlev
         tempdp3d = elem(ie)%state%dp3d(:,:,k,tl%np1) - &
                    elem(ie)%derived%dp(:,:,k) 
-        tempdp3d = tempdp3d * elem(ie)%metdet
-        tempmass = subcell_integration(tempdp3d, np, nc)
+        tempmass = subcell_integration(tempdp3d, np, nc, elem(ie)%metdet)
         tempflux = dt*elem(ie)%sub_elem_mass_flux(:,:,:,k)
         do i=1,nc
         do j=1,nc
