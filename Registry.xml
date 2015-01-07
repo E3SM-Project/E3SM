@@ -178,7 +178,7 @@
 					description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
 					possible_values="Any positive integer value."
 		/>
-		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
+		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graphs/graph.info.part." units="unitless"
 					description="Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time."
 					possible_values="Any path/prefix to a block decomposition file."
 		/>
@@ -190,7 +190,7 @@
 					description="Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
+		<nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graphs/graph.info.part." units="unitless"
 					description="Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time."
 					possible_values="Any path/prefix to a processor decomposition file."
 		/>
@@ -858,7 +858,7 @@
 		</stream>
 		<stream name="input" 
 				type="input"
-				filename_template="grid.nc"
+				filename_template="init.nc"
 				input_interval="initial_only"
 				immutable="true">
 
