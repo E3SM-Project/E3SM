@@ -333,11 +333,10 @@ contains
         dss(1+mod(INT(32147*p),np), 1+mod(INT(1123*p)/np,np)) = 0
       end if
 
-      dss  = dss * elem(ie)%metdet
       dss(2:np-1,2:np-1) = 0
 
-      values = subcell_integration(dss, np, intervals) 
-      fluxes = subcell_dss_fluxes (dss, np, intervals) 
+      values = subcell_integration(dss, np, intervals, elem(ie)%metdet) 
+      fluxes = subcell_dss_fluxes (dss, np, intervals, elem(ie)%metdet) 
 
       test = SUM(fluxes,3)
 
@@ -410,16 +409,12 @@ contains
       end if
 
       div  = divergence_sphere(u, deriv, elem(ie))
-      div  = div * elem(ie)%metdet
    
       v(:,:,1) = elem(ie)%Dinv(1,1,:,:)*u(:,:,1) + elem(ie)%Dinv(1,2,:,:)*u(:,:,2)
       v(:,:,2) = elem(ie)%Dinv(2,1,:,:)*u(:,:,1) + elem(ie)%Dinv(2,2,:,:)*u(:,:,2)
 
-      v(:,:,1) = v(:,:,1)*elem(ie)%metdet(:,:)
-      v(:,:,2) = v(:,:,2)*elem(ie)%metdet(:,:)
-
-      values = subcell_integration(div, np, intervals) 
-      fluxes = subcell_div_fluxes(v, np, intervals) 
+      values = subcell_integration(div, np, intervals, elem(ie)%metdet) 
+      fluxes = subcell_div_fluxes (v,   np, intervals, elem(ie)%metdet) 
 
       test = SUM(fluxes,3)
 
@@ -464,6 +459,7 @@ contains
     real (kind=real_kind)              :: fluxes(intervals,intervals,4)
     real (kind=real_kind)              :: t
 
+    real (kind=real_kind)              :: metdet(np,np)
     type (quadrature_t)                :: gll
     integer                            :: ie,i,j
     logical                            :: success
@@ -472,6 +468,7 @@ contains
 
     gll = gausslobatto(np)
 
+    metdet = 1
     do ie=nets,nete
 
       v = 0 
@@ -493,7 +490,7 @@ contains
         end do
       end if
 
-      fluxes = subcell_div_fluxes(v, np, intervals) 
+      fluxes = subcell_div_fluxes(v, np, intervals, metdet) 
       fluxes = rearth*fluxes
 
       if (ie <= np*np) then
@@ -621,6 +618,7 @@ contains
     real (kind=real_kind)              :: t
 
     type (quadrature_t)                :: gll
+    real (kind=real_kind)              :: metdet(np,np)
     integer                            :: ie,i,j
     logical                            :: success
     real (kind=real_kind),   parameter :: EPS=.0000001
@@ -628,6 +626,7 @@ contains
 
     gll = gausslobatto(np)
 
+    metdet = 1
     do ie=nets,nete
 
       dss = 0 
@@ -641,7 +640,7 @@ contains
         end do
       end if
 
-      fluxes = subcell_dss_fluxes (dss, np, intervals)
+      fluxes = subcell_dss_fluxes (dss, np, intervals, metdet)
 
       if (ie <= np*np) then
         do i=1,intervals
@@ -779,7 +778,7 @@ contains
   subroutine test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
     use physical_constants, only : rearth
     use dimensions_mod, only : np
-    use derivative_mod, only : subcell_Laplace_fluxes, subcell_div_fluxes
+    use derivative_mod, only : subcell_Laplace_fluxes
     use derivative_mod, only : subcell_integration
     use derivative_mod, only : laplace_sphere_wk, gradient_sphere
     use derivative_mod, only : divergence_sphere, divergence_sphere_wk
@@ -824,11 +823,7 @@ contains
 
       laplace = laplace_sphere_wk(u,deriv,elem(ie),.false.)
       laplace = laplace / elem(ie)%spheremp
-      laplace = laplace * elem(ie)%metdet
-      laplace_values = subcell_integration(laplace, np, intervals) 
-
-
-
+      laplace_values = subcell_integration(laplace, np, intervals, elem(ie)%metdet) 
 
       laplace_fluxes = subcell_Laplace_fluxes(u, deriv, elem(ie), np, intervals) 
 
@@ -872,30 +867,29 @@ contains
     integer              , parameter :: intervals=4 
 
     real (kind=real_kind)              :: values(intervals,intervals)
-    real (kind=real_kind)              :: sampled_val(np,np), V(np,np)
+    real (kind=real_kind)              :: V(np,np)
     real (kind=real_kind)              :: t, p
     integer                            :: ie,i,j
     logical                            :: success
 
-    sampled_val = 0
+    V = 0
     success = .true.
     do ie=nets,nete
       call random_number(p)
       if (ie <= np*np) then
-        sampled_val = 0 
-        sampled_val(1+mod(ie,np), 1+mod(ie/np,np)) = 1
+        V = 0 
+        V(1+mod(ie,np), 1+mod(ie/np,np)) = 1
       else
-        t = sampled_val(1+mod((7*ie),np), 1+mod((13*ie)/np,np))
-        sampled_val(1+mod(ie,np), 1+mod(ie/np,np)) = t + 10*p
-        sampled_val(1+mod(INT(32147*p),np), 1+mod(INT(1123*p)/np,np)) = 0
+        t = V(1+mod((7*ie),np), 1+mod((13*ie)/np,np))
+        V(1+mod(ie,np), 1+mod(ie/np,np)) = t + 10*p
+        V(1+mod(INT(32147*p),np), 1+mod(INT(1123*p)/np,np)) = 0
       end if
 
-      V = sampled_val * elem(ie)%metdet
-      values = subcell_integration(V, np, intervals) 
+      values = subcell_integration(V, np, intervals, elem(ie)%metdet) 
 
       t = 0
       do i = 1,np
-        t    = t + DOT_PRODUCT(sampled_val(:,i),elem(ie)%spheremp(:,i))
+        t    = t + DOT_PRODUCT(V(:,i),elem(ie)%spheremp(:,i))
       end do
 
       if (.00001<ABS(t-SUM(values))) then

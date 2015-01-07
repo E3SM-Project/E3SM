@@ -2194,8 +2194,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            if (0<ntrac) then
              temp =  dptens(:,:,:,ie)/dt - temp
              do k=1,nlev
-               temp(:,:,k) = temp(:,:,k) * elem(ie)%metdet
-               dpflux(:,:,:,k,ie) = dpflux(:,:,:,k,ie) + subcell_dss_fluxes(temp(:,:,k), np, nc)
+               dpflux(:,:,:,k,ie) = dpflux(:,:,:,k,ie) + &
+                 subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet)
              end do
            endif
 
@@ -3074,9 +3074,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
               v(:,:,1) =  elem(ie)%Dinv(1,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(1,2,:,:)*vdp(:,:,2,k)
               v(:,:,2) =  elem(ie)%Dinv(2,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(2,2,:,:)*vdp(:,:,2,k)
-              v(:,:,1) = v(:,:,1)*elem(ie)%metdet(:,:)
-              v(:,:,2) = v(:,:,2)*elem(ie)%metdet(:,:)
-              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc)
+              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
               elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
            end if
         enddo
@@ -3098,9 +3096,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
               v(:,:,1) =  elem(ie)%Dinv(1,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(1,2,:,:)*vdp(:,:,2,k)
               v(:,:,2) =  elem(ie)%Dinv(2,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(2,2,:,:)*vdp(:,:,2,k)
-              v(:,:,1) = v(:,:,1)*elem(ie)%metdet(:,:)
-              v(:,:,2) = v(:,:,2)*elem(ie)%metdet(:,:)
-              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc)
+              tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
               elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
            end if
         enddo
@@ -3161,8 +3157,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           do k=1,nlev
             tempdp3d(:,:) = &
                elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1) - stashdp3d(:,:,k)
-            tempdp3d = tempdp3d * elem(ie)%metdet/dt2
-            tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc)
+            tempdp3d = tempdp3d/dt2
+            tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc, elem(ie)%metdet)
             elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + tempflux
           end do
         end if   
