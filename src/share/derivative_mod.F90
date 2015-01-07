@@ -2835,13 +2835,14 @@ endif
 
  
 
-  function subcell_dss_fluxes(dss, p, n) result(fluxes)
+  function subcell_dss_fluxes(dss, p, n, metdet) result(fluxes)
 
     implicit none
 
     integer              , intent(in)  :: p
     integer              , intent(in)  :: n
     real (kind=real_kind), intent(in)  :: dss     (p,p)
+    real (kind=real_kind), intent(in)  :: metdet  (p,p)
     real (kind=real_kind)              :: fluxes  (n,n,4)
 
     real (kind=real_kind)              :: Bp(p,p)
@@ -2878,10 +2879,10 @@ endif
     Tp(p,p)  = Tp(p,p)/2
     Rp(p,p)  = Rp(p,p)/2
 
-    B = subcell_integration(Bp, p, n)
-    T = subcell_integration(Tp, p, n)
-    L = subcell_integration(Lp, p, n)
-    R = subcell_integration(Rp, p, n)
+    B = subcell_integration(Bp, p, n, metdet)
+    T = subcell_integration(Tp, p, n, metdet)
+    L = subcell_integration(Lp, p, n, metdet)
+    R = subcell_integration(Rp, p, n, metdet)
 
     do i = 1,n
     do j = 1,n
@@ -2914,13 +2915,16 @@ endif
 
   end function subcell_dss_fluxes
 
-  function subcell_div_fluxes(u, p, n) result(fluxes)
+  function subcell_div_fluxes(u, p, n, metdet) result(fluxes)
 
     implicit none
 
     integer              , intent(in)  :: p
     integer              , intent(in)  :: n
     real (kind=real_kind), intent(in)  :: u(p,p,2)
+    real (kind=real_kind), intent(in)  :: metdet(p,p)
+
+    real (kind=real_kind)              :: v(p,p,2)
     real (kind=real_kind)              :: fluxes(n,n,4)
     real (kind=real_kind)              :: tb(n,p)
     real (kind=real_kind)              :: lr(p,n)
@@ -2937,11 +2941,14 @@ endif
       call allocate_subcell_integration_matrix(p,n)
     end if
 
-    tb = MATMUL(integration_matrix, u(:,:,2))
+    v(:,:,1) = u(:,:,1)*metdet(:,:)
+    v(:,:,2) = u(:,:,2)*metdet(:,:)
+
+    tb = MATMUL(integration_matrix, v(:,:,2))
     flux_b(:,:) = MATMUL(tb,TRANSPOSE(boundary_interp_matrix(:,1,:)))
     flux_t(:,:) = MATMUL(tb,TRANSPOSE(boundary_interp_matrix(:,2,:)))
 
-    lr = MATMUL(u(:,:,1),TRANSPOSE(integration_matrix))
+    lr = MATMUL(v(:,:,1),TRANSPOSE(integration_matrix))
     flux_l(:,:) = MATMUL(boundary_interp_matrix(:,1,:),lr)
     flux_r(:,:) = MATMUL(boundary_interp_matrix(:,2,:),lr)
 
@@ -2982,11 +2989,11 @@ endif
     end do
     div = div * rrearth
 
-    div(:,:,1) = div(:,:,1) * elem%metdet(:,:) / elem%spheremp(:,:)
-    div(:,:,2) = div(:,:,2) * elem%metdet(:,:) / elem%spheremp(:,:)
+    div(:,:,1) = div(:,:,1) / elem%spheremp(:,:)
+    div(:,:,2) = div(:,:,2) / elem%spheremp(:,:)
 
-    sub_int(:,:,1)  = subcell_integration(div(:,:,1), p, n)
-    sub_int(:,:,2)  = subcell_integration(div(:,:,2), p, n)
+    sub_int(:,:,1)  = subcell_integration(div(:,:,1), p, n, elem%metdet)
+    sub_int(:,:,2)  = subcell_integration(div(:,:,2), p, n, elem%metdet)
 
     do i=1,n
     do j=2,n
@@ -3019,13 +3026,15 @@ endif
   !
   ! Efficiency is obtained by computing and caching the appropriate
   ! integration matrix the first time the function is called.
-  function subcell_integration(sampled_val, np, intervals) result(values)
+  function subcell_integration(sampled_val, np, intervals, metdet) result(values)
 
     implicit none
 
     integer              , intent(in)  :: np
     integer              , intent(in)  :: intervals
     real (kind=real_kind), intent(in)  :: sampled_val(np,np)
+    real (kind=real_kind), intent(in)  :: metdet(np,np)
+    real (kind=real_kind)              :: val(np,np)
     real (kind=real_kind)              :: values(intervals,intervals)
 
     integer i,j
@@ -3036,12 +3045,15 @@ endif
       call allocate_subcell_integration_matrix(np,intervals)
     end if
 
+    ! Multiply sampled values by spectral element weights
+    val = sampled_val * metdet 
+
     ! Multiply the sampled values by the weighted jacobians.  
     ! Symmetry allows us to write this as J^t V J
     ! where J is a vector.  
 
     values = MATMUL(integration_matrix, &
-             MATMUL(sampled_val,TRANSPOSE(integration_matrix)))
+             MATMUL(val,TRANSPOSE(integration_matrix)))
 
   end function subcell_integration
 
