@@ -2565,7 +2565,6 @@ add_default($nl, 'cldfrc_icecrit');
 add_default($nl, 'zmconv_c0_lnd');
 add_default($nl, 'zmconv_c0_ocn');
 add_default($nl, 'zmconv_ke');
-add_default($nl, 'zmconv_tau');
 
 # moist convection rainwater coefficients
 add_default($nl, 'hkconv_cmftau');
