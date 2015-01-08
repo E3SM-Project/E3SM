@@ -125,28 +125,24 @@ module mpas_timekeeping
 
       character (len=*), intent(in) :: calendar 
 
-#ifndef MPAS_CESM
       if (trim(calendar) == 'gregorian') then
          TheCalendar = MPAS_GREGORIAN
+#ifndef MPAS_NO_ESMF_INIT
          call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_GREGORIAN)
+#endif
       else if (trim(calendar) == 'gregorian_noleap') then
          TheCalendar = MPAS_GREGORIAN_NOLEAP
+#ifndef MPAS_NO_ESMF_INIT
          call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_NOLEAP)
+#endif
 !     else if (trim(calendar) == '360day') then
 !        TheCalendar = MPAS_360DAY
+!#ifndef MPAS_NO_ESMF_INIT
 !        call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_360DAY)
+!#endif
       else
          write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
       end if
-#else
-      if (trim(calendar) == 'gregorian') then
-         TheCalendar = MPAS_GREGORIAN
-      else if (trim(calendar) == 'gregorian_noleap') then
-         TheCalendar = MPAS_GREGORIAN_NOLEAP
-      else
-         write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
-      end if
-#endif
 
       yearWidth = 4
 
@@ -157,7 +153,7 @@ module mpas_timekeeping
 
       implicit none
 
-#ifndef MPAS_CESM      
+#ifndef MPAS_NO_ESMF_INIT
       call ESMF_Finalize()
 #endif
 
