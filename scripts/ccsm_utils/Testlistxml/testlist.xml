@@ -4820,6 +4820,7 @@
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
