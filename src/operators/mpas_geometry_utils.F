@@ -187,6 +187,8 @@ module mpas_geometry_utils
 
    subroutine mpas_poly_fit_2(a_in,b_out,weights_in,m,n,ne)!{{{
 
+      use mpas_matrix_operations
+
       implicit none
 
       integer, intent(in) :: m,n,ne
@@ -243,132 +245,6 @@ module mpas_geometry_utils
 
    end subroutine mpas_poly_fit_2!}}}
 
-
-! Updated 10/24/2001.
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!   Program 4.4   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                                                       !
-! Please Note:                                                          !
-!                                                                       !
-! (1) This computer program is written by Tao Pang in conjunction with  !
-!     his book, "An Introduction to Computational Physics," published   !
-!     by Cambridge University Press in 1997.                            !
-!                                                                       !
-! (2) No warranties, express or implied, are made for this program.     !
-!                                                                       !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-subroutine mpas_migs (a,n,x,indx)!{{{
-!
-! subroutine to invert matrix a(n,n) with the inverse stored
-! in x(n,n) in the output.  copyright (c) tao pang 2001.
-!
-  implicit none
-  integer, intent (in) :: n
-  integer :: i,j,k
-  integer, intent (out), dimension (n) :: indx
-  real (kind=RKIND), intent (inout), dimension (n,n):: a
-  real (kind=RKIND), intent (out), dimension (n,n):: x
-  real (kind=RKIND), dimension (n,n) :: b
-!
-  do i = 1, n
-    do j = 1, n
-      b(i,j) = 0.0
-    end do
-  end do
-  do i = 1, n
-    b(i,i) = 1.0
-  end do
-!
-  call mpas_elgs (a,n,indx)
-!
-  do i = 1, n-1
-    do j = i+1, n
-      do k = 1, n
-        b(indx(j),k) = b(indx(j),k)-a(indx(j),i)*b(indx(i),k)
-      end do
-    end do
-  end do
-!
-  do i = 1, n
-    x(n,i) = b(indx(n),i)/a(indx(n),n)
-    do j = n-1, 1, -1
-      x(j,i) = b(indx(j),i)
-      do k = j+1, n
-        x(j,i) = x(j,i)-a(indx(j),k)*x(k,i)
-      end do
-      x(j,i) =  x(j,i)/a(indx(j),j)
-    end do
-  end do
-end subroutine mpas_migs!}}}
-
-
-subroutine mpas_elgs (a,n,indx)!{{{
-!
-! subroutine to perform the partial-pivoting gaussian elimination.
-! a(n,n) is the original matrix in the input and transformed matrix
-! plus the pivoting element ratios below the diagonal in the output.
-! indx(n) records the pivoting order.  copyright (c) tao pang 2001.
-!
-  implicit none
-  integer, intent (in) :: n
-  integer :: i,j,k,itmp
-  integer, intent (out), dimension (n) :: indx
-  real (kind=RKIND) :: c1,pi,pi1,pj
-  real (kind=RKIND), intent (inout), dimension (n,n) :: a
-  real (kind=RKIND), dimension (n) :: c
-!
-! initialize the index
-!
-  do i = 1, n
-    indx(i) = i
-  end do
-!
-! find the rescaling factors, one from each row
-!
-  do i = 1, n
-    c1= 0.0
-    do j = 1, n
-      c1 = max(c1,abs(a(i,j)))
-    end do
-    c(i) = c1
-  end do
-!
-! search the pivoting (largest) element from each column
-!
-  do j = 1, n-1
-    pi1 = 0.0
-    do i = j, n
-      pi = abs(a(indx(i),j))/c(indx(i))
-      if (pi.gt.pi1) then
-        pi1 = pi
-        k   = i
-      endif
-    end do
-!
-! interchange the rows via indx(n) to record pivoting order
-!
-    itmp    = indx(j)
-    indx(j) = indx(k)
-    indx(k) = itmp
-    do i = j+1, n
-      pj  = a(indx(i),j)/a(indx(j),j)
-!
-! record pivoting ratios below the diagonal
-!
-      a(indx(i),j) = pj
-!
-! modify other elements accordingly
-!
-      do k = j+1, n
-        a(indx(i),k) = a(indx(i),k)-pj*a(indx(j),k)
-      end do
-    end do
-  end do
-!
-end subroutine mpas_elgs!}}}
 
 !-------------------------------------------------------------
 
