@@ -851,6 +851,8 @@ module mpas_timekeeping
             if (present(ierr)) ierr = 1
             write(0,*) 'ERROR: Invalid DateTime string', dateTimeString
             return
+         else
+            deallocate(subStrings)
          end if
 
          call mpas_split_string(dateTimeString_, "_", subStrings)
