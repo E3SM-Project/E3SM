@@ -836,7 +836,7 @@ recursive subroutine ESMF_TimeGet(time, YY, MM, DD, D, Dl, H, M, S, MS, &
 !$$$here...  add negative sign for YR<0
 !$$$here...  add Sn, Sd ??
       write(TimeFormatString,FMT="(A,I4.4,A,I4.4,A)") &
-           "(I", yearWidth, ".", yearWidth, "'-',I2.2,'-',I2.2,'_',I2.2,':',I2.2,':',I2.2)"
+           "(I", yearWidth, ".", yearWidth, ",'-',I2.2,'-',I2.2,'_',I2.2,':',I2.2,':',I2.2)"
       write(TimeString,FMT=TimeFormatString) year,month,dayofmonth,hour,minute,second
 
       end subroutine ESMFold_TimeGetString
