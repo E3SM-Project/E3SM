@@ -83,6 +83,8 @@ contains
     ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph
     ! --------------------------------
+    use derivative_mod, only : allocate_subcell_integration_matrix
+    ! --------------------------------
     use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
     ! --------------------------------
     use schedtype_mod, only : schedule
@@ -531,6 +533,11 @@ contains
       call fvm_init1(par)
 #endif
     endif
+
+    ! =======================================================
+    ! Allocate memory for subcell flux calculations.
+    ! =======================================================
+    call allocate_subcell_integration_matrix(np, nc)
 
     if ( use_semi_lagrange_transport) then
       call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
@@ -1673,7 +1680,7 @@ contains
             hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
-#if HOMME_TEST_SUB_ELEMENT_MASS_FLUX
+#ifdef HOMME_TEST_SUB_ELEMENT_MASS_FLUX
     if (0<ntrac) then
       do ie=nets,nete
       do k=1,nlev
