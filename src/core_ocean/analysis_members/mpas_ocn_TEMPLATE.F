@@ -66,7 +66,6 @@ module ocn_TEMPLATE
 
    public :: ocn_setup_packages_TEMPLATE, &
              ocn_init_TEMPLATE, &
-             ocn_init_alarms_TEMPLATE, &
              ocn_compute_TEMPLATE, &
              ocn_restart_TEMPLATE, &
              ocn_finalize_TEMPLATE
@@ -187,77 +186,6 @@ contains
       err = 0
 
    end subroutine ocn_init_TEMPLATE!}}}
-
-!***********************************************************************
-!
-!  routine ocn_init_alarms_TEMPLATE
-!
-!> \brief   Initialize alarms for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine conducts all alarm initializations required for the 
-!>  MPAS-Ocean analysis member.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_init_alarms_TEMPLATE(clock, startTime, computeAlarmID, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(in) :: computeAlarmID
-      type (MPAS_Time_Type), intent(in) :: startTime
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      type (MPAS_Clock_type), intent(inout) :: clock
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: ierr
-      character(len=StrKIND) :: compute_interval
-      type (MPAS_Time_Type) :: alarmStartTime
-      type (MPAS_TimeInterval_type) :: alarmTimeStep
-
-      character (len=StrKIND), pointer :: config_TEMPLATE_compute_interval, config_output_interval
-
-      err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_TEMPLATE_compute_interval', config_TEMPLATE_compute_interval)
-      call mpas_pool_get_config(ocnConfigs, 'config_output_interval', config_output_interval)
-
-      ! set compute alarm for this analysis member
-      if (config_TEMPLATE_compute_interval=='same_as_output') then
-         compute_interval = config_output_interval
-      else
-         compute_interval = config_TEMPLATE_compute_interval
-      endif
-
-      call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-
-   end subroutine ocn_init_alarms_TEMPLATE!}}}
 
 !***********************************************************************
 !
