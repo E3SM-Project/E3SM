@@ -21,6 +21,7 @@ module ocn_analysis_driver
 
    use mpas_grid_types
    use mpas_timekeeping
+   use mpas_timer
    use mpas_stream_manager
 
    use ocn_constants
@@ -279,7 +280,9 @@ contains
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      call mpas_pool_get_config(domain % configs, 'config_TEMPLATE_compute_startup', config_TEMPLATE_compute_startup)
 !      if (config_use_TEMPLATE.and.config_TEMPLATE_compute_startup) then
+!         call mpas_timer_start('io_write', .false.)
 !         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
+!         call mpas_timer_stop('io_write')
 !         err = ior(err, err_tmp)
 !      endif
 
@@ -571,8 +574,12 @@ contains
 
 !      call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
-!         call mpas_stream_mgr_write(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
-!         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+!          call mpas_timer_start('io_write', .false.)
+!          call mpas_stream_mgr_write(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+!          call mpas_timer_stop('io_write')
+!          call mpas_timer_start('io_reset_alarms', .false.)
+!          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+!          call mpas_timer_stop('io_reset_alarms')
 !         err = ior(err, err_tmp)
 !      endif
 
