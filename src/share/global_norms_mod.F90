@@ -534,8 +534,10 @@ contains
                dble(nhe)*(2.0D0*dd_pi*Rearth/dble(4.0*ne*nc))/120.0d0,'s'
           write(iulog,*) "(note that fvm stability is also limited by flow deformation - Lipschitz criterion!)"
        end if
+       write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', &
+                                   1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s)   dt_dyn  < S *', &
-            1/(342.0d0*max_normDinv*lambda_max*rrearth),'s'
+                                   1/(342.0d0*max_normDinv*lambda_max*rrearth),'s'
        if (nu>0) then
           if (hypervis_order==1) then
               write(iulog,'(a,f10.2,a)') 'Stability: viscosity dt < S *',1/(((rrearth*max_normDinv)**2)*lambda_vis),'s'
