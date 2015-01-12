@@ -28,6 +28,7 @@ acme_developer_tests = [
   'ERS_IOP4c.ne30_g16_rx1.A',
   'ERS_IOP4p.f19_g16_rx1.A',
   'ERS_IOP4p.ne30_g16_rx1.A',
+  'ERS_Ly21.f09_g16.TG',
   'NCK.f19_g16_rx1.A',
   'PEA_P1_M.f45_g37_rx1.A',
   'SMS.ne30_f19_g16_rx1.A']
