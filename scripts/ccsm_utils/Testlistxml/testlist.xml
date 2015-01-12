@@ -4794,7 +4794,38 @@
   <compset name="TG">
     <grid name="f09_g16">
       <test name="ERS_Ly21">
+        <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
+        <machine compiler="intel" testtype="acme_developer">cascade</machine>
+        <machine compiler="nag" testtype="acme_developer">cascade</machine>
+        <machine compiler="ibm" testtype="acme_developer">cetus</machine>
+        <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel " testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_developer">eos</machine>
+        <machine compiler="intel" testtype="acme_developer">evergreen</machine>
+        <machine compiler="intel" testtype="acme_developer">goldbach</machine>
+        <machine compiler="lahey" testtype="acme_developer">goldbach</machine>
+        <machine compiler="nag" testtype="acme_developer">goldbach</machine>
+        <machine compiler="pgi" testtype="acme_developer">goldbach</machine>
+        <machine compiler="gnu" testtype="acme_developer">hopper</machine>
+        <machine compiler="intel" testtype="acme_developer">hopper</machine>
+        <machine compiler="pgi" testtype="acme_developer">hopper</machine>
+        <machine compiler="ibm" testtype="acme_developer">intrepid</machine>
+        <machine compiler="intel" testtype="acme_developer">janus</machine>
+        <machine compiler="pgi" testtype="acme_developer">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">mac</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="null" testtype="acme_developer">null</machine>
+        <machine compiler="pgi" testtype="acme_developer">olympus</machine>
+        <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="intel " testtype="acme_developer">yellowstone</machine>
+        <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
         <machine compiler="gnu" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
