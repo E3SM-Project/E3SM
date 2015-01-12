@@ -120,6 +120,7 @@ contains
     use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, &
          repro_sum_setopts
 #else
+    use infnan,           only: nan, assignment(=)
     use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
 #endif
     implicit none
@@ -474,6 +475,12 @@ contains
 
        elem(ie)%derived%Omega_p=0
        elem(ie)%state%dp3d=0
+
+#ifdef CAM
+       elem(ie)%derived%u_met = nan
+       elem(ie)%derived%v_met = nan
+       elem(ie)%derived%T_met = nan
+#endif
     enddo
 
 
@@ -1436,7 +1443,7 @@ contains
        enddo
        ! DEBUGDP step: ps_v should not be used for rsplit>0 code during prim_step
        ! vertical_remap.  so to this for debugging:
-       elem(ie)%state%ps_v(:,:,tl%n0)=-9e9
+!       elem(ie)%state%ps_v(:,:,tl%n0)=-9e9 !outcommented so the pre_scribed winds work with rsplit>0
     enddo
     endif
 

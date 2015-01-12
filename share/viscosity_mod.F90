@@ -206,8 +206,8 @@ use derivative_mod, only :  subcell_Laplace_fluxes
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+integer              , intent(in)  :: nt,nets,nete
 real (kind=real_kind), intent(out), dimension(nc,nc,4,nlev,nets:nete) :: dpflux
-integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens,dptens
 type (EdgeBuffer_t)  , intent(inout) :: edge3
