@@ -93,11 +93,11 @@ typedef struct io_desc_t
   int num_aiotasks;
   int rearranger;
   int maxregions;
-
+  bool needsfill;       // Does this decomp leave holes in the field (true) or write everywhere (false)
   MPI_Datatype basetype;
   PIO_Offset llen;
   int maxiobuflen;
-
+  PIO_Offset *gsize;
 
   int *rfrom;
   int *rcount;
@@ -313,6 +313,12 @@ enum PIO_ERROR_HANDLERS{
 #define PIO_EBADCHUNK NC_EBADCHUNK
 #define PIO_ENOTBUILT NC_ENOTBUILT
 #define PIO_EDISKLESS NC_EDISKLESS
+
+#define PIO_FILL_DOUBLE NC_FILL_DOUBLE
+#define PIO_FILL_FLOAT NC_FILL_FLOAT
+#define PIO_FILL_INT NC_FILL_INT
+#define PIO_FILL_CHAR NC_FILL_CHAR
+
 #endif
 #ifdef _PNETCDF
 #define PIO_EINDEP  NC_EINDEP

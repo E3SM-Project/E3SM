@@ -795,6 +795,36 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   return PIO_NOERR;
 
 }
+
+void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[])
+{
+  PIO_Offset totalllen;
+  PIO_Offset totalgridsize=1;
+  int i;
+  for( i=0;i<iodesc->ndims;i++){
+    totalgridsize *= gsize[i];
+  }
+  MPI_Reduce(&(iodesc->llen), &totalllen, 1, PIO_OFFSET, MPI_SUM, ios.ioroot, ios.union_comm);
+  if(totalllen < totalgridsize){
+    iodesc->needsfill = true;
+    iodesc->gsize = (PIO_Offset *) malloc(iodesc->ndims * sizeof(PIO_Offset));
+    for (i=0;i<iodesc->ndims;i++){
+      iodesc->gsize[i] = gsize[i];
+    }
+  }else{
+    iodesc->needsfill = false;
+    iodesc->gsize = NULL;
+  }
+  //  Pass the needs fill value from io master to all tasks
+  MPI_Bcast(&(iodesc->needsfill), 1, MPI_INT, ios.ioroot, ios.union_comm);
+}
+
+
+
+
+
+
+
 /** 
  ** @internal
  ** The box rearranger computes a mapping between IO tasks and compute tasks such that the data
@@ -934,6 +964,8 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
 
   compute_counts(ios, iodesc, maplen, dest_ioproc, dest_ioindex, ios.union_comm);
 
+  determine_fill(ios, iodesc, gsize);
+
   if(ios.ioproc){
     compute_maxIObuffersize(ios.io_comm, iodesc);
   }
@@ -1058,13 +1090,12 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   mapsort *map=NULL;
   PIO_Offset totalgridsize;
   PIO_Offset *srcindex=NULL;
-
-
+  
   int maxreq = MAX_GATHER_BLOCK_SIZE;
   int rank, ntasks, rcnt;
   size_t pio_offset_size=sizeof(PIO_Offset);
-
-
+  
+  
   tmpioproc = ios.io_rank;
 
 
@@ -1072,7 +1103,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   /* TODO: introduce a mechanism for users to define partitions */
   default_subset_partition(ios, iodesc);
   iodesc->rearranger = PIO_REARR_SUBSET;
-
+  
   MPI_Comm_rank(iodesc->subset_comm, &rank);
   MPI_Comm_size(iodesc->subset_comm, &ntasks);
 
@@ -1081,10 +1112,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   }else{
     pioassert(rank>0 && rank<ntasks,"Bad comp rank in subset create",__FILE__,__LINE__);
   }
-  totalgridsize=1;
-  for(i=0;i<ndims;i++)
-    totalgridsize*=gsize[i];
-
   rcnt = 0;
   iodesc->ndof = maplen;
   if(ios.ioproc){
@@ -1092,6 +1119,11 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     rcnt = 1;
   } 
   iodesc->scount = (int *) calloc(1,sizeof(int));
+
+  totalgridsize=1;
+  for( i=0;i<ndims;i++){
+    totalgridsize *= gsize[i];
+  }
 
   for(i=0;i<maplen;i++){
     pioassert(compmap[i]>=0 && compmap[i]<=totalgridsize, "Compmap value out of bounds",__FILE__,__LINE__);
@@ -1131,7 +1163,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 	rdispls[i] = rdispls[i-1]+ iodesc->rcount[ i-1 ];
     }
     //    printf("%s %d %ld %d %d\n",__FILE__,__LINE__,iodesc,iodesc->llen,maplen);
-
       
     if(iodesc->llen>0){
       srcindex = (PIO_Offset *) calloc(iodesc->llen,pio_offset_size);
@@ -1142,6 +1173,8 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       rdispls[i]=0;
     }
   }
+
+
   // Pass the sindex from each compute task to its associated IO task
 
   pio_fc_gatherv((void *) iodesc->sindex, iodesc->scount[0], PIO_OFFSET,
@@ -1222,11 +1255,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 			      0, iodesc->subset_comm),__FILE__,__LINE__);
 
 
-  /*  
-  pio_swapm((void *) srcindex, recvlths, rdispls, dtypes, 
-	    (void *) iodesc->sindex, sndlths, sdispls, dtypes, 
-	    iodesc->subset_comm, hs, isend, maxreq);
-  */
+
+  determine_fill(ios, iodesc, gsize);
+
   if(ios.ioproc){
 
     /*

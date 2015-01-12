@@ -138,6 +138,7 @@ contains
     double precision :: wall(2), sys(2), usr(2)
     integer :: niomin, niomax
     integer :: nv
+    integer,  parameter :: c0 = 0
 
     nullify(compmap)
 
@@ -227,7 +228,7 @@ contains
                 do frame=1,nframes
                    do nv=1,nvars   
                       call PIO_setframe(File, vari(nv), frame)
-                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr)
+                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval=c0)
                    enddo
 ! multiversion  
 !                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
@@ -258,7 +259,6 @@ contains
   call print_memusage()
 #endif
                 end if
-
 ! Now the Read
                 ierr = PIO_OpenFile(iosystem, File, iotype, trim(fname), mode=PIO_NOWRITE);
                 do nv=1,nvars
@@ -301,7 +301,6 @@ contains
   call print_memusage()
 #endif
                 end if
-
                 
                 call PIO_freedecomp(iosystem, iodesc_r4)
                 call PIO_freedecomp(iosystem, iodesc_r8)
