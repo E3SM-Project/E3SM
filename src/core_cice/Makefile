@@ -21,16 +21,20 @@ OBJS = 	mpas_cice_mpas_core.o \
 	mpas_cice_diagnostics.o \
 	mpas_cice_numerics.o \
 	mpas_cice_constants.o \
+	mpas_cice_column.o
 
-all: core_cice
+all: column_package core_cice
 
 core_cice: $(OBJS)
 	ar -ru libdycore.a $(OBJS)
+	ar -ru libdycore.a column/*.o
 
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 
-mpas_cice_constants.o:
+mpas_cice_constants.o: column_package
+
+mpas_cice_column.o: column_package
 
 mpas_cice_mesh.o: mpas_cice_constants.o
 
@@ -70,7 +74,10 @@ mpas_cice_time_integration.o: mpas_cice_constants.o mpas_cice_velocity_solver.o 
 
 mpas_cice_initialize.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_velocity_solver.o mpas_cice_testing.o mpas_cice_debug.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_advection.o
 
-mpas_cice_mpas_core.o: mpas_cice_constants.o mpas_cice_time_integration.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_initialize.o
+mpas_cice_mpas_core.o: mpas_cice_constants.o mpas_cice_time_integration.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_initialize.o mpas_cice_column.o
+
+column_package:
+	(cd column; $(MAKE))
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
@@ -78,4 +85,4 @@ clean:
 .F.o:
 	$(RM) $@ $*.mod
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -Icolumn
