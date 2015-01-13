@@ -325,25 +325,29 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 
      printf("%s %d \n",__FILE__,__LINE__);
 
-     if(ios->io_rank==0){
-       totalsize=1;
-       for(int id=(fndims-ndims);id<fndims;id++){
-	 start[id]=0;
-	 count[id]=iodesc->gsize[id-(fndims-ndims)];
-	 totalsize*=count[id];
-       }
-       bufptr = malloc(tsize*totalsize);
-     }else{
-       for(int id=0;id<fndims;id++){
-	 start[id]=0;
-	 count[id]=0;
-       }
-     }
-
      for(int nv=0;nv<nvars;nv++){
        printf("%s %d %d\n",__FILE__,__LINE__,nv);
        vdesc = (file->varlist)+vid[nv];
-       if(fndims>ndims && ios->io_rank==0){
+
+
+       if(nv % ios->num_iotasks== ios->io_rank){
+	 totalsize=1;
+	 for(int id=(fndims-ndims);id<fndims;id++){
+	   start[id]=0;
+	   count[id]=iodesc->gsize[id-(fndims-ndims)];
+	   totalsize*=count[id];
+	 }
+	 bufptr = malloc(tsize*totalsize);
+       }else{
+	 for(int id=0;id<fndims;id++){
+	   start[id]=0;
+	   count[id]=0;
+	 }
+       }
+
+
+
+       if(fndims>ndims && nv % ios->num_iotasks == ios->io_rank){
 	 start[0]=vdesc->record;
 	 count[0]=1;
        }
@@ -365,6 +369,9 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
        }else{
 	 fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
        }	 
+       if(totalsize>0){
+	 free(bufptr);
+       }
      }
 #ifdef _PNETCDF
      // Need to flush the buffer of fill values before the next write
@@ -373,9 +380,6 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
        flush_output_buffer(file);
      }
 #endif
-     if(totalsize>0){
-       free(bufptr);
-     }
    }
 
 
@@ -550,7 +554,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
        	         bufptr = (void *)((char *) IOBUF + tsize*(nv*iodesc->llen + region->loffset));
 		 //		 printf("%d %d %d\n",__LINE__,iodesc->llen,region->loffset);
 		 // printf("%d %d %d %d %d %d\n",__LINE__,((int *)bufptr)[0],((int *)bufptr)[1],((int *)bufptr)[2],((int *)bufptr)[3],((int *)bufptr)[4]);
-	         mpierr = MPI_Rsend( bufptr, buflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
+	         mpierr = MPI_Send( bufptr, buflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
 	       }
 	     }
 	   }
