@@ -34,6 +34,9 @@ module element_mod
     real (kind=real_kind) :: phis(np,np)                              ! surface geopotential (prescribed)  5
     real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)                 ! Tracer concentration               6
     real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)               ! Tracer mass                        7
+#ifdef CAM
+    real (kind=real_kind) :: nudge_factor(np,np)                      ! nudging factor (prescribed)
+#endif
   end type elem_state_t
 
   integer(kind=int_kind),public,parameter::StateComponents=8! num prognistics variables (for prim_restart_mod.F90)
@@ -71,7 +74,21 @@ module element_mod
     real (kind=real_kind) :: FQ(np,np,nlev,qsize_d, 1)                ! tracer forcing
     real (kind=real_kind) :: FM(np,np,2,nlev, 1)                      ! momentum forcing
     real (kind=real_kind) :: FT(np,np,nlev, 1)                        ! temperature forcing
-    real (kind=real_kind) :: omega_prescribed(np,np,nlev)             ! prescribed vertical tendency
+    real (kind=real_kind) :: etadot_prescribed(np,np,nlevp)           ! prescribed vertical tendency
+    
+    real (kind=real_kind) :: u_met(np,np,nlev)    ! zonal component of prescribed meteorology winds
+    real (kind=real_kind) :: dudt_met(np,np,nlev) ! rate of change of zonal component of prescribed meteorology winds
+    real (kind=real_kind) :: v_met(np,np,nlev)    ! meridional component of prescribed meteorology winds
+    real (kind=real_kind) :: dvdt_met(np,np,nlev) ! rate of change of meridional component of prescribed meteorology winds
+    real (kind=real_kind) :: T_met(np,np,nlev)    ! prescribed meteorology temperature
+    real (kind=real_kind) :: dTdt_met(np,np,nlev) ! rate of change of prescribed meteorology temperature
+    real (kind=real_kind) :: ps_met(np,np)        ! surface pressure of prescribed meteorology
+    real (kind=real_kind) :: dpsdt_met(np,np)     ! rate of change of surface pressure of prescribed meteorology
+
+    real (kind=real_kind) :: Utnd(npsq,nlev)
+    real (kind=real_kind) :: Vtnd(npsq,nlev)
+    real (kind=real_kind) :: Ttnd(npsq,nlev)
+
 #else
     ! forcing terms for HOMME
     real (kind=real_kind) :: FQ(np,np,nlev,qsize_d, timelevels)       ! tracer forcing
