@@ -1354,6 +1354,10 @@ module mpas_timekeeping
           call ESMF_TimeIntervalGet(interval % ti, D=days, S_i8=seconds, Sn=sn, Sd=sd, rc=ierr)
       endif
 
+      if (sd == 0) then   ! may only occur if (sn == 0)?
+         sd = 1
+      end if
+
       if (present(dt)) then
          dt = (days * 24 * 60 * 60) + seconds + (sn / sd)
       end if
@@ -1390,9 +1394,6 @@ module mpas_timekeeping
       end if
 
       if (present(S_d)) then
-         if (sd == 0) then   ! may only occur if (sn == 0)?
-            sd = 1
-         end if
          S_d = sd
       end if
 
