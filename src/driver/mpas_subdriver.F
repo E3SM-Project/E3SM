@@ -31,7 +31,7 @@ module mpas_subdriver
 
    subroutine mpas_init()
 
-      use mpas_stream_manager, only : MPAS_stream_mgr_init
+      use mpas_stream_manager, only : MPAS_stream_mgr_init, MPAS_build_stream_filename
       use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : MPAS_Time_type, mpas_get_clock_time, mpas_get_time
@@ -49,9 +49,15 @@ module mpas_subdriver
       character(len=StrKIND) :: mesh_stream
       character(len=StrKIND) :: mesh_filename
       character(len=StrKIND) :: mesh_filename_temp
+      character(len=StrKIND) :: ref_time_temp
+      character(len=StrKIND) :: filename_interval_temp
       character(kind=c_char), dimension(StrKIND+1) :: c_mesh_stream
       character(kind=c_char), dimension(StrKIND+1) :: c_mesh_filename_temp
+      character(kind=c_char), dimension(StrKIND+1) :: c_ref_time_temp
+      character(kind=c_char), dimension(StrKIND+1) :: c_filename_interval_temp
       type (MPAS_Time_type) :: start_time
+      type (MPAS_Time_type) :: ref_time
+      type (MPAS_TimeInterval_type) :: filename_interval
       character(len=StrKIND) :: start_timestamp
 
 
@@ -64,14 +70,16 @@ module mpas_subdriver
             integer(kind=c_int), intent(out) :: ierr
          end subroutine xml_stream_parser
 
-         subroutine xml_stream_get_filename(xmlname, streamname, comm, filename, ierr) bind(c)
+         subroutine xml_stream_get_attributes(xmlname, streamname, comm, filename, ref_time, filename_interval, ierr) bind(c)
             use iso_c_binding, only : c_char, c_int
             character(kind=c_char), dimension(*), intent(in) :: xmlname
             character(kind=c_char), dimension(*), intent(in) :: streamname
             integer(kind=c_int), intent(inout) :: comm
             character(kind=c_char), dimension(*), intent(in) :: filename
+            character(kind=c_char), dimension(*), intent(in) :: ref_time
+            character(kind=c_char), dimension(*), intent(in) :: filename_interval
             integer(kind=c_int), intent(out) :: ierr
-         end subroutine xml_stream_get_filename
+         end subroutine xml_stream_get_attributes
       end interface
 
 
@@ -98,16 +106,30 @@ module mpas_subdriver
       call mpas_f_to_c_string(domain % streams_filename, c_filename)
       call mpas_f_to_c_string(mesh_stream, c_mesh_stream)
       c_comm = dminfo % comm
-      call xml_stream_get_filename(c_filename, c_mesh_stream, c_comm, c_mesh_filename_temp, c_ierr)
+      call xml_stream_get_attributes(c_filename, c_mesh_stream, c_comm, &
+                                     c_mesh_filename_temp, c_ref_time_temp, &
+                                     c_filename_interval_temp, c_ierr)
       if (c_ierr /= 0) then
          call mpas_dmpar_abort(dminfo)
       end if
       call mpas_c_to_f_string(c_mesh_filename_temp, mesh_filename_temp)
-      start_time = mpas_get_clock_time(domain_ptr % clock, MPAS_START_TIME, ierr)
-      call mpas_get_time(start_time, dateTimeString=start_timestamp, ierr=ierr)
-      call mpas_expand_string(start_timestamp, mesh_filename_temp, mesh_filename)
-      call mpas_bootstrap_framework(domain_ptr, mesh_filename)
+      call mpas_c_to_f_string(c_ref_time_temp, ref_time_temp)
+      call mpas_c_to_f_string(c_filename_interval_temp, filename_interval_temp)
 
+      start_time = mpas_get_clock_time(domain_ptr % clock, MPAS_START_TIME, ierr)
+      if ( trim(ref_time_temp) == 'initial_time' ) then
+          call mpas_get_time(start_time, dateTimeString=ref_time_temp, ierr=ierr)
+      end if
+
+      if ( trim(filename_interval_temp) == 'none' ) then
+          call mpas_expand_string(ref_time_temp, mesh_filename_temp, mesh_filename)
+      else
+          call mpas_set_time(ref_time, dateTimeString=ref_time_temp, ierr=ierr)
+          call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
+          call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
+      end if
+      write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
+      call mpas_bootstrap_framework(domain_ptr, mesh_filename)
 
       !
       ! Set up run-time streams

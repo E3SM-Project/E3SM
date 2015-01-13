@@ -22,7 +22,7 @@
 #define MSGSIZE 256
 
 
-/* 
+/*
  *  Interface routines for building streams at run-time; defined in mpas_stream_manager.F
  */
 void stream_mgr_create_stream_c(void *, const char *, int *, const char *, const char *, char *, char *, int *, int *, int *, int *);
@@ -45,7 +45,7 @@ struct stacknode {
 struct stacknode *head = NULL;
 
 
-/* 
+/*
  *  Global variables
  */
 static char *global_file;
@@ -137,7 +137,7 @@ struct stacknode * pop_tag(void)
  *
  *  Copies only the name of an XML tag from tag_buf into tag_name. For example,
  *  the name of the tag
- * 
+ *
  *      <stream name="floop" interval="06:00:00"/>
  *
  *  is the string "stream".
@@ -162,19 +162,19 @@ void parse_xml_tag_name(char *tag_buf, char *tag_name)
  *
  *  Function: parse_xml_tag
  *
- *  Parses the next XML tag into a string, plus other bookkeeping. All characters 
+ *  Parses the next XML tag into a string, plus other bookkeeping. All characters
  *  between the first '<' and immediately following '>' character from xml_buf
  *  are copied into tag. The length of the buffer xml_buf is at least buf_len, and
  *  the length of the buffer tag is also at least buf_len.
  *
- *  For providing useful error messages, this routine also counts line numbers, 
+ *  For providing useful error messages, this routine also counts line numbers,
  *  incrementing the line number each time a newline character is encountered.
  *
  *  The output argument start_line provides the line number on which the returned
  *  tag began.
  *
  *  The output argument tag_len provides the number of characters in the tag that
- *  were copied into the tag buffer. If no complete XML tag is found in the input 
+ *  were copied into the tag buffer. If no complete XML tag is found in the input
  *  buffer, the tag_len argument will be set to 0.
  *
  *  The return value is the index in xml_buf representing the end of the tag,
@@ -234,12 +234,12 @@ size_t parse_xml_tag(char *xml_buf, size_t buf_len, char *tag, size_t *tag_len, 
  *  Function: par_read
  *
  *  Reads the contents of a file into a buffer in distributed-memory parallel code.
- * 
- *  The buffer xml_buf is allocated with size bufsize, which will be exactly the 
+ *
+ *  The buffer xml_buf is allocated with size bufsize, which will be exactly the
  *  number of bytes in the file fname. Only the master task will actually read the
  *  file, and the contents are broadcast to all other tasks. The mpi_comm argument
  *  is a Fortran MPI communicator used to determine which task is the master task.
- * 
+ *
  *  A return code of 0 indicates the file was successfully read and broadcast to
  *  all MPI tasks that belong to the communicator.
  *
@@ -301,7 +301,7 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
  *
  *  Function: attribute_check
  *
- *  Checks that a stream has the required attributes, and that attributes 
+ *  Checks that a stream has the required attributes, and that attributes
  *  are consistent.
  *
  *********************************************************************************/
@@ -550,8 +550,8 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 	struct stacknode tmp_node;
 
 
-	/* 
-	 *  Check that we have balanced angle brackets 
+	/*
+	 *  Check that we have balanced angle brackets
 	 */
 	nleft = 0;
 	nright = 0;
@@ -629,7 +629,7 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 			nleft = (nleft + 1) % 2;
 		}
 
-		/* 
+		/*
 		 *  When we reach the end of a line or the beginning of a new attribute definition,
 		 *     the quotes should be balanced...
 		 */
@@ -650,7 +650,7 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 	}
 
 
-	/* 
+	/*
 	 *  Check that each tag is closed
 	 */
 	i = 0;
@@ -682,7 +682,7 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 					snprintf(msgbuf, MSGSIZE, "line %i, unclosed or badly nested XML tag \"%s\".", node->line, node->name);
 					fmt_err(msgbuf);
 
-					while ((node = pop_tag()) != NULL) 
+					while ((node = pop_tag()) != NULL)
 						free(node);
 					return 1;	
 				}
@@ -708,7 +708,7 @@ int xml_syntax_check(char *xml_buf, size_t bufsize)
 		snprintf(msgbuf, MSGSIZE, "line %i, unclosed or badly nested XML tag \"%s\".", node->line, node->name);
 		fmt_err(msgbuf);
 		
-		while ((node = pop_tag()) != NULL) 
+		while ((node = pop_tag()) != NULL)
 			free(node);
 		return 1;	
 	}
@@ -788,7 +788,7 @@ int build_stream_path(const char *stream, const char *template, int *mpi_comm)
 #endif
 							return retval;
 						}
-					} 
+					}
 				}
 				directory[i] = filename_path[i];
 			}
@@ -1068,7 +1068,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			}
 		}
 
-		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, filename_interval_string, ref_time_local, rec_intv_local, 
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, filename_interval_string, ref_time_local, rec_intv_local,
 					&immutable, &iprec, &iclobber, &err);
 		if (err != 0) {
 			*status = 1;
@@ -1295,7 +1295,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			}
 		}
 
-		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, filename_interval_string, ref_time_local, rec_intv_local, 
+		stream_mgr_create_stream_c(manager, streamID, &itype, filename_template, filename_interval_string, ref_time_local, rec_intv_local,
 						&immutable, &iprec, &iclobber, &err);
 		if (err != 0) {
 			*status = 1;
@@ -1458,23 +1458,23 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 /*********************************************************************************
  *
- *  Function: xml_stream_get_filename
+ *  Function: xml_stream_get_attribute
  *
  *  Parses an XML file and searches for the stream whose name matches the 'streamname'
- *  argument; then, returns the associated filename template for that stream in 
- *  the 'filename' argument.
+ *  argument; then, returns the associated attributes for that stream in
+ *  the 'filename', 'ref_time', and 'filename_interval' arguments.
  *
  *  The fname argument provides the name of the XML file that contains the stream
  *  definitions, and mpi_comm is the Fortran MPI communicator used by MPAS.
  *
  *********************************************************************************/
-void xml_stream_get_filename(char *fname, char *streamname, int *mpi_comm, char *filename, int *status)
+void xml_stream_get_attributes(char *fname, char *streamname, int *mpi_comm, char *filename, char *ref_time, char *filename_interval, int *status)
 {
 	char *xml_buf;
 	size_t bufsize;
 	ezxml_t streams;
 	ezxml_t stream_xml;
-	const char *streamID, *filename_template;
+	const char *streamID, *filename_template, *reference_time, *c_filename_interval;
 	int found;
 
 	*status = 0;
@@ -1508,11 +1508,33 @@ void xml_stream_get_filename(char *fname, char *streamname, int *mpi_comm, char 
 	for (stream_xml = ezxml_child(streams, "immutable_stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
 		streamID = ezxml_attr(stream_xml, "name");
 		filename_template = ezxml_attr(stream_xml, "filename_template");
+		reference_time = ezxml_attr(stream_xml, "reference_time");
+		c_filename_interval = ezxml_attr(stream_xml, "filename_interval");
 
 		if (strcmp(streamID, streamname) == 0) {
 			found = 1;
 			fprintf(stderr, "Found grid stream with template %s\n", filename_template);
 			sprintf(filename, "%s", filename_template);
+			if ( reference_time == NULL ) {
+				sprintf(ref_time, "initial_time");
+			} else {
+				sprintf(ref_time, "%s", reference_time);
+			}
+
+			if ( c_filename_interval == NULL ) {
+				sprintf(filename_interval, "none");
+			} else if ( strstr(c_filename_interval, "interval") ) {
+				sprintf(filename_interval, "%s", c_filename_interval);
+				c_filename_interval = ezxml_attr(stream_xml, filename_interval);
+
+				if ( c_filename_interval == NULL ) {
+					sprintf(filename_interval, "none");
+				} else {
+					sprintf(filename_interval, "%s", c_filename_interval);
+				}
+			} else {
+				sprintf(filename_interval, "%s", c_filename_interval);
+			}
 			break;
 		}
 	}
