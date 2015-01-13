@@ -102,8 +102,8 @@
                    ESMF_KIND_I2 = selected_int_kind(4), &
                    ESMF_KIND_I4 = selected_int_kind(9), &
                    ESMF_KIND_I8 = selected_int_kind(18), &
-                   ESMF_KIND_R4 = selected_real_kind(3,25), &
-                   ESMF_KIND_R8 = selected_real_kind(6,45), &
+                   ESMF_KIND_R4 = selected_real_kind(6),  & ! 4-byte real
+                   ESMF_KIND_R8 = selected_real_kind(12), & ! 8-byte real
                    ESMF_KIND_C8 = selected_real_kind(3,25), &
                    ESMF_KIND_C16 = selected_real_kind(6,45)
 
