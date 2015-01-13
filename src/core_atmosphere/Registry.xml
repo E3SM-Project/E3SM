@@ -707,6 +707,10 @@
                 <var name="meshScalingDel2"           type="real"     dimensions="nEdges"/>
                 <var name="meshScalingDel4"           type="real"     dimensions="nEdges"/>
 
+                <var name="edgesOnVertex_sign"        type="real"     dimensions="vertexDegree nVertices"/>
+                <var name="edgesOnCell_sign"          type="real"     dimensions="maxEdges nCells"/>
+                <var name="kiteForCell"               type="integer"  dimensions="maxEdges nCells"/>
+
                 <!-- coefficients for vertical extrapolation to the surface -->
                 <var name="cf1"                       type="real"     dimensions=""/>
                 <var name="cf2"                       type="real"     dimensions=""/>

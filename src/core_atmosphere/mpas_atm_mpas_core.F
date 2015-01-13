@@ -230,6 +230,8 @@ module mpas_core
    
       logical, pointer :: config_do_restart, config_do_DAcycling
 
+
+      call atm_compute_signs(mesh)
    
       call mpas_pool_get_subpool(block % structs, 'diag', diag)
       call mpas_pool_get_subpool(block % structs, 'state', state)
@@ -674,6 +676,87 @@ module mpas_core
       end if
 
    end subroutine atm_compute_mesh_scaling
+
+
+   subroutine atm_compute_signs(mesh)
+
+      implicit none
+
+      type (mpas_pool_type), intent(inout) :: mesh
+
+      integer :: i, j, iCell, iVtx
+      integer, pointer :: nCells, nVertices, nEdges, vertexDegree
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnVertex, verticesOnEdge, cellsOnEdge, edgesOnCell
+      integer, dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, kiteForCell
+      real (kind=RKIND), dimension(:,:), pointer :: edgesOnVertex_sign, edgesOnCell_sign
+
+
+      call mpas_pool_get_array(mesh, 'edgesOnVertex', edgesOnVertex)
+      call mpas_pool_get_array(mesh, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'verticesOnCell', verticesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnVertex', cellsOnVertex)
+      call mpas_pool_get_array(mesh, 'edgesOnVertex_sign', edgesOnVertex_sign)
+      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
+      call mpas_pool_get_array(mesh, 'kiteForCell', kiteForCell)
+
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'vertexDegree', vertexDegree)
+
+
+      do iVtx=1,nVertices
+         do i=1,vertexDegree
+            if (edgesOnVertex(i,iVtx) <= nEdges) then
+               if (iVtx == verticesOnEdge(2,edgesOnVertex(i,iVtx))) then
+                  edgesOnVertex_sign(i,iVtx) = 1.0
+               else
+                  edgesOnVertex_sign(i,iVtx) = -1.0
+               end if
+            else
+               edgesOnVertex_sign(i,iVtx) = 0.0
+            end if
+         end do
+      end do
+
+      do iCell=1,nCells
+         do i=1,nEdgesOnCell(iCell)
+            if (edgesOnCell(i,iCell) <= nEdges) then
+               if (iCell == cellsOnEdge(1,edgesOnCell(i,iCell))) then
+                  edgesOnCell_sign(i,iCell) = 1.0
+               else
+                  edgesOnCell_sign(i,iCell) = -1.0
+               end if
+            else
+               edgesOnCell_sign(i,iCell) = 0.0
+            end if
+         end do
+      end do
+
+      do iCell=1,nCells
+         do i=1,nEdgesOnCell(iCell)
+            iVtx = verticesOnCell(i,iCell)
+            if (iVtx <= nVertices) then
+               do j=1,vertexDegree
+                  if (iCell == cellsOnVertex(j,iVtx)) then
+                     kiteForCell(i,iCell) = j
+                     exit
+                  end if
+               end do
+               if (j > vertexDegree) then
+                  write(stderrUnit,*) 'Unexpected error while identifying kiteForCell'
+               end if
+            else
+               kiteForCell(i,iCell) = 1
+            end if
+         end do
+      end do
+
+   end subroutine atm_compute_signs
 
 
    subroutine atm_compute_damping_coefs(mesh, configs)

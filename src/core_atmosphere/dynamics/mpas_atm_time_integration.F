@@ -23,6 +23,8 @@ module atm_time_integration
    use mpas_atmphys_utilities
 #endif
 
+   integer :: timerid, secs, n_secs
+
    contains
 
 
@@ -3585,7 +3587,7 @@ module atm_time_integration
 
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i
-      real (kind=RKIND) :: h_vertex, r
+      real (kind=RKIND) :: h_vertex, r, s
 
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
       real (kind=RKIND), dimension(:), pointer :: fVertex, fEdge, dvEdge, dcEdge, areaCell, areaTriangle
@@ -3593,12 +3595,17 @@ module atm_time_integration
                                                     circulation, vorticity, ke, pv_edge, pv_vertex, pv_cell, gradPVn, gradPVt, &
                                                     divergence
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnVertex, verticesOnEdge, edgesOnCell, edgesOnEdge, edgesOnVertex
+      real (kind=RKIND), dimension(:,:), pointer :: edgesOnVertex_sign
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge
 
       logical, parameter :: hollingsworth=.true.
       real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
       real (kind=RKIND) :: ke_fact
       real (kind=RKIND), pointer :: config_apvm_upwinding
+
+   integer :: j
+   real(kind=RKIND), dimension(:,:), pointer :: x
+   integer :: secs, n_secs
 
 
       call mpas_pool_get_config(configs, 'config_apvm_upwinding', config_apvm_upwinding)
@@ -3629,6 +3636,7 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
       call mpas_pool_get_array(mesh, 'edgesOnEdge', edgesOnEdge)
       call mpas_pool_get_array(mesh, 'edgesOnVertex', edgesOnVertex)
+      call mpas_pool_get_array(mesh, 'edgesOnVertex_sign', edgesOnVertex_sign)
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
@@ -3654,10 +3662,34 @@ module atm_time_integration
          end do
       end do
 
+   i = 1920
+   j = 41
+
+   allocate(x(j,i))
+
+timerid = 0
+   call start_timer(timerid)
+!$OMP PARALLEL DO PRIVATE(i,j)
+   do i=1,1920
+   do j=1,41
+      x(j,i) = sqrt(real(i) + real(j))
+   end do
+   end do
+!$OMP END PARALLEL DO
+   call stop_timer(timerid, secs, n_secs)
+
+   write(0,*) sum(x)
+   write(0,'(a,i3,a1,i9.9)') 'test timing', secs, '.', n_secs
+
+   deallocate(x)
+
 
       !
       ! Compute circulation and relative vorticity at each vertex
       !
+      timerid = 0
+      call start_timer(timerid)
+#ifdef UNREPRODUCIBLE
       circulation(:,:) = 0.0
       do iEdge=1,nEdges
          do k=1,nVertLevels
@@ -3665,11 +3697,28 @@ module atm_time_integration
             circulation(k,verticesOnEdge(2,iEdge)) = circulation(k,verticesOnEdge(2,iEdge)) + dcEdge(iEdge) * u(k,iEdge)
          end do
       end do
+#else
+!$OMP PARALLEL DO PRIVATE(iVertex,i,iEdge,s,k)
+      do iVertex=1,nVertices
+         circulation(1:nVertLevels,iVertex) = 0.0
+         do i=1,vertexDegree
+            iEdge = edgesOnVertex(i,iVertex)
+            s = edgesOnVertex_sign(i,iVertex) * dcEdge(iEdge)
+            do k=1,nVertLevels
+               circulation(k,iVertex) = circulation(k,iVertex) + s * u(k,iEdge)
+            end do
+         end do
+      end do
+!$OMP END PARALLEL DO
+#endif
+      call stop_timer(timerid, secs, n_secs)
       do iVertex=1,nVertices
          do k=1,nVertLevels
             vorticity(k,iVertex) = circulation(k,iVertex) / areaTriangle(iVertex)
          end do
       end do
+
+      write(0,'(a,i3,a1,i9.9)') 'circulation timing: ', secs, '.', n_secs
 
 
       !
