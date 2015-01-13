@@ -273,6 +273,7 @@ CONTAINS
 
     tmp = EXP(- ((r*radius)**2 + ((eta-eta_c)/0.1_r8)**2))
     IF (ABS(tmp)<1.0E-8) tmp = 0.0
+    tmp=tmp+1.0D0
     tracer_q1_q2 = tmp
   END FUNCTION tracer_q1_q2
   
@@ -1455,7 +1456,8 @@ if (present(fvm)) then
               lon = fvm(ie)%centersphere(i,j)%lon
               lat = fvm(ie)%centersphere(i,j)%lat
               do k=1,nlev
-                 fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
+!phl                  fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
+                 fvm(ie)%c(i,j,k,idex,:) = 1.0D0!
               enddo
            enddo
         enddo

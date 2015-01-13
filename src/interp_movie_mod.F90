@@ -691,6 +691,11 @@ contains
               allocate(datall(ncnt,1))
               do ie=nets,nete
                  en=st+interpdata(ie)%n_interp-1
+
+                 fvm(ie)%psc = hvcoord%hyai(1)*hvcoord%ps0 !p_top
+                 do k=1,nlev
+                    fvm(ie)%psc = fvm(ie)%psc+fvm(ie)%dp_fvm(:,:,k,n0_fvm)
+                 end do
                  call interpol_phys_latlon(interpdata(ie),fvm(ie)%psc, &
                                     fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,1))
                  st=st+interpdata(ie)%n_interp
