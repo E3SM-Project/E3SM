@@ -2174,11 +2174,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                     vtens(i,j,2,k,ie)=vtens_tmp
                  enddo
               enddo
-              if (0<ntrac) then
-                dpflux(:,:,:,k,ie) = -nu_p*dpflux(:,:,:,k,ie)
+              if (0<ntrac) then 
+                elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - &
+                                              eta_ave_w*nu_p*dpflux(:,:,:,k,ie)/hypervis_subcycle
                 if (nu_top>0 .and. k<=3) then
                   laplace_fluxes=subcell_Laplace_fluxes(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),np,nc)
-                  dpflux(:,:,:,k,ie) = dpflux(:,:,:,k,ie) + nu_scale_top*nu_top*laplace_fluxes
+                  elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
+                                           eta_ave_w*nu_scale_top*nu_top*laplace_fluxes/hypervis_subcycle
                 endif
               endif
            enddo
@@ -2224,8 +2226,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            if (0<ntrac) then
              temp =  dptens(:,:,:,ie)/dt - temp
              do k=1,nlev
-               dpflux(:,:,:,k,ie) = dpflux(:,:,:,k,ie) + &
-                 subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet)
+               elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
+                 eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet)/hypervis_subcycle
              end do
            endif
 
@@ -2255,10 +2257,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  enddo
               enddo
            enddo
-           if (0<ntrac) then
-             elem(ie)%sub_elem_mass_flux = &
-                elem(ie)%sub_elem_mass_flux + eta_ave_w*dpflux(:,:,:,:,ie)
-           endif
         enddo
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
