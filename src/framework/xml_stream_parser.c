@@ -262,7 +262,7 @@ int par_read(char *fname, int *mpi_comm, char **xml_buf, size_t *bufsize)
 
 	if (rank == 0) {
 		iofd = open(fname, O_RDONLY);
-		if (!iofd) {
+		if (iofd <= 0) {
 			fprintf(stderr, "********************************************************************************\n\n");
 			fprintf(stderr, "Error: Could not open run-time I/O config file %s\n\n", fname);
 			fprintf(stderr, "********************************************************************************\n");
