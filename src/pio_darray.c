@@ -323,10 +323,10 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
      void *bufptr=NULL;
      size_t totalsize=0;
 
-     printf("%s %d \n",__FILE__,__LINE__);
+     //     printf("%s %d \n",__FILE__,__LINE__);
 
      for(int nv=0;nv<nvars;nv++){
-       printf("%s %d %d\n",__FILE__,__LINE__,nv);
+       //       printf("%s %d %d\n",__FILE__,__LINE__,nv);
        vdesc = (file->varlist)+vid[nv];
 
 
@@ -375,7 +375,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
      }
 #ifdef _PNETCDF
      // Need to flush the buffer of fill values before the next write
-     printf("%s %d \n",__FILE__,__LINE__);
+     //     printf("%s %d \n",__FILE__,__LINE__);
      if(ios->ioproc && file->iotype == PIO_IOTYPE_PNETCDF){
        flush_output_buffer(file);
      }

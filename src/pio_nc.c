@@ -28,6 +28,8 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -36,6 +38,7 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -69,7 +72,7 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
 
@@ -93,6 +96,8 @@ int PIOc_inq_format (int ncid, int *formatp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -101,6 +106,7 @@ int PIOc_inq_format (int ncid, int *formatp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_FORMAT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -134,7 +140,7 @@ int PIOc_inq_format (int ncid, int *formatp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -157,6 +163,8 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -165,6 +173,7 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARID;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -198,7 +207,7 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -221,6 +230,8 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -229,6 +240,7 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARNATTS;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -262,7 +274,7 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -285,6 +297,8 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -293,6 +307,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_DEF_VAR;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -333,7 +348,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -356,6 +371,8 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -364,6 +381,7 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VAR;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -397,7 +415,7 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
     if(ndimsp != NULL){ mpierr = MPI_Bcast(ndimsp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
       file->varlist[varid].ndims = (*ndimsp);}
@@ -434,6 +452,8 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -442,6 +462,7 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARNAME;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -475,7 +496,7 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(name != NULL){
       int slen;
       if(ios->iomaster)
@@ -504,6 +525,8 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -512,6 +535,7 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_DOUBLE;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -545,7 +569,7 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -567,6 +591,8 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -575,6 +601,7 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_INT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -608,7 +635,7 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -630,6 +657,8 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -638,6 +667,7 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_RENAME_ATT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -671,7 +701,7 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -693,6 +723,8 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -701,6 +733,7 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_UBYTE;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -734,7 +767,7 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -761,6 +794,8 @@ int PIOc_del_att (int ncid, int varid, const char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -769,6 +804,7 @@ int PIOc_del_att (int ncid, int varid, const char *name)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_DEL_ATT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -802,7 +838,7 @@ int PIOc_del_att (int ncid, int varid, const char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -824,6 +860,8 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -832,6 +870,7 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_NATTS;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -865,7 +904,7 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(ngattsp,1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -888,6 +927,8 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -896,6 +937,7 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -929,7 +971,7 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ndimsp != NULL)
         mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
        if(nvarsp != NULL)
@@ -959,6 +1001,8 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -967,6 +1011,7 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_TEXT;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1000,7 +1045,7 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -1027,6 +1072,8 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1035,6 +1082,7 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_SHORT;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1068,7 +1116,7 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -1095,6 +1143,8 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1103,6 +1153,7 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_LONG;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1136,7 +1187,7 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -1158,6 +1209,8 @@ int PIOc_redef (int ncid)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1166,6 +1219,7 @@ int PIOc_redef (int ncid)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_REDEF;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1199,7 +1253,7 @@ int PIOc_redef (int ncid)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -1221,6 +1275,8 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1229,6 +1285,7 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_SET_FILL;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1262,7 +1319,7 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -1284,6 +1341,8 @@ int PIOc_enddef (int ncid)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1292,6 +1351,7 @@ int PIOc_enddef (int ncid)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_ENDDEF;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1325,7 +1385,7 @@ int PIOc_enddef (int ncid)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -1347,6 +1407,8 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1355,6 +1417,7 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_RENAME_VAR;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1388,7 +1451,7 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -1410,6 +1473,8 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1418,6 +1483,7 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_SHORT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1451,7 +1517,7 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -1473,6 +1539,8 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1481,6 +1549,7 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_TEXT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1514,7 +1583,7 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -1536,6 +1605,8 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1544,6 +1615,7 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATTNAME;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1577,7 +1649,7 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(name != NULL){
       int slen;
       if(ios->iomaster)
@@ -1606,6 +1678,8 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1614,6 +1688,7 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_ULONGLONG;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1647,7 +1722,7 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -1674,6 +1749,8 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1682,6 +1759,7 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_USHORT;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1715,7 +1793,7 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -1742,6 +1820,8 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1750,6 +1830,7 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_ULONGLONG;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1783,7 +1864,7 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -1805,6 +1886,8 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1813,6 +1896,7 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_DIMLEN;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1846,7 +1930,7 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -1869,6 +1953,8 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1877,6 +1963,7 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_UINT;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1910,7 +1997,7 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -1937,6 +2024,8 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -1945,6 +2034,7 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_LONGLONG;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -1978,7 +2068,7 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -2005,6 +2095,8 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2013,6 +2105,7 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_SCHAR;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2046,7 +2139,7 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -2068,6 +2161,8 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2076,6 +2171,7 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_FLOAT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2109,7 +2205,7 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -2131,6 +2227,8 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2139,6 +2237,7 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_NVARS;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2172,7 +2271,7 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(nvarsp,1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -2195,6 +2294,8 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2203,6 +2304,7 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_RENAME_DIM;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2236,7 +2338,7 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -2258,6 +2360,8 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2266,6 +2370,7 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARNDIMS;
+  sprintf(errstr,"in file %s",__FILE__);
   if(file->varlist[varid].ndims > 0){
     (*ndimsp) = file->varlist[varid].ndims;
     return PIO_NOERR;
@@ -2303,9 +2408,9 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-  mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);
-  file->varlist[varid].ndims = (*ndimsp);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
+    mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);
+    file->varlist[varid].ndims = (*ndimsp);
 
   return ierr;
 }
@@ -2327,6 +2432,8 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2335,6 +2442,7 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_LONG;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2368,7 +2476,7 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -2395,6 +2503,8 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2403,6 +2513,7 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_DIM;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2436,7 +2547,7 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(name != NULL){ 
       int slen;
       if(ios->iomaster)
@@ -2466,6 +2577,8 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2474,6 +2587,7 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_DIMID;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2507,7 +2621,7 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -2530,6 +2644,8 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2538,6 +2654,7 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_UNLIMDIM;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2571,7 +2688,7 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -2593,6 +2710,8 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2601,6 +2720,7 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARDIMID;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2634,7 +2754,7 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(ierr==PIO_NOERR){
       int ndims;
       PIOc_inq_varndims(file->fh, varid, &ndims);
@@ -2661,6 +2781,8 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2669,6 +2791,7 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATTLEN;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2702,7 +2825,7 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -2725,6 +2848,8 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2733,6 +2858,7 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_DIMNAME;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2766,7 +2892,7 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(name != NULL){
       int slen;
       if(ios->iomaster)
@@ -2795,6 +2921,8 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2803,6 +2931,7 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_USHORT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2836,7 +2965,7 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -2858,6 +2987,8 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2866,6 +2997,7 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_FLOAT;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2899,7 +3031,7 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -2926,6 +3058,8 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2934,6 +3068,7 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_LONGLONG;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -2967,7 +3102,7 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -2989,6 +3124,8 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -2997,6 +3134,7 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_UINT;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3030,7 +3168,7 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -3052,6 +3190,8 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3060,6 +3200,7 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_SCHAR;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3093,7 +3234,7 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -3120,6 +3261,8 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3128,6 +3271,7 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATTID;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3161,7 +3305,7 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -3184,6 +3328,8 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3192,6 +3338,7 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_DEF_DIM;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3225,7 +3372,7 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -3248,6 +3395,8 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3256,6 +3405,7 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_NDIMS;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3289,7 +3439,7 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -3312,6 +3462,8 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3320,6 +3472,7 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARTYPE;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3353,7 +3506,7 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -3376,6 +3529,8 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3384,6 +3539,7 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_INT;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3417,7 +3573,7 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -3444,6 +3600,8 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3452,6 +3610,7 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_DOUBLE;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3485,7 +3644,7 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -3512,6 +3671,8 @@ int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3520,6 +3681,7 @@ int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PI
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_UBYTE;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3553,7 +3715,7 @@ int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -3575,6 +3737,8 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3583,6 +3747,7 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATTTYPE;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3616,7 +3781,7 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
@@ -3639,6 +3804,8 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3647,6 +3814,7 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_UCHAR;
+  sprintf(errstr,"in file %s",__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3680,7 +3848,7 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -3702,6 +3870,8 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -3710,6 +3880,7 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_UCHAR;
+  sprintf(errstr,"name %s in file %s",name,__FILE__);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -3743,7 +3914,7 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);

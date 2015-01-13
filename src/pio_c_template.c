@@ -12,6 +12,8 @@ int PIO_function()
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  char errstr[160];
+
 
   ierr = PIO_NOERR;
 
@@ -53,7 +55,7 @@ int PIO_function()
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }

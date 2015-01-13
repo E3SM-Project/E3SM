@@ -160,10 +160,15 @@ foreach my $func (keys %{$functions}){
 	      printf F "        }\n";  
 	      printf F "      }\n";  
 	      printf F "      break;\n";  
-
-
 	  }
 	  if($line =~ /msg =/){
+	      if($func =~ /get_att/){
+		  print F "  sprintf(errstr,\"name %s in file %s\",name,__FILE__);\n";
+	      }else{
+		  print F "  sprintf(errstr,\"in file %s\",__FILE__);\n";
+	      }	      
+
+
 	      if($func =~ /inq_varndims/){
 		  print F "  if(file->varlist[varid].ndims > 0){\n";
 		  print F "    (*ndimsp) = file->varlist[varid].ndims;\n";
