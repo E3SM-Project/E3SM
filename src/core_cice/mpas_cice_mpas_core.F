@@ -102,10 +102,10 @@ module mpas_core
          call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
          xtime = startTimeStamp
 
-         call mpas_init_block(block, dt)
-
          block => block % next
       end do
+
+      call mpas_init_block(domain, dt)
 
    end subroutine mpas_core_init
 
@@ -191,7 +191,7 @@ module mpas_core
    !
    !-----------------------------------------------------------------------
 
-   subroutine mpas_init_block(block, dt)
+   subroutine mpas_init_block(domain, dt)
    
       use mpas_grid_types
       
@@ -199,16 +199,11 @@ module mpas_core
 
       implicit none
 
-      type (block_type), intent(inout) :: block
+      type (domain_type), intent(inout) :: domain
       real (kind=RKIND), intent(in) :: dt
 
-      type (MPAS_pool_type), pointer :: &
-           mesh
-
-      call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-
       ! initialize general stuff
-      call cice_init(block, clock, dt)
+      call cice_init(domain, clock, dt)
 
    end subroutine mpas_init_block
 

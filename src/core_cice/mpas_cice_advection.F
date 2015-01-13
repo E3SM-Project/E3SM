@@ -103,7 +103,7 @@ contains
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          derivTwo
 
-    type(field3DReal), pointer :: &
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorEdge
 
     real(kind=RKIND), dimension(:,:), pointer :: &
@@ -141,7 +141,7 @@ contains
     call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)
     call MPAS_pool_get_array(mesh, "boundaryCell", boundaryCell)
 
-    call MPAS_pool_get_field(velocity_solver, "normalVectorEdge", normalVectorEdge)
+    call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
 
     err = 0
 
