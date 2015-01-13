@@ -102,8 +102,6 @@ module mpas_core
          call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
          xtime = startTimeStamp
 
-         call mpas_init_block(block, dt)
-
          block => block % next
       end do
 
@@ -332,10 +330,10 @@ module mpas_core
          call MPAS_pool_get_array(diagnostics, "xtime", xtime)
          xtime = timeStamp
 
-         call cice_timestep(block, clock, dt, itimestep)
          block => block % next
-
       end do
+
+      call cice_timestep(domain, clock, dt, itimestep)
 
    end subroutine mpas_timestep
    

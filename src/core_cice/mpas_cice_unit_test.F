@@ -35,7 +35,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_perform_unit_test(&
-       block, &
+       domain, &
        configs)!{{{
 
     use cice_velocity_solver_unit_tests, only: &
@@ -46,11 +46,14 @@ contains
     use cice_therm_zerolayer, only: &
          cice_zero_layer_thermo_semtner_unit_test
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output: 
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          configs !< Input: 
+
+    type(block_type), pointer :: &
+         block
 
     character(len=strKIND), pointer :: &
          config_unit_test_type, &
@@ -61,19 +64,25 @@ contains
 
     write(stderrUnit,*) "Unit test: ", trim(config_unit_test_type), " ", trim(config_unit_test_subtype)
 
-    select case (trim(config_unit_test_type))
-    case ("strain rate operator")
-       call cice_strain_rate_operator_unit_test(block, trim(config_unit_test_subtype))
-    case ("stress divergence operator")
-       call cice_stress_divergence_operator_unit_test(block, trim(config_unit_test_subtype))
-    case ("constitutive relationship")
-       call cice_constitutive_relationship_unit_test(block)
-    case ("semtner 1d thermo test")
-       call cice_zero_layer_thermo_semtner_unit_test()
-    case default
-       write(*,*) "Unit test unknown!"
-       write(*,*) "config_unit_test_type:", trim(config_unit_test_type)
-    end select
+    block => domain % blocklist
+    do while (associated(block))
+
+       select case (trim(config_unit_test_type))
+       case ("strain rate operator")
+          call cice_strain_rate_operator_unit_test(block, trim(config_unit_test_subtype))
+       case ("stress divergence operator")
+          call cice_stress_divergence_operator_unit_test(block, trim(config_unit_test_subtype))
+       case ("constitutive relationship")
+          call cice_constitutive_relationship_unit_test(block)
+       case ("semtner 1d thermo test")
+          call cice_zero_layer_thermo_semtner_unit_test()
+       case default
+          write(*,*) "Unit test unknown!"
+          write(*,*) "config_unit_test_type:", trim(config_unit_test_type)
+       end select
+
+       block => block % next
+    end do
 
   end subroutine cice_perform_unit_test!}}}
 

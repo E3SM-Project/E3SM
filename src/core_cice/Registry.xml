@@ -236,6 +236,7 @@ c		/>
 		  filename_template="output.nc"
 		  filename_interval="none"
 		  output_interval="6:00:00"
+		  clobber_mode="replace_files"
 		  runtime_format="single_file">
 	    <var name="latCell"/>
 	    <var name="lonCell"/>
