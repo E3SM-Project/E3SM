@@ -60,7 +60,7 @@ contains
   !
   !**************************************************************************************
   !  
-  subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
+  subroutine cslam_runflux(elem,fvm,hybrid,deriv,dt_fvm,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
     use fvm_line_integrals_flux_mod, only: compute_weights_fluxform
     use fvm_control_volume_mod     , only: n0_fvm, np1_fvm
@@ -75,8 +75,6 @@ contains
     ! -----------------------------------------------
     use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,&
          initghostbufferTR,freeghostbuffertr
-    use control_mod, only : qsplit
-    use time_mod   , only : TimeLevel_Qdp
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)
@@ -84,7 +82,7 @@ contains
     type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
     integer, intent(in)                         :: nets  ! starting thread element number (private)
     integer, intent(in)                         :: nete  ! ending thread element number   (private)
-    real (kind=real_kind)                       :: tstep
+    real (kind=real_kind), intent(in)           :: dt_fvm
     real (kind=real_kind), intent(in)           :: p_top
     
     integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h, ntmp
@@ -114,12 +112,10 @@ contains
 !xx    call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
     
     call t_startf('ff-cslam scheme') 
-    
-!    call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
 
     do ie=nets, nete
        do k=1,nlev
-          call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
+          call fvm_mesh_dep(elem(ie),deriv,fvm(ie),dt_fvm,tl,k)
        end do
        !       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!       
     end do
@@ -174,7 +170,7 @@ contains
           endif
           
           tracer_air0=fvm(ie)%dp_fvm(:,:,k,n0_fvm)       
-          call reconstruction(tracer_air0, fvm(ie),recons)
+!          call reconstruction(tracer_air0, fvm(ie),recons)
           !
           ! limiter is usually not needed for air mass
           !
@@ -182,20 +178,36 @@ contains
           !
           ! do remapping for x (j=1) and y (j=2) fluxes
           !
-          call ff_cslam_remap(tracer_air0,flux_air,weights_all_flux,recons, &
-               fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
-               weights_lgr_index_all_flux, jall)  
+!          call ff_cslam_remap(tracer_air0,flux_air,weights_all_flux,recons, &
+!               fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
+!               weights_lgr_index_all_flux, jall)  
           !
           ! compute flux-areas (to be used for tracer advection)
           !
           call ff_cslam_flux_area(flux_area,weights_all_flux, &
                weights_eul_index_all_flux, weights_lgr_index_all_flux, jall)
+
           !
-          ! forecast equation for air density
+          ! Interface with J.Overfelt SE fluxes
           !
+          flux_air = 0.0D0
           do j=1,nc
              do i=1,nc
-!                fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air0(i,j)-(&  
+                flux_air(i,j,1) = dt_fvm*elem(ie)%sub_elem_mass_flux(i,j,4,k)
+                flux_air(i,j,2) = dt_fvm*elem(ie)%sub_elem_mass_flux(i,j,1,k)
+             enddo
+          enddo
+          do j=1,nc
+             flux_air(nc+1,j,1) = -dt_fvm*elem(ie)%sub_elem_mass_flux(nc,j,2,k)
+          end do
+          do i=1,nc
+             flux_air(i,nc+1,2) = -dt_fvm*elem(ie)%sub_elem_mass_flux(i,nc,3,k)
+          end do
+
+          do j=1,nc
+             do i=1,nc
+!                fvm(ie)%dp_fvm(i,j,k,np1_fvm)=tracer_air0(i,j)+dt_fvm*SUM(elem(ie)%sub_elem_mass_flux(i,j,:,k))/fvm(ie)%area_sphere(i,j)
+
                 fvm(ie)%dp_fvm(i,j,k,np1_fvm)=tracer_air0(i,j)-(&  
                      flux_air(i+1,j,1)-flux_air(i,j,1)+flux_air(i,j+1,2)-flux_air(i,j,2)&
                      )/fvm(ie)%area_sphere(i,j)
@@ -210,20 +222,31 @@ contains
                 !
                 ! note: div_fvm is mostly for debugging - uncomment this for production runs
                 !
-                fvm(ie)%div_fvm(i,j,k) = (1.0D0/(fvm(ie)%area_sphere(i,j)*tstep))*&
+                fvm(ie)%div_fvm(i,j,k) = (1.0D0/(fvm(ie)%area_sphere(i,j)*dt_fvm))*&
                      (flux_area(i+1,j  ,1)-flux_area(i,j,1)+&
                       flux_area(i  ,j+1,2)-flux_area(i,j,2))
              end do
           end do
+
+
+          !
+          ! to get shape-preservation and free-strem preservation (=preserve constant mixing ratio) we do the following
+          !
+!          do itr=1,2
+!             do j=1,nc+1
+!                do i=1,nc+1
+!                   if (flux_air(i,j,itr)*flux_area(i,j,itr)<0.0D0) flux_air(i,j,itr) = -flux_air(i,j,itr)
+!                end do
+!             end do
+!          end do
+
           !
           !loop through all tracers
           !
           do itr=1,ntrac
-!             tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
              tracer0=fvm(ie)%c(:,:,k,itr,n0_fvm)
              call reconstruction(tracer0, fvm(ie),recons)
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
-!             recons=0.0
              !
              ! do remapping for x-y fluxes
              !
@@ -241,6 +264,7 @@ contains
                    rho1 = fvm(ie)%dp_fvm(i,j,k,np1_fvm)
                    area = fvm(ie)%area_sphere(i,j)
                    !
+
                    q1=q0*rho0-(&  
                         !
                         flux_air(i+1,j  ,1)*flux_tracer(i+1,j  ,1)-&
@@ -248,7 +272,6 @@ contains
                         flux_air(i  ,j+1,2)*flux_tracer(i  ,j+1,2)-&
                         flux_air(i  ,j  ,2)*flux_tracer(i  ,j  ,2)&
                         )/area
-!                   fvm(ie)%c(i,j,k,itr,tl%np1)=q1/rho1
                    fvm(ie)%c(i,j,k,itr,np1_fvm)=q1/rho1
                 end do
              end do
@@ -259,13 +282,14 @@ contains
        !
        do j=1,nc
           do i=1,nc
+!phl not needed here - done in interp_..... xxx
              fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,np1_fvm)) +  p_top
           end do
        end do
        !fvm(ie)%c(1:nc,1:nc,:,1,tl%np1)=fvm(ie)%div_fvm !dbg
        !note write tl%np1 in buffer
-!phl       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-!phl       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+!       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+!       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
        !
        ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
        ! the reconstruction and following evaluation of reconstruction function on lat-lon points
@@ -413,7 +437,8 @@ contains
        do jy=1,nc+1
           do jx=1,nc+1
              if (abs(flux_area(jx,jy,k))<1.0E-12) then
-                flux(jx,jy,k) = 0.0D0
+!                flux(jx,jy,k) = 0.0D0
+                flux(jx,jy,k) = tracer0(jx,jy)
              else
                 flux(jx,jy,k) = flux(jx,jy,k)/flux_area(jx,jy,k)
              end if
@@ -434,7 +459,7 @@ contains
 
 
   ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
-  subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
+  subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,dt_fvm,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
     use fvm_line_integrals_mod, only: compute_weights
     use fvm_control_volume_mod, only: n0_fvm, np1_fvm
@@ -448,9 +473,6 @@ contains
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! -----------------------------------------------
     use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
-    use control_mod, only : qsplit
-    use time_mod   , only : TimeLevel_Qdp    
-
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)
@@ -458,7 +480,7 @@ contains
     type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
     integer, intent(in)                         :: nets  ! starting thread element number (private)
     integer, intent(in)                         :: nete  ! ending thread element number   (private)
-    real (kind=real_kind)                       :: tstep
+    real (kind=real_kind), intent(in)           :: dt_fvm
     real (kind=real_kind), intent(in)           :: p_top
     
     integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h, ntmp
@@ -485,7 +507,7 @@ contains
 
     do ie=nets, nete
        do k=1,nlev
-          call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
+          call fvm_mesh_dep(elem(ie),deriv,fvm(ie),dt_fvm,tl,k)
        end do
     end do
 
@@ -1425,14 +1447,14 @@ contains
   !        
   ! OUTPUT: 
   !-----------------------------------------------------------------------------------!
-  subroutine fvm_mcgregor(elem, deriv, tstep, vhat, vstar,order)
+  subroutine fvm_mcgregor(elem, deriv, dt_fvm, vhat, vstar,order)
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t, gradient_sphere, ugradv_sphere, vorticity_sphere
     implicit none
     
     type (element_t), intent(in)                                :: elem
     type (derivative_t), intent(in)                             :: deriv      ! derivative struct
-    real (kind=real_kind), intent(in)                           :: tstep
+    real (kind=real_kind), intent(in)                           :: dt_fvm
     real (kind=real_kind), dimension(np,np,2), intent(inout)    :: vstar
     real (kind=real_kind), dimension(np,np,2), intent(in)       :: vhat
     
@@ -1455,11 +1477,11 @@ contains
        !     vgradv(:,:,1)= gradvstar(:,:,1) - vstarold(:,:,2)*tmp(:,:)
        !     vgradv(:,:,2)= gradvstar(:,:,2) + vstarold(:,:,1)*tmp(:,:)
        !     
-       !     timetaylor=-timetaylor*tstep/(i+1)
+       !     timetaylor=-timetaylor*dt_fvm/(i+1)
        !     vstar=vstar + timetaylor*vgradv
        
        ugradv=ugradv_sphere(vhat,ugradv,deriv,elem)
-       timetaylor=-timetaylor*tstep/(i+1)
+       timetaylor=-timetaylor*dt_fvm/(i+1)
        
        vstar=vstar + timetaylor*ugradv  
     end do
@@ -1478,7 +1500,7 @@ contains
   !        
   ! OUTPUT: 
   !-----------------------------------------------------------------------------------!
-  subroutine fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, ordertaylor)
+  subroutine fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt_fvm, ordertaylor)
     use derivative_mod, only : derivative_t, ugradv_sphere
     use edge_mod, only : edgevpack, edgevunpack
     use bndry_mod, only : bndry_exchangev
@@ -1493,7 +1515,7 @@ contains
     type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
     
     type (derivative_t), intent(in)                             :: deriv      ! derivative struct
-    real (kind=real_kind), intent(in)                           :: tstep
+    real (kind=real_kind), intent(in)                           :: dt_fvm
     integer, intent(in)                                         :: ordertaylor
     
     real (kind=real_kind), dimension(nets:nete,np,np,2,nlev)    :: ugradv
@@ -1505,7 +1527,7 @@ contains
     !------------------------------------------------------------------------------------
     timetaylor=1  
     do  order=1,ordertaylor
-       timetaylor=-timetaylor*tstep/(order+1)  
+       timetaylor=-timetaylor*dt_fvm/(order+1)  
        do ie=nets,nete
           if (order==1)then
              ugradv(ie,:,:,:,:)=elem(ie)%derived%vstar(:,:,:,:) 
@@ -1543,7 +1565,7 @@ contains
   !        
   ! OUTPUT: 
   !-----------------------------------------------------------------------------------!
-  subroutine fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, tstep, ordertaylor)
+  subroutine fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, dt_fvm, ordertaylor)
     use derivative_mod, only : derivative_t, ugradv_sphere
     use edge_mod, only : edgevpack, edgevunpack
     use bndry_mod, only : bndry_exchangev
@@ -1558,7 +1580,7 @@ contains
     type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
     
     type (derivative_t), intent(in)                             :: deriv      ! derivative struct
-    real (kind=real_kind), intent(in)                           :: tstep
+    real (kind=real_kind), intent(in)                           :: dt_fvm
     integer, intent(in)                                         :: ordertaylor
     
     integer                                                     :: ie, k, order
@@ -1573,10 +1595,10 @@ contains
     !
     !  (x(t+1)-x(t))/dt =  1/2( U(x(t),t+1)+U(x(t),t)) + dt 1/2 U(x(t),t) gradU(x(t),t+1)  
     !
-    ! suppose dt = -tstep (we go backward)
-    !  (x(t-tstep)-x(t))/-tstep =  1/2( U(x(t),t-tstep)+U(x(t),t)) - tstep 1/2 U(x(t),t) gradU(x(t),t-tstep)  
+    ! suppose dt = -dt_fvm (we go backward)
+    !  (x(t-dt_fvm)-x(t))/-dt_fvm =  1/2( U(x(t),t-dt_fvm)+U(x(t),t)) - dt_fvm 1/2 U(x(t),t) gradU(x(t),t-dt_fvm)  
     !
-    !  x(t-tstep) = x(t)) -tstep * [ 1/2( U(x(t),t-tstep)+U(x(t),t)) - tstep 1/2 U(x(t),t) gradU(x(t),t-tstep) ]  
+    !  x(t-dt_fvm) = x(t)) -dt_fvm * [ 1/2( U(x(t),t-dt_fvm)+U(x(t),t)) - dt_fvm 1/2 U(x(t),t) gradU(x(t),t-dt_fvm) ]  
     !
     !    !------------------------------------------------------------------------------------
     do ie=nets,nete
@@ -1587,7 +1609,7 @@ contains
           ugradvtmp(:,:,:)=ugradv_sphere(elem(ie)%derived%vstar(:,:,:,k),fvm(ie)%vn0(:,:,:,k),deriv,elem(ie))
           
           elem(ie)%derived%vstar(:,:,:,k) = &
-               (elem(ie)%derived%vstar(:,:,:,k) + fvm(ie)%vn0(:,:,:,k))/2   - tstep*ugradvtmp(:,:,:)/2
+               (elem(ie)%derived%vstar(:,:,:,k) + fvm(ie)%vn0(:,:,:,k))/2   - dt_fvm*ugradvtmp(:,:,:)/2
           
           
           

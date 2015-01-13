@@ -1470,7 +1470,7 @@ contains
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     ! note: time level update for fvm tracers takes place in fvm_mod
-    call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,n0_fvm,nets,nete)
+    call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
 
 #if USE_CUDA_FORTRAN
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1582,7 +1582,7 @@ contains
     use reduction_mod, only : parallelmax
     use derivative_mod, only : interpolate_gll2spelt_points
     use time_mod,    only : time_at
-    use fvm_control_volume_mod, only : fvm_supercycling
+    use fvm_control_volume_mod, only : fvm_supercycling,n0_fvm
 
     type (element_t) , intent(inout)        :: elem(:)
 
@@ -1749,14 +1749,18 @@ contains
        !
        ! FVM transport
        !
-
-      if ( n_Q /= tl%n0 ) then
-        ! make sure tl%n0 contains tracers at start of timestep
-        do ie=nets,nete
-          fvm(ie)%c     (:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c     (:,:,:,1:ntrac,n_Q)
-          fvm(ie)%dp_fvm(:,:,:,        tl%n0)  = fvm(ie)%dp_fvm(:,:,:,        n_Q)
-        end do
-      end if
+       
+       if ( n_Q /= tl%n0 ) then
+          ! make sure tl%n0 contains tracers at start of timestep
+          !
+          ! phl Is this still necessary
+          !
+          do ie=nets,nete
+             fvm(ie)%c     (:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c     (:,:,:,1:ntrac,n_Q)
+             
+             fvm(ie)%dp_fvm(:,:,:,        tl%n0)  = fvm(ie)%dp_fvm(:,:,:,        n_Q)
+          end do
+       end if
 #if defined(_SPELT)
        !
        call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
@@ -1786,8 +1790,12 @@ contains
           endif
        endif
 #else
-      call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
-           dt_q,tl,nets,nete)
+       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
+            dt_q,tl,nets,nete)
+!            dt_q*fvm_supercycling,tl,nets,nete)
+       !
+       ! phl: is this call necessary? there is already a rstep==1 call in the beginning of this subroutine
+       !
        if (rstep.ne.rsplit) then
           !
           ! save velocity for fvm trajecotry algorithm for next fvm time-level update
@@ -1797,31 +1805,27 @@ contains
           end do
        end if
 
-
-
-
-
        if(test_cfldep) then
-         maxcflx=0.0D0
-         maxcfly=0.0D0
-         do k=1, nlev
-
-!            maxcflx = parallelmax(fvm(:)%maxcfl(1,k),hybrid)
-!            maxcfly = parallelmax(fvm(:)%maxcfl(2,k),hybrid)
-           maxcflx = max(maxcflx,parallelmax(fvm(:)%maxcfl(1,k),hybrid))
-           maxcfly = max(maxcfly,parallelmax(fvm(:)%maxcfl(2,k),hybrid))
+          maxcflx=0.0D0
+          maxcfly=0.0D0
+          do k=1, nlev
+             
+             !            maxcflx = parallelmax(fvm(:)%maxcfl(1,k),hybrid)
+             !            maxcfly = parallelmax(fvm(:)%maxcfl(2,k),hybrid)
+             maxcflx = max(maxcflx,parallelmax(fvm(:)%maxcfl(1,k),hybrid))
+             maxcfly = max(maxcfly,parallelmax(fvm(:)%maxcfl(2,k),hybrid))
           end do
-
-           if(hybrid%masterthread) then
+          
+          if(hybrid%masterthread) then
              write(*,*) "nstep",tl%nstep,"dt_fvm=", dt_q*fvm_supercycling, "maximum over all Level"
              write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly
              print *
-           endif
+          endif
        endif
        !overwrite SE density by fvm(ie)%psc
-!        call overwrite_SEdensity(elem,fvm,dt_q,hybrid,nets,nete,tl%np1)
+       !        call overwrite_SEdensity(elem,fvm,dt_q,hybrid,nets,nete,tl%np1)
 #endif
-    endif
+    endif !end fvm tracer transport
 
   end subroutine prim_step
 
