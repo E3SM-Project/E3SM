@@ -36,7 +36,7 @@ class nightlyBuilder(object):
       self.dirName=datetime.datetime.now().strftime("%a%b%d_%H%M%S")
       self.repoName='pio2_0'
 
-      self.url='http://parallelio.googlecode.com/svn/branches/pio2_0'
+      self.url='https://parallelio.googlecode.com/svn/branches/pio2_0'
       self.machurl = 'https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/'
 
       if self.platform == "goldbach":

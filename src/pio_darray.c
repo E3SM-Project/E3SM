@@ -347,29 +347,22 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	 start[0]=vdesc->record;
 	 count[0]=1;
        }
-       switch(iodesc->basetype){
-       case MPI_DOUBLE:
-       case MPI_REAL8:
+       if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 	 for(i=0;i<totalsize;i++){
 	   ((double *)bufptr)[i]  = ((double *) fillvalue)[nv];
 	 }
 	 PIOc_put_vara_double(ncid, vid[nv], start, count, (const double *) bufptr);
-	 break;
-       case MPI_INTEGER:
-         printf("%s %d %d %d %d\n",__FILE__,__LINE__,vid[nv],((int *) fillvalue)[nv],totalsize);
+       }else if(iodesc->basetype == MPI_INTEGER){
 	 for(i=0;i<totalsize;i++){
 	   ((int *)bufptr)[i]  = ((int *) fillvalue)[nv];
 	 }
 	 PIOc_put_vara_int(ncid, vid[nv], start, count, (const int *) bufptr);
-	 break;
-       case MPI_FLOAT:
-       case MPI_REAL4:
+       }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
 	 for(i=0;i<totalsize;i++){
 	   ((float *)bufptr)[i]  = ((float *) fillvalue)[nv];
 	 }
 	 PIOc_put_vara_float(ncid, vid[nv], start, count, (const float *) bufptr);
-	 break;
-       default:
+       }else{
 	 fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
        }	 
      }
