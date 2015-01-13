@@ -822,7 +822,7 @@ module mpas_timekeeping
                      end if
 
                      nowInterval = alarmNow - alarmPtr % prevRingTime
-                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
                      alarmPtr % prevRingTime = alarmNow - nowRemainder
                   else
                      if (present(interval)) then
@@ -830,7 +830,7 @@ module mpas_timekeeping
                      end if
 
                      nowInterval = alarmPtr % prevRingTime - alarmNow
-                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
                      alarmPtr % prevRingTime = alarmNow + nowRemainder
                   end if
                end if
