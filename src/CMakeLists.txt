@@ -25,14 +25,14 @@ ADD_CUSTOM_COMMAND(
 )
 ENDFOREACH()
 if("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
-   LIST(APPEND CMAKE_Fortran_FLAGS	" -ffree-line-length-none")
+   SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
 endif()
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
-  LIST(APPEND CMAKE_C_FLAGS	-c99)
+  SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -c99")
 else()
   if("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
-    LIST(APPEND CMAKE_C_FLAGS   -std=c99)
+    SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
   endif()
 endif()
 
