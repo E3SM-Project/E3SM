@@ -146,11 +146,11 @@ contains
     call mpas_timer_start("advection")
     if (config_use_advection) then
 
-       block => domain % blocklist
-       do while (associated(block))
-          call cice_run_advection(block, clock, dt)
-          block => block % next
-       end do
+       !block => domain % blocklist
+       !do while (associated(block))
+          call cice_run_advection(domain, clock, dt)
+       !   block => block % next
+       !end do
 
     endif
     call mpas_timer_stop("advection")
