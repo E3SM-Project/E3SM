@@ -1332,14 +1332,15 @@ end subroutine box_rearrange_io2comp_{TYPE}
        !  recv_counts(num_tasks) is 0 for non-'rfrom', is rcount for 'rfrom'
        !  recv_displs(num_tasks) is 0 for non-'rfrom', is sum_i recv_counts for 'rfrom'
 
-       rbuf_size = niodof
-       call alloc_check(rindex, niodof, 'rindex buffer')
-       rindex = 0
-
        recv_counts = 0
        do i=1,nrecvs
           recv_counts(rfrom(i)+1) = rcount(i)
        enddo
+       
+       rbuf_size = niodof
+       call alloc_check(rindex, sum(recv_counts), 'rindex buffer')
+       rindex = 0
+
 
        recv_displs = 0
        do i=2,nrecvs
