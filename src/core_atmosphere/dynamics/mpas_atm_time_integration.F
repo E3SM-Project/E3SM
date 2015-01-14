@@ -3586,7 +3586,7 @@ module atm_time_integration
       type (mpas_pool_type), intent(in) :: configs
 
 
-      integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i
+      integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i, j
       real (kind=RKIND) :: h_vertex, r, s
 
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
@@ -3594,18 +3594,15 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, &
                                                     circulation, vorticity, ke, pv_edge, pv_vertex, pv_cell, gradPVn, gradPVt, &
                                                     divergence
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnVertex, verticesOnEdge, edgesOnCell, edgesOnEdge, edgesOnVertex
-      real (kind=RKIND), dimension(:,:), pointer :: edgesOnVertex_sign
+      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnVertex, verticesOnEdge, edgesOnCell, edgesOnEdge, edgesOnVertex, &
+                                          kiteForCell, verticesOnCell
+      real (kind=RKIND), dimension(:,:), pointer :: edgesOnVertex_sign, edgesOnCell_sign
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge
 
       logical, parameter :: hollingsworth=.true.
       real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
       real (kind=RKIND) :: ke_fact
       real (kind=RKIND), pointer :: config_apvm_upwinding
-
-   integer :: j
-   real(kind=RKIND), dimension(:,:), pointer :: x
-   integer :: secs, n_secs
 
 
       call mpas_pool_get_config(configs, 'config_apvm_upwinding', config_apvm_upwinding)
@@ -3631,12 +3628,15 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'cellsOnVertex', cellsOnVertex)
       call mpas_pool_get_array(mesh, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(mesh, 'verticesOnCell', verticesOnCell)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
       call mpas_pool_get_array(mesh, 'edgesOnEdge', edgesOnEdge)
       call mpas_pool_get_array(mesh, 'edgesOnVertex', edgesOnVertex)
       call mpas_pool_get_array(mesh, 'edgesOnVertex_sign', edgesOnVertex_sign)
+      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
+      call mpas_pool_get_array(mesh, 'kiteForCell', kiteForCell)
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
@@ -3654,6 +3654,10 @@ module atm_time_integration
       !
       ! Compute height on cell edges at velocity locations
       !
+      timerid = 0
+      call start_timer(timerid)
+!$OMP PARALLEL 
+!$OMP DO PRIVATE(cell1,cell2,k)
       do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -3661,35 +3665,13 @@ module atm_time_integration
             h_edge(k,iEdge) = 0.5 * (h(k,cell1) + h(k,cell2))
          end do
       end do
-
-   i = 1920
-   j = 41
-
-   allocate(x(j,i))
-
-timerid = 0
-   call start_timer(timerid)
-!$OMP PARALLEL DO PRIVATE(i,j)
-   do i=1,1920
-   do j=1,41
-      x(j,i) = sqrt(real(i) + real(j))
-   end do
-   end do
-!$OMP END PARALLEL DO
-   call stop_timer(timerid, secs, n_secs)
-
-   write(0,*) sum(x)
-   write(0,'(a,i3,a1,i9.9)') 'test timing', secs, '.', n_secs
-
-   deallocate(x)
+!$OMP END DO
 
 
       !
       ! Compute circulation and relative vorticity at each vertex
       !
-      timerid = 0
-      call start_timer(timerid)
-#ifdef UNREPRODUCIBLE
+#ifdef MPI_ONLY
       circulation(:,:) = 0.0
       do iEdge=1,nEdges
          do k=1,nVertLevels
@@ -3697,8 +3679,13 @@ timerid = 0
             circulation(k,verticesOnEdge(2,iEdge)) = circulation(k,verticesOnEdge(2,iEdge)) + dcEdge(iEdge) * u(k,iEdge)
          end do
       end do
+      do iVertex=1,nVertices
+         do k=1,nVertLevels
+            vorticity(k,iVertex) = circulation(k,iVertex) / areaTriangle(iVertex)
+         end do
+      end do
 #else
-!$OMP PARALLEL DO PRIVATE(iVertex,i,iEdge,s,k)
+!$OMP DO PRIVATE(i,iEdge,s,r,k)
       do iVertex=1,nVertices
          circulation(1:nVertLevels,iVertex) = 0.0
          do i=1,vertexDegree
@@ -3708,22 +3695,19 @@ timerid = 0
                circulation(k,iVertex) = circulation(k,iVertex) + s * u(k,iEdge)
             end do
          end do
-      end do
-!$OMP END PARALLEL DO
-#endif
-      call stop_timer(timerid, secs, n_secs)
-      do iVertex=1,nVertices
+         r = 1.0 / areaTriangle(iVertex)
          do k=1,nVertLevels
-            vorticity(k,iVertex) = circulation(k,iVertex) / areaTriangle(iVertex)
+            vorticity(k,iVertex) = circulation(k,iVertex) * r
          end do
       end do
-
-      write(0,'(a,i3,a1,i9.9)') 'circulation timing: ', secs, '.', n_secs
+!$OMP END DO
+#endif
 
 
       !
       ! Compute the divergence at each cell center
       !
+#ifdef MPI_ONLY
       divergence(:,:) = 0.0
       do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
@@ -3739,23 +3723,44 @@ timerid = 0
             divergence(k,iCell) = divergence(k,iCell) * r
          end do
       end do
+#else
+!$OMP DO PRIVATE(i,iEdge,s,r,k)
+      do iCell=1,nCells
+         divergence(1:nVertLevels,iCell) = 0.0
+         do i=1,nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i,iCell)
+            s = edgesOnCell_sign(i,iCell) * dvEdge(iEdge)
+            do k=1,nVertLevels
+              divergence(k,iCell) = divergence(k,iCell) + s * u(k,iEdge)
+            end do
+         end do
+         r = 1.0 / areaCell(iCell)
+         do k = 1,nVertLevels
+            divergence(k,iCell) = divergence(k,iCell) * r
+         end do
+      end do
+!$OMP END DO
+#endif
 
 
       !
       ! Compute kinetic energy in each cell (Ringler et al JCP 2009)
       !
-      ke(:,:) = 0.0
+!$OMP DO PRIVATE(i,iEdge,r,k)
       do iCell=1,nCells
+         ke(1:nVertLevels,iCell) = 0.0
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
             do k=1,nVertLevels
                ke(k,iCell) = ke(k,iCell) + 0.25 * dcEdge(iEdge) * dvEdge(iEdge) * u(k,iEdge)**2.0
             end do
          end do
+         r = 1.0 / areaCell(iCell)
          do k=1,nVertLevels
-            ke(k,iCell) = ke(k,iCell) / areaCell(iCell)
+            ke(k,iCell) = ke(k,iCell) * r
          end do
       end do
+!$OMP END DO
 
       if (hollingsworth) then
 
@@ -3763,50 +3768,70 @@ timerid = 0
          ! *** approximation here because we don't have inner triangle areas
          !
 
-         allocate (ke_vertex(nVertLevels,nVertices))
+!MGD use pv_vertex as scratch space for ke_vertex
+!$OMP DO PRIVATE(k,r)
          do iVertex=1,nVertices
+            r = 0.25 / areaTriangle(iVertex) 
             do k=1,nVertLevels
 
-               ke_vertex(k,iVertex) = (  dcEdge(EdgesOnVertex(1,iVertex))*dvEdge(EdgesOnVertex(1,iVertex))*u(k,EdgesOnVertex(1,iVertex))**2.0  &
+               pv_vertex(k,iVertex) = (  dcEdge(EdgesOnVertex(1,iVertex))*dvEdge(EdgesOnVertex(1,iVertex))*u(k,EdgesOnVertex(1,iVertex))**2.0  &
                                         +dcEdge(EdgesOnVertex(2,iVertex))*dvEdge(EdgesOnVertex(2,iVertex))*u(k,EdgesOnVertex(2,iVertex))**2.0  &
                                         +dcEdge(EdgesOnVertex(3,iVertex))*dvEdge(EdgesOnVertex(3,iVertex))*u(k,EdgesOnVertex(3,iVertex))**2.0  &
-                                                    ) * 0.25 / AreaTriangle(iVertex)
+                                      ) * r
 
             end do
          end do
+!$OMP END DO
 
          ! adjust ke at cell vertices - AG's new KE construction, part 2
          !
 
          ke_fact = 1.0 - .375
 
+!$OMP DO PRIVATE(k)
          do iCell=1,nCells
             do k=1,nVertLevels
-               ke(k,iCell) = ke_fact*ke(k,iCell)
+               ke(k,iCell) = ke_fact * ke(k,iCell)
             end do
          end do
+!$OMP END DO
 
          ! Avoid FP errors caused by a potential division by zero below by 
          ! initializing the "garbage cell" of areaCell to a non-zero value
          areaCell(nCells+1) = 1.0
 
+#ifdef MPI_ONLY
          do iVertex = 1, nVertices
             do i=1,vertexDegree
                iCell = cellsOnVertex(i,iVertex)
                do k = 1,nVertLevels
-                  ke(k,iCell) = ke(k,iCell) + (1.-ke_fact)*kiteAreasOnVertex(i, iVertex) * ke_vertex(k, iVertex) / areaCell(iCell)
+                  ke(k,iCell) = ke(k,iCell) + (1.-ke_fact)*kiteAreasOnVertex(i, iVertex) * pv_vertex(k, iVertex) / areaCell(iCell)
                end do
             end do
          end do
-         deallocate (ke_vertex)
+#else
+!$OMP DO PRIVATE(r,i,j,iVertex,k)
+         do iCell=1,nCells
+            r = 1.0 / areaCell(iCell)
+            do i=1,nEdgesOnCell(iCell)
+               iVertex = verticesOnCell(i,iCell)
+               j = kiteForCell(i,iCell)
+               do k = 1,nVertLevels
+                  ke(k,iCell) = ke(k,iCell) + (1.-ke_fact)*kiteAreasOnVertex(j,iVertex) * pv_vertex(k,iVertex) * r
+               end do
+            end do
+         end do
+!$OMP END DO
+#endif
 
       end if
 
       !
       ! Compute v (tangential) velocities following Thuburn et al JCP 2009
       !
-      v(:,:) = 0.0
+!$OMP DO PRIVATE(i,eoe,k)
       do iEdge = 1,nEdges
+         v(1:nVertLevels,iEdge) = 0.0
          do i=1,nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
             do k = 1,nVertLevels
@@ -3814,29 +3839,34 @@ timerid = 0
             end do
          end do
       end do
+!$OMP END DO
 
 
       !
       ! Compute height at vertices, pv at vertices, and average pv to edge locations
       !  ( this computes pv_vertex at all vertices bounding real cells )
       !
+!$OMP DO PRIVATE(k,h_vertex,i,r)
       do iVertex = 1,nVertices
+         r = 1.0 / areaTriangle(iVertex)
          do k=1,nVertLevels
             h_vertex = 0.0
             do i=1,vertexDegree
                h_vertex = h_vertex + h(k,cellsOnVertex(i,iVertex)) * kiteAreasOnVertex(i,iVertex)
             end do
-            h_vertex = h_vertex / areaTriangle(iVertex)
+            h_vertex = h_vertex * r
 
             pv_vertex(k,iVertex) = (fVertex(iVertex) + vorticity(k,iVertex)) / h_vertex
          end do
       end do
+!$OMP END DO
 
 
       !
       ! Compute pv at the edges
       !   ( this computes pv_edge at all edges bounding real cells )
       !
+#ifdef MPI_ONLY
       pv_edge(:,:) = 0.0
       do iVertex = 1,nVertices
          do i=1,vertexDegree
@@ -3846,11 +3876,21 @@ timerid = 0
             end do
          end do
       end do
+#else
+!$OMP DO PRIVATE(k)
+      do iEdge = 1,nEdges
+         do k=1,nVertLevels
+            pv_edge(k,iEdge) =  0.5 * (pv_vertex(k,verticesOnEdge(1,iEdge)) + pv_vertex(k,verticesOnEdge(2,iEdge)))
+         end do
+      end do
+!$OMP END DO
+#endif
 
       !
       ! Compute pv at cell centers
       !    ( this computes pv_cell for all real cells )
       !
+#ifdef MPI_ONLY
       pv_cell(:,:) = 0.0
       do iVertex = 1, nVertices
          do i=1,vertexDegree
@@ -3860,6 +3900,20 @@ timerid = 0
             end do
          end do
       end do
+#else
+!$OMP DO PRIVATE(r,i,j,iVertex,k)
+      do iCell=1,nCells
+         r = 1.0 / areaCell(iCell)
+         do i=1,nEdgesOnCell(iCell)
+            iVertex = verticesOnCell(i,iCell)
+            j = kiteForCell(i,iCell)
+            do k = 1,nVertLevels
+               pv_cell(k,iCell) = pv_cell(k,iCell) + kiteAreasOnVertex(j,iVertex) * pv_vertex(k,iVertex) * r
+            end do
+         end do
+      end do
+!$OMP END DO
+#endif
 
 
       if (config_apvm_upwinding > 0.0) then
@@ -3870,41 +3924,51 @@ timerid = 0
          ! Compute gradient of PV in the tangent direction
          !   ( this computes gradPVt at all edges bounding real cells )
          !
+!$OMP DO PRIVATE(k,r)
          do iEdge = 1,nEdges
+            r = 1.0 / dvEdge(iEdge)
             do k = 1,nVertLevels
-               gradPVt(k,iEdge) = (pv_vertex(k,verticesOnEdge(2,iEdge)) - pv_vertex(k,verticesOnEdge(1,iEdge))) / &
-                                  dvEdge(iEdge)
+               gradPVt(k,iEdge) = (pv_vertex(k,verticesOnEdge(2,iEdge)) - pv_vertex(k,verticesOnEdge(1,iEdge))) * r
             end do
          end do
+!$OMP END DO
 
          !
          ! Compute gradient of PV in normal direction
          !   (tdr: 2009-10-02: this is not correct because the pv_cell in the halo is not correct)
          !
-         gradPVn(:,:) = 0.0
+!$OMP DO PRIVATE(k)
          do iEdge = 1,nEdges
             do k = 1,nVertLevels
                gradPVn(k,iEdge) = (pv_cell(k,cellsOnEdge(2,iEdge)) - pv_cell(k,cellsOnEdge(1,iEdge))) / &
                                     dcEdge(iEdge)
             end do
          end do
+!$OMP END DO
 
+!$OMP DO PRIVATE(k)
          do iEdge = 1,nEdges
             do k = 1,nVertLevels
                pv_edge(k,iEdge) = pv_edge(k,iEdge) - config_apvm_upwinding * v(k,iEdge) * dt * gradPVt(k,iEdge)
             end do
          end do
+!$OMP END DO
 
          ! Modify PV edge with upstream bias.
          !
+!$OMP DO PRIVATE(k)
          do iEdge = 1,nEdges
             do k = 1,nVertLevels
                pv_edge(k,iEdge) = pv_edge(k,iEdge) - config_apvm_upwinding * u(k,iEdge) *dt * gradPVn(k,iEdge)
             end do
          end do
+!$OMP END DO
 
       end if  ! apvm upwinding
 
+!$OMP END PARALLEL
+      call stop_timer(timerid, secs, n_secs)
+      write(0,'(a,i3,a1,i9.9)') 'func timing: ', secs, '.', n_secs
 
    end subroutine atm_compute_solve_diagnostics
 
