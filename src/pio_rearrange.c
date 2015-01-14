@@ -498,13 +498,18 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   }
 
   if(ios.ioproc){
-    for(i=0;i<nrecvs;i++)
+    int totalrecv=0;
+    for(i=0;i<nrecvs;i++){
       recv_counts[iodesc->rfrom[i]] = iodesc->rcount[i];
+      totalrecv+=iodesc->rcount[i];
+    }
     recv_displs[0] = 0;
     for(i=1;i<nrecvs;i++)
       recv_displs[iodesc->rfrom[i]] = recv_displs[iodesc->rfrom[i-1]]+iodesc->rcount[i-1]*tsize;
-    if(iodesc->llen>0)
-      iodesc->rindex = (PIO_Offset *) calloc(iodesc->llen,sizeof(PIO_Offset));
+    // recalculate llen with repeats (such as halo region) included
+    if(totalrecv>0)
+      iodesc->llen = totalrecv;
+    iodesc->rindex = (PIO_Offset *) calloc(iodesc->llen,sizeof(PIO_Offset));
   }
   //   printf("%d rbuf_size %d\n",ios.comp_rank,rbuf_size);
 
@@ -516,7 +521,6 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     printf("%ld ",s2rindex[i]);
   printf("\n");
   */
-  //  printf("%s %d %ld\n",__FILE__,__LINE__,iodesc->llen);
   //  printf("%s %d %d %d %d %d %d %d\n",__FILE__,__LINE__,send_counts[0],recv_counts[0],send_displs[0],recv_displs[0],sr_types[0],iodesc->llen);
   ierr = pio_swapm( s2rindex, send_counts, send_displs, sr_types, 
 		    iodesc->rindex, recv_counts, recv_displs, sr_types,
@@ -776,13 +780,10 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   //
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
-  //  printf("%s %d \n",__FILE__,__LINE__);
 
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
-
-  //  printf("%s %d \n",__FILE__,__LINE__);
 
   free(sendcounts);
   free(recvcounts); 
@@ -820,7 +821,34 @@ void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[])
 }
 
 
+void iodesc_dump(io_desc_t *iodesc)
+{
+  printf("ioid= %d\n",iodesc->ioid);
+  printf("async_id= %d\n",iodesc->async_id);
+  printf("nrecvs= %d\n",iodesc->nrecvs);
+  printf("ndof= %d\n",iodesc->ndof);
+  printf("ndims= %d\n",iodesc->ndims);
+  printf("num_aiotasks= %d\n",iodesc->num_aiotasks);
+  printf("rearranger= %d\n",iodesc->rearranger);
+  printf("maxregions= %d\n",iodesc->maxregions);
+  printf("needsfill= %d\n",(int) iodesc->needsfill);
 
+  printf("llen= %ld\n",iodesc->llen);
+  printf("maxiobuflen= %d\n",iodesc->maxiobuflen);
+  printf("gsize=");
+  for(int i=0; i< iodesc->ndims; i++){
+      printf(" %d",iodesc->ioid);
+  }
+  printf("\n");
+
+  printf("rindex= ");
+  for(int j=0;j<iodesc->llen;j++)
+    printf(" %ld ",iodesc->rindex[j]);
+  printf("\n");
+  
+
+
+}
 
 
 
@@ -882,10 +910,20 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
     for( i=0;i<nprocs;i++){
       sndlths[ i ] = 1;
     }
+    // llen here is the number that will be read on each io task
     iodesc->llen=1;
     for(i=0;i<ndims;i++)
       iodesc->llen *= iodesc->firstregion->count[i];
   }
+
+
+  if(ios.ioproc){
+    for(i=0; i<ndims; i++){
+      printf("%d %d %d ",i,iodesc->firstregion->start[i],iodesc->firstregion->count[i]);
+    }
+    printf("\n%s %d\n",__FILE__,__LINE__);
+  }
+
 
   for( i=0;i<nioprocs; i++){
     int io_comprank = ios.ioranks[i];
@@ -969,6 +1007,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   if(ios.ioproc){
     compute_maxIObuffersize(ios.io_comm, iodesc);
   }
+  iodesc_dump(iodesc);
   return PIO_NOERR;
 }
 /** 
@@ -1280,7 +1319,13 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     compute_maxIObuffersize(ios.io_comm, iodesc);
 
     iodesc->nrecvs=ntasks;
+
+    iodesc_dump(iodesc);
+  
+
   }
+
+
 
   return ierr;
 
