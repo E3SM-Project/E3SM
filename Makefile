@@ -1,4 +1,4 @@
-MODEL_FORMULATION = 
+MODEL_FORMULATION =
 
 
 dummy:
@@ -64,18 +64,18 @@ pgi:
 	"FC_SERIAL = pgf90" \
 	"CC_SERIAL = pgcc" \
 	"CXX_SERIAL = pgc++" \
-	"FFLAGS_OPT = -r8 -O3 -byteswapio -Mfree" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -r8 -O0 -g -Mbounds -Mchkptr -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
-	"CFLAGS_DEBUG = -O0 -g -traceback" \
-	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
-	"LDFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -Ktrap=divz,fp,inv,ovf -traceback" \
+	"FFLAGS_OPT = -r8 -O3 -byteswapio -Mfree -mp" \
+	"CFLAGS_OPT = -O3 -mp" \
+	"CXXFLAGS_OPT = -O3 -mp" \
+	"LDFLAGS_OPT = -O3 -mp" \
+	"FFLAGS_DEBUG = -r8 -mp -O0 -g -Mbounds -Mchkptr -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
+	"CFLAGS_DEBUG = -O0 -mp -g -traceback" \
+	"CXXFLAGS_DEBUG = -O0 -mp -g -traceback" \
+	"LDFLAGS_DEBUG = -O0 -mp -g -Mbounds -Mchkptr -Ktrap=divz,fp,inv,ovf -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE -DGETTIMEOFDAY" )
 
 pgi-nersc:
 	( $(MAKE) all \
