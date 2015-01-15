@@ -47,6 +47,10 @@
 		            description="Selection of the method for solving ice velocity."
 		            possible_values="'sia'"
 		/>
+		<nml_option name="config_upperSurfaceVertex_method" type="character" default_value="barycentric" units="unitless"
+		            description="Selection of the method for calculating upperSurfaceVertex. 'barycentric' works for obtuse triangles, but will not work correctly across the edges of periodic meshes.  'barycentric_kiteareas' will work across the edges of periodic meshes, but will not work correctly for obtuse triangles."
+		            possible_values="'barycentric','barycentric_kiteareas'"
+		/>
 	</nml_record>
 
 
@@ -510,6 +514,12 @@
 			 description="Coefficients to reconstruct velocity vectors at cells centers."
 		/>
 		<!-- Mesh Variables specific to land ice core -->
+		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
+			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!"
+		/>
+		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
+			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex."
+		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
 		/>
@@ -533,6 +543,14 @@
 		/>
 	</var_struct>
 
+
+	<!-- Scratch Variables -->
+	<var_struct name="scratch" time_levs="1">
+		<var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
+			description="local indices of each vertex"
+			persistence="scratch"
+		/>
+	</var_struct>
 
 <!-- ======================================================================= -->
 
