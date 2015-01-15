@@ -321,8 +321,6 @@ contains
     do while(associated(list_item%iodesc) )
        if(abs(list_item%iodesc%async_id) == id) then
           iodesc=>list_item%iodesc
-          
- print *,__FILE__,__LINE__,id,list_item%index,iodesc%async_id
 
           iodesc%async_id=-1
           nullify(list_item%iodesc)
