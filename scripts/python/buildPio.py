@@ -69,8 +69,9 @@ def runBuild(args):
     file = 'PIO_Macros.'+compiler+'.cmake'
     with open(file, "w") as macros_file:
         xmlcompiler.write_cmake_macros(macros_file,"PIO")
-    os.remove('PIO_Macros.cmake')
-    os.link(file, 'PIO_Macros.cmake')
+    if(os.path.isfile('PIO_Macros.cmake')):
+        os.remove('PIO_Macros.cmake')
+    os.symlink(file, 'PIO_Macros.cmake')
     bld = builder.platformBuilder.factory(machine_name,compiler,args.test,mpilib,args.debug)
     bld.metaBuild()
 
