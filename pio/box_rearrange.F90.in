@@ -1337,10 +1337,9 @@ end subroutine box_rearrange_io2comp_{TYPE}
           recv_counts(rfrom(i)+1) = rcount(i)
        enddo
        
-       rbuf_size = niodof
-       call alloc_check(rindex, sum(recv_counts), 'rindex buffer')
+       rbuf_size = sum(recv_counts)
+       call alloc_check(rindex, rbuf_size, 'rindex buffer')
        rindex = 0
-
 
        recv_displs = 0
        do i=2,nrecvs
