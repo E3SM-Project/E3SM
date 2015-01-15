@@ -268,6 +268,8 @@ contains
 !-----------------------------------------------------------------------
    subroutine diagnostic_solve_before_velocity(domain, timeLevel, err)!{{{
 
+      use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -303,11 +305,13 @@ contains
       real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
         lowerSurface, bedTopography, upperSurfaceVertex
       integer, dimension(:), pointer :: cellMask
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      integer, dimension(:,:), pointer :: baryCellsOnVertex
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, baryWeightsOnVertex
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField
-      integer, pointer :: nCells
+      integer, pointer :: nCells, nVertices
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
+      character (len=StrKIND), pointer :: config_velocity_solver, config_upperSurfaceVertex_method
       real (kind=RKIND) :: thisThk
       integer :: iCell, iLevel
       integer :: err_tmp
@@ -361,10 +365,12 @@ contains
           call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
 
           call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
           call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
           call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+          call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
           call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
@@ -374,6 +380,8 @@ contains
           call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel=timeLevel)
           call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography)
+          call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
+          call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
@@ -391,8 +399,23 @@ contains
 
           ! Upper surface is the lower surface plus the thickness
           upperSurface(:) = lowerSurface(:) + thickness(:)
-          call cells_to_vertices_2dfield(meshPool, upperSurface, upperSurfaceVertex)  ! (Needed only for SIA solver)
-          ! Note: the outer halo may be wrong, but that's ok as long as numhalos>1 because the velocity on the 0-halo will still be correct.
+
+          ! Upper surface on vertices only needed for SIA solver
+          if (trim(config_velocity_solver) == 'sia') then
+             call mpas_pool_get_config(liConfigs, 'config_upperSurfaceVertex_method', config_upperSurfaceVertex_method)
+             select case (trim(config_upperSurfaceVertex_method))
+             case ('barycentric')
+                call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
+                   baryWeightsOnVertex(:, 1:nVertices), upperSurface, upperSurfaceVertex(1:nVertices), err_tmp)
+                err = ior(err, err_tmp)
+             case ('barycentric_kiteareas')
+                call cells_to_vertices_2dfield_using_kiteAreas(meshPool, upperSurface, upperSurfaceVertex)
+             case default
+                write (stdErrUnit,*) 'Error: Invalid value for config_upperSurface_method.'
+                err = 1
+             end select
+             ! Note: the outer halo may be wrong, but that's ok as long as numhalos>1 because the velocity on the 0-halo will still be correct.
+          endif
 
           ! Do vertical remapping of layerThickness and tracers
           call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
@@ -818,48 +841,41 @@ contains
    end subroutine vertical_remap
 
 
-
 !***********************************************************************
 !
-!  subroutine cells_to_vertices_2dfield
+!  subroutine cells_to_vertices_2dfield_using_kiteAreas
 !
 !> \brief   Converts a 2d scalar field from cells to vertices
 !> \author  Matt Hoffman
 !> \date    21 May 2012
-!> \details 
+!> \details
 !>  This routine converts a 2d scalar field from cells to vertices.
+!>  It will give garbage values on obtuse triangles!  But it does work
+!>  on periodic meshes.
+!>  TODO: It would be more efficient to calculate the weights once on init and then only
+!>  perform the interp. in this routine.
 !-----------------------------------------------------------------------
-   subroutine cells_to_vertices_2dfield(meshPool, fieldCells, fieldVertices)
+   subroutine cells_to_vertices_2dfield_using_kiteAreas(meshPool, fieldCells, fieldVertices)
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
-
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
       real (kind=RKIND), dimension(:), intent(in) :: &
          fieldCells    !< Input: field on cells
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
-
       real (kind=RKIND), dimension(:), intent(out) :: &
          fieldVertices    !< Input: field on vertices
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
       integer, dimension(:,:), pointer :: cellsOnVertex
@@ -886,12 +902,12 @@ contains
             if (iCell2 /= icell) baryweight = baryweight + 0.5 * kiteAreasOnVertex(iCell2, iVertex)
           enddo
           fVertexAccum = fVertexAccum + baryweight * fieldCells(cellIndex)  ! add the contribution from this cell's kite
-          weightAccum = weightAccum + kiteAreasOnVertex(iCell, iVertex)  ! This doesn't match areaTriangle for some weird vertices
+          weightAccum = weightAccum + kiteAreasOnVertex(iCell, iVertex)  ! This doesn't match areaTriangle for obtuse triangles!!!
         enddo
         fieldVertices(iVertex) = fVertexAccum / weightAccum  ! I assume this should never be 0...
       enddo
 
-   end subroutine cells_to_vertices_2dfield
+   end subroutine cells_to_vertices_2dfield_using_kiteAreas
 
 end module li_diagnostic_vars
 
