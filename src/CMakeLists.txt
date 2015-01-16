@@ -4,7 +4,8 @@ ENABLE_LANGUAGE(Fortran)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 
 SET(SRCS_C topology.c pio_nc.c pio_file.c pioc_support.c pio_lists.c pioc.c
-        pioc_sc.c pio_spmd.c pio_rearrange.c pio_darray.c pio_put_nc.c pio_get_nc.c)
+        pioc_sc.c pio_spmd.c pio_rearrange.c pio_darray.c pio_put_nc.c 
+        pio_get_nc.c bget.c)
 
 
 SET(SRCS_F90 pio_nf.F90 pio.F90 pio_kinds.F90 pio_types.F90

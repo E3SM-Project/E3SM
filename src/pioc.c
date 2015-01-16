@@ -473,6 +473,10 @@ int PIOc_finalize(const int iosysid)
       free(ios->ioranks);
     }
   }
+
+  free_cn_buffer_pool(*ios);
+
+
   if(ios->io_comm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->io_comm));
   }

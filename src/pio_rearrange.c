@@ -1007,7 +1007,11 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   if(ios.ioproc){
     compute_maxIObuffersize(ios.io_comm, iodesc);
   }
+
+
+#ifdef DEBUG  
   iodesc_dump(iodesc);
+#endif
   return PIO_NOERR;
 }
 /** 
@@ -1319,9 +1323,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     compute_maxIObuffersize(ios.io_comm, iodesc);
 
     iodesc->nrecvs=ntasks;
-
+#ifdef DEBUG
     iodesc_dump(iodesc);
-  
+#endif  
 
   }
 

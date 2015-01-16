@@ -116,6 +116,8 @@ typedef struct mapsort
   int subset_rearrange_create(const iosystem_desc_t ios, int maplen, PIO_Offset compmap[], 
 			      const int gsize[], const int ndims, io_desc_t *iodesc);
   void print_trace (FILE *fp);
+  void cn_buffer_report(iosystem_desc_t ios);
+  void free_cn_buffer_pool(iosystem_desc_t ios);
 #ifdef BGQ
   void identity(MPI_Comm comm, int *iotask);
   void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 

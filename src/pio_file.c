@@ -1,4 +1,5 @@
 #include <pio_internal.h>
+#include <bget.h>
 /**
  ** @public
  ** @ingroup PIO_openfile
@@ -44,7 +45,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   }
 
   file->buffer.validvars=0;
-  file->buffer.totalvars=0;
   file->buffer.vid=NULL;
   file->buffer.data=NULL;
   file->buffer.next=NULL;
@@ -146,7 +146,6 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   file->iotype = *iotype;
 
   file->buffer.validvars=0;
-  file->buffer.totalvars=0;
   file->buffer.data=NULL;
   file->buffer.next=NULL;
   file->buffer.vid=NULL;
@@ -379,6 +378,7 @@ int PIOc_sync (int ncid)
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
+  cn_buffer_report( *ios);
 
   wmb = &(file->buffer); 
   while(wmb != NULL){
@@ -386,14 +386,14 @@ int PIOc_sync (int ncid)
     if(wmb->validvars>0){
       PIOc_write_darray_multi(ncid, wmb->vid,  wmb->ioid, wmb->validvars, wmb->arraylen, wmb->data, wmb->frame, wmb->fillvalue);
       wmb->validvars=0;
-      free(wmb->vid);
+      brel(wmb->vid);
       wmb->vid=NULL;
-      free(wmb->data);
+      brel(wmb->data);
       wmb->data=NULL;
       if(wmb->fillvalue != NULL)
-	free(wmb->fillvalue);
+	brel(wmb->fillvalue);
       if(wmb->frame != NULL)
-	free(wmb->frame);
+	brel(wmb->frame);
       wmb->fillvalue=NULL;
       wmb->frame=NULL;
     }
@@ -401,10 +401,9 @@ int PIOc_sync (int ncid)
     wmb = wmb->next;
     if(twmb == &(file->buffer)){
       twmb->ioid=-1;
-      twmb->totalvars=0;
       twmb->next=NULL;
     }else{
-      free(twmb);
+      brel(twmb);
     }
   }
 

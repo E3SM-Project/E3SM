@@ -158,7 +158,6 @@ typedef struct iosystem_desc_t
 typedef struct wmulti_buffer
 {
   int ioid;
-  int totalvars;
   int validvars;
   int arraylen;
   int *vid;
