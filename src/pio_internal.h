@@ -117,6 +117,7 @@ typedef struct mapsort
 			      const int gsize[], const int ndims, io_desc_t *iodesc);
   void print_trace (FILE *fp);
   void cn_buffer_report(iosystem_desc_t ios);
+  void compute_buffer_init(iosystem_desc_t ios);
   void free_cn_buffer_pool(iosystem_desc_t ios);
 #ifdef BGQ
   void identity(MPI_Comm comm, int *iotask);

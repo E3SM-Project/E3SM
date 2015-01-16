@@ -419,6 +419,8 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   if(envptr != NULL && (strcmp(envptr,"true")==0)){
     PIO_Save_Decomps=true;
   }
+  /* allocate buffer space for compute nodes */
+  compute_buffer_init(*iosys);
 
   return PIO_NOERR;
 }
