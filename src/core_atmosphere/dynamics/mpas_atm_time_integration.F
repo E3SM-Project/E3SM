@@ -95,6 +95,8 @@ module atm_time_integration
    !                  and some diagnostics in diag 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
+      use omp_lib
+
       implicit none
 
       type (domain_type), intent(inout) :: domain
@@ -132,7 +134,8 @@ module atm_time_integration
       real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: config_microp_scheme
 
-      integer, pointer :: num_scalars, index_qv, nCells, nCellsSolve, nEdges, nEdgesSolve, nVertLevels
+      integer, pointer :: num_scalars, index_qv, nCells, nCellsSolve, nEdges, nEdgesSolve, nVertices, nVertLevels
+      integer (kind=OMP_integer_kind) :: nthreads, threadid
 
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
@@ -160,6 +163,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars, scalars_1, scalars_2
 
       real (kind=RKIND), dimension(:,:), pointer :: rqvdynten
+      integer :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
 
       !
       ! Retrieve configuration options
@@ -434,8 +438,37 @@ module atm_time_integration
                call mpas_pool_get_subpool(block % structs, 'state', state)
                call mpas_pool_get_subpool(block % structs, 'diag', diag)
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+   
+               call mpas_pool_get_dimension(state, 'nCells', nCells)
+               call mpas_pool_get_dimension(state, 'nEdges', nEdges)
+               call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+   
+!$OMP PARALLEL PRIVATE(cellStart,cellEnd,vertexStart,vertexEnd,edgeStart,edgeEnd,nthreads,threadid)
+               nthreads = OMP_get_num_threads()
+               threadid = OMP_get_thread_num()
+   
+               cellStart = (threadid * nCells / nthreads) + 1
+               cellEnd = ((threadid+1) * nCells / nthreads)
+               edgeStart = (threadid * nEdges / nthreads) + 1
+               edgeEnd = ((threadid+1) * nEdges / nthreads)
+               vertexStart = (threadid * nVertices / nthreads) + 1
+               vertexEnd = ((threadid+1) * nVertices / nthreads)
 
-               call atm_compute_solve_diagnostics( dt, state, 2, diag, mesh, block % configs )
+!write(0,*) 'cell start/end = ', cellStart, cellEnd
+!write(0,*) 'edge start/end = ', edgeStart, edgeEnd
+!write(0,*) 'vertex start/end = ', vertexStart, vertexEnd
+
+!$OMP MASTER
+               timerid = 1
+               call start_timer(timerid)
+!$OMP END MASTER
+               call atm_compute_solve_diagnostics(dt, state, 2, diag, mesh, block % configs, &
+                                                  cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
+!$OMP MASTER
+               call stop_timer(timerid, secs, n_secs)
+               write(0,'(a,i3,a1,i9.9)') 'func timing: ', secs, '.', n_secs
+!$OMP END MASTER
+!$OMP END PARALLEL
 
                block => block % next
             end do
@@ -2366,7 +2399,7 @@ module atm_time_integration
       real (kind=RKIND) :: u_diffusion
       real (kind=RKIND), dimension(:), pointer ::  fEdge, dvEdge, dcEdge, areaCell, areaTriangle, meshScalingDel2, meshScalingDel4
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
-                                                    circulation, divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
+                                                    divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
                                                     rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zx, cqu, & 
                                                     h_divergence, kdiff
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
@@ -2472,7 +2505,6 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'kdiff', kdiff)
       call mpas_pool_get_array(diag, 'ru', ru)
       call mpas_pool_get_array(diag, 'rw', rw)
-      call mpas_pool_get_array(diag, 'circulation', circulation)
       call mpas_pool_get_array(diag, 'divergence', divergence)
       call mpas_pool_get_array(diag, 'vorticity', vorticity)
       call mpas_pool_get_array(diag, 'ke', ke)
@@ -3567,7 +3599,8 @@ module atm_time_integration
 
 !-------
 
-   subroutine atm_compute_solve_diagnostics(dt, state, time_lev, diag, mesh, configs)
+   subroutine atm_compute_solve_diagnostics(dt, state, time_lev, diag, mesh, configs, &
+                                            cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    ! Compute diagnostic fields used in the tendency computations
    !
@@ -3584,6 +3617,7 @@ module atm_time_integration
       type (mpas_pool_type), intent(inout) :: diag
       type (mpas_pool_type), intent(in) :: mesh
       type (mpas_pool_type), intent(in) :: configs
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
 
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i, j
@@ -3592,7 +3626,7 @@ module atm_time_integration
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
       real (kind=RKIND), dimension(:), pointer :: fVertex, fEdge, dvEdge, dcEdge, areaCell, areaTriangle
       real (kind=RKIND), dimension(:,:), pointer :: vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, &
-                                                    circulation, vorticity, ke, pv_edge, pv_vertex, pv_cell, gradPVn, gradPVt, &
+                                                    vorticity, ke, pv_edge, pv_vertex, pv_cell, gradPVn, gradPVt, &
                                                     divergence
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnVertex, verticesOnEdge, edgesOnCell, edgesOnEdge, edgesOnVertex, &
                                           kiteForCell, verticesOnCell
@@ -3613,7 +3647,6 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'v', v)
       call mpas_pool_get_array(diag, 'rv', vh)
       call mpas_pool_get_array(diag, 'rho_edge', h_edge)
-      call mpas_pool_get_array(diag, 'circulation', circulation)
       call mpas_pool_get_array(diag, 'vorticity', vorticity)
       call mpas_pool_get_array(diag, 'divergence', divergence)
       call mpas_pool_get_array(diag, 'ke', ke)
@@ -3650,57 +3683,54 @@ module atm_time_integration
       call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(mesh, 'vertexDegree', vertexDegree)
 
+!write(0,*) 'cell start/end = ', cellStart, cellEnd
+!write(0,*) 'edge start/end = ', edgeStart, edgeEnd
+!write(0,*) 'vertex start/end = ', vertexStart, vertexEnd
+
 
       !
       ! Compute height on cell edges at velocity locations
       !
-      timerid = 0
-      call start_timer(timerid)
-!$OMP PARALLEL 
-!$OMP DO PRIVATE(cell1,cell2,k)
-      do iEdge=1,nEdges
+      do iEdge=edgeStart,edgeEnd
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          do k=1,nVertLevels
             h_edge(k,iEdge) = 0.5 * (h(k,cell1) + h(k,cell2))
          end do
       end do
-!$OMP END DO
 
 
       !
       ! Compute circulation and relative vorticity at each vertex
       !
 #ifdef MPI_ONLY
-      circulation(:,:) = 0.0
+      vorticity(:,:) = 0.0
       do iEdge=1,nEdges
          do k=1,nVertLevels
-            circulation(k,verticesOnEdge(1,iEdge)) = circulation(k,verticesOnEdge(1,iEdge)) - dcEdge(iEdge) * u(k,iEdge)
-            circulation(k,verticesOnEdge(2,iEdge)) = circulation(k,verticesOnEdge(2,iEdge)) + dcEdge(iEdge) * u(k,iEdge)
+            vorticity(k,verticesOnEdge(1,iEdge)) = vorticity(k,verticesOnEdge(1,iEdge)) - dcEdge(iEdge) * u(k,iEdge)
+            vorticity(k,verticesOnEdge(2,iEdge)) = vorticity(k,verticesOnEdge(2,iEdge)) + dcEdge(iEdge) * u(k,iEdge)
          end do
       end do
       do iVertex=1,nVertices
          do k=1,nVertLevels
-            vorticity(k,iVertex) = circulation(k,iVertex) / areaTriangle(iVertex)
+            vorticity(k,iVertex) = vorticity(k,iVertex) / areaTriangle(iVertex)
          end do
       end do
 #else
-!$OMP DO PRIVATE(i,iEdge,s,r,k)
-      do iVertex=1,nVertices
-         circulation(1:nVertLevels,iVertex) = 0.0
+      do iVertex=vertexStart,vertexEnd
+         vorticity(1:nVertLevels,iVertex) = 0.0
          do i=1,vertexDegree
             iEdge = edgesOnVertex(i,iVertex)
             s = edgesOnVertex_sign(i,iVertex) * dcEdge(iEdge)
             do k=1,nVertLevels
-               circulation(k,iVertex) = circulation(k,iVertex) + s * u(k,iEdge)
+               vorticity(k,iVertex) = vorticity(k,iVertex) + s * u(k,iEdge)
             end do
          end do
          r = 1.0 / areaTriangle(iVertex)
          do k=1,nVertLevels
-            vorticity(k,iVertex) = circulation(k,iVertex) * r
+            vorticity(k,iVertex) = vorticity(k,iVertex) * r
          end do
       end do
-!$OMP END DO
 #endif
 
 
@@ -3724,8 +3754,7 @@ module atm_time_integration
          end do
       end do
 #else
-!$OMP DO PRIVATE(i,iEdge,s,r,k)
-      do iCell=1,nCells
+      do iCell=cellStart,cellEnd
          divergence(1:nVertLevels,iCell) = 0.0
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
@@ -3739,15 +3768,13 @@ module atm_time_integration
             divergence(k,iCell) = divergence(k,iCell) * r
          end do
       end do
-!$OMP END DO
 #endif
 
 
       !
       ! Compute kinetic energy in each cell (Ringler et al JCP 2009)
       !
-!$OMP DO PRIVATE(i,iEdge,r,k)
-      do iCell=1,nCells
+      do iCell=cellStart,cellEnd
          ke(1:nVertLevels,iCell) = 0.0
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
@@ -3760,7 +3787,7 @@ module atm_time_integration
             ke(k,iCell) = ke(k,iCell) * r
          end do
       end do
-!$OMP END DO
+
 
       if (hollingsworth) then
 
@@ -3769,8 +3796,7 @@ module atm_time_integration
          !
 
 !MGD use pv_vertex as scratch space for ke_vertex
-!$OMP DO PRIVATE(k,r)
-         do iVertex=1,nVertices
+         do iVertex=vertexStart,vertexEnd
             r = 0.25 / areaTriangle(iVertex) 
             do k=1,nVertLevels
 
@@ -3781,20 +3807,18 @@ module atm_time_integration
 
             end do
          end do
-!$OMP END DO
 
          ! adjust ke at cell vertices - AG's new KE construction, part 2
          !
 
          ke_fact = 1.0 - .375
 
-!$OMP DO PRIVATE(k)
-         do iCell=1,nCells
+         do iCell=cellStart,cellEnd
             do k=1,nVertLevels
                ke(k,iCell) = ke_fact * ke(k,iCell)
             end do
          end do
-!$OMP END DO
+!$OMP BARRIER
 
          ! Avoid FP errors caused by a potential division by zero below by 
          ! initializing the "garbage cell" of areaCell to a non-zero value
@@ -3810,8 +3834,7 @@ module atm_time_integration
             end do
          end do
 #else
-!$OMP DO PRIVATE(r,i,j,iVertex,k)
-         do iCell=1,nCells
+         do iCell=cellStart,cellEnd
             r = 1.0 / areaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iVertex = verticesOnCell(i,iCell)
@@ -3821,7 +3844,6 @@ module atm_time_integration
                end do
             end do
          end do
-!$OMP END DO
 #endif
 
       end if
@@ -3829,8 +3851,7 @@ module atm_time_integration
       !
       ! Compute v (tangential) velocities following Thuburn et al JCP 2009
       !
-!$OMP DO PRIVATE(i,eoe,k)
-      do iEdge = 1,nEdges
+      do iEdge = edgeStart,edgeEnd
          v(1:nVertLevels,iEdge) = 0.0
          do i=1,nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
@@ -3839,15 +3860,13 @@ module atm_time_integration
             end do
          end do
       end do
-!$OMP END DO
 
 
       !
       ! Compute height at vertices, pv at vertices, and average pv to edge locations
       !  ( this computes pv_vertex at all vertices bounding real cells )
       !
-!$OMP DO PRIVATE(k,h_vertex,i,r)
-      do iVertex = 1,nVertices
+      do iVertex = vertexStart,vertexEnd
          r = 1.0 / areaTriangle(iVertex)
          do k=1,nVertLevels
             h_vertex = 0.0
@@ -3859,8 +3878,8 @@ module atm_time_integration
             pv_vertex(k,iVertex) = (fVertex(iVertex) + vorticity(k,iVertex)) / h_vertex
          end do
       end do
-!$OMP END DO
 
+!$OMP BARRIER
 
       !
       ! Compute pv at the edges
@@ -3877,13 +3896,11 @@ module atm_time_integration
          end do
       end do
 #else
-!$OMP DO PRIVATE(k)
-      do iEdge = 1,nEdges
+      do iEdge = edgeStart,edgeEnd
          do k=1,nVertLevels
             pv_edge(k,iEdge) =  0.5 * (pv_vertex(k,verticesOnEdge(1,iEdge)) + pv_vertex(k,verticesOnEdge(2,iEdge)))
          end do
       end do
-!$OMP END DO
 #endif
 
       !
@@ -3901,8 +3918,8 @@ module atm_time_integration
          end do
       end do
 #else
-!$OMP DO PRIVATE(r,i,j,iVertex,k)
-      do iCell=1,nCells
+      do iCell=cellStart,cellEnd
+         pv_cell(1:nVertLevels,iCell) = 0.0
          r = 1.0 / areaCell(iCell)
          do i=1,nEdgesOnCell(iCell)
             iVertex = verticesOnCell(i,iCell)
@@ -3912,8 +3929,9 @@ module atm_time_integration
             end do
          end do
       end do
-!$OMP END DO
 #endif
+
+!$OMP BARRIER
 
 
       if (config_apvm_upwinding > 0.0) then
@@ -3924,51 +3942,32 @@ module atm_time_integration
          ! Compute gradient of PV in the tangent direction
          !   ( this computes gradPVt at all edges bounding real cells )
          !
-!$OMP DO PRIVATE(k,r)
-         do iEdge = 1,nEdges
+         do iEdge = edgeStart,edgeEnd
             r = 1.0 / dvEdge(iEdge)
             do k = 1,nVertLevels
                gradPVt(k,iEdge) = (pv_vertex(k,verticesOnEdge(2,iEdge)) - pv_vertex(k,verticesOnEdge(1,iEdge))) * r
             end do
          end do
-!$OMP END DO
 
          !
          ! Compute gradient of PV in normal direction
          !   (tdr: 2009-10-02: this is not correct because the pv_cell in the halo is not correct)
          !
-!$OMP DO PRIVATE(k)
-         do iEdge = 1,nEdges
+         do iEdge = edgeStart,edgeEnd
+            r = 1.0 / dcEdge(iEdge)
             do k = 1,nVertLevels
-               gradPVn(k,iEdge) = (pv_cell(k,cellsOnEdge(2,iEdge)) - pv_cell(k,cellsOnEdge(1,iEdge))) / &
-                                    dcEdge(iEdge)
+               gradPVn(k,iEdge) = (pv_cell(k,cellsOnEdge(2,iEdge)) - pv_cell(k,cellsOnEdge(1,iEdge))) * r
             end do
          end do
-!$OMP END DO
 
-!$OMP DO PRIVATE(k)
-         do iEdge = 1,nEdges
+         r = config_apvm_upwinding * dt
+         do iEdge = edgeStart,edgeEnd
             do k = 1,nVertLevels
-               pv_edge(k,iEdge) = pv_edge(k,iEdge) - config_apvm_upwinding * v(k,iEdge) * dt * gradPVt(k,iEdge)
+               pv_edge(k,iEdge) = pv_edge(k,iEdge) - r * (v(k,iEdge) * gradPVt(k,iEdge) + u(k,iEdge) * gradPVn(k,iEdge))
             end do
          end do
-!$OMP END DO
-
-         ! Modify PV edge with upstream bias.
-         !
-!$OMP DO PRIVATE(k)
-         do iEdge = 1,nEdges
-            do k = 1,nVertLevels
-               pv_edge(k,iEdge) = pv_edge(k,iEdge) - config_apvm_upwinding * u(k,iEdge) *dt * gradPVn(k,iEdge)
-            end do
-         end do
-!$OMP END DO
 
       end if  ! apvm upwinding
-
-!$OMP END PARALLEL
-      call stop_timer(timerid, secs, n_secs)
-      write(0,'(a,i3,a1,i9.9)') 'func timing: ', secs, '.', n_secs
 
    end subroutine atm_compute_solve_diagnostics
 

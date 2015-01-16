@@ -206,6 +206,8 @@ module mpas_core
       use mpas_atmphys_init
       use mpas_atmphys_manager
 #endif
+
+      use omp_lib
    
       implicit none
    
@@ -224,6 +226,9 @@ module mpas_core
       
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
+      integer :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, pointer :: nCells, nEdges, nVertices
+      integer (kind=OMP_integer_kind) :: nthreads, threadid
       character(len=StrKIND), pointer :: mminlu
 
       integer, pointer :: nEdgesSolve
@@ -236,13 +241,37 @@ module mpas_core
       call mpas_pool_get_subpool(block % structs, 'diag', diag)
       call mpas_pool_get_subpool(block % structs, 'state', state)
 
+      call mpas_pool_get_subpool(block % structs, 'state', state)
+
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(block % configs, 'config_do_DAcycling', config_do_DAcycling)
 
       if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
          call atm_init_coupled_diagnostics( state, 1, diag, mesh, block % configs)
       end if
-      call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs)
+
+      call mpas_pool_get_dimension(state, 'nCells', nCells)
+      call mpas_pool_get_dimension(state, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+
+!$OMP PARALLEL PRIVATE(cellStart,cellEnd,vertexStart,vertexEnd,edgeStart,edgeEnd,nthreads,threadid)
+      nthreads = OMP_get_num_threads()
+      threadid = OMP_get_thread_num()
+
+      cellStart = (threadid * nCells / nthreads) + 1
+      cellEnd = ((threadid+1) * nCells / nthreads)
+      edgeStart = (threadid * nEdges / nthreads) + 1
+      edgeEnd = ((threadid+1) * nEdges / nthreads)
+      vertexStart = (threadid * nVertices / nthreads) + 1
+      vertexEnd = ((threadid+1) * nVertices / nthreads)
+
+!write(0,*) 'cell start/end = ', cellStart, cellEnd
+!write(0,*) 'edge start/end = ', edgeStart, edgeEnd
+!write(0,*) 'vertex start/end = ', vertexStart, vertexEnd
+
+      call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs, &
+                                         cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
+!$OMP END PARALLEL
 
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
