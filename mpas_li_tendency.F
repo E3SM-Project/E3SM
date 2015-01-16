@@ -616,7 +616,7 @@ module li_tendency
       integer, dimension(:), pointer :: nEdgesOnCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, dcEdge
       logical, pointer :: config_print_thickness_advection_info
-      real (kind=RKIND) :: invAreaCell, flux, maxAllowableDt
+      real (kind=RKIND) :: invAreaCell, flux, maxAllowableDt, layerNormalVelocity
       integer :: iEdge, iCell, i, k
       type (MPAS_TimeInterval_type) :: allowableDtMinStringInterval
       character (len=StrKIND) :: allowableDtMinString
@@ -645,8 +645,12 @@ module li_tendency
           iEdge = edgesOnCell(i, iCell)
           do k = 1, nVertLevels
 
-            if (abs(normalVelocity(k, iEdge)) > 0.0_RKIND) then
-               maxAllowableDt = (0.5_RKIND * dcEdge(iEdge)) / abs(normalVelocity(k, iEdge))  ! in years 
+            ! Average native velocities from layer interfaces to layer midpoints for advection
+            ! TODO This may make more sense to calculate as a 3d field somewhere else so it can also be used for tracer advection, output visualization, etc.
+            layerNormalVelocity = 0.5_RKIND * (normalVelocity(k, iEdge) + normalVelocity(k+1, iEdge))
+
+            if (abs(layerNormalVelocity) > 0.0_RKIND) then
+               maxAllowableDt = (0.5_RKIND * dcEdge(iEdge)) / abs(layerNormalVelocity)  ! in years 
             else
                maxAllowableDt = 1.0e36_RKIND
             endif
@@ -656,7 +660,7 @@ module li_tendency
             endif
             MinOfMaxAllowableDt = min(MinOfMaxAllowableDt, maxAllowableDt)
 
-            flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThicknessEdge(k, iEdge)
+            flux = layerNormalVelocity * dvEdge(iEdge) * layerThicknessEdge(k, iEdge)
             tend(k, iCell) = tend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
           end do
         end do

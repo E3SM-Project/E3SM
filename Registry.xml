@@ -33,7 +33,7 @@
 		<dim name="nVertLevels" units="unitless"
 		     description="The number of levels in the vertical direction. All vertical levels share the same horizontal locations."
 		/>
-		<dim name="nVertLevelsP1" definition="nVertLevels+1" units="unitless"
+		<dim name="nVertInterfaces" definition="nVertLevels+1" units="unitless"
 		     description="The number of interfaces in the vertical direction."
 		/>
 	</dims>
@@ -377,23 +377,23 @@
 		<var name="vertexMask" type="integer" dimensions="nVertices Time" units="none"
 		     description="bitmask indicating various properties about the ice sheet on vertices."
 		/>
-		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge"
 		/>
 			<!-- normalVelocity needs to be input/restart for iterative velocity solvers -->
-		<var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructY"                     type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="y-component of velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructZ"                     type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="z-component of velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructZonal"                 type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructZonal"                 type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="zonal velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructMeridional"            type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructMeridional"            type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
 		/>
 		<!-- Variables related to the sia_velocity package (only needed by SIA solver) -->
@@ -561,7 +561,7 @@
 		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
 		     description="Sigma (fractional) level at center of each layer"
 		/>
-		<var name="layerInterfaceSigma" type="real" dimensions="nVertLevelsP1" units="none"
+		<var name="layerInterfaceSigma" type="real" dimensions="nVertInterfaces" units="none"
 		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
 		/>
 		<var name="bedTopography" type="real" dimensions="nCells" units="m above datum"
