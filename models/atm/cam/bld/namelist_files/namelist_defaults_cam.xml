@@ -1075,7 +1075,6 @@
 <statefreq> 480 </statefreq>
 <integration> "explicit" </integration>
 
-<mesh_file>internal-cubed-sphere</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/inic/homme/svalbardx8v1.g</mesh_file>
