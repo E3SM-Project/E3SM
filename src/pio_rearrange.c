@@ -179,11 +179,8 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 			 int *mfrom, MPI_Datatype mtype[])
 {
   PIO_Offset bsizeT[msgcnt];
-  int pos;
-  int ii;
-  PIO_Offset i8blocksize;
   int blocksize;
-  PIO_Offset *lindex;
+  PIO_Offset lindex[dlen];
 
   pioassert(dlen>=0,"dlen < 0",__FILE__,__LINE__);
 
@@ -191,15 +188,13 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
   mtype[0] = basetype * blocksize;
 #else
   if(mindex != NULL){
-    lindex = (PIO_Offset *) malloc(dlen * sizeof(PIO_Offset));
+    //    lindex = (PIO_Offset *) malloc(dlen * sizeof(PIO_Offset));
     memcpy(lindex, mindex, (size_t) (dlen*sizeof(PIO_Offset)));
-  }else{
-    lindex = NULL;
   }
   bsizeT[0]=0;
   mtype[0] = MPI_DATATYPE_NULL;
-  pos = 0;
-  ii = 0;
+  int pos = 0;
+  int ii = 0;
   if(msgcnt>0){
     if(mfrom == NULL){
       for(int i=0;i<msgcnt;i++){
@@ -247,9 +242,7 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
     }
 
   }
-  if(lindex != NULL){  
-    free(lindex);
-  }
+
 #endif
   return PIO_NOERR;
 
@@ -808,16 +801,20 @@ void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[])
   MPI_Reduce(&(iodesc->llen), &totalllen, 1, PIO_OFFSET, MPI_SUM, ios.ioroot, ios.union_comm);
   if(totalllen < totalgridsize){
     iodesc->needsfill = true;
-    iodesc->gsize = (PIO_Offset *) malloc(iodesc->ndims * sizeof(PIO_Offset));
-    for (i=0;i<iodesc->ndims;i++){
-      iodesc->gsize[i] = gsize[i];
-    }
   }else{
     iodesc->needsfill = false;
     iodesc->gsize = NULL;
   }
   //  Pass the needs fill value from io master to all tasks
   MPI_Bcast(&(iodesc->needsfill), 1, MPI_INT, ios.ioroot, ios.union_comm);
+  if(iodesc->needsfill){
+    iodesc->gsize = (PIO_Offset *) malloc(iodesc->ndims * sizeof(PIO_Offset));
+    for (i=0;i<iodesc->ndims;i++){
+      iodesc->gsize[i] = gsize[i];
+    }
+  }
+
+
 }
 
 
@@ -916,14 +913,14 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       iodesc->llen *= iodesc->firstregion->count[i];
   }
 
-
+  /*
   if(ios.ioproc){
     for(i=0; i<ndims; i++){
       printf("%d %d %d ",i,iodesc->firstregion->start[i],iodesc->firstregion->count[i]);
     }
     printf("\n%s %d\n",__FILE__,__LINE__);
   }
-
+  */
 
   for( i=0;i<nioprocs; i++){
     int io_comprank = ios.ioranks[i];

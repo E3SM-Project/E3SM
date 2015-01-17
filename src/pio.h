@@ -398,7 +398,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 		  const char *fname, const int mode);
 int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue);
-  int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, const int frame[], void *fillvalue);
+  int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, const int frame[], void *fillvalue[]);
 
 int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip);
 int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op) ;

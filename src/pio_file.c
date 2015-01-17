@@ -1,5 +1,5 @@
+#include <pio.h>
 #include <pio_internal.h>
-#include <bget.h>
 /**
  ** @public
  ** @ingroup PIO_openfile
@@ -378,24 +378,13 @@ int PIOc_sync (int ncid)
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
-  cn_buffer_report( *ios);
+  cn_buffer_report( *ios, true);
 
   wmb = &(file->buffer); 
   while(wmb != NULL){
     //    printf("%s %d %d %d\n",__FILE__,__LINE__,wmb->ioid, wmb->validvars);
     if(wmb->validvars>0){
-      PIOc_write_darray_multi(ncid, wmb->vid,  wmb->ioid, wmb->validvars, wmb->arraylen, wmb->data, wmb->frame, wmb->fillvalue);
-      wmb->validvars=0;
-      brel(wmb->vid);
-      wmb->vid=NULL;
-      brel(wmb->data);
-      wmb->data=NULL;
-      if(wmb->fillvalue != NULL)
-	brel(wmb->fillvalue);
-      if(wmb->frame != NULL)
-	brel(wmb->frame);
-      wmb->fillvalue=NULL;
-      wmb->frame=NULL;
+      flush_buffer(ncid, wmb);
     }
     twmb = wmb;
     wmb = wmb->next;

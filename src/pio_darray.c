@@ -1,6 +1,5 @@
 #include <pio.h>
 #include <pio_internal.h>
-#include <bget.h>
 
 PIO_Offset PIO_BUFFER_SIZE_LIMIT= 10485760; // 10MB default limit
 bufsize PIO_CNBUFFER_LIMIT=10485760; // 10MB default limit
@@ -290,7 +289,7 @@ void compute_buffer_init(iosystem_desc_t ios)
  }
 
 int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nvars, const int vid[], 
-			      void *IOBUF, const int frame[], void *fillvalue[])
+			      void *IOBUF, const int frame[], void *fillvalue)
  {
    iosystem_desc_t *ios;
    var_desc_t *vdesc;
@@ -347,12 +346,17 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
      size_t totalsize=0;
 
      //     printf("%s %d \n",__FILE__,__LINE__);
-
      for(int nv=0;nv<nvars;nv++){
-       //       printf("%s %d %d\n",__FILE__,__LINE__,nv);
+	 //       printf("%s %d %d\n",__FILE__,__LINE__,nv);
        vdesc = (file->varlist)+vid[nv];
 
 
+
+       if(fndims>ndims && nv % ios->num_iotasks == ios->io_rank){
+	 start[0]=vdesc->record;
+	 count[0]=1;
+       }
+       
        if(nv % ios->num_iotasks== ios->io_rank){
 	 totalsize=1;
 	 for(int id=(fndims-ndims);id<fndims;id++){
@@ -367,34 +371,30 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	   count[id]=0;
 	 }
        }
-
-
-
-       if(fndims>ndims && nv % ios->num_iotasks == ios->io_rank){
-	 start[0]=vdesc->record;
-	 count[0]=1;
-       }
+       
        if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 	 for(i=0;i<totalsize;i++){
 	   ((double *)bufptr)[i]  = ((double *) fillvalue)[nv];
 	 }
 	 PIOc_put_vara_double(ncid, vid[nv], start, count, (const double *) bufptr);
        }else if(iodesc->basetype == MPI_INTEGER){
+	 //	 printf("%s %d %d %d %X\n",__FILE__,__LINE__,nv,totalsize,bufptr);
 	 for(i=0;i<totalsize;i++){
 	   ((int *)bufptr)[i]  = ((int *) fillvalue)[nv];
 	 }
 	 PIOc_put_vara_int(ncid, vid[nv], start, count, (const int *) bufptr);
        }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
+	 
 	 for(i=0;i<totalsize;i++){
 	   ((float *)bufptr)[i]  = ((float *) fillvalue)[nv];
 	 }
 	 PIOc_put_vara_float(ncid, vid[nv], start, count, (const float *) bufptr);
        }else{
 	 fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
-       }	 
-       if(totalsize>0){
-	 free(bufptr);
        }
+     }
+     if(totalsize>0){
+       free(bufptr);
      }
 #ifdef _PNETCDF
      // Need to flush the buffer of fill values before the next write
@@ -432,9 +432,12 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	 usage += nvars*tsize*(iodesc->maxiobuflen);
 	 //	 printf("%s %d %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT);
 	 MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
-	 //	 printf("%s %d %ld %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT,nvars*tsize*(iodesc->maxiobuflen));
+
 	 if(usage >= PIO_BUFFER_SIZE_LIMIT){	   
+	 printf("%s %d %ld %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT,nvars*tsize*(iodesc->maxiobuflen));
 	   flush_output_buffer(file);
+	   ierr = ncmpi_inq_buffer_usage(ncid, &usage);
+	   printf("%s %d %ld \n",__FILE__,__LINE__,usage);
 	 }
 
      }
@@ -639,7 +642,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
    return ierr;
  }
 
-int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, const int frame[], void *fillvalue)
+int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, const int frame[], void *fillvalue[])
  {
    iosystem_desc_t *ios;
    file_desc_t *file;
@@ -735,6 +738,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    void *bptr;
    void *fptr;
    bool recordvar;
+   bufsize totfree, maxfree;
 
    ierr = PIO_NOERR;
 
@@ -780,6 +784,10 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	 if(wmb->next!=NULL)
 	   wmb = wmb->next;
        }
+       /* flush the previous record before starting a new one. this is collective */
+       if(vdesc->record != wmb->frame[0]){
+	 flush_buffer(ncid,wmb);
+       }
      }else{
        while(wmb->next != NULL && wmb->ioid!= -(ioid)){
 	 if(wmb->next!=NULL)
@@ -791,10 +799,10 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    if(ioid != abs(wmb->ioid) ){
      wmb->next = (wmulti_buffer *) bget((bufsize) sizeof(wmulti_buffer));
      if(wmb->next == NULL){
-       cn_buffer_report(*ios) ;
+       /*  need to do more here */
+       cn_buffer_report(*ios,false) ;
+       piodie("allocation failed",__FILE__,__LINE__);
      }
-     printf("%s %d %X %X\n",__FILE__,__LINE__,wmb,wmb->next);
-
      wmb=wmb->next;
      wmb->next=NULL;
      if(recordvar){
@@ -818,41 +826,27 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    // At this point wmb should be pointing to a new or existing buffer 
    // so we can add the data
     //     printf("%s %d %X %d %d %d\n",__FILE__,__LINE__,wmb->data,wmb->validvars,arraylen,tsize);
+    //    cn_buffer_report(*ios, true);
+    bfreespace(&totfree, &maxfree);
+    bool needflush = (maxfree <= (1+wmb->validvars)*arraylen*tsize );
+    MPI_Allreduce(MPI_IN_PLACE, &needflush, 1,  MPI_INT,  MPI_MAX, ios->comp_comm);
 
-    bptr = bgetr( wmb->data, (1+wmb->validvars)*arraylen*tsize);
-    if(bptr==NULL){
+    if(needflush ){
       // need to flush first
-      printf("%s %d %d %d %d\n",__FILE__,__LINE__,ioid,wmb->validvars,arraylen);
-      PIOc_write_darray_multi(ncid, wmb->vid,  ioid, wmb->validvars, arraylen, wmb->data, wmb->frame, wmb->fillvalue);
-      wmb->validvars=0;
-    }else{
-      wmb->data = bptr; 
-      tptr = (int *) bgetr( wmb->vid,sizeof(int)*( 1+wmb->validvars));
-      if(tptr==NULL){
-	// bad things
-	printf("%s %d %d %d %d\n",__FILE__,__LINE__,ioid,wmb->validvars,arraylen);
-      }else{
-	wmb->vid = tptr;
-      }
-      if(vdesc->record>=0){
-	tptr = (int *) bgetr( wmb->frame,sizeof(int)*( 1+wmb->validvars));
-	if(tptr==NULL){
-	  // bad things
-	  printf("%s %d %d %d %d\n",__FILE__,__LINE__,ioid,wmb->validvars,arraylen);
-	}else{
-	  wmb->frame = tptr;
-	}
-      }
-      if(iodesc->needsfill){
-	fptr = bgetr( wmb->fillvalue,tsize*( 1+wmb->validvars));
-	if(fptr==NULL){
-	  // bad things
-	  printf("%s %d %d %d %d\n",__FILE__,__LINE__,ioid,wmb->validvars,arraylen);
-	}else{
-	  wmb->fillvalue = fptr;
-	}
-      }
+      //printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,maxfree, wmb->validvars, (1+wmb->validvars)*arraylen*tsize,totfree);
+            cn_buffer_report(*ios, true);
+	
+      flush_buffer(ncid,wmb);
     }
+    wmb->data = bgetr( wmb->data, (1+wmb->validvars)*arraylen*tsize);
+    wmb->vid = (int *) bgetr( wmb->vid,sizeof(int)*( 1+wmb->validvars));
+    if(vdesc->record>=0){
+      wmb->frame = (int *) bgetr( wmb->frame,sizeof(int)*( 1+wmb->validvars));
+    }
+    if(iodesc->needsfill){
+      wmb->fillvalue = bgetr( wmb->fillvalue,tsize*( 1+wmb->validvars));
+    }
+ 
 
    if(iodesc->needsfill){
      if(fillvalue != NULL){
@@ -875,6 +869,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	 fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
        }
      }
+
    }
  
 
@@ -891,7 +886,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      wmb->frame[wmb->validvars]=vdesc->record;
    }
    wmb->validvars++;
-
+   /*  I think that this check is no longer nessasary in this location???
 #ifdef _PNETCDF
    PIO_Offset usage;
    if(file->iotype == PIO_IOTYPE_PNETCDF){
@@ -905,19 +900,12 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->union_comm);
      if(usage >= PIO_BUFFER_SIZE_LIMIT){	   
        //       printf("%s %d %ld %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT,wmb->validvars*tsize*(iodesc->maxiobuflen));
-       if(ios->ioproc){
-	 flush_output_buffer(file);
-       }
-       PIOc_write_darray_multi(ncid, wmb->vid,  ioid, wmb->validvars, arraylen, wmb->data, wmb->frame, wmb->fillvalue);
-       wmb->validvars=0;
+       PIOc_sync(ncid);
      }
      
    }
 #endif
-
-
-
-   
+   */
    return ierr;
 
  }
@@ -1245,7 +1233,7 @@ int flush_output_buffer(file_desc_t *file)
   return ierr;
 }
 
-void cn_buffer_report(iosystem_desc_t ios)
+void cn_buffer_report(iosystem_desc_t ios, bool collective)
 {
 
   if(CN_bpool != NULL){
@@ -1254,15 +1242,22 @@ void cn_buffer_report(iosystem_desc_t ios)
     long bget_maxs[5];
 
     bstats(bget_stats, bget_stats+1,bget_stats+2,bget_stats+3,bget_stats+4);
-
-    MPI_Reduce(bget_stats, bget_maxs, 5, MPI_LONG, MPI_MAX, 0, ios.comp_comm);
-    MPI_Reduce(bget_stats, bget_mins, 5, MPI_LONG, MPI_MIN, 0, ios.comp_comm);
-    if(ios.compmaster){
-      printf("PIO: Currently allocated buffer space %ld %ld\n",bget_mins[0],bget_maxs[0]);
-      printf("PIO: Currently available buffer space %ld %ld\n",bget_mins[1],bget_maxs[1]);
-      printf("PIO: Current largest free block %ld %ld\n",bget_mins[2],bget_maxs[2]);
-      printf("PIO: Number of successful bget calls %ld %ld\n",bget_mins[3],bget_maxs[3]);
-      printf("PIO: Number of successful brel calls  %ld %ld\n",bget_mins[4],bget_maxs[4]);
+    if(collective){
+      MPI_Reduce(bget_stats, bget_maxs, 5, MPI_LONG, MPI_MAX, 0, ios.comp_comm);
+      MPI_Reduce(bget_stats, bget_mins, 5, MPI_LONG, MPI_MIN, 0, ios.comp_comm);
+      if(ios.compmaster){
+	printf("PIO: Currently allocated buffer space %ld %ld\n",bget_mins[0],bget_maxs[0]);
+	printf("PIO: Currently available buffer space %ld %ld\n",bget_mins[1],bget_maxs[1]);
+	printf("PIO: Current largest free block %ld %ld\n",bget_mins[2],bget_maxs[2]);
+	printf("PIO: Number of successful bget calls %ld %ld\n",bget_mins[3],bget_maxs[3]);
+	printf("PIO: Number of successful brel calls  %ld %ld\n",bget_mins[4],bget_maxs[4]);
+      }
+    }else{
+      printf("%d: PIO: Currently allocated buffer space %ld \n",ios.union_rank,bget_stats[0]) ;
+      printf("%d: PIO: Currently available buffer space %ld \n",ios.union_rank,bget_stats[1]);
+      printf("%d: PIO: Current largest free block %ld \n",ios.union_rank,bget_stats[2]);
+      printf("%d: PIO: Number of successful bget calls %ld \n",ios.union_rank,bget_stats[3]);
+      printf("%d: PIO: Number of successful brel calls  %ld \n",ios.union_rank,bget_stats[4]);
     }
   }
 }
@@ -1270,11 +1265,29 @@ void cn_buffer_report(iosystem_desc_t ios)
 void free_cn_buffer_pool(iosystem_desc_t ios)
 {
   if(CN_bpool != NULL){
-    cn_buffer_report(ios);
+    cn_buffer_report(ios, true);
     bpoolrelease(CN_bpool);
     free(CN_bpool);
     CN_bpool=NULL;
   }
 
 }
+
+void flush_buffer(int ncid, wmulti_buffer *wmb)
+{
+  if(wmb->validvars>0){
+      PIOc_write_darray_multi(ncid, wmb->vid,  wmb->ioid, wmb->validvars, wmb->arraylen, wmb->data, wmb->frame, wmb->fillvalue);
+      wmb->validvars=0;
+      brel(wmb->vid);
+      wmb->vid=NULL;
+      brel(wmb->data);
+      wmb->data=NULL;
+      if(wmb->fillvalue != NULL)
+	brel(wmb->fillvalue);
+      if(wmb->frame != NULL)
+	brel(wmb->frame);
+      wmb->fillvalue=NULL;
+      wmb->frame=NULL;
+    }
+}    
   

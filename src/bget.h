@@ -33,3 +33,4 @@ void	bufdump     _((void *buf));
 void	bpoold	    _((void *pool, int dumpalloc, int dumpfree));
 int	bpoolv	    _((void *pool));
 void bpoolrelease  _();
+void bfreespace  _((bufsize *maxfree, bufsize *totfree));

@@ -562,7 +562,7 @@ void bpoolrelease()
   freelist.ql.blink=&freelist;
 
 #ifdef BufStats
-  bufsize totalloc = 0;	      /* Total space currently allocated */
+  totalloc = 0;	      /* Total space currently allocated */
   numget = 0;
   numrel = 0;   /* Number of bget() and brel() calls */
 #ifdef BECtl
@@ -634,6 +634,7 @@ void *bget(requested_size)
 
 #ifdef BestFit
 	while (b != &freelist) {
+	  //	  printf("%s %d %X %X %X %ld \n",__FILE__,__LINE__,b,&freelist,best,b->bh.bsize);
 	    if (b->bh.bsize >= size) {
 		if ((best == &freelist) || (b->bh.bsize < best->bh.bsize)) {
 		    best = b;
@@ -1071,17 +1072,9 @@ void bpool(buf, len)
 
 #ifdef BufStats
 
-/*  BSTATS  --	Return buffer allocation free space statistics.  */
-
-void bstats(curalloc, totfree, maxfree, nget, nrel)
-  bufsize *curalloc, *totfree, *maxfree;
-  long *nget, *nrel;
+void bfreespace(bufsize *totfree, bufsize *maxfree)
 {
-    struct bfhead *b = freelist.ql.flink;
-
-    *nget = numget;
-    *nrel = numrel;
-    *curalloc = totalloc;
+   struct bfhead *b = freelist.ql.flink;
     *totfree = 0;
     *maxfree = -1;
     while (b != &freelist) {
@@ -1092,6 +1085,18 @@ void bstats(curalloc, totfree, maxfree, nget, nrel)
 	}
 	b = b->ql.flink;	      /* Link to next buffer */
     }
+}
+
+/*  BSTATS  --	Return buffer allocation free space statistics.  */
+
+void bstats(curalloc, totfree, maxfree, nget, nrel)
+  bufsize *curalloc, *totfree, *maxfree;
+  long *nget, *nrel;
+{
+    *nget = numget;
+    *nrel = numrel;
+    *curalloc = totalloc;
+    bfreespace(totfree, maxfree);
 }
 
 #ifdef BECtl

@@ -10,7 +10,7 @@
 #ifndef MPI_Offset
 #define MPI_Offset long long
 #endif
-
+#include <bget.h>
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
@@ -116,9 +116,10 @@ typedef struct mapsort
   int subset_rearrange_create(const iosystem_desc_t ios, int maplen, PIO_Offset compmap[], 
 			      const int gsize[], const int ndims, io_desc_t *iodesc);
   void print_trace (FILE *fp);
-  void cn_buffer_report(iosystem_desc_t ios);
+  void cn_buffer_report(iosystem_desc_t ios, bool collective);
   void compute_buffer_init(iosystem_desc_t ios);
   void free_cn_buffer_pool(iosystem_desc_t ios);
+  void flush_buffer(int ncid, wmulti_buffer *wmb);
 #ifdef BGQ
   void identity(MPI_Comm comm, int *iotask);
   void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 
