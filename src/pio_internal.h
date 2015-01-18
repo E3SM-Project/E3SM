@@ -11,6 +11,7 @@
 #define MPI_Offset long long
 #endif
 #include <bget.h>
+#include <limits.h>
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
@@ -120,6 +121,8 @@ typedef struct mapsort
   void compute_buffer_init(iosystem_desc_t ios);
   void free_cn_buffer_pool(iosystem_desc_t ios);
   void flush_buffer(int ncid, wmulti_buffer *wmb);
+  void compute_maxaggregate_vars(const iosystem_desc_t ios, io_desc_t *iodesc, int tsize);
+
 #ifdef BGQ
   void identity(MPI_Comm comm, int *iotask);
   void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *stride, int *rearr, 

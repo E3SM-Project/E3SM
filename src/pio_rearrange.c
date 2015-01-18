@@ -11,7 +11,7 @@
 ////
 #include <pio.h>
 #include <pio_internal.h>
-#include <limits.h>
+
 /** internal variable used for debugging */
 int tmpioproc=-1;  
 
@@ -164,10 +164,11 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
     region = region->next;
   }
   // Share the max io buffer size with all io tasks
-#ifndef _MPISERIAL
+#ifdef _MPISERIAL
+  iodesc->maxiobuflen = totiosize;
+#else
   CheckMPIReturn(MPI_Allreduce(&totiosize, &(iodesc->maxiobuflen), 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
 #endif
-  iodesc->maxiobuflen = totiosize;
   
 }
 /**
@@ -847,9 +848,6 @@ void iodesc_dump(io_desc_t *iodesc)
 
 }
 
-
-
-
 /** 
  ** @internal
  ** The box rearranger computes a mapping between IO tasks and compute tasks such that the data
@@ -913,7 +911,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       iodesc->llen *= iodesc->firstregion->count[i];
   }
 
-  /*
+  /* 
   if(ios.ioproc){
     for(i=0; i<ndims; i++){
       printf("%d %d %d ",i,iodesc->firstregion->start[i],iodesc->firstregion->count[i]);
@@ -1004,6 +1002,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   if(ios.ioproc){
     compute_maxIObuffersize(ios.io_comm, iodesc);
   }
+  compute_maxaggregate_bytes(ios, iodesc);
 
 
 #ifdef DEBUG  
@@ -1325,7 +1324,10 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 #endif  
 
   }
+  /* using maxiobuflen compute the maximum number of vars of this type that the io
+     task buffer can handle */
 
+  compute_maxaggregate_bytes(ios, iodesc);
 
 
   return ierr;

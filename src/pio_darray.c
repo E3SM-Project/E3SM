@@ -434,7 +434,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	 MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
 
 	 if(usage >= PIO_BUFFER_SIZE_LIMIT){	   
-	 printf("%s %d %ld %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT,nvars*tsize*(iodesc->maxiobuflen));
+	   printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,usage,nvars,PIO_BUFFER_SIZE_LIMIT,nvars*tsize*(iodesc->maxiobuflen));
 	   flush_output_buffer(file);
 	   ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	   printf("%s %d %ld \n",__FILE__,__LINE__,usage);
@@ -886,26 +886,11 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      wmb->frame[wmb->validvars]=vdesc->record;
    }
    wmb->validvars++;
-   /*  I think that this check is no longer nessasary in this location???
-#ifdef _PNETCDF
-   PIO_Offset usage;
-   if(file->iotype == PIO_IOTYPE_PNETCDF){
-     // make sure we have room in the buffer ;
-     if(ios->ioproc){
-       ierr = ncmpi_inq_buffer_usage(ncid, &usage);
-       usage += (1+wmb->validvars)*tsize*(iodesc->maxiobuflen);
-     }else{
-       usage=0;
-     }
-     MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->union_comm);
-     if(usage >= PIO_BUFFER_SIZE_LIMIT){	   
-       //       printf("%s %d %ld %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT,wmb->validvars*tsize*(iodesc->maxiobuflen));
-       PIOc_sync(ncid);
-     }
-     
+
+   if(wmb->validvars >= iodesc->maxbytes/tsize){
+     PIOc_sync(ncid);
    }
-#endif
-   */
+
    return ierr;
 
  }
@@ -1291,3 +1276,26 @@ void flush_buffer(int ncid, wmulti_buffer *wmb)
     }
 }    
   
+void compute_maxaggregate_bytes(const iosystem_desc_t ios, io_desc_t *iodesc)
+{
+  int maxbytesoniotask=INT_MAX;
+  int maxbytesoncomputetask=INT_MAX;
+  int maxbytes;
+  
+  // printf("%s %d %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen, iodesc->ndof);
+
+  if(ios.ioproc){
+     maxbytesoniotask = PIO_BUFFER_SIZE_LIMIT/ iodesc->maxiobuflen;
+  }
+  if(ios.comp_rank>=0){
+    maxbytesoncomputetask = PIO_CNBUFFER_LIMIT/iodesc->ndof;
+  }
+  maxbytes = min(maxbytesoniotask,maxbytesoncomputetask);
+
+  // printf("%s %d %d %d\n",__FILE__,__LINE__,maxbytesoniotask, maxbytesoncomputetask);
+
+  MPI_Allreduce(&maxbytes, &(iodesc->maxbytes), 1, MPI_INT, MPI_MIN, ios.union_comm);
+
+  //  printf("%s %d %d\n",__FILE__,__LINE__,iodesc->maxbytes);
+  
+}
