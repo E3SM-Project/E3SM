@@ -644,6 +644,8 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       type (mpas_pool_type), pointer :: statePool
       integer, dimension(:), pointer :: vertexMask
       character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: config_velocity_solver
+      logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       type (MPAS_Time_Type) :: currTime
       integer :: err, err_tmp
 
@@ -653,6 +655,8 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       ! Get pool stuff
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
 
 
       ! Copy data from first time level into all other time levels
@@ -686,8 +690,11 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       call mpas_timer_stop("initialize velocity")
 
       ! Init for reconstruction of velocity
-      call mpas_rbf_interp_initialize(meshPool)
-      call mpas_init_reconstruct(meshPool)
+      if ( (trim(config_velocity_solver) == 'sia') .or.    &
+            config_do_velocity_reconstruction_for_external_dycore ) then
+         call mpas_rbf_interp_initialize(meshPool)
+         call mpas_init_reconstruct(meshPool)
+      endif
 
       ! Assign initial time stamp
       call mpas_pool_get_array(statePool, 'xtime', xtime, timeLevel=1)
