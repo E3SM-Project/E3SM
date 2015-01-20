@@ -8,6 +8,7 @@ is returned.
 
 import argparse, sys, os, doctest, time, threading, Queue, signal
 import distutils.spawn, subprocess, getpass
+import xml.etree.ElementTree as xmlet
 
 VERBOSE = False
 TEST_STATUS_FILENAME = "TestStatus"
@@ -43,12 +44,14 @@ def warning(msg):
     print >> sys.stderr, "WARNING:", msg
 
 ###############################################################################
-def run_cmd(cmd):
+def run_cmd(cmd, stdout_arg=None):
 ###############################################################################
-    proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
-    _, errput = proc.communicate()
+    proc = subprocess.Popen(cmd, shell=True, stdout=stdout_arg, stderr=subprocess.PIPE)
+    output, errput = proc.communicate()
     stat = proc.wait()
     expect(stat == 0, "Command: '%s' failed with error '%s'" % (cmd, errput))
+
+    return output
 
 ###############################################################################
 def probe_batch_system():
@@ -113,6 +116,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         default=False,
                         help="Cancel all queued jobs on exit")
 
+    parser.add_argument("-d", "--cdash", action="store_true", dest="cdash", default=False,
+                        help="Produce XML for test results that can be used for cdash")
+
     args = parser.parse_args(args[1:])
 
     global VERBOSE
@@ -121,10 +127,145 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     global CLEANUP
     CLEANUP = args.cleanup
 
-    return args.paths, args.no_wait, args.check_throughput
+    return args.paths, args.no_wait, args.check_throughput, args.cdash
 
 ###############################################################################
-def parse_test_status_file(file_contents, test_path, check_throughput):
+def get_test_time(test_path):
+###############################################################################
+    cmd = "grep 'TOT Run Time' /dev/null $(find %s -name 'ccsm_timing*') || true" % test_path
+    output = run_cmd(cmd, subprocess.PIPE)
+
+    tot_time = 0.0
+    for line in output.splitlines():
+        if (line != "" and not line.isspace()):
+            tokens = line.split()
+
+            if (len(tokens) < 5 or tokens[1:4] != ["TOT", "Run", "Time:"]):
+                warning("Line '%s' not in expected format")
+                continue
+
+            try:
+                cur_time = float(tokens[4])
+                tot_time += cur_time
+            except ValueError:
+                warning("Line '%s' not in expected format, '%s' not a valid float" % (line, tokens[4]))
+
+    if (tot_time == 0.0):
+        warning("No timing data found in %s" % test_path)
+
+    return tot_time
+
+###############################################################################
+def get_test_output(test_path):
+###############################################################################
+    output_file = os.path.join(test_path, "TestStatus.out")
+    if (os.path.exists(output_file)):
+        return open(output_file, 'r').read()
+    else:
+        warning("File '%s' not found" % output_file)
+        return ""
+
+###############################################################################
+def create_cdash_xml(start_time, results):
+###############################################################################
+    # Make necessary dirs
+    local_time_tuple = time.localtime(start_time)
+    subdir_name = time.strftime('%Y%m%d-%H%M', local_time_tuple)
+    data_rel_path = os.path.join("Testing", subdir_name)
+    os.makedirs(data_rel_path)
+
+    # Make tag file
+    tag_fd = open("Testing/TAG", "w")
+    tag_fd.write("%s\nExperimental" % subdir_name)
+    tag_fd.close()
+
+    # Preamble - skip for now?
+    '''<Site BuildName="dakota_core_rhel6_gcc_ompi"
+    BuildStamp="20150115-1944-Continuous"
+    Name="face"
+    Generator="ctest-2.8.11.1"
+    CompilerName=""
+    OSName="Linux"
+    Hostname="face.sandia.gov"
+    OSRelease="2.6.32-504.el6.x86_64"
+    OSVersion="#1 SMP Tue Sep 16 01:56:35 EDT 2014"
+    OSPlatform="x86_64"
+    Is64Bits="1"
+    VendorString="GenuineIntel"
+    VendorID="Intel Corporation"
+    FamilyID="6"
+    ModelID="44"
+    ProcessorCacheSize="12288"
+    NumberOfLogicalCPU="16"
+    NumberOfPhysicalCPU="8"
+    TotalVirtualMemory="26207"
+    TotalPhysicalMemory="24016"
+    LogicalProcessorsPerPhysical="2"
+    ProcessorClockFrequency="2394.04"
+    >'''
+
+    testing_elem = xmlet.Element("Testing")
+
+    start_date_time_elem = xmlet.SubElement(testing_elem, "StartDateTime")
+    start_date_time_elem.text = time.ctime(start_time)
+
+    start_test_time_elem = xmlet.SubElement(testing_elem, "StartTestTime")
+    start_test_time_elem.text = str(int(start_time))
+
+    test_list_elem = xmlet.SubElement(testing_elem, "TestList")
+    for test_name in sorted(results):
+        test_elem = xmlet.SubElement(test_list_elem, "Test")
+        test_elem.text = test_name
+
+    for test_name in sorted(results):
+        test_path, test_status = results[test_name]
+        test_passed = test_status == TEST_PASSED_STATUS
+        test_norm_path = test_path if os.path.isdir(test_path) else os.path.dirname(test_path)
+
+        full_test_elem = xmlet.SubElement(testing_elem, "Test")
+        full_test_elem.attrib["Status"] = "passed" if test_passed else "failed"
+
+        name_elem = xmlet.SubElement(full_test_elem, "Name")
+        name_elem.text = test_name
+
+        path_elem = xmlet.SubElement(full_test_elem, "Path")
+        path_elem.text = test_norm_path
+
+        full_name_elem = xmlet.SubElement(full_test_elem, "FullName")
+        full_name_elem.text = test_name
+
+        full_command_line_elem = xmlet.SubElement(full_test_elem, "FullCommandLine")
+        # text ?
+
+        results_elem = xmlet.SubElement(full_test_elem, "Results")
+
+        named_measurements = (
+            ("text/string",    "Exit Code",         test_status),
+            ("text/string",    "Exit Value",        "0" if test_passed else "1"),
+            ("numeric_double", "Execution Time",    str(get_test_time(test_norm_path))),
+            ("text/string",    "Completion Status", "Not Completed" if test_status in TEST_NOT_FINISHED_STATUS else "Completed"),
+            ("text/string",    "Command line",      "create_test")
+        )
+
+        for type_attr, name_attr, value in named_measurements:
+            named_measurement_elem = xmlet.SubElement(results_elem, "NamedMeasurement")
+            named_measurement_elem.attrib["type"] = type_attr
+            named_measurement_elem.attrib["name"] = name_attr
+
+            value_elem = xmlet.SubElement(named_measurement_elem, "Value")
+            value_elem.text = value
+
+        measurement_elem = xmlet.SubElement(results_elem, "Measurement")
+
+        value_elem = xmlet.SubElement(measurement_elem, "Value")
+        value_elem.text = get_test_output(test_norm_path)
+
+    etree = xmlet.ElementTree(testing_elem)
+
+    etree.write(os.path.join(data_rel_path, "Test.xml"))
+
+###############################################################################
+def parse_test_status_file(file_contents, status_file_path, check_throughput):
 ###############################################################################
     r"""
     >>> parse_test_status_file('PASS testname', '', False)
@@ -153,10 +294,10 @@ def parse_test_status_file(file_contents, test_path, check_throughput):
                 (not check_throughput and THROUGHPUT_TEST_STR in test_name)):
                 return real_test_name, status
         else:
-            print "WARNING: For '%s', line '%s' not in expected format" % (test_path, line)
+            warning("In '%s', line '%s' not in expected format" % (status_file_path, line))
 
     if (real_test_name is None):
-        print "WARNING: Empty status file for test", test_path
+        warning("Empty status file: %s" % status_file_path)
 
     return real_test_name, TEST_PASSED_STATUS
 
@@ -173,28 +314,34 @@ def wait_for_test(test_path, results, wait, check_throughput):
         if (os.path.exists(test_status_filepath)):
             test_status_fd = open(test_status_filepath, "r")
             test_status_contents = test_status_fd.read()
-            test_name, test_status = parse_test_status_file(test_status_contents, test_path, check_throughput)
+            test_name, test_status = parse_test_status_file(test_status_contents, test_status_filepath, check_throughput)
+
             if (test_status in TEST_NOT_FINISHED_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
                 verbose_print("Waiting for test to finish")
             else:
-                results.put( (test_status, test_path) )
+                results.put( (test_name, test_path, test_status) )
                 break
+
         else:
             if (wait and not SIGNAL_RECEIVED):
                 verbose_print("File '%s' does not yet exist" % test_status_filepath)
                 time.sleep(SLEEP_INTERVAL_SEC)
             else:
-                results.put( ("File '%s' doesn't exist" % test_status_filepath, test_path) )
+                test_name = os.path.abspath(test_status_filepath).split("/")[-2]
+                results.put( (test_name, test_path, "File '%s' doesn't exist" % test_status_filepath) )
                 break
 
 ###############################################################################
-def wait_for_tests(test_paths, no_wait, check_throughput):
+def wait_for_tests(test_paths, no_wait, check_throughput, cdash):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
+
+    if (cdash):
+        start_time = time.time()
 
     results = Queue.Queue()
 
@@ -204,20 +351,36 @@ def wait_for_tests(test_paths, no_wait, check_throughput):
         t.start()
 
     while threading.active_count() > 1:
-        time.sleep(1)
+        time.sleep(SLEEP_INTERVAL_SEC)
 
     tests_with_results = dict()
+    completed_test_paths = []
     while (not results.empty()):
-        test_status, test_path = results.get()
-        tests_with_results[test_path] = test_status
+        test_name, test_path, test_status = results.get()
+        if (test_name in tests_with_results):
+            prior_path, prior_status = tests_with_results[test_name]
+            if (test_status == prior_status):
+                warning("Test name '%s' was found in both '%s' and '%s'" %
+                        (test_name, test_path, prior_path))
+            else:
+                raise SystemExit("Test name '%s' was found in both '%s' and '%s' with different results" %
+                                 (test_name, test_path, prior_path))
 
-    expect(set(test_paths) == set(tests_with_results),
-           "Missing results for tests: %s" % (set(test_paths) - set(tests_with_results)) )
+        tests_with_results[test_name] = (test_path, test_status)
+        completed_test_paths.append(test_path)
+
+    expect(set(test_paths) == set(completed_test_paths),
+           "Missing results for test paths: %s" % (set(test_paths) - set(completed_test_paths)) )
 
     all_pass = True
-    for test_path, test_status in sorted(tests_with_results.iteritems()):
-        print "Test '%s' finished with status '%s'" % (test_path, test_status)
+    for test_name, test_data in sorted(tests_with_results.iteritems()):
+        test_path, test_status = test_data
+        print "Test '%s' finished with status '%s'" % (test_name, test_status)
+        print "    Path: %s" % test_path
         all_pass &= test_status == TEST_PASSED_STATUS
+
+    if (cdash):
+        create_cdash_xml(start_time, tests_with_results)
 
     return all_pass
 
@@ -228,9 +391,9 @@ def _main_func(description):
         doctest.testmod()
         return
 
-    test_paths, no_wait, check_throughput = parse_command_line(sys.argv, description)
+    test_paths, no_wait, check_throughput, cdash = parse_command_line(sys.argv, description)
 
-    sys.exit(0 if wait_for_tests(test_paths, no_wait, check_throughput) else 1)
+    sys.exit(0 if wait_for_tests(test_paths, no_wait, check_throughput, cdash) else 1)
 
 ###############################################################################
 
