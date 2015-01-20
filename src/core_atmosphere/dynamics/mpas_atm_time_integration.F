@@ -2471,7 +2471,7 @@ module atm_time_integration
 
       real (kind=RKIND), dimension( nVertLevels + 1 ) :: wduz, wdwz, wdtz, dpzx
       real (kind=RKIND), dimension( nVertLevels ) :: u_mix, ru_edge_w, q
-      real (kind=RKIND) :: theta_turb_flux, z1, z2, z3, z4, zm, z0, zp, r, redge, rcell
+      real (kind=RKIND) :: theta_turb_flux, z1, z2, z3, z4, zm, z0, zp, r
       real (kind=RKIND) :: d2fdx2_cell1, d2fdx2_cell2
 
       integer, dimension(:,:), pointer :: advCellsForEdge
@@ -2662,7 +2662,6 @@ module atm_time_integration
          ! Smagorinsky eddy viscosity, based on horizontal deformation (in this case on model coordinate surfaces).
          ! The integration coefficients were precomputed and stored in defc_a and defc_b
 
-! maybe an nCellsSolve issue?
          do iCell = cellStart,cellEnd
             d_diag(1:nVertLevels) = 0.0
             d_off_diag(1:nVertLevels) = 0.0
@@ -2703,7 +2702,7 @@ module atm_time_integration
 
 !$OMP BARRIER
 !$OMP MASTER
-      allocate(qtot(nVertLevels,1:nCells+1))            ! Previously accounted for garbage cell
+      allocate(qtot(nVertLevels,1:nCells+1))
 !$OMP END MASTER
 !$OMP BARRIER
 
@@ -2742,7 +2741,6 @@ module atm_time_integration
       do iCell = cellStart,cellEnd
          r = 1.0 / areaCell(iCell)
          do k = 1,nVertLevels
-! MGD CAN OPTIMIZE THIS -- just use h_divergence instead of divergence_ru
             h_divergence(k,iCell) = h_divergence(k,iCell) * r
             tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
 
@@ -3175,7 +3173,7 @@ module atm_time_integration
             end if
          end do
 #else
-         do iCell=cellSolveStart,cellSolveEnd
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) * 0.5
@@ -3219,7 +3217,7 @@ module atm_time_integration
             end if
          end do
 #else
-         do iCell=cellSolveStart,cellSolveEnd
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) * 0.5
@@ -3228,7 +3226,7 @@ module atm_time_integration
                   ru_edge_w(k) = fzm(k)*ru(k,iEdge) + fzp(k)*ru(k-1,iEdge)
                end do
 
-               flux_arr(:) = 0.0
+               flux_arr(1:nVertLevels) = 0.0
 
                ! flux_arr stores the value of w at the cell edge used in the horizontal transport
 
@@ -3281,7 +3279,7 @@ module atm_time_integration
 
          end do
 #else
-         do iCell=cellSolveStart,cellSolveEnd
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                cell1 = cellsOnEdge(1,iEdge)
@@ -3360,7 +3358,7 @@ module atm_time_integration
                   end if
                end do
 #else
-               do iCell=cellSolveStart,cellSolveEnd
+               do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
                   do i=1,nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(i,iCell)
                      cell1 = cellsOnEdge(1,iEdge)
@@ -3397,7 +3395,7 @@ module atm_time_integration
                   end if
                end do
 #else
-               do iCell=cellSolveStart,cellSolveEnd
+               do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
                   do i=1,nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(i,iCell)
                      cell1 = cellsOnEdge(1,iEdge)
@@ -3486,7 +3484,7 @@ module atm_time_integration
                end if
             end do
 #else
-            do iCell=cellStart,cellEnd
+            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
                do i=1,nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(i,iCell)
                   cell1 = cellsOnEdge(1,iEdge)
@@ -3611,7 +3609,7 @@ module atm_time_integration
 
 !----------- rhs for theta
 
-      tend_theta(1:nVertLevels,cellSolveStart:cellSolveEnd) = 0.0
+      tend_theta(1:nVertLevels,cellStart:cellEnd) = 0.0
 
       !
       !  horizontal advection for theta
@@ -3632,14 +3630,14 @@ module atm_time_integration
             end if
          end do
 #else
-         do iCell=cellSolveStart,cellSolveEnd
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) * 0.5
                do k=1,nVertLevels
-                  tend_theta(k,cell1) = tend_theta(k,cell1) - edge_sign * ru(k,iEdge) * (theta_m(k,cell1) + theta_m(k,cell2))
+                  tend_theta(k,iCell) = tend_theta(k,iCell) - edge_sign * ru(k,iEdge) * (theta_m(k,cell1) + theta_m(k,cell2))
                end do
             end do
          end do
@@ -3670,13 +3668,13 @@ module atm_time_integration
             end if
          end do
 #else
-         do iCell=cellSolveStart,cellSolveEnd
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
 
-               flux_arr(:) = 0.0
+               flux_arr(1:nVertLevels) = 0.0
 
                do j=1,nAdvCellsForEdge(iEdge)
                   iAdvCell = advCellsForEdge(j,iEdge)
@@ -3727,7 +3725,7 @@ module atm_time_integration
 
          end do
 #else
-         do iCell=cellSolveStart,cellSolveEnd
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                cell1 = cellsOnEdge(1,iEdge)
@@ -3768,10 +3766,10 @@ module atm_time_integration
 
       tend_theta_euler = 0.
 
-!MGD CONVERT THIS
       if (delsq_horiz_mixing) then
          if ( (h_theta_eddy_visc2 > 0.0) .and. (config_horiz_mixing == '2d_fixed') ) then
 
+#if MPI_ONLY
             do iEdge=1,nEdges
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
@@ -3787,10 +3785,27 @@ module atm_time_integration
   
                end if
             end do
+#else
+            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+               do i=1,nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(i,iCell)
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
 
-!MGD CONVERT THIS
+                  do k=1,nVertLevels
+                     theta_turb_flux = h_theta_eddy_visc2*prandtl_inv*(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
+                     theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
+                     flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
+                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+                  end do
+ 
+               end do
+            end do
+#endif
+
          else if (  ( config_horiz_mixing == '2d_smagorinsky') ) then
 
+#if MPI_ONLY
             do iEdge=1,nEdges
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
@@ -3807,6 +3822,24 @@ module atm_time_integration
   
                end if
             end do
+#else
+            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+               do i=1,nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(i,iCell)
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+
+                  do k=1,nVertLevels
+                     theta_turb_flux = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))*prandtl_inv  &
+                                           *(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
+                     theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
+                     flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
+                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+                  end do
+ 
+               end do
+            end do
+#endif
          end if
 
       end if
@@ -3816,13 +3849,12 @@ module atm_time_integration
 
 !$OMP BARRIER
 !$OMP MASTER 
-         allocate(delsq_theta(nVertLevels,1:nCells+1))   ! was allocated nCells+1
+         allocate(delsq_theta(nVertLevels,nCells+1))
 !$OMP END MASTER 
 !$OMP BARRIER
 
          delsq_theta(1:nVertLevels,cellStart:cellEnd) = 0.0
 
-!MGD double-check these...
 #ifdef MPI_ONLY
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
@@ -3872,17 +3904,19 @@ module atm_time_integration
             end if
          end do
 #else
-         do iCell=cellSolveStart,cellSolveEnd
+
+
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                edge_sign = edgesOnCell_sign(i,iCell)
-               redge = meshScalingDel4(iEdge) * h_theta_eddy_visc4 * prandtl_inv * dvEdge(iEdge) / (dcEdge(iEdge) * areaCell(iCell))
+               r = meshScalingDel4(iEdge) * h_theta_eddy_visc4 * prandtl_inv * dvEdge(iEdge) / (dcEdge(iEdge) * areaCell(iCell))
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
 !MGD here we compute this expensive flux twice for each edge.. could store in temp array?
 !MGD this won't work... need global size delsq_theta array...
                do k=1,nVertLevels
-                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - redge * (delsq_theta(k,cell2) - delsq_theta(k,cell1))
+                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - r * (delsq_theta(k,cell2) - delsq_theta(k,cell1))
                end do
             end do
          end do
