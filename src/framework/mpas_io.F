@@ -70,7 +70,8 @@ module mpas_io
                          MPAS_IO_ERR_WRONG_MODE         = -16, &
                          MPAS_IO_ERR_NO_UNLIMITED_DIM   = -17, &
                          MPAS_IO_ERR_UNIMPLEMENTED      = -18, &
-                         MPAS_IO_ERR_WOULD_CLOBBER      = -19
+                         MPAS_IO_ERR_WOULD_CLOBBER      = -19, &
+                         MPAS_IO_ERR_NOEXIST_READ       = -20
 
 
    type MPAS_IO_Handle_type
@@ -384,6 +385,12 @@ module mpas_io
             end if
          end if
       else
+         inquire(file=trim(filename), exist=exists)
+
+         if (.not. exists) then
+            if (present(ierr)) ierr = MPAS_IO_ERR_NOEXIST_READ
+            return
+         end if
 !write(stderrUnit,*) 'MGD PIO_openfile'
          pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_nowrite)
       endif
@@ -4394,6 +4401,8 @@ module mpas_io
             write(stderrUnit,*) 'MPAS IO Error: Unimplemented functionality'
          case (MPAS_IO_ERR_WOULD_CLOBBER)
             write(stderrUnit,*) 'MPAS IO Error: Would clobber existing file'
+         case (MPAS_IO_ERR_NOEXIST_READ)
+            write(stderrUnit,*) 'MPAS IO Error: Attempting to read a file which does not exist.'
          case default
             write(stderrUnit,*) 'MPAS IO Error: Unrecognized error code...'
       end select

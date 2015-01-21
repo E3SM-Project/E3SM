@@ -145,6 +145,8 @@ module mpas_bootstrapping
          write(stderrUnit,*) 'Error: Could not open input file '''//trim(mesh_filename)//''' to read mesh fields'
          write(stderrUnit,*) '************************************************************************************'
          call mpas_dmpar_abort(domain % dminfo)
+      else
+         write(stderrUnit,*) 'Bootstrapping framework with mesh fields from input file '''//trim(mesh_filename)//''''
       end if
 
 
