@@ -37,6 +37,10 @@
             dst_cursor % block => src_cursor % block
             dst_cursor % fieldName = src_cursor % fieldName
             dst_cursor % isVarArray = src_cursor % isVarArray
+            if ( associated( src_cursor % constituentNames ) ) then
+               allocate(dst_cursor % constituentNames(size(src_cursor % constituentNames, dim=1)))
+               dst_cursor % constituentNames(:) = src_cursor % constituentNames(:)
+            end if
             dst_cursor % isPersistent = src_cursor % isPersistent
             dst_cursor % isActive = src_cursor % isActive
             dst_cursor % hasTimeDimension = src_cursor % hasTimeDimension
