@@ -613,6 +613,19 @@ for mct, etc.
   <SCC>mpicc</SCC>
   <SFC>mpif90</SFC>
 </compiler>
+
+<compiler MACH="oic2" COMPILER="gnu">
+  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
+  <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdf -lnetcdff </ADD_SLIBS>
+  <INC_NETCDF>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/include</INC_NETCDF>
+  <LIB_NETCDF>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/lib</LIB_NETCDF>
+  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
+  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
+  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
+  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
+  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
+</compiler>
+
  
 <compiler COMPILER="intel" MACH="titan">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
