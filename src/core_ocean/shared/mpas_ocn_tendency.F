@@ -265,7 +265,7 @@ contains
       ! velocity tendency: pressure gradient
       !
       call mpas_timer_start("pressure grad", .false., velPgradTimer)
-      if (config_pressure_gradient_type.eq.'common_level_eos') then
+      if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          ! only pass EOS derivatives if needed.
          call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
          call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)

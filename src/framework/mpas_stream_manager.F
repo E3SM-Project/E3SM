@@ -61,7 +61,8 @@ module mpas_stream_manager
               MPAS_stream_mgr_ringing_alarms, &
               MPAS_stream_mgr_add_att, &
               MPAS_stream_mgr_write, &
-              MPAS_stream_mgr_read
+              MPAS_stream_mgr_read, &
+              MPAS_build_stream_filename
 
     private
 
@@ -2431,7 +2432,7 @@ module mpas_stream_manager
             if ( stream % filename_interval /= 'none' ) then
                 now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
                 call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
-                call build_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, stream % filename, ierr=local_ierr)
+                call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, stream % filename, ierr=local_ierr)
             else
                 call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
                 call mpas_expand_string(time_string, stream % filename_template, stream % filename)
@@ -2505,7 +2506,7 @@ module mpas_stream_manager
                 now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
                 call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
     
-                call build_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+                call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
             else
                 call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
                 call mpas_expand_string(time_string, stream % filename_template, temp_filename)
@@ -2840,6 +2841,8 @@ module mpas_stream_manager
         character (len=*), intent(out), optional :: actualWhen
         integer, intent(out) :: ierr
 
+        character (len=StrKIND) :: err_string
+
         type (MPAS_stream_list_type), pointer :: alarm_cursor
         type (MPAS_Time_type) :: now_time, ref_time, temp_time
         type (MPAS_TimeInterval_type) :: temp_interval
@@ -2907,7 +2910,7 @@ module mpas_stream_manager
             call mpas_set_time(now_time, dateTimeString=when, ierr=local_ierr)
             call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
             
-            call build_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+            call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
         else
             call mpas_expand_string(when, stream % filename_template, temp_filename)
         end if
@@ -2928,7 +2931,13 @@ module mpas_stream_manager
             call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, &
                                    precision=stream % precision, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
-                ierr = MPAS_STREAM_MGR_ERROR
+                if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
+                    write(err_string,'(a)') 'Stream '''//trim(stream % name)//''' attempted to read non-existent file '''//trim(stream % filename)//''''
+                    STREAM_ERROR_WRITE(trim(err_string))
+                    ierr = MPAS_STREAM_MGR_ERROR
+                else
+                    ierr = MPAS_STREAM_MGR_ERROR
+                end if
                 return
             end if
 
@@ -2959,7 +2968,13 @@ module mpas_stream_manager
            !
            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
-               ierr = MPAS_STREAM_MGR_ERROR
+               if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
+                   write(err_string,'(a)') 'Stream '''//trim(stream % name)//''' attempted to read non-existent file '''//trim(stream % filename)//''''
+                   STREAM_ERROR_WRITE(trim(err_string))
+                   ierr = MPAS_STREAM_MGR_ERROR
+               else
+                   ierr = MPAS_STREAM_MGR_ERROR
+               end if
                return
            end if
 
@@ -3064,7 +3079,7 @@ module mpas_stream_manager
 
            call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
            
-           call build_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, test_filename, ierr=local_ierr)
+           call mpas_build_stream_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, test_filename, ierr=local_ierr)
 
            STREAM_DEBUG_WRITE(' --- Retesting filename is ' COMMA trim(test_filename))
 
@@ -3234,7 +3249,7 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
-    !  routine build_filename
+    !  routine mpas_build_stream_filename
     !
     !> \brief Construct the filename that contains a specific time in a stream
     !> \author Michael Duda, Doug Jacobsen
@@ -3251,7 +3266,7 @@ module mpas_stream_manager
     !>  Return error codes:
     !>  0 no error
     !-----------------------------------------------------------------------
-    subroutine build_filename(ref_time, when, filename_interval, filename_template, filename, ierr) !{{{
+    subroutine mpas_build_stream_filename(ref_time, when, filename_interval, filename_template, filename, ierr) !{{{
 
         implicit none
 
@@ -3314,7 +3329,7 @@ module mpas_stream_manager
 
         call mpas_expand_string(when_string, filename_template, filename)
 
-    end subroutine build_filename !}}}
+    end subroutine mpas_build_stream_filename !}}}
 
 
     !-----------------------------------------------------------------------

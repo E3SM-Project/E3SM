@@ -822,7 +822,7 @@ module mpas_timekeeping
                      end if
 
                      nowInterval = alarmNow - alarmPtr % prevRingTime
-                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
                      alarmPtr % prevRingTime = alarmNow - nowRemainder
                   else
                      if (present(interval)) then
@@ -830,7 +830,7 @@ module mpas_timekeeping
                      end if
 
                      nowInterval = alarmPtr % prevRingTime - alarmNow
-                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
                      alarmPtr % prevRingTime = alarmNow + nowRemainder
                   end if
                end if
@@ -964,6 +964,8 @@ module mpas_timekeeping
             if (present(ierr)) ierr = 1
             write(stderrUnit,*) 'ERROR: Invalid DateTime string', dateTimeString
             return
+         else
+            deallocate(subStrings)
          end if
 
          call mpas_split_string(dateTimeString_, "_", subStrings)
@@ -1354,6 +1356,10 @@ module mpas_timekeeping
           call ESMF_TimeIntervalGet(interval % ti, D=days, S_i8=seconds, Sn=sn, Sd=sd, rc=ierr)
       endif
 
+      if (sd == 0) then   ! may only occur if (sn == 0)?
+         sd = 1
+      end if
+
       if (present(dt)) then
          dt = (days * 24 * 60 * 60) + seconds + (sn / sd)
       end if
@@ -1390,9 +1396,6 @@ module mpas_timekeeping
       end if
 
       if (present(S_d)) then
-         if (sd == 0) then   ! may only occur if (sn == 0)?
-            sd = 1
-         end if
          S_d = sd
       end if
 
