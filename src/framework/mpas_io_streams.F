@@ -161,6 +161,10 @@ module mpas_io_streams
       !
       ! Catch a few special errors
       !
+      if (io_err == MPAS_IO_ERR_NOEXIST_READ) then
+         if (present(ierr)) ierr = MPAS_IO_ERR_NOEXIST_READ
+         return
+      end if
       if (io_err == MPAS_IO_ERR_WOULD_CLOBBER) then
          if (present(ierr)) ierr = MPAS_STREAM_CLOBBER_FILE
          return
