@@ -69,6 +69,10 @@
 
 
 	<nml_record name="physical_parameters" in_defaults="true">
+		<nml_option name="config_ice_specific_heat" type="real" default_value="2009.0" units="J kg^{-1} deg^{-1}"
+		            description="specific heat capacity of ice"
+		            possible_values="Any positive real value"
+		/>
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
 		            description="ice density to use"
 		            possible_values="Any positive real value"
@@ -80,6 +84,10 @@
 		<nml_option name="config_sea_level" type="real" default_value="0.0" units="m above datum"
 		            description="sea level to use for calculating floatation"
 		            possible_values="Any real value"
+		/>
+		<nml_option name="config_seconds_per_year" type="real" default_value="31536000.0" units="unitless"
+		            description="number of seconds per 365-day year"
+		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_default_flowParamA" type="real" default_value="3.1709792e-24" units="s^{-1} Pa^{-n}"
 		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  Defaults to the SI representation of 1.0e-16 yr^{-1} Pa^{-3}."
@@ -137,15 +145,18 @@
 
 
 	<nml_record name="io" in_defaults="true">
-<!--		These options to be implemented in the future.
-<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units="unitless"
-		            description="Timestamp determining how often a global statistics files should be written."
-		            possible_values="'DDDD_HH:MM:SS'"
+                <nml_option name="config_stats_interval" type="integer" default_value="0" units="unitless"
+		            description="Integer specifying interval (number of timesteps) for writing global/local statistics"
+		            possible_values="Any positive integer value greater than or equal to 0."
 		/>
-		<nml_option name="config_write_stats_on_startup" type="logical" default_value=".true." units="unitless"
-		            description="Logical flag determining if statistics files should be written prior to the first time step."
+		<nml_option name="config_write_stats_on_startup" type="logical" default_value=".false." units="unitless"
+		            description="Logical flag determining if statistics should be written prior to the first time step."
 		            possible_values=".true. or .false."
-		/> -->
+                />
+		<nml_option name="config_stats_cell_ID" type="integer" default_value="1" units="unitless"
+		            description="global ID for the cell selected for local statistics/diagnostics"
+		            possible_values="Any positive integer value greater than or equal to 0."
+                />
 		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units="unitless"
 		            description="Logical flag determining if an output file should be written prior to the first time step."
 		            possible_values=".true. or .false."
@@ -329,9 +340,15 @@
 		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
 		     description="layer thickness"
 		/>
+		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="degrees Celsius"
+		     description="upper surface ice temperature"
+		/>
+		<var name="basalTemperature" type="real" dimensions="nCells Time" units="degrees Celsius"
+		     description="lower surface ice temperature"
+		/>
 		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
 			<var name="temperature" array_group="dynamics" units="degrees Celsius"
-			     description="ice temperature"
+			     description="interior ice temperature"
 			/>
 		</var_array>
 
@@ -528,6 +545,7 @@
 		<var name="bedTopography" type="real" dimensions="nCells" units="m above datum"
 		     description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
 		/>
+                <!-- Should sfcMassBal be a state variable instead? -->
 		<var name="sfcMassBal" type="real" dimensions="nCells" units="kg m^2 s^{-1}"
 		     description="Surface mass balance"
 		/>
