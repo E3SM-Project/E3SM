@@ -471,7 +471,7 @@ contains
       call mpas_timer_start("equation of state", .false., diagEOSTimer)
 
       ! compute in-place density
-      if (config_pressure_gradient_type.eq.'common_level_eos') then
+      if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          ! only compute EOS derivatives if needed.
          call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
          call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
@@ -697,7 +697,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, oldLayerThickness, layerThicknessEdge, &
-     normalVelocity, oldSSH, newHighFreqThickness, dt, vertAleTransportTop, err)!{{{
+     normalVelocity, oldSSH, dt, vertAleTransportTop, err, newHighFreqThickness)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -723,7 +723,7 @@ contains
       real (kind=RKIND), dimension(:), intent(in) :: &
          oldSSH     !< Input: sea surface height at old time
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: &
          newHighFreqThickness   !< Input: high frequency thickness.  Alters ALE thickness.
 
       real (kind=RKIND), intent(in) :: &
@@ -807,7 +807,11 @@ contains
       !
       ! Compute desired thickness at new time
       !
-      call ocn_ALE_thickness(meshPool, verticalMeshPool, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)
+      if (present(newHighFreqThickness)) then
+        call ocn_ALE_thickness(meshPool, verticalMeshPool, oldSSH, div_hu_btr, dt, ALE_thickness, err, newHighFreqThickness)
+      else
+        call ocn_ALE_thickness(meshPool, verticalMeshPool, oldSSH, div_hu_btr, dt, ALE_thickness, err)
+      endif
 
       !
       ! Vertical transport through layer interfaces

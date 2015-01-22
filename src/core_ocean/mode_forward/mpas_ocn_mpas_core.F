@@ -156,7 +156,8 @@ module mpas_core
          call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=err)
       end if
       call mpas_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err)
+      call mpas_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err)
+      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err)
 
       ! Initialize submodules before initializing blocks.
       call ocn_timestep_init(err)
@@ -932,7 +933,7 @@ module mpas_core
          frazilIceActive = .true.
       end if
 
-      if (config_pressure_gradient_type.eq.'common_level_eos') then
+      if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          inSituEOSActive = .true.
       end if
 

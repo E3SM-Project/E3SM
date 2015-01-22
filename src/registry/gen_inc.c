@@ -1366,37 +1366,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 		fortprintf(fd, "\n");
 
-		// Setup array pointer
-		fortprintf(fd, "! Allocate space for data\n");
-		if(!vararrpersistence || strcmp(vararrpersistence, "scratch") != 0){
-			switch(ndims){
-				default:
-					break;
-				case 1:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 2:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 3:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 4:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 5:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n", pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-			}
-
-			fortprintf(fd, "      %s(%d) %% array = %s\n", pointer_name, time_lev, default_value);
-
-		} else {
-			if(ndims > 0){
-				fortprintf(fd, "      nullify(%s(%d) %% array)\n", pointer_name, time_lev);
-			}
-		}
-
 		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
@@ -1423,11 +1392,44 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 		snprintf(spacing, 1024, "         ");
 	}
 
-
 	// Add field to pool
 	fortprintf(fd, "! Add field to pool\n");
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", spacing, pointer_name, time_lev);
+
+		// Setup array pointer
+		fortprintf(fd, "! Allocate space for data\n");
+		if(!vararrpersistence || strcmp(vararrpersistence, "scratch") != 0){
+			switch(ndims){
+				default:
+					break;
+				case 1:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 2:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 3:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n", 
+							   spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 4:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n", 
+							  spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 5:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n", 
+							  spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+			}
+
+			fortprintf(fd, "%s%s(%d) %% array = %s\n", spacing, pointer_name, time_lev, default_value);
+
+		} else {
+			if(ndims > 0){
+				fortprintf(fd, "%snullify(%s(%d) %% array)\n", spacing, pointer_name, time_lev);
+			}
+		}
 	}
 	fortprintf(fd, "%scall mpas_pool_add_field(newSubPool, '%s', %s)\n", spacing, vararrname_in_code, pointer_name);
 
@@ -1514,12 +1516,14 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	// Determine name of pointer for this field.
 	set_pointer_name(type, ndims, pointer_name);
+
+
 	fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
 
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "\n");
 		fortprintf(fd, "! Setting up time level %d\n", time_lev);
-		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n",  pointer_name, time_lev);
+		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n", pointer_name, time_lev);
 		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, varname);
 		fortprintf(fd, "      %s(%d) %% isVarArray = .false.\n", pointer_name, time_lev);
 		if(hasTime) {
@@ -1564,39 +1568,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 				}
 			}
 			free(tofree);
-
-
-
-			fortprintf(fd, "! Allocate space for data\n");
-			switch(ndims){
-				default:
-					break;
-				case 1:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 2:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n",
-							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 3:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n",
-							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 4:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n",
-							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 5:
-					fortprintf(fd, "      allocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n",
-							pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-			}
-
-			fortprintf(fd, "      %s(%d) %% array = %s\n", pointer_name, time_lev, default_value);
-		} else if(ndims == 0){
-			fortprintf(fd, "      %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
 		}
-
 
 		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
@@ -1626,6 +1598,38 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", package_spacing, pointer_name, time_lev);
+
+
+		if(ndims > 0){
+			fortprintf(fd, "! Allocate space for data\n");
+			switch(ndims){
+				default:
+					break;
+				case 1:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", package_spacing, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 2:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n",
+							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 3:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n",
+							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 4:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n",
+							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+				case 5:
+					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n",
+							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
+					break;
+			}
+
+			fortprintf(fd, "%s%s(%d) %% array = %s\n", package_spacing, pointer_name, time_lev, default_value);
+		} else if(ndims == 0){
+			fortprintf(fd, "%s%s(%d) %% scalar = %s\n", package_spacing, pointer_name, time_lev, default_value);
+		}
 	}
 	fortprintf(fd, "%scall mpas_pool_add_field(newSubPool, '%s', %s)\n", package_spacing , varname_in_code, pointer_name);
 
@@ -2368,6 +2372,7 @@ int push_attributes(ezxml_t currentPosition){/*{{{*/
 
 int merge_structs_and_var_arrays(ezxml_t currentPosition){/*{{{*/
 	ezxml_t old_child, new_child;
+	ezxml_t next_child;
 	ezxml_t childStruct1, childStruct2, lastStruct;
 
 	const char *name, *name2;
@@ -2395,15 +2400,18 @@ int merge_structs_and_var_arrays(ezxml_t currentPosition){/*{{{*/
 
 				if(strcmp(name, name2) == 0){
 					// Merge children into childStruct1, and "remove" childStruct2
-					for(old_child = ezxml_child(childStruct2, "var"); old_child; old_child = old_child->next){
+					for(old_child = ezxml_child(childStruct2, "var"); old_child; old_child = next_child){
+						next_child = ezxml_next(old_child);
 						new_child = ezxml_insert(old_child, childStruct1, strlen(childStruct1->txt));
 					}
 
-					for(old_child = ezxml_child(childStruct2, "var_array"); old_child; old_child = old_child->next){
+					for(old_child = ezxml_child(childStruct2, "var_array"); old_child; old_child = next_child){
+						next_child = ezxml_next(old_child);
 						new_child = ezxml_insert(old_child, childStruct1, strlen(childStruct1->txt));
 					}
 
-					for(old_child = ezxml_child(childStruct2, "var_struct"); old_child; old_child = old_child->next){
+					for(old_child = ezxml_child(childStruct2, "var_struct"); old_child; old_child = next_child){
+						next_child = ezxml_next(old_child);
 						new_child = ezxml_insert(old_child, childStruct1, strlen(childStruct1->txt));
 					}
 
@@ -2438,7 +2446,8 @@ int merge_structs_and_var_arrays(ezxml_t currentPosition){/*{{{*/
 
 				if(strcmp(name, name2) == 0){
 					// Merge var_arrays and remove childStruct2
-					for(old_child = ezxml_child(childStruct2, "var"); old_child; old_child = old_child->next){
+					for(old_child = ezxml_child(childStruct2, "var"); old_child; old_child = next_child){
+						next_child = ezxml_next(old_child);
 						new_child = ezxml_insert(old_child, childStruct1, strlen(childStruct1->txt));
 					}
 
