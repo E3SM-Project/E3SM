@@ -17,6 +17,14 @@
 !   subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels, dt)
 !   subroutine atm_init_coupled_diagnostics( state, time_lev, diag, mesh, configs )
 
+!!$OMP BARRIER
+!!$OMP MASTER
+!write(0,'(a,e22.15,1x,e22.15,1x,e22.15)') '23) min/max/sum delsq_theta = ', &
+!     minval(delsq_theta(:,1:nCells)), maxval(delsq_theta(:,1:nCells)),
+!sum(delsq_theta(:,1:nCells))
+!!$OMP END MASTER
+!!$OMP BARRIER
+
 module atm_time_integration
 
    use mpas_derived_types
@@ -3669,8 +3677,6 @@ module atm_time_integration
          do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
 
                flux_arr(1:nVertLevels) = 0.0
 
@@ -3908,12 +3914,14 @@ module atm_time_integration
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                edge_sign = edgesOnCell_sign(i,iCell)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
 
                do k=1,nVertLevels
                   theta_turb_flux = h_theta_eddy_visc4*prandtl_inv*(delsq_theta(k,cell2) - delsq_theta(k,cell1))/dcEdge(iEdge)
                   theta_turb_flux = theta_turb_flux * meshScalingDel4(iEdge)
                   flux = dvEdge (iEdge) * theta_turb_flux
-                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edgesOnCell_sign(i,iCell) * flux / areaCell(cell1)
+                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
                end do
 
             end do
