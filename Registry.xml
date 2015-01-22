@@ -216,6 +216,15 @@
 
 
 <!-- ======================================================================= -->
+<!-- PACKAGE DEFINITIONS -->
+
+	<packages>
+		<package name="SIAvelocity" description="Variables only needed by the SIA velocity solver"/>
+		<package name="higherOrderVelocity" description="This package includes variables required for higher order velocity solvers."/>
+	</packages>
+
+
+<!-- ======================================================================= -->
 <!-- I/O STREAM DEFINITIONS -->
 
 	<streams>
@@ -269,15 +278,22 @@
 				immutable="true"
 				filename_template="landice_grid.nc"
 				input_interval="initial_only">
-
 			<stream name="basicmesh"/>
 			<var_array name="tracers"/>
 			<var name="thickness"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
-			<var name="beta"/>
 		</stream>
 
+		<stream name="inputHigherOrderVelocity"
+				type="input"
+				immutable="true"
+				packages="higherOrderVelocity"
+				filename_template="landice_grid.nc2"
+				input_interval="initial_only">
+		<!-- immutable should be true for inputHigherOrderVelocity, but currently there is an error if two immutable streams have the same filename template.  Once it is immutable, runtime_format is no longer needed. -->
+			<var name="beta"/>
+		</stream>
 
 		<stream name="restart"
 				type="input;output"
@@ -331,13 +347,6 @@
 		</stream>
 
 	</streams>
-
-
-<!-- ======================================================================= -->
-<!-- PACKAGES -->
-<packages>
-<package name="SIAvelocity" description="Variables only needed by the SIA velocity solver"/>
-</packages>
 
 
 <!-- ======================================================================= -->
@@ -424,6 +433,7 @@
 		/>
 		<var name="anyVertexMaskChanged"              type="integer"  dimensions="Time"
 		     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
+			packages="higherOrderVelocity"
 		/>
 	</var_struct>
 
@@ -588,6 +598,7 @@
 		/>
 		<var name="beta" type="real" dimensions="nCells" units="Pa s m^{−1}"
 		     description="higher-order basal traction parameter"
+			packages="higherOrderVelocity"
 		/>
 		<!-- Note: beta should be moved to diagnostic fields when a process model is added -->
 	</var_struct>
