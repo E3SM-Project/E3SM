@@ -7,12 +7,8 @@
 !
 
 !!!!!!! OMP TODO !!!!!!!!
-!   subroutine atm_rk_integration_setup( state, diag )
-!   subroutine atm_compute_moist_coefficients( dims, state, diag, mesh )
-!!   subroutine atm_compute_vert_imp_coefs(state, mesh, diag, configs, nVertLevels, dts)
-!!   subroutine atm_set_smlstep_pert_variables( tend, diag, mesh, configs )
+!!   subroutine atm_recover_large_step_variables( state, diag, tend, mesh, configs, dt, ns, rk_step )
 !   subroutine atm_advance_acoustic_step( state, diag, tend, mesh, configs, nCells, nVertLevels, dts )
-!   subroutine atm_recover_large_step_variables( state, diag, tend, mesh, configs, dt, ns, rk_step )
 !   subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nVertLevels, dt)
 !   subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels, dt)
 !   subroutine atm_init_coupled_diagnostics( state, time_lev, diag, mesh, configs )
@@ -270,7 +266,45 @@ module atm_time_integration
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', state)
          call mpas_pool_get_subpool(block % structs, 'diag', diag)
-         call atm_rk_integration_setup(state, diag)
+
+         call mpas_pool_get_dimension(state, 'nCells', nCells)
+         call mpas_pool_get_dimension(state, 'nEdges', nEdges)
+         call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+         call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_dimension(state, 'nVerticesSolve', nVerticesSolve)
+
+!$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
+            nthreads = OMP_get_num_threads()
+            threadid = OMP_get_thread_num()
+
+            cellStart = (threadid * nCells / nthreads) + 1
+            cellEnd = ((threadid+1) * nCells / nthreads)
+            edgeStart = (threadid * nEdges / nthreads) + 1
+            edgeEnd = ((threadid+1) * nEdges / nthreads)
+            vertexStart = (threadid * nVertices / nthreads) + 1
+            vertexEnd = ((threadid+1) * nVertices / nthreads)
+
+            cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
+            cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
+            edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
+            edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
+            vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
+            vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
+
+!$OMP MASTER
+         timerid = 2
+         call start_timer(timerid)
+!$OMP END MASTER
+         call atm_rk_integration_setup(state, diag, &
+                                       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+!$OMP MASTER
+         call stop_timer(timerid, secs, n_secs)
+         write(0,'(a,i3,a1,i9.9)') 'rk_integration_setup timing: ', secs, '.', n_secs
+!$OMP END MASTER
+!$OMP END PARALLEL
+
          block => block % next
       end do
 
@@ -282,15 +316,44 @@ module atm_time_integration
 
          RK3_DYNAMICS : do rk_step = 1, 3  ! Runge-Kutta loop
 
-            if(debug) write(0,*) ' rk substep ', rk_step
-
             block => domain % blocklist
             do while (associated(block))
                ! The coefficients are set for owned cells (cqw) and for all edges of owned cells, 
                call mpas_pool_get_subpool(block % structs, 'state', state)
                call mpas_pool_get_subpool(block % structs, 'diag', diag)
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-               call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh )    !MGD could do away with dimensions arg
+
+!$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
+               nthreads = OMP_get_num_threads()
+               threadid = OMP_get_thread_num()
+   
+               cellStart = (threadid * nCells / nthreads) + 1
+               cellEnd = ((threadid+1) * nCells / nthreads)
+               edgeStart = (threadid * nEdges / nthreads) + 1
+               edgeEnd = ((threadid+1) * nEdges / nthreads)
+               vertexStart = (threadid * nVertices / nthreads) + 1
+               vertexEnd = ((threadid+1) * nVertices / nthreads)
+   
+               cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
+               cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
+               edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
+               edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
+               vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
+               vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
+
+!$OMP MASTER
+               timerid = 2
+               call start_timer(timerid)
+!$OMP END MASTER
+               call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh, &     !MGD could do away with dimensions arg
+                                          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+!$OMP MASTER
+               call stop_timer(timerid, secs, n_secs)
+               write(0,'(a,i3,a1,i9.9)') 'compute_moist_coeffs timing: ', secs, '.', n_secs
+!$OMP END MASTER
+!$OMP END PARALLEL
+   
                block => block % next
             end do
 
@@ -495,7 +558,43 @@ module atm_time_integration
                call mpas_pool_get_subpool(block % structs, 'diag', diag)
                call mpas_pool_get_subpool(block % structs, 'tend', tend)
 
-               call atm_recover_large_step_variables( state, diag, tend, mesh, block % configs, rk_timestep(rk_step), number_sub_steps(rk_step), rk_step  )
+               call mpas_pool_get_dimension(state, 'nCells', nCells)
+               call mpas_pool_get_dimension(state, 'nEdges', nEdges)
+               call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+               call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
+               call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
+               call mpas_pool_get_dimension(state, 'nVerticesSolve', nVerticesSolve)
+
+!$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
+               nthreads = OMP_get_num_threads()
+               threadid = OMP_get_thread_num()
+   
+               cellStart = (threadid * nCells / nthreads) + 1
+               cellEnd = ((threadid+1) * nCells / nthreads)
+               edgeStart = (threadid * nEdges / nthreads) + 1
+               edgeEnd = ((threadid+1) * nEdges / nthreads)
+               vertexStart = (threadid * nVertices / nthreads) + 1
+               vertexEnd = ((threadid+1) * nVertices / nthreads)
+   
+               cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
+               cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
+               edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
+               edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
+               vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
+               vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
+
+!$OMP MASTER
+            timerid = 3
+            call start_timer(timerid)
+!$OMP END MASTER
+               call atm_recover_large_step_variables( state, diag, tend, mesh, block % configs, rk_timestep(rk_step), number_sub_steps(rk_step), rk_step, &
+                                          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+!$OMP MASTER
+            call stop_timer(timerid, secs, n_secs)
+            write(0,'(a,i3,a1,i9.9)') 'recover_large_step timing: ', secs, '.', n_secs
+!$OMP END MASTER
+!$OMP END PARALLEL
 
                block => block % next
             end do
@@ -815,12 +914,16 @@ module atm_time_integration
 
 !---
 
-   subroutine atm_rk_integration_setup( state, diag )
+   subroutine atm_rk_integration_setup( state, diag, &
+                                   cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
       implicit none
 
       type (mpas_pool_type), intent(inout) :: state
       type (mpas_pool_type), intent(inout) :: diag
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
 
       real (kind=RKIND), dimension(:,:), pointer :: ru
       real (kind=RKIND), dimension(:,:), pointer :: ru_save
@@ -859,23 +962,25 @@ module atm_time_integration
       call mpas_pool_get_array(state, 'scalars', scalars_1, 1)
       call mpas_pool_get_array(state, 'scalars', scalars_2, 2)
 
-      ru_save(:,:) = ru(:,:)
-      rw_save(:,:) = rw(:,:)
-      rtheta_p_save(:,:) = rtheta_p(:,:)
-      rho_p_save(:,:) = rho_p(:,:)
+      ru_save(:,edgeStart:edgeEnd) = ru(:,edgeStart:edgeEnd)
+      rw_save(:,cellStart:cellEnd) = rw(:,cellStart:cellEnd)
+      rtheta_p_save(:,cellStart:cellEnd) = rtheta_p(:,cellStart:cellEnd)
+      rho_p_save(:,cellStart:cellEnd) = rho_p(:,cellStart:cellEnd)
 
-      u_2(:,:) = u_1(:,:)
-      w_2(:,:) = w_1(:,:)
-      theta_m_2(:,:) = theta_m_1(:,:)
-      rho_zz_2(:,:) = rho_zz_1(:,:)
-      rho_zz_old_split(:,:) =  rho_zz_1(:,:)
-      scalars_2(:,:,:) = scalars_1(:,:,:)
+      u_2(:,edgeStart:edgeEnd) = u_1(:,edgeStart:edgeEnd)
+      w_2(:,cellStart:cellEnd) = w_1(:,cellStart:cellEnd)
+      theta_m_2(:,cellStart:cellEnd) = theta_m_1(:,cellStart:cellEnd)
+      rho_zz_2(:,cellStart:cellEnd) = rho_zz_1(:,cellStart:cellEnd)
+      rho_zz_old_split(:,cellStart:cellEnd) =  rho_zz_1(:,cellStart:cellEnd)
+      scalars_2(:,:,cellStart:cellEnd) = scalars_1(:,:,cellStart:cellEnd)
 
    end subroutine atm_rk_integration_setup
 
 !-----
 
-   subroutine atm_compute_moist_coefficients( dims, state, diag, mesh )
+   subroutine atm_compute_moist_coefficients( dims, state, diag, mesh, &
+                                   cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
       ! the moist coefficients cqu and cqw serve to transform the inverse dry density (1/rho_d) 
       ! into the inverse full (moist) density (1/rho_m).
@@ -886,7 +991,8 @@ module atm_time_integration
       type (mpas_pool_type), intent(inout) :: state
       type (mpas_pool_type), intent(inout) :: diag
       type (mpas_pool_type), intent(inout) :: mesh
-
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
 
       integer :: iEdge, iCell, k, cell1, cell2, iq
       integer, pointer :: nCells, nEdges, nVertLevels, nCellsSolve
@@ -910,26 +1016,26 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'cqu', cqu)
 
 
-      do iCell = 1, nCellsSolve
+      do iCell = cellSolveStart,cellSolveEnd
          do k = 2, nVertLevels
-            qtot = 0.
+            qtot = 0.0
             do iq = moist_start, moist_end
                qtot = qtot + 0.5 * (scalars(iq, k, iCell) + scalars(iq, k-1, iCell))
             end do
-            cqw(k,iCell) = 1./(1.+qtot)
+            cqw(k,iCell) = 1.0 / (1.0 + qtot)
          end do
       end do
 
-      do iEdge = 1, nEdges
+      do iEdge = edgeStart,edgeEnd
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
             do k = 1, nVertLevels
-               qtot = 0.
+               qtot = 0.0
                do iq = moist_start, moist_end
                   qtot = qtot + 0.5 * ( scalars(iq, k, cell1) + scalars(iq, k, cell2) )
                end do
-               cqu(k,iEdge) = 1./( 1. + qtot)
+               cqu(k,iEdge) = 1.0 / (1.0 + qtot)
             end do
          end if
       end do
@@ -1535,7 +1641,9 @@ module atm_time_integration
 
 !------------------------
 
-   subroutine atm_recover_large_step_variables( state, diag, tend, mesh, configs, dt, ns, rk_step )
+   subroutine atm_recover_large_step_variables( state, diag, tend, mesh, configs, dt, ns, rk_step, &
+                                       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
       ! reconstitute state variables from acoustic-step perturbation variables 
       ! after the acoustic steps.  The perturbation variables were originally set in
@@ -1551,26 +1659,27 @@ module atm_time_integration
       type (mpas_pool_type), intent(in) :: configs
       integer, intent(in) :: ns, rk_step
       real (kind=RKIND), intent(in) :: dt
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
 
 
       real (kind=RKIND), dimension(:,:), pointer :: wwAvg, rw_save, w, rw, rw_p, rtheta_p, rtheta_pp,   &
                                                     rtheta_p_save, rt_diabatic_tend, rho_p, rho_p_save, &
                                                     rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, &
                                                     exner, exner_base, rtheta_base, pressure_p,         &
-                                                    zz, theta_m, pressure_b, qvapor
+                                                    zz, theta_m, pressure_b
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, dvEdge, areaCell
-      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3 
-      integer, dimension(:,:), pointer :: cellsOnEdge
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
+      real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
+      integer, dimension(:), pointer :: nEdgesOnCell
 
-      integer :: iCell, iEdge, k, cell1, cell2
+      integer :: i, iCell, iEdge, k, cell1, cell2
       integer, pointer :: nVertLevels, nCells, nCellsSolve, nEdges, nEdgesSolve
       real (kind=RKIND) :: rcv, p0, flux
       real (kind=RKIND), pointer :: cf1, cf2, cf3, coef_3rd_order
       integer, pointer :: config_theta_adv_order
-      integer, pointer :: index_qv
-
-      logical, parameter :: debug=.false.
 
 
       call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
@@ -1586,10 +1695,6 @@ module atm_time_integration
       call mpas_pool_get_array(tend, 'rt_diabatic_tend', rt_diabatic_tend)
       call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
       call mpas_pool_get_array(state, 'scalars', scalars, 2)
-
-      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
-
-      qvapor => scalars(index_qv,:,:)   ! MGD does this actually work?
 
       call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
       call mpas_pool_get_array(diag, 'rho_p', rho_p)
@@ -1612,11 +1717,16 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'zb', zb)
       call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'zb_cell', zb_cell)
+      call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
 
       call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
@@ -1632,14 +1742,14 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
 
       rcv = rgas/(cp-rgas)
-      p0 = 1.e+05  ! this should come from somewhere else...
+      p0 = 1.0e+05  ! this should come from somewhere else...
 
-      if (config_theta_adv_order /=3) coef_3rd_order = 0.0
+      if (config_theta_adv_order /= 3) coef_3rd_order = 0.0
 
       ! compute new density everywhere so we can compute u from ru.
       ! we will also need it to compute theta_m below
 
-      do iCell = 1, nCells
+      do iCell=cellStart,cellEnd
 
          do k = 1, nVertLevels
 
@@ -1648,7 +1758,8 @@ module atm_time_integration
             rho_zz(k,iCell) = rho_p(k,iCell) + rho_base(k,iCell)
          end do
 
-         w(1,iCell) = 0.
+         w(1,iCell) = 0.0
+
          do k = 2, nVertLevels
             wwAvg(k,iCell) = rw(k,iCell) + (wwAvg(k,iCell) / float(ns))
 
@@ -1656,10 +1767,11 @@ module atm_time_integration
 
 
           ! pick up part of diagnosed w from omega
-            w(k,iCell) = rw(k,iCell)/( (fzm(k)*zz (k,iCell)+fzp(k)*zz (k-1,iCell))   &
+            w(k,iCell) = rw(k,iCell)/( (fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))   &
                                       *(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell)) )
          end do
-         w(nVertLevels+1,iCell) = 0.
+
+         w(nVertLevels+1,iCell) = 0.0
 
          if (rk_step == 3) then
             do k = 1, nVertLevels
@@ -1690,6 +1802,7 @@ module atm_time_integration
       ! initializing the "garbage cell" of rho_zz to a non-zero value
       rho_zz(:,nCells+1) = 1.0
 
+#if MPI_ONLY
       do iEdge = 1, nEdges
 
          cell1 = cellsOnEdge(1,iEdge)
@@ -1720,6 +1833,48 @@ module atm_time_integration
          end do
 
       end do
+#else
+
+!$OMP BARRIER
+
+      do iEdge=edgeStart,edgeEnd
+
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+
+         do k = 1, nVertLevels
+            ruAvg(k,iEdge) = ru(k,iEdge) + (ruAvg(k,iEdge) / float(ns))
+            ru(k,iEdge) = ru(k,iEdge) + ru_p(k,iEdge)
+            u(k,iEdge) = 2.*ru(k,iEdge)/(rho_zz(k,cell1)+rho_zz(k,cell2))
+         end do
+      end do
+
+!$OMP BARRIER
+
+      do iCell=cellStart,cellEnd
+
+         !  finish recovering w from (rho*omega)_p.  as when we formed (rho*omega)_p from u and w, we need
+         !  to use the same flux-divergence operator as is used for the horizontal theta transport
+         !  (See Klemp et al 2003).
+
+         do i=1,nEdgesOnCell(iCell)
+            iEdge=edgesOnCell(i,iCell)
+
+            flux = (cf1*ru(1,iEdge) + cf2*ru(2,iEdge) + cf3*ru(3,iEdge))
+            w(1,iCell) = w(1,iCell) + edgesOnCell_sign(i,iCell) * &
+                                   (zb_cell(1,i,iCell) + sign(1.0_RKIND,flux)*coef_3rd_order*zb3_cell(1,i,iCell))  &
+                                   * flux/(cf1*rho_zz(1,iCell)+cf2*rho_zz(2,iCell)+cf3*rho_zz(3,iCell))
+
+            do k = 2, nVertLevels
+               flux = (fzm(k)*ru(k,iEdge)+fzp(k)*ru(k-1,iEdge))
+               w(k,iCell) = w(k,iCell) + edgesOnCell_sign(i,iCell) * &
+                                    (zb_cell(k,i,iCell)+sign(1.0_RKIND,flux)*coef_3rd_order*zb3_cell(k,i,iCell)) &
+                                    * flux/(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell))
+            end do
+
+         end do
+      end do
+#endif
 
    end subroutine atm_recover_large_step_variables
 
