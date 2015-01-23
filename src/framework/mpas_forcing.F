@@ -13,7 +13,7 @@
 module mpas_forcing
 
 #define COMMA ,
-#define FORCING_DEBUG_WRITE(M) write(stderrUnit,*) M
+#define FORCING_DEBUG_WRITE(M) !write(stderrUnit,*) M
 #define FORCING_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
 #define FORCING_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
 
@@ -160,7 +160,7 @@ contains
        forcingCycleDuration, &
        restart, &
        forcingRestartFile, &
-       forcingCycleStartInclusive)
+       forcingCycleStartInclusive)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! !< Input: The forcing group linked list
@@ -209,7 +209,7 @@ contains
        do while (associated(forcingGroupNew % next))
           if (trim(forcingGroupNew % forcingGroupName) == trim(forcingGroupName)) then
              FORCING_ERROR_WRITE('-- Forcing: forcing group name already exists: '//trim(forcingGroupName))
-             stop
+             call MPAS_dmpar_global_abort('Forcing: forcing group name already exists')
           endif
           forcingGroupNew => forcingGroupNew % next
        enddo
@@ -269,7 +269,7 @@ contains
 
     endif
 
-  end subroutine mpas_forcing_init_group
+  end subroutine mpas_forcing_init_group!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -311,7 +311,7 @@ contains
        forcingReferenceTimeStr, &
        forcingIntervalStr, &
        variable_interval_forward, &
-       variable_interval_backward)
+       variable_interval_backward)!{{{
 
     type (MPAS_streamManager_type), intent(inout) :: &
          streamManager ! the stream manager handle
@@ -454,7 +454,7 @@ contains
        forcingGroup => forcingGroup % next
     end do
 
-  end subroutine mpas_forcing_init_field
+  end subroutine mpas_forcing_init_field!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -477,7 +477,7 @@ contains
        forcingReferenceTimeStr, &
        forcingIntervalStr, &
        variable_interval_forward, &
-       variable_interval_backward)
+       variable_interval_backward)!{{{
 
     type(mpas_forcing_stream_type), pointer :: &
          forcingStreamNew ! the new forcing stream
@@ -562,7 +562,7 @@ contains
 
     else
        FORCING_ERROR_WRITE('-- Forcing: create_new_forcing_stream: incorrect forcing interval specification: '//trim(forcingName))
-       stop
+       call MPAS_dmpar_global_abort('Forcing: incorrect forcing interval specification')
     endif
 
     ! get initial forcing times
@@ -579,7 +579,7 @@ contains
     FORCING_DEBUG_WRITE('-- Forcing: create_new_forcing_stream forcingGroup % forcingGroupName: '//trim(forcingGroup % forcingGroupName))
     call mpas_add_clock_alarm(forcingGroup % forcingClock, forcingStreamNew % forcingAlarmID, forcingAlarmTime, forcingAlarmInterval)
 
-  end subroutine create_new_forcing_stream
+  end subroutine create_new_forcing_stream!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -604,7 +604,7 @@ contains
        forcingReferenceTimeStr, &
        forcingIntervalStr, &
        variable_interval_forward, &
-       variable_interval_backward)
+       variable_interval_backward)!{{{
 
     type(mpas_forcing_stream_type), pointer :: &
          forcingStream ! the forcing stream to add the new field to
@@ -658,14 +658,14 @@ contains
     ! check interpolationType
     if (trim(forcingStream % interpolationType) /= trim(interpolationType)) then
        FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream incompatible interpolation types in stream '//trim(forcingStream % forcingStreamID))
-       stop
+       call MPAS_dmpar_global_abort('Forcing: incompatible interpolation types in stream')
     endif
 
     ! check forcingReferenceTime
     call mpas_set_time(forcingReferenceTime, dateTimeString=forcingReferenceTimeStr)
     if (forcingStream % forcingReferenceTime /= forcingReferenceTime) then
        FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream incompatible forcing reference times in stream '//trim(forcingStream % forcingStreamID))
-       stop
+       call MPAS_dmpar_global_abort('Forcing: incompatible forcing reference times in stream')
     endif
 
     ! check forcing interval optional arguments
@@ -674,16 +674,16 @@ contains
        ! constant interval present in forcing specification
        if (present(variable_interval_forward) .or. present(variable_interval_backward)) then
           FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: overspecified forcing interval: '//trim(forcingName))
-          stop
+          call MPAS_dmpar_global_abort('Forcing: overspecified forcing interval')
        endif
        if (associated(forcingStream % variable_interval_forward_ptr)) then
           FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: incompatible forcing interval specification: '//trim(forcingName))
-          stop
+          call MPAS_dmpar_global_abort('Forcing: incompatible forcing interval specification')
        endif
        call mpas_set_timeInterval(forcingIntervalConstant, timeString=forcingIntervalStr)
        if (forcingStream % forcingIntervalConstant /= forcingIntervalConstant) then
           FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: incompatible constant forcing intervals: '//trim(forcingName))
-          stop
+          call MPAS_dmpar_global_abort('Forcing: incompatible constant forcing intervals')
        endif
 
     else
@@ -691,18 +691,18 @@ contains
        ! variable interval present in forcing specification
        if (.not. present(variable_interval_forward) .or. .not. present(variable_interval_backward)) then
           FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: underspecified forcing interval: '//trim(forcingName))
-          stop
+          call MPAS_dmpar_global_abort('Forcing: underspecified forcing interval')
        endif
        if (.not. associated(forcingStream % variable_interval_forward_ptr)) then
           FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: incompatible forcing interval specification: '//trim(forcingName))
-          stop
+          call MPAS_dmpar_global_abort('Forcing: incompatible forcing interval specification')
        endif
        forcingStream % variable_interval_forward_test_ptr  => variable_interval_forward
        forcingStream % variable_interval_backward_test_ptr => variable_interval_backward
        if (.not. associated(forcingStream % variable_interval_forward_test_ptr,forcingStream % variable_interval_forward_ptr) .or. &
            .not. associated(forcingStream % variable_interval_backward_test_ptr,forcingStream % variable_interval_backward_ptr)) then
           FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: incompatible non-constant forcing intervals: '//trim(forcingName))
-          stop
+          call MPAS_dmpar_global_abort('Forcing: incompatible non-constant forcing intervals')
        endif
 
     endif
@@ -718,7 +718,7 @@ contains
           if (trim(forcingFieldNew % forcingName) == trim(forcingName)) then
              ! forcing already exists
              FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: '//trim(forcingStream % forcingStreamID)//' field already exists: '//trim(forcingName))
-             stop
+             call MPAS_dmpar_global_abort('Forcing: field already exists')
           endif
           forcingFieldNew => forcingFieldNew % next
        enddo
@@ -741,7 +741,7 @@ contains
          streamManager, &
          domain)
 
-  end subroutine add_forcing_field_to_forcing_stream
+  end subroutine add_forcing_field_to_forcing_stream!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -756,7 +756,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  function forcing_interval(forcingStream, currentTime, forward) result(forcingInterval)
+  function forcing_interval(forcingStream, currentTime, forward) result(forcingInterval)!{{{
 
     type(mpas_forcing_stream_type), intent(in) :: &
          forcingStream !< Input: forcing object
@@ -790,7 +790,7 @@ contains
        endif
     end if
     
-  end function forcing_interval
+  end function forcing_interval!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -808,7 +808,7 @@ contains
 
   subroutine get_initial_forcing_times(&
        forcingGroup, &
-       forcingStream)
+       forcingStream)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group interval
@@ -871,7 +871,7 @@ contains
 
     endif
        
-  end subroutine get_initial_forcing_times
+  end subroutine get_initial_forcing_times!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -889,7 +889,7 @@ contains
   subroutine populate_forcing_times(&
        forcingStream, &
        forcingTimeSlot, &
-       forcingSlot)
+       forcingSlot)!{{{
 
     type(mpas_forcing_stream_type), pointer :: &
          forcingStream ! forcing object
@@ -929,7 +929,7 @@ contains
 
     enddo ! iTime
 
-  end subroutine populate_forcing_times
+  end subroutine populate_forcing_times!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -950,7 +950,7 @@ contains
   subroutine mpas_forcing_init_field_data(&
        forcingGroupHead, &
        forcingGroupName, &
-       streamManager)
+       streamManager)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! the forcing group linked list
@@ -990,7 +990,7 @@ contains
        forcingGroup => forcingGroup % next
     end do
 
-  end subroutine mpas_forcing_init_field_data
+  end subroutine mpas_forcing_init_field_data!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1008,7 +1008,7 @@ contains
   subroutine get_initial_forcing_data(&
        forcingGroup, &
        forcingStream, &
-       streamManager)
+       streamManager)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group object
@@ -1095,13 +1095,14 @@ contains
 
        if (ierr /= 0) then
           FORCING_ERROR_WRITE('Error: -- Forcing: get_initial_forcing_data: READ: ' COMMA ierr)
+          call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
        endif
 
        FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: ' COMMA iTime COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr) COMMA ierr)
 
     enddo ! iTime
 
-  end subroutine get_initial_forcing_data
+  end subroutine get_initial_forcing_data!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1124,7 +1125,7 @@ contains
        forcingGroupHead, &
        forcingGroupName, &
        streamManager, &
-       dt)
+       dt)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! the forcing group linked list
@@ -1187,7 +1188,7 @@ contains
        forcingGroup => forcingGroup % next
     end do
 
-  end subroutine mpas_forcing_get_forcing
+  end subroutine mpas_forcing_get_forcing!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1204,7 +1205,7 @@ contains
 
   subroutine advance_forcing_clock(&
        forcingGroup, &
-       dt)
+       dt)!{{{
     
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group object
@@ -1219,7 +1220,7 @@ contains
     call mpas_set_timeInterval(timeStep, dt=dt)
     call mpas_advance_clock(forcingGroup % forcingClock, timeStep)
 
-  end subroutine advance_forcing_clock
+  end subroutine advance_forcing_clock!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1273,7 +1274,7 @@ contains
 
     endif ! forcingCycleAlarmID ringing
 
-  end subroutine cycle_forcing_clock
+  end subroutine cycle_forcing_clock!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1293,7 +1294,7 @@ contains
   subroutine mpas_forcing_get_forcing_time(&
        forcingGroupHead, &
        forcingGroupName, &
-       forcingTime)
+       forcingTime)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! the forcing group linked list
@@ -1321,7 +1322,7 @@ contains
        forcingGroup => forcingGroup % next
     end do
 
-  end subroutine mpas_forcing_get_forcing_time
+  end subroutine mpas_forcing_get_forcing_time!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1339,7 +1340,7 @@ contains
   subroutine get_forcing(&
        forcingGroup, &
        forcingStream, &
-       streamManager)
+       streamManager)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group object
@@ -1413,6 +1414,7 @@ contains
 
        if (ierr /= 0) then
           FORCING_ERROR_WRITE('Error: -- Forcing: mpas_forcing_get_forcing: READ: ' COMMA ierr)
+          call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
        endif
 
        FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: '//trim(forcingTimeCycleStr))//' ' COMMA ierr
@@ -1425,7 +1427,7 @@ contains
          forcingStream, &
          currentTime)
 
-  end subroutine get_forcing
+  end subroutine get_forcing!}}}
 
 !-----------------------------------------------------------------------
 ! Interpolation
@@ -1449,7 +1451,7 @@ contains
        interpolationType, &
        stencilSize, &
        stencilSizeLower, &
-       stencilSizeUpper)
+       stencilSizeUpper)!{{{
 
     character(len=*), intent(in) :: &
          interpolationType !< Input: the interpolation type
@@ -1473,11 +1475,11 @@ contains
        stencilSizeLower = 2
        stencilSizeUpper = 2
     case default
-       FORCING_ERROR_WRITE('-- Forcing: Unknown foring interpolation type: '//trim(interpolationType))
-       stop
+       FORCING_ERROR_WRITE('-- Forcing: Unknown forcing interpolation type: '//trim(interpolationType))
+       call MPAS_dmpar_global_abort('Forcing: Unknown forcing interpolation type')
     end select
 
-  end subroutine interpolation_time_stencil_info
+  end subroutine interpolation_time_stencil_info!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1492,7 +1494,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_interpolants(interpolants, forcingStream, currentTime)
+  subroutine get_interpolants(interpolants, forcingStream, currentTime)!{{{
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          interpolants !< Output: interpolation weights
@@ -1511,11 +1513,11 @@ contains
     case ("four_point_polynomial")
        call get_interpolants_four_point_polynomial(interpolants, forcingStream, currentTime)
     case default
-       FORCING_ERROR_WRITE('-- Forcing: Unknown foring interpolation type: '//trim(forcingStream % interpolationType))
-       stop
+       FORCING_ERROR_WRITE('-- Forcing: Unknown forcing interpolation type: '//trim(forcingStream % interpolationType))
+       call MPAS_dmpar_global_abort('Forcing: Unknown forcing interpolation type')
     end select
 
-  end subroutine get_interpolants
+  end subroutine get_interpolants!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1530,7 +1532,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_interpolants_linear(interpolants, forcingStream, currentTime)
+  subroutine get_interpolants_linear(interpolants, forcingStream, currentTime)!{{{
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          interpolants !< Output: interpolation weights
@@ -1562,7 +1564,7 @@ contains
     interpolants(1) = diffr2 / diffr
     interpolants(2) = diffr1 / diffr
 
-  end subroutine get_interpolants_linear
+  end subroutine get_interpolants_linear!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1577,7 +1579,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_interpolants_constant(interpolants, forcingStream, currentTime)
+  subroutine get_interpolants_constant(interpolants, forcingStream, currentTime)!{{{
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          interpolants !< Output: interpolation weights
@@ -1603,7 +1605,7 @@ contains
        interpolants(2) = 1.0_RKIND
     endif
 
-  end subroutine get_interpolants_constant
+  end subroutine get_interpolants_constant!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1618,7 +1620,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_interpolants_four_point_polynomial(interpolants, forcingStream, currentTime)
+  subroutine get_interpolants_four_point_polynomial(interpolants, forcingStream, currentTime)!{{{
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          interpolants !< Output: interpolation weights
@@ -1652,7 +1654,7 @@ contains
     interpolants(3) = ((x0 - x1) / (x3 - x1)) * ((x0 - x2) / (x3 - x2)) * ((x0 - x4) / (x3 - x4))
     interpolants(4) = ((x0 - x1) / (x4 - x1)) * ((x0 - x2) / (x4 - x2)) * ((x0 - x3) / (x4 - x3))
 
-  end subroutine get_interpolants_four_point_polynomial
+  end subroutine get_interpolants_four_point_polynomial!}}}
 
 !-----------------------------------------------------------------------
 ! arrays
@@ -1675,7 +1677,7 @@ contains
        forcingField, &
        forcingStream, &
        streamManager, &
-       domain)
+       domain)!{{{
 
     type(mpas_forcing_field_type), pointer :: &
          forcingField ! forcing field object
@@ -1730,7 +1732,8 @@ contains
          poolnameInput     ! input pool name
 
     integer :: &
-         iTime ! index of forcing times
+         iTime, & ! index of forcing times
+         ierr ! error flag
 
     logical :: &
          lInputPoolCreated
@@ -1740,8 +1743,16 @@ contains
     poolnameInput  = trim(forcingField % poolname)//"_forcing_input"
 
     ! remove the ouput field to the stream
-    call MPAS_stream_mgr_set_property(streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .false.)
-    call MPAS_stream_mgr_remove_field(streamManager, trim(forcingStream % forcingStreamID), trim(forcingField % fieldname))
+    call MPAS_stream_mgr_set_property(streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=ierr)
+    if (ierr /= 0) then
+       FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
+       call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_set_property')
+    endif
+    call MPAS_stream_mgr_remove_field(streamManager, trim(forcingStream % forcingStreamID), trim(forcingField % fieldname), ierr=ierr)
+    if (ierr /= 0) then
+       FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_remove_field: ' COMMA ierr)
+       call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_remove_field')
+    endif
 
     ! loop over blocks
     block => domain % blocklist
@@ -2069,7 +2080,7 @@ contains
           
           FORCING_ERROR_WRITE('-- Forcing: Forcing only supports REAL and INTEGER data types')
           FORCING_ERROR_WRITE('-- Forcing: Field type: ' COMMA forcingPoolInfo % fieldType)
-          stop
+          call MPAS_dmpar_global_abort('Forcing: Forcing only supports REAL and INTEGER data types')
 
        endif
 
@@ -2082,10 +2093,18 @@ contains
     enddo ! blocklist
 
     ! add the input field to the stream
-    call MPAS_stream_mgr_add_field(streamManager, trim(forcingStream % forcingStreamID), trim(fieldnameInput))
-    call MPAS_stream_mgr_set_property(streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .true.)
+    call MPAS_stream_mgr_add_field(streamManager, trim(forcingStream % forcingStreamID), trim(fieldnameInput), ierr=ierr)
+    if (ierr /= 0) then
+       FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_add_field: ' COMMA ierr)
+       call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_add_field')
+    endif
+    call MPAS_stream_mgr_set_property(streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=ierr)
+    if (ierr /= 0) then
+       FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
+       call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_set_property')
+    endif
 
-  end subroutine setup_input_fields
+  end subroutine setup_input_fields!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2103,7 +2122,7 @@ contains
   subroutine forcing_data_interpolation(&
        domain, &
        forcingStream, &
-       currentTime)
+       currentTime)!{{{
 
     type (domain_type), pointer :: &
          domain ! domain object
@@ -2295,7 +2314,7 @@ contains
     
     deallocate(interpolants)
 
-  end subroutine forcing_data_interpolation
+  end subroutine forcing_data_interpolation!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2312,7 +2331,7 @@ contains
 
   subroutine forcing_shift_data(&
        domain, &
-       forcingStream)
+       forcingStream)!{{{
 
     type(domain_type), pointer :: &
          domain ! domain type
@@ -2375,7 +2394,7 @@ contains
 
           if (forcingFieldInput % contentsTimeLevs < 2) then
              FORCING_ERROR_WRITE('-- Forcing: forcing_shift_data: too few timelevels Pool: '//trim(poolnameInput)//' Field: '//trim(fieldnameInput))
-             stop
+             call MPAS_dmpar_global_abort('Forcing: too few timelevels in Pool')
           endif
 
           if (forcingFieldInput % contentsType == MPAS_POOL_REAL) then
@@ -2420,7 +2439,7 @@ contains
        forcingField => forcingField % next
     end do
 
-  end subroutine forcing_shift_data
+  end subroutine forcing_shift_data!}}}
 
 !-----------------------------------------------------------------------
 ! restarts
@@ -2441,7 +2460,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine mpas_forcing_write_restart_times(forcingGroupHead, forcingTimeRestartFilename)
+  subroutine mpas_forcing_write_restart_times(forcingGroupHead, forcingTimeRestartFilename)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! forcing group linked list head pointer
@@ -2476,7 +2495,7 @@ contains
 
     close(22)
 
-  end subroutine mpas_forcing_write_restart_times
+  end subroutine mpas_forcing_write_restart_times!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2495,7 +2514,7 @@ contains
        forcingGroup, &
        forcingTimeRestartFilename, &
        timeStep, &
-       stopTime)
+       stopTime)!{{{
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! forcing group to restart
@@ -2548,7 +2567,7 @@ contains
 
     close(22)
 
-  end subroutine read_restart_times
+  end subroutine read_restart_times!}}}
 
 !-----------------------------------------------------------------------
 
