@@ -213,13 +213,13 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-  integer function put_var1_vdesc_{TYPE} (File,vardesc, start, ival) result(ierr)
+  integer function put_var1_vdesc_{TYPE} (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
-    integer, intent(in) ::  start(:)
+    integer, intent(in) ::  index(:)
     {VTYPE}, intent(in) :: ival
 
-    ierr = put_var1_{TYPE} (File, vardesc%varid, start, ival)
+    ierr = put_var1_{TYPE} (File, vardesc%varid, index, ival)
   end function put_var1_vdesc_{TYPE}
 
 !>

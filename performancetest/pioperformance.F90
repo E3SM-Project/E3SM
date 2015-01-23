@@ -122,12 +122,12 @@ contains
     integer :: ndims
     integer, pointer :: gdims(:)
     character(len=20) :: fname
-    type(var_desc_t) :: vari(nvars), varr, vard
+    type(var_desc_t) :: vari(nvars), varr(nvars), vard(nvars)
     type(iosystem_desc_t) :: iosystem
     integer :: stride, n
     integer, allocatable :: ifld(:,:), ifld_in(:,:)
     real, allocatable :: rfld(:)
-    double precision, allocatable :: dfld(:)
+    double precision, allocatable :: dfld(:,:), dfld_in(:,:)
     type(file_desc_t) :: File
     type(io_desc_t) :: iodesc_i4, iodesc_r4, iodesc_r8
     integer :: ierr
@@ -139,7 +139,7 @@ contains
     integer :: niomin, niomax
     integer :: nv
     integer,  parameter :: c0 = 0
-
+    double precision, parameter :: cd0 = 1.0e30
     nullify(compmap)
 
 
@@ -175,7 +175,8 @@ contains
        allocate(ifld(maplen,nvars))
        allocate(ifld_in(maplen,nvars))
        allocate(rfld(maplen))
-       allocate(dfld(maplen))
+       allocate(dfld(maplen,nvars))
+       allocate(dfld_in(maplen,nvars))
 
 !       ifld = mype
        rfld = mype
@@ -183,7 +184,7 @@ contains
        do nv=1,nvars
           do j=1,maplen
              ifld(j,nv) = nv*100000000 +mype*1000000 + compmap(j)
-
+             dfld(j,nv) = ifld(j,nv)/1000000.0
 !             if(nv==2) then
 !                ifld(j+(nv-1)*maplen) = -(mype*1000000 + compmap(j))
 !             else
@@ -220,15 +221,15 @@ contains
                 call WriteMetadata(File, gdims, vari, varr, vard)
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
-                call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
+!                call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
 !                call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
-!                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
+                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
                    
 
                 do frame=1,nframes
                    do nv=1,nvars   
-                      call PIO_setframe(File, vari(nv), frame)
-                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval=c0)
+                      call PIO_setframe(File, varr(nv), frame)
+                      call pio_write_darray(File, varr(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval=cd0)
                    enddo
 ! multiversion  
 !                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
@@ -262,16 +263,16 @@ contains
 ! Now the Read
                 ierr = PIO_OpenFile(iosystem, File, iotype, trim(fname), mode=PIO_NOWRITE);
                 do nv=1,nvars
-                   write(varname,'(a,i4.4)') 'vari',nv
-                   ierr =  pio_inq_varid(File, varname, vari(nv))
+                   write(varname,'(a,i4.4)') 'varr',nv
+                   ierr =  pio_inq_varid(File, varname, varr(nv))
                 enddo
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
                 
                 do frame=1,nframes                   
                    do nv=1,nvars
-                      call PIO_setframe(File, vari(nv), frame)
-                      call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv), ierr)
+                      call PIO_setframe(File, varr(nv), frame)
+                      call pio_read_darray(File, varr(nv), iodesc_r8, dfld_in(:,nv), ierr)
                    enddo
                 enddo
                 
@@ -283,7 +284,7 @@ contains
                 errorcnt = 0
                 do nv=1,nvars
                    do j=1,maplen
-                      if(ifld(j,nv) /= ifld_in(j,nv) .and. compmap(j) /= 0) then
+                      if(dfld(j,nv) /= dfld_in(j,nv) .and. compmap(j) /= 0) then
 !                         print *,__LINE__,mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
                          errorcnt = errorcnt+1
                       endif
@@ -315,6 +316,7 @@ contains
        deallocate(ifld_in)
        deallocate(rfld)
        deallocate(dfld)
+       deallocate(dfld_in)
     endif
 
   end subroutine pioperformancetest
@@ -323,7 +325,7 @@ contains
     use pio
     type(file_desc_t) :: File
     integer, intent(in) :: gdims(:)
-    type(var_desc_t),intent(out) :: vari(:), varr, vard
+    type(var_desc_t),intent(out) :: vari(:), varr(:), vard(:)
     integer :: ndims
     character(len=12) :: dimname
     character(len=8) :: varname
@@ -346,10 +348,11 @@ contains
     do nv=1,nvars
        write(varname,'(a,i4.4)') 'vari',nv
        iostat = PIO_def_var(File, varname, PIO_INT, dimid, vari(nv))
+       write(varname,'(a,i4.4)') 'varr',nv
+       iostat = PIO_def_var(File, varname, PIO_REAL, dimid, varr(nv))
+       write(varname,'(a,i4.4)') 'vard',nv
+       iostat = PIO_def_var(File, varname, PIO_DOUBLE, dimid, vard(nv))
     enddo
-    iostat = PIO_def_var(File, 'varr', PIO_REAL, dimid, varr)
-    
-    iostat = PIO_def_var(File, 'vard', PIO_DOUBLE, dimid, vard)
 
     iostat = PIO_enddef(File)
 

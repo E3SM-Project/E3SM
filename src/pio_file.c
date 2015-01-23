@@ -246,9 +246,9 @@ int PIOc_closefile(int ncid)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = 0;
-
-  PIOc_sync(ncid);
-
+  if((file->mode & PIO_WRITE)){
+    PIOc_sync(ncid);
+  }
   if(ios->async_interface && ! ios->ioproc){
     if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
