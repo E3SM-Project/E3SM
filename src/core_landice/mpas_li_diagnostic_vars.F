@@ -300,21 +300,26 @@ contains
       real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
         lowerSurface, bedTopography, upperSurfaceVertex, slopeEdge, &
         normalSlopeEdge, tangentSlopeEdge, dcEdge, dvEdge
-      integer, dimension(:), pointer :: cellMask, edgeMask
+      integer, dimension(:), pointer :: cellMask, edgeMask, vertexMask
       integer, dimension(:), pointer :: vertexMaskOld, vertexMaskNew
+      integer, dimension(:), pointer :: floatingEdges
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, baryWeightsOnVertex
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField
+      type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField, floatingEdgesField
       integer, pointer :: nCells, nVertices, nEdges
       integer, pointer :: anyVertexMaskChanged
+      integer, pointer :: dirichletMaskChanged
+      integer, dimension(:,:), pointer :: dirichletVelocityMaskOld, dirichletVelocityMaskNew
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
       character (len=StrKIND), pointer :: config_velocity_solver, config_sia_tangent_slope_calculation
       ! truly local variables
       real (kind=RKIND) :: thisThk
       integer :: iCell, iLevel, iEdge, cell1, cell2
       integer :: blockVertexMaskChanged, procVertexMaskChanged
+      integer :: blockDirichletMaskChanged, procDirichletMaskChanged
+
       integer :: err_tmp
 
 
@@ -329,6 +334,7 @@ contains
 
          ! Calculate masks - needs to happen before calculating lower surface so we know where the ice is floating
          call li_calculate_mask(meshPool, statePool, timeLevel, err_tmp)
+
          err = ior(err, err_tmp)
 
          block => block % next
@@ -374,6 +380,8 @@ contains
           call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
           call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
+          call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+          call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=timeLevel)
@@ -473,9 +481,26 @@ contains
           call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
           err = ior(err, err_tmp)
 
+          ! This information is only needed by external dycores.
+          if (config_velocity_solver /= 'sia') then
+             ! The interface expects an array where 1's are floating edges and 0's are non-floating edges.
+             floatingEdges = li_mask_is_floating_ice_int(edgeMask)
+             call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel=timeLevel)
+             call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
+          end if
+
           block => block % next
       end do
 
+      ! This information is only needed by external dycores.
+      if (config_velocity_solver /= 'sia') then
+         ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
+         call mpas_timer_start("halo updates")
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+         call mpas_pool_get_field(statePool, 'floatingEdges', floatingEdgesField, timeLevel=timeLevel)
+         call mpas_dmpar_exch_halo_field(floatingEdgesField)
+         call mpas_timer_stop("halo updates")
+      endif
 
       ! This information is only needed for some external dycores.
       if (config_velocity_solver /= 'sia') then
@@ -497,10 +522,20 @@ contains
                 blockVertexMaskChanged = 0
             endif
             !print *, 'blockVertexMaskChanged ', blockVertexMaskChanged
-
             ! Determine if any blocks on this processor had a change to the vertex mask
             procVertexMaskChanged = max(procVertexMaskChanged, blockVertexMaskChanged)
             !print *,'procVertexMaskChanged', procVertexMaskChanged
+
+            ! Also check to see if the Dirichlet b.c. mask has changed
+            call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMaskOld, timeLevel=1)
+            call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMaskNew, timeLevel=2)
+            if ( sum(dirichletVelocityMaskNew - dirichletVelocityMaskOld) /= 0 ) then
+                blockDirichletMaskChanged = 1
+            else
+                blockDirichletMaskChanged = 0
+            endif
+            ! Determine if any blocks on this processor had a change to the vertex mask
+            procDirichletMaskChanged = max(procDirichletMaskChanged, blockDirichletMaskChanged)
 
             block => block % next
          end do
@@ -509,6 +544,10 @@ contains
          call mpas_pool_get_array(statePool, 'anyVertexMaskChanged', anyVertexMaskChanged, timeLevel=timeLevel)
          call mpas_dmpar_max_int(domain % dminfo, procVertexMaskChanged, anyVertexMaskChanged)
          !print *,'anyVertexMaskChanged', anyVertexMaskChanged
+         ! Do the same for the Dirichlet b.c. mask
+         call mpas_pool_get_array(statePool, 'dirichletMaskChanged', dirichletMaskChanged, timeLevel=timeLevel)
+         call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)
+         !print *,'dirichletMaskChanged', dirichletMaskChanged
       end if
 
 

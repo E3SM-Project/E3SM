@@ -3,6 +3,7 @@
 // ===================================================
 
 #include <algorithm>
+#include <set>
 #include "Interface_velocity_solver.hpp"
 //#include <lifev/ice_sheet/interface_with_mpas/Interface.hpp>
 //#include <lifev/ice_sheet/solver/BuildMeshFromBareData.hpp>
@@ -27,7 +28,8 @@ int nVertices, nEdges, nTriangles, nGlobalVertices, nGlobalEdges,
     nGlobalTriangles;
 int maxNEdgesOnCell_F;
 int const *cellsOnEdge_F, *cellsOnVertex_F, *verticesOnCell_F,
-    *verticesOnEdge_F, *edgesOnCell_F, *indexToCellID_F, *nEdgesOnCells_F;
+    *verticesOnEdge_F, *edgesOnCell_F, *indexToCellID_F, *nEdgesOnCells_F,
+    *dirichletCellsMask_F, *floatingEdgesMask_F;
 std::vector<double> layersRatio, levelsNormalizedThickness;
 int nLayers;
 double const *xCell_F, *yCell_F, *zCell_F, *xVertex_F,  *yVertex_F, *zVertex_F, *areaTriangle_F;
@@ -40,7 +42,7 @@ const double minBeta = 1e-5;
 std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
     verticesOnTria, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge;
 std::vector<int> indexToVertexID, vertexToFCell, indexToEdgeID, edgeToFEdge,
-    mask, fVertexToTriangleID, fCellToVertex;
+    mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, velocityOnVertices, velocityOnCells,
     elevationData, thicknessData, betaData, smb_F, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
@@ -73,15 +75,16 @@ int velocity_solver_init_mpi(int* fComm) {
   return 0;
 }
 
+
 void velocity_solver_export_2d_data(double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F) {
   if (isDomainEmpty)
     return;
-
+#ifdef LIFEV
   import2DFields(lowerSurface_F, thickness_F, beta_F, minThick);
-
   velocity_solver_export_2d_data__(reducedComm, elevationData, thicknessData,
       betaData, indexToVertexID);
+#endif
 }
 
 void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
@@ -176,8 +179,9 @@ void velocity_solver_init_l1l2(double const* levelsRatio_F) {
 
 
 void velocity_solver_solve_l1l2(double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F,
-    double const* temperature_F, double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell) {
+    double const* thickness_F, double const* beta_F, double const* temperature_F,
+    double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
+    double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell) {
 
 #ifdef LIFEV
 
@@ -269,6 +273,7 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
     layersRatio[i] = levelsRatio_F[nLayers - 1 - i];
   //std::copy(levelsRatio_F, levelsRatio_F+nLayers, layersRatio.begin());
 
+
   mapCellsToVertices(velocityOnCells, velocityOnVertices, 2, nLayers, Ordering);
 
 #ifdef LIFEV
@@ -279,10 +284,30 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 }
 
 void velocity_solver_solve_fo(double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F,
-    double const* temperature_F, double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell) {
+    double const* thickness_F, double const* beta_F, double const* temperature_F,
+    double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
+    double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell) {
 
   std::fill(u_normal_F, u_normal_F + nEdges_F * (nLayers+1), 0.);
+
+  //import velocity from initial guess and from dirichlet values.
+  int sizeVelOnCell = nCells_F * (nLayers + 1);
+  for(int iCell=0; iCell<nCells_F; ++iCell) {
+    for(int il=0; il<nLayers + 1; ++il) {
+      int ilReversed = nLayers - il;
+      int indexReversed = iCell * (nLayers+1) + ilReversed;
+      int index = iCell * (nLayers + 1) +il;
+      if(dirichletCellsMask_F[indexReversed]!=0) {
+        velocityOnCells[index] = dirichletVelocityXValue[indexReversed];
+        velocityOnCells[index+sizeVelOnCell] = dirichletVelocitYValue[indexReversed];
+      }
+      else {
+        velocityOnCells[index] = xVelocityOnCell[indexReversed];
+        velocityOnCells[index+sizeVelOnCell] = yVelocityOnCell[indexReversed];
+      }
+    }
+  }
+  mapCellsToVertices(velocityOnCells, velocityOnVertices, 2, nLayers, Ordering);
 
   if (!isDomainEmpty) {
 
@@ -299,6 +324,7 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
    std::cout << "Thickness change: " << sum << std::endl;
    std::copy(thickness_F, thickness_F + nCellsSolve_F, &thicknessOnCells[0]);
 #endif
+
 
 
 
@@ -325,7 +351,6 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
       Ordering);
 
   //computing x, yVelocityOnCell
-  int sizeVelOnCell = nCells_F * (nLayers + 1);
   for(int iCell=0; iCell<nCells_F; ++iCell)
     for(int il=0; il<nLayers + 1; ++il) {
       int ilReversed = nLayers - il;
@@ -441,8 +466,11 @@ void velocity_solver_finalize() {
  *
  */
 
-void velocity_solver_compute_2d_grid(int const* verticesMask_F) {
+void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _dirichletCellsMask_F, int const* _floatingEdgesMask_F) {
   int numProcs, me;
+
+  dirichletCellsMask_F = _dirichletCellsMask_F;
+  floatingEdgesMask_F = _floatingEdgesMask_F;
 
   MPI_Comm_size(comm, &numProcs);
   MPI_Comm_rank(comm, &me);
@@ -602,8 +630,13 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F) {
 
   nEdges = edgeToFEdge.size();
   indexToEdgeID.resize(nEdges);
-  for (int index = 0; index < nEdges; index++)
-    indexToEdgeID[index] = fEdgeToEdgeID[edgeToFEdge[index]];
+  floatingEdgesIds.reserve(nEdges);
+  for (int index = 0; index < nEdges; index++) {
+    int fEdge = edgeToFEdge[index];
+    indexToEdgeID[index] = fEdgeToEdgeID[fEdge];
+    if((floatingEdgesMask_F[fEdge]!=0)&&(index<numBoundaryEdges))
+      floatingEdgesIds.push_back(indexToEdgeID[index]);
+  }
 
   //Compute vertices:
   std::vector<int> fCellsToSend;
@@ -656,11 +689,24 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F) {
   allToAll(fCellToVertexID, sendCellsList_F, recvCellsList_F);
 
   nVertices = vertexToFCell.size();
+  int lVertexColumnShift = (Ordering == 1) ? 1 : nVertices;
+  int vertexLayerShift = (Ordering == 0) ? 1 : nLayers + 1;
+
+
   std::cout << "\n nvertices: " << nVertices << " " << nGlobalVertices << "\n"
       << std::endl;
   indexToVertexID.resize(nVertices);
-  for (int index = 0; index < nVertices; index++)
-    indexToVertexID[index] = fCellToVertexID[vertexToFCell[index]];
+  dirichletNodesIDs.reserve(nVertices); //need to improve storage efficiency
+  for (int index = 0; index < nVertices; index++) {
+    int fCell = vertexToFCell[index];
+    indexToVertexID[index] = fCellToVertexID[fCell];
+    for(int il=0; il< nLayers+1; ++il)
+    {
+      int imask_F = il+(nLayers+1)*fCell;
+      if(dirichletCellsMask_F[imask_F]!=0)
+        dirichletNodesIDs.push_back((nLayers-il)*lVertexColumnShift+indexToVertexID[index]*vertexLayerShift);
+    }
+  }
 
   createReverseCellsExchangeLists(sendCellsListReversed, recvCellsListReversed,
       fVertexToTriangleID, fCellToVertexID);
@@ -843,7 +889,7 @@ void velocity_solver_extrude_3d_grid(double const* levelsRatio_F,
       nGlobalEdges, Ordering, reducedComm, indexToVertexID, mpasIndexToVertexID,
       verticesCoords, isVertexBoundary, verticesOnTria, isBoundaryEdge,
       trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge, indexToEdgeID,
-      indexToTriangleID);
+      indexToTriangleID, dirichletNodesIDs, floatingEdgesIds);
   }
 }
 
@@ -1241,15 +1287,36 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double eps) {
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
-  std::map<int, int> bdExtensionMap;
   if (beta_F != 0)
     betaData.assign(nVertices, 1e10);
+
+  std::map<int, int> bdExtensionMap;
+
+  //import fields
+  for (int index = 0; index < nVertices; index++) {
+    int iCell = vertexToFCell[index];
+    thicknessData[index] = std::max(thickness_F[iCell] / unit_length, eps);
+    elevationData[index] = (lowerSurface_F[iCell] / unit_length) + thicknessData[index];
+    if (beta_F != 0)
+      betaData[index] = beta_F[iCell] / unit_length;
+  }
+
+  //extend thickness elevation and basal friction data to the border for floating vertices
+  std::set<int>::const_iterator iter;
 
   for (int iV = 0; iV < nVertices; iV++) {
     if (isVertexBoundary[iV]) {
       int c;
       int fCell = vertexToFCell[iV];
+      if(dirichletCellsMask_F[fCell]!=0) continue;
       int nEdg = nEdgesOnCells_F[fCell];
+      elevationData[iV]=1e10;
+      bool isFloating = false;
+      for (int j = 0; (j < nEdg)&&(!isFloating); j++) {
+        int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
+        isFloating = (floatingEdgesMask_F[fEdge] != 0);
+      }
+      if(!isFloating) continue;
       for (int j = 0; j < nEdg; j++) {
         int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
         bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & 0x02)
@@ -1277,24 +1344,6 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     elevationData[iv] = thicknessData[iv] + lowerSurface_F[ic] / unit_length;
     if (beta_F != 0)
       betaData[iv] = beta_F[ic] / unit_length;
-  }
-
-  for (int index = 0; index < nVertices; index++) {
-    int iCell = vertexToFCell[index];
-
-    if (!isVertexBoundary[index]) {
-      thicknessData[index] = std::max(thickness_F[iCell] / unit_length, eps);
-      elevationData[index] = (lowerSurface_F[iCell] / unit_length) + thicknessData[index];
-    }
-  }
-
-  if (beta_F != 0) {
-    for (int index = 0; index < nVertices; index++) {
-      int iCell = vertexToFCell[index];
-
-      if (!isVertexBoundary[index])
-        betaData[index] = beta_F[iCell] / unit_length;
-    }
   }
 
 }
