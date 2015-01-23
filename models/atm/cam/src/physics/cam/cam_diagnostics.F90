@@ -227,6 +227,8 @@ subroutine diag_init()
 
    call addfld ('MQ      ','kg/m2   ',pver, 'A','Water vapor mass in layer',phys_decomp)
    call addfld ('TMQ     ','kg/m2   ',1,    'A','Total (vertically integrated) precipitable water',phys_decomp)
+   call addfld ('TUQ     ','kg/m/s  ',1,    'A','Total (vertically integrated) zonal water flux',phys_decomp)
+   call addfld ('TVQ     ','kg/m/s  ',1,    'A','Total (vertically integrated) meridional water flux',phys_decomp)
    call addfld ('RELHUM  ','percent ',pver, 'A','Relative humidity',phys_decomp)
    call addfld ('RHW  ','percent '   ,pver, 'A','Relative humidity with respect to liquid',phys_decomp)
    call addfld ('RHI  ','percent '   ,pver, 'A','Relative humidity with respect to ice',phys_decomp)
@@ -952,6 +954,20 @@ end subroutine diag_conv_tend_ini
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     call outfld ('TMQ     ',ftem, pcols   ,lchnk     )
+!
+! Mass of vertically integrated q flux
+!
+    ftem(:ncol,:) = state%u(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    call outfld ('TUQ     ',ftem, pcols   ,lchnk     )
+
+    ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    call outfld ('TVQ     ',ftem, pcols   ,lchnk     )
 
     if (moist_physics) then
 
