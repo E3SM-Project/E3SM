@@ -9,8 +9,8 @@
 !!!!!!! OMP TODO !!!!!!!!
 !   subroutine atm_rk_integration_setup( state, diag )
 !   subroutine atm_compute_moist_coefficients( dims, state, diag, mesh )
-!   subroutine atm_compute_vert_imp_coefs(state, mesh, diag, configs, nVertLevels, dts)
-!   subroutine atm_set_smlstep_pert_variables( tend, diag, mesh, configs )
+!!   subroutine atm_compute_vert_imp_coefs(state, mesh, diag, configs, nVertLevels, dts)
+!!   subroutine atm_set_smlstep_pert_variables( tend, diag, mesh, configs )
 !   subroutine atm_advance_acoustic_step( state, diag, tend, mesh, configs, nCells, nVertLevels, dts )
 !   subroutine atm_recover_large_step_variables( state, diag, tend, mesh, configs, dt, ns, rk_step )
 !   subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nVertLevels, dt)
@@ -388,23 +388,53 @@ module atm_time_integration
             !  during the acoustic substeps
             !***********************************
 
-            ! tend_u
+! tend_u
             call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tend)
             call mpas_pool_get_field(tend, 'u', tend_u_field)
             call mpas_dmpar_exch_halo_field(tend_u_field, (/ 1 /))
-
+   
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
                call mpas_pool_get_subpool(block % structs, 'state', state)
                call mpas_pool_get_subpool(block % structs, 'diag', diag)
                call mpas_pool_get_subpool(block % structs, 'tend', tend)
-
+   
+               call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+               call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+               call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+               call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
-               call atm_set_smlstep_pert_variables( tend, diag, mesh, block % configs )
-               call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step) )
+!$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
+               nthreads = OMP_get_num_threads()
+               threadid = OMP_get_thread_num()
+   
+               cellStart = (threadid * nCells / nthreads) + 1
+               cellEnd = ((threadid+1) * nCells / nthreads)
+               edgeStart = (threadid * nEdges / nthreads) + 1
+               edgeEnd = ((threadid+1) * nEdges / nthreads)
+   
+               cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
+               cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
+               edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
+               edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
 
+!$OMP MASTER
+               timerid = 3
+               call start_timer(timerid)
+!$OMP END MASTER
+               call atm_set_smlstep_pert_variables( tend, diag, mesh, block % configs, &
+                                          cellStart, cellEnd, edgeStart, edgeEnd, &
+                                          cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
+               call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step), &
+                                          cellStart, cellEnd, edgeStart, edgeEnd, &
+                                          cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
+!$OMP MASTER
+               call stop_timer(timerid, secs, n_secs)
+               write(0,'(a,i3,a1,i9.9)') 'set_smlstep timing: ', secs, '.', n_secs
+!$OMP END MASTER
+!$OMP END PARALLEL
                block => block % next
             end do
 
@@ -908,7 +938,9 @@ module atm_time_integration
 
 !---
 
-   subroutine atm_compute_vert_imp_coefs(state, mesh, diag, configs, nVertLevels, dts)
+   subroutine atm_compute_vert_imp_coefs(state, mesh, diag, configs, nVertLevels, dts, &
+                                   cellStart, cellEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute coefficients for vertically implicit gravity-wave/acoustic computations
    !
@@ -926,6 +958,8 @@ module atm_time_integration
       type (mpas_pool_type), intent(in)    :: configs
       integer, intent(in)                  :: nVertLevels          ! for allocating stack variables
       real (kind=RKIND), intent(in)        :: dts
+      integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
 
 
       integer :: iCell, k, iq
@@ -944,8 +978,10 @@ module atm_time_integration
 
 !  set coefficients
 
+#if MPI_ONLY
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+#endif
 
       call mpas_pool_get_config(configs, 'config_epssm', epssm)
 
@@ -981,11 +1017,12 @@ module atm_time_integration
       rcv = rgas/(cp-rgas)
       c2 = cp*rcv
 
+! MGD bad to have all threads setting this variable?
       do k=1,nVertLevels
          cofrz(k) = dtseps*rdzw(k)
       end do
 
-      do iCell = 1, nCellsSolve  !  we only need to do cells we are solving for, not halo cells
+      do iCell = cellSolveStart,cellSolveEnd  !  we only need to do cells we are solving for, not halo cells
 
          do k=2,nVertLevels
             cofwr(k,iCell) =.5*dtseps*gravity*(fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))
@@ -1039,7 +1076,9 @@ module atm_time_integration
 
 !------------------------
 
-   subroutine atm_set_smlstep_pert_variables( tend, diag, mesh, configs )
+   subroutine atm_set_smlstep_pert_variables( tend, diag, mesh, configs, &
+                                   cellStart, cellEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
 
       ! following Klemp et al MWR 2007, we use preturbation variables
       ! in the acoustic-step integration.  This routine computes those 
@@ -1053,22 +1092,26 @@ module atm_time_integration
       type (mpas_pool_type), intent(inout) :: diag
       type (mpas_pool_type), intent(inout) :: mesh
       type (mpas_pool_type), intent(in) :: configs
+      integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
 
-      integer :: iCell, iEdge, k, cell1, cell2
+      integer :: iCell, iEdge, i, k, cell1, cell2
       real (kind=RKIND), pointer :: coef_3rd_order
       integer, pointer :: config_theta_adv_order
       integer, pointer :: nCellsSolve, nCells, nVertLevels, nEdges
-      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, dvEdge, areaCell
       real (kind=RKIND) :: flux
       real (kind=RKIND), dimension(:,:), pointer :: ruAvg, wwAvg
-      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
       real (kind=RKIND), dimension(:,:), pointer :: zz
       real (kind=RKIND), dimension(:,:), pointer :: w_tend, u_tend
       real (kind=RKIND), dimension(:,:), pointer :: rho_pp, rho_p_save, rho_p
       real (kind=RKIND), dimension(:,:), pointer :: ru_p, ru, ru_save
       real (kind=RKIND), dimension(:,:), pointer :: rtheta_pp, rtheta_p_save, rtheta_p, rtheta_pp_old
       real (kind=RKIND), dimension(:,:), pointer :: rw_p, rw_save, rw
+      real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
@@ -1082,11 +1125,16 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'zb', zb)
       call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'zb_cell', zb_cell)
+      call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
 
       call mpas_pool_get_array(tend, 'w', w_tend)
       call mpas_pool_get_array(tend, 'u', u_tend)
@@ -1116,23 +1164,25 @@ module atm_time_integration
       ! set the acoustic step perturbation variables by subtracting the RK timestep variables
       ! from their at the previous RK substep.
 
-      rho_pp = rho_p_save - rho_p
-      ru_p = ru_save - ru
-      rtheta_pp = rtheta_p_save - rtheta_p
-      rtheta_pp_old = rtheta_pp
-      rw_p = rw_save - rw
+      rho_pp(:,cellStart:cellEnd) = rho_p_save(:,cellStart:cellEnd) - rho_p(:,cellStart:cellEnd)
+      ru_p(:,edgeStart:edgeEnd) = ru_save(:,edgeStart:edgeEnd) - ru(:,edgeStart:edgeEnd)
+      rtheta_pp(:,cellStart:cellEnd) = rtheta_p_save(:,cellStart:cellEnd) - rtheta_p(:,cellStart:cellEnd)
+      rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd)
+      rw_p(:,cellStart:cellEnd) = rw_save(:,cellStart:cellEnd) - rw(:,cellStart:cellEnd)
+
 
       ! we solve for omega instead of w (see Klemp et al MWR 2007),
       ! so here we change the w_p tendency to an omega_p tendency
 
-      do iCell = 1, nCellsSolve
+      ! here we need to compute the omega tendency in a manner consistent with our diagnosis of omega.
+      ! this requires us to use the same flux divergence as is used in the theta eqn - see Klemp et al MWR 2003.
+
+#if MPI_ONLY
+      do iCell = cellSolveStart,cellSolveEnd
          do k = 2, nVertLevels
             w_tend(k,iCell) = ( fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)   ) * w_tend(k,iCell)
          end do
       end do
-
-      ! here we need to compute the omega tendency in a manner consistent with our diagnosis of omega.
-      ! this requires us to use the same flux divergence as is used in the theta eqn - see Klemp et al MWR 2003.
 
       do iEdge = 1, nEdges
 
@@ -1150,11 +1200,27 @@ module atm_time_integration
          end do
 
       end do
+#else
+      do iCell=cellStart,cellEnd
+         do k = 2, nVertLevels
+            w_tend(k,iCell) = ( fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)   ) * w_tend(k,iCell)
+         end do
+         do i=1,nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i,iCell)
+            do k = 2, nVertLevels
+               flux = edgesOnCell_sign(i,iCell) * (fzm(k) * u_tend(k,iEdge) + fzp(k) * u_tend(k-1,iEdge))
+               w_tend(k,iCell) = w_tend(k,iCell)   &
+                        - (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3_cell(k,i,iCell)) * flux   &
+                        * (fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)) 
+            end do
+         end do
+      end do
+#endif
 
       !  ruAvg and wwAvg will store the mass fluxes averaged over the acoustic steps for the subsequent scalar transport.
 
-      ruAvg(:,:) = 0.0
-      wwAvg(:,:) = 0.0
+      ruAvg(:,edgeStart:edgeEnd) = 0.0
+      wwAvg(:,cellStart:cellEnd) = 0.0
 
    end subroutine atm_set_smlstep_pert_variables
 
@@ -4310,6 +4376,7 @@ module atm_time_integration
          end do
       end do
 
+! Not sure why we need this barrier here...
 !$OMP BARRIER
 
       !
