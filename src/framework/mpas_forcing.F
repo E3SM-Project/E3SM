@@ -428,6 +428,7 @@ contains
           call create_new_forcing_stream(&
                forcingStreamNew, &
                forcingGroup, &
+               streamManager, &
                forcingName, &
                forcingStreamID, &
                interpolationType, &
@@ -472,6 +473,7 @@ contains
   subroutine create_new_forcing_stream(&
        forcingStreamNew, &
        forcingGroup, &
+       streamManager, &
        forcingName, &
        forcingStreamID, &
        interpolationType, &
@@ -485,6 +487,9 @@ contains
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group linekd list
+
+    type (MPAS_streamManager_type), intent(inout) :: &
+         streamManager ! the stream manager
     
     character(len=*), intent(in) :: &
          forcingName, &          !< Input: the name of the forcing field
@@ -521,6 +526,15 @@ contains
 
     type(MPAS_TimeInterval_type) :: &
          forcingAlarmInterval
+
+    type(MPAS_clock_type), pointer :: &
+         streamClock
+
+    character(len=strKIND) :: &
+         streamAlarmID
+
+    integer :: &
+         ierr
 
     FORCING_DEBUG_WRITE('-- Forcing: create_new_forcing_stream streamID: '//trim(forcingStreamID))
 
@@ -580,6 +594,14 @@ contains
     FORCING_DEBUG_WRITE('-- Forcing: create_new_forcing_stream forcingGroup % forcingGroupName: '//trim(forcingGroup % forcingGroupName))
     call mpas_add_clock_alarm(&
          forcingGroup % forcingClock, forcingStreamNew % forcingAlarmID, forcingAlarmTime, forcingAlarmInterval)
+
+    ! check no alarms defined on stream
+    call mpas_stream_mgr_get_clock(streamManager, streamClock, ierr)
+    streamAlarmID = trim(forcingStreamID)//'_input'
+    if (mpas_is_alarm_defined(streamClock, streamAlarmID, ierr)) then
+       FORCING_ERROR_WRITE('-- Forcing: create_new_forcing_stream: stream has alarm defined: '//trim(streamAlarmID))
+       call MPAS_dmpar_global_abort('Forcing: stream has alarm defined')
+    endif
 
   end subroutine create_new_forcing_stream!}}}
 
