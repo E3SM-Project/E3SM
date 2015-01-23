@@ -731,6 +731,8 @@
                 <var name="zz"                        type="real"     dimensions="nVertLevelsP1 nCells"/>
                 <var name="zb"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
                 <var name="zb3"                       type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
+                <var name="zb_cell"                   type="real"     dimensions="nVertLevelsP1 maxEdges nCells"/>
+                <var name="zb3_cell"                  type="real"     dimensions="nVertLevelsP1 maxEdges nCells"/>
                 <var name="pzm"                       type="real"     dimensions="nVertLevels nCells"/>
                 <var name="pzp"                       type="real"     dimensions="nVertLevels nCells"/>
 

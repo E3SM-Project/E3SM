@@ -719,6 +719,7 @@ module mpas_core
       integer, dimension(:,:), pointer :: edgesOnVertex, verticesOnEdge, cellsOnEdge, edgesOnCell
       integer, dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, kiteForCell
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnVertex_sign, edgesOnCell_sign
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
 
 
       call mpas_pool_get_array(mesh, 'edgesOnVertex', edgesOnVertex)
@@ -731,6 +732,10 @@ module mpas_core
       call mpas_pool_get_array(mesh, 'edgesOnVertex_sign', edgesOnVertex_sign)
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
       call mpas_pool_get_array(mesh, 'kiteForCell', kiteForCell)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'zb_cell', zb_cell)
+      call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
@@ -757,8 +762,12 @@ module mpas_core
             if (edgesOnCell(i,iCell) <= nEdges) then
                if (iCell == cellsOnEdge(1,edgesOnCell(i,iCell))) then
                   edgesOnCell_sign(i,iCell) = 1.0
+                  zb_cell(:,i,iCell) = zb(:,1,edgesOnCell(i,iCell))
+                  zb3_cell(:,i,iCell) = zb3(:,1,edgesOnCell(i,iCell))
                else
                   edgesOnCell_sign(i,iCell) = -1.0
+                  zb_cell(:,i,iCell) = zb(:,2,edgesOnCell(i,iCell))
+                  zb3_cell(:,i,iCell) = zb3(:,2,edgesOnCell(i,iCell))
                end if
             else
                edgesOnCell_sign(i,iCell) = 0.0
