@@ -395,7 +395,7 @@ contains
              end do
           enddo
           call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-          csum(q) = global_shared_sum(1)/(dble(nlev)*4.0D0*DD_PI)
+          csum(q) = global_shared_sum(1)/(4.0D0*DD_PI)
        enddo
        !
        ! psC diagnostics
