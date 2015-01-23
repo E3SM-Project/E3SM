@@ -299,6 +299,9 @@
 				filename_template="landice_grid.nc2"
 				input_interval="initial_only">
 			<var name="beta"/>
+			<var name="dirichletVelocityMask"/>
+			<var name="dirichletVelocityXValue"/>
+			<var name="dirichletVelocityYValue"/>
 		</stream>
 -->
 
@@ -441,6 +444,28 @@
 		/>
 		<var name="anyVertexMaskChanged"              type="integer"  dimensions="Time"
 		     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
+			packages="higherOrderVelocity"
+		/>
+		<var name="dirichletVelocityMask"            type="integer"     dimensions="nVertInterfaces nCells Time"
+		     units="none"  description="mask of where Dirichlet boundary conditions should be applied to the velocity solution.  1 means apply a Dirichlet boundary condition, 0 means do not. (higher-order dycores only)"
+			packages="higherOrderVelocity"
+		/>
+		<var name="dirichletVelocityXValue"            type="real"     dimensions="nVertInterfaces nCells Time"
+		     units="m s^{-1}"  description="value of the x-component of velocity that should be applied where dirichletVelocityMask==1 (higher-order dycores only)"
+			packages="higherOrderVelocity"
+		/>
+		<var name="dirichletVelocityYValue"            type="real"     dimensions="nVertInterfaces nCells Time"
+		     units="m s^{-1}"  description="value of the y-component of velocity that should be applied where dirichletVelocityMask==1 (higher-order dycores only)"
+			packages="higherOrderVelocity"
+		/>
+		<var name="dirichletMaskChanged"              type="integer"  dimensions="Time"
+		     units="none"  description="flag needed by external velocity solvers that indicates if the Dirichlet boundary condition mask has changed (treated as a logical)"
+			packages="higherOrderVelocity"
+		/>
+		<var name="floatingEdges"
+			type="integer" dimensions="nEdges Time"
+			units="unitless"
+			description="edges which are floating have a value of 1.  non floating edges have a value of 0."
 			packages="higherOrderVelocity"
 		/>
 	</var_struct>
@@ -625,14 +650,10 @@
 	       description="generic work array with dimensions of (nVertLevels nCells)"
 	       persistence="scratch"
 	       />
-	</var_struct>
-
-	<!-- Scratch Variables -->
-	<var_struct name="scratch" time_levs="1">
-		<var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
-			description="local indices of each vertex"
-			persistence="scratch"
-		/>
+          <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
+	       description="local indices of each vertex"
+	       persistence="scratch"
+	       />
 	</var_struct>
 
 <!-- ======================================================================= -->

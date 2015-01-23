@@ -87,17 +87,19 @@ void velocity_solver_init_l1l2(double const* levelsRatio);
 void velocity_solver_init_fo(double const* levelsRatio);
 
 void velocity_solver_solve_l1l2(double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F,
-    double const* temperature_F, double* u_normal_F = 0,
+    double const* thickness_F, double const* beta_F, double const* temperature_F,
+    double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
+    double* u_normal_F = 0,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0);
 
 void velocity_solver_solve_fo(double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F,
-    double const* temperature_F, double* u_normal_F = 0,
+    double const* thickness_F, double const* beta_F, double const* temperature_F,
+    double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
+    double* u_normal_F = 0,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0);
 
 
-void velocity_solver_compute_2d_grid(int const* verticesMask_F);
+void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* dirichletNodesMask_F, int const* floatingEdgeMask_F);
 
 void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
     int const* _nVertices_F, int const* _nLayers, int const* _nCellsSolve_F,
@@ -195,7 +197,9 @@ extern void velocity_solver_extrude_3d_grid__(int nLayers, int nGlobalTriangles,
     const std::vector<int>& trianglesPositionsOnEdge,
     const std::vector<int>& verticesOnEdge,
     const std::vector<int>& indexToEdgeID,
-    const std::vector<int>& indexToTriangleID);
+    const std::vector<int>& indexToTriangleID,
+    const std::vector<int>& dirichletNodes,
+    const std::vector<int>&floatingEdges);
 
 //extern void velocity_solver_export_l1l2_velocity__();
 
