@@ -265,7 +265,8 @@ contains
        endif
 
        ! set the forcing cycle alarm
-       call mpas_add_clock_alarm(forcingGroupNew % forcingClock, forcingGroupNew % forcingCycleAlarmID, forcingGroupNew % forcingCycleEnd)
+       call mpas_add_clock_alarm(&
+            forcingGroupNew % forcingClock, forcingGroupNew % forcingCycleAlarmID, forcingGroupNew % forcingCycleEnd)
 
     endif
 
@@ -577,7 +578,8 @@ contains
     forcingAlarmInterval = forcing_interval(forcingStreamNew, forcingAlarmTime, .true.)
 
     FORCING_DEBUG_WRITE('-- Forcing: create_new_forcing_stream forcingGroup % forcingGroupName: '//trim(forcingGroup % forcingGroupName))
-    call mpas_add_clock_alarm(forcingGroup % forcingClock, forcingStreamNew % forcingAlarmID, forcingAlarmTime, forcingAlarmInterval)
+    call mpas_add_clock_alarm(&
+         forcingGroup % forcingClock, forcingStreamNew % forcingAlarmID, forcingAlarmTime, forcingAlarmInterval)
 
   end subroutine create_new_forcing_stream!}}}
 
@@ -699,8 +701,10 @@ contains
        endif
        forcingStream % variable_interval_forward_test_ptr  => variable_interval_forward
        forcingStream % variable_interval_backward_test_ptr => variable_interval_backward
-       if (.not. associated(forcingStream % variable_interval_forward_test_ptr,forcingStream % variable_interval_forward_ptr) .or. &
-           .not. associated(forcingStream % variable_interval_backward_test_ptr,forcingStream % variable_interval_backward_ptr)) then
+       if (.not. associated(forcingStream % variable_interval_forward_test_ptr, &
+                            forcingStream % variable_interval_forward_ptr) .or. &
+           .not. associated(forcingStream % variable_interval_backward_test_ptr, &
+                            forcingStream % variable_interval_backward_ptr)) then
           FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: incompatible non-constant forcing intervals: '//trim(forcingName))
           call MPAS_dmpar_global_abort('Forcing: incompatible non-constant forcing intervals')
        endif
@@ -1743,12 +1747,14 @@ contains
     poolnameInput  = trim(forcingField % poolname)//"_forcing_input"
 
     ! remove the ouput field to the stream
-    call MPAS_stream_mgr_set_property(streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=ierr)
+    call MPAS_stream_mgr_set_property(&
+         streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=ierr)
     if (ierr /= 0) then
        FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
        call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_set_property')
     endif
-    call MPAS_stream_mgr_remove_field(streamManager, trim(forcingStream % forcingStreamID), trim(forcingField % fieldname), ierr=ierr)
+    call MPAS_stream_mgr_remove_field(&
+         streamManager, trim(forcingStream % forcingStreamID), trim(forcingField % fieldname), ierr=ierr)
     if (ierr /= 0) then
        FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_remove_field: ' COMMA ierr)
        call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_remove_field')
@@ -2093,12 +2099,14 @@ contains
     enddo ! blocklist
 
     ! add the input field to the stream
-    call MPAS_stream_mgr_add_field(streamManager, trim(forcingStream % forcingStreamID), trim(fieldnameInput), ierr=ierr)
+    call MPAS_stream_mgr_add_field(&
+         streamManager, trim(forcingStream % forcingStreamID), trim(fieldnameInput), ierr=ierr)
     if (ierr /= 0) then
        FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_add_field: ' COMMA ierr)
        call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_add_field')
     endif
-    call MPAS_stream_mgr_set_property(streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=ierr)
+    call MPAS_stream_mgr_set_property(&
+         streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=ierr)
     if (ierr /= 0) then
        FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
        call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_set_property')
