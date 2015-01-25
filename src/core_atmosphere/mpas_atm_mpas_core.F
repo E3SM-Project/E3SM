@@ -227,12 +227,11 @@ module mpas_core
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
       integer :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
-      integer, pointer :: nCells, nEdges, nVertices
-      integer (kind=OMP_integer_kind) :: nthreads, threadid
+      integer :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
+      integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, nVerticesSolve
+      integer :: nthreads, threadid
       character(len=StrKIND), pointer :: mminlu
 
-      integer, pointer :: nEdgesSolve
-   
       logical, pointer :: config_do_restart, config_do_DAcycling
 
 
@@ -246,13 +245,12 @@ module mpas_core
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(block % configs, 'config_do_DAcycling', config_do_DAcycling)
 
-      if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
-         call atm_init_coupled_diagnostics( state, 1, diag, mesh, block % configs)
-      end if
-
       call mpas_pool_get_dimension(state, 'nCells', nCells)
       call mpas_pool_get_dimension(state, 'nEdges', nEdges)
       call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(state, 'nVerticesSolve', nVerticesSolve)
 
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,vertexStart,vertexEnd,edgeStart,edgeEnd,nthreads,threadid)
       nthreads = OMP_get_num_threads()
@@ -265,9 +263,18 @@ module mpas_core
       vertexStart = (threadid * nVertices / nthreads) + 1
       vertexEnd = ((threadid+1) * nVertices / nthreads)
 
-!write(0,*) 'cell start/end = ', cellStart, cellEnd
-!write(0,*) 'edge start/end = ', edgeStart, edgeEnd
-!write(0,*) 'vertex start/end = ', vertexStart, vertexEnd
+      cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
+      cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
+      edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
+      edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
+      vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
+      vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
+
+      if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
+         call atm_init_coupled_diagnostics(state, 1, diag, mesh, block % configs, &
+                                       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+      end if
 
       call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs, &
                                          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)

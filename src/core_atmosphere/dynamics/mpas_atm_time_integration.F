@@ -7,7 +7,6 @@
 !
 
 !!!!!!! OMP TODO !!!!!!!!
-!   subroutine atm_advance_acoustic_step( state, diag, tend, mesh, configs, nCells, nVertLevels, dts )
 !   subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nVertLevels, dt)
 !   subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels, dt)
 !   subroutine atm_init_coupled_diagnostics( state, time_lev, diag, mesh, configs )
@@ -4824,7 +4823,9 @@ module atm_time_integration
 
 !----------
 
-   subroutine atm_init_coupled_diagnostics( state, time_lev, diag, mesh, configs )
+   subroutine atm_init_coupled_diagnostics(state, time_lev, diag, mesh, configs, &
+                                       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
       implicit none
    
@@ -4833,14 +4834,18 @@ module atm_time_integration
       type (mpas_pool_type), intent(inout) :: diag
       type (mpas_pool_type), intent(inout) :: mesh
       type (mpas_pool_type), intent(in) :: configs
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
 
-      integer :: k, iCell, iEdge, iCell1, iCell2, cell1, cell2
+      integer :: i, k, iCell, iEdge, cell1, cell2
       real (kind=RKIND), pointer :: coef_3rd_order
       integer, pointer :: config_theta_adv_order
       integer, pointer :: nCells, nEdges, nVertLevels
       integer, pointer :: index_qv
       real (kind=RKIND) :: p0, rcv, flux
-      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
+      real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
       real (kind=RKIND), dimension(:,:), pointer :: theta_m
       real (kind=RKIND), dimension(:,:), pointer :: theta
       real (kind=RKIND), dimension(:,:), pointer :: rho_zz
@@ -4860,7 +4865,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: exner
       real (kind=RKIND), dimension(:,:), pointer :: exner_base
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp
-      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3 
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
 
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
@@ -4869,6 +4874,9 @@ module atm_time_integration
       call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
@@ -4895,31 +4903,37 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'fzp', fzp)
       call mpas_pool_get_array(mesh, 'zb', zb)
       call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'zb_cell', zb_cell)
+      call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
 
       if (config_theta_adv_order /= 3) coef_3rd_order = 0.0
 
       rcv = rgas / (cp-rgas)
       p0 = 1.e5  ! this should come from somewhere else...
 
-      do iCell=1,nCells
+      do iCell=cellStart,cellEnd
          do k=1,nVertLevels
             theta_m(k,iCell) = theta(k,iCell) * (1._RKIND + rvord * scalars(index_qv,k,iCell))
             rho_zz(k,iCell) = rho(k,iCell) / zz(k,iCell)
          end do
       end do
 
-      do iEdge = 1, nEdges
-         iCell1 = cellsOnEdge(1,iEdge)
-         iCell2 = cellsOnEdge(2,iEdge)
+!$OMP BARRIER
+
+      do iEdge=edgeStart,edgeEnd
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
          do k=1,nVertLevels
-            ru(k,iEdge) = 0.5 * u(k,iEdge) * (rho_zz(k,iCell1) + rho_zz(k,iCell2))
+            ru(k,iEdge) = 0.5 * u(k,iEdge) * (rho_zz(k,cell1) + rho_zz(k,cell2))
          end do
       end do
+
+!$OMP BARRIER
 
       ! Compute rw (i.e. rho_zz * omega) from rho_zz, w, and ru.
       ! We are reversing the procedure we use in subroutine atm_recover_large_step_variables.
       ! first, the piece that depends on w.
-      do iCell=1,nCells
+      do iCell=cellStart,cellEnd
          rw(1,iCell) = 0.0
          rw(nVertLevels+1,iCell) = 0.0
          do k=2,nVertLevels
@@ -4930,6 +4944,7 @@ module atm_time_integration
       end do
   
       ! next, the piece that depends on ru
+#if MPI_ONLY
       do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -4943,33 +4958,46 @@ module atm_time_integration
                           * (fzp(k) * zz(k-1,cell1) + fzm(k) * zz(k,cell1))
          end do
       end do
+#else
+      do iCell=cellStart,cellEnd
+         do i=1,nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i,iCell)
+            do k = 2,nVertLevels
+            flux = (fzm(k)*ru(k,iEdge) + fzp(k)*ru(k-1,iEdge))
+            rw(k,iCell) = rw(k,iCell)   &
+                          - edgesOnCell_sign(i,iCell) * (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND,flux) * zb3_cell(k,i,iCell))*flux   &
+                          * (fzp(k) * zz(k-1,iCell) + fzm(k) * zz(k,iCell))
+            end do
+         end do
+      end do
+#endif
 
-      do iCell = 1, nCells
+      do iCell=cellStart,cellEnd
          do k=1,nVertLevels
             rho_p(k,iCell) = rho_zz(k,iCell) - rho_base(k,iCell)
          end do
       end do
 
-      do iCell = 1, nCells
+      do iCell=cellStart,cellEnd
          do k=1,nVertLevels
             rtheta_base(k,iCell) = theta_base(k,iCell) * rho_base(k,iCell)
          end do
       end do
 
-      do iCell = 1, nCells
+      do iCell=cellStart,cellEnd
          do k=1,nVertLevels
             rtheta_p(k,iCell) = theta_m(k,iCell) * rho_p(k,iCell)  &
                                              + rho_base(k,iCell)   * (theta_m(k,iCell) - theta_base(k,iCell))
          end do
       end do
 
-      do iCell=1,nCells
+      do iCell=cellStart,cellEnd
          do k=1,nVertLevels
             exner(k,iCell) = (zz(k,iCell) * (rgas/p0) * (rtheta_p(k,iCell) + rtheta_base(k,iCell)))**rcv
          end do
       end do
 
-      do iCell=1,nCells
+      do iCell=cellStart,cellEnd
          do k=1,nVertLevels
             pressure_p(k,iCell) = zz(k,iCell) * rgas &
                                                * (  exner(k,iCell) * rtheta_p(k,iCell) &
