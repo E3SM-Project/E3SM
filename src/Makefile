@@ -16,7 +16,7 @@ endif
 
 all: mpas
 
-mpas: $(AUTOCLEAN_DEPS) reg_includes externals frame ops dycore drver
+mpas: $(AUTOCLEAN_DEPS) reg_includes gen_namelists externals frame ops dycore drver
 	$(LINKER) $(LDFLAGS) -o $(EXE_NAME) driver/*.o -L. -ldycore -lops -lframework $(LIBS) -I./external/esmf_time_f90 -L./external/esmf_time_f90 -lesmf_time
 
 externals: $(AUTOCLEAN_DEPS) reg_includes
@@ -32,6 +32,9 @@ reg_includes: core_reg $(AUTOCLEAN_DEPS)
 
 core_reg:
 	(cd core_$(CORE); $(MAKE) core_reg )
+
+input_gen: reg_includes
+	( cd input_gen; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(SCC)" )
 
 frame: $(AUTOCLEAN_DEPS) reg_includes externals
 	( cd framework; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
@@ -64,6 +67,7 @@ ifeq "$(AUTOCLEAN)" "true"
 endif
 	$(RM) libframework.a libops.a libdycore.a lib$(CORE).a *.o
 	( cd registry; $(MAKE) clean )
+	( cd input_gen; $(MAKE) clean )
 	( cd external; $(MAKE) clean )
 	( cd framework; $(MAKE) clean )
 	( cd operators; $(MAKE) clean )
