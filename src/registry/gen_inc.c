@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "ezxml/ezxml.h"
+#include "ezxml.h"
 #include "registry_types.h"
 #include "gen_inc.h"
 #include "fortprintf.h"

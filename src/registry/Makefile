@@ -1,22 +1,22 @@
 .SUFFIXES: .c .o
 
-OBJS = parse.o dictionary.o gen_inc.o fortprintf.o utility.o ezxml/ezxml.o
+OBJS = parse.o dictionary.o gen_inc.o fortprintf.o utility.o
 
-all: parse
+all: ezxml parse
 	($(MAKE) clean)
 	($(MAKE) parse CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)")
 
-ezxml/ezxml.o:
-	(cd ezxml; $(CC) -c ezxml.c)
+ezxml:
+	(cd ../external/ezxml; $(MAKE) )
 
-parse: $(OBJS)
-	$(CC) $(CPPFLAGS) -o $@ $(OBJS)
+parse: ezxml $(OBJS)
+	$(CC) $(CPPFLAGS) ../external/ezxml/ezxml.o  -I../external/ezxml -o $@ $(OBJS)
 
 clean:
-	$(RM) *.o ezxml/*.o parse
+	$(RM) *.o parse
 	@# Certain systems with intel compilers generate *.i files
 	@# This removes them during the clean process
 	$(RM) *.i
 
-.c.o:
-	$(CC) $(CPPFLAGS) -c $<
+.c.o: ezxml
+	$(CC) $(CPPFLAGS) -I../external/ezxml -c $<

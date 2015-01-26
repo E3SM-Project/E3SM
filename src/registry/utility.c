@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ezxml/ezxml.h"
+#include "ezxml.h"
 #include "registry_types.h"
 
 int is_derived_dim(char * d)/*{{{*/
