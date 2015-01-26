@@ -1811,7 +1811,7 @@ contains
           case (0)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field0DRealOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field0DRealOutput, 1)
              ! allocate the time levels for the input field
              allocate(field0DRealArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -1840,7 +1840,7 @@ contains
           case (1)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field1DRealOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field1DRealOutput, 1)
              ! allocate the time levels for the input field
              allocate(field1DRealArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -1869,7 +1869,7 @@ contains
           case (2)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field2DRealOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field2DRealOutput, 1)
              ! allocate the time levels for the input field
              allocate(field2DRealArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -1898,7 +1898,7 @@ contains
           case (3)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field3DRealOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field3DRealOutput, 1)
              ! allocate the time levels for the input field
              allocate(field3DRealArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -1927,7 +1927,7 @@ contains
           case (4)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field4DRealOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field4DRealOutput, 1)
              ! allocate the time levels for the input field
              allocate(field4DRealArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -1956,7 +1956,7 @@ contains
           case (5)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field5DRealOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field5DRealOutput, 1)
              ! allocate the time levels for the input field
              allocate(field5DRealArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -1990,7 +1990,7 @@ contains
           case (0)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field0DIntOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field0DIntOutput, 1)
              ! allocate the time levels for the input field
              allocate(field0DIntArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -2019,7 +2019,7 @@ contains
           case (1)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field1DIntOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field1DIntOutput, 1)
              ! allocate the time levels for the input field
              allocate(field1DIntArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -2048,7 +2048,7 @@ contains
           case (2)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field2DIntOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field2DIntOutput, 1)
              ! allocate the time levels for the input field
              allocate(field2DIntArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -2077,7 +2077,7 @@ contains
           case (3)
 
              ! get the output field
-             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field3DIntOutput)
+             call MPAS_pool_get_field(forcingPoolOutput, trim(forcingField % fieldname), field3DIntOutput, 1)
              ! allocate the time levels for the input field
              allocate(field3DIntArray(forcingStream % nTimeStencil))
              ! loop over the desired time levels
@@ -2232,7 +2232,7 @@ contains
              select case (forcingPoolInfo % nDims)
              case (0)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field0DRealOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field0DRealOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field0DRealInput, 1)
                 field0DRealOutput = field0DRealInput * interpolants(1)
                 FORCING_DEBUG_WRITE('-- Forcing: forcing_data_interpolation iTime: ' COMMA 1 COMMA ': ' COMMA field0DRealInput COMMA interpolants(1))
@@ -2244,7 +2244,7 @@ contains
 
              case (1)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field1DRealOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field1DRealOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field1DRealInput, 1)
                 field1DRealOutput = field1DRealInput * interpolants(1)
                 do iTime = 2, forcingStream % nTimeStencil
@@ -2254,7 +2254,7 @@ contains
 
              case (2)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field2DRealOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field2DRealOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field2DRealInput, 1)
                 field2DRealOutput = field2DRealInput * interpolants(1)
                 do iTime = 2, forcingStream % nTimeStencil
@@ -2264,7 +2264,7 @@ contains
 
              case (3)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field3DRealOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field3DRealOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field3DRealInput, 1)
                 field3DRealOutput = field3DRealInput * interpolants(1)
                 do iTime = 2, forcingStream % nTimeStencil
@@ -2274,7 +2274,7 @@ contains
 
              case (4)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field4DRealOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field4DRealOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field4DRealInput, 1)
                 field4DRealOutput = field4DRealInput * interpolants(1)
                 do iTime = 2, forcingStream % nTimeStencil
@@ -2284,7 +2284,7 @@ contains
 
              case (5)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field5DRealOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field5DRealOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field5DRealInput, 1)
                 field5DRealOutput = field5DRealInput * interpolants(1)
                 do iTime = 2, forcingStream % nTimeStencil
@@ -2299,7 +2299,7 @@ contains
              select case (forcingPoolInfo % nDims)
              case (0)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field0DIntOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field0DIntOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field0DIntInput, 1)
                 field0DIntOutput = field0DIntInput * interpolants(1)
                 do iTime = 2, forcingStream % nTimeStencil
@@ -2309,7 +2309,7 @@ contains
 
              case (1)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field1DIntOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field1DIntOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field1DIntInput, 1)
                 field1DIntOutput = field1DIntInput * interpolants(1)
                 do iTime = 2, forcingStream % nTimeStencil
@@ -2319,7 +2319,7 @@ contains
 
              case (2)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field2DIntOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field2DIntOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field2DIntInput, 1)
                 field2DIntOutput = field2DIntInput * interpolants(1)
                 do iTime = 2, forcingStream % nTimeStencil
@@ -2329,7 +2329,7 @@ contains
 
              case (3)
 
-                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field3DIntOutput)
+                call MPAS_pool_get_array(forcingPoolOutput, trim(forcingField % fieldname), field3DIntOutput, 1)
                 call MPAS_pool_get_array(forcingPoolInput,  trim(fieldnameInput), field3DIntInput, 1)
                 field3DIntOutput = field3DIntInput * interpolants(1)
                 do iTime = 2, forcingStream % nTimeStencil
