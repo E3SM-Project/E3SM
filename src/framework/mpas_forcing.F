@@ -1788,7 +1788,12 @@ contains
 
        ! get the output pool
        call MPAS_pool_get_subpool(block % structs, trim(forcingField % poolname), forcingPoolOutput)
+       forcingPoolInfo % nDims = -1
        call MPAS_pool_get_field_info(forcingPoolOutput, trim(forcingField % fieldname), forcingPoolInfo)
+       if (forcingPoolInfo % nDims == -1) then
+          FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: fieldname does not exist in poolname')
+          call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_remove_field')
+       endif
 
        ! create the new input forcing pool if needed
        lInputPoolCreated = .false.
