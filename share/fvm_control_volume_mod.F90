@@ -37,8 +37,9 @@ module fvm_control_volume_mod
 
   type, public :: fvm_struct
     ! fvm tracer mixing ratio: (kg/kg)
-    real (kind=real_kind) :: c     (1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,2)
-    ! fvm tracer mixing ratio tendency: (kg/kg/s)
+    real (kind=real_kind) :: c     (1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,2) ! fvm tracer mixing ratio tendency: (kg/kg/s)
+    real (kind=real_kind) :: mass(ntrac_d) !total tracer mass - for diagnostics only
+    
     real (kind=real_kind) :: fc(nc,nc,nlev,ntrac_d)
     real (kind=real_kind) :: dp_fvm(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev        ,2)
     real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nc:nc+nhc)

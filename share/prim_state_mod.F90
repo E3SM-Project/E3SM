@@ -88,7 +88,7 @@ contains
 #if defined(_SPELT)
       type(spelt_struct), optional, intent(in) :: fvm(:)
 #else
-      type(fvm_struct), optional, intent(in) :: fvm(:)
+      type(fvm_struct), optional, intent(inout) :: fvm(:)
 #endif
     type (TimeLevel_t), target, intent(in) :: tl
     type (hybrid_t),intent(in)     :: hybrid
@@ -134,7 +134,7 @@ contains
          psmax_p, dpmax_p
 
     real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d), csum(ntrac_d),&
-         pssum_p, dpsum_p
+         pssum_p, dpsum_p, relative_mass_change(ntrac_d)
 
     !
     ! for fvm diagnostics
@@ -395,8 +395,21 @@ contains
              end do
           enddo
           call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-          csum(q) = global_shared_sum(1)/(4.0D0*DD_PI)
+          csum(q) = global_shared_sum(1)
        enddo
+       if (tl%nstep==0) then
+          do ie=nets,nete
+             fvm(ie)%mass(:)       = 0.0D0
+             fvm(ie)%mass(1:ntrac) = csum(1:ntrac)
+          end do
+       end if
+       do q=1,ntrac
+          if (ABS(fvm(ie)%mass(q))<1.0E-12) then
+             relative_mass_change(q) = csum(q) - fvm(nets)%mass(q)
+          else
+             relative_mass_change = (csum(q) - fvm(nets)%mass(q))/fvm(nets)%mass(q)
+          end if
+       end do
        !
        ! psC diagnostics
        !
@@ -415,7 +428,7 @@ contains
           global_shared_buf(ie,1) = SUM(fvm(ie)%psc(1:nc,1:nc)*fvm(ie)%area_sphere(1:nc,1:nc))
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       psc_mass = global_shared_sum(1)/(4.0D0*DD_PI)
+       psc_mass = global_shared_sum(1)
        !
        ! dp_fvm
        !
@@ -436,7 +449,7 @@ contains
           end do
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       dp_fvm_mass = global_shared_sum(1)/(4.0D0*DD_PI)
+       dp_fvm_mass = global_shared_sum(1)
     end if
 
 
@@ -473,13 +486,13 @@ contains
           write(iulog,'(A36)') "fvm diagnostics                    "
           write(iulog,'(A36)') "-----------------------------------"
           do q=1,ntrac
-             write(iulog,'(A36,I1,3(E23.15))')&
-                  "#c,min(c  ), max(c  ), mass(c  ) = ",q,cmin(q), cmax(q), csum(q)
+             write(iulog,'(A29,I1,4(E23.15))')&
+                  "#c, min, max, ave, change = ",q,cmin(q), cmax(q), csum(q)/(4.0D0*DD_PI),relative_mass_change(q)
           enddo
           write(iulog,'(A37,3(E23.15))')&
-                  "   min(dp_), max(dp_), mass(dp_) =  ",dp_fvm_min, dp_fvm_max, dp_fvm_mass
+                  "   min(dp_), max(dp_), ave(dp_) =  ",dp_fvm_min, dp_fvm_max, dp_fvm_mass/(4.0D0*DD_PI)
           write(iulog,'(A37,3(E23.15))')&
-                  "   min(psC), max(psC), mass(psC) =  ",psc_min, psc_max, psC_mass          
+                  "   min(psC), max(psC), ave(psC) =  ",psc_min, psc_max, psC_mass/(4.0D0*DD_PI)
           write(iulog,'(A36)') "                                   "
 
        end if
