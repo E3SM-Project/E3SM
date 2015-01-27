@@ -65,10 +65,6 @@ int main(int argc, char ** argv)/*{{{*/
 		return 1;
 	}
 
-	write_default_namelist(registry);
-
-	write_default_streams(registry);
-
 	return 0;
 }/*}}}*/
 

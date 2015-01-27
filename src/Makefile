@@ -16,7 +16,7 @@ endif
 
 all: mpas
 
-mpas: $(AUTOCLEAN_DEPS) reg_includes gen_namelists externals frame ops dycore drver
+mpas: $(AUTOCLEAN_DEPS) reg_includes input_gen externals frame ops dycore drver
 	$(LINKER) $(LDFLAGS) -o $(EXE_NAME) driver/*.o -L. -ldycore -lops -lframework $(LIBS) -I./external/esmf_time_f90 -L./external/esmf_time_f90 -lesmf_time
 
 externals: $(AUTOCLEAN_DEPS) reg_includes
@@ -35,6 +35,7 @@ core_reg:
 
 input_gen: reg_includes
 	( cd input_gen; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(SCC)" )
+	( cd core_$(CORE); $(MAKE) core_input_gen NL_GEN="$(PWD)/input_gen/namelist_gen" ST_GEN="$(PWD)/input_gen/streams_gen" )
 
 frame: $(AUTOCLEAN_DEPS) reg_includes externals
 	( cd framework; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
