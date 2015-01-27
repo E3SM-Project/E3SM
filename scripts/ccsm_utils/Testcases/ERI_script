@@ -17,8 +17,8 @@ endif
 
 #--- clone the main case to create ref1 and ref2 cases
 set CASER0  = ${CASEROOT}
-set CASERR1 = ${CASEROOT}.ref1
-set CASERR2 = ${CASEROOT}.ref2
+set CASERR1 = ${CASEROOT}/${CASE}.ref1
+set CASERR2 = ${CASEROOT}/${CASE}.ref2
 set CASE0   = ${CASE}
 
 cd $CCSMROOT/scripts
