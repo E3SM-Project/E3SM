@@ -35,7 +35,7 @@ setenv BASEGEN_FILE01 $CplLogFile
 
 #--- set apt case name, remember main case name and exeroot
 set CASER0 = ${CASEROOT}
-set CASERR = ${CASEROOT}.apt
+set CASERR = ${CASEROOT}/${CASE}.apt
 set EXEROOT0 = $EXEROOT
 
 #======================================================================

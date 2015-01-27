@@ -1,6 +1,6 @@
 #======================================================================
-# All things common to all tests that need to be done at the beginning 
-# of each test should be put here to avoid duplication.  
+# All things common to all tests that need to be done at the beginning
+# of each test should be put here to avoid duplication.
 #======================================================================
 
 #======================================================================
@@ -21,7 +21,7 @@ endif
 
 
 
-# valid test output states are:  
+# valid test output states are:
 #   PASS      Test passed
 #   FAIL      Test failed
 #   BFAIL     Base Results do not exist
@@ -33,8 +33,8 @@ endif
 #   RUN       Test started running, it may or may not have completed
 
 #======================================================================
-# (Don't) Remove test status files! create_test puts the namelist comparision 
-# status and output into these files, respectively.  
+# (Don't) Remove test status files! create_test puts the namelist comparision
+# status and output into these files, respectively.
 #======================================================================
 #
 set basestatus = "RUN  "
@@ -50,15 +50,15 @@ echo "test started $sdate" >>& CaseStatus
 
 if ( ${CASE} =~ *_IOP*) then
   set iopbase_argv = "`echo ${TEST_ARGV} |  sed 's/_IOP[A-Z4cp]*//' | sed 's/ -testroot [^ ]* / /'` -testroot $CASEROOT"
-  set iopbase_case = `echo ${CASE} |  sed 's/_IOP[A-Z4cp]*//'`
   set iopflags = `echo $CASE | sed 's/^.*_IOP\([A-Z4cp]*\).*/\1/'`
-  echo "running create_test ${iopbase_argv}  -clean off -testid ${TEST_TESTID}" >>& $TESTSTATUS_LOG
+  set iopbase_case = `echo ${CASE}-ref.IOP${iopflags} |  sed 's/_IOP[A-Z4cp]*//'`
+  echo "running create_test ${iopbase_argv}  -clean off -testid ${TEST_TESTID}-ref.IOP${iopflags}" >>& $TESTSTATUS_LOG
   echo "iopflags = ${iopflags}" >>& $TESTSTATUS_LOG
 
   #--- run IOP base test ---
   set caseroot0 = ${CASEROOT}
   cd $SCRIPTSROOT
-  ./create_test ${iopbase_argv} -clean off -testid ${TEST_TESTID}
+  ./create_test ${iopbase_argv} -clean off -testid ${TEST_TESTID}-ref.IOP${iopflags}
   cd $CASEROOT  || exit -9
   ./xmlchange  HIST_OPTION='$STOP_OPTION'
   ./xmlchange  HIST_N='$STOP_N'
@@ -86,7 +86,7 @@ if ( ${CASE} =~ *_IOP*) then
   set pref = ( ATM CPL OCN WAV GLC ICE ROF LND )
   set mod = ( A C O W G I R L )
   set i = 0
-  while ( $i < 8 ) 
+  while ( $i < 8 )
     @ i ++
     if ( ${iopflags} =~ *$mod[$i]4p*) then
       ./xmlchange -file env_run.xml -id $pref[$i]_PIO_TYPENAME -val 'netcdf4p'
@@ -96,10 +96,6 @@ if ( ${CASE} =~ *_IOP*) then
       ./xmlchange -file env_run.xml -id $pref[$i]_PIO_TYPENAME -val 'pnetcdf'
     endif
   end
-
-
-
-
 
 endif
 
