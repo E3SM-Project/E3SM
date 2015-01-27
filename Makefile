@@ -26,6 +26,17 @@ all: shared libcvmix analysis_members
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 
+core_input_gen:
+	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
+	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean_$(MODE) )
+	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean_$(MODE) stream_list.ocean_$(MODE). )
+
+post_build:
+	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
+	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
+	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
+
+
 endif # IFEQ ($(wildcard....
 
 else # IFDEF MODE
@@ -84,3 +95,4 @@ clean:
 	(cd analysis_members; $(MAKE) clean)
 	(cd shared; $(MAKE) clean)
 	($(RM) *.mod libdycore.a Registry_processed.xml)
+	$(RM) -r default_inputs
