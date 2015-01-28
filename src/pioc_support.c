@@ -107,18 +107,22 @@ io_region *alloc_region(const int ndims)
 {
   io_region *region;
 
-  region = (io_region *) malloc(sizeof(io_region));
-  region->start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
-  region->count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+  region = (io_region *) bget(sizeof(io_region));
+  region->start = (PIO_Offset *) bget(ndims* sizeof(PIO_Offset));
+  region->count = (PIO_Offset *) bget(ndims* sizeof(PIO_Offset));
   region->loffset = 0;
   region->next=NULL;
+  for(int i=0;i< ndims; i++){
+    region->start[i] = 0;
+    region->count[i] = 0;
+  }
   return region;
 }
 
 io_desc_t *malloc_iodesc(const int piotype, const int ndims)
 {
   io_desc_t *iodesc;
-  iodesc = (io_desc_t *) calloc(1, sizeof(io_desc_t));
+  iodesc = (io_desc_t *) bget(sizeof(io_desc_t));
 
   if(iodesc == NULL)
     fprintf(stderr,"ERROR: allocation error \n");
@@ -164,12 +168,12 @@ void free_region_list(io_region *top)
   ptr = top;
   while(ptr != NULL) {
     if(ptr->start != NULL)
-      free(ptr->start);
+      brel(ptr->start);
     if(ptr->count != NULL)
-      free(ptr->count);
+      brel(ptr->count);
     tptr=ptr;
     ptr=ptr->next;
-    free(tptr);      
+    brel(tptr);      
   }
 
 }
@@ -190,7 +194,7 @@ int PIOc_freedecomp(int iosysid, int ioid)
     return PIO_EBADID;
 
   if(iodesc->rfrom != NULL)
-    free(iodesc->rfrom);
+    brel(iodesc->rfrom);
   if(iodesc->rtype != NULL){
     for(i=0; i<iodesc->num_rtypes; i++){
 #ifdef HAVE_MPI
@@ -200,7 +204,7 @@ int PIOc_freedecomp(int iosysid, int ioid)
 #endif
     }
     iodesc->num_rtypes = 0;
-    free(iodesc->rtype);
+    brel(iodesc->rtype);
   }
   if(iodesc->stype != NULL){
     for(i=0; i<iodesc->num_stypes; i++){
@@ -211,16 +215,16 @@ int PIOc_freedecomp(int iosysid, int ioid)
 #endif
     }
     iodesc->num_stypes = 0;
-    free(iodesc->stype);
+    brel(iodesc->stype);
   }
   if(iodesc->scount != NULL)
-    free(iodesc->scount);
+    brel(iodesc->scount);
   if(iodesc->rcount != NULL)
-    free(iodesc->rcount);
+    brel(iodesc->rcount);
   if(iodesc->sindex != NULL)
-    free(iodesc->sindex);
+    brel(iodesc->sindex);
   if(iodesc->rindex != NULL)
-    free(iodesc->rindex);
+    brel(iodesc->rindex);
 
   if(iodesc->firstregion != NULL)
     free_region_list(iodesc->firstregion);

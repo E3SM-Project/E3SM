@@ -52,8 +52,10 @@ int PIO_function()
       usage = 0;
       if(ios->io_rank==file->indep_rank){
 	ierr = ncmpi_function();
-	pio_push_request(file, request);
-	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
+	if(ierr == PIO_NOERR){
+	  pio_push_request(file, request);
+	  ierr = ncmpi_inq_buffer_usage(ncid, &usage);
+	}
 	//	printf("%s %d %d\n",__FILE__,__LINE__,usage);
       }
       // ncmpi_end_indep_data(file->fh);

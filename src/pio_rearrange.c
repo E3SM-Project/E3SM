@@ -189,7 +189,6 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
   mtype[0] = basetype * blocksize;
 #else
   if(mindex != NULL){
-    //    lindex = (PIO_Offset *) malloc(dlen * sizeof(PIO_Offset));
     memcpy(lindex, mindex, (size_t) (dlen*sizeof(PIO_Offset)));
   }
   bsizeT[0]=0;
@@ -260,7 +259,7 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
   if(ios.ioproc){
     if(iodesc->rtype==NULL){
       int ntypes = iodesc->nrecvs;
-      iodesc->rtype = (MPI_Datatype *) malloc(ntypes * sizeof(MPI_Datatype));
+      iodesc->rtype = (MPI_Datatype *) bget(ntypes * sizeof(MPI_Datatype));
       for(i=0; i<ntypes; i++){
         iodesc->rtype[i] = MPI_DATATYPE_NULL;
       }
@@ -289,22 +288,25 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 
   if(iodesc->stype==NULL){
     int ntypes;
-    if(iodesc->rearranger==PIO_REARR_SUBSET)
+    int ncnt;
+    if(iodesc->rearranger==PIO_REARR_SUBSET){
       ntypes = 1;
-    else
+      ncnt = iodesc->scount[0];
+    }else{
       ntypes = ios.num_iotasks;
-
+      ncnt = iodesc->ndof;
+    }
 
     //  printf("COMP: %d\n",ntypes);
 
 
-    iodesc->stype = (MPI_Datatype *) malloc(ntypes * sizeof(MPI_Datatype));
+    iodesc->stype = (MPI_Datatype *) bget(ntypes * sizeof(MPI_Datatype));
     for(i=0; i<ntypes; i++){
       iodesc->stype[i] = MPI_DATATYPE_NULL;
     }
     iodesc->num_stypes = ntypes;
 
-    create_mpi_datatypes(iodesc->basetype, ntypes, iodesc->ndof, iodesc->sindex, iodesc->scount, NULL, iodesc->stype);
+    create_mpi_datatypes(iodesc->basetype, ntypes, ncnt, iodesc->sindex, iodesc->scount, NULL, iodesc->stype);
 #ifndef _MPISERIAL
        /*    if(tmpioproc==95)   {
       MPI_Aint lb;
@@ -365,7 +367,9 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   else
     numiotasks=1;
 
-  iodesc->scount = (int *) calloc(numiotasks,sizeof(int));
+  iodesc->scount = (int *) bget(numiotasks,sizeof(int));
+  for(i=0;i<numiotasks;i++)
+    iodesc->scount[i]=0;
 
   // iodesc->scount is the amount of data sent to each task from the current task
   for(i=0;i<maplen; i++){
@@ -395,7 +399,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   }
 
   if(ios.ioproc){
-    recv_buf = (int *) malloc(ntasks * sizeof(int));
+    recv_buf = (int *) bget(ntasks * sizeof(int));
     for(i=0;i<ntasks;i++){
       recv_buf[i] = 0;
       recv_counts[i] = 1;
@@ -420,9 +424,12 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     }
     // printf("\n");
 
-    iodesc->rcount = (int *) calloc(max(1,nrecvs),sizeof(int));
-    iodesc->rfrom = (int *) calloc(max(1,nrecvs),sizeof(int));
-    
+    iodesc->rcount = (int *) bget(max(1,nrecvs)*sizeof(int));
+    iodesc->rfrom = (int *)  bget(max(1,nrecvs)*sizeof(int));
+    for(i=0;i<max(1,nrecvs);i++){
+      iodesc->rcount[i]=0;
+      iodesc->rfrom[i]=0;
+    }
 
     nrecvs = 0;
     for(i=0;i<ntasks; i++){
@@ -433,14 +440,15 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
       }
 
     }
-    free(recv_buf);
+    brel(recv_buf);
   }
 
   iodesc->nrecvs = nrecvs;
-  if(iodesc->sindex == NULL)
-    iodesc->sindex = (PIO_Offset *) calloc(iodesc->ndof,sizeof(PIO_Offset));
-
-
+  if(iodesc->sindex == NULL){
+    iodesc->sindex = (PIO_Offset *) bget(iodesc->ndof * sizeof(PIO_Offset));
+    for(i=0;i<iodesc->ndof;i++)
+      iodesc->sindex[i]=0;
+  }
   int tempcount[numiotasks];
   int spos[numiotasks];
 
@@ -503,7 +511,9 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     // recalculate llen with repeats (such as halo region) included
     if(totalrecv>0)
       iodesc->llen = totalrecv;
-    iodesc->rindex = (PIO_Offset *) calloc(iodesc->llen,sizeof(PIO_Offset));
+    iodesc->rindex = (PIO_Offset *) bget(iodesc->llen*sizeof(PIO_Offset));
+    for(i=0;i<iodesc->llen;i++)
+      iodesc->rindex[i]=0;
   }
   //   printf("%d rbuf_size %d\n",ios.comp_rank,rbuf_size);
 
@@ -593,12 +603,12 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 
   define_iodesc_datatypes(ios, iodesc);
 
-  sendcounts = (int *) malloc(ntasks*sizeof(int));
-  recvcounts = (int *) malloc(ntasks*sizeof(int));
-  sdispls = (int *) malloc(ntasks*sizeof(int));
-  rdispls = (int *) malloc(ntasks*sizeof(int));
-  sendtypes = (MPI_Datatype *) malloc(ntasks*sizeof(MPI_Datatype));
-  recvtypes = (MPI_Datatype *) malloc(ntasks*sizeof(MPI_Datatype));
+  sendcounts = (int *) bget(ntasks*sizeof(int));
+  recvcounts = (int *) bget(ntasks*sizeof(int));
+  sdispls = (int *) bget(ntasks*sizeof(int));
+  rdispls = (int *) bget(ntasks*sizeof(int));
+  sendtypes = (MPI_Datatype *) bget(ntasks*sizeof(MPI_Datatype));
+  recvtypes = (MPI_Datatype *) bget(ntasks*sizeof(MPI_Datatype));
   //printf("%s %d %ld %ld\n",__FILE__,__LINE__,sendtypes,recvtypes);
   for(i=0;i<ntasks;i++){
     sendcounts[i] = 0;
@@ -664,10 +674,10 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   //	printf("%s %d %d %d\n",__FILE__,__LINE__,i,((int *)rbuf)[i]);
   //printf("%s %d %ld %ld\n",__FILE__,__LINE__,sendtypes[0],recvtypes);  
 
-  free(sendcounts);
-  free(recvcounts); 
-  free(sdispls);
-  free(rdispls);
+  brel(sendcounts);
+  brel(recvcounts); 
+  brel(sdispls);
+  brel(rdispls);
 //printf("%s %d %ld %ld\n",__FILE__,__LINE__,sendtypes[0],recvtypes);
   for( i=0;i<ntasks; i++){
     if(sendtypes[i] != MPI_DATATYPE_NULL){
@@ -680,8 +690,8 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
     }
   }
   
-  free(sendtypes);
-  free(recvtypes);
+  brel(sendtypes);
+  brel(recvtypes);
 #endif
   return PIO_NOERR;
 }
@@ -735,15 +745,19 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 #else  
   define_iodesc_datatypes(ios, iodesc);
 
-  sendcounts = (int *) calloc(ntasks,sizeof(int));
-  recvcounts = (int *) calloc(ntasks,sizeof(int));
-  sdispls = (int *) calloc(ntasks,sizeof(int));
-  rdispls = (int *) calloc(ntasks,sizeof(int));
-  sendtypes = (MPI_Datatype *) malloc(ntasks*sizeof(MPI_Datatype));
-  recvtypes = (MPI_Datatype *) malloc(ntasks*sizeof(MPI_Datatype));
+  sendcounts = (int *) bget(ntasks*sizeof(int));
+  recvcounts = (int *) bget(ntasks*sizeof(int));
+  sdispls = (int *) bget(ntasks*sizeof(int));
+  rdispls = (int *) bget(ntasks*sizeof(int));
+  sendtypes = (MPI_Datatype *) bget(ntasks*sizeof(MPI_Datatype));
+  recvtypes = (MPI_Datatype *) bget(ntasks*sizeof(MPI_Datatype));
 
 
   for( i=0;i< ntasks;i++){
+    sendcounts[i] = 0;
+    recvcounts[i] = 0;
+    sdispls[i] = 0;
+    rdispls[i] = 0;
     sendtypes[ i ] = MPI_DATATYPE_NULL;
     recvtypes[ i ] = MPI_DATATYPE_NULL;
   }
@@ -779,12 +793,12 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
 
-  free(sendcounts);
-  free(recvcounts); 
-  free(sdispls);
-  free(rdispls);
-  free(sendtypes);
-  free(recvtypes);
+  brel(sendcounts);
+  brel(recvcounts); 
+  brel(sdispls);
+  brel(rdispls);
+  brel(sendtypes);
+  brel(recvtypes);
 #endif
  
   return PIO_NOERR;
@@ -809,7 +823,7 @@ void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[])
   //  Pass the needs fill value from io master to all tasks
   MPI_Bcast(&(iodesc->needsfill), 1, MPI_INT, ios.ioroot, ios.union_comm);
   if(iodesc->needsfill){
-    iodesc->gsize = (PIO_Offset *) malloc(iodesc->ndims * sizeof(PIO_Offset));
+    iodesc->gsize = (PIO_Offset *) bget(iodesc->ndims * sizeof(PIO_Offset));
     for (i=0;i<iodesc->ndims;i++){
       iodesc->gsize[i] = gsize[i];
     }
@@ -1154,11 +1168,11 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   rcnt = 0;
   iodesc->ndof = maplen;
   if(ios.ioproc){
-    iodesc->rcount = (int *) malloc(ntasks *sizeof(int));
+    iodesc->rcount = (int *) bget(ntasks *sizeof(int));
     rcnt = 1;
   } 
-  iodesc->scount = (int *) calloc(1,sizeof(int));
-
+  iodesc->scount = (int *) bget(sizeof(int));
+  iodesc->scount[0]=0;
   totalgridsize=1;
   for( i=0;i<ndims;i++){
     totalgridsize *= gsize[i];
@@ -1170,8 +1184,11 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       (iodesc->scount[0])++;
     }
   }
-  if(iodesc->scount[0]>0)
-    iodesc->sindex = (PIO_Offset *) calloc(iodesc->scount[0],pio_offset_size); 
+  if(iodesc->scount[0]>0){
+    iodesc->sindex = (PIO_Offset *) bget(iodesc->scount[0]*pio_offset_size); 
+    for(i=0;i<iodesc->scount[0];i++)
+      iodesc->sindex[i]=0;
+  }
 
   j=0;
   for(i=0;i<maplen;i++){
@@ -1204,7 +1221,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     //    printf("%s %d %ld %d %d\n",__FILE__,__LINE__,iodesc,iodesc->llen,maplen);
       
     if(iodesc->llen>0){
-      srcindex = (PIO_Offset *) calloc(iodesc->llen,pio_offset_size);
+      srcindex = (PIO_Offset *) bget(iodesc->llen*pio_offset_size);
+      for(i=0;i < iodesc->llen; i++)
+	srcindex[i]=0;
     }
   }else{
     for(i=0;i<ntasks;i++){
@@ -1221,15 +1240,20 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 		 0, iodesc->subset_comm, maxreq);
 
   if(ios.ioproc){
-    map = (mapsort *) malloc(iodesc->llen * sizeof(mapsort));    
-    iomap = (PIO_Offset *) calloc(iodesc->llen,pio_offset_size);
+    map = (mapsort *) bget(iodesc->llen * sizeof(mapsort));    
+    iomap = (PIO_Offset *) bget(iodesc->llen*pio_offset_size);
+    for(i=0;i<iodesc->llen;i++)
+      iomap[i]=0;
   }
 
   // Now pass the compmap, skipping the holes
 
   PIO_Offset *shrtmap;
   if(maplen>iodesc->scount[0]){
-    shrtmap = (PIO_Offset *) calloc(iodesc->scount[0],pio_offset_size);
+    shrtmap = (PIO_Offset *) bget(iodesc->scount[0]*pio_offset_size);
+    for(i=0;i<iodesc->scount[0];i++)
+      shrtmap[i]=0;
+
     j=0;
     for(i=0;i<maplen;i++)
       if(compmap[i]>0)
@@ -1244,7 +1268,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 
 
   if(shrtmap != compmap)
-    free(shrtmap);
+    brel(shrtmap);
 
   if(ios.ioproc){
     int pos=0;
@@ -1263,8 +1287,12 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     // sort the mapping, this will transpose the data into IO order        
     qsort(map, iodesc->llen, sizeof(mapsort), compare_offsets); 
 
-    iodesc->rindex = (PIO_Offset *) calloc(iodesc->llen,pio_offset_size);
-    iodesc->rfrom = (int *) calloc(iodesc->llen,sizeof(int));
+    iodesc->rindex = (PIO_Offset *) bget(iodesc->llen*pio_offset_size);
+    iodesc->rfrom = (int *) bget(iodesc->llen*sizeof(int));
+    for(i=0;i<iodesc->llen;i++){
+      iodesc->rindex[i]=0;
+      iodesc->rfrom[i]=0;
+    }
   }
   int cnt[ntasks];
   int sndlths[ntasks];
@@ -1308,13 +1336,13 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     get_start_and_count_regions(ios.io_comm,iodesc,gsize,iomap);
   
     if(iomap != NULL)
-      free(iomap);
+      brel(iomap);
     
     if(map != NULL)
-      free(map);
+      brel(map);
 
     if(srcindex != NULL)
-      free(srcindex);
+      brel(srcindex);
     
     compute_maxIObuffersize(ios.io_comm, iodesc);
 

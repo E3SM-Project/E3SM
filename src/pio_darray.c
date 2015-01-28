@@ -1,6 +1,7 @@
 #include <pio.h>
 #include <pio_internal.h>
 
+#define PIO_WRITE_BUFFERING 1
 PIO_Offset PIO_BUFFER_SIZE_LIMIT= 10485760; // 10MB default limit
 bufsize PIO_CNBUFFER_LIMIT=10485760; // 10MB default limit
 static void *CN_bpool=NULL; 
@@ -428,7 +429,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
        // make sure we have room in the buffer ;
 	 ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	 usage += nvars*tsize*(iodesc->maxiobuflen);
-	 //	 printf("%s %d %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT);
+	 printf("%s %d %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT);
 	 MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
 
 	 if(usage >= PIO_BUFFER_SIZE_LIMIT){	   
@@ -616,11 +617,17 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	       }
 	     }
 	     bufptr = (void *)((char *) IOBUF + nv*tsize*iodesc->llen);
+	     ierr = ncmpi_iput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
+				    bufptr, iodesc->llen, iodesc->basetype, &request);
+	     /*
 	     ierr = ncmpi_bput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
 				    bufptr, iodesc->llen, iodesc->basetype, &request);
+	     */ 
 	     pio_push_request(file,request);
+	     
 	   }
 	   for(i=0;i<rrcnt;i++){
+             printf("%d %ld %ld %ld %ld\n",i,startlist[i][0],startlist[i][1],countlist[i][0],countlist[i][1]);
 	     free(startlist[i]);
 	     free(countlist[i]);
 	   }
@@ -684,8 +691,11 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 #else
        MPI_Type_size(iodesc->basetype, &vsize);	
 #endif
+       /*
        iobuf = malloc( vsize * rlen);
-       //     printf("%s %d 0x%.16X\n",__FILE__,__LINE__,iobuf);
+       */
+       iobuf = bget(vsize*rlen);
+       printf("%s %d %d 0x%.16X %ld\n",__FILE__,__LINE__,nvars,iobuf,vsize*rlen);
 /*
 
 */
@@ -723,16 +733,20 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      */
      ierr = pio_write_darray_multi_nc(file, iodesc, nvars, vid, iobuf, frame, fillvalue);
    }
+   
+   flush_output_buffer(file);
+
    //printf("%s %d %ld\n",__FILE__,__LINE__,iobuf);
    if(iobuf != NULL && iobuf != array){
      //     printf("%s %d 0x%.16X\n",__FILE__,__LINE__,iobuf);
-     free(iobuf);
+     
+     brel(iobuf);
      //  printf("%s %d\n",__FILE__,__LINE__);
    }
    return ierr;
 
  }
-
+#ifdef PIO_WRITE_BUFFERING
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -740,7 +754,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    io_desc_t *iodesc;
    var_desc_t *vdesc;
    void *bufptr;
-   size_t vsize, rlen;
+   size_t rlen;
    int ierr;
    MPI_Datatype vtype;
    wmulti_buffer *wmb;
@@ -828,20 +842,20 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      wmb->fillvalue=NULL;
    }
 
-
-#ifdef _MPISERIAL
+ 
+ #ifdef _MPISERIAL
     tsize = iodesc->basetype;
 #else
     MPI_Type_size(iodesc->basetype, &tsize);
 #endif
-   // At this point wmb should be pointing to a new or existing buffer 
+  // At this point wmb should be pointing to a new or existing buffer 
    // so we can add the data
     //     printf("%s %d %X %d %d %d\n",__FILE__,__LINE__,wmb->data,wmb->validvars,arraylen,tsize);
     //    cn_buffer_report(*ios, true);
     bfreespace(&totfree, &maxfree);
-    bool needflush = (maxfree <= (1+wmb->validvars)*arraylen*tsize );
+    bool needflush = (maxfree <= 1.1*(1+wmb->validvars)*arraylen*tsize );
     MPI_Allreduce(MPI_IN_PLACE, &needflush, 1,  MPI_INT,  MPI_MAX, ios->comp_comm);
-
+    needflush = wmb->validvars>2;    
     if(needflush ){
       // need to flush first
       //printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,maxfree, wmb->validvars, (1+wmb->validvars)*arraylen*tsize,totfree);
@@ -908,6 +922,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
    wmb->validvars++;
 
+   printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,wmb->validvars,iodesc->maxbytes/tsize, iodesc->ndof, iodesc->llen);
    if(wmb->validvars >= iodesc->maxbytes/tsize){
      PIOc_sync(ncid);
    }
@@ -915,6 +930,73 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    return ierr;
 
  }
+#else
+ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
+ {
+   iosystem_desc_t *ios;
+   file_desc_t *file;
+   io_desc_t *iodesc;
+   void *iobuf;
+   size_t  rlen;
+   int tsize;
+   int ierr;
+   MPI_Datatype vtype;
+
+   ierr = PIO_NOERR;
+
+
+   file = pio_get_file_from_id(ncid);
+   if(file == NULL){
+     fprintf(stderr,"File handle not found %d %d\n",ncid,__LINE__);
+     return PIO_EBADID;
+   }
+   iodesc = pio_get_iodesc_from_id(ioid);
+   if(iodesc == NULL){
+     fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
+     return PIO_EBADID;
+   }
+   iobuf = NULL;
+
+   ios = file->iosystem;
+
+   rlen = iodesc->llen;
+   if(iodesc->rearranger>0){
+     if(rlen>0){
+#ifdef _MPISERIAL
+       tsize = iodesc->basetype;
+#else
+       MPI_Type_size(iodesc->basetype, &tsize);	
+#endif
+       iobuf = bget(tsize*rlen);
+     }
+     //    printf(" rlen = %d %ld\n",rlen,iobuf); 
+
+     //  }
+
+
+     ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 1);
+
+
+   }else{
+     iobuf = array;
+   }
+   switch(file->iotype){
+   case PIO_IOTYPE_PNETCDF:
+   case PIO_IOTYPE_NETCDF:
+   case PIO_IOTYPE_NETCDF4P:
+   case PIO_IOTYPE_NETCDF4C:
+     ierr = pio_write_darray_nc(file, iodesc, vid, iobuf, fillvalue);
+   }
+
+   if(iodesc->rearranger>0 && rlen>0)
+     brel(iobuf);
+
+   return ierr;
+
+ }
+#endif
+
+
 
 int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void *IOBUF)
 {
@@ -1313,7 +1395,7 @@ void compute_maxaggregate_bytes(const iosystem_desc_t ios, io_desc_t *iodesc)
   }
   maxbytes = min(maxbytesoniotask,maxbytesoncomputetask);
 
-  // printf("%s %d %d %d\n",__FILE__,__LINE__,maxbytesoniotask, maxbytesoncomputetask);
+  //  printf("%s %d %d %d\n",__FILE__,__LINE__,maxbytesoniotask, maxbytesoncomputetask);
 
   MPI_Allreduce(&maxbytes, &(iodesc->maxbytes), 1, MPI_INT, MPI_MIN, ios.union_comm);
 
