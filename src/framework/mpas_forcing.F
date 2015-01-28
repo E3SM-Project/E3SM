@@ -1120,7 +1120,7 @@ contains
             ierr=ierr)
 
        if (ierr /= 0) then
-          FORCING_ERROR_WRITE('Error: -- Forcing: get_initial_forcing_data: READ: ' COMMA ierr)
+          FORCING_ERROR_WRITE('-- Forcing: get_initial_forcing_data: READ: ' COMMA ierr)
           call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
        endif
 
@@ -1439,7 +1439,7 @@ contains
             ierr=ierr)
 
        if (ierr /= 0) then
-          FORCING_ERROR_WRITE('Error: -- Forcing: mpas_forcing_get_forcing: READ: ' COMMA ierr)
+          FORCING_ERROR_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: ' COMMA ierr)
           call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
        endif
 
@@ -1772,13 +1772,13 @@ contains
     call MPAS_stream_mgr_set_property(&
          streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=ierr)
     if (ierr /= 0) then
-       FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
+       FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
        call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_set_property')
     endif
     call MPAS_stream_mgr_remove_field(&
          streamManager, trim(forcingStream % forcingStreamID), trim(forcingField % fieldname), ierr=ierr)
     if (ierr /= 0) then
-       FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_remove_field: ' COMMA ierr)
+       FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: MPAS_stream_mgr_remove_field: ' COMMA ierr)
        call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_remove_field')
     endif
 
@@ -1791,8 +1791,8 @@ contains
        forcingPoolInfo % nDims = -1
        call MPAS_pool_get_field_info(forcingPoolOutput, trim(forcingField % fieldname), forcingPoolInfo)
        if (forcingPoolInfo % nDims == -1) then
-          FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: fieldname does not exist in poolname')
-          call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_remove_field')
+          FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: field ' COMMA trim(forcingField % fieldname) COMMA ' does not exist in pool: ' COMMA trim(forcingField % poolname))
+          call MPAS_dmpar_global_abort('Forcing: Error: fieldname does not exist in poolname')
        endif
 
        ! create the new input forcing pool if needed
@@ -2129,13 +2129,13 @@ contains
     call MPAS_stream_mgr_add_field(&
          streamManager, trim(forcingStream % forcingStreamID), trim(fieldnameInput), ierr=ierr)
     if (ierr /= 0) then
-       FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_add_field: ' COMMA ierr)
+       FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: MPAS_stream_mgr_add_field: ' COMMA ierr)
        call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_add_field')
     endif
     call MPAS_stream_mgr_set_property(&
          streamManager, trim(forcingStream % forcingStreamID), MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=ierr)
     if (ierr /= 0) then
-       FORCING_ERROR_WRITE('Error: -- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
+       FORCING_ERROR_WRITE('-- Forcing: setup_input_fields: MPAS_stream_mgr_set_property: ' COMMA ierr)
        call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_set_property')
     endif
 
