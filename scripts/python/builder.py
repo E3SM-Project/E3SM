@@ -174,7 +174,7 @@ class goldbach(platformBuilder):
         
         super(goldbach, self).__init__(compiler, test,mpilib, debug)
         if compiler == 'nag':
-            self.moduleList = ['compiler/nag/6.0']
+            self.moduleList = ['compiler/nag/5.3.1-907']
         if compiler == 'intel':
             self.moduleList = ['compiler/intel/14.0.2']
 
