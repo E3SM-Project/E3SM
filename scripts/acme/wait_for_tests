@@ -6,9 +6,10 @@ If the test passes, 0 is returned, otherwise a non-zero error code
 is returned.
 """
 
-import argparse, sys, os, doctest, time, threading, Queue, signal
+import argparse, sys, os, doctest, time, threading, Queue, signal, socket
 import distutils.spawn, subprocess, getpass
 import xml.etree.ElementTree as xmlet
+from distutils.spawn import find_executable
 
 VERBOSE = False
 TEST_STATUS_FILENAME = "TestStatus"
@@ -116,8 +117,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         default=False,
                         help="Cancel all queued jobs on exit")
 
-    parser.add_argument("-d", "--cdash", action="store_true", dest="cdash", default=False,
-                        help="Produce XML for test results that can be used for cdash")
+    parser.add_argument("-d", "--cdash-build-name", action="store", dest="cdash_build_name", default=None,
+                        help="Build name, implies you want results send to Cdash")
 
     args = parser.parse_args(args[1:])
 
@@ -127,7 +128,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     global CLEANUP
     CLEANUP = args.cleanup
 
-    return args.paths, args.no_wait, args.check_throughput, args.cdash
+    return args.paths, args.no_wait, args.check_throughput, args.cdash_build_name
 
 ###############################################################################
 def get_test_time(test_path):
@@ -166,8 +167,44 @@ def get_test_output(test_path):
         return ""
 
 ###############################################################################
-def create_cdash_xml(start_time, results):
+def create_cdash_xml(start_time, results, cdash_build_name):
 ###############################################################################
+
+    # Create dart config file
+    hostname = socket.gethostname().split(".")[0]
+    dart_config = \
+"""
+SourceDirectory: %s
+BuildDirectory: %s
+
+# Site is something like machine.domain, i.e. pragmatic.crd
+Site: %s
+
+# Build name is osname-revision-compiler, i.e. Linux-2.4.2-2smp-c++
+BuildName: %s
+
+# Submission information
+IsCDash: TRUE
+CDashVersion:
+QueryCDashVersion:
+DropSite: my.cdash.org
+DropLocation: /submit.php?project=ACME_Climate
+DropSiteUser:
+DropSitePassword:
+DropSiteMode:
+DropMethod: http
+TriggerSite:
+ScpCommand: %s
+
+# Dashboard start time
+NightlyStartTime: 00:00:00 EST
+""" % (os.getcwd(), os.getcwd(), hostname,
+       cdash_build_name, find_executable("scp"))
+
+    dart_fd = open("DartConfiguration.tcl", "w")
+    dart_fd.write(dart_config)
+    dart_fd.close()
+
     # Make necessary dirs
     local_time_tuple = time.localtime(start_time)
     subdir_name = time.strftime('%Y%m%d-%H%M', local_time_tuple)
@@ -176,35 +213,40 @@ def create_cdash_xml(start_time, results):
 
     # Make tag file
     tag_fd = open("Testing/TAG", "w")
-    tag_fd.write("%s\nExperimental" % subdir_name)
+    tag_fd.write("%s\nNightly" % subdir_name)
     tag_fd.close()
 
-    # Preamble - skip for now?
-    '''<Site BuildName="dakota_core_rhel6_gcc_ompi"
-    BuildStamp="20150115-1944-Continuous"
-    Name="face"
-    Generator="ctest-2.8.11.1"
-    CompilerName=""
-    OSName="Linux"
-    Hostname="face.sandia.gov"
-    OSRelease="2.6.32-504.el6.x86_64"
-    OSVersion="#1 SMP Tue Sep 16 01:56:35 EDT 2014"
-    OSPlatform="x86_64"
-    Is64Bits="1"
-    VendorString="GenuineIntel"
-    VendorID="Intel Corporation"
-    FamilyID="6"
-    ModelID="44"
-    ProcessorCacheSize="12288"
-    NumberOfLogicalCPU="16"
-    NumberOfPhysicalCPU="8"
-    TotalVirtualMemory="26207"
-    TotalPhysicalMemory="24016"
-    LogicalProcessorsPerPhysical="2"
-    ProcessorClockFrequency="2394.04"
-    >'''
+    #
+    # Make XML
+    #
 
-    testing_elem = xmlet.Element("Testing")
+    site_elem = xmlet.Element("Site")
+
+    # It's OK to lie for most of this stuff
+    site_elem.attrib["BuildName"] = cdash_build_name
+    site_elem.attrib["BuildStamp"] = "%s-Nightly" % subdir_name
+    site_elem.attrib["Name"] = hostname
+    site_elem.attrib["Generator"] = "ctest-2.8.11.1"
+    site_elem.attrib["CompilerName"] = ""
+    site_elem.attrib["OSName"] = "Linux"
+    site_elem.attrib["Hostname"] = hostname
+    site_elem.attrib["OSRelease"] = "2.6.32-504.el6.x86_64"
+    site_elem.attrib["OSVersion"] = "#1 SMP Tue Sep 16 01:56:35 EDT 2014"
+    site_elem.attrib["OSPlatform"] = "x86_64"
+    site_elem.attrib["Is64Bits"] = "1"
+    site_elem.attrib["VendorString"] = "GenuineIntel"
+    site_elem.attrib["VendorID"] = "Intel Corporation"
+    site_elem.attrib["FamilyID"] = "6"
+    site_elem.attrib["ModelID"] = "44"
+    site_elem.attrib["ProcessorCacheSize"] = "12288"
+    site_elem.attrib["NumberOfLogicalCPU"] = "16"
+    site_elem.attrib["NumberOfPhysicalCPU"] = "8"
+    site_elem.attrib["TotalVirtualMemory"] = "26207"
+    site_elem.attrib["TotalPhysicalMemory"] = "24016"
+    site_elem.attrib["LogicalProcessorsPerPhysical"] = "2"
+    site_elem.attrib["ProcessorClockFrequency"] = "2394.04"
+
+    testing_elem = xmlet.SubElement(site_elem, "Testing")
 
     start_date_time_elem = xmlet.SubElement(testing_elem, "StartDateTime")
     start_date_time_elem.text = time.ctime(start_time)
@@ -260,9 +302,14 @@ def create_cdash_xml(start_time, results):
         value_elem = xmlet.SubElement(measurement_elem, "Value")
         value_elem.text = get_test_output(test_norm_path)
 
-    etree = xmlet.ElementTree(testing_elem)
+    elapsed_time_elem = xmlet.SubElement(testing_elem, "ElapsedMinutes")
+    elapsed_time_elem.text = "0" # Skip for now
+
+    etree = xmlet.ElementTree(site_elem)
 
     etree.write(os.path.join(data_rel_path, "Test.xml"))
+
+    run_cmd("ctest -D NightlySubmit")
 
 ###############################################################################
 def parse_test_status_file(file_contents, status_file_path, check_throughput):
@@ -333,14 +380,14 @@ def wait_for_test(test_path, results, wait, check_throughput):
                 break
 
 ###############################################################################
-def wait_for_tests(test_paths, no_wait, check_throughput, cdash):
+def wait_for_tests(test_paths, no_wait, check_throughput, cdash_build_name):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
-    if (cdash):
+    if (cdash_build_name):
         start_time = time.time()
 
     results = Queue.Queue()
@@ -379,8 +426,8 @@ def wait_for_tests(test_paths, no_wait, check_throughput, cdash):
         print "    Path: %s" % test_path
         all_pass &= test_status == TEST_PASSED_STATUS
 
-    if (cdash):
-        create_cdash_xml(start_time, tests_with_results)
+    if (cdash_build_name):
+        create_cdash_xml(start_time, tests_with_results, cdash_build_name)
 
     return all_pass
 
@@ -391,9 +438,10 @@ def _main_func(description):
         doctest.testmod()
         return
 
-    test_paths, no_wait, check_throughput, cdash = parse_command_line(sys.argv, description)
+    test_paths, no_wait, check_throughput, cdash_build_name = \
+        parse_command_line(sys.argv, description)
 
-    sys.exit(0 if wait_for_tests(test_paths, no_wait, check_throughput, cdash) else 1)
+    sys.exit(0 if wait_for_tests(test_paths, no_wait, check_throughput, cdash_build_name) else 1)
 
 ###############################################################################
 
