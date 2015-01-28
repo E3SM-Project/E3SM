@@ -270,7 +270,8 @@ LIST(REMOVE_ITEM FORTRANSOURCES
    ${GLIMMER_SOURCE_DIR}/libglimmer/test_integrate.F90
    ${GLIMMER_SOURCE_DIR}/libglimmer/test_ts.F90
    ${GLIMMER_SOURCE_DIR}/libglimmer/test_writestats.F90
-   ${GLIMMER_SOURCE_DIR}/libglimmer/nc2config.F90 )
+   ${GLIMMER_SOURCE_DIR}/libglimmer/nc2config.F90 
+   ${GLIMMER_SOURCE_DIR}/libglimmer-solve/SLAP/dlapqc.f )
 
 
 IF ((NOT ${NO_TRILINOS}) OR CISM_MPI_MODE)
