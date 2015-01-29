@@ -258,17 +258,19 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
   int i;
   if(ios.ioproc){
     if(iodesc->rtype==NULL){
-      int ntypes = iodesc->nrecvs;
-      iodesc->rtype = (MPI_Datatype *) bget(ntypes * sizeof(MPI_Datatype));
-      for(i=0; i<ntypes; i++){
-        iodesc->rtype[i] = MPI_DATATYPE_NULL;
-      }
-      iodesc->num_rtypes = ntypes;
-
-      if(iodesc->rearranger==PIO_REARR_SUBSET){
-	create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->llen, iodesc->rindex, iodesc->rcount, iodesc->rfrom, iodesc->rtype);
-      }else{
-	create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->llen, iodesc->rindex, iodesc->rcount, NULL, iodesc->rtype);
+      if(iodesc->nrecvs>0){
+	iodesc->rtype = (MPI_Datatype *) bget(iodesc->nrecvs * sizeof(MPI_Datatype));
+	if(iodesc->rtype == NULL){
+	  piomemerror(ios,iodesc->nrecvs * sizeof(MPI_Datatype), __FILE__,__LINE__);
+	}
+	for(i=0; i<iodesc->nrecvs; i++){
+	  iodesc->rtype[i] = MPI_DATATYPE_NULL;
+	}
+	if(iodesc->rearranger==PIO_REARR_SUBSET){
+	  create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->llen, iodesc->rindex, iodesc->rcount, iodesc->rfrom, iodesc->rtype);
+	}else{
+	  create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->llen, iodesc->rindex, iodesc->rcount, NULL, iodesc->rtype);
+	}
       }
 #ifndef _MPISERIAL
             /*      if(tmpioproc==95)     {
@@ -301,6 +303,9 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 
 
     iodesc->stype = (MPI_Datatype *) bget(ntypes * sizeof(MPI_Datatype));
+    if(iodesc->stype == NULL){
+      piomemerror(ios,ntypes * sizeof(MPI_Datatype), __FILE__,__LINE__);
+    }
     for(i=0; i<ntypes; i++){
       iodesc->stype[i] = MPI_DATATYPE_NULL;
     }
@@ -367,7 +372,10 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   else
     numiotasks=1;
 
-  iodesc->scount = (int *) bget(numiotasks,sizeof(int));
+  iodesc->scount = (int *) bget(numiotasks*sizeof(int));
+  if(iodesc->scount == NULL){
+    piomemerror(ios,numiotasks * sizeof(int), __FILE__,__LINE__);
+  }
   for(i=0;i<numiotasks;i++)
     iodesc->scount[i]=0;
 
@@ -400,6 +408,9 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
 
   if(ios.ioproc){
     recv_buf = (int *) bget(ntasks * sizeof(int));
+    if(recv_buf == NULL){
+      piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+    }
     for(i=0;i<ntasks;i++){
       recv_buf[i] = 0;
       recv_counts[i] = 1;
@@ -425,7 +436,13 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     // printf("\n");
 
     iodesc->rcount = (int *) bget(max(1,nrecvs)*sizeof(int));
+    if(iodesc->rcount == NULL){
+      piomemerror(ios,max(1,nrecvs) * sizeof(int), __FILE__,__LINE__);
+    }
     iodesc->rfrom = (int *)  bget(max(1,nrecvs)*sizeof(int));
+    if(iodesc->rfrom == NULL){
+      piomemerror(ios,max(1,nrecvs) * sizeof(int), __FILE__,__LINE__);
+    }
     for(i=0;i<max(1,nrecvs);i++){
       iodesc->rcount[i]=0;
       iodesc->rfrom[i]=0;
@@ -446,6 +463,9 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   iodesc->nrecvs = nrecvs;
   if(iodesc->sindex == NULL){
     iodesc->sindex = (PIO_Offset *) bget(iodesc->ndof * sizeof(PIO_Offset));
+    if(iodesc->sindex == NULL){
+      piomemerror(ios,iodesc->ndof * sizeof(PIO_Offset), __FILE__,__LINE__);
+    }
     for(i=0;i<iodesc->ndof;i++)
       iodesc->sindex[i]=0;
   }
@@ -509,9 +529,13 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     for(i=1;i<nrecvs;i++)
       recv_displs[iodesc->rfrom[i]] = recv_displs[iodesc->rfrom[i-1]]+iodesc->rcount[i-1]*tsize;
     // recalculate llen with repeats (such as halo region) included
-    if(totalrecv>0)
+    if(totalrecv>0){
       iodesc->llen = totalrecv;
-    iodesc->rindex = (PIO_Offset *) bget(iodesc->llen*sizeof(PIO_Offset));
+      iodesc->rindex = (PIO_Offset *) bget(iodesc->llen*sizeof(PIO_Offset));
+      if(iodesc->rindex == NULL){
+	piomemerror(ios,iodesc->llen * sizeof(PIO_Offset), __FILE__,__LINE__);
+      }
+    }
     for(i=0;i<iodesc->llen;i++)
       iodesc->rindex[i]=0;
   }
@@ -604,11 +628,29 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   define_iodesc_datatypes(ios, iodesc);
 
   sendcounts = (int *) bget(ntasks*sizeof(int));
+  if(sendcounts == NULL){
+    piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+  }
   recvcounts = (int *) bget(ntasks*sizeof(int));
+  if(recvcounts == NULL){
+    piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+  }
   sdispls = (int *) bget(ntasks*sizeof(int));
+  if(sdispls == NULL){
+    piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+  }
   rdispls = (int *) bget(ntasks*sizeof(int));
+  if(rdispls == NULL){
+    piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+  }
   sendtypes = (MPI_Datatype *) bget(ntasks*sizeof(MPI_Datatype));
+  if(sendtypes == NULL){
+    piomemerror(ios,ntasks * sizeof(MPI_Datatype), __FILE__,__LINE__);
+  }
   recvtypes = (MPI_Datatype *) bget(ntasks*sizeof(MPI_Datatype));
+  if(recvtypes == NULL){
+    piomemerror(ios,ntasks * sizeof(MPI_Datatype), __FILE__,__LINE__);
+  }
   //printf("%s %d %ld %ld\n",__FILE__,__LINE__,sendtypes,recvtypes);
   for(i=0;i<ntasks;i++){
     sendcounts[i] = 0;
@@ -746,12 +788,29 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   define_iodesc_datatypes(ios, iodesc);
 
   sendcounts = (int *) bget(ntasks*sizeof(int));
+  if(sendcounts == NULL){
+    piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+  }
   recvcounts = (int *) bget(ntasks*sizeof(int));
+  if(recvcounts == NULL){
+    piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+  }
   sdispls = (int *) bget(ntasks*sizeof(int));
+  if(sdispls == NULL){
+    piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+  }
   rdispls = (int *) bget(ntasks*sizeof(int));
+  if(rdispls == NULL){
+    piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+  }
   sendtypes = (MPI_Datatype *) bget(ntasks*sizeof(MPI_Datatype));
+  if(sendtypes == NULL){
+    piomemerror(ios,ntasks * sizeof(MPI_Datatype), __FILE__,__LINE__);
+  }
   recvtypes = (MPI_Datatype *) bget(ntasks*sizeof(MPI_Datatype));
-
+  if(recvtypes == NULL){
+    piomemerror(ios,ntasks * sizeof(MPI_Datatype), __FILE__,__LINE__);
+  }
 
   for( i=0;i< ntasks;i++){
     sendcounts[i] = 0;
@@ -765,8 +824,10 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
     for( i=0;i< iodesc->nrecvs;i++){
       if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
 	if(iodesc->rearranger==PIO_REARR_SUBSET){
-	  sendcounts[ i ] = 1;
-	  sendtypes[ i ] = iodesc->rtype[i];
+	  if(sbuf != NULL){
+	    sendcounts[ i ] = 1;
+	    sendtypes[ i ] = iodesc->rtype[i];
+	  }
 	}else{
 	  sendcounts[ iodesc->rfrom[i] ] = 1;
 	  sendtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
@@ -824,6 +885,9 @@ void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[])
   MPI_Bcast(&(iodesc->needsfill), 1, MPI_INT, ios.ioroot, ios.union_comm);
   if(iodesc->needsfill){
     iodesc->gsize = (PIO_Offset *) bget(iodesc->ndims * sizeof(PIO_Offset));
+    if(iodesc->gsize==NULL){
+      piomemerror(ios,iodesc->ndims * sizeof(MPI_Datatype), __FILE__,__LINE__);
+    }
     for (i=0;i<iodesc->ndims;i++){
       iodesc->gsize[i] = gsize[i];
     }
@@ -1169,9 +1233,15 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   iodesc->ndof = maplen;
   if(ios.ioproc){
     iodesc->rcount = (int *) bget(ntasks *sizeof(int));
+    if(iodesc->rcount == NULL){
+      piomemerror(ios,ntasks * sizeof(int), __FILE__,__LINE__);
+    }
     rcnt = 1;
   } 
   iodesc->scount = (int *) bget(sizeof(int));
+  if(iodesc->scount == NULL){
+    piomemerror(ios,sizeof(int), __FILE__,__LINE__);
+  }
   iodesc->scount[0]=0;
   totalgridsize=1;
   for( i=0;i<ndims;i++){
@@ -1186,6 +1256,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   }
   if(iodesc->scount[0]>0){
     iodesc->sindex = (PIO_Offset *) bget(iodesc->scount[0]*pio_offset_size); 
+    if(iodesc->sindex == NULL){
+      piomemerror(ios,iodesc->scount[0]*pio_offset_size, __FILE__,__LINE__);
+    }
     for(i=0;i<iodesc->scount[0];i++)
       iodesc->sindex[i]=0;
   }
@@ -1222,6 +1295,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       
     if(iodesc->llen>0){
       srcindex = (PIO_Offset *) bget(iodesc->llen*pio_offset_size);
+      if(srcindex == NULL){
+	piomemerror(ios,iodesc->llen * pio_offset_size, __FILE__,__LINE__);
+      }
       for(i=0;i < iodesc->llen; i++)
 	srcindex[i]=0;
     }
@@ -1241,7 +1317,13 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 
   if(ios.ioproc){
     map = (mapsort *) bget(iodesc->llen * sizeof(mapsort));    
+    if(map == NULL){
+      piomemerror(ios,iodesc->llen * sizeof(mapsort), __FILE__,__LINE__);
+    }
     iomap = (PIO_Offset *) bget(iodesc->llen*pio_offset_size);
+    if(iomap == NULL){
+      piomemerror(ios,iodesc->llen * pio_offset_size, __FILE__,__LINE__);
+    }
     for(i=0;i<iodesc->llen;i++)
       iomap[i]=0;
   }
@@ -1251,6 +1333,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   PIO_Offset *shrtmap;
   if(maplen>iodesc->scount[0]){
     shrtmap = (PIO_Offset *) bget(iodesc->scount[0]*pio_offset_size);
+    if(shrtmap == NULL){
+      piomemerror(ios,iodesc->scount[0] * pio_offset_size, __FILE__,__LINE__);
+    }
     for(i=0;i<iodesc->scount[0];i++)
       shrtmap[i]=0;
 
@@ -1288,7 +1373,13 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     qsort(map, iodesc->llen, sizeof(mapsort), compare_offsets); 
 
     iodesc->rindex = (PIO_Offset *) bget(iodesc->llen*pio_offset_size);
+    if(iodesc->rindex == NULL){
+      piomemerror(ios,iodesc->llen * pio_offset_size, __FILE__,__LINE__);
+    }
     iodesc->rfrom = (int *) bget(iodesc->llen*sizeof(int));
+    if(iodesc->rfrom == NULL){
+      piomemerror(ios,iodesc->llen * sizeof(int), __FILE__,__LINE__);
+    }
     for(i=0;i<iodesc->llen;i++){
       iodesc->rindex[i]=0;
       iodesc->rfrom[i]=0;

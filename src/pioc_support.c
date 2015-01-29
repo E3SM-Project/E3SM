@@ -26,6 +26,13 @@ void print_trace (FILE *fp)
   free (strings);
 }
 
+void piomemerror(iosystem_desc_t ios, size_t req, char *fname, const int line){
+  char msg[80];
+  sprintf(msg,"out of memory requesting: %ld",req);
+  cn_buffer_report(ios,false);
+  piodie(msg,fname,line);
+}
+
 
 void piodie(const char *msg,const char *fname, const int line){
   fprintf(stderr,"Abort with message %s in file %s at line %d\n",msg,fname,line);
@@ -147,7 +154,6 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   iodesc->rfrom = NULL;
   iodesc->scount = NULL;
   iodesc->rtype = NULL;
-  iodesc->num_rtypes = 0;
   iodesc->stype = NULL;
   iodesc->num_stypes = 0;
   iodesc->sindex = NULL;
@@ -196,14 +202,13 @@ int PIOc_freedecomp(int iosysid, int ioid)
   if(iodesc->rfrom != NULL)
     brel(iodesc->rfrom);
   if(iodesc->rtype != NULL){
-    for(i=0; i<iodesc->num_rtypes; i++){
+    for(i=0; i<iodesc->nrecvs; i++){
 #ifdef HAVE_MPI
       if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
         MPI_Type_free(iodesc->rtype+i);
       }
 #endif
     }
-    iodesc->num_rtypes = 0;
     brel(iodesc->rtype);
   }
   if(iodesc->stype != NULL){

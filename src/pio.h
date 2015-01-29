@@ -107,7 +107,6 @@ typedef struct io_desc_t
   PIO_Offset *rindex;
 
   MPI_Datatype *rtype;
-  int num_rtypes;
   MPI_Datatype *stype;
   int num_stypes;
   

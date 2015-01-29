@@ -3,7 +3,7 @@
 
 #define PIO_WRITE_BUFFERING 1
 PIO_Offset PIO_BUFFER_SIZE_LIMIT= 10485760; // 10MB default limit
-bufsize PIO_CNBUFFER_LIMIT=10485760; // 10MB default limit
+bufsize PIO_CNBUFFER_LIMIT=104857600; // 100MB default limit
 static void *CN_bpool=NULL; 
 
  // Changes to PIO_BUFFER_SIZE_LIMIT only apply to files opened after the change
@@ -691,11 +691,13 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 #else
        MPI_Type_size(iodesc->basetype, &vsize);	
 #endif
-       /*
-       iobuf = malloc( vsize * rlen);
-       */
-       iobuf = bget(vsize*rlen);
-       printf("%s %d %d 0x%.16X %ld\n",__FILE__,__LINE__,nvars,iobuf,vsize*rlen);
+       iobuf = malloc((size_t) vsize* (size_t) rlen);
+       //       iobuf = bget((size_t) vsize* (size_t) rlen);
+       if(iobuf==NULL){
+	 printf("%s %d %d 0x%.16X %ld\n",__FILE__,__LINE__,nvars,iobuf,vsize*rlen);
+	 piomemerror(*ios,(size_t) rlen*(size_t) vsize, __FILE__,__LINE__);
+       }
+
 /*
 
 */
@@ -739,8 +741,8 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    //printf("%s %d %ld\n",__FILE__,__LINE__,iobuf);
    if(iobuf != NULL && iobuf != array){
      //     printf("%s %d 0x%.16X\n",__FILE__,__LINE__,iobuf);
-     
-     brel(iobuf);
+     free(iobuf);
+     //     brel(iobuf);
      //  printf("%s %d\n",__FILE__,__LINE__);
    }
    return ierr;
@@ -823,9 +825,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    if((recordvar && wmb->ioid != ioid) || (!recordvar && wmb->ioid != -(ioid))){
      wmb->next = (wmulti_buffer *) bget((bufsize) sizeof(wmulti_buffer));
      if(wmb->next == NULL){
-       /*  need to do more here */
-       cn_buffer_report(*ios,false) ;
-       piodie("allocation failed",__FILE__,__LINE__);
+       piomemerror(*ios,sizeof(wmulti_buffer), __FILE__,__LINE__);
      }
      wmb=wmb->next;
      wmb->next=NULL;
@@ -864,12 +864,24 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
       flush_buffer(ncid,wmb);
     }
     wmb->data = bgetr( wmb->data, (1+wmb->validvars)*arraylen*tsize);
+    if(wmb->data == NULL){
+      piomemerror(*ios, (1+wmb->validvars)*arraylen*tsize  , __FILE__,__LINE__);
+    }
     wmb->vid = (int *) bgetr( wmb->vid,sizeof(int)*( 1+wmb->validvars));
+    if(wmb->vid == NULL){
+      piomemerror(*ios, (1+wmb->validvars)*sizeof(int)  , __FILE__,__LINE__);
+    }
     if(vdesc->record>=0){
       wmb->frame = (int *) bgetr( wmb->frame,sizeof(int)*( 1+wmb->validvars));
+      if(wmb->frame == NULL){
+	piomemerror(*ios, (1+wmb->validvars)*sizeof(int)  , __FILE__,__LINE__);
+      }
     }
     if(iodesc->needsfill){
       wmb->fillvalue = bgetr( wmb->fillvalue,tsize*( 1+wmb->validvars));
+      if(wmb->fillvalue == NULL){
+	piomemerror(*ios, (1+wmb->validvars)*tsize  , __FILE__,__LINE__);
+      }
     }
  
 
@@ -922,7 +934,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
    wmb->validvars++;
 
-   printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,wmb->validvars,iodesc->maxbytes/tsize, iodesc->ndof, iodesc->llen);
+			      //   printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,wmb->validvars,iodesc->maxbytes/tsize, iodesc->ndof, iodesc->llen);
    if(wmb->validvars >= iodesc->maxbytes/tsize){
      PIOc_sync(ncid);
    }
@@ -967,7 +979,11 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 #else
        MPI_Type_size(iodesc->basetype, &tsize);	
 #endif
-       iobuf = bget(tsize*rlen);
+       //       iobuf = bget(tsize*rlen);
+       iobuf = malloc(tsize*rlen);
+       if(iobuf==NULL){
+	 piomemerror(ios,rlen*vsize, __FILE__,__LINE__);
+       }
      }
      //    printf(" rlen = %d %ld\n",rlen,iobuf); 
 
@@ -989,7 +1005,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
 
    if(iodesc->rearranger>0 && rlen>0)
-     brel(iobuf);
+     free(iobuf);
 
    return ierr;
 
@@ -1233,8 +1249,8 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   file_desc_t *file;
   io_desc_t *iodesc;
   void *iobuf=NULL;
-  size_t vsize=0, rlen=0;
-  int ierr;
+  size_t rlen=0;
+  int ierr, tsize;
   MPI_Datatype vtype;
  
 
@@ -1257,23 +1273,17 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   }
   if(iodesc->rearranger > 0){
     if(ios->ioproc && rlen>0){
-      vtype = (MPI_Datatype) iodesc->basetype;
-      if(vtype == MPI_INTEGER){
-	iobuf = malloc( rlen*sizeof(int));
-      }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
-	iobuf = malloc( rlen*sizeof(float));
-      }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
-	iobuf = malloc( rlen*sizeof(double));
-      }else if(vtype == MPI_CHARACTER){
-	iobuf = malloc( rlen*sizeof(char));
-      }else{
-	fprintf(stderr,"Type not recognized %d in pioc_read_darray\n",vtype);
-      }
-      if(iobuf == NULL){
-	fprintf(stderr,"malloc failed in pioc_read_darray %d %d\n",rlen,vtype);
-	return PIO_ENOMEM;
-      } 
-    }
+#ifdef _MPISERIAL
+       tsize = iodesc->basetype;
+#else
+       MPI_Type_size(iodesc->basetype, &tsize);	
+#endif
+       iobuf = bget(tsize*rlen);
+       if(iobuf==NULL){
+	 piomemerror(*ios,rlen*tsize, __FILE__,__LINE__);
+       }
+       //       printf("%s %d %X %ld\n",__FILE__,__LINE__,iobuf,rlen);
+     }
   }else{
     iobuf = array;
   }
@@ -1291,7 +1301,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
     //	      printf("%s %d %d\n",__FILE__,__LINE__,ierr);
 
     if(rlen>0)
-      free(iobuf);
+      brel(iobuf);
   }
 
   return ierr;
@@ -1387,10 +1397,10 @@ void compute_maxaggregate_bytes(const iosystem_desc_t ios, io_desc_t *iodesc)
   
   // printf("%s %d %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen, iodesc->ndof);
 
-  if(ios.ioproc){
+  if(ios.ioproc && iodesc->maxiobuflen>0){
      maxbytesoniotask = PIO_BUFFER_SIZE_LIMIT/ iodesc->maxiobuflen;
   }
-  if(ios.comp_rank>=0){
+  if(ios.comp_rank>=0 && iodesc->ndof>0){
     maxbytesoncomputetask = PIO_CNBUFFER_LIMIT/iodesc->ndof;
   }
   maxbytes = min(maxbytesoniotask,maxbytesoncomputetask);
