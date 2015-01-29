@@ -664,20 +664,58 @@ module atm_time_integration
 
                   call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                   call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+                  call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+                  call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+                  call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
+                  call mpas_pool_get_dimension(mesh, 'nVerticesSolve', nVerticesSolve)
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                   call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
+
+!$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
+                  nthreads = OMP_get_num_threads()
+                  threadid = OMP_get_thread_num()
+      
+                  cellStart = (threadid * nCells / nthreads) + 1
+                  cellEnd = ((threadid+1) * nCells / nthreads)
+                  edgeStart = (threadid * nEdges / nthreads) + 1
+                  edgeEnd = ((threadid+1) * nEdges / nthreads)
+                  vertexStart = (threadid * nVertices / nthreads) + 1
+                  vertexEnd = ((threadid+1) * nVertices / nthreads)
+      
+                  cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
+                  cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
+                  edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
+                  edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
+                  vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
+                  vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
+      
                   !
                   ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
                   !       the functionality of the advance_scalars routine; however, it is noticeably slower, 
                   !       so we use the advance_scalars routine for the first two RK substeps.
                   !
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-                     call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), advance_density=.false. )
+!$OMP MASTER
+                     timerid = 2
+                     call start_timer(timerid)
+!$OMP END MASTER
+                     call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), &
+                                             cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                             cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
+                                             advance_density=.false. )
+!$OMP MASTER
+                     call stop_timer(timerid, secs, n_secs)
+                     write(0,'(a,i3,a1,i9.9)') 'advance_scalars timing: ', secs, '.', n_secs
+!$OMP END MASTER
                   else
+!$OMP MASTER
                      block % domain = domain 
-                     call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), advance_density=.false.)
+                     call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), &
+                                                    advance_density=.false. )
+!$OMP END MASTER
                   end if
+!$OMP END PARALLEL
                   block => block % next
                end do
 
@@ -794,20 +832,58 @@ module atm_time_integration
 
                call mpas_pool_get_dimension(mesh, 'nCells', nCells)
                call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+               call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+               call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+               call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
+               call mpas_pool_get_dimension(mesh, 'nVerticesSolve', nVerticesSolve)
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
+
+!$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
+               nthreads = OMP_get_num_threads()
+               threadid = OMP_get_thread_num()
+   
+               cellStart = (threadid * nCells / nthreads) + 1
+               cellEnd = ((threadid+1) * nCells / nthreads)
+               edgeStart = (threadid * nEdges / nthreads) + 1
+               edgeEnd = ((threadid+1) * nEdges / nthreads)
+               vertexStart = (threadid * nVertices / nthreads) + 1
+               vertexEnd = ((threadid+1) * nVertices / nthreads)
+   
+               cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
+               cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
+               edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
+               edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
+               vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
+               vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
+   
                !
                ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
                !       the functionality of the advance_scalars routine; however, it is noticeably slower, 
                !       so we use the advance_scalars routine for the first two RK substeps.
                !
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-                  call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), advance_density=.true.)
+!$OMP MASTER
+                  timerid = 2
+                  call start_timer(timerid)
+!$OMP END MASTER
+                  call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), &
+                                          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
+                                          advance_density=.true. )
+!$OMP MASTER
+                  call stop_timer(timerid, secs, n_secs)
+                  write(0,'(a,i3,a1,i9.9)') 'advance_scalars timing: ', secs, '.', n_secs
+!$OMP END MASTER
                else
+!$OMP MASTER
                   block % domain = domain 
-                  call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), advance_density=.true.)
+                  call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), &
+                                                 advance_density=.true. )
+!$OMP END MASTER
                end if
+!$OMP END PARALLEL
                block => block % next
             end do
 
@@ -2059,7 +2135,10 @@ module atm_time_integration
 
 !---------------------------------------------------------------------------------------
 
-   subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nCells, nVertLevels, dt, advance_density)
+   subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nCells, nVertLevels, dt, &
+                                   cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
+                                   advance_density)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    !
    ! Integrate scalar equations - explicit transport plus other tendencies
@@ -2097,9 +2176,11 @@ module atm_time_integration
       integer, intent(in) :: nCells           ! for allocating stack variables
       integer, intent(in) :: nVertLevels      ! for allocating stack variables
       real (kind=RKIND) :: dt
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
       logical, intent(in), optional :: advance_density
 
-      integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
+      integer :: i, j, iCell, iAdvCell, iEdge, k, iScalar, cell1, cell2
       real (kind=RKIND) :: scalar_weight
 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalar_old, scalar_new, scalar_tend
@@ -2108,9 +2189,9 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, qv_init
       integer, dimension(:,:), pointer :: cellsOnEdge
 
-      integer, dimension(:,:), pointer :: advCellsForEdge
-      integer, dimension(:), pointer :: nAdvCellsForEdge
-      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
+      integer, dimension(:,:), pointer :: advCellsForEdge, edgesOnCell
+      integer, dimension(:), pointer :: nAdvCellsForEdge, nEdgesOnCell
+      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd, edgesOnCell_sign
       real (kind=RKIND), dimension( num_scalars, nVertLevels ) :: flux_arr
 
       real (kind=RKIND), dimension( num_scalars, nVertLevels + 1 ) :: wdtn
@@ -2161,6 +2242,9 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
 
@@ -2186,15 +2270,14 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', v_theta_eddy_visc2)
 
 
-#ifndef DO_PHYSICS
-      scalar_tend = 0.  !  testing purposes - we have no sources or sinks
-#endif
+!$OMP BARRIER
 
       !
       ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
       !
       !  horizontal flux divergence, accumulate in scalar_tend
 
+!MGD BEGIN WORK
       if (local_advance_density) then
          allocate(rho_zz_int(nVertLevels,nCells))
          allocate(scalar_tend_save(num_scalars,nVertLevels,nCells))
@@ -2203,7 +2286,12 @@ module atm_time_integration
       else
          rho_zz_int => rho_zz_new
       end if
+!MGD END WORK
 
+#if MPI_ONLY
+#ifndef DO_PHYSICS
+      scalar_tend = 0.0  !  testing purposes - we have no sources or sinks
+#endif
       do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -2241,6 +2329,42 @@ module atm_time_integration
 
          end if
       end do
+#else
+      do iCell=cellSolveStart,cellSolveEnd
+#ifndef DO_PHYSICS
+         scalar_tend(:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
+#endif
+         do i=1,nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i,iCell)
+
+            !  flux_arr stores the value of the scalar at the edge.
+            !  a better name perhaps would be scalarEdge
+
+            flux_arr(:,:) = 0.0
+            do j=1,nAdvCellsForEdge(iEdge)
+               iAdvCell = advCellsForEdge(j,iEdge)
+               do k=1,nVertLevels
+                  scalar_weight = adv_coefs(j,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
+                  do iScalar=1,num_scalars
+                     flux_arr(iScalar,k) = flux_arr(iScalar,k) + scalar_weight * scalar_new(iScalar,k,iAdvCell)
+                  end do
+               end do
+            end do
+
+            ! here we add the horizontal flux divergence into the scalar tendency.
+            ! note that the scalar tendency is modified.
+
+            do k=1,nVertLevels
+            do iScalar=1,num_scalars
+                  scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
+                         - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*flux_arr(iScalar,k)/areaCell(iCell)
+            end do
+            end do
+            
+         end do
+      end do
+#endif
+
 
       !
       !  vertical flux divergence and update of the scalars
@@ -2248,8 +2372,12 @@ module atm_time_integration
 
       ! zero fluxes at top and bottom
 
-      wdtn(:,1) = 0.
-      wdtn(:,nVertLevels+1) = 0.
+      wdtn(:,1) = 0.0
+      wdtn(:,nVertLevels+1) = 0.0
+
+! We cannot update scalar_new until all other threads have had a chance to
+!    access the old values in the computation of flux_arr
+!$OMP BARRIER
 
       if (local_advance_density) then
          ! update density first
@@ -2262,7 +2390,7 @@ module atm_time_integration
 
       if (config_scalar_vadv_order == 2) then
 
-         do iCell=1,nCellsSolve
+         do iCell=cellSolveStart,cellSolveEnd
             do k = 2, nVertLevels
                do iScalar=1,num_scalars
                   wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
@@ -2278,7 +2406,7 @@ module atm_time_integration
 
       else if ( config_scalar_vadv_order == 3 ) then
 
-         do iCell=1,nCellsSolve
+         do iCell=cellSolveStart,cellSolveEnd
 
             k = 2
             do iScalar=1,num_scalars
@@ -2308,7 +2436,7 @@ module atm_time_integration
 
       else if ( config_scalar_vadv_order == 4 ) then
 
-         do iCell=1,nCellsSolve
+         do iCell=cellSolveStart,cellSolveEnd
 
             k = 2
             do iScalar=1,num_scalars
@@ -2340,11 +2468,13 @@ module atm_time_integration
 
       end if
 
+!MGD BEGIN WORK
       if (local_advance_density) then
          scalar_tend(:,:,1:nCells) = scalar_tend_save(:,:,1:nCells)
          deallocate(rho_zz_int)
          deallocate(scalar_tend_save)
       end if
+!MGD END WORK
 
    end subroutine atm_advance_scalars
 
