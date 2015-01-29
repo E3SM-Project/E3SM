@@ -94,10 +94,8 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
-      logical, pointer :: higherOrderVelocityActive
       type (MPAS_Time_Type) :: startTime
       integer :: i, err, err_tmp, globalErr
-
       logical, pointer :: config_do_restart
 
 
@@ -106,7 +104,6 @@ module mpas_core
       globalErr = 0
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-      call mpas_pool_get_package(domain % packages, 'higherOrderVelocityActive', higherOrderVelocityActive)
 
       !
       ! Initialize config option settings as needed
@@ -132,19 +129,11 @@ module mpas_core
       else
          call mpas_stream_mgr_read(stream_manager, streamID='input', ierr=err_tmp)
          err = ior(err, err_tmp)
-         if (higherOrderVelocityActive) then
-            call mpas_stream_mgr_read(stream_manager, streamID='inputHigherOrderVelocity', ierr=err_tmp)
-            err = ior(err, err_tmp)
-         endif
       end if
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err_tmp)
       err = ior(err, err_tmp)
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err_tmp)
       err = ior(err, err_tmp)
-      if (higherOrderVelocityActive) then
-         call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='inputHigherOrderVelocity', ierr=err_tmp)
-         err = ior(err, err_tmp)
-      endif
       call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
 
@@ -529,7 +518,7 @@ module mpas_core
          write (stdoutUnit,*) 'The SIAVelocity package and associated variables and streams has been enabled because the SIA velocity solver is selected.'
       else
          higherOrderVelocityActive = .true.
-         write (stdoutUnit,*) 'The higherOrderVelocity package and associated variables and streams has been enabled because a higher-order velocity solver is selected.'
+         write (stdoutUnit,*) "The 'higherOrderVelocity' package and associated variables have been enabled because a higher-order velocity solver is selected."
       end if
 
    end subroutine mpas_core_setup_packages

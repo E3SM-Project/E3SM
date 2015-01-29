@@ -283,17 +283,25 @@
 			<var name="thickness"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
+<!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
+<!-- They do not need to be the input file for the SIA dycore, and will be ignored if they are. -->
+			<var name="beta"/>
+			<var name="dirichletVelocityMask"/>
+			<var name="dirichletVelocityXValue"/>
+			<var name="dirichletVelocityYValue"/>
 		</stream>
 
+<!-- An alternate way to allow the HO variables to exist in a separate file.
 		<stream name="inputHigherOrderVelocity"
 				type="input"
 				immutable="true"
 				packages="higherOrderVelocity"
 				filename_template="landice_grid.nc2"
 				input_interval="initial_only">
-		<!-- immutable should be true for inputHigherOrderVelocity, but currently there is an error if two immutable streams have the same filename template.  Once it is immutable, runtime_format is no longer needed. -->
 			<var name="beta"/>
 		</stream>
+-->
+
 
 		<stream name="restart"
 				type="input;output"
