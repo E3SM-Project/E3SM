@@ -6,12 +6,17 @@ If the test passes, 0 is returned, otherwise a non-zero error code
 is returned.
 """
 
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+
 import argparse, sys, os, doctest, time, threading, Queue, signal, socket
 import distutils.spawn, subprocess, getpass
+
 import xml.etree.ElementTree as xmlet
 from distutils.spawn import find_executable
 
-VERBOSE = False
+from acme_util import expect, warning, verbose_print
+
 TEST_STATUS_FILENAME = "TestStatus"
 TEST_NOT_FINISHED_STATUS = ["GEN", "BUILD", "RUN", "PEND"]
 TEST_PASSED_STATUS = "PASS"
@@ -26,33 +31,6 @@ CLEANUP_ROUTINES = \
 CLEANUP = False
 
 THROUGHPUT_TEST_STR = ".tputcomp."
-
-###############################################################################
-def expect(condition, error_msg):
-###############################################################################
-    if (not condition):
-        raise SystemExit(error_msg)
-
-###############################################################################
-def verbose_print(msg):
-###############################################################################
-    if (VERBOSE):
-        print msg
-
-###############################################################################
-def warning(msg):
-###############################################################################
-    print >> sys.stderr, "WARNING:", msg
-
-###############################################################################
-def run_cmd(cmd, stdout_arg=None):
-###############################################################################
-    proc = subprocess.Popen(cmd, shell=True, stdout=stdout_arg, stderr=subprocess.PIPE)
-    output, errput = proc.communicate()
-    stat = proc.wait()
-    expect(stat == 0, "Command: '%s' failed with error '%s'" % (cmd, errput))
-
-    return output
 
 ###############################################################################
 def probe_batch_system():
@@ -76,7 +54,7 @@ def signal_handler(signum, frame):
     if (CLEANUP):
         batch_system = probe_batch_system()
         if (batch_system is not None):
-            run_cmd(CLEANUP_ROUTINES[batch_system])
+            acme_util.run_cmd(CLEANUP_ROUTINES[batch_system])
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -122,8 +100,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    global VERBOSE
-    VERBOSE = args.verbose
+    acme_util.set_verbosity(args.verbose)
 
     global CLEANUP
     CLEANUP = args.cleanup
@@ -134,7 +111,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def get_test_time(test_path):
 ###############################################################################
     cmd = "grep 'TOT Run Time' /dev/null $(find %s -name 'ccsm_timing*') || true" % test_path
-    output = run_cmd(cmd, subprocess.PIPE)
+    output = acme_util.run_cmd(cmd)
 
     tot_time = 0.0
     for line in output.splitlines():
@@ -309,7 +286,7 @@ NightlyStartTime: 00:00:00 EST
 
     etree.write(os.path.join(data_rel_path, "Test.xml"))
 
-    run_cmd("ctest -D NightlySubmit")
+    acme_util.run_cmd("ctest -D NightlySubmit")
 
 ###############################################################################
 def parse_test_status_file(file_contents, status_file_path, check_throughput):
