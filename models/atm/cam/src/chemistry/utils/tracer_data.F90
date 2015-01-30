@@ -12,7 +12,7 @@ module tracer_data
   use time_manager, only : get_curr_date, get_step_size, get_curr_calday
   use spmd_utils,   only : masterproc
   use ppgrid,       only : pcols, pver, pverp, begchunk, endchunk
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use cam_logfile,  only : iulog
   
   use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_index

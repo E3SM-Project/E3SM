@@ -8,7 +8,7 @@
       use shr_kind_mod, only : r4 => shr_kind_r4
       use shr_kind_mod, only : r8 => shr_kind_r8
       use cam_logfile,  only : iulog
-      use abortutils,   only : endrun
+      use cam_abortutils,   only : endrun
 #ifdef SPMD
       use mpishorthand, only : mpicom,mpiint,mpir8, mpilog, mpir4
 #endif

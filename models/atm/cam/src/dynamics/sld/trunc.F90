@@ -18,7 +18,7 @@ subroutine trunc
   use pmgrid
   use pspect
   use comspe
-  use abortutils, only: endrun
+  use cam_abortutils, only: endrun
 
   implicit none
 

@@ -3,7 +3,7 @@ module mo_setsoa
   use shr_kind_mod, only : r8 => shr_kind_r8
   use cam_logfile,  only : iulog
   use ppgrid,       only : pcols, pver, begchunk, endchunk
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use mo_constants, only : avogadro, Rgas
 
   implicit none
@@ -216,7 +216,7 @@ subroutine setsoa_old(dt,reaction_rates,tfld,vmr,xhnm,ncol,lchnk)
   use chem_mods,    only : adv_mass, gas_pcnst, rxntot
   use mo_chem_utls, only : get_spc_ndx, get_rxt_ndx
   use cam_history,  only : outfld
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
 !
   implicit none
 !

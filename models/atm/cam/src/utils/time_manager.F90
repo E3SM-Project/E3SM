@@ -7,7 +7,7 @@ module time_manager
    use ESMF
    use string_utils, only: to_upper
    use dycore,       only: dycore_is
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #ifdef SPMD
    use mpishorthand, only: mpicom, mpiint, mpilog, mpichar

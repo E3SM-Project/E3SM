@@ -27,7 +27,7 @@ subroutine qmassarun(cwava   ,w       ,q3      ,pdel    ,hw1lat  , &
   use pmgrid,       only: plev, plon
   use constituents, only: pcnst, cnst_get_type_byind
   use dycore, only: dycore_is
-  use abortutils, only: endrun
+  use cam_abortutils, only: endrun
 
   implicit none
 

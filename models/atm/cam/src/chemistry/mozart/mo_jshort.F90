@@ -8,7 +8,7 @@
       use shr_kind_mod,  only : r8 => shr_kind_r8
       use physconst,     only : pi
       use mo_constants,  only : d2r
-      use abortutils,    only : endrun
+      use cam_abortutils,    only : endrun
       use cam_logfile,   only : iulog
       use spmd_utils,    only : masterproc
       use ppgrid,        only : pver

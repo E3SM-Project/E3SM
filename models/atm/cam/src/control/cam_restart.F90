@@ -10,7 +10,7 @@ module cam_restart
    use pmgrid,           only: plev, plevp, plat
    use rgrid,            only: nlon, wnummax, fullgrid
    use ioFileMod,        only: getfil, opnfil
-   use abortutils,       only: endrun
+   use cam_abortutils,       only: endrun
    use camsrfexch,       only: cam_out_t     
    use dyn_comp,         only: dyn_import_t, dyn_export_t
 

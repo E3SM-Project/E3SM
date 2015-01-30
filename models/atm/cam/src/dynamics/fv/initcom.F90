@@ -14,7 +14,7 @@ subroutine initcom
    use commap,        only: w, clat, clon, w_staggered, clat
    use commap,        only: clat_staggered, clon, latdeg, londeg
    use commap,        only: latdeg_st, londeg_st
-   use abortutils,    only: endrun
+   use cam_abortutils,    only: endrun
    use rgrid,         only: fullgrid
    use spmd_utils,    only: masterproc
    use cam_logfile,   only: iulog

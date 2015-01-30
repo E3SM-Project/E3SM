@@ -4,7 +4,7 @@ module mo_airplane
   !--------------------------------------------------------------------
 
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use pio,          only : pio_inq_dimid, pio_inq_dimlen, pio_get_var, &
        file_desc_t, var_desc_t, pio_inq_vardimid, pio_inq_varndims, pio_nowrite, &
        pio_inq_varid, pio_closefile

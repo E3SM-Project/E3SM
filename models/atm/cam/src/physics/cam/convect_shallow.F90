@@ -130,7 +130,7 @@
                                 cappa, latice, mwdry, mwh2o
   use pmgrid,            only : plev, plevp
   use spmd_utils,        only : masterproc
-  use abortutils,        only : endrun
+  use cam_abortutils,        only : endrun
   use phys_control,      only : cam_physpkg_is
   
   use physics_buffer,            only : pbuf_get_index, physics_buffer_desc, pbuf_set_field

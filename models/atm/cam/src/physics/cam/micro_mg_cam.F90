@@ -29,7 +29,7 @@ use cldwat2m_macro, only: rhmini
 use cam_history,    only: addfld, add_default, phys_decomp, outfld
 
 use cam_logfile,    only: iulog
-use abortutils,     only: endrun
+use cam_abortutils,     only: endrun
 use error_messages, only: handle_errmsg
 use ref_pres,       only: top_lev=>trop_cloud_top_lev
 

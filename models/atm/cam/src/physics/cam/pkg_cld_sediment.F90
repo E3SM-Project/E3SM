@@ -17,7 +17,7 @@ module pkg_cld_sediment
   use physconst,     only: gravit, latvap, latice, rair, rhoh2o
   use cldwat,        only: icritc
   use pkg_cldoptics, only: reitab, reltab
-  use abortutils,    only: endrun
+  use cam_abortutils,    only: endrun
   use cam_logfile,   only: iulog
 
   implicit none

@@ -6,7 +6,7 @@ module ocn_comp
   use physconst,       only: tmelt, pi
   use ppgrid,          only: pcols, begchunk, endchunk
   use phys_grid,       only: get_ncols_p, get_rlat_all_p, get_rlon_all_p
-  use abortutils,      only: endrun
+  use cam_abortutils,      only: endrun
   use ocn_types
 !
 ! !PUBLIC TYPES:

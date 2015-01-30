@@ -19,7 +19,7 @@ module comsrf
   use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
   use ppgrid, only: pcols, begchunk, endchunk
   use infnan, only: nan, assignment(=)
-  use abortutils, only: endrun
+  use cam_abortutils, only: endrun
 
   implicit none
 

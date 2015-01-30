@@ -1,7 +1,7 @@
 module cam_history_support
   use shr_kind_mod, only: r8=>shr_kind_r8, i8=>shr_kind_i8, shr_kind_cl
   use pio,          only: var_desc_t, file_desc_t
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use cam_logfile,  only: iulog
   use spmd_utils,   only: masterproc
 
@@ -279,7 +279,7 @@ contains
   end subroutine formula_terms_copy
 
   subroutine handle_pio_error(ierr, errorstr)
-    use abortutils,   only: endrun
+    use cam_abortutils,   only: endrun
     use pio,          only: pio_noerr
     implicit none
 

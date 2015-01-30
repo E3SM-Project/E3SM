@@ -18,7 +18,7 @@ module spmd_dyn
    use pmgrid,       only: plat, numlats, &
                            beglat, endlat, begirow, endirow, plev
    use mpishorthand, only: mpir8, mpicom
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use spmd_utils,   only: iam, masterproc, npes
    use cam_logfile,  only: iulog
 

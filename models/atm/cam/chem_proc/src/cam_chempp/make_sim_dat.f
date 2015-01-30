@@ -80,7 +80,7 @@
       write(30,100) trim(line)
       line(7:)   = 'use chem_mods,   only : extfrc_lst, inv_lst, slvd_lst'
       write(30,100) trim(line)
-      line(7:)   = 'use abortutils,  only : endrun'
+      line(7:)   = 'use cam_abortutils,  only : endrun'
       write(30,100) trim(line)
       line(7:)   = 'use mo_tracname, only : solsym'
       write(30,100) trim(line)

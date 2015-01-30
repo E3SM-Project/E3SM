@@ -67,7 +67,7 @@ contains
     use spmd_utils,        only : iam
     use mo_fstrat,         only : fstrat_inti
     use m_types,           only : time_ramp
-    use abortutils,        only : endrun
+    use cam_abortutils,        only : endrun
     use pmgrid,            only : plev           
     use mo_sethet,         only : sethet_inti
     use mo_usrrxt,         only : usrrxt_inti

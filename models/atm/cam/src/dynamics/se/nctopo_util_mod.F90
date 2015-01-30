@@ -37,7 +37,7 @@ contains
     use dof_mod, only           : putUniquePoints
     use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer, EdgeBuffer_t
     use ncdio_atm, only : infld
-    use abortutils,     only: endrun
+    use cam_abortutils,     only: endrun
     use pio, only : file_desc_t, io_desc_t, pio_double, pio_get_local_array_size, pio_freedecomp
 
     implicit none

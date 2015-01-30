@@ -28,7 +28,7 @@
   use cam_history,      only: outfld, addfld, phys_decomp
   use cam_logfile,      only: iulog
   use ppgrid,           only: pver  
-  use abortutils,       only: endrun
+  use cam_abortutils,       only: endrun
   use spmd_utils,       only: masterproc
   use wv_saturation,    only: qsat
 

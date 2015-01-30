@@ -37,7 +37,7 @@ use ndrop,            only: ndrop_init, dropmixnuc
 use ndrop_bam,        only: ndrop_bam_init, ndrop_bam_run, ndrop_bam_ccn
 use cam_history,      only: addfld, phys_decomp, add_default, outfld
 use cam_logfile,      only: iulog
-use abortutils,       only: endrun
+use cam_abortutils,       only: endrun
 use ref_pres,         only: top_lev => trop_cloud_top_lev
 
 implicit none

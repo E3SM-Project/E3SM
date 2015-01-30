@@ -1,6 +1,6 @@
 module interp_mod
   use shr_kind_mod, only : r8=>shr_kind_r8
-  use abortutils, only : endrun
+  use cam_abortutils, only : endrun
   implicit none
   public get_interp_lat, get_interp_lon, setup_history_interpolation, write_interpolated
   public var_is_vector_uvar, var_is_vector_vvar, latlon_interpolation, add_interp_attributes

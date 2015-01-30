@@ -36,7 +36,7 @@
 
       subroutine heatnirco2( co2, scco2, pmid, htng, kbot, zarg, sza )
 
-      use abortutils, only : endrun
+      use cam_abortutils, only : endrun
 
 !-----------------------------------------------------------------------
 ! 	... dummy arguments

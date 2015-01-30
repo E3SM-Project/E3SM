@@ -17,7 +17,7 @@ module cldwat
    use spmd_utils,    only: masterproc
    use ppgrid,        only: pcols, pver, pverp
    use physconst,     only: latvap, latice, cpair
-   use abortutils,    only: endrun
+   use cam_abortutils,    only: endrun
    use cam_logfile,   only: iulog
    use ref_pres,      only: top_lev => trop_cloud_top_lev
 

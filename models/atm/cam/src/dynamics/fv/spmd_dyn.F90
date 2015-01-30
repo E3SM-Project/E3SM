@@ -24,7 +24,7 @@ module spmd_dyn
    use ghostmodule,        only: ghosttype
    use parutilitiesmodule, only: parpatterntype
    use fv_control_mod,     only: ct_overlap, trac_decomp
-   use abortutils,         only: endrun
+   use cam_abortutils,         only: endrun
    use cam_logfile,        only: iulog
 
    implicit none

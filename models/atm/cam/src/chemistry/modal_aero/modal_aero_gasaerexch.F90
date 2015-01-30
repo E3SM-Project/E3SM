@@ -95,7 +95,7 @@ use constituents,      only:  pcnst, cnst_name, cnst_get_ind
 use mo_tracname,       only:  solsym
 use physconst,         only:  gravit, mwdry, rair
 use ppgrid,            only:  pcols, pver
-use abortutils,        only : endrun
+use cam_abortutils,        only : endrun
 use spmd_utils,        only : iam, masterproc
 
 
@@ -1201,7 +1201,7 @@ timeloop: do while (tcur < dtfull-1.0e-3_r8 )
 use modal_aero_data
 use modal_aero_rename
 
-use abortutils, only   :    endrun
+use cam_abortutils, only   :    endrun
 use cam_history, only  :   addfld, add_default, fieldname_len, phys_decomp
 use constituents, only :  pcnst, cnst_get_ind, cnst_name
 use spmd_utils, only   :    masterproc

@@ -305,7 +305,7 @@ end subroutine phys_register
   !======================================================================= 
 
 subroutine phys_inidat( cam_out, pbuf2d )
-    use abortutils, only : endrun
+    use cam_abortutils, only : endrun
 
     use physics_buffer, only : pbuf_get_index, pbuf_get_field, physics_buffer_desc, pbuf_set_field, dyn_time_lvls
 
@@ -874,7 +874,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     use cam_history,    only: outfld
 #endif
     use comsrf,         only: fsns, fsnt, flns, sgh30, flnt, landm, fsds
-    use abortutils,     only: endrun
+    use cam_abortutils,     only: endrun
 #if ( defined OFFLINE_DYN )
      use metdata,       only: get_met_srf1
 #endif
@@ -1259,7 +1259,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use check_energy,       only: check_energy_chng
     use check_energy,       only: check_tracers_data, check_tracers_init, check_tracers_chng
     use time_manager,       only: get_nstep
-    use abortutils,         only: endrun
+    use cam_abortutils,         only: endrun
     use dycore,             only: dycore_is
     use cam_control_mod,    only: aqua_planet 
     use mo_gas_phase_chemdr,only: map2chm
@@ -1666,7 +1666,7 @@ subroutine tphysbc (ztodt,               &
     use clubb_intr,      only: clubb_tend_cam
     use sslt_rebin,      only: sslt_rebin_adv
     use tropopause,      only: tropopause_output
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
 

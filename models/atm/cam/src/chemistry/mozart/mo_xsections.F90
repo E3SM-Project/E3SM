@@ -350,7 +350,7 @@ wave_loop : &
 !-----------------------------------------------------------------------------
 
       use mo_params,   only : kw
-      use abortutils,  only : endrun
+      use cam_abortutils,  only : endrun
       use cam_logfile, only : iulog
 
       implicit none
@@ -471,7 +471,7 @@ wave_loop : &
 !-----------------------------------------------------------------------------
 
       use mo_params,   only : kw
-      use abortutils,  only : endrun
+      use cam_abortutils,  only : endrun
       use cam_logfile, only : iulog
 
       implicit none

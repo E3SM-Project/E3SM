@@ -29,7 +29,7 @@ subroutine herxin(pf      ,pkcnst  ,fb      ,fxl     ,fxr     , &
    use pmgrid,       only: plev, plon
    use scanslt,      only: plond, beglatex, endlatex, platd, nxpt
    use rgrid,        only: fullgrid
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
 !-----------------------------------------------------------------------
    implicit none
 !------------------------------Parameters-------------------------------

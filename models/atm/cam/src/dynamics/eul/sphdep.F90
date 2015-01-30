@@ -28,7 +28,7 @@ subroutine sphdep(jcen    ,jgc     ,dt      ,ra      ,iterdp  , &
   use shr_kind_mod, only: r8 => shr_kind_r8
   use pmgrid,       only: plev, plon, plat
   use scanslt,      only: platd, plond, beglatex, endlatex, i1, nxpt, j1
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use cam_logfile,  only: iulog
   implicit none
 #include <parslt.h>

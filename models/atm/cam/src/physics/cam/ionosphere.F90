@@ -7,7 +7,7 @@ module ionosphere
 use shr_kind_mod,   only : r8 => shr_kind_r8            ! Real kind to declare variables
 use physics_types,  only : physics_state, physics_ptend !Structures containing physics state and tendency variables
 use physics_buffer, only : physics_buffer_desc
-use abortutils,     only : endrun
+use cam_abortutils,     only : endrun
 
 implicit none
 save

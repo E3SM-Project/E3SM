@@ -18,7 +18,7 @@ module iop
   use prognostics
   use time_manager, only: timemgr_init, get_curr_date, get_curr_calday,&
                           get_nstep,get_start_date,timemgr_time_inc
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use scamMod
   use wrap_nf
   use cam_logfile,  only: iulog

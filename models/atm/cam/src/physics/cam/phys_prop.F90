@@ -19,7 +19,7 @@ use pio,            only: file_desc_t, var_desc_t, pio_get_var, pio_inq_varid, &
                           pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, PIO_NOERR
 
 use cam_logfile,    only: iulog
-use abortutils,     only: endrun
+use cam_abortutils,     only: endrun
 
 implicit none
 private

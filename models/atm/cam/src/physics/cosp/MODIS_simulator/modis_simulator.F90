@@ -50,7 +50,7 @@
 !
 module mod_modis_sim
   USE MOD_COSP_CONSTANTS, only: R_UNDEF
-  USE abortutils,         only: complain_and_die => endrun
+  USE cam_abortutils,         only: complain_and_die => endrun
   implicit none
   ! ------------------------------
   ! Algorithmic parameters

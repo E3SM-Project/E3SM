@@ -47,7 +47,7 @@ contains
 
     use mo_chem_utls, only : get_het_ndx, get_spc_ndx
     use spmd_utils,   only : masterproc
-    use abortutils,   only : endrun
+    use cam_abortutils,   only : endrun
 
     integer :: k, m
     
@@ -163,7 +163,7 @@ contains
     use chem_mods,    only : gas_pcnst
     use ppgrid,       only : pver, pcols
     use phys_grid,    only : get_rlat_all_p
-    use abortutils,   only : endrun
+    use cam_abortutils,   only : endrun
     use mo_constants, only : avo => avogadro, boltz_cgs
 
     implicit none

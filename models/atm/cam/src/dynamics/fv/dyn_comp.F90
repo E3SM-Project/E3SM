@@ -3,7 +3,7 @@ module dyn_comp
 use shr_kind_mod,       only: r8 => shr_kind_r8, r4 => shr_kind_r4
 use dynamics_vars,      only: T_FVDYCORE_GRID,            &
                               T_FVDYCORE_STATE, T_FVDYCORE_CONSTANTS
-use abortutils,         only: endrun
+use cam_abortutils,         only: endrun
 
 #if defined(SPMD)
 use mpishorthand,       only: mpicom, mpir8
