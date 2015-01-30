@@ -87,8 +87,8 @@ limit stacksize unlimited
 
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine.
-setenv MPSTKZ 64M
-setenv OMP_STACKSIZE 64M
+setenv MPSTKZ 128M
+setenv OMP_STACKSIZE 128M
 if ( $COMPILER == "intel" ) then
 	setenv XTPE_LINK_TYPE dynamic
 endif
