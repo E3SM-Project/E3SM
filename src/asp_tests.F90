@@ -273,7 +273,6 @@ CONTAINS
 
     tmp = EXP(- ((r*radius)**2 + ((eta-eta_c)/0.1_r8)**2))
     IF (ABS(tmp)<1.0E-8) tmp = 0.0
-    tmp=tmp+1.0D0
     tracer_q1_q2 = tmp
   END FUNCTION tracer_q1_q2
   
