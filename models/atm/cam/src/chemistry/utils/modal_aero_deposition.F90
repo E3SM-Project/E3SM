@@ -20,7 +20,7 @@ use shr_kind_mod,     only: r8 => shr_kind_r8
 use camsrfexch,       only: cam_out_t     
 use constituents,     only: pcnst, cnst_get_ind
 use ppgrid,           only: pcols
-use abortutils,       only: endrun
+use cam_abortutils,       only: endrun
 
 implicit none
 private

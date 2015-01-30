@@ -7,7 +7,7 @@ module mo_srf_emissions
   use chem_mods,    only : gas_pcnst
   use spmd_utils,   only : masterproc,iam
   use mo_tracname,  only : solsym
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use ioFileMod,    only : getfil
   use ppgrid,       only : pcols, begchunk, endchunk
   use cam_logfile,  only : iulog

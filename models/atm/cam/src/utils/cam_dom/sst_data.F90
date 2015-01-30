@@ -32,7 +32,7 @@ module sst_data
   use ppgrid,          only: pcols, begchunk, endchunk
   use phys_grid,       only: get_ncols_p, get_rlat_all_p, get_rlon_all_p,&
                              scatter_field_to_chunk
-  use abortutils,      only: endrun
+  use cam_abortutils,      only: endrun
   use cam_control_mod, only: aqua_planet
   use error_messages,  only: alloc_err
   use interpolate_data,only: get_timeinterp_factors

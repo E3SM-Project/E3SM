@@ -4,7 +4,7 @@
   use shr_spfn_mod,   only: erfc => shr_spfn_erfc
   use cam_logfile,    only: iulog
   use ppgrid,         only: pcols, pver, pverp
-  use abortutils,     only: endrun
+  use cam_abortutils,     only: endrun
   use spmd_utils,     only: masterproc
   use wv_saturation,  only: qsat
 

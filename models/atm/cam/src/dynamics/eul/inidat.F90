@@ -17,7 +17,7 @@ module inidat
    use prognostics,     only : div, vort, t3, u3, v3, q3, n3, phis, dpsm, dpsl, ps
    use ncdio_atm,       only: infld
    use shr_kind_mod,    only: r8 => shr_kind_r8
-   use abortutils  ,    only: endrun
+   use cam_abortutils  ,    only: endrun
    use phys_grid,       only: get_ncols_p
    
    use spmd_utils,      only: masterproc, mpicom, mpir8

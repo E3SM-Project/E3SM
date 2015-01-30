@@ -8,7 +8,7 @@ module error_messages
    ! Author: B. Eaton
    ! 
    !----------------------------------------------------------------------- 
-   use abortutils,  only: endrun
+   use cam_abortutils,  only: endrun
    use cam_logfile, only: iulog
 
    implicit none

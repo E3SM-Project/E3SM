@@ -9,7 +9,7 @@ module mo_ghg_chem
   use shr_kind_mod,   only : r8 => shr_kind_r8
   use boundarydata,   only : boundarydata_type, boundarydata_init, boundarydata_update
   use physics_types,  only : physics_state
-  use abortutils,     only : endrun
+  use cam_abortutils,     only : endrun
   use ppgrid,         only : pcols, pver, begchunk, endchunk
 
   implicit none

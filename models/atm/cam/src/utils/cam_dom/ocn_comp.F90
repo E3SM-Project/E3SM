@@ -447,7 +447,7 @@ contains
 
   subroutine read_domain(varname, ncid , dimlonnam, dimlatnam, lonnam, latnam, &
        dim1b, dim1e, dim2b, dim2e, field, readvar)
-    use abortutils, only : endrun
+    use cam_abortutils, only : endrun
     !-----------------------------------------------------------------------
     !
     ! Arguments

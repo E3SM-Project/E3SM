@@ -6,7 +6,7 @@
 # COSP_PATH, ISCCP_PATH, RS_PATH, CS_PATH, LLNL_PATH, MISR_PATH, MODIS_PATH.
 #
 # The macro CAM_BLD is also prepended.  It is the build directory of the CAM
-# code and it contains the abortutils.mod file.  The abortutils module is
+# code and it contains the cam_abortutils.mod file.  The cam_abortutils module is
 # referenced by COSP code in order to perform an abort which is appropriate
 # for the CESM system.
 #

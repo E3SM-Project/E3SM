@@ -96,7 +96,7 @@ module phys_grid
 #endif
    use spmd_utils,   only: iam, masterproc, npes, proc_smp_map, nsmps
    use m_MergeSorts, only: IndexSet, IndexSort
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use perf_mod
    use cam_logfile,  only: iulog
 

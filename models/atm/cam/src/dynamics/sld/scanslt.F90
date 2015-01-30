@@ -13,7 +13,7 @@ module scanslt
    use shr_kind_mod,    only: r8 => shr_kind_r8
    use pmgrid,          only: plon, plev, plevp, plat, beglat, endlat
    use constituents,    only: pcnst
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use hycoef,          only: hyai, hybi, hypm, hypi, ps0, hybm, nprlev, hybd
    use perf_mod
    use cam_logfile,  only: iulog

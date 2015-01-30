@@ -38,7 +38,7 @@ module qbo
   use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
   use cam_history
   use error_messages, only: alloc_err
-  use abortutils,     only: endrun  
+  use cam_abortutils,     only: endrun  
   use cam_logfile,    only: iulog
 
   implicit none

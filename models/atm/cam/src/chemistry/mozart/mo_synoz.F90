@@ -38,7 +38,7 @@ contains
                              dry_mass => mwdry, & ! kg/kmole
                              seconds_in_day => cday, &
                              rearth  ! m
-    use abortutils,   only : endrun
+    use cam_abortutils,   only : endrun
     use dyn_grid,     only : get_dyn_grid_parm_real1d
 
     implicit none

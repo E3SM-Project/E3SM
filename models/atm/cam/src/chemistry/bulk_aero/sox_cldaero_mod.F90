@@ -4,7 +4,7 @@
 module sox_cldaero_mod
 
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use ppgrid,       only : pcols, pver
   use mo_chem_utls, only : get_spc_ndx
   use cldaero_mod,  only : cldaero_conc_t, cldaero_allocate, cldaero_deallocate

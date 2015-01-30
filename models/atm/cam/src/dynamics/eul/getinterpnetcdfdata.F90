@@ -7,7 +7,7 @@ module getinterpnetcdfdata
 !   
 ! Modules Used:
 !
-  use abortutils,    only: endrun
+  use cam_abortutils,    only: endrun
   use pmgrid,        only: plev
   use scamMod,       only: scm_crm_mode
   use cam_logfile,   only: iulog

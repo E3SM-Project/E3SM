@@ -24,7 +24,7 @@ use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
 
 
 use error_messages, only: alloc_err   
-use abortutils,     only: endrun
+use cam_abortutils,     only: endrun
 use cam_logfile,    only: iulog
 
 implicit none

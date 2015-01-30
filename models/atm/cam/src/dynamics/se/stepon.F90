@@ -12,7 +12,7 @@ module stepon
    use pmgrid,         only: plev, plevp, plat
    use spmd_utils,     only: iam, masterproc, mpicom
    use constituents,   only: pcnst, cnst_name, cnst_longname
-   use abortutils,     only: endrun
+   use cam_abortutils,     only: endrun
    use ppgrid,         only: begchunk, endchunk
    use physconst,      only: zvir, cappa
    use physics_types,  only: physics_state, physics_tend

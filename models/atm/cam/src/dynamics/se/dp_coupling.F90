@@ -37,7 +37,7 @@ CONTAINS
     use shr_vmath_mod,  only: shr_vmath_exp
     use time_manager,   only: is_first_step
     use viscosity_mod,  only: compute_zeta_C0
-    use abortutils,     only: endrun
+    use cam_abortutils,     only: endrun
     use gravity_waves_sources, only: gws_src_fnct
     use dyn_comp,       only: frontgf_idx, frontga_idx
     use phys_control,   only: use_gw_front

@@ -11,7 +11,7 @@ module subcol_tstcp
    use physics_types, only: physics_state, physics_tend, physics_ptend
    use ppgrid,        only: pcols, psubcols, pver, pverp
    use constituents,  only: pcnst
-   use abortutils,    only: endrun
+   use cam_abortutils,    only: endrun
    use spmd_utils,      only: masterproc
    use cam_logfile,     only: iulog
 

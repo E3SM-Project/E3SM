@@ -1318,7 +1318,7 @@ masked :   if( mask(i,k) ) then
 !		      the ternary solution
 !----------------------------------------------------------------------
 
-      use abortutils, only : endrun
+      use cam_abortutils, only : endrun
 
       implicit none
 

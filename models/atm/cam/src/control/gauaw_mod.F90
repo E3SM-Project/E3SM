@@ -14,7 +14,7 @@ module gauaw_mod
 ! Author: David Williamson, Jim Hack
 !
 !-----------------------------------------------------------------------
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use shr_kind_mod, only: r8 => shr_kind_r8
 
 #ifdef NO_R16

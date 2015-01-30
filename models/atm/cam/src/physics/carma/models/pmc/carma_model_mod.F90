@@ -31,7 +31,7 @@ module carma_model_mod
   use spmd_utils,     only: masterproc
   use shr_kind_mod,   only: r8 => shr_kind_r8
   use radconstants,   only: nswbands, nlwbands
-  use abortutils,     only: endrun
+  use cam_abortutils,     only: endrun
   use physics_types,  only: physics_state, physics_ptend
   use ppgrid,         only: pcols, pver
   use physics_buffer, only: physics_buffer_desc

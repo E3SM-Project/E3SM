@@ -17,7 +17,7 @@ module ncdio_atm
   use shr_sys_mod  , only: shr_sys_flush         ! Standardized system subroutines
   use shr_scam_mod  , only: shr_scam_getCloseLatLon  ! Standardized system subroutines
   use spmd_utils   , only: masterproc
-  use abortutils   , only: endrun
+  use cam_abortutils   , only: endrun
   use dycore,        only: dycore_is
   use scamMod,      only: initTimeIdx,scmlat,scmlon,single_column
   use cam_logfile,  only: iulog

@@ -12,7 +12,7 @@ module scanslt
    use shr_kind_mod, only: r8 => shr_kind_r8
    use pmgrid,       only: plon, plat, plev, beglat, endlat, plevp
    use constituents, only: pcnst
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use scamMod,      only: single_column
    use perf_mod
 !-----------------------------------------------------------------------

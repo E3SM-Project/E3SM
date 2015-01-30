@@ -49,7 +49,7 @@ contains
     ! ... Initialize the implict solver
     !-----------------------------------------------------------------------
     use mo_chem_utls, only : get_spc_ndx, get_rxt_ndx
-    use abortutils, only : endrun
+    use cam_abortutils, only : endrun
     use cam_history, only : addfld, add_default, phys_decomp
     use ppgrid, only : pver
     use mo_tracname, only : solsym

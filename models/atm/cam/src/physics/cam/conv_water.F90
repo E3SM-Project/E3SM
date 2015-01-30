@@ -18,7 +18,7 @@
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,        only: pcols, pver, pverp
   use physconst,     only: gravit, latvap, latice
-  use abortutils,    only: endrun
+  use cam_abortutils,    only: endrun
 
   use perf_mod
   use cam_logfile,   only: iulog

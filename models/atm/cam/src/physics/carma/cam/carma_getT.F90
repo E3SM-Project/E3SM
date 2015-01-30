@@ -8,7 +8,7 @@
     use ncdio_atm,    only: infld
     use pmgrid,       only: plat, plev, plevp, plon
     use ppgrid,       only: pcols, pver, pverp
-    use abortutils,   only: endrun
+    use cam_abortutils,   only: endrun
 
     real(r8), intent(out)   :: T(pver)      ! midpoint temperature (Pa)
 

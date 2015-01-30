@@ -7,7 +7,7 @@ module spmd_dyn
   !-----------------------------------------------------------------------
 
   use parallel_mod, only: initmp,  par
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use spmd_utils,   only: masterproc, npes
 
   implicit none

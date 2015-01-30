@@ -4,7 +4,7 @@
 module solar_data
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmd_utils,   only: masterproc
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use pio
   use cam_pio_utils, only : cam_pio_openfile
   use cam_logfile,  only: iulog

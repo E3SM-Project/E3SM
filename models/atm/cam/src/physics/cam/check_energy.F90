@@ -592,7 +592,7 @@ end subroutine check_energy_get_integrals
 ! associated with a flux
 !-----------------------------------------------------------------------
 
-    use abortutils, only: endrun 
+    use cam_abortutils, only: endrun 
 
 
     implicit none
