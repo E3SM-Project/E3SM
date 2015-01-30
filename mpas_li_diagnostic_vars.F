@@ -111,13 +111,18 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
+      character (len=StrKIND), pointer :: config_velocity_solver
       type (field2DReal), pointer :: normalVelocityField, layerThicknessEdgeField
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
+      real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
+      integer, pointer :: nVertInterfaces
       integer :: err_tmp
 !!!      integer :: blockVertexMaskChanged, procVertexMaskChanged, anyVertexMaskChanged
 
 
       err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       ! ===
       ! === Diagnostic solve of variables prior to velocity 
@@ -201,17 +206,29 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
-
-         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+         call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
          call mpas_pool_get_array(statePool, 'uReconstructX', uReconstructX, timeLevel=timeLevel)
          call mpas_pool_get_array(statePool, 'uReconstructY', uReconstructY, timeLevel=timeLevel)
-         call mpas_pool_get_array(statePool, 'uReconstructZ', uReconstructZ, timeLevel=timeLevel)
-         call mpas_pool_get_array(statePool, 'uReconstructZonal', uReconstructZonal, timeLevel=timeLevel)
-         call mpas_pool_get_array(statePool, 'uReconstructMeridional', uReconstructMeridional, timeLevel=timeLevel)
+         call mpas_pool_get_array(statePool, 'surfaceSpeed', surfaceSpeed, timeLevel=timeLevel)
+         call mpas_pool_get_array(statePool, 'basalSpeed', basalSpeed, timeLevel=timeLevel)
 
-         call mpas_reconstruct(meshPool, normalVelocity,               &
-                          uReconstructX, uReconstructY, uReconstructZ, &
-                          uReconstructZonal, uReconstructMeridional )
+         ! Native SIA dycore needs to have reconstructed velocities calculated.
+         ! External dycores return their native velocities at cell center locations,
+         ! but these can optionally be overwritten by reconstructed velocities for testing.
+         if ( (trim(config_velocity_solver) == 'sia') ) then
+            call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+            call mpas_pool_get_array(statePool, 'uReconstructZ', uReconstructZ, timeLevel=timeLevel)
+            call mpas_pool_get_array(statePool, 'uReconstructZonal', uReconstructZonal, timeLevel=timeLevel)
+            call mpas_pool_get_array(statePool, 'uReconstructMeridional', uReconstructMeridional, timeLevel=timeLevel)
+
+            call mpas_reconstruct(meshPool, normalVelocity,               &
+                            uReconstructX, uReconstructY, uReconstructZ, &
+                            uReconstructZonal, uReconstructMeridional )
+         endif
+
+         ! Calculate diagnostic speed arrays
+         surfaceSpeed = sqrt(uReconstructX(1,:)**2 + uReconstructY(1,:)**2)
+         basalSpeed   = sqrt(uReconstructX(nVertInterfaces,:)**2 + uReconstructY(nVertInterfaces,:)**2)
 
          block => block % next
       end do
