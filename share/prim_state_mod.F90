@@ -79,16 +79,17 @@ contains
 !=======================================================================================================! 
 
   subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete, fvm)
-    use physical_constants, only : dd_pi
-    use control_mod, only : tracer_transport_type
+    use physical_constants    , only : dd_pi
+    use control_mod           , only : tracer_transport_type
     use fvm_control_volume_mod, only : n0_fvm, np1_fvm
+    use derivative_mod        , only : subcell_integration
 
     type (element_t), intent(in) :: elem(:)
     
 #if defined(_SPELT)
       type(spelt_struct), optional, intent(in) :: fvm(:)
 #else
-      type(fvm_struct), optional, intent(in) :: fvm(:)
+      type(fvm_struct), optional, intent(inout) :: fvm(:)
 #endif
     type (TimeLevel_t), target, intent(in) :: tl
     type (hybrid_t),intent(in)     :: hybrid
@@ -134,12 +135,14 @@ contains
          psmax_p, dpmax_p
 
     real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d), csum(ntrac_d),&
-         pssum_p, dpsum_p
+         pssum_p, dpsum_p, relative_mass_change(ntrac_d)
 
     !
     ! for fvm diagnostics
     !
     real (kind=real_kind) :: psc_mass, psc_min, psc_max,dp_fvm_mass, dp_fvm_min, dp_fvm_max 
+    real (kind=real_kind) :: psc_ps_diff_sum, psc_ps_diff_min, psc_ps_diff_max
+    real (kind=real_kind) :: tmp2(nc,nc,nets:nete)
 
 
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
@@ -395,10 +398,23 @@ contains
              end do
           enddo
           call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-          csum(q) = global_shared_sum(1)/(dble(nlev)*4.0D0*DD_PI)
+          csum(q) = global_shared_sum(1)
        enddo
+       if (tl%nstep==0) then
+          do ie=nets,nete
+             fvm(ie)%mass(:)       = 0.0D0
+             fvm(ie)%mass(1:ntrac) = csum(1:ntrac)
+          end do
+       end if
+       do q=1,ntrac
+          if (ABS(fvm(ie)%mass(q))<1.0E-12) then
+             relative_mass_change(q) = csum(q) - fvm(nets)%mass(q)
+          else
+             relative_mass_change = (csum(q) - fvm(nets)%mass(q))/fvm(nets)%mass(q)
+          end if
+       end do
        !
-       ! psC diagnostics
+       ! psC diagnostics (PSC = surface pressure implied by fvm)
        !
        do ie=nets,nete
           tmp1(ie) = MINVAL(fvm(ie)%psc(1:nc,1:nc))
@@ -407,15 +423,33 @@ contains
        do ie=nets,nete
           tmp1(ie) = MAXVAL(fvm(ie)%psc(1:nc,1:nc))
        enddo
-       !
-       ! surface pressure mass implied by fvm
-       !
        psc_max = ParallelMax(tmp1,hybrid)
        do ie=nets,nete
           global_shared_buf(ie,1) = SUM(fvm(ie)%psc(1:nc,1:nc)*fvm(ie)%area_sphere(1:nc,1:nc))
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       psc_mass = global_shared_sum(1)/(4.0D0*DD_PI)
+       psc_mass = global_shared_sum(1)
+       !
+       ! diagnostics on difference between fvm ps and se ps
+       !
+       do ie=nets,nete
+          tmp2(:,:,ie) = (fvm(ie)%psc(1:nc,1:nc)*fvm(ie)%area_sphere(1:nc,1:nc)-&
+                          subcell_integration(elem(ie)%state%ps_v(:,:,n0), np, nc, elem(ie)%metdet))/&
+                          fvm(ie)%psc(1:nc,1:nc)*fvm(ie)%area_sphere(1:nc,1:nc)
+       end do
+       do ie=nets,nete
+          tmp1(ie) = MINVAL(tmp2(1:nc,1:nc,ie))
+       enddo
+       psc_ps_diff_min = ParallelMin(tmp1,hybrid)
+       do ie=nets,nete
+          tmp1(ie) = MAXVAL(tmp2(1:nc,1:nc,ie))
+       enddo
+       psc_ps_diff_max = ParallelMax(tmp1,hybrid)
+       do ie=nets,nete
+          global_shared_buf(ie,1) = SUM(tmp2(1:nc,1:nc,ie))
+       enddo
+       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+       psc_ps_diff_sum = global_shared_sum(1) 
        !
        ! dp_fvm
        !
@@ -436,7 +470,7 @@ contains
           end do
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       dp_fvm_mass = global_shared_sum(1)/(4.0D0*DD_PI)
+       dp_fvm_mass = global_shared_sum(1)
     end if
 
 
@@ -473,13 +507,15 @@ contains
           write(iulog,'(A36)') "fvm diagnostics                    "
           write(iulog,'(A36)') "-----------------------------------"
           do q=1,ntrac
-             write(iulog,'(A36,I1,3(E23.15))')&
-                  "#c,min(c  ), max(c  ), mass(c  ) = ",q,cmin(q), cmax(q), csum(q)
+             write(iulog,'(A29,I1,4(E23.15))')&
+                  "#c, min, max, ave, change = ",q,cmin(q), cmax(q), csum(q)/(4.0D0*DD_PI),relative_mass_change(q)
           enddo
           write(iulog,'(A37,3(E23.15))')&
-                  "   min(dp_), max(dp_), mass(dp_) =  ",dp_fvm_min, dp_fvm_max, dp_fvm_mass
+                  "   min(dp_), max(dp_), ave(dp_) =  ",dp_fvm_min, dp_fvm_max, dp_fvm_mass/(4.0D0*DD_PI)
           write(iulog,'(A37,3(E23.15))')&
-                  "   min(psC), max(psC), mass(psC) =  ",psc_min, psc_max, psC_mass          
+                  "   min(psC), max(psC), ave(psC) =  ",psc_min, psc_max, psC_mass/(4.0D0*DD_PI)
+          write(iulog,'(A42,3(E23.15))')&
+                  "   min(psC-ps), max(psC-ps), sum(psC-ps) =  ",psc_ps_diff_min, psc_ps_diff_max, psC_ps_diff_sum 
           write(iulog,'(A36)') "                                   "
 
        end if
