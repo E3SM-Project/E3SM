@@ -164,12 +164,15 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
     region = region->next;
   }
   // Share the max io buffer size with all io tasks
-#ifdef _MPISERIAL
-  iodesc->maxiobuflen = totiosize;
-#else
-  CheckMPIReturn(MPI_Allreduce(&totiosize, &(iodesc->maxiobuflen), 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
+#ifndef _MPISERIAL
+  CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
 #endif
-  
+  iodesc->maxiobuflen = totiosize;
+
+  if(iodesc->maxiobuflen<=0){
+    fprintf(stderr,"%s %d %ld %ld %d %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen,totiosize,MPI_OFFSET,MPI_MAX,io_comm); 
+    piodie("ERROR: maxiobuflen<=0",__FILE__,__LINE__);
+  }
 }
 /**
  ** @internal
