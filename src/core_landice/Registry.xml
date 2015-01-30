@@ -400,6 +400,12 @@
 		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
 		     description="elevation at top of ice on vertices" packages="SIAvelocity"
 		/>
+		<var name="surfaceSpeed"                     type="real"     dimensions="nCells Time"
+		     units="m s^{-1}"  description="ice surface speed reconstructed at cell centers"
+		/>
+		<var name="basalSpeed"                     type="real"     dimensions="nCells Time"
+		     units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
+		/>
 		<var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
 		     units="m m^{-1}"  description="normal surface slope on edges" packages="SIAvelocity"
 		/>
