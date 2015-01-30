@@ -10,6 +10,7 @@
 
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
+  setenv  MODULEPATH ${MODULEPATH}:/ccs/home/norton/.modules
   module rm PrgEnv-intel
   module rm PrgEnv-pgi
   module rm PrgEnv-cray
@@ -32,10 +33,11 @@ if (-e /opt/modules/default/init/csh) then
 
   if ($COMPILER == "pgicuda") then
     module load PrgEnv-pgi
-    module switch pgi pgi/14.2.0
+#    module switch pgi pgi/14.2.0
+    module switch pgi pgi/14.10.lustre
     module load cray-mpich/6.3.0
     module load cray-libsci/12.1.3
-    module switch xt-asyncpe xt-asyncpe/5.24
+    module switch xt-asyncpe xt-asyncpe/5.27
     module load esmf/5.2.0rp2
 
     module add cudatoolkit
@@ -44,10 +46,11 @@ if (-e /opt/modules/default/init/csh) then
 
   if ( $COMPILER == "pgi" ) then
     module load PrgEnv-pgi
-    module switch pgi pgi/14.2.0
+#    module switch pgi pgi/14.2.0
+    module switch pgi pgi/14.10.lustre
     module load cray-mpich/6.3.0
     module load cray-libsci/12.1.3
-    module switch xt-asyncpe xt-asyncpe/5.24
+    module switch xt-asyncpe xt-asyncpe/5.27
     module load esmf/5.2.0rp2
   endif
 
