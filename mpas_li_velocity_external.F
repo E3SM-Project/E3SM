@@ -365,7 +365,6 @@ contains
          tracers
       integer, dimension(:), pointer :: vertexMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
-      real (kind=RKIND), dimension(:,:), pointer :: dirichletVelocityXValue, dirichletVelocityYValue
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_always_compute_fem_grid
       integer, pointer :: anyVertexMaskChanged
@@ -396,8 +395,6 @@ contains
       call mpas_pool_get_array(statePool, 'anyVertexMaskChanged', anyVertexMaskChanged, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'dirichletMaskChanged', dirichletMaskChanged, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'dirichletVelocityXValue', dirichletVelocityXValue, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'dirichletVelocityYValue', dirichletVelocityYValue, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=timeLevel)
 
 
@@ -471,7 +468,9 @@ contains
       case ('L1L2') ! ===============================================
 #ifdef USE_EXTERNAL_L1L2
           call mpas_timer_start("velocity_solver_solve_L1L2")
-          call velocity_solver_solve_L1L2(lowerSurface, thickness, beta, tracers(index_temperature,:,:), dirichletVelocityXValue, dirichletVelocityYValue, normalVelocity, uReconstructX, uReconstructY)
+          call velocity_solver_solve_L1L2(lowerSurface, thickness, beta, tracers(index_temperature,:,:), &
+                uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
+                normalVelocity, uReconstructX, uReconstructY)  ! return values
 !         call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)
           call mpas_timer_stop("velocity_solver_solve_L1L2")
           ! Optional calls to have LifeV output data files
@@ -488,7 +487,9 @@ contains
       case ('FO') ! ===============================================
 #ifdef USE_EXTERNAL_FIRSTORDER
           call mpas_timer_start("velocity_solver_solve_FO")
-          call velocity_solver_solve_FO(lowerSurface, thickness, beta, tracers(index_temperature,:,:), dirichletVelocityXValue, dirichletVelocityYValue, normalVelocity, uReconstructX, uReconstructY)
+          call velocity_solver_solve_FO(lowerSurface, thickness, beta, tracers(index_temperature,:,:), &
+                uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
+                normalVelocity, uReconstructX, uReconstructY)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)
           call mpas_timer_stop("velocity_solver_solve_FO")
           call mpas_timer_start("velocity_solver export")
@@ -505,7 +506,9 @@ contains
       case ('Stokes') ! ===============================================
 #ifdef USE_EXTERNAL_STOKES
           call mpas_timer_start("velocity_solver_solve_stokes")
-          call velocity_solver_solve_stokes(lowerSurface, thickness, beta, tracers(index_temperature,:,:), dirichletVelocityXValue, dirichletVelocityYValue, normalVelocity, uReconstructX, uReconstructY, uReconstructZ)
+          call velocity_solver_solve_stokes(lowerSurface, thickness, beta, tracers(index_temperature,:,:), &
+                uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
+                normalVelocity, uReconstructX, uReconstructY, uReconstructZ)  ! return values
           uReconstructZ = uReconstructZ / (365.0*24.0*3600.0)  ! convert from m/yr to m/s
           call mpas_timer_stop("velocity_solver_solve_stokes")
 #else
