@@ -1883,6 +1883,7 @@ module atm_time_integration
 
       rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd)
 
+!$OMP BARRIER
 
       ! vertically implicit acoustic and gravity wave integration.
       ! this follows Klemp et al MWR 2007, with the addition of an implicit Rayleigh damping of w
@@ -2344,6 +2345,7 @@ module atm_time_integration
 !MGD END WORK
 
 #if MPI_ONLY
+!$OMP MASTER
 #ifndef DO_PHYSICS
       scalar_tend = 0.0  !  testing purposes - we have no sources or sinks
 #endif
@@ -2384,10 +2386,11 @@ module atm_time_integration
 
          end if
       end do
+!$OMP END MASTER
 #else
       do iCell=cellSolveStart,cellSolveEnd
 #ifndef DO_PHYSICS
-         scalar_tend(:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
+         scalar_tend(:,:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
 #endif
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
@@ -2690,7 +2693,7 @@ module atm_time_integration
       do iScalar = 1,num_scalars
 
 #ifndef DO_PHYSICS
-         scalar_tend(:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
+         scalar_tend(:,:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
 #endif
          scalars_old(iScalar,k,iCell) = scalars_old(iScalar,k,iCell)+dt*scalar_tend(iScalar,k,iCell) / rho_zz_old(k,iCell)
          scalar_tend(iScalar,k,iCell) = 0.0
