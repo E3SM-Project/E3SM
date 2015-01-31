@@ -668,7 +668,7 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
   
   call reconstruction(f, fvm,recons)
-!phl  call monotonic_gradient_cart(f, fvm,recons, desc) 
+  call monotonic_gradient_cart(f, fvm,recons, desc) 
 !phl PCoM  recons=0.0
 
   tmpaxp=(corners(1)%x+corners(2)%x)/2

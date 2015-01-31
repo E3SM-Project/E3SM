@@ -316,37 +316,6 @@ CONTAINS
   END FUNCTION tracer_q
 
 
-!----------------------------------------------------------------------- 
-! Tracer slotted cylinder
-!-----------------------------------------------------------------------                                                   
-  REAL(r8) FUNCTION tracer_slotted_cylinder(lon,lat,eta,rotation_angle, eta_c)
-    IMPLICIT NONE
-    REAL(r8), INTENT(IN) :: eta, lon, lat, rotation_angle, eta_c
-    REAL(r8) :: rot_lon, rot_lat, sin_tmp, cos_tmp, r
-    REAL(r8) :: rot_perturb_lon, rot_perturb_lat, tmp, R0
-
-    rot_perturb_lon = perturbation_longitude*deg2rad
-    rot_perturb_lat = perturbation_latitude_tracer*deg2rad
-
-    IF (ABS(rotation_angle)<1.0E-8) THEN
-       rot_lon = lon
-       rot_lat = lat
-    ELSE
-       CALL regrot(lon,lat,rot_lon,rot_lat,0.0d0,-0.5d0*pi+rotation_angle*deg2rad,1)
-    ENDIF
-    sin_tmp = SIN(rot_perturb_lat)*SIN(rot_lat)
-    cos_tmp = COS(rot_perturb_lat)*COS(rot_lat)
-    r = ACOS( sin_tmp + cos_tmp*COS(rot_lon-rot_perturb_lon) )    ! great circle distance
-    R0=0.25D0
-    if ((r .le. R0) .AND. (abs(rot_lon-rot_perturb_lon).ge. R0/6)) then
-       tracer_slotted_cylinder = 2.0D0
-    elseif ((r .le. R0) .AND. (abs(rot_lon-rot_perturb_lon) < R0/6) &
-         .AND. (rot_lat-rot_perturb_lat < -5.0D0*R0/12.0D0)) then
-       tracer_slotted_cylinder = 2.0D0
-    else
-       tracer_slotted_cylinder = 1.0D0
-    endif
-  END FUNCTION tracer_slotted_cylinder
 
 
 
@@ -1013,7 +982,7 @@ use dimensions_mod, only : nlev,np, qsize,nc,ntrac, nep
 use control_mod, only : test_case, u_perturb
 use cube_mod, only : rotate_grid
 use jw, only : u_wind, v_wind, temperature, surface_geopotential, tracer_q1_q2,&
-     tracer_q3, perturbation_longitude, perturbation_latitude, deg2rad, tracer_slotted_cylinder ! _EXTERNAL
+     tracer_q3, perturbation_longitude, perturbation_latitude, deg2rad ! _EXTERNAL
 use parallel_mod, only : abortmp
 
 implicit none
@@ -1375,7 +1344,6 @@ if (qsize>=4) then
    idex=4
    do ie=nets,nete
       elem(ie)%state%Q(:,:,:,idex) = 1
-!      elem(ie)%state%Q(i,j,k,idex) = tracer_slotted_cylinder(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
    enddo
 endif
 
@@ -1504,8 +1472,7 @@ if (present(fvm)) then
            lon = fvm(ie)%centersphere(i,j)%lon
            lat = fvm(ie)%centersphere(i,j)%lat
            do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = tracer_slotted_cylinder(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
-!              fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
+              fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
            enddo
         enddo
         enddo
@@ -1527,11 +1494,14 @@ if (present(fvm)) then
   endif
   if (ntrac>=4) then
      idex=4
+     eta_c = 0.6
      do ie=nets,nete
         do j=1,nc
         do i=1,nc
+           lon = fvm(ie)%centersphere(i,j)%lon
+           lat = fvm(ie)%centersphere(i,j)%lat
            do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = 1.0D0
+              fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
            enddo
         enddo
         enddo

@@ -283,9 +283,6 @@ program prim_main
      ithr=omp_get_thread_num()
      hybrid = hybrid_create(par,ithr,1)
 #ifdef PIO_INTERP
-     !
-     ! boundary exchange for lat-lon I/O
-     !
      if (ntrac>0) call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm)
      call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
 #else

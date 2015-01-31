@@ -13,4 +13,5 @@ SET(HOMME_TESTS
   swtc1-dg.cmake
   swtc2-dg.cmake
   swtc5-dg.cmake
+  cslam-bw.cmake
 )
