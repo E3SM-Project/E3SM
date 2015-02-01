@@ -26,7 +26,7 @@ module mo_apex
    use ppgrid,          only: pcols, begchunk, endchunk          ! physics grid
    use phys_grid,       only: get_lat_p, get_lon_p, get_ncols_p
    use cam_history,     only: addfld, phys_decomp, add_default   ! for history saves
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use cam_control_mod, only: magfield_fix_year
    use cam_logfile,     only: iulog
    use spmd_utils,      only: masterproc

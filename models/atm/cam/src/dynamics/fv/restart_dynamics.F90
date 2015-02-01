@@ -15,7 +15,7 @@ module restart_dynamics
   use pmgrid,         only: plon, plat, plev
   use constituents,   only: pcnst
   use dyn_comp,       only: dyn_import_t, dyn_export_t
-  use abortutils,     only: endrun
+  use cam_abortutils,     only: endrun
   use fv_control_mod, only: tmass0
   use dynamics_vars,  only: T_FVDYCORE_STATE
   use cam_logfile,    only: iulog
@@ -68,7 +68,7 @@ module restart_dynamics
 CONTAINS
 
   subroutine set_r_var(name, timelevels, index, v2, v3, v4, v5, v2r4, v3r4, v4r4, v5r4)
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
 
 
     character(len=*), intent(in) :: name
@@ -114,7 +114,7 @@ CONTAINS
   end subroutine set_r_var
   
   subroutine init_restart_varlistw(dyn_out)
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
     use dyn_comp, only  : dyn_export_t
     use constituents, only : cnst_name
 
@@ -157,7 +157,7 @@ CONTAINS
   end subroutine init_restart_varlistw
 
   subroutine init_restart_varlistr(dyn_in)
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
     use dyn_comp, only  : dyn_import_t
     use constituents, only : cnst_name
 

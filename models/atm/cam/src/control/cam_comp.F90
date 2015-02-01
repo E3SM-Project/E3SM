@@ -10,7 +10,7 @@ module cam_comp
    use shr_kind_mod,      only: r8 => SHR_KIND_R8, cl=>SHR_KIND_CL, cs=>SHR_KIND_CS
    use pmgrid,            only: plat, plev
    use spmd_utils,        only: masterproc
-   use abortutils,        only: endrun
+   use cam_abortutils,        only: endrun
    use camsrfexch,        only: cam_out_t, cam_in_t     
    use shr_sys_mod,       only: shr_sys_flush
    use physics_types,     only: physics_state, physics_tend

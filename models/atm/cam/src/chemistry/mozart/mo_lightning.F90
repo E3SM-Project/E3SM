@@ -6,7 +6,7 @@ module mo_lightning
   use shr_kind_mod,  only : r8 => shr_kind_r8
   use ppgrid,        only : begchunk, endchunk, pcols, pver
   use phys_grid,     only : ngcols_p
-  use abortutils,    only : endrun
+  use cam_abortutils,    only : endrun
   use cam_logfile,   only : iulog
   use spmd_utils,    only : masterproc, mpicom
 

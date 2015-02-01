@@ -15,7 +15,7 @@ use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_ge
                             rad_cnst_get_mode_props, rad_cnst_get_mode_num
 
 use cam_logfile,      only: iulog
-use abortutils,       only: endrun
+use cam_abortutils,       only: endrun
 use cam_history,      only: addfld, add_default, fieldname_len, phys_decomp, outfld
 use constituents,     only: pcnst, cnst_name
 

@@ -214,7 +214,7 @@ contains
     use namelist_utils,  only: find_group_name
     use units,           only: getunit, freeunit
     use mpishorthand
-    use abortutils,  only: endrun
+    use cam_abortutils,  only: endrun
 
     character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
@@ -468,7 +468,7 @@ contains
 
     use ppgrid
     use cam_history, only: add_default, addfld, phys_decomp
-    use abortutils,  only: endrun
+    use cam_abortutils,  only: endrun
 
     !------------------Input arguments---------------------------------------
 

@@ -6,7 +6,7 @@ module mo_fstrat
   use shr_kind_mod, only : r8 => shr_kind_r8
   use ppgrid,       only : pcols, pver,pverp, begchunk, endchunk
   use chem_mods,    only : gas_pcnst
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use cam_pio_utils, only : cam_pio_openfile
   use pio
   use cam_logfile,  only : iulog

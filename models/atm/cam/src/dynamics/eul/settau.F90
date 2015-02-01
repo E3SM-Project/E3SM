@@ -25,7 +25,7 @@ subroutine settau(zdt)
   use pspect
   use commap
   use physconst,    only: cappa, rair, gravit
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use spmd_utils,   only: masterproc
   use hycoef,       only : hypi, hybi, hypd
   use sgexx,        only: dgeco, dgedi
@@ -365,7 +365,7 @@ subroutine cmplr(hes     ,w       ,nc)
 !-----------------------------------------------------------------------
 
   use shr_kind_mod, only: r8 => shr_kind_r8
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use cam_logfile,  only: iulog
 
   implicit none

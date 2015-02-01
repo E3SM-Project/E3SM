@@ -47,7 +47,7 @@ module restart_dynamics
 CONTAINS
 
   subroutine set_r_var(name, timelevels, index, v1, v2, v3, v4, v5)
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
 
     character(len=*), intent(in) :: name
     integer, intent(in) :: timelevels, index
@@ -78,7 +78,7 @@ CONTAINS
   end subroutine set_r_var
 
   subroutine init_restart_varlist()
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
 
 
     integer :: vcnt=1

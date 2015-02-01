@@ -11,7 +11,7 @@ module restart_physics
   use comsrf,             only: sgh, sgh30, landm, trefmxav, trefmnav, & 
        fsnt, flns, fsns, fsds, flnt, initialize_comsrf
   use ioFileMod
-  use abortutils,         only: endrun
+  use cam_abortutils,         only: endrun
   use units,              only: getunit
   use camsrfexch,         only: cam_out_t
   use cam_control_mod,    only : adiabatic, ideal_phys

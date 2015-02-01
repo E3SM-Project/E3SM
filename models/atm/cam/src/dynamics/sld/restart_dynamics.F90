@@ -13,7 +13,7 @@ module restart_dynamics
    use pspect,          only: psp
 #endif
    use comspe,          only: lnpstar
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use sld_control_mod, only: tmass0
    use cam_logfile,     only: iulog
    use dyn_comp,        only: dyn_import_t, dyn_export_t
@@ -57,7 +57,7 @@ module restart_dynamics
 CONTAINS
 
   subroutine set_r_var(name, timelevels, index, v1, v2, v3, v4, v5)
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
 
     character(len=*), intent(in) :: name
     integer, intent(in) :: timelevels, index
@@ -88,7 +88,7 @@ CONTAINS
   end subroutine set_r_var
 
   subroutine init_restart_varlist()
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
     use prognostics,     only: u3, v3, q3, qm1, div, dps, dpsl, dpsm, phis, phisl, &
          phism, ps, urhs, vrhs, trhs, prhs, ql, qm, &
          tl, tm, omga, parrsld, t3, etadot, ptimelevels

@@ -14,7 +14,7 @@ use rrtmg_lw_rad,      only: rrtmg_lw
 use spmd_utils,        only: masterproc
 use perf_mod,          only: t_startf, t_stopf
 use cam_logfile,       only: iulog
-use abortutils,        only: endrun
+use cam_abortutils,        only: endrun
 use radconstants,      only: nlwbands
 
 implicit none

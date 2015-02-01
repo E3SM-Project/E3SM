@@ -85,7 +85,7 @@ module sld_control_mod
 !-----------------------------------------------------------------------
 
      use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
-     use abortutils,      only: endrun
+     use cam_abortutils,      only: endrun
      use namelist_utils,  only: find_group_name
      use units,           only: getunit, freeunit
      use mpishorthand

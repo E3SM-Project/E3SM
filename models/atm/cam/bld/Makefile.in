@@ -116,9 +116,9 @@ $(MODEL_EXEDIR)/$(EXENAME): $(OBJS)
 	$(LINKER) -o $@ $(OBJS) $(NC_LDFLAGS) $(LDFLAGS)
 
 ifneq ($(strip $(COSP_LIBDIR)),)
-# Rules to build COSP in its own library.  Add abortutils dependency so
+# Rules to build COSP in its own library.  Add cam_abortutils dependency so
 # cosp code can make use of subroutine endrun.
-$(COSP_LIBDIR)/libcosp.a: abortutils.o
+$(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 	$(MAKE) -C $(COSP_LIBDIR)
 
 cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a

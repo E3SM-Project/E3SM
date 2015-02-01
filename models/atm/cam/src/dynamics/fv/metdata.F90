@@ -17,7 +17,7 @@ module metdata
   use spmd_utils,         only: masterproc
   use ppgrid,             only: pcols, pver, begchunk, endchunk
   use time_manager,       only: get_curr_calday, get_curr_date, get_step_size
-  use abortutils,         only: endrun
+  use cam_abortutils,         only: endrun
   use dynamics_vars,      only: T_FVDYCORE_GRID
 
 #if ( defined SPMD )

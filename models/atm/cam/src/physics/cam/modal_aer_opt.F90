@@ -29,7 +29,7 @@ use cam_history,       only: phys_decomp, addfld, add_default, outfld
 use cam_history_support, only: fillvalue
 use cam_logfile,       only: iulog
 use perf_mod,          only: t_startf, t_stopf
-use abortutils,        only: endrun
+use cam_abortutils,        only: endrun
 
 use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
 use modal_aero_calcsize,    only: modal_aero_calcsize_diag

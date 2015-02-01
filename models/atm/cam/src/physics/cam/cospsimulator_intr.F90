@@ -42,7 +42,7 @@ module cospsimulator_intr
    use cam_history,     only: addfld, add_default, phys_decomp, outfld
    use cam_history_support,     only: max_fieldname_len 
    use perf_mod,        only: t_startf, t_stopf
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use cam_pio_utils,   only: max_chars
    use phys_control,    only: cam_physpkg_is
 

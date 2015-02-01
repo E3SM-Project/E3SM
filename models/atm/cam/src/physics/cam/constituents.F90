@@ -17,7 +17,7 @@ module constituents
   use shr_kind_mod, only: r8 => shr_kind_r8
   use physconst,    only: r_universal
   use spmd_utils,   only: masterproc
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use cam_logfile,  only: iulog
 
   implicit none

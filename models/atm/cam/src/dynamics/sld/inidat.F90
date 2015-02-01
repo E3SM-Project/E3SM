@@ -17,7 +17,7 @@ module inidat
         phism, phisl, q3, qm, dpsm, dpsl, ql
    use ncdio_atm,       only: infld
    use shr_kind_mod,    only: r8 => shr_kind_r8
-   use abortutils  ,    only: endrun
+   use cam_abortutils  ,    only: endrun
    use phys_grid,       only: get_ncols_p
    use spmd_utils,      only: masterproc, npes
    use cam_control_mod, only: ideal_phys, aqua_planet, moist_physics, adiabatic

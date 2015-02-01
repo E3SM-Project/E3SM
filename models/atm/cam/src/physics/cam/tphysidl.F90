@@ -17,7 +17,7 @@ subroutine tphysidl(ztodt, state, tend)
    use physics_types,      only: physics_state, physics_tend, physics_ptend, &
                                  physics_ptend_init, physics_update
    use physconst,          only: gravit, cappa, rair, cpair
-   use abortutils,         only: endrun
+   use cam_abortutils,         only: endrun
    use ref_pres,           only: pref_mid_norm, psurf_ref
    use cam_history,        only: outfld
    use cam_logfile,        only: iulog

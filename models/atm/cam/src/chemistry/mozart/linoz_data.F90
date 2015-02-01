@@ -5,7 +5,7 @@
 module linoz_data
 
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use spmd_utils,   only : masterproc
   use tracer_data,  only : trfld,trfile
   use cam_logfile,  only : iulog

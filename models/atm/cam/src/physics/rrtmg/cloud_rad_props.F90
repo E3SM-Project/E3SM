@@ -8,7 +8,7 @@ use ppgrid,           only: pcols, pver, pverp
 use physics_types,    only: physics_state
 use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_get_field, pbuf_old_tim_idx
 use radconstants,     only: nswbands, nlwbands, idx_sw_diag, ot_length, idx_lw_diag
-use abortutils,       only: endrun
+use cam_abortutils,       only: endrun
 use rad_constituents, only: iceopticsfile, liqopticsfile
 use oldcloud,         only: oldcloud_lw, old_liq_get_rad_props_lw, old_ice_get_rad_props_lw, oldcloud_init
 

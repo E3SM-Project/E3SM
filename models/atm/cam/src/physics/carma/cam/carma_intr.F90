@@ -34,7 +34,7 @@ module carma_intr
   use constituents,   only: pcnst, cnst_add, cnst_get_ind, &
                             cnst_name, cnst_longname, cnst_type
   use chem_surfvals,  only: chem_surfvals_get
-  use abortutils,     only: endrun
+  use cam_abortutils,     only: endrun
   use physics_buffer, only: physics_buffer_desc, pbuf_add_field, pbuf_old_tim_idx, &
                             pbuf_get_index, pbuf_get_field, dtype_r8
 

@@ -8,7 +8,7 @@ module native_mapping
 ! 
   use cam_logfile, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8, shr_kind_cl
-  use abortutils,    only : endrun
+  use cam_abortutils,    only : endrun
   use spmd_utils, only : iam, masterproc, mpi_character, mpi_logical, mpi_integer, mpi_max, mpicom
 
   implicit none

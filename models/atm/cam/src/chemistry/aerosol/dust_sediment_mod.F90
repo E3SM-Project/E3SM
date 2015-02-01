@@ -13,7 +13,7 @@ module dust_sediment_mod
   use ppgrid,        only: pcols, pver, pverp
   use physconst,     only: gravit, rair
   use cam_logfile,   only: iulog
-  use abortutils,    only: endrun
+  use cam_abortutils,    only: endrun
 
   private
   public :: dust_sediment_vel, dust_sediment_tend

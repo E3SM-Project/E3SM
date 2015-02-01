@@ -32,7 +32,7 @@ module atm_comp_mct
   use camsrfexch       , only: cam_out_t, cam_in_t     
   use cam_restart      , only: get_restcase, get_restartdir
   use cam_history      , only: outfld, ctitle
-  use abortutils       , only: endrun
+  use cam_abortutils       , only: endrun
   use filenames        , only: interpret_filename_spec, caseid, brnch_retain_casename
 #ifdef SPMD
   use spmd_utils       , only: spmdinit, masterproc, iam

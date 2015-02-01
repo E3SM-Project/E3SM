@@ -17,7 +17,7 @@ module buffer
 
   use shr_kind_mod, only: r8 => shr_kind_r8, r4=> shr_kind_r4, i4=> shr_kind_i4
   use cam_logfile,  only: iulog
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   implicit none
   private
   ! The maximum number of dims in a fortran array

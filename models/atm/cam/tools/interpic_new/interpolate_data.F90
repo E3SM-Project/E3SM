@@ -1,6 +1,6 @@
 ! copied from cam3_5_26.  Get rid of some CAM utilities to avoid
 ! spiralling into the dependency abyss!
-! remove use association of abortutils, scamMod, cam_logfile
+! remove use association of cam_abortutils, scamMod, cam_logfile
 
 module interpolate_data
 ! Description:

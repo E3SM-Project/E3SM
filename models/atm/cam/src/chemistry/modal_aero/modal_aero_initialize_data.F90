@@ -1,6 +1,6 @@
 module modal_aero_initialize_data
   use cam_logfile,           only : iulog
-  use abortutils,            only: endrun
+  use cam_abortutils,            only: endrun
   use spmd_utils,            only: masterproc, iam
   use ppgrid,                only: pcols, pver, begchunk, endchunk
   use modal_aero_data
