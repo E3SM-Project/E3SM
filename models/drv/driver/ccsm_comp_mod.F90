@@ -578,6 +578,12 @@ subroutine ccsm_pre_init1()
         iam=comp_comm_iam(it))
    if (iamroot_CPLID) output_perf = .true.
 
+   ! Timer initialization (has to be after mpi init)
+   call t_initf(NLFileName, LogPrint=.false., mpicom=mpicom_GLOID, &
+                MasterTask=iamroot_GLOID)
+   call t_startf('DRIVER_INIT')
+   call t_startf('ccsm_pre_init1')
+
    if (iamin_CPLID) complist = trim(complist)//' cpl'
 
    comp_id(it)    = CPLID
@@ -725,6 +731,9 @@ subroutine ccsm_pre_init1()
       write(logunit,'(2A)') subname,' ESMF_INTERFACE is set'
 #endif
    endif
+
+   call t_stopf('ccsm_pre_init1')
+   call t_stopf('DRIVER_INIT')
    !
    !  When using io servers (pio_async_interface=.true.) the server tasks do not return from 
    !  shr_pio_init2 
@@ -747,18 +756,9 @@ subroutine ccsm_pre_init2()
 
    if (iamroot_CPLID) call seq_ccsm_printlogheader()
 
-   !----------------------------------------------------------
-   !| Timer initialization (has to be after mpi init)
-   !----------------------------------------------------------
-
-   call t_initf(NLFileName, LogPrint=.false., mpicom=mpicom_GLOID, &
-                MasterTask=iamroot_GLOID)
-
    if (iamin_CPLID) then
       call seq_io_cpl_init()
    endif
-
-   call t_startf('DRIVER_INIT')
 
    !----------------------------------------------------------
    !| Memory test
@@ -1930,8 +1930,6 @@ subroutine ccsm_init()
       write(logunit,*) ' '
       call shr_sys_flush(logunit)
    endif
-
-   call t_stopf  ('DRIVER_INIT')
 
 end subroutine ccsm_init
 
