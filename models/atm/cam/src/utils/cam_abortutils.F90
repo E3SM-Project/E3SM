@@ -1,4 +1,4 @@
-module abortutils
+module cam_abortutils
 
   use shr_sys_mod, only: endrun => shr_sys_abort
 
@@ -8,4 +8,4 @@ module abortutils
 
   public :: endrun
 
-end module abortutils
+end module cam_abortutils
