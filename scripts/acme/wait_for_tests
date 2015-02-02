@@ -10,7 +10,7 @@ import acme_util
 acme_util.check_minimum_python_version(2, 7)
 
 import argparse, sys, os, doctest, time, threading, Queue, signal, socket
-import distutils.spawn, subprocess, getpass
+import distutils.spawn, getpass
 
 import xml.etree.ElementTree as xmlet
 from distutils.spawn import find_executable
@@ -54,7 +54,7 @@ def signal_handler(signum, frame):
     if (CLEANUP):
         batch_system = probe_batch_system()
         if (batch_system is not None):
-            acme_util.run_cmd(CLEANUP_ROUTINES[batch_system])
+            acme_util.run_cmd(CLEANUP_ROUTINES[batch_system], verbose=True)
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -286,7 +286,7 @@ NightlyStartTime: 00:00:00 EST
 
     etree.write(os.path.join(data_rel_path, "Test.xml"))
 
-    acme_util.run_cmd("ctest -D NightlySubmit")
+    acme_util.run_cmd("ctest -D NightlySubmit", verbose=True)
 
 ###############################################################################
 def parse_test_status_file(file_contents, status_file_path, check_throughput):
