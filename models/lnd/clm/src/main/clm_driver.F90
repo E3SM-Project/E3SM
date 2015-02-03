@@ -679,7 +679,6 @@ contains
                      filter(nc)%num_nolakep, filter(nc)%nolakep, &
                      waterstate_vars, canopystate_vars)
              end if
-             call t_stopf('ecosysdyn')
 
           end if  ! end of if-use_cn
 
@@ -701,6 +700,8 @@ contains
           call EDbio_vars%SetValues( 0._r8 )
           
        end if  ! end of if-use_ed
+
+       call t_stopf('ecosysdyn')
 
        ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
        call t_startf('depvel')
