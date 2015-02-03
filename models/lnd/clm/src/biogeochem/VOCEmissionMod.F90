@@ -86,9 +86,11 @@ contains
     class(vocemis_type) :: this
     type(bounds_type), intent(in)    :: bounds  
 
-    call this%InitAllocate(bounds) 
-    call this%InitHistory(bounds)
-    call this%InitCold(bounds)
+    if ( shr_megan_mechcomps_n > 0) then
+       call this%InitAllocate(bounds) 
+       call this%InitHistory(bounds)
+       call this%InitCold(bounds)
+    end if
 
   end subroutine Init
 
@@ -113,8 +115,6 @@ contains
     integer            :: begp, endp
     type(shr_megan_megcomp_t), pointer :: meg_cmp
     !-----------------------------------------------------------------------
-
-    if ( shr_megan_mechcomps_n < 1) return
 
     begg = bounds%begg; endg = bounds%endg
     begp = bounds%begp; endp = bounds%endp
