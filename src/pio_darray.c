@@ -91,13 +91,8 @@ void compute_buffer_init(iosystem_desc_t ios)
 
      PIO_Offset *startlist[iodesc->maxregions];
      PIO_Offset *countlist[iodesc->maxregions];
-
-
-#ifdef _MPISERIAL
-     tsize = iodesc->basetype;
-#else
      MPI_Type_size(iodesc->basetype, &tsize);
-#endif
+
      region = iodesc->firstregion;
 
      if(vdesc->record >= 0 && ndims<fndims)
@@ -167,11 +162,7 @@ void compute_buffer_init(iosystem_desc_t ios)
 #endif
        case PIO_IOTYPE_NETCDF:
 	 {
-#ifdef _MPISERIAL
-	   dsize = iodesc->basetype;
-#else
 	   mpierr = MPI_Type_size(iodesc->basetype, &dsize);
- #endif
 	   size_t tstart[ndims], tcount[ndims];
 	   if(ios->io_rank==0){
          // FIX(SPM, 100714)  don't use i, use something like myrank and iam
@@ -332,11 +323,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
    }
 
    ierr = PIOc_inq_varndims(file->fh, vid[0], &fndims);
-#ifdef _MPISERIAL
-   tsize = iodesc->basetype;
-#else
    MPI_Type_size(iodesc->basetype, &tsize);
-#endif
 
    if(iodesc->needsfill && file->iotype == PIO_IOTYPE_PNETCDF){
      PIO_Offset start[fndims];
@@ -429,14 +416,14 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
        // make sure we have room in the buffer ;
 	 ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	 usage += nvars*tsize*(iodesc->maxiobuflen);
-	 printf("%s %d %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT);
+	 //printf("%s %d %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT);
 	 MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
 
 	 if(usage >= PIO_BUFFER_SIZE_LIMIT){	   
-	   printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,usage,nvars,PIO_BUFFER_SIZE_LIMIT,nvars*tsize*(iodesc->maxiobuflen));
+	 //  printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,usage,nvars,PIO_BUFFER_SIZE_LIMIT,nvars*tsize*(iodesc->maxiobuflen));
 	   flush_output_buffer(file);
 	   ierr = ncmpi_inq_buffer_usage(ncid, &usage);
-	   printf("%s %d %ld \n",__FILE__,__LINE__,usage);
+	  // printf("%s %d %ld \n",__FILE__,__LINE__,usage);
 	 }
 
      }
@@ -501,11 +488,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 #endif
        case PIO_IOTYPE_NETCDF:
 	 {
-#ifdef _MPISERIAL
-	   dsize = iodesc->basetype;
-#else
 	   mpierr = MPI_Type_size(iodesc->basetype, &dsize);
-#endif
 	   size_t tstart[ndims], tcount[ndims];
 	   if(ios->io_rank==0){
 	     for(int iorank=0;iorank<iodesc->num_aiotasks;iorank++){
@@ -627,7 +610,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	     
 	   }
 	   for(i=0;i<rrcnt;i++){
-             printf("%d %ld %ld %ld %ld\n",i,startlist[i][0],startlist[i][1],countlist[i][0],countlist[i][1]);
+             //printf("%d %ld %ld %ld %ld\n",i,startlist[i][0],startlist[i][1],countlist[i][0],countlist[i][1]);
 	     free(startlist[i]);
 	     free(countlist[i]);
 	   }
@@ -686,11 +669,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    if(iodesc->rearranger>0){
      if(rlen>0){
        //       printf("rlen = %ld\n",rlen);
-#ifdef _MPISERIAL
-       vsize = iodesc->basetype;
-#else
        MPI_Type_size(iodesc->basetype, &vsize);	
-#endif
        iobuf = malloc((size_t) vsize* (size_t) rlen);
        //       iobuf = bget((size_t) vsize* (size_t) rlen);
        if(iobuf==NULL){
@@ -795,8 +774,10 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
   }else{
     recordvar=true;
   }
-  pioassert(iodesc->ndof==arraylen,"ndof != arraylen",__FILE__,__LINE__);
-
+  if(iodesc->ndof != arraylen){
+    fprintf(stderr,"ndof=%ld, arraylen=%ld\n",iodesc->ndof,arraylen);
+    piodie("ndof != arraylen",__FILE__,__LINE__);
+  }
    wmb = &(file->buffer);
    if(wmb->ioid == -1){
      if(recordvar){
@@ -843,22 +824,22 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
 
  
- #ifdef _MPISERIAL
-    tsize = iodesc->basetype;
-#else
     MPI_Type_size(iodesc->basetype, &tsize);
-#endif
   // At this point wmb should be pointing to a new or existing buffer 
    // so we can add the data
     //     printf("%s %d %X %d %d %d\n",__FILE__,__LINE__,wmb->data,wmb->validvars,arraylen,tsize);
     //    cn_buffer_report(*ios, true);
     bfreespace(&totfree, &maxfree);
+#ifdef _MPISERIAL
+    bool needflush = false;
+#else
     bool needflush = (maxfree <= 1.1*(1+wmb->validvars)*arraylen*tsize );
     MPI_Allreduce(MPI_IN_PLACE, &needflush, 1,  MPI_INT,  MPI_MAX, ios->comp_comm);
-    needflush = wmb->validvars>2;    
+#endif
+
     if(needflush ){
       // need to flush first
-      //printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,maxfree, wmb->validvars, (1+wmb->validvars)*arraylen*tsize,totfree);
+      printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,maxfree, wmb->validvars, (1+wmb->validvars)*arraylen*tsize,totfree);
             cn_buffer_report(*ios, true);
 	
       flush_buffer(ncid,wmb);
@@ -974,15 +955,11 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    rlen = iodesc->llen;
    if(iodesc->rearranger>0){
      if(rlen>0){
-#ifdef _MPISERIAL
-       tsize = iodesc->basetype;
-#else
        MPI_Type_size(iodesc->basetype, &tsize);	
-#endif
        //       iobuf = bget(tsize*rlen);
-       iobuf = malloc(tsize*rlen);
+       iobuf = malloc((size_t) tsize*rlen);
        if(iobuf==NULL){
-	 piomemerror(ios,rlen*vsize, __FILE__,__LINE__);
+	 piomemerror(*ios,rlen*(size_t) tsize, __FILE__,__LINE__);
        }
      }
      //    printf(" rlen = %d %ld\n",rlen,iobuf); 
@@ -1058,11 +1035,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     // We can potentially allow for one iodesc to have multiple datatypes by allowing the
     // calling program to change the basetype.   
     region = iodesc->firstregion;
-#ifdef _MPISERIAL
-    tsize = iodesc->basetype;
-#else
     MPI_Type_size(iodesc->basetype, &tsize);
-#endif
     if(fndims>ndims){
       ndims++;
       if(vdesc->record<0) 
@@ -1273,16 +1246,11 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   }
   if(iodesc->rearranger > 0){
     if(ios->ioproc && rlen>0){
-#ifdef _MPISERIAL
-       tsize = iodesc->basetype;
-#else
        MPI_Type_size(iodesc->basetype, &tsize);	
-#endif
-       iobuf = bget(tsize*rlen);
+       iobuf = bget(((size_t) tsize)*rlen);
        if(iobuf==NULL){
-	 piomemerror(*ios,rlen*tsize, __FILE__,__LINE__);
+	 piomemerror(*ios,rlen*((size_t) tsize), __FILE__,__LINE__);
        }
-       //       printf("%s %d %X %ld\n",__FILE__,__LINE__,iobuf,rlen);
      }
   }else{
     iobuf = array;
@@ -1349,6 +1317,7 @@ void cn_buffer_report(iosystem_desc_t ios, bool collective)
 	printf("PIO: Current largest free block %ld %ld\n",bget_mins[2],bget_maxs[2]);
 	printf("PIO: Number of successful bget calls %ld %ld\n",bget_mins[3],bget_maxs[3]);
 	printf("PIO: Number of successful brel calls  %ld %ld\n",bget_mins[4],bget_maxs[4]);
+	//	print_trace(stdout);
       }
     }else{
       printf("%d: PIO: Currently allocated buffer space %ld \n",ios.union_rank,bget_stats[0]) ;

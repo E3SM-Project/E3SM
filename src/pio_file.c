@@ -89,16 +89,16 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 	if(ios->iomaster) printf("%d Setting IO buffer %ld\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
       }
-      for(int i=0;i<PIO_MAX_VARS;i++)
-	file->request[i]=MPI_REQUEST_NULL;
-      file->nreq=0;
-      file->indep_rank=0;
       break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
+  for(int i=0;i<PIO_MAX_VARS;i++)
+    file->request[i]=MPI_REQUEST_NULL;
+  file->nreq=0;
+  file->indep_rank=0;
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   if(ierr==PIO_NOERR){
@@ -200,16 +200,16 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 	  printf("%d Setting IO buffer size on all iotasks to %ld\n",ios->io_rank,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
       }
-      for(int i=0;i<PIO_MAX_VARS;i++)
-	file->request[i]=MPI_REQUEST_NULL;
-      file->nreq=0;
-      file->indep_rank=0;
       break;
 #endif
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
+  for(int i=0;i<PIO_MAX_VARS;i++)
+    file->request[i]=MPI_REQUEST_NULL;
+  file->nreq=0;
+  file->indep_rank=0;
   
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 

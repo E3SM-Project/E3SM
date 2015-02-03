@@ -63,7 +63,7 @@ void pioassert(_Bool expression, const char *msg, const char *fname, const int l
 int check_netcdf(file_desc_t *file,int status, const char *fname, const int line){
   iosystem_desc_t *ios;
   int ierr;
-
+  char errstr[160];
   ios = file->iosystem;
   ierr = PIO_NOERR;
 
@@ -75,8 +75,9 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
 #endif
   case PIO_IOTYPE_NETCDF:
     if(ios->iomaster){
-      if(status != NC_NOERR && (ios->error_handler == PIO_INTERNAL_ERROR))	
-	fprintf(stderr,"NETCDF ERROR: %s %s %d\n",nc_strerror(status),fname,line);
+      if(status != NC_NOERR && (ios->error_handler == PIO_INTERNAL_ERROR))
+         piodie(nc_strerror(status),fname,line);	
+//	fprintf(stderr,"NETCDF ERROR: %s %s %d\n",nc_strerror(status),fname,line);
     }
     if(ios->error_handler == PIO_INTERNAL_ERROR){
       if(status != NC_NOERR)	

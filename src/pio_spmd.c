@@ -79,9 +79,9 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
       int count=0;
       int tail = 0;
       MPI_Request rcvid[gather_block_size];
-#ifndef _MPISERIAL
+
       CheckMPIReturn(MPI_Type_size(recvtype, &dsize), __FILE__,__LINE__);
-#endif      
+
       for(int p=0;p<nprocs;p++){
 	if(p != root){
 	  if(recvcnt > 0){
@@ -102,9 +102,7 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
       }
 
       // copy local data
-#ifndef _MPISERIAL
       CheckMPIReturn(MPI_Type_size(sendtype, &dsize), __FILE__,__LINE__);      
-#endif
       memcpy(recvbuf, sendbuf, sendcnt*dsize );
 
       count = min(count, preposts);
@@ -149,7 +147,9 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
   int dsize;
   
 
-
+#ifdef _MPISERIAL
+  memcpy(recvbuf, sendbuf, sizeof(sendtype));
+#else
   if(flow_cntl > 0){
     fc_gather = true;
     gather_block_size = min(flow_cntl,MAX_GATHER_BLOCK_SIZE);
@@ -170,10 +170,9 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
       int count=0;
       int tail = 0;
       MPI_Request rcvid[gather_block_size];
-#ifndef _MPISERIAL
       // printf("%s %d %d\n",__FILE__,__LINE__,(int) recvtype);
       CheckMPIReturn(MPI_Type_size(recvtype, &dsize), __FILE__,__LINE__);
-#endif      
+
       for(int p=0;p<nprocs;p++){
 	if(p != root){
 	  if(recvcnts[p] > 0){
@@ -194,19 +193,14 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
       }
 
       // copy local data
-#ifndef _MPISERIAL
       CheckMPIReturn(MPI_Type_size(sendtype, &dsize), __FILE__,__LINE__);      
-#endif
       CheckMPIReturn(MPI_Sendrecv(sendbuf, sendcnt, sendtype,
 				  mytask, 102, recvbuf, recvcnts[mytask], recvtype,
 				  mytask, 102, comm, &status),__FILE__,__LINE__);
 
       count = min(count, preposts);
-
-#ifndef _MPISERIAL	
       if(count>0)
 	CheckMPIReturn(MPI_Waitall( count, rcvid, MPI_STATUSES_IGNORE),__FILE__,__LINE__);
-#endif
     }else{
       if(sendcnt > 0){
 	CheckMPIReturn(MPI_Recv( &hs, 1, MPI_INT, root, mtag, comm, &status), __FILE__,__LINE__);
@@ -216,7 +210,7 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
   }else{
     CheckMPIReturn(MPI_Gatherv ( sendbuf, sendcnt, sendtype, recvbuf, recvcnts, displs, recvtype, root, comm), __FILE__,__LINE__);
   }
-
+#endif
   return PIO_NOERR;
 }
 
@@ -263,11 +257,11 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 
 #ifndef _MPISERIAL
   if(max_requests == 0) {
-    //    #ifdef DEBUG
+    #ifdef DEBUG
     for(int i=0;i<nprocs;i++){
       printf("%d sndlths %d %d %d %d\n",i,sndlths[i],sdispls[i],rcvlths[i],rdispls[i]);
     }
-    // #endif
+     #endif
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }

@@ -168,11 +168,12 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
 #endif
   iodesc->maxiobuflen = totiosize;
-
+#ifndef _MPISERIAL
   if(iodesc->maxiobuflen<=0){
     fprintf(stderr,"%s %d %ld %ld %d %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen,totiosize,MPI_OFFSET,MPI_MAX,io_comm); 
     piodie("ERROR: maxiobuflen<=0",__FILE__,__LINE__);
   }
+#endif
 }
 /**
  ** @internal
@@ -189,7 +190,9 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
   pioassert(dlen>=0,"dlen < 0",__FILE__,__LINE__);
 
 #ifdef _MPISERIAL
-  mtype[0] = basetype * blocksize;
+  int tsize;
+  MPI_Type_size(basetype, &tsize);
+  mtype[0] = tsize * blocksize;
 #else
   if(mindex != NULL){
     memcpy(lindex, mindex, (size_t) (dlen*sizeof(PIO_Offset)));
@@ -502,11 +505,8 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     recv_counts[i] = 0;
     recv_displs[i]   =0;
   }
-#ifndef _MPISERIAL
   MPI_Type_size(MPI_OFFSET, &tsize);
-#else
-  tsize = sizeof(long long);
-#endif
+
   for(i=0; i<ntasks; i++){
     sr_types[i] = MPI_OFFSET;
   }
@@ -615,18 +615,18 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   MPI_Comm_size(mycomm, &ntasks);
 
   pioassert(nvars>0,"nvars must be > 0",__FILE__,__LINE__);
+  MPI_Type_size(iodesc->basetype, &tsize);
 
 #ifdef _MPISERIAL
   /* in mpiserial iodesc->basetype is the byte length of the basic type */
   for(ivar = 0; ivar < nvars; ivar++){
-    int voffset = ivar * iodesc->llen * iodesc->basetype;
+    int voffset = ivar * iodesc->llen * tsize;
     for(i=0;i<iodesc->llen; i++){
       memcpy((char *) rbuf + voffset + iodesc->rindex[i],(char *) sbuf + voffset + iodesc->sindex[i], (size_t) (iodesc->basetype));
     }
   }
   tsize = iodesc->basetype;
 #else
-  MPI_Type_size(iodesc->basetype, &tsize);
 
   define_iodesc_datatypes(ios, iodesc);
 
@@ -966,9 +966,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   for(int i=ndims-2;i>=0; i--)
     gstride[i]=gstride[i+1]*gsize[i+1];
 
-#ifndef _MPISERIAL
   MPI_Type_size(MPI_OFFSET, &tsize);
-#endif
 
   for(i=0; i< maplen; i++){
     dest_ioproc[i] = -1;
@@ -1439,7 +1437,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       brel(srcindex);
     
     compute_maxIObuffersize(ios.io_comm, iodesc);
-
+    
     iodesc->nrecvs=ntasks;
 #ifdef DEBUG
     iodesc_dump(iodesc);
