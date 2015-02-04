@@ -39,6 +39,8 @@ module mpas_subdriver
  
       implicit none
 
+      integer :: iArg, nArgs
+      character(len=StrKIND) :: argument, namelistFile, streamsFile
       character(len=StrKIND) :: timeStamp
       integer :: ierr
 
@@ -82,8 +84,46 @@ module mpas_subdriver
          end subroutine xml_stream_get_attributes
       end interface
 
+      namelistFile = domain % namelist_filename
+      streamsFile = domain % streams_filename
+
+      nArgs = command_argument_count()
+      do iArg = 1, nArgs
+         call get_command_argument(iArg, argument)
+         if (len_trim(argument) == 0) exit
+
+         if ( trim(argument) == '-n' ) then
+            iArg = iArg + 1
+            call get_command_argument(iArg, namelistFile)
+            if ( len_trim(namelistFile) == 0 ) then
+                write(0,*) 'ERROR: The -n argument requires a namelist file argument.'
+                stop
+            else if ( trim(namelistFile) == '-s' ) then
+                write(0,*) 'ERROR: The -n argument requires a namelist file argument.'
+                stop
+            end if
+         else if ( trim(argument) == '-s' ) then
+            iArg = iArg + 1
+            call get_command_argument(iArg, streamsFile)
+            if ( len_trim(streamsFile) == 0 ) then
+                write(0,*) 'ERROR: The -s argument requires a streams file argument.'
+                stop
+            else if ( trim(streamsFile) == '-n' ) then
+                write(0,*) 'ERROR: The -s argument requires a streams file argument.'
+                stop
+            end if
+         end if
+
+         iArg = iArg + 1
+      end do
 
       domain_ptr => domain
+
+      domain % namelist_filename = namelistFile
+      domain % streams_filename = streamsFile
+
+      write(0,*) 'Reading namelist from file: ', trim(domain % namelist_filename)
+      write(0,*) 'Reading streams configuration from file: ', trim(domain % streams_filename)
 
       !
       ! Initialize infrastructure
