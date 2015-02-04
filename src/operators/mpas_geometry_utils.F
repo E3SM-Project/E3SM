@@ -14,6 +14,8 @@ module mpas_geometry_utils
    use mpas_io_units
    use mpas_vector_operations
 
+   implicit none
+
    contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -290,9 +292,15 @@ module mpas_geometry_utils
       endif
 
       triangleArea = mpas_triangle_signed_area(a, b, c, meshPool)
-      weight_a = mpas_triangle_signed_area(point, b, c, meshPool) / triangleArea
-      weight_b = mpas_triangle_signed_area(point, c, a, meshPool) / triangleArea
-      weight_c = mpas_triangle_signed_area(point, a, b, meshPool) / triangleArea
+      if (triangleArea > 0.0_RKIND) then
+         weight_a = mpas_triangle_signed_area(point, b, c, meshPool) / triangleArea
+         weight_b = mpas_triangle_signed_area(point, c, a, meshPool) / triangleArea
+         weight_c = mpas_triangle_signed_area(point, a, b, meshPool) / triangleArea
+      else
+         weight_a = 0.0_RKIND
+         weight_b = 0.0_RKIND
+         weight_c = 0.0_RKIND
+      endif
 
       error = abs(weight_a + weight_b + weight_c - 1.0_RKIND)
       if (error > 1.0e-12_RKIND) then
@@ -318,28 +326,36 @@ module mpas_geometry_utils
 
 !***********************************************************************
 !
-!  routine mpas_calculate_barycentric_weights_for_vertices
+!  routine mpas_calculate_barycentric_weights_for_points
 !
-!> \brief   Calculates barycentric weights for all vertices
+!> \brief   Calculates barycentric weights for a set of points
 !> \author  Matthew Hoffman
 !> \date    13 January 2015
 !> \details
 !>  This routine calculates calculates barycentric weights (coordinates)
-!>  for all vertices in a mesh with a triangular dual mesh.
+!>  for a set of points provided.  Requires a mesh with a triangular dual mesh.
 !>  The routine will attempt to find which triangle (made of cell centers)
-!>  in which each vertex lives.  Those cell center indices will be stored in the 
-!>  baryCellsOnVertex array.  If no 'owning' triangle is identified, then
-!>  the cell centers from cellsOnVertex will be used instead and barycentric
-!>  extrapolation will be performed.  The barycentric weights associated with the
-!>  triangle vertices identified in baryCellsOnVertex are stored in the array 
-!>  baryWeightsOnVertex.
+!>  in which each point lies.  Those cell center indices will be stored in the 
+!>  baryCellsOnPoints array.  
+!>  The triangle search is limited to a triangle location provided to the routine
+!>  and its surrounding triangles.  The triangle location is identified by a vertex
+!>  id, which is stored in the input array searchVertex.
+!>  If the pointset is vertices, the list of vertices can be passed in.  If the 
+!>  pointset is something else, then the callling routine must
+!>  first determine which vertices each point is closest to.
+!>  If no 'owning' triangle is identified in this routine, then
+!>  the cell centers from cellsOnVertex of the search vertex will be used instead and
+!>  barycentric extrapolation will be performed.  The barycentric weights associated with
+!>  the triangle nodes identified in baryCellsOnPoints are stored in the array
+!>  baryWeightsOnPoints.
 !>  Note this does not handle triangles spanning planar periodic meshes because mpas_triangle_signed_area_plane does not!
 !-----------------------------------------------------------------------
-   subroutine mpas_calculate_barycentric_weights_for_vertices(meshPool, baryCellsOnVertex, baryWeightsOnVertex, ierr)!{{{
+   subroutine mpas_calculate_barycentric_weights_for_points(meshPool, xPoint, yPoint, zPoint, searchVertex, baryCellsOnPoints, baryWeightsOnPoints, ierr)!{{{
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-
+      real(kind=RKIND), dimension(:), intent(in) :: xPoint, yPoint, zPoint  !< Input: coordinate of the points for which barycentric weights should be calculated
+      integer, dimension(:), intent(in) :: searchVertex  !< Input: list of the vertex id to be used as the search origin for each point listed in xPoint, yPoint, XPoint
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -347,35 +363,35 @@ module mpas_geometry_utils
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      integer, dimension(:,:), pointer, intent(out) :: baryCellsOnVertex  !< Output: An array of dimension (nVertices, 3) that contains the 3 neighboring cells to be used for the barycentric interpolation/extrapolation
-      real(kind=RKIND), dimension(:,:), pointer, intent(out) :: baryWeightsOnVertex  !< Output: An array of dimension (nVertices, 3) that contains the 3 bary weights for each vertex
+      integer, dimension(:,:), intent(out) :: baryCellsOnPoints  !< Output: An array of dimension (3, nPoints) that contains the 3 neighboring cells to be used for the barycentric interpolation/extrapolation
+      real(kind=RKIND), dimension(:,:), intent(out) :: baryWeightsOnPoints  !< Output: An array of dimension (3, nPoints) that contains the 3 bary weights for each point
       integer, intent(out) :: ierr !< Output: error flag
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      integer, pointer :: nVertices, vertexDegree
+      integer, pointer :: vertexDegree
+      logical, pointer :: on_a_sphere
+      integer :: nPoints, iPoint, baseVertex
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnVertex, verticesOnCell
-      real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex, xCell, yCell, zCell, areaTriangle
+      real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
       real(kind=RKIND), dimension(3,3) :: triangleVertices
-      integer :: cell1, cell2, cell3, c, t
+      integer :: cell1, cell2, cell3, c, t, iCell, iTriangle
       real(kind=RKIND), dimension(3) :: point, triangle_a, triangle_b, triangle_c
 
       ierr = 0
 
-      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
-      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      nPoints = size(xPoint)
 
-      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
-      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
-      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+
       call mpas_pool_get_array(meshPool, 'xCell', xCell)
       call mpas_pool_get_array(meshPool, 'yCell', yCell)
       call mpas_pool_get_array(meshPool, 'zCell', zCell)
       call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
       call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
 
       if (vertexDegree /= 3) then
          write (stderrUnit,*) 'Error: Barycentric weights can only be calculated if vertexDegree is 3'
@@ -383,27 +399,25 @@ module mpas_geometry_utils
          return
       endif
 
-
-      do iVertex = 1, nVertices
-         point = (/ xVertex(iVertex), yVertex(iVertex), zVertex(iVertex) /)
+      do iPoint = 1, nPoints
+         point = (/ xPoint(iPoint), yPoint(iPoint), zPoint(iPoint) /)
+         baseVertex = searchVertex(iPoint)
 
          ! Step 1 - Identify the 'owning' triangle, if possible
-         ! In a decent mesh, most vertices will live inside the triangle defined by cellsOnVertex, 
-         ! so check that first
-
-         baryCellsOnVertex(:, iVertex) = cellsOnVertex(:, iVertex)   ! start by assigning cellsOnVertex as the triangle
-         cell1 = cellsOnVertex(1, iVertex)
-         cell2 = cellsOnVertex(2, iVertex)
-         cell3 = cellsOnVertex(3, iVertex)
+         ! Start with the triangle defined by cellsOnVertex for the searchVertex.
+         baryCellsOnPoints(:, iPoint) = cellsOnVertex(:, baseVertex)   ! start by assigning cellsOnVertex as the triangle
+         cell1 = cellsOnVertex(1, baseVertex)
+         cell2 = cellsOnVertex(2, baseVertex)
+         cell3 = cellsOnVertex(3, baseVertex)
          triangleVertices(1,:) = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
          triangleVertices(2,:) = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
          triangleVertices(3,:) = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
-         if (.not. mpas_point_in_polygon(point, triangleVertices, meshPool)) then
+         if (.not. mpas_point_in_polygon(point, triangleVertices, on_a_sphere)) then
 
             ! If that was the owning triangle, don't do anything because we've already assigned cellsOnVertex as the triangle
             ! If that was not the owning triangle, check the neighboring triangles
             neighborCellsLoop: do c = 1, 3
-               iCell = cellsOnVertex(c, iVertex)
+               iCell = cellsOnVertex(c, baseVertex)
                if (iCell > 0) then
                   do t = 1, nEdgesOnCell(iCell)
                      iTriangle = verticesOnCell(t, iCell)
@@ -414,8 +428,8 @@ module mpas_geometry_utils
                         triangleVertices(1,:) = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
                         triangleVertices(2,:) = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
                         triangleVertices(3,:) = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
-                        if (mpas_point_in_polygon(point, triangleVertices, meshPool)) then
-                           baryCellsOnVertex(:, iVertex) = cellsOnVertex(:, iTriangle)
+                        if (mpas_point_in_polygon(point, triangleVertices, on_a_sphere)) then
+                           baryCellsOnPoints(:, iPoint) = cellsOnVertex(:, iTriangle)
                            exit neighborCellsLoop ! No need to keep searching
                         endif
                      endif ! check if triangle is valid
@@ -429,24 +443,20 @@ module mpas_geometry_utils
          endif
 
          ! Step 2 - Determine the barycentric weights for the identified 'owning' triangle
-         cell1 = baryCellsOnVertex(1, iVertex)
-         cell2 = baryCellsOnVertex(2, iVertex)
-         cell3 = baryCellsOnVertex(3, iVertex)
+         cell1 = baryCellsOnPoints(1, iPoint)
+         cell2 = baryCellsOnPoints(2, iPoint)
+         cell3 = baryCellsOnPoints(3, iPoint)
 
          triangle_a = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
          triangle_b = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
          triangle_c = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
 
          call mpas_calculate_barycentric_weights(point, triangle_a, triangle_b, triangle_c, meshPool,     &
-             baryWeightsOnVertex(1, iVertex), baryWeightsOnVertex(2, iVertex), baryWeightsOnVertex(3, iVertex), ierr)
-
-         !if (ierr == 1) then
-         !   areaTriangle(iVertex) = 9999999999999999999.0  ! a hack to see which vertices had problems getting weights - be sure to set ierr = 0 before the call to mpas_calculate_barycentric_weights
-         !endif
+             baryWeightsOnPoints(1, iPoint), baryWeightsOnPoints(2, iPoint), baryWeightsOnPoints(3, iPoint), ierr)
 
       enddo
 
-   end subroutine mpas_calculate_barycentric_weights_for_vertices !}}}
+   end subroutine mpas_calculate_barycentric_weights_for_points !}}}
 
 
 !***********************************************************************
@@ -509,9 +519,13 @@ module mpas_geometry_utils
       ab = b - a
       ac = c - a
       call mpas_cross_product_in_r3(ab, ac, crossprod)
-      triangleNormal = crossprod / mpas_vec_mag_in_r3(crossprod)
-      mpas_triangle_signed_area_plane = 0.5_RKIND * (mpas_vec_mag_in_r3(crossprod)) *  &
+      if (mpas_vec_mag_in_r3(crossprod) == 0.0_RKIND) then
+         mpas_triangle_signed_area_plane = 0.0_RKIND
+      else
+         triangleNormal = crossprod / mpas_vec_mag_in_r3(crossprod)
+         mpas_triangle_signed_area_plane = 0.5_RKIND * (mpas_vec_mag_in_r3(crossprod)) *  &
               sum(triangleNormal * normalvec)
+      endif
    end function mpas_triangle_signed_area_plane !}}}
 
 
@@ -551,37 +565,6 @@ module mpas_geometry_utils
 
 !***********************************************************************
 !
-!  routine mpas_triangle_area_sphere
-!
-!> \brief   Calculates area of a triangle on a sphere
-!> \author  Matthew Hoffman
-!> \date    13 January 2015
-!> \details
-!>  This routine calculates the area of a triangle on the surface of a sphere.
-!>  Uses Girard's formula.
-!>  Reference: http://mathworld.wolfram.com/SphericalTriangle.html
-!-----------------------------------------------------------------------
-   real(kind=RKIND) function mpas_triangle_area_sphere(a, b, c, normal_vector)!{{{
-      !-----------------------------------------------------------------
-      ! input variables
-      !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(3), intent(in) :: a, b, c  !< Input: 3d (x,y,z) points forming the triangle in which to calculate the bary weights
-      !-----------------------------------------------------------------
-      ! local variables
-      !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(3) :: ab, bc, ca
-      real(kind=RKIND) :: amag, bmag, cmag, semiperimeter
-
-      angle_a = mpas_sphere_angle(a(1), a(2), a(3), b(1), b(2), b(3), c(1), c(2), c(3))
-      angle_b = mpas_sphere_angle(b(1), b(2), b(3), a(1), a(2), a(3), c(1), c(2), c(3))
-      angle_c = mpas_sphere_angle(c(1), c(2), c(3), b(1), b(2), b(3), a(1), a(2), a(3))
-
-      mpas_triangle_area_sphere = r**2 * (angle_a + angle_b + angle_c - pi)
-   end function mpas_triangle_area_sphere !}}}
-
-
-!***********************************************************************
-!
 !  routine mpas_point_in_polygon
 !
 !> \brief   Hit test to determine if a point is inside of a polygon
@@ -596,23 +579,21 @@ module mpas_geometry_utils
 !>  situation where a point on a edge could be 'orphaned' - determined
 !>  to not belong to *any* polygons.
 !-----------------------------------------------------------------------
-   logical function mpas_point_in_polygon(point, polygonVertices, meshPool)!{{{
+   logical function mpas_point_in_polygon(point, polygonVertices, on_a_sphere)!{{{
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       real(kind=RKIND), dimension(3), intent(in) :: point  !< Input: 3d (x,y,z) point
       real(kind=RKIND), dimension(:,:), intent(in) :: polygonVertices  !< Input: 3d (x,y,z) points forming the polygon to test, second dimension should be 3
-      type (mpas_pool_type), intent(inout) :: meshPool  !< Input: Mesh information (to find out if on a sphere)
+      logical, intent(in) :: on_a_sphere  !< Input: If on a sphere
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      logical, pointer :: on_a_sphere
       real(kind=RKIND), dimension(3) :: normal_vector, crossprod, vec1, vec2
       integer :: polygonDegree, i
       integer, dimension(:), allocatable :: vertexNeighborFwd
       real(kind=RKIND), parameter :: eps = 1.0e-12_RKIND
 
-      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       if (on_a_sphere) then
          normal_vector = point
       else
@@ -642,19 +623,20 @@ module mpas_geometry_utils
 
 !***********************************************************************
 !
-!  subroutine mpas_cells_to_vertices_using_baryweights
+!  subroutine mpas_cells_to_points_using_baryweights
 !
-!> \brief   Converts a single layer scalar field from cells to vertices using barycentric weights.
+!> \brief   Converts a single layer scalar field from cells to specified points using barycentric weights.
 !> \author  Matt Hoffman
 !> \date    14 Jan 2015
 !> \details 
-!>  This routine converts a single layer scalar field from cells to vertices using 
-!>  barycentric weights.  The weights should be calculated on init using the 
-!>  mpas_calculate_barycentric_weights_for_vertices routine above.  That routine
-!>  will calculate the baryCellsOnVertex, baryWeightsOnVertex fields.  These may
+!>  This routine converts a single layer scalar field from cells to a provided set
+!>  of point locations using barycentric weights.
+!>  The weights should be calculated on init using the
+!>  mpas_calculate_barycentric_weights_for_points routine above.  That routine
+!>  will calculate the baryCellsOnPoints, baryWeightsOnPoints fields.  These may
 !>  be stored in meshPool, but that is not assumed.
 !-----------------------------------------------------------------------
-   subroutine mpas_cells_to_vertices_using_baryweights(meshPool, baryCellsOnVertex, baryWeightsOnVertex, fieldCells, fieldVertices, ierr)!{{{
+   subroutine mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnPoints, baryWeightsOnPoints, fieldCells, fieldPoints, ierr)!{{{
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -663,9 +645,9 @@ module mpas_geometry_utils
       real (kind=RKIND), dimension(:), intent(in) :: &
          fieldCells    !< Input: field on cells
       integer, dimension(:,:), intent(in) :: &
-         baryCellsOnVertex    !< Input: The three cells that should be used for barycentric interpolation (or possibly extrapolation) for each vertex
+         baryCellsOnPoints    !< Input: The three cells that should be used for barycentric interpolation (or possibly extrapolation) for each point.  First dimension should be 3.
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         baryWeightsOnVertex    !< Input: the weights corresponding to each cell in baryCellsOnVertex
+         baryWeightsOnPoints    !< Input: the weights corresponding to each cell in baryCellsOnPoints.  First dimension should be 3.
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -674,35 +656,35 @@ module mpas_geometry_utils
       ! output variables
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:), intent(out) :: &
-         fieldVertices    !< Output: field on vertices
+         fieldPoints    !< Output: field on points
       integer, intent(out) :: ierr
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      integer, pointer :: nVertices, vertexDegree
-      integer :: iVertex, cell1, cell2, cell3
+      integer, pointer :: vertexDegree
+      integer :: nPoints, iPoint, cell1, cell2, cell3
 
       ierr = 0
 
-      ! Get needed items from mesh pool
-      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
-
       if (vertexDegree /= 3) then
          write (stderrUnit,*) 'Error: Barycentric weights can only be calculated if vertexDegree is 3'
          ierr = 1
          return
       endif
 
-      do iVertex = 1, nVertices  ! Loop over vertices
-        cell1 = baryCellsOnVertex(1, iVertex)
-        cell2 = baryCellsOnVertex(2, iVertex)
-        cell3 = baryCellsOnVertex(3, iVertex)
-        fieldVertices(iVertex) = baryWeightsOnVertex(1, iVertex) * fieldCells(cell1) +    &
-            baryWeightsOnVertex(2, iVertex) * fieldCells(cell2) + baryWeightsOnVertex(3, iVertex) * fieldCells(cell3)
+      nPoints = size(fieldPoints)
+
+      do iPoint = 1, nPoints  ! Loop over vertices
+        cell1 = baryCellsOnPoints(1, iPoint)
+        cell2 = baryCellsOnPoints(2, iPoint)
+        cell3 = baryCellsOnPoints(3, iPoint)
+        fieldPoints(iPoint) = baryWeightsOnPoints(1, iPoint) * fieldCells(cell1) +    &
+                              baryWeightsOnPoints(2, iPoint) * fieldCells(cell2) +    &
+                              baryWeightsOnPoints(3, iPoint) * fieldCells(cell3)
       enddo
 
-   end subroutine mpas_cells_to_vertices_using_baryweights !}}}
+   end subroutine mpas_cells_to_points_using_baryweights !}}}
 
 !-------------------------------------------------------------
 
