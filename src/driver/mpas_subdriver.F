@@ -88,7 +88,8 @@ module mpas_subdriver
       streamsFile = domain % streams_filename
 
       nArgs = command_argument_count()
-      do iArg = 1, nArgs
+      iArg = 1
+      do while (iArg < nArgs)
          call get_command_argument(iArg, argument)
          if (len_trim(argument) == 0) exit
 
