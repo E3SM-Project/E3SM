@@ -101,8 +101,8 @@ contains
              ierr = nf90_create(fname, nmode, File%fh, &
                   info=File%iosystem%info )
 ! Set default to NOFILL for performance.  
-!             if(ierr==PIO_NOERR) &
-!                  ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
+             if(ierr==PIO_NOERR) &
+                  ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           endif
 #endif          
        case(PIO_iotype_netcdf)

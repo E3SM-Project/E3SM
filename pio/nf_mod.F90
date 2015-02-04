@@ -1740,7 +1740,8 @@ contains
              ierr=nf90_def_var( ncid=File%fh,name=name(1:nlen),xtype=type, &
                   dimids=dimids(1:vardesc%ndims),varid=vardesc%varid)
           endif
-          ierr = nf90_def_var_fill(File%fh, vardesc%varid, 1, 0)
+!        removed , use nf90_set_fill instead
+!          ierr = nf90_def_var_fill(File%fh, vardesc%varid, 1, 0)
 #endif
        case(pio_iotype_netcdf,pio_iotype_netcdf4c)
           ! assuming type valid for both pnetcdf and netcdf
