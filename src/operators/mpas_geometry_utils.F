@@ -686,6 +686,125 @@ module mpas_geometry_utils
 
    end subroutine mpas_cells_to_points_using_baryweights !}}}
 
+
+
+!***********************************************************************
+!
+!  subroutine mpas_unit_test_in_triangle
+!
+!> \brief   Simple unit test for testing the mpas_point_in_polygon routine.
+!> \author  Matt Hoffman
+!> \date    4 Feb 2015
+!> \details 
+!>  This routine tests the mpas_point_in_polygon routine.
+!-----------------------------------------------------------------------
+   subroutine mpas_unit_test_in_triangle(ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(3,3) :: trianglePoints
+      real (kind=RKIND), dimension(3) :: point1, point2
+
+      ierr = 0
+
+      trianglePoints(1,:) = (/ 0.0, 0.0, 0.0 /)
+      trianglePoints(2,:) = (/ 1.0, 0.0, 0.0 /)
+      trianglePoints(3,:) = (/ 0.0, 1.0, 0.0 /)
+
+      point1 = (/ 0.333, 0.333, 0.333 /)
+      point2 = (/ -0.01, 0.5, 0.0 /)
+
+      if (.not. mpas_point_in_polygon(point1, trianglePoints, .false.)) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_in_triangle: point1 calculated to be outside of triangle.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_in_triangle: point1 test - SUCCESS'
+      endif
+
+      if (mpas_point_in_polygon(point2, trianglePoints, .false.)) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_in_triangle: point2 calculated to be inside of triangle.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_in_triangle: point2 test - SUCCESS'
+      endif
+
+   end subroutine mpas_unit_test_in_triangle !}}}
+
+
+
+!***********************************************************************
+!
+!  subroutine mpas_unit_test_bary_weights
+!
+!> \brief   Simple unit test for testing the mpas_calculate_barycentric_weights routine.
+!> \author  Matt Hoffman
+!> \date    4 Feb 2015
+!> \details 
+!>  This routine tests the mpas_calculate_barycentric_weights routine.
+!-----------------------------------------------------------------------
+   subroutine mpas_unit_test_bary_weights(meshPool, ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool  !< Input: Mesh information
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(3,3) :: trianglePoints
+      real (kind=RKIND), dimension(3) :: point1, point2
+      real (kind=RKIND), dimension(3) :: weights
+      real (kind=RKIND) :: eps = 1.0e-12_RKIND
+
+      ierr = 0
+
+      trianglePoints(1,:) = (/ 0.0, 0.0, 0.0 /)
+      trianglePoints(2,:) = (/ 1.0, 0.0, 0.0 /)
+      trianglePoints(3,:) = (/ 0.0, 1.0, 0.0 /)
+
+      point1 = (/ 0.33333333333333333, 0.33333333333333333, 0.33333333333333333 /)
+      point2 = (/ 0.0, 0.0, 0.0 /)
+
+
+      call mpas_calculate_barycentric_weights(point1, trianglePoints(1,:), trianglePoints(2,:), trianglePoints(3,:), meshPool,     &
+             weights(1), weights(2), weights(3), ierr)
+      if (maxval(abs(weights - (/ 0.33333333333333333, 0.33333333333333333, 0.33333333333333333 /) )) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_bary_weights: point1 test - SUCCESS'
+      endif
+
+      call mpas_calculate_barycentric_weights(point2, trianglePoints(1,:), trianglePoints(2,:), trianglePoints(3,:), meshPool,     &
+             weights(1), weights(2), weights(3), ierr)
+      if (maxval(abs(weights - (/ 1.0, 0.0, 0.0 /) )) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_bary_weights: point2 test - SUCCESS'
+      endif
+
+   end subroutine mpas_unit_test_bary_weights !}}}
+
 !-------------------------------------------------------------
 
 end module mpas_geometry_utils
