@@ -29,6 +29,7 @@ cat >! $file << EOF1
 #SBATCH --job-name=${CASE}
 #SBATCH --partition=lr3
 #SBATCH --account=${PROJECT}
+#SBATCH --qos=lr_normal
 #SBATCH --time=$tlimit
 #SBATCH --nodes=$nodes
 #SBATCH --ntasks=$ntasks
