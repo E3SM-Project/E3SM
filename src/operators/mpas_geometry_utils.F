@@ -188,6 +188,53 @@ module mpas_geometry_utils
    end subroutine mpas_arc_bisect!}}}
 
 
+!***********************************************************************
+!
+!  routine mpas_distance_plane
+!
+!> \brief   Calculates distance between two points on a plane.
+!> \author  Matthew Hoffman
+!> \date    5 February 2015
+!> \details
+!>  This routine calculates distance between two points on a plane.
+!>  It does not work for periodic meshes.
+!-----------------------------------------------------------------------
+   real(kind=RKIND) function mpas_distance_plane(a, b)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3), intent(in) :: a, b  !< Input: 3d (x,y,z) points between which to calculate distance
+
+      mpas_distance_plane = sqrt(sum((a - b)**2))
+   end function mpas_distance_plane !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_distance
+!
+!> \brief   Calculates distance between two points on a plane or sphere
+!> \author  Matthew Hoffman
+!> \date    5 February 2015
+!> \details
+!>  This routine calculates distance between two points on a plane or sphere.
+!>  It does not work for periodic meshes because mpas_distance_plane does not!
+!-----------------------------------------------------------------------
+   real(kind=RKIND) function mpas_distance(a, b, on_a_sphere)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3), intent(in) :: a, b  !< Input: 3d (x,y,z) points between which to calculate distance
+      logical, intent(in) :: on_a_sphere  !< Input: If on a sphere
+
+      if (on_a_sphere) then
+         mpas_distance = mpas_arc_length(a(1), a(2), a(3), b(1), b(2), b(3))
+      else
+         mpas_distance = mpas_distance_plane(a, b)
+      endif
+   end function mpas_distance !}}}
+
+
    subroutine mpas_poly_fit_2(a_in,b_out,weights_in,m,n,ne)!{{{
 
       use mpas_matrix_operations
@@ -304,7 +351,7 @@ module mpas_geometry_utils
 
       error = abs(weight_a + weight_b + weight_c - 1.0_RKIND)
       if (error > 1.0e-12_RKIND) then
-         write (stderrUnit,*) 'Error: Barycentric weights sum to substantially different from 1.0', error  , triangleArea, weight_a, weight_b, weight_c
+          write (stderrUnit,*) 'Error: Barycentric weights sum to substantially different from 1.0. error:', error  !, triangleArea, weight_a, weight_b, weight_c
          ierr = 1
       endif
 
@@ -336,19 +383,41 @@ module mpas_geometry_utils
 !>  for a set of points provided.  Requires a mesh with a triangular dual mesh.
 !>  The routine will attempt to find which triangle (made of cell centers)
 !>  in which each point lies.  Those cell center indices will be stored in the 
-!>  baryCellsOnPoints array.  
+!>  baryCellsOnPoints array.
 !>  The triangle search is limited to a triangle location provided to the routine
 !>  and its surrounding triangles.  The triangle location is identified by a vertex
 !>  id, which is stored in the input array searchVertex.
 !>  If the pointset is vertices, the list of vertices can be passed in.  If the 
 !>  pointset is something else, then the callling routine must
-!>  first determine which vertices each point is closest to.
+!>  first determine which vertices each point is closest (or at least close) to.
 !>  If no 'owning' triangle is identified in this routine, then
-!>  the cell centers from cellsOnVertex of the search vertex will be used instead and
-!>  barycentric extrapolation will be performed.  The barycentric weights associated with
+!>  the closest valid triangle that was searched will be used, and therefore
+!>  barycentric extrapolation will be set up.  The barycentric weights associated with
 !>  the triangle nodes identified in baryCellsOnPoints are stored in the array
 !>  baryWeightsOnPoints.
-!>  Note this does not handle triangles spanning planar periodic meshes because mpas_triangle_signed_area_plane does not!
+!>
+!>  Note this does not handle triangles spanning planar periodic meshes because
+!>  mpas_triangle_signed_area_plane does not!
+!>
+!>  Note that this routine will store local indices in baryCellsOnVertex so this
+!>  field will differ across decompositions.  For this reason, baryCellsOnVertex
+!>  should not be used as a restart variable.  Calculating baryCellsOnVertex during
+!>  init for each simulation is the only robust solution.  Similarly, if you choose
+!>  to output baryCellsOnVertex, be aware that you will be looking at local indices
+!>  which may be of limited use.
+!>
+!>  To use this routine to build weights for interpolating from cells to vertices
+!>  you can call this routine like:
+!>     do iVertex = 1, nVertices
+!>        vertexIndicesField % array(iVertex) = iVertex
+!>     enddo
+!>     call mpas_calculate_barycentric_weights_for_points(meshPool, &
+!>            xVertex(1:nVertices), yVertex(1:nVertices), zVertex(1:nVertices), &
+!>            vertexIndicesField % array(1:nVertices), &
+!>            baryCellsOnVertex(:, 1:nVertices), baryWeightsOnVertex(:, 1:nVertices), err_tmp)
+!>  Note that you should only pass in the indices up to nVertices in this case -
+!>  this routine will not perform special treatment of the extra 'garbage' index at nVertices+1.
+!>  Also note that vertexIndicesField%array is just the local indices 1:nVertices.
 !-----------------------------------------------------------------------
    subroutine mpas_calculate_barycentric_weights_for_points(meshPool, xPoint, yPoint, zPoint, searchVertex, baryCellsOnPoints, baryWeightsOnPoints, ierr)!{{{
       !-----------------------------------------------------------------
@@ -369,26 +438,34 @@ module mpas_geometry_utils
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      integer, pointer :: vertexDegree
+      integer, pointer :: vertexDegree, nCells, nVertices
       logical, pointer :: on_a_sphere
       integer :: nPoints, iPoint, baseVertex
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnVertex, verticesOnCell
-      real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex
       real(kind=RKIND), dimension(3,3) :: triangleVertices
       integer :: cell1, cell2, cell3, c, t, iCell, iTriangle
       real(kind=RKIND), dimension(3) :: point, triangle_a, triangle_b, triangle_c
+      logical :: in_a_triangle
+      real(kind=RKIND) :: this_triangle_distance, nearest_triangle_distance
+      integer :: nearest_triangle_index
 
       ierr = 0
 
       nPoints = size(xPoint)
 
       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
       call mpas_pool_get_array(meshPool, 'xCell', xCell)
       call mpas_pool_get_array(meshPool, 'yCell', yCell)
       call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
       call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
       call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
@@ -403,44 +480,70 @@ module mpas_geometry_utils
          point = (/ xPoint(iPoint), yPoint(iPoint), zPoint(iPoint) /)
          baseVertex = searchVertex(iPoint)
 
+         in_a_triangle = .false.
+         nearest_triangle_distance = huge(nearest_triangle_distance)
+         nearest_triangle_index = -1
+
          ! Step 1 - Identify the 'owning' triangle, if possible
          ! Start with the triangle defined by cellsOnVertex for the searchVertex.
          baryCellsOnPoints(:, iPoint) = cellsOnVertex(:, baseVertex)   ! start by assigning cellsOnVertex as the triangle
          cell1 = cellsOnVertex(1, baseVertex)
          cell2 = cellsOnVertex(2, baseVertex)
          cell3 = cellsOnVertex(3, baseVertex)
-         triangleVertices(1,:) = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
-         triangleVertices(2,:) = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
-         triangleVertices(3,:) = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
-         if (.not. mpas_point_in_polygon(point, triangleVertices, on_a_sphere)) then
+         if (cell1 <= nCells .and. cell2 <= nCells .and. cell3 <= nCells) then
+            triangleVertices(1,:) = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
+            triangleVertices(2,:) = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
+            triangleVertices(3,:) = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
+            in_a_triangle = mpas_point_in_polygon(point, triangleVertices, on_a_sphere)
+            nearest_triangle_distance = mpas_distance(point, (/ xVertex(baseVertex), yVertex(baseVertex), zVertex(baseVertex) /), on_a_sphere)
+            nearest_triangle_index = baseVertex
+         else
+            in_a_triangle = .false.
+            nearest_triangle_distance = huge(this_triangle_distance)
+            nearest_triangle_index = baseVertex
+         endif
 
+         if (.not. in_a_triangle) then
             ! If that was the owning triangle, don't do anything because we've already assigned cellsOnVertex as the triangle
             ! If that was not the owning triangle, check the neighboring triangles
             neighborCellsLoop: do c = 1, 3
                iCell = cellsOnVertex(c, baseVertex)
-               if (iCell > 0) then
+               if (iCell <= nCells) then
                   do t = 1, nEdgesOnCell(iCell)
                      iTriangle = verticesOnCell(t, iCell)
-                     if (iTriangle > 0) then
+                     if (iTriangle <= nVertices) then
                         cell1 = cellsOnVertex(1, iTriangle)
                         cell2 = cellsOnVertex(2, iTriangle)
                         cell3 = cellsOnVertex(3, iTriangle)
-                        triangleVertices(1,:) = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
-                        triangleVertices(2,:) = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
-                        triangleVertices(3,:) = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
-                        if (mpas_point_in_polygon(point, triangleVertices, on_a_sphere)) then
-                           baryCellsOnPoints(:, iPoint) = cellsOnVertex(:, iTriangle)
-                           exit neighborCellsLoop ! No need to keep searching
+                        if (cell1 <= nCells .and. cell2 <= nCells .and. cell3 <= nCells) then
+                           triangleVertices(1,:) = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
+                           triangleVertices(2,:) = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
+                           triangleVertices(3,:) = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
+                           if (mpas_point_in_polygon(point, triangleVertices, on_a_sphere)) then
+                              in_a_triangle = .true.
+                              baryCellsOnPoints(:, iPoint) = cellsOnVertex(:, iTriangle)
+                              exit neighborCellsLoop ! No need to keep searching
+                           endif
+                           this_triangle_distance = mpas_distance(point, (/ xVertex(iTriangle), yVertex(iTriangle), zVertex(iTriangle) /), on_a_sphere)
+                        else
+                           this_triangle_distance = huge(this_triangle_distance)
+                        endif ! check that all 3 cells are valid
+                        if (this_triangle_distance < nearest_triangle_distance) then
+                           nearest_triangle_distance = this_triangle_distance
+                           nearest_triangle_index = iTriangle
                         endif
                      endif ! check if triangle is valid
                   end do
                endif
             end do neighborCellsLoop
-            ! If none of these neighboring triangles are the owning triangle, then
-            ! here we revert back to the default assigned above of cellsOnVertex as the triangle (which will be extrapolation)
-            ! For example, an obtuse triangle at the edge of a mesh will have a vertex that
-            ! it not owned by any triangle in the mesh.
          endif
+
+         if (.not. in_a_triangle) then
+            ! If none of the neighboring triangles are the owning triangle, then
+            ! here we revert back to the closest valid triangle (which will be extrapolation)
+            baryCellsOnPoints(:, iPoint) = cellsOnVertex(:, nearest_triangle_index)
+         endif
+
 
          ! Step 2 - Determine the barycentric weights for the identified 'owning' triangle
          cell1 = baryCellsOnPoints(1, iPoint)
@@ -635,6 +738,14 @@ module mpas_geometry_utils
 !>  mpas_calculate_barycentric_weights_for_points routine above.  That routine
 !>  will calculate the baryCellsOnPoints, baryWeightsOnPoints fields.  These may
 !>  be stored in meshPool, but that is not assumed.
+!>
+!>  To use this routine to interpolate from cells to vertices you can call this
+!>  routine like:
+!>    call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
+!>       baryWeightsOnVertex(:, 1:nVertices), upperSurface, upperSurfaceVertex(1:nVertices), err_tmp)
+!>  Note that you should only pass in the indices up to nVertices for the fields
+!>  with a nVertices dimension in this case -
+!>  this routine will not perform special treatment of the extra 'garbage' index at nVertices+1.
 !-----------------------------------------------------------------------
    subroutine mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnPoints, baryWeightsOnPoints, fieldCells, fieldPoints, ierr)!{{{
       !-----------------------------------------------------------------
