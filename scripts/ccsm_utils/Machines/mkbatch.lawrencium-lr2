@@ -55,14 +55,7 @@ cd \$RUNDIR
 echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
 
 setenv OMP_NUM_THREADS ${maxthrds}
-# for mvapich
-#srun --ntasks=${maxtasks} --cpu_bind=sockets --cpu_bind=verbose --kill-on-bad-exit \$EXEROOT/cesm.exe >&! cesm.log.\$LID
-# for mvapich2
-srun --mpi=none --ntasks=${maxtasks} --cpu_bind=sockets --cpu_bind=verbose --kill-on-bad-exit \$EXEROOT/cesm.exe >&! cesm.log.\$LID
-
-#setenv MV2_ENABLE_AFFINITY 1
-#setenv MV2_CPU_MAPPING 31:29:27:25:23:21:19:17:15:13:11:9:7:5:3:1
-#srun --mpi=none -n=${maxtasks} --kill-on-bad-exit \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+mpirun -np ${maxtasks} \$EXEROOT/cesm.exe >&! cesm.log.\$LID
 
 wait
 echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
