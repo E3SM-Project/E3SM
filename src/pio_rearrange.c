@@ -241,6 +241,9 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 	}
 
 	CheckMPIReturn(MPI_Type_create_indexed_block(len, blocksize, displace, basetype, mtype+i),__FILE__,__LINE__);
+	if(mtype[i] == MPI_DATATYPE_NULL){
+	  piodie("Unexpected NULL MPI DATATYPE",__FILE__,__LINE__);
+	}
 	CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
 	pos+=mcount[i];
 
@@ -673,11 +676,17 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 	  recvcounts[ i ] = 1;
 	  // The stride here is the length of the collected array (llen)
           MPI_Type_hvector(nvars, 1, (MPI_Aint) iodesc->llen*tsize, iodesc->rtype[i], recvtypes+i);
+	  if(recvtypes[i] == MPI_DATATYPE_NULL){
+	    piodie("Unexpected NULL MPI DATATYPE",__FILE__,__LINE__);
+	  }
           MPI_Type_commit(recvtypes+i);
 	  //recvtypes[ i ] = iodesc->rtype[i];
 	}else{
 	  recvcounts[ iodesc->rfrom[i] ] = 1;
           MPI_Type_hvector(nvars, 1,(MPI_Aint) iodesc->llen*tsize,iodesc->rtype[i], recvtypes+iodesc->rfrom[i]);
+	  if(recvtypes[i] == MPI_DATATYPE_NULL){
+	    piodie("Unexpected NULL MPI DATATYPE",__FILE__,__LINE__);
+	  }
           MPI_Type_commit(recvtypes+i);
 	  // recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
 	  rdispls[ iodesc->rfrom[i] ] = 0;
@@ -698,6 +707,9 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
     if(scount[i] > 0) {
       sendcounts[io_comprank]=1;
       MPI_Type_hvector(nvars, 1, (MPI_Aint) iodesc->ndof*tsize, iodesc->stype[i], sendtypes+io_comprank);
+      if(sendtypes[io_comprank] == MPI_DATATYPE_NULL){
+	piodie("Unexpected NULL MPI DATATYPE",__FILE__,__LINE__);
+      }
       MPI_Type_commit(sendtypes+io_comprank);
     }else{
       sendcounts[io_comprank]=0;

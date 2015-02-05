@@ -3,7 +3,7 @@
 
 #define PIO_WRITE_BUFFERING 1
 PIO_Offset PIO_BUFFER_SIZE_LIMIT= 10485760; // 10MB default limit
-bufsize PIO_CNBUFFER_LIMIT=10485760; // 100MB default limit
+bufsize PIO_CNBUFFER_LIMIT=10485760; // 10MB default limit
 static void *CN_bpool=NULL; 
 
  // Changes to PIO_BUFFER_SIZE_LIMIT only apply to files opened after the change
@@ -252,14 +252,14 @@ void compute_buffer_init(iosystem_desc_t ios)
 	   rrcnt++;
 	 }	 
 	 if(regioncnt==iodesc->maxregions-1){
-	   //printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,ios->io_rank,iodesc->llen, tdsize);
+	   // printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,ios->io_rank,iodesc->llen, tdsize);
 	   //	   ierr = ncmpi_put_varn_all(ncid, vid, iodesc->maxregions, startlist, countlist, 
 	   //			     IOBUF, iodesc->llen, iodesc->basetype);
 	   
-	   //printf("%s %d %ld \n",__FILE__,__LINE__,IOBUF);
 	   ierr = ncmpi_bput_varn(ncid, vid, rrcnt, startlist, countlist, 
 				  IOBUF, iodesc->llen, iodesc->basetype, &request);
 	   pio_push_request(file,request);
+	   //	   printf("%s %d %X %d\n",__FILE__,__LINE__,IOBUF,request);
 	   for(i=0;i<rrcnt;i++){
 	     free(startlist[i]);
 	     free(countlist[i]);
@@ -839,7 +839,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 
     if(needflush ){
       // need to flush first
-      printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,maxfree, wmb->validvars, (1+wmb->validvars)*arraylen*tsize,totfree);
+      //      printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,maxfree, wmb->validvars, (1+wmb->validvars)*arraylen*tsize,totfree);
             cn_buffer_report(*ios, true);
 	
       flush_buffer(ncid,wmb);
