@@ -94,7 +94,7 @@ typedef struct io_desc_t
   int rearranger;
   int maxregions;
   bool needsfill;       // Does this decomp leave holes in the field (true) or write everywhere (false)
-  int maxbytes;  // maximum number of vars of this type before flushing
+  int maxbytes;         // maximum number of bytes of this iodesc before flushing
   MPI_Datatype basetype;
   PIO_Offset llen;
   int maxiobuflen;

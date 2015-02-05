@@ -162,6 +162,8 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   iodesc->rcount = NULL;
   iodesc->ioid=-1;
   iodesc->llen=0;
+  iodesc->maxiobuflen=0;
+  iodesc->maxbytes=0;
   iodesc->ndims = ndims;
   iodesc->firstregion = alloc_region(ndims);
 

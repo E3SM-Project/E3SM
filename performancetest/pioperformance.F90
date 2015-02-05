@@ -22,7 +22,7 @@ program pioperformance
   integer :: niotasks(max_io_task_array_size)
   integer :: nv, nframes, nvars(max_nvars)
   namelist /pioperf/ decompfile, pio_typenames, rearrangers, niotasks, nframes, nvars
-#ifdef BGQ
+#ifdef BGQTRY
   external :: print_memusage
 #endif
   !
@@ -39,7 +39,7 @@ program pioperformance
   else
      Mastertask=.false.
   endif
-#ifdef BGQ
+#ifdef BGQTRY
   call print_memusage()
 #endif
   nvars = 0
@@ -193,7 +193,7 @@ contains
           enddo
        enddo
 
-#ifdef BGQ
+#ifdef BGQTRY
   call print_memusage()
 #endif
 
@@ -256,7 +256,7 @@ contains
                 if(mype==0) then
                    ! print out performance in MB/s
                    print *, 'write ',rearr, ntasks, nvars, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
-#ifdef BGQ
+#ifdef BGQTRY
   call print_memusage()
 #endif
                 end if
@@ -298,7 +298,7 @@ contains
                       print *,'ERROR: INPUT/OUTPUT data mismatch ',errorcnt
                    endif
                    print *, 'read ',rearr, ntasks,nvars, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
-#ifdef BGQ
+#ifdef BGQTRY 
   call print_memusage()
 #endif
                 end if

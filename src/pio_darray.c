@@ -3,7 +3,7 @@
 
 #define PIO_WRITE_BUFFERING 1
 PIO_Offset PIO_BUFFER_SIZE_LIMIT= 10485760; // 10MB default limit
-bufsize PIO_CNBUFFER_LIMIT=104857600; // 100MB default limit
+bufsize PIO_CNBUFFER_LIMIT=10485760; // 100MB default limit
 static void *CN_bpool=NULL; 
 
  // Changes to PIO_BUFFER_SIZE_LIMIT only apply to files opened after the change
@@ -673,7 +673,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        iobuf = malloc((size_t) vsize* (size_t) rlen);
        //       iobuf = bget((size_t) vsize* (size_t) rlen);
        if(iobuf==NULL){
-	 printf("%s %d %d 0x%.16X %ld\n",__FILE__,__LINE__,nvars,iobuf,vsize*rlen);
+	 printf("%s %d %d %ld\n",__FILE__,__LINE__,nvars,vsize*rlen);
 	 piomemerror(*ios,(size_t) rlen*(size_t) vsize, __FILE__,__LINE__);
        }
 
@@ -1376,8 +1376,8 @@ void compute_maxaggregate_bytes(const iosystem_desc_t ios, io_desc_t *iodesc)
 
   //  printf("%s %d %d %d\n",__FILE__,__LINE__,maxbytesoniotask, maxbytesoncomputetask);
 
-  MPI_Allreduce(&maxbytes, &(iodesc->maxbytes), 1, MPI_INT, MPI_MIN, ios.union_comm);
-
-  //  printf("%s %d %d\n",__FILE__,__LINE__,iodesc->maxbytes);
-  
+  MPI_Allreduce(MPI_IN_PLACE, &maxbytes, 1, MPI_INT, MPI_MIN, ios.union_comm);
+  iodesc->maxbytes=maxbytes;
+  //  printf("%s %d %d %d\n",__FILE__,__LINE__,iodesc->maxbytes,iodesc->maxiobuflen);
+    
 }
