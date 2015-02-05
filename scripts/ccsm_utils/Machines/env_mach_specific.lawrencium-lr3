@@ -4,15 +4,15 @@ source /etc/profile.d/modules.csh
 module purge
 module load cmake
 module load perl xml-libxml switch
-if ( $COMPILER == "pgi" ) then
-    module load pgi
-endif
 
 if ( $COMPILER == "intel" ) then
     module load intel
+    module load openmpi
+    module load netcdf/4.3.2-intel-p
+    module load mkl
 endif
-module load netcdf
 
+setenv NETCDF_PATH $NETCDF_DIR
 #-------------------------------------------------------------------------------
 
 limit coredumpsize 1000000
