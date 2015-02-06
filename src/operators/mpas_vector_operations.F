@@ -37,7 +37,8 @@ module mpas_vector_operations
    !
    !--------------------------------------------------------------------
 
-   public :: mpas_initialize_vectors, &
+   public :: mpas_vec_mag_in_r3, &
+             mpas_initialize_vectors, &
              mpas_initialize_tangent_vectors, &
              mpas_unit_vec_in_r3, &
              mpas_cross_product_in_r3, &
@@ -58,6 +59,23 @@ module mpas_vector_operations
 
 contains
 
+
+!***********************************************************************
+!
+!  routine mpas_vec_mag_in_r3
+!
+!> \brief   MPAS 3D vector magnitude routine
+!> \author  Matt Hoffman
+!> \date    13 Jan. 2015
+!> \details 
+!> This routine calculates the magnitude of a 3d vector.
+!-----------------------------------------------------------------------
+  real (kind=RKIND) function mpas_vec_mag_in_r3(xin)!{{{
+    implicit none
+    real (kind=RKIND), dimension(3), intent(in) :: xin !< Input: Vector
+    mpas_vec_mag_in_r3 = sqrt(xin(1)**2 + xin(2)**2 + xin(3)**2)
+  end function mpas_vec_mag_in_r3!}}}
+
 !***********************************************************************
 !
 !  routine mpas_unit_vec_in_r3
@@ -70,7 +88,7 @@ contains
 !-----------------------------------------------------------------------
   subroutine mpas_unit_vec_in_r3(xin)!{{{
     implicit none
-    real (kind=RKIND), intent(inout) :: xin(3) !< Input/Output: Vector and unit vector
+    real (kind=RKIND), dimension(3), intent(inout) :: xin !< Input/Output: Vector and unit vector
     real (kind=RKIND) :: mag
     mag = sqrt(xin(1)**2+xin(2)**2+xin(3)**2)
     xin(:) = xin(:) / mag
