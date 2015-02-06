@@ -123,15 +123,14 @@ module mpas_subdriver
       domain % namelist_filename = namelistFile
       domain % streams_filename = streamsFile
 
-      write(0,*) 'Reading namelist from file: ', trim(domain % namelist_filename)
-      write(0,*) 'Reading streams configuration from file: ', trim(domain % streams_filename)
-
       !
       ! Initialize infrastructure
       !
       call mpas_framework_init(dminfo, domain_ptr)
       call mpas_core_setup_packages(domain_ptr % configs, domain_ptr % packages, ierr)
       call mpas_core_setup_clock(domain_ptr % clock, domain_ptr % configs, ierr)
+
+      write(stderrUnit,*) 'Reading streams configuration from file: ', trim(domain % streams_filename)
 
       call mpas_timer_start('total time')
       call mpas_timer_start('initialize')

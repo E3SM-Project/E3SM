@@ -40,7 +40,7 @@ module mpas_framework
 !>  to initializing different parts of MPAS, that are housed within the framework.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system, calendar, stdoutUnit, stderrUnit)!{{{
+   subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system, calendar, stdoutUnit_in, stderrUnit_in)!{{{
 
       implicit none
 
@@ -52,7 +52,7 @@ module mpas_framework
       type (iosystem_desc_t), optional, pointer :: io_system
       character(len=*), intent(in), optional :: calendar
 
-      integer, intent(in), optional :: stdoutUnit, stderrUnit
+      integer, intent(in), optional :: stdoutUnit_in, stderrUnit_in
 
       character(len=StrKIND), pointer :: config_calendar_type
       integer, pointer :: config_pio_num_iotasks, config_pio_stride
@@ -61,7 +61,7 @@ module mpas_framework
 
 
       allocate(dminfo)
-      call mpas_io_units_init(stdoutUnit, stderrUnit)
+      call mpas_io_units_init(stdoutUnit_in, stderrUnit_in)
       call mpas_dmpar_init(dminfo, mpi_comm)
 
 #ifdef MPAS_DEBUG
@@ -71,8 +71,10 @@ module mpas_framework
       call mpas_allocate_domain(domain, dminfo)
 
       if (.not. present(nml_filename)) then
+         write(stderrUnit,*) 'Reading namelist from file: ', trim(domain % namelist_filename)
          call mpas_setup_namelists(domain % configs, domain % namelist_filename, domain % dminfo)
       else
+         write(stderrUnit,*) 'Reading namelist from file: ', trim(nml_filename)
          call mpas_setup_namelists(domain % configs, nml_filename, domain % dminfo)
       end if
 
