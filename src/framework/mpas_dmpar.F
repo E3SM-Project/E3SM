@@ -26,11 +26,14 @@ module mpas_dmpar
 #ifdef _MPI
 include 'mpif.h'
    integer, parameter :: MPI_INTEGERKIND = MPI_INTEGER
+   integer, parameter :: MPI_2INTEGERKIND = MPI_2INTEGER
 
 #ifdef SINGLE_PRECISION
    integer, parameter :: MPI_REALKIND = MPI_REAL
+   integer, parameter :: MPI_2REALKIND = MPI_2REAL
 #else
    integer, parameter :: MPI_REALKIND = MPI_DOUBLE_PRECISION
+   integer, parameter :: MPI_2REALKIND = MPI_2DOUBLE_PRECISION
 #endif
 #endif
 
@@ -210,22 +213,30 @@ include 'mpif.h'
 !
 !> \brief MPAS dmpar broadcast integer routine.
 !> \author Michael Duda
-!> \date   03/26/13
+!> \date   03/26/13; modified by William Lipscomb 01/21/15
 !> \details
 !>  This routine broadcasts an integer to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_int(dminfo, i)!{{{
+   subroutine mpas_dmpar_bcast_int(dminfo, i, proc)!{{{
 
       implicit none
 
       type (dm_info), intent(in) :: dminfo !< Input: Domain information
       integer, intent(inout) :: i !< Input/Output: Integer to broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
 
 #ifdef _MPI
-      integer :: mpi_ierr
+      integer :: mpi_ierr, source
 
-      call MPI_Bcast(i, 1, MPI_INTEGERKIND, IO_NODE, dminfo % comm, mpi_ierr)
+      if (present(proc)) then
+         source = proc
+      else
+         source = IO_NODE
+      endif
+
+      call MPI_Bcast(i, 1, MPI_INTEGERKIND, source, dminfo % comm, mpi_ierr)
 #endif
 
    end subroutine mpas_dmpar_bcast_int!}}}
@@ -235,23 +246,31 @@ include 'mpif.h'
 !
 !> \brief MPAS dmpar broadcast integers routine.
 !> \author Michael Duda
-!> \date   03/26/13
+!> \date   03/26/13; modified by William Lipscomb 01/21/15
 !> \details
 !>  This routine broadcasts an array of integers to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_ints(dminfo, n, iarray)!{{{
+   subroutine mpas_dmpar_bcast_ints(dminfo, n, iarray, proc)!{{{
 
       implicit none
 
       type (dm_info), intent(in) :: dminfo !< Input: Domain information
       integer, intent(in) :: n !< Input: Length of array
       integer, dimension(n), intent(inout) :: iarray !< Input/Output: Array of integers
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
 
 #ifdef _MPI
-      integer :: mpi_ierr
+      integer :: mpi_ierr, source
 
-      call MPI_Bcast(iarray, n, MPI_INTEGERKIND, IO_NODE, dminfo % comm, mpi_ierr)
+      if (present(proc)) then
+         source = proc
+      else
+         source = IO_NODE
+      endif
+
+      call MPI_Bcast(iarray, n, MPI_INTEGERKIND, source, dminfo % comm, mpi_ierr)
 #endif
 
    end subroutine mpas_dmpar_bcast_ints!}}}
@@ -261,22 +280,30 @@ include 'mpif.h'
 !
 !> \brief MPAS dmpar broadcast real routine.
 !> \author Michael Duda
-!> \date   03/26/13
+!> \date   03/26/13; modified by William Lipscomb 01/21/15
 !> \details
 !>  This routine broadcasts a real to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_real(dminfo, r)!{{{
+   subroutine mpas_dmpar_bcast_real(dminfo, r, proc)!{{{
 
       implicit none
 
       type (dm_info), intent(in) :: dminfo !< Input: Domain information
       real (kind=RKIND), intent(inout) :: r !< Input/Output: Real to be broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
 
 #ifdef _MPI
-      integer :: mpi_ierr
+      integer :: mpi_ierr, source
 
-      call MPI_Bcast(r, 1, MPI_REALKIND, IO_NODE, dminfo % comm, mpi_ierr)
+      if (present(proc)) then
+         source = proc
+      else
+         source = IO_NODE
+      endif
+
+      call MPI_Bcast(r, 1, MPI_REALKIND, source, dminfo % comm, mpi_ierr)
 #endif
 
    end subroutine mpas_dmpar_bcast_real!}}}
@@ -286,23 +313,31 @@ include 'mpif.h'
 !
 !> \brief MPAS dmpar broadcast reals routine.
 !> \author Michael Duda
-!> \date   03/26/13
+!> \date   03/26/13; modified by William Lipscomb 01/21/15
 !> \details
 !>  This routine broadcasts an array of reals to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_reals(dminfo, n, rarray)!{{{
+   subroutine mpas_dmpar_bcast_reals(dminfo, n, rarray, proc)!{{{
 
       implicit none
 
       type (dm_info), intent(in) :: dminfo !< Input: Domain information
       integer, intent(in) :: n !< Input: Length of array
       real (kind=RKIND), dimension(n), intent(inout) :: rarray !< Input/Output: Array of reals to be broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
 
 #ifdef _MPI
-      integer :: mpi_ierr
+      integer :: mpi_ierr, source
 
-      call MPI_Bcast(rarray, n, MPI_REALKIND, IO_NODE, dminfo % comm, mpi_ierr)
+      if (present(proc)) then
+         source = proc
+      else
+         source = IO_NODE
+      endif
+
+      call MPI_Bcast(rarray, n, MPI_REALKIND, source, dminfo % comm, mpi_ierr)
 #endif
 
    end subroutine mpas_dmpar_bcast_reals!}}}
@@ -312,22 +347,30 @@ include 'mpif.h'
 !
 !> \brief MPAS dmpar broadcast double routine.
 !> \author Michael Duda
-!> \date   11/04/13
+!> \date   11/04/13; modified by William Lipscomb 01/21/15
 !> \details
 !>  This routine broadcasts a double to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_double(dminfo, r)!{{{
+   subroutine mpas_dmpar_bcast_double(dminfo, r, proc)!{{{
 
       implicit none
 
       type (dm_info), intent(in) :: dminfo !< Input: Domain information
       double precision, intent(inout) :: r !< Input/Output: Double to be broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
 
 #ifdef _MPI
-      integer :: mpi_ierr
+      integer :: mpi_ierr, source
 
-      call MPI_Bcast(r, 1, MPI_DOUBLE_PRECISION, IO_NODE, dminfo % comm, mpi_ierr)
+      if (present(proc)) then
+         source = proc
+      else
+         source = IO_NODE
+      endif
+
+      call MPI_Bcast(r, 1, MPI_DOUBLE_PRECISION, source, dminfo % comm, mpi_ierr)
 #endif
 
    end subroutine mpas_dmpar_bcast_double!}}}
@@ -337,23 +380,31 @@ include 'mpif.h'
 !
 !> \brief MPAS dmpar broadcast doubles routine.
 !> \author Michael Duda
-!> \date   11/04/13
+!> \date   11/04/13; modified by William Lipscomb 01/21/15
 !> \details
 !>  This routine broadcasts an array of doubles to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_doubles(dminfo, n, rarray)!{{{
+   subroutine mpas_dmpar_bcast_doubles(dminfo, n, rarray, proc)!{{{
 
       implicit none
 
       type (dm_info), intent(in) :: dminfo !< Input: Domain information
       integer, intent(in) :: n !< Input: Length of array
       double precision, dimension(n), intent(inout) :: rarray !< Input/Output: Array of doubles to be broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
 
 #ifdef _MPI
-      integer :: mpi_ierr
+      integer :: mpi_ierr, source
 
-      call MPI_Bcast(rarray, n, MPI_DOUBLE_PRECISION, IO_NODE, dminfo % comm, mpi_ierr)
+      if (present(proc)) then
+         source = proc
+      else
+         source = IO_NODE
+      endif
+
+      call MPI_Bcast(rarray, n, MPI_DOUBLE_PRECISION, source, dminfo % comm, mpi_ierr)
 #endif
 
    end subroutine mpas_dmpar_bcast_doubles!}}}
@@ -363,21 +414,29 @@ include 'mpif.h'
 !
 !> \brief MPAS dmpar broadcast logical routine.
 !> \author Michael Duda
-!> \date   03/26/13
+!> \date   03/26/13; modified by William Lipscomb 01/21/15
 !> \details
 !>  This routine broadcasts a logical to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_logical(dminfo, l)!{{{
+   subroutine mpas_dmpar_bcast_logical(dminfo, l, proc)!{{{
 
       implicit none
 
       type (dm_info), intent(in) :: dminfo !< Input: Domain information
       logical, intent(inout) :: l !< Input/Output: Logical to be broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
 
 #ifdef _MPI
-      integer :: mpi_ierr
+      integer :: mpi_ierr, source
       integer :: itemp
+
+      if (present(proc)) then
+         source = proc
+      else
+         source = IO_NODE
+      endif
 
       if (dminfo % my_proc_id == IO_NODE) then
          if (l) then
@@ -387,7 +446,7 @@ include 'mpif.h'
          end if
       end if
 
-      call MPI_Bcast(itemp, 1, MPI_INTEGERKIND, IO_NODE, dminfo % comm, mpi_ierr)
+      call MPI_Bcast(itemp, 1, MPI_INTEGERKIND, source, dminfo % comm, mpi_ierr)
 
       if (itemp == 1) then
          l = .true.
@@ -403,22 +462,30 @@ include 'mpif.h'
 !
 !> \brief MPAS dmpar broadcast character routine.
 !> \author Michael Duda
-!> \date   03/26/13
+!> \date   03/26/13; modified by William Lipscomb 01/21/15
 !> \details
 !>  This routine broadcasts a character to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_bcast_char(dminfo, c)!{{{
+   subroutine mpas_dmpar_bcast_char(dminfo, c, proc)!{{{
 
       implicit none
 
       type (dm_info), intent(in) :: dminfo !< Input: Domain information
       character (len=*), intent(inout) :: c !< Input/Output: Character to be broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
 
 #ifdef _MPI
-      integer :: mpi_ierr
+      integer :: mpi_ierr, source
 
-      call MPI_Bcast(c, len(c), MPI_CHARACTER, IO_NODE, dminfo % comm, mpi_ierr)
+      if (present(proc)) then
+         source = proc
+      else
+         source = IO_NODE
+      endif
+
+      call MPI_Bcast(c, len(c), MPI_CHARACTER, source, dminfo % comm, mpi_ierr)
 #endif
 
    end subroutine mpas_dmpar_bcast_char!}}}
@@ -590,6 +657,146 @@ include 'mpif.h'
 #endif
 
    end subroutine mpas_dmpar_max_real!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_minloc_int
+!
+!> \brief MPAS dmpar minloc integer routine.
+!> \author William Lipscomb
+!> \date   01/21/15
+!> \details
+!>  This routine returns the minimum integer value across all processors in a communicator,
+!>  along with the processor on which this value resides.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_minloc_int(dminfo, i, imin, procout)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      integer, intent(in) :: i !< Input: Integer value
+      integer, intent(out) :: imin !< Output: Minimum of integer values
+      integer, intent(out) :: procout  !< Output: Processor on which imin resides
+      integer :: mpi_ierr
+      integer, dimension(2,1) :: recvbuf, sendbuf
+
+#ifdef _MPI
+      sendbuf(1,1) = i
+      sendbuf(2,1) = dminfo % my_proc_id  ! This is the processor number associated with the value i
+      call MPI_Allreduce(sendbuf, recvbuf, 1, MPI_2INTEGERKIND, MPI_MINLOC, dminfo % comm, mpi_ierr)
+      imin = recvbuf(1,1)
+      procout = recvbuf(2,1)
+#else
+      imin = i
+      procout = IO_NODE
+#endif
+
+   end subroutine mpas_dmpar_minloc_int!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_minloc_real
+!
+!> \brief MPAS dmpar minloc real routine.
+!> \author William Lipscomb
+!> \date   01/21/15
+!> \details
+!>  This routine returns the minimum real value across all processors in a communicator,
+!>  along with the processor on which this value resides.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_minloc_real(dminfo, r, rmin, procout)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      real(kind=RKIND), intent(in) :: r !< Input: Real value
+      real(kind=RKIND), intent(out) :: rmin !< Output: Minimum of real values
+      integer, intent(out) :: procout  !< Output: Processor on which rin resides
+      integer :: mpi_ierr
+      real(kind=RKIND), dimension(2,1) :: recvbuf, sendbuf      
+
+#ifdef _MPI
+      sendbuf(1,1) = r
+      sendbuf(2,1) = dminfo % my_proc_id  ! This is the processor number associated with the value x (coerced to a real)
+      call MPI_Allreduce(sendbuf, recvbuf, 1, MPI_2REALKIND, MPI_MINLOC, dminfo % comm, mpi_ierr)
+      rmin = recvbuf(1,1)
+      procout = recvbuf(2,1)   ! coerced back to integer
+#else
+      rmin = r
+      procout = IO_NODE
+#endif
+
+   end subroutine mpas_dmpar_minloc_real!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_maxloc_int
+!
+!> \brief MPAS dmpar maxloc integer routine.
+!> \author William Lipscomb
+!> \date   01/21/15
+!> \details
+!>  This routine returns the maximum integer value across all processors in a communicator,
+!>  along with the processor on which this value resides.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_maxloc_int(dminfo, i, imax, procout)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      integer, intent(in) :: i !< Input: Integer value
+      integer, intent(out) :: imax !< Output: Maximum of integer values
+      integer, intent(out) :: procout  !< Output: Processor on which imax resides
+      integer :: mpi_ierr
+      integer, dimension(2,1) :: recvbuf, sendbuf      
+
+#ifdef _MPI
+      sendbuf(1,1) = i
+      sendbuf(2,1) = dminfo % my_proc_id  ! This is the processor number associated with the value i
+      call MPI_Allreduce(sendbuf, recvbuf, 1, MPI_2INTEGERKIND, MPI_MAXLOC, dminfo % comm, mpi_ierr)
+      imax = recvbuf(1,1)
+      procout = recvbuf(2,1)
+#else
+      imax = i
+      procout = IO_NODE
+#endif
+
+   end subroutine mpas_dmpar_maxloc_int!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_maxloc_real
+!
+!> \brief MPAS dmpar maxloc real routine.
+!> \author William Lipscomb
+!> \date   01/21/15
+!> \details
+!>  This routine returns the maximum real value across all processors in a communicator,
+!>  along with the processor on which this value resides.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_maxloc_real(dminfo, r, rmax, procout)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      real(kind=RKIND), intent(in) :: r !< Input: Real value
+      real(kind=RKIND), intent(out) :: rmax !< Output: Maximum of real values
+      integer, intent(out) :: procout  !< Output: Processor on which rmax resides
+      integer :: mpi_ierr
+      real(kind=RKIND), dimension(2,1) :: recvbuf, sendbuf      
+
+#ifdef _MPI
+      sendbuf(1,1) = r
+      sendbuf(2,1) = dminfo % my_proc_id  ! This is the processor number associated with the value x (coerced to a real)
+      call MPI_Allreduce(sendbuf, recvbuf, 1, MPI_2REALKIND, MPI_MAXLOC, dminfo % comm, mpi_ierr)
+      rmax = recvbuf(1,1)
+      procout = recvbuf(2,1)   ! coerced back to integer
+#else
+      rmax = r
+      procout = IO_NODE
+#endif
+
+   end subroutine mpas_dmpar_maxloc_real!}}}
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_sum_int_array
