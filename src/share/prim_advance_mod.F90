@@ -136,9 +136,11 @@ contains
     type(derived_type) ,pointer         :: jptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_jac
 
+    integer(c_int) :: ierr = 0
+
   interface
 
-   subroutine noxsolve(vectorSize,vector,v_container,p_container,j_container) &
+   subroutine noxsolve(vectorSize,vector,v_container,p_container,j_container,ierr) &
 !   subroutine noxsolve(vectorSize,vector,v_container) &
      bind(C,name='noxsolve')
     use ,intrinsic :: iso_c_binding
@@ -147,6 +149,7 @@ contains
       type(c_ptr)                   :: v_container
       type(c_ptr)                   :: p_container  !precon ptr
       type(c_ptr)                   :: j_container  !analytic jacobian ptr
+      integer(c_int)                :: ierr         !error flag
     end subroutine noxsolve
 
   end interface
@@ -520,7 +523,9 @@ contains
 !            deriv,nets,nete,.false.,eta_ave_w)
 
 ! interface to use nox and loca solver libraries using JFNK, and returns xstate(n+1)
-   call noxsolve(size(xstate), xstate, c_ptr_to_object, c_ptr_to_pre,c_ptr_to_jac)
+    call noxsolve(size(xstate), xstate, c_ptr_to_object, c_ptr_to_pre, c_ptr_to_jac, ierr)
+
+    if (ierr /= 0) call abortmp('Error in noxsolve: Newton failed to converge')
 
       call c_f_pointer(c_ptr_to_object, fptr) ! convert C ptr to F ptr
       elem = fptr%base

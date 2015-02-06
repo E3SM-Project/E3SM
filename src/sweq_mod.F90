@@ -177,17 +177,17 @@ contains
 
 #ifdef TRILINOS
   interface 
-    subroutine noxinit(vectorSize,vector,comm,v_container,p_container) &
-        bind(C,name='noxinit')
-    use ,intrinsic :: iso_c_binding
-      integer(c_int)                :: vectorSize,comm
-      real(c_double)  ,dimension(*) :: vector
-      type(c_ptr)                   :: v_container
-      type(c_ptr)                   :: p_container  !precon ptr
-    end subroutine noxinit
+     subroutine noxinit(vectorSize, vector, comm, v_container, p_container) &
+          bind(C,name='noxinit')
+       use ,intrinsic :: iso_c_binding
+       integer(c_int)                :: vectorSize,comm
+       real(c_double)  ,dimension(*) :: vector
+       type(c_ptr)                   :: v_container
+       type(c_ptr)                   :: p_container  !precon ptr
+     end subroutine noxinit
 
     subroutine noxfinish() bind(C,name='noxfinish')
-    use ,intrinsic :: iso_c_binding ,only : c_double ,c_int ,c_ptr
+      use ,intrinsic :: iso_c_binding ,only : c_double ,c_int ,c_ptr
     end subroutine noxfinish
 
   end interface
@@ -525,7 +525,7 @@ contains
 ! only nonstagger is coded
              allocate(blkjac(nets:nete))
              lambdasq(:) = pmean*dt*dt
-             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
+!             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
 !             if (precon_method == "block_jacobi") then
 !                call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
 !             end if
