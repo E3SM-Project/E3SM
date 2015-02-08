@@ -176,7 +176,7 @@ module mpas_core
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
-               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
+               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsistent: using config_run_duration.'
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
