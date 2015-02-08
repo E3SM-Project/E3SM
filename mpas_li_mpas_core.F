@@ -587,7 +587,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
    subroutine landice_init_block(block, startTimeStamp, dminfo)
 
       use mpas_grid_types
-      use mpas_geometry_utils, only: mpas_calculate_barycentric_weights_for_points
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
       use li_setup
@@ -624,17 +623,9 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       !-----------------------------------------------------------------
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
-      type (mpas_pool_type), pointer :: scratchPool
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: currTime
       integer :: err, err_tmp
-      integer :: iCell, iLevel, i, iVertex
-      integer, pointer :: nVertices
-      character (len=StrKIND), pointer :: config_sia_tangent_slope_calculation
-      integer, dimension(:,:), pointer :: baryCellsOnVertex
-      real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
-      real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
-      type (field1dInteger), pointer :: vertexIndicesField
 
       err = 0
       err_tmp = 0
@@ -642,16 +633,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       ! Get pool stuff
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-      call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-      call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
-      call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
-      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
-      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
-      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
-      call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
-      call mpas_pool_get_field(scratchPool, 'vertexIndices', vertexIndicesField)
-      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
-
 
       ! ===
       ! === Call init routines ===
@@ -660,20 +641,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       err = ior(err, err_tmp)
 
       call li_setup_sign_and_index_fields(meshPool)
-
-      ! The SIA solver needs to setup these weights for calculating upperSurfaceVertex
-      if (trim(config_sia_tangent_slope_calculation) == 'from_vertex_barycentric') then
-         call mpas_allocate_scratch_field(vertexIndicesField, .true.)
-         do iVertex = 1, nVertices
-            vertexIndicesField % array(iVertex) = iVertex
-         enddo
-         call mpas_calculate_barycentric_weights_for_points(meshPool, &
-                xVertex(1:nVertices), yVertex(1:nVertices), zVertex(1:nVertices), &
-                vertexIndicesField % array(1:nVertices), &
-                baryCellsOnVertex(:, 1:nVertices), baryWeightsOnVertex(:, 1:nVertices), err_tmp)
-         err = ior(err, err_tmp)
-         call mpas_deallocate_scratch_field(vertexIndicesField, .true.)
-      endif
 
 ! This was needed to init FCT once.
 !!!      ! Init for FCT tracer advection
