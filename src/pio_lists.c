@@ -72,8 +72,7 @@ file_desc_t *pio_get_file_from_id(int ncid)
 
   if(cfile==NULL){
     printf("ERROR: Operation on undefined file %s %d\n",__FILE__,__LINE__);
-  }
-  if(cfile->nreq > PIO_MAX_REQUESTS || cfile->nreq < 0){
+  }else if(cfile->nreq > PIO_MAX_REQUESTS || cfile->nreq < 0){
     printf("%s %d %d %d\n",__FILE__,__LINE__,ncid,cfile->nreq);
     piodie("Bad request count",__FILE__,__LINE__);
   }

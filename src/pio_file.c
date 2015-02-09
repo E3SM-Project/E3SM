@@ -68,7 +68,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 #ifdef _MPISERIAL      
       ierr = nc_open(filename, file->mode, &(file->fh));
 #else
-      file->mode = file->mode |  NC_MPIIO | NC_NETCDF4;
+      file->mode = file->mode |  NC_MPIIO;
       ierr = nc_open_par(filename, file->mode, ios->io_comm,ios->info, &(file->fh));
 #endif
       break;
