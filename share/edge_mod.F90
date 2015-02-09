@@ -486,21 +486,22 @@ contains
     moveLength = nlyr*pSchedule%MoveCycle(1)%lengthP
     ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrP -1) + 1 
 
-    do i=1,pSchedule%pPtr-1
-       elemid = pSchedule%pIndx(i)%elemid
-       edgeid = pSchedule%pIndx(i)%edgeid
+!NEWEDGEBUFF    do i=1,pSchedule%pPtr-1
+!NEWEDGEBUFF       elemid = pSchedule%pIndx(i)%elemid
+!NEWEDGEBUFF       edgeid = pSchedule%pIndx(i)%edgeid
 !NEWEDGEBUFF       if(iam==1) then 
 !NEWEDGEBUFF          print *,'IAM: ',iam,' elemid: ',elemid, ' ORDERED putmap: ', edge%putmap(edgeid,elemid)
 !NEWEDGEBUFF       endif
-    enddo
-    do i=1,pSchedule%gPtr-1
-       elemid = pSchedule%gIndx(i)%elemid
-       edgeid = pSchedule%gIndx(i)%edgeid
+!NEWEDGEBUFF    enddo
+!NEWEDGEBUFF    do i=1,pSchedule%gPtr-1
+!NEWEDGEBUFF       elemid = pSchedule%gIndx(i)%elemid
+!NEWEDGEBUFF       edgeid = pSchedule%gIndx(i)%edgeid
 !NEWEDGEBUFF       if(iam==1) then 
 !NEWEDGEBUFF          print *,'IAM: ',iam,' elemid: ',elemid,' ORDERED getmap: ', edge%getmap(edgeid,elemid)
 !NEWEDGEBUFF       endif
-    enddo
+!NEWEDGEBUFF    enddo
 
+    print *,'initNewedgebuffer: nthreadshoriz: ',nthreadshoriz
     allocate(edge%moveLength(nthreadshoriz))
     allocate(edge%movePtr(nthreadshoriz))
 
@@ -535,6 +536,7 @@ contains
     edge%buf    (:)=0.0D0
     edge%receive(:)=0.0D0
 
+#if 0
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
     do icycle=1,nRecvCycles
@@ -552,6 +554,7 @@ contains
     iptr   = nlyr*(pSchedule%MoveCycle(1)%ptrP - 1) + 1
     length = nlyr*pSchedule%MoveCycle(1)%lengthP
     print *,'IAM: ',iam,'MoveCycle: Pointers: ', iptr,' LENGTH: ',length 
+#endif
 !    print *,'IAM: ',iam,'MoveCycle: Pointers: ',edge%movePtr  
 !    print *,'IAM: ',iam,'MoveCycle: LENGTH: ',edge%moveLength  
 #if (defined HORIZ_OPENMP)
@@ -1559,7 +1562,7 @@ contains
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i)
 #endif
-#if 0
+#if 1
     do k=ks,ke
        iptr=np*(kptr+k-1)+ie
        do i=1,np
@@ -1588,10 +1591,10 @@ contains
     enddo
 #endif
 
-!dir$ simd 
+!JMD!dir$ simd 
     do k=ks,ke
        iptr=np*(kptr+k-1)+is
-!dir$ unroll(4)
+!JMD!dir$ unroll(4)
        do i=1,np
           v(i  ,1  ,k) = v(i  ,1  ,k)+edge%receive(iptr+i) ! South
        enddo

@@ -1216,7 +1216,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! ==========================================
        ! solve for Gamma_ref, given C as RHS input
        ! ==========================================
-
+       print *,'prim_advance_si: before call to pcg_solver:'
        Gamma_ref = pcg_solver(elem, &
             C,          &
             cg,         &
@@ -1228,6 +1228,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
             nets,       &
             nete,       &
             blkjac)
+       print *,'prim_advance_si: after call to pcg_solver:'
 
 
        ! ================================================================
@@ -1459,7 +1460,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #endif
 #if 1
+       print *,'prim_advance_si: before call to prim_diffusion'
        call prim_diffusion(elem, nets,nete,np1,deriv,dt2,cg%hybrid)
+       print *,'prim_advance_si: after call to prim_diffusion'
 #endif
        call t_stopf('prim_advance_si')
        call t_adj_detailf(-1)
