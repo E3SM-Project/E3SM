@@ -152,28 +152,28 @@ contains
       endif
 
 
-      ! if absolute, then compute density at all levels based on k_displaced value
+      ! if absolute, then compute density at all levels based on pressure of k_displaced value
+      ! but since linear EOS does not (at present) have a pressure dependency, this just returns density
       if (displacement_type_local == 'absolute') then
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                ! Linear equation of state
                density(k,iCell) =  config_eos_linear_densityref &
-                     - config_eos_linear_alpha * (tracers(indexT,k_displaced_local,iCell) - config_eos_linear_Tref) &
-                     + config_eos_linear_beta  * (tracers(indexS,k_displaced_local,iCell) - config_eos_linear_Sref)
+                     - config_eos_linear_alpha * (tracers(indexT,k,iCell) - config_eos_linear_Tref) &
+                     + config_eos_linear_beta  * (tracers(indexS,k,iCell) - config_eos_linear_Sref)
             end do
          end do
       endif
 
-      ! if relative, then compute density at all levels based on k+k_displaced value
+      ! if relative, then compute density at all levels based on k+k_displaced pressure value
+      ! but since (at present) linear EOS has not dependence on pressure, it returns density
       if (displacement_type_local == 'relative') then
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
-               k_ref = min(k + k_displaced_local, nVertLevels)
-               k_ref = max(k_ref, 1)
                ! Linear equation of state
                density(k,iCell) =  config_eos_linear_densityref &
-                     - config_eos_linear_alpha * (tracers(indexT,k_ref,iCell) - config_eos_linear_Tref) &
-                     + config_eos_linear_beta  * (tracers(indexS,k_ref,iCell) - config_eos_linear_Sref)
+                     - config_eos_linear_alpha * (tracers(indexT,k,iCell) - config_eos_linear_Tref) &
+                     + config_eos_linear_beta  * (tracers(indexS,k,iCell) - config_eos_linear_Sref)
             end do
          end do
       endif
