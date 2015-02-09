@@ -254,7 +254,7 @@ contains
     end if
     if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
 
-    if(par%masterproc) call PrintGridVertex(GridVertex)
+    !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
 
 
     if(partmethod .eq. SFCURVE) then

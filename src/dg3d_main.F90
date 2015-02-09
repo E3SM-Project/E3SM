@@ -44,7 +44,7 @@ program dg3d_main
       type (newEdgeBuffer_t)  :: edge3            ! 3 component edge buffer (1, 3d vector + 1 3d scalar field)
       type (ReductionBuffer_ordered_1d_t)  :: red    ! reduction buffer for cg
       type (parallel_t)    :: par              ! parallel structure for distributed memory programming
-      type (domain1d_t), allocatable :: dom_mt(:)
+      type (domain1d_t), pointer :: dom_mt(:)
       type (hybrid_t)       :: hybrid ! parallel structure for shared memory/distributed memory
       type (hvcoord_t)     :: hvcoord         ! hybrid vertical coordinate struct
 
@@ -57,7 +57,7 @@ program dg3d_main
 !	Begin executable code set distributed memory world...						!
 !=======================================================================================================!      
       par=initmp()
-      call init(elem,edge1,edge2,edge3,red,par)
+      call init(elem,edge1,edge2,edge3,red,par,dom_mt)
   
 !=======================================================================================================!
 !	Allocate state variables									!
@@ -69,12 +69,12 @@ program dg3d_main
 !=======================================================================================================!
       if(par%masterproc) print *,'Main:NThreads=',NThreads
 
-      call omp_set_num_threads(NThreads)
-     
-      allocate(dom_mt(0:NThreads-1))
-      do ithr=0,NThreads-1
-         dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
-      end do
+!      call omp_set_num_threads(NThreads)
+!     
+!      allocate(dom_mt(0:NThreads-1))
+!      do ithr=0,NThreads-1
+!         dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
+!      end do
 !=======================================================================================================!
 !	Sync-up to make sure timing is clean								!
 !=======================================================================================================!

@@ -36,7 +36,7 @@ use dg_sweq_mod, only : sweq_dg
       type (newEdgeBuffer_t)  :: edge3            ! 3 component edge buffer (1, 3d vector + 1 3d scalar field)
       type (ReductionBuffer_ordered_1d_t)  :: red    ! reduction buffer for cg
       type (parallel_t)    :: par              ! parallel structure for distributed memory programming
-      type (domain1d_t), allocatable :: dom_mt(:)
+      type (domain1d_t), pointer :: dom_mt(:)
 
       integer nets,nete
       integer ithr
@@ -48,7 +48,7 @@ use dg_sweq_mod, only : sweq_dg
 !=======================================================================================================!      
       par=initmp()
 
-      call init(elem, edge1,edge2,edge3,red,par)
+      call init(elem, edge1,edge2,edge3,red,par,dom_mt)
   
 !      open (unit=80,file='cs_geometry.dat')
 !      write(80,*) np,nv,ne,nlev
@@ -63,12 +63,12 @@ use dg_sweq_mod, only : sweq_dg
 !=======================================================================================================!
       if(par%masterproc) print *,'Main:NThreads=',NThreads
 
-      call omp_set_num_threads(NThreads)
-     
-      allocate(dom_mt(0:NThreads-1))
-      do ithr=0,NThreads-1
-         dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
-      end do
+!      call omp_set_num_threads(NThreads)
+!     
+!      allocate(dom_mt(0:NThreads-1))
+!      do ithr=0,NThreads-1
+!         dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
+!      end do
 !=======================================================================================================!
 !	Sync-up to make sure timing is clean								!
 !=======================================================================================================!

@@ -12,7 +12,7 @@ program main
   ! -----------------------------------------------
   use parallel_mod, only : parallel_t, initmp, syncmp, haltmp
   ! -----------------------------------------------
-  use thread_mod, only : nthreads, omp_get_thread_num, omp_set_num_threads
+  use thread_mod, only : nthreads, nThreadsHoriz, omp_get_thread_num, omp_set_num_threads
   ! -----------------------------------------------
   !      use time_mod
   ! -----------------------------------------------
@@ -43,7 +43,7 @@ program main
   type (newEdgeBuffer_t)  :: edge3            ! 3 component edge buffer (1, 3d vector + 1 3d scalar field)
   type (ReductionBuffer_ordered_1d_t)  :: red    ! reduction buffer for cg
   type (parallel_t)    :: par              ! parallel structure for distributed memory programming
-  type (domain1d_t), allocatable :: dom_mt(:)
+  type (domain1d_t), pointer :: dom_mt(:)
 
   integer nets,nete
   integer ithr
@@ -58,7 +58,7 @@ program main
        Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
   
-  call init(elem,edge1,edge2,edge3,red,par,fvm)
+  call init(elem,edge1,edge2,edge3,red,par,dom_mt,fvm)
   ! =====================================================
   ! Allocate state variables
   ! =====================================================
@@ -72,12 +72,14 @@ program main
 
   if(par%masterproc) print *,"Main:NThreads=",NThreads
 
-  call omp_set_num_threads(NThreads)
+!  call omp_set_num_threads(NThreads)
 
-  allocate(dom_mt(0:NThreads-1))
-  do ithr=0,NThreads-1
-     dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
-  end do
+!  allocate(dom_mt(0:NThreads-1))
+!  do ithr=0,NThreads-1
+!     dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
+!  end do
+!  nThreadsHoriz = NThreads
+!
 
   ! =====================================
   !  Sync-up to make sure timing is clean

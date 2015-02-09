@@ -6,7 +6,7 @@
 module init_mod
 contains
 ! not a nice way to integrate fvm but otherwise DG does not work anymore
-  subroutine init(elem, edge1,edge2,edge3,red,par, fvm)
+  subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt, fvm)
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
     use thread_mod, only : nthreads
@@ -72,6 +72,11 @@ contains
     use restart_mod, only : initRestartFile
     ! --------------------------------
     use params_mod, only : SFCURVE
+    ! ---------------------------------
+    use thread_mod, only : nThreadsHoriz, omp_get_num_threads
+    ! ---------------------------------
+    use domain_mod, only: domain1d_t, decompose 
+    ! ---------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! --------------------------------
     use fvm_mod, only : fvm_init1
@@ -93,6 +98,7 @@ contains
     type (newEdgeBuffer_t)           :: edge3
     type (ReductionBuffer_ordered_1d_t) :: red
     type (parallel_t), intent(in) :: par
+    type (domain1d_t), pointer :: dom_mt(:)
     ! Local Variables
 
     type (GridVertex_t), target,allocatable :: GridVertex(:)
@@ -108,6 +114,7 @@ contains
     integer :: nlyr
     integer :: iMv
     integer :: nxyp, istartP
+    integer :: n_domains
     real(kind=real_kind) :: et,st
 
     character(len=80) rot_type   ! cube edge rotation type
@@ -357,14 +364,22 @@ contains
     !JMD call PrintDofV(elem)
     !JMD call PrintDofP(elem)
 
-    ! =================================================================
-    ! Initialize shared boundary_exchange and reduction buffers
-    ! =================================================================
     allocate(desc(nelemd))
     do ie=1,nelemd
        desc(ie) = elem(ie)%desc
     enddo
+    n_domains = min(Nthreads,nelemd)
+    call omp_set_num_threads(n_domains)
+    allocate(dom_mt(0:n_domains-1))
+    do ithr=0,NThreads-1
+       dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
+    end do
+    nThreadsHoriz = NThreads
 
+    ! =================================================================
+    ! Initialize shared boundary_exchange and reduction buffers
+    ! =================================================================
+    print *,'init: before first call to initEdgeBuffer'
     call initEdgeBuffer(par,edge1,desc,nlev)
 !    print *,'init: After first call to initEdgeBuffer'
 !    stop
@@ -375,6 +390,7 @@ contains
     call initEdgeBuffer(par,edge2,desc,2*nlev)
     call initEdgeBuffer(par,edge3,desc,11*nlev)
 #endif
+    print *,'init: after call to initEdgeBuffer'
     allocate(global_shared_buf(nelemd,nrepro_vars))
     call InitReductionBuffer(red,3*nlev,nthreads)
     call InitReductionBuffer(red_sum,1)
