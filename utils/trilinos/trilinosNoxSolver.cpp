@@ -16,8 +16,8 @@
 #include "Teuchos_DefaultMpiComm.hpp"
 
 
-#define SIMPLE_PREC_ON
-//#define IDENTITY_PREC_ON
+//#define SIMPLE_PREC_ON
+#define IDENTITY_PREC_ON
 
 //#define SIMPLE_ML_PREC_ON
 
