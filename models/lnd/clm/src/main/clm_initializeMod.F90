@@ -122,7 +122,10 @@ contains
   subroutine initialize1( )
     !
     ! !DESCRIPTION:
-    ! CLM initialization first phase 
+    ! CLM initialization first phase
+    ! PET: 9 Feb 2015: In preparation for modifying land sub-grid architecture. This initialization
+    ! 	   phase will change to accommodate topographic units as a new level in the sub-grid hierarchy,
+    !	   added between gridcell and landunit. 
     !
     ! !USES:
     use clm_varpar       , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
