@@ -2835,7 +2835,7 @@ endif
 
  
 
-  function subcell_dss_fluxes(dss, p, n, metdet) result(fluxes)
+  function subcell_dss_fluxes(dss, p, n, metdet, C) result(fluxes)
 
     implicit none
 
@@ -2843,6 +2843,8 @@ endif
     integer              , intent(in)  :: n
     real (kind=real_kind), intent(in)  :: dss     (p,p)
     real (kind=real_kind), intent(in)  :: metdet  (p,p)
+    real (kind=real_kind), intent(in)  :: C       (2,2,2)  
+
     real (kind=real_kind)              :: fluxes  (n,n,4)
 
     real (kind=real_kind)              :: Bp(p,p)
@@ -2869,15 +2871,15 @@ endif
     Rp(p,:)  = dss(p,:)  ! right
     Lp(1,:)  = dss(1,:)  ! left
 
-    Bp(1,1)  = Bp(1,1)/2
-    Lp(1,1)  = Lp(1,1)/2
-    Bp(p,1)  = Bp(p,1)/2
-    Rp(p,1)  = Rp(p,1)/2
+    Bp(1,1)  = C(1,1,2)
+    Lp(1,1)  = C(1,1,1)
+    Bp(p,1)  = C(2,1,2)
+    Rp(p,1)  = C(2,1,1) 
 
-    Tp(1,p)  = Tp(1,p)/2
-    Lp(1,p)  = Lp(1,p)/2
-    Tp(p,p)  = Tp(p,p)/2
-    Rp(p,p)  = Rp(p,p)/2
+    Tp(1,p)  = C(1,2,2)
+    Lp(1,p)  = C(1,2,1) 
+    Tp(p,p)  = C(2,2,2)
+    Rp(p,p)  = C(2,2,1) 
 
     B = subcell_integration(Bp, p, n, metdet)
     T = subcell_integration(Tp, p, n, metdet)
@@ -2897,7 +2899,6 @@ endif
       if (i<n) L(i,j) = L(i,j) + L(i+1,j) 
     end do
     end do
-
 
     do i = 1,n
       do j = 1,n

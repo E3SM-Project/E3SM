@@ -1994,14 +1994,14 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use dimensions_mod, only : np, np, nlev, nc, ntrac
-  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis
+  use dimensions_mod, only : np, np, nlev, nc, ntrac, max_corner_elem
+  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
   use hybrid_mod, only : hybrid_t
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use derivative_mod, only : subcell_Laplace_fluxes, subcell_dss_fluxes
-  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, EdgeDescriptor_t, edgeDGVunpack
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk_dp3d
   use physical_constants, only: Cp
@@ -2026,9 +2026,12 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: ttens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: dptens
+  real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)          :: corners
+  real (kind=real_kind), dimension(2,2,2)                       :: cflux
   real (kind=real_kind), dimension(nc,nc,4,nlev,nets:nete)      :: dpflux
   real (kind=real_kind), dimension(np,np,nlev) :: p
   real (kind=real_kind), dimension(np,np) :: dptemp1,dptemp2
+  type (EdgeDescriptor_t)                                       :: desc
 
 
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -2213,6 +2216,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              do k=1,nlev
                temp(:,:,k) = dptens(:,:,k,ie) / elem(ie)%spheremp
              enddo
+             corners = 0.0d0
+             corners(1:np,1:np,:) = dptens(:,:,:,ie)
            endif
            call edgeVunpack(edge3, dptens(:,:,:,ie), nlev, kptr, elem(ie)%desc)
 
@@ -2228,11 +2233,26 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               dptens(:,:,k,ie)=dt*dptens(:,:,k,ie)*elem(ie)%rspheremp(:,:)
            enddo
 
+
            if (0<ntrac) then
              temp =  dptens(:,:,:,ie)/dt - temp
+             kptr=3*nlev
+             desc = elem(ie)%desc
+             
+             call edgeDGVunpack(edge3, corners, nlev, kptr, desc)
+             
+             corners = corners/dt
+             
              do k=1,nlev
+               call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
+ 
+               cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
+               cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
+               cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
+               cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
+
                elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
-                 eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet)/hypervis_subcycle
+                 eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet,cflux)/hypervis_subcycle
              end do
            endif
 
@@ -2589,14 +2609,14 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   ! ===================================
   use kinds, only : real_kind
-  use dimensions_mod, only : np, nc, nlev, ntrac
+  use dimensions_mod, only : np, nc, nlev, ntrac, max_corner_elem
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
-  use edge_mod, only : edgevpack, edgevunpack
+  use edge_mod, only : edgevpack, edgevunpack, edgedescriptor_t, edgeDGVunpack
   use bndry_mod, only : bndry_exchangev
-  use control_mod, only : moisture, qsplit, use_cpstar, rsplit
+  use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
   use hybvcoord_mod, only : hvcoord_t
 
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
@@ -2644,6 +2664,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,nlev)   :: vgrad_p    ! v.grad(p)
   real (kind=real_kind), dimension(np,np,nlev+1) :: ph               ! half level pressures on p-grid
   real (kind=real_kind), dimension(np,np,2,nlev) :: v_vadv   ! velocity vertical advection
+  real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)          :: corners
+  real (kind=real_kind), dimension(2,2,2)                         :: cflux
   real (kind=real_kind) ::  kappa_star(np,np,nlev)
   real (kind=real_kind) ::  vtens1(np,np,nlev)
   real (kind=real_kind) ::  vtens2(np,np,nlev)
@@ -2651,6 +2673,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind) ::  stashdp3d (np,np,nlev)
   real (kind=real_kind) ::  tempdp3d  (np,np)
   real (kind=real_kind) ::  tempflux  (nc,nc,4)
+  type (EdgeDescriptor_t)                                       :: desc
+
 
   real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
@@ -3247,15 +3271,29 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           end do
         endif
 
+        corners = 0.0d0
+        corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,np1)
         kptr=kptr+2*nlev
         call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
 
         if  (0<ntrac.and.eta_ave_w.ne.0.) then
+          desc = elem(ie)%desc
+          call edgeDGVunpack(edge3p1, corners, nlev, kptr, desc)
+          corners = corners/dt2
+
           do k=1,nlev
-            tempdp3d(:,:) = &
-               elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1) - stashdp3d(:,:,k)
+            tempdp3d = elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+            tempdp3d = tempdp3d - stashdp3d(:,:,k)
             tempdp3d = tempdp3d/dt2
-            tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc, elem(ie)%metdet)
+
+            call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
+ 
+            cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
+            cflux(2,1,:)   = elem(ie)%rspheremp(np, 1) * cflux(2,1,:) 
+            cflux(1,2,:)   = elem(ie)%rspheremp(1, np) * cflux(1,2,:) 
+            cflux(2,2,:)   = elem(ie)%rspheremp(np,np) * cflux(2,2,:) 
+
+            tempflux =  eta_ave_w*subcell_dss_fluxes(tempdp3d, np, nc, elem(ie)%metdet, cflux)
             elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + tempflux
           end do
         end if   
@@ -3288,7 +3326,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   end do
 
-
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -3298,6 +3335,73 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   call t_adj_detailf(-1)
 
   end subroutine compute_and_apply_rhs
+
+
+  subroutine distribute_flux_at_corners(cflux, corners, getmapP)
+    use kinds,          only : int_kind, real_kind
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod,    only : swest
+    implicit none
+
+    real   (kind=real_kind), intent(out)  :: cflux(2,2,2)
+    real   (kind=real_kind), intent(in)   :: corners(0:np+1,0:np+1)
+    integer(kind=int_kind),  intent(in)   :: getmapP(:)
+
+    cflux = 0.0d0
+    if (getmapP(swest+0*max_corner_elem) /= -1) then
+      cflux(1,1,1) =                (corners(0,1) - corners(1,1))     
+      cflux(1,1,1) = cflux(1,1,1) + (corners(0,0) - corners(1,1)) / 2.0d0
+      cflux(1,1,1) = cflux(1,1,1) + (corners(0,1) - corners(1,0)) / 2.0d0
+ 
+      cflux(1,1,2) =                (corners(1,0) - corners(1,1))     
+      cflux(1,1,2) = cflux(1,1,2) + (corners(0,0) - corners(1,1)) / 2.0d0
+      cflux(1,1,2) = cflux(1,1,2) + (corners(1,0) - corners(0,1)) / 2.0d0
+    else
+      cflux(1,1,1) =                (corners(0,1) - corners(1,1))     
+      cflux(1,1,2) =                (corners(1,0) - corners(1,1))     
+    endif
+ 
+    if (getmapP(swest+1*max_corner_elem) /= -1) then
+      cflux(2,1,1) =                (corners(np+1,1) - corners(np,1))     
+      cflux(2,1,1) = cflux(2,1,1) + (corners(np+1,0) - corners(np,1)) / 2.0d0
+      cflux(2,1,1) = cflux(2,1,1) + (corners(np+1,1) - corners(np,0)) / 2.0d0
+ 
+      cflux(2,1,2) =                (corners(np  ,0) - corners(np,  1))     
+      cflux(2,1,2) = cflux(2,1,2) + (corners(np+1,0) - corners(np,  1)) / 2.0d0
+      cflux(2,1,2) = cflux(2,1,2) + (corners(np  ,0) - corners(np+1,1)) / 2.0d0
+    else
+      cflux(2,1,1) =                (corners(np+1,1) - corners(np,1))     
+      cflux(2,1,2) =                (corners(np  ,0) - corners(np,1))     
+    endif
+ 
+    if (getmapP(swest+2*max_corner_elem) /= -1) then
+      cflux(1,2,1) =                (corners(0,np  ) - corners(1,np  ))     
+      cflux(1,2,1) = cflux(1,2,1) + (corners(0,np+1) - corners(1,np  )) / 2.0d0
+      cflux(1,2,1) = cflux(1,2,1) + (corners(0,np  ) - corners(1,np+1)) / 2.0d0
+ 
+      cflux(1,2,2) =                (corners(1,np+1) - corners(1,np  ))     
+      cflux(1,2,2) = cflux(1,2,2) + (corners(0,np+1) - corners(1,np  )) / 2.0d0
+      cflux(1,2,2) = cflux(1,2,2) + (corners(1,np+1) - corners(0,np  )) / 2.0d0
+    else
+      cflux(1,2,1) =                (corners(0,np  ) - corners(1,np  ))     
+      cflux(1,2,2) =                (corners(1,np+1) - corners(1,np  ))     
+    endif
+ 
+    if (getmapP(swest+3*max_corner_elem) /= -1) then
+      cflux(2,2,1) =                (corners(np+1,np  ) - corners(np,np  ))     
+      cflux(2,2,1) = cflux(2,2,1) + (corners(np+1,np+1) - corners(np,np  )) / 2.0d0
+      cflux(2,2,1) = cflux(2,2,1) + (corners(np+1,np  ) - corners(np,np+1)) / 2.0d0
+ 
+      cflux(2,2,2) =                (corners(np  ,np+1) - corners(np,np  ))     
+      cflux(2,2,2) = cflux(2,2,2) + (corners(np+1,np+1) - corners(np,np  )) / 2.0d0
+      cflux(2,2,2) = cflux(2,2,2) + (corners(np  ,np+1) - corners(np+1,np)) / 2.0d0
+    else
+      cflux(2,2,1) =                (corners(np+1,np  ) - corners(np,np  ))     
+      cflux(2,2,1) =                (corners(np  ,np+1) - corners(np,np  ))     
+    endif
+  end subroutine
+
+
 #ifdef TRILINOS
   subroutine residual(xstate, fx, nelemd, c_ptr_to_object) bind(C,name='calc_f')
 
