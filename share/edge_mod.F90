@@ -32,6 +32,8 @@ module edge_mod
      integer(kind=int_kind), pointer  :: getmapP(:) => null()
      integer(kind=int_kind), pointer  :: putmapP_ghost(:) => null()
      integer(kind=int_kind), pointer  :: getmapP_ghost(:) => null()
+     integer(kind=int_kind), pointer  :: putmapS(:) => null()
+     integer(kind=int_kind), pointer  :: getmapS(:) => null()
      integer(kind=int_kind), pointer  :: globalID(:) => null()
      integer(kind=int_kind), pointer  :: loc2buf(:) => null()
      type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
