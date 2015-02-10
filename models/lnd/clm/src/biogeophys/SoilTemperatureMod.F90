@@ -462,7 +462,7 @@ contains
          l = col%landunit(c)
          if (lun%urbpoi(l)) then
             if (col%itype(c) == icol_sunwall .or. col%itype(c) == icol_shadewall .or. col%itype(c) == icol_roof) then
-               eflx_building_heat(c) = cnfac*fn(c,nlevurb) + (1-cnfac)*fn1(c,nlevurb)
+               eflx_building_heat(c) = cnfac*fn(c,nlevurb) + (1._r8-cnfac)*fn1(c,nlevurb)
             else
                eflx_building_heat(c) = 0._r8
             end if
@@ -509,7 +509,7 @@ contains
 
          else
             if(frac_h2osfc(c) /= 0._r8) then
-               t_grnd(c) = (1 - frac_h2osfc(c)) * t_soisno(c,1) + frac_h2osfc(c) * t_h2osfc(c)
+               t_grnd(c) = (1._r8 - frac_h2osfc(c)) * t_soisno(c,1) + frac_h2osfc(c) * t_h2osfc(c)
             else
                t_grnd(c) = t_soisno(c,1)
             end if
@@ -762,7 +762,7 @@ contains
             else if (lun%itype(l) /= istwet .AND. lun%itype(l) /= istice .AND. lun%itype(l) /= istice_mec &
                  .AND. col%itype(c) /= icol_sunwall .AND. col%itype(c) /= icol_shadewall .AND. &
                  col%itype(c) /= icol_roof) then
-               cv(c,j) = csol(c,j)*(1-watsat(c,j))*dz(c,j) + (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
+               cv(c,j) = csol(c,j)*(1._r8-watsat(c,j))*dz(c,j) + (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
             else if (lun%itype(l) == istwet) then 
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
                if (j > nlevsoi) cv(c,j) = csol(c,j)*dz(c,j)
@@ -1516,21 +1516,21 @@ contains
                if (pft%active(p)) then
                   if (.not. lun%urbpoi(l)) then
                      eflx_gnet(p) = sabg(p) + dlrad(p) &
-                          + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit(c) &
+                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit(c) &
                           - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
                      ! save sabg for balancecheck, in case frac_sno is set to zero later
                      sabg_chk(p) = frac_sno_eff(c) * sabg_snow(p) + (1._r8 - frac_sno_eff(c) ) * sabg_soil(p)
 
                      eflx_gnet_snow = sabg_snow(p) + dlrad(p) &
-                          + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit_snow(c) &
+                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit_snow(c) &
                           - (eflx_sh_snow(p)+qflx_ev_snow(p)*htvp(c))
 
                      eflx_gnet_soil = sabg_soil(p) + dlrad(p) &
-                          + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit_soil(c) &
+                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit_soil(c) &
                           - (eflx_sh_soil(p)+qflx_ev_soil(p)*htvp(c))
 
                      eflx_gnet_h2osfc = sabg_soil(p) + dlrad(p) &
-                          + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit_h2osfc(c) &
+                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) - lwrad_emit_h2osfc(c) &
                           - (eflx_sh_h2osfc(p)+qflx_ev_h2osfc(p)*htvp(c))
                   else
                      ! For urban columns we use the net longwave radiation (eflx_lwrad_net) because of
@@ -1594,15 +1594,15 @@ contains
                   l = pft%landunit(p)
                   if (.not. lun%urbpoi(l)) then
 
-                     eflx_gnet_top = sabg_lyr(p,lyr_top) + dlrad(p) + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
+                     eflx_gnet_top = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
                           - lwrad_emit(c) - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
                      hs_top(c) = hs_top(c) + eflx_gnet_top*pft%wtcol(p)
 
-                     eflx_gnet_snow = sabg_lyr(p,lyr_top) + dlrad(p) + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
+                     eflx_gnet_snow = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
                           - lwrad_emit_snow(c) - (eflx_sh_snow(p)+qflx_ev_snow(p)*htvp(c))
 
-                     eflx_gnet_soil = sabg_lyr(p,lyr_top) + dlrad(p) + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
+                     eflx_gnet_soil = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(c) &
                           - lwrad_emit_soil(c) - (eflx_sh_soil(p)+qflx_ev_soil(p)*htvp(c))
 
                      hs_top_snow(c) = hs_top_snow(c) + eflx_gnet_snow*pft%wtcol(p)
@@ -3252,7 +3252,7 @@ contains
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
                         bmatrix_snow(c,4,j-1) = 0._r8
-                        bmatrix_snow(c,3,j-1) = 1+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
+                        bmatrix_snow(c,3,j-1) = 1._r8+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
                         if ( j /= 0) then
                            bmatrix_snow(c,2,j-1) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
                         end if
@@ -3330,7 +3330,7 @@ contains
                      if (j == col%snl(c)+1) then
                         dzp     = z(c,j+1)-z(c,j)
                         bmatrix_snow(c,4,j-1) = 0._r8
-                        bmatrix_snow(c,3,j-1) = 1+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
+                        bmatrix_snow(c,3,j-1) = 1._r8+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
                         if ( j /= 0) then
                            bmatrix_snow(c,2,j-1) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
                         end if
@@ -3406,7 +3406,7 @@ contains
                   if (j == col%snl(c)+1) then
                      dzp     = z(c,j+1)-z(c,j)
                      bmatrix_snow(c,4,j-1) = 0._r8
-                     bmatrix_snow(c,3,j-1) = 1+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
+                     bmatrix_snow(c,3,j-1) = 1._r8+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
                      if ( j /= 0) then
                         bmatrix_snow(c,2,j-1) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
                      end if
@@ -3939,7 +3939,7 @@ contains
                         if (j /= 1) then
                            bmatrix_soil(c,4,j) = 0._r8
                         end if
-                        bmatrix_soil(c,3,j) = 1+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
+                        bmatrix_soil(c,3,j) = 1._r8+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
                         bmatrix_soil(c,2,j) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
                      else if (j <= nlevurb-1) then
                         dzm     = (z(c,j)-z(c,j-1))
@@ -4031,7 +4031,7 @@ contains
                         if (j /= 1) then
                            bmatrix_soil(c,4,j) = 0._r8
                         end if
-                        bmatrix_soil(c,3,j) = 1+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
+                        bmatrix_soil(c,3,j) = 1._r8+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
                         bmatrix_soil(c,2,j) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
                      else if (j == 1) then
                         ! this is the snow/soil interface layer
@@ -4127,7 +4127,7 @@ contains
                      if (j /= 1) then
                         bmatrix_soil(c,4,j) = 0._r8
                      end if
-                     bmatrix_soil(c,3,j) = 1+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
+                     bmatrix_soil(c,3,j) = 1._r8+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
                      bmatrix_soil(c,2,j) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
                   else if (j == 1) then
                      ! this is the snow/soil interface layer
@@ -4527,7 +4527,7 @@ contains
        ! surface water layer has two coefficients
        dzm=(0.5*dz_h2osfc(c)+col%z(c,1))
 
-       bmatrix_ssw(c,3,0)= 1+(1._r8-cnfac)*(dtime/c_h2osfc(c)) &
+       bmatrix_ssw(c,3,0)= 1._r8+(1._r8-cnfac)*(dtime/c_h2osfc(c)) &
             *tk_h2osfc(c)/dzm -(dtime/c_h2osfc(c))*dhsdT(c) !interaction from atm
 
     enddo
