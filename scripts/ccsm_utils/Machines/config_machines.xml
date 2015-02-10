@@ -718,6 +718,24 @@
         <PES_PER_NODE>16</PES_PER_NODE>
 </machine>
 
+<machine MACH="oic2">
+         <DESC>ORNL XK6, os is Linux, 8 pes/node, batch system is PBS</DESC>
+         <COMPILERS>gnu</COMPILERS>
+         <MPILIBS>mpich,mpi-serial,openmpi</MPILIBS>
+         <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
+         <EXEROOT>/home/$USER/models/ACME/run/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/home/$USER/models/ACME</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/home/zdr/models/ccsm_inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/home/zdr/models/ccsm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/home/$USER/models/ACME/run/archive/$CASE</DOUT_S_ROOT>
+         <OS>LINUX</OS>
+         <BATCHQUERY>qstat -f</BATCHQUERY>
+         <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+</machine>
+
 <machine MACH="titan">
          <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>pgi,pgicuda,intel,cray</COMPILERS>
