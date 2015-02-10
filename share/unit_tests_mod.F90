@@ -314,6 +314,7 @@ contains
     real (kind=real_kind)              :: values(intervals,intervals)
     real (kind=real_kind)              :: fluxes(intervals,intervals,4)
     real (kind=real_kind)              :: test(intervals,intervals)
+    real (kind=real_kind)              :: cflux(2,2,2)
     real (kind=real_kind)              :: p,t
 
     integer                            :: ie,i,j,k
@@ -335,8 +336,18 @@ contains
 
       dss(2:np-1,2:np-1) = 0
 
+      do i=1,2
+      do j=1,2
+        do k=1,2
+          call random_number(cflux(i,j,k))
+        end do
+        cflux(i,j,1) = cflux(i,j,1)*dss(np*i-np+2-i,np*j-np+2-j)+cflux(i,j,2)
+        cflux(i,j,2) = dss(np*i-np+2-i,np*j-np+2-j)-cflux(i,j,1)
+      end do
+      end do
+
       values = subcell_integration(dss, np, intervals, elem(ie)%metdet) 
-      fluxes = subcell_dss_fluxes (dss, np, intervals, elem(ie)%metdet) 
+      fluxes = subcell_dss_fluxes (dss, np, intervals, elem(ie)%metdet, cflux) 
 
       test = SUM(fluxes,3)
 
@@ -375,7 +386,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=5 
+    integer              , parameter :: intervals=6 
 
     real (kind=real_kind)              :: u(np,np,2), v(np,np,2)
     real (kind=real_kind)              :: div(np,np)
@@ -611,7 +622,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=5 
+    integer              , parameter :: intervals=6 
 
     real (kind=real_kind)              :: dss(np,np)
     real (kind=real_kind)              :: fluxes(intervals,intervals,4)
@@ -619,6 +630,7 @@ contains
 
     type (quadrature_t)                :: gll
     real (kind=real_kind)              :: metdet(np,np)
+    real (kind=real_kind)              :: cflux(2,2,2)
     integer                            :: ie,i,j
     logical                            :: success
     real (kind=real_kind),   parameter :: EPS=.0000001
@@ -640,7 +652,14 @@ contains
         end do
       end if
 
-      fluxes = subcell_dss_fluxes (dss, np, intervals, metdet)
+      do i=1,2
+      do j=1,2
+        cflux(i,j,1) = dss(np*i-np+2-i,np*j-np+2-j)/2
+        cflux(i,j,2) = dss(np*i-np+2-i,np*j-np+2-j)/2
+      end do
+      end do
+
+      fluxes = subcell_dss_fluxes (dss, np, intervals, metdet, cflux)
 
       if (ie <= np*np) then
         do i=1,intervals
@@ -713,7 +732,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=5 
+    integer              , parameter :: intervals=6 
 
     real (kind=real_kind)              :: laplace(np,np)
     real (kind=real_kind)              :: fluxes(intervals,intervals,4)
@@ -793,7 +812,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=5 
+    integer              , parameter :: intervals=6 
 
     real (kind=real_kind)              :: u(np,np)
     real (kind=real_kind)              :: laplace(np,np)
@@ -864,7 +883,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
     integer              , intent(in) :: nets,nete
 
-    integer              , parameter :: intervals=4 
+    integer              , parameter :: intervals=6 
 
     real (kind=real_kind)              :: values(intervals,intervals)
     real (kind=real_kind)              :: V(np,np)

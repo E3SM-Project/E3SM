@@ -877,6 +877,9 @@ contains
     call t_adj_detailf(-2)
 
   end subroutine edgeVunpack
+
+
+
   subroutine edgeVunpackVert(edge,v,desc)
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use dimensions_mod, only : np, max_corner_elem, ne
@@ -1066,8 +1069,8 @@ contains
   ! ========================================
 
   subroutine edgeDGVunpack(edge,v,vlyr,kptr,desc)
-    use dimensions_mod, only : np
-    use control_mod, only : north, south, east, west
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr
@@ -1095,7 +1098,34 @@ contains
        end do
     end do
 
+    i = swest
+    if(desc%getmapP(i) /= -1) then
+      do k=1,vlyr
+        v(0,0,k) = edge%buf(kptr+k,desc%getmapP(i)+1)
+      end do
+    end if
+    i = swest+max_corner_elem
+    if(desc%getmapP(i) /= -1) then
+      do k=1,vlyr
+        v(np+1,0,k) = edge%buf(kptr+k,desc%getmapP(i)+1)
+      end do
+    end if
+    i = swest+3*max_corner_elem
+    if(desc%getmapP(i) /= -1) then
+      do k=1,vlyr
+        v(np+1,np+1,k) = edge%buf(kptr+k,desc%getmapP(i)+1)
+      end do
+    end if
+    i = swest+2*max_corner_elem
+    if(desc%getmapP(i) /= -1) then
+      do k=1,vlyr
+        v(0,np+1,k) = edge%buf(kptr+k,desc%getmapP(i)+1)
+      end do
+    end if
+
   end subroutine edgeDGVunpack
+
+
 
   ! ========================================
   ! edgeVunpackMIN/MAX:
