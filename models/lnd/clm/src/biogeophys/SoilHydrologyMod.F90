@@ -325,6 +325,8 @@ contains
           qflx_surf        =>    waterflux_vars%qflx_surf_col        , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
           qflx_h2osfc_surf =>    waterflux_vars%qflx_h2osfc_surf_col , & ! Output: [real(r8) (:)   ]  surface water runoff (mm/s)                       
           qflx_infl        =>    waterflux_vars%qflx_infl_col        , & ! Output: [real(r8) (:)   ] infiltration (mm H2O /s)                           
+          qflx_gross_infl_soil=> waterflux_vars%qflx_gross_infl_soil_col, & ! Output: [real(r8) (:)] gross infiltration (mm H2O/s)
+          qflx_gross_evap_soil=> waterflux_vars%qflx_gross_evap_soil_col,  & ! Output: [real(r8) (:)] gross evaporation (mm H2O/s)
 
           smpmin           =>    soilstate_vars%smpmin_col           , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)        
           sucsat           =>    soilstate_vars%sucsat_col           , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
@@ -380,10 +382,18 @@ contains
              !1. partition surface inputs between soil and h2osfc
              qflx_in_soil(c) = (1._r8 - frac_h2osfc(c)) * (qflx_top_soil(c)  - qflx_surf(c))
              qflx_in_h2osfc(c) = frac_h2osfc(c) * (qflx_top_soil(c)  - qflx_surf(c))          
-
+             qflx_gross_infl_soil(c) = (1._r8 - frac_h2osfc(c)) * (qflx_top_soil(c)  - qflx_surf(c))
+             
              !2. remove evaporation (snow treated in SnowHydrology)
              qflx_in_soil(c) = qflx_in_soil(c) - (1.0_r8 - fsno - frac_h2osfc(c))*qflx_evap(c)
              qflx_in_h2osfc(c) =  qflx_in_h2osfc(c)  - frac_h2osfc(c) * qflx_ev_h2osfc(c)
+
+             if(qflx_evap(c)>0._r8)then
+               qflx_gross_evap_soil(c) = (1.0_r8 - fsno - frac_h2osfc(c))*qflx_evap(c)
+             else
+               qflx_gross_evap_soil(c) = 0._r8
+               qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c)-(1.0_r8 - fsno - frac_h2osfc(c))*qflx_evap(c)
+             endif
 
              !3. determine maximum infiltration rate
              if (use_vichydro) then
@@ -417,6 +427,7 @@ contains
              !4. soil infiltration and h2osfc "run-on"
              qflx_infl(c) = qflx_in_soil(c) - qflx_infl_excess(c)
              qflx_in_h2osfc(c) =  qflx_in_h2osfc(c) + qflx_infl_excess(c)
+             qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c)- qflx_infl_excess(c)
 
              !5. surface runoff from h2osfc
              if (h2osfcflag==1) then
@@ -459,6 +470,7 @@ contains
              !--  if all water evaporates, there will be no bottom drainage
              if (h2osfc(c) < 0.0) then
                 qflx_infl(c) = qflx_infl(c) + h2osfc(c)/dtime
+                qflx_gross_evap_soil(c) = qflx_gross_evap_soil(c) - h2osfc(c)/dtime                
                 h2osfc(c) = 0.0
                 qflx_h2osfc_drain(c)= 0._r8
              else
@@ -472,14 +484,19 @@ contains
              !7. remove drainage from h2osfc and add to qflx_infl
              h2osfc(c) = h2osfc(c) - qflx_h2osfc_drain(c) * dtime
              qflx_infl(c) = qflx_infl(c) + qflx_h2osfc_drain(c)
+             qflx_gross_infl_soil(c)= qflx_gross_infl_soil(c) + qflx_h2osfc_drain(c)             
           else
              ! non-vegetated landunits (i.e. urban) use original CLM4 code
              if (snl(c) >= 0) then
                 ! when no snow present, sublimation is removed in Drainage
                 qflx_infl(c) = qflx_top_soil(c) - qflx_surf(c) - qflx_evap_grnd(c)
+                qflx_gross_infl_soil(c) = qflx_top_soil(c) - qflx_surf(c)
+                qflx_gross_evap_soil(c) = qflx_evap_grnd(c)                
              else
                 qflx_infl(c) = qflx_top_soil(c) - qflx_surf(c) &
                      - (1.0_r8 - frac_sno(c)) * qflx_ev_soil(c)
+                qflx_gross_infl_soil(c) = qflx_top_soil(c) - qflx_surf(c)
+                qflx_gross_evap_soil(c) = (1.0_r8 - frac_sno(c)) * qflx_ev_soil(c)                     
              end if
              qflx_h2osfc_surf(c) = 0._r8
           endif

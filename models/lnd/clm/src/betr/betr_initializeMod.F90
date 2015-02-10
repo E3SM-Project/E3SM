@@ -55,7 +55,7 @@ implicit none
   namelist / betr_inparm / bgc_method
 
   !currently, there are three options
-  !'mock_run','century_bgc' and 'o18_isotope' in use
+  !'mock_run','century_bgc' and 'o18_isotope'(it is removed at the moment) in use
   !ncar is responsible to test and finish the o18_isotope option
   !century_bgc is tested in ACME, and is not finished in the version
   !handed over to NCAR, Jinyun Tang, Jan 22nd, 2015

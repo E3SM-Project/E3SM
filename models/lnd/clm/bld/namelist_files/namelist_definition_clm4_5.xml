@@ -189,6 +189,11 @@ This downscaling is conservative.
 <default>Default: .true.</default>
 </entry>
 
+<entry id="use_betr" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the BeTR
+(BETR = 'on' is EXPERIMENTAL NOT SUPPORTED!)
+</entry>
 
 <entry id="use_ed" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
@@ -1250,6 +1255,14 @@ Set to 1 to
 Visible and Near-infrared albedo values for melting lakes. Albedo will relax to these values as temperature
 reaches melting when ice is present with no snow layers. Represents puddling, ice disintegration, and white ice.
 Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes without snow layers.
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- namelist elements associated with the betr_initializeMod                                  -->
+<!-- ========================================================================================  -->
+<entry id="bgc_method" type="char*256" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Specify what bgc module will be used within the betr framework. 
 </entry>
 
 <!-- ========================================================================================  -->

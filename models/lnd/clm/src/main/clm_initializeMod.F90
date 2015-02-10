@@ -11,7 +11,7 @@ module clm_initializeMod
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed
+  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed, use_betr  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use perf_mod         , only : t_startf, t_stopf
   use readParamsMod    , only : readParameters
@@ -65,6 +65,8 @@ module clm_initializeMod
   use EDBioType              , only : EDbio_type         ! ED type used to interact with CLM variables
   use EDVecPatchType         , only : EDpft                   
   use EDVecCohortType        , only : coh                ! unique to ED, used for domain decomp
+  use ChemStateType          , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
+  
   !
   implicit none
   save
@@ -111,6 +113,7 @@ module clm_initializeMod
   type(glc_diagnostics_type)  :: glc_diagnostics_vars
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
   type(EDbio_type)            :: EDbio_vars
+  type(chemstate_type)        :: chemstate_vars  
   !
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
@@ -360,7 +363,7 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog
+    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi    
     use clm_varcon            , only : h2osno_max, bdsno, c13ratio, c14ratio, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
@@ -401,6 +404,8 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
+    use betr_initializeMod    , only : betr_initialize
+    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars    
     !
     ! !ARGUMENTS    
     implicit none
@@ -626,6 +631,7 @@ contains
 
     call waterflux_vars%init(bounds_proc)
 
+    call chemstate_vars%Init(bounds_proc)    
     ! WJS (6-24-14): Without the following write statement, the assertion in
     ! energyflux_vars%init fails with pgi 13.9 on yellowstone. So for now, I'm leaving
     ! this write statement in place as a workaround for this problem.
@@ -657,6 +663,15 @@ contains
     allocate(soil_water_retention_curve, &
          source=create_soil_water_retention_curve())
 
+    ! --------------------------------------------------------------
+    ! Initialise the BeTR 
+    ! --------------------------------------------------------------
+
+    if(use_betr)then
+      !state variables will be initialized inside betr_initialize
+      call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
+    endif 
+         
     call SnowOptics_init( ) ! SNICAR optical parameters:
 
     call SnowAge_init( )    ! SNICAR aging   parameters:
@@ -828,7 +843,8 @@ contains
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-               waterflux_vars, waterstate_vars, EDbio_vars )
+               waterflux_vars, waterstate_vars, EDbio_vars,                     &    
+               betrtracer_vars, tracerstate_vars, tracerflux_vars )
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -841,7 +857,8 @@ contains
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+            waterflux_vars, waterstate_vars, EDbio_vars,                     &
+            betrtracer_vars, tracerstate_vars, tracerflux_vars)
 
     end if
 
@@ -880,7 +897,8 @@ contains
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+            waterflux_vars, waterstate_vars, EDbio_vars,                     &
+           betrtracer_vars, tracerstate_vars, tracerflux_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -893,7 +911,8 @@ contains
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+            waterflux_vars, waterstate_vars, EDbio_vars,  &
+            betrtracer_vars, tracerstate_vars, tracerflux_vars)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)

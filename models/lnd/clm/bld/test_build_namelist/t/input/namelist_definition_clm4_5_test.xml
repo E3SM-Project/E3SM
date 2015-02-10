@@ -1160,6 +1160,14 @@ Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes wi
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- namelist elements associated with the betr_initializeMod                                  -->
+<!-- ========================================================================================  -->
+<entry id="bgc_method" type="char*256" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Specify what bgc module will be used within the betr framework. 
+</entry>
+ 
+<!-- ========================================================================================  -->
 <!-- namelist elements associated with the Hydrology1Mod                                       -->
 <!-- ========================================================================================  -->
 

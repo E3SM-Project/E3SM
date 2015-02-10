@@ -163,7 +163,7 @@ contains
     ! !ARGUMENTS:
     integer, intent(in) :: num_soilp       ! number of soil patches in filter
     integer, intent(in) :: filter_soilp(:) ! filter for soil patches
-    type(cnstate_type), intent(in) :: cnstate_vars
+    type(cnstate_type), intent(inout) :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
     integer  :: yr, mon, day, tod, offset

@@ -48,8 +48,8 @@ implicit none
   case ("century_bgc")
     active_bgc = .true.
     allocate(bgc_reaction, source=bgc_reaction_CENTURY_type())
-  case ("o18_istope")
-    allocate(bgc_reaction, source=bgc_reaction_O18ISO_type())
+  !case ("o18_istope")    ! on hold
+  !  allocate(bgc_reaction, source=bgc_reaction_O18ISO_type())
   case default
     write(iulog,*)subname //' ERROR: unknown method: ', method
     call endrun(msg=errMsg(__FILE__, __LINE__))

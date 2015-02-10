@@ -10,6 +10,8 @@ module clm_driver
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed
+  use clm_varpar             , only : nlevtrc_full
+  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed, use_betr  
   use clm_varctl             , only : use_cn, use_cndv, use_lch4, use_voc, use_noio, use_c13, use_c14
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day
   use clm_varpar             , only : nlevsno, nlevgrnd, crop_prog
@@ -108,6 +110,20 @@ module clm_driver
   use clm_initializeMod      , only : lnd2glc_vars
   use clm_initializeMod      , only : EDbio_vars
   use clm_initializeMod      , only : soil_water_retention_curve
+  use clm_initializeMod      , only : chemstate_vars
+  use betr_initializeMod     , only : betrtracer_vars
+  use betr_initializeMod     , only : tracercoeff_vars
+  use betr_initializeMod     , only : tracerflux_vars
+  use betr_initializeMod     , only : tracerState_vars
+  use betr_initializeMod     , only : tracerboundarycond_vars
+  use betr_initializeMod     , only : bgc_reaction
+  use betr_initializeMod     , only : plantsoilnutrientflux_vars
+  use BetrBGCMod             , only : run_betr_one_step_without_drainage
+  use BetrBGCMod             , only : run_betr_one_step_with_drainage
+  use TracerBalanceMod       , only : betr_tracer_massbalance_check
+  use TracerBalanceMod       , only : begin_betr_tracer_massbalance
+  use BGCReactionsFactoryMod , only : is_active_betr_bgc
+  use CNEcosystemDynBetrMod  , only : CNEcosystemDynVeg, CNEcosystemDynSummary  
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
@@ -251,6 +267,17 @@ contains
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
 
+       if(use_betr)then
+          call t_startf('beg betr bal')
+
+          call begin_betr_tracer_massbalance(bounds_clump, 1, nlevsoi, &
+               filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
+               tracerstate_vars)
+          call tracerflux_vars%Reset(bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc)
+
+          call t_stopf('end betr bal')
+       endif
+       
        if (use_cn) then
           call t_startf('begcnbal')
 
@@ -426,6 +453,7 @@ contains
 
        call t_startf('bgflux')
 
+       call waterflux_vars%Reset(bounds_clump, filter(nc)%num_nolakec , filter(nc)%nolakec)       
        ! Bareground fluxes for all patches except lakes and urban landunits
 
        call BareGroundFluxes(bounds_clump,                                 &
@@ -557,7 +585,7 @@ contains
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,                      &
             atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
             waterflux_vars, waterstate_vars, soilhydrology_vars, aerosol_vars, &
-            soil_water_retention_curve)
+            soil_water_retention_curve, betrtracer_vars, tracerflux_vars, tracerstate_vars)
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
@@ -645,9 +673,52 @@ contains
 
        call t_startf('ecosysdyn')
 
-       ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
-       if (.not. use_ed) then 
-          if (use_cn) then 
+       if(is_active_betr_bgc)then
+         !right now betr bgc is intended only for non-ed mode
+         
+         !this returns the plant nutrient demand to soil bgc
+         call CNEcosystemDynVeg(bounds_clump,                                    &
+                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
+                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
+                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
+                  cnstate_vars, carbonflux_vars, carbonstate_vars,               &
+                  c13_carbonflux_vars, c13_carbonstate_vars,                     &
+                  c14_carbonflux_vars, c14_carbonstate_vars,                     &
+                  nitrogenflux_vars, nitrogenstate_vars,                         &
+                  atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
+                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
+                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
+                  plantsoilnutrientflux_vars)
+
+         !do belowground bgc and transport         
+         call t_startf('betr_nodrain')
+         dtime = get_step_size()
+         call run_betr_one_step_without_drainage(bounds_clump, 1, nlevsoi,           &
+              filter(nc)%num_soilc, filter(nc)%soilc, dtime,  col, atm2lnd_vars,     &
+              soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
+              waterflux_vars, chemstate_vars, betrtracer_vars, bgc_reaction,         &
+              tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
+              tracerflux_vars, plantsoilnutrientflux_vars)
+
+         call t_stopf('betr_nodrain')
+         !do ecosystem variable summary
+         call CNEcosystemDynSummary(bounds_clump,                                &
+                  filter(nc)%num_soilc, filter(nc)%soilc,                        &
+                  filter(nc)%num_soilp, filter(nc)%soilp,                        &
+                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
+                  cnstate_vars, carbonflux_vars, carbonstate_vars,               &
+                  c13_carbonflux_vars, c13_carbonstate_vars,                     &
+                  c14_carbonflux_vars, c14_carbonstate_vars,                     &
+                  nitrogenflux_vars, nitrogenstate_vars,                         &
+                  atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
+                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
+                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
+                  plantsoilnutrientflux_vars)  
+       else       
+       
+         ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
+         if (.not. use_ed) then 
+           if (use_cn) then 
 
              ! fully prognostic canopy structure and C-N biogeochemistry
              ! - CNDV defined: prognostic biogeography; else prescribed
@@ -680,48 +751,50 @@ contains
                      waterstate_vars, canopystate_vars)
              end if
 
-          end if  ! end of if-use_cn
+           end if  ! end of if-use_cn
 
-       else ! use_ed
+         else ! use_ed
 
-          call carbonflux_vars%SetValues(&
+           call carbonflux_vars%SetValues(&
                filter(nc)%num_soilp, filter(nc)%soilp, 0._r8, filter(nc)%num_soilc, filter(nc)%soilc, 0._r8)
-          if ( use_c13 ) then
+           if ( use_c13 ) then
              call c13_carbonflux_vars%SetValues(&
                   filter(nc)%num_soilp, filter(nc)%soilp, 0._r8, filter(nc)%num_soilc, filter(nc)%soilc, 0._r8)
-          end if
-          if ( use_c14 ) then
+           end if
+           if ( use_c14 ) then
              call c14_carbonflux_vars%SetValues(&
                   filter(nc)%num_soilp, filter(nc)%soilp, 0._r8, filter(nc)%num_soilc, filter(nc)%soilc, 0._r8)
-          end if
-          call nitrogenflux_vars%SetValues(&
+           end if
+           call nitrogenflux_vars%SetValues(&
                   filter(nc)%num_soilp, filter(nc)%soilp, 0._r8, filter(nc)%num_soilc, filter(nc)%soilc, 0._r8)
 
-          call EDbio_vars%SetValues( 0._r8 )
+           call EDbio_vars%SetValues( 0._r8 )
           
-       end if  ! end of if-use_ed
+         end if  ! end of if-use_ed
 
-       call t_stopf('ecosysdyn')
+         call t_stopf('ecosysdyn')
 
-       ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
-       call t_startf('depvel')
-       call depvel_compute(bounds_clump, &
-            atm2lnd_vars, canopystate_vars, waterstate_vars, frictionvel_vars, &
-            photosyns_vars, drydepvel_vars)
-       call t_stopf('depvel')
 
-       if (use_lch4) then
-          call t_startf('ch4')
-          call ch4 (bounds_clump,                                                                  &
+
+         if (use_lch4) then
+           call t_startf('ch4')
+           call ch4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
                filter(nc)%num_lakec, filter(nc)%lakec,                                             &
                filter(nc)%num_soilp, filter(nc)%soilp,                                             &
                atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
                temperature_vars, energyflux_vars, waterstate_vars, waterflux_vars,                 &
                carbonstate_vars, carbonflux_vars, nitrogenflux_vars, ch4_vars, lnd2atm_vars)
-          call t_stopf('ch4')
-       end if
+           call t_stopf('ch4')
+         end if
+       endif
 
+       ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
+       call t_startf('depvel')
+       call depvel_compute(bounds_clump, &
+            atm2lnd_vars, canopystate_vars, waterstate_vars, frictionvel_vars, &
+            photosyns_vars, drydepvel_vars)
+       call t_stopf('depvel')     
        ! ============================================================================
        ! Calculate soil/snow hydrology with drainage (subsurface runoff)
        ! ============================================================================
@@ -738,6 +811,22 @@ contains
 
        call t_stopf('hydro2 drainage')     
 
+       if(use_betr)then
+
+         call t_startf('betr drainage')       
+         call run_betr_one_step_with_drainage(bounds_clump, 1, nlevsoi               , &
+            filter(nc)%num_soilc, filter(nc)%soilc, tracerboundarycond_vars%jtops_col(bounds_clump%begc:bounds_clump%endc), &
+            waterflux_vars%qflx_drain_vr_col(bounds_clump%begc:bounds_clump%endc, 1:nlevsoi), &
+            col, betrtracer_vars , tracercoeff_vars, tracerstate_vars,  tracerflux_vars)
+         call t_stopf('betr drainage')
+
+         call t_startf('betr balchk')
+         call betr_tracer_massbalance_check(bounds_clump, 1, nlevsoi, &
+           filter(nc)%num_soilc, filter(nc)%soilc,  betrtracer_vars , &
+           tracerstate_vars,  tracerflux_vars)
+         call t_stopf('betr balchk')  
+           
+       endif          
        ! ============================================================================
        ! Check the energy and water balance, also carbon and nitrogen balance
        ! ============================================================================
@@ -1034,7 +1123,9 @@ contains
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-               waterflux_vars, waterstate_vars, EDbio_vars, rdate=rdate )
+               waterflux_vars, waterstate_vars, EDbio_vars,                     &
+               betrtracer_vars, tracerstate_vars, tracerflux_vars,              &
+               rdate=rdate )
 
           call t_stopf('clm_drv_io_wrest')
        end if

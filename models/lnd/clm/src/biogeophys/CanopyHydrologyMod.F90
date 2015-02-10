@@ -569,7 +569,7 @@ contains
 
        ! update surface water fraction (this may modify frac_sno)
        call FracH2oSfc(bounds, num_nolakec, filter_nolakec, &
-            waterstate_vars)
+            waterstate_vars, waterflux_vars%qflx_h2osfc2topsoi_col)
 
      end associate 
 
@@ -633,7 +633,7 @@ contains
 
    !-----------------------------------------------------------------------
    subroutine FracH2OSfc(bounds, num_h2osfc, filter_h2osfc, &
-        waterstate_vars, no_update)
+        waterstate_vars, qflx_h2osfc2topsoi, no_update)
      !
      ! !DESCRIPTION:
      ! Determine fraction of land surfaces which are submerged  
@@ -643,12 +643,14 @@ contains
      use shr_const_mod   , only : shr_const_pi
      use shr_spfn_mod    , only : erf => shr_spfn_erf
      use landunit_varcon , only : istsoil, istcrop
+     use clm_time_manager   , only : get_step_size       
      !
      ! !ARGUMENTS:
      type(bounds_type)     , intent(in)           :: bounds           
      integer               , intent(in)           :: num_h2osfc       ! number of column points in column filter
      integer               , intent(in)           :: filter_h2osfc(:) ! column filter 
      type(waterstate_type) , intent(inout)        :: waterstate_vars
+     real(r8)              , intent(inout)        :: qflx_h2osfc2topsoi(bounds%begc:bounds%endc)     
      integer               , intent(in), optional :: no_update        ! flag to make calculation w/o updating variables
      !
      ! !LOCAL VARIABLES:
@@ -656,6 +658,7 @@ contains
      real(r8):: d,fd,dfdd      ! temporary variable for frac_h2oscs iteration
      real(r8):: sigma          ! microtopography pdf sigma in mm
      real(r8):: min_h2osfc
+     real(r8):: dtime     
      !-----------------------------------------------------------------------
 
      associate(                                              & 
@@ -670,13 +673,14 @@ contains
           frac_h2osfc  => waterstate_vars%frac_h2osfc_col    & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero 
           )
 
+       dtime=get_step_size()           
        ! arbitrary lower limit on h2osfc for safer numerics...
        min_h2osfc=1.e-8_r8
 
        do f = 1, num_h2osfc
           c = filter_h2osfc(f)
           l = col%landunit(c)
-
+          qflx_h2osfc2topsoi(c) = 0._r8
           ! h2osfc only calculated for soil vegetated land units
           if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
 
@@ -703,6 +707,7 @@ contains
              else
                 frac_h2osfc(c) = 0._r8
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + h2osfc(c)
+                qflx_h2osfc2topsoi(c) = h2osfc(c)/dtime                
                 h2osfc(c)=0._r8
              endif
 
