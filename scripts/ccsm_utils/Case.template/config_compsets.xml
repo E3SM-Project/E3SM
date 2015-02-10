@@ -175,7 +175,8 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="C_INTERANNUAL"        alias="CIAF" >2000_DATM%IAF_SLND_DICE%SIAF_POP2_DROF%IAF_SGLC_SWAV</COMPSET>
 <COMPSET sname="C_NORMAL_YEAR_ECOSYS" alias="CECO" >1850_DATM%NYF_SLND_DICE%SSMI_POP2%ECO_DROF%NYF_SGLC_SWAV</COMPSET>
 
-<COMPSET sname="C_MPAS"               alias="CMPAS" support_level="Experimental, under development" >2000_DATM%NYF_SLND_DICE%SSMI_MPAS_SROF%NYF_SGLC_SWAV</COMPSET>
+<COMPSET sname="C_MPAS_NORMAL_YEAR"   alias="CMPASO-NYF" support_level="Experimental, under development" >2000_DATM%NYF_SLND_DICE%SSMI_MPASO_DROF%NYF_SGLC_SWAV</COMPSET>
+<COMPSET sname="C_MPAS_INTERANNUAL"        alias="CMPASO-IAF" support_level="Experimental, under development" >2000_DATM%IAF_SLND_DICE%SIAF_MPASO_DROF%IAF_SGLC_SWAV</COMPSET>
 
 <!-- D compsets -->
 
@@ -428,7 +429,7 @@ value of RUN_STARTDATE will be date2.
 <COMP_OCN compset="_SOCN">socn</COMP_OCN>
 <COMP_OCN compset="_XOCN">xocn</COMP_OCN>
 <COMP_OCN compset="_AQUAP">aquap</COMP_OCN>
-<COMP_OCN compset="_MPAS">mpas-o</COMP_OCN>
+<COMP_OCN compset="_MPASO">mpas-o</COMP_OCN>
 
 <COMP_GLC compset="_CISM">cism</COMP_GLC> 
 <COMP_GLC compset="_SGLC">sglc</COMP_GLC>
@@ -464,7 +465,7 @@ value of RUN_STARTDATE will be date2.
 <desc compset="_SOCN">SOCN:</desc>
 <desc compset="_XOCN">XOCN:</desc>
 <desc compset="_AQUAP">AQUAP:</desc>
-<desc compset="_MPAS">MPAS: (Experimental)</desc>
+<desc compset="_MPASO">MPAS-O: (Experimental)</desc>
 
 <desc compset="_CISM">CISM:</desc>
 <desc compset="_SGLC">SGLC:</desc>
@@ -1496,7 +1497,7 @@ DOCN%COPY => docn copy mode
 <ATM_NCPL compset="_DATM.*_DOCN%US20"  > 24</ATM_NCPL> 
 <ATM_NCPL compset="_CAM%ADIAB"         > 48</ATM_NCPL>  
 <ATM_NCPL compset="_CAM%IDEAL"         > 48</ATM_NCPL>  
-<ATM_NCPL compset="_MPAS"              >  1</ATM_NCPL>  
+<ATM_NCPL compset="_MPASO"             >  1</ATM_NCPL>  
 
 <ATM_NCPL compset=".+" grid="a%0.23x0.31">96</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne60np4"  >96</ATM_NCPL>
@@ -1525,7 +1526,7 @@ DOCN%COPY => docn copy mode
 <CPL_SEQ_OPTION compset="_DATM.*_DLND.*_DICE.*_DOCN">CESM1_MOD</CPL_SEQ_OPTION>
 <CPL_SEQ_OPTION compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</CPL_SEQ_OPTION>
 <CPL_SEQ_OPTION compset="_SOCN"                     >CESM1_MOD</CPL_SEQ_OPTION>
-<CPL_SEQ_OPTION compset="_MPAS"                     >CESM1_MOD</CPL_SEQ_OPTION>
+<CPL_SEQ_OPTION compset="_MPASO"                    >CESM1_MOD</CPL_SEQ_OPTION>
 
 <ROF_NCPL compset=".+"  >8</ROF_NCPL> 
 <ROF_NCPL compset="_DATM.*_POP2"            >$ATM_NCPL</ROF_NCPL>
@@ -1541,7 +1542,7 @@ DOCN%COPY => docn copy mode
 <GLC_NCPL compset="_DLND.*_CISM">1</GLC_NCPL>
 
 <NCPL_BASE_PERIOD compset="_DLND.*_CISM">year  </NCPL_BASE_PERIOD>
-<NCPL_BASE_PERIOD compset="_MPAS"       >hour  </NCPL_BASE_PERIOD>
+<NCPL_BASE_PERIOD compset="_MPASO"       >hour  </NCPL_BASE_PERIOD>
 
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
