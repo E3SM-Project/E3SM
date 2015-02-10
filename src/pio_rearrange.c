@@ -684,10 +684,10 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 	}else{
 	  recvcounts[ iodesc->rfrom[i] ] = 1;
           MPI_Type_hvector(nvars, 1,(MPI_Aint) iodesc->llen*tsize,iodesc->rtype[i], recvtypes+iodesc->rfrom[i]);
-	  if(recvtypes[i] == MPI_DATATYPE_NULL){
+	  if(recvtypes[iodesc->rfrom[i]] == MPI_DATATYPE_NULL){
 	    piodie("Unexpected NULL MPI DATATYPE",__FILE__,__LINE__);
 	  }
-          MPI_Type_commit(recvtypes+i);
+          MPI_Type_commit(recvtypes+iodesc->rfrom[i]);
 	  // recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
 	  rdispls[ iodesc->rfrom[i] ] = 0;
 	  //    printf("%d: rindex[%d] %d\n",ios.comp_rank,0,iodesc->rindex[0]);
@@ -721,7 +721,6 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 
   //  for(i=0;i<nvars*iodesc->ndof;i++)
   //   printf("%s %d %d %d \n",__FILE__,__LINE__,i,((int *)sbuf)[i]);
-
 
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 

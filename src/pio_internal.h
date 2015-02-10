@@ -22,7 +22,13 @@
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
-#define MAX_GATHER_BLOCK_SIZE -1
+
+#ifdef BGQ
+  #define MAX_GATHER_BLOCK_SIZE 0
+#else  
+  #define MAX_GATHER_BLOCK_SIZE -1
+#endif
+
 
 extern PIO_Offset PIO_BUFFER_SIZE_LIMIT;
 

@@ -224,12 +224,13 @@ contains
 !                call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
 !                call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
                 call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
-                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
+!                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
 
                 do frame=1,nframes
 !                print *,__FILE__,__LINE__,frame
                    do nv=1,nvars   
                       call PIO_setframe(File, varr(nv), frame)
+!                print *,__FILE__,__LINE__,frame,nv
                       call pio_write_darray(File, varr(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval=cd0)
                    enddo
 !                print *,__FILE__,__LINE__,frame
