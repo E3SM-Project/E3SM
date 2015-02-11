@@ -220,8 +220,8 @@ implicit none
    integer                             , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
    real(r8)                            , intent(in) :: dtime                              ! model time step
    type(column_type)                   , intent(in) :: col                                ! column type
-   type(Waterstate_Type),              , intent(in) :: waterstate_vars                    ! water state variables
-   type(temperature_type),             , intent(in) :: temperature_vars                   ! energy state variable
+   type(Waterstate_Type)               , intent(in) :: waterstate_vars                    ! water state variables
+   type(temperature_type)              , intent(in) :: temperature_vars                   ! energy state variable
    type(soilstate_type)                , intent(in) :: soilstate_vars
    type(canopystate_type)              , intent(in) :: canopystate_vars
    type(cnstate_type)                  , intent(inout) :: cnstate_vars   

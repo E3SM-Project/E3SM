@@ -376,7 +376,7 @@ contains
            soilstate_vars, canopystate_vars, cnstate_vars)
   
   !add new litter 
-  call calc_om_input(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, dtime, col, betrtracer_vars, centurybgc_vars, tracerstate_vars)
+  call calc_om_input(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, dtime, col, betrtracer_vars, centurybgc_vars, cnstate_vars, tracerstate_vars)
       
   !initialize the state vector
   call init_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%neqs, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)

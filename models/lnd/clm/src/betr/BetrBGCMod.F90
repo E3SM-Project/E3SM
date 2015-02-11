@@ -148,7 +148,7 @@ contains
        tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
     
   !print*,'do bgc_reaction'
-  call bgc_reaction%calc_bgc_reaction(bounds, lbj, ubj, num_soilc, filter_soilc, num_soip, filter_soilp, tracerboundarycond_vars%jtops_col,&
+  call bgc_reaction%calc_bgc_reaction(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, tracerboundarycond_vars%jtops_col,&
        dtime, col, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, cnstate_vars, &
        canopystate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   

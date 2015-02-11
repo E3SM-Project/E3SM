@@ -48,9 +48,9 @@ implicit none
     
     end subroutine Init_betrbgc_interface
 !----------------------------------------------------------------------    
-    subroutine calc_bgc_reaction_interface(this, bounds, lbj, ubj, numf, filter, jtops, dtime, &
+    subroutine calc_bgc_reaction_interface(this, bounds, lbj, ubj, num_soilc, filter_soilc,num_soilp,filter_soilp, jtops, dtime, &
        col, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, &
-       soilstate_vars, chemstate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+       soilstate_vars, chemstate_vars, cnstate_vars, canopystate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
   ! eventually this will be an abstract subroutine, but now I use the select case approach for a quick and dirty implementation.
@@ -74,8 +74,10 @@ implicit none
    import :: bgc_reaction_type
    class(bgc_reaction_type)   , intent(in) :: this
    type(bounds_type)          , intent(in) :: bounds                             ! bounds   
-   integer                    , intent(in) :: numf                               ! number of columns in column filter
-   integer                    , intent(in) :: filter(:)                          ! column filter
+   integer                    , intent(in) :: num_soilc                               ! number of columns in column filter
+   integer                    , intent(in) :: filter_soilc(:)                          ! column filter
+   integer                    , intent(in) :: num_soilp
+   integer                    , intent(in) :: filter_soilp(:)
    integer                    , intent(in) :: jtops( : )               ! top index of each column
    integer                    , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
    real(r8)                   , intent(in) :: dtime                              ! model time step
@@ -95,7 +97,7 @@ implicit none
    end subroutine calc_bgc_reaction_interface
 !----------------------------------------------------------------------    
    
-   subroutine set_boundary_conditions_interface(this, bounds, numf, filter, dz_top, &
+   subroutine set_boundary_conditions_interface(this, bounds, num_soilc, filter_soilc, dz_top, &
       betrtracer_vars, waterflux_vars, tracerboundarycond_vars)
 
    use TracerBoundaryCondType, only : tracerboundarycond_type   
@@ -108,8 +110,8 @@ implicit none
    import :: bgc_reaction_type
    class(bgc_reaction_type)   , intent(in) :: this
    type(bounds_type)          , intent(in) :: bounds
-   integer                    , intent(in) :: numf                 ! number of columns in column filter
-   integer                    , intent(in) :: filter(:)            ! column filter   
+   integer                    , intent(in) :: num_soilc                 ! number of columns in column filter
+   integer                    , intent(in) :: filter_soilc(:)            ! column filter   
    type(betrtracer_type)      , intent(in) :: betrtracer_vars
    real(r8)                   , intent(in) :: dz_top( : )
    type(waterflux_type)       , intent(in) :: waterflux_vars     
@@ -139,7 +141,7 @@ implicit none
    
    
 !-------------------------------------------------------------------------------  
-  subroutine do_tracer_equilibration_interface(this, bounds, lbj, ubj, jtops, numf, filter, betrtracer_vars, &
+  subroutine do_tracer_equilibration_interface(this, bounds, lbj, ubj, jtops, num_soilc, filter_soilc, betrtracer_vars, &
     tracercoeff_vars, tracerstate_vars)
   !
   ! DESCRIPTIONS
@@ -159,8 +161,8 @@ implicit none
   type(bounds_type)          , intent(in)    :: bounds
   integer                    , intent(in)    :: lbj, ubj
   integer                    , intent(in)    :: jtops( : )        ! top label of each column
-  integer                    , intent(in)    :: numf
-  integer                    , intent(in)    :: filter(:)
+  integer                    , intent(in)    :: num_soilc
+  integer                    , intent(in)    :: filter_soilc(:)
   type(betrtracer_type)      , intent(in)    :: betrtracer_vars
   type(tracercoeff_type)     , intent(in)    :: tracercoeff_vars
   type(tracerstate_type)     , intent(inout) :: tracerstate_vars

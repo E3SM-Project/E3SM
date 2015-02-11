@@ -561,7 +561,7 @@ module BGCCenturySubMod
   
   end subroutine retrieve_state_vector
 !-------------------------------------------------------------------------------  
-  subroutine calc_om_input(bounds, lbj, ubj, numf, filter, jtops, dtime, col, betrtracer_vars,centurybgc_vars, tracerstate_vars)
+  subroutine calc_om_input(bounds, lbj, ubj, numf, filter, jtops, dtime, col, betrtracer_vars,centurybgc_vars, cnstate_vars, tracerstate_vars)
   !
   ! DESCRIPTION
   ! add litter to soil
@@ -571,6 +571,7 @@ module BGCCenturySubMod
   use tracerstatetype       , only : tracerstate_type
   use ColumnType            , only : column_type
   use BeTRTracerType        , only : betrtracer_type  
+  use CNStateType           , only : cnstate_type
   implicit none
   type(bounds_type)       , intent(in) :: bounds
   integer                 , intent(in) :: lbj, ubj
@@ -579,6 +580,7 @@ module BGCCenturySubMod
   integer                 , intent(in) :: filter(:)
   real(r8)                , intent(in) :: dtime
   type(centurybgc_type)   , intent(in) :: centurybgc_vars   
+  type(cnstate_type)      , intent(inout) :: cnstate_vars
   type(column_type)       , intent(in) :: col                                ! column type  
   type(betrtracer_type)   , intent(in) :: betrtracer_vars                    ! betr configuration information
   type(tracerstate_type)  , intent(inout) :: tracerstate_vars  
