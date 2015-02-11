@@ -977,6 +977,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   int rdispls[nprocs];
   MPI_Datatype dtypes[nprocs];
   PIO_Offset iomaplen[nioprocs];
+  int maxreq = MAX_GATHER_BLOCK_SIZE;
 
   iodesc->rearranger = PIO_REARR_BOX;
 
@@ -1028,7 +1029,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   //  iomaplen = calloc(nioprocs, sizeof(PIO_Offset));
   pio_swapm(&(iodesc->llen), sndlths, sdispls, dtypes,
 	    iomaplen, recvlths, rdispls, dtypes, 	
-	    ios.union_comm, false, false, MAX_GATHER_BLOCK_SIZE);
+	    ios.union_comm, false, false, maxreq);
   /*
   printf("%s %d %d\n",__FILE__,__LINE__,nioprocs);
   for(i=0; i<nioprocs; i++){
@@ -1054,12 +1055,12 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       
       pio_swapm(iodesc->firstregion->count,  sndlths, sdispls, dtypes,
 		count, recvlths, rdispls, dtypes, 
-		ios.union_comm, false, false, MAX_GATHER_BLOCK_SIZE);
+		ios.union_comm, false, false, maxreq);
       
       // The start from iotask i is sent to all compute tasks
       pio_swapm(iodesc->firstregion->start,  sndlths, sdispls, dtypes,
 		start, recvlths, rdispls, dtypes, 
-		ios.union_comm, false, false, MAX_GATHER_BLOCK_SIZE);
+		ios.union_comm, false, false, maxreq);
 
       for(k=0;k<maplen;k++){
 	PIO_Offset gcoord[ndims], lcoord[ndims];
