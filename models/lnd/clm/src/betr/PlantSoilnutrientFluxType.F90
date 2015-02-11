@@ -127,7 +127,7 @@ module PlantSoilnutrientFluxType
     this%plant_minn_demand_flx_col(begc:endc) = spval
     call hist_addfld1d (fname='PLANT_MINN_DEMAND_FLX', units='gN/m^2/s',  &
             avgflag='A', long_name='plant nitrogen demand flux', &
-            ptr_col=plant_minn_demand_flx_col, default='inactive')         
+            ptr_col=this%plant_minn_demand_flx_col, default='inactive')         
     
   end subroutine InitHistory
 

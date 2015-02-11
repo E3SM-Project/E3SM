@@ -751,7 +751,6 @@ contains
          enddo
       enddo
 
-    end associate 
 
     do j = 1, nlevsoi
       do fc = 1, num_hydrologyc
@@ -760,6 +759,7 @@ contains
       enddo  
     enddo
 
+    end associate 
    end subroutine soilwater_zengdecker2009
 
  end module SoilWaterMovementMod

@@ -10,7 +10,7 @@ module clm_driver
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed
-  use clm_varpar             , only : nlevtrc_full
+  use clm_varpar             , only : nlevtrc_soil
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed, use_betr  
   use clm_varctl             , only : use_cn, use_cndv, use_lch4, use_voc, use_noio, use_c13, use_c14
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day
@@ -270,7 +270,7 @@ contains
        if(use_betr)then
           call t_startf('beg betr bal')
 
-          call begin_betr_tracer_massbalance(bounds_clump, 1, nlevsoi, &
+          call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
                filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
                tracerstate_vars)
           call tracerflux_vars%Reset(bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc)
@@ -673,7 +673,7 @@ contains
 
        call t_startf('ecosysdyn')
 
-       if(is_active_betr_bgc)then
+       if(is_active_betr_bgc())then
          !right now betr bgc is intended only for non-ed mode
          
          !this returns the plant nutrient demand to soil bgc
@@ -693,7 +693,7 @@ contains
          !do belowground bgc and transport         
          call t_startf('betr_nodrain')
          dtime = get_step_size()
-         call run_betr_one_step_without_drainage(bounds_clump, 1, nlevsoi,           &
+         call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,           &
               filter(nc)%num_soilc, filter(nc)%soilc, dtime,  col, atm2lnd_vars,     &
               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
               waterflux_vars, chemstate_vars, betrtracer_vars, bgc_reaction,         &
@@ -814,14 +814,14 @@ contains
        if(use_betr)then
 
          call t_startf('betr drainage')       
-         call run_betr_one_step_with_drainage(bounds_clump, 1, nlevsoi               , &
+         call run_betr_one_step_with_drainage(bounds_clump, 1, nlevtrc_soil               , &
             filter(nc)%num_soilc, filter(nc)%soilc, tracerboundarycond_vars%jtops_col(bounds_clump%begc:bounds_clump%endc), &
-            waterflux_vars%qflx_drain_vr_col(bounds_clump%begc:bounds_clump%endc, 1:nlevsoi), &
+            waterflux_vars%qflx_drain_vr_col(bounds_clump%begc:bounds_clump%endc, 1:nlevtrc_soil), &
             col, betrtracer_vars , tracercoeff_vars, tracerstate_vars,  tracerflux_vars)
          call t_stopf('betr drainage')
 
          call t_startf('betr balchk')
-         call betr_tracer_massbalance_check(bounds_clump, 1, nlevsoi, &
+         call betr_tracer_massbalance_check(bounds_clump, 1, nlevtrc_soil, &
            filter(nc)%num_soilc, filter(nc)%soilc,  betrtracer_vars , &
            tracerstate_vars,  tracerflux_vars)
          call t_stopf('betr balchk')  

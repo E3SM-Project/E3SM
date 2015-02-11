@@ -6,7 +6,34 @@ module CNEcosystemDynBetrMod
 !
 ! Now it is only for generic carbon coupling no isotope is attempted below, but will
 ! be enabled gradually.
-
+  use shr_kind_mod        , only : r8 => shr_kind_r8
+  use shr_sys_mod         , only : shr_sys_flush
+  use clm_varctl          , only : flanduse_timeseries, use_c13, use_c14, use_ed
+  use decompMod           , only : bounds_type
+  use perf_mod            , only : t_startf, t_stopf
+  use spmdMod             , only : masterproc
+  use clm_varctl          , only : use_century_decomp
+  use CNStateType         , only : cnstate_type
+  use CNCarbonFluxType    , only : carbonflux_type
+  use CNCarbonStateType   , only : carbonstate_type
+  use CNNitrogenFluxType  , only : nitrogenflux_type
+  use CNNitrogenStateType , only : nitrogenstate_type
+  use CNDVType            , only : dgvs_type
+  use CanopyStateType     , only : canopystate_type
+  use SoilStateType       , only : soilstate_type
+  use TemperatureType     , only : temperature_type
+  use WaterstateType      , only : waterstate_type
+  use WaterfluxType       , only : waterflux_type
+  use atm2lndType         , only : atm2lnd_type
+  use SoilStateType       , only : soilstate_type
+  use CanopyStateType     , only : canopystate_type
+  use TemperatureType     , only : temperature_type 
+  use PhotosynthesisType  , only : photosyns_type
+  use ch4Mod              , only : ch4_type
+  use EnergyFluxType      , only : energyflux_type
+  use SoilHydrologyType   , only : soilhydrology_type
+  use FrictionVelocityType, only : frictionvel_type
+  use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type 
 implicit none
 
 
@@ -24,7 +51,7 @@ implicit none
        nitrogenflux_vars, nitrogenstate_vars, &
        atm2lnd_vars, waterstate_vars, waterflux_vars, &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
-       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars)
+       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars)
     
     !   
     ! !USES:
@@ -152,7 +179,7 @@ implicit none
        nitrogenflux_vars, nitrogenstate_vars, &
        atm2lnd_vars, waterstate_vars, waterflux_vars, &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
-       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars)
+       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars)
     ! !USES:
     use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
     use CNMRespMod             , only: CNMResp

@@ -30,7 +30,7 @@ implicit none
   use BGCReactionsMod           , only : bgc_reaction_type
   use BGCReactionsMockRunType   , only : bgc_reaction_mock_run_type
   use BGCReactionsCenturyType   , only : bgc_reaction_CENTURY_type
-  use BGCReactionsO18IsotopeType, only : bgc_reaction_O18ISO_type
+!  use BGCReactionsO18IsotopeType, only : bgc_reaction_O18ISO_type
   use abortutils                , only : endrun
   use clm_varctl                , only : iulog
   ! !ARGUMENTS
