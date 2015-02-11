@@ -556,15 +556,12 @@ contains
              exit
            endif
           end do
-          sumSurfaceLayer = 0.0
           do k=1,int(rSurfaceLayer)
-            sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
             tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + tracers(:,k,iCell)*layerThickness(k,iCell)
           enddo
           k=int(rSurfaceLayer)+1
-          sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
           tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer)*tracers(:,k,iCell)*layerThickness(k,iCell)
-          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / sumSurfaceLayer
+          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / surfaceLayerDepth
         enddo
       endif
 
@@ -584,23 +581,18 @@ contains
            rSurfaceLayer = k
            sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
            if(sumSurfaceLayer.gt.surfaceLayerDepth) then
-             sumSurfaceLayer = sumSurfaceLayer - layerThicknessEdge(k,iCell)
-             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThicknessEdge(k,iCell)
+             sumSurfaceLayer = sumSurfaceLayer - layerThicknessEdge(k,iEdge)
+             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThicknessEdge(k,iEdge)
              exit
            endif
           end do
-          sumSurfaceLayer = 0.0
           do k=1,int(rSurfaceLayer)
-            sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
             normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
           enddo
           k=int(rSurfaceLayer)+1
           if(k.le.maxLevelEdgeTop(iEdge)) then
-            sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
             normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + fraction(rSurfaceLayer)*normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
-          endif
-          if (maxLevelEdgeTop(iEdge) .gt. 0) then
-             normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) / sumSurfaceLayer
+            normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) / surfaceLayerDepth
           end if
         enddo
       endif ! if config_use_cvmix_kpp
@@ -1149,7 +1141,7 @@ contains
          bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
          bulkRichardsonNumberShear(k,iCell) = shearContribution
 
-       enddo
+        enddo ! do k=1,maxLevelCell(iCell)
 
        ! remove 2dz mode from bulkRichardsonNumber{Buoy,Shear}
         buoySmoothed(:) = 0.0
