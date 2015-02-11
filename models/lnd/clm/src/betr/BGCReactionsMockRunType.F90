@@ -136,7 +136,7 @@ implicit none
   end subroutine Init_betrbgc
   
 !-------------------------------------------------------------------------------
-  subroutine set_boundary_conditions(this, bounds, numf, filter, dz_top, betrtracer_vars, &
+  subroutine set_boundary_conditions(this, bounds, num_soilc, filter_soilc, dz_top, betrtracer_vars, &
     waterflux_vars, tracerboundarycond_vars)
   !
   ! DESCRIPTION
@@ -151,8 +151,8 @@ implicit none
   
   class(bgc_reaction_mock_run_type), intent(in) :: this
   type(bounds_type),      intent(in) :: bounds
-  integer,                intent(in) :: numf                 ! number of columns in column filter
-  integer,                intent(in) :: filter(:)            ! column filter   
+  integer,                intent(in) :: num_soilc                 ! number of columns in column filter_soilc
+  integer,                intent(in) :: filter_soilc(:)            ! column filter_soilc   
   type(betrtracer_type),  intent(in) :: betrtracer_vars
   real(r8),               intent(in) :: dz_top(bounds%begc: )
   type(waterflux_type),   intent(in) :: waterflux_vars  
@@ -166,8 +166,8 @@ implicit none
   SHR_ASSERT_ALL((ubound(dz_top)                == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
 
 
-  do fc = 1, numf
-    c = filter(fc)
+  do fc = 1, num_soilc
+    c = filter_soilc(fc)
     
     !eventually, the following code will be implemented using polymorphism
     tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_n2)=32.8_r8                         !mol m-3, contant boundary condition
@@ -187,8 +187,9 @@ implicit none
   end subroutine set_boundary_conditions
 !-------------------------------------------------------------------------------
   
-  subroutine calc_bgc_reaction(this, bounds, lbj, ubj, numf, filter, jtops, dtime, col, betrtracer_vars, tracercoeff_vars, &
-       waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+  subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, &
+       dtime, col, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars,&
+       cnstate_vars, canopystate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
   ! eventually this will be an abstract subroutine, but now I use the select case approach for a quick and dirty implementation.
@@ -203,26 +204,32 @@ implicit none
    use SoilStatetype            , only : soilstate_type
    use ChemStateType            , only : chemstate_type
    use ColumnType               , only : column_type
+   use CanopyStateType          , only : canopystate_type
+   use CNStateType              , only : cnstate_type     
    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
    
    
    !ARGUMENTS
-   class(bgc_reaction_mock_run_type),    intent(in) :: this
-   type(bounds_type),           intent(in) :: bounds                             ! bounds   
-   integer,                     intent(in) :: numf                               ! number of columns in column filter
-   integer,                     intent(in) :: filter(:)                          ! column filter
-   integer,                     intent(in) :: jtops(bounds%begc: )               ! top index of each column
-   integer,                     intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
-   real(r8),                    intent(in) :: dtime                              ! model time step
-   type(column_type),           intent(in) :: col                                ! column type
-   type(Waterstate_Type),       intent(in) :: waterstate_vars                    ! water state variables
-   type(temperature_type),      intent(in) :: temperature_vars                   ! energy state variable
-   type(soilstate_type)  , intent(in) :: soilstate_vars  
-   type(chemstate_type),        intent(in) :: chemstate_vars
-   type(betrtracer_type),       intent(in) :: betrtracer_vars                    ! betr configuration information
-   type(tracercoeff_type),      intent(in) :: tracercoeff_vars
-   type(tracerstate_type),   intent(inout) :: tracerstate_vars
-   type(tracerflux_type),    intent(inout) :: tracerflux_vars
+   class(bgc_reaction_mock_run_type)   , intent(in) :: this
+   type(bounds_type)                   , intent(in) :: bounds                             ! bounds   
+   integer                             , intent(in) :: num_soilc                               ! number of columns in column filter_soilc
+   integer                             , intent(in) :: filter_soilc(:)                          ! column filter_soilc
+   integer                             , intent(in) :: num_soilp
+   integer                             , intent(in) :: filter_soilp(:)                    ! pft filter   
+   integer                             , intent(in) :: jtops(bounds%begc: )               ! top index of each column
+   integer                             , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
+   real(r8)                            , intent(in) :: dtime                              ! model time step
+   type(column_type)                   , intent(in) :: col                                ! column type
+   type(Waterstate_Type),              , intent(in) :: waterstate_vars                    ! water state variables
+   type(temperature_type),             , intent(in) :: temperature_vars                   ! energy state variable
+   type(soilstate_type)                , intent(in) :: soilstate_vars
+   type(canopystate_type)              , intent(in) :: canopystate_vars
+   type(cnstate_type)                  , intent(inout) :: cnstate_vars   
+   type(chemstate_type)                , intent(in) :: chemstate_vars
+   type(betrtracer_type)               , intent(in) :: betrtracer_vars                    ! betr configuration information
+   type(tracercoeff_type)              , intent(in) :: tracercoeff_vars
+   type(tracerstate_type)              , intent(inout) :: tracerstate_vars
+   type(tracerflux_type)               , intent(inout) :: tracerflux_vars
    type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars  
    character(len=*), parameter :: subname ='calc_bgc_reaction'
     
@@ -232,7 +239,7 @@ implicit none
   
   
 !-------------------------------------------------------------------------------  
-  subroutine do_tracer_equilibration(this, bounds, lbj, ubj, jtops, numf, filter, betrtracer_vars, tracercoeff_vars, tracerstate_vars)
+  subroutine do_tracer_equilibration(this, bounds, lbj, ubj, jtops, num_soilc, filter_soilc, betrtracer_vars, tracercoeff_vars, tracerstate_vars)
   !
   ! DESCRIPTIONS
   ! requilibrate tracers that has solid and mobile phases
@@ -252,8 +259,8 @@ implicit none
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )        ! top label of each column
-  integer,                intent(in) :: numf
-  integer,                intent(in) :: filter(:)
+  integer,                intent(in) :: num_soilc
+  integer,                intent(in) :: filter_soilc(:)
   type(betrtracer_type),  intent(in) :: betrtracer_vars
   type(tracercoeff_type), intent(in) :: tracercoeff_vars
   type(tracerstate_type), intent(inout) :: tracerstate_vars
@@ -297,7 +304,7 @@ implicit none
     !
     ! !LOCAL VARIABLES:
     integer :: p, c, l, k, j
-    integer :: fc                                        ! filter index
+    integer :: fc                                        ! filter_soilc index
     integer               :: begc, endc
     integer               :: begg, endg    
     !-----------------------------------------------------------------------

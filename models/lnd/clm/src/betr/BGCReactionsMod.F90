@@ -68,24 +68,28 @@ implicit none
    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
    use BeTRTracerType           , only : BeTRTracer_Type       
    use shr_kind_mod             , only : r8 => shr_kind_r8
-
+   use CanopyStateType          , only : canopystate_type
+   use CNStateType              , only : cnstate_type
+   
    import :: bgc_reaction_type
-   class(bgc_reaction_type),    intent(in) :: this
-   type(bounds_type),           intent(in) :: bounds                             ! bounds   
-   integer,                     intent(in) :: numf                               ! number of columns in column filter
-   integer,                     intent(in) :: filter(:)                          ! column filter
-   integer,                     intent(in) :: jtops( : )               ! top index of each column
-   integer,                     intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
-   real(r8),                    intent(in) :: dtime                              ! model time step
-   type(column_type),           intent(in) :: col                                ! column type
-   type(Waterstate_Type),       intent(in) :: waterstate_vars                    ! water state variables
-   type(temperature_type),      intent(in) :: temperature_vars                   ! energy state variable
-   type(chemstate_type),        intent(in) :: chemstate_vars
-   type(betrtracer_type),       intent(in) :: betrtracer_vars                    ! betr configuration information
-   type(soilstate_type)  ,      intent(in) :: soilstate_vars  
-   type(tracercoeff_type),      intent(in) :: tracercoeff_vars
-   type(tracerstate_type),   intent(inout) :: tracerstate_vars
-   type(tracerflux_type),    intent(inout) :: tracerflux_vars
+   class(bgc_reaction_type)   , intent(in) :: this
+   type(bounds_type)          , intent(in) :: bounds                             ! bounds   
+   integer                    , intent(in) :: numf                               ! number of columns in column filter
+   integer                    , intent(in) :: filter(:)                          ! column filter
+   integer                    , intent(in) :: jtops( : )               ! top index of each column
+   integer                    , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
+   real(r8)                   , intent(in) :: dtime                              ! model time step
+   type(column_type)          , intent(in) :: col                                ! column type
+   type(Waterstate_Type)      , intent(in) :: waterstate_vars                    ! water state variables
+   type(temperature_type)     , intent(in) :: temperature_vars                   ! energy state variable
+   type(chemstate_type)       , intent(in) :: chemstate_vars
+   type(betrtracer_type)      , intent(in) :: betrtracer_vars                    ! betr configuration information
+   type(soilstate_type)       , intent(in) :: soilstate_vars
+   type(canopystate_type)     , intent(in)    :: canopystate_vars
+   type(cnstate_type)         , intent(inout) :: cnstate_vars   
+   type(tracercoeff_type)     , intent(in) :: tracercoeff_vars
+   type(tracerstate_type)     , intent(inout) :: tracerstate_vars
+   type(tracerflux_type)      , intent(inout) :: tracerflux_vars
    type(plantsoilnutrientflux_type), intent(inout) ::  plantsoilnutrientflux_vars                    !total nitrogen yield to plant     
     
    end subroutine calc_bgc_reaction_interface

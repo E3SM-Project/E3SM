@@ -587,11 +587,19 @@ module BGCCenturySubMod
   !local variables
   integer :: fc, c, j
   
-  associate(                                            &
+  associate(                                                            & !
+
+    nfixation_prof       => cnstate_vars%nfixation_prof_col           , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions          
+    ndep_prof            => cnstate_vars%ndep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions          
+         
+    leaf_prof            => cnstate_vars%leaf_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
+    froot_prof           => cnstate_vars%froot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
+    croot_prof           => cnstate_vars%croot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
+    stem_prof            => cnstate_vars%stem_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of stems                          
     
-    lit1      => centurybgc_vars%lit1                 , & !
-    lit2      => centurybgc_vars%lit2                 , & !
-    lit3      => centurybgc_vars%lit3                   & !
+    lit1      => centurybgc_vars%lit1                                 , & !
+    lit2      => centurybgc_vars%lit2                                 , & !
+    lit3      => centurybgc_vars%lit3                                   & !
   )  
   do fc = 1, numf
     c = filter(fc)

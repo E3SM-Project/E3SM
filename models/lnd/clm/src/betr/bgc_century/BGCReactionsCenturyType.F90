@@ -251,7 +251,7 @@ contains
   end subroutine Init_betrbgc
 
 !-------------------------------------------------------------------------------
-  subroutine set_boundary_conditions(this, bounds, numf, filter, dz_top, betrtracer_vars, &
+  subroutine set_boundary_conditions(this, bounds, num_soilc, filter_soilc, dz_top, betrtracer_vars, &
     waterflux_vars, tracerboundarycond_vars)
   !
   ! DESCRIPTION
@@ -268,8 +268,8 @@ contains
   
   class(bgc_reaction_CENTURY_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
-  integer                         , intent(in) :: numf                 ! number of columns in column filter
-  integer                         , intent(in) :: filter(:)            ! column filter
+  integer                         , intent(in) :: num_soilc                 ! number of columns in column filter
+  integer                         , intent(in) :: filter_soilc(:)            ! column filter
   type(betrtracer_type)           , intent(in) :: betrtracer_vars
   real(r8)                        , intent(in) :: dz_top(bounds%begc: )
   type(waterflux_type)            , intent(in) :: waterflux_vars
@@ -301,30 +301,35 @@ contains
   end subroutine set_boundary_conditions
 !-------------------------------------------------------------------------------
 
-  subroutine calc_bgc_reaction(this, bounds, lbj, ubj, numf, filter, jtops, dtime, col, betrtracer_vars, tracercoeff_vars, &
-    waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+  subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, dtime, col, &
+    betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, &
+    cnstate_vars, canopystate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
   ! eventually this will be an abstract subroutine, but now I use the select case approach for a quick and dirty implementation.
   !USES
   !
-  use tracerfluxType        , only : tracerflux_type
-  use tracerstatetype       , only : tracerstate_type
-  use tracercoeffType       , only : tracercoeff_type
-  use BetrTracerType        , only : betrtracer_type
-  use WaterStateType        , only : Waterstate_Type
-  use TemperatureType       , only : temperature_type
-  use ChemStateType         , only : chemstate_type
-  use ColumnType            , only : column_type
-  use SoilStatetype         , only : soilstate_type
-  use ODEMod                , only : ode_adapt_mbbks1
+  use tracerfluxType           , only : tracerflux_type
+  use tracerstatetype          , only : tracerstate_type
+  use tracercoeffType          , only : tracercoeff_type
+  use BetrTracerType           , only : betrtracer_type
+  use WaterStateType           , only : Waterstate_Type
+  use TemperatureType          , only : temperature_type
+  use ChemStateType            , only : chemstate_type
+  use ColumnType               , only : column_type
+  use SoilStatetype            , only : soilstate_type
+  use ODEMod                   , only : ode_adapt_mbbks1
+  use CanopyStateType          , only : canopystate_type
+  use CNStateType              , only : cnstate_type  
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
-
+  use CNVerticalProfileMod     , only : decomp_vertprofiles
   !ARGUMENTS
   class(bgc_reaction_CENTURY_type)   , intent(in) :: this
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
-  integer                            , intent(in) :: numf                               ! number of columns in column filter
-  integer                            , intent(in) :: filter(:)                          ! column filter
+  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
+  integer                            , intent(in) :: filter_soilc(:)                          ! column filter
+  integer                            , intent(in) :: num_soilp
+  integer                            , intent(in) :: filter_soilp(:)                    ! pft filter
   integer                            , intent(in) :: jtops(bounds%begc: )               ! top index of each column
   integer                            , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
   real(r8)                           , intent(in) :: dtime                              ! model time step
@@ -335,6 +340,8 @@ contains
   type(chemstate_type)               , intent(in) :: chemstate_vars
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information
   type(tracercoeff_type)             , intent(in) :: tracercoeff_vars
+  type(canopystate_type)             , intent(in)    :: canopystate_vars
+  type(cnstate_type)                 , intent(inout) :: cnstate_vars
   type(tracerstate_type)             , intent(inout) :: tracerstate_vars
   type(tracerflux_type)              , intent(inout) :: tracerflux_vars
   type(plantsoilnutrientflux_type)   , intent(inout) :: plantsoilnutrientflux_vars
@@ -362,15 +369,20 @@ contains
   !initialize local variables
   y0(:, :, :) = spval
   yf(:, :, :) = spval
+
+  !calculate vertical profiles to destribute various variables
+  call decomp_vertprofiles(bounds, &
+           num_soilc, filter_soilc, num_soilp, filter_soilp, &
+           soilstate_vars, canopystate_vars, cnstate_vars)
   
   !add new litter 
-  call calc_om_input(bounds, lbj, ubj, numf, filter, jtops, dtime, col, betrtracer_vars, centurybgc_vars, tracerstate_vars)
+  call calc_om_input(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, dtime, col, betrtracer_vars, centurybgc_vars, tracerstate_vars)
       
   !initialize the state vector
-  call init_state_vector(bounds, lbj, ubj, numf, filter, jtops, centurybgc_vars%neqs, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)
+  call init_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%neqs, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)
 
   !calculate multiplicative scalars for decay parameters
-  call calc_decompK_multiply_scalar(bounds, lbj, ubj, numf, filter, jtops, &
+  call calc_decompK_multiply_scalar(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, &
     waterstate_vars%finundated_col(bounds%begc:bounds%endc), col%z(bounds%begc:bounds%endc, lbj:ubj),&
     temperature_vars%t_soisno_col(bounds%begc:bounds%endc, lbj:ubj), &
     tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_o2), &
@@ -378,26 +390,26 @@ contains
      soilstate_vars, centurybgc_vars)
   
   !calculate decay coefficients
-  call calc_som_deacyK(bounds, lbj, ubj, numf, filter, jtops, centurybgc_vars%nom_pools, tracercoeff_vars, tracerstate_vars, &
+  call calc_som_deacyK(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, tracercoeff_vars, tracerstate_vars, &
     betrtracer_vars, centurybgc_vars, k_decay(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj))
   
   !calculate potential decay rates, without nutrient constraint
-  call calc_sompool_decay(bounds, lbj, ubj, numf, filter, jtops, centurybgc_vars%nom_pools, &
+  call calc_sompool_decay(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, &
      k_decay(1:centurybgc_vars%nom_pools,  bounds%begc:bounds%endc, lbj:ubj), y0(1:centurybgc_vars%nom_pools, lbj:ubj, bounds%begc:bounds%endc),&
      pot_decay_rates)
       
   !calculate potential respiration rates by summarizing all om decomposition pathways
-  call calc_potential_aerobic_hr(bounds, lbj, ubj, numf, filter, jtops, centurybgc_vars%nom_pools, pot_decay_rates, &
+  call calc_potential_aerobic_hr(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, pot_decay_rates, &
     soilstate_vars%cellsand_col(bounds%begc:bounds%endc,lbj:ubj), pot_co2_hr)      
       
   !calculate fraction of anerobic environment
-  call calc_anaerobic_frac(bounds, lbj, ubj, numf, filter, jtops, temperature_vars%t_soisno_col(bounds%begc:bounds%endc,lbj:ubj),&
+  call calc_anaerobic_frac(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, temperature_vars%t_soisno_col(bounds%begc:bounds%endc,lbj:ubj),&
      soilstate_vars, waterstate_vars%h2osoi_vol_col(bounds%begc:bounds%endc,lbj:ubj), pot_co2_hr, &
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_o2), &
      anaerobic_frac(bounds%begc:bounds%endc, lbj:ubj))
       
   !calculate normalized rate for nitrification and denitrification
-  call calc_nitrif_denitrif_rate(bounds, lbj, ubj, numf, filter, jtops, col%dz(bounds%begc:bounds%endc, lbj:ubj), &
+  call calc_nitrif_denitrif_rate(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, col%dz(bounds%begc:bounds%endc, lbj:ubj), &
      temperature_vars%t_soisno_col(bounds%begc:bounds%endc, lbj:ubj), &
      chemstate_vars%soil_pH(bounds%begc:bounds%endc, lbj:ubj),  pot_co2_hr, anaerobic_frac, &
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x), &     
@@ -411,8 +423,8 @@ contains
   k_decay(centurybgc_vars%lid_plant_minn, : ,: )=0._r8    
   !do ode integration and update state variables for each layer
   do j = lbj, ubj
-    do fc = 1, numf
-      c = filter(fc)
+    do fc = 1, num_soilc
+      c = filter_soilc(fc)
       if(j<jtops(c))cycle   
       !assign parameters for stoichiometric matrix calculation
       call Extra_inst%AAssign(cn_ratios,cp_ratios, k_decay(:,c,j), n2_n2o_ratio_denit(c,j), nh4_no3_ratio(c,j), soilstate_vars%cellsand_col(c,j))
@@ -424,10 +436,10 @@ contains
 
   
   !retrieve the flux variable
-  call retrieve_flux(bounds, lbj, ubj, numf, filter, jtops, centurybgc_vars%neqs, dtime, yf, y0, tracerflux_vars, centurybgc_vars, plantsoilnutrientflux_vars)
+  call retrieve_flux(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%neqs, dtime, yf, y0, tracerflux_vars, centurybgc_vars, plantsoilnutrientflux_vars)
   
   !retrieve the state variable    
-  call retrieve_state_vector(bounds, lbj, ubj, numf, filter, jtops, centurybgc_vars%neqs,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      
+  call retrieve_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%neqs,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      
   
   
   call Extra_inst%DDeallocate()
@@ -436,7 +448,7 @@ contains
     
   
 !-------------------------------------------------------------------------------
-  subroutine do_tracer_equilibration(this, bounds, lbj, ubj, jtops, numf, filter, betrtracer_vars, tracercoeff_vars, tracerstate_vars)
+  subroutine do_tracer_equilibration(this, bounds, lbj, ubj, jtops, num_soilc, filter_soilc, betrtracer_vars, tracercoeff_vars, tracerstate_vars)
   !
   ! DESCRIPTIONS
   ! requilibrate tracers that has solid and mobile phases
@@ -453,8 +465,8 @@ contains
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )        ! top label of each column
-  integer,                intent(in) :: numf
-  integer,                intent(in) :: filter(:)
+  integer,                intent(in) :: num_soilc
+  integer,                intent(in) :: filter_soilc(:)
   type(betrtracer_type),  intent(in) :: betrtracer_vars
   type(tracercoeff_type), intent(in) :: tracercoeff_vars
   type(tracerstate_type), intent(inout) :: tracerstate_vars

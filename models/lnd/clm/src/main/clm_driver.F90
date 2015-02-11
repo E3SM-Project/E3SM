@@ -693,10 +693,13 @@ contains
          !do belowground bgc and transport         
          call t_startf('betr_nodrain')
          dtime = get_step_size()
-         call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,           &
-              filter(nc)%num_soilc, filter(nc)%soilc, dtime,  col, atm2lnd_vars,     &
+         call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,      &
+              filter(nc)%num_soilc, filter(nc)%soilc,                                &
+              filter(nc)%num_soilp, filter(nc)%soilp,                                &
+              dtime,  col, atm2lnd_vars,                                             &
               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
-              waterflux_vars, chemstate_vars, betrtracer_vars, bgc_reaction,         &
+              waterflux_vars, chemstate_vars, cnstate_vars, canopystate_vars,        &
+              betrtracer_vars, bgc_reaction,                                         &
               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
               tracerflux_vars, plantsoilnutrientflux_vars)
 
@@ -775,7 +778,19 @@ contains
          call t_stopf('ecosysdyn')
 
 
-
+         if (use_betr)then
+           !this is used for non-online bgc with betr
+           call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,    &
+              filter(nc)%num_soilc, filter(nc)%soilc,                                &
+              filter(nc)%num_soilp, filter(nc)%soilp,                                &
+              dtime,  col, atm2lnd_vars,                                             &
+              soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
+              waterflux_vars, chemstate_vars, cnstate_vars, canopystate_vars,        &
+              betrtracer_vars, bgc_reaction,                                         &
+              tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
+              tracerflux_vars, plantsoilnutrientflux_vars)         
+         endif
+         
          if (use_lch4) then
            call t_startf('ch4')
            call ch4 (bounds_clump,                                                                  &
@@ -787,7 +802,7 @@ contains
                carbonstate_vars, carbonflux_vars, nitrogenflux_vars, ch4_vars, lnd2atm_vars)
            call t_stopf('ch4')
          end if
-       endif
+       endif !end of if is_active_betr_bgc
 
        ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
        call t_startf('depvel')

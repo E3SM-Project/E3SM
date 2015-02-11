@@ -239,7 +239,54 @@ implicit none
   
 
   
-  
+       call CNWoodProducts(num_soilc, filter_soilc, &
+            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
+            carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars)
+
+       call CNFireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
+            cnstate_vars, carbonstate_vars)
+
+       call CNFireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
+            carbonflux_vars, nitrogenflux_vars)
+       !--------------------------------------------
+       ! Update3
+       !--------------------------------------------
+
+       if ( use_c13 ) then
+          call CIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, carbonflux_vars, carbonstate_vars, &
+               isotopeflux_vars=c13_carbonflux_vars, isotopestate_vars=c13_carbonstate_vars, &
+               isotope='c13')
+       end if
+       if ( use_c14 ) then
+          call CIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, carbonflux_vars, carbonstate_vars, &
+               isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
+               isotope='c14')
+       end if
+
+       call CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            carbonflux_vars, carbonstate_vars)
+
+       if ( use_c13 ) then
+          call CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               c13_carbonflux_vars, c13_carbonstate_vars)
+       end if
+       if ( use_c14 ) then
+          call CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               c14_carbonflux_vars, c14_carbonstate_vars)
+       end if
+
+
+       if ( use_c14 ) then
+          call C14Decay(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               c14_carbonstate_vars)
+
+          call C14BombSpike(num_soilp, filter_soilp, &
+               cnstate_vars)
+       end if            
   end subroutine CNEcosystemDynSummary
   
 end module CNEcosystemDynBetrMod
