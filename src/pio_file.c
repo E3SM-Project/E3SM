@@ -69,6 +69,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       ierr = nc_open(filename, file->mode, &(file->fh));
 #else
       file->mode = file->mode |  NC_MPIIO;
+      // printf("%s %d %d %d\n",__FILE__,__LINE__,file->mode, NC_MPIIO);
       ierr = nc_open_par(filename, file->mode, ios->io_comm,ios->info, &(file->fh));
 #endif
       break;
@@ -180,7 +181,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
       //         The 64 bit options are not compatable with hdf5 format files
       //      printf("%d %d %d %d %d \n",__LINE__,file->mode,PIO_64BIT_DATA, PIO_64BIT_OFFSET, NC_MPIIO);
       file->mode = file->mode |  NC_MPIIO | NC_NETCDF4;
-
+      //printf("%s %d %d %d\n",__FILE__,__LINE__,file->mode, NC_MPIIO| NC_NETCDF4);
       ierr = nc_create_par(filename, file->mode, ios->io_comm,ios->info  , &(file->fh));
       break;
     case PIO_IOTYPE_NETCDF4C:
@@ -379,7 +380,7 @@ int PIOc_sync (int ncid)
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
-  cn_buffer_report( *ios, true);
+  //  cn_buffer_report( *ios, true);
 
   wmb = &(file->buffer); 
   while(wmb != NULL){
