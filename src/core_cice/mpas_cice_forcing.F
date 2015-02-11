@@ -292,7 +292,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  atmospheric_forcing
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -306,6 +306,8 @@ contains
        streamManager, &
        domain, &
        simulationClock)
+
+    use cice_debug, only: cice_debug_output_array
 
     type (MPAS_streamManager_type), intent(inout) :: streamManager
 
@@ -333,21 +335,19 @@ contains
             "cice_atmospheric_forcing_sixhrly", &
             streamManager, &
             config_dt)
-#if 0
+
        call MPAS_forcing_get_forcing(&
             ciceForcingGroups, &
             "cice_atmospheric_forcing_monthly", &
             streamManager, &
             config_dt)
-#endif
+
     endif
-
-    call test_forcing(domain, simulationClock)
-
-    !call test_restart(domain)
 
     block => domain % blocklist
     do while (associated(block))
+
+       call forcing_testing(block)
 
        ! convert the input forcing variables to the coupling variables       
        select case (trim(config_atmospheric_forcing_type))
@@ -831,237 +831,6 @@ contains
     
   end subroutine cice_forcing_write_restart
 
-!-----------------------------------------------------------------------
-! debug
-!-----------------------------------------------------------------------
-
-  subroutine test_forcing(&
-       domain, &
-       simulationClock)
-
-    type(domain_type) :: domain
-
-    type(MPAS_clock_type) :: simulationClock
-
-    type (block_type), pointer :: block
-
-    type(mpas_pool_type), pointer :: atmosForcing, atmosForcing2
-
-    real(kind=RKIND), pointer :: &
-         zeroSixhrly, &
-         constantSixhrly, &
-         linearSixhrly, &
-         sinusoidalSixhrly, &
-         zeroMonthly, &
-         constantMonthly, &
-         linearMonthly, &
-         sinusoidalMonthly
-
-    real(kind=RKIND), pointer :: &
-         linearSixhrly1, &
-         sinusoidalSixhrly1, &
-         linearMonthly1, &
-         sinusoidalMonthly1
-
-    real(kind=RKIND), pointer :: &
-         linearSixhrly2, &
-         sinusoidalSixhrly2, &
-         linearMonthly2, &
-         sinusoidalMonthly2
-    
-    character(len=strKIND), pointer :: config_start_time
-
-    type(mpas_time_type) :: &
-         initialSimulationTime, &
-         currentSimulationTime, &
-         forcingTime
-
-    type(mpas_timeinterval_type) :: &
-         elapsedSimulationTime
-
-    real(kind=RKIND) :: &
-         elapsedSimulationTimeReal, &
-         elapsedSimulationTimeRealForcingSixhrly, &
-         elapsedSimulationTimeRealForcingMonthly
-
-    block => domain % blocklist
-    do while (associated(block))
-       
-       call MPAS_pool_get_config(block % configs, "config_start_time", config_start_time)
-       call MPAS_set_time(initialSimulationTime, dateTimeString=config_start_time)
-
-       currentSimulationTime = mpas_get_clock_time(simulationClock, MPAS_NOW)
-       elapsedSimulationTime = currentSimulationTime - initialSimulationTime
-       call mpas_get_timeInterval(elapsedSimulationTime, initialSimulationTime, dt=elapsedSimulationTimeReal)
-       elapsedSimulationTimeReal = elapsedSimulationTimeReal / (3600.0_RKIND * 24.0_RKIND)
-
-       elapsedSimulationTimeRealForcingSixhrly = 0.0_RKIND
- 
-       call MPAS_forcing_get_forcing_time(&
-            ciceForcingGroups, &
-            "cice_atmospheric_forcing_sixhrly", &
-            forcingTime)
-
-       elapsedSimulationTime = forcingTime - initialSimulationTime
-       call mpas_get_timeInterval(elapsedSimulationTime, initialSimulationTime, dt=elapsedSimulationTimeRealForcingSixhrly)
-       elapsedSimulationTimeRealForcingSixhrly = elapsedSimulationTimeRealForcingSixhrly / (3600.0_RKIND * 24.0_RKIND)
-
-       elapsedSimulationTimeRealForcingMonthly = 0.0_RKIND
-
-#if 0
-       call MPAS_forcing_get_forcing_time(&
-            ciceForcingGroups, &
-            "cice_atmospheric_forcing_monthly", &
-            forcingTime)
-
-       elapsedSimulationTime = forcingTime - initialSimulationTime
-       call mpas_get_timeInterval(elapsedSimulationTime, initialSimulationTime, dt=elapsedSimulationTimeRealForcingMonthly)
-       elapsedSimulationTimeRealForcingMonthly = elapsedSimulationTimeRealForcingMonthly / (3600.0_RKIND * 24.0_RKIND)
-#endif
-
-       call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
-       call MPAS_pool_get_subpool(block % structs, "atmos_forcing_forcing_input", atmosForcing2)
-
-       call MPAS_pool_get_array(atmosForcing, "zeroSixhrly", zeroSixhrly)
-       call MPAS_pool_get_array(atmosForcing, "constantSixhrly", constantSixhrly)
-       call MPAS_pool_get_array(atmosForcing, "linearSixhrly", linearSixhrly)
-       call MPAS_pool_get_array(atmosForcing, "sinusoidalSixhrly", sinusoidalSixhrly)
-       call MPAS_pool_get_array(atmosForcing, "zeroMonthly", zeroMonthly)
-       call MPAS_pool_get_array(atmosForcing, "constantMonthly", constantMonthly)
-       call MPAS_pool_get_array(atmosForcing, "linearMonthly", linearMonthly)
-       call MPAS_pool_get_array(atmosForcing, "sinusoidalMonthly", sinusoidalMonthly)
-
-       call MPAS_pool_get_array(atmosForcing2, "linearSixhrly_forcing_input", linearSixhrly1, 1)
-       call MPAS_pool_get_array(atmosForcing2, "sinusoidalSixhrly_forcing_input", sinusoidalSixhrly1, 1)
-       call MPAS_pool_get_array(atmosForcing2, "linearMonthly_forcing_input", linearMonthly1, 1)
-       call MPAS_pool_get_array(atmosForcing2, "sinusoidalMonthly_forcing_input", sinusoidalMonthly1, 1)
-
-       call MPAS_pool_get_array(atmosForcing2, "linearSixhrly_forcing_input", linearSixhrly2, 2)
-       call MPAS_pool_get_array(atmosForcing2, "sinusoidalSixhrly_forcing_input", sinusoidalSixhrly2, 2)
-       call MPAS_pool_get_array(atmosForcing2, "linearMonthly_forcing_input", linearMonthly2, 2)
-       call MPAS_pool_get_array(atmosForcing2, "sinusoidalMonthly_forcing_input", sinusoidalMonthly2, 2)
-
-       write(55,*) elapsedSimulationTimeReal, &
-            zeroSixhrly, constantSixhrly, linearSixhrly, sinusoidalSixhrly, &
-            zeroMonthly, constantMonthly, linearMonthly, sinusoidalMonthly, &
-            elapsedSimulationTimeRealForcingSixhrly, elapsedSimulationTimeRealForcingMonthly
-       !write(stderrUnit,*) time_hour, linearSixhrly, sinusoidalSixhrly, linearMonthly, sinusoidalMonthly
-       !write(stderrUnit,*) time_hour, linearSixhrly1, sinusoidalSixhrly1, linearMonthly1, sinusoidalMonthly1
-       !write(stderrUnit,*) time_hour, linearSixhrly2, sinusoidalSixhrly2, linearMonthly2, sinusoidalMonthly2
-       flush(55)
-
-       return
-
-       block => block % next
-    end do
-
-  end subroutine test_forcing
-
-!-----------------------------------------------------------------------
-
-  subroutine test_restart(domain)
-
-    type(domain_type) :: domain
-
-    type (block_type), pointer :: block
-
-    type(mpas_pool_type), pointer :: atmosForcing, atmosCoupling
-
-    real(kind=RKIND), pointer :: &
-         zeroSixhrly, &
-         constantSixhrly, &
-         linearSixhrly, &
-         sinusoidalSixhrly, &
-         zeroMonthly, &
-         constantMonthly, &
-         linearMonthly, &
-         sinusoidalMonthly
-
-    real(kind=RKIND), pointer :: &
-         zeroSixhrlyOutput, &
-         constantSixhrlyOutput, &
-         linearSixhrlyOutput, &
-         sinusoidalSixhrlyOutput, &
-         zeroMonthlyOutput, &
-         constantMonthlyOutput, &
-         linearMonthlyOutput, &
-         sinusoidalMonthlyOutput
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         airTemperature, &
-         airSpecificHumidity, &
-         rainfallRate, &
-         uAirVelocity, &
-         vAirVelocity, &
-         cloudFraction
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         airTemperatureOutput, &
-         airSpecificHumidityOutput, &
-         rainfallRateOutput, &
-         uAirVelocityOutput, &
-         vAirVelocityOutput, &
-         cloudFractionOutput
-
-    block => domain % blocklist
-    do while (associated(block))
-       
-       call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
-       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
-
-       call MPAS_pool_get_array(atmosForcing, "zeroSixhrly", zeroSixhrly)
-       call MPAS_pool_get_array(atmosForcing, "constantSixhrly", constantSixhrly)
-       call MPAS_pool_get_array(atmosForcing, "linearSixhrly", linearSixhrly)
-       call MPAS_pool_get_array(atmosForcing, "sinusoidalSixhrly", sinusoidalSixhrly)
-       call MPAS_pool_get_array(atmosForcing, "zeroMonthly", zeroMonthly)
-       call MPAS_pool_get_array(atmosForcing, "constantMonthly", constantMonthly)
-       call MPAS_pool_get_array(atmosForcing, "linearMonthly", linearMonthly)
-       call MPAS_pool_get_array(atmosForcing, "sinusoidalMonthly", sinusoidalMonthly)
-
-       call MPAS_pool_get_array(atmosForcing, "zeroSixhrlyOutput", zeroSixhrlyOutput)
-       call MPAS_pool_get_array(atmosForcing, "constantSixhrlyOutput", constantSixhrlyOutput)
-       call MPAS_pool_get_array(atmosForcing, "linearSixhrlyOutput", linearSixhrlyOutput)
-       call MPAS_pool_get_array(atmosForcing, "sinusoidalSixhrlyOutput", sinusoidalSixhrlyOutput)
-       call MPAS_pool_get_array(atmosForcing, "zeroMonthlyOutput", zeroMonthlyOutput)
-       call MPAS_pool_get_array(atmosForcing, "constantMonthlyOutput", constantMonthlyOutput)
-       call MPAS_pool_get_array(atmosForcing, "linearMonthlyOutput", linearMonthlyOutput)
-       call MPAS_pool_get_array(atmosForcing, "sinusoidalMonthlyOutput", sinusoidalMonthlyOutput)
-
-       zeroSixhrlyOutput = zeroSixhrly
-       constantSixhrlyOutput = constantSixhrly
-       linearSixhrlyOutput = linearSixhrly
-       sinusoidalSixhrlyOutput = sinusoidalSixhrly
-       zeroMonthlyOutput = zeroMonthly
-       constantMonthly = constantMonthly
-       linearMonthlyOutput = linearMonthly
-       sinusoidalMonthlyOutput = sinusoidalMonthly
-
-       call MPAS_pool_get_array(atmosCoupling, "airTemperature", airTemperature)
-       call MPAS_pool_get_array(atmosCoupling, "airSpecificHumidity", airSpecificHumidity)
-       call MPAS_pool_get_array(atmosCoupling, "rainfallRate", rainfallRate)
-       call MPAS_pool_get_array(atmosCoupling, "uAirVelocity", uAirVelocity)
-       call MPAS_pool_get_array(atmosCoupling, "vAirVelocity", vAirVelocity)
-       call MPAS_pool_get_array(atmosForcing, "cloudFraction", cloudFraction)
-
-       call MPAS_pool_get_array(atmosForcing, "airTemperatureOutput", airTemperatureOutput)
-       call MPAS_pool_get_array(atmosForcing, "airSpecificHumidityOutput", airSpecificHumidityOutput)
-       call MPAS_pool_get_array(atmosForcing, "rainfallRateOutput", rainfallRateOutput)
-       call MPAS_pool_get_array(atmosForcing, "uAirVelocityOutput", uAirVelocityOutput)
-       call MPAS_pool_get_array(atmosForcing, "vAirVelocityOutput", vAirVelocityOutput)
-       call MPAS_pool_get_array(atmosForcing, "cloudFractionOutput", cloudFractionOutput)
-
-       airTemperatureOutput = airTemperature
-       airSpecificHumidityOutput = airSpecificHumidity
-       rainfallRateOutput = rainfallRate
-       uAirVelocityOutput = uAirVelocity
-       vAirVelocityOutput = vAirVelocity
-       cloudFractionOutput = cloudFraction
-
-       block => block % next
-    end do
-
-  end subroutine test_restart
-
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  variable_interval_midmonth_forward
@@ -1215,6 +984,36 @@ contains
     variableInterval = (endOfMonth - previousMonthStart) / 2   
 
   end function variable_interval_midmonth_backward
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine forcing_testing(block)
+
+    use cice_debug, only: cice_debug_output_array
+
+    type(block_type) :: block
+
+    type(MPAS_pool_type), pointer :: pool
+
+    real(kind=RKIND), dimension(:), pointer :: array
+
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", pool)
+    
+    call MPAS_pool_get_array(pool, "airTemperature", array)
+
+    call cice_debug_output_array(array)
+
+  end subroutine forcing_testing
 
 !-----------------------------------------------------------------------
 
