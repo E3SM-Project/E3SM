@@ -536,13 +536,13 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
       recv_displs[iodesc->rfrom[i]] = recv_displs[iodesc->rfrom[i-1]]+iodesc->rcount[i-1]*tsize;
     // recalculate llen with repeats (such as halo region) included
     if(totalrecv>0){
-      iodesc->llen = totalrecv;
-      iodesc->rindex = (PIO_Offset *) bget(iodesc->llen*sizeof(PIO_Offset));
+      //      iodesc->llen = totalrecv;
+      iodesc->rindex = (PIO_Offset *) bget(totalrecv*sizeof(PIO_Offset));
       if(iodesc->rindex == NULL){
-	piomemerror(ios,iodesc->llen * sizeof(PIO_Offset), __FILE__,__LINE__);
+	piomemerror(ios,totalrecv * sizeof(PIO_Offset), __FILE__,__LINE__);
       }
     }
-    for(i=0;i<iodesc->llen;i++)
+    for(i=0;i<totalrecv;i++)
       iodesc->rindex[i]=0;
   }
   //   printf("%d rbuf_size %d\n",ios.comp_rank,rbuf_size);
@@ -888,15 +888,23 @@ void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[])
   for( i=0;i<iodesc->ndims;i++){
     totalgridsize *= gsize[i];
   }
-  MPI_Reduce(&(iodesc->llen), &totalllen, 1, PIO_OFFSET, MPI_SUM, ios.ioroot, ios.union_comm);
+  if(iodesc->rearranger==PIO_REARR_SUBSET){
+    totalllen=iodesc->llen;
+  }else{
+    totalllen = iodesc->ndof;
+  }
+  //  printf("%s %d %ld %ld\n",__FILE__,__LINE__,totalllen,totalgridsize);
+
+  MPI_Allreduce(MPI_IN_PLACE, &totalllen, 1, PIO_OFFSET, MPI_SUM, ios.union_comm);
+  //printf("%s %d %ld %ld\n",__FILE__,__LINE__,totalllen,totalgridsize);
+  
   if(totalllen < totalgridsize){
     iodesc->needsfill = true;
   }else{
     iodesc->needsfill = false;
     iodesc->gsize = NULL;
   }
-  //  Pass the needs fill value from io master to all tasks
-  MPI_Bcast(&(iodesc->needsfill), 1, MPI_INT, ios.ioroot, ios.union_comm);
+
   if(iodesc->needsfill){
     iodesc->gsize = (PIO_Offset *) bget(iodesc->ndims * sizeof(PIO_Offset));
     if(iodesc->gsize==NULL){

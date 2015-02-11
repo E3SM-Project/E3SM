@@ -138,7 +138,7 @@ contains
     double precision :: wall(2), sys(2), usr(2)
     integer :: niomin, niomax
     integer :: nv
-    integer,  parameter :: c0 = 0
+    integer,  parameter :: c0 = -1
     double precision, parameter :: cd0 = 1.0e30
     nullify(compmap)
 
@@ -183,7 +183,8 @@ contains
        dfld = mype
        do nv=1,nvars
           do j=1,maplen
-             ifld(j,nv) = nv*100000000 +mype*1000000 + compmap(j)
+!             ifld(j,nv) = nv*100000000 +mype*1000000 + compmap(j)
+             ifld(j,nv) = compmap(j)
              dfld(j,nv) = ifld(j,nv)/1000000.0
 !             if(nv==2) then
 !                ifld(j+(nv-1)*maplen) = -(mype*1000000 + compmap(j))
@@ -221,19 +222,16 @@ contains
                 call WriteMetadata(File, gdims, vari, varr, vard)
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
-!                call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
+                call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
 !                call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
-                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
+!                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
 !                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
 
                 do frame=1,nframes
-!                print *,__FILE__,__LINE__,frame
                    do nv=1,nvars   
-                      call PIO_setframe(File, varr(nv), frame)
-!                print *,__FILE__,__LINE__,frame,nv
-                      call pio_write_darray(File, varr(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval=cd0)
+                      call PIO_setframe(File, vari(nv), frame)
+                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval=c0)
                    enddo
-!                print *,__FILE__,__LINE__,frame
 ! multiversion  
 !                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
 
@@ -267,16 +265,16 @@ contains
 ! Now the Read
                 ierr = PIO_OpenFile(iosystem, File, iotype, trim(fname), mode=PIO_NOWRITE);
                 do nv=1,nvars
-                   write(varname,'(a,i4.4)') 'varr',nv
-                   ierr =  pio_inq_varid(File, varname, varr(nv))
+                   write(varname,'(a,i4.4)') 'vari',nv
+                   ierr =  pio_inq_varid(File, varname, vari(nv))
                 enddo
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
                 
                 do frame=1,nframes                   
                    do nv=1,nvars
-                      call PIO_setframe(File, varr(nv), frame)
-                      call pio_read_darray(File, varr(nv), iodesc_r8, dfld_in(:,nv), ierr)
+                      call PIO_setframe(File, vari(nv), frame)
+                      call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv), ierr)
                    enddo
                 enddo
                 
@@ -288,8 +286,10 @@ contains
                 errorcnt = 0
                 do nv=1,nvars
                    do j=1,maplen
-                      if(dfld(j,nv) /= dfld_in(j,nv) .and. compmap(j) /= 0) then
-!                         print *,__LINE__,mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
+                      if(ifld(j,nv) /= ifld_in(j,nv) .and. compmap(j) /= 0) then
+                         if(errorcnt < 10) then
+                            print *,__LINE__,mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
+                         endif
                          errorcnt = errorcnt+1
                       endif
                    enddo
