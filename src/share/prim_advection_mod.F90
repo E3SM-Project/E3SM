@@ -853,7 +853,7 @@ module prim_advection_mod
   use edge_mod, only           : EdgeDescriptor_t, newEdgeBuffer_t, newedgevpack, newedgerotate, newedgevunpack, initedgebuffer, newedgevunpackmin, ghostbuffer3D_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
-  use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax
+  use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax,newneighbor_minmax
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   use parallel_mod, only   : abortmp
 
@@ -870,7 +870,7 @@ module prim_advection_mod
 #endif
   public :: vertical_remap
 
-  type (newEdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1,  edgeveloc
+  type (newEdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdvQ2JMD, edgeAdv1,  edgeveloc
   type (ghostBuffer3D_t)   :: ghostbuf_tr
 
   integer,parameter :: DSSeta = 1
@@ -879,6 +879,7 @@ module prim_advection_mod
   integer,parameter :: DSSno_var = -1
 
   real(kind=real_kind), allocatable :: qmin(:,:,:), qmax(:,:,:)
+  real(kind=real_kind), allocatable :: qminJMD(:,:,:), qmaxJMD(:,:,:)
 
   type (derivative_t), public, allocatable   :: deriv(:) ! derivative struct (nthreads)
 
@@ -932,6 +933,7 @@ contains
     call initEdgeBuffer(par,edgeAdv_p1,desc,qsize*nlev + nlev)
     call initEdgeBuffer(par,edgeAdvQ2,desc,qsize*nlev*2)  ! Qtens,Qmin, Qmax
     call initEdgeBuffer(par,edgeveloc,desc,2*nlev)
+    call initEdgeBuffer(par,edgeAdvQ2JMD,desc,qsize*nlev*2,NewMethod=.TRUE.)
 
     deallocate(desc)
 
@@ -944,6 +946,8 @@ contains
     ! this static array is shared by all threads, so dimension for all threads (nelemd), not nets:nete:
     allocate (qmin(nlev,qsize,nelemd))
     allocate (qmax(nlev,qsize,nelemd))
+    allocate (qminJMD(nlev,qsize,nelemd))
+    allocate (qmaxJMD(nlev,qsize,nelemd))
 
   end subroutine Prim_Advec_Init1
 
@@ -2016,7 +2020,13 @@ end subroutine ALE_parametric_coords
         enddo
       enddo
       ! update qmin/qmax based on neighbor data for lim8
+      qminJMD=qmin
+      qmaxJMD=qmax
       call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
+      call newneighbor_minmax(hybrid,edgeAdvQ2JMD,nets,nete,qminJMD(:,:,nets:nete), qmaxJMD(:,:,nets:nete))
+      if(SUM(qmin-qminJMD) > 0.0D0) print *,'ERROR detected: diff(qmin-qminJMD): ',SUM(qmin-qminJMD)
+      if(SUM(qmax-qmaxJMD) > 0.0D0) print *,'ERROR detected: diff(qmax-qmaxJMD): ',SUM(qmax-qmaxJMD)
+      
     endif
 
     ! lets just reuse the old neighbor min/max, but update based on local data

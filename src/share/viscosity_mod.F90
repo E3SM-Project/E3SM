@@ -19,7 +19,8 @@ use parallel_mod, only : parallel_t
 use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
 use edge_mod, only :  newEdgeBuffer_t, newedgevpack, newedgerotate, newedgevunpack, newedgevunpackmin, &
-    newedgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, EdgeDescriptor_t
+    newedgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, EdgeDescriptor_t, newedgeSunpackmax, newedgeSunpackmin,newedgeSpack
+
 use bndry_mod, only : bndry_exchangev
 use control_mod, only : hypervis_scaling, nu, nu_div
 
@@ -787,6 +788,42 @@ end subroutine
 
 
 #ifdef _PRIM
+
+subroutine NewNeighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
+ 
+   type (hybrid_t)      , intent(in) :: hybrid
+   type (newEdgeBuffer_t)  , intent(inout) :: edgeMinMax
+   integer :: nets,nete
+   real (kind=real_kind) :: min_neigh(nlev,qsize,nets:nete)
+   real (kind=real_kind) :: max_neigh(nlev,qsize,nets:nete)
+
+   ! local 
+   integer :: ie,q, k,kptr
+
+   
+   do ie=nets,nete
+      kptr = 0
+      call  newedgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      kptr = qsize*nlev
+      call  newedgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+   enddo
+   
+   call bndry_exchangeV(hybrid,edgeMinMax)
+
+   do ie=nets,nete
+      kptr = 0
+      call  newedgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      kptr = qsize*nlev
+      call  newedgeSunpackMAX(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      do q=1,qsize
+      do k=1,nlev
+          min_neigh(k,q,ie) = max(min_neigh(k,q,ie),0d0)
+      enddo
+      enddo
+   enddo
+  
+end subroutine NewNeighbor_minmax
+
 subroutine neighbor_minmax(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
 !
 ! compute Q min&max over the element and all its neighbors
