@@ -2542,7 +2542,7 @@ sub add_default {
           warning("No default value found for $var.\n" .
                   "            Are defaults provided for this resolution and land mask?\n");
         } else {
-          fatal_error("No default value found for $var.\n" .
+          warning("No default value found for $var.\n" .
                       "            Are defaults provided for this resolution and land mask?\n");
         }
       }
