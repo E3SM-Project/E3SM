@@ -32,20 +32,20 @@ module Sort
 #endif
 
    interface
-      subroutine qsort(array, elem_count, elem_size, compare) bind(C, name="qsort")
+      subroutine qsort(array, elem_count, elem_size, compare) bind(C, name="qsort")!{{{
          import
          type(c_ptr), value       :: array
          integer(c_size_t), value :: elem_count
          integer(c_size_t), value :: elem_size
          type(c_funptr), value    :: compare ! int (*compare)(const void*, const void*)
-      end subroutine qsort ! standard C library qsort
+      end subroutine qsort!}}}
    end interface
 
    public :: compareIntDescending, compareRealDescending
 
    contains
 
-   integer(c_int) function compareIntDescending(a, b) bind(C)
+   integer(c_int) function compareIntDescending(a, b) bind(C)!{{{
       integer(c_int), intent(in) :: a, b
 
       if (a < b) then
@@ -55,9 +55,9 @@ module Sort
       else
          compareIntDescending = -1
       end if
-   end function compareIntDescending
+   end function compareIntDescending!}}}
 
-   integer(c_int) function compareRealDescending( a, b ) bind(C)
+   integer(c_int) function compareRealDescending( a, b ) bind(C)!{{{
       real (C_REAL), intent(in) :: a, b
 
       if (a < b) then
@@ -67,7 +67,7 @@ module Sort
       else
          compareRealDescending = -1
       end if
-   end function compareRealDescending
+   end function compareRealDescending!}}}
 
 end module Sort
 
@@ -91,21 +91,21 @@ module ocn_okubo_weiss
    save
 
    interface
-      subroutine compute_ev_2(A, wr, wi)
+      subroutine compute_ev_2(A, wr, wi)!{{{
          use iso_c_binding, only: c_double
          real (c_double), dimension(2,2) :: A
          real (c_double), dimension(2) :: wr
          real (c_double), dimension(2) :: wi
-      end subroutine compute_ev_2
+      end subroutine compute_ev_2!}}}
    end interface
 
    interface
-      subroutine compute_ev_3(A, wr, wi)
+      subroutine compute_ev_3(A, wr, wi)!{{{
          use iso_c_binding, only: c_double
          real (c_double), dimension(3,3) :: A
          real (c_double), dimension(3) :: wr
          real (c_double), dimension(3) :: wi
-      end subroutine compute_ev_3
+      end subroutine compute_ev_3!}}}
    end interface
 
    !--------------------------------------------------------------------
@@ -319,9 +319,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_OW_values(dvel, nVertLevels, nCells, maxLevelCell, &
+   subroutine ocn_compute_OW_values(dvel, nVertLevels, nCells, maxLevelCell, &!{{{
                                     OW, OW_norm, Lam2, Lam2_R3, Lam2_norm, &
-                                    S, om, Lam1)!{{{
+                                    S, om, Lam1)
 
       !-----------------------------------------------------------------
       !
@@ -570,8 +570,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_OW_component_IDs(dminfo, block, meshPool, processorId, nVertLevels, &
-                                           nCells, OW_thresh, OW_cc_id)!{{{
+   subroutine ocn_compute_OW_component_IDs(dminfo, block, meshPool, processorId, nVertLevels, &!{{{
+                                           nCells, OW_thresh, OW_cc_id)
 
       !-----------------------------------------------------------------
       !
@@ -694,7 +694,7 @@ contains
       end do
 
       call mpas_timer_stop("CC local", CCLocalTimer)
-      call mpas_timer_start("CC communcation loop", .false., CCComLoopTimer)
+      call mpas_timer_start("CC communication loop", .false., CCComLoopTimer)
 
       ! Merge components that are connected over domain boundaries
       ! Communicate the CC IDs over the halo field.
@@ -740,16 +740,14 @@ contains
             end do
          end do
 
-         write (*,*) "Something updated in communication process:", communcationLoop, updateArray(1)
          if (communcationLoop > 2) then
             call mpas_dmpar_max_int_array(dminfo, 1, updateArray, globalUpdateArray)
             if (globalUpdateArray(1) == 0) then
-               write (*,*) "Nothing changed globally, exiting after round", communcationLoop
                exit
             end if
          end if
       end do
-      call mpas_timer_stop("CC communcation loop", CCComLoopTimer)
+      call mpas_timer_stop("CC communication loop", CCComLoopTimer)
 
       call mpas_timer_start("CC eddy stats", .false., CCStatsTimer)
       call ocn_compute_eddy_stats(dminfo, block, nVertLevels, nCells, nCellsSolve, nLocalCCs, &
@@ -869,8 +867,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_eddy_stats(dminfo, block, nVertLevels, nCells, nCellsSolve, &
-                                     nLocalCCs, nEdgesOnCell, cellsOnCell, OW_cc_id, OW_thresh)!{{{
+   subroutine ocn_compute_eddy_stats(dminfo, block, nVertLevels, nCells, nCellsSolve, &!{{{
+                                     nLocalCCs, nEdgesOnCell, cellsOnCell, OW_cc_id, OW_thresh)
 
 
       !-----------------------------------------------------------------
@@ -884,7 +882,15 @@ contains
       integer, intent(in) :: nVertLevels, nCells, nCellsSolve, nLocalCCs
       integer, dimension(:), intent(in) :: nEdgesOnCell
       integer, dimension(:,:), intent(in) :: cellsOnCell
-      integer, dimension(:,:), intent(in) :: OW_thresh, OW_cc_id
+      integer, dimension(:,:), intent(in) :: OW_thresh
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, dimension(:,:), intent(inout) :: OW_cc_id
 
       !-----------------------------------------------------------------
       !
@@ -901,6 +907,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: posX, posY, posZ
       real (kind=RKIND), dimension(:,:), pointer :: velX, velY, velZ
       logical, pointer :: on_a_sphere, use_lat_lon_coords
+      integer, pointer :: min_cells
 
       integer, dimension(nVertLevels*nCells) :: nextCellIdxK, nextCellIdxI
       real (kind=RKIND), dimension(nLocalCCs) :: sumVol, numCells, origCCId, wsVelX, wsVelY, wsVelZ, &
@@ -917,6 +924,7 @@ contains
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_use_lat_lon_coords', use_lat_lon_coords)
+      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_eddy_min_cells', min_cells)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
@@ -934,9 +942,9 @@ contains
          call mpas_pool_get_array(meshPool, 'xCell', posX)
          call mpas_pool_get_array(meshPool, 'yCell', posY)
          call mpas_pool_get_array(meshPool, 'zCell', posZ)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityX', velX)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityY', velY)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', velZ)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityX', velX)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityY', velY)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velZ)
       end if
 
       call mpas_timer_start("stats per proc", .false., CCStatsPerProcT)
@@ -1049,13 +1057,15 @@ contains
 
       numCCsArray(1) = curCC
       call mpas_dmpar_max_int_array(dminfo, 1, numCCsArray, maxNumCCsArray)
-      write (*,*) "Number of (partial) eddies on this domain:", numCCsArray(1)
-      write (*,*) "Global maximum of (partial) eddies on a domain:", maxNumCCsArray(1)
 
+      ! this merges eddy stats AND outputs the results
       call mpas_timer_start("aggregate stats", .false., CCAggregateStatsT)
-      call ocn_aggregate_eddy_stats(dmInfo, use_lat_lon_coords, curCC, maxNumCCsArray(1), &
-                                    origCCId, sumVol, numCells, wsPosX, wsPosY, wsPosZ, &
-                                    wsVelX, wsVelY, wsVelZ)
+      call ocn_aggregate_eddy_stats(dmInfo, use_lat_lon_coords, min_cells, &
+                                    curCC, maxNumCCsArray(1), &
+                                    origCCId, sumVol, numCells, &
+                                    wsPosX, wsPosY, wsPosZ, &
+                                    wsVelX, wsVelY, wsVelZ, &
+                                    OW_cc_id, nVertLevels, nCellsSolve)
       call mpas_timer_stop("aggregate stats", CCAggregateStatsT)
 
    end subroutine ocn_compute_eddy_stats!}}}
@@ -1074,9 +1084,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_aggregate_eddy_stats(dmInfo, use_lat_lon_coords,  numCCs, maxCCsPerDomain, &
-                                       origCCId, sumVol, numCells, wsPosX, wsPosY, wsPosZ, &
-                                       wsVelX, wsVelY, wsVelZ)!{{{
+   subroutine ocn_aggregate_eddy_stats(dmInfo, use_lat_lon_coords, min_cells, &!{{{
+                                       numCCs, maxCCsPerDomain, &
+                                       origCCId, sumVol, numCells, &
+                                       wsPosX, wsPosY, wsPosZ, &
+                                       wsVelX, wsVelY, wsVelZ, &
+                                       OW_cc_id, nVertLevels, nCellsSolve)
 
 
       !-----------------------------------------------------------------
@@ -1087,9 +1100,18 @@ contains
 
       type (dm_info), intent(in) :: dminfo
       logical, intent(in) :: use_lat_lon_coords
-      integer, intent(in) :: numCCs, maxCCsPerDomain
+      integer, intent(in) :: numCCs, maxCCsPerDomain, min_cells
       real (kind=RKIND), dimension(:), intent(in) :: origCCId, sumVol, numCells, &
                              wsPosX, wsPosY, wsPosZ, wsVelX, wsVelY, wsVelZ
+      integer, intent(in) :: nVertLevels, nCellsSolve
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, dimension(:,:), intent(inout) :: OW_cc_id
 
       !-----------------------------------------------------------------
       !
@@ -1101,11 +1123,12 @@ contains
       real (kind=RKIND), dimension(9 * maxCCsPerDomain * dmInfo % nprocs) :: &
          globalStats, aggregated
 
-      integer i, j, ierr, curId, listIdx, totalCCs
+      integer i, j, k, ierr, curId, listIdx, totalCCs, cullId
 
-      call mpas_timer_start("gather", .false., CCAggGatherT)
       ! Multiplex all eddy statistics into one array so it can be send with
       ! one MPI communication call
+      call mpas_timer_start("all gather", .false., CCAggGatherT)
+
       stats = 0
       do i = 1, numCCs
          stats(9*(i-1) + 1) = origCCId(i)
@@ -1119,43 +1142,72 @@ contains
          stats(9*(i-1) + 9) = numCells(i)
       end do
 
-      ! Send all local statistics to IO node
-      call MPI_Gather(stats, 9*maxCCsPerDomain, MPI_REALKIND, &
+      ! Send all local statistics
+      call MPI_Allgather(stats, 9*maxCCsPerDomain, MPI_REALKIND, &
                       globalStats, 9*maxCCsPerDomain, MPI_REALKIND, &
-                      IO_NODE, dmInfo % comm, ierr)
-      call mpas_timer_stop("gather", CCAggGatherT)
+                      dmInfo % comm, ierr)
+      call mpas_timer_stop("all gather", CCAggGatherT)
 
-      if (dminfo % my_proc_id == IO_NODE) then
-         call mpas_timer_start("sort/reduce", .false., CCAggSortT)
+      ! Sort partial eddy stats according to eddy ID for efficient merging
+      call mpas_timer_start("sort/reduce", .false., CCAggSortT)
 
-         ! Sort partial eddy stats according to eddy ID for efficient merging
-         totalCCs = maxCCsPerDomain * dmInfo % nprocs
-         if (totalCCs > 0) then
-            call ocn_sort_eddy_stats(globalStats, totalCCs, 9)
+      totalCCs = maxCCsPerDomain * dmInfo % nprocs
+      if (totalCCs > 0) then
+         call ocn_sort_eddy_stats(globalStats, totalCCs, 9)
+      end if
+
+      ! Aggregate the results
+      listIdx = 0
+      aggregated = 0
+      curId = -1
+      do i = 1, totalCCs
+         ! if our current id is not the same (new eddy)
+         if (globalStats(9*(i-1)+1) /= curId) then
+            ! get ID
+            curId = globalStats(9*(i-1)+1)
+
+            ! check to see if the last one was big enough
+            if (listIdx .gt. 0) then
+              ! cull it if it wasn't
+              if (aggregated(9*(listIdx-1)+9) .lt. min_cells) then
+                cullId = aggregated(9*(listIdx-1)+1)
+
+                do j = 1, 9
+                  aggregated(9*(listIdx-1)+j) = 0
+                end do
+                listIdx = listIdx - 1
+
+                ! remove the CC from the local domain
+                do k = 1, nCellsSolve
+                  do j = 1, nVertLevels
+                    if (OW_cc_id(j, k) == cullId) then
+                      OW_cc_id(j, k) = -1
+                    end if
+                  end do
+                end do
+              end if
+            end if
+
+            ! if 0, then end of the list
+            if (curId == 0) then
+               exit
+            end if
+
+            ! new eddy
+            listIdx = listIdx + 1
+            aggregated(9*(listIdx-1)+1) = curId
          end if
 
-         ! Aggregate the results
-         listIdx = 0
-         aggregated = 0
-         curId = -1
-         do i = 1, totalCCs
-            if (globalStats(9*(i-1)+1) /= curId) then
-               curId = globalStats(9*(i-1)+1)
-               if (curId == 0) then
-                  exit
-               end if
-               listIdx = listIdx + 1
-            end if
-            aggregated(9*(listIdx-1)+1) = curId
-            ! Merge stats about weighted position, velocity, etc. by summing
-            do j = 2, 9
-               aggregated(9*(listIdx-1)+j) = aggregated(9*(listIdx-1)+j) &
-                                           + globalStats(9*(i-1)+j)
-            end do
+         ! Merge stats about weighted position, velocity, etc. by summing
+         do j = 2, 9
+            aggregated(9*(listIdx-1)+j) = aggregated(9*(listIdx-1)+j) &
+                                        + globalStats(9*(i-1)+j)
          end do
-         write (*,*) "Number of aggregated eddies:", listIdx
-         call mpas_timer_stop("sort/reduce", CCAggSortT)
+      end do
+      call mpas_timer_stop("sort/reduce", CCAggSortT)
 
+      ! only output if IO node
+      if (dminfo % my_proc_id == IO_NODE) then
          ! Output aggregated
          call mpas_timer_start("output", .false., CCOutputT)
          call ocn_output_eddy_stats(listIdx, aggregated, use_lat_lon_coords)
@@ -1183,7 +1235,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_sort_eddy_stats(stats, numRecords, recordLength)
+   subroutine ocn_sort_eddy_stats(stats, numRecords, recordLength)!{{{
       use iso_c_binding
       use Sort
 
@@ -1196,7 +1248,7 @@ contains
 
       call qsort(c_loc(stats(1)), elemCount, elemSize, c_funloc(compareRealDescending))
 
-   end subroutine ocn_sort_eddy_stats
+   end subroutine ocn_sort_eddy_stats!}}}
 
 
 !***********************************************************************
@@ -1230,6 +1282,7 @@ contains
 
       real (kind=RKIND) :: v
       integer i, fileID
+      integer id
 
       fileID = mpas_get_free_unit()
 
@@ -1240,22 +1293,22 @@ contains
           statsFileCreated = .true.
       else
           open(fileID, file='okubo_weiss_eddy_stats.txt', STATUS='UNKNOWN', POSITION='append')
-          write(fileID, *) ""
       endif 
+      
+      write (fileID, *) '"eddy ID", ', '"number of cells", ', '"volume sum", ',  '"weighted position", ', '"average position", ', '"average velocity"' 
 
       ! Output number of eddies and statistics for each eddy
-      write (fileID, *) "Number of eddies:", numEddies
       do i = 1, numEddies
-         write (fileID, *) "Eddy ID:", i, int(aggData(9*(i-1)+1))
+         write (fileID, '(I, A)', advance='no') int(aggData(9*(i-1)+1)), ', '
          v = aggData(9*(i-1)+2)
-         write (fileID, *) "Volume sum:", v
-         write (fileID, *) "Number of cells:", aggData(9*(i-1)+9)
-         write (fileID, *) "Weighted position:", aggData(9*(i-1)+3), aggData(9*(i-1)+4), aggData(9*(i-1)+5)
-         write (fileID, *) "Average position:", aggData(9*(i-1)+3)/v, aggData(9*(i-1)+4)/v, aggData(9*(i-1)+5)/v
+         write (fileID, '(I, A)', advance='no') int(aggData(9*(i-1)+9)), ', '
+         write (fileID, '(ES, A)', advance='no') v, ', '
+         write (fileID, '(ES, ES, ES, A)', advance='no') aggData(9*(i-1)+3), aggData(9*(i-1)+4), aggData(9*(i-1)+5), ', '
+         write (fileID, '(ES, ES, ES, A)', advance='no') aggData(9*(i-1)+3)/v, aggData(9*(i-1)+4)/v, aggData(9*(i-1)+5)/v, ', '
          if (use_lat_lon_coords) then
-            write (fileID, *) "Average velocity:", aggData(9*(i-1)+6)/v, aggData(9*(i-1)+7)/v
+            write (fileID, '(ES, ES)') aggData(9*(i-1)+6)/v, aggData(9*(i-1)+7)/v
          else
-            write (fileID, *) "Average Velocity:", aggData(9*(i-1)+6)/v, aggData(9*(i-1)+7)/v, aggData(9*(i-1)+8)/v
+            write (fileID, '(ES, ES, ES)') aggData(9*(i-1)+6)/v, aggData(9*(i-1)+7)/v, aggData(9*(i-1)+8)/v
          end if
       end do
 
@@ -1300,10 +1353,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_velocity_gradient_R3Cell(normalVelocity, tangentialVelocity, &
+   subroutine mpas_velocity_gradient_R3Cell(normalVelocity, tangentialVelocity, &!{{{
       meshPool, edgeSignOnCell, edgeTangentVectors, includeHalo, &
       nVertLevels, nEdges, &
-      velocityGradient)!{{{
+      velocityGradient)
 
       !-----------------------------------------------------------------
       !
