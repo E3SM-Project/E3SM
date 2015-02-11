@@ -96,6 +96,7 @@ module edge_mod
   public :: newedgeVunpackMIN, newedgeVunpackMAX
   public :: newedgeDGVpack, newedgeDGVunpack
   
+  public :: newedgeSpack, newedgeSunpackMIN, newedgeSunpackMAX
   
 
   public :: edgeVunpackVert
@@ -410,7 +411,7 @@ contains
   !
   ! create an Real based communication buffer
   ! =========================================
-  subroutine initNewEdgeBuffer(par,edge,desc,nlyr)
+  subroutine initNewEdgeBuffer(par,edge,desc,nlyr,NewMethod)
     use dimensions_mod, only : np, nelemd, max_corner_elem
     use schedtype_mod, only : cycle_t, schedule_t, schedule
     implicit none
@@ -418,6 +419,7 @@ contains
     type (newEdgeBuffer_t),intent(out), target :: edge
     type (EdgeDescriptor_t),intent(in)  :: desc(:)
     integer,intent(in)                :: nlyr
+    logical (kind=log_kind), intent(in), optional :: NewMethod
     ! integer, intent(in)  :: globalid(:)
 
     ! Notes about the buf_ptr/receive_ptr options:
@@ -454,7 +456,12 @@ contains
     ! call t_adj_detailf(+3)
     call t_startf('initnewedgebuffer')
 
-    nbuf=nlyr*4*(np+max_corner_elem)*nelemd
+    if(present(NewMethod)) then 
+        nbuf=nlyr*4*(1+max_corner_elem)*nelemd
+    else 
+        nbuf=nlyr*4*(np+max_corner_elem)*nelemd
+    endif
+
     edge%nlyr=nlyr
     edge%nbuf=nbuf
     if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
@@ -472,12 +479,20 @@ contains
           if(desc(ie)%putmapP(i) == -1) then 
               edge%putmap(i,ie) = -1
           else
-              edge%putmap(i,ie) = nlyr*desc(ie)%putmapP(i)
+              if(present(NewMethod)) then 
+                  edge%putmap(i,ie) = nlyr*desc(ie)%putmapS(i)
+              else
+                  edge%putmap(i,ie) = nlyr*desc(ie)%putmapP(i)
+              endif
           endif
           if(desc(ie)%getmapP(i) == -1) then 
               edge%getmap(i,ie) = -1
           else
-              edge%getmap(i,ie) = nlyr*desc(ie)%getmapP(i)
+              if(present(NewMethod)) then 
+                  edge%getmap(i,ie) = nlyr*desc(ie)%getmapS(i)
+              else
+                  edge%getmap(i,ie) = nlyr*desc(ie)%getmapP(i)
+              endif
           endif
           edge%reverse(i,ie) = desc(ie)%reverse(i) 
        enddo
@@ -485,8 +500,13 @@ contains
 
     ! Determine the most optimal way to move data in the bndry_exchange call 
     pSchedule  => Schedule(1)
-    moveLength = nlyr*pSchedule%MoveCycle(1)%lengthP
-    ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrP -1) + 1 
+    if(present(NewMethod)) then 
+        moveLength = nlyr*pSchedule%MoveCycle(1)%lengthS
+        ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrS -1) + 1 
+    else
+        moveLength = nlyr*pSchedule%MoveCycle(1)%lengthP
+        ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrP -1) + 1 
+    endif
 
 !NEWEDGEBUFF    do i=1,pSchedule%pPtr-1
 !NEWEDGEBUFF       elemid = pSchedule%pIndx(i)%elemid
@@ -1196,6 +1216,85 @@ contains
     call t_adj_detailf(-2)
 
   end subroutine newedgeVpack
+
+  subroutine newedgeSpack(edge,v,vlyr,kptr,ielem)
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+
+    type (newEdgeBuffer_t)                :: edge
+    integer,              intent(in)   :: vlyr
+    real (kind=real_kind),intent(in)   :: v(vlyr)
+    integer,              intent(in)   :: kptr
+    integer,              intent(in)   :: ielem
+!    type (EdgeDescriptor_t),intent(in) :: desc
+
+    ! Local variables
+    integer :: i,k,ir,ll,iptr
+
+    integer :: is,ie,in,iw
+    integer :: nce
+    real (kind=real_kind) :: tmp
+
+    call t_adj_detailf(+2)
+    call t_startf('newedgeSpack')
+
+    is = edge%putmap(south,ielem)
+    ie = edge%putmap(east,ielem)
+    in = edge%putmap(north,ielem)
+    iw = edge%putmap(west,ielem)
+    if (edge%nlyr < (kptr+vlyr) ) then
+       call haltmp('edgeSpack: Buffer overflow: size of the vertical dimension must be increased!')
+    endif
+
+    do k=1,vlyr
+       iptr = kptr+k-1
+       edge%buf(iptr+ie)   = v(k) ! East
+       edge%buf(iptr+is)   = v(k) ! South
+       edge%buf(iptr+in)   = v(k) ! North
+       edge%buf(iptr+iw)   = v(k) ! West
+    enddo
+    !set the max_corner_elem
+    nce = max_corner_elem
+! SWEST
+    do ll=swest,swest+max_corner_elem-1
+        if (edge%putmap(ll,ielem) /= -1) then
+            do k=1,vlyr
+                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(k)
+            end do
+        end if
+    end do
+
+! SEAST
+    do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
+        if (edge%putmap(ll,ielem) /= -1) then
+            do k=1,vlyr
+                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(k)
+            end do
+        end if
+    end do
+
+! NEAST
+    do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+        if (edge%putmap(ll,ielem) /= -1) then
+            do k=1,vlyr
+                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(k)
+            end do
+        end if
+    end do
+
+! NWEST
+    do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+        if (edge%putmap(ll,ielem) /= -1) then
+            do k=1,vlyr
+                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(k)
+            end do
+        end if
+    end do
+
+    call t_stopf('newedgeSpack')
+    call t_adj_detailf(-2)
+
+  end subroutine newedgeSpack
 
   ! =========================================
   ! LongEdgeVpack:
@@ -2067,6 +2166,138 @@ contains
     end do
     
   end subroutine newedgeVunpackMAX
+
+  subroutine newedgeSunpackMAX(edge,v,vlyr,kptr,ielem)
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+
+    type (newEdgeBuffer_t),         intent(in)  :: edge
+    integer,               intent(in)  :: vlyr
+    real (kind=real_kind), intent(inout) :: v(vlyr)
+    integer,               intent(in)  :: kptr
+    integer,               intent(in)  :: ielem
+
+
+    ! Local
+
+    integer :: i,k,l,iptr,nce
+    integer :: is,ie,in,iw
+
+    threadsafe=.false.
+
+    is=edge%getmap(south,ielem)
+    ie=edge%getmap(east,ielem)
+    in=edge%getmap(north,ielem)
+    iw=edge%getmap(west,ielem)
+    do k=1,vlyr
+       iptr=(kptr+k-1)
+       v(k) = MAX(v(k),edge%receive(iptr+is),edge%receive(iptr+ie),edge%receive(iptr+in),edge%receive(iptr+iw))
+    end do
+
+    nce = max_corner_elem
+! SWEST
+    do l=swest,swest+max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(k)=MAX(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! SEAST
+    do l=swest+max_corner_elem,swest+2*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(k)=MAX(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! NEAST
+    do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then
+            do k=1,vlyr
+                v(k)=MAX(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! NWEST
+    do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(k)=MAX(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+    
+  end subroutine newedgeSunpackMAX
+
+  subroutine newedgeSunpackMIN(edge,v,vlyr,kptr,ielem)
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+
+    type (newEdgeBuffer_t),         intent(in)  :: edge
+    integer,               intent(in)  :: vlyr
+    real (kind=real_kind), intent(inout) :: v(vlyr)
+    integer,               intent(in)  :: kptr
+    integer,               intent(in)  :: ielem
+
+
+    ! Local
+
+    integer :: i,k,l,iptr,nce
+    integer :: is,ie,in,iw
+
+    threadsafe=.false.
+
+    is=edge%getmap(south,ielem)
+    ie=edge%getmap(east,ielem)
+    in=edge%getmap(north,ielem)
+    iw=edge%getmap(west,ielem)
+    do k=1,vlyr
+       iptr=(kptr+k-1)
+       v(k) = MIN(v(k),edge%receive(iptr+is),edge%receive(iptr+ie),edge%receive(iptr+in),edge%receive(iptr+iw))
+    end do
+
+    nce = max_corner_elem
+! SWEST
+    do l=swest,swest+max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(k)=MiN(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! SEAST
+    do l=swest+max_corner_elem,swest+2*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(k)=MIN(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! NEAST
+    do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then
+            do k=1,vlyr
+                v(k)=MIN(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+
+! NWEST
+    do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+        if(edge%getmap(l,ielem) /= -1) then 
+            do k=1,vlyr
+                v(k)=MIN(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+            enddo
+        endif
+    end do
+    
+  end subroutine newedgeSunpackMIN
 
   subroutine oldedgeVunpackMIN(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np, max_corner_elem
