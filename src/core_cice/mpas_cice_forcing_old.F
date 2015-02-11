@@ -10,7 +10,7 @@
 !
 !-----------------------------------------------------------------------
 
-module cice_forcing
+module cice_forcing_old
 
   use mpas_grid_types
   use mpas_timekeeping
@@ -26,7 +26,7 @@ module cice_forcing
        cice_convert_pop_forcing_to_mpas
 
   character(len=200), parameter :: &
-       forcingType = "480km"
+       forcingType = "gx1"
          
   integer, parameter, private :: &
        epoch = 1900
@@ -276,6 +276,39 @@ contains
        call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(6), "monthly", &
             "", "prec.nmyr.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
 
+    else if (trim(forcingType) == "gx1") then
+
+       ! set number of forcing fields
+       atmosForcingFields % nForcingFields = 6
+       allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
+       
+       ! set forcing directory
+       atmosForcingFields % forcingDirectory = "/Users/akt/Work/Forcing/gx1/"
+
+       ! air temperature
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
+            "/4XDAILY/", "t_10.", ".dat", "binary", 1460, 1.0_RKIND)
+
+       ! u air velocity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(2), "interval", &
+            "/4XDAILY/", "u_10.", ".dat", "binary", 1460, 1.0_RKIND)
+
+       ! v air velocity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(3), "interval", &
+            "/4XDAILY/", "v_10.", ".dat", "binary", 1460, 1.0_RKIND)
+
+       ! air humidity
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(4), "interval", &
+            "/4XDAILY/", "q_10.", ".dat", "binary", 1460, 1.0_RKIND)
+
+       ! cloudFraction
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(5), "monthly", &
+            "/MONTHLY/", "cldf.omip.", ".dat", "binary", 12, 0.5_RKIND)
+
+       ! precipitation
+       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(6), "monthly", &
+            "/MONTHLY/", "prec.nmyr.", ".dat", "binary", 12, 0.5_RKIND)
+
     endif
 
   end subroutine init_atmos_forcing!}}}
@@ -307,6 +340,7 @@ contains
     type (MPAS_pool_type), pointer :: &
          mesh, &
          atmos_forcing, &
+         atmos_coupling, &
          configs
 
     integer :: &
@@ -324,6 +358,7 @@ contains
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
 
     elapsed_time_forcing = elapsed_time_forcing + 3600.0_RKIND
 
@@ -339,6 +374,7 @@ contains
          mesh, &
          clock, &
          configs, &
+         atmos_coupling, &
          atmos_forcing, &
          forcingTime, &
          forcingTimeEpoch, &
@@ -368,6 +404,7 @@ contains
        mesh, &
        clock, &
        configs, &
+       atmos_coupling, &
        atmos_forcing, &
        forcingTime, &
        forcingTimeEpoch, &
@@ -386,7 +423,8 @@ contains
          clock
 
     type (MPAS_pool_type), pointer :: &
-         atmos_forcing !< Input/Output: 
+         atmos_forcing, & !< Input/Output: 
+         atmos_coupling   !< Input/Output: 
 
     integer, intent(in) :: &
          year, &    !< Input: 
@@ -411,7 +449,7 @@ contains
          airSpecificHumidity, &
          shortwaveDown, &
          cloudFraction, &
-         precipitationRate, &
+         rainfallRate, &
          longwaveDown, &
          snowfallRate, &
          airPotentialTemperature, &
@@ -449,24 +487,25 @@ contains
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
-    call MPAS_pool_get_array(atmos_forcing, "airTemperature", airTemperature)
+    call MPAS_pool_get_array(atmos_coupling, "airTemperature", airTemperature)
+    call MPAS_pool_get_array(atmos_coupling, "airDensity", airDensity)
+    call MPAS_pool_get_array(atmos_coupling, "airSpecificHumidity", airSpecificHumidity)
+    call MPAS_pool_get_array(atmos_coupling, "rainfallRate", rainfallRate)
+    call MPAS_pool_get_array(atmos_coupling, "snowfallRate", snowfallRate)
+    call MPAS_pool_get_array(atmos_coupling, "longwaveDown", longwaveDown)
+    call MPAS_pool_get_array(atmos_coupling, "airPotentialTemperature", airPotentialTemperature)
+    call MPAS_pool_get_array(atmos_coupling, "uAirVelocity", uAirVelocity)
+    call MPAS_pool_get_array(atmos_coupling, "vAirVelocity", vAirVelocity)
+
     call MPAS_pool_get_array(atmos_forcing, "uAirVelocityPOP", uAirVelocityPOP)
     call MPAS_pool_get_array(atmos_forcing, "vAirVelocityPOP", vAirVelocityPOP)
-    call MPAS_pool_get_array(atmos_forcing, "airDensity", airDensity)
-    call MPAS_pool_get_array(atmos_forcing, "airSpecificHumidity", airSpecificHumidity)
     call MPAS_pool_get_array(atmos_forcing, "shortwaveDown", shortwaveDown)
     call MPAS_pool_get_array(atmos_forcing, "cloudFraction", cloudFraction)
-    call MPAS_pool_get_array(atmos_forcing, "precipitationRate", precipitationRate)
-    call MPAS_pool_get_array(atmos_forcing, "longwaveDown", longwaveDown)
-    call MPAS_pool_get_array(atmos_forcing, "snowfallRate", snowfallRate)
-    call MPAS_pool_get_array(atmos_forcing, "airPotentialTemperature", airPotentialTemperature)
     call MPAS_pool_get_array(atmos_forcing, "windSpeed", windSpeed)
     call MPAS_pool_get_array(atmos_forcing, "sensibleTransferCoefficient", sensibleTransferCoefficient)
     call MPAS_pool_get_array(atmos_forcing, "latentTransferCoefficient", latentTransferCoefficient)
     call MPAS_pool_get_array(atmos_forcing, "uAirStress", uAirStress) 
     call MPAS_pool_get_array(atmos_forcing, "vAirStress", vAirStress)
-    call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)
-    call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)
     call MPAS_pool_get_array(atmos_forcing, "uPOPAlongGridVector", uPOPAlongGridVector)
     call MPAS_pool_get_array(atmos_forcing, "vPOPAlongGridVector", vPOPAlongGridVector)
 
@@ -519,9 +558,9 @@ contains
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(8), &
-            precipitationRate)
+            rainfallRate)
 
-    else if (trim(forcingType) == "480km") then
+    else if (trim(forcingType) == "480km" .or. trim(forcingType) == "gx1") then
 
        ! air temperature
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
@@ -557,7 +596,7 @@ contains
        call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
             atmosForcingFields % forcingDirectory, &
             atmosForcingFields % forcingFieldsArray(6), &
-            precipitationRate)
+            rainfallRate)
 
     endif
 
@@ -598,7 +637,7 @@ contains
                vAirStress(iCell), &
                airTemperature(iCell), &
                cloudFraction(iCell), &
-               precipitationRate(iCell), &
+               rainfallRate(iCell), &
                uAirVelocity(iCell), &
                vAirVelocity(iCell), &
                airDensity(iCell))
@@ -620,7 +659,7 @@ contains
                vAirStress(iCell), &
                airTemperature(iCell), &
                cloudFraction(iCell), &
-               precipitationRate(iCell), &
+               rainfallRate(iCell), &
                uAirVelocity(iCell), &
                vAirVelocity(iCell), &
                airDensity(iCell), &
@@ -666,7 +705,7 @@ contains
        vAirStress, &
        airTemperature, &
        cloudFraction, &
-       precipitationRate, &
+       rainfallRate, &
        uAirVelocity, &
        vAirVelocity, &
        airDensity, &
@@ -685,7 +724,7 @@ contains
          shortwaveDown                  !< Output: 
 
     real(kind=RKIND), intent(inout) :: &
-         precipitationRate !< Input/Output: 
+         rainfallRate !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
          airTemperature, & !< Input: 
@@ -718,14 +757,14 @@ contains
                    (1.0_RKIND + 0.275_RKIND * cloudFraction)
 
     ! snowfall rate
-    precipitationRate = precipitationRate * (12.0_RKIND / seconds_per_year) ! convert mm per year
+    rainfallRate = rainfallRate * (12.0_RKIND / seconds_per_year) ! convert mm per year
 
     snowfallRate = 0.0_RKIND
 
     if (airTemperature < freshWaterFreezingPoint) then
 
-       snowfallRate = precipitationRate
-       precipitationRate = 0.0_RKIND
+       snowfallRate = rainfallRate
+       rainfallRate = 0.0_RKIND
 
     endif
 
@@ -770,7 +809,7 @@ contains
        vAirStress, &
        airTemperature, &
        cloudFraction, &
-       precipitationRate, &
+       rainfallRate, &
        uAirVelocity, &
        vAirVelocity, &
        airDensity)!{{{
@@ -786,7 +825,7 @@ contains
          vAirStress                     !< Output: 
 
     real(kind=RKIND), intent(inout) :: &
-         precipitationRate !< Input/Output: 
+         rainfallRate !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
          airTemperature, & !< Input: 
@@ -817,14 +856,14 @@ contains
                    (1.0_RKIND + 0.275_RKIND * cloudFraction)
 
     ! snowfall rate
-    precipitationRate = precipitationRate * (12.0_RKIND / seconds_per_year) ! convert mm per year
+    rainfallRate = rainfallRate * (12.0_RKIND / seconds_per_year) ! convert mm per year
 
     snowfallRate = 0.0_RKIND
 
     if (airTemperature < freshWaterFreezingPoint) then
 
-       snowfallRate = precipitationRate
-       precipitationRate = 0.0_RKIND
+       snowfallRate = rainfallRate
+       rainfallRate = 0.0_RKIND
 
     endif
 
@@ -2520,4 +2559,4 @@ integer :: i
 
 !-----------------------------------------------------------------------
 
-end module cice_forcing
+end module cice_forcing_old

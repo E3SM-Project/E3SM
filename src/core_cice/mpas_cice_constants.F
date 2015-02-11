@@ -37,5 +37,18 @@ module cice_constants
        iceThicknessMinimum  = puny, &
        snowThicknessMinimum = puny
 
+
+  real(kind=RKIND), parameter, public :: &
+       ciceStefanBoltzmann = 5.79484e-8_RKIND , & ! J m-2 K-4 s-1
+       ciceFreshWaterFreezingPoint = 273.15_RKIND, & ! freezing temp of fresh ice (K)
+       ciceAirSpecificHeat = 1005.0_RKIND, & ! specific heat of air (J/kg/K)
+       ciceLatentHeatSublimation = 2.835e6_RKIND ! latent heat, sublimation freshwater (J/kg)
+
+
+
+ real(kind=RKIND), parameter, public :: &
+      ciceSecondsPerYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND, &
+      ciceSecondsPerDay = 24.0_RKIND * 3600.0_RKIND
+
 end module cice_constants
 

@@ -11,6 +11,7 @@ OBJS = 	mpas_cice_mpas_core.o \
 	mpas_cice_velocity_solver_pwl.o \
 	mpas_cice_velocity_solver_variational_shared.o \
 	mpas_cice_velocity_solver_shared.o \
+	mpas_cice_forcing_old.o \
 	mpas_cice_forcing.o \
 	mpas_cice_therm_zerolayer.o \
 	mpas_cice_initialize.o \
@@ -46,6 +47,8 @@ mpas_cice_velocity_solver_shared.o: mpas_cice_constants.o mpas_cice_testing.o mp
 
 mpas_cice_therm_zerolayer.o: mpas_cice_constants.o mpas_cice_numerics.o
 
+mpas_cice_forcing_old.o: mpas_cice_constants.o mpas_cice_mesh.o
+
 mpas_cice_forcing.o: mpas_cice_constants.o mpas_cice_mesh.o
 
 mpas_cice_velocity_solver_weak.o: mpas_cice_constants.o mpas_cice_testing.o mpas_cice_debug.o mpas_cice_velocity_solver_shared.o
@@ -66,11 +69,11 @@ mpas_cice_advection.o:
 
 mpas_cice_unit_test.o: mpas_cice_constants.o mpas_cice_velocity_solver_unit_tests.o
 
-mpas_cice_time_integration.o: mpas_cice_constants.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_unit_test.o mpas_cice_advection.o mpas_cice_diagnostics.o
+mpas_cice_time_integration.o: mpas_cice_constants.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_unit_test.o mpas_cice_advection.o mpas_cice_diagnostics.o mpas_cice_forcing_old.o
 
-mpas_cice_initialize.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_velocity_solver.o mpas_cice_testing.o mpas_cice_debug.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_advection.o
+mpas_cice_initialize.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_velocity_solver.o mpas_cice_testing.o mpas_cice_debug.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_advection.o mpas_cice_forcing_old.o
 
-mpas_cice_mpas_core.o: mpas_cice_constants.o mpas_cice_time_integration.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_initialize.o
+mpas_cice_mpas_core.o: mpas_cice_constants.o mpas_cice_time_integration.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_initialize.o mpas_cice_forcing_old.o
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a

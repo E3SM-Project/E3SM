@@ -40,6 +40,7 @@ module mpas_core
       use mpas_configure
       use mpas_grid_types
       use mpas_stream_manager
+      use cice_forcing, only: cice_forcing_init
    
       implicit none
    
@@ -56,6 +57,9 @@ module mpas_core
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
       integer :: ierr
+
+      character(len=strKIND), pointer :: &
+           config_atmospheric_forcing_age
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
@@ -89,6 +93,11 @@ module mpas_core
       ! Read all other inputs
       call MPAS_stream_mgr_read(stream_manager, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+
+      ! initialize forcing
+      call MPAS_pool_get_config(domain % configs, "config_atmospheric_forcing_age", config_atmospheric_forcing_age)
+      if (trim(config_atmospheric_forcing_age) == "new") &
+           call cice_forcing_init(domain, stream_manager)
 
       !
       ! Initialize core
@@ -230,6 +239,7 @@ module mpas_core
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_timer
+      use cice_forcing, only: cice_forcing_get
    
       implicit none
    
@@ -246,6 +256,9 @@ module mpas_core
       
       real (kind=RKIND), pointer :: config_dt
       character(len=StrKIND), pointer :: config_restart_timestamp_name
+
+      character(len=StrKIND), pointer :: & 
+           config_atmospheric_forcing_age
 
       ! configurations
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
@@ -275,6 +288,11 @@ module mpas_core
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
          write(0,*) 'Doing timestep ', trim(timeStamp)
+
+         ! forcing
+         call MPAS_pool_get_config(domain % configs, "config_atmospheric_forcing_age", config_atmospheric_forcing_age)
+         if (trim(config_atmospheric_forcing_age) == "new") &
+              call cice_forcing_get(stream_manager, domain, clock)
 
          ! do the time integration
          call mpas_timer_start("time integration")

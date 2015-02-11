@@ -49,7 +49,7 @@ contains
     use cice_advection, only: cice_init_advection
     use cice_velocity_solver, only: cice_init_velocity_solver
     use cice_debug, only: cice_test_case_output
-    use cice_forcing, only: cice_init_forcing, cice_get_forcing, cice_convert_pop_forcing_to_mpas
+    use cice_forcing_old, only: cice_init_forcing, cice_get_forcing, cice_convert_pop_forcing_to_mpas
 
     type(block_type), intent(inout) :: &
          block !< Input/Output: 
@@ -69,6 +69,9 @@ contains
          config_use_forcing, &
          config_do_restart
 
+    character(len=strKIND), pointer :: &
+         config_atmospheric_forcing_age
+
     !call cice_convert_pop_forcing_to_mpas(block)
 
     configs => block % configs
@@ -77,6 +80,8 @@ contains
     call MPAS_pool_get_config(configs, "config_use_advection", config_use_advection)
     call MPAS_pool_get_config(configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(configs, "config_atmospheric_forcing_age", config_atmospheric_forcing_age)
+
 
     call init_junk_values(block)
 
@@ -86,8 +91,10 @@ contains
     ! init forcing
     if (config_use_forcing) then
 
-       call cice_init_forcing(&
-            block)
+       if (trim(config_atmospheric_forcing_age) == "old") then
+          call cice_init_forcing(&
+               block)
+       endif
        
        call cice_get_forcing(&
             block, &
