@@ -1,0 +1,191 @@
+module MathfuncMod
+#include "shr_assert.h"
+
+!Module contains mathematical functions for some elementary manipulations
+!Created by Jinyun Tang
+   use shr_kind_mod, only: r8 => shr_kind_r8
+   use clm_varctl      , only : iulog
+   use abortutils,   only: endrun   
+   use shr_log_mod ,   only: errMsg => shr_log_errMsg
+   !contains subroutines for array manipulation
+   !and some useful functions
+implicit none
+   save
+   private
+   public :: cumsum
+   public :: swap
+   public :: minmax
+   public :: cumdif
+   public :: diff
+   public :: safe_div
+   public :: dot_sum
+   interface swap
+      module procedure swap_i, swap_r, swap_rv
+   end interface swap
+contains
+!-------------------------------------------------------------------------------   
+   function heviside(x)result(ans)
+   implicit none
+   real(r8), intent(in) :: x
+   real(r8) :: ans
+   
+   if(x>0._r8)then
+      ans = 1._r8
+   else
+      ans = 0._r8
+   endif
+   end function heviside
+
+
+!-------------------------------------------------------------------------------
+   subroutine swap_i(a,b)
+   implicit none
+   integer, intent(inout) :: a, b
+   integer :: c
+   
+   c = a
+   a = b
+   b = c
+   
+   end subroutine swap_i
+!-------------------------------------------------------------------------------
+   subroutine swap_r(a,b)
+   implicit none
+   real(r8), intent(inout) :: a, b
+   real(r8) :: c
+   
+   c = a
+   a = b
+   b = c
+   
+   end subroutine swap_r
+!-------------------------------------------------------------------------------
+   subroutine swap_rv(a,b)
+   implicit none
+   real(r8), dimension(:), intent(inout) :: a, b
+   real(r8), dimension(size(a)) :: c
+   
+   integer :: n
+   
+   if(size(a)/=size(b))then
+      write(iulog,*)'the input vectors are not of same size in swap_rv'
+      write(iulog,*)'clm model is stopping'      
+      call endrun()
+   endif
+   
+   c = a
+   a = b
+   b = c
+   
+   end subroutine swap_rv
+!-------------------------------------------------------------------------------
+   function minmax(x)result(ans)
+   !returnd the minimum and maximum of the input vector
+   implicit none
+   real(r8), dimension(:), intent(in) :: x
+   
+   integer :: n, j
+   real(r8) :: ans(2)
+   n = size(x)
+   ans(1) = x(1)
+   ans(2) = x(1)
+   
+   do j = 2, n
+      if(ans(1)>x(j))then
+         ans(1) = x(j)
+      endif
+      
+      if(ans(2)<x(j))then
+         ans(2)=x(j)
+      endif   
+   enddo
+   return
+   
+   end function minmax
+!-------------------------------------------------------------------------------   
+   subroutine cumsum(x, y)
+   implicit none
+   real(r8), dimension(:), intent(in)  :: x
+   real(r8), dimension(:), intent(out) :: y
+   
+   integer :: n
+   integer :: j
+   SHR_ASSERT_ALL((size(x)   == size(y)),        errMsg(__FILE__,__LINE__))
+   
+   n = size(x)
+   
+   y(1)=x(1)
+   do j = 2, n
+     y(j) = y(j-1)+x(j)
+   enddo
+   
+   end subroutine cumsum
+   
+!-------------------------------------------------------------------------------   
+   subroutine cumdif(x, y)
+   implicit none
+   real(r8), dimension(:), intent(in)  :: x
+   real(r8), dimension(:), intent(out) :: y
+   
+   integer :: n
+   integer :: j
+   
+   SHR_ASSERT_ALL((size(x)   == size(y)),        errMsg(__FILE__,__LINE__))
+   n = size(x)
+   call diff(x,y(2:n))
+   y(1)=x(1)
+   
+   end subroutine cumdif
+!-------------------------------------------------------------------------------   
+   
+   subroutine diff(x,y)
+   implicit none
+   real(r8), dimension(:), intent(in)  :: x
+   real(r8), dimension(:), intent(out) :: y
+   
+   integer :: n
+   integer :: j
+   SHR_ASSERT_ALL((size(x)   == size(y)+1),        errMsg(__FILE__,__LINE__))
+   
+   n = size(x)
+   do j = 2, n
+     y(j-1) = x(j)-x(j-1)
+   enddo
+   end subroutine diff   
+  
+!------------------------------------------------------------------------------- 
+   function safe_div(a,b)result(ans)
+   !
+   !DESCRIPTION
+   !avoid division by zero when calculate a/b
+   implicit none
+   real(r8), intent(in) :: a
+   real(r8), intent(in) :: b
+   
+   real(r8) :: ans
+ 
+   ans = a * b / (b**2._r8+1.e-40_r8)
+   return
+   end function safe_div
+
+!--------------------------------------------------------------------------------
+  function dot_sum(x,y)result(ans)
+  !
+  !DESCRIPTIONS
+  ! calculate the dot product 
+  use shr_kind_mod, only: r8 => shr_kind_r8
+  implicit none
+  real(r8), dimension(:), intent(in) :: x
+  real(r8), dimension(:), intent(in) :: y
+
+  integer  :: n, j
+  real(r8) :: ans
+  SHR_ASSERT_ALL((size(x)           == size(y)), errMsg(__FILE__,__LINE__)) 
+
+  n = size(x)
+  ans = 0._r8
+  do j = 1, n
+    ans = ans + x(j)*y(j)
+  enddo 
+  end function dot_sum
+end module MathfuncMod
