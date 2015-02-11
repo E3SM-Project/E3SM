@@ -1081,8 +1081,8 @@ module namelist_mod
     endif
 #endif
 
-    if (0 < cubed_sphere_map .AND.  \
-        tracer_transport_type .eq. TRACERTRANSPORT_LAGRANGIAN_FVM  .OR. \
+    if (0 < cubed_sphere_map .AND.  &
+        tracer_transport_type .eq. TRACERTRANSPORT_LAGRANGIAN_FVM  .OR. &
         tracer_transport_type .eq. TRACERTRANSPORT_FLUXFORM_FVM)  then
       print *,' cslam_fvm and flux_form_cslam_fvm require equi-angle gnomonic cube sphere mapping.'
       print *,' Set cubed_sphere_map = 0 or comment it out all together.                          '
