@@ -454,7 +454,7 @@ contains
     integer :: dest, source, length, tag, iptr
 
     ! call t_adj_detailf(+3)
-    call t_startf('initnewedgebuffer')
+    ! call t_startf('initnewedgebuffer')
 
     if(present(NewMethod)) then 
         nbuf=nlyr*4*(1+max_corner_elem)*nelemd
@@ -474,6 +474,21 @@ contains
     allocate(edge%putmap(max_neigh_edges,nelemd))
     allocate(edge%getmap(max_neigh_edges,nelemd))
     allocate(edge%reverse(max_neigh_edges,nelemd))
+
+#if 0
+if(present(NewMethod)) then 
+    do ie=1,nelemd
+       if(iam==1) then 
+          print *,'IAM: ',iam,' ie: ',ie, ' generic ORDERED putmap: ', desc(ie)%putmapS
+       endif
+    enddo
+    do ie=1,nelemd
+       if(iam==1) then 
+          print *,'IAM: ',iam,' ie: ',ie, ' generic ORDERED getmap: ', desc(ie)%getmapS
+       endif
+    enddo
+endif
+#endif
     do ie=1,nelemd
        do i=1,max_neigh_edges
           if(desc(ie)%putmapP(i) == -1) then 
@@ -508,22 +523,22 @@ contains
         ptr       = nlyr*(pSchedule%MoveCycle(1)%ptrP -1) + 1 
     endif
 
-!NEWEDGEBUFF    do i=1,pSchedule%pPtr-1
-!NEWEDGEBUFF       elemid = pSchedule%pIndx(i)%elemid
-!NEWEDGEBUFF       edgeid = pSchedule%pIndx(i)%edgeid
-!NEWEDGEBUFF       if(iam==1) then 
-!NEWEDGEBUFF          print *,'IAM: ',iam,' elemid: ',elemid, ' ORDERED putmap: ', edge%putmap(edgeid,elemid)
-!NEWEDGEBUFF       endif
-!NEWEDGEBUFF    enddo
-!NEWEDGEBUFF    do i=1,pSchedule%gPtr-1
-!NEWEDGEBUFF       elemid = pSchedule%gIndx(i)%elemid
-!NEWEDGEBUFF       edgeid = pSchedule%gIndx(i)%edgeid
-!NEWEDGEBUFF       if(iam==1) then 
-!NEWEDGEBUFF          print *,'IAM: ',iam,' elemid: ',elemid,' ORDERED getmap: ', edge%getmap(edgeid,elemid)
-!NEWEDGEBUFF       endif
-!NEWEDGEBUFF    enddo
+#if 0
+if(present(NewMethod)) then 
+    do ie=1,nelemd
+       if(iam==1) then 
+          print *,'IAM: ',iam,' ie: ',ie, ' ORDERED putmap: ', edge%putmap(:,ie)
+       endif
+    enddo
+    do ie=1,nelemd
+       if(iam==1) then 
+          print *,'IAM: ',iam,' ie: ',ie,' ORDERED getmap: ', edge%getmap(:,ie)
+       endif
+    enddo
+endif
+#endif
 
-    print *,'initNewedgebuffer: nthreadshoriz: ',nthreadshoriz
+!JMD    print *,'initNewedgebuffer: nthreadshoriz: ',nthreadshoriz
     allocate(edge%moveLength(nthreadshoriz))
     allocate(edge%movePtr(nthreadshoriz))
 
@@ -559,23 +574,25 @@ contains
     edge%receive(:)=0.0D0
 
 #if 0
+if(present(NewMethod)) then 
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
     do icycle=1,nRecvCycles
        pCycle => pSchedule%RecvCycle(icycle)
-       length = nlyr * pCycle%lengthP
-       iptr   = nlyr * (pCycle%ptrP - 1) + 1
+       length = nlyr * pCycle%lengthS
+       iptr   = nlyr * (pCycle%ptrS - 1) + 1
        print *,'IAM: ', iam, 'RecvCycle: Pointer: ',iptr,' LENGTH: ',length
     enddo
     do icycle=1,nSendCycles
        pCycle => pSchedule%SendCycle(icycle)
-       length = nlyr * pCycle%lengthP
-       iptr   = nlyr * (pCycle%ptrP - 1) + 1
+       length = nlyr * pCycle%lengthS
+       iptr   = nlyr * (pCycle%ptrS - 1) + 1
        print *,'IAM: ', iam, 'SendCycle: Pointer: ',iptr,' LENGTH: ',length
     enddo
-    iptr   = nlyr*(pSchedule%MoveCycle(1)%ptrP - 1) + 1
-    length = nlyr*pSchedule%MoveCycle(1)%lengthP
+    iptr   = nlyr*(pSchedule%MoveCycle(1)%ptrS - 1) + 1
+    length = nlyr*pSchedule%MoveCycle(1)%lengthS
     print *,'IAM: ',iam,'MoveCycle: Pointers: ', iptr,' LENGTH: ',length 
+endif
 #endif
 !    print *,'IAM: ',iam,'MoveCycle: Pointers: ',edge%movePtr  
 !    print *,'IAM: ',iam,'MoveCycle: LENGTH: ',edge%moveLength  
@@ -618,7 +635,7 @@ contains
 !    enddo
 #endif
 
-    call t_stopf('initnewedgebuffer')
+    !call t_stopf('initnewedgebuffer')
     !call t_adj_detailf(-3)
     
 
@@ -1248,10 +1265,10 @@ contains
 
     do k=1,vlyr
        iptr = kptr+k-1
-       edge%buf(iptr+ie)   = v(k) ! East
-       edge%buf(iptr+is)   = v(k) ! South
-       edge%buf(iptr+in)   = v(k) ! North
-       edge%buf(iptr+iw)   = v(k) ! West
+       edge%buf(iptr+ie+1)   = v(k) ! East
+       edge%buf(iptr+is+1)   = v(k) ! South
+       edge%buf(iptr+in+1)   = v(k) ! North
+       edge%buf(iptr+iw+1)   = v(k) ! West
     enddo
     !set the max_corner_elem
     nce = max_corner_elem
@@ -1259,7 +1276,8 @@ contains
     do ll=swest,swest+max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(k)
+                iptr = nce*(kptr+k-1)
+                edge%buf(iptr+edge%putmap(ll,ielem)+1)=v(k)
             end do
         end if
     end do
@@ -1268,7 +1286,8 @@ contains
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(k)
+                iptr = nce*(kptr+k-1)
+                edge%buf(iptr+edge%putmap(ll,ielem)+1)=v(k)
             end do
         end if
     end do
@@ -1277,7 +1296,8 @@ contains
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(k)
+                iptr = nce*(kptr+k-1)
+                edge%buf(iptr+edge%putmap(ll,ielem)+1)=v(k)
             end do
         end if
     end do
@@ -1286,7 +1306,8 @@ contains
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(k)
+                iptr = nce*(kptr+k-1)
+                edge%buf(iptr+edge%putmap(ll,ielem)+1)=v(k)
             end do
         end if
     end do
@@ -2191,7 +2212,7 @@ contains
     iw=edge%getmap(west,ielem)
     do k=1,vlyr
        iptr=(kptr+k-1)
-       v(k) = MAX(v(k),edge%receive(iptr+is),edge%receive(iptr+ie),edge%receive(iptr+in),edge%receive(iptr+iw))
+       v(k) = MAX(v(k),edge%receive(iptr+is+1),edge%receive(iptr+ie+1),edge%receive(iptr+in+1),edge%receive(iptr+iw+1))
     end do
 
     nce = max_corner_elem
@@ -2199,7 +2220,8 @@ contains
     do l=swest,swest+max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(k)=MAX(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                iptr = nce*(kptr+k-1)
+                v(k)=MAX(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2208,7 +2230,8 @@ contains
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(k)=MAX(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                iptr = nce*(kptr+k-1)
+                v(k)=MAX(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2217,7 +2240,8 @@ contains
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then
             do k=1,vlyr
-                v(k)=MAX(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                iptr = nce*(kptr+k-1)
+                v(k)=MAX(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2226,7 +2250,8 @@ contains
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(k)=MAX(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                iptr = nce*(kptr+k-1)
+                v(k)=MAX(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2257,7 +2282,7 @@ contains
     iw=edge%getmap(west,ielem)
     do k=1,vlyr
        iptr=(kptr+k-1)
-       v(k) = MIN(v(k),edge%receive(iptr+is),edge%receive(iptr+ie),edge%receive(iptr+in),edge%receive(iptr+iw))
+       v(k) = MIN(v(k),edge%receive(iptr+is+1),edge%receive(iptr+ie+1),edge%receive(iptr+in+1),edge%receive(iptr+iw+1))
     end do
 
     nce = max_corner_elem
@@ -2265,7 +2290,8 @@ contains
     do l=swest,swest+max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(k)=MiN(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                iptr = nce*(kptr+k-1)
+                v(k)=MiN(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2274,7 +2300,8 @@ contains
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(k)=MIN(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                iptr = nce*(kptr+k-1)
+                v(k)=MIN(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2283,7 +2310,8 @@ contains
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then
             do k=1,vlyr
-                v(k)=MIN(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                iptr = nce*(kptr+k-1)
+                v(k)=MIN(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -2292,7 +2320,8 @@ contains
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(k)=MIN(v(k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                iptr = nce*(kptr+k-1)
+                v(k)=MIN(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do

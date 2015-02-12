@@ -21,7 +21,7 @@ use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, 
 use edge_mod, only :  newEdgeBuffer_t, newedgevpack, newedgerotate, newedgevunpack, newedgevunpackmin, &
     newedgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, EdgeDescriptor_t, newedgeSunpackmax, newedgeSunpackmin,newedgeSpack
 
-use bndry_mod, only : bndry_exchangev
+use bndry_mod, only : bndry_exchangev, bndry_exchangeS
 use control_mod, only : hypervis_scaling, nu, nu_div
 
 implicit none
@@ -805,16 +805,16 @@ subroutine NewNeighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
       kptr = 0
       call  newedgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
       kptr = qsize*nlev
-      call  newedgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  newedgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
    enddo
    
-   call bndry_exchangeV(hybrid,edgeMinMax)
+   call bndry_exchangeS(hybrid,edgeMinMax)
 
    do ie=nets,nete
       kptr = 0
       call  newedgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
       kptr = qsize*nlev
-      call  newedgeSunpackMAX(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      call  newedgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
       do q=1,qsize
       do k=1,nlev
           min_neigh(k,q,ie) = max(min_neigh(k,q,ie),0d0)

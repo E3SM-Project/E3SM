@@ -66,7 +66,7 @@ contains
     integer                       :: icycle
     integer			  :: iSched
     logical, parameter            :: VerbosePrint=.FALSE.
-    logical, parameter            :: Debug=.true.
+    logical, parameter            :: Debug=.FALSE.
     integer :: ierr
     integer :: l1,l2,l1id,l2id
 

@@ -2,6 +2,17 @@
 #include "config.h"
 #endif
 
+      module EXTRAE_MODULE
+
+     interface
+
+         subroutine extrae_user_function (enter)
+         integer*4, intent(in) :: enter
+         end subroutine extrae_user_function
+
+      end interface
+
+      end module EXTRAE_MODULE
 
 #if 0
 SUBROUTINES:
@@ -934,6 +945,8 @@ contains
     call initEdgeBuffer(par,edgeAdvQ2,desc,qsize*nlev*2)  ! Qtens,Qmin, Qmax
     call initEdgeBuffer(par,edgeveloc,desc,2*nlev)
     call initEdgeBuffer(par,edgeAdvQ2JMD,desc,qsize*nlev*2,NewMethod=.TRUE.)
+!    print *,'After call to initEdgeBuffer in Prim_Advec_Init1'
+!    stop 
 
     deallocate(desc)
 
@@ -1823,6 +1836,7 @@ end subroutine ALE_parametric_coords
     integer :: nfilt,rkstage,rhs_multiplier
     integer :: n0_qdp, np1_qdp
 
+!    call extrae_user_function(1)
     call t_barrierf('sync_prim_advec_tracers_remap_k2', hybrid%par%comm)
     call t_startf('prim_advec_tracers_remap_rk2')
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) !time levels for qdp are not the same
@@ -1876,6 +1890,8 @@ end subroutine ALE_parametric_coords
     endif
 
     call t_stopf('prim_advec_tracers_remap_rk2')
+!    call extrae_user_function(0)
+
   end subroutine prim_advec_tracers_remap_rk2
 
 !-----------------------------------------------------------------------------
@@ -1924,6 +1940,7 @@ end subroutine ALE_parametric_coords
   use edge_mod       , only : newedgevpack, newedgevunpack
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
+  use parallel_mod, only : abortmp, iam
 #if USE_CUDA_FORTRAN
   use cuda_mod, only: euler_step_cuda
 #endif
@@ -2020,12 +2037,45 @@ end subroutine ALE_parametric_coords
         enddo
       enddo
       ! update qmin/qmax based on neighbor data for lim8
+#if 1
+      call newneighbor_minmax(hybrid,edgeAdvQ2JMD,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
+!      call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
+#else
+      ! test code for newneighbor_minmax()
       qminJMD=qmin
       qmaxJMD=qmax
       call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
       call newneighbor_minmax(hybrid,edgeAdvQ2JMD,nets,nete,qminJMD(:,:,nets:nete), qmaxJMD(:,:,nets:nete))
-      if(SUM(qmin-qminJMD) > 0.0D0) print *,'ERROR detected: diff(qmin-qminJMD): ',SUM(qmin-qminJMD)
-      if(SUM(qmax-qmaxJMD) > 0.0D0) print *,'ERROR detected: diff(qmax-qmaxJMD): ',SUM(qmax-qmaxJMD)
+      if(any(qmin.ne.qminJMD) ) then 
+            print *,'IAM: ',iam,' ERROR detected: count(qmin.ne.qminJMD): ',count(qmin.ne.qminJMD)
+            do ie = nets, nete
+            do k=1,nlev
+            do q=1,qsize
+               if(qmin(k,q,ie) .ne. qminJMD(k,q,ie)) then 
+                  print *,IAM,k,q,ie,qmin(k,q,ie),qminJMD(k,q,ie)
+               endif
+            enddo
+            enddo
+            enddo
+      else
+            print *,'prim_advection: qmin matches'
+      endif
+      if(any(qmax.ne.qmaxJMD) ) then 
+            print *,'IAM: ',iam,' ERROR detected: count(qmax.ne.qmaxJMD): ',count(qmax.ne.qmaxJMD)
+            do ie = nets, nete
+            do k=1,nlev
+            do q=1,qsize
+               if(qmax(k,q,ie) .ne. qmaxJMD(k,q,ie)) then 
+                  print *,IAM, k,q,ie,qmax(k,q,ie),qmaxJMD(k,q,ie)
+               endif
+            enddo
+            enddo
+            enddo
+      else
+            print *,'prim_advection: qmax matches'
+      endif
+!      call abortmp('after newneighbor_minmax')
+#endif
       
     endif
 
@@ -2079,8 +2129,18 @@ end subroutine ALE_parametric_coords
           enddo
         enddo
       endif
-      call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
-           nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
+
+!   Previous version of biharmonic_wk_scalar_minmax included a min/max
+!   calculation into the boundary exchange.  This was causing cache issues.
+!   Split the single operation into two separate calls 
+!      call newneighbor_minmax()
+!      call biharmonic_wk_scalar() 
+! 
+!      call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
+!           nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
+      call newneighbor_minmax(hybrid,edgeAdvQ2JMD,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
+      call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
+
       do ie = nets , nete
 #if (defined COLUMN_OPENMP)
         !$omp parallel do private(k, q, dp0)
