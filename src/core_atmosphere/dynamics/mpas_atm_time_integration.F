@@ -3555,6 +3555,8 @@ module atm_time_integration
 
       tend_u_euler(1:nVertLevels,edgeStart:edgeEnd) = 0.0
 
+!$OMP BARRIER
+
       if (delsq_horiz_mixing) then
 
          if ((h_mom_eddy_visc2 > 0.0) .and. (config_horiz_mixing == '2d_fixed')) then
