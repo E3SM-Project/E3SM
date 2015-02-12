@@ -8,7 +8,9 @@ module BGCCenturySubMod
   use decompMod          , only : bounds_type
   use clm_varcon         , only : spval  
   implicit none
+  save
   
+  public :: readCentNitrifDenitrifParams
   
   type, public :: centurybgc_type
   
@@ -52,21 +54,10 @@ module BGCCenturySubMod
     procedure, private :: InitAllocate
   end type centurybgc_type
   
-  
-
-  type, private :: CNNitrifDenitrifParamsType
-   real(r8) :: k_nitr_max               !  maximum nitrification rate constant (1/s)
-   real(r8) :: surface_tension_water    !  surface tension of water(J/m^2), Arah an and Vinten 1995
-   real(r8) :: rij_kro_a                !  Arah and Vinten 1995)
-   real(r8) :: rij_kro_alpha            !  parameter to calculate anoxic fraction of soil  (Arah and Vinten 1995)
-   real(r8) :: rij_kro_beta             !  (Arah and Vinten 1995)
-   real(r8) :: rij_kro_gamma            !  (Arah and Vinten 1995)
-   real(r8) :: rij_kro_delta            !  (Arah and Vinten 1995)
-  end type CNNitrifDenitrifParamsType
-
-  type(CNNitrifDenitrifParamsType),private ::  CNNitrifDenitrifParamsInst
+    
   
  contains
+ 
   subroutine Init(this, bounds, lbj, ubj)
   !
   ! DESCRIPTION
@@ -86,7 +77,7 @@ module BGCCenturySubMod
   
   call this%InitAllocate(bounds, lbj, ubj)
   
-  call readCNNitrifDenitrifParams ( ncid )
+
   
   end subroutine Init
 !-------------------------------------------------------------------------------
@@ -105,15 +96,6 @@ module BGCCenturySubMod
   this%som3 = 6  
   this%cwd  = 7
   
-  this%k_decay_lit1=1._r8/(0.066_r8*86400._r8*365._r8)        ![1/s]
-  this%k_decay_lit2=1._r8/(0.25_r8 *86400._r8*365._r8)
-  this%k_decay_lit3=1._r8/(0.25_r8 *86400._r8*365._r8)
-  this%k_decay_som1=1._r8/(0.17_r8 *86400._r8*365._r8)
-  this%k_decay_som2=1._r8/(6.1_r8  *86400._r8*365._r8)
-  this%k_decay_som3=1._r8/(270._r8 *86400._r8*365._r8)
-  this%k_decay_cwd =1._r8/(4.1_r8  *86400._r8*365._r8)
-
-
   this%lid_nh4 = this%nom_pools + 1   !this is also used to indicate the nitrification reaction
   this%lid_no3 = this%nom_pools + 2   !this is also used to indicate the denitrification reaction
   this%lid_o2  = this%nom_pools + 3
@@ -141,69 +123,9 @@ module BGCCenturySubMod
   allocate(this%o_scalar_col(bounds%begc:bounds%endc,     lbj:ubj))
   allocate(this%depth_scalar_col(bounds%begc:bounds%endc, lbj:ubj))
   
-  end subroutine InitAllocate  
-!-------------------------------------------------------------------------------
-  subroutine readCNNitrifDenitrifParams ( ncid )
-    !
-    use ncdio_pio    , only: file_desc_t
-    use clm_varcon   , only : secspday
-    !
-    ! !ARGUMENTS:
-    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
-    !
-    ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'CNNitrifDenitrifParamsType'
-    character(len=100) :: errCode = '-Error reading in parameters file:'
-    logical            :: readv ! has variable been read in or not
-    real(r8)           :: tempr ! temporary to read in constant
-    character(len=100) :: tString ! temp. var for reading
-    !-----------------------------------------------------------------------
-    !
-    ! read in constants
-    !
-    tString='k_nitr_max'
-    !call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    !if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    tempr =  0.1_r8 /secspday   ! 10%/day  Parton et al., 2001
-    CNNitrifDenitrifParamsInst%k_nitr_max=tempr
+  end subroutine InitAllocate
+  
 
-    tString='surface_tension_water'
-    !call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    !if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    tempr = 73.e-3_r8   ! (J/m^2), Arah and Vinten 1995
-    CNNitrifDenitrifParamsInst%surface_tension_water=tempr
-
-    tString='rij_kro_a'
-    !call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    !if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    tempr = 1.5e-10_r8         !Arah and Vinten 1995
-    CNNitrifDenitrifParamsInst%rij_kro_a=tempr
-
-    tString='rij_kro_alpha'
-    !call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    !if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    tempr = 1.26_r8            !Arah and Vinten 1995
-    CNNitrifDenitrifParamsInst%rij_kro_alpha=tempr
-
-    tString='rij_kro_beta'
-    !call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    !if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    tempr = 0.6_r8             !Arah and Vinten 1995
-    CNNitrifDenitrifParamsInst%rij_kro_beta=tempr
-
-    tString='rij_kro_gamma'
-    !call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    !if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    tempr = 0.6_r8
-    CNNitrifDenitrifParamsInst%rij_kro_gamma=tempr
-
-    tString='rij_kro_delta'
-    !call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    !if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    tempr = 0.85_r8
-    CNNitrifDenitrifParamsInst%rij_kro_delta=tempr
-
-  end subroutine readCNNitrifDenitrifParams
 
 !-------------------------------------------------------------------------------
   subroutine init_state_vector(bounds, lbj, ubj, numf, filter, jtops, neq, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)
@@ -285,13 +207,13 @@ module BGCCenturySubMod
     som2           => centurybgc_vars%som2              , & !
     som3           => centurybgc_vars%som3              , & !
     cwd            => centurybgc_vars%cwd               , & !
-    k_decay_lit1   => centurybgc_vars%k_decay_lit1      , &   
-    k_decay_lit2   => centurybgc_vars%k_decay_lit2      , &   
-    k_decay_lit3   => centurybgc_vars%k_decay_lit3      , &   
-    k_decay_som1   => centurybgc_vars%k_decay_som1      , &   
-    k_decay_som2   => centurybgc_vars%k_decay_som2      , &   
-    k_decay_som3   => centurybgc_vars%k_decay_som3      , &   
-    k_decay_cwd    => centurybgc_vars%k_decay_cwd         &   
+    k_decay_lit1   => CNDecompBgcParamsInst%k_decay_lit1      , & !  
+    k_decay_lit2   => CNDecompBgcParamsInst%k_decay_lit2      , & !  
+    k_decay_lit3   => CNDecompBgcParamsInst%k_decay_lit3      , & !  
+    k_decay_som1   => CNDecompBgcParamsInst%k_decay_som1      , & !  
+    k_decay_som2   => CNDecompBgcParamsInst%k_decay_som2      , & !  
+    k_decay_som3   => CNDecompBgcParamsInst%k_decay_som3      , & !  
+    k_decay_cwd    => CNDecompBgcParamsInst%k_decay_cwd         & !  
   ) 
   
   k_decay(:, :, :) = spval
@@ -809,9 +731,10 @@ module BGCCenturySubMod
   ! DESCRIPTIONS
   ! calculate soil anoxia state for doing nitrification and denitrification
   ! Rewritten based on Charlie Koven's code by Jinyun Tang
-  use CNSharedParamsMod , only : CNParamsShareInst
-  use clm_varcon        , only : d_con_g, grav, d_con_w
+  use CNSharedParamsMod   , only : CNParamsShareInst
+  use clm_varcon          , only : d_con_g, grav, d_con_w
   use SoilStatetype       , only : soilstate_type
+  use BGCCenturyParMod    , only : CNNitrifDenitrifParamsInst
   implicit none
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
@@ -1089,4 +1012,7 @@ module BGCCenturySubMod
   end subroutine calc_decompK_multiply_scalar
 
 
+  
+  
+  
 end module BGCCenturySubMod

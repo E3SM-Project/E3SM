@@ -37,12 +37,38 @@ module CNEcosystemDynBetrMod
 implicit none
 
 
-  public :: CNEcosystemDynVeg
-  public :: CNEcosystemDynSummary
+  public :: CNEcosystemDynBetrVeg
+  public :: CNEcosystemDynBetrSummary
   contains
 
+  !-----------------------------------------------------------------------
+  subroutine CNEcosystemDynBetrInit(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialzation of the CN Ecosystem dynamics.
+    !
+    ! !USES:
+    use CNAllocationBetrMod, only : CNAllocationBetrInit
+    use CNPhenologyMod     , only : CNPhenologyInit
+    use CNFireMod          , only : CNFireInit
+    use CNC14DecayMod      , only : C14_init_BombSpike
+    !
+    ! !ARGUMENTS:
+    implicit none
+    type(bounds_type), intent(in) :: bounds      
+    !-----------------------------------------------------------------------
+
+    call CNAllocationBetrInit (bounds)
+    call CNPhenologyInit  (bounds)
+    call CNFireInit       (bounds)
+    
+    if ( use_c14 ) then
+       call C14_init_BombSpike()
+    end if
+
+  end subroutine CNEcosystemDynBetrInit
   
-  subroutine CNEcosystemDynVeg(bounds, &
+  subroutine CNEcosystemDynBetrVeg(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
@@ -164,13 +190,18 @@ implicit none
             canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
             carbonflux_vars, nitrogenstate_vars)
             
-            
-            
+       !     
+       call calc_plant_nutrient_demand(bounds,  num_soilp, filter_soilp,&
+       photosyns_vars, crop_vars, canopystate_vars,                           &
+       cnstate_vars, carbonstate_vars, carbonflux_vars,                       &
+       c13_carbonflux_vars, c14_carbonflux_vars,                              &
+       nitrogenstate_vars,  nitrogenflux_vars, plantsoilnutrientflux_vars )
+       
        call t_stopf('CNMResp')  
-  end subroutine CNEcosystemDynVeg
+  end subroutine CNEcosystemDynBetrVeg
   
 !-------------------------------------------------------------------------------
-  subroutine CNEcosystemDynSummary(bounds, &
+  subroutine CNEcosystemDynBetrSummary(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb, &
        cnstate_vars, carbonflux_vars, carbonstate_vars, &
@@ -287,6 +318,6 @@ implicit none
           call C14BombSpike(num_soilp, filter_soilp, &
                cnstate_vars)
        end if            
-  end subroutine CNEcosystemDynSummary
+  end subroutine CNEcosystemDynBetrSummary
   
 end module CNEcosystemDynBetrMod

@@ -14,7 +14,7 @@ module clm_initializeMod
   use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed, use_betr  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use perf_mod         , only : t_startf, t_stopf
-  use readParamsMod    , only : readParameters
+  use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio       , only : file_desc_t
   ! 
   !-----------------------------------------
@@ -388,7 +388,8 @@ contains
     use restFileMod           , only : restFile_read, restFile_write 
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
-    use CNEcosystemDynMod     , only : CNEcosystemDynInit 
+    use CNEcosystemDynMod     , only : CNEcosystemDynInit
+    use CNEcosystemDynBetrMod , only : CNEcosystemDynBetrInit    
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
@@ -405,7 +406,8 @@ contains
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
     use betr_initializeMod    , only : betr_initialize
-    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars    
+    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars
+    use BGCReactionsFactoryMod, only : is_active_betr_bgc    
     !
     ! !ARGUMENTS    
     implicit none
@@ -454,11 +456,10 @@ contains
     nclumps = get_proc_clumps()
 
     ! ------------------------------------------------------------------------
-    ! Read in parameters files
+    ! Read in shared parameters files
     ! ------------------------------------------------------------------------
 
-    call readParameters()
-
+    call readSharedParameters()
     ! ------------------------------------------------------------------------
     ! Initialize time manager
     ! ------------------------------------------------------------------------
@@ -629,6 +630,7 @@ contains
          soilstate_vars%watsat_col(begc:endc, 1:), &
          temperature_vars%t_soisno_col(begc:endc, -nlevsno+1:) )
 
+    
     call waterflux_vars%init(bounds_proc)
 
     call chemstate_vars%Init(bounds_proc)    
@@ -663,6 +665,7 @@ contains
     allocate(soil_water_retention_curve, &
          source=create_soil_water_retention_curve())
 
+
     ! --------------------------------------------------------------
     ! Initialise the BeTR 
     ! --------------------------------------------------------------
@@ -670,8 +673,8 @@ contains
     if(use_betr)then
       !state variables will be initialized inside betr_initialize
       call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
-    endif 
-         
+    endif
+    
     call SnowOptics_init( ) ! SNICAR optical parameters:
 
     call SnowAge_init( )    ! SNICAR aging   parameters:
@@ -686,6 +689,12 @@ contains
        call vocemis_vars%Init(bounds_proc)
     end if
 
+    ! ------------------------------------------------------------------------
+    ! Read in private parameters files, this should be preferred for mulitphysics
+    ! implementation, jinyun Tang, Feb. 11, 2015
+    ! ------------------------------------------------------------------------
+    call readPrivateParameters()
+    
     if (use_cn) then
 
        call init_decomp_cascade_constants()
@@ -793,7 +802,11 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       call CNEcosystemDynInit(bounds_proc)
+       if(is_active_betr_bgc())then
+         call CNEcosystemDynBetrInit(bounds_proc)
+       else
+         call CNEcosystemDynInit(bounds_proc)
+       endif
     else
        call SatellitePhenologyInit(bounds_proc)
     end if

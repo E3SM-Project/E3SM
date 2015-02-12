@@ -29,6 +29,9 @@ implicit none
       
       !do cold initialization of different tracers
       procedure(initCold_interface)                     , deferred :: initCold
+      
+      !read in implementation specific parameters
+      procedure(readParams_interface)                   , deferred :: readParams
   end type bgc_reaction_type  
   
   abstract interface
@@ -195,5 +198,15 @@ implicit none
   
   end subroutine InitCold_interface  
   
+!-------------------------------------------------------------------------------  
+  subroutine readParams(this, ncid)
+
+  use ncdio_pio               , only : file_desc_t
+                                         
+  import :: bgc_reaction_type
+  
+  type(file_desc_t)  :: ncid  ! pio netCDF file id
+    
+  end subroutine readParams  
   end interface
 end module BGCReactionsMod

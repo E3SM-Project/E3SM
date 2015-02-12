@@ -123,7 +123,7 @@ module clm_driver
   use TracerBalanceMod       , only : betr_tracer_massbalance_check
   use TracerBalanceMod       , only : begin_betr_tracer_massbalance
   use BGCReactionsFactoryMod , only : is_active_betr_bgc
-  use CNEcosystemDynBetrMod  , only : CNEcosystemDynVeg, CNEcosystemDynSummary  
+  use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary  
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
@@ -677,7 +677,7 @@ contains
          !right now betr bgc is intended only for non-ed mode
          
          !this returns the plant nutrient demand to soil bgc
-         call CNEcosystemDynVeg(bounds_clump,                                    &
+         call CNEcosystemDynBetrVeg(bounds_clump,                                    &
                   filter(nc)%num_soilc, filter(nc)%soilc,                        &
                   filter(nc)%num_soilp, filter(nc)%soilp,                        &
                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
@@ -705,7 +705,7 @@ contains
 
          call t_stopf('betr_nodrain')
          !do ecosystem variable summary
-         call CNEcosystemDynSummary(bounds_clump,                                &
+         call CNEcosystemDynBetrSummary(bounds_clump,                                &
                   filter(nc)%num_soilc, filter(nc)%soilc,                        &
                   filter(nc)%num_soilp, filter(nc)%soilp,                        &
                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &

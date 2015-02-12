@@ -35,6 +35,7 @@ implicit none
      procedure :: init_boundary_condition_type  ! initialize type of top boundary conditions
      procedure :: do_tracer_equilibration       ! do equilibrium tracer chemistry
      procedure :: InitCold                      ! do cold initialization
+     procedure :: readParams                    ! read in parameters
    end type bgc_reaction_mock_run_type
    
    interface bgc_reaction_mock_run_type
@@ -355,5 +356,18 @@ implicit none
     
 
   end subroutine InitCold
+
+  !-----------------------------------------------------------------------
+  subroutine readParams(this, ncid)
+
+  use ncdio_pio               , only : file_desc_t
+                                         
+  class(bgc_reaction_mock_run_type) , intent(in)    :: this   
+  
+  type(file_desc_t)  :: ncid  ! pio netCDF file id
+   
+   
+  !do nothing here  
+  end subroutine readParams
   
 end module BGCReactionsMockRunType

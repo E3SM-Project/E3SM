@@ -41,6 +41,7 @@ implicit none
    procedure :: init_boundary_condition_type  ! initialize type of top boundary conditions
    procedure :: do_tracer_equilibration       ! do equilibrium tracer chemistry
    procedure :: initCold
+   procedure :: readParams
   end type bgc_reaction_CENTURY_type
 
   
@@ -482,8 +483,24 @@ contains
 
 
   end subroutine do_tracer_equilibration
+  
+  !-----------------------------------------------------------------------
+  subroutine readParams(this, ncid)
 
+  use ncdio_pio               , only : file_desc_t
+                                         
+  class(bgc_reaction_CENTURY_type) , intent(in)    :: this  
+  
+  type(file_desc_t)  :: ncid  ! pio netCDF file id
+  
+  
 
+  call readCentDecompBgcParams ( ncid )
+  
+  call readCentNitrifDenitrifParams ( ncid )
+  
+  end subroutine readParams
+  
   !-----------------------------------------------------------------------
   subroutine InitCold(this, bounds, betrtracer_vars,  waterstate_vars, tracerstate_vars)
     !
