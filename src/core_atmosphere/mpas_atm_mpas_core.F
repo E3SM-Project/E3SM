@@ -53,7 +53,7 @@ module mpas_core
       call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
 
-      
+
       !
       ! If this is a restart run, read the restart stream, else read the input
       ! stream.
@@ -965,7 +965,7 @@ module mpas_core
 
       integer :: cell1, cell2, iEdge, n, i, j, j_in, iCell
       integer, pointer :: nCells, nEdges
-      integer :: cell_list(20), ordered_cell_list(20)
+      integer :: cell_list(20)
       logical :: addcell
 
 
@@ -1016,24 +1016,10 @@ module mpas_core
                end if
             end do
   
-          ! order the list by increasing cell number (brute force approach)
-  
-            do i=1,n
-               ordered_cell_list(i) = nCells + 2
-               j_in = 1
-               do j=1,n
-                  if (ordered_cell_list(i) > cell_list(j) ) then
-                     j_in = j
-                     ordered_cell_list(i) = cell_list(j)
-                  end if
-               end do
-!               ordered_cell_list(i) = cell_list(j_in)
-               cell_list(j_in) = nCells + 3
-            end do
   
             nAdvCellsForEdge(iEdge) = n
             do iCell = 1, nAdvCellsForEdge(iEdge)
-               advCellsForEdge(iCell,iEdge) = ordered_cell_list(iCell)
+               advCellsForEdge(iCell,iEdge) = cell_list(iCell)
             end do
   
           ! we have the ordered list, now construct coefficients
@@ -1046,7 +1032,7 @@ module mpas_core
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell1 ) j_in = j
+               if( cell_list(j) == cell1 ) j_in = j
             end do
             adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(1,1,iEdge)
             adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) + deriv_two(1,1,iEdge)
@@ -1054,7 +1040,7 @@ module mpas_core
             do iCell = 1, nEdgesOnCell(cell1)
                j_in = 0
                do j=1, n
-                 if( ordered_cell_list(j) == cellsOnCell(iCell,cell1) ) j_in = j
+                 if( cell_list(j) == cellsOnCell(iCell,cell1) ) j_in = j
                end do
                adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(iCell+1,1,iEdge)
                adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) + deriv_two(iCell+1,1,iEdge)
@@ -1065,7 +1051,7 @@ module mpas_core
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell2 ) j_in = j
+               if( cell_list(j) == cell2 ) j_in = j
             end do
             adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(1,2,iEdge)
             adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) - deriv_two(1,2,iEdge)
@@ -1073,7 +1059,7 @@ module mpas_core
             do iCell = 1, nEdgesOnCell(cell2)
                j_in = 0
                do j=1, n
-                  if( ordered_cell_list(j) == cellsOnCell(iCell,cell2) ) j_in = j
+                  if( cell_list(j) == cellsOnCell(iCell,cell2) ) j_in = j
                end do
                adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(iCell+1,2,iEdge)
                adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) - deriv_two(iCell+1,2,iEdge)
@@ -1088,13 +1074,13 @@ module mpas_core
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell1 ) j_in = j
+               if( cell_list(j) == cell1 ) j_in = j
             end do
             adv_coefs(j_in,iEdge) = adv_coefs(j_in,iEdge) + 0.5
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell2 ) j_in = j
+               if( cell_list(j) == cell2 ) j_in = j
             end do
             adv_coefs(j_in,iEdge) = adv_coefs(j_in,iEdge) + 0.5
   
