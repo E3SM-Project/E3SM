@@ -480,8 +480,16 @@ module mpas_core
       type (mpas_pool_type), intent(in) :: configPool
       type (mpas_pool_type), intent(in) :: packagePool
       integer, intent(out) :: ierr
+      ! Locals
+      character (len=StrKIND), pointer :: config_velocity_solver
+      logical, pointer :: SIAvelocityActive
 
       ierr = 0
+
+      call mpas_pool_get_config(configPool, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
+
+      if(trim(config_velocity_solver) == 'sia') SIAvelocityActive = .true.
 
    end subroutine mpas_core_setup_packages
 
@@ -618,8 +626,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: currTime
       integer :: err, err_tmp
-      integer :: iCell, iLevel, i
-
 
       err = 0
       err_tmp = 0
@@ -635,7 +641,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       err = ior(err, err_tmp)
 
       call li_setup_sign_and_index_fields(meshPool)
-
 
 ! This was needed to init FCT once.
 !!!      ! Init for FCT tracer advection

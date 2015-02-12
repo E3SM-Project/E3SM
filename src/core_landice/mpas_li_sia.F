@@ -124,6 +124,8 @@ contains
 
    subroutine li_sia_block_init(block, err)
 
+      use mpas_geometry_utils, only: mpas_calculate_barycentric_weights_for_points
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -151,9 +153,45 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: scratchPool
+      integer :: iCell, iLevel, i, iVertex, err_tmp
+      integer, pointer :: nVertices
+      character (len=StrKIND), pointer :: config_sia_tangent_slope_calculation
+      integer, dimension(:,:), pointer :: baryCellsOnVertex
+      real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
+      real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+      type (field1dInteger), pointer :: vertexIndicesField
 
       ! No block init needed.
       err = 0
+      err_tmp = 0
+
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+      call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
+      call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+      call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
+      call mpas_pool_get_field(scratchPool, 'vertexIndices', vertexIndicesField)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+
+      ! The SIA solver may need to setup these weights for calculating upperSurfaceVertex
+      if (trim(config_sia_tangent_slope_calculation) == 'from_vertex_barycentric') then
+         call mpas_allocate_scratch_field(vertexIndicesField, .true.)
+         do iVertex = 1, nVertices
+            vertexIndicesField % array(iVertex) = iVertex
+         enddo
+         call mpas_calculate_barycentric_weights_for_points(meshPool, &
+                xVertex(1:nVertices), yVertex(1:nVertices), zVertex(1:nVertices), &
+                vertexIndicesField % array(1:nVertices), &
+                baryCellsOnVertex(:, 1:nVertices), baryWeightsOnVertex(:, 1:nVertices), err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_deallocate_scratch_field(vertexIndicesField, .true.)
+      endif
+
 
    !--------------------------------------------------------------------
    end subroutine li_sia_block_init
@@ -211,14 +249,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), pointer :: thickness, layerCenterSigma, dcEdge, dvEdge, upperSurface, upperSurfaceVertex
+      real (kind=RKIND), dimension(:), pointer :: thickness, layerCenterSigma, dcEdge, dvEdge
+      real (kind=RKIND), dimension(:), pointer :: slopeEdge, normalSlopeEdge
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
       integer, dimension(:), pointer :: edgeMask
       integer, pointer :: nVertLevels, nEdges, nVertices, vertexDegree
       integer :: iLevel, iEdge, iCell, iVertex, cell1, cell2, cellIndex
-      real (kind=RKIND) :: basalVelocity, slopeOnEdge, &
-               normalSlopeOnEdge, tangentSlopeOnEdge,  &
+      real (kind=RKIND) :: basalVelocity, &
                layerCenterHeightOnEdge, thicknessEdge, hVertexAccum
       real (kind=RKIND), pointer :: rhoi         ! ice density
       real (kind=RKIND), pointer :: ratefactor   ! flow law parameter, A
@@ -241,8 +279,8 @@ contains
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'slopeEdge', slopeEdge, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
 
 
       ! Get parameters specified in the namelist
@@ -260,11 +298,6 @@ contains
          if ( li_mask_is_dynamic_ice(edgeMask(iEdge)) ) then
              cell1 = cellsOnEdge(1,iEdge)
              cell2 = cellsOnEdge(2,iEdge)
-             ! Calculate slope at edge
-             ! This could/should be calculated externally to this subroutine
-             normalSlopeOnEdge = (upperSurface(cell1) - upperSurface(cell2) ) / dcEdge(iEdge) 
-             tangentSlopeOnEdge = ( upperSurfaceVertex(verticesOnEdge(1,iEdge)) - upperSurfaceVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
-             slopeOnEdge = (normalSlopeOnEdge**2 + tangentSlopeOnEdge**2)**0.5
              ! Calculate thickness on edge - 2nd order
              thicknessEdge = (thickness(cell1) + thickness(cell2) ) * 0.5_RKIND
              ! Loop over layers
@@ -273,7 +306,7 @@ contains
                 layerCenterHeightOnEdge = thicknessEdge * (1.0_RKIND - layerCenterSigma(iLevel) )
                 ! Calculate SIA velocity
                 normalVelocity(iLevel,iEdge) = basalVelocity + &
-                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeOnEdge**(n-1) * normalSlopeOnEdge * &
+                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeEdge(iEdge)**(n-1) * normalSlopeEdge(iEdge) * &
                     (thicknessEdge**(n+1) - (thicknessEdge - layerCenterHeightOnEdge)**(n+1))
              end do  ! Levels
          else
