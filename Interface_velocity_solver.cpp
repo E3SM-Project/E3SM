@@ -1308,7 +1308,6 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     if (isVertexBoundary[iV]) {
       int c;
       int fCell = vertexToFCell[iV];
-      if(dirichletCellsMask_F[fCell]!=0) continue;
       int nEdg = nEdgesOnCells_F[fCell];
       elevationData[iV]=1e10;
       bool isFloating = false;
