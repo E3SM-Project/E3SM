@@ -68,7 +68,7 @@ contains
 !> \brief   MPAS 3D vector magnitude routine
 !> \author  Matt Hoffman
 !> \date    13 Jan. 2015
-!> \details 
+!> \details
 !> This routine calculates the magnitude of a 3d vector.
 !-----------------------------------------------------------------------
   real (kind=RKIND) function mpas_vec_mag_in_r3(xin)!{{{
@@ -84,7 +84,7 @@ contains
 !> \brief   MPAS 3D unit vector routine
 !> \author  Xylar Asay-Davis
 !> \date    03/28/13
-!> \details 
+!> \details
 !> This routine creates a unit vector out of an input point.
 !-----------------------------------------------------------------------
   subroutine mpas_unit_vec_in_r3(xin)!{{{
@@ -102,7 +102,7 @@ contains
 !> \brief   MPAS 3D cross product routine
 !> \author  Xylar Asay-Davis
 !> \date    03/28/13
-!> \details 
+!> \details
 !> This routine computes the cross product of two input vectors.
 !-----------------------------------------------------------------------
   subroutine mpas_cross_product_in_r3(p_1,p_2,p_out)!{{{
@@ -122,8 +122,8 @@ contains
 !> \brief   Convert an R3 cell-centered vector field to 2D vectors at edges
 !> \author  Mark Petersen
 !> \date    April 2013
-!> \details 
-!>  Convert an R3 cell-centered vector field to 2D vectors at edges, where 
+!> \details
+!>  Convert an R3 cell-centered vector field to 2D vectors at edges, where
 !>  the local coordinate system at the edge is normal and tangent to that edge.
 !
 !-----------------------------------------------------------------------
@@ -197,7 +197,7 @@ contains
            ! normal component at edge: take dot products with unit vectors at edge
            normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
            tangentialVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeTangentVectors(:,iEdge))
- 
+
          enddo
       enddo
 
@@ -210,7 +210,7 @@ contains
 !> \brief   Interpolate from R3 cell-centered vector field vector normal to edge
 !> \author  Mark Petersen
 !> \date    April 2013
-!> \details 
+!> \details
 !>  Convert an R3 cell-centered vector field to normal vectors at edges.
 !
 !-----------------------------------------------------------------------
@@ -230,7 +230,7 @@ contains
       type (mpas_pool_type), intent(in) :: &
          meshPool         !< Input: Mesh information
 
-      logical, intent(in) :: & 
+      logical, intent(in) :: &
          includeHalo !< Input: If true, halo cells and edges are included in computation
 
       !-----------------------------------------------------------------
@@ -258,7 +258,7 @@ contains
 
       if (includeHalo) then
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
-      else 
+      else
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
       endif
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -277,7 +277,7 @@ contains
 
            ! normal component at edge: take dot products with unit vectors at edge
            normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
- 
+
          enddo
       enddo
 
@@ -290,8 +290,8 @@ contains
 !> \brief   compute tangential velocity at an edge from the normal velocities
 !> \author  Mark Petersen
 !> \date    April 2013
-!> \details 
-!>  Compute tangential velocity at an edge from the normal velocities on the 
+!> \details
+!>  Compute tangential velocity at an edge from the normal velocities on the
 !>  edges of the two neighboring cells.
 !
 !-----------------------------------------------------------------------
@@ -310,7 +310,7 @@ contains
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: Mesh information
 
-      logical, intent(in) :: & 
+      logical, intent(in) :: &
          includeHalo !< Input: If true, halo cells and edges are included in computation
 
       !-----------------------------------------------------------------
@@ -337,7 +337,7 @@ contains
 
       if (includeHalo) then
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
-      else 
+      else
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
       endif
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -440,9 +440,9 @@ contains
 !> \brief   Computes zonal, meridional, and vertical unit vectors
 !> \author  Mark Petersen
 !> \date    1 May 2013
-!> \details 
+!> \details
 !>  Given a latitude and longitude location, compute unit vectors pointing 
-!>  in the zonal, meridional, and vertical directions.  
+!>  in the zonal, meridional, and vertical directions.
 !
 !-----------------------------------------------------------------------
 
@@ -457,7 +457,7 @@ contains
       real (kind=RKIND), intent(in) :: &
          lon, &!< Input: longitude, in radians, ranging [0,2*pi]
          lat   !< Input: latitude,  in radians, ranging [-pi,pi]
- 
+
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -505,7 +505,7 @@ contains
 !> \brief   Convert an R3 vector to a vector in spherical coordinates
 !> \author  Mark Petersen
 !> \date    April 2013
-!> \details 
+!> \details
 !>  Given an R3 vector, rotate it to spherical coordinates
 !
 !-----------------------------------------------------------------------
@@ -570,7 +570,7 @@ contains
 !> \brief   Convert a vector in spherical coordinates to an R3 vector
 !> \author  Mark Petersen
 !> \date    April 2013
-!> \details 
+!> \details
 !>  Given a vector in spherical coordinates, rotate it R3
 !
 !-----------------------------------------------------------------------
@@ -632,7 +632,7 @@ contains
 !> \brief   MPAS RBF interpolation initialization routine
 !> \author  Xylar Asay-Davis
 !> \date    03/28/13
-!> \details 
+!> \details
 !> This routine computes geometric fields that will be potentially useful for calling
 !> the interpolation routines.
 !> Input: the mesh
@@ -641,7 +641,7 @@ contains
 !>      cellTangentPlane - 2 orthogonal unit vectors in the tangent plane of each cell
 !>                         The first unit vector is chosen to point toward the center of the first
 !>                         edge on the cell.
-!>      localVerticalUnitVectors - the unit normal vector of the tangent plane at the center 
+!>      localVerticalUnitVectors - the unit normal vector of the tangent plane at the center
 !>                         of each cell
 !-----------------------------------------------------------------------
   subroutine mpas_initialize_vectors(meshPool)!{{{
@@ -749,9 +749,9 @@ contains
 !> \brief   Initialize edgeTangentVectors
 !> \author  Mark Petersen
 !> \date    June 2013
-!> \details 
+!> \details
 !> This routine initializes the array edgeTangentVectors.  It is not
-!> included in the mpas_initialize_vectors subroutine because the 
+!> included in the mpas_initialize_vectors subroutine because the
 !> array edgeTangentVectors is not included in all cores.
 !> Input: the mesh
 !> Output:
