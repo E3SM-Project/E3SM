@@ -2,8 +2,8 @@
 
 import os, sys, csv, time, math
 from optparse import OptionParser
-import Scientific.IO.NetCDF
-from Scientific.IO import NetCDF
+#import Scientific.IO.NetCDF
+#from Scientific.IO import NetCDF
 #from Numeric import *
 
 
@@ -425,8 +425,8 @@ os.system('cp '+options.ccsm_input+'/lnd/clm2/paramdata/clm_params.'+pftphys_sta
 os.system('chmod u+w ' +csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/clm_params.'+pftphys_stamp+'.'+ \
               casename+'.nc')
 if (options.parm_file != ''):
-    pftfile = NetCDF.NetCDFFile(csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/' \
-                                +'clm_params.'+pftphys_stamp+'.'+casename+'.nc',"a")
+#    pftfile = NetCDF.NetCDFFile(csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/' \
+#                                +'clm_params.'+pftphys_stamp+'.'+casename+'.nc',"a")
     input   = open(os.path.abspath(options.parm_file))
     for s in input:
         if s[0:1] != '#':
@@ -515,7 +515,9 @@ if (options.refcase == 'none'):
     if (options.ccsm_input != ''):
         os.system('./xmlchange -file env_run.xml -id DIN_LOC_ROOT -val ' \
                       +options.ccsm_input)
-    
+    #domain paths
+    os.system('./xmlchange -file env_run.xml -id LND_DOMAIN_PATH -val '+casedir)
+    os.system('./xmlchange -file env_run.xml -id ATM_DOMAIN_PATH -val '+casedir)
     #define mask and resoultion
     os.system('./xmlchange -file env_run.xml -id CLM_USRDAT_NAME ' \
                   +' -val '+str(numxpts)+'x'+str(numypts)+'pt_'+options.site)
@@ -584,6 +586,7 @@ if (options.refcase == 'none'):
     os.system('./xmlchange -file env_mach_pes.xml -id NTASKS_GLC -val 1')
     os.system('./xmlchange -file env_mach_pes.xml -id NTASKS_ROF -val 1')
     os.system('./xmlchange -file env_mach_pes.xml -id NTASKS_WAV -val 1')
+    os.system('./xmlchange -file env_mach_pes.xml -id NTHRDS_WAV -val 1')
     os.system('./xmlchange -file env_mach_pes.xml -id MAX_TASKS_PER_NODE -val 1')
 
     if (int(options.ninst) > 1):
@@ -680,6 +683,10 @@ if (options.refcase == 'none'):
     #        output.write(" spinup_state = 0\n")
     #    output.write("/\n")
         output.close()
+    #copy site data to case directory
+    os.system('cp '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/*'+casename+'*.nc .')
+    os.system('cp '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/domain*'+options.site+'*.nc .')
+
 
     #configure case
     if (options.no_config == False):
@@ -1175,9 +1182,9 @@ if (finidat != '' and options.runroot == '' ):
     os.system('cp -f '+csmdir+'/run/'+options.finidat_case+'/run/'+ \
               'rpointer.* '+csmdir+'/run/'+casename+'/run/')
 #move site data to run directory
-os.system('mv '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/*'+casename+'* ' \
+os.system('cp '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/*'+casename+'* ' \
            +runroot+'/'+casename+'/run/')
-os.system('mv '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/domain*'+options.site+'* ' \
+os.system('cp '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/domain*'+options.site+'* ' \
            +runroot+'/'+casename+'/run/')
 
 #os.system('cp -f ../microbepar_in ' +csmdir+'/run/'+casename+'/run/')
