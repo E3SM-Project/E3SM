@@ -229,9 +229,10 @@ contains
       integer, pointer :: nCells, nVertices, nEdges, vertexDegree
       real(KIND=RKIND), dimension(:), pointer :: thickness, bedTopography
       integer, dimension(:), pointer :: nEdgesOnCell, cellMask, vertexMask, edgeMask
-      integer, dimension(:,:), pointer :: cellsOnCell, cellsOnVertex, cellsOnEdge
+      integer, dimension(:,:), pointer :: cellsOnCell, cellsOnVertex, cellsOnEdge, dirichletVelocityMask
       real (kind=RKIND), pointer :: config_ice_density, config_ocean_density, &
             config_sea_level, config_dynamic_thickness
+      character (len=StrKIND), pointer :: config_velocity_solver
 
       integer :: i, j, iCell
       logical :: isMargin
@@ -262,6 +263,7 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       ! ====
       ! Calculate cellMask values===========================
@@ -278,10 +280,18 @@ contains
       end where
 
       ! Identify cells where the ice is above the ice dynamics thickness limit
-      where ( thickness > config_dynamic_thickness )
-          cellMask = ior(cellMask, li_mask_ValueDynamicIce)
-      end where
-      ! see below for an additional check
+      if (config_velocity_solver == 'sia') then
+         where ( thickness > config_dynamic_thickness )
+            cellMask = ior(cellMask, li_mask_ValueDynamicIce)
+         end where
+      else  ! HO external FEM dycore
+         call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=timeLevel)
+         ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
+         where ( (thickness > config_dynamic_thickness) .and.    &  ! same as for SIA case
+              (dirichletVelocityMask(1,:) == 0) )   ! but exclude dirichletVelocityMask locations set as lateral b.c.  To ignore dirichlet b.c. on the basal boundary, just check the surface level
+            cellMask = ior(cellMask, li_mask_ValueDynamicIce)
+         end where
+      endif
 
       ! Is it floating? (ice thickness equal to floatation is considered floating)
       ! For now floating ice and grounded ice are mutually exclusive.  
