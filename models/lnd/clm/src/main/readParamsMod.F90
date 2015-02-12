@@ -29,7 +29,7 @@ contains
     ! calls for ED parameters
     call EDParamsReadFile()
 
-  end subroutine readParameters
+  end subroutine readSharedParameters
   !-----------------------------------------------------------------------
   subroutine EDParamsReadFile ()
     !

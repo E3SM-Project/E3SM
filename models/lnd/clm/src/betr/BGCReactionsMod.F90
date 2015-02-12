@@ -199,14 +199,15 @@ implicit none
   end subroutine InitCold_interface  
   
 !-------------------------------------------------------------------------------  
-  subroutine readParams(this, ncid)
+  subroutine readParams_interface(this, ncid)
 
   use ncdio_pio               , only : file_desc_t
                                          
   import :: bgc_reaction_type
-  
+
+  class(bgc_reaction_type)          , intent(in)    :: this  
   type(file_desc_t)  :: ncid  ! pio netCDF file id
     
-  end subroutine readParams  
+  end subroutine readParams_interface  
   end interface
 end module BGCReactionsMod

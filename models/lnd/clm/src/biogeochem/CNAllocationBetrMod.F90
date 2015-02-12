@@ -1,4 +1,6 @@
 module CNAllocationBetrMod
+
+#include "shr_assert.h"
   
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -33,7 +35,7 @@ module CNAllocationBetrMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: readCNAllocBetrParams
   public :: CNAllocationBetrInit         ! Initialization
-
+  public :: calc_plant_nutrient_demand
 
   type :: CNAllocParamsType
      real(r8) :: bdnr              ! bulk denitrification rate (1/s)
@@ -539,6 +541,45 @@ contains
   end associate 
  end subroutine plantCNAlloc
 
+
+ !-----------------------------------------------------------------------------
+ subroutine calc_plant_nutrient_demand(bounds, num_soilc, filter_soilc,  num_soilp, filter_soilp,&
+       photosyns_vars, crop_vars, canopystate_vars,                           &
+       cnstate_vars, carbonstate_vars, carbonflux_vars,                       &
+       c13_carbonflux_vars, c14_carbonflux_vars,                              &
+       nitrogenstate_vars,  nitrogenflux_vars, plantsoilnutrientflux_vars )
+
+  use CNStateType         , only : cnstate_type
+  use CNCarbonFluxType    , only : carbonflux_type
+  use CNCarbonStateType   , only : carbonstate_type
+  use CNNitrogenFluxType  , only : nitrogenflux_type
+  use CNNitrogenStateType , only : nitrogenstate_type
+  use CanopyStateType     , only : canopystate_type
+  use CanopyStateType     , only : canopystate_type
+  use PhotosynthesisType  , only : photosyns_type
+  use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
+
+  implicit none
+  ! !ARGUMENTS:
+  type(bounds_type)        , intent(in)    :: bounds
+  integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
+  integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
+  integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
+  type(photosyns_type)     , intent(in)    :: photosyns_vars
+  type(crop_type)          , intent(in)    :: crop_vars
+  type(canopystate_type)   , intent(in)    :: canopystate_vars
+  type(carbonstate_type)   , intent(in)    :: carbonstate_vars
+  type(cnstate_type)       , intent(inout) :: cnstate_vars
+  type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+  type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
+  type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
+  type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+  type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars 
+
+ end subroutine calc_plant_nutrient_demand
+
  !-----------------------------------------------------------------------------
  subroutine calc_plant_nitrogen_demand(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
    photosyns_vars, canopystate_vars, crop_vars, carbonstate_vars, &
@@ -677,7 +718,7 @@ contains
   ! set time steps
   dt = real( get_step_size(), r8 )
 
-  dayscrecover = NutrientCompetitionParamsInst%dayscrecover
+  dayscrecover = CNAllocParamsInst%dayscrecover
   ! loop over patches to assess the total plant N demand
   do fp=1,num_soilp
     p = filter_soilp(fp)

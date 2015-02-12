@@ -247,7 +247,6 @@ contains
   !comment following lines out when it is hooked to CLM at the moment
   !call CNParamsReadShared(ncid)
   
-  !call readCNNitrifDenitrifParams ( ncid )
   
   end subroutine Init_betrbgc
 
@@ -488,7 +487,7 @@ contains
   subroutine readParams(this, ncid)
 
   use ncdio_pio               , only : file_desc_t
-                                         
+  use BGCCenturyParMod        , only : readCentDecompBgcParams, readCentNitrifDenitrifParams                                       
   class(bgc_reaction_CENTURY_type) , intent(in)    :: this  
   
   type(file_desc_t)  :: ncid  ! pio netCDF file id

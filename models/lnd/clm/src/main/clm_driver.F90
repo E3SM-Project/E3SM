@@ -779,6 +779,7 @@ contains
 
 
          if (use_betr)then
+           dtime = get_step_size()
            !this is used for non-online bgc with betr
            call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,    &
               filter(nc)%num_soilc, filter(nc)%soilc,                                &

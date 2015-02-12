@@ -1,8 +1,11 @@
 module BGCCenturyParMod
+  use shr_kind_mod           , only : r8 => shr_kind_r8
+  use abortutils                         , only : endrun
+  use shr_log_mod                        , only : errMsg => shr_log_errMsg
 implicit none
 
-  public :: readCNDecompBgcParams
-
+  public :: readCentDecompBgcParams
+  public :: readCentNitrifDenitrifParams
 
 
   type, private :: CNNitrifDenitrifParamsType
@@ -69,8 +72,10 @@ implicit none
 !-------------------------------------------------------------------------------
   subroutine readCentNitrifDenitrifParams ( ncid )
     !
-    use ncdio_pio    , only: file_desc_t
+    use ncdio_pio    , only: file_desc_t,ncd_io
+   
     use clm_varcon   , only : secspday
+    use clm_time_manager , only : get_days_per_year
     !
     ! !ARGUMENTS:
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -123,12 +128,14 @@ implicit none
   end subroutine readCentNitrifDenitrifParams
   
   !-----------------------------------------------------------------------
-  subroutine readCNDecompBgcParams ( ncid )
+  subroutine readCentDecompBgcParams ( ncid )
     !
     ! !DESCRIPTION:
     !
     ! !USES:
     use ncdio_pio    , only: file_desc_t,ncd_io
+    use clm_varcon   , only : secspday
+    use clm_time_manager , only : get_days_per_year
     !
     ! !ARGUMENTS:
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -145,6 +152,8 @@ implicit none
     real(r8) :: tau_s1  
     real(r8) :: tau_s2  
     real(r8) :: tau_s3     
+    real(r8) :: days_per_year
+    real(r8) :: tau_cwd
     !-----------------------------------------------------------------------
 
     ! These are not read off of netcdf file
@@ -262,7 +271,10 @@ implicit none
     tau_s1 = 1./7.3
     tau_s2 = 1./0.2
     tau_s3 = 1./.0045
-    
+    ! century leaves wood decomposition rates open, within range of 0 - 0.5 yr^-1
+    tau_cwd  = 1./0.3    
+    days_per_year = get_days_per_year()    
+
     CNDecompBgcParamsInst%k_decay_lit1=1._r8/(secspday * days_per_year * tau_l1)        ![1/s]
     CNDecompBgcParamsInst%k_decay_lit2=1._r8/(secspday * days_per_year * tau_l2_l3)
     CNDecompBgcParamsInst%k_decay_lit3=1._r8/(secspday * days_per_year * tau_l2_l3)
@@ -270,5 +282,5 @@ implicit none
     CNDecompBgcParamsInst%k_decay_som2=1._r8/(secspday * days_per_year * tau_s2)
     CNDecompBgcParamsInst%k_decay_som3=1._r8/(secspday * days_per_year * tau_s3)
     CNDecompBgcParamsInst%k_decay_cwd =1._r8/(secspday * days_per_year * tau_cwd)    
-  end subroutine readCNDecompBgcParams
+  end subroutine readCentDecompBgcParams
 end module BGCCenturyParMod

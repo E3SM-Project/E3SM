@@ -103,6 +103,7 @@ implicit none
     use dynHarvestMod          , only: CNHarvest
     use clm_varpar             , only: crop_prog
     use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type    
+    use CNAllocationBetrMod    , only: calc_plant_nutrient_demand
     implicit none
     !
     ! !ARGUMENTS:
@@ -191,7 +192,7 @@ implicit none
             carbonflux_vars, nitrogenstate_vars)
             
        !     
-       call calc_plant_nutrient_demand(bounds,  num_soilp, filter_soilp,&
+       call calc_plant_nutrient_demand(bounds, num_soilc, filter_soilc,  num_soilp, filter_soilp,&
        photosyns_vars, crop_vars, canopystate_vars,                           &
        cnstate_vars, carbonstate_vars, carbonflux_vars,                       &
        c13_carbonflux_vars, c14_carbonflux_vars,                              &
@@ -234,7 +235,6 @@ implicit none
     use dynHarvestMod          , only: CNHarvest
     use clm_varpar             , only: crop_prog
     use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
-
     implicit none
     !
     ! !ARGUMENTS:

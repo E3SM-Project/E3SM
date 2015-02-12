@@ -10,7 +10,6 @@ module BGCCenturySubMod
   implicit none
   save
   
-  public :: readCentNitrifDenitrifParams
   
   type, public :: centurybgc_type
   
@@ -178,7 +177,7 @@ module BGCCenturySubMod
   use BetrTracerType        , only : betrtracer_type
   use tracerstatetype       , only : tracerstate_type
   use BeTRTracerType        , only : betrtracer_type
-  
+  use BGCCenturyParMod      , only : CNDecompBgcParamsInst 
   implicit none
   integer,                     intent(in) :: nom_pools
   type(bounds_type),           intent(in) :: bounds
