@@ -1406,7 +1406,7 @@ module mpas_core
       call mpas_pool_get_array(diag, 'theta_pv', theta_pv)
       call mpas_pool_get_array(diag, 'vort_pv', vort_pv)
       
-      write(0,*) 'Interpolating u,v,theta,vort to pv '
+      !write(0,*) 'Interpolating u,v,theta,vort to pv '
       
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
                      ertel_pv, uZonal, u_pv, missingVal)
@@ -1425,7 +1425,7 @@ module mpas_core
       call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
                      ertel_pv, vVort, vort_pv, missingVal)
       deallocate(vVort)
-      write(0,*) 'Done interpolating '
+      !write(0,*) 'Done interpolating '
    end subroutine interp_pv_diagnostics     
    
    subroutine interp_pv( nCells, nLevels, interpVal, &
@@ -1784,6 +1784,7 @@ module mpas_core
       call mpas_pool_get_array(mesh, 'cellTangentPlane', cellTangentPlane)
       call mpas_pool_get_array(mesh, 'localVerticalUnitVectors', localVerticalUnitVectors)
       call mpas_pool_get_array(mesh, 'edgeNormalVectors', edgeNormalVectors)
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
       
       call mpas_pool_get_array(state, 'w', w, time_lev)
       call mpas_pool_get_array(diag, 'theta', theta)
@@ -1881,7 +1882,7 @@ module mpas_core
       
       pvuVal = 2.0_RKIND
       missingVal = -99999.0_RKIND
-      !call interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
+      call interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
    
    end subroutine atm_compute_pv_diagnostics
 
