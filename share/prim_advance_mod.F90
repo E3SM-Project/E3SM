@@ -45,15 +45,15 @@ contains
     type (EdgeDescriptor_t),allocatable  :: desc(:)
 !    integer, allocatable :: globalid(:)
 
-    print *,'prim_advance_init: nelemd:= ',nelemd
+!    print *,'prim_advance_init: nelemd:= ',nelemd
     allocate(desc(nelemd))
 !    allocate(globalid(nelemd))
-    print *,'prim_advance_init: after allocate '
+!    print *,'prim_advance_init: after allocate '
     do ie=1,nelemd
        desc(ie) = elem(ie)%desc
 !       globalid(ie) = elem(ie)%GlobalId
     enddo
-    print *,'prim_advance_init: before call to initNewEdgeBuffer rsplit: ',rsplit
+!    print *,'prim_advance_init: before call to initNewEdgeBuffer rsplit: ',rsplit
     if (rsplit==0) then
        call initEdgeBuffer(par,edge3p1,desc,3*nlev+1)
        call initEdgeBuffer(par,oldedge3p1,3*nlev+1)
