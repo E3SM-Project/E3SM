@@ -1766,7 +1766,7 @@ module mpas_core
       real(kind=RKIND), dimension(:,:), pointer :: w, rho, vorticity, zgrid, &
                                                    localVerticalUnitVectors, edgeNormalVectors, kiteAreasOnVertex, &
                                                    theta, uReconstructX, uReconstructY, uReconstructZ, &
-                                                   ertel_pv, rho_zz
+                                                   ertel_pv
       real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane
       
       call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
@@ -1877,14 +1877,16 @@ module mpas_core
       call mpas_dmpar_exch_halo_field(uReconstructZ_f)
       call mpas_dmpar_exch_halo_field(w_f)
       
-      call calc_epv(mesh, 1, state, diag)
+      call calc_epv(mesh, time_lev, state, diag)
       
       pvuVal = 2.0_RKIND
       missingVal = -99999.0_RKIND
-      call interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
+      !call interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
    
    end subroutine atm_compute_pv_diagnostics
-   
+
+!nick comment
+#if 0
    subroutine calc_pvBudget(mesh, diag, tend, tend_physics)
       
       call mpas_pool_get_array(state, 'w', w, time_lev)
@@ -2119,5 +2121,7 @@ module mpas_core
       call interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
    
    end subroutine atm_compute_pvBudget_diagnostics
+!end nick comment
+#endif
 
 end module mpas_core

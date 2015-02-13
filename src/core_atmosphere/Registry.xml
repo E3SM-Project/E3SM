@@ -570,11 +570,11 @@
 			<var name="ke"/>
 			<var name="uReconstructZonal"/>
 			<var name="uReconstructMeridional"/>
-			<var name="ertel_pv"/>
-			<var name="u_pv"/>
-			<var name="v_pv"/>
-			<var name="theta_pv"/>
-			<var name="vort_pv"/>
+			  <var name="ertel_pv"/>
+			  <var name="u_pv"/>
+			  <var name="v_pv"/>
+			  <var name="theta_pv"/>
+			  <var name="vort_pv"/>
 			<var name="i_rainnc"/>
 			<var name="rainnc"/>
 			<var name="precipw"/>
@@ -827,11 +827,11 @@
                 <var name="ke"                      type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="pv_vertex"               type="real"     dimensions="nVertLevels nVertices Time"/>
                 <var name="pv_cell"                 type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="ertel_pv"                 type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="u_pv"                 type="real"     dimensions="nCells Time"/>
-                <var name="v_pv"                 type="real"     dimensions="nCells Time"/>
-                <var name="theta_pv"                 type="real"     dimensions="nCells Time"/>
-                <var name="vort_pv"                 type="real"     dimensions="nCells Time"/>
+                  <var name="ertel_pv"                 type="real"     dimensions="nVertLevels nCells Time"/>
+                  <var name="u_pv"                 type="real"     dimensions="nCells Time"/>
+                  <var name="v_pv"                 type="real"     dimensions="nCells Time"/>
+                  <var name="theta_pv"                 type="real"     dimensions="nCells Time"/>
+                  <var name="vort_pv"                 type="real"     dimensions="nCells Time"/>
 
                 <!-- reconstructed horizontal velocity vectors at cell centers -->
                 <var name="uReconstructX"           type="real"     dimensions="nVertLevels nCells Time"/>
