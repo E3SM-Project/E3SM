@@ -333,12 +333,10 @@ module mpas_core
       integer :: itimestep
       integer :: ierr
 
-      type (mpas_pool_type), pointer :: state, diag, mesh, diag_physics
+      type (mpas_pool_type), pointer :: state, diag, mesh, diag_physics, tend, tend_physics
 
       ! For high-frequency diagnostics output
       character (len=StrKIND) :: tempfilename
-
-
 
       ! Eventually, dt should be domain specific
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
@@ -425,8 +423,11 @@ module mpas_core
               call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
               call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+              call mpas_pool_get_subpool(block_ptr % structs, 'tend', tend)
+              call mpas_pool_get_subpool(block_ptr % structs, 'tend_physics', tend_physics)
               call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
               call atm_compute_pv_diagnostics(state, 1, diag, mesh)
+              call atm_compute_pvBudget_diagnostics(state, 1, diag, mesh, tend, tend_physics)
 
               block_ptr => block_ptr % next
            end do
@@ -1428,6 +1429,40 @@ module mpas_core
       !write(0,*) 'Done interpolating '
    end subroutine interp_pv_diagnostics     
    
+   subroutine interp_pvBudget_diagnostics(mesh, diag, pvuVal, missingVal)
+      !compute various fields on 2pvu surface using calculated PVU field
+      !tend_diab, tend_fric
+      
+      implicit none
+      
+      type (mpas_pool_type), intent(in)  :: mesh
+      type (mpas_pool_type), intent(inout) :: diag
+      real(kind=RKIND) ::  pvuVal, missingVal
+      
+      integer :: iCell, k
+      integer, pointer :: nCells, nVertLevels
+                                          
+      real(kind=RKIND),dimension(:),pointer:: latCell, depv_dt_diab_pv, depv_dt_fric_pv
+      real(kind=RKIND),dimension(:,:),pointer:: depv_dt_diab, depv_dt_fric, ertel_pv
+      
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCells)
+      
+      call mpas_pool_get_array(mesh, 'latCell', latCell)
+      
+      call mpas_pool_get_array(diag, 'ertel_pv', ertel_pv)
+      call mpas_pool_get_array(diag, 'depv_dt_diab', depv_dt_diab)
+      call mpas_pool_get_array(diag, 'depv_dt_fric', depv_dt_fric)
+      
+      !write(0,*) 'Interpolating u,v,theta,vort to pv '
+      
+      call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
+                     ertel_pv, depv_dt_diab, depv_dt_diab_pv, missingVal)
+      call interp_pv(nCells, nVertLevels, pvuVal, latCell, &
+                     ertel_pv, depv_dt_fric, depv_dt_fric_pv, missingVal)
+      !write(0,*) 'Done interpolating '
+   end subroutine interp_pvBudget_diagnostics
+   
    subroutine interp_pv( nCells, nLevels, interpVal, &
                          latCell, field0, field1,field, &
                          missingVal)
@@ -1885,10 +1920,64 @@ module mpas_core
       call interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
    
    end subroutine atm_compute_pv_diagnostics
+   
+   subroutine calc_pvBudget(state, time_lev, diag, mesh, tend, tend_physics)
+      
+      use mpas_vector_reconstruction
+      
+      implicit none
+      
+      type (mpas_pool_type), intent(in) :: state
+      integer, intent(in) :: time_lev            ! which time level to use from state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(in) :: tend_physics
+      type (mpas_pool_type), intent(inout) :: tend !modify tend_w_euler to uncouple with density
 
-!nick comment
-#if 0
-   subroutine calc_pvBudget(mesh, diag, tend, tend_physics)
+      integer :: iCell, k, iEdge
+      integer, pointer :: nCellsSolve, nVertLevels, nVertices, nCells, nEdges
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge, edgesOnCell, verticesOnCell, &
+                                          cellsOnVertex, verticesOnEdge
+      !real(kind=RKIND) :: rvord
+      real(kind=RKIND), dimension(3) :: gradxu, gradtheta, gradxf
+      real(kind=RKIND), dimension(3,3) :: xyzLocal
+      real(kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, areaTriangle, dcEdge
+      real(kind=RKIND), dimension(:,:), pointer :: w, rho, vorticity, zgrid, &
+                                                   localVerticalUnitVectors, edgeNormalVectors, kiteAreasOnVertex, &
+                                                   theta, uReconstructX, uReconstructY, uReconstructZ, &
+                                                   ertel_pv, rho_zz
+      real(kind=RKIND), dimension(:,:), pointer :: depv_dt_lw, depv_dt_sw, depv_dt_bl, depv_dt_cu, depv_dt_mp, depv_dt_mix
+      real(kind=RKIND), dimension(:,:), pointer :: depv_dt_diab, depv_dt_fric, depv_dt_phys
+      real(kind=RKIND), dimension(:,:), pointer :: tend_u_phys, tend_u_euler, rho_edge, tend_w_euler
+      real(kind=RKIND), dimension(:,:), pointer :: rthblten, rthcuten, rthratenlw, rthratensw, &
+                                                   dtheta_dt_mp, dtheta_dt_mix
+      real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane
+      
+      real(kind=RKIND), dimension(:,:), allocatable :: varVerts, tenduX, tenduY, tenduZ, tenduZonal,tendUMerid
+      
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'verticesOnCell', verticesOnCell)
+      call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(mesh, 'cellsOnVertex', cellsOnVertex)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'cellTangentPlane', cellTangentPlane)
+      call mpas_pool_get_array(mesh, 'localVerticalUnitVectors', localVerticalUnitVectors)
+      call mpas_pool_get_array(mesh, 'edgeNormalVectors', edgeNormalVectors)
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'verticesOnEdge', verticesOnEdge)
       
       call mpas_pool_get_array(state, 'w', w, time_lev)
       call mpas_pool_get_array(diag, 'theta', theta)
@@ -1994,7 +2083,12 @@ module mpas_core
       
       !frictional component ----------------------
       !vertical curl at vertices ( like SAT analogies tend_u:varVerts :: u:vorticity)
-      tend_u_phys = tend_u_phys + tend_u_euler/rho_edge
+      do iEdge=1,nEdges
+         do k=1,nVertLevels
+            tend_u_phys(k,iEdge) = tend_u_phys(k,iEdge)+tend_u_euler(k,iEdge)/rho_edge(k,iEdge)
+         end do
+      end do
+      !tend_u_phys = tend_u_phys + tend_u_euler/rho_edge
       do k=1,nVertLevels
          call calc_vertical_curl(varVerts(k,:), tend_u_phys(k,:), dcEdge, areaTriangle, verticesOnEdge, nEdges, nVertices)
       end do
@@ -2012,8 +2106,8 @@ module mpas_core
          end do
       end do
       !constant extrapolation for density above and below cell centers
-      tend_w_euler(1,:) = tend_w_euler(1,:)/rho(1,:)
-      tend_w_euler(nVertLevels+1,:) = tend_w_euler(nVertLevels+1,:)/rho(nVertLevels,:)
+      tend_w_euler(1,1:nCells) = tend_w_euler(1,1:nCells)/rho(1,1:nCells)
+      tend_w_euler(nVertLevels+1,1:nCells) = tend_w_euler(nVertLevels+1,1:nCells)/rho(nVertLevels,1:nCells)
       
       do iCell=1,nCellsSolve
          do k=1,nVertLevels
@@ -2055,74 +2149,67 @@ module mpas_core
       
    end subroutine calc_pvBudget
    
-   subroutine atm_compute_pvBudget_diagnostics(state, time_lev, diag, mesh)
-      ! after calculating epv, do the pv budget in the "classic" formulation: (e.g., Pedlosky) 
+   subroutine atm_compute_pvBudget_diagnostics(state, time_lev, diag, mesh, tend, tend_physics)
+      ! after calculating epv,
+      !pv budget in the "classic" formulation: (e.g., Pedlosky) 
       !Depv_Dt = Thermo+Friction = vort3d/rho . grad(Dtheta/Dt) + gradTheta/rho . grad x F/rho
-      ! The thermo term gets calculated just like epv but theta replaced Dtheta/Dt
+      ! The thermo term gets calculated just like epv but theta replaced w/ Dtheta/Dt
       ! F/rho is tend_{u,v,w} and we'll calculate a cell's vertical and horizontal curl separately.
-   
-      use mpas_grid_types
+      
       use mpas_constants
-   
+      use mpas_grid_types
+      
       implicit none
-   
-      type (mpas_pool_type), intent(inout) :: state
+      
+      type (mpas_pool_type), intent(inout) :: diag, tend
+      type (mpas_pool_type), intent(in) :: state, mesh, tend_physics
       integer, intent(in) :: time_lev            ! which time level to use from state
-      type (mpas_pool_type), intent(inout) :: diag
-      type (mpas_pool_type), intent(in) :: mesh
    
       integer :: iCell, k
       integer, pointer :: nCells, nVertLevels, index_qv
       real (kind=RKIND) :: pvuVal, missingVal
-      real (kind=RKIND), dimension(:,:), pointer :: theta, rho, theta_m, rho_zz, zz, dtheta_dt_mix, tend_theta_euler
-      type (field2DReal), pointer :: theta_f, uReconstructX_f, uReconstructY_f, uReconstructZ_f, w_f
+      real (kind=RKIND), dimension(:,:), pointer :: dtheta_dt_mix, tend_theta_euler
       type (field2DReal), pointer :: rthratenlw_f, rthratensw_f, rthcuten_f, rthblten_f, dtheta_dt_mp_f, theta_euler_f, dtheta_dt_mix_f
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(state, 'index_qv', index_qv)
-
-      call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz, time_lev)
       call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
-
-      call mpas_pool_get_array(diag, 'theta', theta)
-      call mpas_pool_get_array(diag, 'rho', rho)
-
-      call mpas_pool_get_array(mesh, 'zz', zz)
-
-      do iCell=1,nCells
-         do k=1,nVertLevels
-            theta(k,iCell) = theta_m(k,iCell) / (1._RKIND + rvord * scalars(index_qv,k,iCell))
-            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
-         end do
-      end do
       
       !nick szapiro
-      write(0,*) "Calculating epv"
+      write(0,*) "Calculating pvBudget"
       
       !need halo cells for everything w/ horizontal derivative
-      call mpas_pool_get_field(state, 'w', w_f, time_lev)
-      call mpas_pool_get_field(diag, 'uReconstructX', uReconstructX_f)
-      call mpas_pool_get_field(diag, 'uReconstructY', uReconstructY_f)
-      call mpas_pool_get_field(diag, 'uReconstructZ', uReconstructZ_f)
-      call mpas_pool_get_field(diag, 'theta', theta_f)
-
-      call mpas_dmpar_exch_halo_field(theta_f)
-      call mpas_dmpar_exch_halo_field(uReconstructX_f)
-      call mpas_dmpar_exch_halo_field(uReconstructY_f)
-      call mpas_dmpar_exch_halo_field(uReconstructZ_f)
-      call mpas_dmpar_exch_halo_field(w_f)
+      call mpas_pool_get_array(tend, 'theta_euler', tend_theta_euler)
+      call mpas_pool_get_array(diag, 'dtheta_dt_mix', dtheta_dt_mix)
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            !with modified moist potential temperature being the model state variable being mixed,
+            ! assume qv field is not mixed and so there's no tend_qv to consider
+            dtheta_dt_mix(k,iCell) = tend_theta_euler(k,iCell)/( 1._RKIND + rvord*scalars(index_qv,k,iCell) )
+         end do
+      end do
+      call mpas_pool_get_field(tend_physics, 'rthratenlw', rthratenlw_f)
+      call mpas_pool_get_field(tend_physics, 'rthratensw', rthratensw_f)
+      call mpas_pool_get_field(tend_physics, 'rthcuten', rthcuten_f)
+      call mpas_pool_get_field(tend_physics, 'rthblten', rthblten_f)
+      call mpas_pool_get_field(diag, 'dtheta_dt_mp', dtheta_dt_mp_f)
+      call mpas_pool_get_field(diag, 'dtheta_dt_mix', dtheta_dt_mix_f)
       
-      call calc_epv(mesh, 1, state, diag)
+      call mpas_dmpar_exch_halo_field(rthratenlw_f)
+      call mpas_dmpar_exch_halo_field(rthratensw_f)
+      call mpas_dmpar_exch_halo_field(rthcuten_f)
+      call mpas_dmpar_exch_halo_field(rthblten_f)
+      call mpas_dmpar_exch_halo_field(dtheta_dt_mp_f)
+      call mpas_dmpar_exch_halo_field(dtheta_dt_mix_f)
+      
+      call calc_pvBudget(state, time_lev, diag, mesh, tend, tend_physics)
       
       pvuVal = 2.0_RKIND
       missingVal = -99999.0_RKIND
-      call interp_pv_diagnostics(mesh, diag, pvuVal, missingVal)
+      call interp_pvBudget_diagnostics(mesh, diag, pvuVal, missingVal)
    
    end subroutine atm_compute_pvBudget_diagnostics
-!end nick comment
-#endif
 
 end module mpas_core
