@@ -672,15 +672,16 @@ module mpas_core
          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='output', ierr=ierr)
          call mpas_timer_stop('reset_io_alarms')
 
+         call mpas_timer_start('io_write', .false.)
+         call mpas_stream_mgr_write(stream_manager, streamID='restart', ierr=ierr)
+         call mpas_timer_stop('io_write')
+
          if ( mpas_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
          end if
 
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='restart', ierr=ierr)
-         call mpas_timer_stop('io_write')
          call mpas_timer_start('reset_io_alarms', .false.)
          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=ierr)
          call mpas_timer_stop('reset_io_alarms')
