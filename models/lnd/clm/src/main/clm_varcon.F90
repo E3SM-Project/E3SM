@@ -168,8 +168,9 @@ module clm_varcon
   !------------------------------------------------------------------
   ! Note some of these constants are also used in CNNitrifDenitrifMod
 
-  real(r8), parameter :: catomw = 12.011_r8 ! molar mass of C atoms (g/mol)
-
+  real(r8), parameter :: catomw = 12.011_r8     ! molar mass of C atoms (g/mol)
+  real(r8), parameter :: natomw = 14.007_r8     ! molar mass of N atoms (g/mol)
+  
   real(r8) :: s_con(ngases,4)    ! Schmidt # calculation constants (spp, #)
   data (s_con(1,i),i=1,4) /1898_r8, -110.1_r8, 2.834_r8, -0.02791_r8/ ! CH4
   data (s_con(2,i),i=1,4) /1801_r8, -120.1_r8, 3.7818_r8, -0.047608_r8/ ! O2

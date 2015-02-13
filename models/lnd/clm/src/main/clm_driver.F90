@@ -692,13 +692,13 @@ contains
 
          !do belowground bgc and transport         
          call t_startf('betr_nodrain')
-         dtime = get_step_size()
+
          call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,      &
               filter(nc)%num_soilc, filter(nc)%soilc,                                &
               filter(nc)%num_soilp, filter(nc)%soilp,                                &
-              dtime,  col, atm2lnd_vars,                                             &
+              col, atm2lnd_vars,                                             &
               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
-              waterflux_vars, chemstate_vars, cnstate_vars, canopystate_vars,        &
+              waterflux_vars, chemstate_vars, cnstate_vars, carbonflux_vars,         &
               betrtracer_vars, bgc_reaction,                                         &
               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
               tracerflux_vars, plantsoilnutrientflux_vars)
@@ -779,14 +779,13 @@ contains
 
 
          if (use_betr)then
-           dtime = get_step_size()
            !this is used for non-online bgc with betr
            call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,    &
               filter(nc)%num_soilc, filter(nc)%soilc,                                &
               filter(nc)%num_soilp, filter(nc)%soilp,                                &
-              dtime,  col, atm2lnd_vars,                                             &
+              col, atm2lnd_vars,                                                     &
               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
-              waterflux_vars, chemstate_vars, cnstate_vars, canopystate_vars,        &
+              waterflux_vars, chemstate_vars, cnstate_vars, carbonflux_vars,         &
               betrtracer_vars, bgc_reaction,                                         &
               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
               tracerflux_vars, plantsoilnutrientflux_vars)         

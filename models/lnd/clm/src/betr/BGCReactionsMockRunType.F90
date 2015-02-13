@@ -190,7 +190,7 @@ implicit none
   
   subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, &
        dtime, col, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars,&
-       cnstate_vars, canopystate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+       cnstate_vars, carbonflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
   ! eventually this will be an abstract subroutine, but now I use the select case approach for a quick and dirty implementation.
@@ -208,7 +208,7 @@ implicit none
    use CanopyStateType          , only : canopystate_type
    use CNStateType              , only : cnstate_type     
    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
-   
+   use CNCarbonFluxType         , only : carbonflux_type   
    
    !ARGUMENTS
    class(bgc_reaction_mock_run_type)   , intent(in) :: this
@@ -224,14 +224,14 @@ implicit none
    type(Waterstate_Type)               , intent(in) :: waterstate_vars                    ! water state variables
    type(temperature_type)              , intent(in) :: temperature_vars                   ! energy state variable
    type(soilstate_type)                , intent(in) :: soilstate_vars
-   type(canopystate_type)              , intent(in) :: canopystate_vars
-   type(cnstate_type)                  , intent(inout) :: cnstate_vars   
+   type(cnstate_type)                  , intent(inout) :: cnstate_vars
+   type(carbonflux_type)               , intent(inout) :: carbonflux_vars   
    type(chemstate_type)                , intent(in) :: chemstate_vars
    type(betrtracer_type)               , intent(in) :: betrtracer_vars                    ! betr configuration information
    type(tracercoeff_type)              , intent(in) :: tracercoeff_vars
    type(tracerstate_type)              , intent(inout) :: tracerstate_vars
    type(tracerflux_type)               , intent(inout) :: tracerflux_vars
-   type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars  
+   class(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars  
    character(len=*), parameter :: subname ='calc_bgc_reaction'
     
    

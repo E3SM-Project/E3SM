@@ -247,7 +247,7 @@ contains
        call CNGResp(num_soilp, filter_soilp, &
             carbonflux_vars)
        call t_stopf('CNGResp')
-
+       call carbonflux_vars%summary_rr(num_soilp, filter_soilp, num_soilc, filter_soilc)
        !--------------------------------------------
        ! CNUpdate0
        !--------------------------------------------

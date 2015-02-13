@@ -36,9 +36,10 @@ module CNEcosystemDynBetrMod
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type 
 implicit none
 
-
+  private
   public :: CNEcosystemDynBetrVeg
   public :: CNEcosystemDynBetrSummary
+
   contains
 
   !-----------------------------------------------------------------------
@@ -191,15 +192,58 @@ implicit none
             canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
             carbonflux_vars, nitrogenstate_vars)
             
-       !     
+              
+       call t_stopf('CNMResp')
+
+       !calculate vertical profiles to destribute various variables, this could also pet put outside this block of codes
+       call decomp_vertprofiles(bounds,  num_soilc, filter_soilc, num_soilp, filter_soilp,  soilstate_vars, canopystate_vars, cnstate_vars)
+
        call calc_plant_nutrient_demand(bounds, num_soilc, filter_soilc,  num_soilp, filter_soilp,&
-       photosyns_vars, crop_vars, canopystate_vars,                           &
-       cnstate_vars, carbonstate_vars, carbonflux_vars,                       &
-       c13_carbonflux_vars, c14_carbonflux_vars,                              &
-       nitrogenstate_vars,  nitrogenflux_vars, plantsoilnutrientflux_vars )
+         photosyns_vars, crop_vars, canopystate_vars,                           &
+         cnstate_vars, carbonstate_vars, carbonflux_vars,                       &
+         c13_carbonflux_vars, c14_carbonflux_vars,                              &
+         nitrogenstate_vars,  nitrogenflux_vars, plantsoilnutrientflux_vars )
        
-       call t_stopf('CNMResp')  
+       call calc_fpg(bounds, num_soilc, filter_soilc, &
+          plantsoilnutrientflux_vars%plant_totn_demand_flx_col(bounds%begc:bounds%endc), &
+          nitrogenstate_vars%plant_nbuffer_col(bounds%begc:bounds%endc), cnstate_vars%fpg_col(bounds%begc:bounds%endc))
+       
+       call plantCNAlloc(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+         photosyns_vars,  cnstate_vars,  carbonstate_vars, carbonflux_vars, &
+         c13_carbonflux_vars, c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+    
+       !--------------------------------------------
+       ! Phenology
+       !--------------------------------------------
+
+       ! CNphenology needs to be called after CNdecompAlloc, because it
+       ! depends on current time-step fluxes to new growth on the last
+       ! litterfall timestep in deciduous systems
+
+       call t_startf('CNPhenology')
+       call CNPhenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            num_pcropp, filter_pcropp, doalb, &
+            waterstate_vars, temperature_vars, crop_vars, canopystate_vars, soilstate_vars, &
+            dgvs_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, &
+            nitrogenstate_vars, nitrogenflux_vars)
+       call t_stopf('CNPhenology')
+
+       !--------------------------------------------
+       ! Growth respiration
+       !--------------------------------------------
+
+       call t_startf('CNGResp')
+       call CNGResp(num_soilp, filter_soilp, &
+            carbonflux_vars)
+       
+       call carbonflux_vars%summary_rr(num_soilp, filter_soilp, num_soilc, filter_soilc)
+       call t_stopf('CNGResp')
+
+       
   end subroutine CNEcosystemDynBetrVeg
+
+
+
   
 !-------------------------------------------------------------------------------
   subroutine CNEcosystemDynBetrSummary(bounds, &
@@ -269,55 +313,258 @@ implicit none
     type(plantsoilnutrientflux_type), intent(in) :: plantsoilnutrientflux_vars   
   
 
-  
-       call CNWoodProducts(num_soilc, filter_soilc, &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
-            carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars)
+    !--------------------------------------------
+    ! CNUpdate0
+    !--------------------------------------------
 
-       call CNFireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
-            cnstate_vars, carbonstate_vars)
+    call t_startf('CNUpdate0')
+    call CStateUpdate0(&
+            num_soilp, filter_soilp, &
+            carbonflux_vars, carbonstate_vars)
 
-       call CNFireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
-            carbonflux_vars, nitrogenflux_vars)
-       !--------------------------------------------
-       ! Update3
-       !--------------------------------------------
+    if ( use_c13 ) then
+       call CStateUpdate0(&
+               num_soilp, filter_soilp, &
+               c13_carbonflux_vars, c13_carbonstate_vars)
+    end if
 
-       if ( use_c13 ) then
-          call CIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    if ( use_c14 ) then
+       call CStateUpdate0(&
+               num_soilp, filter_soilp, &
+               c14_carbonflux_vars, c14_carbonstate_vars)
+    end if
+    call t_stopf('CNUpdate0')
+
+    !--------------------------------------------
+    ! Update1
+    !--------------------------------------------
+
+    call t_startf('CNUpdate1')
+
+    if ( use_c13 ) then
+       call CIsoFlux1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c13_carbonflux_vars, isotopestate_vars=c13_carbonstate_vars, &
                isotope='c13')
-       end if
-       if ( use_c14 ) then
-          call CIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    end if
+
+    if ( use_c14 ) then
+       call CIsoFlux1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, carbonflux_vars, carbonstate_vars, &
                isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
                isotope='c14')
-       end if
+    end if
 
-       call CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            cnstate_vars, carbonflux_vars, carbonstate_vars)
+
+    if ( use_c13 ) then
+       call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, c13_carbonflux_vars, c13_carbonstate_vars)
+    end if
+    
+    if ( use_c14 ) then
+       call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, c14_carbonflux_vars, c14_carbonstate_vars)
+    end if
+
+    call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
+    call t_stopf('CNUpdate1')
+
+    call t_startf('CNSoilLittVertTransp')
+
+
+    call t_startf('CNGapMortality')
+    call CNGapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            dgvs_vars, cnstate_vars, &
+            carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars)
+    call t_stopf('CNGapMortality')
+
+       !--------------------------------------------
+       ! Update2
+       !--------------------------------------------
+
+    call t_startf('CNUpdate2')
+
+    if ( use_c13 ) then
+       call CIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, carbonflux_vars, carbonstate_vars, &
+               isotopeflux_vars=c13_carbonflux_vars, isotopestate_vars=c13_carbonstate_vars, &
+               isotope='c13')
+    end if
+
+    if ( use_c14 ) then
+       call CIsoFlux2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, carbonflux_vars, carbonstate_vars, &
+               isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
+               isotope='c14')
+    end if
+
+    call CStateUpdate2( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonflux_vars, carbonstate_vars)
 
-       if ( use_c13 ) then
-          call CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    if ( use_c13 ) then
+          call CStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c13_carbonflux_vars, c13_carbonstate_vars)
-       end if
-       if ( use_c14 ) then
-          call CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    end if
+    if ( use_c14 ) then
+          call CStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c14_carbonflux_vars, c14_carbonstate_vars)
-       end if
+    end if
+    call NStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            nitrogenflux_vars, nitrogenstate_vars)
 
 
-       if ( use_c14 ) then
-          call C14Decay(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+    if (flanduse_timeseries /= ' ') then
+       call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars)
+    end if
+
+    if ( use_c13 ) then
+       call CIsoFlux2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, carbonflux_vars, carbonstate_vars, &
+               isotopeflux_vars=c13_carbonflux_vars, isotopestate_vars=c13_carbonstate_vars, &
+               isotope='c13')
+    end if
+    
+    if ( use_c14 ) then
+       call CIsoFlux2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, carbonflux_vars, carbonstate_vars, &
+               isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
+               isotope='c14')
+    end if
+
+    call CStateUpdate2h( num_soilc, filter_soilc,  num_soilp, filter_soilp, &
+            carbonflux_vars, carbonstate_vars)
+    if ( use_c13 ) then
+       call CStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               c13_carbonflux_vars, c13_carbonstate_vars)
+    end if
+    if ( use_c14 ) then
+       call CStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               c14_carbonflux_vars, c14_carbonstate_vars)
+    end if
+
+    call NStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            nitrogenflux_vars, nitrogenstate_vars)
+
+    call CNWoodProducts(num_soilc, filter_soilc, &
+            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
+            carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars)
+
+    call CNFireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            atm2lnd_vars, temperature_vars, energyflux_vars, soilhydrology_vars, waterstate_vars, &
+            cnstate_vars, carbonstate_vars)
+
+    call CNFireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
+            carbonflux_vars, nitrogenflux_vars)
+
+    call t_stopf('CNUpdate2')
+
+    !--------------------------------------------
+    ! Update3
+    !--------------------------------------------
+
+    if ( use_c13 ) then
+       call CIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, carbonflux_vars, carbonstate_vars, &
+               isotopeflux_vars=c13_carbonflux_vars, isotopestate_vars=c13_carbonstate_vars, &
+               isotope='c13')
+    end if
+    if ( use_c14 ) then
+       call CIsoFlux3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               cnstate_vars, carbonflux_vars, carbonstate_vars, &
+               isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
+               isotope='c14')
+    end if
+
+    call CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            carbonflux_vars, carbonstate_vars)
+
+    if ( use_c13 ) then
+       call CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               c13_carbonflux_vars, c13_carbonstate_vars)
+    end if
+    
+    if ( use_c14 ) then
+       call CStateUpdate3( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               c14_carbonflux_vars, c14_carbonstate_vars)
+    end if
+
+
+    if ( use_c14 ) then
+       call C14Decay(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c14_carbonstate_vars)
 
-          call C14BombSpike(num_soilp, filter_soilp, &
+       call C14BombSpike(num_soilp, filter_soilp, &
                cnstate_vars)
-       end if            
+    end if
+    
+    
+    call t_startf('CNUpdate3')
+
+    call NStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            nitrogenflux_vars, nitrogenstate_vars)
+    call t_stopf('CNUpdate3')
+
+    call t_startf('CNsum')
+    call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars)
+
+    call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
+    call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    if ( use_c13 ) then
+      call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
+      call c13_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    end if
+    if ( use_c14 ) then
+      call c14_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
+      call c14_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    end if
+    call nitrogenflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+
+    call t_stopf('CNsum')
+       
   end subroutine CNEcosystemDynBetrSummary
+
+
+
+  !-----------------------------------------------------------------------    
+  subroutine calc_fpg(bounds, num_soilc, filter_soilc, plant_totn_demand_flx, plant_nbuffer, fpg)
+  !
+  ! DESCRIPTION
+  ! calculate gpp downregulation factor
+  use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
+  use clm_time_manager         , only : get_step_size  
+  implicit none
+  type(bounds_type)        , intent(in)    :: bounds    
+  integer                  , intent(in)    :: num_soilc                         ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)                   ! filter for soil columns  
+  real(r8)                 , intent(inout) :: plant_totn_demand_flx(bounds%begc:bounds%endc)
+  real(r8)                 , intent(in)    :: plant_nbuffer(bounds%begc:bounds%endc)
+  real(r8)                 , intent(inout) :: fgp(bounds%begc:bounds%endc)
+  
+  integer :: fc, c
+  real(r8) :: dtime
+  
+  dtime =  get_step_size()
+  
+  do fc=1,num_soilc
+    c = filter_soilc(fc)    
+    ! calculate the fraction of potential growth that can be
+    ! acheived with the N available to plants
+    ! now a silly question here is does plant take more than necessary?
+    if (plant_totn_demand_flx(c) > 0.0_r8) then
+      fpg(c) = min(plant_nbuffer(c) / (plant_totn_demand_flx(c)*dtime),1.0_r8)
+      
+      plant_totn_demand_flx(c) = plant_totn_demand_flx(c)* (1._r8-fpg(c))
+    else
+      fpg(c) = 1.0_r8
+    end if
+  enddo          
+  end subroutine calc_fpg
   
 end module CNEcosystemDynBetrMod

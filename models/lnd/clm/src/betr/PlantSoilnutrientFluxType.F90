@@ -22,8 +22,8 @@ module PlantSoilnutrientFluxType
   
     real(r8), pointer :: plant_minn_yield_flx_col             (:)    !column level mineral nitrogen yield from soil bgc calculation
     real(r8), pointer :: plant_minn_yield_flx_patch           (:)    !patch level mineral nitrogen yeild from soil bgc calculation
-    real(r8), pointer :: plant_minn_yield_flx_vr_col          (:, :) !
-    real(r8), pointer :: plant_minn_demand_flx_col            (:)    !column level mineral nitrogen demand
+    real(r8), pointer :: plant_minn_yield_flx_vr_col          (:, :) !layer specific mineral nitrogen yield
+    real(r8), pointer :: plant_totn_demand_flx_col            (:)    !column level total nitrogen demand, g N/m2/s
    contains
 
      procedure , public  :: Init   
@@ -74,7 +74,7 @@ module PlantSoilnutrientFluxType
     
     allocate(this%plant_minn_yield_flx_vr_col                  (begc:endc, lbj:ubj)) ; this%plant_minn_yield_flx_vr_col         (:,:) = nan
     
-    allocate(this%plant_minn_demand_flx_col                    (begc:endc)) ; this%plant_minn_demand_flx_col                    (:)   = nan
+    allocate(this%plant_totn_demand_flx_col                    (begc:endc)) ; this%plant_totn_demand_flx_col                    (:)   = nan
   end subroutine InitAllocate    
 
 
@@ -124,10 +124,10 @@ module PlantSoilnutrientFluxType
             avgflag='A', long_name='plant nitrogen uptake flux from soil', &
             ptr_col=this%plant_minn_yield_flx_vr_col, default='inactive')         
 
-    this%plant_minn_demand_flx_col(begc:endc) = spval
-    call hist_addfld1d (fname='PLANT_MINN_DEMAND_FLX', units='gN/m^2/s',  &
+    this%plant_totn_demand_flx_col(begc:endc) = spval
+    call hist_addfld1d (fname='PLANT_TOTN_DEMAND_FLX', units='gN/m^2/s',  &
             avgflag='A', long_name='plant nitrogen demand flux', &
-            ptr_col=this%plant_minn_demand_flx_col, default='inactive')         
+            ptr_col=this%plant_totn_demand_flx_col, default='inactive')         
     
   end subroutine InitHistory
 

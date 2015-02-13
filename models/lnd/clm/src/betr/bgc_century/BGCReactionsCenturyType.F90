@@ -215,7 +215,7 @@ contains
   betrtracer_vars%tracernames(jj+5) = 'SOM2'
   betrtracer_vars%tracernames(jj+6) = 'SOM3'
   betrtracer_vars%tracernames(jj+7) = 'CWD'
-  
+    
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_n2)  =.true.
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_o2)  =.true.
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_ar)  =.true.
@@ -290,23 +290,27 @@ contains
   tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_co2x)=0.0168_r8                     !mol m-3, contant boundary condition  
   tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_ch4)=6.939e-5_r8                    !mol m-3, contant boundary condition
 
-    
+      
   tracerboundarycond_vars%bot_concflux_col(1,1,:) = 0._r8                                  !zero flux boundary condition
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_n2) = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_o2) = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_ar) = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_co2x) = 2._r8*1.267e-5_r8/dz_top(1)   !m/s surface conductance
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_ch4) = 2._r8*1.267e-5_r8/dz_top(1)    !m/s surface conductance  
+  !those will be updated with snow resistance and hydraulic wicking resistance
+  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_n2)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
+  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_o2)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
+  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_ar)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
+  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_co2x) = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
+  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_ch4)  = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance  
   
   end subroutine set_boundary_conditions
 !-------------------------------------------------------------------------------
 
   subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, dtime, col, &
     betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, &
-    cnstate_vars, canopystate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+    cnstate_vars, carbonflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
-  ! eventually this will be an abstract subroutine, but now I use the select case approach for a quick and dirty implementation.
+  ! this returns net carbon fluxes from decay and translocation
+  ! and also update the related carbon/nitrogen/phosphorus(potentially) pools of OM
+  ! note it is assumed the stoichiometry of the om pools are not changed during decomposition
+  !
   !USES
   !
   use tracerfluxType           , only : tracerflux_type
@@ -323,6 +327,7 @@ contains
   use CNStateType              , only : cnstate_type  
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   use CNVerticalProfileMod     , only : decomp_vertprofiles
+  use CNCarbonFluxType    , only : carbonflux_type  
   !ARGUMENTS
   class(bgc_reaction_CENTURY_type)   , intent(in) :: this
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
@@ -340,18 +345,18 @@ contains
   type(chemstate_type)               , intent(in) :: chemstate_vars
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information
   type(tracercoeff_type)             , intent(in) :: tracercoeff_vars
-  type(canopystate_type)             , intent(in)    :: canopystate_vars
   type(cnstate_type)                 , intent(inout) :: cnstate_vars
+  type(carbonflux_type)              , intent(inout) :: carbonflux_vars  
   type(tracerstate_type)             , intent(inout) :: tracerstate_vars
   type(tracerflux_type)              , intent(inout) :: tracerflux_vars
-  type(plantsoilnutrientflux_type)   , intent(inout) :: plantsoilnutrientflux_vars
+  class(plantsoilnutrientflux_type)   , intent(inout) :: plantsoilnutrientflux_vars
   
   character(len=*), parameter :: subname ='calc_bgc_reaction'
 
   integer :: fc, c, j
 
-  real(r8) :: y0(centurybgc_vars%neqs, bounds%begc:bounds%endc, lbj:ubj)
-  real(r8) :: yf(centurybgc_vars%neqs, bounds%begc:bounds%endc, lbj:ubj)  
+  real(r8) :: y0(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8) :: yf(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)  
   real(r8) :: cn_ratios(centurybgc_vars%nom_pools)
   real(r8) :: cp_ratios(centurybgc_vars%nom_pools)
   real(r8) :: time
@@ -361,6 +366,8 @@ contains
   real(r8) :: anaerobic_frac(bounds%begc:bounds%endc,lbj:ubj)
   real(r8) :: n2_n2o_ratio_denit(bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: nh4_no3_ratio(bounds%begc:bounds%endc, lbj:ubj)
+  real(r8) :: nuptake_prof(bounds%begc:bounds%endc,1:ubj)
+  
   
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
   
@@ -370,16 +377,18 @@ contains
   y0(:, :, :) = spval
   yf(:, :, :) = spval
 
-  !calculate vertical profiles to destribute various variables
-  call decomp_vertprofiles(bounds, &
-           num_soilc, filter_soilc, num_soilp, filter_soilp, &
-           soilstate_vars, canopystate_vars, cnstate_vars)
+  !calculate elemental stoichiometry
   
-  !add new litter 
-  call calc_om_input(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, dtime, col, betrtracer_vars, centurybgc_vars, cnstate_vars, tracerstate_vars)
-      
+  
+  !calculate nitrogen uptake profile
+  call calc_nuptake_prof(bounds, ubj, num_soilc, filter_soilc, &
+     tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, 1:ubj, betrtracer_vars%id_trc_nh3x), &
+     tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, 1:ubj, betrtracer_vars%id_trc_no3x), &
+     col%dz(bounds%begc:bounds%endc,1:ubj), cnstate_vars%nfixation_prof(bounds%begc:bounds%endc,1:ubj), &
+     nuptake_prof(bounds%begc:bounds%endc,1:ubj))
+           
   !initialize the state vector
-  call init_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%neqs, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)
+  call init_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)
 
   !calculate multiplicative scalars for decay parameters
   call calc_decompK_multiply_scalar(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, &
@@ -420,7 +429,12 @@ contains
      
   !now there is no plant nitrogen uptake, I tend to create a new structure to indicate plant nutrient demand when it is hooked
   !back with CLM
-  k_decay(centurybgc_vars%lid_plant_minn, : ,: )=0._r8    
+  
+  call calc_plant_nitrogen_uptake_prof(bounds, ubj, num_soilc, filter_soilc, &
+     plantsoilnutrientflux_vars%plant_totn_demand_flx_col(bounds%begc:bounds%endc), &
+     nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
+     k_decay(centurybgc_vars%lid_plant_minn, bounds%begc:bounds%endc ,1:ubj))
+  
   !do ode integration and update state variables for each layer
   do j = lbj, ubj
     do fc = 1, num_soilc
@@ -430,19 +444,38 @@ contains
       call Extra_inst%AAssign(cn_ratios,cp_ratios, k_decay(:,c,j), n2_n2o_ratio_denit(c,j), nh4_no3_ratio(c,j), soilstate_vars%cellsand_col(c,j))
       !update state variables
       time = 0._r8 
-      call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%neqs, time, dtime, yf(:,c,j))
+      call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
     enddo
   enddo  
 
   
   !retrieve the flux variable
-  call retrieve_flux(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%neqs, dtime, yf, y0, tracerflux_vars, centurybgc_vars, plantsoilnutrientflux_vars)
+  call retrieve_nutrient_flux(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, dtime, yf, y0, tracerflux_vars, centurybgc_vars, plantsoilnutrientflux_vars)
+
+  !-----------------------------------------------------------------------------------------------
+  !this section of code will be no longer in use when Bardan's code comes in
+  !calculating the interesting downregulating factor for plant gpp
+  call calc_fpg(bounds, num_soilc, filter_soilc, plantsoilnutrientflux_vars, cnstate_vars%fpg_col(bounds%begc:bounds%endc))
+  
+  !
+  call plant_downregulated_growth(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       photosyns_vars,  cnstate_vars,  carbonstate_vars, carbonflux_vars, &
+       c13_carbonflux_vars, c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+
+  !apply root respiration co2. this could potentially cause negative o2, but, anyway, I cannot do better because of the current code structure
+  !
+  !
+  !-----------------------------------------------------------------------------------------------
   
   !retrieve the state variable    
-  call retrieve_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%neqs,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      
+  call retrieve_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      
   
   
   call Extra_inst%DDeallocate()
+  
+
+  
+  
   end subroutine calc_bgc_reaction
   
     
@@ -579,7 +612,7 @@ contains
 !-------------------------------------------------------------------------------
 
 
-  subroutine one_box_century_bgc(ystate, dtime, time, neqs, dydt)
+  subroutine one_box_century_bgc(ystate, dtime, time, nstvars, dydt)
   !
   ! DESCRIPTIONS
   !do single box bgc
@@ -587,28 +620,32 @@ contains
   use SOMStateVarUpdateMod  , only : calc_dtrend_som_bgc
   use BGCCenturySubMod      , only : calc_cascade_matrix
   implicit none
-  integer,  intent(in)  :: neqs
+  integer,  intent(in)  :: nstvars
   real(r8), intent(in)  :: dtime
   real(r8), intent(in)  :: time
-  real(r8), intent(in)  :: ystate(neqs)
-  real(r8), intent(out) :: dydt(neqs)
+  real(r8), intent(in)  :: ystate(nstvars)
+  real(r8), intent(out) :: dydt(nstvars)
   
   !local variables
   integer :: lk
-  real(r8) :: cascade_matrix(neqs, Extra_inst%nr)
+  real(r8) :: cascade_matrix(nstvars, Extra_inst%nr)
   real(r8) :: reaction_rates(Extra_inst%nr)
   
   
     !calculate cascade matrix, which contains the stoichiometry for all reactions
-  call calc_cascade_matrix(neqs, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
+  call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_no3_ratio, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
     
-    !do pool degradation
+ !do pool degradation
   do lk = 1, Extra_inst%nr
-    reaction_rates(lk)=ystate(lk)*Extra_inst%k_decay(lk)
+    if(lk==centurybgc_vars%lid_plant_minn)then
+      reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
+    else
+      reaction_rates(lk)=ystate(lk)*Extra_inst%k_decay(lk)
+    endif
   enddo
     
-  call calc_dtrend_som_bgc(neqs, Extra_inst%nr, cascade_matrix(1:neqs, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
+  call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
   end subroutine one_box_century_bgc
   

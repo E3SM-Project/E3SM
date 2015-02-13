@@ -42,16 +42,17 @@ contains
   
   end subroutine betrbgc_init
 !-------------------------------------------------------------------------------
-  subroutine run_betr_one_step_without_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, dtime, col, &
+  subroutine run_betr_one_step_without_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, col, &
      atm2lnd_vars, soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, waterflux_vars, chemstate_vars, &
-     cnstate_vars, canopystate_vars, betrtracer_vars, bgc_reaction, tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+     cnstate_vars, carbonflux_vars, betrtracer_vars, bgc_reaction, tracerboundarycond_vars, tracercoeff_vars, &
+     tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! DESCRIPTION
   ! run betr code one step forward, without drainage calculation
   
   !USES
   !
-
+  use clm_time_manager      , only : get_step_size
   use tracerfluxType        , only : tracerflux_type
   use tracerstatetype       , only : tracerstate_type
   use tracercoeffType       , only : tracercoeff_type  
@@ -69,8 +70,8 @@ contains
   use SoilHydrologyType     , only : soilhydrology_type
   use clm_varpar            , only : nlevsoi
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
-  use CanopyStateType          , only : canopystate_type
-  use CNStateType              , only : cnstate_type      
+  use CNStateType              , only : cnstate_type
+  use CNCarbonFluxType         , only : carbonflux_type  
   implicit none
   
   type(bounds_type)            , intent(in) :: bounds                     ! bounds   
@@ -79,7 +80,7 @@ contains
   integer                      , intent(in) :: num_soilp
   integer                      , intent(in) :: filter_soilp(:)                    ! pft filter   
   integer                      , intent(in) :: lbj, ubj                   ! lower and upper bounds, make sure they are > 0  
-  real(r8)                     , intent(in) :: dtime                      ! model time step
+
   type(column_type)            , intent(in) :: col                        ! column type
   type(Waterstate_Type)        , intent(in) :: waterstate_vars            ! water state variables
   type(soilstate_type)         , intent(in) :: soilstate_vars             ! column physics variable
@@ -89,21 +90,21 @@ contains
   class(bgc_reaction_type)     , intent(in) :: bgc_reaction
   type(atm2lnd_type)           , intent(in) :: atm2lnd_vars
   type(soilhydrology_type)     , intent(in) :: soilhydrology_vars
-  type(canopystate_type)       , intent(in) :: canopystate_vars
-  type(cnstate_type)           , intent(inout) :: cnstate_vars     
+  type(cnstate_type)           , intent(inout) :: cnstate_vars
+    type(carbonflux_type)      , intent(inout) :: carbonflux_vars  
   type(waterflux_type)         , intent(inout) :: waterflux_vars  
   type(tracerboundarycond_type), intent(inout) :: tracerboundarycond_vars
   type(tracercoeff_type)       , intent(inout) :: tracercoeff_vars
   type(tracerstate_type)       , intent(inout) :: tracerstate_vars
   type(tracerflux_type)        , intent(inout) :: tracerflux_vars
-  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars 
+  class(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars 
   !local variables
   character(len=255) :: subname = 'run_betr_one_step_without_drainage'
-  real(r8) :: dtime2
+  real(r8) :: dtime2, dtime
   real(r8) :: Rfactor(bounds%begc:bounds%endc, lbj:ubj,1:betrtracer_vars%ngwmobile_tracers) !retardation factor
   integer  :: j
 
-  
+  dtime = get_step_size()
   !initialize extra parameters
   dtime2 = dtime * 0.5_r8
   
@@ -150,7 +151,7 @@ contains
   !print*,'do bgc_reaction'
   call bgc_reaction%calc_bgc_reaction(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, tracerboundarycond_vars%jtops_col,&
        dtime, col, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, cnstate_vars, &
-       canopystate_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+       carbonflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   
   !print*,'do advection diffusion transport ' 
   call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &

@@ -65,7 +65,7 @@ module BeTRTracerType
    integer, pointer :: adsorbid(:)                                      !which tracer is adsorbed
    integer, pointer :: volatileid(:)
    integer, pointer :: h2oid(:)   
-   character(len=12),pointer:: tracernames(:)                           !array with tracer names
+   character(len=36),pointer :: tracernames(:)                          !array with tracer names
    real(r8),pointer :: gram_mole_wt(:)                                  !molecular weight of the master species, [g/mol]
    real(r8),pointer :: vtrans_scal(:)                                   !scaling factor for plant tracer uptake through transpiration, for non-water neutral aqueous tracers
   

@@ -38,8 +38,11 @@ module BGCCenturySubMod
   integer :: lid_n2
   integer :: lid_n2o
   integer :: lid_plant_minn  !local position of plant consumption of mineral nitrogen in the state variable vector
+  integer :: lid_n2o_nit     !n2o production from nitrification, used to for mass balance book keeping
+  integer :: lid_co2_hr      !co2 production from heterotrophic respiration
   
-  integer :: neqs            !number of equations for the state variabile vector
+  
+  integer :: nstvars            !number of equations for the state variabile vector
   integer :: nreactions      !seven decomposition pathways plus nitrification, denitrification and plant immobilization
 
   real(r8), pointer :: t_scalar_col(:,:)
@@ -83,6 +86,22 @@ module BGCCenturySubMod
 
   subroutine Init_pars(this)
 
+  !
+  !DESCRIPTION
+  !describe the layout of the stoichiometric matrix for the reactions
+  !           r{1} r{2} r{3} r{4} ... r{n}
+  ! s{1}
+  ! s{2}
+  ! s{3}
+  ! s{4}
+  ! ...
+  ! s{n}
+  ! s{n+1}
+  ! ...
+  ! s{m}
+  ! each reaction is associated with a primary species, the secondary species follows after primary species
+  ! for the century model, the primary species are seven om pools and nh4, no3 and plant nitrogen 
+  ! 
   implicit none
   class(centurybgc_type) :: this
   
@@ -97,15 +116,17 @@ module BGCCenturySubMod
   
   this%lid_nh4 = this%nom_pools + 1   !this is also used to indicate the nitrification reaction
   this%lid_no3 = this%nom_pools + 2   !this is also used to indicate the denitrification reaction
-  this%lid_o2  = this%nom_pools + 3
-  this%lid_co2 = this%nom_pools + 4
-  this%lid_n2o = this%nom_pools + 5
-  this%lid_n2  = this%nom_pools + 6
-  this%lid_plant_minn = this%nom_pools + 7
+  this%lid_plant_minn = this%nom_pools + 3  
+  this%lid_o2  = this%nom_pools + 4
+  this%lid_co2 = this%nom_pools + 5
+  this%lid_n2o = this%nom_pools + 6
+  this%lid_n2  = this%nom_pools + 7
+  this%lid_n2o_nit = this%nom_pools + 8
+  this%lid_co2_hr  = this%nom_pools + 9
   
-  this%neqs = this%nom_pools + 5
+  this%nstvars = this%nom_pools + 9        !totally 16 state variables
   
-  this%nreactions = this%nom_pools + 3  !seven decomposition pathways plus nitrification, denitrification and plant immobilization  
+  this%nreactions = this%nom_pools + 3     !seven decomposition pathways plus nitrification, denitrification and plant immobilization  
   end subroutine Init_pars
 !-------------------------------------------------------------------------------
 
@@ -232,13 +253,14 @@ module BGCCenturySubMod
   end subroutine calc_som_deacyK  
 
 !-------------------------------------------------------------------------------
-  subroutine calc_cascade_matrix(neqs, nreactions, cn_ratios, cp_ratios, n2_n2o_ratio_denit, nh4_no3_ratio, pct_sand, centurybgc_vars, cascade_matrix)
+  subroutine calc_cascade_matrix(nstvars, nreactions, cn_ratios, cp_ratios, n2_n2o_ratio_denit, nh4_no3_ratio, pct_sand, centurybgc_vars, cascade_matrix)
   !
   ! DESCRIPTION
   ! calculate cascade matrix for the decomposition model
   !
+  use clm_varcon                , only: nitrif_n2o_loss_frac
   implicit none
-  integer                       , intent(in) :: neqs
+  integer                       , intent(in) :: nstvars
   integer                       , intent(in) :: nreactions
   type(centurybgc_type)         , intent(in) :: centurybgc_vars
   real(r8)                      , intent(in) :: cn_ratios(centurybgc_vars%nom_pools)
@@ -247,7 +269,7 @@ module BGCCenturySubMod
   real(r8)                      , intent(in) :: nh4_no3_ratio                        !ratio of nh4 to no3 at current time step
   real(r8)                      , intent(in) :: pct_sand
   
-  real(r8),intent(out) :: cascade_matrix(neqs, nreactions)
+  real(r8),intent(out) :: cascade_matrix(nstvars, nreactions)
   
   real(r8) :: ftxt, f1, f2
   integer :: k
@@ -354,10 +376,11 @@ module BGCCenturySubMod
     endif
   enddo
   !reaction 8, nitrification
-  !NH4(+) + O2 -> NO3(-) + H2O + 2H(+)
+  !NH4(+) + (2-f)O2 + (2-f)OH(-)-> (1-f)NO3(-) + (f/2)N2O + (3-f/2) H2O 
   cascade_matrix(lid_nh4 ,8) = -1._r8
-  cascade_matrix(lid_o2  ,8) = -1._r8
-  cascade_matrix(lid_no3 ,8) = 1._r8
+  cascade_matrix(lid_o2  ,8) = -(2._r8 - nitrif_n2o_loss_frac)
+  cascade_matrix(lid_no3 ,8) = 1._r8 - nitrif_n2o_loss_frac
+  cascade_matrix(lid_n2o, 8) = 0.5_r8 * nitrif_n2o_loss_frac
   
   !reaction 9, denitrification
   !NO3(-) -> 0.5*f N2O + 0.5* (1-f) N2, where f is a function determined from the century denitrification model
@@ -408,7 +431,7 @@ module BGCCenturySubMod
 
   
 !-------------------------------------------------------------------------------  
-  subroutine retrieve_flux(bounds, lbj, ubj, numf, filter, jtops, neq, dtime, yf, y0,  tracerflux_vars, centurybgc_vars, plantsoilnutrientflux_vars)
+  subroutine retrieve_nutrient_flux(bounds, lbj, ubj, numf, filter, jtops, neq, dtime, yf, y0,  tracerflux_vars, centurybgc_vars, plantsoilnutrientflux_vars)
   !
   ! DESCRIPTION
   ! retrieve the fluxes
@@ -428,7 +451,7 @@ module BGCCenturySubMod
   real(r8)                        , intent(in) :: y0(neq, bounds%begc:bounds%endc, lbj:ubj) !
   type(centurybgc_type)           , intent(in) :: centurybgc_vars 
   type(tracerflux_type)           , intent(inout) :: tracerflux_vars
-  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
+  class(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
   
   integer :: fc, c, j
   
@@ -438,7 +461,10 @@ module BGCCenturySubMod
       plantsoilnutrientflux_vars%plant_minn_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))/dtime
     enddo
   enddo
-  end subroutine retrieve_flux
+  
+  call plantsoilnutrientflux_vars%summary(bounds, lbj, ubj, numf, filter)
+  
+  end subroutine retrieve_nutrient_flux
 !-------------------------------------------------------------------------------
 
   subroutine retrieve_state_vector(bounds, lbj, ubj, numf, filter, jtops, neq, yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)
@@ -481,59 +507,6 @@ module BGCCenturySubMod
   enddo
   
   end subroutine retrieve_state_vector
-!-------------------------------------------------------------------------------  
-  subroutine calc_om_input(bounds, lbj, ubj, numf, filter, jtops, dtime, col, betrtracer_vars,centurybgc_vars, cnstate_vars, tracerstate_vars)
-  !
-  ! DESCRIPTION
-  ! add litter to soil
-  ! now it is only for illustration purpose
-  
-  use tracerfluxType        , only : tracerflux_type
-  use tracerstatetype       , only : tracerstate_type
-  use ColumnType            , only : column_type
-  use BeTRTracerType        , only : betrtracer_type  
-  use CNStateType           , only : cnstate_type
-  implicit none
-  type(bounds_type)       , intent(in) :: bounds
-  integer                 , intent(in) :: lbj, ubj
-  integer                 , intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
-  integer                 , intent(in) :: numf
-  integer                 , intent(in) :: filter(:)
-  real(r8)                , intent(in) :: dtime
-  type(centurybgc_type)   , intent(in) :: centurybgc_vars   
-  type(cnstate_type)      , intent(inout) :: cnstate_vars
-  type(column_type)       , intent(in) :: col                                ! column type  
-  type(betrtracer_type)   , intent(in) :: betrtracer_vars                    ! betr configuration information
-  type(tracerstate_type)  , intent(inout) :: tracerstate_vars  
-
-  
-  !local variables
-  integer :: fc, c, j
-  
-  associate(                                                            & !
-
-    nfixation_prof       => cnstate_vars%nfixation_prof_col           , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions          
-    ndep_prof            => cnstate_vars%ndep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions          
-         
-    leaf_prof            => cnstate_vars%leaf_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
-    froot_prof           => cnstate_vars%froot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
-    croot_prof           => cnstate_vars%croot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
-    stem_prof            => cnstate_vars%stem_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of stems                          
-    
-    lit1      => centurybgc_vars%lit1                                 , & !
-    lit2      => centurybgc_vars%lit2                                 , & !
-    lit3      => centurybgc_vars%lit3                                   & !
-  )  
-  do fc = 1, numf
-    c = filter(fc)
-    do j = jtops(c), ubj   !currently, om is added only to soil layers       
-      tracerstate_vars%tracer_conc_solid_passive_col(c,j,lit1) = tracerstate_vars%tracer_conc_solid_passive_col(c,j,lit1) + 1.e-5_r8*dtime
-      tracerstate_vars%tracer_conc_solid_passive_col(c,j,lit2) = tracerstate_vars%tracer_conc_solid_passive_col(c,j,lit2) + 1.e-5_r8*dtime
-      tracerstate_vars%tracer_conc_solid_passive_col(c,j,lit3) = tracerstate_vars%tracer_conc_solid_passive_col(c,j,lit3) + 1.e-5_r8*dtime
-    enddo
-  enddo
-  end associate
-  end subroutine calc_om_input
   
 !-------------------------------------------------------------------------------  
 
@@ -544,11 +517,12 @@ module BGCCenturySubMod
   ! calculate nitrification denitrification rate
   ! the actual nitrification rate will be f_nitr * [nh4]
   ! and the actual denitri rate will be of f_denit * [no3]
-  use clm_varcon          , only : rpi, secspday
+  use clm_varcon          , only : rpi, secspday, catomw, natomw
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
   use MathfuncMod         , only : safe_div
-  use shr_const_mod       , only : SHR_CONST_TKFRZ  
+  use shr_const_mod       , only : SHR_CONST_TKFRZ
+  
   implicit none
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
@@ -570,8 +544,7 @@ module BGCCenturySubMod
   real(r8)             , intent(out) :: decay_nh4(bounds%begc: ,lbj: )            !1/s, decay rate of nh4
   real(r8)             , intent(out) :: decay_no3(bounds%begc: ,lbj: )            !1/s, decay rate of no3
   
-  real(r8), parameter :: g_carbon_per_mol   = 12.011_r8     !standard atomic mass 
-  real(r8), parameter :: g_nitrogen_per_mol = 14.007_r8     !standard atmoic mass
+
   logical, parameter :: no_frozen_nitrif_denitrif = .false.                     !this is a testing parameter, just to make the model run
   
   !local variables
@@ -662,7 +635,7 @@ module BGCCenturySubMod
       decay_nh4(j,c) = pot_f_nit_vr(c,j) 
       !---------------- denitrification
       ! first some input variables an unit conversions
-      soil_hr_vr(c,j) = pot_co2_hr(c,j) * g_carbon_per_mol
+      soil_hr_vr(c,j) = pot_co2_hr(c,j) * catomw
 
       ! CENTURY papers give denitrification in units of per gram soil; need to convert from volumetric to mass-based units here
       soil_bulkdensity(c,j) = bd(c,j) + h2osoi_liq(c,j)/dz(c,j)         
@@ -671,7 +644,7 @@ module BGCCenturySubMod
 
       g_per_m3_sec__to__ug_per_gsoil_day = g_per_m3__to__ug_per_gsoil * secspday
 
-      smin_no3_massdens_vr(c,j) = max(smin_no3_vr(c,j), 0._r8) * g_per_m3__to__ug_per_gsoil * g_nitrogen_per_mol
+      smin_no3_massdens_vr(c,j) = max(smin_no3_vr(c,j), 0._r8) * g_per_m3__to__ug_per_gsoil * natomw
 
       soil_co2_prod(c,j) = (soil_hr_vr(c,j) * (g_per_m3_sec__to__ug_per_gsoil_day))
 
@@ -712,8 +685,6 @@ module BGCCenturySubMod
       wfps_vr(c,j) = max(min(h2osoi_vol(c,j)/watsat(c, j), 1._r8), 0._r8) * 100._r8
       fr_WFPS(c,j) = max(0.1_r8, 0.015_r8 * wfps_vr(c,j) - 0.32_r8)
       
-
-
       ! final ratio expression 
       n2_n2o_ratio_denit(c,j) = max(0.16*ratio_k1(c,j), ratio_k1(c,j)*exp(-0.8 * ratio_no3_co2(c,j))) * fr_WFPS(c,j)
     enddo
@@ -1012,6 +983,92 @@ module BGCCenturySubMod
 
 
   
+  !-----------------------------------------------------------------------  
+  subroutine calc_nuptake_prof(bounds, nlevdecomp, num_soilc, filter_soilc, smin_nh4_vr, sminn_no3_vr, &
+     dzsoi_decomp, nfixation_prof, nuptake_prof)
+  !
+  !DESCRIPTION
+  ! calculate the nitrogen uptake profile
+  !
+  implicit none
+  type(bounds_type)        , intent(in)   :: bounds  
+  integer                  , intent(in)   :: nlevdecomp                        ! number of vertical layers
+  integer                  , intent(in)   :: num_soilc                         ! number of soil columns in filter
+  integer                  , intent(in)   :: filter_soilc(:)                   ! filter for soil columns
+  real(r8)                 , intent(in)   :: sminn_nh4_vr(bounds%begc: , 1: )                        ! soil mineral nitrogen profile
+  real(r8)                 , intent(in)   :: sminn_no3_vr(bounds%begc: , 1: )                        ! soil mineral nitrogen profile  
+  real(r8)                 , intent(in)   :: dzsoi(bounds%begc:bounds%endc,1: )                                   ! layer thickness
+  real(r8)                 , intent(in)   :: nfixation_prof(bounds%begc: , 1: )                  ! nitrogen fixation profile
+  real(r8)                 , intent(inout):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp) ! nitrogen uptake profile
+  
+  !local variables
+  integer :: fc, j, c      ! indices
+  real(r8):: sminn_tot(bounds%begc:bounds%endc)  !vertically integrated mineral nitrogen
+  
+ 
+  SHR_ASSERT_ALL((ubound(dzsoi_decomp)     == (/nlevdecomp/)), errMsg(__FILE__, __LINE__))   
+  SHR_ASSERT_ALL((ubound(sminn_nh4_vr)     == (/bounds%endc, nlevdecomp/)), errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_ALL((ubound(sminn_no3_vr)     == (/bounds%endc, nlevdecomp/)), errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_ALL((ubound(nfixation_prof)     == (/bounds%endc, nlevdecomp/)), errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_ALL((ubound(dzsoi)     == (/bounds%endc, nlevdecomp/)), errMsg(__FILE__, __LINE__))  
+  SHR_ASSERT_ALL((ubound(nuptake_prof)     == (/bounds%endc, nlevdecomp/)), errMsg(__FILE__, __LINE__))
+  
+  ! init sminn_tot
+  do fc=1,num_soilc
+    c = filter_soilc(fc)
+    sminn_tot(c) = 0.
+  end do
+
+  do j = 1, nlevdecomp
+    do fc=1,num_soilc
+      c = filter_soilc(fc)
+      sminn_tot(c) = sminn_tot(c) + (sminn_nh4_vr(c,j)+smin_no3_vr(c,j)) * dzsoi(c,j)
+    end do
+  end do
+
+  do j = 1, nlevdecomp
+    do fc=1,num_soilc
+      c = filter_soilc(fc)      
+      if (sminn_tot(c)  >  0.) then
+        nuptake_prof(c,j) = (sminn_nh4_vr(c,j)+sminn_no3_vr(c,j)) / sminn_tot(c)
+      else
+        nuptake_prof(c,j) = nfixation_prof(c,j)
+      endif
+
+   end do
+  end do
+         
+  
+  end subroutine calc_nuptake_prof
+  
+ 
+  !-----------------------------------------------------------------------  
+  subroutine calc_plant_nitrogen_uptake_prof(bounds, nlevdecomp, num_soilc, filter_soilc,
+    dzsoi, plant_totn_demand_flx_col, nuptake_prof, plant_demand_vr)
+  
+  !caluate depth specific demand
+  use clm_varcon           , only : natomw
+  implicit none
+  type(bounds_type)        , intent(in)    :: bounds  
+  integer                  , intent(in)    :: nlevdecomp                        ! number of vertical layers
+  integer                  , intent(in)    :: num_soilc                         ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)                   ! filter for soil columns
+  real(r8)                 , intent(in)    :: dzsoi(bounds%begc:bounds%endc,1:nlevdecomp)                                   ! layer thickness  
+  real(r8)                 , intent(in)    :: plant_totn_demand_flx_col(bounds%begc:bounds%endc)
+  real(r8)                 , intent(in)    :: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
+  real(r8)                 , intent(inout) :: plant_demand_vr(1,bounds%begc:bounds%endc, 1:nlevdecomp)      !mol N/m3/s
+  
+  integer :: fc, c, j
+  
+  do j = 1, nlevdecomp
+    do fc = 1, num_soilc  
+      c = filter_soilc(fc)
+      plant_demand_vr(1,c,j) = plant_totn_demand_flx_col(c) * nuptake_prof(c,j) / dz(c,j) /natomw   
+    enddo
+  enddo  
   
   
+  end subroutine calc_plant_nitrogen_uptake_prof
+  
+
 end module BGCCenturySubMod

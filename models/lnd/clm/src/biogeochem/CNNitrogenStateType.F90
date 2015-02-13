@@ -98,6 +98,7 @@ module CNNitrogenStateType
      real(r8), pointer :: endnb_col                    (:)     ! col nitrogen mass, end of time step (gN/m**2)
      real(r8), pointer :: errnb_col                    (:)     ! colnitrogen balance error for the timestep (gN/m**2)
 
+     real(r8), pointer :: plant_nbuffer_col            (:)     ! col plant nitrogen buffer, (gN/m2), used to exchange info with betr 
    contains
 
      procedure , public  :: Init   
@@ -215,6 +216,7 @@ contains
     allocate(this%errnb_patch (begp:endp));     this%errnb_patch (:) =nan
     allocate(this%errnb_col   (begc:endc));     this%errnb_col   (:) =nan 
 
+    allocate(this%plant_nbuffer_col(begc:endc));this%plant_nbuffer_col(:) = nan
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -441,6 +443,11 @@ contains
             ptr_col=this%totsomn_1m_col)
     endif
 
+    this%plant_nbuffer_col(begc:endc) = spval
+    call hist_addfld1d (fname='PLANTN_BUFFER', units='gN/m^2', &
+            avgflag='A', long_name='plant nitrogen stored as buffer', &
+            ptr_col=this%plant_nbuffer_col)
+    
     this%ntrunc_col(begc:endc) = spval
     call hist_addfld1d (fname='COL_NTRUNC', units='gN/m^2',  &
          avgflag='A', long_name='column-level sink for N truncation', &
@@ -699,6 +706,7 @@ contains
           this%prod10n_col(c)       = 0._r8
           this%prod100n_col(c)      = 0._r8
           this%totprodn_col(c)      = 0._r8
+          this%plant_nbuffer_col(c) = 0._r8
        end if
     end do
 
@@ -971,6 +979,11 @@ contains
        end do
     end do
 
+    call 
+    call restartvar(ncid=ncid, flag=flag, varname='plant_nbuffer', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%plant_nbuffer_col)
+         
     call restartvar(ncid=ncid, flag=flag, varname='totcoln', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%totcoln_col) 

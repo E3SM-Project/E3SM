@@ -381,6 +381,7 @@ module CNCarbonFluxType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
+     procedure , public  :: summary_rr
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
      procedure , private :: InitCold
@@ -4103,7 +4104,8 @@ contains
     use clm_time_manager , only: get_step_size
     use clm_varcon       , only: secspday
     use clm_varpar       , only: nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
-    use subgridAveMod    , only: p2c 
+    use subgridAveMod    , only: p2c
+    use BGCReactionsFactoryMod , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class(carbonflux_type)                 :: this
@@ -4216,18 +4218,7 @@ contains
                this%gr_patch(p)
        end if
 
-       ! root respiration (RR)
-       this%rr_patch(p) = &
-            this%froot_mr_patch(p) + &
-            this%cpool_froot_gr_patch(p) + &
-            this%cpool_livecroot_gr_patch(p) + &
-            this%cpool_deadcroot_gr_patch(p) + &
-            this%transfer_froot_gr_patch(p) + &
-            this%transfer_livecroot_gr_patch(p) + &
-            this%transfer_deadcroot_gr_patch(p) + &
-            this%cpool_froot_storage_gr_patch(p) + &
-            this%cpool_livecroot_storage_gr_patch(p) + &
-            this%cpool_deadcroot_storage_gr_patch(p)
+
 
        ! net primary production (NPP)
        this%npp_patch(p) = &
@@ -4569,24 +4560,27 @@ contains
             this%somhr_col(c)
     end do
 
-    ! total heterotrophic respiration, vertically resolved (HR)
-    do j = 1,nlevdecomp
-       do fc = 1,num_soilc
+    if(.not. is_active_betr_bgc())then
+      ! total heterotrophic respiration, vertically resolved (HR)
+      do j = 1,nlevdecomp
+        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%hr_vr_col(c,j) = 0._r8
-       end do
-    end do
-    do k = 1, ndecomp_cascade_transitions
-       do j = 1,nlevdecomp
+        end do
+      end do
+
+      do k = 1, ndecomp_cascade_transitions
+        do j = 1,nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%hr_vr_col(c,j) = &
                   this%hr_vr_col(c,j) + &
                   this%decomp_cascade_hr_vr_col(c,j,k)
           end do
-       end do
-    end do
-
+        end do
+      end do
+    endif
+    
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        ! total soil respiration, heterotrophic + root respiration (SR)
@@ -4758,4 +4752,38 @@ contains
   end associate
   end subroutine Summary
 
+  
+  subroutine summary_rr(this, num_soilp, filter_soilp, num_soilc, filter_soilc)
+  !
+  ! description
+  ! summarize root respiration
+
+  class(carbonflux_type) :: this  
+
+  integer, intent(in) :: num_soilp
+  integer, intent(in) :: filter_soilp(:)
+  integer, intent(in) :: num_soilc
+  integer, intent(in) :: filter_soilc(:)
+
+   ! patch loop
+  do fp = 1,num_soilp
+    p = filter_soilp(fp)  
+    ! root respiration (RR)
+    this%rr_patch(p) = &
+    this%froot_mr_patch(p) + &
+    this%cpool_froot_gr_patch(p) + &
+    this%cpool_livecroot_gr_patch(p) + &
+    this%cpool_deadcroot_gr_patch(p) + &
+    this%transfer_froot_gr_patch(p) + &
+    this%transfer_livecroot_gr_patch(p) + &
+    this%transfer_deadcroot_gr_patch(p) + &
+    this%cpool_froot_storage_gr_patch(p) + &
+    this%cpool_livecroot_storage_gr_patch(p) + &
+    this%cpool_deadcroot_storage_gr_patch(p)
+  enddo  
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%rr_patch(bounds%begp:bounds%endp), &
+         this%rr_col(bounds%begc:bounds%endc))
+         
+  end subroutine summary_rr  
 end module CNCarbonFluxType
