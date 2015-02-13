@@ -70,19 +70,15 @@ module li_statistics
 !> 
 !-----------------------------------------------------------------------
 
-   subroutine li_compute_statistics(domain, timeLevel, timeIndex)
-
-     ! dminfo is the domain info needed for global communication
-     ! state contains the state variables needed to compute global diagnostics
-     ! grid contains the meta data about the grid
-     ! timeIndex is the current time step counter
+   subroutine li_compute_statistics(domain, timeLevel, itimestep)
 
      implicit none
 
      ! Input/output arguments
-     type (domain_type), intent(inout) :: domain !< Input/Output: domain information
-     integer, intent(in) :: timeLevel
-     integer, intent(in) :: timeIndex
+     type (domain_type), intent(inout) :: domain !< Input/Output: domain object
+     integer, intent(in) :: timeLevel   !< Input: time level used by pools for variables with multiple time levels
+                                        !  (typically '2' when this subroutine is called at the end of a time step)
+     integer, intent(in) :: itimestep   !< Input: current time step counter
 
      ! Local variables
 
@@ -92,6 +88,7 @@ module li_statistics
      ! pools
      type (mpas_pool_type), pointer :: statePool
      type (mpas_pool_type), pointer :: meshPool
+     type (mpas_pool_type), pointer :: scratchPool
      type (mpas_pool_type), pointer :: diagnosticsPool
 
      ! mesh dimensions 
@@ -107,29 +104,40 @@ module li_statistics
      ! state variables
      character (len=StrKIND),             pointer :: xtime
      integer,           dimension(:),     pointer :: cellMask
+     integer,           dimension(:),     pointer :: edgeMask
      real (kind=RKIND), dimension(:),     pointer :: upperSurface
      real (kind=RKIND), dimension(:),     pointer :: surfaceTemperature, basalTemperature
      real (kind=RKIND), dimension(:,:),   pointer :: layerThickness, normalVelocity
      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
+     ! scratch variables
+     type (field1dInteger), pointer :: iceCellMaskField
+     integer, dimension(:), pointer :: iceCellMask
+
+     type (field1dInteger), pointer :: iceEdgeMaskField
+     integer, dimension(:), pointer :: iceEdgeMask
+
+     type (field2dReal), pointer :: workLevelCellField
+     real (kind=RKIND), dimension(:,:), pointer :: workLevelCell
+
      ! config variables
-     real (kind=RKIND), pointer :: scyr    ! seconds per year
      real (kind=RKIND), pointer :: rhoi    ! ice density (kg/m^3)
      real (kind=RKIND), pointer :: shci    ! specific heat capacity of ice (J/deg/kg)
+     real (kind=RKIND), pointer :: KtoC    ! 273.15; factor for converting Kelvin to Celsius
      integer, pointer :: statsCellID       ! global ID of cell for which we write stats/diagnostics
 
-     ! masks
-     integer, dimension(:), allocatable :: iceCellMask, iceEdgeMask
+     ! other pointers
+     integer, pointer :: indexTemperature
 
      ! work variables and arrays
-     real (kind=RKIND) :: localSum, localMin, localMax, localVertSumMin, localVertSumMax 
+     real (kind=RKIND) :: localSum, localMin, localMax, localVertSumMin, localVertSumMax
+     real (kind=RKIND) :: localAbsoluteMax
      integer :: localMinlocElement, localMinlocLevel
      integer :: localMaxlocElement, localMaxlocLevel
      integer :: localVertSumMinlocElement, localVertSumMaxlocElement
-     real (kind=RKIND), dimension(:), allocatable :: workArray1D
-     real (kind=RKIND), dimension(:,:), allocatable :: workArray
+     real (kind=RKIND), dimension(:), allocatable :: workLevel
 
-     ! sums and max/mins on local block
+     ! sums and max/mins on local processor
      real (kind=RKIND) :: iceAreaSum, iceVolumeSum, iceEnergySum
      real (kind=RKIND) :: thicknessMax, thicknessMin
      real (kind=RKIND) :: temperatureMax, temperatureMin
@@ -154,11 +162,35 @@ module li_statistics
      real (kind=RKIND) :: diagnosticSfcMassBal, diagnosticSurfaceTemperature, diagnosticBasalTemperature
      real (kind=RKIND), dimension(:), allocatable :: diagnosticSpeed, diagnosticTemperature
 
-     integer :: iCell, iCell1, iCell2, iEdge, iTracer, kLevel
+     integer :: iCell, iCell1, iCell2, iEdge, kLevel
      integer :: proc
+
+     ! local parameters
+     real (kind=RKIND), parameter :: scyr = 31536000.0_RKIND  ! seconds per 365-day year
 
      block => domain % blocklist
      dminfo => domain % dminfo
+
+     ! initialize statistics for this processor
+     ! If we have > 1 block/proc, these are summed or reduced over the block
+
+     iceAreaSum   =  0.0_RKIND
+     iceVolumeSum =  0.0_RKIND
+     iceEnergySum =  0.0_RKIND
+     thicknessMax =     -huge(0.0_RKIND)
+     thicknessMin =      huge(0.0_RKIND)
+     temperatureMax =   -huge(0.0_RKIND)
+     temperatureMin =    huge(0.0_RKIND)
+     velocityMax =      -huge(0.0_RKIND)
+     basalVelocityMax = -huge(0.0_RKIND)
+
+     thicknessMinlocCell = 0
+     thicknessMaxlocCell = 0
+     temperatureMinlocCell = 0
+     temperatureMinlocLevel = 0
+     velocityMaxlocEdge = 0
+     velocityMaxlocLevel = 0
+     basalVelocityMaxlocEdge = 0
 
      ! initialize info for diagnostic grid cell
      ! These values will be overwritten on the processor owning this grid cell
@@ -175,8 +207,10 @@ module li_statistics
      do while (associated(block))
 
         ! pools
+
         call mpas_pool_get_subpool(block % structs, 'state', statePool)
         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
         ! mesh dimensions
@@ -191,12 +225,17 @@ module li_statistics
         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
         call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
-        !TODO - Make bedTopography and sfcMassBal state variables?
         call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography)
         call mpas_pool_get_array(meshPool, 'sfcMassBal', sfcMassBal)
          
+        ! scratch fields
+        call mpas_pool_get_field(scratchPool, 'iceCellMask', iceCellMaskField)
+        call mpas_pool_get_field(scratchPool, 'iceEdgeMask', iceEdgeMaskField)
+        call mpas_pool_get_field(scratchPool, 'workLevelCell', workLevelCellField)
+
         ! state variables
         call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel)
+        call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
         call mpas_pool_get_array(statePool, 'upperSurface', upperSurface,   timeLevel)
         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
@@ -205,36 +244,37 @@ module li_statistics
         call mpas_pool_get_array(statePool, 'basalTemperature', basalTemperature, timeLevel)
         !Note: xtime only has one time level, but stating it explicitly here to avoid confusion
         call mpas_pool_get_array(statePool, 'xtime', xtime, timeLevel=1)
+        call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
 
         ! config settings
         call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
         call mpas_pool_get_config(liConfigs, 'config_ice_specific_heat', shci)
-        call mpas_pool_get_config(liConfigs, 'config_seconds_per_year', scyr)
         call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', statsCellID)
+        call mpas_pool_get_config(liConfigs, 'config_kelvin_to_celsius', KtoC)
+
+        call mpas_allocate_scratch_field(iceCellMaskField, .true.)
+        iceCellMask => iceCellMaskField % array
+        call mpas_allocate_scratch_field(iceEdgeMaskField, .true.)
+        iceEdgeMask => iceEdgeMaskField % array
+        call mpas_allocate_scratch_field(workLevelCellField, .true.)
+        workLevelCell => workLevelCellField % array
 
         ! compute ice cell mask (= 1 for cells where ice is present, else = 0)
         ! Note: Global sums are taken only over cells with mask = 1
 
-        allocate(iceCellMask(nCellsSolve))
-        do iCell = 1, nCellsSolve
-           if (li_mask_is_ice(cellMask(iCell))) then
-              iceCellMask(iCell) = 1
-           else
-              iceCellMask(iCell) = 0
-           endif
-        enddo
+        where (li_mask_is_ice(cellMask))
+           iceCellMask = 1
+        elsewhere
+           iceCellMask = 0
+        endwhere
 
         ! compute ice edge mask (= 1 for edges of cells where ice is present, else = 0)
-        allocate(iceEdgeMask(nEdgesSolve))
-        do iEdge = 1, nEdgesSolve
-           iCell1 = cellsOnEdge(1,iEdge)                                                                                                          
-           iCell2 = cellsOnEdge(2,iEdge)  
-           if (li_mask_is_ice(cellMask(iCell1)) .or. li_mask_is_ice(cellMask(iCell2))) then
-              iceEdgeMask(iEdge) = 1
-           else
-              iceEdgeMask(iEdge) = 0
-           endif
-        enddo
+
+        where (li_mask_is_ice(edgeMask))
+           iceEdgeMask = 1
+        elsewhere
+           iceEdgeMask = 0
+        endwhere
 
         ! Compute statistics on local block
 
@@ -243,40 +283,43 @@ module li_statistics
 
         call li_compute_field_local_stats(dminfo,                           &
                                           nVertLevels,     nCellsSolve,     &
-                                          layerThickness,  iceCellMask,     &
+                                          layerThickness,                   &
+                                          iceCellMask(1:nCellsSolve),       &
                                           localSum,                         &
                                           localMin,        localMax,        &
                                           localVertSumMin, localVertSumMax, &
                                           localVertSumMinlocElement = localVertSumMinlocElement, &
                                           localVertSumMaxlocElement = localVertSumMaxlocElement)
 
-        thicknessMin = localVertSumMin
-        thicknessMax = localVertSumMax
+        if (localVertSumMin < thicknessMin) then
+           thicknessMin = localVertSumMin
+           thicknessMinlocCell = indexToCellID(localVertSumMinlocElement)
+        endif
 
-        ! global cell index for max/min values
-        thicknessMinlocCell = indexToCellID(localVertSumMinlocElement)
-        thicknessMaxlocCell = indexToCellID(localVertSumMaxlocElement)
+        if (localVertSumMax > thicknessMax) then
+           thicknessMax = localVertSumMax
+           thicknessMaxlocCell = indexToCellID(localVertSumMaxlocElement)
+        endif
 
         ! work array whose vertical sum = 1 everywhere
-
-        if (.not. allocated(workArray)) allocate(workArray(nVertLevels,nCellsSolve))
-        workArray(1,:) = 1.0_RKIND
-        workArray(2:nVertLevels,:) = 0.0_RKIND
+        workLevelCell(1,:) = 1.0_RKIND
+        workLevelCell(2:nVertLevels,:) = 0.0_RKIND
 
         ! total ice area
         call li_compute_field_area_weighted_local_stats                       &
                                           (dminfo,                            &
                                            nVertLevels,       nCellsSolve,    &
                                            areaCell(1:nCellsSolve),           &
-                                           workArray,         iceCellMask,    &
+                                           workLevelCell(:,1:nCellsSolve),    &
+                                           iceCellMask(1:nCellsSolve),        &
                                            localSum,                          &
                                            localMin,          localMax,       &
                                            localVertSumMin,   localVertSumMax)
 
-        iceAreaSum = localSum
+        iceAreaSum = iceAreaSum + localSum
 
         ! work array with a value of 1 in each layer
-        workArray(:,:) = 1.0_RKIND
+        workLevelCell(:,:) = 1.0_RKIND
 
         ! total ice volume
         call li_compute_field_volume_weighted_local_stats                                 &
@@ -284,36 +327,38 @@ module li_statistics
                                            nVertLevels,                     nCellsSolve,  &
                                            areaCell(1:nCellsSolve),                       &
                                            layerThickness(:,1:nCellsSolve),               & 
-                                           workArray,                       iceCellMask,  &
+                                           workLevelCell(:,1:nCellsSolve),                &
+                                           iceCellMask(1:nCellsSolve),                    &
                                            localSum,                                      &
                                            localMin,                        localMax,     &
                                            localVertSumMin,                 localVertSumMax)
 
-        iceVolumeSum = localSum
+        iceVolumeSum = iceVolumeSum + localSum
 
         ! max and min temperature
         ! optional maxloc/minloc arguments give the local cell IDs where max/mins are located
 
-        iTracer = 1    ! assume temperature is the first tracer array
-
-        call li_compute_field_local_stats(dminfo,                                &
-                                          nVertLevels,        nCellsSolve,       &
-                                          tracers(iTracer,:,1:nCellsSolve),      &
-                                          iceCellMask,                           &
-                                          localSum,                              &
-                                          localMin,           localMax,          &
-                                          localVertSumMin,    localVertSumMax,   &
-                                          localMinlocElement, localMinlocLevel,  &
+        call li_compute_field_local_stats(dminfo,                                    &
+                                          nVertLevels,        nCellsSolve,           &
+                                          tracers(indexTemperature,:,1:nCellsSolve), &
+                                          iceCellMask(1:nCellsSolve),                &
+                                          localSum,                                  &
+                                          localMin,           localMax,              &
+                                          localVertSumMin,    localVertSumMax,       &
+                                          localMinlocElement, localMinlocLevel,      &
                                           localMaxlocElement, localMaxlocLevel)
 
-        temperatureMax = localMax
-        temperatureMin = localMin
+        if (localMin < temperatureMin) then
+           temperatureMin = localMin
+           temperatureMinlocCell  = indexToCellID(localMinlocElement)
+           temperatureMinlocLevel = localMinlocLevel
+        endif
 
-        ! global cell and level indices for max/min values
-        temperatureMinlocCell  = indexToCellID(localMinlocElement)
-        temperatureMinlocLevel = localMinlocLevel
-        temperatureMaxlocCell  = indexToCellID(localMaxlocElement)
-        temperatureMaxlocLevel = localMaxlocLevel
+        if (localMax > temperatureMax) then
+           temperatureMax = localMax
+           temperatureMaxlocCell  = indexToCellID(localMaxlocElement)
+           temperatureMaxlocLevel = localMaxlocLevel
+        endif
 
         ! total ice energy (relative to 0 deg C)
         !TODO - Compute ice energy differently if using the enthalpy scheme
@@ -323,13 +368,13 @@ module li_statistics
                                            nVertLevels,                     nCellsSolve,  &
                                            areaCell(1:nCellsSolve),                       &
                                            layerThickness(:,1:nCellsSolve),               & 
-                                           tracers(iTracer,:,1:nCellsSolve),              &
-                                           iceCellMask,                                   &
+                                           tracers(indexTemperature,:,1:nCellsSolve),     &
+                                           iceCellMask(1:nCellsSolve),                    &
                                            localSum,                                      &
                                            localMin,                        localMax,     &
                                            localVertSumMin,                 localVertSumMax)
 
-        iceEnergySum = localSum * rhoi * shci
+        iceEnergySum = iceEnergySum + localSum*rhoi*shci
 
         ! normal velocity at cell edges; find the maximum magnitude
         !TODO - If velocity is defined at layer interfaces, then nVertLevels -> nVertLevels + 1
@@ -337,57 +382,61 @@ module li_statistics
         call li_compute_field_local_stats(dminfo,                               &
                                           nVertLevels,        nEdgesSolve,      &
                                           normalVelocity(:,1:nEdgesSolve),      &
-                                          iceEdgeMask,                          &
+                                          iceEdgeMask(1:nEdgesSolve),           &
                                           localSum,                             &
                                           localMin,           localMax,         &
                                           localVertSumMin,    localVertSumMax,  &
                                           localMinlocElement, localMinlocLevel, &
                                           localMaxlocElement, localMaxlocLevel)
 
-        velocityMax = max(localMax, -localMin)
+        localAbsoluteMax = max(localMax, -localMin)   ! take maximum magnitude, independent of sign
 
-        ! global edge and level indices for max value
-        if (localMax > abs(localMin)) then
-           velocityMaxlocEdge = indexToEdgeID(localMaxlocElement)
-           velocityMaxlocLevel = localMaxlocLevel
-        else
-           velocityMaxlocEdge = indexToEdgeId(localMinlocElement)
-           velocityMaxlocLevel = localMinlocLevel
+        if (localAbsoluteMax > velocityMax) then
+           velocityMax = localAbsoluteMax
+           if (localMax > abs(localMin)) then
+              velocityMaxlocEdge = indexToEdgeID(localMaxlocElement)
+              velocityMaxlocLevel = localMaxlocLevel
+           else
+              velocityMaxlocEdge = indexToEdgeId(localMinlocElement)
+              velocityMaxlocLevel = localMinlocLevel
+           endif
         endif
 
         ! basal velocity at cell edges; find the maximum magnitude
         ! Note: If velocity is located at layer midpoints, this is actually the 
         !       velocity in the lowest layer
 
-        call li_compute_field_local_stats(dminfo,                              &
-                                          1,               nEdgesSolve,        &
+        call li_compute_field_local_stats(dminfo,                                    &
+                                          1,                  nEdgesSolve,           &
                                           normalVelocity(nVertLevels,1:nEdgesSolve), &
-                                          iceEdgeMask,                         &
-                                          localSum,                            &
-                                          localMin,           localMax,        &
-                                          localVertSumMin,    localVertSumMax, &
-                                          localMinlocElement, localMinlocLevel,&
+                                          iceEdgeMask(1:nEdgesSolve),                &
+                                          localSum,                                  &
+                                          localMin,           localMax,              &
+                                          localVertSumMin,    localVertSumMax,       &
+                                          localMinlocElement, localMinlocLevel,      &
                                           localMaxlocElement, localMaxlocLevel)
          
-        basalVelocityMax = max(localMax, -localMin)
-
-        ! global edge and level indices for max value
-        if (localMax > abs(localMin)) then
-           basalVelocityMaxlocEdge = indexToEdgeID(localMaxlocElement)
-        else
-           basalVelocityMaxlocEdge = indexToEdgeID(localMinlocElement)
+        localAbsoluteMax = max(localMax, -localMin)   ! take maximum magnitude, independent of sign
+        
+        if (localAbsoluteMax > basalVelocityMax) then
+           basalVelocityMax = localAbsoluteMax
+           if (localMax > abs(localMin)) then
+              basalVelocityMaxlocEdge = indexToEdgeID(localMaxlocElement)
+           else
+              basalVelocityMaxlocEdge = indexToEdgeID(localMinlocElement)
+           endif
         endif
 
         ! allocate and initialize some diagnostic arrays if not done already 
         !TODO - If velocity is defined at layer interfaces, then nVertLevels -> nVertLevels + 1
-        if (.not. allocated(diagnosticTemperature)) then
-           allocate(diagnosticTemperature(nVertLevels))
-           diagnosticTemperature(:) = 0.0_RKIND
-        endif
-
         if (.not. allocated(diagnosticSpeed)) then
            allocate(diagnosticSpeed(nVertLevels))
            diagnosticSpeed(:) = 0.0_RKIND
+        endif
+
+        if (.not. allocated(diagnosticTemperature)) then
+           allocate(diagnosticTemperature(nVertLevels))
+           diagnosticTemperature(:) = 0.0_RKIND
         endif
 
         ! Determine whether the user-specified diagnostic cell is on this block
@@ -405,13 +454,19 @@ module li_statistics
               diagnosticSurfaceTemperature = surfaceTemperature(iCell)
               diagnosticBasalTemperature = basalTemperature(iCell)
               iEdge = edgesOnCell(1,iCell)  ! arbitrarily choose edge #1 for velocity diagnostics
+                                            ! alternatively, could write out the cell-center velocity
               diagnosticSpeed(:) = normalVelocity(:,iEdge) * scyr  ! convert from m/s to m/yr
-              diagnosticTemperature(:) = tracers(1,:,iCell)  ! assume temperature is tracer #1
+              diagnosticTemperature(:) = tracers(indexTemperature,:,iCell)
            endif
         enddo
         
+        ! clean up
+        call mpas_deallocate_scratch_field(iceCellMaskField, .true.)
+        call mpas_deallocate_scratch_field(iceEdgeMaskField, .true.)
+        call mpas_deallocate_scratch_field(workLevelCellField, .true.)
+
         block => block % next
-     end do  ! block loop
+     enddo  ! block loop
 
      ! Compute global statistics
      ! TODO: Reduce the number of global reductions in this subroutine?
@@ -485,70 +540,68 @@ module li_statistics
      call mpas_dmpar_sum_real (dminfo, diagnosticBasalTemperature, diagnosticBasalTemperature)
 
      !TODO - Change to nVertLevels + 1 if velocity lives on layer interfaces
-     allocate (workArray1d(nVertLevels))
-     call mpas_dmpar_sum_real_array(dminfo, nVertLevels, diagnosticSpeed, workArray1d)
-     diagnosticSpeed(:) = workArray1D(:)
+     allocate (workLevel(nVertLevels))
+     call mpas_dmpar_sum_real_array(dminfo, nVertLevels, diagnosticSpeed, workLevel)
+     diagnosticSpeed(:) = workLevel(:)
 
-     call mpas_dmpar_sum_real_array(dminfo, nVertLevels, diagnosticTemperature, workArray1D)
-     diagnosticTemperature(:) = workArray1D(:)
+     call mpas_dmpar_sum_real_array(dminfo, nVertLevels, diagnosticTemperature, workLevel)
+     diagnosticTemperature(:) = workLevel(:)
      
      ! Write global and local stats to the log file
-     !TODO - Change stdout (6) to another fileunit?
-     
+ 
      if (dminfo % my_proc_id == IO_NODE) then
-        write(6,*) ' '
-        write(6,'(a60)') '------------------------------------------------------------'
-        write(6,*) ' '
-        write(6,'(a25,a20)')          'Global statistics: time =', trim(xtime)
-        write(6,'(a25,i8)')           '               timestep =', timeIndex
-        write(6,*) ' '
-        write(6,'(a32,e24.16)')       'Total ice area (km^2)           ',   &
+        write(stdoutUnit,*) ' '
+        write(stdoutUnit,'(a60)') '------------------------------------------------------------'
+        write(stdoutUnit,*) ' '
+        write(stdoutUnit,'(a25,a20)')          'Global statistics: time =', trim(xtime)
+        write(stdoutUnit,'(a25,i8)')           '               timestep =', itimestep
+        write(stdoutUnit,*) ' '
+        write(stdoutUnit,'(a32,e24.16)')       'Total ice area (km^2)           ',   &
                                        globalIceAreaSum*1.0d-6       ! convert from m^2 to km^2
-        write(6,'(a32,e24.16)')       'Total ice volume (km^3)         ',   &
+        write(stdoutUnit,'(a32,e24.16)')       'Total ice volume (km^3)         ',   &
                                        globalIceVolumeSum*1.0d-9     ! convert from m^3 to km^3
-        write(6,'(a32,e24.16)')       'Total ice energy (J)            ',   &
+        write(stdoutUnit,'(a32,e24.16)')       'Total ice energy (J)            ',   &
                                        globalIceEnergySum
-        write(6,'(a32,f24.16,i8)')    'Max thickness (m), cell         ',   &
+        write(stdoutUnit,'(a32,f24.16,i8)')    'Max thickness (m), cell         ',   &
                                        globalThicknessMax, thicknessMaxlocCell
-        write(6,'(a32,f24.16,i8)')    'Min thickness (m), cell         ',   &
+        write(stdoutUnit,'(a32,f24.16,i8)')    'Min thickness (m), cell         ',   &
                                        globalThicknessMin, thicknessMinlocCell
-        write(6,'(a32,f24.16)')       'Mean thickness (m)              ',   &
+        write(stdoutUnit,'(a32,f24.16)')       'Mean thickness (m)              ',   &
                                        globalthicknessMean
-        write(6,'(a32,f24.16,i8,i4)') 'Max temperature (C), cell, level',   &
-                                       globalTemperatureMax, temperatureMaxlocCell, temperatureMaxlocLevel
-        write(6,'(a32,f24.16,i8,i4)') 'Min temperature (C), cell, level',   &
-                                       globalTemperatureMin, temperatureMinlocCell, temperatureMinlocLevel
-        write(6,'(a32,f24.16)')       'Mean temperature (C)            ',   &
-                                       globalTemperatureMean
-        write(6,'(a32,f24.16,i8,i4)') 'Max velocity (m/yr), edge, level',   &
+        write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Max temperature (C), cell, level',   &
+                                       globalTemperatureMax - KtoC, temperatureMaxlocCell, temperatureMaxlocLevel
+        write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Min temperature (C), cell, level',   &
+                                       globalTemperatureMin - KtoC , temperatureMinlocCell, temperatureMinlocLevel
+        write(stdoutUnit,'(a32,f24.16)')       'Mean temperature (C)            ',   &
+                                       globalTemperatureMean - KtoC
+        write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Max velocity (m/yr), edge, level',   &
                                        globalVelocityMax * scyr, velocityMaxlocEdge, velocityMaxlocLevel
-        write(6,'(a32,f24.16,i8,i4)') 'Max basal velo (m/yr), edge     ',   &
+        write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Max basal velo (m/yr), edge     ',   &
                                        globalBasalVelocityMax * scyr, basalVelocityMaxlocEdge
-        write(6,*) ' '
-        write(6,'(a30,i6)')  'Column diagnostics: cell ID = ', statsCellID
-        write(6,'(a30,3i6)') 'Local cell ID, block, proc =  ', diagnosticCell, diagnosticBlockID, diagnosticProcID
-        write(6,*) ' '
-        write(6,'(a25,f24.16)') 'Upper surface (m)        ', diagnosticUpperSurface
-        write(6,'(a25,f24.16)') 'Thickness (m)            ', diagnosticThickness
-        write(6,'(a25,f24.16)') 'Bed topography (m)       ', diagnosticBedTopography
-        write(6,'(a25,f24.16)') 'Sfc mass balance (m/yr)  ', diagnosticSfcMassBal
-        write(6,*) ' '
-        write(6,'(a55)') 'Sigma        Ice speed (m/yr)       Ice temperature (C)'
-        write(6,'(f6.4, a25, f24.16)') 0.0_RKIND, '------', diagnosticSurfaceTemperature
+        write(stdoutUnit,*) ' '
+        write(stdoutUnit,'(a30,i6)')  'Column diagnostics: cell ID = ', statsCellID
+        write(stdoutUnit,'(a30,3i6)') 'Local cell ID, block, proc =  ', diagnosticCell, diagnosticBlockID, diagnosticProcID
+        write(stdoutUnit,*) ' '
+        write(stdoutUnit,'(a25,f24.16)') 'Upper surface (m)        ', diagnosticUpperSurface
+        write(stdoutUnit,'(a25,f24.16)') 'Thickness (m)            ', diagnosticThickness
+        write(stdoutUnit,'(a25,f24.16)') 'Bed topography (m)       ', diagnosticBedTopography
+        write(stdoutUnit,'(a25,f24.16)') 'Sfc mass balance (m/yr)  ', diagnosticSfcMassBal
+        write(stdoutUnit,*) ' '
+        write(stdoutUnit,'(a55)') 'Sigma        Ice speed (m/yr)       Ice temperature (C)'
+        write(stdoutUnit,'(f6.4, a25, f24.16)') 0.0_RKIND, '------', diagnosticSurfaceTemperature - KtoC
         do kLevel = 1, nVertLevels
-           write(6,'(f6.4, f25.16, f24.16)') &
-                layerCenterSigma(kLevel), diagnosticSpeed(kLevel), diagnosticTemperature(kLevel)
+           write(stdoutUnit,'(f6.4, f25.16, f24.16)') &
+                layerCenterSigma(kLevel), diagnosticSpeed(kLevel), diagnosticTemperature(kLevel) - KtoC
         end do
-        write(6,'(f6.4, a25, f24.16)') 1.0_RKIND, '------', diagnosticBasalTemperature
-        write(6,*) ' '
+        write(stdoutUnit,'(f6.4, a25, f24.16)') 1.0_RKIND, '------', diagnosticBasalTemperature - KtoC
+        write(stdoutUnit,*) ' '
      endif   ! my_proc_id = IO_NODE
 
      ! clean up
-     deallocate(workArray)
-     deallocate(workArray1d)
-     deallocate(diagnosticSpeed)
+     deallocate(workLevel)
      deallocate(diagnosticTemperature)
-     
+     deallocate(diagnosticSpeed)
+
    end subroutine li_compute_statistics
 
 !***********************************************************************
