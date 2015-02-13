@@ -106,6 +106,7 @@ module CNNitrogenStateType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
+     procedure , public  :: nbuffer_update
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
@@ -1542,4 +1543,31 @@ contains
 
  end subroutine Summary
 
+ 
+ 
+  subroutine nbuffer_update(this, bounds, num_soilc, filter_soilc,  &
+      plant_minn_active_yield_flx_col, plant_minn_passive_yield_flx_col)
+
+    use clm_time_manager         , only : get_step_size        
+    ! !ARGUMENTS:
+    class (nitrogenstate_type) :: this
+    type(bounds_type) , intent(in) :: bounds  
+    integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+    integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+    
+    real(r8)          , intent(in) :: plant_minn_active_yield_flx_col(bounds%begc:bounds%endc)
+    real(r8)          , intent(in) :: plant_minn_passive_yield_flx_col(bounds%begc:bounds%endc)
+    integer :: fc, c
+    real(r8) :: dtime
+  
+    dtime =  get_step_size()
+  
+    
+    do fc = 1, num_soilc
+      c = filter_soilc(fc)
+      this%plant_nbuffer_col(c) = (plant_minn_active_yield_flx_col(c) + plant_minn_passive_yield_flx_col(c))*dtime
+      
+    enddo
+      
+  end subroutine nbuffer_update      
 end module CNNitrogenStateType

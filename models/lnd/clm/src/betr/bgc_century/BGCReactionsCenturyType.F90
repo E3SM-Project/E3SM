@@ -452,20 +452,6 @@ contains
   !retrieve the flux variable
   call retrieve_nutrient_flux(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, dtime, yf, y0, tracerflux_vars, centurybgc_vars, plantsoilnutrientflux_vars)
 
-  !-----------------------------------------------------------------------------------------------
-  !this section of code will be no longer in use when Bardan's code comes in
-  !calculating the interesting downregulating factor for plant gpp
-  call calc_fpg(bounds, num_soilc, filter_soilc, plantsoilnutrientflux_vars, cnstate_vars%fpg_col(bounds%begc:bounds%endc))
-  
-  !
-  call plant_downregulated_growth(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       photosyns_vars,  cnstate_vars,  carbonstate_vars, carbonflux_vars, &
-       c13_carbonflux_vars, c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
-
-  !apply root respiration co2. this could potentially cause negative o2, but, anyway, I cannot do better because of the current code structure
-  !
-  !
-  !-----------------------------------------------------------------------------------------------
   
   !retrieve the state variable    
   call retrieve_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      

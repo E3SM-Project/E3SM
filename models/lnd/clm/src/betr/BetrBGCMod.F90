@@ -71,7 +71,8 @@ contains
   use clm_varpar            , only : nlevsoi
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   use CNStateType              , only : cnstate_type
-  use CNCarbonFluxType         , only : carbonflux_type  
+  use CNCarbonFluxType         , only : carbonflux_type
+  use BGCReactionsFactoryMod   , only : is_active_betr_bgc
   implicit none
   
   type(bounds_type)            , intent(in) :: bounds                     ! bounds   
@@ -91,7 +92,7 @@ contains
   type(atm2lnd_type)           , intent(in) :: atm2lnd_vars
   type(soilhydrology_type)     , intent(in) :: soilhydrology_vars
   type(cnstate_type)           , intent(inout) :: cnstate_vars
-    type(carbonflux_type)      , intent(inout) :: carbonflux_vars  
+  type(carbonflux_type)        , intent(inout) :: carbonflux_vars  
   type(waterflux_type)         , intent(inout) :: waterflux_vars  
   type(tracerboundarycond_type), intent(inout) :: tracerboundarycond_vars
   type(tracercoeff_type)       , intent(inout) :: tracercoeff_vars
@@ -181,8 +182,14 @@ contains
     tracercoeff_vars, tracerstate_vars, &
     tracerflux_vars%tracer_flx_ebu_col(bounds%begc:bounds%endc, 1:betrtracer_vars%nvolatile_tracers))
     
-  !do flux budget
+  !do flux for nitrogen storage pool 
+  if(is_active_betr_bgc())then    
+    call plantsoilnutrientflux_vars%summary(bounds, ubj, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
+      tracerflux_vars%tracer_flx_vtrans_col(bounds%begc:bounds%endc,betrtracer_vars%id_trc_nh3x), &
+      tracerflux_vars%tracer_flx_vtrans_col(bounds%begc:bounds%endc,betrtracer_vars%id_trc_no3x))
+  endif
   end subroutine run_betr_one_step_without_drainage
+    
 !-------------------------------------------------------------------------------
   subroutine tracer_solid_transport(bounds, lbj, ubj, num_soilc, filter_soilc, dtime, hmconductance_col, dz, &
     betrtracer_vars, tracerboundarycond_vars, tracerstate_vars)
@@ -598,8 +605,7 @@ contains
 
 
   enddo  
-
-  
+    
   end associate
   end subroutine do_tracer_advection
 !-------------------------------------------------------------------------------  

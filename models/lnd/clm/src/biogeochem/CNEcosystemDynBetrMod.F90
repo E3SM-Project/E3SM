@@ -313,6 +313,9 @@ implicit none
     type(plantsoilnutrientflux_type), intent(in) :: plantsoilnutrientflux_vars   
   
 
+    call nitrogenstate_vars%nbuffer_update(num_soilc, filter_soilc, &
+      plantsoilnutrientflux_vars%plant_minn_active_yield_flx_col(bounds%begc:bounds%endc),   &
+      plantsoilnutrientflux_vars%plant_minn_passive_yield_flx_col(bounds%begc:bounds%endc))
     !--------------------------------------------
     ! CNUpdate0
     !--------------------------------------------
@@ -558,7 +561,7 @@ implicit none
     ! acheived with the N available to plants
     ! now a silly question here is does plant take more than necessary?
     if (plant_totn_demand_flx(c) > 0.0_r8) then
-      fpg(c) = min(plant_nbuffer(c) / (plant_totn_demand_flx(c)*dtime),1.0_r8)
+      fpg(c) = min(plant_nbuffer(c) / (plant_totn_demand_flx(c)*dtime),1._r8)
       
       plant_totn_demand_flx(c) = plant_totn_demand_flx(c)* (1._r8-fpg(c))
     else

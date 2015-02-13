@@ -458,11 +458,10 @@ module BGCCenturySubMod
   do fc = 1, numf
     c = filter(fc)    
     do j = jtops(c), ubj
-      plantsoilnutrientflux_vars%plant_minn_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))/dtime
+      plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))/dtime
     enddo
   enddo
   
-  call plantsoilnutrientflux_vars%summary(bounds, lbj, ubj, numf, filter)
   
   end subroutine retrieve_nutrient_flux
 !-------------------------------------------------------------------------------
