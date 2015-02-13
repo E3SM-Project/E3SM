@@ -782,12 +782,12 @@ contains
     larr(bounds%begl : bounds%endl) = spval
     sumwt(bounds%begl : bounds%endl) = 0._r8
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .and. pft%wtlunit(c) /= 0._r8) then
+       if (col%active(c) .and. col%wtlunit(c) /= 0._r8) then
           if (carr(c) /= spval .and. scale_c2l(c) /= spval) then
              l = col%landunit(c)
              if (sumwt(l) == 0._r8) larr(l) = 0._r8
-             larr(l) = larr(l) + carr(c) * scale_c2l(c) * pft%wtlunit(c)
-             sumwt(l) = sumwt(l) + pft%wtlunit(c)
+             larr(l) = larr(l) + carr(c) * scale_c2l(c) * col%wtlunit(c)
+             sumwt(l) = sumwt(l) + col%wtlunit(c)
           end if
        end if
     end do
@@ -879,12 +879,12 @@ contains
     do j = 1,num2d
        sumwt(bounds%begl : bounds%endl) = 0._r8
        do c = bounds%begc,bounds%endc
-          if (col%active(c) .and. pft%wtlunit(c) /= 0._r8) then
+          if (col%active(c) .and. col%wtlunit(c) /= 0._r8) then
              if (carr(c,j) /= spval .and. scale_c2l(c) /= spval) then
                 l = col%landunit(c)
                 if (sumwt(l) == 0._r8) larr(l,j) = 0._r8
-                larr(l,j) = larr(l,j) + carr(c,j) * scale_c2l(c) * pft%wtlunit(c)
-                sumwt(l) = sumwt(l) + pft%wtlunit(c)
+                larr(l,j) = larr(l,j) + carr(c,j) * scale_c2l(c) * col%wtlunit(c)
+                sumwt(l) = sumwt(l) + col%wtlunit(c)
              end if
           end if
        end do

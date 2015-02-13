@@ -8,6 +8,9 @@ module GridcellType
   ! -------------------------------------------------------- 
   !   1 => default
   !
+  ! PET: 9 Feb 2015: Preparing to change the sub-grid hierarchy to include
+  ! 	 topographic units between gridcell and landunit.
+  !	 
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use landunit_varcon, only : max_lunit
