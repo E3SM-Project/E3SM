@@ -148,6 +148,8 @@ def create_cdash_xml(start_time, results, cdash_build_name):
 ###############################################################################
 
     # Create dart config file
+    utc_time_tuple = time.gmtime(start_time)
+    cdash_timestamp = time.strftime("%H:%M:%S", utc_time_tuple)
     hostname = socket.gethostname().split(".")[0]
     dart_config = \
 """
@@ -174,17 +176,16 @@ TriggerSite:
 ScpCommand: %s
 
 # Dashboard start time
-NightlyStartTime: 00:00:00 EST
+NightlyStartTime: %s UTC
 """ % (os.getcwd(), os.getcwd(), hostname,
-       cdash_build_name, find_executable("scp"))
+       cdash_build_name, find_executable("scp"), cdash_timestamp)
 
     dart_fd = open("DartConfiguration.tcl", "w")
     dart_fd.write(dart_config)
     dart_fd.close()
 
     # Make necessary dirs
-    local_time_tuple = time.localtime(start_time)
-    subdir_name = time.strftime('%Y%m%d-%H%M', local_time_tuple)
+    subdir_name = time.strftime('%Y%m%d-%H%M', utc_time_tuple)
     data_rel_path = os.path.join("Testing", subdir_name)
     os.makedirs(data_rel_path)
 
