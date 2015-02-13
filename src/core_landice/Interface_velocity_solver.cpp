@@ -1309,13 +1309,13 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
       int c;
       int fCell = vertexToFCell[iV];
       int nEdg = nEdgesOnCells_F[fCell];
-      elevationData[iV]=1e10;
       bool isFloating = false;
       for (int j = 0; (j < nEdg)&&(!isFloating); j++) {
         int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
         isFloating = (floatingEdgesMask_F[fEdge] != 0);
       }
       if(!isFloating) continue;
+      double elevTemp =1e10;
       for (int j = 0; j < nEdg; j++) {
         int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
         bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & 0x02)
@@ -1327,8 +1327,9 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
         int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
         c = (fCellToVertex[c0] == iV) ? c1 : c0;
         double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
-        if (elevationData[iV] > elev) {
-          elevationData[iV] = elev;
+
+        if (elevTemp > elev) {
+          elevTemp = elev;
           bdExtensionMap[iV] = c;
         }
       }
