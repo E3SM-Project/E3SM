@@ -4,6 +4,7 @@ module CNEcosystemDynBetrMod
 ! DESCRIPTION
 ! betr based aboveground belowground coupling
 !
+! Created by Jinyun Tang
 ! Now it is only for generic carbon coupling no isotope is attempted below, but will
 ! be enabled gradually.
   use shr_kind_mod        , only : r8 => shr_kind_r8
@@ -33,7 +34,10 @@ module CNEcosystemDynBetrMod
   use EnergyFluxType      , only : energyflux_type
   use SoilHydrologyType   , only : soilhydrology_type
   use FrictionVelocityType, only : frictionvel_type
-  use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type 
+  use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
+  use tracerfluxType           , only : tracerflux_type
+  use tracerstatetype          , only : tracerstate_type
+  use BetrTracerType           , only : betrtracer_type    
 implicit none
 
   private
@@ -82,30 +86,31 @@ implicit none
     
     !   
     ! !USES:
-    use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
-    use CNMRespMod             , only: CNMResp
-    use CNDecompMod            , only: CNDecompAlloc
-    use CNPhenologyMod         , only: CNPhenology
-    use CNGRespMod             , only: CNGResp
-    use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
-    use CNNStateUpdate1Mod     , only: NStateUpdate1
-    use CNGapMortalityMod      , only: CNGapMortality
-    use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
-    use CNNStateUpdate2Mod     , only: NStateUpdate2, NStateUpdate2h
-    use CNFireMod              , only: CNFireArea, CNFireFluxes
-    use CNCStateUpdate3Mod     , only: CStateUpdate3
-    use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
-    use CNC14DecayMod          , only: C14Decay, C14BombSpike
-    use CNWoodProductsMod      , only: CNWoodProducts
-    use CNSoilLittVertTranspMod, only: CNSoilLittVertTransp
-    use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
-    use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
-    use CropType               , only: crop_type
-    use dynHarvestMod          , only: CNHarvest
-    use clm_varpar             , only: crop_prog
-    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type    
-    use CNAllocationBetrMod    , only: calc_plant_nutrient_demand
-    implicit none
+  use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
+  use CNMRespMod             , only: CNMResp
+  use CNDecompMod            , only: CNDecompAlloc
+  use CNPhenologyMod         , only: CNPhenology
+  use CNGRespMod             , only: CNGResp
+  use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
+  use CNNStateUpdate1Mod     , only: NStateUpdate1
+  use CNGapMortalityMod      , only: CNGapMortality
+  use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
+  use CNNStateUpdate2Mod     , only: NStateUpdate2, NStateUpdate2h
+  use CNFireMod              , only: CNFireArea, CNFireFluxes
+  use CNCStateUpdate3Mod     , only: CStateUpdate3
+  use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
+  use CNC14DecayMod          , only: C14Decay, C14BombSpike
+  use CNWoodProductsMod      , only: CNWoodProducts
+  use CNSoilLittVertTranspMod, only: CNSoilLittVertTransp
+  use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
+  use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
+  use CropType               , only: crop_type
+  use dynHarvestMod          , only: CNHarvest
+  use clm_varpar             , only: crop_prog
+  use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type    
+  use CNAllocationBetrMod    , only: calc_plant_nutrient_demand
+  
+  implicit none
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds  
@@ -136,7 +141,11 @@ implicit none
     type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
-  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars   
+  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
+  type(betrtracer_type)    , intent(in)    :: betrtracer_vars                    ! betr configuration information  
+  type(tracerstate_type)   , intent(in)    :: tracerstate_vars
+  type(tracerflux_type)    , intent(in)    :: tracerflux_vars
+  
 
     ! --------------------------------------------------
     ! zero the column-level C and N fluxes
@@ -239,7 +248,7 @@ implicit none
        call carbonflux_vars%summary_rr(num_soilp, filter_soilp, num_soilc, filter_soilc)
        call t_stopf('CNGResp')
 
-       
+        
   end subroutine CNEcosystemDynBetrVeg
 
 
@@ -516,25 +525,54 @@ implicit none
     call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars)
 
-    call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
-    call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-    if ( use_c13 ) then
-      call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
-      call c13_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-    end if
-    if ( use_c14 ) then
-      call c14_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
-      call c14_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-    end if
-    call nitrogenflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-    call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-
-    call t_stopf('CNsum')
        
   end subroutine CNEcosystemDynBetrSummary
 
+  !-----------------------------------------------------------------------    
+  subroutine CNFluxStateSummary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, carbonflux_vars, carbonstate_vars, &
+    c13_carbonflux_vars, c13_carbonstate_vars, c14_carbonflux_vars, c14_carbonstate_vars, nitrogenflux_vars, nitrogenstate_vars, &
+    betrtracer_vars, tracerflux_vars, tracerstate_vars)
+  !
+  ! DESCRIPTION
+  ! summarize all fluxes and state varaibles, prepare for mass balance analysis
+  !
 
+  implicit none
+  type(bounds_type)        , intent(in)    :: bounds  
+  integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
+  integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
+  integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
+  type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+  type(carbonstate_type)   , intent(inout) :: carbonstate_vars
+  type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
+  type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
+  type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
+  type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
+  type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+  type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+  type(betrtracer_type)    , intent(in)    :: betrtracer_vars                    ! betr configuration information  
+  type(tracerstate_type)   , intent(in)    :: tracerstate_vars
+  type(tracerflux_type)    , intent(in)    :: tracerflux_vars
+  
+  
+  
+  call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
+  call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+  if ( use_c13 ) then
+    call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
+    call c13_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+  end if
+  if ( use_c14 ) then
+    call c14_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
+    call c14_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+  end if
+  call nitrogenflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+  call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
+  call t_stopf('CNsum')
+
+  end subroutine CNFluxStateSummary 
   !-----------------------------------------------------------------------    
   subroutine calc_fpg(bounds, num_soilc, filter_soilc, plant_totn_demand_flx, plant_nbuffer, fpg)
   !

@@ -1538,7 +1538,8 @@ contains
            this%sminn_col(c) + &
            this%totprodn_col(c) + &
            this%seedn_col(c) + &
-           this%ntrunc_col(c)
+           this%ntrunc_col(c) + &
+           this%plant_nbuffer_col(c)
    end do
 
  end subroutine Summary

@@ -847,10 +847,17 @@ contains
        ! ============================================================================
 
        if (.not. use_ed) then
+
           if (use_cn) then
+          
+            if(is_active_betr_bgc())then
+               !extract nitrogen pool and flux from betr
+               !summarize total column nitrogen and carbon
+               
+            else
              ! FIX(SPM,032414) there are use_ed checks in this routine...be consistent 
              ! (see comment above re: no leaching
-             call CNEcosystemDynLeaching(bounds_clump,                  &
+               call CNEcosystemDynLeaching(bounds_clump,                  &
                   filter(nc)%num_soilc, filter(nc)%soilc,               &
                   filter(nc)%num_soilp, filter(nc)%soilp,               &
                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,      &
@@ -859,12 +866,14 @@ contains
                   c14_carbonflux_vars, c14_carbonstate_vars, dgvs_vars, &
                   nitrogenflux_vars, nitrogenstate_vars,                &
                   waterstate_vars, waterflux_vars, frictionvel_vars, canopystate_vars)
-
-             if (doalb) then   
-                call CNVegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp, &
+            endif
+               
+            if (doalb) then   
+              call CNVegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp, &
                      waterstate_vars, frictionvel_vars, dgvs_vars, cnstate_vars, &
                      carbonstate_vars, canopystate_vars)
-             end if
+            end if
+               
           end if
        end if
 
