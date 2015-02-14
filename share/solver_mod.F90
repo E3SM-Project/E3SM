@@ -140,8 +140,8 @@ contains
 
        do ie=nets,nete
           ieptr=ie-nets+1
-          Dinv => elem(ie)%Dinv
-          metinv => elem(ie)%metinv
+          Dinv => elem(ie)%DinvJMD
+          metinv => elem(ie)%metinvJMD
           metdet => elem(ie)%metdet
           rmetdet  => elem(ie)%rmetdet
 
@@ -213,13 +213,13 @@ contains
                       gradp1       = gradp(i,j,1,k,ie)
                       gradp2       = gradp(i,j,2,k,ie)
 #if 1
-                      gradp(i,j,1,k,ie) = Dinv(1,1,i,j)*gradp1 + &
-                           Dinv(2,1,i,j)*gradp2
-                      gradp(i,j,2,k,ie) = Dinv(1,2,i,j)*gradp1 + &
-                           Dinv(2,2,i,j)*gradp2
+                      gradp(i,j,1,k,ie) = Dinv(i,j,1,1)*gradp1 + &
+                           Dinv(i,j,2,1)*gradp2
+                      gradp(i,j,2,k,ie) = Dinv(i,j,1,2)*gradp1 + &
+                           Dinv(i,j,2,2)*gradp2
 #else
-                      gradp(i,j,1,k,ie) = (metinv(1,1,i,j)*gradp1 + metinv(1,2,i,j)*gradp2)
-                      gradp(i,j,2,k,ie) = (metinv(2,1,i,j)*gradp1 + metinv(2,2,i,j)*gradp2)
+                      gradp(i,j,1,k,ie) = (metinv(i,j,1,1)*gradp1 + metinv(i,j,1,2)*gradp2)
+                      gradp(i,j,2,k,ie) = (metinv(i,j,2,1)*gradp1 + metinv(i,j,2,2)*gradp2)
 #endif
                    end do
                 end do
@@ -239,7 +239,7 @@ contains
           ieptr=ie-nets+1
           
           rmp     => elem(ie)%rmp
-          Dinv    => elem(ie)%Dinv
+          Dinv    => elem(ie)%DinvJMD
           metdet => elem(ie)%metdet
           mp      => elem(ie)%mp
 
@@ -265,9 +265,9 @@ contains
                       gradp1 = gradp(i,j,1,k,ie)
                       gradp2 = gradp(i,j,2,k,ie)
                       gradp(i,j,1,k,ie) = metdet(i,j) * rmp(i,j) * &
-                             (Dinv(1,1,i,j)*gradp1 + Dinv(1,2,i,j)*gradp2)
+                             (Dinv(i,j,1,1)*gradp1 + Dinv(i,j,1,2)*gradp2)
                       gradp(i,j,2,k,ie) = metdet(i,j) * rmp(i,j) * &
-                             (Dinv(2,1,i,j)*gradp1 + Dinv(2,2,i,j)*gradp2)
+                             (Dinv(i,j,2,1)*gradp1 + Dinv(i,j,2,2)*gradp2)
                    end do
                 end do
 
@@ -435,7 +435,7 @@ contains
 
 
           metdet  => elem(ie)%metdet
-          metinv  => elem(ie)%metinv
+          metinv  => elem(ie)%metinvJMD
           rmp     => elem(ie)%rmp
           mp      => elem(ie)%mp          
 
@@ -457,8 +457,8 @@ contains
                 do i=1,np
                    gradp1       = gradp(i,j,1)
                    gradp2       = gradp(i,j,2)
-                   gradp(i,j,1) = metdet(i,j)*(metinv(1,1,i,j)*gradp1 + metinv(1,2,i,j)*gradp2)
-                   gradp(i,j,2) = metdet(i,j)*(metinv(2,1,i,j)*gradp1 + metinv(2,2,i,j)*gradp2)
+                   gradp(i,j,1) = metdet(i,j)*(metinv(i,j,1,1)*gradp1 + metinv(i,j,1,2)*gradp2)
+                   gradp(i,j,2) = metdet(i,j)*(metinv(i,j,2,1)*gradp1 + metinv(i,j,2,2)*gradp2)
                 end do
              end do
 

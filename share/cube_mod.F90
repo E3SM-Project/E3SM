@@ -284,38 +284,38 @@ contains
        do i=1,np
           x1=gll_points(i)
           x2=gll_points(j)
-          call Dmap(elem%D(:,:,i,j),x1,x2,elem%corners3D,cubed_sphere_map,elem%corners,elem%u2qmap,elem%facenum)
+          call Dmap(elem%DJMD(i,j,:,:),x1,x2,elem%corners3D,cubed_sphere_map,elem%corners,elem%u2qmap,elem%facenum)
 
 
           ! Numerical metric tensor based on analytic D: met = D^T times D
           ! (D maps between sphere and reference element)
-          elem%met(1,1,i,j) = elem%D(1,1,i,j)*elem%D(1,1,i,j) + &
-                              elem%D(2,1,i,j)*elem%D(2,1,i,j)
-          elem%met(1,2,i,j) = elem%D(1,1,i,j)*elem%D(1,2,i,j) + &
-                              elem%D(2,1,i,j)*elem%D(2,2,i,j)
-          elem%met(2,1,i,j) = elem%D(1,1,i,j)*elem%D(1,2,i,j) + &
-                              elem%D(2,1,i,j)*elem%D(2,2,i,j)
-          elem%met(2,2,i,j) = elem%D(1,2,i,j)*elem%D(1,2,i,j) + &
-                              elem%D(2,2,i,j)*elem%D(2,2,i,j)
+          elem%metJMD(i,j,1,1) = elem%DJMD(i,j,1,1)*elem%DJMD(i,j,1,1) + &
+                              elem%DJMD(i,j,2,1)*elem%DJMD(i,j,2,1)
+          elem%metJMD(i,j,1,2) = elem%DJMD(i,j,1,1)*elem%DJMD(i,j,1,2) + &
+                              elem%DJMD(i,j,2,1)*elem%DJMD(i,j,2,2)
+          elem%metJMD(i,j,2,1) = elem%DJMD(i,j,1,1)*elem%DJMD(i,j,1,2) + &
+                              elem%DJMD(i,j,2,1)*elem%DJMD(i,j,2,2)
+          elem%metJMD(i,j,2,2) = elem%DJMD(i,j,1,2)*elem%DJMD(i,j,1,2) + &
+                              elem%DJMD(i,j,2,2)*elem%DJMD(i,j,2,2)
 
           ! compute D^-1...
           ! compute determinant of D mapping matrix... if not zero compute inverse
 
-          detD = elem%D(1,1,i,j)*elem%D(2,2,i,j) - elem%D(1,2,i,j)*elem%D(2,1,i,j)      
+          detD = elem%DJMD(i,j,1,1)*elem%DJMD(i,j,2,2) - elem%DJMD(i,j,1,2)*elem%DJMD(i,j,2,1)      
 
-          elem%Dinv(1,1,i,j) =  elem%D(2,2,i,j)/detD
-          elem%Dinv(1,2,i,j) = -elem%D(1,2,i,j)/detD
-          elem%Dinv(2,1,i,j) = -elem%D(2,1,i,j)/detD
-          elem%Dinv(2,2,i,j) =  elem%D(1,1,i,j)/detD
+          elem%DinvJMD(i,j,1,1) =  elem%DJMD(i,j,2,2)/detD
+          elem%DinvJMD(i,j,1,2) = -elem%DJMD(i,j,1,2)/detD
+          elem%DinvJMD(i,j,2,1) = -elem%DJMD(i,j,2,1)/detD
+          elem%DinvJMD(i,j,2,2) =  elem%DJMD(i,j,1,1)/detD
 
           ! L2 norm = sqrt max eigenvalue of metinv
           !         = 1/sqrt(min eigenvalue of met)
           ! l1 and l2 are eigenvalues of met
           ! (should both be positive, l1 > l2)
-          l1 = (elem%met(1,1,i,j) + elem%met(2,2,i,j) + sqrt(4.0d0*elem%met(1,2,i,j)*elem%met(2,1,i,j) + &
-              (elem%met(1,1,i,j) - elem%met(2,2,i,j))**2))/2.0d0
-          l2 = (elem%met(1,1,i,j) + elem%met(2,2,i,j) - sqrt(4.0d0*elem%met(1,2,i,j)*elem%met(2,1,i,j) + &
-              (elem%met(1,1,i,j) - elem%met(2,2,i,j))**2))/2.0d0
+          l1 = (elem%metJMD(i,j,1,1) + elem%metJMD(i,j,2,2) + sqrt(4.0d0*elem%metJMD(i,j,1,2)*elem%metJMD(i,j,2,1) + &
+              (elem%metJMD(i,j,1,1) - elem%metJMD(i,j,2,2))**2))/2.0d0
+          l2 = (elem%metJMD(i,j,1,1) + elem%metJMD(i,j,2,2) - sqrt(4.0d0*elem%metJMD(i,j,1,2)*elem%metJMD(i,j,2,1) + &
+              (elem%metJMD(i,j,1,1) - elem%metJMD(i,j,2,2))**2))/2.0d0
           ! Max L2 norm of Dinv is sqrt of max eigenvalue of metinv
           ! max eigenvalue of metinv is 1/min eigenvalue of met
           norm = 1.0d0/sqrt(min(abs(l1),abs(l2)))
@@ -330,7 +330,7 @@ contains
           !   = 1/sqrt(2) sqrt( |g_x|^2 + |g_y|^2 + 2*|g_x dot g_y|) / J
           ! g^x = Dinv(:,1)    g_x = D(1,:)
           ! g^y = Dinv(:,2)    g_y = D(2,:)
-          norm = (2*abs(sum(elem%Dinv(:,1,i,j)*elem%Dinv(:,2,i,j))) + sum(elem%Dinv(:,1,i,j)**2) + sum(elem%Dinv(:,2,i,j)**2))
+          norm = (2*abs(sum(elem%DinvJMD(i,j,:,1)*elem%DinvJMD(i,j,:,2))) + sum(elem%DinvJMD(i,j,:,1)**2) + sum(elem%DinvJMD(i,j,:,2)**2))
           norm = sqrt(norm)
 !          norm = (2*abs(sum(elem%D(1,:,i,j)*elem%D(2,:,i,j))) + sum(elem%D(1,:,i,j)**2) + sum(elem%D(2,:,i,j)**2))
 !          norm = sqrt(norm)/detD
@@ -341,14 +341,14 @@ contains
           elem%metdet(i,j) = abs(detD)
           elem%rmetdet(i,j) = 1.0D0/abs(detD)
 
-          elem%metinv(1,1,i,j) =  elem%met(2,2,i,j)/(detD*detD)
-          elem%metinv(1,2,i,j) = -elem%met(1,2,i,j)/(detD*detD)
-          elem%metinv(2,1,i,j) = -elem%met(2,1,i,j)/(detD*detD)
-          elem%metinv(2,2,i,j) =  elem%met(1,1,i,j)/(detD*detD)
+          elem%metinvJMD(i,j,1,1) =  elem%metJMD(i,j,2,2)/(detD*detD)
+          elem%metinvJMD(i,j,1,2) = -elem%metJMD(i,j,1,2)/(detD*detD)
+          elem%metinvJMD(i,j,2,1) = -elem%metJMD(i,j,2,1)/(detD*detD)
+          elem%metinvJMD(i,j,2,2) =  elem%metJMD(i,j,1,1)/(detD*detD)
 
           ! matricies for tensor hyper-viscosity
           ! compute eigenvectors of metinv (probably same as computed above)
-          M = elem%metinv(:,:,i,j)
+          M = elem%metinvJMD(i,j,:,:)
 
           eig(1) = (M(1,1) + M(2,2) + sqrt(4.0d0*M(1,2)*M(2,1) + &
               (M(1,1) - M(2,2))**2))/2.0d0
@@ -434,10 +434,10 @@ contains
 
 
 !matrix D*E
-          DE(1,1)=sum(elem%D(1,:,i,j)*E(:,1))
-          DE(1,2)=sum(elem%D(1,:,i,j)*E(:,2))
-          DE(2,1)=sum(elem%D(2,:,i,j)*E(:,1))
-          DE(2,2)=sum(elem%D(2,:,i,j)*E(:,2))
+          DE(1,1)=sum(elem%DJMD(i,j,1,:)*E(:,1))
+          DE(1,2)=sum(elem%DJMD(i,j,1,:)*E(:,2))
+          DE(2,1)=sum(elem%DJMD(i,j,2,:)*E(:,1))
+          DE(2,2)=sum(elem%DJMD(i,j,2,:)*E(:,2))
 
 	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
 	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
@@ -457,7 +457,7 @@ contains
           V(2,1)=sum(DEL(2,:)*DE(1,:))
           V(2,2)=sum(DEL(2,:)*DE(2,:))
 
-	  elem%tensorVisc(:,:,i,j)=V(:,:)
+	  elem%tensorViscJMD(i,j,:,:)=V(:,:)
 
        end do
     end do
@@ -476,12 +476,12 @@ contains
     elem%dx_long  = 1.0d0/(min_svd*0.5d0*dble(np-1)*rrearth*1000.0d0)
 
     ! optional noramlization:
-    elem%D = elem%D * sqrt(alpha) 
-    elem%Dinv = elem%Dinv / sqrt(alpha) 
+    elem%DJMD = elem%DJMD * sqrt(alpha) 
+    elem%DinvJMD = elem%DinvJMD / sqrt(alpha) 
     elem%metdet = elem%metdet * alpha
     elem%rmetdet = elem%rmetdet / alpha
-    elem%met = elem%met * alpha
-    elem%metinv = elem%metinv / alpha
+    elem%metJMD = elem%metJMD * alpha
+    elem%metinvJMD = elem%metinvJMD / alpha
 
   end subroutine metric_atomic
 

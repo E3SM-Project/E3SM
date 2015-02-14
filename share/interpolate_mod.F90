@@ -1752,8 +1752,8 @@ end subroutine interpolate_ce
        do j=1,npts
           do i=1,npts
              ! latlon->contra
-             fld_contra(i,j,1) = elem%Dinv(1,1,i,j)*fld_cube(i,j,1) + elem%Dinv(1,2,i,j)*fld_cube(i,j,2)
-             fld_contra(i,j,2) = elem%Dinv(2,1,i,j)*fld_cube(i,j,1) + elem%Dinv(2,2,i,j)*fld_cube(i,j,2)
+             fld_contra(i,j,1) = elem%DinvJMD(i,j,1,1)*fld_cube(i,j,1) + elem%DinvJMD(i,j,1,2)*fld_cube(i,j,2)
+             fld_contra(i,j,2) = elem%DinvJMD(i,j,2,1)*fld_cube(i,j,1) + elem%DinvJMD(i,j,2,2)*fld_cube(i,j,2)
           enddo
        enddo
     else
@@ -1842,8 +1842,8 @@ end subroutine interpolate_ce
           do j=1,npts
              do i=1,npts
                 ! latlon->contra
-                fld_contra(i,j,1,k) = elem%Dinv(1,1,i,j)*fld_cube(i,j,1,k) + elem%Dinv(1,2,i,j)*fld_cube(i,j,2,k)
-                fld_contra(i,j,2,k) = elem%Dinv(2,1,i,j)*fld_cube(i,j,1,k) + elem%Dinv(2,2,i,j)*fld_cube(i,j,2,k)
+                fld_contra(i,j,1,k) = elem%DinvJMD(i,j,1,1)*fld_cube(i,j,1,k) + elem%DinvJMD(i,j,1,2)*fld_cube(i,j,2,k)
+                fld_contra(i,j,2,k) = elem%DinvJMD(i,j,2,1)*fld_cube(i,j,1,k) + elem%DinvJMD(i,j,2,2)*fld_cube(i,j,2,k)
              enddo
           enddo
        end do

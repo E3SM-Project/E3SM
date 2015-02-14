@@ -871,8 +871,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
                    ! Contravariant velocities
 
-                   vco(i,j,1) = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-                   vco(i,j,2) = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+                   vco(i,j,1) = elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2
+                   vco(i,j,2) = elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2
 
                    vgrad_ps(i,j,k) = ps(i,j)*(vco(i,j,1)*elem(ie)%derived%grad_lnps(i,j,1) + &
                         vco(i,j,2)*elem(ie)%derived%grad_lnps(i,j,2))
@@ -940,8 +940,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
                    ! Contravariant velocities
 
-                   vco(i,j,1) = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-                   vco(i,j,2) = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+                   vco(i,j,1) = elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2
+                   vco(i,j,2) = elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2
 
                    vgradT = vco(i,j,1)*gradT(i,j,1) + vco(i,j,2)*gradT(i,j,2)
 
@@ -982,8 +982,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
                    ! covariant velocity
 
-                   vco(i,j,1) = elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(2,1,i,j)*v2
-                   vco(i,j,2) = elem(ie)%D(1,2,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2
+                   vco(i,j,1) = elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,2,1)*v2
+                   vco(i,j,2) = elem(ie)%DJMD(i,j,1,2)*v1 + elem(ie)%DJMD(i,j,2,2)*v2
 
                    E(i,j) = 0.5_real_kind*( v1*v1 + v2*v2 )
 
@@ -1005,13 +1005,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                    elem(ie)%derived%zeta(i,j,k) = elem(ie)%rmetdet(i,j)*elem(ie)%derived%zeta(i,j,k)
                    hybfac =  hvcoord%hybm(k)*(ps(i,j)*rpmid(i,j,k))
 
-                   glnps1 = elem(ie)%Dinv(1,1,i,j)*elem(ie)%derived%grad_lnps(i,j,1) + &
-                        elem(ie)%Dinv(2,1,i,j)*elem(ie)%derived%grad_lnps(i,j,2)
-                   glnps2 = elem(ie)%Dinv(1,2,i,j)*elem(ie)%derived%grad_lnps(i,j,1) + &
-                        elem(ie)%Dinv(2,2,i,j)*elem(ie)%derived%grad_lnps(i,j,2)
+                   glnps1 = elem(ie)%DinvJMD(i,j,1,1)*elem(ie)%derived%grad_lnps(i,j,1) + &
+                        elem(ie)%DinvJMD(i,j,2,1)*elem(ie)%derived%grad_lnps(i,j,2)
+                   glnps2 = elem(ie)%DinvJMD(i,j,1,2)*elem(ie)%derived%grad_lnps(i,j,1) + &
+                        elem(ie)%DinvJMD(i,j,2,2)*elem(ie)%derived%grad_lnps(i,j,2)
 
-                   v1 = elem(ie)%Dinv(1,1,i,j)*grad_Phi(i,j,1) + elem(ie)%Dinv(2,1,i,j)*grad_Phi(i,j,2)
-                   v2 = elem(ie)%Dinv(1,2,i,j)*grad_Phi(i,j,1) + elem(ie)%Dinv(2,2,i,j)*grad_Phi(i,j,2)
+                   v1 = elem(ie)%DinvJMD(i,j,1,1)*grad_Phi(i,j,1) + elem(ie)%DinvJMD(i,j,2,1)*grad_Phi(i,j,2)
+                   v2 = elem(ie)%DinvJMD(i,j,1,2)*grad_Phi(i,j,1) + elem(ie)%DinvJMD(i,j,2,2)*grad_Phi(i,j,2)
 
                    Vscript(i,j,1,k,ie) = - v_vadv(i,j,1,k) &
                         + elem(ie)%state%v(i,j,2,k,n0) * (elem(ie)%fcor(i,j) + elem(ie)%derived%zeta(i,j,k)) &
@@ -1032,8 +1032,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           do k=1,nlev
              do j=1,np
                 do i=1,np
-                   Vs1 = elem(ie)%Dinv(1,1,i,j)*grad_dGref(i,j,1,k) + elem(ie)%Dinv(2,1,i,j)*grad_dGref(i,j,2,k)
-                   Vs2 = elem(ie)%Dinv(1,2,i,j)*grad_dGref(i,j,1,k) + elem(ie)%Dinv(2,2,i,j)*grad_dGref(i,j,2,k)
+                   Vs1 = elem(ie)%DinvJMD(i,j,1,1)*grad_dGref(i,j,1,k) + elem(ie)%DinvJMD(i,j,2,1)*grad_dGref(i,j,2,k)
+                   Vs2 = elem(ie)%DinvJMD(i,j,1,2)*grad_dGref(i,j,1,k) + elem(ie)%DinvJMD(i,j,2,2)*grad_dGref(i,j,2,k)
 
                    Vscript(i,j,1,k,ie) = elem(ie)%mp(i,j)*Vscript(i,j,1,k,ie) + Vs1
                    Vscript(i,j,2,k,ie) = elem(ie)%mp(i,j)*Vscript(i,j,2,k,ie) + Vs2
@@ -1094,10 +1094,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
                    ! Contravariant Vscript
 
-                   gVscript(i,j,1) = elem(ie)%Dinv(1,1,i,j)*Vscript(i,j,1,k,ie) + &
-                        elem(ie)%Dinv(1,2,i,j)*Vscript(i,j,2,k,ie)
-                   gVscript(i,j,2) = elem(ie)%Dinv(2,1,i,j)*Vscript(i,j,1,k,ie) + &
-                        elem(ie)%Dinv(2,2,i,j)*Vscript(i,j,2,k,ie)
+                   gVscript(i,j,1) = elem(ie)%DinvJMD(i,j,1,1)*Vscript(i,j,1,k,ie) + &
+                        elem(ie)%DinvJMD(i,j,1,2)*Vscript(i,j,2,k,ie)
+                   gVscript(i,j,2) = elem(ie)%DinvJMD(i,j,2,1)*Vscript(i,j,1,k,ie) + &
+                        elem(ie)%DinvJMD(i,j,2,2)*Vscript(i,j,2,k,ie)
 
                    gVscript(i,j,1) = elem(ie)%metdet(i,j)*gVscript(i,j,1)
                    gVscript(i,j,2) = elem(ie)%metdet(i,j)*gVscript(i,j,2)
@@ -1346,8 +1346,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                 do i=1,np
                    gGr1 = grad_Gref(i,j,1,k)
                    gGr2 = grad_Gref(i,j,2,k)
-                   elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%Dinv(1,1,i,j)*gGr1 + elem(ie)%Dinv(2,1,i,j)*gGr2
-                   elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%Dinv(1,2,i,j)*gGr1 + elem(ie)%Dinv(2,2,i,j)*gGr2
+                   elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%DinvJMD(i,j,1,1)*gGr1 + elem(ie)%DinvJMD(i,j,2,1)*gGr2
+                   elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%DinvJMD(i,j,1,2)*gGr1 + elem(ie)%DinvJMD(i,j,2,2)*gGr2
                 end do
              end do
 
@@ -2628,7 +2628,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ==================================================
      ! vertically eulerian only needs grad(ps)
      if (rsplit==0) &
-          grad_ps = gradient_sphere(elem(ie)%state%ps_v(:,:,n0),deriv,elem(ie)%Dinv)
+          grad_ps = gradient_sphere(elem(ie)%state%ps_v(:,:,n0),deriv,elem(ie)%DinvJMD)
 
 
      ! ============================
@@ -2670,7 +2670,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            else
               p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
            endif
-           grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
+           grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%DinvJMD)
         endif
 
         rdp(:,:,k) = 1.0D0/dp(:,:,k)
@@ -2848,7 +2848,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! ================================================
         ! compute gradp term (ps/p)*(dp/dps)*T
         ! ================================================
-        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%T(:,:,k,n0),deriv,elem(ie)%Dinv)
+        vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%T(:,:,k,n0),deriv,elem(ie)%DinvJMD)
         do j=1,np
            do i=1,np
               v1     = elem(ie)%state%v(i,j,1,k,n0)
@@ -2859,7 +2859,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
         ! vtemp = grad ( E + PHI )
-        vtemp = gradient_sphere(Ephi(:,:),deriv,elem(ie)%Dinv)
+        vtemp = gradient_sphere(Ephi(:,:),deriv,elem(ie)%DinvJMD)
 
         do j=1,np
            do i=1,np
@@ -2944,7 +2944,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  Ephi(i,j)=0.5D0*( v1*v1 + v2*v2 )
               enddo
            enddo
-           vtemp = gradient_sphere(Ephi,deriv,elem(ie)%Dinv)
+           vtemp = gradient_sphere(Ephi,deriv,elem(ie)%DinvJMD)
            do j=1,np
               do i=1,np
                  ! dp/dn u dot grad(E)
@@ -2964,7 +2964,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
            ! vtemp = grad_phi(:,:,k)
-           vtemp = gradient_sphere(phi(:,:,k),deriv,elem(ie)%Dinv)
+           vtemp = gradient_sphere(phi(:,:,k),deriv,elem(ie)%DinvJMD)
            do j=1,np
               do i=1,np
                  v1     = elem(ie)%state%v(i,j,1,k,n0)
@@ -3017,7 +3017,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               enddo
            enddo
 
-           vtemp(:,:,:) = gradient_sphere(elem(ie)%state%phis(:,:),deriv,elem(ie)%Dinv)
+           vtemp(:,:,:) = gradient_sphere(elem(ie)%state%phis(:,:),deriv,elem(ie)%DinvJMD)
            do j=1,np
               do i=1,np
                  v1     = elem(ie)%state%v(i,j,1,k,n0)
@@ -3027,7 +3027,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               enddo
            enddo
 
-           vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%T(:,:,k,n0),deriv,elem(ie)%Dinv)
+           vtemp(:,:,:)   = gradient_sphere(elem(ie)%state%T(:,:,k,n0),deriv,elem(ie)%DinvJMD)
            do j=1,np
               do i=1,np
                  v1     = elem(ie)%state%v(i,j,1,k,n0)

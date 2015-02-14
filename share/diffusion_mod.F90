@@ -6,29 +6,50 @@ module diffusion_mod
   ! =======================
   use kinds,              only : real_kind
   ! =======================
-  use dimensions_mod,     only : nlev, np, qsize
+  use dimensions_mod,     only : nlev, np, qsize, nelemd
   ! =======================
   use derivative_mod,     only : gradient, vorticity, derivative_t, divergence
   ! =======================
   use parallel_mod, only : parallel_t
   ! =======================
-  use edge_mod, only : oldEdgeBuffer_t, oldedgevpack, oldedgerotate, oldedgevunpack, initedgebuffer, newEdgeBuffer_t, newedgevpack, newedgevunpack
+  use element_mod, only : element_t
+  ! =======================
+  use edge_mod, only : oldEdgeBuffer_t, initedgebuffer, newEdgeBuffer_t, &
+      newedgevpack, newedgevunpack, newedgerotate,EdgeDescriptor_t
   ! =======================
   private
   save
   public :: diffusion_init, prim_diffusion, scalar_diffusion
-  type (oldEdgeBuffer_t)  :: edgeS1, edgeS2
-  type (oldEdgeBuffer_t) :: edge3
-  type (oldEdgeBuffer_t) :: edge4
+  type (newEdgeBuffer_t)  :: edgeS1, edgeS2
+  type (newEdgeBuffer_t) :: edge3
+  type (newEdgeBuffer_t) :: edge4
 
 contains
-  subroutine diffusion_init(par)
-    type(parallel_t) :: par
+  subroutine diffusion_init(par,elem)
+     
+    implicit none
+    type (parallel_t) :: par
+    type (element_t) :: elem(:)
 
-       call initEdgeBuffer(par,edgeS1,qsize*nlev)
-       call initEdgeBuffer(par,edgeS2,2*qsize*nlev)
-       call initEdgeBuffer(par,edge3, 3*nlev)
-       call initEdgeBuffer(par,edge4, 4*nlev)
+    ! local 
+    type (EdgeDescriptor_t), allocatable :: desc(:)
+    integer :: ie
+
+    allocate(desc(nelemd))
+    do ie=1,nelemd
+       desc(ie) = elem(ie)%desc
+    enddo
+   
+    call initEdgeBuffer(par,edgeS1,desc,qsize*nlev)
+!JMD    print *,'diffusion_init: after initEdgeBuffer(edgeS1)'
+    call initEdgeBuffer(par,edgeS2,desc,2*qsize*nlev)
+!JMD    print *,'diffusion_init: after initEdgeBuffer(edgeS2)'
+    call initEdgeBuffer(par,edge3,desc, 3*nlev)
+!JMD    print *,'diffusion_init: after initEdgeBuffer(edge3)'
+    call initEdgeBuffer(par,edge4,desc, 4*nlev)
+!JMD    print *,'diffusion_init: after initEdgeBuffer(edge4)'
+
+    deallocate(desc)
 
   end subroutine diffusion_init
 
@@ -88,8 +109,8 @@ contains
 
        mp       => elem(ie)%mp
        rmp      => elem(ie)%rmp
-       met      => elem(ie)%met
-       metinv   => elem(ie)%metinv
+       met      => elem(ie)%metJMD
+       metinv   => elem(ie)%metinvJMD
        metdet   => elem(ie)%metdet
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
 
@@ -102,18 +123,18 @@ contains
 
           do j=1,np
              do i=1,np
-!                 grad_T_np1(i,j,1,k,ie) = mp(i,j)*(metinv(1,1,i,j)*grad_tmp(i,j,1)+metinv(1,2,i,j)*grad_tmp(i,j,2))
-!                 grad_T_np1(i,j,2,k,ie) = mp(i,j)*(metinv(2,1,i,j)*grad_tmp(i,j,1)+metinv(2,2,i,j)*grad_tmp(i,j,2))
+!                 grad_T_np1(i,j,1,k,ie) = mp(i,j)*(metinv(i,j,1,1)*grad_tmp(i,j,1)+metinv(i,j,1,2)*grad_tmp(i,j,2))
+!                 grad_T_np1(i,j,2,k,ie) = mp(i,j)*(metinv(i,j,2,1)*grad_tmp(i,j,1)+metinv(i,j,2,2)*grad_tmp(i,j,2))
 ! Map grad_tmp to lat-lon instead of rotating it
-                 grad_T_np1(i,j,1,k,ie) = mp(i,j)*(elem(ie)%Dinv(1,1,i,j)*grad_tmp(i,j,1)+elem(ie)%Dinv(2,1,i,j)*grad_tmp(i,j,2))
-                 grad_T_np1(i,j,2,k,ie) = mp(i,j)*(elem(ie)%Dinv(1,2,i,j)*grad_tmp(i,j,1)+elem(ie)%Dinv(2,2,i,j)*grad_tmp(i,j,2))
+                 grad_T_np1(i,j,1,k,ie) = mp(i,j)*(elem(ie)%DinvJMD(i,j,1,1)*grad_tmp(i,j,1)+elem(ie)%DinvJMD(i,j,2,1)*grad_tmp(i,j,2))
+                 grad_T_np1(i,j,2,k,ie) = mp(i,j)*(elem(ie)%DinvJMD(i,j,1,2)*grad_tmp(i,j,1)+elem(ie)%DinvJMD(i,j,2,2)*grad_tmp(i,j,2))
                 v1     = elem(ie)%state%v(i,j,1,k,np1)
                 v2     = elem(ie)%state%v(i,j,2,k,np1)
 
-                gp(i,j,1) = metdet(i,j)*(elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2)
-                gp(i,j,2) = metdet(i,j)*(elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2)
-                vco(i,j,1) = elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(2,1,i,j)*v2
-                vco(i,j,2) = elem(ie)%D(1,2,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2
+                gp(i,j,1) = metdet(i,j)*(elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2)
+                gp(i,j,2) = metdet(i,j)*(elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2)
+                vco(i,j,1) = elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,2,1)*v2
+                vco(i,j,2) = elem(ie)%DJMD(i,j,1,2)*v1 + elem(ie)%DJMD(i,j,2,2)*v2
              end do
           end do
 
@@ -130,16 +151,14 @@ contains
        end do
 
        kptr=0
-       call oldedgeVpack(edge4,grad_T_np1(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+       call newedgeVpack(edge4,grad_T_np1(1,1,1,1,ie),2*nlev,kptr,ie)
 
        kptr=2*nlev
-       call oldedgeVpack(edge4,zeta_np1(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call newedgeVpack(edge4,zeta_np1(1,1,1,ie),nlev,kptr,ie)
 
        kptr=3*nlev
-       call oldedgeVpack(edge4,div_np1(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call newedgeVpack(edge4,div_np1(1,1,1,ie),nlev,kptr,ie)
 
-!       kptr=0
-!       call oldedgerotate(edge4,2*nlev,kptr,elem(ie)%desc)
 
     end do
 
@@ -150,19 +169,19 @@ contains
        mp       => elem(ie)%mp
        rmp      => elem(ie)%rmp
        metdet   => elem(ie)%metdet
-       metinv   => elem(ie)%metinv
+       metinv   => elem(ie)%metinvJMD
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
-       D        => elem(ie)%D
-       Dinv     => elem(ie)%Dinv
+       D        => elem(ie)%DJMD
+       Dinv     => elem(ie)%DinvJMD
 
        kptr=0
-       call oldedgeVunpack(edge4, grad_T_np1(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge4, grad_T_np1(1,1,1,1,ie), 2*nlev, kptr, ie)
 
        kptr=2*nlev
-       call oldedgeVunpack(edge4, zeta_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge4, zeta_np1(1,1,1,ie), nlev, kptr, ie)
 
        kptr=3*nlev
-       call oldedgeVunpack(edge4, div_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge4, div_np1(1,1,1,ie), nlev, kptr, ie)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -194,13 +213,13 @@ contains
                 ! Compute contravariant gradient(T(n+1))
                 ! ==========================================
 
-!                grad_T_np1(i,j,1,k,ie) = metdet(i,j)*(metinv(1,1,i,j)*v1 + metinv(1,2,i,j)*v2)
-!                grad_T_np1(i,j,2,k,ie) = metdet(i,j)*(metinv(2,1,i,j)*v1 + metinv(2,2,i,j)*v2)
+!                grad_T_np1(i,j,1,k,ie) = metdet(i,j)*(metinv(i,j,1,1)*v1 + metinv(i,j,1,2)*v2)
+!                grad_T_np1(i,j,2,k,ie) = metdet(i,j)*(metinv(i,j,2,1)*v1 + metinv(i,j,2,2)*v2)
                 grad_tmp(i,j,:) = grad_T_np1(i,j,:,k,ie)
                 grad_T_np1(i,j,1,k,ie) = metdet(i,j)*rmp(i,j)*&
-       (elem(ie)%Dinv(1,1,i,j)*grad_tmp(i,j,1)+elem(ie)%Dinv(1,2,i,j)*grad_tmp(i,j,2))
+       (elem(ie)%DinvJMD(i,j,1,1)*grad_tmp(i,j,1)+elem(ie)%DinvJMD(i,j,1,2)*grad_tmp(i,j,2))
                 grad_T_np1(i,j,2,k,ie) = metdet(i,j)*rmp(i,j)*&
-       (elem(ie)%Dinv(2,1,i,j)*grad_tmp(i,j,1)+elem(ie)%Dinv(2,2,i,j)*grad_tmp(i,j,2))
+       (elem(ie)%DinvJMD(i,j,2,1)*grad_tmp(i,j,1)+elem(ie)%DinvJMD(i,j,2,2)*grad_tmp(i,j,2))
                 !grad_T_np1(i,j,1,k,ie) = metdet(i,j)*rmp(i,j)*grad_T_np1(i,j,1,k,ie)
                 !grad_T_np1(i,j,2,k,ie) = metdet(i,j)*rmp(i,j)*grad_T_np1(i,j,2,k,ie)
 
@@ -225,8 +244,8 @@ contains
           do j=1,np
              do i=1,np
 
-                v2 = Dinv(1,1,i,j)*grad_zeta(i,j,1) + Dinv(2,1,i,j)*grad_zeta(i,j,2)
-                v1 = Dinv(1,2,i,j)*grad_zeta(i,j,1) + Dinv(2,2,i,j)*grad_zeta(i,j,2)
+                v2 = Dinv(i,j,1,1)*grad_zeta(i,j,1) + Dinv(i,j,2,1)*grad_zeta(i,j,2)
+                v1 = Dinv(i,j,1,2)*grad_zeta(i,j,1) + Dinv(i,j,2,2)*grad_zeta(i,j,2)
 
                 v2 = -v2
                 grad_zeta(i,j,1) = v1
@@ -234,8 +253,8 @@ contains
                 v1 = grad_div(i,j,1)
                 v2 = grad_div(i,j,2)
 
-                grad_div(i,j,1) = Dinv(1,1,i,j)*v1 + Dinv(2,1,i,j)*v2
-                grad_div(i,j,2) = Dinv(1,2,i,j)*v1 + Dinv(2,2,i,j)*v2
+                grad_div(i,j,1) = Dinv(i,j,1,1)*v1 + Dinv(i,j,2,1)*v2
+                grad_div(i,j,2) = Dinv(i,j,1,2)*v1 + Dinv(i,j,2,2)*v2
                 lap_v_np1(i,j,1,k,ie) = mp(i,j)*(grad_div(i,j,1) - grad_zeta(i,j,1))
                 lap_v_np1(i,j,2,k,ie) = mp(i,j)*(grad_div(i,j,2) - grad_zeta(i,j,2))
 
@@ -245,10 +264,10 @@ contains
        end do
 
        kptr=0
-       call oldedgeVpack(edge3, lap_v_np1(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+       call newedgeVpack(edge3, lap_v_np1(1,1,1,1,ie),2*nlev,kptr,ie)
 
        kptr=2*nlev
-       call oldedgeVpack(edge3, lap_T_np1(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call newedgeVpack(edge3, lap_T_np1(1,1,1,ie),nlev,kptr,ie)
 
     end do
 
@@ -261,10 +280,10 @@ contains
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
 
        kptr=0
-       call oldedgeVunpack(edge3, lap_v_np1(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge3, lap_v_np1(1,1,1,1,ie), 2*nlev, kptr, ie)
 
        kptr=2*nlev
-       call oldedgeVunpack(edge3, lap_T_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call newedgeVunpack(edge3, lap_T_np1(1,1,1,ie), nlev, kptr, ie)
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
@@ -343,7 +362,7 @@ contains
        do q=1,qsize
 
           mp       => elem(ie)%mp
-          metinv   => elem(ie)%metinv
+          metinv   => elem(ie)%metinvJMD
           metdet   => elem(ie)%metdet
 
 #if (defined COLUMN_OPENMP)
@@ -361,8 +380,8 @@ contains
                    v1 = mp(i,j)*grad_tmp(i,j,1)
                    v2 = mp(i,j)*grad_tmp(i,j,2)
 
-                   grad_Q_np1(i,j,1,k,q,ie) = metdet(i,j)*(metinv(1,1,i,j)*v1 + metinv(1,2,i,j)*v2)
-                   grad_Q_np1(i,j,2,k,q,ie) = metdet(i,j)*(metinv(2,1,i,j)*v1 + metinv(2,2,i,j)*v2)
+                   grad_Q_np1(i,j,1,k,q,ie) = metdet(i,j)*(metinv(i,j,1,1)*v1 + metinv(i,j,1,2)*v2)
+                   grad_Q_np1(i,j,2,k,q,ie) = metdet(i,j)*(metinv(i,j,2,1)*v1 + metinv(i,j,2,2)*v2)
 
                 end do
              end do
@@ -371,9 +390,9 @@ contains
 
        end do
        
-       call oldedgeVpack(edgeS2,grad_Q_np1(:,:,:,:,:,ie),2*nlev*qsize,0,elem(ie)%desc)
+       call newedgeVpack(edgeS2,grad_Q_np1(:,:,:,:,:,ie),2*nlev*qsize,0,ie)
 
-       call oldedgerotate(edgeS2,2*nlev*qsize,0,elem(ie)%desc)
+       call newedgerotate(edgeS2,2*nlev*qsize,0,elem(ie)%desc)
 
     end do
 
@@ -384,12 +403,12 @@ contains
        mp       => elem(ie)%mp
        rmp      => elem(ie)%rmp
        metdet   => elem(ie)%metdet
-       metinv   => elem(ie)%metinv
+       metinv   => elem(ie)%metinvJMD
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
-       D        => elem(ie)%D
-       Dinv     => elem(ie)%Dinv
+       D        => elem(ie)%DJMD
+       Dinv     => elem(ie)%DinvJMD
        
-       call oldedgeVunpack(edgeS2, grad_Q_np1(:,:,:,:,:,ie), 2*nlev*qsize, 0, elem(ie)%desc)
+       call newedgeVunpack(edgeS2, grad_Q_np1(:,:,:,:,:,ie), 2*nlev*qsize, 0, ie)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -408,8 +427,8 @@ contains
                    !                v1 = rmp(i,j)*grad_Q_np1(i,j,1,k,ie)
                    !                v2 = rmp(i,j)*grad_Q_np1(i,j,2,k,ie)
 
-                   !                grad_Q_np1(i,j,1,k,ie) = metdet(i,j)*(metinv(1,1,i,j)*v1 + metinv(1,2,i,j)*v2)
-                   !                grad_Q_np1(i,j,2,k,ie) = metdet(i,j)*(metinv(2,1,i,j)*v1 + metinv(2,2,i,j)*v2)
+                   !                grad_Q_np1(i,j,1,k,ie) = metdet(i,j)*(metinv(i,j,1,1)*v1 + metinv(i,j,1,2)*v2)
+                   !                grad_Q_np1(i,j,2,k,ie) = metdet(i,j)*(metinv(i,j,2,1)*v1 + metinv(i,j,2,2)*v2)
 
                    grad_Q_np1(i,j,1,k,q,ie) = rmp(i,j)*grad_Q_np1(i,j,1,k,q,ie)
                    grad_Q_np1(i,j,2,k,q,ie) = rmp(i,j)*grad_Q_np1(i,j,2,k,q,ie)
@@ -429,7 +448,7 @@ contains
 
        end do
 
-       call oldedgeVpack(edgeS1, lap_Q_np1(1,1,1,1,ie),nlev*qsize, 0,elem(ie)%desc)
+       call newedgeVpack(edgeS1, lap_Q_np1(1,1,1,1,ie),nlev*qsize, 0,ie)
 
     end do
     call bndry_exchangeV(hybrid,edgeS1)
@@ -440,7 +459,7 @@ contains
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
 
        
-       call oldedgeVunpack(edgeS1, lap_Q_np1(1,1,1,1,ie), nlev*qsize, 0, elem(ie)%desc)
+       call newedgeVunpack(edgeS1, lap_Q_np1(1,1,1,1,ie), nlev*qsize, 0, ie)
 
        do q=1,qsize
 #if (defined COLUMN_OPENMP)

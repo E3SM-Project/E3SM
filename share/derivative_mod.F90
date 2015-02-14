@@ -1807,7 +1807,7 @@ endif
 !
 
     type (derivative_t), intent(in) :: deriv
-    real(kind=real_kind), intent(in), dimension(2,2,np,np) :: Dinv
+    real(kind=real_kind), intent(in), dimension(np,np,2,2) :: Dinv
     real(kind=real_kind), intent(in) :: s(np,np)
 
     real(kind=real_kind) :: ds(np,np,2)
@@ -1835,8 +1835,8 @@ endif
     ! convert covarient to latlon
     do j=1,np
        do i=1,np
-          ds(i,j,1)=Dinv(1,1,i,j)*v1(i,j) + Dinv(2,1,i,j)*v2(i,j)
-          ds(i,j,2)=Dinv(1,2,i,j)*v1(i,j) + Dinv(2,2,i,j)*v2(i,j)
+          ds(i,j,1)=Dinv(i,j,1,1)*v1(i,j) + Dinv(i,j,2,1)*v2(i,j)
+          ds(i,j,2)=Dinv(i,j,1,2)*v1(i,j) + Dinv(i,j,2,2)*v2(i,j)
        enddo
     enddo
 
@@ -1898,8 +1898,8 @@ endif
     ! convert contra -> latlon 
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(1,1,i,j)*dscontra(i,j,1) + elem%D(1,2,i,j)*dscontra(i,j,2))
-          ds(i,j,2)=(elem%D(2,1,i,j)*dscontra(i,j,1) + elem%D(2,2,i,j)*dscontra(i,j,2))
+          ds(i,j,1)=(elem%DJMD(i,j,1,1)*dscontra(i,j,1) + elem%DJMD(i,j,1,2)*dscontra(i,j,2))
+          ds(i,j,2)=(elem%DJMD(i,j,2,1)*dscontra(i,j,1) + elem%DJMD(i,j,2,2)*dscontra(i,j,2))
        enddo
     enddo
     end function curl_sphere_wk_testcov
@@ -1949,13 +1949,13 @@ endif
        do m=1,np
           do j=1,np
              dscontra(m,n,1)=dscontra(m,n,1)-(&
-                  (elem%mp(j,n)*elem%metinv(1,1,m,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
-                  (elem%mp(m,j)*elem%metinv(2,1,m,n)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
+                  (elem%mp(j,n)*elem%metinvJMD(m,n,1,1)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
+                  (elem%mp(m,j)*elem%metinvJMD(m,n,2,1)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
                   ) *rrearth
 
              dscontra(m,n,2)=dscontra(m,n,2)-(&
-                  (elem%mp(j,n)*elem%metinv(1,2,m,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
-                  (elem%mp(m,j)*elem%metinv(2,2,m,n)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
+                  (elem%mp(j,n)*elem%metinvJMD(m,n,1,2)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
+                  (elem%mp(m,j)*elem%metinvJMD(m,n,2,2)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
                   ) *rrearth
           enddo
        enddo
@@ -1963,8 +1963,8 @@ endif
     ! convert contra -> latlon 
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(1,1,i,j)*dscontra(i,j,1) + elem%D(1,2,i,j)*dscontra(i,j,2))
-          ds(i,j,2)=(elem%D(2,1,i,j)*dscontra(i,j,1) + elem%D(2,2,i,j)*dscontra(i,j,2))
+          ds(i,j,1)=(elem%DJMD(i,j,1,1)*dscontra(i,j,1) + elem%DJMD(i,j,1,2)*dscontra(i,j,2))
+          ds(i,j,2)=(elem%DJMD(i,j,2,1)*dscontra(i,j,1) + elem%DJMD(i,j,2,2)*dscontra(i,j,2))
        enddo
     enddo
 
@@ -2025,8 +2025,8 @@ endif
           vcontra(m,n,1)=1
 
           ! contra->latlon:
-          v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
-          v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
+          v(:,:,1)=(elem%DJMD(:,:,1,1)*vcontra(:,:,1) + elem%DJMD(:,:,1,2)*vcontra(:,:,2))
+          v(:,:,2)=(elem%DJMD(:,:,2,1)*vcontra(:,:,1) + elem%DJMD(:,:,2,2)*vcontra(:,:,2))
 
 
           ! compute div(metdet phivec) * s
@@ -2043,8 +2043,8 @@ endif
           vcontra(m,n,2)=1
 
           ! contra->latlon:
-          v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
-          v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
+          v(:,:,1)=(elem%DJMD(:,:,1,1)*vcontra(:,:,1) + elem%DJMD(:,:,1,2)*vcontra(:,:,2))
+          v(:,:,2)=(elem%DJMD(:,:,2,1)*vcontra(:,:,1) + elem%DJMD(:,:,2,2)*vcontra(:,:,2))
 
           ! compute div(metdet phivec) * s
           div = divergence_sphere(v,deriv,elem)
@@ -2065,8 +2065,8 @@ endif
     dscov=ds
 #endif
     ! convert covariant -> latlon 
-    ds(:,:,1)=elem%Dinv(1,1,:,:)*dscov(:,:,1) + elem%Dinv(2,1,:,:)*dscov(:,:,2)
-    ds(:,:,2)=elem%Dinv(1,2,:,:)*dscov(:,:,1) + elem%Dinv(2,2,:,:)*dscov(:,:,2)
+    ds(:,:,1)=elem%DinvJMD(:,:,1,1)*dscov(:,:,1) + elem%DinvJMD(:,:,2,1)*dscov(:,:,2)
+    ds(:,:,2)=elem%DinvJMD(:,:,1,2)*dscov(:,:,1) + elem%DinvJMD(:,:,2,2)*dscov(:,:,2)
 
     end function gradient_sphere_wk_testcontra
 
@@ -2101,7 +2101,7 @@ endif
     do component=1,3
        ! Dot u with the gradient of each component
        dum_cart(:,:,component) = sum( u(:,:,:) * &
-            gradient_sphere(dum_cart(:,:,component),deriv,elem%Dinv) ,3)
+            gradient_sphere(dum_cart(:,:,component),deriv,elem%DinvJMD) ,3)
     enddo
 
     ! cartesian -> latlon
@@ -2155,8 +2155,8 @@ endif
     ! convert contra -> latlon *and* divide by jacobian
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(1,1,i,j)*v1(i,j) + elem%D(1,2,i,j)*v2(i,j))/elem%metdet(i,j)
-          ds(i,j,2)= (elem%D(2,1,i,j)*v1(i,j) + elem%D(2,2,i,j)*v2(i,j))/elem%metdet(i,j)
+          ds(i,j,1)=(elem%DJMD(i,j,1,1)*v1(i,j) + elem%DJMD(i,j,1,2)*v2(i,j))/elem%metdet(i,j)
+          ds(i,j,2)= (elem%DJMD(i,j,2,1)*v1(i,j) + elem%DJMD(i,j,2,2)*v2(i,j))/elem%metdet(i,j)
        enddo
     enddo
  
@@ -2196,8 +2196,8 @@ endif
     ! latlon- > contra
     do j=1,np
        do i=1,np
-          vtemp(i,j,1)=(elem%Dinv(1,1,i,j)*v(i,j,1) + elem%Dinv(1,2,i,j)*v(i,j,2))
-          vtemp(i,j,2)=(elem%Dinv(2,1,i,j)*v(i,j,1) + elem%Dinv(2,2,i,j)*v(i,j,2))
+          vtemp(i,j,1)=(elem%DinvJMD(i,j,1,1)*v(i,j,1) + elem%DinvJMD(i,j,1,2)*v(i,j,2))
+          vtemp(i,j,2)=(elem%DinvJMD(i,j,2,1)*v(i,j,1) + elem%DinvJMD(i,j,2,2)*v(i,j,2))
        enddo
     enddo
 
@@ -2219,8 +2219,8 @@ endif
           ! latlon -> covarient
           do j=1,np
              do i=1,np
-                gtemp(i,j,1)=(elem%D(1,1,i,j)*ggtemp(i,j,1) + elem%D(2,1,i,j)*ggtemp(i,j,2))
-                gtemp(i,j,2)=(elem%D(1,2,i,j)*ggtemp(i,j,1) + elem%D(2,2,i,j)*ggtemp(i,j,2))
+                gtemp(i,j,1)=(elem%DJMD(i,j,1,1)*ggtemp(i,j,1) + elem%DJMD(i,j,2,1)*ggtemp(i,j,2))
+                gtemp(i,j,2)=(elem%DJMD(i,j,1,2)*ggtemp(i,j,1) + elem%DJMD(i,j,2,2)*ggtemp(i,j,2))
              enddo
           enddo
 ! grad(psi) dot v:
@@ -2261,8 +2261,8 @@ endif
     ! latlon->contra
     do j=1,np
        do i=1,np
-          ucontra(i,j,1)=(elem%Dinv(1,1,i,j)*v(i,j,1) + elem%Dinv(1,2,i,j)*v(i,j,2))
-          ucontra(i,j,2)=(elem%Dinv(2,1,i,j)*v(i,j,1) + elem%Dinv(2,2,i,j)*v(i,j,2))
+          ucontra(i,j,1)=(elem%DinvJMD(i,j,1,1)*v(i,j,1) + elem%DinvJMD(i,j,1,2)*v(i,j,2))
+          ucontra(i,j,2)=(elem%DinvJMD(i,j,2,1)*v(i,j,1) + elem%DinvJMD(i,j,2,2)*v(i,j,2))
        enddo
     enddo
 
@@ -2325,8 +2325,8 @@ endif
        ! latlon->contra
        do j=1,np
           do i=1,np
-             ucontra(i,j,1)=(elem%Dinv(1,1,i,j)*v(i,j,1) + elem%Dinv(1,2,i,j)*v(i,j,2))
-             ucontra(i,j,2)=(elem%Dinv(2,1,i,j)*v(i,j,1) + elem%Dinv(2,2,i,j)*v(i,j,2))
+             ucontra(i,j,1)=(elem%DinvJMD(i,j,1,1)*v(i,j,1) + elem%DinvJMD(i,j,1,2)*v(i,j,2))
+             ucontra(i,j,2)=(elem%DinvJMD(i,j,2,1)*v(i,j,1) + elem%DinvJMD(i,j,2,2)*v(i,j,2))
           enddo
        enddo
     endif
@@ -2414,8 +2414,8 @@ endif
     ! convert to covariant form
     do j=1,np
        do i=1,np
-          vco(i,j,1)=(elem%D(1,1,i,j)*v(i,j,1) + elem%D(2,1,i,j)*v(i,j,2))
-          vco(i,j,2)=(elem%D(1,2,i,j)*v(i,j,1) + elem%D(2,2,i,j)*v(i,j,2))
+          vco(i,j,1)=(elem%DJMD(i,j,1,1)*v(i,j,1) + elem%DJMD(i,j,2,1)*v(i,j,2))
+          vco(i,j,2)=(elem%DJMD(i,j,1,2)*v(i,j,1) + elem%DJMD(i,j,2,2)*v(i,j,2))
        enddo
     enddo
 
@@ -2470,8 +2470,8 @@ endif
                                                                     
       do j=1,np
          do i=1,np
-            vco(i,j,1)=(elem%D(1,1,i,j)*v(i,j,1) + elem%D(2,1,i,j)*v(i,j,2))
-            vco(i,j,2)=(elem%D(1,2,i,j)*v(i,j,1) + elem%D(2,2,i,j)*v(i,j,2))
+            vco(i,j,1)=(elem%DJMD(i,j,1,1)*v(i,j,1) + elem%DJMD(i,j,2,1)*v(i,j,2))
+            vco(i,j,2)=(elem%DJMD(i,j,1,2)*v(i,j,1) + elem%DJMD(i,j,2,2)*v(i,j,2))
 
 
          enddo
@@ -2529,8 +2529,8 @@ endif
     ! convert to contra variant form and multiply by g
     do j=1,np
        do i=1,np
-          gv(i,j,1)=elem%metdet(i,j)*(elem%Dinv(1,1,i,j)*v(i,j,1) + elem%Dinv(1,2,i,j)*v(i,j,2))
-          gv(i,j,2)=elem%metdet(i,j)*(elem%Dinv(2,1,i,j)*v(i,j,1) + elem%Dinv(2,2,i,j)*v(i,j,2))
+          gv(i,j,1)=elem%metdet(i,j)*(elem%DinvJMD(i,j,1,1)*v(i,j,1) + elem%DinvJMD(i,j,1,2)*v(i,j,2))
+          gv(i,j,2)=elem%metdet(i,j)*(elem%DinvJMD(i,j,2,1)*v(i,j,1) + elem%DinvJMD(i,j,2,2)*v(i,j,2))
        enddo
     enddo
 
@@ -2575,7 +2575,7 @@ endif
     ! Local
     real(kind=real_kind) :: grads(np,np,2), oldgrads(np,np,2)
 
-    grads=gradient_sphere(s,deriv,elem%Dinv)
+    grads=gradient_sphere(s,deriv,elem%DinvJMD)
  
     if (var_coef) then
        if (hypervis_power/=0 ) then
@@ -2587,8 +2587,8 @@ endif
           oldgrads=grads
           do j=1,np
              do i=1,np
-                grads(i,j,1) = sum(oldgrads(i,j,:)*elem%tensorVisc(1,:,i,j))
-                grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorVisc(2,:,i,j))
+                grads(i,j,1) = sum(oldgrads(i,j,:)*elem%tensorViscJMD(i,j,1,:))
+                grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorViscJMD(i,j,2,:))
              end do
           end do
        else

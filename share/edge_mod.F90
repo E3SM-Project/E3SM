@@ -319,8 +319,9 @@ contains
        tmp_ptr(1:nlyr,1:nbuf) => buf_ptr
        edge%buf => tmp_ptr
 #else
-       ! call F77 routine which will reshape array.
-       call remap_2D_ptr_buf(edge,nlyr,nbuf,buf_ptr)
+!JMD Comment this out for now
+!       ! call F77 routine which will reshape array.
+!       call remap_2D_ptr_buf(edge,nlyr,nbuf,buf_ptr)
 #endif
     else
        allocate(edge%buf    (nlyr,nbuf))
@@ -339,7 +340,8 @@ contains
        edge%receive => tmp_ptr
 #else
        ! call F77 routine which will reshape array.
-       call remap_2D_ptr_receive(edge,nlyr,nbuf,receive_ptr)
+!JMD comment this out for now.
+!       call remap_2D_ptr_receive(edge,nlyr,nbuf,receive_ptr)
 #endif
     else
        allocate(edge%receive(nlyr,nbuf))
@@ -5714,6 +5716,7 @@ end subroutine remap_2D_ptr_buf
 subroutine remap_2D_ptr_receive(edge,nlyr,nbuf,src_array)
 use edge_mod, only       : oldEdgeBuffer_t ! _EXTERNAL                                                   
 use kinds, only          : real_kind
+implicit none 
 ! input                                                                                               
 type (oldEdgeBuffer_t) :: edge
 integer :: nlyr,nbuf
