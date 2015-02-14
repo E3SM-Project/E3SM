@@ -689,12 +689,13 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _diri
   allToAll(fCellToVertexID, sendCellsList_F, recvCellsList_F);
 
   nVertices = vertexToFCell.size();
-  int lVertexColumnShift = (Ordering == 1) ? 1 : nVertices;
+  int vertexColumnShift = (Ordering == 1) ? 1 : nGlobalVertices;
   int vertexLayerShift = (Ordering == 0) ? 1 : nLayers + 1;
 
 
   std::cout << "\n nvertices: " << nVertices << " " << nGlobalVertices << "\n"
       << std::endl;
+
   indexToVertexID.resize(nVertices);
   dirichletNodesIDs.reserve(nVertices); //need to improve storage efficiency
   for (int index = 0; index < nVertices; index++) {
@@ -704,7 +705,7 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _diri
     {
       int imask_F = il+(nLayers+1)*fCell;
       if(dirichletCellsMask_F[imask_F]!=0)
-        dirichletNodesIDs.push_back((nLayers-il)*lVertexColumnShift+indexToVertexID[index]*vertexLayerShift);
+        dirichletNodesIDs.push_back((nLayers-il)*vertexColumnShift+indexToVertexID[index]*vertexLayerShift);
     }
   }
 
