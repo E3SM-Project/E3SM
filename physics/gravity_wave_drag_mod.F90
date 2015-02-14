@@ -56,19 +56,19 @@ module gravity_wave_drag_mod
           v1 = elemin%state%v(i,j,1,k,nm1)
           v2 = elemin%state%v(i,j,2,k,nm1)
 
-          U  = v1*elemin%D(1,1,i,j) + v2*elemin%D(1,2,i,j)
-          V  = v1*elemin%D(2,1,i,j) + v2*elemin%D(2,2,i,j)
+          U  = v1*elemin%DJMD(i,j,1,1) + v2*elemin%DJMD(i,j,1,2)
+          V  = v1*elemin%DJMD(i,j,2,1) + v2*elemin%DJMD(i,j,2,2)
 
           UGWdrag = U*2.0_real_kind*dt*Rayleigh(k)
           VGWdrag = V*2.0_real_kind*dt*Rayleigh(k)
 
           elemin%derived%FM(i,j,1,k,nm1) = &
             elemin%derived%FM(i,j,1,k,nm1) - &
-            (UGWdrag*elemin%Dinv(1,1,i,j) + VGWdrag*elemin%Dinv(1,2,i,j))
+            (UGWdrag*elemin%DinvJMD(i,j,1,1) + VGWdrag*elemin%DinvJMD(i,j,1,2))
 
           elemin%derived%FM(i,j,2,k,nm1) = &
             elemin%derived%FM(i,j,2,k,nm1) - &
-            (UGWdrag*elemin%Dinv(2,1,i,j) + VGWdrag*elemin%Dinv(2,2,i,j))
+            (UGWdrag*elemin%DinvJMD(i,j,2,1) + VGWdrag*elemin%DinvJMD(i,j,2,2))
         enddo
       enddo
     enddo

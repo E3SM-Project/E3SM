@@ -526,7 +526,9 @@ contains
     allocate(cg(0:n_domains-1))
     call prim_advance_init(par,elem,integration)
     call Prim_Advec_Init1(par, elem,n_domains)
-    call diffusion_init(par)
+    print *,'IAM: ',iam, ' before call to diffusion_init'
+    call diffusion_init(par,elem)
+    print *,'IAM: ',iam, ' After call to diffusion_init'
     if (ntrac>0) then
 #if defined(_SPELT)
       call spelt_init1(par)

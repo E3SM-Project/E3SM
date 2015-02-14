@@ -322,8 +322,8 @@ contains
              do i=1,np
                 v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
                 v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
-                v(i,j,1)=elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(1,2,i,j)*v2   ! contra->latlon
-                v(i,j,2)=elem(ie)%D(2,1,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2   ! contra->latlon
+                v(i,j,1)=elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,1,2)*v2   ! contra->latlon
+                v(i,j,2)=elem(ie)%DJMD(i,j,2,1)*v1 + elem(ie)%DJMD(i,j,2,2)*v2   ! contra->latlon
              enddo
           enddo
        enddo
@@ -344,8 +344,8 @@ contains
              do i=1,np
                 v1=v(i,j,1)
                 v2=v(i,j,2)
-                v(i,j,1) = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-                v(i,j,2) = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+                v(i,j,1) = elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2
+                v(i,j,2) = elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2
              enddo
           enddo
        enddo
@@ -359,8 +359,8 @@ contains
              k1=1
              v1     = elem(ie)%state%v(i,j,1,k1,n0)   ! contra
              v2     = elem(ie)%state%v(i,j,2,k1,n0)   ! contra
-             vlatlon(i,j,1) =elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(1,2,i,j)*v2   ! contra->latlon
-             vlatlon(i,j,2) =elem(ie)%D(2,1,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2   ! contra->latlon
+             vlatlon(i,j,1) =elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,1,2)*v2   ! contra->latlon
+             vlatlon(i,j,2) =elem(ie)%DJMD(i,j,2,1)*v1 + elem(ie)%DJMD(i,j,2,2)*v2   ! contra->latlon
              
              E(i,j) = 0.5D0*(vlatlon(i,j,1)**2 + vlatlon(i,j,2)**2) 
              hstar         = (elem(ie)%state%p(i,j,1,n0) + pmean)/g
@@ -609,7 +609,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
           
-          elem(ie)%state%v(:,:,:,k,n0)=tc1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
+          elem(ie)%state%v(:,:,:,k,n0)=tc1_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -632,7 +632,7 @@ contains
   function tc1_velocity(sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -673,8 +673,8 @@ contains
              ! using the D^-T mapping matrix (see Loft notes for details)
              ! =====================================================
 
-             v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-             v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+             v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+             v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
           end do
        end do
     end do
@@ -1168,7 +1168,7 @@ contains
 
     integer, intent(in)                  :: npts
     type (spherical_polar_t), intent(in) :: sphere(npts,npts)
-    real (kind=real_kind), intent(in)    :: D(2,2,npts,npts)
+    real (kind=real_kind), intent(in)    :: D(npts,npts,2,2)
     real (kind=real_kind), intent(in)    :: latc,lonc
     real (kind=real_kind)                :: grad(npts,npts,2)
 
@@ -1208,8 +1208,8 @@ contains
              grad(i,j,2) = 0.0D0
           end if
 
-          grad1=D(1,1,i,j)*grad(i,j,1) + D(1,2,i,j)*grad(i,j,2)     ! assumes input is DV = v_i 
-          grad2=D(2,1,i,j)*grad(i,j,1) + D(2,2,i,j)*grad(i,j,2)     !  "               "     "
+          grad1=D(i,j,1,1)*grad(i,j,1) + D(i,j,1,2)*grad(i,j,2)     ! assumes input is DV = v_i 
+          grad2=D(i,j,2,1)*grad(i,j,1) + D(i,j,2,2)*grad(i,j,2)     !  "               "     "
 
           grad(i,j,1)=grad1
           grad(i,j,2)=grad2
@@ -1256,7 +1256,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=tc1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)  ! tc2 vel same as tc1
+          elem(ie)%state%v(:,:,:,k,n0)=tc1_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)  ! tc2 vel same as tc1
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -1497,7 +1497,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=tc5_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)  
+          elem(ie)%state%v(:,:,:,k,n0)=tc5_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)  
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -1520,7 +1520,7 @@ contains
   function tc5_velocity(sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -1557,8 +1557,8 @@ contains
           ! using the D mapping matrix (see Loft notes for details)
           ! =====================================================
 
-          v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-          v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+          v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
        end do
     end do
 
@@ -1927,8 +1927,8 @@ contains
              v1     = elem(ie)%state%v(i,j,1,1,n0)
              v2     = elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%met(1,1,i,j)*v1 + elem(ie)%met(1,2,i,j)*v2
-             vco(i,j,2) = elem(ie)%met(2,1,i,j)*v1 + elem(ie)%met(2,2,i,j)*v2
+             vco(i,j,1) = elem(ie)%metJMD(i,j,1,1)*v1 + elem(ie)%metJMD(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%metJMD(i,j,2,1)*v1 + elem(ie)%metJMD(i,j,2,2)*v2
 
              gv(i,j,1) = elem(ie)%metdet(i,j)*v1
              gv(i,j,2) = elem(ie)%metdet(i,j)*v2
@@ -1978,8 +1978,8 @@ contains
              v1     = elem(ie)%state%v(i,j,1,1,n0)
              v2     = elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%met(1,1,i,j)*v1 + elem(ie)%met(1,2,i,j)*v2
-             vco(i,j,2) = elem(ie)%met(2,1,i,j)*v1 + elem(ie)%met(2,2,i,j)*v2
+             vco(i,j,1) = elem(ie)%metJMD(i,j,1,1)*v1 + elem(ie)%metJMD(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%metJMD(i,j,2,1)*v1 + elem(ie)%metJMD(i,j,2,2)*v2
              E(i,j) = 0.5D0*( vco(i,j,1)*v1 + vco(i,j,2)*v2 )
 
           end do
@@ -2079,7 +2079,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=tc6_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
+          elem(ie)%state%v(:,:,:,k,n0)=tc6_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -2146,7 +2146,7 @@ contains
   function tc6_velocity(sphere,D) result(v) 
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -2174,8 +2174,8 @@ contains
           ! using the D mapping matrix (see Loft notes for details)
           ! =====================================================
 
-          v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-          v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+          v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 
        end do
     end do
@@ -2348,7 +2348,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=tc8_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
+          elem(ie)%state%v(:,:,:,k,n0)=tc8_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -2514,7 +2514,7 @@ contains
   function tc8_velocity(sphere,D) result(v) 
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -2542,8 +2542,8 @@ contains
           ! using the D^-T mapping matrix (see Loft notes for details)
           ! =====================================================
 
-          v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-          v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+          v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 
        end do
     end do
@@ -2585,7 +2585,7 @@ contains
              end do
           end do
 
-          elem(ie)%state%v(:,:,:,k,n0)=vortex_velocity(0.0D0,elem(ie)%spherep(:,:),elem(ie)%Dinv)
+          elem(ie)%state%v(:,:,:,k,n0)=vortex_velocity(0.0D0,elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=elem(ie)%state%v(:,:,:,k,n0)
 
@@ -2627,7 +2627,7 @@ contains
   function vortex_velocity(t,sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: t,D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: t,D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -2675,8 +2675,8 @@ contains
                 V1=0.0D0
                 V2=0.0D0
              endif
-             v(i,j,1)= (V1+phiuv(2))*D(1,1,i,j) + (V2+phiuv(3))*D(1,2,i,j)
-             v(i,j,2)= (V1+phiuv(2))*D(2,1,i,j) + (V2+phiuv(3))*D(2,2,i,j)
+             v(i,j,1)= (V1+phiuv(2))*D(i,j,1,1) + (V2+phiuv(3))*D(i,j,1,2)
+             v(i,j,2)= (V1+phiuv(2))*D(i,j,2,1) + (V2+phiuv(3))*D(i,j,2,2)
           end do
        end do
     end do
@@ -3250,7 +3250,7 @@ contains
 
           elem(ie)%state%p(:,:,k,n0)=swirl_init_tracer(elem(ie)%spherep(:,:),k)
 
-          elem(ie)%state%v(:,:,:,k,n0)=swirl_velocity(0.0D0,elem(ie)%spherep(:,:),elem(ie)%Dinv)
+          elem(ie)%state%v(:,:,:,k,n0)=swirl_velocity(0.0D0,elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=elem(ie)%state%v(:,:,:,k,n0)
  
@@ -3506,7 +3506,7 @@ contains
   function swirl_velocity(t,sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: t,D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: t,D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -3574,8 +3574,8 @@ contains
 	      IF (ABS(v1_new)<1.0E-10) v1_new=0.0d0
 	      V1=v1_new
 	      V2=v2_new
-	      v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-	      v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+	      v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+	      v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 	  end do
 	end do
     end do
@@ -3606,8 +3606,8 @@ contains
 	    IF (ABS(v1_new)<1.0E-10) v1_new=0.0d0
 	    V1=v1_new
 	    V2=v2_new
-	    v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-	    v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+	    v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+	    v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 	  end do
 	end do
       end do
@@ -3637,8 +3637,8 @@ contains
 	    IF (ABS(v1_new)<1.0E-10) v1_new=0.0d0
 	    V1=v1_new
 	    V2=v2_new
-	    v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-	    v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+	    v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+	    v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 	  end do
 	end do
       end do
@@ -3679,8 +3679,8 @@ contains
              IF (ABS(v1_new)<1.0E-10) v1_new=0.0d0
              V1=v1_new
              V2=v2_new
-             v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-             v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+             v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+             v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
           end do
        end do
       end do
@@ -3766,7 +3766,7 @@ contains
           pElem%state%p(:,:,k,nm1)=pElem%state%p(:,:,k,n0)
           pElem%state%p(:,:,k,np1)=pElem%state%p(:,:,k,n0)
 
-          pElem%state%v(:,:,:,k,n0)=sj1_velocity_cubedsphere(pElem%spherep(:,:),pElem%Dinv)
+          pElem%state%v(:,:,:,k,n0)=sj1_velocity_cubedsphere(pElem%spherep(:,:),pElem%DinvJMD)
           pElem%state%v(:,:,:,k,nm1)=pElem%state%v(:,:,:,k,n0)
           pElem%state%v(:,:,:,k,np1)=pElem%state%v(:,:,:,k,n0)
        end do
@@ -3916,7 +3916,7 @@ contains
   function sj1_velocity_cubedsphere(sphere,D) result(v) 
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -3932,8 +3932,8 @@ contains
           V1  = sj1_velocity(lat)
           
           ! Map onto contravariant velocities
-          v(i,j,1)= V1*D(1,1,i,j)
-          v(i,j,2)= V1*D(2,1,i,j)
+          v(i,j,1)= V1*D(i,j,1,1)
+          v(i,j,2)= V1*D(i,j,2,1)
        end do
     end do
 

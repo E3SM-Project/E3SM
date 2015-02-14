@@ -1836,9 +1836,9 @@ end subroutine ALE_parametric_coords
     integer :: nfilt,rkstage,rhs_multiplier
     integer :: n0_qdp, np1_qdp
 
-!    call extrae_user_function(1)
     call t_barrierf('sync_prim_advec_tracers_remap_k2', hybrid%par%comm)
     call t_startf('prim_advec_tracers_remap_rk2')
+!    call extrae_user_function(1)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) !time levels for qdp are not the same
     rkstage = 3 !   3 stage RKSSP scheme, with optimal SSP CFL
 
@@ -1888,9 +1888,9 @@ end subroutine ALE_parametric_coords
     else
       call advance_hypervis_scalar(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt)
     endif
+!    call extrae_user_function(0)
 
     call t_stopf('prim_advec_tracers_remap_rk2')
-!    call extrae_user_function(0)
 
   end subroutine prim_advec_tracers_remap_rk2
 

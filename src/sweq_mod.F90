@@ -700,18 +700,18 @@ contains
          do k=1,nlev
           do i=1,np
            do j=1,np
-           utemp1(i,j)= elem(ie)%D(1,1,i,j)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%D(1,2,i,j)*elem(ie)%state%v(i,j,2,k,np1)
-           utemp2(i,j)= elem(ie)%D(2,1,i,j)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%D(2,2,i,j)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp1(i,j)= elem(ie)%DJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%DJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp2(i,j)= elem(ie)%DJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%DJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,np1)
            elem(ie)%state%v(i,j,1,k,np1)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,np1)=utemp2(i,j)
 
-           utemp1(i,j)= elem(ie)%D(1,1,i,j)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(1,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
-           utemp2(i,j)= elem(ie)%D(2,1,i,j)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(2,2,i,j)*elem(ie)%state%v(i,j,2,k,n0) 
+           utemp1(i,j)= elem(ie)%DJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%DJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
+           utemp2(i,j)= elem(ie)%DJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%DJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0) 
            elem(ie)%state%v(i,j,1,k,n0)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,n0)=utemp2(i,j)
 
-           utemp1(i,j)= elem(ie)%D(1,1,i,j)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%D(1,2,i,j)*elem(ie)%state%v(i,j,2,k,nm1)
-           utemp2(i,j)= elem(ie)%D(2,1,i,j)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%D(2,2,i,j)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp1(i,j)= elem(ie)%DJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%DJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp2(i,j)= elem(ie)%DJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%DJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,nm1)
 
            elem(ie)%state%v(i,j,1,k,nm1)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,nm1)=utemp2(i,j)
@@ -734,7 +734,7 @@ contains
 
          if (topology == "cube" .and. test_case=="swtc1") then
              do k=1,nlev
-                elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%Dinv)
+                elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%DinvJMD)
                 elem(ie)%state%v(:,:,:,k,n0)=elem(ie)%state%v(:,:,:,k,np1)
                 elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,nm1)
              end do 
@@ -742,20 +742,20 @@ contains
          do k=1,nlev
           do i=1,np
            do j=1,np
-           utemp1(i,j)= elem(ie)%Dinv(1,1,i,j)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%Dinv(1,2,i,j)*elem(ie)%state%v(i,j,2,k,np1)
-           utemp2(i,j)= elem(ie)%Dinv(2,1,i,j)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%Dinv(2,2,i,j)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp1(i,j)= elem(ie)%DinvJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%DinvJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp2(i,j)= elem(ie)%DinvJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%DinvJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,np1)
 
            elem(ie)%state%v(i,j,1,k,np1)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,np1)=utemp2(i,j)
 
-           utemp1(i,j)= elem(ie)%Dinv(1,1,i,j)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%Dinv(1,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
-           utemp2(i,j)= elem(ie)%Dinv(2,1,i,j)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%Dinv(2,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
+           utemp1(i,j)= elem(ie)%DinvJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%DinvJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
+           utemp2(i,j)= elem(ie)%DinvJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%DinvJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0)
 
            elem(ie)%state%v(i,j,1,k,n0)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,n0)=utemp2(i,j)
 
-           utemp1(i,j)= elem(ie)%Dinv(1,1,i,j)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%Dinv(1,2,i,j)*elem(ie)%state%v(i,j,2,k,nm1)
-           utemp2(i,j)= elem(ie)%Dinv(2,1,i,j)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%Dinv(2,2,i,j)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp1(i,j)= elem(ie)%Dinv(i,j,1,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%DinvJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp2(i,j)= elem(ie)%Dinv(i,j,2,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%DinvJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,nm1)
 
            elem(ie)%state%v(i,j,1,k,nm1)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,nm1)=utemp2(i,j)
@@ -1577,14 +1577,14 @@ contains
 !            ! Convert wind to lat-lon
 !           v1     = (elem(ie)%state%v(:,:,1,k,tl%n0) + elem(ie)%state%v(:,:,1,k,tl%np1))/2.0D0  ! contra
 !           v2     = (elem(ie)%state%v(:,:,2,k,tl%n0) + elem(ie)%state%v(:,:,2,k,tl%np1))/2.0D0   ! contra 
-!           vhat(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-!           vhat(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+!           vhat(:,:,1)=elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2   ! contra->latlon
+!           vhat(:,:,2)=elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2   ! contra->latlon
 !           
 !            ! Convert wind to lat-lon
 !           v1     = elem(ie)%state%v(:,:,1,k,tl%np1)  ! contra
 !           v2     = elem(ie)%state%v(:,:,2,k,tl%np1)   ! contra 
-!           vstar(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-!           vstar(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+!           vstar(:,:,1)=elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2   ! contra->latlon
+!           vstar(:,:,2)=elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2   ! contra->latlon
 !           
 !           ! calculate high order approximation
 !           call fvm_mcgregor(elem(ie), deriv, dt, vhat,vstar, 1)
@@ -1612,14 +1612,14 @@ contains
          ! Convert wind to lat-lon
         v1     = elem(ie)%state%v(:,:,1,k,tl%n0)  ! contra
         v2     = elem(ie)%state%v(:,:,2,k,tl%n0)  ! contra 
-        fvm(ie)%vn0(:,:,1,k)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-        fvm(ie)%vn0(:,:,2,k)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+        fvm(ie)%vn0(:,:,1,k)=elem(ie)%DJMD(:,:,1,1)*v1 + elem(ie)%DJMD(:,:,1,2)*v2   ! contra->latlon
+        fvm(ie)%vn0(:,:,2,k)=elem(ie)%DJMD(:,:,2,1)*v1 + elem(ie)%DJMD(:,:,2,2)*v2   ! contra->latlon
         
          ! Convert wind to lat-lon
         v1     = elem(ie)%state%v(:,:,1,k,tl%np1)  ! contra
         v2     = elem(ie)%state%v(:,:,2,k,tl%np1)   ! contra 
-        elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-        elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+        elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%DJMD(:,:,1,1)*v1 + elem(ie)%DJMD(:,:,1,2)*v2   ! contra->latlon
+        elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%DJMD(:,:,2,1)*v1 + elem(ie)%DJMD(:,:,2,2)*v2   ! contra->latlon
         
       enddo  
     end do  

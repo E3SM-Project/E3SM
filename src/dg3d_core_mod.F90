@@ -44,7 +44,7 @@ module dg3d_core_mod
 function  real_vorticity(uv,sg,D,deriv) result(vor)
 !==========================================================================================
     type (derivative_t)         :: deriv
-    real (kind=real_kind), intent(in) :: D(2,2,np,np)
+    real (kind=real_kind), intent(in) :: D(np,np,2,2)
     real (kind=real_kind), dimension(np,np), intent(in) :: sg
     real (kind=real_kind), dimension(np,np,2), intent(in) :: uv
     real (kind=real_kind), dimension(np,np,2) :: couv

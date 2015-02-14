@@ -362,8 +362,8 @@ contains
 
                 v1                         = elemin%state%v(i,j,1,k,nm1)
                 v2                         = elemin%state%v(i,j,2,k,nm1)
-                cm%col(i,j)%U(nlevp-k)     = v1*elemin%D(1,1,i,j) + v2*elemin%D(1,2,i,j)            
-                cm%col(i,j)%V(nlevp-k)     = v1*elemin%D(2,1,i,j) + v2*elemin%D(2,2,i,j)                
+                cm%col(i,j)%U(nlevp-k)     = v1*elemin%DJMD(i,j,1,1) + v2*elemin%DJMD(i,j,1,2)            
+                cm%col(i,j)%V(nlevp-k)     = v1*elemin%DJMD(i,j,2,1) + v2*elemin%DJMD(i,j,2,2)                
 #ifdef USE_MAXLAT
 		endif
 #endif
@@ -460,8 +460,8 @@ contains
                 u1 = cd%U( nlevp-k)          ! dry adiabatic adjustment in convect43c
                 v1 = cd%V( nlevp-k)          ! requires update altered U, V, T, Q, QS
 
-                elemin%state%v(i,j,1,k,nm1)  = u1*elemin%Dinv(1,1,i,j) + v1*elemin%Dinv(1,2,i,j)
-                elemin%state%v(i,j,2,k,nm1)  = u1*elemin%Dinv(2,1,i,j) + v1*elemin%Dinv(2,2,i,j)
+                elemin%state%v(i,j,1,k,nm1)  = u1*elemin%DinvJMD(i,j,1,1) + v1*elemin%DinvJMD(i,j,1,2)
+                elemin%state%v(i,j,2,k,nm1)  = u1*elemin%DinvJMD(i,j,2,1) + v1*elemin%DinvJMD(i,j,2,2)
                 elemin%state%T(i,j,k,nm1)    = cd%T(nlevp-k)
                 elemin%state%Q(i,j,k,1)      = cd%Q(nlevp-k)/(1_real_kind - cd%Q(nlevp-k))
 #ifdef USE_MAXLAT
@@ -485,9 +485,9 @@ contains
                 RCD = (1_real_kind+elemin%state%Q(i,j,k,1))**2_real_kind
 
                 elemin%derived%FM(i,j,1,k,nm1) = &
-                elemin%derived%FM(i,j,1,k,nm1) + fu*elemin%Dinv(1,1,i,j) + fv*elemin%Dinv(1,2,i,j)
+                elemin%derived%FM(i,j,1,k,nm1) + fu*elemin%DinvJMD(i,j,1,1) + fv*elemin%DinvJMD(i,j,1,2)
                 elemin%derived%FM(i,j,2,k,nm1) = &
-                elemin%derived%FM(i,j,2,k,nm1) + fu*elemin%Dinv(2,1,i,j) + fv*elemin%Dinv(2,2,i,j)
+                elemin%derived%FM(i,j,2,k,nm1) + fu*elemin%DinvJMD(i,j,2,1) + fv*elemin%DinvJMD(i,j,2,2)
                 elemin%derived%FT(i,j,k,nm1)   = &
                 elemin%derived%FT(i,j,k,nm1)   +     cd%FT(nlevp-k)
                 elemin%derived%FQ(i,j,k,nm1,1) = &

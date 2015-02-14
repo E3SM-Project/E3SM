@@ -82,7 +82,7 @@ subroutine jw_baroclinic(ie,sphere,D,cori,sgp,ptop,tbar,v3d,pt3d,dp3d, qt3d)
 !=======================================================================================================!
     integer, intent(in) :: ie
     type (spherical_polar_t), intent(in):: sphere(np,np)
-    real (kind=real_kind), intent(in)   :: D(2,2,np,np)
+    real (kind=real_kind), intent(in)   :: D(np,np,2,2)
     real (kind=real_kind), intent(out)  :: sgp(np,np),ptop(np,np),cori(np,np)
     real (kind=real_kind), intent(out)  :: tbar(nlev)     
     real (kind=real_kind), intent(out)  :: v3d(np,np,2,nlev)
@@ -140,8 +140,8 @@ subroutine jw_baroclinic(ie,sphere,D,cori,sgp,ptop,tbar,v3d,pt3d,dp3d, qt3d)
              ! map sphere velocities onto the contravariant cube velocities
              ! =====================================================
        
-          v3d(i,j,1,k)= v1*D(1,1,i,j) + v2*D(1,2,i,j)
-          v3d(i,j,2,k)= v1*D(2,1,i,j) + v2*D(2,2,i,j)
+          v3d(i,j,1,k)= v1*D(i,j,1,1) + v2*D(i,j,1,2)
+          v3d(i,j,2,k)= v1*D(i,j,2,1) + v2*D(i,j,2,2)
 
          !v3d(i,j,1,k) = v1       
          !v3d(i,j,2,k) = v2      
@@ -280,7 +280,7 @@ subroutine heldsuarez_initial(ie,sphere,D,cori,sgp,ptop,tbar,v3d,pt3d,dp3d)
 !=======================================================================================================!
     integer, intent(in) :: ie
     type (spherical_polar_t), intent(in):: sphere(np,np)
-    real (kind=real_kind), intent(in)   :: D(2,2,np,np)
+    real (kind=real_kind), intent(in)   :: D(np,np,2,2)
     real (kind=real_kind), intent(out)  :: sgp(np,np),ptop(np,np),cori(np,np)
     real (kind=real_kind), intent(out)  :: tbar(nlev)     
     real (kind=real_kind), intent(out)  :: v3d(np,np,2,nlev)
@@ -319,8 +319,8 @@ subroutine heldsuarez_initial(ie,sphere,D,cori,sgp,ptop,tbar,v3d,pt3d,dp3d)
           v1 = 0.0D0
           v2 = 0.0D0
        
-          v3d(i,j,1,k)= v1*D(1,1,i,j) + v2*D(1,2,i,j)
-          v3d(i,j,2,k)= v1*D(2,1,i,j) + v2*D(2,2,i,j)
+          v3d(i,j,1,k)= v1*D(i,j,1,1) + v2*D(i,j,1,2)
+          v3d(i,j,2,k)= v1*D(i,j,2,1) + v2*D(i,j,2,2)
 
           snlat=SIN(sphere(i,j)%lat)
           cori(i,j)= 2.0D0*omg*snlat

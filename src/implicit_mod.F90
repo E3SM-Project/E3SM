@@ -669,8 +669,8 @@ contains
     real (kind=real_kind), dimension(np,np)     :: rspheremp
     real (kind=real_kind), dimension(np,np)     :: spheremp
     real (kind=real_kind), dimension(np,np)     :: metdet
-    real (kind=real_kind), dimension(2,2,np,np) :: met
-    real (kind=real_kind), dimension(2,2,np,np) :: metinv
+    real (kind=real_kind), dimension(np,np,2,2) :: met
+    real (kind=real_kind), dimension(np,np,2,2) :: metinv
 
     ! Thread private working set ...
 
@@ -752,8 +752,8 @@ contains
              do i=1,np
 
 
-             gvm1(i,j,1) = pptr%base(ie)%D(1,1,i,j)*zv(i,j,1,k,ie) + pptr%base(ie)%D(1,2,i,j)*zv(i,j,2,k,ie)
-             gvm1(i,j,2) = pptr%base(ie)%D(2,1,i,j)*zv(i,j,1,k,ie) + pptr%base(ie)%D(2,2,i,j)*zv(i,j,2,k,ie)
+             gvm1(i,j,1) = pptr%base(ie)%DJMD(i,j,1,1)*zv(i,j,1,k,ie) + pptr%base(ie)%DJMD(i,j,1,2)*zv(i,j,2,k,ie)
+             gvm1(i,j,2) = pptr%base(ie)%DJMD(i,j,2,1)*zv(i,j,1,k,ie) + pptr%base(ie)%DJMD(i,j,2,2)*zv(i,j,2,k,ie)
 
              end do
           end do
@@ -816,7 +816,7 @@ contains
 
     do ie=ns,ne
 
-       metinv(:,:,:,:)  = pptr%base(ie)%metinv(:,:,:,:)
+       metinv(:,:,:,:)  = pptr%base(ie)%metinvJMD(:,:,:,:)
        spheremp(:,:)  = pptr%base(ie)%spheremp(:,:)
        rspheremp(:,:)  = pptr%base(ie)%rspheremp(:,:)
 
@@ -824,7 +824,7 @@ contains
 
           ! compute grad dp needed to back substitute for du
 
-          grad_dp(:,:,:,k,ie)=gradient_sphere(dp(:,:,k,ie),pptr%deriv,pptr%base(ie)%Dinv)
+          grad_dp(:,:,:,k,ie)=gradient_sphere(dp(:,:,k,ie),pptr%deriv,pptr%base(ie)%DinvJMD)
 
           ! ==================================================
           ! Rotate grad_dp to form contravariant object:
@@ -862,10 +862,10 @@ contains
              do i=1,np
                grad_dp1 = pptr%base(ie)%rspheremp(i,j)*grad_dp(i,j,1,k,ie)
                grad_dp2 = pptr%base(ie)%rspheremp(i,j)*grad_dp(i,j,2,k,ie)
-           grad_dp(i,j,1,k,ie)   = pptr%base(ie)%Dinv(1,1,i,j)*grad_dp1 + &
-                      pptr%base(ie)%Dinv(1,2,i,j)*grad_dp2
-           grad_dp(i,j,2,k,ie)   = pptr%base(ie)%Dinv(2,1,i,j)*grad_dp1 + &
-                      pptr%base(ie)%Dinv(2,2,i,j)*grad_dp2
+           grad_dp(i,j,1,k,ie)   = pptr%base(ie)%DinvJMD(i,j,1,1)*grad_dp1 + &
+                      pptr%base(ie)%DinvJMD(i,j,1,2)*grad_dp2
+           grad_dp(i,j,2,k,ie)   = pptr%base(ie)%DinvJMD(i,j,2,1)*grad_dp1 + &
+                      pptr%base(ie)%DinvJMD(i,j,2,2)*grad_dp2
 
                dv(i,j,1,k,ie) = zv(i,j,1,k,ie) - pptr%dt*grad_dp(i,j,1,k,ie)
                dv(i,j,2,k,ie) = zv(i,j,2,k,ie) - pptr%dt*grad_dp(i,j,2,k,ie)  

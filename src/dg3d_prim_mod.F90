@@ -112,11 +112,11 @@
          if (topology == 'cube') then   
             do ie=nets,nete 
                if (test_case=='jw_bcl') then    
-                  call jw_baroclinic(ie,elem(ie)%spherep,elem(ie)%Dinv,elem(ie)%fcor,elem(ie)%state%sgp,          &
+                  call jw_baroclinic(ie,elem(ie)%spherep,elem(ie)%DinvJMD,elem(ie)%fcor,elem(ie)%state%sgp,          &
                        elem(ie)%state%ptop,elem(ie)%state%tbar,elem(ie)%state%v(:,:,:,:,n0),        &
                        elem(ie)%state%pt3d,elem(ie)%state%dp3d, elem(ie)%state%qt3d)
                elseif (test_case=='heldsuarez') then  
-                  call heldsuarez_initial(ie,elem(ie)%spherep,elem(ie)%Dinv,elem(ie)%fcor,elem(ie)%state%sgp,     &
+                  call heldsuarez_initial(ie,elem(ie)%spherep,elem(ie)%DinvJMD,elem(ie)%fcor,elem(ie)%state%sgp,     &
                        elem(ie)%state%ptop,elem(ie)%state%tbar,elem(ie)%state%v(:,:,:,:,n0),   &
                        elem(ie)%state%pt3d,elem(ie)%state%dp3d)
                endif
@@ -128,7 +128,7 @@
                ! I need to pass qt3d by lagrangian_surfvars later
                ! elem(ie)%state%Q(:,:,:) = elem(ie)%state%qt3d(:,:,:)
                do k=1,nlev    
-                  elem(ie)%state%uv(:,:,:,k)  = contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%D(:,:,:,:))
+                  elem(ie)%state%uv(:,:,:,k)  = contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%DJMD(:,:,:,:))
                   elem(ie)%state%uv0(:,:,:,k) = elem(ie)%state%uv(:,:,:,k)
                enddo
             enddo
@@ -249,11 +249,11 @@
                !=======================================================================================================!
                if (nstep == 1 ) then
                   if (topology == 'cube' .and. test_case=='jw_bcl') then
-                     call jw_baroclinic(ie,elem(ie)%spherep,elem(ie)%Dinv,elem(ie)%fcor,elem(ie)%state%sgp,   &
+                     call jw_baroclinic(ie,elem(ie)%spherep,elem(ie)%DinvJMD,elem(ie)%fcor,elem(ie)%state%sgp,   &
                           elem(ie)%state%ptop,elem(ie)%state%tbar,elem(ie)%state%v(:,:,:,:,n0),    & 
                           elem(ie)%state%pt3d,elem(ie)%state%dp3d,elem(ie)%state%qt3d)
                   elseif (test_case=='heldsuarez') then
-                     call heldsuarez_initial(ie,elem(ie)%spherep,elem(ie)%Dinv,elem(ie)%fcor,elem(ie)%state%sgp,&
+                     call heldsuarez_initial(ie,elem(ie)%spherep,elem(ie)%DinvJMD,elem(ie)%fcor,elem(ie)%state%sgp,&
                           elem(ie)%state%ptop,elem(ie)%state%tbar,elem(ie)%state%v(:,:,:,:,n0),&
                           elem(ie)%state%pt3d,elem(ie)%state%dp3d)
 
@@ -266,7 +266,7 @@
                      elem(ie)%state%pr3d_ref(:,:,:)= elem(ie)%state%pr3d(:,:,:)
             !=======================================================================================================!
                   do k=1,nlev
-                     elem(ie)%state%uv(:,:,:,k)  = contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%D(:,:,:,:))
+                     elem(ie)%state%uv(:,:,:,k)  = contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%DJMD(:,:,:,:))
                      elem(ie)%state%ht(:,:,k)    = psi2height(elem(ie)%state%psi(:,:,k),grv)
                   enddo
                endif
@@ -381,8 +381,8 @@
                     ! Converting to [u,v] = A^-T [u_1,u_2] 
                  do j=1,np
                  do i=1,np
-                  dif_uv(i,j,1,k,ie) = difu(i,j) *elem(ie)%Dinv(1,1,i,j) + difv(i,j) * elem(ie)%Dinv(2,1,i,j)
-                  dif_uv(i,j,2,k,ie) = difu(i,j) *elem(ie)%Dinv(1,2,i,j) + difv(i,j) * elem(ie)%Dinv(2,2,i,j)
+                  dif_uv(i,j,1,k,ie) = difu(i,j) *elem(ie)%DinvJMD(i,j,1,1) + difv(i,j) * elem(ie)%DinvJMD(i,j,2,1)
+                  dif_uv(i,j,2,k,ie) = difu(i,j) *elem(ie)%DinvJMD(i,j,1,2) + difv(i,j) * elem(ie)%DinvJMD(i,j,2,2)
                  enddo
                  enddo
 
@@ -652,13 +652,13 @@
                      call linear_remap(ie,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,                     &
                           elem(ie)%state%uv,elem(ie)%state%dp3d)
                   else if (remap_type == "parabolic") then
-                     call parabolic_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
+                     call parabolic_remap(elem(ie)%metinvJMD,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
                           elem(ie)%state%uv,elem(ie)%state%dp3d,elem(ie)%state%qt3d)
                   else if (remap_type == "monotonic") then
-                     call monotonic_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
+                     call monotonic_remap(elem(ie)%metinvJMD,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
                           elem(ie)%state%uv,elem(ie)%state%dp3d)
                   else if (remap_type == "energy") then
-                     call energy_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,	&
+                     call energy_remap(elem(ie)%metinvJMD,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,	&
                           elem(ie)%state%uv,elem(ie)%state%dp3d)
                   endif
                   !=======================================================================================================!
@@ -671,7 +671,7 @@
                !       Converting covarinat to contravariant and Psi to Height
                !=======================================================================================================!
                do k=1,nlev
-                  elem(ie)%state%v(:,:,:,k,n0)= sphere2contra(elem(ie)%state%uv(:,:,:,k),elem(ie)%Dinv(:,:,:,:))
+                  elem(ie)%state%v(:,:,:,k,n0)= sphere2contra(elem(ie)%state%uv(:,:,:,k),elem(ie)%DinvJMD(:,:,:,:))
                   elem(ie)%state%ht(:,:,k)    = psi2height(elem(ie)%state%psi(:,:,k),grv)
                enddo
                !=======================================================================================================!
@@ -786,7 +786,7 @@
                !=======================================================================================================!
                if (nstep == 1 ) then
                   if (topology == 'cube' .and. test_case=='jw_bcl') then
-                     call jw_baroclinic(ie,elem(ie)%spherep,elem(ie)%Dinv,elem(ie)%fcor,elem(ie)%state%sgp,   &
+                     call jw_baroclinic(ie,elem(ie)%spherep,elem(ie)%DinvJMD,elem(ie)%fcor,elem(ie)%state%sgp,   &
                           elem(ie)%state%ptop,elem(ie)%state%tbar,elem(ie)%state%v(:,:,:,:,n0),    & 
                           elem(ie)%state%pt3d,elem(ie)%state%dp3d,elem(ie)%state%qt3d)
 
@@ -799,7 +799,7 @@
                   !  DG: Compute  covariant components for the first time
                   !=======================================================================================================!
                   do k=1,nlev
-                     elem(ie)%state%uv(:,:,:,k)  = contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%D(:,:,:,:))
+                     elem(ie)%state%uv(:,:,:,k)  = contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%DJMD(:,:,:,:))
                      !elem(ie)%state%uv0(:,:,:,k) = elem(ie)%state%uv(:,:,:,k)
                      !elem(ie)%state%couv(:,:,:,k) = elem(ie)%state%uv(:,:,:,k)
                      !elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%met(:,:,:,:))
@@ -897,8 +897,8 @@
 
              do j=1,np
              do i=1,np
-                 dif_uv(i,j,1,k,ie) = difu(i,j) *elem(ie)%Dinv(1,1,i,j) + difv(i,j) * elem(ie)%Dinv(2,1,i,j)
-                 dif_uv(i,j,2,k,ie) = difu(i,j) *elem(ie)%Dinv(1,2,i,j) + difv(i,j) * elem(ie)%Dinv(2,2,i,j)
+                 dif_uv(i,j,1,k,ie) = difu(i,j) *elem(ie)%DinvJMD(i,j,1,1) + difv(i,j) * elem(ie)%DinvJMD(i,j,2,1)
+                 dif_uv(i,j,2,k,ie) = difu(i,j) *elem(ie)%DinvJMD(i,j,1,2) + difv(i,j) * elem(ie)%DinvJMD(i,j,2,2)
              enddo
              enddo
 
@@ -1085,13 +1085,13 @@
                      call linear_remap(ie,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,                     &
                           elem(ie)%state%uv,elem(ie)%state%dp3d)
                   else if (remap_type == "parabolic") then
-                     call parabolic_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
+                     call parabolic_remap(elem(ie)%metinvJMD,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
                           elem(ie)%state%uv,elem(ie)%state%dp3d,elem(ie)%state%qt3d)
                   else if (remap_type == "monotonic") then
-                     call monotonic_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
+                     call monotonic_remap(elem(ie)%metinvJMD,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
                           elem(ie)%state%uv,elem(ie)%state%dp3d)
                   else if (remap_type == "energy") then
-                     call energy_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,	&
+                     call energy_remap(elem(ie)%metinvJMD,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,	&
                           elem(ie)%state%uv,elem(ie)%state%dp3d)
                   endif
                   !=======================================================================================================!
@@ -1106,7 +1106,7 @@
                !=======================================================================================================!
                do k=1,nlev
                   !lem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
-                  elem(ie)%state%v(:,:,:,k,n0)= sphere2contra(elem(ie)%state%uv(:,:,:,k),elem(ie)%Dinv(:,:,:,:))
+                  elem(ie)%state%v(:,:,:,k,n0)= sphere2contra(elem(ie)%state%uv(:,:,:,k),elem(ie)%DinvJMD(:,:,:,:))
                   !elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%met(:,:,:,:))
                   elem(ie)%state%ht(:,:,k)    = psi2height(elem(ie)%state%psi(:,:,k),grv)
                enddo
@@ -1236,7 +1236,7 @@
                !=======================================================================================================!
                if (nstep == 1 ) then
                   if (topology == 'cube' .and. test_case=='jw_bcl') then
-                     call jw_baroclinic(ie,elem(ie)%spherep,elem(ie)%Dinv,elem(ie)%fcor,elem(ie)%state%sgp,   &
+                     call jw_baroclinic(ie,elem(ie)%spherep,elem(ie)%DinvJMD,elem(ie)%fcor,elem(ie)%state%sgp,   &
                           elem(ie)%state%ptop,elem(ie)%state%tbar,elem(ie)%state%v(:,:,:,:,n0),    & 
                           elem(ie)%state%pt3d,elem(ie)%state%dp3d,elem(ie)%state%qt3d)
                    ! call lagrangian_surfvars(ie,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,          &
@@ -1251,9 +1251,9 @@
                   !  DG: Compute  covariant components for the first time
                   !=======================================================================================================!
                   do k=1,nlev
-                     elem(ie)%state%uv(:,:,:,k)  = contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%D(:,:,:,:))
+                     elem(ie)%state%uv(:,:,:,k)  = contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%DJMD(:,:,:,:))
                      elem(ie)%state%uv0(:,:,:,k) = elem(ie)%state%uv(:,:,:,k)
-                     elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%met(:,:,:,:))
+                     elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%metJMD(:,:,:,:))
                      elem(ie)%state%ht(:,:,k)    = psi2height(elem(ie)%state%psi(:,:,k),grv)
                   enddo
                endif
@@ -1271,7 +1271,7 @@
                !       Converting covarinat to contravariant (second timestep onwards)
                !=======================================================================================================!
                do k=1,nlev
-                  elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
+                  elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinvJMD(:,:,:,:))
                enddo
                !=======================================================================================================!
                !       Temporary Storage for fiels from previous time step
@@ -1452,7 +1452,7 @@
                !       Converting covarinat to contravariant and Psi to Height
                !=======================================================================================================!
                do k=1,nlev
-                  elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
+                  elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinvJMD(:,:,:,:))
                   elem(ie)%state%ht(:,:,k)    = psi2height(elem(ie)%state%psi(:,:,k),grv)
                enddo
                !=======================================================================================================!
@@ -1560,7 +1560,7 @@
                      call linear_remap(ie,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,                     &
                           elem(ie)%state%couv,elem(ie)%state%dp3d)
                   else if (remap_type == "parabolic") then
-                     call parabolic_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
+                     call parabolic_remap(elem(ie)%metinvJMD,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
                           elem(ie)%state%couv,elem(ie)%state%dp3d,elem(ie)%state%qt3d)
                    ! call linear_remap(ie,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,                     &
                    !       elem(ie)%state%couv,elem(ie)%state%dp3d)
@@ -1569,10 +1569,10 @@
                    ! call energy_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,	&
                    !      elem(ie)%state%couv,elem(ie)%state%dp3d)
                   else if (remap_type == "monotonic") then
-                     call monotonic_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
+                     call monotonic_remap(elem(ie)%metinvJMD,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,     &
                           elem(ie)%state%couv,elem(ie)%state%dp3d)
                   else if (remap_type == "energy") then
-                     call energy_remap(elem(ie)%metinv,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,	&
+                     call energy_remap(elem(ie)%metinvJMD,elem(ie)%state%sgp,elem(ie)%state%ptop,elem(ie)%state%pt3d,	&
                           elem(ie)%state%couv,elem(ie)%state%dp3d)
                   endif
                   !=======================================================================================================!
@@ -1586,7 +1586,7 @@
                !       Converting covarinat to contravariant and Psi to Height
                !=======================================================================================================!
                do k=1,nlev
-                  elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
+                  elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinvJMD(:,:,:,:))
                   !elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%met(:,:,:,:))
                   elem(ie)%state%ht(:,:,k)    = psi2height(elem(ie)%state%psi(:,:,k),grv)
                enddo
@@ -1596,7 +1596,7 @@
                !       Surface Pressure: at nlev+1                                                                     !
                !=======================================================================================================!
                do k=1,nlev
-                  elem(ie)%state%uv(:,:,:,k)= contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%D(:,:,:,:))
+                  elem(ie)%state%uv(:,:,:,k)= contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%DJMD(:,:,:,:))
                   !elem(ie)%state%zeta(:,:,k)= vorticity(elem(ie)%state%couv(:,:,:,k),deriv)/elem(ie)%metdet(:,:)
                   elem(ie)%state%zeta(:,:,k)= cov_vorticity(deriv,elem(ie)%state%couv(:,:,:,k))/elem(ie)%metdet(:,:)
                end do

@@ -126,13 +126,13 @@ implicit none
 !=======================================================================================================!
 !  From HOMME to Local Pointer										!
 !=======================================================================================================!
-    met    => elem%met
-    metinv => elem%metinv
+    met    => elem%metJMD
+    metinv => elem%metinvJMD
     metdet => elem%metdet
     mv     => elem%mp
     fcor   => elem%fcor
-    Dinv   => elem%Dinv
-    D      => elem%D
+    Dinv   => elem%DinvJMD
+    D      => elem%DJMD
 !=======================================================================================================!
 !  Length-scale redefined, gravity									!
 !=======================================================================================================!
@@ -175,15 +175,15 @@ implicit none
 !  Covariant components for the halo region [u^1,u^2] = A^-1 * [u,v] 
 !=======================================================================================================!
     do k= 1, np
-       contuv_halo(k,1,1) = Dinv(1,1,k,1)  * uv_halo(k,1,1) + Dinv(1,2,k,1)  * uv_halo(k,1,2)
-       contuv_halo(k,1,2) = Dinv(2,1,k,1)  * uv_halo(k,1,1) + Dinv(2,2,k,1)  * uv_halo(k,1,2)
-       contuv_halo(k,2,1) = Dinv(1,1,np,k) * uv_halo(k,2,1) + Dinv(1,2,np,k) * uv_halo(k,2,2)
-       contuv_halo(k,2,2) = Dinv(2,1,np,k) * uv_halo(k,2,1) + Dinv(2,2,np,k) * uv_halo(k,2,2)
+       contuv_halo(k,1,1) = Dinv(k,1,1,1)  * uv_halo(k,1,1) + Dinv(k,1,1,2)  * uv_halo(k,1,2)
+       contuv_halo(k,1,2) = Dinv(k,1,2,1)  * uv_halo(k,1,1) + Dinv(k,1,2,2)  * uv_halo(k,1,2)
+       contuv_halo(k,2,1) = Dinv(np,k,1,1) * uv_halo(k,2,1) + Dinv(np,k,1,2) * uv_halo(k,2,2)
+       contuv_halo(k,2,2) = Dinv(np,k,2,1) * uv_halo(k,2,1) + Dinv(np,k,2,2) * uv_halo(k,2,2)
 
-       contuv_halo(k,3,1) = Dinv(1,1,k,np) * uv_halo(k,3,1) + Dinv(1,2,k,np) * uv_halo(k,3,2)
-       contuv_halo(k,3,2) = Dinv(2,1,k,np) * uv_halo(k,3,1) + Dinv(2,2,k,np) * uv_halo(k,3,2)
-       contuv_halo(k,4,1) = Dinv(1,1,1,k)  * uv_halo(k,4,1) + Dinv(1,2,1,k)  * uv_halo(k,4,2)
-       contuv_halo(k,4,2) = Dinv(2,1,1,k)  * uv_halo(k,4,1) + Dinv(2,2,1,k)  * uv_halo(k,4,2)
+       contuv_halo(k,3,1) = Dinv(k,np,1,1) * uv_halo(k,3,1) + Dinv(k,np,1,2) * uv_halo(k,3,2)
+       contuv_halo(k,3,2) = Dinv(k,np,2,1) * uv_halo(k,3,1) + Dinv(k,np,2,2) * uv_halo(k,3,2)
+       contuv_halo(k,4,1) = Dinv(1,k,1,1)  * uv_halo(k,4,1) + Dinv(1,k,1,2)  * uv_halo(k,4,2)
+       contuv_halo(k,4,2) = Dinv(1,k,2,1)  * uv_halo(k,4,1) + Dinv(1,k,2,2)  * uv_halo(k,4,2)
     enddo
 
     contrauv(:,:,:) = sphere2contra(uv,Dinv) 
@@ -204,8 +204,8 @@ implicit none
 
     do j= 1, np
     do i= 1, np
-       gh11(i,j) = gh(i,j)*metinv(1,1,i,j)
-       gh22(i,j) = gh(i,j)*metinv(2,2,i,j)
+       gh11(i,j) = gh(i,j)*metinv(i,j,1,1)
+       gh22(i,j) = gh(i,j)*metinv(i,j,2,2)
     enddo
     enddo
 
@@ -215,29 +215,29 @@ implicit none
        tmp3 = grv*ht_halo(k,3)
        tmp4 = grv*ht_halo(k,4)
 
-       gh11_halo(k,1) = tmp1*metinv(1,1,k,1)
-       gh11_halo(k,2) = tmp2*metinv(1,1,np,k)
-       gh11_halo(k,3) = tmp3*metinv(1,1,k,np)
-       gh11_halo(k,4) = tmp4*metinv(1,1,1,k)
+       gh11_halo(k,1) = tmp1*metinv(k,1,1,1)
+       gh11_halo(k,2) = tmp2*metinv(np,k,1,1)
+       gh11_halo(k,3) = tmp3*metinv(k,np,1,1)
+       gh11_halo(k,4) = tmp4*metinv(1,k,1,1)
 
-       gh22_halo(k,1) = tmp1*metinv(2,2,k,1)
-       gh22_halo(k,2) = tmp2*metinv(2,2,np,k)
-       gh22_halo(k,3) = tmp3*metinv(2,2,k,np)
-       gh22_halo(k,4) = tmp4*metinv(2,2,1,k)
+       gh22_halo(k,1) = tmp1*metinv(k,1,2,2)
+       gh22_halo(k,2) = tmp2*metinv(np,k,2,2)
+       gh22_halo(k,3) = tmp3*metinv(k,np,2,2)
+       gh22_halo(k,4) = tmp4*metinv(1,k,2,2)
     enddo
 !=======================================================================================================!
 !  Covariant components for the halo region
 !=======================================================================================================!
     do k= 1, np
-       couv_halo(k,1,1) = met(1,1,k,1)  * contuv_halo(k,1,1) + met(1,2,k,1)  * contuv_halo(k,1,2)
-       couv_halo(k,1,2) = met(2,1,k,1)  * contuv_halo(k,1,1) + met(2,2,k,1)  * contuv_halo(k,1,2)
-       couv_halo(k,2,1) = met(1,1,np,k) * contuv_halo(k,2,1) + met(1,2,np,k) * contuv_halo(k,2,2)
-       couv_halo(k,2,2) = met(2,1,np,k) * contuv_halo(k,2,1) + met(2,2,np,k) * contuv_halo(k,2,2)
+       couv_halo(k,1,1) = met(k,1,1,1)  * contuv_halo(k,1,1) + met(k,1,1,2)  * contuv_halo(k,1,2)
+       couv_halo(k,1,2) = met(k,1,2,1)  * contuv_halo(k,1,1) + met(k,1,2,2)  * contuv_halo(k,1,2)
+       couv_halo(k,2,1) = met(np,k,1,1) * contuv_halo(k,2,1) + met(np,k,1,2) * contuv_halo(k,2,2)
+       couv_halo(k,2,2) = met(np,k,2,1) * contuv_halo(k,2,1) + met(np,k,2,2) * contuv_halo(k,2,2)
 
-       couv_halo(k,3,1) = met(1,1,k,np) * contuv_halo(k,3,1) + met(1,2,k,np) * contuv_halo(k,3,2)
-       couv_halo(k,3,2) = met(2,1,k,np) * contuv_halo(k,3,1) + met(2,2,k,np) * contuv_halo(k,3,2)
-       couv_halo(k,4,1) = met(1,1,1,k)  * contuv_halo(k,4,1) + met(1,2,1,k)  * contuv_halo(k,4,2)
-       couv_halo(k,4,2) = met(2,1,1,k)  * contuv_halo(k,4,1) + met(2,2,1,k)  * contuv_halo(k,4,2)
+       couv_halo(k,3,1) = met(k,np,1,1) * contuv_halo(k,3,1) + met(k,np,1,2) * contuv_halo(k,3,2)
+       couv_halo(k,3,2) = met(k,np,2,1) * contuv_halo(k,3,1) + met(k,np,2,2) * contuv_halo(k,3,2)
+       couv_halo(k,4,1) = met(1,k,1,1)  * contuv_halo(k,4,1) + met(1,k,1,2)  * contuv_halo(k,4,2)
+       couv_halo(k,4,2) = met(1,k,2,1)  * contuv_halo(k,4,1) + met(1,k,2,2)  * contuv_halo(k,4,2)
     enddo
 
 !=======================================================================================================!
@@ -348,8 +348,8 @@ implicit none
 
 !  do j=1,np
 !  do i=1,np
-!     grad(i,j,2) = gradu1(i,j) *Dinv(1,1,i,j) + gradu2(i,j) * Dinv(2,1,i,j) 
-!     grad(i,j,3) = gradu1(i,j) *Dinv(1,2,i,j) + gradu2(i,j) * Dinv(2,2,i,j) 
+!     grad(i,j,2) = gradu1(i,j) *Dinv(i,j,1,1) + gradu2(i,j) * Dinv(i,j,2,1) 
+!     grad(i,j,3) = gradu1(i,j) *Dinv(i,j,1,2) + gradu2(i,j) * Dinv(i,j,2,2) 
 !  enddo
 !  enddo
 #endif
@@ -368,8 +368,8 @@ implicit none
 
    do j=1,np
    do i=1,np
-      rhs(i,j,2) = u1_rhs(i,j) *Dinv(1,1,i,j) + u2_rhs(i,j) * Dinv(2,1,i,j) + source(i,j,2) 
-      rhs(i,j,3) = u1_rhs(i,j) *Dinv(1,2,i,j) + u2_rhs(i,j) * Dinv(2,2,i,j) + source(i,j,3)  
+      rhs(i,j,2) = u1_rhs(i,j) *Dinv(i,j,1,1) + u2_rhs(i,j) * Dinv(i,j,2,1) + source(i,j,2) 
+      rhs(i,j,3) = u1_rhs(i,j) *Dinv(i,j,1,2) + u2_rhs(i,j) * Dinv(i,j,2,2) + source(i,j,3)  
    enddo
    enddo
  end subroutine  dgsw_uvh_rhs 
@@ -458,8 +458,8 @@ subroutine dg_sw_model(elem,deriv,contrauvbuf,htbuf,contrauv,couv,ht,hill,rhs)
 !=======================================================================================================!
 !  From HOMME to Local Pointer										!
 !=======================================================================================================!
-    met    => elem%met
-    metinv => elem%metinv
+    met    => elem%metJMD
+    metinv => elem%metinvJMD
     metdet => elem%metdet
     mv     => elem%mp
     fcor   => elem%fcor
@@ -543,8 +543,8 @@ subroutine dg_sw_model(elem,deriv,contrauvbuf,htbuf,contrauv,couv,ht,hill,rhs)
 !=======================================================================================================!
     do j= 1, np
     do i= 1, np
-       gh11(i,j) = grv*ht(i,j)*metinv(1,1,i,j)
-       gh22(i,j) = grv*ht(i,j)*metinv(2,2,i,j)
+       gh11(i,j) = grv*ht(i,j)*metinv(i,j,1,1)
+       gh22(i,j) = grv*ht(i,j)*metinv(i,j,2,2)
     enddo
     enddo
    
@@ -554,29 +554,29 @@ subroutine dg_sw_model(elem,deriv,contrauvbuf,htbuf,contrauv,couv,ht,hill,rhs)
        tmp3 = grv*ht_halo(k,3)
        tmp4 = grv*ht_halo(k,4)
 
-       gh11_halo(k,1) = tmp1*metinv(1,1,k,1)
-       gh11_halo(k,2) = tmp2*metinv(1,1,np,k)
-       gh11_halo(k,3) = tmp3*metinv(1,1,k,np)
-       gh11_halo(k,4) = tmp4*metinv(1,1,1,k)
+       gh11_halo(k,1) = tmp1*metinv(k,1,1,1)
+       gh11_halo(k,2) = tmp2*metinv(np,k,1,1)
+       gh11_halo(k,3) = tmp3*metinv(k,np,1,1)
+       gh11_halo(k,4) = tmp4*metinv(1,k,1,1)
 
-       gh22_halo(k,1) = tmp1*metinv(2,2,k,1)
-       gh22_halo(k,2) = tmp2*metinv(2,2,np,k)
-       gh22_halo(k,3) = tmp3*metinv(2,2,k,np)
-       gh22_halo(k,4) = tmp4*metinv(2,2,1,k)
+       gh22_halo(k,1) = tmp1*metinv(k,1,2,2)
+       gh22_halo(k,2) = tmp2*metinv(np,k,2,2)
+       gh22_halo(k,3) = tmp3*metinv(k,np,2,2)
+       gh22_halo(k,4) = tmp4*metinv(1,k,2,2)
     enddo
 !=======================================================================================================!
 !  Covariant components for the halo region 								!
 !=======================================================================================================!
     do k= 1, np
-       couv_halo(k,1,1) = met(1,1,k,1)  * contrauv_halo(k,1,1) + met(1,2,k,1)  * contrauv_halo(k,1,2)
-       couv_halo(k,1,2) = met(2,1,k,1)  * contrauv_halo(k,1,1) + met(2,2,k,1)  * contrauv_halo(k,1,2)
-       couv_halo(k,2,1) = met(1,1,np,k) * contrauv_halo(k,2,1) + met(1,2,np,k) * contrauv_halo(k,2,2)
-       couv_halo(k,2,2) = met(2,1,np,k) * contrauv_halo(k,2,1) + met(2,2,np,k) * contrauv_halo(k,2,2)
+       couv_halo(k,1,1) = met(k,1,1,1)  * contrauv_halo(k,1,1) + met(k,1,1,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,1,2) = met(k,1,2,1)  * contrauv_halo(k,1,1) + met(k,1,2,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,2,1) = met(np,k,1,1) * contrauv_halo(k,2,1) + met(np,k,1,2) * contrauv_halo(k,2,2)
+       couv_halo(k,2,2) = met(np,k,2,1) * contrauv_halo(k,2,1) + met(np,k,2,2) * contrauv_halo(k,2,2)
 
-       couv_halo(k,3,1) = met(1,1,k,np) * contrauv_halo(k,3,1) + met(1,2,k,np) * contrauv_halo(k,3,2)
-       couv_halo(k,3,2) = met(2,1,k,np) * contrauv_halo(k,3,1) + met(2,2,k,np) * contrauv_halo(k,3,2)
-       couv_halo(k,4,1) = met(1,1,1,k)  * contrauv_halo(k,4,1) + met(1,2,1,k)  * contrauv_halo(k,4,2)
-       couv_halo(k,4,2) = met(2,1,1,k)  * contrauv_halo(k,4,1) + met(2,2,1,k)  * contrauv_halo(k,4,2)
+       couv_halo(k,3,1) = met(k,np,1,1) * contrauv_halo(k,3,1) + met(k,np,1,2) * contrauv_halo(k,3,2)
+       couv_halo(k,3,2) = met(k,np,2,1) * contrauv_halo(k,3,1) + met(k,np,2,2) * contrauv_halo(k,3,2)
+       couv_halo(k,4,1) = met(1,k,1,1)  * contrauv_halo(k,4,1) + met(1,k,1,2)  * contrauv_halo(k,4,2)
+       couv_halo(k,4,2) = met(1,k,2,1)  * contrauv_halo(k,4,1) + met(1,k,2,2)  * contrauv_halo(k,4,2)
     enddo
 !=======================================================================================================!
 ! Energy for the internal elements => energy(i,j)= g*h + 0.5*(u_1*u^1 + u_2*u^2)			!
@@ -942,7 +942,7 @@ function  uv_vorticity(uv,sg,D,deriv) result(vor)
 !==========================================================================================
 !   Implicit None
     type (derivative_t)         :: deriv
-    real (kind=real_kind), intent(in) :: D(2,2,np,np)
+    real (kind=real_kind), intent(in) :: D(np,np,2,2)
     real (kind=real_kind), dimension(np,np), intent(in) :: sg  
     real (kind=real_kind), dimension(np,np,2), intent(in) :: uv
     real (kind=real_kind), dimension(np,np,2) :: couv 
@@ -1160,15 +1160,15 @@ subroutine dg_diff_grads(elem,deriv,contrauvbuf,contrauv,couv,dif_gradu,dif_grad
     enddo
 
     do k= 1,np
-       couv_halo(k,1,1) = elem%met(1,1,k,1)  * contrauv_halo(k,1,1) + elem%met(1,2,k,1)  * contrauv_halo(k,1,2)
-       couv_halo(k,1,2) = elem%met(2,1,k,1)  * contrauv_halo(k,1,1) + elem%met(2,2,k,1)  * contrauv_halo(k,1,2)
-       couv_halo(k,2,1) = elem%met(1,1,np,k) * contrauv_halo(k,2,1) + elem%met(1,2,np,k) * contrauv_halo(k,2,2)
-       couv_halo(k,2,2) = elem%met(2,1,np,k) * contrauv_halo(k,2,1) + elem%met(2,2,np,k) * contrauv_halo(k,2,2)
+       couv_halo(k,1,1) = elem%metJMD(k,1,1,1)  * contrauv_halo(k,1,1) + elem%metJMD(k,1,1,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,1,2) = elem%metJMD(k,1,2,1)  * contrauv_halo(k,1,1) + elem%metJMD(k,1,2,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,2,1) = elem%metJMD(np,k,1,1) * contrauv_halo(k,2,1) + elem%metJMD(np,k,1,2) * contrauv_halo(k,2,2)
+       couv_halo(k,2,2) = elem%metJMD(np,k,2,1) * contrauv_halo(k,2,1) + elem%metJMD(np,k,2,2) * contrauv_halo(k,2,2)
 
-       couv_halo(k,3,1) = elem%met(1,1,k,np) * contrauv_halo(k,3,1) + elem%met(1,2,k,np) * contrauv_halo(k,3,2)
-       couv_halo(k,3,2) = elem%met(2,1,k,np) * contrauv_halo(k,3,1) + elem%met(2,2,k,np) * contrauv_halo(k,3,2)
-       couv_halo(k,4,1) = elem%met(1,1,1,k)  * contrauv_halo(k,4,1) + elem%met(1,2,1,k)  * contrauv_halo(k,4,2)
-       couv_halo(k,4,2) = elem%met(2,1,1,k)  * contrauv_halo(k,4,1) + elem%met(2,2,1,k)  * contrauv_halo(k,4,2)
+       couv_halo(k,3,1) = elem%metJMD(k,np,1,1) * contrauv_halo(k,3,1) + elem%metJMD(k,np,1,2) * contrauv_halo(k,3,2)
+       couv_halo(k,3,2) = elem%metJMD(k,np,2,1) * contrauv_halo(k,3,1) + elem%metJMD(k,np,2,2) * contrauv_halo(k,3,2)
+       couv_halo(k,4,1) = elem%metJMD(1,k,1,1)  * contrauv_halo(k,4,1) + elem%metJMD(1,k,1,2)  * contrauv_halo(k,4,2)
+       couv_halo(k,4,2) = elem%metJMD(1,k,2,1)  * contrauv_halo(k,4,1) + elem%metJMD(1,k,2,2)  * contrauv_halo(k,4,2)
     enddo
 
     Call  jump_fluxint(deriv,couv,couv_halo,jflx)
@@ -1210,18 +1210,18 @@ subroutine dg_diff_grads_uv(elem,deriv,uvbuf,uv,dif_gradu,dif_gradv)
     enddo
 
    do k= 1, np
-       couv_halo(k,1,1) = elem%D(1,1,k,1)  * uv_halo(k,1,1) + elem%D(2,1,k,1)  * uv_halo(k,1,2)
-       couv_halo(k,1,2) = elem%D(1,2,k,1)  * uv_halo(k,1,1) + elem%D(2,2,k,1)  * uv_halo(k,1,2)
-       couv_halo(k,2,1) = elem%D(1,1,np,k) * uv_halo(k,2,1) + elem%D(2,1,np,k) * uv_halo(k,2,2)
-       couv_halo(k,2,2) = elem%D(1,2,np,k) * uv_halo(k,2,1) + elem%D(2,2,np,k) * uv_halo(k,2,2)
+       couv_halo(k,1,1) = elem%DJMD(k,1,1,1)  * uv_halo(k,1,1) + elem%DJMD(k,1,2,1)  * uv_halo(k,1,2)
+       couv_halo(k,1,2) = elem%DJMD(k,1,1,2)  * uv_halo(k,1,1) + elem%DJMD(k,1,2,2)  * uv_halo(k,1,2)
+       couv_halo(k,2,1) = elem%DJMD(np,k,1,1) * uv_halo(k,2,1) + elem%DJMD(np,k,2,1) * uv_halo(k,2,2)
+       couv_halo(k,2,2) = elem%DJMD(np,k,1,2) * uv_halo(k,2,1) + elem%DJMD(np,k,2,2) * uv_halo(k,2,2)
 
-       couv_halo(k,3,1) = elem%D(1,1,k,np) * uv_halo(k,3,1) + elem%D(2,1,k,np) * uv_halo(k,3,2)
-       couv_halo(k,3,2) = elem%D(1,2,k,np) * uv_halo(k,3,1) + elem%D(2,2,k,np) * uv_halo(k,3,2)
-       couv_halo(k,4,1) = elem%D(1,1,1,k)  * uv_halo(k,4,1) + elem%D(2,1,1,k)  * uv_halo(k,4,2)
-       couv_halo(k,4,2) = elem%D(1,2,1,k)  * uv_halo(k,4,1) + elem%D(2,2,1,k)  * uv_halo(k,4,2)
+       couv_halo(k,3,1) = elem%DJMD(k,np,1,1) * uv_halo(k,3,1) + elem%DJMD(k,np,2,1) * uv_halo(k,3,2)
+       couv_halo(k,3,2) = elem%DJMD(k,np,1,2) * uv_halo(k,3,1) + elem%DJMD(k,np,2,2) * uv_halo(k,3,2)
+       couv_halo(k,4,1) = elem%DJMD(1,k,1,1)  * uv_halo(k,4,1) + elem%DJMD(1,k,2,1)  * uv_halo(k,4,2)
+       couv_halo(k,4,2) = elem%DJMD(1,k,1,2)  * uv_halo(k,4,1) + elem%DJMD(1,k,2,2)  * uv_halo(k,4,2)
     enddo
 
-        couv(:,:,:) = sphere2cov(uv,elem%D)
+        couv(:,:,:) = sphere2cov(uv,elem%DJMD)
 
     Call  jump_fluxint(deriv,couv,couv_halo,jflx)
 !   Call  jump_fluxint(deriv,uv,uv_halo,jflx)
@@ -1397,14 +1397,14 @@ subroutine jump_fluxint(deriv,uv,uv_senw,jfluxint)
     real(kind=real_kind), dimension(np,np,2), intent(out) :: grad_u
 
     real(kind=real_kind), dimension(np,np) :: gr1 ,gr2, sg
-    real(kind=real_kind), dimension(2,2,np,np) :: ginv
+    real(kind=real_kind), dimension(np,np,2,2) :: ginv
 
     real(kind=real_kind) ::  s1,s2, weight , v1,v2
     integer :: i,j,l
 !=======================================================================================================!
 
     sg(:,:) = elem%metdet(:,:)
-    ginv(:,:,:,:) = elem%metinv(:,:,:,:)
+    ginv(:,:,:,:) = elem%metinvJMD(:,:,:,:)
 
 !!  DoubleInt[ grad(U) = (U_x1, U_x2)]
 
@@ -1445,18 +1445,18 @@ subroutine jump_fluxint(deriv,uv,uv_senw,jfluxint)
             do i=1,np
                    v1 = gr1(i,j)
                    v2 = gr2(i,j)
-             grad_u(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-             grad_u(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+             grad_u(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+             grad_u(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
             end do
         end do
 
 ! do j=1,np
 !  do i=1,np
-!     dif_gradu(i,j,1) = gradu1(i,j,1) *elem%Dinv(1,1,i,j) + gradu1(i,j,2) * elem%Dinv(2,1,i,j) 
-!     dif_gradu(i,j,2) = gradu1(i,j,1) *elem%Dinv(1,2,i,j) + gradu1(i,j,2) * elem%Dinv(2,2,i,j) 
+!     dif_gradu(i,j,1) = gradu1(i,j,1) *elem%DinvJMD(i,j,1,1) + gradu1(i,j,2) * elem%DinvJMD(i,j,2,1) 
+!     dif_gradu(i,j,2) = gradu1(i,j,1) *elem%DinvJMD(i,j,1,2) + gradu1(i,j,2) * elem%DinvJMD(i,j,2,2) 
 !
-!     dif_gradv(i,j,1) = gradu2(i,j,1) *elem%Dinv(1,1,i,j) + gradu2(i,j,2) * elem%Dinv(2,1,i,j) 
-!     dif_gradv(i,j,2) = gradu2(i,j,1) *elem%Dinv(1,2,i,j) + gradu2(i,j,2) * elem%Dinv(2,2,i,j) 
+!     dif_gradv(i,j,1) = gradu2(i,j,1) *elem%DinvJMD(i,j,1,1) + gradu2(i,j,2) * elem%DinvJMD(i,j,2,1) 
+!     dif_gradv(i,j,2) = gradu2(i,j,1) *elem%DinvJMD(i,j,1,2) + gradu2(i,j,2) * elem%DinvJMD(i,j,2,2) 
 !  enddo
 !  enddo
 
@@ -1689,7 +1689,7 @@ end function adv_flux_term
 !=======================================================================================!
 function contra2co(vin,met) result(vout)
 !=======================================================================================!
-real (kind=real_kind),intent(in) :: met(2,2,np,np)
+real (kind=real_kind),intent(in) :: met(np,np,2,2)
 real (kind=real_kind),intent(in) :: vin(np,np,2)
 real (kind=real_kind)            :: vout(np,np,2)
 integer :: i,j
@@ -1699,15 +1699,15 @@ do j=1,np
 do i=1,np
    v1= vin(i,j,1)
    v2= vin(i,j,2)
-   vout(i,j,1)= met(1,1,i,j)*v1 + met(1,2,i,j)*v2
-   vout(i,j,2)= met(2,1,i,j)*v1 + met(2,2,i,j)*v2
+   vout(i,j,1)= met(i,j,1,1)*v1 + met(i,j,1,2)*v2
+   vout(i,j,2)= met(i,j,2,1)*v1 + met(i,j,2,2)*v2
 enddo
 enddo
 end function contra2co
 !=======================================================================================!
 function co2contra(vin,metinv) result(vout)
 !=======================================================================================!
-real (kind=real_kind),intent(in) :: metinv(2,2,np,np)
+real (kind=real_kind),intent(in) :: metinv(np,np,2,2)
 real (kind=real_kind),intent(in) :: vin(np,np,2)
 real (kind=real_kind)            :: vout(np,np,2)
 integer :: i,j
@@ -1717,15 +1717,15 @@ do j=1,np
 do i=1,np
    v1= vin(i,j,1)
    v2= vin(i,j,2)
-   vout(i,j,1)= metinv(1,1,i,j)*v1 + metinv(1,2,i,j)*v2
-   vout(i,j,2)= metinv(2,1,i,j)*v1 + metinv(2,2,i,j)*v2
+   vout(i,j,1)= metinv(i,j,1,1)*v1 + metinv(i,j,1,2)*v2
+   vout(i,j,2)= metinv(i,j,2,1)*v1 + metinv(i,j,2,2)*v2
 enddo
 enddo
 end function co2contra
 !=======================================================================================!
 function sphere2cov(vin,D) result(vout)
 !=======================================================================================!
-real (kind=real_kind),intent(in) :: D(2,2,np,np)
+real (kind=real_kind),intent(in) :: D(np,np,2,2)
 real (kind=real_kind),intent(in) :: vin(np,np,2)
 real (kind=real_kind)            :: vout(np,np,2)
 integer:: i,j
@@ -1737,8 +1737,8 @@ real (kind=real_kind):: v1,v2
   do i=1,np
     v1= vin(i,j,1)
     v2= vin(i,j,2)
-    vout(i,j,1) = D(1,1,i,j)*v1 + D(2,1,i,j)*v2
-    vout(i,j,2) = D(1,2,i,j)*v1 + D(2,2,i,j)*v2
+    vout(i,j,1) = D(i,j,1,1)*v1 + D(i,j,2,1)*v2
+    vout(i,j,2) = D(i,j,1,2)*v1 + D(i,j,2,2)*v2
   enddo
   enddo
  return
@@ -1746,7 +1746,7 @@ end function sphere2cov
 !=======================================================================================!
 function cov2sphere(vin,Dinv) result(vout)
 !=======================================================================================!
-real (kind=real_kind),intent(in) :: Dinv(2,2,np,np)
+real (kind=real_kind),intent(in) :: Dinv(np,np,2,2)
 real (kind=real_kind),intent(in) :: vin(np,np,2)
 real (kind=real_kind)            :: vout(np,np,2)
 integer:: i,j
@@ -1758,8 +1758,8 @@ real (kind=real_kind):: v1,v2
   do i=1,np
     v1= vin(i,j,1)
     v2= vin(i,j,2)
-    vout(i,j,1) = Dinv(1,1,i,j)*v1 + Dinv(2,1,i,j)*v2
-    vout(i,j,2) = Dinv(1,2,i,j)*v1 + Dinv(2,2,i,j)*v2
+    vout(i,j,1) = Dinv(i,j,1,1)*v1 + Dinv(i,j,2,1)*v2
+    vout(i,j,2) = Dinv(i,j,1,2)*v1 + Dinv(i,j,2,2)*v2
   enddo
   enddo
  return
@@ -1767,7 +1767,7 @@ end function cov2sphere
 !=======================================================================================!
 function sphere2contra(vin,Dinv) result(vout)
 !=======================================================================================!
-real (kind=real_kind),intent(in) :: Dinv(2,2,np,np)
+real (kind=real_kind),intent(in) :: Dinv(np,np,2,2)
 real (kind=real_kind),intent(in) :: vin(np,np,2)
 real (kind=real_kind)            :: vout(np,np,2)
 integer:: i,j
@@ -1779,8 +1779,8 @@ real (kind=real_kind):: v1,v2
   do i=1,np
     v1= vin(i,j,1)
     v2= vin(i,j,2)
-    vout(i,j,1) = Dinv(1,1,i,j)*v1 + Dinv(1,2,i,j)*v2
-    vout(i,j,2) = Dinv(2,1,i,j)*v1 + Dinv(2,2,i,j)*v2
+    vout(i,j,1) = Dinv(i,j,1,1)*v1 + Dinv(i,j,1,2)*v2
+    vout(i,j,2) = Dinv(i,j,2,1)*v1 + Dinv(i,j,2,2)*v2
   enddo
   enddo
  return
@@ -1788,7 +1788,7 @@ end function sphere2contra
 !=======================================================================================!
 function contra2sphere(vin,D) result(vout)
 !=======================================================================================!
-real (kind=real_kind),intent(in) :: D(2,2,np,np)
+real (kind=real_kind),intent(in) :: D(np,np,2,2)
 real (kind=real_kind),intent(in) :: vin(np,np,2)
 real (kind=real_kind)            :: vout(np,np,2)
 integer:: i,j
@@ -1800,8 +1800,8 @@ real (kind=real_kind):: v1,v2
   do i=1,np
     v1= vin(i,j,1)
     v2= vin(i,j,2)
-    vout(i,j,1) = D(1,1,i,j)*v1 + D(1,2,i,j)*v2
-    vout(i,j,2) = D(2,1,i,j)*v1 + D(2,2,i,j)*v2
+    vout(i,j,1) = D(i,j,1,1)*v1 + D(i,j,1,2)*v2
+    vout(i,j,2) = D(i,j,2,1)*v1 + D(i,j,2,2)*v2
   enddo
   enddo
 !=======================================================================================!

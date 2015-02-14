@@ -68,6 +68,7 @@ contains
 !
     J_tmp = 0.0D0
 
+!JMD    print *,'global_integral: before loop'
        do ie=nets,nete
           do j=1,np
              do i=1,np
@@ -79,8 +80,11 @@ contains
     do ie=nets,nete
       global_shared_buf(ie,1) = J_tmp(ie)
     enddo
+!JMD    print *,'global_integral: before wrap_repro_sum'
     call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+!JMD    print *,'global_integral: after wrap_repro_sum'
     I_tmp = global_shared_sum(1)
+!JMD    print *,'global_integral: after global_shared_sum'
     I_sphere = I_tmp(1)/(4.0D0*DD_PI)
 
   end function global_integral
@@ -464,14 +468,14 @@ contains
     do rowind=1,2
       do colind=1,2
 	do ie=nets,nete
-	  zeta(:,:,ie) = elem(ie)%tensorVisc(rowind,colind,:,:)*elem(ie)%spheremp(:,:)
+	  zeta(:,:,ie) = elem(ie)%tensorViscJMD(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
 	  call oldedgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
 	end do
 
 	call bndry_exchangeV(hybrid,edgebuf)
 	do ie=nets,nete
 	  call oldedgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
-          elem(ie)%tensorVisc(rowind,colind,:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
+          elem(ie)%tensorViscJMD(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
 	end do
       enddo !rowind
     enddo !colind
@@ -484,15 +488,15 @@ contains
       do colind=1,2
     ! replace hypervis w/ bilinear based on continuous corner values
 	do ie=nets,nete
-	  noreast = elem(ie)%tensorVisc(rowind,colind,np,np)
-	  nw = elem(ie)%tensorVisc(rowind,colind,1,np)
-	  se = elem(ie)%tensorVisc(rowind,colind,np,1)
-	  sw = elem(ie)%tensorVisc(rowind,colind,1,1)
+	  noreast = elem(ie)%tensorViscJMD(np,np,rowind,colind)
+	  nw = elem(ie)%tensorViscJMD(1,np,rowind,colind)
+	  se = elem(ie)%tensorViscJMD(np,1,rowind,colind)
+	  sw = elem(ie)%tensorViscJMD(1,1,rowind,colind)
 	  do i=1,np
 	    x = gp%points(i)
 	    do j=1,np
 		y = gp%points(j)
-		elem(ie)%tensorVisc(rowind,colind,i,j) = 0.25d0*( &
+		elem(ie)%tensorViscJMD(i,j,rowind,colind) = 0.25d0*( &
 					(1.0d0-x)*(1.0d0-y)*sw + &
 					(1.0d0-x)*(y+1.0d0)*nw + &
 					(x+1.0d0)*(1.0d0-y)*se + &
@@ -681,7 +685,7 @@ contains
     integer i,j,ie
 
     do ie=nets,nete
-       met => elem(ie)%met
+       met => elem(ie)%metJMD
        do j=1,npts
           do i=1,npts
 
@@ -691,11 +695,11 @@ contains
              vt1     = vt(i,j,1,ie)
              vt2     = vt(i,j,2,ie)
 
-             dvco(i,j,1) = met(1,1,i,j)*dv1 + met(1,2,i,j)*dv2
-             dvco(i,j,2) = met(2,1,i,j)*dv1 + met(2,2,i,j)*dv2
+             dvco(i,j,1) = met(i,j,1,1)*dv1 + met(i,j,1,2)*dv2
+             dvco(i,j,2) = met(i,j,2,1)*dv1 + met(i,j,2,2)*dv2
 
-             vtco(i,j,1) = met(1,1,i,j)*vt1 + met(1,2,i,j)*vt2
-             vtco(i,j,2) = met(2,1,i,j)*vt1 + met(2,2,i,j)*vt2
+             vtco(i,j,1) = met(i,j,1,1)*vt1 + met(i,j,1,2)*vt2
+             vtco(i,j,2) = met(i,j,2,1)*vt1 + met(i,j,2,2)*vt2
 
              dvsq(i,j,ie) = SQRT(dvco(i,j,1)*dv1 + dvco(i,j,2)*dv2)
              vtsq(i,j,ie) = SQRT(vtco(i,j,1)*vt1 + vtco(i,j,2)*vt2)
@@ -789,7 +793,7 @@ contains
     integer i,j,ie
 
     do ie=nets,nete
-       met => elem(ie)%met
+       met => elem(ie)%metJMD
        do j=1,npts
           do i=1,npts
 
@@ -799,11 +803,11 @@ contains
              vt1     = vt(i,j,1,ie)
              vt2     = vt(i,j,2,ie)
 
-             dvco(i,j,1) = met(1,1,i,j)*dv1 + met(1,2,i,j)*dv2
-             dvco(i,j,2) = met(2,1,i,j)*dv1 + met(2,2,i,j)*dv2
+             dvco(i,j,1) = met(i,j,1,1)*dv1 + met(i,j,1,2)*dv2
+             dvco(i,j,2) = met(i,j,2,1)*dv1 + met(i,j,2,2)*dv2
 
-             vtco(i,j,1) = met(1,1,i,j)*vt1 + met(1,2,i,j)*vt2
-             vtco(i,j,2) = met(2,1,i,j)*vt1 + met(2,2,i,j)*vt2
+             vtco(i,j,1) = met(i,j,1,1)*vt1 + met(i,j,1,2)*vt2
+             vtco(i,j,2) = met(i,j,2,1)*vt1 + met(i,j,2,2)*vt2
 
              dvsq(i,j,ie) = dvco(i,j,1)*dv1 + dvco(i,j,2)*dv2
              vtsq(i,j,ie) = vtco(i,j,1)*vt1 + vtco(i,j,2)*vt2
@@ -895,7 +899,7 @@ contains
     integer i,j,ie
 
     do ie=nets,nete
-       met => elem(ie)%met
+       met => elem(ie)%metJMD
 
        do j=1,npts
           do i=1,npts
@@ -906,11 +910,11 @@ contains
              vt1     = vt(i,j,1,ie)
              vt2     = vt(i,j,2,ie)
 
-             dvco(i,j,1) = met(1,1,i,j)*dv1 + met(1,2,i,j)*dv2
-             dvco(i,j,2) = met(2,1,i,j)*dv1 + met(2,2,i,j)*dv2
+             dvco(i,j,1) = met(i,j,1,1)*dv1 + met(i,j,1,2)*dv2
+             dvco(i,j,2) = met(i,j,2,1)*dv1 + met(i,j,2,2)*dv2
 
-             vtco(i,j,1) = met(1,1,i,j)*vt1 + met(1,2,i,j)*vt2
-             vtco(i,j,2) = met(2,1,i,j)*vt1 + met(2,2,i,j)*vt2
+             vtco(i,j,1) = met(i,j,1,1)*vt1 + met(i,j,1,2)*vt2
+             vtco(i,j,2) = met(i,j,2,1)*vt1 + met(i,j,2,2)*vt2
 
              dvsq(i,j,ie) = SQRT(dvco(i,j,1)*dv1 + dvco(i,j,2)*dv2)
              vtsq(i,j,ie) = SQRT(vtco(i,j,1)*vt1 + vtco(i,j,2)*vt2)

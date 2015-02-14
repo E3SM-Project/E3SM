@@ -165,7 +165,7 @@ subroutine sw1_init_state(elem,nets,nete,pmean)
 
     do ie=nets,nete
     do k=1,nlev
-          elem(ie)%state%v(:,:,:,k,n0)= sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)	  
+          elem(ie)%state%v(:,:,:,k,n0)= sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)	  
 	  elem(ie)%state%ht(:,:,k) = sw1_phi(elem(ie)%spherep(:,:),pmean,latc_dg,lonc_dg)
 	  elem(ie)%state%hs(:,:,k) = 0.0D0
 !	   elem(ie)%state%psi(:,:,k)= elem(ie)%state%ht(:,:,k)
@@ -181,7 +181,7 @@ end subroutine sw1_init_state
 function sw1_velocity(sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -222,8 +222,8 @@ function sw1_velocity(sphere,D) result(v)
              ! using the D^-T mapping matrix (see Loft notes for details)
              ! =====================================================
 
-           !v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-           !v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+           !v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+           !v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
           end do
        end do
     end do
@@ -374,8 +374,8 @@ subroutine sw2_init_state(elem,nets,nete,pmean)
     do ie=nets,nete
        elem(ie)%fcor=sw2_coreolis_init(elem(ie)%spherep)
        do k=1,nlev
-         !elem(ie)%state%v(:,:,:,k,n0)= sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)  ! sw2 vel same as sw1
-          elem(ie)%state%v(:,:,:,k,n0)= sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)  ! sw2 vel same as sw1
+         !elem(ie)%state%v(:,:,:,k,n0)= sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)  ! sw2 vel same as sw1
+          elem(ie)%state%v(:,:,:,k,n0)= sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)  ! sw2 vel same as sw1
 	  elem(ie)%state%ht(:,:,k) = sw2_phi(elem(ie)%spherep(:,:))/g
           elem(ie)%state%hs(:,:,k) = 0.0D0
 !	  elem(ie)%state%psi(:,:,k)= elem(ie)%state%ht(:,:,k)
@@ -535,7 +535,7 @@ subroutine galewsky_init_state(elem,nets,nete,pmean,deriv)
     do ie=nets,nete
        elem(ie)%fcor= galewsky_coriolis(elem(ie)%spherep)
        do k=1,nlev
-          elem(ie)%state%v(:,:,:,k,n0)= galewsky_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
+          elem(ie)%state%v(:,:,:,k,n0)= galewsky_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
           elem(ie)%state%ht(:,:,k)= galewsky_phi(elem(ie)%spherep(:,:),gs) /  g
           elem(ie)%state%hs(:,:,k)= 0.0D0
        end do
@@ -612,7 +612,7 @@ subroutine galewsky_init_state(elem,nets,nete,pmean,deriv)
   function galewsky_velocity(sphere,D) result(v)
 !=======================================================================================================!
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -645,8 +645,8 @@ subroutine galewsky_init_state(elem,nets,nete,pmean,deriv)
              V1 =  ulat
              V2 =  0.0D0
 
-          !v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)   !contravariant vectors 
-          !v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          !v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)   !contravariant vectors 
+          !v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
           v(i,j,1)= V1
           v(i,j,2)= V2
 
@@ -730,7 +730,7 @@ subroutine galewsky_init_state(elem,nets,nete,pmean,deriv)
     gs=gauss(ngs_gal)
 
     elem(ie)%fcor = galewsky_coriolis(elem(ie)%spherep)
-    elem(ie)%state%v(:,:,:,k,n0) = galewsky_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
+    elem(ie)%state%v(:,:,:,k,n0) = galewsky_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
     elem(ie)%state%ht(:,:,k) =  galewsky_phi(elem(ie)%spherep(:,:),gs)/g
     elem(ie)%state%hs(:,:,k) = 0.0D0
 
@@ -762,7 +762,7 @@ subroutine sw5_init_state(elem,nets,nete,pmean,deriv)
     do ie=nets,nete
        elem(ie)%fcor= sw5_coreolis_init(elem(ie)%spherep)
        do k=1,nlev
-          elem(ie)%state%v(:,:,:,k,n0)= sw5_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)	   
+          elem(ie)%state%v(:,:,:,k,n0)= sw5_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)	   
 	  Call sw5_phi(elem(ie)%spherep(:,:),hts,hll)           
 	  elem(ie)%state%ht(:,:,k)= hts(:,:)/g 
           elem(ie)%state%hs(:,:,k)= hll(:,:)/g
@@ -779,7 +779,7 @@ end subroutine sw5_init_state
 function sw5_velocity(sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -818,8 +818,8 @@ function sw5_velocity(sphere,D) result(v)
 
            v(i,j,1)= V1
            v(i,j,2)= V2
-          !v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-          !v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          !v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+          !v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
        end do
     end do
 
@@ -1040,8 +1040,8 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
              v1= elem(ie)%state%v(i,j,1,1,n0)
              v2= elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%met(1,1,i,j)*v1 + elem(ie)%met(1,2,i,j)*v2
-             vco(i,j,2) = elem(ie)%met(2,1,i,j)*v1 + elem(ie)%met(2,2,i,j)*v2
+             vco(i,j,1) = elem(ie)%metJMD(i,j,1,1)*v1 + elem(ie)%metJMD(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%metJMD(i,j,2,1)*v1 + elem(ie)%metJMD(i,j,2,2)*v2
 
              gv(i,j,1) = elem(ie)%metdet(i,j)*v1
              gv(i,j,2) = elem(ie)%metdet(i,j)*v2
@@ -1091,8 +1091,8 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
              v1     = elem(ie)%state%v(i,j,1,1,n0)
              v2     = elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%met(1,1,i,j)*v1 + elem(ie)%met(1,2,i,j)*v2
-             vco(i,j,2) = elem(ie)%met(2,1,i,j)*v1 + elem(ie)%met(2,2,i,j)*v2
+             vco(i,j,1) = elem(ie)%metJMD(i,j,1,1)*v1 + elem(ie)%metJMD(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%metJMD(i,j,2,1)*v1 + elem(ie)%metJMD(i,j,2,2)*v2
              E(i,j) = 0.5D0*( vco(i,j,1)*v1 + vco(i,j,2)*v2 )
 
           end do
@@ -1165,7 +1165,7 @@ subroutine sw1_init(elem,tl,ie,k,pmean)
     np1   = tl%np1
     nstep = tl%nstep    
 
-    elem(ie)%state%v(:,:,:,k,n0)= sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)	  
+    elem(ie)%state%v(:,:,:,k,n0)= sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)	  
     elem(ie)%state%ht(:,:,k) = sw1_phi(elem(ie)%spherep(:,:),pmean,latc_dg,lonc_dg)
     elem(ie)%state%hs(:,:,k) = 0.0D0    
 !    elem(ie)%state%psi(:,:,k)= elem(ie)%state%ht(:,:,k)
@@ -1188,7 +1188,7 @@ subroutine sw2_init(elem,tl,ie,k,pmean)
     nstep = tl%nstep  
 
     elem(ie)%fcor=sw2_coreolis_init(elem(ie)%spherep)
-    elem(ie)%state%v(:,:,:,k,n0)=sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
+    elem(ie)%state%v(:,:,:,k,n0)=sw1_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
     elem(ie)%state%ht(:,:,k)= sw2_phi(elem(ie)%spherep(:,:))/g
     elem(ie)%state%hs(:,:,k)= 0.0D0
 !    elem(ie)%state%psi(:,:,k)= elem(ie)%state%ht(:,:,k)	  
@@ -1211,7 +1211,7 @@ subroutine sw5_init(elem,tl,ie,k,pmean)
     nstep = tl%nstep  
 !=======================================================================================================!
     elem(ie)%fcor=sw5_coreolis_init(elem(ie)%spherep)
-    elem(ie)%state%v(:,:,:,k,n0)= sw5_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)	   
+    elem(ie)%state%v(:,:,:,k,n0)= sw5_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)	   
     Call sw5_phi(elem(ie)%spherep(:,:),hts,hll)           
     elem(ie)%state%ht(:,:,k)= hts(:,:)/g 
     elem(ie)%state%hs(:,:,k)= hll(:,:)/g

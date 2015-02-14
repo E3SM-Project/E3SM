@@ -102,13 +102,13 @@ subroutine dg3d_uvform_rhs(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !=======================================================================================================!
 !	From HOMME
 !=======================================================================================================!
- met    => elem%met
- metinv => elem%metinv
+ met    => elem%metJMD
+ metinv => elem%metinvJMD
  metdet => elem%metdet
  mv     => elem%mp   
  fcor   => elem%fcor
- Dinv   => elem%Dinv
- D      => elem%D
+ Dinv   => elem%DinvJMD
+ D      => elem%DJMD
  grv = g 
 !=======================================================================================================!
 !  Mass and Inverse-Mass Matrix										!
@@ -165,15 +165,15 @@ subroutine dg3d_uvform_rhs(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !  Contravariant components for the halo region (needed for continuity eqns) 
 !=======================================================================================================!
     do k= 1, np
-       contuv_senw(k,1,1) = Dinv(1,1,k,1)  * uv_senw(k,1,1) + Dinv(1,2,k,1)  * uv_senw(k,1,2)
-       contuv_senw(k,1,2) = Dinv(2,1,k,1)  * uv_senw(k,1,1) + Dinv(2,2,k,1)  * uv_senw(k,1,2)
-       contuv_senw(k,2,1) = Dinv(1,1,np,k) * uv_senw(k,2,1) + Dinv(1,2,np,k) * uv_senw(k,2,2)
-       contuv_senw(k,2,2) = Dinv(2,1,np,k) * uv_senw(k,2,1) + Dinv(2,2,np,k) * uv_senw(k,2,2)
+       contuv_senw(k,1,1) = Dinv(k,1,1,1)  * uv_senw(k,1,1) + Dinv(k,1,1,2)  * uv_senw(k,1,2)
+       contuv_senw(k,1,2) = Dinv(k,1,2,1)  * uv_senw(k,1,1) + Dinv(k,1,2,2)  * uv_senw(k,1,2)
+       contuv_senw(k,2,1) = Dinv(np,k,1,1) * uv_senw(k,2,1) + Dinv(np,k,1,2) * uv_senw(k,2,2)
+       contuv_senw(k,2,2) = Dinv(np,k,2,1) * uv_senw(k,2,1) + Dinv(np,k,2,2) * uv_senw(k,2,2)
 
-       contuv_senw(k,3,1) = Dinv(1,1,k,np) * uv_senw(k,3,1) + Dinv(1,2,k,np) * uv_senw(k,3,2)
-       contuv_senw(k,3,2) = Dinv(2,1,k,np) * uv_senw(k,3,1) + Dinv(2,2,k,np) * uv_senw(k,3,2)
-       contuv_senw(k,4,1) = Dinv(1,1,1,k)  * uv_senw(k,4,1) + Dinv(1,2,1,k)  * uv_senw(k,4,2)
-       contuv_senw(k,4,2) = Dinv(2,1,1,k)  * uv_senw(k,4,1) + Dinv(2,2,1,k)  * uv_senw(k,4,2)
+       contuv_senw(k,3,1) = Dinv(k,np,1,1) * uv_senw(k,3,1) + Dinv(k,np,1,2) * uv_senw(k,3,2)
+       contuv_senw(k,3,2) = Dinv(k,np,2,1) * uv_senw(k,3,1) + Dinv(k,np,2,2) * uv_senw(k,3,2)
+       contuv_senw(k,4,1) = Dinv(1,k,1,1)  * uv_senw(k,4,1) + Dinv(1,k,1,2)  * uv_senw(k,4,2)
+       contuv_senw(k,4,2) = Dinv(1,k,2,1)  * uv_senw(k,4,1) + Dinv(1,k,2,2)  * uv_senw(k,4,2)
     enddo
 
 !=======================================================================================================!
@@ -187,15 +187,15 @@ subroutine dg3d_uvform_rhs(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !  Covariant components for the halo region
 !=======================================================================================================!
     do k= 1, np
-       couv_senw(k,1,1) = met(1,1,k,1)  * contuv_senw(k,1,1) + met(1,2,k,1)  * contuv_senw(k,1,2)
-       couv_senw(k,1,2) = met(2,1,k,1)  * contuv_senw(k,1,1) + met(2,2,k,1)  * contuv_senw(k,1,2)
-       couv_senw(k,2,1) = met(1,1,np,k) * contuv_senw(k,2,1) + met(1,2,np,k) * contuv_senw(k,2,2)
-       couv_senw(k,2,2) = met(2,1,np,k) * contuv_senw(k,2,1) + met(2,2,np,k) * contuv_senw(k,2,2)
+       couv_senw(k,1,1) = met(k,1,1,1)  * contuv_senw(k,1,1) + met(k,1,1,2)  * contuv_senw(k,1,2)
+       couv_senw(k,1,2) = met(k,1,2,1)  * contuv_senw(k,1,1) + met(k,1,2,2)  * contuv_senw(k,1,2)
+       couv_senw(k,2,1) = met(np,k,1,1) * contuv_senw(k,2,1) + met(np,k,1,2) * contuv_senw(k,2,2)
+       couv_senw(k,2,2) = met(np,k,2,1) * contuv_senw(k,2,1) + met(np,k,2,2) * contuv_senw(k,2,2)
 
-       couv_senw(k,3,1) = met(1,1,k,np) * contuv_senw(k,3,1) + met(1,2,k,np) * contuv_senw(k,3,2)
-       couv_senw(k,3,2) = met(2,1,k,np) * contuv_senw(k,3,1) + met(2,2,k,np) * contuv_senw(k,3,2)
-       couv_senw(k,4,1) = met(1,1,1,k)  * contuv_senw(k,4,1) + met(1,2,1,k)  * contuv_senw(k,4,2)
-       couv_senw(k,4,2) = met(2,1,1,k)  * contuv_senw(k,4,1) + met(2,2,1,k)  * contuv_senw(k,4,2)
+       couv_senw(k,3,1) = met(k,np,1,1) * contuv_senw(k,3,1) + met(k,np,1,2) * contuv_senw(k,3,2)
+       couv_senw(k,3,2) = met(k,np,2,1) * contuv_senw(k,3,1) + met(k,np,2,2) * contuv_senw(k,3,2)
+       couv_senw(k,4,1) = met(1,k,1,1)  * contuv_senw(k,4,1) + met(1,k,1,2)  * contuv_senw(k,4,2)
+       couv_senw(k,4,2) = met(1,k,2,1)  * contuv_senw(k,4,1) + met(1,k,2,2)  * contuv_senw(k,4,2)
     enddo
 !=======================================================================================================!
  do i = 1,np
@@ -260,21 +260,21 @@ subroutine dg3d_uvform_rhs(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !=======================================================================================================!
  do j = 1,np
  do i = 1,np
-    ghij(i,j,1) = (grv * htop(i,j) )* metinv(1,1,i,j)
-    ghij(i,j,2) = (grv * htop(i,j) )* metinv(2,2,i,j)
+    ghij(i,j,1) = (grv * htop(i,j) )* metinv(i,j,1,1)
+    ghij(i,j,2) = (grv * htop(i,j) )* metinv(i,j,2,2)
  end do
  end do
 
  do k = 1,np
-    gh11_senw(k,1) = (grv * abs(ht_senw(k,1)) )* metinv(1,1,k,1)
-    gh11_senw(k,2) = (grv * abs(ht_senw(k,2)) )* metinv(1,1,np,k)
-    gh11_senw(k,3) = (grv * abs(ht_senw(k,3)) )* metinv(1,1,k,np)
-    gh11_senw(k,4) = (grv * abs(ht_senw(k,4)) )* metinv(1,1,1,k)
+    gh11_senw(k,1) = (grv * abs(ht_senw(k,1)) )* metinv(k,1,1,1)
+    gh11_senw(k,2) = (grv * abs(ht_senw(k,2)) )* metinv(np,k,1,1)
+    gh11_senw(k,3) = (grv * abs(ht_senw(k,3)) )* metinv(k,np,1,1)
+    gh11_senw(k,4) = (grv * abs(ht_senw(k,4)) )* metinv(1,k,1,1)
 
-    gh22_senw(k,1) = (grv * abs(ht_senw(k,1)) )* metinv(2,2,k,1)
-    gh22_senw(k,2) = (grv * abs(ht_senw(k,2)) )* metinv(2,2,np,k)
-    gh22_senw(k,3) = (grv * abs(ht_senw(k,3)) )* metinv(2,2,k,np)
-    gh22_senw(k,4) = (grv * abs(ht_senw(k,4)) )* metinv(2,2,1,k)
+    gh22_senw(k,1) = (grv * abs(ht_senw(k,1)) )* metinv(k,1,2,2)
+    gh22_senw(k,2) = (grv * abs(ht_senw(k,2)) )* metinv(np,k,2,2)
+    gh22_senw(k,3) = (grv * abs(ht_senw(k,3)) )* metinv(k,np,2,2)
+    gh22_senw(k,4) = (grv * abs(ht_senw(k,4)) )* metinv(1,k,2,2)
  end do
 !=======================================================================================================!
 !  fjmax(:) = dg3d_fluxjacobian(uv,uv_senw,ghij(:,:,1),ghij(:,:,2),gh11_senw,gh22_senw)
@@ -410,8 +410,8 @@ subroutine dg3d_uvform_rhs(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 
    do j=1,np
    do i=1,np
-      sp_grad(i,j,1) = pgrad(i,j,1) *Dinv(1,1,i,j) + pgrad(i,j,2) * Dinv(2,1,i,j)
-      sp_grad(i,j,2) = pgrad(i,j,1) *Dinv(1,2,i,j) + pgrad(i,j,2) * Dinv(2,2,i,j)
+      sp_grad(i,j,1) = pgrad(i,j,1) *Dinv(i,j,1,1) + pgrad(i,j,2) * Dinv(i,j,2,1)
+      sp_grad(i,j,2) = pgrad(i,j,1) *Dinv(i,j,1,2) + pgrad(i,j,2) * Dinv(i,j,2,2)
    enddo
    enddo
 
@@ -441,8 +441,8 @@ subroutine dg3d_uvform_rhs(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !
 !   do j=1,np
 !   do i=1,np
-!     sw3d_rhs(i,j,1) = u1_rhs(i,j) *Dinv(1,1,i,j) + u2_rhs(i,j) * Dinv(2,1,i,j) + sw_source(i,j,1)
-!     sw3d_rhs(i,j,2) = u1_rhs(i,j) *Dinv(1,2,i,j) + u2_rhs(i,j) * Dinv(2,2,i,j) + sw_source(i,j,2)
+!     sw3d_rhs(i,j,1) = u1_rhs(i,j) *Dinv(i,j,1,1) + u2_rhs(i,j) * Dinv(i,j,2,1) + sw_source(i,j,1)
+!     sw3d_rhs(i,j,2) = u1_rhs(i,j) *Dinv(i,j,1,2) + u2_rhs(i,j) * Dinv(i,j,2,2) + sw_source(i,j,2)
 !   enddo
 !   enddo
 
@@ -452,8 +452,8 @@ subroutine dg3d_uvform_rhs(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
     do i = 1, np
         u1 = (sw_grad(i,j,1) - flux_sw(i,j,1)) 
         u2 = (sw_grad(i,j,2) - flux_sw(i,j,2)) 
-      sw3d_rhs(i,j,1) = (u1 *Dinv(1,1,i,j) + u2 * Dinv(2,1,i,j))*mmi(i,j) + sw_source(i,j,1)
-      sw3d_rhs(i,j,2) = (u1 *Dinv(1,2,i,j) + u2 * Dinv(2,2,i,j))*mmi(i,j) + sw_source(i,j,2)
+      sw3d_rhs(i,j,1) = (u1 *Dinv(i,j,1,1) + u2 * Dinv(i,j,2,1))*mmi(i,j) + sw_source(i,j,1)
+      sw3d_rhs(i,j,2) = (u1 *Dinv(i,j,1,2) + u2 * Dinv(i,j,2,2))*mmi(i,j) + sw_source(i,j,2)
      enddo
      enddo
  
@@ -507,8 +507,8 @@ subroutine dg3d_rhs_terms(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !=======================================================================================================!
 !	From HOMME
 !=======================================================================================================!
- met    => elem%met
- metinv => elem%metinv
+ met    => elem%metJMD
+ metinv => elem%metinvJMD
  metdet => elem%metdet
  mv     => elem%mp   
  fcor   => elem%fcor
@@ -648,15 +648,15 @@ subroutine dg3d_rhs_terms(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !	Covariant components for the halo region 
 !=======================================================================================================!
  do k = 1,np
-    couv_senw(k,1,1) = elem%met(1,1,k,1)  * uv_senw(k,1,1) + elem%met(1,2,k,1)  * uv_senw(k,1,2)
-    couv_senw(k,1,2) = elem%met(2,1,k,1)  * uv_senw(k,1,1) + elem%met(2,2,k,1)  * uv_senw(k,1,2)
-    couv_senw(k,2,1) = elem%met(1,1,np,k) * uv_senw(k,2,1) + elem%met(1,2,np,k) * uv_senw(k,2,2)
-    couv_senw(k,2,2) = elem%met(2,1,np,k) * uv_senw(k,2,1) + elem%met(2,2,np,k) * uv_senw(k,2,2)
+    couv_senw(k,1,1) = elem%metJMD(k,1,1,1)  * uv_senw(k,1,1) + elem%metJMD(k,1,1,2)  * uv_senw(k,1,2)
+    couv_senw(k,1,2) = elem%metJMD(k,1,2,1)  * uv_senw(k,1,1) + elem%metJMD(k,1,2,2)  * uv_senw(k,1,2)
+    couv_senw(k,2,1) = elem%metJMD(np,k,1,1) * uv_senw(k,2,1) + elem%metJMD(np,k,1,2) * uv_senw(k,2,2)
+    couv_senw(k,2,2) = elem%metJMD(np,k,2,1) * uv_senw(k,2,1) + elem%metJMD(np,k,2,2) * uv_senw(k,2,2)
 
-    couv_senw(k,3,1) = elem%met(1,1,k,np) * uv_senw(k,3,1) + elem%met(1,2,k,np) * uv_senw(k,3,2)
-    couv_senw(k,3,2) = elem%met(2,1,k,np) * uv_senw(k,3,1) + elem%met(2,2,k,np) * uv_senw(k,3,2)
-    couv_senw(k,4,1) = elem%met(1,1,1,k)  * uv_senw(k,4,1) + elem%met(1,2,1,k)  * uv_senw(k,4,2)
-    couv_senw(k,4,2) = elem%met(2,1,1,k)  * uv_senw(k,4,1) + elem%met(2,2,1,k)  * uv_senw(k,4,2)
+    couv_senw(k,3,1) = elem%metJMD(k,np,1,1) * uv_senw(k,3,1) + elem%metJMD(k,np,1,2) * uv_senw(k,3,2)
+    couv_senw(k,3,2) = elem%metJMD(k,np,2,1) * uv_senw(k,3,1) + elem%metJMD(k,np,2,2) * uv_senw(k,3,2)
+    couv_senw(k,4,1) = elem%metJMD(1,k,1,1)  * uv_senw(k,4,1) + elem%metJMD(1,k,1,2)  * uv_senw(k,4,2)
+    couv_senw(k,4,2) = elem%metJMD(1,k,2,1)  * uv_senw(k,4,1) + elem%metJMD(1,k,2,2)  * uv_senw(k,4,2)
  enddo     
 !=======================================================================================================!    
 !	Energy for the Halo region from the neighbours
@@ -673,23 +673,23 @@ subroutine dg3d_rhs_terms(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !=======================================================================================================!
  do j = 1,np
  do i = 1,np
-   !ghij(i,j,1) = (grv * abs(ht(i,j)) )* elem%metinv(1,1,i,j)
-   !ghij(i,j,2) = (grv * abs(ht(i,j)) )* elem%metinv(2,2,i,j)
-    ghij(i,j,1) = (grv * htop(i,j) )* elem%metinv(1,1,i,j)
-    ghij(i,j,2) = (grv * htop(i,j) )* elem%metinv(2,2,i,j)
+   !ghij(i,j,1) = (grv * abs(ht(i,j)) )* elem%metinv(i,j,1,1)
+   !ghij(i,j,2) = (grv * abs(ht(i,j)) )* elem%metinv(i,j,2,2)
+    ghij(i,j,1) = (grv * htop(i,j) )* elem%metinvJMD(i,j,1,1)
+    ghij(i,j,2) = (grv * htop(i,j) )* elem%metinvJMD(i,j,2,2)
  end do
  end do
 
  do k = 1,np
-    gh11_senw(k,1) = (grv * abs(ht_senw(k,1)) )* elem%metinv(1,1,k,1)
-    gh11_senw(k,2) = (grv * abs(ht_senw(k,2)) )* elem%metinv(1,1,np,k)
-    gh11_senw(k,3) = (grv * abs(ht_senw(k,3)) )* elem%metinv(1,1,k,np)
-    gh11_senw(k,4) = (grv * abs(ht_senw(k,4)) )* elem%metinv(1,1,1,k)
+    gh11_senw(k,1) = (grv * abs(ht_senw(k,1)) )* elem%metinvJMD(k,1,1,1)
+    gh11_senw(k,2) = (grv * abs(ht_senw(k,2)) )* elem%metinvJMD(np,k,1,1)
+    gh11_senw(k,3) = (grv * abs(ht_senw(k,3)) )* elem%metinvJMD(k,np,1,1)
+    gh11_senw(k,4) = (grv * abs(ht_senw(k,4)) )* elem%metinvJMD(1,k,1,1)
 
-    gh22_senw(k,1) = (grv * abs(ht_senw(k,1)) )* elem%metinv(2,2,k,1)
-    gh22_senw(k,2) = (grv * abs(ht_senw(k,2)) )* elem%metinv(2,2,np,k)
-    gh22_senw(k,3) = (grv * abs(ht_senw(k,3)) )* elem%metinv(2,2,k,np)
-    gh22_senw(k,4) = (grv * abs(ht_senw(k,4)) )* elem%metinv(2,2,1,k)
+    gh22_senw(k,1) = (grv * abs(ht_senw(k,1)) )* elem%metinvJMD(k,1,2,2)
+    gh22_senw(k,2) = (grv * abs(ht_senw(k,2)) )* elem%metinvJMD(np,k,2,2)
+    gh22_senw(k,3) = (grv * abs(ht_senw(k,3)) )* elem%metinvJMD(k,np,2,2)
+    gh22_senw(k,4) = (grv * abs(ht_senw(k,4)) )* elem%metinvJMD(1,k,2,2)
  end do
 !=======================================================================================================!
 !  fjmax(:) = dg3d_fluxjacobian(uvcomp,uv_senw,ghij(:,:,1),ghij(:,:,2),gh11_senw,gh22_senw)
@@ -892,7 +892,7 @@ end function  divergence_cov
 
     integer             , intent(in) :: klev 
     real(kind=real_kind), intent(in) :: sg(np,np)
-    real(kind=real_kind), intent(in) :: ginv(2,2,np,np)
+    real(kind=real_kind), intent(in) :: ginv(np,np,2,2)
     real(kind=real_kind), intent(in) :: uv(np,np,2)
     real(kind=real_kind)             :: difuv(np,np,2)
     real(kind=real_kind)             :: damp              
@@ -928,7 +928,7 @@ end function  horizontal_diff
     type (derivative_t)              :: deriv
 
     real(kind=real_kind), intent(in) :: sg(np,np)
-    real(kind=real_kind), intent(in) :: ginv(2,2,np,np)
+    real(kind=real_kind), intent(in) :: ginv(np,np,2,2)
     real(kind=real_kind), intent(in) :: uv(np,np,2)
     real(kind=real_kind)             :: difuv(np,np,2)
 
@@ -949,12 +949,12 @@ end function  horizontal_diff
             do i=1,np
                    v1 = gradu(i,j,1)
                    v2 = gradu(i,j,2)
-              grad_u(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_u(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_u(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_u(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
                    v1 = gradv(i,j,1)
                    v2 = gradv(i,j,2)
-              grad_v(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_v(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_v(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_v(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
             end do
         end do
 
@@ -978,7 +978,7 @@ end function diffusion_uv
 
     real(kind=real_kind), intent(in) :: dtime 
     real(kind=real_kind), intent(in) :: sg(np,np)
-    real(kind=real_kind), intent(in) :: ginv(2,2,np,np)
+    real(kind=real_kind), intent(in) :: ginv(np,np,2,2)
     real(kind=real_kind), intent(in) :: tmp(np,np)
     real(kind=real_kind)             :: dift(np,np)
     real(kind=real_kind)             :: dcoft        
@@ -1007,7 +1007,7 @@ end function implicit_diff
     real(kind=real_kind)             :: dift(np,np)
 
     real(kind=real_kind) :: sg(np,np)
-    real(kind=real_kind) :: ginv(2,2,np,np)
+    real(kind=real_kind) :: ginv(np,np,2,2)
 
     real(kind=real_kind),dimension(np,np) :: udiv, vdiv
     real(kind=real_kind), dimension(np,np,2) :: gradt, gradv, grad_t, grad_v
@@ -1019,7 +1019,7 @@ end function implicit_diff
 !=======================================================================================================!
 
     sg(:,:) = elem%metdet(:,:) 
-    ginv(:,:,:,:) = elem%metinv(:,:,:,:) 
+    ginv(:,:,:,:) = elem%metinvJMD(:,:,:,:) 
 
     !  Laplacian operatons for (u_1, u_2)
 
@@ -1038,8 +1038,8 @@ end function implicit_diff
             do i=1,np
                    v1 = gradt(i,j,1)
                    v2 = gradt(i,j,2)
-              grad_t(i,j,1) = d_tnu* dp(i,j)* sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_t(i,j,2) = d_tnu* dp(i,j)* sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_t(i,j,1) = d_tnu* dp(i,j)* sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_t(i,j,2) = d_tnu* dp(i,j)* sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
             end do
         end do
 
@@ -1063,7 +1063,7 @@ end function diffusion_theta
     real(kind=real_kind)             :: difuv(np,np,2)
 
     real(kind=real_kind) :: sg(np,np)
-    real(kind=real_kind) :: ginv(2,2,np,np)
+    real(kind=real_kind) :: ginv(np,np,2,2)
 
     real(kind=real_kind),dimension(np,np) :: udiv, vdiv 
     real(kind=real_kind), dimension(np,np,2) :: gradu, gradv, grad_u, grad_v
@@ -1075,7 +1075,7 @@ end function diffusion_theta
 !=======================================================================================================!
 
     sg(:,:) = elem%metdet(:,:) 
-    ginv(:,:,:,:) = elem%metinv(:,:,:,:) 
+    ginv(:,:,:,:) = elem%metinvJMD(:,:,:,:) 
 
         ! MNL: adjustment because we're on ref elem, not cube
        if (ne.ne.0) then
@@ -1095,12 +1095,12 @@ end function diffusion_theta
             do i=1,np
                    v1 = gradu(i,j,1)
                    v2 = gradu(i,j,2)
-              grad_u(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_u(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_u(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_u(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
                    v1 = gradv(i,j,1)
                    v2 = gradv(i,j,2)
-              grad_v(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_v(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_v(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_v(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
             end do
         end do
 
@@ -1122,7 +1122,7 @@ end function diffusion_hypr
     type (derivative_t)              :: deriv
 
     real(kind=real_kind), intent(in) :: sg(np,np)
-    real(kind=real_kind), intent(in) :: ginv(2,2,np,np)
+    real(kind=real_kind), intent(in) :: ginv(np,np,2,2)
     real(kind=real_kind), intent(in) :: tmp(np,np)
     real(kind=real_kind)             :: dift(np,np)
 
@@ -1142,8 +1142,8 @@ end function diffusion_hypr
             do i=1,np
                    v1 = gradt(i,j,1)
                    v2 = gradt(i,j,2)
-              grad_t(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_t(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_t(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_t(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
             end do
         end do
 
@@ -1165,7 +1165,7 @@ end function diffusion_temp
     type (derivative_t)              :: deriv
 
     real(kind=real_kind), intent(in) :: sg(np,np)
-    real(kind=real_kind), intent(in) :: ginv(2,2,np,np)
+    real(kind=real_kind), intent(in) :: ginv(np,np,2,2)
     real(kind=real_kind), intent(in) :: uv(np,np,2)
     real(kind=real_kind)             :: difuv(np,np,2), lapuv(np,np,2)
 
@@ -1186,12 +1186,12 @@ end function diffusion_temp
             do i=1,np
                    v1 = gradu(i,j,1)
                    v2 = gradu(i,j,2)
-              grad_u(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_u(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_u(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_u(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
                    v1 = gradv(i,j,1)
                    v2 = gradv(i,j,2)
-              grad_v(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_v(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_v(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_v(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
             end do
         end do
 
@@ -1214,12 +1214,12 @@ end function diffusion_temp
             do i=1,np
                    v1 = gradu(i,j,1)
                    v2 = gradu(i,j,2)
-              grad_u(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_u(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_u(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_u(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
                    v1 = gradv(i,j,1)
                    v2 = gradv(i,j,2)
-              grad_v(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              grad_v(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+              grad_v(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              grad_v(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
             end do
         end do
 
@@ -1239,7 +1239,7 @@ end function diffusion_temp
     type (derivative_t)              :: deriv
 
    !real(kind=real_kind), intent(in) :: sg(np,np)
-   !real(kind=real_kind), intent(in) :: ginv(2,2,np,np)
+   !real(kind=real_kind), intent(in) :: ginv(np,np,2,2)
     real(kind=real_kind), intent(in) :: fld(np,np)
     real(kind=real_kind)             :: diff(np,np)
 
@@ -1835,7 +1835,7 @@ end subroutine pres_grad_term
 !=======================================================================================================!
  function general_grad(grad,g,ginv)  result(ggrad)
 
-    real(kind=real_kind), intent(in) :: g(2,2,np,np), ginv(2,2,np,np)  
+    real(kind=real_kind), intent(in) :: g(np,np,2,2), ginv(np,np,2,2)  
     real(kind=real_kind), intent(in) :: grad(np,np,2)
     real(kind=real_kind)             :: ggrad(np,np,2)
 
@@ -1846,10 +1846,10 @@ end subroutine pres_grad_term
             do i=1,np
                    v1 = grad(i,j,1)
                    v2 = grad(i,j,2)
-             ! ggrad(i,j,1) =  g(1,1,i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-             ! ggrad(i,j,2) =  g(2,2,i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
-              ggrad(i,j,1) =  (ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-              ggrad(i,j,2) =  (ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+             ! ggrad(i,j,1) =  g(i,j,1,1) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+             ! ggrad(i,j,2) =  g(i,j,2,2) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
+              ggrad(i,j,1) =  (ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+              ggrad(i,j,2) =  (ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
             end do
         end do
 
@@ -2122,15 +2122,15 @@ subroutine dg3d_diff_grads(elem,deriv,contrauvbuf,contrauv,couv,dif_gradu,dif_gr
     enddo
 
     do k= 1,np
-       couv_halo(k,1,1) = elem%met(1,1,k,1)  * contrauv_halo(k,1,1) + elem%met(1,2,k,1)  * contrauv_halo(k,1,2)
-       couv_halo(k,1,2) = elem%met(2,1,k,1)  * contrauv_halo(k,1,1) + elem%met(2,2,k,1)  * contrauv_halo(k,1,2)
-       couv_halo(k,2,1) = elem%met(1,1,np,k) * contrauv_halo(k,2,1) + elem%met(1,2,np,k) * contrauv_halo(k,2,2)
-       couv_halo(k,2,2) = elem%met(2,1,np,k) * contrauv_halo(k,2,1) + elem%met(2,2,np,k) * contrauv_halo(k,2,2)
+       couv_halo(k,1,1) = elem%metJMD(k,1,1,1)  * contrauv_halo(k,1,1) + elem%metJMD(k,1,1,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,1,2) = elem%metJMD(k,1,2,1)  * contrauv_halo(k,1,1) + elem%metJMD(k,1,2,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,2,1) = elem%metJMD(np,k,1,1) * contrauv_halo(k,2,1) + elem%metJMD(np,k,1,2) * contrauv_halo(k,2,2)
+       couv_halo(k,2,2) = elem%metJMD(np,k,2,1) * contrauv_halo(k,2,1) + elem%metJMD(np,k,2,2) * contrauv_halo(k,2,2)
 
-       couv_halo(k,3,1) = elem%met(1,1,k,np) * contrauv_halo(k,3,1) + elem%met(1,2,k,np) * contrauv_halo(k,3,2)
-       couv_halo(k,3,2) = elem%met(2,1,k,np) * contrauv_halo(k,3,1) + elem%met(2,2,k,np) * contrauv_halo(k,3,2)
-       couv_halo(k,4,1) = elem%met(1,1,1,k)  * contrauv_halo(k,4,1) + elem%met(1,2,1,k)  * contrauv_halo(k,4,2)
-       couv_halo(k,4,2) = elem%met(2,1,1,k)  * contrauv_halo(k,4,1) + elem%met(2,2,1,k)  * contrauv_halo(k,4,2)
+       couv_halo(k,3,1) = elem%metJMD(k,np,1,1) * contrauv_halo(k,3,1) + elem%metJMD(k,np,1,2) * contrauv_halo(k,3,2)
+       couv_halo(k,3,2) = elem%metJMD(k,np,2,1) * contrauv_halo(k,3,1) + elem%metJMD(k,np,2,2) * contrauv_halo(k,3,2)
+       couv_halo(k,4,1) = elem%metJMD(1,k,1,1)  * contrauv_halo(k,4,1) + elem%metJMD(1,k,1,2)  * contrauv_halo(k,4,2)
+       couv_halo(k,4,2) = elem%metJMD(1,k,2,1)  * contrauv_halo(k,4,1) + elem%metJMD(1,k,2,2)  * contrauv_halo(k,4,2)
     enddo
 
     Call  jump_fluxint(deriv,couv,couv_halo,jflx)
@@ -2176,18 +2176,18 @@ end subroutine dg3d_diff_grads
     enddo
 
    do k= 1, np
-       couv_halo(k,1,1) = elem%D(1,1,k,1)  * uv_halo(k,1,1) + elem%D(2,1,k,1)  * uv_halo(k,1,2)
-       couv_halo(k,1,2) = elem%D(1,2,k,1)  * uv_halo(k,1,1) + elem%D(2,2,k,1)  * uv_halo(k,1,2)
-       couv_halo(k,2,1) = elem%D(1,1,np,k) * uv_halo(k,2,1) + elem%D(2,1,np,k) * uv_halo(k,2,2)
-       couv_halo(k,2,2) = elem%D(1,2,np,k) * uv_halo(k,2,1) + elem%D(2,2,np,k) * uv_halo(k,2,2)
+       couv_halo(k,1,1) = elem%DJMD(k,1,1,1)  * uv_halo(k,1,1) + elem%DJMD(k,1,2,1)  * uv_halo(k,1,2)
+       couv_halo(k,1,2) = elem%DJMD(k,1,1,2)  * uv_halo(k,1,1) + elem%DJMD(k,1,2,2)  * uv_halo(k,1,2)
+       couv_halo(k,2,1) = elem%DJMD(np,k,1,1) * uv_halo(k,2,1) + elem%DJMD(np,k,2,1) * uv_halo(k,2,2)
+       couv_halo(k,2,2) = elem%DJMD(np,k,1,2) * uv_halo(k,2,1) + elem%DJMD(np,k,2,2) * uv_halo(k,2,2)
 
-       couv_halo(k,3,1) = elem%D(1,1,k,np) * uv_halo(k,3,1) + elem%D(2,1,k,np) * uv_halo(k,3,2)
-       couv_halo(k,3,2) = elem%D(1,2,k,np) * uv_halo(k,3,1) + elem%D(2,2,k,np) * uv_halo(k,3,2)
-       couv_halo(k,4,1) = elem%D(1,1,1,k)  * uv_halo(k,4,1) + elem%D(2,1,1,k)  * uv_halo(k,4,2)
-       couv_halo(k,4,2) = elem%D(1,2,1,k)  * uv_halo(k,4,1) + elem%D(2,2,1,k)  * uv_halo(k,4,2)
+       couv_halo(k,3,1) = elem%DJMD(k,np,1,1) * uv_halo(k,3,1) + elem%DJMD(k,np,2,1) * uv_halo(k,3,2)
+       couv_halo(k,3,2) = elem%DJMD(k,np,1,2) * uv_halo(k,3,1) + elem%DJMD(k,np,2,2) * uv_halo(k,3,2)
+       couv_halo(k,4,1) = elem%DJMD(1,k,1,1)  * uv_halo(k,4,1) + elem%DJMD(1,k,2,1)  * uv_halo(k,4,2)
+       couv_halo(k,4,2) = elem%DJMD(1,k,1,2)  * uv_halo(k,4,1) + elem%DJMD(1,k,2,2)  * uv_halo(k,4,2)
     enddo
 
-        couv(:,:,:) = sphere2cov(uv,elem%D)
+        couv(:,:,:) = sphere2cov(uv,elem%DJMD)
 
     Call  jump_fluxint(deriv,couv,couv_halo,jflx)
         cu(:,:) = couv(:,:,1)
@@ -2357,14 +2357,14 @@ subroutine jump_fluxint(deriv,uv,uv_senw,jfluxint)
     real(kind=real_kind), dimension(np,np,2), intent(out) :: grad_u
 
     real(kind=real_kind), dimension(np,np) :: gr1 ,gr2, sg
-    real(kind=real_kind), dimension(2,2,np,np) :: ginv
+    real(kind=real_kind), dimension(np,np,2,2) :: ginv
 
     real(kind=real_kind) ::  s1,s2, weight , v1,v2
     integer :: i,j,l
 !=======================================================================================================!
 
     sg(:,:) = elem%metdet(:,:)
-    ginv(:,:,:,:) = elem%metinv(:,:,:,:)
+    ginv(:,:,:,:) = elem%metinvJMD(:,:,:,:)
 
 !!  DoubleInt[ grad(U) = (U_x1, U_x2)]
 
@@ -2405,8 +2405,8 @@ subroutine jump_fluxint(deriv,uv,uv_senw,jfluxint)
             do i=1,np
                    v1 = gr1(i,j)
                    v2 = gr2(i,j)
-             grad_u(i,j,1) =  sg(i,j) *(ginv(1,1,i,j)*v1 + ginv(1,2,i,j)*v2)
-             grad_u(i,j,2) =  sg(i,j) *(ginv(2,1,i,j)*v1 + ginv(2,2,i,j)*v2)
+             grad_u(i,j,1) =  sg(i,j) *(ginv(i,j,1,1)*v1 + ginv(i,j,1,2)*v2)
+             grad_u(i,j,2) =  sg(i,j) *(ginv(i,j,2,1)*v1 + ginv(i,j,2,2)*v2)
             end do
         end do
 

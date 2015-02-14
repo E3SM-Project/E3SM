@@ -176,13 +176,13 @@ subroutine dg_tvdrk(elem, stage,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)
         elseif (topology == "cube" .and. test_case=="galewsky") then
            call galewsky_init(elem,tl,ie,k,pmean)
         endif
-        elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%met(:,:,:,:))  
+        elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%metJMD(:,:,:,:))  
       endif
        !================================================================================================!
        ! Coverting covarinat to contravariant, height to phi, etc
        !================================================================================================!       
        elem(ie)%state%psi(:,:,k)= height2phi(elem(ie)%state%ht(:,:,k),elem(ie)%metdet(:,:))
-       elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))       
+       elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinvJMD(:,:,:,:))       
        ht_rk(:,:,ie,0)  = elem(ie)%state%psi(:,:,k)
        uv_rk(:,:,:,ie,0)= elem(ie)%state%couv(:,:,:,k)
    enddo
@@ -249,7 +249,7 @@ im1= intrk-1
 	  			 alpha_rk(intrk,s+1)*uv_rk(:,:,2,ie,s)+ beta_rk(intrk,s+1)*hdt*sw_rhs(:,:,3)				
        enddo       
        elem(ie)%state%ht(:,:,k)= phi2height(ht_rk(:,:,ie,intrk),elem(ie)%metdet(:,:))
-       elem(ie)%state%v(:,:,:,k,n0)= co2contra(uv_rk(:,:,:,ie,intrk),elem(ie)%metinv(:,:,:,:))	
+       elem(ie)%state%v(:,:,:,k,n0)= co2contra(uv_rk(:,:,:,ie,intrk),elem(ie)%metinvJMD(:,:,:,:))	
        elem(ie)%state%couv(:,:,:,k)= uv_rk(:,:,:,ie,intrk)
    enddo
 !=======================================================================================================!
@@ -355,7 +355,7 @@ subroutine dg_tvdrk_advect(elem,stage,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,ne
        endif
 
        elem(ie)%state%psi(:,:,k)   = height2phi(elem(ie)%state%ht(:,:,k),elem(ie)%metdet(:,:))
-       elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%met(:,:,:,:))
+       elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%metJMD(:,:,:,:))
        ht_rk(:,:,ie,0)= elem(ie)%state%psi(:,:,k)
     enddo
 !=======================================================================================================!
@@ -508,7 +508,7 @@ If (nstep > 0 .and. filter_freq > 0 .and. MODULO(nstep,filter_freq) == 0) then
 
       elem(ie)%state%psi(:,:,k)= height2phi(elem(ie)%state%ht(:,:,k),elem(ie)%metdet(:,:))
       uv_rk0(:,:,:,k,ie) = elem(ie)%state%uv(:,:,:,k)
-      elem(ie)%state%v(:,:,:,k,n0)= sphere2contra(elem(ie)%state%uv(:,:,:,k),elem(ie)%Dinv)
+      elem(ie)%state%v(:,:,:,k,n0)= sphere2contra(elem(ie)%state%uv(:,:,:,k),elem(ie)%DinvJMD)
 
       ! DG: Packing (u,v) spherical  velocity & height fields
       !======================================================
@@ -582,8 +582,8 @@ If (nstep > 0 .and. filter_freq > 0 .and. MODULO(nstep,filter_freq) == 0) then
 
    do j=1,np
    do i=1,np
-      dif_uv(i,j,1,k,ie) = difu(i,j) *elem(ie)%Dinv(1,1,i,j) + difv(i,j) * elem(ie)%Dinv(2,1,i,j) 
-      dif_uv(i,j,2,k,ie) = difu(i,j) *elem(ie)%Dinv(1,2,i,j) + difv(i,j) * elem(ie)%Dinv(2,2,i,j) 
+      dif_uv(i,j,1,k,ie) = difu(i,j) *elem(ie)%DinvJMD(i,j,1,1) + difv(i,j) * elem(ie)%DinvJMD(i,j,2,1) 
+      dif_uv(i,j,2,k,ie) = difu(i,j) *elem(ie)%DinvJMD(i,j,1,2) + difv(i,j) * elem(ie)%DinvJMD(i,j,2,2) 
    enddo
    enddo
 
@@ -654,7 +654,7 @@ If (nstep > 0 .and. filter_freq > 0 .and. MODULO(nstep,filter_freq) == 0) then
 
         elem(ie)%state%ht(:,:,k) = phi2height(psi_rk0(:,:,k,ie),elem(ie)%metdet(:,:))
 
-       elem(ie)%state%v(:,:,:,k,n0)= sphere2contra(elem(ie)%state%uv(:,:,:,k),elem(ie)%Dinv)
+       elem(ie)%state%v(:,:,:,k,n0)= sphere2contra(elem(ie)%state%uv(:,:,:,k),elem(ie)%DinvJMD)
 
    end do
 
@@ -749,14 +749,14 @@ k= 1         !Always
         ! call sw8_init(elem,tl,ie,k,pmean)
        endif
       !elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%met(:,:,:,:))
-       elem(ie)%state%couv(:,:,:,k)= sphere2cov(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%D)
+       elem(ie)%state%couv(:,:,:,k)= sphere2cov(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%DJMD)
      endif
       !================================================================================================!
       ! Coverting covarinat to contravariant, height to phi, etc
       !================================================================================================!
       elem(ie)%state%psi(:,:,k)= height2phi(elem(ie)%state%ht(:,:,k),elem(ie)%metdet(:,:))
       cuv_tmp(:,:,:,k,ie)= elem(ie)%state%couv(:,:,:,k)
-      elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
+      elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinvJMD(:,:,:,:))
       !contrauv(:,:,:,k,ie)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
 
       !======================================================
@@ -866,8 +866,8 @@ k= 1         !Always
 
       elem(ie)%state%couv(:,:,:,k)= cuv_rk(:,:,:,k,ie)
       elem(ie)%state%ht(:,:,k)    = phi2height(psi_rk(:,:,k,ie),elem(ie)%metdet(:,:))
-      elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
-      !contrauv(:,:,:,k,ie)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
+      elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinvJMD(:,:,:,:))
+      !contrauv(:,:,:,k,ie)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinvJMD(:,:,:,:))
 
       !======================================================
       ! DG: Packing  contravariant vectors,  ht-field  (nair)
@@ -921,8 +921,8 @@ k= 1         !Always
         elem(ie)%state%couv(:,:,:,k)= cuv_rk(:,:,:,k,ie)
         elem(ie)%state%ht(:,:,k) = phi2height(psi_rk(:,:,k,ie),elem(ie)%metdet(:,:))
 
-        elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
-       !contrauv(:,:,:,k,ie)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinv(:,:,:,:))
+        elem(ie)%state%v(:,:,:,k,n0)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinvJMD(:,:,:,:))
+       !contrauv(:,:,:,k,ie)= co2contra(elem(ie)%state%couv(:,:,:,k),elem(ie)%metinvJMD(:,:,:,:))
        !elem(ie)%state%v(:,:,:,k,n0)= cov2sphere(cuv_rk(:,:,:,k,ie),elem(ie)%Dinv)
 
 
