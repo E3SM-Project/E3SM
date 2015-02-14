@@ -896,14 +896,17 @@ void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[])
   //  printf("%s %d %ld %ld\n",__FILE__,__LINE__,totalllen,totalgridsize);
 
   MPI_Allreduce(MPI_IN_PLACE, &totalllen, 1, PIO_OFFSET, MPI_SUM, ios.union_comm);
-  //printf("%s %d %ld %ld\n",__FILE__,__LINE__,totalllen,totalgridsize);
+
   
   if(totalllen < totalgridsize){
+    if(ios.iomaster) printf("%s %d %ld %ld\n",__FILE__,__LINE__,totalllen,totalgridsize);
     iodesc->needsfill = true;
   }else{
     iodesc->needsfill = false;
     iodesc->gsize = NULL;
   }
+  //  TURN OFF FILL for timing test
+  //  iodesc->needsfill=false;
 
   if(iodesc->needsfill){
     iodesc->gsize = (PIO_Offset *) bget(iodesc->ndims * sizeof(PIO_Offset));
