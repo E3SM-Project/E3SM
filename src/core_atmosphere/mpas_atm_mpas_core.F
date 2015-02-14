@@ -1453,6 +1453,8 @@ module mpas_core
       call mpas_pool_get_array(diag, 'ertel_pv', ertel_pv)
       call mpas_pool_get_array(diag, 'depv_dt_diab', depv_dt_diab)
       call mpas_pool_get_array(diag, 'depv_dt_fric', depv_dt_fric)
+      call mpas_pool_get_array(diag, 'depv_dt_diab_pv', depv_dt_diab_pv)
+      call mpas_pool_get_array(diag, 'depv_dt_fric_pv', depv_dt_fric_pv)
       
       !write(0,*) 'Interpolating u,v,theta,vort to pv '
       
@@ -1945,8 +1947,7 @@ module mpas_core
       real(kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, areaTriangle, dcEdge
       real(kind=RKIND), dimension(:,:), pointer :: w, rho, vorticity, zgrid, &
                                                    localVerticalUnitVectors, edgeNormalVectors, kiteAreasOnVertex, &
-                                                   theta, uReconstructX, uReconstructY, uReconstructZ, &
-                                                   ertel_pv, rho_zz
+                                                   theta, uReconstructX, uReconstructY, uReconstructZ
       real(kind=RKIND), dimension(:,:), pointer :: depv_dt_lw, depv_dt_sw, depv_dt_bl, depv_dt_cu, depv_dt_mp, depv_dt_mix
       real(kind=RKIND), dimension(:,:), pointer :: depv_dt_diab, depv_dt_fric, depv_dt_phys
       real(kind=RKIND), dimension(:,:), pointer :: tend_u_phys, tend_u_euler, rho_edge, tend_w_euler
@@ -2017,7 +2018,7 @@ module mpas_core
       allocate(tenduZonal(nVertLevels,nCells))
       allocate(tenduMerid(nVertLevels,nCells))
       
-      !epv and diabatic component ----------------------
+      !diabatic component ----------------------
       do iCell=1,nCellsSolve
          do k=1,nVertLevels
             !vort1/rho1
@@ -2080,6 +2081,7 @@ module mpas_core
             depv_dt_mix(k,iCell) = dotProduct(gradxu, gradtheta,3)* 1.0e6
          end do 
       end do
+      depv_dt_diab = depv_dt_lw + depv_dt_sw + depv_dt_bl + depv_dt_cu + depv_dt_mp + depv_dt_mix
       
       !frictional component ----------------------
       !vertical curl at vertices ( like SAT analogies tend_u:varVerts :: u:vorticity)
@@ -2134,11 +2136,8 @@ module mpas_core
                              tenduX, tenduY,tenduZ, tend_w_euler,varVerts)
             
             depv_dt_fric(k,iCell) = dotProduct(gradxf, gradtheta,3)* 1.0e6
-            
          end do
       end do
-      
-      depv_dt_diab = depv_dt_lw + depv_dt_sw + depv_dt_bl + depv_dt_cu + depv_dt_mp + depv_dt_mix
       
       deallocate(varVerts)
       deallocate(tenduX)
@@ -2170,6 +2169,7 @@ module mpas_core
       real (kind=RKIND) :: pvuVal, missingVal
       real (kind=RKIND), dimension(:,:), pointer :: dtheta_dt_mix, tend_theta_euler
       type (field2DReal), pointer :: rthratenlw_f, rthratensw_f, rthcuten_f, rthblten_f, dtheta_dt_mp_f, theta_euler_f, dtheta_dt_mix_f
+      type (field2DReal), pointer :: tend_u_phys_f, tend_u_euler_f, tend_w_euler_f
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
@@ -2181,6 +2181,7 @@ module mpas_core
       write(0,*) "Calculating pvBudget"
       
       !need halo cells for everything w/ horizontal derivative
+      !Dtheta/Dt
       call mpas_pool_get_array(tend, 'theta_euler', tend_theta_euler)
       call mpas_pool_get_array(diag, 'dtheta_dt_mix', dtheta_dt_mix)
       do iCell=1,nCells
@@ -2203,6 +2204,14 @@ module mpas_core
       call mpas_dmpar_exch_halo_field(rthblten_f)
       call mpas_dmpar_exch_halo_field(dtheta_dt_mp_f)
       call mpas_dmpar_exch_halo_field(dtheta_dt_mix_f)
+      
+      !friction
+      call mpas_pool_get_field(diag , 'tend_u_phys', tend_u_phys_f)
+      call mpas_pool_get_field(tend, 'u_euler', tend_u_euler_f)
+      call mpas_pool_get_field(tend, 'w_euler', tend_w_euler_f)
+      call mpas_dmpar_exch_halo_field(tend_u_phys_f)
+      call mpas_dmpar_exch_halo_field(tend_u_euler_f)
+      call mpas_dmpar_exch_halo_field(tend_w_euler_f)
       
       call calc_pvBudget(state, time_lev, diag, mesh, tend, tend_physics)
       
