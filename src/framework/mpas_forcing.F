@@ -1415,7 +1415,7 @@ contains
           FORCING_ERROR_WRITE('Error: -- Forcing: mpas_forcing_get_forcing: READ: ' COMMA ierr)
        endif
 
-       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: '//trim(forcingTimeCycleStr))//' ' COMMA ierr
+       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: '//trim(forcingTimeCycleStr)//' ' COMMA ierr)
 
     endif ! forcingAlarmID ringing
 
