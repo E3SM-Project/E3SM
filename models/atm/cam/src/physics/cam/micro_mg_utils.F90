@@ -116,7 +116,7 @@ real(r8), parameter, public :: rhow = 1000._r8  ! bulk density liquid
 real(r8), parameter, public :: rhows = 917._r8  ! bulk density water solid
 
 ! autoconversion size threshold for cloud ice to snow (m)
-real(r8), parameter, public :: dcs = 90.e-6_r8
+real(r8) :: dcs
 
 ! fall speed parameters, V = aD^b (V is in m/s)
 ! droplets
@@ -155,7 +155,7 @@ real(r8), parameter :: dsph = 3._r8
 ! Bounds for mean diameter for different constituents.
 ! (E.g. ice must be at least 10 microns but no more than twice the
 ! threshold for autoconversion to snow.
-real(r8), parameter :: lam_bnd_ice(2) = 1._r8/[2._r8*dcs, 10.e-6_r8]
+real(r8) :: lam_bnd_ice(2)
 real(r8), parameter :: lam_bnd_rain(2) = 1._r8/[500.e-6_r8, 20.e-6_r8]
 real(r8), parameter :: lam_bnd_snow(2) = 1._r8/[2000.e-6_r8, 10.e-6_r8]
 
@@ -216,7 +216,7 @@ contains
 ! Check the list at the top of this module for descriptions of all other
 ! arguments.
 subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
-     latice, errstring)
+     latice, errstring, dcs_in)
 
   integer,  intent(in)  :: kind
   real(r8), intent(in)  :: rh2o
@@ -224,6 +224,7 @@ subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
   real(r8), intent(in)  :: tmelt_in
   real(r8), intent(in)  :: latvap
   real(r8), intent(in)  :: latice
+  real(r8), intent(in)  :: dcs_in
 
   character(128), intent(out) :: errstring
 
@@ -241,6 +242,9 @@ subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
   rv= rh2o                  ! water vapor gas constant
   cpp = cpair               ! specific heat of dry air
   tmelt = tmelt_in
+  dcs = dcs_in
+  lam_bnd_ice(1) = 1._r8/(2._r8*dcs)
+  lam_bnd_ice(2) = 1._r8/10.e-6_r8
 
   ! latent heats
 
@@ -561,13 +565,12 @@ end subroutine kk2000_liq_autoconversion
 ! Autoconversion of cloud ice to snow
 ! similar to Ferrier (1994)
 
-elemental subroutine ice_autoconversion(t, qiic, lami, n0i, dcs, prci, nprci)
+elemental subroutine ice_autoconversion(t, qiic, lami, n0i, prci, nprci)
 
   real(r8), intent(in) :: t
   real(r8), intent(in) :: qiic
   real(r8), intent(in) :: lami
   real(r8), intent(in) :: n0i
-  real(r8), intent(in) :: dcs
 
   real(r8), intent(out) :: prci
   real(r8), intent(out) :: nprci
