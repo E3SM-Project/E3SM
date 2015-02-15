@@ -38,6 +38,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, update cpool carbon state
     !
+
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
@@ -80,6 +81,7 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
+    use BGCReactionsFactoryMod, only : is_active_betr_bgc    
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -121,6 +123,7 @@ contains
          cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
       end do
 
+    if(.not. is_active_betr_bgc())then
       ! plant to litter fluxes
       do j = 1,nlevdecomp
          ! column loop
@@ -163,7 +166,9 @@ contains
             end do
          end if
       end do
-
+    endif   !end if is_active_betr_bgc()
+    
+    
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)

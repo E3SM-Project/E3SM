@@ -83,7 +83,10 @@ implicit none
        atm2lnd_vars, waterstate_vars, waterflux_vars, &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
        dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars)
-    
+  
+  !
+  ! Update vegetation related state variables and fluxes
+  ! and obtain some belowground fluxes to be applied in belowground bgc
     !   
     ! !USES:
   use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
@@ -111,70 +114,70 @@ implicit none
   use CNAllocationBetrMod    , only: calc_plant_nutrient_demand
   
   implicit none
-    !
-    ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds  
-    integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
-    integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
-    integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
-    integer                  , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
-    integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
-    logical                  , intent(in)    :: doalb             ! true = surface albedo calculation time step
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars 
-    type(waterstate_type)    , intent(in)    :: waterstate_vars
-    type(waterflux_type)     , intent(in)    :: waterflux_vars
-    type(canopystate_type)   , intent(in)    :: canopystate_vars
-    type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(temperature_type)   , intent(inout) :: temperature_vars
-    type(crop_type)          , intent(in)    :: crop_vars
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
-    type(photosyns_type)     , intent(in)    :: photosyns_vars
-    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
-    type(energyflux_type)    , intent(in)    :: energyflux_vars
+  !
+  ! !ARGUMENTS:
+  type(bounds_type)        , intent(in)    :: bounds  
+  integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
+  integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
+  integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
+  integer                  , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
+  integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
+  logical                  , intent(in)    :: doalb             ! true = surface albedo calculation time step
+  type(cnstate_type)       , intent(inout) :: cnstate_vars
+  type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+  type(carbonstate_type)   , intent(inout) :: carbonstate_vars
+  type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
+  type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
+  type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
+  type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
+  type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+  type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+  type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars 
+  type(waterstate_type)    , intent(in)    :: waterstate_vars
+  type(waterflux_type)     , intent(in)    :: waterflux_vars
+  type(canopystate_type)   , intent(in)    :: canopystate_vars
+  type(soilstate_type)     , intent(in)    :: soilstate_vars
+  type(temperature_type)   , intent(inout) :: temperature_vars
+  type(crop_type)          , intent(in)    :: crop_vars
+  type(dgvs_type)          , intent(inout) :: dgvs_vars
+  type(photosyns_type)     , intent(in)    :: photosyns_vars
+  type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
+  type(energyflux_type)    , intent(in)    :: energyflux_vars
   type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
   type(betrtracer_type)    , intent(in)    :: betrtracer_vars                    ! betr configuration information  
   type(tracerstate_type)   , intent(in)    :: tracerstate_vars
   type(tracerflux_type)    , intent(in)    :: tracerflux_vars
   
 
-    ! --------------------------------------------------
-    ! zero the column-level C and N fluxes
-    ! --------------------------------------------------
+  ! --------------------------------------------------
+  ! zero the column-level C and N fluxes
+  ! --------------------------------------------------
        
-       call t_startf('CNZero')
+  call t_startf('CNZero')
 
-       call carbonflux_vars%SetValues( &
-            num_soilp, filter_soilp, 0._r8, &
-            num_soilc, filter_soilc, 0._r8)
+  call carbonflux_vars%SetValues( &
+        num_soilp, filter_soilp, 0._r8, &
+        num_soilc, filter_soilc, 0._r8)
 
-       if ( use_c13 ) then
-          call c13_carbonflux_vars%SetValues( &
-               num_soilp, filter_soilp, 0._r8, &
-               num_soilc, filter_soilc, 0._r8)
-       end if
+  if ( use_c13 ) then
+    call c13_carbonflux_vars%SetValues( &
+       num_soilp, filter_soilp, 0._r8, &
+       num_soilc, filter_soilc, 0._r8)
+  end if
 
-       if ( use_c14 ) then
-          call c14_carbonflux_vars%SetValues( &
-               num_soilp, filter_soilp, 0._r8, &
-               num_soilc, filter_soilc, 0._r8)
-       end if
+  if ( use_c14 ) then
+    call c14_carbonflux_vars%SetValues( &
+       num_soilp, filter_soilp, 0._r8, &
+       num_soilc, filter_soilc, 0._r8)
+  end if
        call nitrogenflux_vars%SetValues( &
             num_soilp, filter_soilp, 0._r8, &
             num_soilc, filter_soilc, 0._r8)
 
-       call t_stopf('CNZero')
+  call t_stopf('CNZero')
 
-       ! --------------------------------------------------
+  ! --------------------------------------------------
        ! Nitrogen Deposition, Fixation and Respiration
        ! --------------------------------------------------
 
@@ -248,83 +251,6 @@ implicit none
        call carbonflux_vars%summary_rr(num_soilp, filter_soilp, num_soilc, filter_soilc)
        call t_stopf('CNGResp')
 
-        
-  end subroutine CNEcosystemDynBetrVeg
-
-
-
-  
-!-------------------------------------------------------------------------------
-  subroutine CNEcosystemDynBetrSummary(bounds, &
-       num_soilc, filter_soilc, &
-       num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb, &
-       cnstate_vars, carbonflux_vars, carbonstate_vars, &
-       c13_carbonflux_vars, c13_carbonstate_vars, &
-       c14_carbonflux_vars, c14_carbonstate_vars, &
-       nitrogenflux_vars, nitrogenstate_vars, &
-       atm2lnd_vars, waterstate_vars, waterflux_vars, &
-       canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
-       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars)
-    ! !USES:
-    use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
-    use CNMRespMod             , only: CNMResp
-    use CNDecompMod            , only: CNDecompAlloc
-    use CNPhenologyMod         , only: CNPhenology
-    use CNGRespMod             , only: CNGResp
-    use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
-    use CNNStateUpdate1Mod     , only: NStateUpdate1
-    use CNGapMortalityMod      , only: CNGapMortality
-    use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
-    use CNNStateUpdate2Mod     , only: NStateUpdate2, NStateUpdate2h
-    use CNFireMod              , only: CNFireArea, CNFireFluxes
-    use CNCStateUpdate3Mod     , only: CStateUpdate3
-    use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
-    use CNC14DecayMod          , only: C14Decay, C14BombSpike
-    use CNWoodProductsMod      , only: CNWoodProducts
-    use CNSoilLittVertTranspMod, only: CNSoilLittVertTransp
-    use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
-    use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
-    use CropType               , only: crop_type
-    use dynHarvestMod          , only: CNHarvest
-    use clm_varpar             , only: crop_prog
-    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
-    implicit none
-    !
-    ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds  
-    integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
-    integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
-    integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
-    integer                  , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
-    integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
-    logical                  , intent(in)    :: doalb             ! true = surface albedo calculation time step
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars 
-    type(waterstate_type)    , intent(in)    :: waterstate_vars
-    type(waterflux_type)     , intent(in)    :: waterflux_vars
-    type(canopystate_type)   , intent(in)    :: canopystate_vars
-    type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(temperature_type)   , intent(inout) :: temperature_vars
-    type(crop_type)          , intent(in)    :: crop_vars
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
-    type(photosyns_type)     , intent(in)    :: photosyns_vars
-    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
-    type(energyflux_type)    , intent(in)    :: energyflux_vars
-    type(plantsoilnutrientflux_type), intent(in) :: plantsoilnutrientflux_vars   
-  
-
-    call nitrogenstate_vars%nbuffer_update(num_soilc, filter_soilc, &
-      plantsoilnutrientflux_vars%plant_minn_active_yield_flx_col(bounds%begc:bounds%endc),   &
-      plantsoilnutrientflux_vars%plant_minn_passive_yield_flx_col(bounds%begc:bounds%endc))
     !--------------------------------------------
     ! CNUpdate0
     !--------------------------------------------
@@ -520,6 +446,84 @@ implicit none
     call NStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
     call t_stopf('CNUpdate3')
+       
+        
+  end subroutine CNEcosystemDynBetrVeg
+
+
+
+  
+!-------------------------------------------------------------------------------
+  subroutine CNEcosystemDynBetrSummary(bounds, &
+       num_soilc, filter_soilc, &
+       num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb, &
+       cnstate_vars, carbonflux_vars, carbonstate_vars, &
+       c13_carbonflux_vars, c13_carbonstate_vars, &
+       c14_carbonflux_vars, c14_carbonstate_vars, &
+       nitrogenflux_vars, nitrogenstate_vars, &
+       atm2lnd_vars, waterstate_vars, waterflux_vars, &
+       canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
+       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars)
+    ! !USES:
+    use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
+    use CNMRespMod             , only: CNMResp
+    use CNDecompMod            , only: CNDecompAlloc
+    use CNPhenologyMod         , only: CNPhenology
+    use CNGRespMod             , only: CNGResp
+    use CNCStateUpdate1Mod     , only: CStateUpdate1,CStateUpdate0
+    use CNNStateUpdate1Mod     , only: NStateUpdate1
+    use CNGapMortalityMod      , only: CNGapMortality
+    use CNCStateUpdate2Mod     , only: CStateUpdate2, CStateUpdate2h
+    use CNNStateUpdate2Mod     , only: NStateUpdate2, NStateUpdate2h
+    use CNFireMod              , only: CNFireArea, CNFireFluxes
+    use CNCStateUpdate3Mod     , only: CStateUpdate3
+    use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
+    use CNC14DecayMod          , only: C14Decay, C14BombSpike
+    use CNWoodProductsMod      , only: CNWoodProducts
+    use CNSoilLittVertTranspMod, only: CNSoilLittVertTransp
+    use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
+    use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
+    use CropType               , only: crop_type
+    use dynHarvestMod          , only: CNHarvest
+    use clm_varpar             , only: crop_prog
+    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
+    implicit none
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)        , intent(in)    :: bounds  
+    integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
+    integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
+    integer                  , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
+    integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
+    logical                  , intent(in)    :: doalb             ! true = surface albedo calculation time step
+    type(cnstate_type)       , intent(inout) :: cnstate_vars
+    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
+    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
+    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
+    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
+    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars 
+    type(waterstate_type)    , intent(in)    :: waterstate_vars
+    type(waterflux_type)     , intent(in)    :: waterflux_vars
+    type(canopystate_type)   , intent(in)    :: canopystate_vars
+    type(soilstate_type)     , intent(in)    :: soilstate_vars
+    type(temperature_type)   , intent(inout) :: temperature_vars
+    type(crop_type)          , intent(in)    :: crop_vars
+    type(dgvs_type)          , intent(inout) :: dgvs_vars
+    type(photosyns_type)     , intent(in)    :: photosyns_vars
+    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
+    type(energyflux_type)    , intent(in)    :: energyflux_vars
+    type(plantsoilnutrientflux_type), intent(in) :: plantsoilnutrientflux_vars   
+  
+
+    call nitrogenstate_vars%nbuffer_update(num_soilc, filter_soilc, &
+      plantsoilnutrientflux_vars%plant_minn_active_yield_flx_col(bounds%begc:bounds%endc),   &
+      plantsoilnutrientflux_vars%plant_minn_passive_yield_flx_col(bounds%begc:bounds%endc))
 
     call t_startf('CNsum')
     call CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -556,6 +560,7 @@ implicit none
   type(tracerflux_type)    , intent(in)    :: tracerflux_vars
   
   
+  !assign state variables, leaching flux, runoff flux, hr, denitrification fluxes, f_nit_n2o for mass balance analysis
   
   call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
   call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)

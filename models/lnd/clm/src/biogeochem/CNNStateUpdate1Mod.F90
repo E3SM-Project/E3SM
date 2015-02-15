@@ -36,6 +36,7 @@ contains
     ! On the radiation time step, update all the prognostic nitrogen state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
+    use BGCReactionsFactoryMod, only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -78,6 +79,7 @@ contains
          ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_deadstem_col(c) * dt
       end do
 
+      if(.not. is_active_betr_bgc  ())then
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -262,7 +264,7 @@ contains
          end do
 
       end if
-
+    endif
       ! patch loop
 
       do fp = 1,num_soilp

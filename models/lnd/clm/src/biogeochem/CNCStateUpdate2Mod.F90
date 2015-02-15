@@ -32,6 +32,7 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by gap-phase mortality fluxes
     !
+    use BGCReactionsFactoryMod, only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -54,8 +55,9 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      ! column level carbon fluxes from gap-phase mortality
-      do j = 1,nlevdecomp
+      if( .not. is_active_betr_bgc  ())then
+        ! column level carbon fluxes from gap-phase mortality
+        do j = 1,nlevdecomp
          ! column loop
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -71,8 +73,8 @@ contains
                  cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
 
          end do
-      end do
-
+        end do
+      endif
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -116,6 +118,7 @@ contains
     ! Update all the prognostic carbon state
     ! variables affected by harvest mortality fluxes
     !
+    use BGCReactionsFactoryMod, only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -138,8 +141,9 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      ! column level carbon fluxes from harvest mortality
-      do j = 1, nlevdecomp
+      if( .not. is_active_betr_bgc () )then
+        ! column level carbon fluxes from harvest mortality
+        do j = 1, nlevdecomp
          ! column loop
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -155,9 +159,9 @@ contains
                  cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
 
             ! wood to product pools - states updated in CNWoodProducts()
-         end do
-      end do
-
+          end do
+        end do
+      endif
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
