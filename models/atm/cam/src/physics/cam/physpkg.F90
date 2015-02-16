@@ -61,6 +61,18 @@ module physpkg
   integer ::  snow_dp_idx        = 0
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
+  
+  !BSINGH(09/16/2014): Added for unified convective transport
+  integer :: rprddp_idx          = 0 
+  integer :: rprdsh_idx          = 0 
+  integer :: nevapr_shcu_idx     = 0 
+  integer :: nevapr_dpcu_idx     = 0 
+
+  integer :: icwmrdp_idx        = 0 
+  integer :: icwmrsh_idx        = 0 
+  integer :: sh_frac_idx        = 0 
+  integer :: dp_frac_idx        = 0 
+  !BSINGH -Ends
 
   save
 
@@ -75,6 +87,7 @@ module physpkg
   !
   logical :: clim_modal_aero  ! climate controled by prognostic or prescribed modal aerosols
   logical :: prog_modal_aero  ! Prognostic modal aerosols present
+  logical :: convproc_do_aer, convproc_do_gas  !BSINGH(09/16/2014): Added for unified convective transport
 
   !======================================================================= 
 contains
@@ -835,6 +848,20 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     snow_dp_idx  = pbuf_get_index('SNOW_DP')
     prec_sh_idx  = pbuf_get_index('PREC_SH')
     snow_sh_idx  = pbuf_get_index('SNOW_SH')
+
+    !BSINGH(09/16/2014): Added for unified convective transport
+    rprddp_idx      = pbuf_get_index('RPRDDP')  
+    rprdsh_idx      = pbuf_get_index('RPRDSH')  
+    nevapr_shcu_idx = pbuf_get_index('NEVAPR_SHCU') 
+    nevapr_dpcu_idx = pbuf_get_index('NEVAPR_DPCU') 
+
+    icwmrdp_idx      = pbuf_get_index('ICWMRDP')
+    icwmrsh_idx      = pbuf_get_index('ICWMRSH')
+    sh_frac_idx      = pbuf_get_index('SH_FRAC')
+    dp_frac_idx      = pbuf_get_index('DP_FRAC')
+
+    call phys_getopts(convproc_do_aer_out = convproc_do_aer)
+    !BSINGH -ENDS
 
     call phys_getopts(prog_modal_aero_out=prog_modal_aero)
 
@@ -1647,7 +1674,7 @@ subroutine tphysbc (ztodt,               &
          physics_ptend_init, physics_ptend_sum, physics_state_check
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
     use cam_history,     only: outfld
-    use physconst,       only: cpair, latvap
+    use physconst,       only: cpair, latvap, gravit !BSINGH(09/16/2014): Added gravit for unified convective treatment
     use constituents,    only: pcnst, qmin, cnst_get_ind
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
     use time_manager,    only: is_first_step, get_nstep
@@ -1655,7 +1682,7 @@ subroutine tphysbc (ztodt,               &
     use check_energy,    only: check_energy_chng, check_energy_fix, check_energy_timestep_init
     use check_energy,    only: check_tracers_data, check_tracers_init, check_tracers_chng
     use dycore,          only: dycore_is
-    use aero_model,      only: aero_model_wetdep
+    use aero_model,      only: aero_model_wetdep, convproc_aero_model_wetdep
     use carma_intr,      only: carma_wetdep_tend, carma_timestep_tend
     use carma_flags_mod, only: carma_do_detrain, carma_do_cldice, carma_do_cldliq,  carma_do_wetdep
     use radiation,       only: radiation_tend
@@ -1669,6 +1696,7 @@ subroutine tphysbc (ztodt,               &
     use abortutils,      only: endrun
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
+    use modal_aero_convproc, only:ma_convproc_intr !BSINGH(09/22/2014): Added for unified convective transport
 
     implicit none
 
@@ -1759,6 +1787,25 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: prec_sed(:)     ! total precip from cloud sedimentation
     real(r8),pointer :: snow_sed(:)     ! snow from cloud ice sedimentation
 
+    ! BSINGH(09/16/2014): Added for unified convective treatment
+    integer, parameter :: nsrflx_mzaer2cnvpr = 2  !RCE 2012/01/12 bgn
+    real(r8) :: qsrflx_mzaer2cnvpr(pcols,pcnst,nsrflx_mzaer2cnvpr)
+    real(r8), pointer :: rprddp(:,:)     ! rain production, deep convection
+    real(r8), pointer :: rprdsh(:,:)     ! rain production, deep convection
+    real(r8), pointer :: evapcsh(:,:)    ! Evaporation rate of shallow convective precipitation >=0.
+    real(r8), pointer :: evapcdp(:,:)    ! Evaporation rate of deep    convective precipitation >=0.
+
+    
+    real(r8), pointer :: icwmrdp(:,:)    ! in cloud water mixing ratio, deep convection
+    real(r8), pointer :: icwmrsh(:,:)    ! in cloud water mixing ratio, deep convection
+    real(r8), pointer :: sh_frac(:,:)    ! Shallow convective cloud fraction
+    real(r8), pointer :: dp_frac(:,:)    ! Deep convective cloud fraction
+
+    real(r8) :: evapcdpsum(pcols), rprddpsum(pcols)
+    real(r8) :: evapcshsum(pcols), rprdshsum(pcols)
+    real(r8) :: sh_e_ed_ratio(pcols,pver)       ! shallow conv [ent/(ent+det)] ratio  !RCE  
+    !BSINGH -ENDS
+
     ! energy checking variables
     real(r8) :: zero(pcols)                    ! array of zeros
     real(r8) :: zero_sc(pcols*psubcols)        ! array of zeros
@@ -1780,6 +1827,44 @@ subroutine tphysbc (ztodt,               &
 
     ! Debug physics_state.
     logical :: state_debug_checks
+
+    !BSINGH(09/17/2014): Added for unified convective transport
+    !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
+    ! by convproc_aero_model_wetdep subroutine. These variables were declared public for unified convective transport in 
+    ! zm_conv_intr but Lahey Compiler didn't like that (blows up while compiling physpkg.F90 due to 
+    ! insufficient memory)
+
+    real(r8):: mu(pcols,pver) 
+    real(r8):: eu(pcols,pver)
+    real(r8):: du(pcols,pver)
+    real(r8):: md(pcols,pver)
+    real(r8):: ed(pcols,pver)
+    real(r8):: dp(pcols,pver)
+    
+    ! wg layer thickness in mbs (between upper/lower interface).
+    real(r8):: dsubcld(pcols)
+    
+    ! wg layer thickness in mbs between lcl and maxi.    
+    integer :: jt(pcols)
+    
+    ! wg top  level index of deep cumulus convection.
+    integer :: maxg(pcols)
+    
+    ! wg gathered values of maxi.
+    integer :: ideep(pcols)
+    
+    ! w holds position of gathered points vs longitude index
+    integer :: lengath
+
+    !BSINGH(09/22/2014): Added for unified convective transport
+    real(r8) :: aerdepwetis(pcols,pcnst) 
+    real(r8) :: aerdepwetcw(pcols,pcnst)
+
+    !BSINGH(09/22/2014): Added for liq cld frac bug fix
+    real(r8)  :: lcldo(pcols,pver)              !HW pass old liqclf from macro_driver to micro_driver
+    !BSINGH - ENDS
+
+    
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -1931,7 +2016,8 @@ subroutine tphysbc (ztodt,               &
          dlf,        pflx,    zdu,       &
          rliq,    &
          ztodt,   &
-         state,   ptend, cam_in%landfrac, pbuf) 
+         state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
+         dsubcld, jt, maxg, ideep, lengath) !BSINGH -  Add 11 new args ('mu' to 'lengath') for unified convective transport
     call t_stopf('convect_deep_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -1961,7 +2047,7 @@ subroutine tphysbc (ztodt,               &
 
     call convect_shallow_tend (ztodt   , cmfmc,  cmfmc2  ,&
          dlf        , dlf2   ,  rliq   , rliq2, & 
-         state      , ptend  ,  pbuf)
+         state      , ptend  ,  pbuf   , sh_e_ed_ratio) !BSINGH(09/22/2014): Added sh_e_ed_ratio for unified convective transport
     call t_stopf ('convect_shallow_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -2044,7 +2130,7 @@ subroutine tphysbc (ztodt,               &
                dlf, dlf2, & ! detrain
                cmfmc,   cmfmc2, &
                cam_in%ts,      cam_in%sst, zdu,  pbuf, &
-               det_s, det_ice)
+               det_s, det_ice, lcldo ) !BSINGH(09/22/2014): Added lcldo for liq cld frac bug fix
 
           !  Since we "added" the reserved liquid back in this routine, we need 
 	  !    to account for it in the energy checker
@@ -2094,7 +2180,7 @@ subroutine tphysbc (ztodt,               &
        end if
 
        call t_startf('microp_aero_run')
-       call microp_aero_run(state, ptend_aero, ztodt, pbuf)
+       call microp_aero_run(state, ptend_aero, ztodt, pbuf, lcldo )!BSINGH(09/22/2014): Added lcldo for liq cld frac bug fix
        call t_stopf('microp_aero_run')
 
        call t_startf('microp_tend')
@@ -2154,7 +2240,46 @@ subroutine tphysbc (ztodt,               &
           call modal_aero_calcsize_diag(state, pbuf)
           call modal_aero_wateruptake_dr(state, pbuf)
        endif
-       call aero_model_wetdep( state, ztodt, dlf, cam_out, ptend, pbuf)
+       if(convproc_do_aer .or. convproc_do_gas) then !BSINGH(09/15/2014): For unified convective transport
+          !Compute variables needed for convproc unified convective transport
+          call pbuf_get_field(pbuf, rprddp_idx,      rprddp  )
+          call pbuf_get_field(pbuf, rprdsh_idx,      rprdsh  )
+          call pbuf_get_field(pbuf, nevapr_shcu_idx, evapcsh )
+          call pbuf_get_field(pbuf, nevapr_dpcu_idx, evapcdp )
+          
+          call pbuf_get_field(pbuf, icwmrdp_idx,     icwmrdp )
+          call pbuf_get_field(pbuf, icwmrsh_idx,     icwmrsh )
+          call pbuf_get_field(pbuf, sh_frac_idx,     sh_frac )
+          call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
+
+          evapcdpsum(:) = 0.0_r8
+          rprddpsum(:)  = 0.0_r8  !RCE 2012/01/12 bgn
+          evapcshsum(:) = 0.0_r8
+          rprdshsum(:)  = 0.0_r8
+
+          do k = 1, pver
+             rprddpsum(:ncol)  = rprddpsum(:ncol)  +  rprddp(:ncol,k)*state%pdel(:ncol,k)/gravit
+             rprdshsum(:ncol)  = rprdshsum(:ncol)  +  rprdsh(:ncol,k)*state%pdel(:ncol,k)/gravit
+             evapcdpsum(:ncol) = evapcdpsum(:ncol) + evapcdp(:ncol,k)*state%pdel(:ncol,k)/gravit
+             evapcshsum(:ncol) = evapcshsum(:ncol) + evapcsh(:ncol,k)*state%pdel(:ncol,k)/gravit
+          enddo  !RCE 2012/01/12 end
+
+          call convproc_aero_model_wetdep( state, ztodt, dlf, rprddpsum, rprdshsum,     &
+               evapcdpsum, evapcshsum, nsrflx_mzaer2cnvpr, cam_out, qsrflx_mzaer2cnvpr, &
+               aerdepwetis, aerdepwetcw, ptend, pbuf )
+          call t_startf('ma_convproc')
+          call ma_convproc_intr( state, ptend, pbuf, ztodt,                &
+               dp_frac, icwmrdp, rprddp, evapcdp,                          &
+               sh_frac, icwmrsh, rprdsh, evapcsh,                          &
+               dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
+               nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
+               mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath   )
+          call t_stopf('ma_convproc')
+          
+          !Bcall set_srf_wetdep( aerdepwetis, aerdepwetcw, cam_out )  !RCE 2012/01/12 end    !BALLI* DO WE NEED THIS???? Ask Dick !BALLI******
+       else
+          call aero_model_wetdep( state, ztodt, dlf, cam_out, ptend, pbuf)
+       endif
        call physics_update(state, ptend, ztodt, tend)
 
 
@@ -2171,7 +2296,8 @@ subroutine tphysbc (ztodt,               &
        end if
 
        call t_startf ('convect_deep_tend2')
-       call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf ) 
+       call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
+          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath )  !BSINGH(09/17/2014): Add 11 new args ('mu' to 'lengath') for unified convective transport
        call t_stopf ('convect_deep_tend2')
 
        call physics_update(state, ptend, ztodt, tend)
