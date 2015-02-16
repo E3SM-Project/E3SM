@@ -304,7 +304,7 @@ contains
 
   subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, dtime, col, &
     betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, &
-    cnstate_vars, carbonflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+    cnstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
   ! this returns net carbon fluxes from decay and translocation
@@ -323,11 +323,11 @@ contains
   use ColumnType               , only : column_type
   use SoilStatetype            , only : soilstate_type
   use ODEMod                   , only : ode_adapt_mbbks1
-  use CanopyStateType          , only : canopystate_type
   use CNStateType              , only : cnstate_type  
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   use CNVerticalProfileMod     , only : decomp_vertprofiles
-  use CNCarbonFluxType    , only : carbonflux_type  
+  use CNCarbonFluxType         , only : carbonflux_type
+  use CNNitrogenFluxType       , only : nitrogenflux_type  
   !ARGUMENTS
   class(bgc_reaction_CENTURY_type)   , intent(in) :: this
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
@@ -346,7 +346,8 @@ contains
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information
   type(tracercoeff_type)             , intent(in) :: tracercoeff_vars
   type(cnstate_type)                 , intent(inout) :: cnstate_vars
-  type(carbonflux_type)              , intent(inout) :: carbonflux_vars  
+  type(carbonflux_type)              , intent(inout) :: carbonflux_vars
+  type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars  
   type(tracerstate_type)             , intent(inout) :: tracerstate_vars
   type(tracerflux_type)              , intent(inout) :: tracerflux_vars
   class(plantsoilnutrientflux_type)   , intent(inout) :: plantsoilnutrientflux_vars

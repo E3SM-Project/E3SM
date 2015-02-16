@@ -53,7 +53,7 @@ implicit none
 !----------------------------------------------------------------------    
     subroutine calc_bgc_reaction_interface(this, bounds, lbj, ubj, num_soilc, filter_soilc,num_soilp,filter_soilp, jtops, dtime, &
        col, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, &
-       soilstate_vars, chemstate_vars, cnstate_vars, carbonflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+       soilstate_vars, chemstate_vars, cnstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
   ! eventually this will be an abstract subroutine, but now I use the select case approach for a quick and dirty implementation.
@@ -73,7 +73,8 @@ implicit none
    use shr_kind_mod             , only : r8 => shr_kind_r8
    use CanopyStateType          , only : canopystate_type
    use CNStateType              , only : cnstate_type
-   use CNCarbonFluxType         , only : carbonflux_type   
+   use CNCarbonFluxType         , only : carbonflux_type
+   use CNNitrogenFluxType       , only : nitrogenflux_type     
    import :: bgc_reaction_type
    class(bgc_reaction_type)   , intent(in) :: this
    type(bounds_type)          , intent(in) :: bounds                             ! bounds   
@@ -91,7 +92,8 @@ implicit none
    type(betrtracer_type)      , intent(in) :: betrtracer_vars                    ! betr configuration information
    type(soilstate_type)       , intent(in) :: soilstate_vars
    type(cnstate_type)         , intent(inout) :: cnstate_vars
-    type(carbonflux_type)     , intent(inout) :: carbonflux_vars
+   type(carbonflux_type)      , intent(inout) :: carbonflux_vars
+   type(nitrogenflux_type)    , intent(inout) :: nitrogenflux_vars
    type(tracercoeff_type)     , intent(in) :: tracercoeff_vars
    type(tracerstate_type)     , intent(inout) :: tracerstate_vars
    type(tracerflux_type)      , intent(inout) :: tracerflux_vars

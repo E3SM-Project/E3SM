@@ -354,6 +354,7 @@ module CNCarbonFluxType
      real(r8), pointer :: cwdc_loss_col                             (:)     ! (gC/m2/s) col-level coarse woody debris C loss
      real(r8), pointer :: litterc_loss_col                          (:)     ! (gC/m2/s) col-level litter C loss
 
+     real(r8), pointer :: bgc_cpool_inputs_vr_col                   (:, :, :)  ! 
      ! patch averaged to column variables - to remove need for pcf_a instance
      real(r8), pointer :: rr_col                                    (:)     ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
      real(r8), pointer :: ar_col                                    (:)     ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)      
@@ -662,6 +663,7 @@ contains
      allocate(this%prod100c_loss_col                 (begc:endc))                  ; this%prod100c_loss_col         (:)  =nan
      allocate(this%product_closs_col                 (begc:endc))                  ; this%product_closs_col         (:)  =nan
 
+     allocate(this%bgc_cpool_inputs_vr_col           (begc:endc, 1:nlevdecomp_full,4));this%bgc_cpool_inputs_vr_col (:,:,:) = nan
      allocate(this%lf_conv_cflux_col                 (begc:endc))                  ; this%lf_conv_cflux_col         (:)  =nan
      allocate(this%lithr_col                         (begc:endc))                  ; this%lithr_col                 (:)  =nan
      allocate(this%somhr_col                         (begc:endc))                  ; this%somhr_col                 (:)  =nan
@@ -3004,6 +3006,34 @@ contains
 
      end if
 
+    this%bgc_cpool_inputs_vr_col(begc:endc, :, 1) = spval    
+    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,1)
+    fieldname='BGC_CPOOL_INPUT_'//' METAB_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+    this%bgc_cpool_inputs_vr_col(begc:endc, :, 2) = spval    
+    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,2)
+    fieldname='BGC_CPOOL_INPUT_'//'_CEL_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+    this%bgc_cpool_inputs_vr_col(begc:endc, :, 3) = spval    
+    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,3)
+    fieldname='BGC_CPOOL_INPUT_'//'_LIG_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+    this%bgc_cpool_inputs_vr_col(begc:endc, :, 4) = spval    
+    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,4)
+    fieldname='BGC_CPOOL_INPUT_'//'_CWD_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+     
      !-------------------------------
      ! C13 flux variables - native to column 
      !-------------------------------

@@ -696,10 +696,10 @@ contains
          call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,      &
               filter(nc)%num_soilc, filter(nc)%soilc,                                &
               filter(nc)%num_soilp, filter(nc)%soilp,                                &
-              col, atm2lnd_vars,                                             &
+              col, atm2lnd_vars,                                                     &
               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
               waterflux_vars, chemstate_vars, cnstate_vars, carbonflux_vars,         &
-              betrtracer_vars, bgc_reaction,                                         &
+              nitrogenflux_vars, betrtracer_vars, bgc_reaction,                      &
               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
               tracerflux_vars, plantsoilnutrientflux_vars)
 
