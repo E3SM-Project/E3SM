@@ -82,7 +82,8 @@ implicit none
        nitrogenflux_vars, nitrogenstate_vars, &
        atm2lnd_vars, waterstate_vars, waterflux_vars, &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
-       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars)
+       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars, &
+        betrtracer_vars, tracerflux_vars, tracerstate_vars)
   
   !
   ! Update vegetation related state variables and fluxes
@@ -248,7 +249,7 @@ implicit none
        call CNGResp(num_soilp, filter_soilp, &
             carbonflux_vars)
        
-       call carbonflux_vars%summary_rr(num_soilp, filter_soilp, num_soilc, filter_soilc)
+       call carbonflux_vars%summary_rr(bounds,num_soilp, filter_soilp, num_soilc, filter_soilc)
        call t_stopf('CNGResp')
 
     !--------------------------------------------

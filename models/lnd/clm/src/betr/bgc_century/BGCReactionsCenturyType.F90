@@ -385,7 +385,7 @@ contains
   call calc_nuptake_prof(bounds, ubj, num_soilc, filter_soilc, &
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, 1:ubj, betrtracer_vars%id_trc_nh3x), &
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, 1:ubj, betrtracer_vars%id_trc_no3x), &
-     col%dz(bounds%begc:bounds%endc,1:ubj), cnstate_vars%nfixation_prof(bounds%begc:bounds%endc,1:ubj), &
+     col%dz(bounds%begc:bounds%endc,1:ubj), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj), &
      nuptake_prof(bounds%begc:bounds%endc,1:ubj))
            
   !initialize the state vector
@@ -431,7 +431,7 @@ contains
   !now there is no plant nitrogen uptake, I tend to create a new structure to indicate plant nutrient demand when it is hooked
   !back with CLM
   
-  call calc_plant_nitrogen_uptake_prof(bounds, ubj, num_soilc, filter_soilc, &
+  call calc_plant_nitrogen_uptake_prof(bounds, ubj, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc, lbj:ubj), &
      plantsoilnutrientflux_vars%plant_totn_demand_flx_col(bounds%begc:bounds%endc), &
      nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
      k_decay(centurybgc_vars%lid_plant_minn, bounds%begc:bounds%endc ,1:ubj))

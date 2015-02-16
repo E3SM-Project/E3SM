@@ -4783,18 +4783,20 @@ contains
   end subroutine Summary
 
   
-  subroutine summary_rr(this, num_soilp, filter_soilp, num_soilc, filter_soilc)
+  subroutine summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
   !
   ! description
   ! summarize root respiration
 
+  use subgridAveMod    , only: p2c
   class(carbonflux_type) :: this  
 
+  type(bounds_type), intent(in) :: bounds  
   integer, intent(in) :: num_soilp
   integer, intent(in) :: filter_soilp(:)
   integer, intent(in) :: num_soilc
   integer, intent(in) :: filter_soilc(:)
-
+  integer :: fp, p
    ! patch loop
   do fp = 1,num_soilp
     p = filter_soilp(fp)  

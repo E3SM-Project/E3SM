@@ -32,6 +32,7 @@ implicit none
 !  use BGCReactionsO18IsotopeType, only : bgc_reaction_O18ISO_type
   use abortutils                , only : endrun
   use clm_varctl                , only : iulog
+  use tracer_varcon             , only : is_active_betr_bgc
   ! !ARGUMENTS
   
   class(bgc_reaction_type), allocatable :: bgc_reaction
