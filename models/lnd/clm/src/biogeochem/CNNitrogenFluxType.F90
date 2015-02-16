@@ -220,7 +220,7 @@ module CNNitrogenFluxType
 
      real(r8), pointer :: sminn_no3_input_vr_col                    (:,:)
      real(r8), pointer :: sminn_nh4_input_vr_col                    (:,:)
-     real(r8), pointer :: bgc_npool_inputs_vr_col                    (:,:)
+     real(r8), pointer :: bgc_npool_inputs_vr_col                   (:,:,:)
      ! ---------- NITRIF_DENITRIF  ---------------------
 
      ! nitrification / denitrification fluxes
@@ -570,9 +570,9 @@ contains
     allocate(this%f_n2o_nit_col               (begc:endc))                   ; this%f_n2o_nit_col                    (:)   = nan
     allocate(this%f_n2o_nit_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%f_n2o_nit_vr_col                 (:,:) = nan
 
-    allocate(this%sminn_no3_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%this%sminn_no3_input_vr_col      (:,:) = nan
+    allocate(this%sminn_no3_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_no3_input_vr_col      (:,:) = nan
     allocate(this%sminn_nh4_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_nh4_input_vr_col           (:,:) = nan
-    allocate(this%bgc_npool_inputs_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%this%bgc_npool_inputs_vr_col      (:,:) = nan
+    allocate(this%bgc_npool_inputs_vr_col     (begc:endc,1:nlevdecomp_full,4)) ;this%bgc_npool_inputs_vr_col      (:,:,:) = nan
      
     allocate(this%smin_no3_massdens_vr_col    (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_massdens_vr_col         (:,:) = nan
     allocate(this%soil_bulkdensity_col        (begc:endc,1:nlevdecomp_full)) ; this%soil_bulkdensity_col             (:,:) = nan

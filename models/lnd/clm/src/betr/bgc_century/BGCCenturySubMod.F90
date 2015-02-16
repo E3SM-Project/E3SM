@@ -983,8 +983,8 @@ module BGCCenturySubMod
 
   
   !-----------------------------------------------------------------------  
-  subroutine calc_nuptake_prof(bounds, nlevdecomp, num_soilc, filter_soilc, smin_nh4_vr, sminn_no3_vr, &
-     dzsoi_decomp, nfixation_prof, nuptake_prof)
+  subroutine calc_nuptake_prof(bounds, nlevdecomp, num_soilc, filter_soilc, sminn_nh4_vr, sminn_no3_vr, &
+     dzsoi, nfixation_prof, nuptake_prof)
   !
   !DESCRIPTION
   ! calculate the nitrogen uptake profile
@@ -996,9 +996,9 @@ module BGCCenturySubMod
   integer                  , intent(in)   :: filter_soilc(:)                   ! filter for soil columns
   real(r8)                 , intent(in)   :: sminn_nh4_vr(bounds%begc: , 1: )                        ! soil mineral nitrogen profile
   real(r8)                 , intent(in)   :: sminn_no3_vr(bounds%begc: , 1: )                        ! soil mineral nitrogen profile  
-  real(r8)                 , intent(in)   :: dzsoi(bounds%begc:bounds%endc,1: )                                   ! layer thickness
+  real(r8)                 , intent(in)   :: dzsoi(bounds%begc: , 1: )                                   ! layer thickness
   real(r8)                 , intent(in)   :: nfixation_prof(bounds%begc: , 1: )                  ! nitrogen fixation profile
-  real(r8)                 , intent(inout):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp) ! nitrogen uptake profile
+  real(r8)                 , intent(inout):: nuptake_prof(bounds%begc: , 1: ) ! nitrogen uptake profile
   
   !local variables
   integer :: fc, j, c      ! indices
@@ -1021,7 +1021,7 @@ module BGCCenturySubMod
   do j = 1, nlevdecomp
     do fc=1,num_soilc
       c = filter_soilc(fc)
-      sminn_tot(c) = sminn_tot(c) + (sminn_nh4_vr(c,j)+smin_no3_vr(c,j)) * dzsoi(c,j)
+      sminn_tot(c) = sminn_tot(c) + (sminn_nh4_vr(c,j)+sminn_no3_vr(c,j)) * dzsoi(c,j)
     end do
   end do
 
@@ -1042,7 +1042,7 @@ module BGCCenturySubMod
   
  
   !-----------------------------------------------------------------------  
-  subroutine calc_plant_nitrogen_uptake_prof(bounds, nlevdecomp, num_soilc, filter_soilc,
+  subroutine calc_plant_nitrogen_uptake_prof(bounds, nlevdecomp, num_soilc, filter_soilc, &
     dzsoi, plant_totn_demand_flx_col, nuptake_prof, plant_demand_vr)
   
   !caluate depth specific demand
@@ -1062,7 +1062,7 @@ module BGCCenturySubMod
   do j = 1, nlevdecomp
     do fc = 1, num_soilc  
       c = filter_soilc(fc)
-      plant_demand_vr(1,c,j) = plant_totn_demand_flx_col(c) * nuptake_prof(c,j) / dz(c,j) /natomw   
+      plant_demand_vr(1,c,j) = plant_totn_demand_flx_col(c) * nuptake_prof(c,j) / dzsoi(c,j) /natomw   
     enddo
   enddo  
   

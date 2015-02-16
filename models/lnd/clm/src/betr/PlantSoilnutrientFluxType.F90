@@ -74,7 +74,7 @@ module PlantSoilnutrientFluxType
     allocate(this%plant_minn_active_yield_flx_patch                   (begp:endp)) ; this%plant_minn_active_yield_flx_patch               (:)   = nan
     allocate(this%plant_minn_passive_yield_flx_patch                  (begp:endp)) ; this%plant_minn_passive_yield_flx_patch              (:)   = nan
     
-    allocate(this%plant_minn_acitve_yield_flx_col                     (begc:endc)) ; this%plant_minn_active_yield_flx_col                 (:)   = nan
+    allocate(this%plant_minn_active_yield_flx_col                     (begc:endc)) ; this%plant_minn_active_yield_flx_col                 (:)   = nan
     allocate(this%plant_minn_passive_yield_flx_col                    (begc:endc)) ; this%plant_minn_passive_yield_flx_col                (:)   = nan
     
     allocate(this%plant_minn_active_yield_flx_vr_col         (begc:endc, lbj:ubj)) ; this%plant_minn_active_yield_flx_vr_col              (:,:) = nan

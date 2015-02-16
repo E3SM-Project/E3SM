@@ -980,7 +980,6 @@ contains
        end do
     end do
 
-    call 
     call restartvar(ncid=ncid, flag=flag, varname='plant_nbuffer', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_nbuffer_col)
