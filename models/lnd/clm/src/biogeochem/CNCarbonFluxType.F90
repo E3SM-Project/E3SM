@@ -4135,7 +4135,7 @@ contains
     use clm_varcon       , only: secspday
     use clm_varpar       , only: nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only: p2c
-    use BGCReactionsFactoryMod , only : is_active_betr_bgc
+    use tracer_varcon    , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class(carbonflux_type)                 :: this
@@ -4590,7 +4590,7 @@ contains
             this%somhr_col(c)
     end do
 
-    if(.not. is_active_betr_bgc())then
+    if(.not. is_active_betr_bgc)then
       ! total heterotrophic respiration, vertically resolved (HR)
       do j = 1,nlevdecomp
         do fc = 1,num_soilc

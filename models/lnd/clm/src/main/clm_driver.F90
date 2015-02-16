@@ -122,7 +122,7 @@ module clm_driver
   use BetrBGCMod             , only : run_betr_one_step_with_drainage
   use TracerBalanceMod       , only : betr_tracer_massbalance_check
   use TracerBalanceMod       , only : begin_betr_tracer_massbalance
-  use BGCReactionsFactoryMod , only : is_active_betr_bgc
+  use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary  
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
@@ -673,7 +673,7 @@ contains
 
        call t_startf('ecosysdyn')
 
-       if(is_active_betr_bgc())then
+       if(is_active_betr_bgc)then
          !right now betr bgc is intended only for non-ed mode
          
          !this returns the plant nutrient demand to soil bgc
@@ -850,7 +850,7 @@ contains
 
           if (use_cn) then
           
-            if(is_active_betr_bgc())then
+            if(is_active_betr_bgc)then
                !extract nitrogen pool and flux from betr
                !summarize total column nitrogen and carbon
                

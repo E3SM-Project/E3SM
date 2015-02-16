@@ -139,7 +139,7 @@ contains
     use fileutils               , only : getfil
     use ncdio_pio               , only : ncd_pio_closefile, ncd_pio_openfile, &
                                          file_desc_t, ncd_inqdid, ncd_inqdlen
-    use BGCReactionsFactoryMod  , only : is_active_betr_bgc                                         
+    use tracer_varcon           , only : is_active_betr_bgc                                         
     use betr_initializeMod      , only : bgc_reaction
     
     !
@@ -172,7 +172,7 @@ contains
        !
        ! populate each module with private parameters
        !       
-       if(is_active_betr_bgc())then
+       if(is_active_betr_bgc)then
          call readCNAllocBetrParams(ncid) 
        else
          call readCNAllocParams(ncid)

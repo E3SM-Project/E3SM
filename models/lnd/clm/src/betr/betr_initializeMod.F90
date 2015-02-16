@@ -80,7 +80,7 @@ implicit none
   end if
   ! Broadcast namelist variables read in
   call shr_mpi_bcast(bgc_method, mpicom)
-  print*,'bgc_method',bgc_method 
+
   end subroutine betr_readNL
 !-------------------------------------------------------------------------------  
   subroutine betr_initialize(bounds, lbj, ubj, waterstate_vars)

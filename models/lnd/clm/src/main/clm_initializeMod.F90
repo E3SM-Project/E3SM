@@ -407,7 +407,7 @@ contains
     use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
     use betr_initializeMod    , only : betr_initialize
     use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars
-    use BGCReactionsFactoryMod, only : is_active_betr_bgc    
+    use tracer_varcon         , only : is_active_betr_bgc    
     !
     ! !ARGUMENTS    
     implicit none
@@ -802,7 +802,7 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       if(is_active_betr_bgc())then
+       if(is_active_betr_bgc)then
          call CNEcosystemDynBetrInit(bounds_proc)
        else
          call CNEcosystemDynInit(bounds_proc)

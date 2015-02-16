@@ -72,7 +72,7 @@ contains
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   use CNStateType              , only : cnstate_type
   use CNCarbonFluxType         , only : carbonflux_type
-  use BGCReactionsFactoryMod   , only : is_active_betr_bgc
+  use tracer_varcon            , only : is_active_betr_bgc
   use CNNitrogenFluxType       , only : nitrogenflux_type    
   implicit none
   
@@ -185,7 +185,7 @@ contains
     tracerflux_vars%tracer_flx_ebu_col(bounds%begc:bounds%endc, 1:betrtracer_vars%nvolatile_tracers))
     
   !do flux for nitrogen storage pool 
-  if(is_active_betr_bgc())then    
+  if(is_active_betr_bgc)then    
     call plantsoilnutrientflux_vars%summary(bounds, ubj, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
       tracerflux_vars%tracer_flx_vtrans_col(bounds%begc:bounds%endc,betrtracer_vars%id_trc_nh3x), &
       tracerflux_vars%tracer_flx_vtrans_col(bounds%begc:bounds%endc,betrtracer_vars%id_trc_no3x))

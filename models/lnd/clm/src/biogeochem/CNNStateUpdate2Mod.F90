@@ -34,7 +34,7 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-    use BGCReactionsFactoryMod, only : is_active_betr_bgc      
+    use tracer_varcon, only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -58,7 +58,7 @@ contains
       dt = real( get_step_size(), r8 )
 
       ! column-level nitrogen fluxes from gap-phase mortality
-      if( .not. is_active_betr_bgc  ())then
+      if( .not. is_active_betr_bgc  )then
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -121,7 +121,7 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-    use BGCReactionsFactoryMod, only : is_active_betr_bgc      
+    use tracer_varcon, only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -144,7 +144,7 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      if( .not. is_active_betr_bgc  ())then
+      if( .not. is_active_betr_bgc  )then
       ! column-level nitrogen fluxes from harvest mortality
 
       do j = 1,nlevdecomp

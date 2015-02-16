@@ -81,7 +81,7 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
-    use BGCReactionsFactoryMod, only : is_active_betr_bgc    
+    use tracer_varcon, only : is_active_betr_bgc    
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -123,7 +123,7 @@ contains
          cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
       end do
 
-    if(.not. is_active_betr_bgc())then
+    if(.not. is_active_betr_bgc)then
       ! plant to litter fluxes
       do j = 1,nlevdecomp
          ! column loop
