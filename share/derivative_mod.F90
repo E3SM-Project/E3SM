@@ -527,7 +527,7 @@ end do
     integer i
     integer j
     integer l
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
 
     real(kind=real_kind)  sumx00,sumx01
     real(kind=real_kind)  sumy00,sumy01
@@ -666,7 +666,7 @@ endif
     integer j
     integer l
 
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
 
     real(kind=real_kind) ::  dudx00,dudx01
     real(kind=real_kind) ::  dudx10,dudx11
@@ -765,7 +765,7 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
     integer i
     integer j
     integer l
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
 
     real(kind=real_kind)  sumx00,sumx01
     real(kind=real_kind)  sumy00,sumy01
@@ -911,7 +911,7 @@ endif
     integer i
     integer j
     integer l
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
 
     real(kind=real_kind)  sumx00,sumx01
     real(kind=real_kind)  sumy00,sumy01
@@ -1081,7 +1081,7 @@ endif
     integer j
     integer l
 
-    logical, parameter :: UseUnroll=.TRUE.
+    logical, parameter :: UseUnroll=.FALSE.
 
     real(kind=real_kind)  sumx00,sumx01
     real(kind=real_kind)  sumy00,sumy01
@@ -1174,6 +1174,7 @@ else
        do l=1,np
           sumx00=0.0d0
           sumy00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Dpv(i,l  )*p(i,j  )
              sumy00 = sumy00 + deriv%M_t(i,l  )*p(i,j  )
@@ -1186,6 +1187,7 @@ else
        do i=1,np
           sumx00=0.0d0
           sumy00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%M_t(l,j  )*vtempt(l,i  ,1)
              sumy00 = sumy00 +  deriv%Dpv(l,j  )*vtempt(l,i  ,2)
@@ -1215,7 +1217,7 @@ endif
     integer i
     integer j
     integer l
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
 
     real(kind=real_kind) ::  dsdx00,dsdx01
     real(kind=real_kind) ::  dsdx10,dsdx11
@@ -1272,20 +1274,15 @@ endif
        do j=1,np
           do l=1,np
              dsdx00=0.0d0
-
              dsdy00=0.0d0
-
+!DIR$ UNROLL(NP)
              do i=1,np
                 dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
-
                 dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
              end do
              ds(l  ,j  ,1) = dsdx00
-
              ds(j  ,l  ,2) = dsdy00
-
           end do
-
        end do
     end if
   end function gradient_str_nonstag
@@ -1308,7 +1305,7 @@ endif
     integer j
     integer l
     
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
 
     real(kind=real_kind) ::  dvdx00,dvdx01
     real(kind=real_kind) ::  dvdx10,dvdx11
@@ -1364,6 +1361,7 @@ else
           dudy00=0.0d0
           dvdx00=0.0d0
 
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )*v(i,j  ,2)
              dudy00 = dudy00 + deriv%Dvv(i,l  )*v(j  ,i,1)
@@ -1411,6 +1409,7 @@ endif
     do j=1,np
        do l=1,nc
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Cfvm(i,l  )*v(i,j  )
           enddo
@@ -1420,6 +1419,7 @@ endif
     do j=1,nc
        do i=1,nc
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 + deriv%Cfvm(l,j  )*vtemp(l,i)
           enddo
@@ -1448,6 +1448,7 @@ endif
     do j=1,np
        do l=1,nep
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Sfvm(i,l  )*v(i,j  )
           enddo
@@ -1457,6 +1458,7 @@ endif
     do j=1,nep
        do i=1,nep
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 + deriv%Sfvm(l,j  )*vtemp(l,i)
           enddo
@@ -1489,6 +1491,7 @@ endif
     do j=1,np
        do l=1,nc+1
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Mfvm(i,l  )*v(i,j  )
           enddo
@@ -1498,6 +1501,7 @@ endif
     do j=1,nc+1
        do i=1,nc+1
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 + deriv%Mfvm(l,j  )*vtemp(l,i)
           enddo
@@ -2096,6 +2100,8 @@ endif
        ! since reindexing the inputs to use the intrinsic effectively would be
        ! just asking for trouble.)
        dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+!       dum_cart(:,:,component)= elem%vec_sphere2cart(:,:,component,1)*v(:,:,1) + &
+!                                elem%vec_sphere2cart(:,:,component,2)*v(:,:,2)
     end do
 
     ! Do ugradv on the cartesian components.
@@ -2108,7 +2114,10 @@ endif
     ! cartesian -> latlon
     do component=1,2
        ! vec_sphere2cart is its own pseudoinverse.
-       ugradv(:,:,component)=sum( dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component) ,3)
+       ugradv(:,:,component) = sum(dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component), 3)
+!       ugradv(:,:,component) = dum_cart(:,:,1)*elem%vec_sphere2cart(:,:,1,component) + &
+!                               dum_cart(:,:,2)*elem%vec_sphere2cart(:,:,2,component) + &
+!                               dum_cart(:,:,3)*elem%vec_sphere2cart(:,:,3,component)
     end do
 
   end function ugradv_sphere
@@ -2980,11 +2989,3 @@ endif
 
 
 end module derivative_mod
-
-
-
-
-
-
-
-

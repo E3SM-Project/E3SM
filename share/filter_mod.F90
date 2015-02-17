@@ -335,7 +335,7 @@ contains
     real(kind=real_kind) :: sumx10,sumx11
 
     integer(kind=int_kind) :: rem,n2,npr,nprp1
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
 
     !JMD if(MODULO(np,2) == 0 .and. UseUnroll) then 
     if(UseUnroll) then 
