@@ -83,7 +83,7 @@ function dg3d_gradient_mass(deriv,uvflx)  result(gradf)
     real(kind=real_kind), intent(in) :: uvflx(np,np,2)
     real(kind=real_kind)             :: gradf(np,np)
     integer:: i,j,l
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
     real(kind=real_kind)  sumx00,sumx01
     real(kind=real_kind)  sumy00,sumy01
     real(kind=real_kind)  sumx10,sumx11
@@ -165,6 +165,7 @@ else
        do l=1,np
           sumx00=zero
 	  sumy00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00  = sumx00  + deriv%Dvv_twt(i,l) * uvflx(i,j,1)
              sumy00  = sumy00  + deriv%Mvv_twt(i,l) * uvflx(i,j,2)
@@ -177,6 +178,7 @@ else
        do i=1,np
           sumx00=zero
 	  sumy00=zero
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%Mvv_twt(l,j)*vvtempt(l,i,1)
              sumy00 = sumy00 +  deriv%Dvv_twt(l,j)*vvtempt(l,i,2)
@@ -199,7 +201,7 @@ subroutine dg3d_gradient_mom(deriv,energy,gradu1,gradu2)
     real(kind=real_kind), intent(in) :: energy(np,np)
     real(kind=real_kind), intent(out):: gradu1(np,np), gradu2(np,np)
     integer:: i,j,l    
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
     real(kind=real_kind):: sumx00,sumx01
     real(kind=real_kind):: sumy00,sumy01
     real(kind=real_kind):: sumx10,sumx11
@@ -289,6 +291,7 @@ else
        do l=1,np
           sumx00=zero
           sumy00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Dvv_twt(i,l) * energy(i,j)
              sumy00 = sumy00 + deriv%Mvv_twt(i,l) * energy(i,j)
@@ -301,6 +304,7 @@ else
        do i=1,np
           sumx00=zero
 	  sumy00=zero
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%Mvv_twt(l,j)*vvtempt(l,i,1)
              sumy00 = sumy00 +  deriv%Dvv_twt(l,j)*vvtempt(l,i,2)
@@ -331,7 +335,7 @@ subroutine dg3d_source_term(mv,rmv,deriv,gcori,contrauv,couv,pgrad,force,source)
     real(kind=real_kind) ::  dudy10,dudy11
     real (kind=real_kind):: term,delm
     integer:: i,j,k,l    
-    logical, parameter :: UseUnroll = .TRUE.    
+    logical, parameter :: UseUnroll = .FALSE.    
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!    
 !  mv  => elem(ie)%mv   
@@ -389,6 +393,7 @@ else
        do l=1,np
           dudy00=zero
 	  dvdx00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l)* couv(i,j,2)
              dudy00 = dudy00 + deriv%Dvv(i,l)* couv(j,i,1)

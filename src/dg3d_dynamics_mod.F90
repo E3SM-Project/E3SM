@@ -813,7 +813,7 @@ function  divergence_cov(deriv,mterm,couv) result(div)
 
     real (kind=real_kind) :: term,delm
     integer i,j,k,l    
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
    !  Covariant vorticity
@@ -866,6 +866,7 @@ else
        do l=1,np
           dudy00=zero
           dvdx00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,1)
              dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,2)
@@ -1278,7 +1279,7 @@ end function cube_laplacian
     real(kind=real_kind) ::  dvdx10,dvdx11
     real(kind=real_kind) ::  dudy00,dudy01
     real(kind=real_kind) ::  dudy10,dudy11    
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
     !  divergence
@@ -1333,6 +1334,7 @@ else
       do l=1,np
           dudy00=zero
           dvdx00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )* fuv(i  ,j,1)
              dudy00 = dudy00 + deriv%Dvv(i,l  )* fuv(j  ,i,2)
@@ -1367,7 +1369,7 @@ endif
     real(kind=real_kind) ::  dvdx10,dvdx11
     real(kind=real_kind) ::  dudy00,dudy01
     real(kind=real_kind) ::  dudy10,dudy11    
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
     !  Covariant vorticity
@@ -1420,6 +1422,7 @@ endif
           do l=1,np
              dudy00=zero
              dvdx00=zero
+!DIR$ UNROLL(NP)
              do i=1,np
                 dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
                 dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
@@ -1456,7 +1459,7 @@ function gradient_rhs(deriv,ff)  result(gradf)
     real(kind=real_kind) ::  dvdx10,dvdx11
     real(kind=real_kind) ::  dudy00,dudy01
     real(kind=real_kind) ::  dudy10,dudy11    
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
 !=======================================================================================================!
   !Geopotential ht gradients
 if(MODULO(np,2) == 0 .and. UseUnroll) then 
@@ -1506,13 +1509,11 @@ else
           dudy00=zero
 	  dvdx00=zero
 
+!DIR$ UNROLL(NP)
           do i=1,np
-
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )* ff(i  ,j)
 	     dudy00 = dudy00 + deriv%Dvv(i,l  )* ff(j  ,i)
-
           end do
-
           phi1(l  ,j  ) = dvdx00
 	  phi2(j  ,l  ) = dudy00
 
@@ -1552,7 +1553,7 @@ subroutine source_term(elem,deriv,dx,dy,gcori,contrauv,couv,prg,source)
 
     real (kind=real_kind) :: term,delm
     integer i,j,k,l    
-    logical, parameter :: UseUnroll = .TRUE.
+    logical, parameter :: UseUnroll = .FALSE.
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
 if(MODULO(np,2) == 0 .and. UseUnroll) then 
@@ -1600,6 +1601,7 @@ else
        do l=1,np
           dudy00=zero
           dvdx00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
              dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
@@ -1667,15 +1669,13 @@ function gradient_mass(deriv,dx,dy,uvflx)  result(gradf)
        do l=1,np
           sumx00=zero
           sumy00=zero
-
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Dvv_twt(i,l) * uvflx(i,j,1)
              sumy00 = sumy00 + deriv%mvv_twt(i,l) * uvflx(i,j,2)
           end do
-
           vvtempt(j  ,l  ,1) = sumx00
           vvtempt(j  ,l  ,2) = sumy00
-
        end do
     end do
 
@@ -1683,13 +1683,12 @@ function gradient_mass(deriv,dx,dy,uvflx)  result(gradf)
        do i=1,np
           sumx00=zero
           sumy00=zero
-
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%mvv_twt(l,j  )*vvtempt(l,i,1)
              sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i,2)
           end do
-
-           gradf(i,j) = dy*sumx00 + dx*sumy00
+          gradf(i,j) = dy*sumx00 + dx*sumy00
        end do
     end do
 
@@ -1726,19 +1725,18 @@ subroutine gradient_mom(deriv,dx,dy,energy,gradu1,gradu2)
     do j=1,np
        do l=1,np
           sumx00=zero
-
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Dvv_twt(i,l) * energy(i,j)
           end do
-
           vvtempt(j  ,l  ,1) = sumx00
-
        end do
     end do
 
     do j=1,np
        do i=1,np
           sumx00=zero
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%mvv_twt(l,j  )*vvtempt(l,i,1)
           end do
@@ -1751,6 +1749,7 @@ subroutine gradient_mom(deriv,dx,dy,energy,gradu1,gradu2)
     do j=1,np
        do l=1,np
           sumy00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              sumy00 = sumy00 + deriv%mvv_twt(i,l) * energy(i,j)
           end do
@@ -1761,6 +1760,7 @@ subroutine gradient_mom(deriv,dx,dy,energy,gradu1,gradu2)
     do j=1,np
        do i=1,np
           sumy00=zero
+!DIR$ UNROLL(NP)
           do l=1,np
              sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i,2)
           end do
