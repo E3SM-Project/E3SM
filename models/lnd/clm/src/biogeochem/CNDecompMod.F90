@@ -1,5 +1,5 @@
 module CNDecompMod
-
+! Future home of ACME Land Group developments under Task M3.12, Xiaojuan Yang
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module holding routines used in litter and soil decomposition model
