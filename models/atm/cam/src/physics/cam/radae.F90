@@ -27,7 +27,7 @@ module radae
   use pmgrid,           only: plev, plevp
   use radconstants,     only: nlwbands, idx_LW_0650_0800, idx_LW_0500_0650, &
         idx_LW_1000_1200, idx_LW_0800_1000,  idx_LW_1200_2000
-  use abortutils,       only: endrun
+  use cam_abortutils,       only: endrun
   use cam_logfile,      only: iulog
   use wv_saturation,    only: qsat_water
 

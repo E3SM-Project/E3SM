@@ -4,7 +4,7 @@ module radconstants
 ! code used in the RRTMG model.
 
 use shr_kind_mod,   only: r8 => shr_kind_r8
-use abortutils,     only: endrun
+use cam_abortutils,     only: endrun
 
 implicit none
 private

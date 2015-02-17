@@ -8,7 +8,7 @@ module cloud_fraction
   use ref_pres,     only: pref_mid 
   use spmd_utils,   only: masterproc
   use cam_logfile,  only: iulog
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use ref_pres,     only: trop_cloud_top_lev
 
   implicit none

@@ -18,7 +18,7 @@
   use constituents,  only: cnst_get_ind, pcnst
   use perf_mod,      only: t_startf, t_stopf
   use cam_logfile,   only: iulog
-  use abortutils,    only: endrun
+  use cam_abortutils,    only: endrun
 
   implicit none
   private

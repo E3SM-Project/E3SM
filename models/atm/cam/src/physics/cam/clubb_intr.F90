@@ -230,7 +230,7 @@ module clubb_intr
                                       zt, zm, sfc, rad_zt, rad_zm
     use namelist_utils,         only: find_group_name
     use units,                  only: getunit, freeunit
-    use abortutils,             only: endrun
+    use cam_abortutils,             only: endrun
     use error_messages,         only: handle_errmsg
     use time_manager,         	only: is_first_step
     use constants_clubb,        only: em_min, w_tol_sqd, rt_tol, thl_tol  
@@ -2010,7 +2010,7 @@ end function diag_ustar
     use cam_history, only:             addfld, phys_decomp
     use namelist_utils,only:           find_group_name
     use units,only:                    getunit, freeunit
-    use abortutils,only:               endrun
+    use cam_abortutils,only:               endrun
 
     implicit none
 

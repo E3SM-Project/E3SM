@@ -31,7 +31,7 @@ contains
     use ppgrid,       only : pver, pcols
     use chem_mods,    only : adv_mass, gas_pcnst
     use physconst,    only : mwdry                   ! molecular weight of dry air
-    use abortutils,   only : endrun
+    use cam_abortutils,   only : endrun
     use phys_control, only : waccmx_is               !WACCM-X runtime switch
 
     implicit none

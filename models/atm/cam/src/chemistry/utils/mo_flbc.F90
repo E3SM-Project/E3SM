@@ -6,7 +6,7 @@ module mo_flbc
   use shr_kind_mod, only : r8 => shr_kind_r8
   use m_types,      only : time_ramp
   use spmd_utils,   only : masterproc,iam
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use ioFileMod,    only : getfil
   use ppgrid,       only : pcols, begchunk, endchunk, pver
   use time_manager, only : get_curr_date, get_curr_calday

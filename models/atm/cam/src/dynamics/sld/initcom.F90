@@ -30,7 +30,7 @@ subroutine initcom
    use commap
    use physconst,       only: rair, rearth, ra
    use time_manager,    only: get_step_size
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use spmd_utils,      only: masterproc
    use hycoef,          only: hypd, hypm
    use sld_control_mod, only: ifax, trig

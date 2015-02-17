@@ -8,7 +8,7 @@ module mo_strato_sad
   use ppgrid,       only : pver, pcols, pverp, begchunk, endchunk
   use time_manager, only : get_curr_date
   use time_utils,   only : flt_date, moz_findplb
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use ioFileMod,    only : getfil
   use spmd_utils,   only : masterproc
   use cam_logfile,  only : iulog

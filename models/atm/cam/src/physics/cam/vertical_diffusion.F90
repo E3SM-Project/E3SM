@@ -33,7 +33,7 @@ module vertical_diffusion
   use ppgrid,           only : pcols, pver, pverp
   use constituents,     only : pcnst, qmin, cnst_get_ind
   use diffusion_solver, only : vdiff_selector
-  use abortutils,       only : endrun
+  use cam_abortutils,       only : endrun
   use error_messages,   only : handle_errmsg
   use physconst,        only :          &
                                cpair  , &     ! Specific heat of dry air

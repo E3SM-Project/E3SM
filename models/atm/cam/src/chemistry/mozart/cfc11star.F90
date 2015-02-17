@@ -8,7 +8,7 @@ module cfc11star
   use cam_logfile,  only : iulog
   
   use physics_buffer, only : pbuf_add_field, dtype_r8
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use ppgrid,       only : pcols, pver, begchunk, endchunk
   use spmd_utils,   only : masterproc
 

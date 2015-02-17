@@ -15,7 +15,7 @@ module dp_coupling
    use check_energy,  only: check_energy_timestep_init
    use dynamics_vars, only: T_FVDYCORE_GRID
    use dyn_comp,      only: dyn_import_t, dyn_export_t
-   use abortutils,    only: endrun
+   use cam_abortutils,    only: endrun
 #if defined ( SPMD )
    use spmd_dyn,      only: local_dp_map, block_buf_nrecs, chunk_buf_nrecs
 #endif

@@ -2,7 +2,7 @@ module mapz_module
 
  use shr_kind_mod,  only : r8 => shr_kind_r8
  use FVperf_module, only : FVstartclock, FVstopclock
- use abortutils,    only : endrun
+ use cam_abortutils,    only : endrun
  use cam_logfile,   only : iulog
 
  public map1_cubic_te, map1_ppm, mapn_ppm, mapn_ppm_tracer, ppme

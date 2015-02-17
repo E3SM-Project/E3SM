@@ -14,7 +14,7 @@ module spedata
   use time_manager, only: get_curr_date, get_curr_calday, get_step_size, timemgr_is_caltype
   use spmd_utils,   only: masterproc
   use ppgrid,       only: pcols, pver, begchunk, endchunk
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use pio,          only: var_desc_t, file_desc_t, pio_get_var, pio_get_att, &
                           pio_setdebuglevel, pio_seterrorhandling, pio_bcast_error, &
                           pio_internal_error, pio_noerr, pio_inq_varid, pio_put_var, &

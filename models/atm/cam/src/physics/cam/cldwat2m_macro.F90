@@ -13,7 +13,7 @@
    use shr_kind_mod,     only: r8=>shr_kind_r8
    use spmd_utils,       only: masterproc
    use ppgrid,           only: pcols, pver, pverp
-   use abortutils,       only: endrun
+   use cam_abortutils,       only: endrun
    use physconst,        only: cpair, latvap, latice, rh2o
    use wv_saturation,    only: qsat_water, svp_water, svp_ice
    use cam_history,      only: addfld, add_default, phys_decomp, outfld 

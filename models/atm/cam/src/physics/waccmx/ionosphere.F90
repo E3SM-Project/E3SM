@@ -1420,7 +1420,7 @@ contains
 !-----------------------------------------------------------------------
   SUBROUTINE tridag(a,b,c,r,u,n)
 
-    use abortutils,   only: endrun
+    use cam_abortutils,   only: endrun
 
     INTEGER n
     REAL(r8) :: a(n),b(n),c(n),r(n),u(n)

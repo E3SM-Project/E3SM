@@ -38,7 +38,7 @@ contains
 
     use mo_chem_utls,      only : get_spc_ndx, get_extfrc_ndx, get_inv_ndx, get_rxt_ndx
     use cam_history,       only : addfld,phys_decomp
-    use abortutils,        only : endrun
+    use cam_abortutils,        only : endrun
     use cam_history,       only : add_default
     use mo_chm_diags,      only : chm_diags_inti
     use mo_tracname,       only : solsym

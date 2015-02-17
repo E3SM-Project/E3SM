@@ -7,7 +7,7 @@ module nlte_fomichev
   use shr_kind_mod,       only: r8 => shr_kind_r8
   use physconst,          only: r_universal, rearth, avogad, boltz
   use chem_surfvals,      only: chem_surfvals_get
-  use abortutils,         only: endrun
+  use cam_abortutils,         only: endrun
 
   implicit none
   private

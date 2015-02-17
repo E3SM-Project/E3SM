@@ -15,7 +15,7 @@ use cam_history,      only: addfld, add_default, phys_decomp, outfld
 use cam_logfile,      only: iulog
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
-use abortutils,       only: endrun
+use cam_abortutils,       only: endrun
 
 implicit none
 private

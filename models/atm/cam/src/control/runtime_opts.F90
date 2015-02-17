@@ -33,7 +33,7 @@ use filenames,       only: ncdata, bnd_topo, &
                            caseid, &
                            brnch_retain_casename
 use dycore,          only: dycore_is
-use abortutils,      only: endrun
+use cam_abortutils,      only: endrun
 use rayleigh_friction, only: rayk0, raykrange, raytau0
 
 !-----------------------------------------------------------------------

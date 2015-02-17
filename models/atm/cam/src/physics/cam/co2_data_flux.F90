@@ -10,7 +10,7 @@ module co2_data_flux
   use ppgrid,         only : begchunk, endchunk, pcols
   use phys_grid,      only : scatter_field_to_chunk, get_ncols_p
   use error_messages, only : alloc_err, handle_ncerr, handle_err
-  use abortutils,     only : endrun
+  use cam_abortutils,     only : endrun
   use netcdf
   use error_messages, only : handle_ncerr  
   use cam_logfile,    only : iulog

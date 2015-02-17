@@ -42,7 +42,7 @@ subroutine dyn_readnl( nlfilename )
    use units,           only: getunit, freeunit
    use namelist_utils,  only: find_group_name
    use spmd_utils,      only: masterproc
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use cam_logfile,     only: iulog
 #if defined(SPMD)
    use mpishorthand

@@ -128,7 +128,7 @@ subroutine wv_sat_readnl(nlfile)
   use namelist_utils,  only: find_group_name
   use units,           only: getunit, freeunit
   use mpishorthand
-  use abortutils,      only: endrun
+  use cam_abortutils,      only: endrun
 
   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
    
@@ -181,7 +181,7 @@ subroutine wv_sat_init
                             wv_sat_valid_idx
   use spmd_utils,     only: masterproc
   use cam_logfile,    only: iulog
-  use abortutils,     only: endrun
+  use cam_abortutils,     only: endrun
   use shr_assert_mod, only: shr_assert_in_domain
   use error_messages, only: handle_errmsg
 
@@ -237,7 +237,7 @@ subroutine wv_sat_final
   ! Purpose:                                                         !
   !   Deallocate global variables in module.                         !
   !------------------------------------------------------------------!
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
 
   integer :: status
 
@@ -594,7 +594,7 @@ end subroutine qsat_ice
 subroutine findsp_vc(q, t, p, use_ice, tsp, qsp)
 
   use cam_logfile,  only: iulog
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   ! Wrapper for findsp which is 1D and handles the output status.
   ! Changing findsp to elemental restricted debugging output.
   ! If that output is needed again, it's preferable *not* to copy findsp,

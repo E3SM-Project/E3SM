@@ -26,7 +26,7 @@ subroutine sltint(jcen    ,fb      ,lam     ,rdphi   , &
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use pmgrid,       only: plon, plev
-  use abortutils, only: endrun
+  use cam_abortutils, only: endrun
   use scanslt,      only: beglatex, endlatex, i1, plond, platd, nxpt
 #if (!defined UNICOSMP)
   use srchutil, only: whenieq

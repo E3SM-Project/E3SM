@@ -21,7 +21,7 @@ use cam_history_support, only : fillvalue
 ! Placed here due to PGI bug.
 use ref_pres,     only: clim_modal_aero_top_lev
 
-use abortutils,       only: endrun
+use cam_abortutils,       only: endrun
 
 implicit none
 private
