@@ -1799,7 +1799,7 @@ endif
     
 !----------------------------------------------------------------
 
-
+!DIR$ ATTRIBUTES FORCEINLINE :: gradient_sphere
   function gradient_sphere(s,deriv,Dinv) result(ds)
 !
 !   input s:  scalar
@@ -1824,6 +1824,7 @@ endif
        do l=1,np
           dsdx00=0.0d0
           dsdy00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
              dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
@@ -1886,6 +1887,7 @@ endif
     dscontra=0
     do n=1,np
        do m=1,np
+!DIR$ UNROLL(NP)
           do j=1,np
              ! phi(n)_y  sum over second index, 1st index fixed at m
              dscontra(m,n,1)=dscontra(m,n,1)-(elem%mp(m,j)*s(m,j)*deriv%Dvv(n,j) )*rrearth
@@ -1947,6 +1949,7 @@ endif
     dscontra=0
     do n=1,np
        do m=1,np
+!DIR$ UNROLL(NP)
           do j=1,np
              dscontra(m,n,1)=dscontra(m,n,1)-(&
                   (elem%mp(j,n)*elem%metinv(m,n,1,1)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
@@ -2008,6 +2011,7 @@ endif
     dscov=0
     do n=1,np
        do m=1,np
+!DIR$ UNROLL(NP)
           do j=1,np
              ! phi(m)_x  sum over first index, second index fixed at n
              dscov(m,n,1)=dscov(m,n,1)-(elem%mp(j,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) )*rrearth
@@ -2069,9 +2073,6 @@ endif
     ds(:,:,2)=elem%Dinv(:,:,1,2)*dscov(:,:,1) + elem%Dinv(:,:,2,2)*dscov(:,:,2)
 
     end function gradient_sphere_wk_testcontra
-
-
-
 
   function ugradv_sphere(u,v,deriv,elem) result(ugradv)
 !
@@ -2144,6 +2145,7 @@ endif
        do l=1,np
           dsdx00=0.0d0
           dsdy00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
              dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
@@ -2205,6 +2207,7 @@ endif
        do m=1,np
 
           div(m,n)=0
+!DIR$ UNROLL(NP)
           do j=1,np
              div(m,n)=div(m,n)-(elem%spheremp(j,n)*vtemp(j,n,1)*deriv%Dvv(m,j) &
                               +elem%spheremp(m,j)*vtemp(m,j,2)*deriv%Dvv(n,j)) &
@@ -2389,7 +2392,7 @@ endif
   end function edge_flux_u_cg
 
     
-
+!DIR$ ATTRIBUTES FORCEINLINE :: vorticity_sphere
   function vorticity_sphere(v,deriv,elem) result(vort)
 !
 !   input:  v = velocity in lat-lon coordinates
@@ -2425,6 +2428,7 @@ endif
           dudy00=0.0d0
           dvdx00=0.0d0
 
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )*vco(i,j  ,2)
              dudy00 = dudy00 + deriv%Dvv(i,l  )*vco(j  ,i,1)
@@ -2484,6 +2488,7 @@ endif
             dudy00=0.0d0
             dvdx00=0.0d0
 
+!DIR$ UNROLL(NP)
             do i=1,np
                dvdx00 = dvdx00 + deriv%Dvv_diag(i,l)*vco(i,j ,2)
                dudy00 = dudy00 + deriv%Dvv_diag(i,l)*vco(j ,i,1)
@@ -2502,8 +2507,7 @@ endif
      
   end function vorticity_sphere_diag
 
-
-
+!DIR$ ATTRIBUTES FORCEINLINE :: divergence_sphere
   function divergence_sphere(v,deriv,elem) result(div)
 !
 !   input:  v = velocity in lat-lon coordinates
@@ -2539,6 +2543,7 @@ endif
        do l=1,np
           dudx00=0.0d0
           dvdy00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              dudx00 = dudx00 + deriv%Dvv(i,l  )*gv(i,j  ,1)
              dvdy00 = dvdy00 + deriv%Dvv(i,l  )*gv(j  ,i,2)
@@ -2557,7 +2562,7 @@ endif
   end function divergence_sphere
 
 
-
+!DIR$ ATTRIBUTES FORCEINLINE :: laplace_sphere_wk
   function laplace_sphere_wk(s,deriv,elem,var_coef) result(laplace)
 !
 !   input:  s = scalar
@@ -2602,7 +2607,7 @@ endif
 
   end function laplace_sphere_wk
 
-
+!DIR$ ATTRIBUTES FORCEINLINE :: vlaplace_sphere_wk
   function vlaplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
@@ -2747,6 +2752,7 @@ endif
     ! N^3 tensor product formulation:
     do m=1,npdg
     do j=1,np
+!DIR$ UNROLL(NP)
     do i=1,np
        A(j,m)=A(j,m)+( p(i,j)*deriv%Mvv_twt(i,i)*deriv%Mvv_twt(j,j)  )*deriv%legdg(m,i)
     enddo
@@ -2755,6 +2761,7 @@ endif
 
     do n=1,npdg
     do m=1,npdg
+!DIR$ UNROLL(NP)
     do j=1,np
        phat(m,n)=phat(m,n)+A(j,m)*deriv%legdg(n,j)
     enddo
