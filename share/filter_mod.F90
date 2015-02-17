@@ -777,8 +777,8 @@ contains
                elem(ie)%derived%div(:,:,:,nfilt), &
                elem(ie)%state%v(:,:,:,:,nfilt), &
                flt,                      &
-               elem(ie)%DJMD,                 &
-               elem(ie)%DinvJMD)
+               elem(ie)%D,                 &
+               elem(ie)%Dinv)
           elem(ie)%state%lnps(:,:,nfilt) = LOG(elem(ie)%state%ps_v(:,:,nfilt))
        end do
     end if
@@ -1056,8 +1056,8 @@ contains
                    do i=1,np
                       v1 = elem(ie)%state%v(i,j,1,k,nfilt)*rrearth
                       v2 = elem(ie)%state%v(i,j,2,k,nfilt)*rrearth
-                      u(i,j)= v1*elem(ie)%DinvJMD(i,j,1,1) + v2*elem(ie)%DinvJMD(i,j,2,1)
-                      v(i,j)= v1*elem(ie)%DinvJMD(i,j,1,2) + v2*elem(ie)%DinvJMD(i,j,2,2)
+                      u(i,j)= v1*elem(ie)%Dinv(i,j,1,1) + v2*elem(ie)%Dinv(i,j,2,1)
+                      v(i,j)= v1*elem(ie)%Dinv(i,j,1,2) + v2*elem(ie)%Dinv(i,j,2,2)
                    end do
                 end do
              else
@@ -1065,8 +1065,8 @@ contains
                    do i=1,np
                       v1 = elem(ie)%state%v(i,j,1,k,nfilt)*rrearth
                       v2 = elem(ie)%state%v(i,j,2,k,nfilt)*rrearth
-                      u(i,j)= v1*elem(ie)%DJMD(i,j,1,1) + v2*elem(ie)%DJMD(i,j,1,2)
-                      v(i,j)= v1*elem(ie)%DJMD(i,j,2,1) + v2*elem(ie)%DJMD(i,j,2,2)
+                      u(i,j)= v1*elem(ie)%D(i,j,1,1) + v2*elem(ie)%D(i,j,1,2)
+                      v(i,j)= v1*elem(ie)%D(i,j,2,1) + v2*elem(ie)%D(i,j,2,2)
                    end do
                 end do
              endif
@@ -1079,8 +1079,8 @@ contains
                    do i=1,np
                       v1 = u(i,j)*rearth
                       v2 = v(i,j)*rearth
-                      elem(ie)%state%v(i,j,1,k,nfilt)= v1*elem(ie)%DJMD(i,j,1,1) + v2*elem(ie)%DJMD(i,j,2,1)
-                      elem(ie)%state%v(i,j,2,k,nfilt)= v1*elem(ie)%DJMD(i,j,1,2) + v2*elem(ie)%DJMD(i,j,2,2)
+                      elem(ie)%state%v(i,j,1,k,nfilt)= v1*elem(ie)%D(i,j,1,1) + v2*elem(ie)%D(i,j,2,1)
+                      elem(ie)%state%v(i,j,2,k,nfilt)= v1*elem(ie)%D(i,j,1,2) + v2*elem(ie)%D(i,j,2,2)
                    end do
                 end do
              else
@@ -1088,8 +1088,8 @@ contains
                    do i=1,np
                       v1 = u(i,j)*rearth
                       v2 = v(i,j)*rearth
-                      elem(ie)%state%v(i,j,1,k,nfilt)= v1*elem(ie)%DinvJMD(i,j,1,1) + v2*elem(ie)%DinvJMD(i,j,1,2)
-                      elem(ie)%state%v(i,j,2,k,nfilt)= v1*elem(ie)%DinvJMD(i,j,2,1) + v2*elem(ie)%DinvJMD(i,j,2,2)
+                      elem(ie)%state%v(i,j,1,k,nfilt)= v1*elem(ie)%Dinv(i,j,1,1) + v2*elem(ie)%Dinv(i,j,1,2)
+                      elem(ie)%state%v(i,j,2,k,nfilt)= v1*elem(ie)%Dinv(i,j,2,1) + v2*elem(ie)%Dinv(i,j,2,2)
                    end do
                 end do
              endif

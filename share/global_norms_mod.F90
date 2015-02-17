@@ -468,14 +468,14 @@ contains
     do rowind=1,2
       do colind=1,2
 	do ie=nets,nete
-	  zeta(:,:,ie) = elem(ie)%tensorViscJMD(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
+	  zeta(:,:,ie) = elem(ie)%tensorVisc(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
 	  call oldedgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
 	end do
 
 	call bndry_exchangeV(hybrid,edgebuf)
 	do ie=nets,nete
 	  call oldedgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
-          elem(ie)%tensorViscJMD(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
+          elem(ie)%tensorVisc(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
 	end do
       enddo !rowind
     enddo !colind
@@ -488,15 +488,15 @@ contains
       do colind=1,2
     ! replace hypervis w/ bilinear based on continuous corner values
 	do ie=nets,nete
-	  noreast = elem(ie)%tensorViscJMD(np,np,rowind,colind)
-	  nw = elem(ie)%tensorViscJMD(1,np,rowind,colind)
-	  se = elem(ie)%tensorViscJMD(np,1,rowind,colind)
-	  sw = elem(ie)%tensorViscJMD(1,1,rowind,colind)
+	  noreast = elem(ie)%tensorVisc(np,np,rowind,colind)
+	  nw = elem(ie)%tensorVisc(1,np,rowind,colind)
+	  se = elem(ie)%tensorVisc(np,1,rowind,colind)
+	  sw = elem(ie)%tensorVisc(1,1,rowind,colind)
 	  do i=1,np
 	    x = gp%points(i)
 	    do j=1,np
 		y = gp%points(j)
-		elem(ie)%tensorViscJMD(i,j,rowind,colind) = 0.25d0*( &
+		elem(ie)%tensorVisc(i,j,rowind,colind) = 0.25d0*( &
 					(1.0d0-x)*(1.0d0-y)*sw + &
 					(1.0d0-x)*(y+1.0d0)*nw + &
 					(x+1.0d0)*(1.0d0-y)*se + &
@@ -685,7 +685,7 @@ contains
     integer i,j,ie
 
     do ie=nets,nete
-       met => elem(ie)%metJMD
+       met => elem(ie)%met
        do j=1,npts
           do i=1,npts
 
@@ -793,7 +793,7 @@ contains
     integer i,j,ie
 
     do ie=nets,nete
-       met => elem(ie)%metJMD
+       met => elem(ie)%met
        do j=1,npts
           do i=1,npts
 
@@ -899,7 +899,7 @@ contains
     integer i,j,ie
 
     do ie=nets,nete
-       met => elem(ie)%metJMD
+       met => elem(ie)%met
 
        do j=1,npts
           do i=1,npts

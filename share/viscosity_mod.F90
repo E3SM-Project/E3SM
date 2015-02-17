@@ -602,8 +602,8 @@ do k=1,nlev
 do ie=nets,nete
     v1 = elem(ie)%state%v(:,:,1,k,nt)
     v2 = elem(ie)%state%v(:,:,2,k,nt)
-    ulatlon(:,:,1) = elem(ie)%DJMD(:,:,1,1)*v1 + elem(ie)%DJMD(:,:,1,2)*v2
-    ulatlon(:,:,2) = elem(ie)%DJMD(:,:,2,1)*v1 + elem(ie)%DJMD(:,:,2,2)*v2
+    ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
+    ulatlon(:,:,2) = elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2
    !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
    zeta(:,:,k,ie)=vorticity_sphere(ulatlon,deriv,elem(ie))
 enddo
@@ -642,8 +642,8 @@ do k=1,nlev
 do ie=nets,nete
     v1 = elem(ie)%state%v(:,:,1,k,nt)
     v2 = elem(ie)%state%v(:,:,2,k,nt)
-    ulatlon(:,:,1) = elem(ie)%DJMD(:,:,1,1)*v1 + elem(ie)%DJMD(:,:,1,2)*v2
-    ulatlon(:,:,2) = elem(ie)%DJMD(:,:,2,1)*v1 + elem(ie)%DJMD(:,:,2,2)*v2
+    ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
+    ulatlon(:,:,2) = elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2
    !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
    zeta(:,:,k,ie)=divergence_sphere(ulatlon,deriv,elem(ie))
 enddo
@@ -1171,8 +1171,8 @@ end subroutine
                 v2=rearth
              endif
              
-             ulatlon(i,j,1)=elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,1,2)*v2   ! contra->latlon
-             ulatlon(i,j,2)=elem(ie)%DJMD(i,j,2,1)*v1 + elem(ie)%DJMD(i,j,2,2)*v2   ! contra->latlon
+             ulatlon(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+             ulatlon(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
              pv(i,j,1,ie) = ulatlon(i,j,1)
              pv(i,j,2,ie) = ulatlon(i,j,2)
              
@@ -1431,8 +1431,8 @@ end subroutine
   do ie=nets,nete
      call random_number(ucontra)
      ! contra->latlon
-     ulatlon(:,:,1)=(elem(ie)%DJMD(:,:,1,1)*ucontra(:,:,1) + elem(ie)%DJMD(:,:,1,2)*ucontra(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%DJMD(:,:,2,1)*ucontra(:,:,1) + elem(ie)%DJMD(:,:,2,2)*ucontra(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%D(:,:,1,1)*ucontra(:,:,1) + elem(ie)%D(:,:,1,2)*ucontra(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%D(:,:,2,1)*ucontra(:,:,1) + elem(ie)%D(:,:,2,2)*ucontra(:,:,2))
      phidivu = elem(ie)%spheremp(:,:)*divergence_sphere(ulatlon,deriv,elem(ie))
      ugradphi = divergence_sphere_wk(ulatlon,deriv,elem(ie))
      lhs = phidivu - ugradphi
@@ -1460,7 +1460,7 @@ end subroutine
      call random_number(p)
      
      ! grad(p)  (lat/lon vector)
-     gradp = gradient_sphere(p,deriv,elem(ie)%DinvJMD)
+     gradp = gradient_sphere(p,deriv,elem(ie)%Dinv)
      gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
      gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
      gradp_wk = gradient_sphere_wk_testcontra(p,deriv,elem(ie))
@@ -1468,8 +1468,8 @@ end subroutine
      ucontra(:,:,1)=p  ! PHIvec_1 * p
      ucontra(:,:,2)=0
      ! contra->latlon
-     ulatlon(:,:,1)=(elem(ie)%DJMD(:,:,1,1)*ucontra(:,:,1) + elem(ie)%DJMD(:,:,1,2)*ucontra(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%DJMD(:,:,2,1)*ucontra(:,:,1) + elem(ie)%DJMD(:,:,2,2)*ucontra(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%D(:,:,1,1)*ucontra(:,:,1) + elem(ie)%D(:,:,1,2)*ucontra(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%D(:,:,2,1)*ucontra(:,:,1) + elem(ie)%D(:,:,2,2)*ucontra(:,:,2))
 
      rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
      lhs = gradp(:,:,1)-gradp_wk(:,:,1)
@@ -1477,8 +1477,8 @@ end subroutine
      ucontra(:,:,1)=0  ! PHIvec_2 * p
      ucontra(:,:,2)=p
      ! contra->latlon
-     ulatlon(:,:,1)=(elem(ie)%DJMD(:,:,1,1)*ucontra(:,:,1) + elem(ie)%DJMD(:,:,1,2)*ucontra(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%DJMD(:,:,2,1)*ucontra(:,:,1) + elem(ie)%DJMD(:,:,2,2)*ucontra(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%D(:,:,1,1)*ucontra(:,:,1) + elem(ie)%D(:,:,1,2)*ucontra(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%D(:,:,2,1)*ucontra(:,:,1) + elem(ie)%D(:,:,2,2)*ucontra(:,:,2))
      rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
      lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)  
 
@@ -1487,8 +1487,8 @@ end subroutine
      ! cov -> latlon
      gradp(:,:,1)=rhs
      gradp(:,:,2)=rhs2
-     rhs(:,:)=elem(ie)%DinvJMD(:,:,1,1)*gradp(:,:,1) + elem(ie)%DinvJMD(:,:,2,1)*gradp(:,:,2)
-     rhs2(:,:)=elem(ie)%DinvJMD(:,:,1,2)*gradp(:,:,1) + elem(ie)%DinvJMD(:,:,2,2)*gradp(:,:,2)
+     rhs(:,:)=elem(ie)%Dinv(:,:,1,1)*gradp(:,:,1) + elem(ie)%Dinv(:,:,2,1)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%Dinv(:,:,1,2)*gradp(:,:,1) + elem(ie)%Dinv(:,:,2,2)*gradp(:,:,2)
 
 
      do j=1,np
@@ -1520,7 +1520,7 @@ end subroutine
 
      
      ! grad(p)  (lat/lon vector)
-     gradp = gradient_sphere(p,deriv,elem(ie)%DinvJMD)
+     gradp = gradient_sphere(p,deriv,elem(ie)%Dinv)
      gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
      gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
      gradp_wk = gradient_sphere_wk_testcov(p,deriv,elem(ie))
@@ -1530,15 +1530,15 @@ end subroutine
      ucov(:,:,1)=p  ! PHIvec_1 * p
      ucov(:,:,2)=0
      ! cov->latlon
-     ulatlon(:,:,1)=(elem(ie)%DinvJMD(:,:,1,1)*ucov(:,:,1) + elem(ie)%DinvJMD(:,:,2,1)*ucov(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%DinvJMD(:,:,1,2)*ucov(:,:,1) + elem(ie)%DinvJMD(:,:,2,2)*ucov(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%Dinv(:,:,1,1)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,1)*ucov(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%Dinv(:,:,1,2)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,2)*ucov(:,:,2))
      rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
 
      ucov(:,:,1)=0  ! PHIvec_2 * p
      ucov(:,:,2)=p
      ! cov->latlon
-     ulatlon(:,:,1)=(elem(ie)%DinvJMD(:,:,1,1)*ucov(:,:,1) + elem(ie)%DinvJMD(:,:,2,1)*ucov(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%DinvJMD(:,:,1,2)*ucov(:,:,1) + elem(ie)%DinvJMD(:,:,2,2)*ucov(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%Dinv(:,:,1,1)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,1)*ucov(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%Dinv(:,:,1,2)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,2)*ucov(:,:,2))
      rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
 
 
@@ -1546,8 +1546,8 @@ end subroutine
      ! contra -> latlon
      gradp(:,:,1)=rhs
      gradp(:,:,2)=rhs2
-     rhs(:,:) =elem(ie)%DJMD(:,:,1,1)*gradp(:,:,1) + elem(ie)%DJMD(:,:,1,2)*gradp(:,:,2)
-     rhs2(:,:)=elem(ie)%DJMD(:,:,2,1)*gradp(:,:,1) + elem(ie)%DJMD(:,:,2,2)*gradp(:,:,2)
+     rhs(:,:) =elem(ie)%D(:,:,1,1)*gradp(:,:,1) + elem(ie)%D(:,:,1,2)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%D(:,:,2,1)*gradp(:,:,1) + elem(ie)%D(:,:,2,2)*gradp(:,:,2)
 
 
      do j=1,np
@@ -1586,15 +1586,15 @@ end subroutine
      ucov(:,:,1)=p  ! PHIvec_1 * p
      ucov(:,:,2)=0
      ! cov->latlon, and then u cross khat:
-     ulatlon(:,:,2)=-(elem(ie)%DinvJMD(:,:,1,1)*ucov(:,:,1) + elem(ie)%DinvJMD(:,:,2,1)*ucov(:,:,2))
-     ulatlon(:,:,1)= (elem(ie)%DinvJMD(:,:,1,2)*ucov(:,:,1) + elem(ie)%DinvJMD(:,:,2,2)*ucov(:,:,2))
+     ulatlon(:,:,2)=-(elem(ie)%Dinv(:,:,1,1)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,1)*ucov(:,:,2))
+     ulatlon(:,:,1)= (elem(ie)%Dinv(:,:,1,2)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,2)*ucov(:,:,2))
      rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
 
      ucov(:,:,1)=0  ! PHIvec_2 * p
      ucov(:,:,2)=p
      ! cov->latlon, and u cross khat:
-     ulatlon(:,:,2)=-(elem(ie)%DinvJMD(:,:,1,1)*ucov(:,:,1) + elem(ie)%DinvJMD(:,:,2,1)*ucov(:,:,2))
-     ulatlon(:,:,1)= (elem(ie)%DinvJMD(:,:,1,2)*ucov(:,:,1) + elem(ie)%DinvJMD(:,:,2,2)*ucov(:,:,2))
+     ulatlon(:,:,2)=-(elem(ie)%Dinv(:,:,1,1)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,1)*ucov(:,:,2))
+     ulatlon(:,:,1)= (elem(ie)%Dinv(:,:,1,2)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,2)*ucov(:,:,2))
      rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
 
 
@@ -1602,8 +1602,8 @@ end subroutine
      ! contra -> latlon
      gradp(:,:,1)=rhs
      gradp(:,:,2)=rhs2
-     rhs(:,:) =elem(ie)%DJMD(:,:,1,1)*gradp(:,:,1) + elem(ie)%DJMD(:,:,1,2)*gradp(:,:,2)
-     rhs2(:,:)=elem(ie)%DJMD(:,:,2,1)*gradp(:,:,1) + elem(ie)%DJMD(:,:,2,2)*gradp(:,:,2)
+     rhs(:,:) =elem(ie)%D(:,:,1,1)*gradp(:,:,1) + elem(ie)%D(:,:,1,2)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%D(:,:,2,1)*gradp(:,:,1) + elem(ie)%D(:,:,2,2)*gradp(:,:,2)
 
 
      do j=1,np
