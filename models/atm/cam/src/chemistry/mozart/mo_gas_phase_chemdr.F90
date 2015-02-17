@@ -31,7 +31,7 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(phtcnt)        :: pht_names
   character(len=fieldname_len),dimension(rxt_tag_cnt)   :: tag_names
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
-  logical :: convproc_do_aer !BSINGH(09/17/2014) - For unified convective transport
+
 contains
 
   subroutine gas_phase_chemdr_inti()
@@ -55,8 +55,7 @@ contains
 
     !-----------------------------------------------------------------------
 
-    call phys_getopts( history_aerosol_out = history_aerosol, &
-         convproc_do_aer_out = convproc_do_aer ) !BSINGH(09/17/2014): For unified convective transport
+    call phys_getopts( history_aerosol_out = history_aerosol )
    
     ndx_h2so4 = get_spc_ndx('H2SO4')
 
@@ -688,9 +687,7 @@ contains
       call sethet( het_rates, pmid, zmid, phis, tfld, &
                    cmfdqr, prain, nevapr, delt, invariants(:,:,indexm), &
                    vmr, ncol, lchnk )
-       if(.not. convproc_do_aer) then !BSINGH(09/17/2014): For unified convective transport
-          call het_diags( het_rates(:ncol,:,:), mmr(:ncol,:,:), pdel(:ncol,:), lchnk, ncol )
-       endif
+      call het_diags( het_rates(:ncol,:,:), mmr(:ncol,:,:), pdel(:ncol,:), lchnk, ncol )
     end if
 
     do i = phtcnt+1,rxt_tag_cnt
@@ -731,12 +728,6 @@ contains
     call t_stopf('imp_sol')
 
     if( h2o_ndx>0) call outfld( 'H2O_GAS',  vmr(1,1,h2o_ndx),  ncol ,lchnk )
-    if(convproc_do_aer) then !BSINGH -For unified convective transport
-       call vmr2mmr( vmr, mmr_new, mbar, ncol )  !RCE
-       mmr_new(:ncol,:,:) = 0.5_r8*( mmr(:ncol,:,:)+mmr_new(:ncol,:,:) )  !RCE
-       !RCE - mmr_new = average of mmr values before and after imp_sol
-       call het_diags( het_rates(:ncol,:,:), mmr_new(:ncol,:,:), pdel(:ncol,:), lchnk, ncol )  !RCE
-    endif
 
     ! save h2so4 change by gas phase chem (for later new particle nucleation)
     if (ndx_h2so4 > 0) then
