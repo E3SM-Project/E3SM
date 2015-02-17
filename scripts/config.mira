@@ -11,13 +11,11 @@ cd /gpfs/mira-fs0/projects/CESM_Atmos/usr/jedwards/pio2tests
 rm -fr CMakeCache.txt CMakeFiles */CMakeCache.txt */CmakeFiles
 export NETCDF_DIR=/home/jayesh/public/libs/netcdf-install-c-4.3.2-cxx-4.2-f-4.2/
 export HDF5_DIR=/home/jayesh/public/libs/hdf5-1.8.12-install
+export PATH=/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin:$PATH
 
-export PATH=/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin:$NETCDF_DIR/bin:$HDF5_DIR/bin:$PATH
 
-
-cmake --debugtrycompile -D PNETCDF_DIR=/home/jedwards/pnetcdf-1987-mpich3 \
-      -D CMAKE_PREFIX_PATH=$NETCDF_DIR:$HDF5_DIR \
-      -D NETCDF_DIR=$NETCDF_DIR \
+cmake --debugtrycompile \
+      -D CMAKE_BUILD_TYPE=PIO \
       -D PIO_FILESYSTEM_HINTS="gpfs" \
       -D PIO_BUILD_TIMING=1 \
       -D PIO_BUILD_TESTS=1 \

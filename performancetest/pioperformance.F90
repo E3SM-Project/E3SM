@@ -137,7 +137,7 @@ contains
     character(len=8) :: varname
     double precision :: wall(2), sys(2), usr(2)
     integer :: niomin, niomax
-    integer :: nv
+    integer :: nv, mode
     integer,  parameter :: c0 = -1
     double precision, parameter :: cd0 = 1.0e30
     nullify(compmap)
@@ -204,6 +204,11 @@ contains
           if(mype==0) then
              print *,'iotype=',piotypes(k)
           endif
+          if(iotype==PIO_IOTYPE_PNETCDF) then
+             mode = PIO_64BIT_DATA
+          else
+             mode = 0
+          endif
           do rearrtype=1,2
              rearr = rearrangers(rearrtype)
              if(rearr /= PIO_REARR_SUBSET .and. rearr /= PIO_REARR_BOX) exit
@@ -217,7 +222,8 @@ contains
                 call pio_init(mype, comm, ntasks, 0, stride, PIO_REARR_SUBSET, iosystem)
                    
                 write(fname, '(a,i1,a,i4.4,a,i1,a)') 'pioperf.',rearr,'-',ntasks,'-',iotype,'.nc'
-                ierr =  PIO_CreateFile(iosystem, File, iotype, trim(fname))
+		
+                ierr =  PIO_CreateFile(iosystem, File, iotype, trim(fname), mode)
 
                 call WriteMetadata(File, gdims, vari, varr, vard)
                 call MPI_Barrier(comm,ierr)
@@ -228,6 +234,7 @@ contains
 !                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
 
                 do frame=1,nframes
+                   if(mype==0) print *,__FILE__,__LINE__,frame
                    do nv=1,nvars   
                       call PIO_setframe(File, vari(nv), frame)
                       call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval=c0)

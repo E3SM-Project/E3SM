@@ -809,9 +809,10 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	   wmb = wmb->next;
        }
        /* flush the previous record before starting a new one. this is collective */
-       if(wmb->frame != NULL && vdesc->record != wmb->frame[0]){
-	 flush_buffer(ncid,wmb);
-       }
+    //   if(wmb->frame != NULL && vdesc->record != wmb->frame[0]){
+     //    if(ios->iomaster) printf("%s %d\n",__FILE__,__LINE__);
+	// flush_buffer(ncid,wmb);
+    //   }
      }else{
        while(wmb->next != NULL && wmb->ioid!= -(ioid)){
 	 if(wmb->next!=NULL)
