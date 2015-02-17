@@ -49,7 +49,7 @@ module cuda_mod
   public :: copy_qdp_h2d
   public :: cudaThreadSynchronize_wrap
 
-  integer,parameter :: numk_eul = 8
+  integer,parameter :: numk_eul = 6
   integer,parameter :: numk_hyp = 6
   integer,parameter :: numk_lim2d = 15
 
@@ -780,15 +780,9 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax ,
   real(kind=real_kind), value                                             , intent(in   ) :: dt, nu_q, nu_p
   integer, value                                                          , intent(in   ) :: n0_qdp, np1_qdp, rhs_viss, limiter_option, nets, nete
   integer :: ks
-  integer :: i , j , k , kk , q , ie , ij , ijk , ijkk
-  real(kind=real_kind), shared :: vstar_s    (np*np+1,numk_eul,2)
-  real(kind=real_kind), shared :: qtens_s    (np*np+1,numk_eul  )
-  real(kind=real_kind), shared :: spheremp_s (np*np+1           )
-  real(kind=real_kind), shared :: deriv_dvv_s(np*np+1           )
-  real(kind=real_kind), shared :: metdet_s   (np*np+1           )
-  real(kind=real_kind), shared :: rmetdet_s  (np*np+1           )
-  real(kind=real_kind), shared :: dp_star_s  (np*np+1,numk_eul  )
-  real(kind=real_kind) :: qtmp
+  integer :: i , j , k , kk , q , ie , ij
+  real(kind=real_kind), shared :: deriv_dvv_s(np*np+1)
+  real(kind=real_kind) :: qtmp, qtens
 
   ks = int(ceiling(dble(nlev)/numk_eul))
 
@@ -801,53 +795,42 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax ,
   ie =       ((blockidx%x-1)/ks)/qsize_d+1
   ij   =              (j-1)*np+i
 
-  if (k  > nlev   ) return
-  if (q  > qsize_d) return
-  if (ie > nete   ) return
-
-  !Pre-load shared variables
-  vstar_s(ij,kk,:) = vstar(i,j,k,:,ie)
-  if (kk == 1) then
-    spheremp_s(ij) = spheremp(i,j,ie)
-    metdet_s(ij) = metdet(i,j,ie)
-    rmetdet_s(ij) = rmetdet(i,j,ie)
-    deriv_dvv_s(ij) = deriv_dvv(i,j)
+  if (k  <= nlev .and. q  <= qsize_d .and. ie <= nete ) then
+    if (kk == 1) deriv_dvv_s(ij) = deriv_dvv(i,j)
+    qtmp = Qdp(i,j,k,q,n0_qdp,ie)
+    qtens = qtmp - dt * divergence_sphere( i , j , k , q , ie , kk , ij , vstar , qtmp , metdet , rmetdet , dinv , deriv_dvv_s , nets , nete )
+    if ( rhs_viss /= 0 ) qtens = qtens + qtens_biharmonic(i,j,k,q,ie)
+    Qdp(i,j,k,q,np1_qdp,ie) = spheremp(i,j,ie) * qtens
   endif
-  call syncthreads()
-
-  !Begin the kernel
-  qtmp = Qdp(i,j,k,q,n0_qdp,ie)
-  qtens_s(ij,kk) = qtmp - dt * divergence_sphere( i , j , ie , kk , ij , vstar_s , qtmp , metdet_s , rmetdet_s , dinv , deriv_dvv_s , nets , nete )
-  if ( rhs_viss /= 0 ) qtens_s(ij,kk) = qtens_s(ij,kk) + qtens_biharmonic(i,j,k,q,ie)
-  call syncthreads()
-  Qdp(i,j,k,q,np1_qdp,ie) = spheremp_s(ij) * Qtens_s(ij,kk)
 end subroutine euler_step_kernel1
 
 
 
-attributes(device) function divergence_sphere(i,j,ie,k,ij,Vstar,qtmp,metdet,rmetdet,dinv,deriv_dvv,nets,nete) result(dp_star)
+attributes(device) function divergence_sphere(i,j,k,q,ie,kk,ij,Vstar,qtmp,metdet,rmetdet,dinv,deriv_dvv,nets,nete) result(dp_star)
   implicit none
-  integer,              intent(in) :: i, j, ie, k, ij, nets, nete
-  real(kind=real_kind), intent(in) :: Dinv     (np*np,2,2,nets:nete)
-  real(kind=real_kind), intent(in) :: metdet   (np*np+1)
-  real(kind=real_kind), intent(in) :: rmetdet  (np*np+1)
+  integer,              intent(in) :: i, j, k, q, ie, kk, ij, nets, nete
+  real(kind=real_kind), intent(in) :: Dinv     (np,np,2,2,nets:nete)
+  real(kind=real_kind), intent(in) :: metdet   (np,np,nets:nete)
+  real(kind=real_kind), intent(in) :: rmetdet  (np,np,nets:nete)
   real(kind=real_kind), intent(in) :: deriv_dvv(np*np+1)
-  real(kind=real_kind), intent(in) :: Vstar    (np*np+1,numk_eul,2)
+  real(kind=real_kind), intent(in) :: Vstar    (np,np,nlev,2,nets:nete)
   real(kind=real_kind), intent(in), value :: qtmp
   real(kind=real_kind)             :: dp_star
-  real(kind=real_kind), shared :: gv(np*np,numk_eul,2)
+  real(kind=real_kind), shared :: gv(np*np+1,numk_eul,2)
   integer :: s
-  real(kind=real_kind) :: vvtemp, divtemp
-  gv(ij,k,1) = metdet(ij) * ( dinv(ij,1,1,ie) * Vstar(ij,k,1) * qtmp + dinv(ij,1,2,ie) * Vstar(ij,k,2) * qtmp )
-  gv(ij,k,2) = metdet(ij) * ( dinv(ij,2,1,ie) * Vstar(ij,k,1) * qtmp + dinv(ij,2,2,ie) * Vstar(ij,k,2) * qtmp )
+  real(kind=real_kind) :: vvtemp, divtemp, vs1tmp, vs2tmp
+  vs1tmp = vstar(i,j,k,1,ie) * metdet(i,j,ie) * qtmp
+  vs2tmp = vstar(i,j,k,2,ie) * metdet(i,j,ie) * qtmp
+  gv(ij,kk,1) = dinv(i,j,1,1,ie) * vs1tmp + dinv(i,j,1,2,ie) * vs2tmp
+  gv(ij,kk,2) = dinv(i,j,2,1,ie) * vs1tmp + dinv(i,j,2,2,ie) * vs2tmp
   call syncthreads()
   divtemp = 0.0d0
   vvtemp   = 0.0d0
   do s = 1 , np
-    divtemp = divtemp + deriv_dvv((i-1)*np+s) * gv((j-1)*np+s,k,1)
-    vvtemp  = vvtemp  + deriv_dvv((j-1)*np+s) * gv((s-1)*np+i,k,2)
+    divtemp = divtemp + deriv_dvv((i-1)*np+s) * gv((j-1)*np+s,kk,1)
+    vvtemp  = vvtemp  + deriv_dvv((j-1)*np+s) * gv((s-1)*np+i,kk,2)
   end do
-  dp_star = ( divtemp + vvtemp ) * ( rmetdet(ij) * rrearth_d )
+  dp_star = ( divtemp + vvtemp ) * ( rmetdet(i,j,ie) * rrearth_d )
 end function divergence_sphere
 
 
@@ -1162,9 +1145,8 @@ attributes(global) subroutine hypervis_kernel1( Qdp , qtens , dp , dinv , variab
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: spheremp
   real(kind=real_kind), value                                             , intent(in   ) :: dt , ps0 , nu_p
   integer, value                                                          , intent(in   ) :: nets , nete , nt
-  real(kind=real_kind), dimension(np*np+1,2,numk_hyp), shared :: s
+  real(kind=real_kind), dimension(np*np+1,numk_hyp,2), shared :: s
   real(kind=real_kind), dimension(np*np+1,4  ), shared :: dinv_s
-  real(kind=real_kind), dimension(np,np), shared :: variable_hyperviscosity_s
   real(kind=real_kind), dimension(np,np), shared :: spheremp_s
   real(kind=real_kind), dimension(np,np), shared :: deriv_dvv_s
   real(kind=real_kind) :: dp0
@@ -1186,18 +1168,17 @@ attributes(global) subroutine hypervis_kernel1( Qdp , qtens , dp , dinv , variab
 
   if (kk == 1) then
     dinv_s(ij,:) = dinv(i,j,:,ie)
-    variable_hyperviscosity_s(i,j) = variable_hyperviscosity(i,j,ie)
     spheremp_s(i,j) = spheremp(i,j,ie)
     deriv_dvv_s(i,j) = deriv_dvv(i,j)
   endif
   if (nu_p>0) then
-    s(ij,1,kk) = dpdiss_ave(i,j,k,ie) * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
+    s(ij,kk,1) = dpdiss_ave(i,j,k,ie) * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
   else
     dp0 = ( ( hyai(k+1) - hyai(k) )*ps0 + ( hybi(k+1) - hybi(k) )*ps0 )
-    s(ij,1,kk) = dp0 * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
+    s(ij,kk,1) = dp0 * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
   endif
   call syncthreads()
-  qtens(i,j,k,q,ie) = laplace_sphere_wk(i,j,ie,kk,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv_s,nets,nete)
+  qtens(i,j,k,q,ie) = laplace_sphere_wk(i,j,ie,kk,s,dinv_s,spheremp_s,variable_hyperviscosity,deriv_dvv_s,nets,nete)
 end subroutine hypervis_kernel1
 
 
@@ -1214,11 +1195,9 @@ attributes(global) subroutine hypervis_kernel2( Qdp , qtens , dp , dinv , variab
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: rspheremp
   real(kind=real_kind), value                                             , intent(in   ) :: dt, nu_q
   integer, value                                                          , intent(in   ) :: nets , nete , nt
-  real(kind=real_kind), dimension(np*np+1,2,numk_hyp), shared :: s
+  real(kind=real_kind), dimension(np*np+1,numk_hyp,2), shared :: s
   real(kind=real_kind), dimension(np*np+1,4  ), shared :: dinv_s
-  real(kind=real_kind), dimension(np,np), shared :: variable_hyperviscosity_s
   real(kind=real_kind), dimension(np,np), shared :: spheremp_s
-  real(kind=real_kind), dimension(np,np), shared :: rspheremp_s
   real(kind=real_kind), dimension(np,np), shared :: deriv_dvv_s
   integer :: i, j, k, q, ie, kk, ks, ij
 
@@ -1238,15 +1217,12 @@ attributes(global) subroutine hypervis_kernel2( Qdp , qtens , dp , dinv , variab
 
   if (kk == 1) then
     dinv_s(ij,:) = dinv(i,j,:,ie)
-    variable_hyperviscosity_s(i,j) = variable_hyperviscosity(i,j,ie)
     spheremp_s(i,j) = spheremp(i,j,ie)
-    rspheremp_s(i,j) = rspheremp(i,j,ie)
     deriv_dvv_s(i,j) = deriv_dvv(i,j)
   endif
+  s(ij,kk,1) = rspheremp(i,j,ie)*qtens(i,j,k,q,ie)
   call syncthreads()
-  s(ij,1,kk) = rspheremp_s(i,j)*qtens(i,j,k,q,ie)
-  call syncthreads()
-  Qdp(i,j,k,q,nt,ie) = Qdp(i,j,k,q,nt,ie)*spheremp_s(i,j)-dt*nu_q*laplace_sphere_wk(i,j,ie,kk,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv_s,nets,nete)
+  Qdp(i,j,k,q,nt,ie) = Qdp(i,j,k,q,nt,ie)*spheremp_s(i,j)-dt*nu_q*laplace_sphere_wk(i,j,ie,kk,s,dinv_s,spheremp_s,variable_hyperviscosity,deriv_dvv_s,nets,nete)
 end subroutine hypervis_kernel2
 
 
@@ -1254,10 +1230,10 @@ end subroutine hypervis_kernel2
 attributes(device) function laplace_sphere_wk(i,j,ie,k,s,dinv,spheremp,variable_hyperviscosity,deriv_dvv,nets,nete) result(lapl)
   implicit none
   integer,                                              intent(in) :: nets, nete, i, j, ie, k
-  real(kind=real_kind), dimension(np*np+1,2,numk_hyp) , intent(inout) :: s
+  real(kind=real_kind), dimension(np*np+1,numk_hyp,2) , intent(inout) :: s
   real(kind=real_kind), dimension(np*np+1,2,2        ), intent(in) :: dinv
   real(kind=real_kind), dimension(np,np              ), intent(in) :: deriv_dvv
-  real(kind=real_kind), dimension(np,np              ), intent(in) :: variable_hyperviscosity
+  real(kind=real_kind), dimension(np,np,nets:nete    ), intent(in) :: variable_hyperviscosity
   real(kind=real_kind), dimension(np,np              ), intent(in) :: spheremp
   real(kind=real_kind)                                             :: lapl
   integer :: l
@@ -1272,21 +1248,21 @@ end function laplace_sphere_wk
 attributes(device) function gradient_sphere(i,j,ie,k,s,dinv,variable_hyperviscosity,deriv_dvv,nets,nete) result(ds)
   implicit none
   integer,                                              intent(in) :: nets, nete, i, j, ie, k
-  real(kind=real_kind), dimension(np*np+1,2,numk_hyp) , intent(in) :: s
+  real(kind=real_kind), dimension(np*np+1,numk_hyp,2) , intent(in) :: s
   real(kind=real_kind), dimension(np*np+1,2,2        ), intent(in) :: dinv
   real(kind=real_kind), dimension(np,np              ), intent(in) :: deriv_dvv
-  real(kind=real_kind), dimension(np,np              ), intent(in) :: variable_hyperviscosity
+  real(kind=real_kind), dimension(np,np,nets:nete    ), intent(in) :: variable_hyperviscosity
   real(kind=real_kind), dimension(2)                               :: ds
   integer :: l
   real(kind=real_kind) :: dsdx00 , dsdy00, tmp1, tmp2
   dsdx00 = 0.0d0
   dsdy00 = 0.0d0
   do l = 1 , np
-    dsdx00 = dsdx00 + deriv_dvv(l,i)*s((j-1)*np+l,1,k)
-    dsdy00 = dsdy00 + deriv_dvv(l,j)*s((l-1)*np+i,1,k)
+    dsdx00 = dsdx00 + deriv_dvv(l,i)*s((j-1)*np+l,k,1)
+    dsdy00 = dsdy00 + deriv_dvv(l,j)*s((l-1)*np+i,k,1)
   enddo
-  ds(1) = ( dinv((j-1)*np+i,1,1)*dsdx00 + dinv((j-1)*np+i,2,1)*dsdy00 ) * rrearth_d * variable_hyperviscosity(i,j)
-  ds(2) = ( dinv((j-1)*np+i,1,2)*dsdx00 + dinv((j-1)*np+i,2,2)*dsdy00 ) * rrearth_d * variable_hyperviscosity(i,j)
+  ds(1) = ( dinv((j-1)*np+i,1,1)*dsdx00 + dinv((j-1)*np+i,2,1)*dsdy00 ) * rrearth_d * variable_hyperviscosity(i,j,ie)
+  ds(2) = ( dinv((j-1)*np+i,1,2)*dsdx00 + dinv((j-1)*np+i,2,2)*dsdy00 ) * rrearth_d * variable_hyperviscosity(i,j,ie)
 end function gradient_sphere
 
 
@@ -1295,20 +1271,20 @@ attributes(device) function divergence_sphere_wk(i,j,ie,k,tmp,s,dinv,spheremp,de
   implicit none
   integer,                                              intent(in   ) :: nets, nete, i, j, ie, k
   real(kind=real_kind), dimension(2),                   intent(in   ) :: tmp
-  real(kind=real_kind), dimension(np*np+1,2,numk_hyp) , intent(inout) :: s
+  real(kind=real_kind), dimension(np*np+1,numk_hyp,2) , intent(inout) :: s
   real(kind=real_kind), dimension(np*np+1,2,2        ), intent(in   ) :: dinv
   real(kind=real_kind), dimension(np,np              ), intent(in   ) :: deriv_dvv
   real(kind=real_kind), dimension(np,np              ), intent(in   ) :: spheremp
   real(kind=real_kind)                                                :: lapl
   integer :: l, ij
   ij = (j-1)*np+i
-  s(ij,1,k) = ( dinv((j-1)*np+i,1,1)*tmp(1) + dinv((j-1)*np+i,1,2)*tmp(2) )
-  s(ij,2,k) = ( dinv((j-1)*np+i,2,1)*tmp(1) + dinv((j-1)*np+i,2,2)*tmp(2) )
+  s(ij,k,1) = ( dinv((j-1)*np+i,1,1)*tmp(1) + dinv((j-1)*np+i,1,2)*tmp(2) ) * spheremp(i,j)
+  s(ij,k,2) = ( dinv((j-1)*np+i,2,1)*tmp(1) + dinv((j-1)*np+i,2,2)*tmp(2) ) * spheremp(i,j)
   call syncthreads()
   lapl = 0.0d0
   do l = 1 , np
-    lapl = lapl - (spheremp(l,j)*s((j-1)*np+l,1,k)*deriv_dvv(i,l)+&
-                   spheremp(i,l)*s((l-1)*np+i,2,k)*deriv_dvv(j,l)) * rrearth_d
+    lapl = lapl - (s((j-1)*np+l,k,1)*deriv_dvv(i,l)+&
+                   s((l-1)*np+i,k,2)*deriv_dvv(j,l)) * rrearth_d
   enddo
 end function divergence_sphere_wk
 
