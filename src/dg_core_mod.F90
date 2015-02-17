@@ -126,13 +126,13 @@ implicit none
 !=======================================================================================================!
 !  From HOMME to Local Pointer										!
 !=======================================================================================================!
-    met    => elem%metJMD
-    metinv => elem%metinvJMD
+    met    => elem%met
+    metinv => elem%metinv
     metdet => elem%metdet
     mv     => elem%mp
     fcor   => elem%fcor
-    Dinv   => elem%DinvJMD
-    D      => elem%DJMD
+    Dinv   => elem%Dinv
+    D      => elem%D
 !=======================================================================================================!
 !  Length-scale redefined, gravity									!
 !=======================================================================================================!
@@ -458,8 +458,8 @@ subroutine dg_sw_model(elem,deriv,contrauvbuf,htbuf,contrauv,couv,ht,hill,rhs)
 !=======================================================================================================!
 !  From HOMME to Local Pointer										!
 !=======================================================================================================!
-    met    => elem%metJMD
-    metinv => elem%metinvJMD
+    met    => elem%met
+    metinv => elem%metinv
     metdet => elem%metdet
     mv     => elem%mp
     fcor   => elem%fcor
@@ -1160,15 +1160,15 @@ subroutine dg_diff_grads(elem,deriv,contrauvbuf,contrauv,couv,dif_gradu,dif_grad
     enddo
 
     do k= 1,np
-       couv_halo(k,1,1) = elem%metJMD(k,1,1,1)  * contrauv_halo(k,1,1) + elem%metJMD(k,1,1,2)  * contrauv_halo(k,1,2)
-       couv_halo(k,1,2) = elem%metJMD(k,1,2,1)  * contrauv_halo(k,1,1) + elem%metJMD(k,1,2,2)  * contrauv_halo(k,1,2)
-       couv_halo(k,2,1) = elem%metJMD(np,k,1,1) * contrauv_halo(k,2,1) + elem%metJMD(np,k,1,2) * contrauv_halo(k,2,2)
-       couv_halo(k,2,2) = elem%metJMD(np,k,2,1) * contrauv_halo(k,2,1) + elem%metJMD(np,k,2,2) * contrauv_halo(k,2,2)
+       couv_halo(k,1,1) = elem%met(k,1,1,1)  * contrauv_halo(k,1,1) + elem%met(k,1,1,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,1,2) = elem%met(k,1,2,1)  * contrauv_halo(k,1,1) + elem%met(k,1,2,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,2,1) = elem%met(np,k,1,1) * contrauv_halo(k,2,1) + elem%met(np,k,1,2) * contrauv_halo(k,2,2)
+       couv_halo(k,2,2) = elem%met(np,k,2,1) * contrauv_halo(k,2,1) + elem%met(np,k,2,2) * contrauv_halo(k,2,2)
 
-       couv_halo(k,3,1) = elem%metJMD(k,np,1,1) * contrauv_halo(k,3,1) + elem%metJMD(k,np,1,2) * contrauv_halo(k,3,2)
-       couv_halo(k,3,2) = elem%metJMD(k,np,2,1) * contrauv_halo(k,3,1) + elem%metJMD(k,np,2,2) * contrauv_halo(k,3,2)
-       couv_halo(k,4,1) = elem%metJMD(1,k,1,1)  * contrauv_halo(k,4,1) + elem%metJMD(1,k,1,2)  * contrauv_halo(k,4,2)
-       couv_halo(k,4,2) = elem%metJMD(1,k,2,1)  * contrauv_halo(k,4,1) + elem%metJMD(1,k,2,2)  * contrauv_halo(k,4,2)
+       couv_halo(k,3,1) = elem%met(k,np,1,1) * contrauv_halo(k,3,1) + elem%met(k,np,1,2) * contrauv_halo(k,3,2)
+       couv_halo(k,3,2) = elem%met(k,np,2,1) * contrauv_halo(k,3,1) + elem%met(k,np,2,2) * contrauv_halo(k,3,2)
+       couv_halo(k,4,1) = elem%met(1,k,1,1)  * contrauv_halo(k,4,1) + elem%met(1,k,1,2)  * contrauv_halo(k,4,2)
+       couv_halo(k,4,2) = elem%met(1,k,2,1)  * contrauv_halo(k,4,1) + elem%met(1,k,2,2)  * contrauv_halo(k,4,2)
     enddo
 
     Call  jump_fluxint(deriv,couv,couv_halo,jflx)
@@ -1210,18 +1210,18 @@ subroutine dg_diff_grads_uv(elem,deriv,uvbuf,uv,dif_gradu,dif_gradv)
     enddo
 
    do k= 1, np
-       couv_halo(k,1,1) = elem%DJMD(k,1,1,1)  * uv_halo(k,1,1) + elem%DJMD(k,1,2,1)  * uv_halo(k,1,2)
-       couv_halo(k,1,2) = elem%DJMD(k,1,1,2)  * uv_halo(k,1,1) + elem%DJMD(k,1,2,2)  * uv_halo(k,1,2)
-       couv_halo(k,2,1) = elem%DJMD(np,k,1,1) * uv_halo(k,2,1) + elem%DJMD(np,k,2,1) * uv_halo(k,2,2)
-       couv_halo(k,2,2) = elem%DJMD(np,k,1,2) * uv_halo(k,2,1) + elem%DJMD(np,k,2,2) * uv_halo(k,2,2)
+       couv_halo(k,1,1) = elem%D(k,1,1,1)  * uv_halo(k,1,1) + elem%D(k,1,2,1)  * uv_halo(k,1,2)
+       couv_halo(k,1,2) = elem%D(k,1,1,2)  * uv_halo(k,1,1) + elem%D(k,1,2,2)  * uv_halo(k,1,2)
+       couv_halo(k,2,1) = elem%D(np,k,1,1) * uv_halo(k,2,1) + elem%D(np,k,2,1) * uv_halo(k,2,2)
+       couv_halo(k,2,2) = elem%D(np,k,1,2) * uv_halo(k,2,1) + elem%D(np,k,2,2) * uv_halo(k,2,2)
 
-       couv_halo(k,3,1) = elem%DJMD(k,np,1,1) * uv_halo(k,3,1) + elem%DJMD(k,np,2,1) * uv_halo(k,3,2)
-       couv_halo(k,3,2) = elem%DJMD(k,np,1,2) * uv_halo(k,3,1) + elem%DJMD(k,np,2,2) * uv_halo(k,3,2)
-       couv_halo(k,4,1) = elem%DJMD(1,k,1,1)  * uv_halo(k,4,1) + elem%DJMD(1,k,2,1)  * uv_halo(k,4,2)
-       couv_halo(k,4,2) = elem%DJMD(1,k,1,2)  * uv_halo(k,4,1) + elem%DJMD(1,k,2,2)  * uv_halo(k,4,2)
+       couv_halo(k,3,1) = elem%D(k,np,1,1) * uv_halo(k,3,1) + elem%D(k,np,2,1) * uv_halo(k,3,2)
+       couv_halo(k,3,2) = elem%D(k,np,1,2) * uv_halo(k,3,1) + elem%D(k,np,2,2) * uv_halo(k,3,2)
+       couv_halo(k,4,1) = elem%D(1,k,1,1)  * uv_halo(k,4,1) + elem%D(1,k,2,1)  * uv_halo(k,4,2)
+       couv_halo(k,4,2) = elem%D(1,k,1,2)  * uv_halo(k,4,1) + elem%D(1,k,2,2)  * uv_halo(k,4,2)
     enddo
 
-        couv(:,:,:) = sphere2cov(uv,elem%DJMD)
+        couv(:,:,:) = sphere2cov(uv,elem%D)
 
     Call  jump_fluxint(deriv,couv,couv_halo,jflx)
 !   Call  jump_fluxint(deriv,uv,uv_halo,jflx)
@@ -1404,7 +1404,7 @@ subroutine jump_fluxint(deriv,uv,uv_senw,jfluxint)
 !=======================================================================================================!
 
     sg(:,:) = elem%metdet(:,:)
-    ginv(:,:,:,:) = elem%metinvJMD(:,:,:,:)
+    ginv(:,:,:,:) = elem%metinv(:,:,:,:)
 
 !!  DoubleInt[ grad(U) = (U_x1, U_x2)]
 
@@ -1452,11 +1452,11 @@ subroutine jump_fluxint(deriv,uv,uv_senw,jfluxint)
 
 ! do j=1,np
 !  do i=1,np
-!     dif_gradu(i,j,1) = gradu1(i,j,1) *elem%DinvJMD(i,j,1,1) + gradu1(i,j,2) * elem%DinvJMD(i,j,2,1) 
-!     dif_gradu(i,j,2) = gradu1(i,j,1) *elem%DinvJMD(i,j,1,2) + gradu1(i,j,2) * elem%DinvJMD(i,j,2,2) 
+!     dif_gradu(i,j,1) = gradu1(i,j,1) *elem%Dinv(i,j,1,1) + gradu1(i,j,2) * elem%Dinv(i,j,2,1) 
+!     dif_gradu(i,j,2) = gradu1(i,j,1) *elem%Dinv(i,j,1,2) + gradu1(i,j,2) * elem%Dinv(i,j,2,2) 
 !
-!     dif_gradv(i,j,1) = gradu2(i,j,1) *elem%DinvJMD(i,j,1,1) + gradu2(i,j,2) * elem%DinvJMD(i,j,2,1) 
-!     dif_gradv(i,j,2) = gradu2(i,j,1) *elem%DinvJMD(i,j,1,2) + gradu2(i,j,2) * elem%DinvJMD(i,j,2,2) 
+!     dif_gradv(i,j,1) = gradu2(i,j,1) *elem%Dinv(i,j,1,1) + gradu2(i,j,2) * elem%Dinv(i,j,2,1) 
+!     dif_gradv(i,j,2) = gradu2(i,j,1) *elem%Dinv(i,j,1,2) + gradu2(i,j,2) * elem%Dinv(i,j,2,2) 
 !  enddo
 !  enddo
 

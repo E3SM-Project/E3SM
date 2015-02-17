@@ -140,8 +140,8 @@ contains
 
        do ie=nets,nete
           ieptr=ie-nets+1
-          Dinv => elem(ie)%DinvJMD
-          metinv => elem(ie)%metinvJMD
+          Dinv => elem(ie)%Dinv
+          metinv => elem(ie)%metinv
           metdet => elem(ie)%metdet
           rmetdet  => elem(ie)%rmetdet
 
@@ -239,7 +239,7 @@ contains
           ieptr=ie-nets+1
           
           rmp     => elem(ie)%rmp
-          Dinv    => elem(ie)%DinvJMD
+          Dinv    => elem(ie)%Dinv
           metdet => elem(ie)%metdet
           mp      => elem(ie)%mp
 
@@ -435,7 +435,7 @@ contains
 
 
           metdet  => elem(ie)%metdet
-          metinv  => elem(ie)%metinvJMD
+          metinv  => elem(ie)%metinv
           rmp     => elem(ie)%rmp
           mp      => elem(ie)%mp          
 

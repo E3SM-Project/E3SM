@@ -495,8 +495,8 @@ contains
                   0.0D0*elem_physics(ie)%ubar(i,j,2,n0v))*q
 
              ! project from sphere to contravariant velocities
-             vcon1 = elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2
-             vcon2 = elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2
+             vcon1 = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+             vcon2 = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
 
              gv(i,j,1) = elem(ie)%metdet(i,j)*vcon1
              gv(i,j,2) = elem(ie)%metdet(i,j)*vcon2
@@ -512,8 +512,8 @@ contains
              v2 = elem_physics(ie)%uproj1(i,j,2,n0v)*cm%D%Qt1 + elem_physics(ie)%uproj2(i,j,2,n0v)*cm%D%Qt2
 
              ! project from sphere to contravariant velocities
-             vcon1 = elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2
-             vcon2 = elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2
+             vcon1 = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+             vcon2 = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
 
              gv(i,j,1) = elem(ie)%metdet(i,j)*vcon1
              gv(i,j,2) = elem(ie)%metdet(i,j)*vcon2
@@ -526,8 +526,8 @@ contains
              v2 = elem_physics(ie)%ubar(i,j,2,n0v)
 
              ! project from sphere to contravariant velocities
-             vcon1 = elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2
-             vcon2 = elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2
+             vcon1 = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+             vcon2 = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
 
              ! 5/21/2009 was missing q
              q  = elem_physics(ie)%qmc(i,j,n0v)
@@ -595,8 +595,8 @@ contains
              ubar2 = elem(ie)%state%v(i,j,2,nlev,n0v)
 
              ! project from sphere to contravariant velocities
-             vcon1 = elem(ie)%DinvJMD(i,j,1,1)*ubar1 + elem(ie)%DinvJMD(i,j,1,2)*ubar2
-             vcon2 = elem(ie)%DinvJMD(i,j,2,1)*ubar1 + elem(ie)%DinvJMD(i,j,2,2)*ubar2
+             vcon1 = elem(ie)%Dinv(i,j,1,1)*ubar1 + elem(ie)%Dinv(i,j,1,2)*ubar2
+             vcon2 = elem(ie)%Dinv(i,j,2,1)*ubar1 + elem(ie)%Dinv(i,j,2,2)*ubar2
 
              !qtens   = vcon1*gradqmc(i,j,1)   + vcon2*gradqmc(i,j,2)
              qtens = 0.0D0
@@ -900,7 +900,7 @@ contains
 !       rdy=2.0_real_kind/(elem(ie)%dy*rearth) ! strong derivative inverse y length
 
        mv       => elem_physics(ie)%mp
-       metinv   => elem(ie)%metinvJMD
+       metinv   => elem(ie)%metinv
        metdet   => elem(ie)%metdet
 
        gradqmc_tmp(:,:,:) = gradient(elem_physics(ie)%qmc(:,:,np1),deriv)
@@ -935,10 +935,10 @@ contains
        mv       => elem_physics(ie)%mp
        rmp      => elem_physics(ie)%rmp
        metdet   => elem(ie)%metdet
-       metinv   => elem(ie)%metinvJMD
+       metinv   => elem(ie)%metinv
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
-       D        => elem(ie)%DJMD
-       Dinv     => elem(ie)%DinvJMD
+       D        => elem(ie)%D
+       Dinv     => elem(ie)%Dinv
 
        call oldedgeVunpack(edgeS2, grad_qmc_np1(:,:,:,ie), 2, 0, elem(ie)%desc)
        call oldedgeVunpack(edgeS2, grad_teb_np1(:,:,:,ie), 2, 2, elem(ie)%desc)

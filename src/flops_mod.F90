@@ -113,21 +113,7 @@ contains
 
     gtimer%time_buf = red_timer%buf 
 
-#ifdef _HTRACE
-    call TRACE_FINALIZE(tcount)
-    flops_tot = 1.0E6*tcount(2)
-
-    ! ============================================================
-    !  Perform the global sum across all threads and MPI processes
-    ! ============================================================
-    global_shared_buf(1,1) = flops_tot
-    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm, nsize=1)
-    red_flops%buf(1) = global_shared_sum(1)
-    flops_tot = red_flops%buf(1)
-    if(Debug) write(iulog,*)'flops_report: point #5'
-#else
     tcount(2) = 1.0E-6*flops_tot
-#endif
     if(Debug) write(iulog,*)'flops_report: point #6'
     if (hybrid%par%masterproc .and. hybrid%ithr==0) then
        if (integration=="semi_imp") then
@@ -250,11 +236,7 @@ contains
              write(iulog,137)gtimer%time_buf(T_reduce_mpi)/nmax
           endif
           if(Debug) write(iulog,*)'flops_report: point #12'
-#ifdef _HTRACE
-          call TRACE_FINALIZE(tcount)
-#else
           tcount(2) = 1.0E-6*flops_tot
-#endif
           write(iulog,60)hybrid%par%nprocs,hybrid%Nthreads,np,nv,ne,nlev,gtimer%time_buf(T_adv)/nmax,  &
                flops_tot/gtimer%time_buf(T_adv),1.0E-6*flops_tot/dble(nmax),tcount(2)/dble(nmax)
           write(iulog,*) 'nmax,filter_counter ',nmax,filter_counter
@@ -263,11 +245,7 @@ contains
           ! This is for the explicit time-stepping
           ! =======================================
 
-#ifdef _HTRACE
-
-#else
           flops_tot = nmax*(flops_exp+flops_filter/real(filter_freq,kind=real_kind))*(nelem*nlev)
-#endif
 
           write(iulog,300) gtimer%time_buf(T_init)
           write(iulog,301) gtimer%time_buf(T_topology)
@@ -422,20 +400,7 @@ contains
 !     time_boundary = red_max%buf(1)
     !JMD     write(iulog,*)'ITHR: ',hybrid%ithr,' prim_flops_report (AFTER):  ',time_adv,time_boundary
 
-#ifdef _HTRACE
-    call TRACE_FINALIZE(tcount)
-    flops_tot = 1.0E6*tcount(2)
-
-    ! ============================================================
-    !  Perform the global sum across all threads and MPI processes
-    ! ============================================================
-    global_shared_buf(1,1) = flops_tot
-    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm, nsize=1)
-    red_flops%buf(1) = global_shared_sum(1)
-    flops_tot = red_flops%buf(1)
-#else
     tcount(2) = 1.0E-6*flops_tot
-#endif
 
 !     flops_tmp(1)=timer%boundary2/nmax
 !     call psum_mt(red_flops,flops_tmp,1,hybrid)
@@ -451,7 +416,6 @@ contains
     if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
        if (integration=="semi_imp") then
 
-#ifndef _HTRACE
           flops_exper = 0
 
           selectcase(ne)
@@ -505,8 +469,6 @@ contains
           end select   ! end resolution 
           
           flops_tot = 1.0E6*nmax*flops_exper
-
-#endif
 
           write(iulog,*)'semi-implicit timing output'
           ! timers in semi_imp:
@@ -585,7 +547,6 @@ contains
        ! ------------------------------
        else
 
-#ifndef _HTRACE
 
           selectcase(ne)
           !----------------
@@ -672,7 +633,6 @@ contains
           end select   ! end resolution 
           
           flops_tot = 1.0E6*nmax*flops_exper
-#endif
 
 ! --- timing calculations ---
 ! * computation timers are T_adv and T_advec_tracers 

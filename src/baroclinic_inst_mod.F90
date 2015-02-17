@@ -473,12 +473,12 @@ endif
 #if 0
                 if (( integration == "explicit" ).or.( integration == "full_imp" )) then
                    ! explicit covariant
-                   elem(ie)%state%v(i,j,1,k,n0)= v1*elem(ie)%DJMD(i,j,1,1) + v2*elem(ie)%DJMD(i,j,2,1)
-                   elem(ie)%state%v(i,j,2,k,n0)= v1*elem(ie)%DJMD(i,j,1,2) + v2*elem(ie)%DJMD(i,j,2,2)
+                   elem(ie)%state%v(i,j,1,k,n0)= v1*elem(ie)%D(i,j,1,1) + v2*elem(ie)%D(i,j,2,1)
+                   elem(ie)%state%v(i,j,2,k,n0)= v1*elem(ie)%D(i,j,1,2) + v2*elem(ie)%D(i,j,2,2)
                 else
                    ! semi-implicit contravariant
-                   elem(ie)%state%v(i,j,1,k,n0)= v1*elem(ie)%DinvJMD(i,j,1,1) + v2*elem(ie)%DinvJMD(i,j,1,2)
-                   elem(ie)%state%v(i,j,2,k,n0)= v1*elem(ie)%DinvJMD(i,j,2,1) + v2*elem(ie)%DinvJMD(i,j,2,2)
+                   elem(ie)%state%v(i,j,1,k,n0)= v1*elem(ie)%Dinv(i,j,1,1) + v2*elem(ie)%Dinv(i,j,1,2)
+                   elem(ie)%state%v(i,j,2,k,n0)= v1*elem(ie)%Dinv(i,j,2,1) + v2*elem(ie)%Dinv(i,j,2,2)
                 endif
 #else
                 elem(ie)%state%v(i,j,1,k,n0)= v1

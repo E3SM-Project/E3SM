@@ -488,8 +488,8 @@ contains
              do ie=1,nelemd
                 en=st+elem(ie)%idxp%NumUniquePts-1
                    do k=1,nlev
-                      varptmp(:,:,k) = elem(ie)%DJMD(:,:,2,1)*elem(ie)%state%v(:,:,1,k,tl%n0)+ &
-                           elem(ie)%DJMD(:,:,2,2)*elem(ie)%state%v(:,:,2,k,tl%n0)
+                      varptmp(:,:,k) = elem(ie)%D(:,:,2,1)*elem(ie)%state%v(:,:,1,k,tl%n0)+ &
+                           elem(ie)%D(:,:,2,2)*elem(ie)%state%v(:,:,2,k,tl%n0)
                    end do
                    call UniquePoints(elem(ie)%idxp,nlev,varptmp,var3d(st:en,:))
                 st=en+1

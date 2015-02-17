@@ -102,13 +102,13 @@ subroutine dg3d_uvform_rhs(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !=======================================================================================================!
 !	From HOMME
 !=======================================================================================================!
- met    => elem%metJMD
- metinv => elem%metinvJMD
+ met    => elem%met
+ metinv => elem%metinv
  metdet => elem%metdet
  mv     => elem%mp   
  fcor   => elem%fcor
- Dinv   => elem%DinvJMD
- D      => elem%DJMD
+ Dinv   => elem%Dinv
+ D      => elem%D
  grv = g 
 !=======================================================================================================!
 !  Mass and Inverse-Mass Matrix										!
@@ -507,8 +507,8 @@ subroutine dg3d_rhs_terms(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !=======================================================================================================!
 !	From HOMME
 !=======================================================================================================!
- met    => elem%metJMD
- metinv => elem%metinvJMD
+ met    => elem%met
+ metinv => elem%metinv
  metdet => elem%metdet
  mv     => elem%mp   
  fcor   => elem%fcor
@@ -648,15 +648,15 @@ subroutine dg3d_rhs_terms(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
 !	Covariant components for the halo region 
 !=======================================================================================================!
  do k = 1,np
-    couv_senw(k,1,1) = elem%metJMD(k,1,1,1)  * uv_senw(k,1,1) + elem%metJMD(k,1,1,2)  * uv_senw(k,1,2)
-    couv_senw(k,1,2) = elem%metJMD(k,1,2,1)  * uv_senw(k,1,1) + elem%metJMD(k,1,2,2)  * uv_senw(k,1,2)
-    couv_senw(k,2,1) = elem%metJMD(np,k,1,1) * uv_senw(k,2,1) + elem%metJMD(np,k,1,2) * uv_senw(k,2,2)
-    couv_senw(k,2,2) = elem%metJMD(np,k,2,1) * uv_senw(k,2,1) + elem%metJMD(np,k,2,2) * uv_senw(k,2,2)
+    couv_senw(k,1,1) = elem%met(k,1,1,1)  * uv_senw(k,1,1) + elem%met(k,1,1,2)  * uv_senw(k,1,2)
+    couv_senw(k,1,2) = elem%met(k,1,2,1)  * uv_senw(k,1,1) + elem%met(k,1,2,2)  * uv_senw(k,1,2)
+    couv_senw(k,2,1) = elem%met(np,k,1,1) * uv_senw(k,2,1) + elem%met(np,k,1,2) * uv_senw(k,2,2)
+    couv_senw(k,2,2) = elem%met(np,k,2,1) * uv_senw(k,2,1) + elem%met(np,k,2,2) * uv_senw(k,2,2)
 
-    couv_senw(k,3,1) = elem%metJMD(k,np,1,1) * uv_senw(k,3,1) + elem%metJMD(k,np,1,2) * uv_senw(k,3,2)
-    couv_senw(k,3,2) = elem%metJMD(k,np,2,1) * uv_senw(k,3,1) + elem%metJMD(k,np,2,2) * uv_senw(k,3,2)
-    couv_senw(k,4,1) = elem%metJMD(1,k,1,1)  * uv_senw(k,4,1) + elem%metJMD(1,k,1,2)  * uv_senw(k,4,2)
-    couv_senw(k,4,2) = elem%metJMD(1,k,2,1)  * uv_senw(k,4,1) + elem%metJMD(1,k,2,2)  * uv_senw(k,4,2)
+    couv_senw(k,3,1) = elem%met(k,np,1,1) * uv_senw(k,3,1) + elem%met(k,np,1,2) * uv_senw(k,3,2)
+    couv_senw(k,3,2) = elem%met(k,np,2,1) * uv_senw(k,3,1) + elem%met(k,np,2,2) * uv_senw(k,3,2)
+    couv_senw(k,4,1) = elem%met(1,k,1,1)  * uv_senw(k,4,1) + elem%met(1,k,1,2)  * uv_senw(k,4,2)
+    couv_senw(k,4,2) = elem%met(1,k,2,1)  * uv_senw(k,4,1) + elem%met(1,k,2,2)  * uv_senw(k,4,2)
  enddo     
 !=======================================================================================================!    
 !	Energy for the Halo region from the neighbours
@@ -675,21 +675,21 @@ subroutine dg3d_rhs_terms(elem,klev,neq,deriv,uvbuf,htbuf,dpbuf,ptbuf,qtbuf,  &
  do i = 1,np
    !ghij(i,j,1) = (grv * abs(ht(i,j)) )* elem%metinv(i,j,1,1)
    !ghij(i,j,2) = (grv * abs(ht(i,j)) )* elem%metinv(i,j,2,2)
-    ghij(i,j,1) = (grv * htop(i,j) )* elem%metinvJMD(i,j,1,1)
-    ghij(i,j,2) = (grv * htop(i,j) )* elem%metinvJMD(i,j,2,2)
+    ghij(i,j,1) = (grv * htop(i,j) )* elem%metinv(i,j,1,1)
+    ghij(i,j,2) = (grv * htop(i,j) )* elem%metinv(i,j,2,2)
  end do
  end do
 
  do k = 1,np
-    gh11_senw(k,1) = (grv * abs(ht_senw(k,1)) )* elem%metinvJMD(k,1,1,1)
-    gh11_senw(k,2) = (grv * abs(ht_senw(k,2)) )* elem%metinvJMD(np,k,1,1)
-    gh11_senw(k,3) = (grv * abs(ht_senw(k,3)) )* elem%metinvJMD(k,np,1,1)
-    gh11_senw(k,4) = (grv * abs(ht_senw(k,4)) )* elem%metinvJMD(1,k,1,1)
+    gh11_senw(k,1) = (grv * abs(ht_senw(k,1)) )* elem%metinv(k,1,1,1)
+    gh11_senw(k,2) = (grv * abs(ht_senw(k,2)) )* elem%metinv(np,k,1,1)
+    gh11_senw(k,3) = (grv * abs(ht_senw(k,3)) )* elem%metinv(k,np,1,1)
+    gh11_senw(k,4) = (grv * abs(ht_senw(k,4)) )* elem%metinv(1,k,1,1)
 
-    gh22_senw(k,1) = (grv * abs(ht_senw(k,1)) )* elem%metinvJMD(k,1,2,2)
-    gh22_senw(k,2) = (grv * abs(ht_senw(k,2)) )* elem%metinvJMD(np,k,2,2)
-    gh22_senw(k,3) = (grv * abs(ht_senw(k,3)) )* elem%metinvJMD(k,np,2,2)
-    gh22_senw(k,4) = (grv * abs(ht_senw(k,4)) )* elem%metinvJMD(1,k,2,2)
+    gh22_senw(k,1) = (grv * abs(ht_senw(k,1)) )* elem%metinv(k,1,2,2)
+    gh22_senw(k,2) = (grv * abs(ht_senw(k,2)) )* elem%metinv(np,k,2,2)
+    gh22_senw(k,3) = (grv * abs(ht_senw(k,3)) )* elem%metinv(k,np,2,2)
+    gh22_senw(k,4) = (grv * abs(ht_senw(k,4)) )* elem%metinv(1,k,2,2)
  end do
 !=======================================================================================================!
 !  fjmax(:) = dg3d_fluxjacobian(uvcomp,uv_senw,ghij(:,:,1),ghij(:,:,2),gh11_senw,gh22_senw)
@@ -1019,7 +1019,7 @@ end function implicit_diff
 !=======================================================================================================!
 
     sg(:,:) = elem%metdet(:,:) 
-    ginv(:,:,:,:) = elem%metinvJMD(:,:,:,:) 
+    ginv(:,:,:,:) = elem%metinv(:,:,:,:) 
 
     !  Laplacian operatons for (u_1, u_2)
 
@@ -1075,7 +1075,7 @@ end function diffusion_theta
 !=======================================================================================================!
 
     sg(:,:) = elem%metdet(:,:) 
-    ginv(:,:,:,:) = elem%metinvJMD(:,:,:,:) 
+    ginv(:,:,:,:) = elem%metinv(:,:,:,:) 
 
         ! MNL: adjustment because we're on ref elem, not cube
        if (ne.ne.0) then
@@ -2122,15 +2122,15 @@ subroutine dg3d_diff_grads(elem,deriv,contrauvbuf,contrauv,couv,dif_gradu,dif_gr
     enddo
 
     do k= 1,np
-       couv_halo(k,1,1) = elem%metJMD(k,1,1,1)  * contrauv_halo(k,1,1) + elem%metJMD(k,1,1,2)  * contrauv_halo(k,1,2)
-       couv_halo(k,1,2) = elem%metJMD(k,1,2,1)  * contrauv_halo(k,1,1) + elem%metJMD(k,1,2,2)  * contrauv_halo(k,1,2)
-       couv_halo(k,2,1) = elem%metJMD(np,k,1,1) * contrauv_halo(k,2,1) + elem%metJMD(np,k,1,2) * contrauv_halo(k,2,2)
-       couv_halo(k,2,2) = elem%metJMD(np,k,2,1) * contrauv_halo(k,2,1) + elem%metJMD(np,k,2,2) * contrauv_halo(k,2,2)
+       couv_halo(k,1,1) = elem%met(k,1,1,1)  * contrauv_halo(k,1,1) + elem%met(k,1,1,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,1,2) = elem%met(k,1,2,1)  * contrauv_halo(k,1,1) + elem%met(k,1,2,2)  * contrauv_halo(k,1,2)
+       couv_halo(k,2,1) = elem%met(np,k,1,1) * contrauv_halo(k,2,1) + elem%met(np,k,1,2) * contrauv_halo(k,2,2)
+       couv_halo(k,2,2) = elem%met(np,k,2,1) * contrauv_halo(k,2,1) + elem%met(np,k,2,2) * contrauv_halo(k,2,2)
 
-       couv_halo(k,3,1) = elem%metJMD(k,np,1,1) * contrauv_halo(k,3,1) + elem%metJMD(k,np,1,2) * contrauv_halo(k,3,2)
-       couv_halo(k,3,2) = elem%metJMD(k,np,2,1) * contrauv_halo(k,3,1) + elem%metJMD(k,np,2,2) * contrauv_halo(k,3,2)
-       couv_halo(k,4,1) = elem%metJMD(1,k,1,1)  * contrauv_halo(k,4,1) + elem%metJMD(1,k,1,2)  * contrauv_halo(k,4,2)
-       couv_halo(k,4,2) = elem%metJMD(1,k,2,1)  * contrauv_halo(k,4,1) + elem%metJMD(1,k,2,2)  * contrauv_halo(k,4,2)
+       couv_halo(k,3,1) = elem%met(k,np,1,1) * contrauv_halo(k,3,1) + elem%met(k,np,1,2) * contrauv_halo(k,3,2)
+       couv_halo(k,3,2) = elem%met(k,np,2,1) * contrauv_halo(k,3,1) + elem%met(k,np,2,2) * contrauv_halo(k,3,2)
+       couv_halo(k,4,1) = elem%met(1,k,1,1)  * contrauv_halo(k,4,1) + elem%met(1,k,1,2)  * contrauv_halo(k,4,2)
+       couv_halo(k,4,2) = elem%met(1,k,2,1)  * contrauv_halo(k,4,1) + elem%met(1,k,2,2)  * contrauv_halo(k,4,2)
     enddo
 
     Call  jump_fluxint(deriv,couv,couv_halo,jflx)
@@ -2176,18 +2176,18 @@ end subroutine dg3d_diff_grads
     enddo
 
    do k= 1, np
-       couv_halo(k,1,1) = elem%DJMD(k,1,1,1)  * uv_halo(k,1,1) + elem%DJMD(k,1,2,1)  * uv_halo(k,1,2)
-       couv_halo(k,1,2) = elem%DJMD(k,1,1,2)  * uv_halo(k,1,1) + elem%DJMD(k,1,2,2)  * uv_halo(k,1,2)
-       couv_halo(k,2,1) = elem%DJMD(np,k,1,1) * uv_halo(k,2,1) + elem%DJMD(np,k,2,1) * uv_halo(k,2,2)
-       couv_halo(k,2,2) = elem%DJMD(np,k,1,2) * uv_halo(k,2,1) + elem%DJMD(np,k,2,2) * uv_halo(k,2,2)
+       couv_halo(k,1,1) = elem%D(k,1,1,1)  * uv_halo(k,1,1) + elem%D(k,1,2,1)  * uv_halo(k,1,2)
+       couv_halo(k,1,2) = elem%D(k,1,1,2)  * uv_halo(k,1,1) + elem%D(k,1,2,2)  * uv_halo(k,1,2)
+       couv_halo(k,2,1) = elem%D(np,k,1,1) * uv_halo(k,2,1) + elem%D(np,k,2,1) * uv_halo(k,2,2)
+       couv_halo(k,2,2) = elem%D(np,k,1,2) * uv_halo(k,2,1) + elem%D(np,k,2,2) * uv_halo(k,2,2)
 
-       couv_halo(k,3,1) = elem%DJMD(k,np,1,1) * uv_halo(k,3,1) + elem%DJMD(k,np,2,1) * uv_halo(k,3,2)
-       couv_halo(k,3,2) = elem%DJMD(k,np,1,2) * uv_halo(k,3,1) + elem%DJMD(k,np,2,2) * uv_halo(k,3,2)
-       couv_halo(k,4,1) = elem%DJMD(1,k,1,1)  * uv_halo(k,4,1) + elem%DJMD(1,k,2,1)  * uv_halo(k,4,2)
-       couv_halo(k,4,2) = elem%DJMD(1,k,1,2)  * uv_halo(k,4,1) + elem%DJMD(1,k,2,2)  * uv_halo(k,4,2)
+       couv_halo(k,3,1) = elem%D(k,np,1,1) * uv_halo(k,3,1) + elem%D(k,np,2,1) * uv_halo(k,3,2)
+       couv_halo(k,3,2) = elem%D(k,np,1,2) * uv_halo(k,3,1) + elem%D(k,np,2,2) * uv_halo(k,3,2)
+       couv_halo(k,4,1) = elem%D(1,k,1,1)  * uv_halo(k,4,1) + elem%D(1,k,2,1)  * uv_halo(k,4,2)
+       couv_halo(k,4,2) = elem%D(1,k,1,2)  * uv_halo(k,4,1) + elem%D(1,k,2,2)  * uv_halo(k,4,2)
     enddo
 
-        couv(:,:,:) = sphere2cov(uv,elem%DJMD)
+        couv(:,:,:) = sphere2cov(uv,elem%D)
 
     Call  jump_fluxint(deriv,couv,couv_halo,jflx)
         cu(:,:) = couv(:,:,1)
@@ -2364,7 +2364,7 @@ subroutine jump_fluxint(deriv,uv,uv_senw,jfluxint)
 !=======================================================================================================!
 
     sg(:,:) = elem%metdet(:,:)
-    ginv(:,:,:,:) = elem%metinvJMD(:,:,:,:)
+    ginv(:,:,:,:) = elem%metinv(:,:,:,:)
 
 !!  DoubleInt[ grad(U) = (U_x1, U_x2)]
 

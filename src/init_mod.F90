@@ -404,11 +404,6 @@ contains
 
     allocate(mass(np,np,nelemd))
 
-#ifdef _HTRACE
-    htype = 19
-    pflag = 1
-    call TRACE_INIT(htype,pflag)
-#endif
     while_iter = 0
     filter_counter = 0
 

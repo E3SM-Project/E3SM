@@ -662,10 +662,6 @@ contains
        ! =================================
        ! Call advance
        ! =================================
-       point = 1
-#ifdef _HTRACE
-       call EVENT_POINT(point)
-#endif
        if(Debug) print *,'homme: point #12'
 
        if      (integration == "explicit") then
@@ -700,18 +696,18 @@ contains
          do k=1,nlev
           do i=1,np
            do j=1,np
-           utemp1(i,j)= elem(ie)%DJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%DJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,np1)
-           utemp2(i,j)= elem(ie)%DJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%DJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp1(i,j)= elem(ie)%D(i,j,1,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%D(i,j,1,2)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp2(i,j)= elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,np1)
            elem(ie)%state%v(i,j,1,k,np1)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,np1)=utemp2(i,j)
 
-           utemp1(i,j)= elem(ie)%DJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%DJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
-           utemp2(i,j)= elem(ie)%DJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%DJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0) 
+           utemp1(i,j)= elem(ie)%D(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
+           utemp2(i,j)= elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0) 
            elem(ie)%state%v(i,j,1,k,n0)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,n0)=utemp2(i,j)
 
-           utemp1(i,j)= elem(ie)%DJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%DJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,nm1)
-           utemp2(i,j)= elem(ie)%DJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%DJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp1(i,j)= elem(ie)%D(i,j,1,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%D(i,j,1,2)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp2(i,j)= elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,nm1)
 
            elem(ie)%state%v(i,j,1,k,nm1)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,nm1)=utemp2(i,j)
@@ -734,7 +730,7 @@ contains
 
          if (topology == "cube" .and. test_case=="swtc1") then
              do k=1,nlev
-                elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%DinvJMD)
+                elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%Dinv)
                 elem(ie)%state%v(:,:,:,k,n0)=elem(ie)%state%v(:,:,:,k,np1)
                 elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,nm1)
              end do 
@@ -742,20 +738,20 @@ contains
          do k=1,nlev
           do i=1,np
            do j=1,np
-           utemp1(i,j)= elem(ie)%DinvJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%DinvJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,np1)
-           utemp2(i,j)= elem(ie)%DinvJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%DinvJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp1(i,j)= elem(ie)%Dinv(i,j,1,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%Dinv(i,j,1,2)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp2(i,j)= elem(ie)%Dinv(i,j,2,1)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%Dinv(i,j,2,2)*elem(ie)%state%v(i,j,2,k,np1)
 
            elem(ie)%state%v(i,j,1,k,np1)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,np1)=utemp2(i,j)
 
-           utemp1(i,j)= elem(ie)%DinvJMD(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%DinvJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
-           utemp2(i,j)= elem(ie)%DinvJMD(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%DinvJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0)
+           utemp1(i,j)= elem(ie)%Dinv(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%Dinv(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
+           utemp2(i,j)= elem(ie)%Dinv(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%Dinv(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0)
 
            elem(ie)%state%v(i,j,1,k,n0)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,n0)=utemp2(i,j)
 
-           utemp1(i,j)= elem(ie)%Dinv(i,j,1,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%DinvJMD(i,j,1,2)*elem(ie)%state%v(i,j,2,k,nm1)
-           utemp2(i,j)= elem(ie)%Dinv(i,j,2,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%DinvJMD(i,j,2,2)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp1(i,j)= elem(ie)%Dinv(i,j,1,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%Dinv(i,j,1,2)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp2(i,j)= elem(ie)%Dinv(i,j,2,1)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%Dinv(i,j,2,2)*elem(ie)%state%v(i,j,2,k,nm1)
 
            elem(ie)%state%v(i,j,1,k,nm1)=utemp1(i,j)
            elem(ie)%state%v(i,j,2,k,nm1)=utemp2(i,j)
@@ -781,11 +777,6 @@ contains
        end if
        if(Debug) print *,'homme: point #13'
 !      if (hybrid%masterthread) print *,'post solve same ts'
-
-       point = 2
-#ifdef _HTRACE
-       call EVENT_POINT(point)
-#endif
 
        ! =================================
        ! update time level pointers
@@ -1339,12 +1330,6 @@ contains
        ! =================================
        ! Call advance
        ! =================================
-       point = 1
-
-#ifdef _HTRACE
-       call EVENT_POINT(point)
-#endif
-
        if (rk_stage_user > 0) then
           ! user specified number of stages.  has to be >= 2
           cfl = max(2,rk_stage_user)
@@ -1360,11 +1345,6 @@ contains
             dt_rk   , pmean, tl   , nets, nete)
        
        call TimeLevel_update(tl,"leapfrog")       
-       point = 2
-#ifdef _HTRACE
-       call EVENT_POINT(point)
-#endif
-
        ! ============================================================
        ! Instrumentation alley:
        !
@@ -1612,14 +1592,14 @@ contains
          ! Convert wind to lat-lon
         v1     = elem(ie)%state%v(:,:,1,k,tl%n0)  ! contra
         v2     = elem(ie)%state%v(:,:,2,k,tl%n0)  ! contra 
-        fvm(ie)%vn0(:,:,1,k)=elem(ie)%DJMD(:,:,1,1)*v1 + elem(ie)%DJMD(:,:,1,2)*v2   ! contra->latlon
-        fvm(ie)%vn0(:,:,2,k)=elem(ie)%DJMD(:,:,2,1)*v1 + elem(ie)%DJMD(:,:,2,2)*v2   ! contra->latlon
+        fvm(ie)%vn0(:,:,1,k)=elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2   ! contra->latlon
+        fvm(ie)%vn0(:,:,2,k)=elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2   ! contra->latlon
         
          ! Convert wind to lat-lon
         v1     = elem(ie)%state%v(:,:,1,k,tl%np1)  ! contra
         v2     = elem(ie)%state%v(:,:,2,k,tl%np1)   ! contra 
-        elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%DJMD(:,:,1,1)*v1 + elem(ie)%DJMD(:,:,1,2)*v2   ! contra->latlon
-        elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%DJMD(:,:,2,1)*v1 + elem(ie)%DJMD(:,:,2,2)*v2   ! contra->latlon
+        elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2   ! contra->latlon
+        elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2   ! contra->latlon
         
       enddo  
     end do  

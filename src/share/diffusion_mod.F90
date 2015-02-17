@@ -109,8 +109,8 @@ contains
 
        mp       => elem(ie)%mp
        rmp      => elem(ie)%rmp
-       met      => elem(ie)%metJMD
-       metinv   => elem(ie)%metinvJMD
+       met      => elem(ie)%met
+       metinv   => elem(ie)%metinv
        metdet   => elem(ie)%metdet
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
 
@@ -126,15 +126,15 @@ contains
 !                 grad_T_np1(i,j,1,k,ie) = mp(i,j)*(metinv(i,j,1,1)*grad_tmp(i,j,1)+metinv(i,j,1,2)*grad_tmp(i,j,2))
 !                 grad_T_np1(i,j,2,k,ie) = mp(i,j)*(metinv(i,j,2,1)*grad_tmp(i,j,1)+metinv(i,j,2,2)*grad_tmp(i,j,2))
 ! Map grad_tmp to lat-lon instead of rotating it
-                 grad_T_np1(i,j,1,k,ie) = mp(i,j)*(elem(ie)%DinvJMD(i,j,1,1)*grad_tmp(i,j,1)+elem(ie)%DinvJMD(i,j,2,1)*grad_tmp(i,j,2))
-                 grad_T_np1(i,j,2,k,ie) = mp(i,j)*(elem(ie)%DinvJMD(i,j,1,2)*grad_tmp(i,j,1)+elem(ie)%DinvJMD(i,j,2,2)*grad_tmp(i,j,2))
+                 grad_T_np1(i,j,1,k,ie) = mp(i,j)*(elem(ie)%Dinv(i,j,1,1)*grad_tmp(i,j,1)+elem(ie)%Dinv(i,j,2,1)*grad_tmp(i,j,2))
+                 grad_T_np1(i,j,2,k,ie) = mp(i,j)*(elem(ie)%Dinv(i,j,1,2)*grad_tmp(i,j,1)+elem(ie)%Dinv(i,j,2,2)*grad_tmp(i,j,2))
                 v1     = elem(ie)%state%v(i,j,1,k,np1)
                 v2     = elem(ie)%state%v(i,j,2,k,np1)
 
-                gp(i,j,1) = metdet(i,j)*(elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2)
-                gp(i,j,2) = metdet(i,j)*(elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2)
-                vco(i,j,1) = elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,2,1)*v2
-                vco(i,j,2) = elem(ie)%DJMD(i,j,1,2)*v1 + elem(ie)%DJMD(i,j,2,2)*v2
+                gp(i,j,1) = metdet(i,j)*(elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2)
+                gp(i,j,2) = metdet(i,j)*(elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2)
+                vco(i,j,1) = elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,2,1)*v2
+                vco(i,j,2) = elem(ie)%D(i,j,1,2)*v1 + elem(ie)%D(i,j,2,2)*v2
              end do
           end do
 
@@ -169,10 +169,10 @@ contains
        mp       => elem(ie)%mp
        rmp      => elem(ie)%rmp
        metdet   => elem(ie)%metdet
-       metinv   => elem(ie)%metinvJMD
+       metinv   => elem(ie)%metinv
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
-       D        => elem(ie)%DJMD
-       Dinv     => elem(ie)%DinvJMD
+       D        => elem(ie)%D
+       Dinv     => elem(ie)%Dinv
 
        kptr=0
        call newedgeVunpack(edge4, grad_T_np1(1,1,1,1,ie), 2*nlev, kptr, ie)
@@ -217,9 +217,9 @@ contains
 !                grad_T_np1(i,j,2,k,ie) = metdet(i,j)*(metinv(i,j,2,1)*v1 + metinv(i,j,2,2)*v2)
                 grad_tmp(i,j,:) = grad_T_np1(i,j,:,k,ie)
                 grad_T_np1(i,j,1,k,ie) = metdet(i,j)*rmp(i,j)*&
-       (elem(ie)%DinvJMD(i,j,1,1)*grad_tmp(i,j,1)+elem(ie)%DinvJMD(i,j,1,2)*grad_tmp(i,j,2))
+       (elem(ie)%Dinv(i,j,1,1)*grad_tmp(i,j,1)+elem(ie)%Dinv(i,j,1,2)*grad_tmp(i,j,2))
                 grad_T_np1(i,j,2,k,ie) = metdet(i,j)*rmp(i,j)*&
-       (elem(ie)%DinvJMD(i,j,2,1)*grad_tmp(i,j,1)+elem(ie)%DinvJMD(i,j,2,2)*grad_tmp(i,j,2))
+       (elem(ie)%Dinv(i,j,2,1)*grad_tmp(i,j,1)+elem(ie)%Dinv(i,j,2,2)*grad_tmp(i,j,2))
                 !grad_T_np1(i,j,1,k,ie) = metdet(i,j)*rmp(i,j)*grad_T_np1(i,j,1,k,ie)
                 !grad_T_np1(i,j,2,k,ie) = metdet(i,j)*rmp(i,j)*grad_T_np1(i,j,2,k,ie)
 
@@ -362,7 +362,7 @@ contains
        do q=1,qsize
 
           mp       => elem(ie)%mp
-          metinv   => elem(ie)%metinvJMD
+          metinv   => elem(ie)%metinv
           metdet   => elem(ie)%metdet
 
 #if (defined COLUMN_OPENMP)
@@ -403,10 +403,10 @@ contains
        mp       => elem(ie)%mp
        rmp      => elem(ie)%rmp
        metdet   => elem(ie)%metdet
-       metinv   => elem(ie)%metinvJMD
+       metinv   => elem(ie)%metinv
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
-       D        => elem(ie)%DJMD
-       Dinv     => elem(ie)%DinvJMD
+       D        => elem(ie)%D
+       Dinv     => elem(ie)%Dinv
        
        call newedgeVunpack(edgeS2, grad_Q_np1(:,:,:,:,:,ie), 2*nlev*qsize, 0, ie)
 #ifdef DEBUGOMP

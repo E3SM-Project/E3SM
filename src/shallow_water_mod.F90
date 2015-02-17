@@ -322,8 +322,8 @@ contains
              do i=1,np
                 v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
                 v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
-                v(i,j,1)=elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,1,2)*v2   ! contra->latlon
-                v(i,j,2)=elem(ie)%DJMD(i,j,2,1)*v1 + elem(ie)%DJMD(i,j,2,2)*v2   ! contra->latlon
+                v(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+                v(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
              enddo
           enddo
        enddo
@@ -344,8 +344,8 @@ contains
              do i=1,np
                 v1=v(i,j,1)
                 v2=v(i,j,2)
-                v(i,j,1) = elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2
-                v(i,j,2) = elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2
+                v(i,j,1) = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+                v(i,j,2) = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
              enddo
           enddo
        enddo
@@ -359,8 +359,8 @@ contains
              k1=1
              v1     = elem(ie)%state%v(i,j,1,k1,n0)   ! contra
              v2     = elem(ie)%state%v(i,j,2,k1,n0)   ! contra
-             vlatlon(i,j,1) =elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,1,2)*v2   ! contra->latlon
-             vlatlon(i,j,2) =elem(ie)%DJMD(i,j,2,1)*v1 + elem(ie)%DJMD(i,j,2,2)*v2   ! contra->latlon
+             vlatlon(i,j,1) =elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+             vlatlon(i,j,2) =elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
              
              E(i,j) = 0.5D0*(vlatlon(i,j,1)**2 + vlatlon(i,j,2)**2) 
              hstar         = (elem(ie)%state%p(i,j,1,n0) + pmean)/g
@@ -609,7 +609,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
           
-          elem(ie)%state%v(:,:,:,k,n0)=tc1_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
+          elem(ie)%state%v(:,:,:,k,n0)=tc1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -1256,7 +1256,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=tc1_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)  ! tc2 vel same as tc1
+          elem(ie)%state%v(:,:,:,k,n0)=tc1_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)  ! tc2 vel same as tc1
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -1497,7 +1497,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=tc5_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)  
+          elem(ie)%state%v(:,:,:,k,n0)=tc5_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)  
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -1927,8 +1927,8 @@ contains
              v1     = elem(ie)%state%v(i,j,1,1,n0)
              v2     = elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%metJMD(i,j,1,1)*v1 + elem(ie)%metJMD(i,j,1,2)*v2
-             vco(i,j,2) = elem(ie)%metJMD(i,j,2,1)*v1 + elem(ie)%metJMD(i,j,2,2)*v2
+             vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
 
              gv(i,j,1) = elem(ie)%metdet(i,j)*v1
              gv(i,j,2) = elem(ie)%metdet(i,j)*v2
@@ -1978,8 +1978,8 @@ contains
              v1     = elem(ie)%state%v(i,j,1,1,n0)
              v2     = elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%metJMD(i,j,1,1)*v1 + elem(ie)%metJMD(i,j,1,2)*v2
-             vco(i,j,2) = elem(ie)%metJMD(i,j,2,1)*v1 + elem(ie)%metJMD(i,j,2,2)*v2
+             vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
              E(i,j) = 0.5D0*( vco(i,j,1)*v1 + vco(i,j,2)*v2 )
 
           end do
@@ -2079,7 +2079,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=tc6_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
+          elem(ie)%state%v(:,:,:,k,n0)=tc6_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -2348,7 +2348,7 @@ contains
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
 
-          elem(ie)%state%v(:,:,:,k,n0)=tc8_velocity(elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
+          elem(ie)%state%v(:,:,:,k,n0)=tc8_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=0.0D0
        end do
@@ -2585,7 +2585,7 @@ contains
              end do
           end do
 
-          elem(ie)%state%v(:,:,:,k,n0)=vortex_velocity(0.0D0,elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
+          elem(ie)%state%v(:,:,:,k,n0)=vortex_velocity(0.0D0,elem(ie)%spherep(:,:),elem(ie)%Dinv)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=elem(ie)%state%v(:,:,:,k,n0)
 
@@ -3250,7 +3250,7 @@ contains
 
           elem(ie)%state%p(:,:,k,n0)=swirl_init_tracer(elem(ie)%spherep(:,:),k)
 
-          elem(ie)%state%v(:,:,:,k,n0)=swirl_velocity(0.0D0,elem(ie)%spherep(:,:),elem(ie)%DinvJMD)
+          elem(ie)%state%v(:,:,:,k,n0)=swirl_velocity(0.0D0,elem(ie)%spherep(:,:),elem(ie)%Dinv)
           elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,n0)
           elem(ie)%state%v(:,:,:,k,np1)=elem(ie)%state%v(:,:,:,k,n0)
  
@@ -3766,7 +3766,7 @@ contains
           pElem%state%p(:,:,k,nm1)=pElem%state%p(:,:,k,n0)
           pElem%state%p(:,:,k,np1)=pElem%state%p(:,:,k,n0)
 
-          pElem%state%v(:,:,:,k,n0)=sj1_velocity_cubedsphere(pElem%spherep(:,:),pElem%DinvJMD)
+          pElem%state%v(:,:,:,k,n0)=sj1_velocity_cubedsphere(pElem%spherep(:,:),pElem%Dinv)
           pElem%state%v(:,:,:,k,nm1)=pElem%state%v(:,:,:,k,n0)
           pElem%state%v(:,:,:,k,np1)=pElem%state%v(:,:,:,k,n0)
        end do

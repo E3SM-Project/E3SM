@@ -272,7 +272,7 @@ module element_mod
 
      real (kind=real_kind)    :: variable_hyperviscosity(np,np)       ! hyperviscosity based on above
      real (kind=real_kind)    :: hv_courant                           ! hyperviscosity courant number
-     real (kind=real_kind)    :: tensorViscJMD(np,np,2,2)                !og, matrix V for tensor viscosity
+     real (kind=real_kind)    :: tensorVisc(np,np,2,2)                !og, matrix V for tensor viscosity
 
      ! Edge connectivity information
 !     integer(kind=int_kind)   :: node_numbers(4)
@@ -288,12 +288,12 @@ module element_mod
      type (elem_accum_t)       :: accum
 #endif
      ! Metric terms
-     real (kind=real_kind)    :: metJMD(np,np,2,2)                       ! metric tensor on velocity and pressure grid
-     real (kind=real_kind)    :: metinvJMD(np,np,2,2)                    ! metric tensor on velocity and pressure grid
+     real (kind=real_kind)    :: met(np,np,2,2)                       ! metric tensor on velocity and pressure grid
+     real (kind=real_kind)    :: metinv(np,np,2,2)                    ! metric tensor on velocity and pressure grid
      real (kind=real_kind)    :: metdet(np,np)                        ! g = SQRT(det(g_ij)) on velocity and pressure grid
      real (kind=real_kind)    :: rmetdet(np,np)                       ! 1/metdet on velocity pressure grid
-     real (kind=real_kind)    :: DJMD(np,np,2,2)                         ! Map covariant field on cube to vector field on the sphere
-     real (kind=real_kind)    :: DinvJMD(np,np,2,2)                      ! Map vector field on the sphere to covariant v on cube
+     real (kind=real_kind)    :: D(np,np,2,2)                         ! Map covariant field on cube to vector field on the sphere
+     real (kind=real_kind)    :: Dinv(np,np,2,2)                      ! Map vector field on the sphere to covariant v on cube
 
      ! Convert vector fields from spherical to rectangular components
      ! The transpose of this operation is its pseudoinverse.

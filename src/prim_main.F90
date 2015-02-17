@@ -86,9 +86,6 @@ program prim_main
   
   logical :: dir_e ! boolean existence of directory where output netcdf goes
   
-#ifdef _HTRACE
-  integer htype,pflag
-#endif
   ! =====================================================
   ! Begin executable code set distributed memory world...
   ! =====================================================
@@ -105,15 +102,6 @@ program prim_main
   call t_startf('prim_init1')
   call prim_init1(elem,  fvm, par,dom_mt,tl)
   call t_stopf('prim_init1')
-
-
-
-#ifdef _HTRACE
-  htype = 19
-  pflag = 0
-  call TRACE_INIT(htype,pflag)
-#endif
-
 
   ! =====================================
   ! Begin threaded region so each thread can print info

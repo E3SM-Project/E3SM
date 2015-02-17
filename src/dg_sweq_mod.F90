@@ -379,10 +379,6 @@ endif
 #ifdef _BGL
  call trace_start()
 #endif        
-#ifdef _HTRACE
- point= 1
- call EVENT_POINT(point)
-#endif
 #ifdef _HPM
  call f_hpmstart(5,'dg2d advance')
 #endif
@@ -406,10 +402,6 @@ endif
 !=======================================================================================================!
 #ifdef _BGL
  call trace_stop()
-#endif
-#ifdef _HTRACE
- point = 2
- call EVENT_POINT(point)
 #endif
 #ifdef _HPM
  call f_hpmstop(5)

@@ -619,10 +619,10 @@ contains
                 do ie=nets,nete
                    en=st+interpdata(ie)%n_interp-1
                    do k=1,nlev
-                       varvtmp(:,:,1,k) = elem(ie)%DJMD(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0) + &
-                                          elem(ie)%DJMD(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
-                       varvtmp(:,:,2,k) = elem(ie)%DJMD(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0) + &
-                                          elem(ie)%DJMD(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
+                       varvtmp(:,:,1,k) = elem(ie)%D(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0) + &
+                                          elem(ie)%D(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
+                       varvtmp(:,:,2,k) = elem(ie)%D(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0) + &
+                                          elem(ie)%D(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
                    end do
                    call interpolate_vector(interpdata(ie), elem(ie), &
                                         varvtmp, np, nlev, var3d(st:en,:,:,1), 0)

@@ -377,8 +377,8 @@ contains
                  do i=1,np
                     v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
                     v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
-                    elem(ie)%state%v(i,j,1,k,n0)=elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,1,2)*v2   ! contra->latlon
-                    elem(ie)%state%v(i,j,2,k,n0)=elem(ie)%DJMD(i,j,2,1)*v1 + elem(ie)%DJMD(i,j,2,2)*v2   ! contra->latlon
+                    elem(ie)%state%v(i,j,1,k,n0)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+                    elem(ie)%state%v(i,j,2,k,n0)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
                  enddo
               enddo
            enddo
@@ -391,8 +391,8 @@ contains
                  do i=1,np
                     v1=elem(ie)%state%v(i,j,1,k,n0)
                     v2=elem(ie)%state%v(i,j,2,k,n0)
-                    elem(ie)%state%v(i,j,1,k,n0) = elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2
-                    elem(ie)%state%v(i,j,2,k,n0) = elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2
+                    elem(ie)%state%v(i,j,1,k,n0) = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+                    elem(ie)%state%v(i,j,2,k,n0) = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
                  enddo
               enddo
            enddo
@@ -442,8 +442,8 @@ contains
 
                    v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
                    v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
-                   ulatlon(i,j,1)=elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,1,2)*v2   ! contra->latlon
-                   ulatlon(i,j,2)=elem(ie)%DJMD(i,j,2,1)*v1 + elem(ie)%DJMD(i,j,2,2)*v2   ! contra->latlon
+                   ulatlon(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+                   ulatlon(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
 
                    E(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  +&
                         elem(ie)%state%p(i,j,k,n0) + elem(ie)%state%ps(i,j)
@@ -452,11 +452,11 @@ contains
                    pv(i,j,2) = ulatlon(i,j,2)*(pmean+elem(ie)%state%p(i,j,k,n0))
                 end do
              end do
-             grade = gradient_sphere(E,deriv,elem(ie)%DinvJMD)       ! scalar -> latlon vector
+             grade = gradient_sphere(E,deriv,elem(ie)%Dinv)       ! scalar -> latlon vector
              !grade = gradient_sphere_wk(E,deriv,elem(ie)%Dinv)       ! scalar -> latlon vector
              zeta = vorticity_sphere(ulatlon,deriv,elem(ie)) ! latlon vector -> scalar 
              if (tracer_advection_formulation==TRACERADV_UGRADQ) then
-                gradh = gradient_sphere(elem(ie)%state%p(:,:,k,n0),deriv,elem(ie)%DinvJMD)
+                gradh = gradient_sphere(elem(ie)%state%p(:,:,k,n0),deriv,elem(ie)%Dinv)
                 div = ulatlon(:,:,1)*gradh(:,:,1)+ulatlon(:,:,2)*gradh(:,:,2)
              else
                 div = divergence_sphere(pv,deriv,elem(ie))      ! latlon vector -> scalar
@@ -568,8 +568,8 @@ contains
                    vtens2=rspheremp(i,j)*vtens(i,j,2,k,ie)
 
                    ! lat-lon -> contra
-                   vtens(i,j,1,k,ie) = elem(ie)%DinvJMD(i,j,1,1)*vtens1 + elem(ie)%DinvJMD(i,j,1,2)*vtens2
-                   vtens(i,j,2,k,ie) = elem(ie)%DinvJMD(i,j,2,1)*vtens1 + elem(ie)%DinvJMD(i,j,2,2)*vtens2
+                   vtens(i,j,1,k,ie) = elem(ie)%Dinv(i,j,1,1)*vtens1 + elem(ie)%Dinv(i,j,1,2)*vtens2
+                   vtens(i,j,2,k,ie) = elem(ie)%Dinv(i,j,2,1)*vtens1 + elem(ie)%Dinv(i,j,2,2)*vtens2
                 end do
              end do
           end do
@@ -1452,8 +1452,8 @@ contains
              do i=1,np
                 v1     = elem(ie)%state%v(i,j,1,k,nt)   ! contra
                 v2     = elem(ie)%state%v(i,j,2,k,nt)   ! contra 
-                elem(ie)%state%v(i,j,1,k,nt)=elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,1,2)*v2   ! contra->latlon
-                elem(ie)%state%v(i,j,2,k,nt)=elem(ie)%DJMD(i,j,2,1)*v1 + elem(ie)%DJMD(i,j,2,2)*v2   ! contra->latlon
+                elem(ie)%state%v(i,j,1,k,nt)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+                elem(ie)%state%v(i,j,2,k,nt)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
              enddo
           enddo
        enddo
@@ -1617,8 +1617,8 @@ contains
              do i=1,np
                 v1=elem(ie)%state%v(i,j,1,k,nt)
                 v2=elem(ie)%state%v(i,j,2,k,nt)
-                elem(ie)%state%v(i,j,1,k,nt) = elem(ie)%DinvJMD(i,j,1,1)*v1 + elem(ie)%DinvJMD(i,j,1,2)*v2
-                elem(ie)%state%v(i,j,2,k,nt) = elem(ie)%DinvJMD(i,j,2,1)*v1 + elem(ie)%DinvJMD(i,j,2,2)*v2
+                elem(ie)%state%v(i,j,1,k,nt) = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+                elem(ie)%state%v(i,j,2,k,nt) = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
              enddo
           enddo
        enddo
@@ -1734,9 +1734,6 @@ contains
 !    real (kind=real_kind) :: et,st
     integer i,j,k,ie
     integer kptr
-#ifdef _HTRACE
-!    integer point
-#endif
     integer iptr
     integer nm1,n0,np1
     integer nstep
@@ -1780,10 +1777,10 @@ contains
           do k=1,nlev
              call filter_P(elem(ie)%state%p(:,:,k,n0),flt)
 
-             ulatlon(:,:,1)=elem(ie)%DJMD(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0)+&
-                            elem(ie)%DJMD(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
-             ulatlon(:,:,2)=elem(ie)%DJMD(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0)+&
-                            elem(ie)%DJMD(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
+             ulatlon(:,:,1)=elem(ie)%D(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0)+&
+                            elem(ie)%D(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
+             ulatlon(:,:,2)=elem(ie)%D(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0)+&
+                            elem(ie)%D(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
 
              do j=1,np
                 do i=1,np
@@ -1820,10 +1817,10 @@ contains
           call newedgeVunpack(edge3, elem(ie)%state%p(:,:,:,n0), nlev, kptr, ie)
 
           do k=1,nlev
-             vco(:,:,1) = elem(ie)%DinvJMD(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0)+&
-                          elem(ie)%DinvJMD(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
-             vco(:,:,2) = elem(ie)%DinvJMD(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0)+&
-                          elem(ie)%DinvJMD(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
+             vco(:,:,1) = elem(ie)%Dinv(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0)+&
+                          elem(ie)%Dinv(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
+             vco(:,:,2) = elem(ie)%Dinv(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0)+&
+                          elem(ie)%Dinv(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
              do j=1,np
                 do i=1,np
                    elem(ie)%state%v(i,j,1,k,n0) = elem(ie)%rmp(i,j)*vco(i,j,1)
@@ -1847,7 +1844,7 @@ contains
        mp => elem(ie)%mp
        fcor => elem(ie)%fcor
        metdet => elem(ie)%metdet
-       Dinv => elem(ie)%DinvJMD
+       Dinv => elem(ie)%Dinv
 
        !JMD       TIMER_DETAIL_START(timer,2,st)
        !JMD metdet => elem(ie)%metdet
@@ -1890,8 +1887,8 @@ contains
                 v1     = elem(ie)%state%v(i,j,1,k,n0)
                 v2     = elem(ie)%state%v(i,j,2,k,n0)
 
-                vco(i,j,1) = elem(ie)%metJMD(i,j,1,1)*v1 + elem(ie)%metJMD(i,j,1,2)*v2
-                vco(i,j,2) = elem(ie)%metJMD(i,j,2,1)*v1 + elem(ie)%metJMD(i,j,2,2)*v2
+                vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+                vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
 
                 E(i,j) = 0.5D0*( vco(i,j,1)*v1 + vco(i,j,2)*v2 )
 
@@ -1987,7 +1984,7 @@ contains
 
        rmp     => elem(ie)%rmp
        mp      => elem(ie)%mp
-       Dinv    => elem(ie)%DinvJMD
+       Dinv    => elem(ie)%Dinv
        metdet  => elem(ie)%metdet
 
        ! ===========================================================
@@ -2091,12 +2088,6 @@ contains
     ! ======================================================
 
     !DBG print *,'advance_si: before call to pcg_solver'
-#ifdef _HTRACE
-!    point = 3
-    !JMD    call EVENT_POINT(point)
-! ---
-#endif
-! --- endif _HTRACE
 
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
@@ -2115,16 +2106,9 @@ contains
          nete,            &     ! ending   element number
          blkjac)
 
-#ifdef _HTRACE
-!    point = 4
-    !JMD   call EVENT_POINT(point)
-! ---
-#endif
-! --- endif _HTRACE
-
     do ie=nets,nete
 
-       Dinv => elem(ie)%DinvJMD
+       Dinv => elem(ie)%Dinv
 
        do k=1,nlev
 
@@ -2169,7 +2153,7 @@ contains
 #endif
     do ie=nets,nete
        rmp => elem(ie)%rmp
-       Dinv => elem(ie)%DinvJMD
+       Dinv => elem(ie)%Dinv
 
 
        kptr=0      
@@ -2245,15 +2229,15 @@ contains
 
   if (topology == "cube" .and. test_case=="swtc1") then
      do k=1,nlev
-        elem%state%v(:,:,:,k,n0)=tc1_velocity(elem%spherep,elem%DinvJMD)
+        elem%state%v(:,:,:,k,n0)=tc1_velocity(elem%spherep,elem%Dinv)
      end do
   else if (topology == "cube" .and. test_case=="vortex") then                
      do k=1,nlev
-        elem%state%v(:,:,:,k,n0)=vortex_velocity(time,elem%spherep,elem%DinvJMD)
+        elem%state%v(:,:,:,k,n0)=vortex_velocity(time,elem%spherep,elem%Dinv)
      end do
   else if (topology == "cube" .and. test_case=="swirl") then                
      do k=1,nlev
-        elem%state%v(:,:,:,k,n0)=swirl_velocity(time,elem%spherep,elem%DinvJMD)
+        elem%state%v(:,:,:,k,n0)=swirl_velocity(time,elem%spherep,elem%Dinv)
      end do
 
   end if
@@ -2339,8 +2323,8 @@ contains
               
               v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
               v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
-              ulatlon(i,j,1)=elem(ie)%DJMD(i,j,1,1)*v1 + elem(ie)%DJMD(i,j,1,2)*v2   ! contra->latlon
-              ulatlon(i,j,2)=elem(ie)%DJMD(i,j,2,1)*v1 + elem(ie)%DJMD(i,j,2,2)*v2   ! contra->latlon
+              ulatlon(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+              ulatlon(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
               
               E(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  +&
                    elem(ie)%state%p(i,j,k,n0) + elem(ie)%state%ps(i,j)
@@ -2349,7 +2333,7 @@ contains
               pv(i,j,2) = ulatlon(i,j,2)*(pmean+elem(ie)%state%p(i,j,k,n0))
            end do
         end do
-        grade = gradient_sphere(E,deriv,elem(ie)%DinvJMD)       ! scalar -> latlon vector
+        grade = gradient_sphere(E,deriv,elem(ie)%Dinv)       ! scalar -> latlon vector
         zeta = vorticity_sphere(ulatlon,deriv,elem(ie)) ! latlon vector -> scalar 
         div = divergence_sphere(pv,deriv,elem(ie))      ! latlon vector -> scalar 
         
@@ -2407,8 +2391,8 @@ contains
               vtens2=rspheremp(i,j)*vtens(i,j,2,k,ie)
               
               ! lat-lon -> contra
-              vtens(i,j,1,k,ie) = elem(ie)%DinvJMD(i,j,1,1)*vtens1 + elem(ie)%DinvJMD(i,j,1,2)*vtens2
-              vtens(i,j,2,k,ie) = elem(ie)%DinvJMD(i,j,2,1)*vtens1 + elem(ie)%DinvJMD(i,j,2,2)*vtens2
+              vtens(i,j,1,k,ie) = elem(ie)%Dinv(i,j,1,1)*vtens1 + elem(ie)%Dinv(i,j,1,2)*vtens2
+              vtens(i,j,2,k,ie) = elem(ie)%Dinv(i,j,2,1)*vtens1 + elem(ie)%Dinv(i,j,2,2)*vtens2
            end do
         end do
      end do
@@ -2568,8 +2552,8 @@ end function adv_flux_term
     g11=0
     g22=0
 #else
-    g11=(elem%metinvJMD(:,:,1,1))   ! sqrt(g11)=contra component of nhat on east/west edges
-    g22=(elem%metinvJMD(:,:,2,2))   ! sgrt(g22)=contra component of nhat on north/south edges
+    g11=(elem%metinv(:,:,1,1))   ! sqrt(g11)=contra component of nhat on east/west edges
+    g22=(elem%metinv(:,:,2,2))   ! sgrt(g22)=contra component of nhat on north/south edges
 #endif
 
     gh11(:,:) = (si(:,:))*g11(:,:)
