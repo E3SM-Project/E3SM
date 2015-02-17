@@ -127,7 +127,7 @@ ELSE ()
     SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${DEBUG_FFLAGS}")
   ELSE ()
     IF(NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Cray)
-      SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+      SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -g")
     ENDIF ()
   ENDIF ()
 
