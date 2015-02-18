@@ -30,6 +30,7 @@ module li_statistics
    use mpas_timer
    use li_setup
    use li_mask
+   use li_constants
 
    implicit none
    private
@@ -122,8 +123,6 @@ module li_statistics
 
      ! config variables
      real (kind=RKIND), pointer :: rhoi    ! ice density (kg/m^3)
-     real (kind=RKIND), pointer :: shci    ! specific heat capacity of ice (J/deg/kg)
-     real (kind=RKIND), pointer :: KtoC    ! 273.15; factor for converting Kelvin to Celsius
      integer, pointer :: statsCellID       ! global ID of cell for which we write stats/diagnostics
 
      ! other pointers
@@ -248,9 +247,7 @@ module li_statistics
 
         ! config settings
         call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
-        call mpas_pool_get_config(liConfigs, 'config_ice_specific_heat', shci)
         call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', statsCellID)
-        call mpas_pool_get_config(liConfigs, 'config_kelvin_to_celsius', KtoC)
 
         call mpas_allocate_scratch_field(iceCellMaskField, .true.)
         iceCellMask => iceCellMaskField % array
@@ -374,7 +371,7 @@ module li_statistics
                                            localMin,                        localMax,     &
                                            localVertSumMin,                 localVertSumMax)
 
-        iceEnergySum = iceEnergySum + localSum*rhoi*shci
+        iceEnergySum = iceEnergySum + localSum*rhoi*cp_ice
 
         ! normal velocity at cell edges; find the maximum magnitude
         !TODO - If velocity is defined at layer interfaces, then nVertLevels -> nVertLevels + 1
@@ -487,7 +484,7 @@ module li_statistics
      endif
 
      if (globalIceVolumeSum > 0.0_RKIND) then
-        globalTemperatureMean = globalIceEnergySum / (globalIceVolumeSum * rhoi * shci)
+        globalTemperatureMean = globalIceEnergySum / (globalIceVolumeSum * rhoi * cp_ice)
      else
         globalTemperatureMean = 0.0_RKIND
      endif
@@ -569,11 +566,11 @@ module li_statistics
         write(stdoutUnit,'(a32,f24.16)')       'Mean thickness (m)              ',   &
                                        globalthicknessMean
         write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Max temperature (C), cell, level',   &
-                                       globalTemperatureMax - KtoC, temperatureMaxlocCell, temperatureMaxlocLevel
+                                       globalTemperatureMax - kelvin_to_celsius, temperatureMaxlocCell, temperatureMaxlocLevel
         write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Min temperature (C), cell, level',   &
-                                       globalTemperatureMin - KtoC , temperatureMinlocCell, temperatureMinlocLevel
+                                       globalTemperatureMin - kelvin_to_celsius , temperatureMinlocCell, temperatureMinlocLevel
         write(stdoutUnit,'(a32,f24.16)')       'Mean temperature (C)            ',   &
-                                       globalTemperatureMean - KtoC
+                                       globalTemperatureMean - kelvin_to_celsius
         write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Max velocity (m/yr), edge, level',   &
                                        globalVelocityMax * scyr, velocityMaxlocEdge, velocityMaxlocLevel
         write(stdoutUnit,'(a32,f24.16,i8,i4)') 'Max basal velo (m/yr), edge     ',   &
@@ -588,12 +585,12 @@ module li_statistics
         write(stdoutUnit,'(a25,f24.16)') 'Sfc mass balance (m/yr)  ', diagnosticSfcMassBal
         write(stdoutUnit,*) ' '
         write(stdoutUnit,'(a55)') 'Sigma        Ice speed (m/yr)       Ice temperature (C)'
-        write(stdoutUnit,'(f6.4, a25, f24.16)') 0.0_RKIND, '------', diagnosticSurfaceTemperature - KtoC
+        write(stdoutUnit,'(f6.4, a25, f24.16)') 0.0_RKIND, '------', diagnosticSurfaceTemperature - kelvin_to_celsius
         do kLevel = 1, nVertLevels
            write(stdoutUnit,'(f6.4, f25.16, f24.16)') &
-                layerCenterSigma(kLevel), diagnosticSpeed(kLevel), diagnosticTemperature(kLevel) - KtoC
+                layerCenterSigma(kLevel), diagnosticSpeed(kLevel), diagnosticTemperature(kLevel) - kelvin_to_celsius
         end do
-        write(stdoutUnit,'(f6.4, a25, f24.16)') 1.0_RKIND, '------', diagnosticBasalTemperature - KtoC
+        write(stdoutUnit,'(f6.4, a25, f24.16)') 1.0_RKIND, '------', diagnosticBasalTemperature - kelvin_to_celsius
         write(stdoutUnit,*) ' '
      endif   ! my_proc_id = IO_NODE
 

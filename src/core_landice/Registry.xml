@@ -69,20 +69,12 @@
 
 
 	<nml_record name="physical_parameters" in_defaults="true">
-		<nml_option name="config_ice_specific_heat" type="real" default_value="2009.0" units="J kg^{-1} K^{-1}"
-		            description="specific heat capacity of ice"
-		            possible_values="Any positive real value"
-		/>
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
 		            description="ice density to use"
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_ocean_density" type="real" default_value="1028.0" units="kg m^{-3}"
 		            description="ocean density to use for calculating floatation"
-		            possible_values="Any positive real value"
-		/>
-		<nml_option name="config_kelvin_to_celsius" type="real" default_value="273.15" units="K"
-		            description="factor for converting K to Celsius"
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_sea_level" type="real" default_value="0.0" units="m above datum"

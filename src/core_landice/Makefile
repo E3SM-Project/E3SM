@@ -47,10 +47,12 @@ mpas_li_sia.o: mpas_li_mask.o \
                mpas_li_setup.o
 
 mpas_li_statistics.o: mpas_li_mask.o \
-                      mpas_li_setup.o
+                      mpas_li_setup.o \
+		      mpas_li_constants.o
 
 mpas_li_mask.o: mpas_li_setup.o
 
+mpas_li_constants.o:
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
