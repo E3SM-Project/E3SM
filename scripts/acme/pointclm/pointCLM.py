@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#/usr/bin/env python
 
 import os, sys, csv, time, math
 from optparse import OptionParser
@@ -37,7 +37,7 @@ parser.add_option("--caseroot", dest="caseroot", default='../../', \
                   help = "case root directory (default = ./, i.e., under scripts/)")
 parser.add_option("--cpl_bypass", dest="cpl_bypass", default=False, \
                    help = "Bypass coupler (point CLM only)", action = "store_true")
-parser.add_option("--runroot", dest="runroot", default="../../../run", \
+parser.add_option("--runroot", dest="runroot", default="", \
                   help="Directory where the run would be created")
 parser.add_option("--site", dest="site", default='', \
                   help = '6-character FLUXNET code to run (required)')
@@ -64,7 +64,7 @@ parser.add_option("--exit_spinup", action="store_true", \
 parser.add_option("--csmdir", dest="csmdir", default='../../..', \
                   help = "base CESM directory (default = ../../..)")
 parser.add_option("--ccsm_input", dest="ccsm_input", \
-                  default='../../../../ccsm_inputdata', \
+                  default='', \
                   help = "input data directory for CESM (required)")
 parser.add_option("--finidat_case", dest="finidat_case", default='', \
                   help = "case containing initial data file to use" \
@@ -202,38 +202,38 @@ else:
 #case run root directory
 if (options.runroot == '' or (os.path.exists(options.runroot) == False)):
     runroot = csmdir+'/run'
-else:
-    runroot = os.path.abspath(options.runroot)
+
+#Check for Scientific Python - if not, disable makepointdata
+#3/31/2015 DMR - for ACME, makepointdata is currently disabled for all machines
+options.nopointdata = True
 
 #check for valid input data directory
-print(options.ccsm_input)
 if (options.ccsm_input == '' or (os.path.exists(options.ccsm_input) \
                                  == False)):
-    print('Error:  invalid input data directory')
-    sys.exit()
+    print('Input data directory invalid.  Using default:')
+    if (options.machine == 'titan'):
+       options.ccsm_input='/lustre/atlas/world-shared/cli900/cesm/inputdata'
+    if (options.machine == 'mira'):
+       options.ccsm_input='/projects/EarthModel/inputdata'
+    if (options.machine == 'oic2'):
+       options.ccsm_input='/home/zdr/models/ccsm_inputdata'
+    print 'Input data directory: ', options.ccsm_input
 else:
     options.ccsm_input = os.path.abspath(options.ccsm_input)
-
-#check for valid compset
-compset = options.compset
-if (compset != 'I1850CLM45CN' and compset != 'I1850CLM45' and compset != 'I2000CLM45' and \
-        compset != 'I2000CLM45CN' and compset != 'I20TRCLM45CN' and compset != 'I1850CN' and \
-        compset != 'I2000CN' and compset != 'I1850' and compset != 'I2000' and compset != 'I20TRCN' and \
-        compset != 'I20TRCRUCLM45CN'):
-    print('Error:  Only CLM40, CLM45, CLM40CN, CLM45CN compsets are supported')
-    sys.exit()
 
 #figure out if clm40 or clm45, set model-specific options
 isclm45 =  False
 surfdir = 'surfdata'
 pftphys_stamp = 'clm40.c130424'
-if (compset[-7:] == 'CLM45CN' or compset[-5:] == 'CLM45'):
+compset = options.compset
+print compset[-7:]
+if ('CLM45' in compset):
     isclm45 = True
     surfdir = 'surfdata_map'
     pftphys_stamp = 'c130821'
 
 #check consistency of options
-if (compset == 'I20TRCLM45CN' or compset == "I20TRCRUCLM45CN" or compset == 'I20TRCN'):
+if ('20TR' in compset):
     #ignore spinup option if transient compset
     if (options.ad_spinup or options.exit_spinup):
       print('Spinup options not available for transient compset.')
@@ -243,52 +243,13 @@ if (compset == 'I20TRCLM45CN' or compset == "I20TRCRUCLM45CN" or compset == 'I20
         print('Error:  must provide initial data file for I20TR compsets')
         sys.exit()
 
+
 #get full path of finidat file
 finidat=''
 finidat_year=int(options.finidat_year)
 
 if (options.exit_spinup):
-    if (options.mycaseid != ''):
-        finidat = options.mycaseid+'_'+options.site+'_I1850CN_ad_spinup'
-    else:
-        finidat = options.site+'_I1850CN_ad_spinup'
     finidat_year = int(options.ny_ad)+1
-
-if (finidat == ''  and options.finidat_case == ''):  #not user-defined
-    if (options.coldstart==False and compset == "I1850CLM45CN" and options.ad_spinup == False):
-        if (options.mycaseid != ''):
-            options.finidat_case = options.mycaseid+'_'+options.site+ \
-                '_I1850CLM45CN_ad_spinup'
-        else:
-            options.finidat_case = options.site+'_I1850CLM45CN_ad_spinup'
-
-        if (options.finidat_year == -1):
-            finidat_year = int(options.ny_ad)+1
-    
-    if (compset == "I20TRCLM45CN" or compset == "I20TRCRUCLM45CN"):
-        if (options.mycaseid != ''):
-            options.finidat_case = options.mycaseid+'_'+options.site+ \
-                '_I1850CLM45CN'
-        else:
-            options.finidat_case = options.site + '_I1850CLM45CN'
-            
-        if (options.finidat_year == -1):
-            finidat_year=1850
-    if (compset == "I20TRCN"):
-        if (options.mycaseid != ''):
-            options.finidat_case = options.mycaseid+'_'+options.site+ \
-                '_I1850CN'
-        else:
-            options.finidat_case = options.site + '_I1850CN'
-        if (options.finidat_year == -1):
-            finidat_year = 1850
-
-        #finidat is required for transient compset
-            if (os.path.exists(runroot+'/'+options.finidat_case) == False):
-                print('Error:  must provide initial data file for I20TRCLM45CN compset OR '+ \
-                          runroot+'/'+options.finidat_case+' existed as refcase')
-                sys.exit
-
 
 if (options.finidat_case != ''):
     finidat_yst = str(finidat_year)
@@ -308,21 +269,9 @@ if (options.finidat_case != ''):
                   '-01-01-00000.nc'
 
 #construct default casename
-casename    = options.site+"_"+compset
+casename    = options.site
 if (options.mycaseid != ""):
-    casename = options.mycaseid+'_'+casename
-#CRU-NCEP 2 transient phases
-if (compset[0:5] == 'I20TR' and options.cruncep):
-    if options.trans2:
-        casename = casename+'_phase2'
-    else:
-        casename = casename+'_phase1'
-if (options.ad_spinup):
-    casename = casename+'_ad_spinup'
-if (options.exit_spinup):
-    casename = casename+'_exit_spinup'
-
-PTCLMfiledir = csmdir+'/scripts/acme/pointclm/PTCLM_files/'
+    casename = options.mycaseid+'_'+options.site
 
 if (caseroot != "./"):
     casedir=caseroot+"/"+casename
@@ -376,67 +325,62 @@ if (options.nopointdata == False):
     print(ptcmd)
     os.system(ptcmd)
 else:
-    print('point data making NOT requested!  Make sure they exist')
+    print('Surface and domain file generation NOT requested.  Will check input data directory')
 
-#get site year information
-sitedatadir = os.path.abspath(PTCLMfiledir+'/PTCLM_sitedata')
-os.chdir(sitedatadir)
-AFdatareader = csv.reader(open(options.sitegroup+'_sitedata.txt',"rb"))
-for row in AFdatareader:
-    if row[0] == options.site:
-        if (options.cruncep):
-            if ('CN' in compset):
-                if (options.trans2):
-                    startyear = 1921
-                    endyear   = int(row[7])
-                else:
-                    startyear = 1901
-                    endyear   = 1920
-            else:
-                startyear = int(row[6]) #1901
-                endyear   = int(row[7])
-        else:
-            startyear=int(row[6])
-            endyear=int(row[7])
-        alignyear = int(row[8])
-        if (options.regional == True):
-            if (options.xpts < 2 and options.ypts < 2):
-                print('Error:  xpts OR ypts MUST be greater than 1 for regional option\n')
-                sys.exit()
-            numxpts = int(options.xpts)
-            numypts = int(options.ypts)
-        else:
-            numxpts=1
-            numypts=1
-
-           #numxpts=int(row[9])
-           #numypts=int(row[10])
+numxpts = 1
+numypts = 1
 ptstr = str(numxpts)+'x'+str(numypts)+'pt'
+
+#get site year information from input data
+atm_filepath = options.ccsm_input+'/atm/datm7/CLM1PT_data/'+str(options.xpts)+'x'+ \
+                 str(options.ypts)+'pt_'+options.site
+startyear = 0
+endyear   = 0
+if (os.path.exists(atm_filepath)):
+    files = os.listdir(atm_filepath)
+    for f in files:
+      if ('.nc' in f and '-' in f):
+        if (startyear == 0):
+	   startyear = int(f[0:4])
+        if (int(f[0:4]) > endyear):
+           endyear = int(f[0:4])
+    print 'Determining start and end year from point data'
+    print 'Start year = ', startyear
+    print 'End   year = ', endyear
+else: 
+    print 'Site-level meteorological data does NOT exist.'
+    print 'Please download these data from input data repository'
+    print 'Automatic download of single point data is not functional'
+    sys.exit()
+
 os.chdir(csmdir+'/scripts')
 #get simyr
 mysimyr=1850
-if (options.compset == 'ICLM45CN'):
+if ('2000' in compset):
     mysimyr=2000
 
 #parameter (pft-phys) modifications if desired
-os.system('cp '+options.ccsm_input+'/lnd/clm2/paramdata/clm_params.'+pftphys_stamp+'.nc ' \
-              +csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/clm_params.'+pftphys_stamp+'.'+ \
-              casename+'.nc')
-os.system('chmod u+w ' +csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/clm_params.'+pftphys_stamp+'.'+ \
-              casename+'.nc')
-if (options.parm_file != ''):
+#os.system('mkdir -p '+csmdir+'/scripts/acme/pointclm/temp')
+#os.system('cp '+options.ccsm_input+'/lnd/clm2/paramdata/clm_params.'+pftphys_stamp+'.nc ' \
+#              +csmdir+'/scripts/acme/pointclm/temp/clm_params.'+pftphys_stamp+'.'+ \
+#              casename+'.nc')
+#os.system('chmod u+w ' +csmdir+'/scripts/acme/pointclm/temp/clm_params.'+pftphys_stamp+'.'+ \
+#              casename+'.nc')
+
+#DMR 3/31/15 - for ACME, disable Scientific Python capabilities
+#if (options.parm_file != ''):
 #    pftfile = NetCDF.NetCDFFile(csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/' \
 #                                +'clm_params.'+pftphys_stamp+'.'+casename+'.nc',"a")
-    input   = open(os.path.abspath(options.parm_file))
-    for s in input:
-        if s[0:1] != '#':
-            values = s.split()
-            temp = pftfile.variables[values[0]]
-            temp_data = temp.getValue()
-            temp_data[int(values[1])] = float(values[2])
-            temp.assignValue(temp_data)
-    input.close()
-    pftfile.close()
+#    input   = open(os.path.abspath(options.parm_file))
+#    for s in input:
+#        if s[0:1] != '#':
+#            values = s.split()
+#            temp = pftfile.variables[values[0]]
+#            temp_data = temp.getValue()
+#            temp_data[int(values[1])] = float(values[2])
+#            temp.assignValue(temp_data)
+#    input.close()
+#    pftfile.close()
 
 #set number of run years for ad, exit spinup cases
 if (options.ny_ad != options.run_n and options.ad_spinup):
@@ -475,24 +419,6 @@ if (options.refcase == 'none'):
     else:
         clmcn_opts = "-phys clm4_0"
 
-    if (options.compset[-2:] == "CN"):
-        clmcn_opts += " -bgc cn"
-
-    #Koven's n-layer, nitri-denitri, and bsw consistence (excluding century C model)
-    #also options for clm4me
-    if (options.vsoilc):
-        if (options.centbgc):
-            clmcn_opts += " -vsoilc_centbgc on"
-        else:
-            clmcn_opts += " -vsoilc_centbgc no-cent" 
-    else:
-        if (options.centbgc):
-            clmcn_opts += " -vsoilc_centbgc no-vert"
-    if (options.CH4):
-        clmcn_opts += " -clm4me on"
-    if (options.MICROBE):
-        clmcn_opts += " -microbe on"
-
     if (options.nofire and isclm45):
         clmcn_opts += " -nofire"
 
@@ -515,18 +441,22 @@ if (options.refcase == 'none'):
     if (options.ccsm_input != ''):
         os.system('./xmlchange -file env_run.xml -id DIN_LOC_ROOT -val ' \
                       +options.ccsm_input)
-    #domain paths
-    os.system('./xmlchange -file env_run.xml -id LND_DOMAIN_PATH -val '+casedir)
-    os.system('./xmlchange -file env_run.xml -id ATM_DOMAIN_PATH -val '+casedir)
+    
     #define mask and resoultion
+    if ('CN' in compset):
+       mybgc = 'cn'
+    elif ('BGC' in compset):
+       mybgc = 'bgc'
+    else:
+       mybgc = 'none'
     os.system('./xmlchange -file env_run.xml -id CLM_USRDAT_NAME ' \
                   +' -val '+str(numxpts)+'x'+str(numypts)+'pt_'+options.site)
     if (options.ad_spinup):
         os.system('./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS ' \
-                      +' -val "-mask navy -bgc_spinup on -bgc cn"')
-    elif (options.compset[-2:] == "CN"):
+                      +' -val "-mask navy -bgc_spinup on -bgc '+mybgc+'"')
+    elif (mybgc != 'none'):
         os.system('./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS ' \
-                      +' -val "-mask navy -bgc cn"')
+                      +' -val "-mask navy -bgc '+mybgc+'"')
     else:
         os.system('./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS ' \
                       +' -val "-mask navy"')
@@ -662,31 +592,30 @@ if (options.refcase == 'none'):
             output.write(" finidat = '"+finidat+"'\n")
         #surface data file
 
-        output.write(" fsurdat = './surfdata_"+str(numxpts)+'x'+ \
-                str(numypts)+"pt_"+casename+"_simyr"+str(mysimyr)+".nc'\n")
+#        output.write(" fsurdat = './surfdata_"+str(numxpts)+'x'+ \
+#                str(numypts)+"pt_"+casename+"_simyr"+str(mysimyr)+".nc'\n")
+        output.write("fsurdat = '"+options.ccsm_input+'/lnd/clm2/'+surfdir+'/surfdata_'+str(numxpts)+'x'+ \
+                str(numypts)+"pt_"+options.site+"_simyr"+str(mysimyr)+".nc'\n")
         #pft dynamics file for transient run
-        if (compset == 'I20TRCLM45CN' or compset == 'I20TRCN' or compset == "I20TRCRUCLM45CN"):
+        if ('20TR' in compset):
             output.write(" fpftdyn = './surfdata.pftdyn_"+str(numxpts)+'x' \
                  +str(numypts)+"pt_"+casename+".nc'\n")
         #pft-physiology file
-        output.write(" paramfile = './clm_params."+pftphys_stamp+"."+ \
-                     casename+".nc'\n")
+        #output.write(" paramfile = './clm_params."+pftphys_stamp+"."+ \
+        #             casename+".nc'\n")
+
         #nitrogen deposition file
-        if (options.compset[-2:] == 'CN'):
+        if ('CN' in compset or 'BGC' in compset):
             output.write( " stream_fldfilename_ndep = '"+options.ccsm_input+ \
       "/lnd/clm2/ndepdata/fndep_clm_hist_simyr1849-2006_1.9x2.5_c100428.nc'\n")
+	if (options.vsoilc):
+            output.write(" use_vertsoilc = .true.\n")
+	if (options.centbgc):
+	    output.write(" use_century_decomp = .true.\n")
+	if (options.CH4):
+	    output.write(" use_lch4 = .true.\n")
 
-    #ad spinup option (CLM45 only)
-    #    if (options.ad_spinup and isclm45):
-    #        output.write(" spinup_state = 1\n ")
-    #    elif (options.compset[-7:] == 'CLM45CN'):
-    #        output.write(" spinup_state = 0\n")
-    #    output.write("/\n")
         output.close()
-    #copy site data to case directory
-    os.system('cp '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/*'+casename+'*.nc .')
-    os.system('cp '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/domain*'+options.site+'*.nc .')
-
 
     #configure case
     if (options.no_config == False):
@@ -872,7 +801,7 @@ if (options.refcase == 'none'):
                 taxst = "taxmode = 'cycle', 'cycle', 'cycle', 'extend'"
             else:
                 taxst = "taxmode = 'cycle', 'extend'"
-            if ('I20TR' in compset):
+            if ('20TR' in compset):
                 taxst = taxst+", 'extend'"
             myoutput.write(taxst+'\n')
         else:
@@ -880,7 +809,7 @@ if (options.refcase == 'none'):
     myinput.close()
     myoutput.close()
 
-    if (compset == "I20TRCLM45CN" or compset == "I20TRCRUCLM45CN" or compset == "I20TRCN"):  
+    if ('20TR' in compset):  
         os.system('cp '+csmdir+'/models/lnd/clm/doc/UsersGuide/co2_streams.txt ./')
         myinput  = open('co2_streams.txt','r')
         myoutput = open('co2_streams.txt.tmp','w')
@@ -918,252 +847,8 @@ if (options.refcase == 'none'):
 
 
 else:  
-
-#----------------------------Reference case set ------------------------------------------
+  print('Reference case disabled')
     
-    os.chdir('../run')
-    incasename  = options.refcase+'_'+options.compset
-    if (options.cruncep and (options.compset == 'I20TRCN' or options.compset == "I20TRCRUCLM45CN" or options.compset == 'I20TRCLM45CN')):
-        if (options.trans2):
-            incasename = incasename + '_phase2'
-        else:
-            incasename = incasename + '_phase1'
-    if (options.ad_spinup):
-        incasename = incasename + '_ad_spinup'
-    if (options.exit_spinup):
-        incasename = incasename + '_exit_spinup'
-    os.system('mkdir -p '+casename+'/run')
-    os.chdir(casename+'/run')
-    os.system('pwd')
-           
-    print 'Copying files from '+incasename+' to '+casename
-    os.system('cp '+csmdir+'/run/'+incasename+'/run/*_in* .')
-    os.system('cp '+csmdir+'/run/'+incasename+'/bld/cesm.exe .')
-    os.system('cp '+csmdir+'/run/'+incasename+'/run/*.nml .')
-    os.system('cp '+csmdir+'/run/'+incasename+'/run/*eam* .')
-    os.system('cp '+csmdir+'/run/'+incasename+'/run/*.rc .')
-
-   #Change generic site/case name to actual site/case name in namelst files
-    os.system('chmod u+w *')
-    os.system('sed -e s/'+incasename+'/'+casename+'/ig  lnd_in > lnd_in_tmp')
-    os.system('mv lnd_in_tmp lnd_in')
-    os.system('sed -e s/REFCASE/'+options.site+'/ig  lnd_in > lnd_in_tmp')
-    os.system('mv lnd_in_tmp lnd_in')
-    ptstr = str(numxpts)+'x'+str(numypts)+'pt'
-    os.system('sed -e s/1x1pt/'+ptstr+'/ig  lnd_in > lnd_in_tmp')
-    os.system('mv lnd_in_tmp lnd_in')
-    #os.system('sed -e s/'+incasename+'/'+casename+'/ig  datm_atm_in > datm_atm_in_tmp')
-    #os.system('mv datm_atm_in_tmp datm_atm_in')
-    #os.system('sed -e s/REFCASE/'+options.site+'/ig  datm_atm_in > datm_atm_in_tmp')
-    #os.system('mv datm_atm_in_tmp datm_atm_in')
-    os.system('sed -e s/1x1pt_REFCASE/'+ptstr+'_'+options.site+'/ig  datm_atm_in > datm_atm_in_tmp')
-    os.system('mv datm_atm_in_tmp datm_atm_in')
-    #os.system('sed -e s/CLM_USRDAT/1x1pt_'+options.site+'/ig  datm_atm_in > datm_atm_in_tmp')
-    #os.system('mv datm_atm_in_tmp datm_atm_in')
-    #os.system('mv clm1PT.CLM_USRDAT.stream.txt clm1PT.1x1pt_REFCASE.stream.txt')
-    if (options.cruncep):
-        os.system('sed -e s/1x1pt_REFCASE/'+ptstr+'_'+options.site+'/ig datm.streams.txt.CLMCRUNCEP.Precip > ' \
-                      +'datm.streams.txt.CLMCRUNCEP.Precip.tmp')
-        os.system('sed -e s/1x1pt_REFCASE/'+ptstr+'_'+options.site+'/ig datm.streams.txt.CLMCRUNCEP.Solar > ' \
-                      +'datm.streams.txt.CLMCRUNCEP.Solar.tmp')
-        os.system('sed -e s/1x1pt_REFCASE/'+ptstr+'_'+options.site+'/ig datm.streams.txt.CLMCRUNCEP.TPQW > ' \
-                      +'datm.streams.txt.CLMCRUNCEP.TPQW.tmp')
-    else:
-        os.system('sed -e s/1x1pt_REFCASE/'+ptstr+'_'+options.site+'/ig datm.streams.txt.CLM1PT.CLM_USRDAT > ' \
-                      +'datm.streams.txt.CLM1PT.CLM_USRDAT.tmp')
-    #os.system('rm *REFCASE*')
-    os.system('sed -e s/'+incasename+'/'+casename+'/ig  drv_in > drv_in_tmp')
-    os.system('mv drv_in_tmp drv_in')
-    os.system('sed -e s/REFCASE/'+options.site+'/ig  drv_in > drv_in_tmp')
-    os.system('mv drv_in_tmp drv_in')
-    
-    #modify met stream file for correct years
-    if (options.cruncep):
-        types = ['CRUNCEP.Precip', 'CRUNCEP.Solar', 'CRUNCEP.TPQW']
-    else:
-        types = ['1PT.CLM_USRDAT']
-    for t in types:                  
-        if (options.cruncep):
-            if (t == 'CRUNCEP.Precip'):
-                prefix = 'clmforc.cruncep.c2010.0.5d.Prec.'
-            elif (t == 'CRUNCEP.Solar'):
-                prefix = 'clmforc.cruncep.c2010.0.5d.Solr.'
-            elif (t == 'CRUNCEP.TPQW'):
-                prefix = 'clmforc.cruncep.c2010.0.5d.TPQWL.'          
-        else:
-            prefix = ''
-        myinput  = open('datm.streams.txt.CLM'+t+'.tmp', 'r')
-        myoutput = open('datm.streams.txt.CLM'+t,'w')
-        if (options.cruncep and not options.trans2):
-            firstfile = '1901-01.nc'
-        elif (options.cruncep):
-            firstfile = '1921-01.nc'
-        else:
-            firstfile = '2000-01.nc'
-        fieldinfo=False
-        for s in myinput:
-            if ('fieldInfo' in s):
-                fieldinfo = True
-                myoutput.write(s)
-            elif (firstfile in s):
-                print 'TIME INFO', startyear, endyear
-                for y in range(startyear,endyear+1):
-                    for m in range(1,13):
-                        if (m < 10):
-                            myoutput.write('            '+prefix+str(y)+'-0'+str(m)+'.nc\n')
-                        else:
-                            myoutput.write('            '+prefix+str(y)+'-'+str(m)+'.nc\n')
-            elif (fieldinfo and '.nc' in s):
-                pass
-            else:
-                myoutput.write(s)
-        myinput.close()
-        myoutput.close()
-        os.system('rm datm.streams.txt.CLM'+t+'.tmp')
-
-    #modify presearo stream file to change to 1850-2000 file
-    if ('20TR' not in compset):
-        myinput  = open('datm.streams.txt.presaero.clim_1850')
-        myoutput = open('datm.streams.txt.presaero.clim_1850.tmp','w')
-        for s in myinput:
-            if ('aerosoldep_monthly' in s):
-                myoutput.write('            aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc\n')
-            else:
-                myoutput.write(s)
-        myinput.close()
-        myoutput.close()
-        os.system('mv datm.streams.txt.presaero.clim_1850.tmp datm.streams.txt.presaero.clim_1850')
-
-    #modify datm_atm_in for correct years
-    myinput  = open('datm_atm_in')
-    myoutput = open('datm_atm_in_tmp','w')
-    for s in myinput:
-        if ('streams =' in s):
-            myalign_year = 1 #startyear
-            if (options.align_year != -999):
-                myalign_year = options.align_year
-            if ('I20TR' in compset):
-                mypresaero = '"datm.streams.txt.presaero.trans_1850-2000 1850 1850 2000"'
-                myco2      = ', "datm.global1val.streams.co2.txt 1766 1766 2010"'
-            else:
-                mypresaero = '"datm.streams.txt.presaero.clim_1850 1 1850 1850"'
-                myco2=''
-            if (options.cruncep):
-                myoutput.write(' streams = "datm.streams.txt.CLMCRUNCEP.Solar '+str(myalign_year)+ \
-                                   ' '+str(startyear)+' '+str(endyear)+'  ", '+ \
-                                   '"datm.streams.txt.CLMCRUNCEP.Precip '+str(myalign_year)+ \
-                                   ' '+str(startyear)+' '+str(endyear)+'  ", '+ \
-                                   '"datm.streams.txt.CLMCRUNCEP.TPQW '+str(myalign_year)+ \
-                                   ' '+str(startyear)+' '+str(endyear)+'  ", '+mypresaero+myco2+'\n')
-            else:
-                 myoutput.write(' streams = "datm.streams.txt.CLM1PT.CLM_USRDAT '+str(myalign_year)+ \
-                                   ' '+str(startyear)+' '+str(endyear)+'  ", '+mypresaero+myco2+'\n')
-        elif ('streams' in s):
-            continue  #do nothing
-        elif ('taxmode =' in s):
-            if (options.cruncep):
-                taxst = "taxmode = 'cycle', 'cycle', 'cycle', 'extend'"
-            else:
-                taxst = "taxmode = 'cycle', 'extend'"
-            if ('I20TR' in compset):
-                taxst = taxst+", 'extend'"
-            myoutput.write(taxst+'\n')
-        else:
-            myoutput.write(s)
-    myinput.close()
-    myoutput.close()
-    os.system('mv datm_atm_in_tmp datm_atm_in')
-
-    #modify component .nml files
-    nmlfiles=['atm','cpl','glc','ice','lnd','ocn','rof','wav']
-    for mynml in nmlfiles:
-        outfile = open(mynml+'_modelio.nml','w')
-        outfile.write('&modelio\n')
-        outfile.write('   diri    = "'+os.path.abspath('../..')+'/'+incasename+'/'+ \
-                          mynml+'   "\n')
-        outfile.write('   diro    = "./"\n') #'+os.path.abspath('.')+'   "\n')
-        outfile.write('   logfile = "'+mynml+'.log   "\n')
-        outfile.write('/\n')
-        outfile.write('&pio_inparm\n')
-        outfile.write(' pio_numiotasks = -99\n')
-        outfile.write(' pio_root = -99\n')
-        outfile.write(' pio_stride = -99\n')
-        outfile.write(" pio_typename = 'nothing'\n")
-        outfile.write(" /\n")
-        outfile.close()
-          
-    #make drv_in namelist modifications (run length for final spin/tranisent case)
-    myinput  = open('drv_in')
-    myoutput = open('drv_in_tmp','w')
-    for s in myinput:
-        if (s[0:7] == ' stop_n'):
-            myoutput.write(" stop_n = "+str(options.run_n)+'\n')                               
-        elif (s[0:10] == ' restart_n'):
-            myoutput.write(" restart_n = "+str(options.run_n)+'\n')
-        elif (s[0:9] == ' stop_ymd'):
-            myoutput.write(" stop_ymd       = -999\n")
-        elif (s[0:12] == ' restart_ymd'):
-            myoutput.write(" restart_ymd    = -999\n")
-        elif (s[0:11] == ' atm_cpl_dt'):
-            myoutput.write(" atm_cpl_dt = "+str(int(float(options.tstep)*3600.0))+'\n')
-        elif (s[0:11] == ' lnd_cpl_dt'):
-            myoutput.write(" lnd_cpl_dt = "+str(int(float(options.tstep)*3600.0))+'\n')
-        elif (s[0:11] == ' ice_cpl_dt'):
-            myoutput.write(" atm_cpl_dt = "+str(int(float(options.tstep)*3600.0))+'\n')
-        elif (s[0:10] == ' start_ymd'):
-            myoutput.write(s)
-        else:
-            myoutput.write(s)
-    myinput.close()
-    myoutput.close()
-    os.system('mv drv_in_tmp drv_in')
-            
-    #make lnd_in namelist modification for finidat file in transient case for correct year
-    myinput  = open('lnd_in')
-    myoutput = open('lnd_in_tmp','w')
-   
-    for s in myinput:
-        if (s[0:8] == ' hist_mf'):
-            if (compset == 'I20TRCLM45CN' or compset == "I20TRCRUCLM45CN" or compset == 'I20TRCN'):
-                myoutput.write(' hist_mfilt = 12, 8760, 365\n')
-            else: 
-                myoutput.write(' hist_mfilt = 1\n')
-        elif (s[0:8] == ' hist_nh'):
-            if (compset == 'I20TRCLM45CN' or compet == "I20TRCRUCLM45CN" or compset == 'I20TRCN'):
-                myoutput.write(' hist_nhtfrq = 0, -1, -24\n')
-                myoutput.write(" hist_fincl2 = 'NEE', 'GPP', 'NPP', 'ER', 'AR', 'MR', 'GR', 'SR', 'EFLX_LH_TOT', 'FSH', 'FPSN', 'BTRAN', 'FPG', 'FPI', 'CPOOL', 'NPOOL', 'TV', 'FSA', 'FIRA', 'FCTR', 'FCEV', 'FGEV', 'TBOT', 'FLDS', 'FSDS', 'RAIN', 'SNOW', 'WIND', 'PBOT', 'QBOT'\n")
-                myoutput.write(" hist_fincl3 = 'NEE', 'GPP', 'NPP', 'AGNPP', 'BGNPP', 'ER', 'AR', 'MR', 'GR', 'HR', 'SR', 'EFLX_LH_TOT', 'FSH', 'FPSN', 'BTRAN', 'FPG', 'FPI', 'TBOT', 'FLDS', 'FSDS', 'RAIN', 'SNOW', 'WIND', 'PBOT', 'QBOT', 'PFT_FIRE_CLOSS', 'LITFALL', 'TLAI', 'LEAFC' ,'FROOTC', 'LIVESTEMC', 'DEADSTEMC', 'LIVECROOTC', 'DEADCROOTC', 'TOTVEGC', 'TOTSOMC', 'TOTLITC', 'CWDC', 'TOTECOSYSC', 'TOTCOLC', 'TOTSOMN', 'TOTECOSYSN', 'SMINN', 'QOVER', 'QDRAI', 'QRGWL', 'QRUNOFF' \n")
-            else:
-                myoutput.write(' hist_nhtfrq = -8760\n')
-        elif (s[0:8] == ' finidat' and options.ad_spinup == False):
-            myoutput.write(" finidat = '"+finidat+"'\n")
-        elif (s[0:7] == ' nrevsn'):
-            myoutput.write(" nrevsn = '"+finidat+"'\n")
-        elif (s[0:6] == ' dtime'):
-            myoutput.write(" dtime = "+str(int(float(options.tstep)*3600.0))+'\n')
-        else:
-            myoutput.write(s)
-    myinput.close()
-    myoutput.close()
-    os.system('mv lnd_in_tmp lnd_in')
-
-    #write a basic PBS script
-    output = open(casename+'.run','w')
-    output.write('#PBS -S /bin/bash\n')
-    output.write('#PBS -V\n')
-    output.write('#PBS -m ae\n')
-    output.write('#PBS -N '+casename+'\n')
-    output.write('#PBS -q esd08q\n')
-    output.write("#PBS -l nodes="+str((int(options.np)-1)/8+1)+ \
-                     ":ppn="+str(min(int(options.np),8))+"\n")  
-    output.write('#PBS -l walltime=48:00:00\n')
-    output.write("cd "+csmdir+'/run/'+casename+"/run\n")
-    if (options.np == 1):
-        output.write("./cesm.exe > cesm_log.txt\n")
-    else:
-        output.write("mpirun -np "+options.np+" --hostfile $PBS_NODEFILE ./cesm.exe\n")
-    output.close()
-
 #---------------------------end of refcase ------------------------------------------------
 
 
@@ -1182,10 +867,10 @@ if (finidat != '' and options.runroot == '' ):
     os.system('cp -f '+csmdir+'/run/'+options.finidat_case+'/run/'+ \
               'rpointer.* '+csmdir+'/run/'+casename+'/run/')
 #move site data to run directory
-os.system('cp '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/*'+casename+'* ' \
-           +runroot+'/'+casename+'/run/')
-os.system('cp '+csmdir+'/scripts/acme/pointclm/PTCLM_files/temp/domain*'+options.site+'* ' \
-           +runroot+'/'+casename+'/run/')
+#os.system('mv '+csmdir+'/scripts/acme/pointclm/temp/*'+casename+'* ' \
+#           +runroot+'/'+casename+'/run/')
+#os.system('mv '+csmdir+'/scripts/acme/pointclm/temp/domain*'+options.site+'* ' \
+#           +runroot+'/'+casename+'/run/')
 
 #os.system('cp -f ../microbepar_in ' +csmdir+'/run/'+casename+'/run/')
 

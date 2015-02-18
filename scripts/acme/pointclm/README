@@ -1,9 +1,7 @@
 # Testing for OIC phase 2
 # This will run 10 years of accelerated decomposition spinup (cold start) at the UMBS flux site
 # The case directory will be generated in ACME/scripts
+# By default, the run directory will be in ACME/run, NOT what is in the machine file.
 
-On Mira:
-python runCLM.py --site US-UMB --ad_spinup --nyears_ad_spinup 10 --compset I1850CLM45CN --ccsm_input /projects/ccsm/inputdata --mach mira --compiler ibm --mpilib ibm
+python pointCLM.py --site US-UMB --ad_spinup --nyears_ad_spinup 10 --compset I1850CLM45CN --compiler <compiler> 
 
-On OIC:
-python runCLM.py --site US-UMB --ad_spinup --nyears_ad_spinup 10 --compset I1850CLM45CN --ccsm_input /home/zdr/models/ccsm_inputdata/ --mach oic2
