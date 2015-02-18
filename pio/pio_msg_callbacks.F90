@@ -100,7 +100,6 @@ end subroutine freedecomp_handler
 
 subroutine create_file_handler(iosystem)
   use pio, only : iosystem_desc_t, file_desc_t, pio_createfile
-  use pio_kinds, only : char_len
   use pio_msg_mod, only : add_to_file_list
   use pio_support, only : debugAsync
 #ifndef NO_MPIMOD
@@ -114,11 +113,13 @@ subroutine create_file_handler(iosystem)
 
   integer :: ierr
   integer :: iotype, amode
-  
-  character(len=char_len) :: fname
+  integer :: namelen
+  character(len=:), allocatable :: fname
   type(file_desc_t), pointer :: file
   
-  call mpi_bcast(fname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
+  call mpi_bcast(namelen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  allocate(character(len=namelen):: fname )  
+  call mpi_bcast(fname, namelen, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
   call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
   
   call mpi_bcast(amode, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
@@ -126,7 +127,7 @@ subroutine create_file_handler(iosystem)
   allocate(file)
   
   ierr= pio_createfile(iosystem, file, iotype, trim(fname), amode )
-
+  deallocate(fname)
   call add_to_file_list(file)
   if(Debugasync) print *,__PIO_FILE__,__LINE__,file%fh
 
@@ -150,10 +151,14 @@ subroutine open_file_handler(iosystem)
   integer :: ierr
   integer :: iotype, amode
   
-  character(len=char_len) :: fname
+  character(len=:), allocatable :: fname
   type(file_desc_t), pointer :: file
-  
-  call mpi_bcast(fname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
+  integer :: namelen
+
+
+  call mpi_bcast(namelen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  allocate(character(len=namelen):: fname )  
+  call mpi_bcast(fname, namelen, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
 
   call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
   
@@ -162,7 +167,7 @@ subroutine open_file_handler(iosystem)
   allocate(file)
   
   ierr= pio_openfile(iosystem, file, iotype, trim(fname), amode)
-
+  deallocate(fname)
   call add_to_file_list(file)
   if(Debugasync) print *,__PIO_FILE__,__LINE__,file%fh
 

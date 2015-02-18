@@ -2434,7 +2434,8 @@ contains
     character(len=9) :: rd_buffer
     character(len=4) :: stripestr
     character(len=9) :: stripestr2
-    character(len=char_len)  :: myfname
+    character(len=:), allocatable  :: myfname
+    integer :: namelen
 #ifdef _COMPRESSION
     integer :: restart
 
@@ -2457,18 +2458,19 @@ contains
     end if
 
     file%iotype = iotype 
-    myfname = fname
+
+
 
     if(.not. (iosystem%async_interface .and. iosystem%ioproc)) then
+       namelen = len_trim(fname)
+       allocate(character(len=namelen) :: myfname)
+
+       myfname = trim(fname)
+
        call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
        call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
 
-       if(len(fname) > char_len) then
-          print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile', len(fname), char_len
-          call piodie( __PIO_FILE__,__LINE__)
-       end if
-
-       call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
+       call mpi_bcast(myfname, namelen, mpi_character, 0, iosystem%comp_comm, ierr)
     end if
 
     file%iosystem => iosystem
@@ -2502,8 +2504,8 @@ contains
        if(iosystem%comp_rank==0) then
           call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
        end if
-
-       call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(namelen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(myfname, namelen, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(amode, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
 
@@ -2534,7 +2536,7 @@ contains
     if(ierr==0) file%file_is_open=.true.
 	
     if(debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
-
+    deallocate(myfname)
 #ifdef TIMING
     call t_stopf("PIO_createfile")
 #endif
@@ -2602,8 +2604,8 @@ contains
     integer    :: amode, msg
     logical, parameter :: check = .true.
     character(len=9) :: rd_buffer
-    character(len=char_len) :: myfname
-
+    character(len=:), allocatable :: myfname
+    integer :: namelen
 #ifdef TIMING
     call t_startf("PIO_openfile")
 #endif
@@ -2635,9 +2637,6 @@ contains
        file%iotype = iotype 
     end if
 
-
-    myfname = fname
-
 #if defined(USEMPIIO)
     if ( (file%iotype==pio_iotype_pbinary .or. file%iotype==pio_iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
@@ -2652,14 +2651,16 @@ contains
     end if
 #endif
     if(.not. (iosystem%ioproc .and. iosystem%async_interface)) then
+       namelen = len_trim(fname)
+       allocate(character(len=namelen) :: myfname)
+
+       myfname = trim(fname)
+
        call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
        call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
-       if(len(fname) > char_len) then
-          print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile'
-          call piodie( __PIO_FILE__,__LINE__)
-       end if
 
-       call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
+
+       call mpi_bcast(myfname, namelen, mpi_character, 0, iosystem%comp_comm, ierr)
     end if
 
     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
@@ -2668,7 +2669,8 @@ contains
           call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
        end if
        
-       call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(namelen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(myfname, namelen, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(amode, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
     end if
@@ -2696,10 +2698,10 @@ contains
     end select
     if(Debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
     if(ierr==0) file%file_is_open=.true.
+    deallocate(myfname)
 #ifdef TIMING
     call t_stopf("PIO_openfile")
 #endif
-
   end function PIO_openfile
 
 !> 
