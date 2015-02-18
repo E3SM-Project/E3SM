@@ -136,7 +136,8 @@ if ($prestageopt) {
 }    
 
 # Subversion repository location.
-my $svn_loc = 'https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/';
+my $svn_loc = 'https://acme-svn2.ornl.gov/acme-repo/acme/inputdata/';
+my $svn_loc_backup = 'https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/';
 
 # If export option is set, test for svn install, and server
 if ($exportopt) {
@@ -144,13 +145,6 @@ if ($exportopt) {
   if ($error eq '') {
     die "Error: the subversion client svn was not found.\n";
   }
-  my $error = `svn list $svn_loc > /dev/null`;
-#  my @error = `svn list $svn_loc 2>&1`;
-#  @found=grep(/atm\//g,@error);
-#  chomp(@found);
-#  if (length($found[0]) == 0){
-#    die ("@error \n");
-#  } 
 }
 
 $inputdata_rootdir .= "/";
@@ -235,8 +229,20 @@ EOF
 	   if (($isinput) && ($exportopt) && (!-e $fileneed)) {
 	      my $fileloc = $svn_loc.$filend;     # Location in subversion repository.
   	      my $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
-	      isinrepository($fileloc) ? dataexport($fileneed, $fileloc) : 
-		 print "File was not found in svn repo: $fileloc \n";
+              if (isinrepository($fileloc)) {
+                  dataexport($fileneed, $fileloc);
+              }
+              else {
+                  print "File was not found in svn repo: $fileloc, trying backup... \n";
+                  $fileloc = $svn_loc_backup.$filend;     # Location in subversion repository.
+                  $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
+                  if (isinrepository($fileloc)) {
+                      dataexport($fileneed, $fileloc);
+                  }
+                  else {
+                      print "File was not found in backup svn repo: $fileloc\n";
+                  }
+              }
 	   }
 	   if (($isinput) && ($prestageopt)) {
 	      my $filecopy = $prestage_rootdir.$filend;
