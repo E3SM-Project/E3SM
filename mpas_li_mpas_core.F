@@ -161,6 +161,7 @@ module mpas_core
 
 
       ! check for errors and exit
+
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
           call mpas_dmpar_global_abort("An error has occurred in mpas_core_init. Aborting...")
@@ -191,6 +192,7 @@ module mpas_core
       use mpas_timer
       use li_diagnostic_vars
       use li_setup
+      use li_statistics
       use mpas_io_streams, only: MPAS_STREAM_LATEST_BEFORE
    
       implicit none
@@ -223,7 +225,8 @@ module mpas_core
       integer :: itimestep
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
-      logical, pointer :: config_do_restart, config_write_output_on_startup
+      integer, pointer :: config_stats_interval   !< interval (number of timesteps) for writing stats
+      logical, pointer :: config_do_restart, config_write_output_on_startup, config_write_stats_on_startup
       character(len=StrKIND), pointer :: config_restart_timestamp_name
 
       type (MPAS_Time_Type) :: currTime
@@ -242,6 +245,8 @@ module mpas_core
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(liConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
       call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call mpas_pool_get_config(liConfigs, 'config_write_stats_on_startup', config_write_stats_on_startup)
+      call mpas_pool_get_config(liConfigs, 'config_stats_interval', config_stats_interval)
 
       call mpas_timer_start("land ice core run")
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
@@ -275,14 +280,15 @@ module mpas_core
 
       call mpas_timer_stop("initial state calculation")
 
-
       ! ===
       ! === Write Initial Output
       ! ===
       call mpas_timer_start("write output")
+
       if (config_write_output_on_startup) then
          call mpas_stream_mgr_write(stream_manager, 'output', forceWriteNow=.true., ierr=err_tmp)
       endif
+
       call mpas_timer_stop("write output")
 
       ! === error check and exit
@@ -291,7 +297,12 @@ module mpas_core
           call mpas_dmpar_global_abort("An error has occurred in mpas_core_run before time-stepping. Aborting...")
       endif
 
-
+      if (config_write_stats_on_startup) then
+         call mpas_timer_start("compute_statistics")
+         call li_compute_statistics(domain, 1, 0)  ! timelevel = 1, itimestep = 0
+                                                   ! (itimestep is initialized below)
+         call mpas_timer_stop("compute_statistics")
+      endif
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -323,7 +334,6 @@ module mpas_core
 
          !write(6,*) '  dt (s) = ', dtSeconds
 
-
          ! ===
          ! === Perform Timestep
          ! ===
@@ -332,6 +342,15 @@ module mpas_core
          call landice_timestep(domain, itimestep, dtSeconds, timeStamp, err_tmp)
          err = ior(err,err_tmp)
 
+         ! Write statistics at designated interval
+         if (config_stats_interval > 0) then
+            if (mod(itimestep, config_stats_interval) == 0) then
+               call mpas_timer_start("compute_statistics")
+               call li_compute_statistics(domain, 2, itimestep)
+               call mpas_timer_stop("compute_statistics")
+            end if
+         end if
+
          ! Move time level 2 fields back into time level 1 for next time step
          block => domain % blocklist
          do while(associated(block))
@@ -339,8 +358,8 @@ module mpas_core
             call mpas_pool_shift_time_levels(statePool)
             block => block % next
          end do
-         call mpas_timer_stop("time integration")
 
+         call mpas_timer_stop("time integration")
 
          ! ===
          ! === Read time-varying inputs, if present (i.e., forcing)
@@ -697,7 +716,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       use mpas_grid_types
       use li_time_integration
       use mpas_timer
-!!!      use li_global_diagnostics
    
       implicit none
    
@@ -732,55 +750,18 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       type (block_type), pointer :: block_ptr
       integer :: err_tmp
 
-   
       err = 0
       err_tmp = 0
-
 
       call li_timestep(domain, dt, timeStamp, err_tmp)
       err = ior(err,err_tmp)
    
-!!!      if (config_stats_interval .gt. 0) then
-!!!          if(mod(itimestep, config_stats_interval) == 0) then
-!!!              block_ptr => domain % blocklist
-!!!              if(associated(block_ptr % next)) then
-!!!                  write(0,*) 'Error: computeGlobalDiagnostics assumes ',&
-!!!                             'that there is only one block per processor.'
-!!!              end if
-!!!   
-!!!              call mpas_timer_start("global_diagnostics")
-!!!              call li_compute_global_diagnostics(domain % dminfo, &
-!!!                       block_ptr % state % time_levs(2) % state, block_ptr % mesh, &
-!!!                       itimestep, dt)
-!!!              call mpas_timer_stop("global_diagnostics")
-!!!          end if
-!!!      end if
-
-      !TODO: replace the above code block with this if we desire to convert config_stats_interval to use alarms
-      !if (mpas_is_alarm_ringing(clock, statsAlarmID, ierr=ierr)) then
-      !   call mpas_reset_clock_alarm(clock, statsAlarmID, ierr=ierr)
-
-      !   block_ptr => domain % blocklist
-      !   if(associated(block_ptr % next)) then
-      !      write(0,*) 'Error: computeGlobalDiagnostics assumes ',&
-      !                 'that there is only one block per processor.'
-      !   end if
-
-      !   call mpas_timer_start("global_diagnostics")
-      !   call sw_compute_global_diagnostics(domain % dminfo, &
-      !            block_ptr % state % time_levs(2) % state, block_ptr % mesh, &
-      !            timeStamp, dt)
-      !   call mpas_timer_stop("global_diagnostics")
-      !end if
-
       ! === error check
       if (err > 0) then
           write (0,*) "An error has occurred in mpas_timestep."
       endif
-
    
    end subroutine landice_timestep
-   
    
 
 !***********************************************************************
