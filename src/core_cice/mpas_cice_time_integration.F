@@ -59,9 +59,6 @@ contains
     use cice_therm_zerolayer, only: &
          cice_zerolayer_thermodynamics
 
-    use cice_forcing_old, only: &
-         cice_get_forcing
-
     use cice_diagnostics, only: &
          cice_run_diagnostics
 
@@ -91,9 +88,6 @@ contains
          config_use_advection, &
          config_use_vertical_thermodynamics
 
-    character(len=strKIND), pointer :: &
-         config_atmospheric_forcing_age
-
 #define debug 0
 
     call store_timestep_counter(block, itimestep)
@@ -105,19 +99,10 @@ contains
     call MPAS_pool_get_config(configs, "config_use_advection", config_use_advection)
     call MPAS_pool_get_config(configs, "config_use_vertical_thermodynamics", config_use_vertical_thermodynamics)
     call MPAS_pool_get_config(configs, "config_perform_unit_test", config_perform_unit_test)
-    call MPAS_pool_get_config(configs, "config_atmospheric_forcing_age", config_atmospheric_forcing_age)
 
     if (config_perform_unit_test) then
        call cice_perform_unit_test(block, configs)
        return
-    endif
-
-    ! get forcing
-    if (trim(config_atmospheric_forcing_age) == "old") then
-       call mpas_timer_start("forcing")
-       if (config_use_forcing) &
-            call cice_get_forcing(block, clock)
-       call mpas_timer_stop("forcing")
     endif
 
     ! zero layer thermodynamics

@@ -58,9 +58,6 @@ module mpas_core
       type (MPAS_Time_Type) :: startTime
       integer :: ierr
 
-      character(len=strKIND), pointer :: &
-           config_atmospheric_forcing_age
-
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
@@ -95,9 +92,7 @@ module mpas_core
       call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
       ! initialize forcing
-      call MPAS_pool_get_config(domain % configs, "config_atmospheric_forcing_age", config_atmospheric_forcing_age)
-      if (trim(config_atmospheric_forcing_age) == "new") &
-           call cice_forcing_init(domain, stream_manager)
+      call cice_forcing_init(domain, stream_manager)
 
       !
       ! Initialize core
@@ -257,9 +252,6 @@ module mpas_core
       real (kind=RKIND), pointer :: config_dt
       character(len=StrKIND), pointer :: config_restart_timestamp_name
 
-      character(len=StrKIND), pointer :: & 
-           config_atmospheric_forcing_age
-
       ! configurations
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
@@ -277,22 +269,17 @@ module mpas_core
       call mpas_stream_mgr_write(stream_manager, ierr=ierr)
       call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-      ! During integration, time level 1 stores the model state at the beginning of the
-      !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
-      itimestep = 0
-      do while (.not. mpas_is_clock_stop_time(clock))
+      itimestep = 1
+      call mpas_advance_clock(clock)
 
-         itimestep = itimestep + 1
-         call mpas_advance_clock(clock)
+      ! initial forcing
+      call cice_forcing_get(stream_manager, domain, clock, .true.)
+
+      timeLoop: do
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
          write(0,*) 'Doing timestep ', trim(timeStamp)
-
-         ! forcing
-         call MPAS_pool_get_config(domain % configs, "config_atmospheric_forcing_age", config_atmospheric_forcing_age)
-         if (trim(config_atmospheric_forcing_age) == "new") &
-              call cice_forcing_get(stream_manager, domain, clock)
 
          ! do the time integration
          call mpas_timer_start("time integration")
@@ -309,7 +296,17 @@ module mpas_core
          call mpas_stream_mgr_write(stream_manager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-      end do
+         ! check if the simulation is finished
+         if (mpas_is_clock_stop_time(clock)) exit timeLoop
+
+         ! advance the clock
+         itimestep = itimestep + 1
+         call mpas_advance_clock(clock)
+
+         ! forcing
+         call cice_forcing_get(stream_manager, domain, clock, .false.)
+
+      end do timeLoop
 
    end subroutine mpas_core_run
    
