@@ -1282,7 +1282,6 @@ contains
 
       real (kind=RKIND) :: v
       integer i, fileID
-      integer id
 
       fileID = mpas_get_free_unit()
 
