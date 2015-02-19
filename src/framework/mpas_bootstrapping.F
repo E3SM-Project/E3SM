@@ -326,8 +326,313 @@ module mpas_bootstrapping
       deallocate(block_start)
       deallocate(block_count)
       deallocate(readingBlock)
-
    end subroutine mpas_bootstrap_framework !}}}
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_bootstrap_framework_phase2
+   !
+   !> \brief   Defines dimensions and allocates fields
+   !> \author  Doug Jacobsen
+   !> \date    03/04/2015
+   !> \details
+   !>  This routine assumes blocks have already been setup correctly (some
+   !>  fields have the correct indices, and exchange lists are created).
+   !>  It will finish the setup of blocks by defining all remaining dimensions,
+   !>  and allocating all fields and structs.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_bootstrap_framework_phase2(stream_manager, domain) !{{{
+
+      use mpas_stream_manager
+      use mpas_stream_list
+
+      implicit none
+
+      type (mpas_streamManager_type), pointer :: stream_manager
+      type (domain_type), pointer :: domain
+
+      type (mpas_pool_type), pointer :: readableDimensions
+      type (mpas_pool_type), pointer :: streamDimensions
+      type (mpas_pool_iterator_type) :: poolItr, fieldItr
+      type (mpas_pool_field_info_type) :: fieldInfo
+
+      type (field1DReal), pointer :: real1DField
+      type (field2DReal), pointer :: real2DField
+      type (field3DReal), pointer :: real3DField
+      type (field4DReal), pointer :: real4DField
+      type (field5DReal), pointer :: real5DField
+      type (field1DInteger), pointer :: int1DField
+      type (field2DInteger), pointer :: int2DField
+      type (field3DInteger), pointer :: int3DField
+      type (field1DChar), pointer :: char1DField
+
+      character (len=StrKIND) :: streamName, streamFilenameTemplate, streamFilenameInterval, streamReferenceTime, streamFilename
+      integer :: streamDirection
+      logical :: streamActive
+
+      type (mpas_stream_list_type), pointer :: streamCursor
+      type (MPAS_IO_Handle_type) :: inputHandle
+
+      character (len=StrKIND), pointer :: dimName
+      integer, pointer :: dimValue
+      integer :: tempDim
+      integer :: iDim, err_level, err_local
+
+      call mpas_pool_create_pool(readableDimensions)
+
+      err_level = mpas_pool_get_error_level()
+      call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+      ! Reading dimensions from streams
+      write(stderrUnit, *) ' ---- Reading dimensions from streams ----'
+      call mpas_stream_mgr_begin_iteration(stream_manager)
+      do while ( mpas_stream_mgr_get_next_stream(stream_manager, streamCursor, streamID = streamName, directionProperty = streamDirection, &
+                                                 activeProperty = streamActive) )
+
+         if ( streamActive .and. ( streamDirection == MPAS_STREAM_INPUT .or. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) ) then
+            ! Build stream dimension pool from the list of fields
+            call mpas_pool_create_pool(streamDimensions)
+
+            call mpas_pool_begin_iteration(streamCursor % field_pool)
+            do while ( mpas_pool_get_next_member(streamCursor % field_pool, poolItr) )
+               if ( poolItr % memberType == MPAS_POOL_CONFIG ) then
+                  call mpas_pool_get_field_info(domain % blocklist % allFields, poolItr % memberName, fieldInfo)
+
+                  if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
+                     if ( fieldInfo % nDims == 1 ) then
+                        call mpas_pool_get_field(domain % blocklist % allFields, poolItr % memberName, real1DField)
+                        if ( .not. real1DField % isVarArray ) then
+                           call mpas_pool_get_dimension(streamDimensions, real1DField % dimNames(1), dimValue)
+
+                           if ( .not. associated(dimValue) ) then
+                              call mpas_pool_add_dimension(streamDimensions, real1DField % dimNames(1), MPAS_MISSING_DIM)
+                           end if
+                        end if
+                     else if ( fieldInfo % nDims == 2 ) then
+                        call mpas_pool_get_field(domain % blocklist % allFields, poolItr % memberName, real2DField)
+                        if ( .not. real1DField % isVarArray ) then
+                           call mpas_pool_get_dimension(streamDimensions, real2DField % dimNames(1), dimValue)
+
+                           if ( .not. associated(dimValue) ) then
+                              call mpas_pool_add_dimension(streamDimensions, real2DField % dimNames(1), MPAS_MISSING_DIM)
+                           end if
+                        end if
+                        call mpas_pool_get_dimension(streamDimensions, real2DField % dimNames(2), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real2DField % dimNames(2), MPAS_MISSING_DIM)
+                        end if
+                     else if ( fieldInfo % nDims == 3 ) then
+                        call mpas_pool_get_field(domain % blocklist % allFields, poolItr % memberName, real3DField)
+                        if ( .not. real1DField % isVarArray ) then
+                           call mpas_pool_get_dimension(streamDimensions, real3DField % dimNames(1), dimValue)
+
+                           if ( .not. associated(dimValue) ) then
+                              call mpas_pool_add_dimension(streamDimensions, real3DField % dimNames(1), MPAS_MISSING_DIM)
+                           end if
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, real3DField % dimNames(2), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real3DField % dimNames(2), MPAS_MISSING_DIM)
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, real3DField % dimNames(3), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real3DField % dimNames(3), MPAS_MISSING_DIM)
+                        end if
+                     else if ( fieldInfo % nDims == 4 ) then
+                        call mpas_pool_get_field(domain % blocklist % allFields, poolItr % memberName, real4DField)
+                        if ( .not. real1DField % isVarArray ) then
+                           call mpas_pool_get_dimension(streamDimensions, real4DField % dimNames(1), dimValue)
+
+                           if ( .not. associated(dimValue) ) then
+                              call mpas_pool_add_dimension(streamDimensions, real4DField % dimNames(1), MPAS_MISSING_DIM)
+                           end if
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, real4DField % dimNames(2), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real4DField % dimNames(2), MPAS_MISSING_DIM)
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, real4DField % dimNames(3), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real4DField % dimNames(3), MPAS_MISSING_DIM)
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, real4DField % dimNames(4), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real4DField % dimNames(4), MPAS_MISSING_DIM)
+                        end if
+                     else if ( fieldInfo % nDims == 5 ) then
+                        call mpas_pool_get_field(domain % blocklist % allFields, poolItr % memberName, real5DField)
+                        if ( .not. real1DField % isVarArray ) then
+                           call mpas_pool_get_dimension(streamDimensions, real5DField % dimNames(1), dimValue)
+
+                           if ( .not. associated(dimValue) ) then
+                              call mpas_pool_add_dimension(streamDimensions, real5DField % dimNames(1), MPAS_MISSING_DIM)
+                           end if
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, real5DField % dimNames(2), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real5DField % dimNames(2), MPAS_MISSING_DIM)
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, real5DField % dimNames(3), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real5DField % dimNames(3), MPAS_MISSING_DIM)
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, real5DField % dimNames(4), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real5DField % dimNames(4), MPAS_MISSING_DIM)
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, real5DField % dimNames(5), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, real5DField % dimNames(5), MPAS_MISSING_DIM)
+                        end if
+                     end if
+                  else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
+                     if ( fieldInfo % nDims == 1 ) then
+                        call mpas_pool_get_field(domain % blocklist % allFields, poolItr % memberName, int1DField)
+                        if ( .not. int1DField % isVarArray ) then
+                           call mpas_pool_get_dimension(streamDimensions, int1DField % dimNames(1), dimValue)
+
+                           if ( .not. associated(dimValue) ) then
+                              call mpas_pool_add_dimension(streamDimensions, int1DField % dimNames(1), MPAS_MISSING_DIM)
+                           end if
+                        end if
+                     else if ( fieldInfo % nDims == 2 ) then
+                        call mpas_pool_get_field(domain % blocklist % allFields, poolItr % memberName, int2DField)
+                        if ( .not. int1DField % isVarArray ) then
+                           call mpas_pool_get_dimension(streamDimensions, int2DField % dimNames(1), dimValue)
+
+                           if ( .not. associated(dimValue) ) then
+                              call mpas_pool_add_dimension(streamDimensions, int2DField % dimNames(1), MPAS_MISSING_DIM)
+                           end if
+                        end if
+                        call mpas_pool_get_dimension(streamDimensions, int2DField % dimNames(2), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, int2DField % dimNames(2), MPAS_MISSING_DIM)
+                        end if
+                     else if ( fieldInfo % nDims == 3 ) then
+                        call mpas_pool_get_field(domain % blocklist % allFields, poolItr % memberName, int3DField)
+                        if ( .not. int1DField % isVarArray ) then
+                           call mpas_pool_get_dimension(streamDimensions, int3DField % dimNames(1), dimValue)
+
+                           if ( .not. associated(dimValue) ) then
+                              call mpas_pool_add_dimension(streamDimensions, int3DField % dimNames(1), MPAS_MISSING_DIM)
+                           end if
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, int3DField % dimNames(2), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, int3DField % dimNames(2), MPAS_MISSING_DIM)
+                        end if
+
+                        call mpas_pool_get_dimension(streamDimensions, int3DField % dimNames(3), dimValue)
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(streamDimensions, int3DField % dimNames(3), MPAS_MISSING_DIM)
+                        end if
+                     end if
+                  else if ( fieldInfo % fieldType == MPAS_POOL_CHARACTER ) then
+                     if ( fieldInfo % nDims == 1 ) then
+                        call mpas_pool_get_field(domain % blocklist % allFields, poolItr % memberName, char1DField)
+                        if ( .not. int1DField % isVarArray ) then
+                           call mpas_pool_get_dimension(streamDimensions, char1DField % dimNames(1), dimValue)
+
+                           if ( .not. associated(dimValue) ) then
+                              call mpas_pool_add_dimension(streamDimensions, char1DField % dimNames(1), MPAS_MISSING_DIM)
+                           end if
+                        end if
+                     end if
+                  end if
+               end if
+            end do
+
+            ! Determine stream filename
+            call mpas_get_stream_filename(stream_manager, streamID = streamName, filename = streamFilename, ierr = err_local)
+
+            write(stderrUnit, *) ' * Reading dimensions from stream ' // trim(streamName) &
+                                 // ' using file ' // trim(streamFilename)
+
+            ! Try to open file
+            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr = err_local)
+
+            ! If to determine if file was opened or not.
+            if ( err_local == MPAS_IO_NOERR ) then
+
+               ! Iterate over list of dimensions we determined we need from the above loop
+               call mpas_pool_begin_iteration(streamDimensions)
+               do while ( mpas_pool_get_next_member(streamDimensions, poolItr) )
+                  if ( poolItr % memberType == MPAS_POOL_DIMENSION ) then
+                     ! Try to read the dimension
+                     call mpas_io_inq_dim(inputHandle, trim(poolItr % memberName), tempDim, ierr = err_local)
+
+                     ! Check to see if the dimension has already been defined
+                     call mpas_pool_get_dimension(readableDimensions, poolItr % memberName, dimValue)
+
+                     ! If to see if dimension was read or not
+                     if ( err_local == MPAS_IO_NOERR ) then
+                        write(stderrUnit, *) '   * Dimension ' // trim(poolItr % memberName) // ' was read with a value of ', tempDim
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(readableDimensions, poolItr % memberName, tempDim)
+                        else if ( dimValue /= tempDim .and. dimValue == MPAS_MISSING_DIM ) then
+                           dimValue = tempDim
+                        else if ( dimValue /= tempDim ) then
+                           call mpas_dmpar_global_abort('ERROR: Dimension ' // trim(poolItr % membername) &
+                                                        // ' was read with an inconsistent value. Exiting...')
+                        end if
+                     else
+                        write(stderrUnit, *) '   * Dimension ' // trim(poolItr % memberName) // ' was not found in stream.'
+                     end if
+
+                  end if
+               end do
+
+               ! Close file
+               call mpas_io_close(inputHandle)
+            else
+               write(stderrUnit, *) '   * File not found. Skipping stream.'
+            end if
+
+            ! Destroy pool that contains list of streams dimensions
+            call mpas_pool_destroy_pool(streamDimensions)
+         else
+            write(stderrUnit, *) ' Stream ' // trim(streamName) // ' was not found in stream list...'
+         end if
+      end do
+      write(stderrUnit, *) ' ---- Finished reading dimensions from streams ----'
+      write(stderrUnit, *)
+      write(stderrUnit, *)
+
+      call mpas_pool_set_error_level(err_level)
+
+      ! Allocate blocks, and copy indexTo arrays into blocks
+      call mpas_block_creator_finalize_block_phase2(stream_manager, domain % blocklist, readableDimensions)
+      call mpas_link_fields(domain)
+
+      call mpas_pool_destroy_pool(readableDimensions)
+
+   end subroutine mpas_bootstrap_framework_phase2 !}}}
 
 
    subroutine mpas_io_setup_cell_block_fields(inputHandle, nReadCells, readCellStart, readingBlock, maxEdges, indexToCellID, &
