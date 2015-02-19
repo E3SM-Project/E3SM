@@ -62,9 +62,6 @@ contains
        call initEdgeBuffer(par,edge3p1,desc,4*nlev+1)
        call initEdgeBuffer(par,oldedge3p1,4*nlev+1)
     endif
-!JMD    print *,'prim_advance_init: rsplit := ',rsplit
-!JMD    print *,'prim_advance_init: after call first call to initEdgeBuffer'
-!JMD    stop
 
     if(integration == 'semi_imp') then
        call initEdgeBuffer(par,edge1,desc,nlev)
@@ -827,17 +824,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           call preq_filter(elem, edge3p1, flt, cg%hybrid, nfilt, nets, nete)
        end if
 
-       do ie = nets, nete
-
-          elem(ie)%derived%grad_lnps(:,:,:) = gradient(elem(ie)%state%lnps(:,:,n0),deriv)*rrearth
-
-       end do
-
        ! ================================================
        ! boundary exchange grad_lnps
        ! ================================================
 
        do ie = nets, nete
+
+          elem(ie)%derived%grad_lnps(:,:,:) = gradient(elem(ie)%state%lnps(:,:,n0),deriv)*rrearth
 
           do k=1,nlevp
              pintref(k)  = hvcoord%hyai(k)*ps0 + hvcoord%hybi(k)*psref
@@ -1216,7 +1209,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! ==========================================
        ! solve for Gamma_ref, given C as RHS input
        ! ==========================================
-       print *,'prim_advance_si: before call to pcg_solver:'
+
        Gamma_ref = pcg_solver(elem, &
             C,          &
             cg,         &
@@ -1228,8 +1221,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
             nets,       &
             nete,       &
             blkjac)
-       print *,'prim_advance_si: after call to pcg_solver:'
-
 
        ! ================================================================
        ! Backsubstitute Gamma_ref into semi-implicit system of equations
@@ -1402,6 +1393,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        call bndry_exchangeV(cg%hybrid,edge3p1)
 
+!KGEN START(prim_advance_si_bug1)
        do ie=nets,nete
 
           ! ===================================
@@ -1421,6 +1413,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! Complete global assembly by normalizing velocity by rmp
           ! Vscript = Vscript - dt*grad(Gref)
           ! ==========================================================
+          if(iam==1) then           
+!BUG  There appears to be a bug in the Intel 15.0.1 compiler that generates
+!BUG  incorrect code for this loop if the following print * statement is removed.
+             print *,'IAM: ',iam, ' prim_advance_si: after SUM(v(np1)) ',sum(elem(ie)%state%v(:,:,:,:,np1)) 
+          endif
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
@@ -1431,6 +1428,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                 do i=1,np
                    elem(ie)%state%v(i,j,1,k,np1) = Vscript(i,j,1,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,1,k,np1)
                    elem(ie)%state%v(i,j,2,k,np1) = Vscript(i,j,2,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,2,k,np1)
+                   elem(ie)%state%T(i,j,k,np1)   = elem(ie)%rmp(i,j)*Tscript(i,j,k,ie)
                 end do
              end do
 
@@ -1442,28 +1440,26 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              end do
           end do
 
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j)
-#endif
-          do k=1,nlev
-             do j=1,np
-                do i=1,np
-                   elem(ie)%state%T(i,j,k,np1) = elem(ie)%rmp(i,j)*Tscript(i,j,k,ie)
-                end do
-             end do
-          end do
+!JMD #if (defined COLUMN_OPENMP)
+!JMD !$omp parallel do private(k,i,j)
+!JMD #endif
+!JMD          do k=1,nlev
+!JMD             do j=1,np
+!JMD                do i=1,np
+!JMD                   elem(ie)%state%T(i,j,k,np1)   = elem(ie)%rmp(i,j)*Tscript(i,j,k,ie)
+!JMD                end do
+!JMD             end do
+!JMD          end do
 
        end do
+!KGEN END(prim_advance_si_bug1)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
-#if 1
-       print *,'prim_advance_si: before call to prim_diffusion'
+
        call prim_diffusion(elem, nets,nete,np1,deriv,dt2,cg%hybrid)
-       print *,'prim_advance_si: after call to prim_diffusion'
-#endif
        call t_stopf('prim_advance_si')
        call t_adj_detailf(-1)
 #endif

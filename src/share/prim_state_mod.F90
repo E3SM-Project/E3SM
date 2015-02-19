@@ -538,24 +538,24 @@ contains
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%IEner(:,:,n)
        enddo
-       print *,'IAM: ',iam,'prim_printstate: point #0'
+!BUG: prim_advance_si_bug1
+!BUG To observe the prim_advance_si_bug1 uncomment the following line.  It
+!BUG should after several iterations generate NaN's
+!BUG       print *,'IAM: ',iam,' prim_printstate: SUM(tmp): ',SUM(tmp)
        IEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        IEner(n) = IEner(n)*scale
-       print *,'IAM: ',iam,'prim_printstate: point #1'
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%IEner_wet(:,:,n)
        enddo
        IEner_wet(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        IEner_wet(n) = IEner_wet(n)*scale
-       print *,'IAM: ',iam,'prim_printstate: point #2'
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%KEner(:,:,n)
        enddo
        KEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        KEner(n) = KEner(n)*scale
-       print *,'IAM: ',iam,'prim_printstate: point #3'
        
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%PEner(:,:,n)
@@ -563,7 +563,6 @@ contains
        PEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        PEner(n) = PEner(n)*scale
        TOTE(n)=IEner(n)+PEner(n)+KEner(n)
-       print *,'IAM: ',iam,'prim_printstate: point #4'
        
        
        do q=1,qsize
@@ -587,7 +586,6 @@ contains
              Q1mass(q) = Q1mass(q)*scale
           endif
        enddo
-       print *,'IAM: ',iam,'prim_printstate: point #5'
        
     enddo
     
@@ -601,7 +599,6 @@ contains
        tmp(:,:,ie) = elem(ie)%accum%KEvert1 + elem(ie)%accum%KEvert2
     enddo
     KEvert = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-       print *,'IAM: ',iam,'prim_printstate: point #6'
     KEvert = KEvert*scale
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%IEvert1 + elem(ie)%accum%IEvert2
