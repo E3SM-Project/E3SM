@@ -20,7 +20,7 @@ module piolib_mod
   use pio_support, only : piodie, debug, debugio, debugasync, checkmpireturn
   !
 
-  use pio_mpi_utils, only : PIO_type_to_mpi_type 
+
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf     ! _EXTERNAL
 #endif
