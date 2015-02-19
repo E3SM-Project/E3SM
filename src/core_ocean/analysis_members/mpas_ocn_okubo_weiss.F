@@ -251,7 +251,7 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       integer, pointer :: nCellsSolve, nVertLevels
-      integer, dimension(1) :: cellsArray, cellsSumArray
+      integer :: cells, cellsSum
 
       !-----------------------------------------------------------------
       !
@@ -263,20 +263,20 @@ contains
       !
       !-----------------------------------------------------------------
 
-      cellsArray(1) = 0
+      cells = 0
       dminfo = domain % dminfo
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-         cellsArray(1) = cellsArray(1)  + nCellsSolve
+         cells = cells  + nCellsSolve
 
          block => block % next
       end do
 
-      call mpas_dmpar_sum_int_array(dminfo, 1, cellsArray, cellsSumArray)
-      nCellsGlobal = cellsSumArray(1)
+      call mpas_dmpar_sum_int(dminfo, cells, cellsSum)
+      nCellsGlobal = cellsSum
       nTotalCellsGlobal = nCellsGlobal*nVertLevels
 
 #ifdef SINGLE_PRECISION
@@ -618,7 +618,7 @@ contains
       integer origK, origCell, nLocalCCs
       integer, dimension(nVertLevels*nCells) :: unionMap
       integer communcationLoop
-      integer, dimension(1) :: updateArray, globalUpdateArray
+      integer :: update, globalUpdate
 
       call mpas_timer_start("CC local", .false., CCLocalTimer)
 
@@ -712,7 +712,7 @@ contains
 
          ! Loop over the ghost cells updated with data from adjacent blocks
          ! and merge
-         updateArray(1) = 0
+         update = 0
          do k = 1, nVertLevels
             do iCell = nCellsSolve+1, nCells
                ! Check if ghost cell is part of an eddy
@@ -726,12 +726,12 @@ contains
                            if (OW_cc_id(k, iCell) < OW_cc_id(k, iOtherCell)) then
                               ! Ghost cell has lower ID, it takes precedence
                               ! over this block.
-                              updateArray(1) = 1
+                              update = 1
                               call ocn_update_components(OW_cc_id, k, iCell, iOtherCell, nCells, nVertLevels)
                            else if (OW_cc_id(k, iCell) > OW_cc_id(k, iOtherCell)) then
                               ! Ghost cell has higher ID, this block takes precedende.
                               OW_cc_id(k, iCell) = OW_cc_id(k, iOtherCell)
-                              updateArray(1) = 1
+                              update = 1
                            end if
                         end if
                      end if
@@ -741,8 +741,8 @@ contains
          end do
 
          if (communcationLoop > 2) then
-            call mpas_dmpar_max_int_array(dminfo, 1, updateArray, globalUpdateArray)
-            if (globalUpdateArray(1) == 0) then
+            call mpas_dmpar_max_int(dminfo, update, globalUpdate)
+            if (globalUpdate == 0) then
                exit
             end if
          end if
@@ -913,8 +913,7 @@ contains
       real (kind=RKIND), dimension(nLocalCCs) :: sumVol, numCells, origCCId, wsVelX, wsVelY, wsVelZ, &
             wsPosX, wsPosY, wsPosZ
       real (kind=RKIND) :: vol
-      integer k, iCell, i, curCC, iIdx, curI, curK, iOtherCell
-      integer, dimension(1) :: numCCsArray, maxNumCCsArray
+      integer k, iCell, i, curCC, iIdx, curI, curK, iOtherCell, maxNumCCs
 
       integer, dimension(size(OW_thresh,1), size(OW_thresh,2)) :: OW_thresh_local
 
@@ -1055,13 +1054,12 @@ contains
 
       call mpas_timer_stop("stats per proc", CCStatsPerProcT)
 
-      numCCsArray(1) = curCC
-      call mpas_dmpar_max_int_array(dminfo, 1, numCCsArray, maxNumCCsArray)
+      call mpas_dmpar_max_int(dminfo, curCC, maxNumCCs)
 
       ! this merges eddy stats AND outputs the results
       call mpas_timer_start("aggregate stats", .false., CCAggregateStatsT)
       call ocn_aggregate_eddy_stats(dmInfo, use_lat_lon_coords, min_cells, &
-                                    curCC, maxNumCCsArray(1), &
+                                    curCC, maxNumCCs, &
                                     origCCId, sumVol, numCells, &
                                     wsPosX, wsPosY, wsPosZ, &
                                     wsVelX, wsVelY, wsVelZ, &
