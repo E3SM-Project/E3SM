@@ -1366,6 +1366,12 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 		fortprintf(fd, "\n");
 
+		if ( ndims > 0 ) {
+			fortprintf(fd, "      nullify(%s(%d) %% array)\n", pointer_name, time_lev);
+		} else {
+			fortprintf(fd, "      %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
+		}
+		fortprintf(fd, "      %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
 		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
@@ -1570,6 +1576,12 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 			free(tofree);
 		}
 
+		if ( ndims > 0 ) {
+			fortprintf(fd, "     %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
+			fortprintf(fd, "     nullify(%s(%d) %% array)\n", pointer_name, time_lev);
+		} else {
+			fortprintf(fd, "     %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
+		}
 		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
