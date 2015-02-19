@@ -27,6 +27,7 @@ module mpas_grid_types
    use mpas_timekeeping, only : MPAS_Clock_type
 
    integer, parameter :: nTimeLevs = 2
+   integer, parameter :: MPAS_MISSING_DIM = -999
 
    ! Derived type describing info for doing I/O specific to a field
    type io_info
@@ -3218,7 +3219,34 @@ module mpas_grid_types
 
    end subroutine mpas_link_fields!}}}
 
+!***********************************************************************
+!
+!  funtion mpas_dimension_num_garbage_elements
+!
+!> \brief   MPAS Number of garbage elements for dimension
+!> \author  Doug Jacobsen
+!> \date    02/28/2015
+!> \details 
+!> This routine takes as input the name of a dimension and a dimension pool.
+!> Using this information, it returns the number of garbage elements that should
+!> be padded on each array allocated with this dimension size.
+!
+!-----------------------------------------------------------------------
+   integer function mpas_dimension_num_garbage_elements(dimName, iErr) result(numElements)!{{{
+      character (len=*), intent(in) :: dimName
+      integer, intent(in) :: iErr
 
+      numElements = 0
+
+      if ( trim(dimName) == "nCells" ) then
+         numElements = 1
+      else if ( trim(dimName) == "nVertices" ) then
+         numElements = 1
+      else if ( trim(dimName) == "nEdges" ) then
+         numElements = 1
+      end if
+
+   end function mpas_dimension_num_garbage_elements!}}}
 
 
 

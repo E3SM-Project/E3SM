@@ -1281,4 +1281,256 @@ module mpas_block_creator
 
    end subroutine mpas_block_creator_reindex_block_fields!}}}
 
+!***********************************************************************
+!
+!  routine mpas_block_creator_allocate_pool_fields
+!
+!> \brief   Pool field allocator
+!> \author  Doug Jacobsen
+!> \date    02/05/2015
+!> \details
+!>  This routine iterates over all pools, and allocates the fields in each pool
+!>  based on their pre-defined dimension information.
+!>  On each field, the dimNames array is used to query the correct dimension information
+!>  and populate the dimSizes array.
+!>  This routine also copies all dimensions from dimensionPool to currentPool
+!
+!-----------------------------------------------------------------------
+   recursive subroutine mpas_block_creator_allocate_pool_fields(currentPool, dimensionPool)!{{{
+      type (mpas_pool_type), pointer :: currentPool !< Input: Current pool to allocate and copy dimensions.
+      type (mpas_pool_type), pointer :: dimensionPool !< Input: Pool of dimensions for the current block
+      type (mpas_pool_type), pointer :: subPool
+      type (mpas_pool_iterator_type) :: poolItr
+
+      type (field1DReal), pointer :: real1DField
+      type (field2DReal), pointer :: real2DField
+      type (field3DReal), pointer :: real3DField
+      type (field4DReal), pointer :: real4DField
+      type (field5DReal), pointer :: real5DField
+      type (field1DInteger), pointer :: int1DField
+      type (field2DInteger), pointer :: int2DField
+      type (field3DInteger), pointer :: int3DField
+      type (field1DChar), pointer :: char1DField
+
+      integer :: timeLev, iDim
+      integer, pointer :: tempDim
+      integer, dimension(:), pointer :: tempDim1D
+      integer :: dimSize
+      integer :: localErr
+
+      call mpas_pool_begin_iteration(dimensionPool)
+      do while( mpas_pool_get_next_member(dimensionPool, poolItr) )
+         if (poolItr % memberType == MPAS_POOL_DIMENSION) then
+            if (poolItr % nDims == 0) then
+               call mpas_pool_get_dimension(dimensionPool, poolItr % memberName, tempDim)
+               call mpas_pool_add_dimension(currentPool, poolItr % memberName, tempDim)
+            else if (poolItr % nDims == 1) then
+               call mpas_pool_get_dimension(dimensionPool, poolItr % memberName, tempDim1D)
+               call mpas_pool_add_dimension(currentPool, poolItr % memberName, tempDim1D)
+            end if
+         end if
+      end do
+
+      call mpas_pool_begin_iteration(currentPool)
+      do while ( mpas_pool_get_next_member(currentPool, poolItr) )
+         if ( poolItr % memberType == MPAS_POOL_SUBPOOL ) then
+            call mpas_pool_get_subpool(currentPool, poolItr % memberName, subPool)
+            call mpas_block_creator_allocate_pool_fields(subPool, dimensionPool)
+         else if ( poolItr % memberType == MPAS_POOL_FIELD ) then
+            if ( poolItr % dataType == MPAS_POOL_REAL ) then
+               if ( poolItr % nDims == 1 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real1DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real1DField % dimNames(iDim), tempDim)
+
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real1DField % dimNames(iDim)) &
+                                                          // ' was not read or defined, but is required for field ' &
+                                                          // trim(poolItr % memberName) // '. Exiting...')
+                        end if
+                        real1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real1DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real1DField % isActive .and. real1DField % isPersistent ) then
+                        allocate(real1DField % array(real1DField % dimSizes(1)))
+                        real1DField % array(:) = real1DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 2 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real2DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real2DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real2DField % dimNames(iDim)) &
+                                                          // ' was not read or defined, but is required for field ' &
+                                                          // trim(poolItr % memberName) // '. Exiting...')
+                        end if
+                        real2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real2DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real2DField % isActive .and. real2DField % isPersistent ) then
+                        allocate(real2DField % array(real2DField % dimSizes(1), real2DField % dimSizes(2)))
+                        real2DField % array(:,:) = real2DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 3 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real3DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real3DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real3DField % dimNames(iDim)) &
+                                                          // ' was not read or defined, but is required for field ' &
+                                                          // trim(poolItr % memberName) // '. Exiting...')
+                        end if
+                        real3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real3DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real3DField % isActive .and. real3DField % isPersistent ) then
+                        allocate(real3DField % array(real3DField % dimSizes(1), real3DField % dimSizes(2), real3DField % dimSizes(3)))
+                        real3DField % array(:,:,:) = real3DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 4 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real4DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real4DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real4DField % dimNames(iDim)) &
+                                                          // ' was not read or defined, but is required for field ' &
+                                                          // trim(poolItr % memberName) // '. Exiting...')
+                        end if
+                        real4DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real4DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real4DField % isActive .and. real4DField % isPersistent ) then
+                        allocate(real4DField % array(real4DField % dimSizes(1), real4DField % dimSizes(2), &
+                                                     real4DField % dimSizes(3), real4DField % dimSizes(4)))
+                        real4DField % array(:,:,:,:) = real4DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 5 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real5DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real5DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real5DField % dimNames(iDim)) &
+                                                          // ' was not read or defined, but is required for field ' &
+                                                          // trim(poolItr % memberName) // '. Exiting...')
+                        end if
+                        real5DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real5DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real5DField % isActive .and. real5DField % isPersistent ) then
+                        allocate(real5DField % array(real5DField % dimSizes(1), real5DField % dimSizes(2), &
+                                                     real5DField % dimSizes(3), real5DField % dimSizes(4), &
+                                                     real5DField % dimSizes(5)))
+                        real5DField % array(:,:,:,:,:) = real5DField % defaultValue
+                     end if
+                  end do
+               end if
+            else if ( poolItr % dataType == MPAS_POOL_INTEGER ) then
+               if ( poolItr % nDims == 1 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, int1DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, int1DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(int1DField % dimNames(iDim)) &
+                                                          // ' was not read or defined, but is required for field ' &
+                                                          // trim(poolItr % memberName) // '. Exiting...')
+                        end if
+                        int1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                      int1DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( int1DField % isActive .and. int1DField % isPersistent ) then
+                        allocate(int1DField % array(int1DField % dimSizes(1)))
+                        int1DField % array(:) = int1DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 2 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, int2DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, int2DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(int2DField % dimNames(iDim)) &
+                                                          // ' was not read or defined, but is required for field ' &
+                                                          // trim(poolItr % memberName) // '. Exiting...')
+                        end if
+                        int2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                      int2DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( int2DField % isActive .and. int2DField % isPersistent ) then
+                        allocate(int2DField % array(int2DField % dimSizes(1), int2DField % dimSizes(2)))
+                        int2DField % array(:,:) = int2DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 3 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, int3DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, int3DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(int3DField % dimNames(iDim)) &
+                                                          // ' was not read or defined, but is required for field ' &
+                                                          // trim(poolItr % memberName) // '. Exiting...')
+                        end if
+                        int3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                      int3DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( int3DField % isActive .and. int3DField % isPersistent ) then
+                        allocate(int3DField % array(int3DField % dimSizes(1), int3DField % dimSizes(2), int3DField % dimSizes(3)))
+                        int3DField % array(:,:,:) = int3DField % defaultValue
+                     end if
+                  end do
+               end if
+            else if ( poolItr % dataType == MPAS_POOL_CHARACTER ) then
+               if ( poolItr % nDims == 1 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, char1DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, char1DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(char1DField % dimNames(iDim)) &
+                                                          // ' was not read or defined, but is required for field ' &
+                                                          // trim(poolItr % memberName) // '. Exiting...')
+                        end if
+                        char1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       char1DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( char1DField % isActive .and. char1DField % isPersistent ) then
+                        allocate(char1DField % array(char1DField % dimSizes(1)))
+                        char1DField % array(:) = char1DField % defaultValue
+                     end if
+                  end do
+               end if
+            end if
+         end if
+      end do
+
+   end subroutine mpas_block_creator_allocate_pool_fields!}}}
+
 end module mpas_block_creator
