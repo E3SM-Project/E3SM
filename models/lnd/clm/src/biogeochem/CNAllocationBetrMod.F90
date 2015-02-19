@@ -36,7 +36,7 @@ module CNAllocationBetrMod
   public :: readCNAllocBetrParams
   public :: CNAllocationBetrInit         ! Initialization
   public :: calc_plant_nutrient_demand
-
+  public :: plantCNAlloc
   type :: CNAllocParamsType
      real(r8) :: bdnr              ! bulk denitrification rate (1/s)
      real(r8) :: dayscrecover      ! number of days to recover negative cpool

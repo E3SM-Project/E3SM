@@ -688,7 +688,8 @@ contains
                   atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
                   canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                   dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
-                  plantsoilnutrientflux_vars)
+                  plantsoilnutrientflux_vars, &
+                  betrtracer_vars, tracerflux_vars, tracerstate_vars)
 
          !do belowground bgc and transport         
          call t_startf('betr_nodrain')
@@ -786,7 +787,7 @@ contains
               col, atm2lnd_vars,                                                     &
               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
               waterflux_vars, chemstate_vars, cnstate_vars, carbonflux_vars,         &
-              betrtracer_vars, bgc_reaction,                                         &
+              nitrogenflux_vars, betrtracer_vars, bgc_reaction,                      &
               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
               tracerflux_vars, plantsoilnutrientflux_vars)         
          endif

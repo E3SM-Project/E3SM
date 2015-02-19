@@ -43,7 +43,7 @@ implicit none
   private
   public :: CNEcosystemDynBetrVeg
   public :: CNEcosystemDynBetrSummary
-
+  public :: CNEcosystemDynBetrInit
   contains
 
   !-----------------------------------------------------------------------
@@ -112,8 +112,10 @@ implicit none
   use dynHarvestMod          , only: CNHarvest
   use clm_varpar             , only: crop_prog
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type    
-  use CNAllocationBetrMod    , only: calc_plant_nutrient_demand
-  
+  use CNAllocationBetrMod    , only : calc_plant_nutrient_demand
+  use CNVerticalProfileMod   , only : decomp_vertprofiles  
+  use CNAllocationBetrMod    , only : plantCNAlloc
+  use CNNStateUpdate3Mod     , only : NStateUpdate3
   implicit none
   !
   ! !ARGUMENTS:
@@ -488,6 +490,7 @@ implicit none
     use dynHarvestMod          , only: CNHarvest
     use clm_varpar             , only: crop_prog
     use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
+    use CNPrecisionControlMod, only : CNPrecisionControl
     implicit none
     !
     ! !ARGUMENTS:
@@ -522,7 +525,7 @@ implicit none
     type(plantsoilnutrientflux_type), intent(in) :: plantsoilnutrientflux_vars   
   
 
-    call nitrogenstate_vars%nbuffer_update(num_soilc, filter_soilc, &
+    call nitrogenstate_vars%nbuffer_update(bounds, num_soilc, filter_soilc, &
       plantsoilnutrientflux_vars%plant_minn_active_yield_flx_col(bounds%begc:bounds%endc),   &
       plantsoilnutrientflux_vars%plant_minn_passive_yield_flx_col(bounds%begc:bounds%endc))
 
@@ -592,7 +595,7 @@ implicit none
   integer                  , intent(in)    :: filter_soilc(:)                   ! filter for soil columns  
   real(r8)                 , intent(inout) :: plant_totn_demand_flx(bounds%begc:bounds%endc)
   real(r8)                 , intent(in)    :: plant_nbuffer(bounds%begc:bounds%endc)
-  real(r8)                 , intent(inout) :: fgp(bounds%begc:bounds%endc)
+  real(r8)                 , intent(inout) :: fpg(bounds%begc:bounds%endc)
   
   integer :: fc, c
   real(r8) :: dtime
