@@ -1117,8 +1117,108 @@ module mpas_block_creator
        indexToEdgeCursor => indexToEdgeCursor % next
        indexToVertexCursor => indextoVertexcursor % next
      end do
+  end subroutine mpas_block_creator_finalize_block_init!}}}
 
-   end subroutine mpas_block_creator_finalize_block_init!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_block_creator_finalize_block_phase2
+!
+!> \brief   Phase 2 of block creation finalization
+!> \author  Doug Jacobsen
+!> \date    05/31/12
+!> \details
+!>  This routine finalizes the block setup process. It sets up all additional
+!>  dimensions, and allocates space for fields. In addition, it groups all fields
+!>  into their respective structures and puts them into the correct blocks.
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_block_creator_finalize_block_phase2(stream_manager, blocklist, readableDimensions) !{{{
+
+     use mpas_stream_manager
+
+     type (mpas_streamManager_type), pointer :: stream_manager !< Input: Stream manager structure
+     type (block_type), pointer :: blocklist !< Input/Output: Linked List of blocks
+     type (mpas_pool_type), intent(inout) :: readableDimensions
+
+     type (domain_type), pointer :: domain
+
+     type (block_type), pointer :: block_ptr
+
+     type (mpas_pool_iterator_type) :: itr
+
+     type (field1dInteger), pointer :: indexField, indexFieldBlk
+
+     integer :: err_level
+     integer, pointer :: dim0d
+     integer, dimension(:), pointer :: dim1d
+
+     domain => blocklist % domain
+
+     ! Loop over blocks
+     block_ptr => blocklist
+     do while(associated(block_ptr))
+
+       err_level = mpas_pool_get_error_level()
+       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+       call mpas_pool_begin_iteration(readableDimensions)
+       do while (mpas_pool_get_next_member(readableDimensions, itr))
+          if ( itr % memberType == MPAS_POOL_DIMENSION ) then
+             if ( itr % nDims == 0 ) then
+                call mpas_pool_get_dimension(block_ptr % dimensions, trim(itr % memberName), dim0d)
+                if ( .not. associated(dim0d) ) then
+                    call mpas_pool_get_dimension(readableDimensions, itr % memberName, dim0d)
+                    call mpas_pool_add_dimension(block_ptr % dimensions, trim(itr % memberName), dim0d)
+                end if
+             else if ( itr % nDims == 1 ) then
+                call mpas_pool_get_dimension(block_ptr % dimensions, trim(itr % memberName), dim1d)
+                if ( .not. associated(dim1d) ) then
+                    call mpas_pool_get_dimension(readableDimensions, itr % memberName, dim1d)
+                    call mpas_pool_add_dimension(block_ptr % dimensions, trim(itr % memberName), dim1d)
+                end if
+             end if
+          end if
+       end do
+       call mpas_pool_set_error_level(err_level)
+
+!      call mpas_setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
+
+       call mpas_block_creator_allocate_pool_fields(block_ptr % structs, block_ptr % dimensions)
+
+       err_level = mpas_pool_get_error_level()
+       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToCellID', indexField)
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToCellID_blk', indexFieldBlk)
+
+       indexField % array(:) = indexFieldBlk % array(:)
+
+       call mpas_pool_remove_field(block_ptr % allFields, 'indextoCellID_blk')
+       call mpas_deallocate_field(indexFieldBlk)
+
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToEdgeID', indexField)
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToEdgeID_blk', indexFieldBlk)
+
+       indexField % array(:) = indexFieldBlk % array(:)
+
+       call mpas_pool_remove_field(block_ptr % allFields, 'indextoEdgeID_blk')
+       call mpas_deallocate_field(indexFieldBlk)
+
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToVertexID', indexField)
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToVertexID_blk', indexFieldBlk)
+
+       indexField % array(:) = indexFieldBlk % array(:)
+
+       call mpas_pool_remove_field(block_ptr % allFields, 'indextoVertexID_blk')
+       call mpas_deallocate_field(indexFieldBlk)
+       call mpas_pool_set_error_level(err_level)
+
+       block_ptr => block_ptr % next
+     end do
+
+   end subroutine mpas_block_creator_finalize_block_phase2!}}}
+
 
 !***********************************************************************
 !
