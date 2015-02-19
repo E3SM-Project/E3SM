@@ -76,6 +76,9 @@ module mpas_forcing
      type(MPAS_TimeInterval_type) :: forcingIntervalConstant ! the forcing interval
      type(MPAS_Time_type) :: forcingReferenceTime ! the forcing reference time
 
+     ! forcing initialization type
+     character(len=strKIND) :: forcingInitializationType
+
      ! optional functions to calculate variable intervals
      procedure (variable_interval), pointer, nopass :: variable_interval_forward_ptr => null ()
      procedure (variable_interval), pointer, nopass :: variable_interval_backward_ptr => null ()
@@ -311,6 +314,7 @@ contains
        interpolationType, &
        forcingReferenceTimeStr, &
        forcingIntervalStr, &
+       forcingInitializationType, &
        variable_interval_forward, &
        variable_interval_backward)!{{{
 
@@ -330,7 +334,8 @@ contains
          forcingReferenceTimeStr !< Input: a reference time for the forcing times
 
     character(len=*), intent(in), optional :: &
-         forcingIntervalStr         !< Input: the interval between forcing times
+         forcingIntervalStr, &     !< Input: the interval between forcing times
+         forcingInitializationType !< Input: the forcing initialization type
 
     ! forward variable interval function
     interface
@@ -396,6 +401,7 @@ contains
                         interpolationType, &
                         forcingReferenceTimeStr, &
                         forcingIntervalStr, &
+                        forcingInitializationType, &
                         variable_interval_forward, &
                         variable_interval_backward)
                    return
@@ -415,6 +421,7 @@ contains
                      interpolationType, &
                      forcingReferenceTimeStr, &
                      forcingIntervalStr, &
+                     forcingInitializationType, &
                      variable_interval_forward, &
                      variable_interval_backward)
                 return
@@ -434,6 +441,7 @@ contains
                interpolationType, &
                forcingReferenceTimeStr, &
                forcingIntervalStr, &
+               forcingInitializationType, &
                variable_interval_forward, &
                variable_interval_backward)
           
@@ -447,6 +455,7 @@ contains
                interpolationType, &
                forcingReferenceTimeStr, &
                forcingIntervalStr, &
+               forcingInitializationType, &
                variable_interval_forward, &
                variable_interval_backward)
 
@@ -479,6 +488,7 @@ contains
        interpolationType, &
        forcingReferenceTimeStr, &
        forcingIntervalStr, &
+       forcingInitializationType, &
        variable_interval_forward, &
        variable_interval_backward)!{{{
 
@@ -498,7 +508,8 @@ contains
          forcingReferenceTimeStr !< Input: a reference time for the forcing times
 
     character(len=*), intent(in), optional :: &
-         forcingIntervalStr      !< Input: the interval between forcing times
+         forcingIntervalStr, &     !< Input: the interval between forcing times
+         forcingInitializationType !< Input: the forcing initialization type
 
     ! forward variable interval function
     interface
@@ -603,6 +614,20 @@ contains
        call MPAS_dmpar_global_abort('Forcing: stream has alarm defined')
     endif
 
+    ! set the initialization type
+    forcingStreamNew % forcingInitializationType = "default"
+    if (present(forcingInitializationType)) then
+       if (trim(forcingInitializationType) == "default" .or. &
+           trim(forcingInitializationType) == "noncycled" .or. &
+           trim(forcingInitializationType) == "next") then
+          forcingStreamNew % forcingInitializationType = trim(forcingInitializationType)
+       else
+          FORCING_ERROR_WRITE('-- Forcing: create_new_forcing_stream: invalid forcing initialization type: '//trim(forcingInitializationType))
+          FORCING_ERROR_WRITE('-- Forcing: create_new_forcing_stream: for forcing name: '//trim(forcingName))
+          call MPAS_dmpar_global_abort('Forcing: invalid forcing initialization type')
+       endif
+    endif
+
   end subroutine create_new_forcing_stream!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -627,6 +652,7 @@ contains
        interpolationType, &
        forcingReferenceTimeStr, &
        forcingIntervalStr, &
+       forcingInitializationType, &
        variable_interval_forward, &
        variable_interval_backward)!{{{
 
@@ -647,7 +673,8 @@ contains
          forcingReferenceTimeStr !< Input: a reference time for the forcing times
 
     character(len=*), intent(in), optional :: &
-         forcingIntervalStr      !< Input: the interval between forcing times
+         forcingIntervalStr, &     !< Input: the interval between forcing times
+         forcingInitializationType !< Input: the forcing initialization type
 
     ! forward variable interval function
     interface
@@ -751,6 +778,17 @@ contains
        allocate(forcingFieldNew % next)
        forcingFieldNew => forcingFieldNew % next
        nullify(forcingFieldNew % next)
+    endif
+
+    ! check the initialization type
+    if (present(forcingInitializationType)) then
+       if (trim(forcingInitializationType) /= trim(forcingStream % forcingInitializationType)) then
+          FORCING_ERROR_WRITE('-- Forcing: add_forcing_field_to_forcing_stream: inconsistent initialzation type for stream')
+          FORCING_ERROR_WRITE('-- Forcing: stream initialization type: '//trim(forcingStream % forcingInitializationType))
+          FORCING_ERROR_WRITE('-- Forcing: field initialization type: '//trim(forcingInitializationType))
+          FORCING_ERROR_WRITE('-- Forcing: for forcing name: '//trim(forcingName))
+          call MPAS_dmpar_global_abort('Forcing: inconsistent initialization type')
+       endif
     endif
 
     ! set the forcing name
@@ -1062,7 +1100,8 @@ contains
        forcingTimeCycle = forcingStream % forcingTimes(iTime)
 
        ! cycle this clock time to ensure its in the correct range
-       if (forcingGroup % forcingCycleUse) then
+       if (forcingGroup % forcingCycleUse .and. &
+            trim(forcingStream % forcingInitializationType) == "default") then
 
           if (forcingGroup % forcingCycleStartInclusive) then
 
@@ -1106,6 +1145,12 @@ contains
 
           endif
 
+       endif
+
+       ! other initialization types
+       if (trim(forcingStream % forcingInitializationType) == "next" .and. &
+            iTime <= forcingStream % nTimeStencilLower) then
+          forcingTimeCycle = forcingStream % forcingTimes(forcingStream % nTimeStencilLower+1)
        endif
 
        ! load the data into the slot
