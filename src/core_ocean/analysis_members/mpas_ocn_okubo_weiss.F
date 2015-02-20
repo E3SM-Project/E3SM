@@ -1130,7 +1130,7 @@ contains
 
       offset = 9 * maxCCsPerDomain * (dmInfo % my_proc_id)
 
-      aggregated = 0
+      aggregated = -1.0e34
       do i = 1, numCCs
          aggregated(9*(i-1) + 1 + offset) = origCCId(i)
          aggregated(9*(i-1) + 2 + offset) = sumVol(i)
