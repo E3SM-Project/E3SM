@@ -72,13 +72,13 @@ module Sort
 end module Sort
 
 
-
 module ocn_okubo_weiss
 
    use mpas_grid_types
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
+   use mpas_constants
 
    use ocn_constants
    use ocn_diagnostics_routines
@@ -139,8 +139,6 @@ module ocn_okubo_weiss
       CCAggregateStatsT, CCAggGatherT, CCAggSortT, CCOutputT
    integer :: nCellsGlobal
    integer :: nTotalCellsGlobal
-   logical :: statsFileCreated
-
 
 !***********************************************************************
 
@@ -293,7 +291,6 @@ contains
       end if
 #endif
 
-      statsFileCreated = .false.
       err = 0
 
    end subroutine ocn_init_okubo_weiss!}}}
@@ -372,9 +369,9 @@ contains
             OW(k, iCell) = S(k, iCell) - om(k, iCell)*om(k, iCell)
          end do
          do k = kmax+1, nVertLevels
-            S(k, iCell) = 0
-            om(k, iCell) = 0
-            OW(k, iCell) = 0
+            S(k, iCell) = 0.0_RKIND
+            om(k, iCell) = 0.0_RKIND
+            OW(k, iCell) = 0.0_RKIND
          end do
       end do
       OW = OW / OW_norm;
@@ -386,10 +383,10 @@ contains
       do iCell = 1, nCells
          kmax = maxLevelCell(iCell)
          do k = 1, kmax
-            !sym =  0.5 * (dvel(1:2, 1:2, k, iCell) + Transpose(dvel(1:2, 1:2, k, iCell)))
-            !asym = 0.5 * (dvel(1:2, 1:2, k, iCell) - Transpose(dvel(1:2, 1:2, k, iCell)))
-            sym3 =  0.5 * (dvel(:, :, k, iCell) + Transpose(dvel(:, :, k, iCell)))
-            asym3 = 0.5 * (dvel(:, :, k, iCell) - Transpose(dvel(:, :, k, iCell)))
+            !sym =  0.5_RKIND * (dvel(1:2, 1:2, k, iCell) + Transpose(dvel(1:2, 1:2, k, iCell)))
+            !asym = 0.5_RKIND * (dvel(1:2, 1:2, k, iCell) - Transpose(dvel(1:2, 1:2, k, iCell)))
+            sym3 =  0.5_RKIND * (dvel(:, :, k, iCell) + Transpose(dvel(:, :, k, iCell)))
+            asym3 = 0.5_RKIND * (dvel(:, :, k, iCell) - Transpose(dvel(:, :, k, iCell)))
             sym2 =  sym3(1:2, 1:2)
             asym2 = asym3(1:2, 1:2)
             T2 = matmul(sym2, sym2) + matmul(asym2, asym2)
@@ -407,9 +404,9 @@ contains
             Lam2_R3(k, iCell) = 4*lambda3(2)
          end do
          do k = kmax+1, nVertLevels
-            Lam1(k, iCell) = 0
-            Lam2(k, iCell) = 0
-            Lam2_R3(k, iCell) = 0
+            Lam1(k, iCell) = 0.0_RKIND
+            Lam2(k, iCell) = 0.0_RKIND
+            Lam2_R3(k, iCell) = 0.0_RKIND
          end do
       end do
 
@@ -462,7 +459,7 @@ contains
             if (OW(k, iCell) < threshold) then
                OW_thresh(k,iCell) = 1
             else
-               OW_thresh(k,iCell) = 0
+               OW_thresh(k,iCell) = 0.0_RKIND
             end if
          end do
       end do
@@ -712,7 +709,7 @@ contains
 
          ! Loop over the ghost cells updated with data from adjacent blocks
          ! and merge
-         update = 0
+         update = 0.0_RKIND
          do k = 1, nVertLevels
             do iCell = nCellsSolve+1, nCells
                ! Check if ghost cell is part of an eddy
@@ -903,8 +900,8 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool
 
       real (kind=RKIND), dimension(:), pointer ::  areaCell
-      real (kind=RKIND), dimension(:,:), pointer ::  layerThickness
-      real (kind=RKIND), dimension(:), pointer :: posX, posY, posZ
+      real (kind=RKIND), dimension(:,:), pointer ::  layerThickness, zMid
+      real (kind=RKIND), dimension(:), pointer :: posX, posY
       real (kind=RKIND), dimension(:,:), pointer :: velX, velY, velZ
       logical, pointer :: on_a_sphere, use_lat_lon_coords
       integer, pointer :: min_cells
@@ -916,6 +913,7 @@ contains
       integer k, iCell, i, curCC, iIdx, curI, curK, iOtherCell, maxNumCCs
 
       integer, dimension(size(OW_thresh,1), size(OW_thresh,2)) :: OW_thresh_local
+      character (len=StrKIND), pointer :: xtime
 
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -940,11 +938,12 @@ contains
       else
          call mpas_pool_get_array(meshPool, 'xCell', posX)
          call mpas_pool_get_array(meshPool, 'yCell', posY)
-         call mpas_pool_get_array(meshPool, 'zCell', posZ)
          call mpas_pool_get_array(diagnosticsPool, 'velocityX', velX)
          call mpas_pool_get_array(diagnosticsPool, 'velocityY', velY)
-         call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velZ)
       end if
+      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+      call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', velZ)
+      call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
 
       call mpas_timer_start("stats per proc", .false., CCStatsPerProcT)
 
@@ -979,18 +978,18 @@ contains
                end if
                ! Put this cell into the list of cells to be processed as
                ! seed for the flood fill of this eddy
-               OW_thresh_local(k, iCell) = 0
+               OW_thresh_local(k, iCell) = 0.0_RKIND
                iIdx = 1
                nextCellIdxK(1) = k
                nextCellIdxI(1) = iCell
-               sumVol(curCC) = 0
-               numCells(curCC) = 0
-               wsPosX(curCC) = 0
-               wsPosY(curCC) = 0
-               wsPosZ(curCC) = 0
-               wsVelX(curCC) = 0
-               wsVelY(curCC) = 0
-               wsVelZ(curCC) = 0
+               sumVol(curCC) = 0.0_RKIND
+               numCells(curCC) = 0.0_RKIND
+               wsPosX(curCC) = 0.0_RKIND
+               wsPosY(curCC) = 0.0_RKIND
+               wsPosZ(curCC) = 0.0_RKIND
+               wsVelX(curCC) = 0.0_RKIND
+               wsVelY(curCC) = 0.0_RKIND
+               wsVelZ(curCC) = 0.0_RKIND
                origCCId(curCC) = OW_cc_id(k, iCell)
                ! Flood fill: loop over list of cells to be processed
                ! iIdx is the position in the list, while curI/curK are the
@@ -1006,14 +1005,11 @@ contains
                      numCells(curCC) = numCells(curCC) + 1
                      wsPosX(curCC) = wsPosX(curCC) + vol * posX(curI)
                      wsPosY(curCC) = wsPosY(curCC) + vol * posY(curI)
+                     wsPosZ(curCC) = wsPosZ(curCC) + vol * zMid(curK, curI)
                      wsVelX(curCC) = wsVelX(curCC) + vol * velX(curK, curI)
                      wsVelY(curCC) = wsVelY(curCC) + vol * velY(curK, curI)
-                     if (use_lat_lon_coords) then
-                        wsPosZ(curCC) = wsPosZ(curCC) + vol * curK
-                     else
-                        wsPosZ(curCC) = wsPosZ(curCC) + vol * posZ(curI)
-                        wsVelZ(curCC) = wsVelZ(curCC) + vol * velZ(curK, curI)
-                     end if
+                     ! velZ is at top of cell, so take average of vertical velocity at top and bottom.
+                     wsVelZ(curCC) = wsVelZ(curCC) + vol * 0.5_RKIND*(velZ(curK, curI)+velZ(curK+1, curI))
                   end if
 
                   ! Check neighbors of cell and put them into list:
@@ -1025,7 +1021,7 @@ contains
                            iIdx = iIdx + 1
                            nextCellIdxK(iIdx) = curK
                            nextCellIdxI(iIdx) = iOtherCell
-                           OW_thresh_local(curK, iOtherCell) = 0
+                           OW_thresh_local(curK, iOtherCell) = 0.0_RKIND
                         end if
                      end if
                   end do
@@ -1035,7 +1031,7 @@ contains
                         iIdx = iIdx + 1
                         nextCellIdxK(iIdx) = curK-1
                         nextCellIdxI(iIdx) = curI
-                        OW_thresh_local(curK-1, curI) = 0
+                        OW_thresh_local(curK-1, curI) = 0.0_RKIND
                      end if
                   end if
                   ! Cell on higher k-level
@@ -1044,13 +1040,19 @@ contains
                         iIdx = iIdx + 1
                         nextCellIdxK(iIdx) = curK+1
                         nextCellIdxI(iIdx) = curI
-                        OW_thresh_local(curK+1, curI) = 0
+                        OW_thresh_local(curK+1, curI) = 0.0_RKIND
                      end if
                   end if
                end do
             end if
          end do
       end do
+
+      ! for lat/lon coordinates, convert from radians to degrees for output
+      if (use_lat_lon_coords) then
+         wsPosX = wsPosX *180.0_RKIND/pii
+         wsPosY = wsPosY *180.0_RKIND/pii
+      end if
 
       call mpas_timer_stop("stats per proc", CCStatsPerProcT)
 
@@ -1063,7 +1065,7 @@ contains
                                     origCCId, sumVol, numCells, &
                                     wsPosX, wsPosY, wsPosZ, &
                                     wsVelX, wsVelY, wsVelZ, &
-                                    OW_cc_id, nVertLevels, nCellsSolve)
+                                    OW_cc_id, nVertLevels, nCellsSolve,xtime)
       call mpas_timer_stop("aggregate stats", CCAggregateStatsT)
 
    end subroutine ocn_compute_eddy_stats!}}}
@@ -1087,7 +1089,7 @@ contains
                                        origCCId, sumVol, numCells, &
                                        wsPosX, wsPosY, wsPosZ, &
                                        wsVelX, wsVelY, wsVelZ, &
-                                       OW_cc_id, nVertLevels, nCellsSolve)
+                                       OW_cc_id, nVertLevels, nCellsSolve,xtime)
 
 
       !-----------------------------------------------------------------
@@ -1102,6 +1104,7 @@ contains
       real (kind=RKIND), dimension(:), intent(in) :: origCCId, sumVol, numCells, &
                              wsPosX, wsPosY, wsPosZ, wsVelX, wsVelY, wsVelZ
       integer, intent(in) :: nVertLevels, nCellsSolve
+      character (len=StrKIND), intent(in) :: xtime
 
       !-----------------------------------------------------------------
       !
@@ -1165,7 +1168,7 @@ contains
 
       ! Aggregate the results
       listIdx = 0
-      aggregated = 0
+      aggregated = 0.0_RKIND
       curId = -1
       do i = 1, totalCCs
          ! if our current id is not the same (new eddy)
@@ -1184,7 +1187,7 @@ contains
                 cullId = aggregated(9*(listIdx-1)+1)
 
                 do j = 1, 9
-                  aggregated(9*(listIdx-1)+j) = 0
+                  aggregated(9*(listIdx-1)+j) = 0.0_RKIND
                 end do
                 listIdx = listIdx - 1
 
@@ -1221,7 +1224,7 @@ contains
       if (dminfo % my_proc_id == IO_NODE) then
          ! Output aggregated
          call mpas_timer_start("output", .false., CCOutputT)
-         call ocn_output_eddy_stats(listIdx, aggregated, use_lat_lon_coords)
+         call ocn_output_eddy_stats(listIdx, aggregated, use_lat_lon_coords,xtime)
          call mpas_timer_stop("output", CCOutputT)
       end if
 
@@ -1272,7 +1275,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_output_eddy_stats(numEddies, aggData, use_lat_lon_coords)!{{{
+   subroutine ocn_output_eddy_stats(numEddies, aggData, use_lat_lon_coords,xtime)!{{{
 
 
       !-----------------------------------------------------------------
@@ -1284,6 +1287,7 @@ contains
       integer, intent(in) :: numEddies
       real (kind=RKIND), dimension(:), intent(in) :: aggData
       logical, intent(in) :: use_lat_lon_coords
+      character (len=StrKIND), intent(in) :: xtime
 
       !-----------------------------------------------------------------
       !
@@ -1297,29 +1301,22 @@ contains
       fileID = mpas_get_free_unit()
 
       ! Create output file.
-      ! If this is not the first output step, open for appending.
-      if (.not. statsFileCreated) then
-          open(fileID, file='okubo_weiss_eddy_stats.txt', STATUS='UNKNOWN', POSITION='rewind')
-          statsFileCreated = .true.
-      else
-          open(fileID, file='okubo_weiss_eddy_stats.txt', STATUS='UNKNOWN', POSITION='append')
-      endif 
+      open(fileID, file='okubo_weiss_eddy_stats_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
       
-      write (fileID, *) '"eddy ID", ', '"number of cells", ', '"volume sum", ',  '"weighted position", ', '"average position", ', '"average velocity"' 
+      if (use_lat_lon_coords) then
+         write (fileID, '(10A)') '"eddy ID", ', '"number of cells", ', '"volume sum, m^3", ',  '"average longitude, degrees", ',  '"average latitude, degrees", ',  '"average depth, m", ', '"average zonal velocity, m/s"', '"average meridional velocity, m/s"', '"average vertical velocity, m/s"'  
+      else
+         write (fileID, '(10A)') '"eddy ID", ', '"number of cells", ', '"volume sum, m^3", ',  '"average x-position, m", ',   '"average y-position, m", ',  '"average depth, m", ', '"average x-velocity, m/s"' , '"average y-velocity, m/s"' , '"average z-velocity, m/s"' 
+      end if
 
       ! Output number of eddies and statistics for each eddy
       do i = 1, numEddies
-         write (fileID, '(I, A)', advance='no') int(aggData(9*(i-1)+1)), ', '
+         write (fileID, '(I10, A)', advance='no') int(aggData(9*(i-1)+1)), ', '
          v = aggData(9*(i-1)+2)
-         write (fileID, '(I, A)', advance='no') int(aggData(9*(i-1)+9)), ', '
-         write (fileID, '(ES, A)', advance='no') v, ', '
-         write (fileID, '(ES, ES, ES, A)', advance='no') aggData(9*(i-1)+3), aggData(9*(i-1)+4), aggData(9*(i-1)+5), ', '
-         write (fileID, '(ES, ES, ES, A)', advance='no') aggData(9*(i-1)+3)/v, aggData(9*(i-1)+4)/v, aggData(9*(i-1)+5)/v, ', '
-         if (use_lat_lon_coords) then
-            write (fileID, '(ES, ES)') aggData(9*(i-1)+6)/v, aggData(9*(i-1)+7)/v
-         else
-            write (fileID, '(ES, ES, ES)') aggData(9*(i-1)+6)/v, aggData(9*(i-1)+7)/v, aggData(9*(i-1)+8)/v
-         end if
+         write (fileID, '(I10, A)', advance='no') int(aggData(9*(i-1)+9)), ', '
+         write (fileID, '(ES12.5, A)', advance='no') v, ', '
+         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5, A)', advance='no') aggData(9*(i-1)+3)/v, ', ', aggData(9*(i-1)+4)/v, ', ', aggData(9*(i-1)+5)/v, ', '
+         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5)') aggData(9*(i-1)+6)/v, ', ', aggData(9*(i-1)+7)/v, ', ', aggData(9*(i-1)+8)/v
       end do
 
       close(fileID)
