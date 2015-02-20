@@ -2973,11 +2973,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               
               if (se_prescribed_wind_2d) then
                  vtens1(i,j,k) = 0.D0
-                 elem(ie)%derived%Utnd(i+(j-1)*np,k) = 0.D0
                  vtens2(i,j,k) = 0.D0
-                 elem(ie)%derived%Vtnd(i+(j-1)*np,k) = 0.D0
                  ttens(i,j,k) = 0.D0
-                 elem(ie)%derived%Ttnd(i+(j-1)*np,k) = 0.D0
               else
                  if(se_met_nudge_u.gt.0.D0)then
                     u_m_umet = v1 - &
@@ -2987,30 +2984,30 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                          elem(ie)%derived%v_met(i,j,k) - &
                          se_met_tevolve*tevolve*elem(ie)%derived%dvdt_met(i,j,k)
 
-                    vtens1(i,j,k) =   vtens1(i,j,k) - se_met_nudge_u*u_m_umet * elem(ie)%state%nudge_factor(i,j)
+                    vtens1(i,j,k) =   vtens1(i,j,k) - se_met_nudge_u*u_m_umet * elem(ie)%derived%nudge_factor(i,j,k)
 
                     elem(ie)%derived%Utnd(i+(j-1)*np,k) = elem(ie)%derived%Utnd(i+(j-1)*np,k) &
-                         + se_met_nudge_u*u_m_umet * elem(ie)%state%nudge_factor(i,j)
+                         + se_met_nudge_u*u_m_umet * elem(ie)%derived%nudge_factor(i,j,k)
 
-                    vtens2(i,j,k) =   vtens2(i,j,k) - se_met_nudge_u*v_m_vmet * elem(ie)%state%nudge_factor(i,j)
+                    vtens2(i,j,k) =   vtens2(i,j,k) - se_met_nudge_u*v_m_vmet * elem(ie)%derived%nudge_factor(i,j,k)
 
                     elem(ie)%derived%Vtnd(i+(j-1)*np,k) = elem(ie)%derived%Vtnd(i+(j-1)*np,k) &
-                         + se_met_nudge_u*v_m_vmet * elem(ie)%state%nudge_factor(i,j)
+                         + se_met_nudge_u*v_m_vmet * elem(ie)%derived%nudge_factor(i,j,k)
 
                  endif
 
                  if(se_met_nudge_p.gt.0.D0)then
-                    vtens1(i,j,k) =   vtens1(i,j,k) - se_met_nudge_p*grad_p_m_pmet(i,j,1,k)  * elem(ie)%state%nudge_factor(i,j)
-                    vtens2(i,j,k) =   vtens2(i,j,k) - se_met_nudge_p*grad_p_m_pmet(i,j,2,k)  * elem(ie)%state%nudge_factor(i,j)
+                    vtens1(i,j,k) =   vtens1(i,j,k) - se_met_nudge_p*grad_p_m_pmet(i,j,1,k)  * elem(ie)%derived%nudge_factor(i,j,k)
+                    vtens2(i,j,k) =   vtens2(i,j,k) - se_met_nudge_p*grad_p_m_pmet(i,j,2,k)  * elem(ie)%derived%nudge_factor(i,j,k)
                  endif
 
                  if(se_met_nudge_t.gt.0.D0)then
                     t_m_tmet = elem(ie)%state%T(i,j,k,n0) - &
                          elem(ie)%derived%T_met(i,j,k) - &
                          se_met_tevolve*tevolve*elem(ie)%derived%dTdt_met(i,j,k)
-                    ttens(i,j,k)  = ttens(i,j,k) - se_met_nudge_t*t_m_tmet * elem(ie)%state%nudge_factor(i,j)
+                    ttens(i,j,k)  = ttens(i,j,k) - se_met_nudge_t*t_m_tmet * elem(ie)%derived%nudge_factor(i,j,k)
                     elem(ie)%derived%Ttnd(i+(j-1)*np,k) = elem(ie)%derived%Ttnd(i+(j-1)*np,k) &
-                         + se_met_nudge_t*t_m_tmet * elem(ie)%state%nudge_factor(i,j)
+                         + se_met_nudge_t*t_m_tmet * elem(ie)%derived%nudge_factor(i,j,k)
                  endif
               endif
 #endif

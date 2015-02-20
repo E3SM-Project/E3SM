@@ -1081,6 +1081,7 @@ module namelist_mod
     endif
 #endif
 
+#ifndef CAM
     if (0 < cubed_sphere_map .AND.  &
         tracer_transport_type .eq. TRACERTRANSPORT_LAGRANGIAN_FVM  .OR. &
         tracer_transport_type .eq. TRACERTRANSPORT_FLUXFORM_FVM)  then
@@ -1088,6 +1089,7 @@ module namelist_mod
       print *,' Set cubed_sphere_map = 0 or comment it out all together.                          '
         call abortmp("Error: (cslam_fvm or flux_form_cslam_fvm) and cubed_sphere_map>0")
     end if
+#endif
 
 
 

@@ -477,9 +477,20 @@ contains
        elem(ie)%state%dp3d=0
 
 #ifdef CAM
+       elem(ie)%derived%etadot_prescribed = nan
        elem(ie)%derived%u_met = nan
        elem(ie)%derived%v_met = nan
+       elem(ie)%derived%dudt_met = nan
+       elem(ie)%derived%dvdt_met = nan
        elem(ie)%derived%T_met = nan
+       elem(ie)%derived%dTdt_met = nan
+       elem(ie)%derived%ps_met = nan
+       elem(ie)%derived%dpsdt_met = nan
+       elem(ie)%derived%nudge_factor = nan
+
+       elem(ie)%derived%Utnd=0.D0
+       elem(ie)%derived%Vtnd=0.D0
+       elem(ie)%derived%Ttnd=0.D0
 #endif
     enddo
 
