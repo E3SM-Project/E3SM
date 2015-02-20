@@ -335,103 +335,11 @@ contains
     real(kind=real_kind) :: sumx10,sumx11
 
     integer(kind=int_kind) :: rem,n2,npr,nprp1
-    logical, parameter :: UseUnroll = .FALSE.
 
-    !JMD if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    if(UseUnroll) then 
-       rem = MODULO(np,unroll)
-       npr  = np - rem 
-       nprp1 = npr+1
-       !JMD    print *,'Filter_P: np,npr,nprp1,rem:',np,npr,nprp1,rem
-
-       do j=1,npr,2
-          do l=1,npr,2
-             sumx00=0.0d0
-             sumx01=0.0d0
-             sumx10=0.0d0
-             sumx11=0.0d0
-
-             do i=1,np
-                sumx00 = sumx00 + flt%FmatP(i,l  )*p(i,j  )
-                sumx01 = sumx01 + flt%FmatP(i,l+1)*p(i,j  )
-                sumx10 = sumx10 + flt%FmatP(i,l  )*p(i,j+1)
-                sumx11 = sumx11 + flt%FmatP(i,l+1)*p(i,j+1)
-             end do
-
-             temptP(j  ,l  ) = sumx00
-             temptP(j  ,l+1) = sumx01
-             temptP(j+1,l  ) = sumx10
-             temptP(j+1,l+1) = sumx11
-
-          end do
-       end do
-       if(rem>0) then 
-          ! =======================
-          ! Calculate the remainder
-          ! =======================
-          do l=1,npr
-             sumx00=0.0d0
-             sumx01=0.0d0
-             do i=1,np
-                sumx00 = sumx00 + flt%FmatP(i,l  )*p(i,np  )
-                sumx01 = sumx01 + flt%FmatP(i,np  )*p(i,l  )
-             enddo
-             temptP(np  ,l  ) = sumx00	
-             temptP(l  ,np  ) = sumx01	
-          enddo
-          sumx00=0.0d0
-          do i=1,np
-             sumx00 = sumx00 + flt%FmatP(i,np  )*p(i,np  )
-          enddo
-          temptP(np  ,np  ) = sumx00
-       endif
-
-       do j=1,npr,2
-          do i=1,npr,2
-             sumx00=0.0d0
-             sumx01=0.0d0
-             sumx10=0.0d0
-             sumx11=0.0d0
-
-             do l=1,np
-                sumx00 = sumx00 +  flt%FmatP(l,j  )*temptP(l,i  )
-                sumx01 = sumx01 +  flt%FmatP(l,j+1)*temptP(l,i  )
-                sumx10 = sumx10 +  flt%FmatP(l,j  )*temptP(l,i+1)
-                sumx11 = sumx11 +  flt%FmatP(l,j+1)*temptP(l,i+1)
-             end do
-
-             p(i  ,j  ) = sumx00
-             p(i  ,j+1) = sumx01
-             p(i+1,j  ) = sumx10
-             p(i+1,j+1) = sumx11
-
-          end do
-       end do
-       if(rem>0) then 
-          ! =======================
-          ! Calculate the remainder
-          ! =======================
-          do i=1,npr
-             sumx00=0.0d0
-             sumx01=0.0d0
-             do l=1,np
-                sumx00 = sumx00 +  flt%FmatP(l,i  )*temptP(l,np  )
-                sumx01 = sumx01 +  flt%FmatP(l,np  )*temptP(l,i  )
-             enddo
-             p(np  ,i  ) = sumx00
-             p(i  ,np  ) = sumx01
-          enddo
-          sumx00=0.0d0
-          do l=1,np
-             sumx00 = sumx00 +  flt%FmatP(l,np  )*temptP(l,np  )
-          enddo
-          p(np  ,np  ) = sumx00
-
-       endif
-    else
        do j=1,np
           do l=1,np
              sumx00=0.0d0
+!DIR$ UNROLL(NP)
              do i=1,np
 		sumx00 = sumx00 + flt%FmatP(i,l  )*p(i,j  )
              enddo
@@ -441,13 +349,13 @@ contains
        do j=1,np
 	  do i=1,np
 	     sumx00=0.0d0
+!DIR$ UNROLL(NP)
 	     do l=1,np
 		sumx00 = sumx00 +  flt%FmatP(l,j  )*temptP(l,i  )
 	     enddo
 	     p(i  ,j  ) = sumx00
           enddo
        enddo
-    endif
 
   end subroutine filter_P
   

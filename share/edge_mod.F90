@@ -74,8 +74,9 @@ module edge_mod
      integer (kind=int_kind), dimension(:,:), pointer :: receive => null()
   end type LongEdgeBuffer_t
 
+  ! 8-byte Integer routines 
   public :: initLongEdgeBuffer, FreeLongEdgeBuffer
-  public :: LongEdgeVpack
+  public :: LongEdgeVpack, LongEdgeVunpackMIN
 
 
   interface initEdgeBuffer
@@ -88,24 +89,35 @@ module edge_mod
   end interface
   public :: initEdgeBuffer, FreeEdgeBuffer
 
+  !---------------------------------------------------------- 
+  ! pack/unpack routines that use the old format Edge buffer
+  !---------------------------------------------------------- 
   public :: oldedgeVpack, oldedgeVunpack
   public :: oldedgeVunpackMIN, oldedgeVunpackMAX
   public :: oldedgeDGVpack, oldedgeDGVunpack
 
-  public :: newedgeVpack, newedgevunpack
+  !--------------------------------------------------------- 
+  ! pack/unpack routines that use the new format Edge buffer
+  !--------------------------------------------------------- 
+  public :: newedgeVpack, newedgeVunpack
   public :: newedgeVunpackMIN, newedgeVunpackMAX
   public :: newedgeDGVpack, newedgeDGVunpack
   
-  public :: newedgeSpack, newedgeSunpackMIN, newedgeSunpackMAX
+  !----------------------------------------------------------------
+  ! pack/unpack routines that communicate a fixed number values 
+  ! per element
+  !----------------------------------------------------------------
+  public :: newedgeSpack
+  public :: newedgeSunpackMIN, newedgeSunpackMAX
   
 
   public :: edgeVunpackVert
-  public :: LongEdgeVunpackMIN
 
 
   public :: newedgerotate
   public :: oldedgerotate
   public :: buffermap
+
   logical, private :: threadsafe=.true.
 
 
@@ -319,9 +331,8 @@ contains
        tmp_ptr(1:nlyr,1:nbuf) => buf_ptr
        edge%buf => tmp_ptr
 #else
-!JMD Comment this out for now
-!       ! call F77 routine which will reshape array.
-!       call remap_2D_ptr_buf(edge,nlyr,nbuf,buf_ptr)
+       ! call F77 routine which will reshape array.
+       call remap_2D_ptr_buf(edge,nlyr,nbuf,buf_ptr)
 #endif
     else
        allocate(edge%buf    (nlyr,nbuf))
@@ -340,8 +351,7 @@ contains
        edge%receive => tmp_ptr
 #else
        ! call F77 routine which will reshape array.
-!JMD comment this out for now.
-!       call remap_2D_ptr_receive(edge,nlyr,nbuf,receive_ptr)
+       call remap_2D_ptr_receive(edge,nlyr,nbuf,receive_ptr)
 #endif
     else
        allocate(edge%receive(nlyr,nbuf))
@@ -692,6 +702,7 @@ endif
     call oldedgeVpack(edge,v,vlyr,kptr,desc)
 
   end subroutine oldedgeDGVpack
+
   subroutine newedgeDGVpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np
     type (newEdgeBuffer_t)                      :: edge
@@ -754,7 +765,6 @@ endif
 #endif
 
   end subroutine FreeNewEdgeBuffer
-
 
   subroutine FreeGhostBuffer3D(buffer) 
     implicit none
@@ -1668,10 +1678,10 @@ endif
     in=edge%getmap(north,ielem)
     iw=edge%getmap(west,ielem)
 
- ks = 1
- kblock = 52
- ke = min(vlyr,kblock)
- do while ((ke<=vlyr) .and. (.not. ks>vlyr)) 
+ ! ks = 1
+ ! kblock = 52
+ ! ke = min(vlyr,kblock)
+ ! do while ((ke<=vlyr) .and. (.not. ks>vlyr)) 
 !    if((ielem==1) .and. (iam ==1)) then 
 !       print *,'newedgeVunpack: ks,ke ',ks,ke
 !    endif
@@ -1686,53 +1696,28 @@ endif
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i)
 #endif
-#if 1
-    do k=ks,ke
+    do k=1,vlyr
        iptr=np*(kptr+k-1)+ie
        do i=1,np
           v(np ,i  ,k) = v(np ,i  ,k)+edge%receive(iptr+i) ! East
        enddo
     enddo
-#else
-!dec$ ivdep
-    do k=ks,ke
-       iptr=np*(kptr+k-1)+ie
-       i=1
-       temp1 = v(np,i,k)
-       v(np ,i  ,k) = temp1+edge%receive(iptr+i) ! East
 
-       i=i+1
-       temp1 = v(np,i,k)
-       v(np ,i  ,k) = temp1+edge%receive(iptr+i) ! East
-
-       i=i+1
-       temp1 = v(np,i,k)
-       v(np ,i  ,k) = temp1+edge%receive(iptr+i) ! East
-
-       i=i+1
-       temp1 = v(np,i,k)
-       v(np ,i  ,k) = temp1+edge%receive(iptr+i) ! East
-    enddo
-#endif
-
-!JMD!dir$ simd 
-    do k=ks,ke
+    do k=1,vlyr
        iptr=np*(kptr+k-1)+is
-!JMD!dir$ unroll(4)
        do i=1,np
           v(i  ,1  ,k) = v(i  ,1  ,k)+edge%receive(iptr+i) ! South
        enddo
     enddo
 
-!dec$ ivdep 
-    do k=ks,ke
+    do k=1,vlyr
        iptr=np*(kptr+k-1)+in
        do i=1,np
           v(i  ,np ,k) = v(i  ,np ,k)+edge%receive(iptr+i) ! North
        enddo
     enddo
 
-    do k=ks,ke
+    do k=1,vlyr
        iptr=np*(kptr+k-1)+iw
        do i=1,np
           v(1  ,i  ,k) = v(1  ,i  ,k)+edge%receive(iptr+i) ! West
@@ -1743,9 +1728,8 @@ endif
     nce = max_corner_elem
     do ll=swest,swest+max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
-            do k=ks,ke
+            do k=1,vlyr
                 v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
-!                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive(kptr+k,edge%getmap(ll,ielem)+1)
             enddo
         endif
     end do
@@ -1753,9 +1737,8 @@ endif
 ! SEAST
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
-            do k=ks,ke
+            do k=1,vlyr
                 v(np ,1 ,k)=v(np,1 ,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
-!                v(np ,1 ,k)=v(np,1 ,k)+edge%receive(kptr+k,edge%getmap(ll,ielem)+1)
             enddo
         endif
     end do
@@ -1763,9 +1746,8 @@ endif
 ! NEAST
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
-            do k=ks,ke
+            do k=1,vlyr
                 v(np ,np,k)=v(np,np,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
-!                v(np ,np,k)=v(np,np,k)+edge%receive(kptr+k,edge%getmap(ll,ielem)+1)
             enddo
         endif
     end do
@@ -1773,18 +1755,17 @@ endif
 ! NWEST
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
-            do k=ks,ke
+            do k=1,vlyr
                 v(1  ,np,k)=v(1 ,np,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
-!                v(1  ,np,k)=v(1 ,np,k)+edge%receive(kptr+k,edge%getmap(ll,ielem)+1)
             enddo
         endif
     end do
-    ks = ke+1
-    ke = ke+kblock
-    if(ke>vlyr) then
-       ke=vlyr
-    endif
- enddo
+!    ks = ke+1
+!    ke = ke+kblock
+!    if(ke>vlyr) then
+!       ke=vlyr
+!    endif
+! enddo
 
     call t_stopf('newedge_unpack')
     call t_adj_detailf(-2)
@@ -2728,15 +2709,6 @@ endif
 
      end function buffermap
 
-
-
-
-
-
-
-
-
-
   ! ===========================================
   !  FreeGhostBuffer:
   !  Author: Christoph Erath, Mark Taylor
@@ -2780,8 +2752,6 @@ endif
   subroutine GhostVpackfull(edge,v,nc1,nc2,nc,vlyr,kptr,desc)
     use dimensions_mod, only : max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-
-
 
     type (Ghostbuffer3D_t)                      :: edge
     integer,              intent(in)   :: vlyr
@@ -2827,8 +2797,6 @@ endif
     if (in<1) call abortmp('error in=0')
     if (iw<1) call abortmp('error iw=0')
 #endif
-
-
 
 !    print *,nc,is,ie,in,iw
     do k=1,vlyr
