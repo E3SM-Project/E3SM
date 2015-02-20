@@ -40,7 +40,7 @@
 #define FLOW_CONTROL 2
 #define DEF_P2P_HANDSHAKE .true.
 #define DEF_P2P_ISEND .false.
-#define DEF_P2P_MAXREQ 64
+#define DEF_P2P_MAXREQ -1
 
 #ifndef _MPISERIAL
 #ifndef _NO_FLOW_CONTROL
