@@ -57,12 +57,7 @@ For dissipation: Q = Qdp1-after-DSS / dp1-after-DSS
 last step:
   remap Qdp* to Qdp(t+1)   [ dp_star(t+1) -> dp(t+1) ]
 
-
-
 #endif
-
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Begin GPU remap module  !!
@@ -1976,8 +1971,8 @@ end subroutine ALE_parametric_coords
   call euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
   return
 #endif
-! call t_barrierf('sync_euler_step', hybrid%par%comm)
-!   call t_startf('euler_step')
+!  call t_barrierf('sync_euler_step', hybrid%par%comm)
+  call t_startf('euler_step')
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   compute Q min/max values for lim8
@@ -2300,7 +2295,7 @@ end subroutine ALE_parametric_coords
 !$OMP BARRIER
 #endif
 #endif
-!   call t_stopf('euler_step')
+   call t_stopf('euler_step')
   end subroutine euler_step
 
 !-----------------------------------------------------------------------------
@@ -3156,8 +3151,5 @@ end subroutine ALE_parametric_coords
   enddo
   call t_stopf('vertical_remap')
   end subroutine vertical_remap
-
-
-
 
 end module prim_advection_mod

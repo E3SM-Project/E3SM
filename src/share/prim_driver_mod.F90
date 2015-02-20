@@ -141,6 +141,7 @@ contains
     integer :: nlyr
     integer :: iMv
     integer :: err, ierr, l, j
+    logical, parameter :: Debug = .FALSE.
 
     real(kind=real_kind), allocatable :: aratio(:,:)
     real(kind=real_kind) :: area(1),xtmp
@@ -288,7 +289,7 @@ contains
 
 
     nelemd = LocalElemCount(MetaVertex(1))
-    if((iam == 1)) then 
+    if(par%masterproc .and. Debug) then 
         call PrintMetaVertex(MetaVertex(1))
     endif
 
@@ -306,7 +307,6 @@ contains
     if (nelemd>0) then
        allocate(elem(nelemd))
        call allocate_element_desc(elem)
-
 #ifndef CAM
        call ManagerInit()
 #endif
@@ -325,7 +325,6 @@ contains
     ! ====================================================
 
     call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
-
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
     global_shared_buf=0.0_real_kind

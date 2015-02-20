@@ -806,14 +806,10 @@ function  divergence_cov(deriv,mterm,couv) result(div)
 
     real (kind=real_kind), dimension(np,np) :: cdiv, div
 
-    real(kind=real_kind) ::  dvdx00,dvdx01
-    real(kind=real_kind) ::  dvdx10,dvdx11
-    real(kind=real_kind) ::  dudy00,dudy01
-    real(kind=real_kind) ::  dudy10,dudy11
+    real(kind=real_kind) ::  dvdx00,dudy00
 
     real (kind=real_kind) :: term,delm
     integer i,j,k,l    
-    logical, parameter :: UseUnroll = .FALSE.
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
    !  Covariant vorticity
@@ -821,47 +817,6 @@ function  divergence_cov(deriv,mterm,couv) result(div)
    !  div = [(u1)_x + (u2)_y] / G, computed in physical space by
    !                               collocation differentiation.
    !
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    do j=1,np,2
-       do l=1,np,2
-
-          dudy00=zero
-          dudy01=zero
-          dudy10=zero
-          dudy11=zero
-
-          dvdx00=zero
-          dvdx01=zero
-          dvdx10=zero
-          dvdx11=zero
-
-          do i=1,np
-
-             dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,1)
-             dvdx01 = dvdx01 + deriv%Dvv(i,l+1)* couv(i  ,j,1)
-             dvdx10 = dvdx10 + deriv%Dvv(i,l  )* couv(i,j+1,1)
-             dvdx11 = dvdx11 + deriv%Dvv(i,l+1)* couv(i,j+1,1)
-
-             dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,2)
-             dudy01 = dudy01 + deriv%Dvv(i,l+1)* couv(j  ,i,2)
-             dudy10 = dudy10 + deriv%Dvv(i,l  )* couv(j+1,i,2)
-             dudy11 = dudy11 + deriv%Dvv(i,l+1)* couv(j+1,i,2)
-
-          end do
-
-          cdiv(l  ,j  ) = dvdx00
-          cdiv(l+1,j  ) = dvdx01
-          cdiv(l  ,j+1) = dvdx10
-          cdiv(l+1,j+1) = dvdx11
-
-          vvtemp(j  ,l  ) = dudy00
-          vvtemp(j  ,l+1) = dudy01
-          vvtemp(j+1,l  ) = dudy10
-          vvtemp(j+1,l+1) = dudy11
-
-        end do
-    end do
-else
     do j=1,np
        do l=1,np
           dudy00=zero
@@ -875,12 +830,11 @@ else
           vvtemp(j  ,l  ) = dudy00
         end do
     end do
-endif
-   do j=1,np
+    do j=1,np
        do i=1,np
            div(i,j)= rrearth*(cdiv(i,j) + vvtemp(i,j))  / mterm(i,j)
        end do
-   end do
+    end do
 
 
 end function  divergence_cov
@@ -1275,11 +1229,7 @@ end function cube_laplacian
     integer j
     integer l
 
-    real(kind=real_kind) ::  dvdx00,dvdx01
-    real(kind=real_kind) ::  dvdx10,dvdx11
-    real(kind=real_kind) ::  dudy00,dudy01
-    real(kind=real_kind) ::  dudy10,dudy11    
-    logical, parameter :: UseUnroll = .FALSE.
+    real(kind=real_kind) ::  dvdx00,dudy00
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
     !  divergence
@@ -1287,49 +1237,6 @@ end function cube_laplacian
     !  div = [(u1)_x + (u2)_y] / G, computed in physical space by
     !                               collocation differentiation.
     !
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-   do j=1,np,2
-      do l=1,np,2
-
-   !do j=1,np
-   !   do l=1,np
-          dudy00=zero
-          dudy01=zero
-          dudy10=zero
-          dudy11=zero
-
-          dvdx00=zero
-          dvdx01=zero
-          dvdx10=zero
-          dvdx11=zero
-
-          do i=1,np
-
-             dvdx00 = dvdx00 + deriv%Dvv(i,l  )* fuv(i  ,j,1)
-             dvdx01 = dvdx01 + deriv%Dvv(i,l+1)* fuv(i  ,j,1)
-             dvdx10 = dvdx10 + deriv%Dvv(i,l  )* fuv(i,j+1,1)
-             dvdx11 = dvdx11 + deriv%Dvv(i,l+1)* fuv(i,j+1,1)
-
-             dudy00 = dudy00 + deriv%Dvv(i,l  )* fuv(j  ,i,2)
-             dudy01 = dudy01 + deriv%Dvv(i,l+1)* fuv(j  ,i,2)
-             dudy10 = dudy10 + deriv%Dvv(i,l  )* fuv(j+1,i,2)
-             dudy11 = dudy11 + deriv%Dvv(i,l+1)* fuv(j+1,i,2)
-
-          end do
-
-          div(l  ,j  ) = dvdx00
-          div(l+1,j  ) = dvdx01
-          div(l  ,j+1) = dvdx10
-          div(l+1,j+1) = dvdx11
-
-          vvtemp(j  ,l  ) = dudy00
-          vvtemp(j  ,l+1) = dudy01
-          vvtemp(j+1,l  ) = dudy10
-          vvtemp(j+1,l+1) = dudy11
-
-       end do
-    end do
-else
    do j=1,np
       do l=1,np
           dudy00=zero
@@ -1343,7 +1250,6 @@ else
           vvtemp(j  ,l  ) = dudy00
        end do
     end do
-endif
 
     do j=1,np
        do i=1,np
@@ -1365,11 +1271,7 @@ endif
     integer i
     integer j
     integer l
-    real(kind=real_kind) ::  dvdx00,dvdx01
-    real(kind=real_kind) ::  dvdx10,dvdx11
-    real(kind=real_kind) ::  dudy00,dudy01
-    real(kind=real_kind) ::  dudy10,dudy11    
-    logical, parameter :: UseUnroll = .FALSE.
+    real(kind=real_kind) ::  dvdx00,dudy00
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
     !  Covariant vorticity
@@ -1377,67 +1279,25 @@ endif
     !  vor = [(u2)_x - (u1)_y] / G
     !
     !
-    if(MODULO(np,2) == 0 .and. UseUnroll) then 
-       do j=1,np,2
-          do l=1,np,2
-
-             dudy00=zero
-             dudy01=zero
-             dudy10=zero
-             dudy11=zero
-
-             dvdx00=zero
-             dvdx01=zero
-             dvdx10=zero
-             dvdx11=zero
-
-             do i=1,np
-
-                dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
-                dvdx01 = dvdx01 + deriv%Dvv(i,l+1)* couv(i  ,j,2)
-                dvdx10 = dvdx10 + deriv%Dvv(i,l  )* couv(i,j+1,2)
-                dvdx11 = dvdx11 + deriv%Dvv(i,l+1)* couv(i,j+1,2)
-
-                dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
-                dudy01 = dudy01 + deriv%Dvv(i,l+1)* couv(j  ,i,1)
-                dudy10 = dudy10 + deriv%Dvv(i,l  )* couv(j+1,i,1)
-                dudy11 = dudy11 + deriv%Dvv(i,l+1)* couv(j+1,i,1)
-
-             end do
-
-             vor(l  ,j  ) = dvdx00
-             vor(l+1,j  ) = dvdx01
-             vor(l  ,j+1) = dvdx10
-             vor(l+1,j+1) = dvdx11
-
-             vvtemp(j  ,l  ) = dudy00
-             vvtemp(j  ,l+1) = dudy01
-             vvtemp(j+1,l  ) = dudy10
-             vvtemp(j+1,l+1) = dudy11
-
-          end do
-       end do
-    else
-       do j=1,np
-          do l=1,np
-             dudy00=zero
-             dvdx00=zero
+     do j=1,np
+        do l=1,np
+           dudy00=zero
+           dvdx00=zero
 !DIR$ UNROLL(NP)
-             do i=1,np
-                dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
-                dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
-             end do
-             vor(l  ,j  ) = dvdx00
-             vvtemp(j  ,l  ) = dudy00
-          end do
-       end do
-    endif
+           do i=1,np
+              dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
+              dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
+           end do
+           vor(l  ,j  ) = dvdx00
+           vvtemp(j  ,l  ) = dudy00
+        end do
+     end do
 
-    do j=1,np
+     do j=1,np
        do i=1,np
           vor(i,j)=(vor(i,j)-vvtemp(i,j))*rrearth
        end do
-    end do
+     end do
 !=======================================================================================================!
  end function cov_vorticity
 !=======================================================================================================!
@@ -1455,60 +1315,13 @@ function gradient_rhs(deriv,ff)  result(gradf)
     integer j
     integer l
 
-    real(kind=real_kind) ::  dvdx00,dvdx01
-    real(kind=real_kind) ::  dvdx10,dvdx11
-    real(kind=real_kind) ::  dudy00,dudy01
-    real(kind=real_kind) ::  dudy10,dudy11    
-    logical, parameter :: UseUnroll = .FALSE.
+    real(kind=real_kind) ::  dvdx00,dudy00
 !=======================================================================================================!
   !Geopotential ht gradients
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    do j=1,np,2
-       do l=1,np,2
-
-          dudy00=zero
-          dudy01=zero
-          dudy10=zero
-          dudy11=zero
-
-
-          dvdx00=zero
-          dvdx01=zero
-          dvdx10=zero
-          dvdx11=zero
-
-          do i=1,np
-
-             dvdx00 = dvdx00 + deriv%Dvv(i,l  )* ff(i  ,j)
-             dvdx01 = dvdx01 + deriv%Dvv(i,l+1)* ff(i  ,j)
-             dvdx10 = dvdx10 + deriv%Dvv(i,l  )* ff(i,j+1)
-             dvdx11 = dvdx11 + deriv%Dvv(i,l+1)* ff(i,j+1)
-
-             dudy00 = dudy00 + deriv%Dvv(i,l  )* ff(j  ,i)
-             dudy01 = dudy01 + deriv%Dvv(i,l+1)* ff(j  ,i)
-             dudy10 = dudy10 + deriv%Dvv(i,l  )* ff(j+1,i)
-             dudy11 = dudy11 + deriv%Dvv(i,l+1)* ff(j+1,i)
-
-          end do
-
-          phi1(l  ,j  ) = dvdx00
-          phi1(l+1,j  ) = dvdx01
-          phi1(l  ,j+1) = dvdx10
-          phi1(l+1,j+1) = dvdx11
-          phi2(j  ,l  ) = dudy00
-          phi2(j  ,l+1) = dudy01
-          phi2(j+1,l  ) = dudy10
-          phi2(j+1,l+1) = dudy11
-
-        end do
-    end do
-else
     do j=1,np
        do l=1,np
-
           dudy00=zero
 	  dvdx00=zero
-
 !DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )* ff(i  ,j)
@@ -1516,10 +1329,8 @@ else
           end do
           phi1(l  ,j  ) = dvdx00
 	  phi2(j  ,l  ) = dudy00
-
         end do
     end do
-endif
 
     do j=1,np
        do i=1,np
@@ -1546,57 +1357,12 @@ subroutine source_term(elem,deriv,dx,dy,gcori,contrauv,couv,prg,source)
     real (kind=real_kind), dimension(np,np,2) :: gradp
     real (kind=real_kind), dimension(np,np) :: vor, vort, phi1,phi2
 
-    real(kind=real_kind) ::  dvdx00,dvdx01
-    real(kind=real_kind) ::  dvdx10,dvdx11
-    real(kind=real_kind) ::  dudy00,dudy01
-    real(kind=real_kind) ::  dudy10,dudy11
+    real(kind=real_kind) ::  dvdx00,dudy00
 
     real (kind=real_kind) :: term,delm
     integer i,j,k,l    
-    logical, parameter :: UseUnroll = .FALSE.
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    do j=1,np,2
-       do l=1,np,2
-
-          dudy00=zero
-          dudy01=zero
-          dudy10=zero
-          dudy11=zero
-
-          dvdx00=zero
-          dvdx01=zero
-          dvdx10=zero
-          dvdx11=zero
-
-          do i=1,np
-
-             dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
-             dvdx01 = dvdx01 + deriv%Dvv(i,l+1)* couv(i  ,j,2)
-             dvdx10 = dvdx10 + deriv%Dvv(i,l  )* couv(i,j+1,2)
-             dvdx11 = dvdx11 + deriv%Dvv(i,l+1)* couv(i,j+1,2)
-
-             dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
-             dudy01 = dudy01 + deriv%Dvv(i,l+1)* couv(j  ,i,1)
-             dudy10 = dudy10 + deriv%Dvv(i,l  )* couv(j+1,i,1)
-             dudy11 = dudy11 + deriv%Dvv(i,l+1)* couv(j+1,i,1)
-
-          end do
-
-          vor(l  ,j  ) = dvdx00
-          vor(l+1,j  ) = dvdx01
-          vor(l  ,j+1) = dvdx10
-          vor(l+1,j+1) = dvdx11
-
-          vvtemp(j  ,l  ) = dudy00
-          vvtemp(j  ,l+1) = dudy01
-          vvtemp(j+1,l  ) = dudy10
-          vvtemp(j+1,l+1) = dudy11
-
-        end do
-    end do
-else
     do j=1,np
        do l=1,np
           dudy00=zero
@@ -1610,7 +1376,6 @@ else
           vvtemp(j  ,l  ) = dudy00
         end do
     end do
-endif
 
     do j=1,np
        do i=1,np
@@ -1658,10 +1423,7 @@ function gradient_mass(deriv,dx,dy,uvflx)  result(gradf)
     integer j
     integer l
 
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumy00,sumy01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  sumy10,sumy11
+    real(kind=real_kind)  sumx00,sumy00
     real (kind=real_kind) :: vvtempt(np,np,2)
 !=======================================================================================================!
 
@@ -1713,10 +1475,7 @@ subroutine gradient_mom(deriv,dx,dy,energy,gradu1,gradu2)
     integer j
     integer l
 
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumy00,sumy01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  sumy10,sumy11
+    real(kind=real_kind)  sumx00, sumy00
     real (kind=real_kind) :: vvtempt(np,np,2)
 !=======================================================================================================!
 
