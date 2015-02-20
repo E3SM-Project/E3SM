@@ -809,25 +809,34 @@ for mct, etc.
 </compiler>    
 
 <compiler COMPILER="pgi" MACH="blues">
+  <PNETCDF_PATH>/soft/pnetcdf/1.5.0/pgi-13.9/mpich2-1.4.1</PNETCDF_PATH>
   <NETCDF_PATH> /soft/netcdf/4.3.1-serial/pgi-13.9/</NETCDF_PATH>
-  <MPI_PATH MPILIB="mvapich2">/soft/mvapich2/2.0-pgi-13.9-psm</MPI_PATH>
-  <MPI_LIB_NAME MPILIB="mvapich2">mpich</MPI_LIB_NAME>
+  <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/pgi-13.9</MPI_PATH>
+  <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-pgi-13.9/</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
+  <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="blues">
+  <PNETCDF_PATH>/soft/pnetcdf/1.5.0/intel-13.1/mpich2-1.4.1</PNETCDF_PATH>
   <NETCDF_PATH>/soft/netcdf/4.3.1-serial/intel-13.1</NETCDF_PATH>
-  <MPI_PATH MPILIB="mvapich2">/soft/mvapich2/2.0-intel-13.1-psm</MPI_PATH>
-  <MPI_LIB_NAME MPILIB="mvapich2">mpich</MPI_LIB_NAME>
+  <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/intel-13.1</MPI_PATH>
+  <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-intel-13.1</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
+  <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="blues">
+  <PNETCDF_PATH>/soft/pnetcdf/1.5.0/gcc-4.7.2/mpich2-1.4.1</PNETCDF_PATH>
   <NETCDF_PATH>/soft/netcdf/4.3.1-serial/gcc-4.7.2</NETCDF_PATH>
-  <MPI_PATH MPILIB="mvapich2">/soft/mvapich2/2.0-gcc-4.7.2-psm</MPI_PATH>
-  <MPI_LIB_NAME MPILIB="mvapich2">mpich</MPI_LIB_NAME>
+  <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.6.5-gcc-4.7.2</MPI_PATH>
+  <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-gcc-4.7.2/</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
+  <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
