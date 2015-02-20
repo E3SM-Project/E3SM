@@ -199,11 +199,7 @@ if (COLLECTIVE_IO_WRITE) then
 
 
      do ie=1,nelemd
-#ifdef _PREDICT
-       ig = Schedule(iam)%Local2Global(ie)
-#else
        ig = Schedule(1)%Local2Global(ie)
-#endif
        array_disp(ie) = ig-1
        array_blen(ie) = 1
 
@@ -248,11 +244,7 @@ if ( COLLECTIVE_IO_WRITE ) then
 else
 
      do ie=1,nelemd
-#ifdef _PREDICT
-       ig = Schedule(iam)%Local2Global(ie)
-#else
        ig = Schedule(1)%Local2Global(ie)
-#endif
        ! offset = (ig-1)*recl   this will overflow integer*4 at high-res
        offset = ig-1
        offset = offset*recl
@@ -281,11 +273,7 @@ endif
      endif   
 #endif
      do ie=1,nelemd
-#ifdef _PREDICT
-       ig = Schedule(iam)%Local2Global(ie)
-#else
        ig = Schedule(1)%Local2Global(ie)
-#endif
 !	print *, __FILE__,__LINE__,ie,ig,sizeof(variable(ie))
 
         if(columnpackage == "emanuel")then
@@ -331,11 +319,7 @@ if ( COLLECTIVE_IO_READ ) then
      call mpi_type_commit( type_ablock, ierr )
 
      do ie=1,nelemd
-#ifdef _PREDICT
-       ig = Schedule(iam)%Local2Global(ie)
-#else
        ig = Schedule(1)%Local2Global(ie)
-#endif
        array_disp(ie) = ig-1
        array_blen(ie) = 1
 
@@ -378,11 +362,7 @@ if ( COLLECTIVE_IO_READ ) then
      
 else
      do ie=1,nelemd
-#ifdef _PREDICT
-       ig = Schedule(iam)%Local2Global(ie)
-#else
        ig = Schedule(1)%Local2Global(ie)
-#endif
        ! offset = (ig-1)*recl   this will overflow integer*4 at high-res
        offset = ig-1
        offset = offset*recl
@@ -401,11 +381,7 @@ endif
      open(unit=56,file=File%fname,status='OLD',form='UNFORMATTED', &
 	     recl=recl,ACCESS='DIRECT')
      do ie=1,nelemd
-#ifdef _PREDICT
-       ig = Schedule(iam)%Local2Global(ie)
-#else
        ig = Schedule(1)%Local2Global(ie)
-#endif
          if(columnpackage == "emanuel")then
            read(56,rec=ig) variable(ie)
 	 else
@@ -851,11 +827,7 @@ endif
     displace(1) = 0
 
     do ie=1,nelemd
-#ifdef _PREDICT
-       ig = Schedule(iam)%Local2Global(ie)
-#else
        ig = Schedule(1)%Local2Global(ie)
-#endif
        displace(1) = ig - 1
        call MPI_Type_Create_Subarray(ndims,sizes,subsizes,displace, &
              MPI_ORDER_FORTRAN,File%ElemState,elem_filetype(ie),ierr)

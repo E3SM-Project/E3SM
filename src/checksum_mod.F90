@@ -73,11 +73,7 @@ contains
 
 
     ! Setup the pointer to proper Schedule
-#ifdef _PREDICT
-    pSchedule => Schedule(iam)
-#else
     pSchedule => Schedule(1)
-#endif
 
 
     allocate(TestPattern_l(np,np,nlev,nelemd))

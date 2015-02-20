@@ -29,7 +29,7 @@ module schedtype_mod
      integer                     :: placeholder  ! total integer count should be even
      integer                     :: nSendCycles
      integer                     :: nRecvCycles
-     integer                        :: padding
+     integer                     :: padding
      integer,pointer             :: Local2Global(:)
      type (Cycle_t), pointer     ::   Cycle(:)          
      type (Cycle_t), pointer :: SendCycle(:)

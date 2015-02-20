@@ -2,8 +2,6 @@
 #include "config.h"
 #endif
 
-#define NEW_PACK
-
 module bndry_mod
   use parallel_mod, only : abortmp,iam
   use edge_mod, only : Ghostbuffer3D_t
@@ -16,16 +14,11 @@ module bndry_mod
   public :: sort_neighbor_buffer_mapping
 
   interface bndry_exchangeV
-#ifdef NEW_PACK
      module procedure bndry_exchangeV_nonth_recv_buf
-#else
-     module procedure bndry_exchangeV_nonth
-#endif
-     module procedure long_bndry_exchangeV_nonth
      module procedure bndry_exchangeV_thsave 
-
      module procedure bndry_exchangeV_nonth_recv_newbuf
      module procedure bndry_exchangeV_thsave_new
+     module procedure long_bndry_exchangeV_nonth
   end interface
 
   interface bndry_exchangeS
@@ -85,11 +78,7 @@ contains
 #else
 
     ! Setup the pointer to proper Schedule
-#ifdef _PREDICT
-    pSchedule => Schedule(iam)
-#else
     pSchedule => Schedule(1)
-#endif
     nlyr = buffer%nlyr
 
     nSendCycles = pSchedule%nSendCycles
@@ -345,7 +334,6 @@ contains
         buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
     endif
 
-
   end subroutine bndry_exchangeV_nonth_recv_newbuf
 
   subroutine bndry_exchangeS_nonth_recv_newbuf(par,buffer)
@@ -484,11 +472,7 @@ contains
 
 
     ! Setup the pointer to proper Schedule
-#ifdef _PREDICT
-    pSchedule => Schedule(iam)
-#else
     pSchedule => Schedule(1)
-#endif
     nlyr = buffer%nlyr
 
     nSendCycles = pSchedule%nSendCycles
@@ -570,13 +554,7 @@ contains
     !$OMP BARRIER
 #endif
 
-#ifdef NEW_PACK
     call bndry_exchangeV_nonth_recv_buf(hybrid%par,buffer)
-#else
-    !$OMP MASTER
-    call bndry_exchangeV_nonth(hybrid%par,buffer)
-    !$OMP END MASTER
-#endif
 
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
@@ -674,11 +652,7 @@ contains
 
 #ifdef _MPI
        ! Setup the pointer to proper Schedule
-#ifdef _PREDICT
-       pSchedule => Schedule(iam)
-#else
        pSchedule => Schedule(1)
-#endif
        nlyr = buffer%nlyr
 
        nSendCycles = pSchedule%nSendCycles
@@ -797,11 +771,7 @@ contains
 
 #ifdef _MPI
        ! Setup the pointer to proper Schedule
-#ifdef _PREDICT
-       pSchedule => Schedule(iam)
-#else
        pSchedule => Schedule(1)
-#endif
        nlyr = buffer%nlyr
               
        nSendCycles = pSchedule%nSendCycles
@@ -1004,9 +974,6 @@ contains
 !  end ghost exchange corner orientation
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   end subroutine
-
-
-
 
 
   subroutine sort_neighbor_buffer_mapping(hybrid,elem,nets,nete)

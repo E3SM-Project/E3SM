@@ -235,38 +235,6 @@ contains
        TailPartition(i)=GridEdge(i)%tail%processor_number
        HeadPartition(i)=GridEdge(i)%head%processor_number
     enddo
-#ifdef _PREDICT
-    allocate(MetaVertex(npart))
-    allocate(Schedule(npart))
-#ifdef _MPI
-    call haltmp("init: PREDICT code branch not supported under MPI")
-#else
-    nelemd = nelem
-    print *,'init: before allocation of elem nelemd:',nelemd
-    !JMDallocate(elem(nelemd))
-    print *,'init: after allocation of elem'
-#endif
-    do iMv = 1,npart
-       ! ====================================================
-       !  Generate the communication graph 
-       ! ====================================================
-       !JMDcall initMetaGraph(iMv,MetaVertex(iMv),TailPartition,HeadPartition,GridVertex,GridEdge)
-       call initMetaGraph(iMv,MetaVertex(iMv),GridVertex,GridEdge)
-
-       !JMD nelemd = LocalElemCount(MetaVertex(iMv))
-
-       ! ====================================================
-       !  Generate the communication schedule
-       ! ====================================================
-       if (MODULO(iMv,100) ==0) print *,'init: before call to genEdgeSched iMv :',iMv
-       call genEdgeSched(iMv,Schedule(iMv),MetaVertex(iMv))
-
-    enddo
-
-    print *,'init: before MessageStats'
-    call MessageStats(nlyr)
-    print *,'init: after MessageStats'
-#else
     allocate(MetaVertex(1))
     allocate(Schedule(1))
 
@@ -300,8 +268,6 @@ contains
     call genEdgeSched(elem, iam,Schedule(1),MetaVertex(1))
     !call PrintSchedule(Schedule(1))
     
-
-#endif
     deallocate(TailPartition)
     deallocate(HeadPartition)
 
