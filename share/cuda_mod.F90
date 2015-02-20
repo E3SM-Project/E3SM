@@ -213,11 +213,7 @@ contains
     write(*,*) "cuda_mod_init"
 
     write(*,*) "allocate arrays on device & host"
-#ifdef _PREDICT
-    pSchedule => Schedule(iam)
-#else
     pSchedule => Schedule(1)
-#endif
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
     mx_send_len = 0
@@ -947,11 +943,7 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
   integer                   :: dest,length,tag,iptr,source,nlyr,query_sum, npacked
   logical :: recvflag, internal_unpacked
   real :: time_milli
-#ifdef _PREDICT
-  pSchedule => Schedule(iam)
-#else
   pSchedule => Schedule(1)
-#endif
   nlyr = edgeAdv%nlyr
   nSendCycles = pSchedule%nSendCycles
   nRecvCycles = pSchedule%nRecvCycles
