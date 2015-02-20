@@ -218,9 +218,9 @@ module CNNitrogenFluxType
      real(r8), pointer :: net_nmin_vr_col                           (:,:)   ! col vertically-resolved net rate of N mineralization (gN/m3/s)
      real(r8), pointer :: net_nmin_col                              (:)     ! col vert-int (diagnostic) net rate of N mineralization (gN/m2/s)
 
-     real(r8), pointer :: sminn_no3_input_vr_col                    (:,:)
-     real(r8), pointer :: sminn_nh4_input_vr_col                    (:,:)
-     real(r8), pointer :: bgc_npool_inputs_vr_col                   (:,:,:)
+     real(r8), pointer :: sminn_no3_input_vr_col                    (:,:)   !col no3 input, gN/m3/time step
+     real(r8), pointer :: sminn_nh4_input_vr_col                    (:,:)   !col nh4 input, gN/m3/time step
+     real(r8), pointer :: bgc_npool_inputs_vr_col                   (:,:,:) !col organic nitrogen input, gN/m3/time step
      ! ---------- NITRIF_DENITRIF  ---------------------
 
      ! nitrification / denitrification fluxes

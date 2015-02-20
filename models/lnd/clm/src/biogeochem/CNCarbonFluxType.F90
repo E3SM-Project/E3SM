@@ -354,7 +354,7 @@ module CNCarbonFluxType
      real(r8), pointer :: cwdc_loss_col                             (:)     ! (gC/m2/s) col-level coarse woody debris C loss
      real(r8), pointer :: litterc_loss_col                          (:)     ! (gC/m2/s) col-level litter C loss
 
-     real(r8), pointer :: bgc_cpool_inputs_vr_col                   (:, :, :)  ! 
+     real(r8), pointer :: bgc_cpool_inputs_vr_col                   (:, :, :)  ! col-level organic carbon input gC/m3 /time step
      ! patch averaged to column variables - to remove need for pcf_a instance
      real(r8), pointer :: rr_col                                    (:)     ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
      real(r8), pointer :: ar_col                                    (:)     ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)      

@@ -177,13 +177,14 @@ contains
   character(len=*)                 , parameter :: subname ='Init_betrbgc'
 
   integer :: jj
+  integer :: nelm
   !type(file_desc_t) :: ncid
   
   !ncid%fh=10
 
   call centurybgc_vars%Init(bounds, lbj, ubj)
 
-  betrtracer_vars%ngwmobile_tracers=7                                 ! n2, o2, ar, co2, ch4, nh3x and no3x
+  betrtracer_vars%ngwmobile_tracers=7                                ! n2, o2, ar, co2, ch4, nh3x and no3x
   betrtracer_vars%nsolid_passive_tracers=centurybgc_vars%nom_pools    !
   betrtracer_vars%nvolatile_tracers=6                                 ! n2, o2, ar, co2, ch4 and nh3x 
   betrtracer_vars%ntracers=betrtracer_vars%ngwmobile_tracers+betrtracer_vars%nsolid_passive_tracers
@@ -207,14 +208,23 @@ contains
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_ch4)='CH4'
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_nh3x)='NH3X'
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_no3x)='NO3X'
- 
-  betrtracer_vars%tracernames(jj+1)  = 'LIT1'
-  betrtracer_vars%tracernames(jj+2)  = 'LIT2'
-  betrtracer_vars%tracernames(jj+3)  = 'LIT3'
-  betrtracer_vars%tracernames(jj+4)  = 'SOM1'
-  betrtracer_vars%tracernames(jj+5) = 'SOM2'
-  betrtracer_vars%tracernames(jj+6) = 'SOM3'
-  betrtracer_vars%tracernames(jj+7) = 'CWD'
+  nelm=centurybgc_vars%nelms
+  
+  betrtracer_vars%tracernames(jj+centurybgc_vars%lit1*nelm-1)  = 'LIT1C'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%lit2*nelm-1)  = 'LIT2C'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%lit3*nelm-1)  = 'LIT3C'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%som1*nelm-1)  = 'SOM1C'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%som2*nelm-1)  = 'SOM2C'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%som3*nelm-1)  = 'SOM3C'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%cwd*nelm-1)   = 'CWDC'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%lit1*nelm)    = 'LIT1N'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%lit2*nelm)    = 'LIT2N'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%lit3*nelm)    = 'LIT3N'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%som1*nelm)    = 'SOM1N'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%som2*nelm)    = 'SOM2N'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%som3*nelm)    = 'SOM3N'
+  betrtracer_vars%tracernames(jj+centurybgc_vars%cwd*nelm)     = 'CWDN'
+  
     
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_n2)  =.true.
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_o2)  =.true.
@@ -358,8 +368,8 @@ contains
 
   real(r8) :: y0(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: yf(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)  
-  real(r8) :: cn_ratios(centurybgc_vars%nom_pools)
-  real(r8) :: cp_ratios(centurybgc_vars%nom_pools)
+  real(r8) :: cn_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8) :: cp_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: time
   real(r8) :: k_decay(centurybgc_vars%nreactions, bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: pot_decay_rates(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)   ![mol C/m3/s] potential decay rates for different om pools without nutrient limitation
@@ -377,9 +387,15 @@ contains
   !initialize local variables
   y0(:, :, :) = spval
   yf(:, :, :) = spval
-
-  !calculate elemental stoichiometry
+  cn_ratios(:,:,:) = nan
+  cp_ratios(:,:,:) = nan
+  !calculate elemental stoichiometry for different om pools and add mineral nutrient input from other than decaying process
+  !ideally, this should be done within the ode operator. However, since it is not possible to do it consistently for centurybgc (it requires
+  ! an reformulation of the nitrogen fixation cycle)
+  !I did this in a quick and dirty way. 
   
+  call calc_extneral_bgc_input(bounds, 1, ubj, num_soilc, filter_soilc, dtime, carbonflux_vars, nitrogenflux_vars, &
+    centurybgc_vars, betrtracer_vars, tracerstate_vars, cn_ratios, cp_ratios)
   
   !calculate nitrogen uptake profile
   call calc_nuptake_prof(bounds, ubj, num_soilc, filter_soilc, &
@@ -442,7 +458,7 @@ contains
       c = filter_soilc(fc)
       if(j<jtops(c))cycle   
       !assign parameters for stoichiometric matrix calculation
-      call Extra_inst%AAssign(cn_ratios,cp_ratios, k_decay(:,c,j), n2_n2o_ratio_denit(c,j), nh4_no3_ratio(c,j), soilstate_vars%cellsand_col(c,j))
+      call Extra_inst%AAssign(cn_ratios(:,c,j),cp_ratios(:,c,j), k_decay(:,c,j), n2_n2o_ratio_denit(c,j), nh4_no3_ratio(c,j), soilstate_vars%cellsand_col(c,j))
       !update state variables
       time = 0._r8 
       call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
@@ -604,6 +620,11 @@ contains
   ! DESCRIPTIONS
   !do single box bgc
   !
+  !the equations to be solved are in the form
+  !
+  ! dx/dt=I+A*R, where I is the input, A is the stoichiometric matrix, and R is the reaction vector
+  !
+  ! the input only contains litter input and mineral nutrient, som is assumed to be of fixed stoichiometry
   use SOMStateVarUpdateMod  , only : calc_dtrend_som_bgc
   use BGCCenturySubMod      , only : calc_cascade_matrix
   implicit none

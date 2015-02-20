@@ -21,7 +21,9 @@ module BGCCenturySubMod
   integer :: som2  
   integer :: som3    
   integer :: cwd   
-  
+  integer :: c_loc
+  integer :: n_loc
+  integer :: nelms                 !number of chemical elements in an om pool
   real(r8) :: k_decay_lit1
   real(r8) :: k_decay_lit2 
   real(r8) :: k_decay_lit3 
@@ -66,7 +68,7 @@ module BGCCenturySubMod
   ! Initialize centurybgc type
   
   use ncdio_pio    , only: file_desc_t  
-  implicit none
+
   class(centurybgc_type) :: this
   type(bounds_type),                intent(in) :: bounds
   integer,                          intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
@@ -102,7 +104,7 @@ module BGCCenturySubMod
   ! each reaction is associated with a primary species, the secondary species follows after primary species
   ! for the century model, the primary species are seven om pools and nh4, no3 and plant nitrogen 
   ! 
-  implicit none
+
   class(centurybgc_type) :: this
   
   this%nom_pools = 7   !not include coarse wood debris
@@ -114,17 +116,20 @@ module BGCCenturySubMod
   this%som3 = 6  
   this%cwd  = 7
   
-  this%lid_nh4 = this%nom_pools + 1   !this is also used to indicate the nitrification reaction
-  this%lid_no3 = this%nom_pools + 2   !this is also used to indicate the denitrification reaction
-  this%lid_plant_minn = this%nom_pools + 3  
-  this%lid_o2  = this%nom_pools + 4
-  this%lid_co2 = this%nom_pools + 5
-  this%lid_n2o = this%nom_pools + 6
-  this%lid_n2  = this%nom_pools + 7
-  this%lid_n2o_nit = this%nom_pools + 8
-  this%lid_co2_hr  = this%nom_pools + 9
+  this%nelms = 2   !carbon and nitrogen
+  this%c_loc = 1
+  this%n_loc = 2
+  this%lid_nh4 = this%nom_pools*this%nelms        + 1   !this is also used to indicate the nitrification reaction
+  this%lid_no3 = this%nom_pools*this%nelms        + 2   !this is also used to indicate the denitrification reaction
+  this%lid_plant_minn = this%nom_pools*this%nelms + 3  
+  this%lid_o2  = this%nom_pools*this%nelms        + 4
+  this%lid_co2 = this%nom_pools*this%nelms        + 5
+  this%lid_n2o = this%nom_pools*this%nelms        + 6
+  this%lid_n2  = this%nom_pools*this%nelms        + 7
+  this%lid_n2o_nit = this%nom_pools*this%nelms    + 8
+  this%lid_co2_hr  = this%nom_pools*this%nelms    + 9
   
-  this%nstvars = this%nom_pools + 9        !totally 16 state variables
+  this%nstvars = this%nom_pools*this%nelms + 9        !totally 16 state variables
   
   this%nreactions = this%nom_pools + 3     !seven decomposition pathways plus nitrification, denitrification and plant immobilization  
   end subroutine Init_pars
@@ -132,7 +137,7 @@ module BGCCenturySubMod
 
   subroutine InitAllocate(this, bounds, lbj, ubj)
   
-  implicit none
+
   class(centurybgc_type)                       :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
@@ -154,7 +159,7 @@ module BGCCenturySubMod
   use tracerstatetype       , only : tracerstate_type
   use BeTRTracerType        , only : betrtracer_type
   
-  implicit none
+
   type(bounds_type)            , intent(in) :: bounds
   integer                      , intent(in) :: lbj, ubj
   integer                      , intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -171,7 +176,7 @@ module BGCCenturySubMod
   do fc = 1, numf
     c = filter(fc)
     do j = jtops(c), ubj
-      y0(1:centurybgc_vars%nom_pools, j, c)    = tracerstate_vars%tracer_conc_solid_passive_col(c, j, :)
+      y0(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, j, c)    = tracerstate_vars%tracer_conc_solid_passive_col(c, j, :)
 
       y0(centurybgc_vars%lid_o2,  j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2) 
 
@@ -199,7 +204,7 @@ module BGCCenturySubMod
   use tracerstatetype       , only : tracerstate_type
   use BeTRTracerType        , only : betrtracer_type
   use BGCCenturyParMod      , only : CNDecompBgcParamsInst 
-  implicit none
+
   integer,                     intent(in) :: nom_pools
   type(bounds_type),           intent(in) :: bounds
   integer,                     intent(in) :: lbj, ubj
@@ -259,7 +264,7 @@ module BGCCenturySubMod
   ! calculate cascade matrix for the decomposition model
   !
   use clm_varcon                , only: nitrif_n2o_loss_frac
-  implicit none
+
   integer                       , intent(in) :: nstvars
   integer                       , intent(in) :: nreactions
   type(centurybgc_type)         , intent(in) :: centurybgc_vars
@@ -283,7 +288,9 @@ module BGCCenturySubMod
     som2      => centurybgc_vars%som2                 , & !
     som3      => centurybgc_vars%som3                 , & !
     cwd       => centurybgc_vars%cwd                  , & !
-    
+    c_loc     => centurybgc_vars%c_loc                , & !
+    n_loc     => centurybgc_vars%n_loc                , & !
+    nelms     => centurybgc_vars%nelms                , & !
     lid_o2    => centurybgc_vars%lid_o2               , & !
     lid_co2   => centurybgc_vars%lid_co2              , & !
     lid_nh4   => centurybgc_vars%lid_nh4              , & !
@@ -299,67 +306,101 @@ module BGCCenturySubMod
   !mass balance is automatically ensured.
   
   
-  !reaction1
+  !reaction1, lit1 -> s1
   !lit1 + 0.55*o2 -> 0.45 som1 + 0.55co2 + (1/cn_ratios(lit1) - 0.45/cn_ratios(som1))min_n+ (1/cp_ratios(lit1)-0.45/cp_ratios(som1))min_p
-  cascade_matrix(lit1   ,1)  = -1._r8
-  cascade_matrix(lid_o2 ,1)  = -0.55_r8
-  cascade_matrix(som1   ,1)  =  0.45_r8  
-  cascade_matrix(lid_co2,1)  =  0.55_r8
+  cascade_matrix((lit1-1)*nelms+c_loc   ,1)  = -1._r8
+  cascade_matrix((lit1-1)*nelms+n_loc   ,1)  = -1._r8
+  
+  cascade_matrix(lid_o2 ,1)  = -CNDecompBgcParamsInst%rf_l1s1_bgc
+  cascade_matrix((som1-1)*nelms+c_loc   ,1)  = 1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc
+  cascade_matrix((som1-1)*nelms+n_loc   ,1)  = 1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc
+  cascade_matrix(lid_co2,1)  =  CNDecompBgcParamsInst%rf_l1s1_bgc
   cascade_matrix(lid_nh4,1)  =  1._r8/cn_ratios(lit1) - 1._r8/cn_ratios(som1)
 
 
-  !reaction 2
+  !reaction 2, lit2 -> s1
   !lit2 + 0.5 o2  -> 0.5 som1 + 0.5 co2 + (1/cn_ratios(lit2)-0.5/cn_ratios(som1))min_n +(1/cp_ratios(lit2)-0.5/cp_ratios(som1))min_p
-  cascade_matrix(lit2   ,2)   = -1._r8
-  cascade_matrix(lid_o2 ,2)   = -0.5_r8
-  cascade_matrix(som1   ,2)   =  0.5_r8
-  cascade_matrix(lid_co2,2)   =  0.5_r8
+  cascade_matrix((lit2-1)*nelms+c_loc   ,2)   = -1._r8
+  cascade_matrix((lit2-1)*nelms+n_loc   ,2)   = -1._r8
+  
+  cascade_matrix(lid_o2 ,2)   = -CNDecompBgcParamsInst%rf_l2s1_bgc
+  cascade_matrix((som1-1)*nelms+c_loc   ,2)   =  1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc
+  cascade_matrix((som1-1)*nelms+n_loc   ,2)   =  1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc
+  
+  cascade_matrix(lid_co2,2)   =  CNDecompBgcParamsInst%rf_l2s1_bgc
   cascade_matrix(lid_nh4,2)   = 1._r8/cn_ratios(lit2) - 0.5_r8/cn_ratios(som1)
   
-  !reaction 3
+  !reaction 3, lit3->s2
   !lit3 + 0.5 o2 -> 0.5 som2 + 0.5 co2 + (1/cn_ratios(lit3) - 0.5/cn_ratios(som2))min_n + (1/cp_ratios(lit3)-0.5_r8/cp_ratios(som2))minp
-  cascade_matrix(lit3   ,3) = -1._r8
-  cascade_matrix(lid_o2 ,3) = -0.5_r8
-  cascade_matrix(som2   ,3) =  0.5_r8
-  cascade_matrix(lid_co2,3) =  0.5_r8
+  cascade_matrix((lit3-1)*nelms+c_loc   ,3) = -1._r8
+  cascade_matrix((lit3-1)*nelms+n_loc   ,3) = -1._r8
+  
+  cascade_matrix(lid_o2 ,3) = -CNDecompBgcParamsInst%rf_l3s2_bgc
+  cascade_matrix((som2-1)*nelms+c_loc   ,3) =  1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc
+  cascade_matrix((som2-1)*nelms+n_loc   ,3) =  1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc
+  
+  cascade_matrix(lid_co2,3) = CNDecompBgcParamsInst%rf_l3s2_bgc
   cascade_matrix(lid_nh4,3) = 1._r8/cn_ratios(lit3) - 0.5_r8/cn_ratios(som2)
   
+  !double check those stoichiometry parameters
   !reaction 4, the partition into som2 and som3 is soil texture dependent
   !som1 + f(txt) o2 -> f1*som2 + f2*som3 + f(txt) co2 + (1/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)) +(1/cp_ratios(som1)-f1/cp_ratios(som2)-f2/cp_ratios(som3))
-  !f(txt) = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - sand), assuming sand = 30%
+  !f(txt) = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - sand)
   !f1+f2+f(txt)=1._r8
   ftxt = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - pct_sand)
   f1 = 0.996*(1._r8-ftxt)
   f2 = 0.004*(1._r8-ftxt)
-  cascade_matrix(som1   ,4)  = -1._r8
+  cascade_matrix((som1-1)*nelms+c_loc   ,4)  = -1._r8
+  cascade_matrix((som1-1)*nelms+n_loc   ,4)  = -1._r8
+  
   cascade_matrix(lid_o2 ,4) = -ftxt
-  cascade_matrix(som3   ,4)  = 0.004*(1._r8-ftxt)
-  cascade_matrix(som2   ,4) = 0.996*(1._r8-ftxt)
+  cascade_matrix((som3-1)*nelms+c_loc   ,4)  = 0.004*(1._r8-ftxt)
+  cascade_matrix((som3-1)*nelms+n_loc   ,4)  = 0.004*(1._r8-ftxt)
+  
+  cascade_matrix((som2-1)*nelms+c_loc   ,4) = 0.996*(1._r8-ftxt)
+  cascade_matrix((som2-1)*nelms+n_loc   ,4) = 0.996*(1._r8-ftxt)
+  
   cascade_matrix(lid_co2,4) = ftxt
   cascade_matrix(lid_nh4,4) = 1._r8/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)
   
-  !reaction 5, 
+  !reaction 5, som2->som1, som3
   !som2 + 0.55 o2 -> 0.42 som1 + 0.03som3 + 0.55co2 + (1/cn_ratios(som2)-0.42/cn_ratios(som1)-0.03/cn_ratios(som3)) + (1/cp_raitos(som2)-0.42/cp_ratios(som1)-0.03/cp_ratios(som3))
-  cascade_matrix(som2   ,5)   = -1._r8
+  cascade_matrix((som2-1)*nelms+c_loc   ,5)   = -1._r8
+  cascade_matrix((som2-1)*nelms+n_loc   ,5)   = -1._r8
+  
   cascade_matrix(lid_o2 ,5)   = -0.55_r8
-  cascade_matrix(som1   ,5)   =  0.42_r8
-  cascade_matrix(som3   ,5)   =  0.03_r8
+  cascade_matrix((som1-1)*nelms+c_loc   ,5)   =  0.42_r8
+  cascade_matrix((som1-1)*nelms+n_loc   ,5)   =  0.42_r8
+  
+  cascade_matrix((som3-1)*nelms+c_loc   ,5)   =  0.03_r8
+  cascade_matrix((som3-1)*nelms+n_loc   ,5)   =  0.03_r8
+  
   cascade_matrix(lid_co2,5)   =  0.55_r8
   cascade_matrix(lid_nh4,5)   = 1._r8/cn_ratios(som2)-0.42_r8/cn_ratios(som1)-0.03_r8/cn_ratios(som3)
   
-  !reaction 6
+  !reaction 6, s3-> s1
   !som3 + 0.55 o2 -> 0.45*som1 + 0.55co2 + (1/cn_ratios(som3)-0.45/cn_ratios(som1)) + (1/cp_ratios(som3)-0.45/cp_ratios(som1))
-  cascade_matrix(som3   ,6) = -1._r8
-  cascade_matrix(lid_o2 ,6) = -0.55_r8
-  cascade_matrix(som1   ,6) = 0.45_r8
-  cascade_matrix(lid_co2,6) = 0.55_r8
+  cascade_matrix((som3-1)*nelms+c_loc   ,6) = -1._r8
+  cascade_matrix((som3-1)*nelms+n_loc   ,6) = -1._r8
+  
+  cascade_matrix(lid_o2 ,6) = -CNDecompBgcParamsInst%rf_s3s1_bgc
+  cascade_matrix((som1-1)*nelms+c_loc   ,6) = 1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc
+  cascade_matrix((som1-1)*nelms+n_loc   ,6) = 1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc
+  
+  cascade_matrix(lid_co2,6) = CNDecompBgcParamsInst%rf_s3s1_bgc
   cascade_matrix(lid_nh4,6) = 1._r8/cn_ratios(som3) - 0.45_r8/cn_ratios(som1)
   
-  !reaction 7, the partition into lit1 and lit2 is nutrient dependent
+  !reaction 7, the partition into lit1 and lit2 is nutrient dependent, respires co2?
   !cwd + o2 -> 0.76lit2 + 0.24*lit3 + (1/cn_ratios(cwd)-0.76/cn_ratios(lit2)-0.24/cn_ratios(lit3)) + (1/cp_ratios(cwd)-0.76/cp_ratios(lit2)-0.24/cp_ratios(lit3))
-  cascade_matrix(cwd    ,7) = -1._r8
-  cascade_matrix(lit2   ,7) = 0.76_r8
-  cascade_matrix(lit3   ,7) = 0.24_r8
+  cascade_matrix((cwd-1)*nelms+c_loc    ,7) = -1._r8
+  cascade_matrix((cwd-1)*nelms+n_loc    ,7) = -1._r8
+  
+  cascade_matrix((lit2-1)*nelms+c_loc   ,7) = CNDecompBgcParamsInst%cwd_fcel_bgc
+  cascade_matrix((lit2-1)*nelms+n_loc   ,7) = CNDecompBgcParamsInst%cwd_fcel_bgc
+  
+  cascade_matrix((lit3-1)*nelms+c_loc   ,7) = CNDecompBgcParamsInst%cwd_flig_bgc
+  cascade_matrix((lit3-1)*nelms+n_loc   ,7) = CNDecompBgcParamsInst%cwd_flig_bgc
+  
   cascade_matrix(lid_nh4,7) = 1._r8/cn_ratios(cwd) - 0.76_r8/cn_ratios(lit2) - 0.24_r8/cn_ratios(lit3)
     
   do k = 1, 7
@@ -402,7 +443,7 @@ module BGCCenturySubMod
   !
   ! DESCRIPTION
   ! calculate degradation for all different pools
-  implicit none
+
   integer,  intent(in) :: nom_pools
   type(bounds_type),           intent(in) :: bounds
   integer,                     intent(in) :: lbj, ubj
@@ -438,7 +479,7 @@ module BGCCenturySubMod
   use tracerfluxType           , only : tracerflux_type
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   
-  implicit none
+
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -472,7 +513,7 @@ module BGCCenturySubMod
   use tracerstatetype       , only : tracerstate_type
   use BeTRTracerType        , only : betrtracer_type
   
-  implicit none
+
   type(bounds_type)       , intent(in) :: bounds
   integer                 , intent(in) :: lbj, ubj
   integer                 , intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -522,7 +563,6 @@ module BGCCenturySubMod
   use MathfuncMod         , only : safe_div
   use shr_const_mod       , only : SHR_CONST_TKFRZ
   
-  implicit none
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )        ! top label of each column
@@ -704,7 +744,7 @@ module BGCCenturySubMod
   use clm_varcon          , only : d_con_g, grav, d_con_w
   use SoilStatetype       , only : soilstate_type
   use BGCCenturyParMod    , only : CNNitrifDenitrifParamsInst
-  implicit none
+
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )            ! top label of each column
@@ -819,8 +859,10 @@ module BGCCenturySubMod
   !
   ! DESCRIPTION
   ! calculate potential aerobic heteorotrophic respiration, and potential oxygen consumption based on cascade_matrix
-  use MathfuncMod, only : dot_sum  
-  implicit none
+  use MathfuncMod         , only : dot_sum  
+  use CNSharedParamsMod   , only : CNParamsShareInst
+  use CNSharedParamsMod   , only : CNParamsShareInst
+  
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -836,34 +878,34 @@ module BGCCenturySubMod
   integer  :: fc, c, j
   
   cascade_matrix_hr = 0._r8
-  !reaction1
+  !reaction1, lit1 -> som1
   !lit1 + 0.55*o2 -> 0.45 som1 + 0.55co2 + (1/cn_ratios(lit1) - 0.45/cn_ratios(som1))+ (1/cp_ratios(lit1)-0.45/cp_ratios(som1))
 
-  cascade_matrix_hr(1)=  0.55_r8
+  cascade_matrix_hr(1)=  CNDecompBgcParamsInst%rf_l1s1_bgc 
   
-  !reaction 2
+  !reaction 2, lit2 -> som1
   !lit2 + 0.5 o2  -> 0.5 som1 + 0.5 co2 + (1/cn_ratios(lit2)-0.5/cn_ratios(som1)) +(1/cp_ratios(lit2)-0.5/cp_ratios(som1))
-  cascade_matrix_hr(2) =  0.5_r8
+  cascade_matrix_hr(2) =  CNDecompBgcParamsInst%rf_l2s1_bgc
   
-  !reaction 3
+  !reaction 3, lit3 -> som2
   !lit3 + 0.5 o2 -> 0.5 som2 + 0.5 co2
-  cascade_matrix_hr(3)=  0.5_r8
+  cascade_matrix_hr(3)=  CNDecompBgcParamsInst%rf_l3s2_bgc
   
   
-  !reaction 5, 
+  !reaction 5, som2 -> som1
   !som2 + 0.55 o2 -> 0.42 som1 + 0.03som3 + 0.55co2 + (1/cn_ratios(som2)-0.42/cn_ratios(som1)-0.03/cn_ratios(som3)) + (1/cp_raitos(som2)-0.42/cp_ratios(som1)-0.03/cp_ratios(som3))
-  cascade_matrix_hr(5)   =  0.55_r8
+  cascade_matrix_hr(5)   =  CNDecompBgcParamsInst%rf_s2s1_bgc
   
-  !reaction 6
+  !reaction 6, s3 -> s1
   !som3 + 0.55 o2 -> 0.45*som1 + 0.55co2 + (1/cn_ratios(som3)-0.45/cn_ratios(som1)) + (1/cp_ratios(som3)-0.45/cp_ratios(som1))
-  cascade_matrix_hr(6) = 0.55_r8
+  cascade_matrix_hr(6) = CNDecompBgcParamsInst%rf_s3s1_bgc
   
   !obtain the potential respiration
 
   do fc = 1, numf
     c = filter(fc)
     do j = jtops(c), ubj
-      !reaction 4, the partition into som2 and som3 is soil texture dependent
+      !reaction 4, the partition into som2 and som3 is soil texture dependent, som1->som2, som3
       !som1 + f(txt) o2 -> f1*som2 + f2*som3 + f(txt) co2 + (1/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)) +(1/cp_ratios(som1)-f1/cp_ratios(som2)-f2/cp_ratios(som3))
       !f(txt) = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - sand), assuming sand = 30%
       !f1+f2+f(txt)=1._r8
@@ -888,7 +930,7 @@ module BGCCenturySubMod
   use CNSharedParamsMod   , only : CNParamsShareInst
   use shr_const_mod       , only : SHR_CONST_TKFRZ, SHR_CONST_PI
   use SoilStatetype       , only : soilstate_type
-  implicit none
+
   type(bounds_type),         intent(in) :: bounds
   integer,                   intent(in) :: lbj, ubj
   integer,                   intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -989,7 +1031,7 @@ module BGCCenturySubMod
   !DESCRIPTION
   ! calculate the nitrogen uptake profile
   !
-  implicit none
+
   type(bounds_type)        , intent(in)   :: bounds  
   integer                  , intent(in)   :: nlevdecomp                        ! number of vertical layers
   integer                  , intent(in)   :: num_soilc                         ! number of soil columns in filter
@@ -1047,7 +1089,7 @@ module BGCCenturySubMod
   
   !caluate depth specific demand
   use clm_varcon           , only : natomw
-  implicit none
+
   type(bounds_type)        , intent(in)    :: bounds  
   integer                  , intent(in)    :: nlevdecomp                        ! number of vertical layers
   integer                  , intent(in)    :: num_soilc                         ! number of soil columns in filter
@@ -1068,6 +1110,95 @@ module BGCCenturySubMod
   
   
   end subroutine calc_plant_nitrogen_uptake_prof
+  
+ 
+  !-----------------------------------------------------------------------  
+  
+  subroutine calc_extneral_bgc_input(bounds, lbj, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
+    centurybgc_vars, betrtracer_vars, tracerstate_vars, cn_ratios, cp_ratios)
+
+
+  use MathfuncMod         , only :  safe_div
+
+  type(bounds_type)                  , intent(in) :: bounds                             ! bounds
+  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
+  integer                            , intent(in) :: filter_soilc(:)                          ! column filter
+  type(carbonflux_type)              , intent(in) :: carbonflux_vars
+  type(nitrogenflux_type)            , intent(in) :: nitrogenflux_vars
+  type(centurybgc_type)              , intent(in) :: centurybgc_vars  
+  type(tracerstate_type)             , intent(inout) :: tracerstate_vars
+  real(r8)                           , intent(inout) :: cn_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8)                           , intent(inout) :: cp_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  
+
+  integer :: k, fc, c, j
+ 
+  associate(                                                                         & !  
+    lit1           => centurybgc_vars%lit1                                         , & !
+    lit2           => centurybgc_vars%lit2                                         , & !
+    lit3           => centurybgc_vars%lit3                                         , & !
+    som1           => centurybgc_vars%som1                                         , & !
+    som2           => centurybgc_vars%som2                                         , & !
+    som3           => centurybgc_vars%som3                                         , & !
+    cwd            => centurybgc_vars%cwd                                          , & !
+    nelm           => centurybgc_vars%nelms                                        , & !
+    id_trc_nh3x    => betrtracer_vars%id_trc_nh3x                                  , & !
+    id_trc_no3x    => betrtracer_vars%id_trc_no3x                                  , & !   
+    ngwmobile_tracers => betrtracer_vars%ngwmobile_tracers                         , & !
+    tracer_conc_solid_passive => tracerstate_vars%tracer_conc_solid_passive_col    , & !
+    tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col                  , & !
+    bgc_cpool_inputs_vr => carbonflux_vars%bgc_cpool_inputs_vr_col                 , & !
+    bgc_npool_inputs_vr => nitrogenflux_vars%bgc_npool_inputs_vr_col               , & !
+    sminn_nh4_input_vr  => nitrogenflux_vars%sminn_nh4_input_vr_col                , & !
+    sminn_no3_input_vr  => nitrogenflux_vars%sminn_no3_input_vr_col                  & 
+  )
+  
+
+  do fc = 1, num_soilc
+    c = filter_soilc(fc)
+    
+    do j = lbj, ubj
+      k = lit1
+      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,n,k)/catomw      
+      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,n,k)/natomw
+      
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+
+      k = lit2
+      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,n,k)/catomw      
+      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,n,k)/natomw
+      
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+      
+      k = lit3
+      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,n,k)/catomw      
+      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,n,k)/natomw
+      
+      cn_ratios(k,c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+
+      k = cwd
+      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,n,k)/catomw      
+      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,n,k)/natomw
+      
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+      
+      k = som1
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+
+      k = som2
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+
+      k = som3
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+
+      tracer_conc_mobile(c, j, id_trc_nh3x) = tracer_conc_mobile(c, j, id_trc_nh3x) + sminn_nh4_input_vr_col(c,j)/natomw
+      tracer_conc_mobile(c, j, id_trc_no3x) = tracer_conc_mobile(c, j, id_trc_no3x) + sminn_no3_input_vr_col(c,j)/natomw
+      
+    enddo
+  enddo
+  
+  end associate
+  end subroutine calc_extneral_bgc_input
   
 
 end module BGCCenturySubMod

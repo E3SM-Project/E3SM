@@ -123,7 +123,25 @@ contains
          cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
       end do
 
-    if(.not. is_active_betr_bgc)then
+    if( is_active_betr_bgc)then
+      !summarize litter carbon input
+      ! plant to litter fluxes
+      do j = 1,nlevdecomp
+         ! column loop
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            ! phenology and dynamic land cover fluxes
+            cf%bgc_cpool_inputs_vr_col(c,j,i_met_lit) = &
+                 ( cf%phenology_c_to_litr_met_c_col(c,j) + cf%dwt_frootc_to_litr_met_c_col(c,j) ) *dt
+            cf%bgc_cpool_inputs_vr_col(c,j,i_cel_lit) = &
+                 ( cf%phenology_c_to_litr_cel_c_col(c,j) + cf%dwt_frootc_to_litr_cel_c_col(c,j) ) *dt
+            cf%bgc_cpool_inputs_vr_col(c,j,i_lig_lit) = &
+                 ( cf%phenology_c_to_litr_lig_c_col(c,j) + cf%dwt_frootc_to_litr_lig_c_col(c,j) ) *dt
+            cf%bgc_cpool_inputs_vr_col(c,j,i_cwd) = &
+                 ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) *dt
+         enddo
+      enddo  
+    else
       ! plant to litter fluxes
       do j = 1,nlevdecomp
          ! column loop
