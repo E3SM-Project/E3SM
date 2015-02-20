@@ -80,6 +80,7 @@
         <machine compiler="ibm" testtype="acme_developer">intrepid</machine>
         <machine compiler="intel" testtype="acme_developer">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
@@ -134,6 +135,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -200,6 +202,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -264,6 +267,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -346,6 +350,7 @@
         <machine compiler="intel" testtype="prebeta">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -467,6 +472,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -589,6 +595,7 @@
         <machine compiler="intel" testtype="prebeta">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -645,6 +652,7 @@
         <machine compiler="intel" testtype="acme_developer">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="prebeta">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
@@ -701,6 +709,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -767,6 +776,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -831,6 +841,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -1218,6 +1229,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -1281,6 +1293,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -2488,6 +2501,7 @@
         <machine compiler="ibm" testtype="acme_developer">intrepid</machine>
         <machine compiler="intel" testtype="acme_developer">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
@@ -2540,6 +2554,7 @@
         <machine compiler="intel" testtype="prebeta">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -5563,6 +5578,7 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_developer">lawrencium-lr2</machine>
         <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_developer">linux-generic</machine>
         <machine compiler="gnu" testtype="acme_developer">mac</machine>
         <machine compiler="gnu" testtype="acme_integration">mac</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
