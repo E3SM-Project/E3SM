@@ -1117,33 +1117,42 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(9 * maxCCsPerDomain) :: stats
-      real (kind=RKIND), dimension(9 * maxCCsPerDomain * dmInfo % nprocs) :: &
-         globalStats, aggregated
+      real (kind=RKIND), dimension(9 * maxCCsPerDomain * (dmInfo % nprocs)) :: globalStats, aggregated
 
-      integer i, j, k, ierr, curId, listIdx, totalCCs, cullId
+      integer i, j, k, ierr, curId, listIdx, totalCCs, cullId, offset
 
       ! Multiplex all eddy statistics into one array so it can be send with
       ! one MPI communication call
+      ! TODO this could be possibly be made more memory and network 
+      !      efficient with lists, because a large array is allocated
+      !      allocated and communicated across all processors to merge eddies
       call mpas_timer_start("all gather", .false., CCAggGatherT)
 
-      stats = 0
+      offset = 9 * maxCCsPerDomain * (dmInfo % my_proc_id)
+
+      aggregated = 0
       do i = 1, numCCs
-         stats(9*(i-1) + 1) = origCCId(i)
-         stats(9*(i-1) + 2) = sumVol(i)
-         stats(9*(i-1) + 3) = wsPosX(i)
-         stats(9*(i-1) + 4) = wsPosY(i)
-         stats(9*(i-1) + 5) = wsPosZ(i)
-         stats(9*(i-1) + 6) = wsVelX(i)
-         stats(9*(i-1) + 7) = wsVelY(i)
-         stats(9*(i-1) + 8) = wsVelZ(i)
-         stats(9*(i-1) + 9) = numCells(i)
+         aggregated(9*(i-1) + 1 + offset) = origCCId(i)
+         aggregated(9*(i-1) + 2 + offset) = sumVol(i)
+         aggregated(9*(i-1) + 3 + offset) = wsPosX(i)
+         aggregated(9*(i-1) + 4 + offset) = wsPosY(i)
+         aggregated(9*(i-1) + 5 + offset) = wsPosZ(i)
+         aggregated(9*(i-1) + 6 + offset) = wsVelX(i)
+         aggregated(9*(i-1) + 7 + offset) = wsVelY(i)
+         aggregated(9*(i-1) + 8 + offset) = wsVelZ(i)
+         aggregated(9*(i-1) + 9 + offset) = numCells(i)
       end do
 
       ! Send all local statistics
-      call MPI_Allgather(stats, 9*maxCCsPerDomain, MPI_REALKIND, &
-                      globalStats, 9*maxCCsPerDomain, MPI_REALKIND, &
-                      dmInfo % comm, ierr)
+      ! TODO if there is an mpas_dmpar_allgather, that should be used instead
+      !      of max -- in theory, that should be more efficient because
+      !      data just has to be copied to all procs, rather than compared
+      !      to make the max
+      call mpas_dmpar_max_real_array(dmInfo, &
+                                     9 * maxCCsPerDomain * (dmInfo % nprocs), &
+                                     aggregated, &
+                                     globalStats)
+
       call mpas_timer_stop("all gather", CCAggGatherT)
 
       ! Sort partial eddy stats according to eddy ID for efficient merging
