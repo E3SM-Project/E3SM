@@ -1,5 +1,7 @@
 .SUFFIXES: .c .o
 
+EZXML_PATH= ../../external/ezxml
+
 OBJS = parse.o dictionary.o gen_inc.o fortprintf.o utility.o
 
 all: ezxml parse
@@ -7,10 +9,10 @@ all: ezxml parse
 	($(MAKE) parse CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)")
 
 ezxml:
-	(cd ../external/ezxml; $(MAKE) )
+	(cd $(EZXML_PATH); $(MAKE) )
 
 parse: ezxml $(OBJS)
-	$(CC) $(CPPFLAGS) ../external/ezxml/ezxml.o  -I../external/ezxml -o $@ $(OBJS)
+	$(CC) $(CPPFLAGS) $(EZXML_PATH)/ezxml.o  -I$(EZXML_PATH) -o $@ $(OBJS)
 
 clean:
 	$(RM) *.o parse
@@ -19,4 +21,4 @@ clean:
 	$(RM) *.i
 
 .c.o: ezxml
-	$(CC) $(CPPFLAGS) -I../external/ezxml -c $<
+	$(CC) $(CPPFLAGS) -I$(EZXML_PATH) -c $<
