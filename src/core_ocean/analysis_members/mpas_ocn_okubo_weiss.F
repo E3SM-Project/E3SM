@@ -1171,7 +1171,11 @@ contains
          ! if our current id is not the same (new eddy)
          if (globalStats(9*(i-1)+1) /= curId) then
             ! get ID
-            curId = globalStats(9*(i-1)+1)
+            if (globalStats(9*(i-1)+1) .lt. 0) then
+              curId = 0
+            else
+              curId = globalStats(9*(i-1)+1)
+            end if
 
             ! check to see if the last one was big enough
             if (listIdx .gt. 0) then
