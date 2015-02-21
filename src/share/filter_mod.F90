@@ -589,7 +589,8 @@ contains
 #ifdef _PRIM
   subroutine preq_filter(elem, edge3p1, flt, hybrid, nfilt, nets, nete)
     use element_mod, only : element_t
-    use edge_mod, only  : newEdgebuffer_t, newedgevpack, newedgevunpack
+    use edge_mod, only  :  newedgevpack, newedgevunpack
+    use edgetype_mod, only : newedgebuffer_t 
     use bndry_mod, only : bndry_exchangev
     use hybrid_mod, only  : hybrid_t
     use dimensions_mod, only : nlev
@@ -806,7 +807,8 @@ contains
     use element_mod, only : element_t
     use parallel_mod, only : syncmp
     use dimensions_mod, only : nlev
-    use edge_mod, only : oldEdgeBuffer_t, oldedgevpack, oldedgevunpack
+    use edge_mod, only : oldedgevpack, oldedgevunpack
+    use edgetype_mod, only : oldEdgeBuffer_t
     use bndry_mod, only : bndry_exchangev
     use hybrid_mod, only : hybrid_t
     use physical_constants, only : rearth,rrearth

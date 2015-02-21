@@ -483,7 +483,8 @@ contains
     use interpolate_mod, only : interpdata_t, interpolate_scalar, interpolate_vector, &
          get_interp_parameter,var_is_vector_vvar,var_is_vector_uvar, replace_vec_by_vordiv
     use element_mod, only : element_t
-    use edge_mod, only : oldedgebuffer_t, oldedgevpack, oldedgevunpack, initedgebuffer, freeedgebuffer
+    use edge_mod, only : oldedgevpack, oldedgevunpack, initedgebuffer, freeedgebuffer
+    use edgetype_mod, only : oldedgebuffer_t
     use dimensions_mod, only : nelemd, nlev, np
     use parallel_mod, only : parallel_t, syncmp
     use bndry_mod, only : bndry_exchangeV

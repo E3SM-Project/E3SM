@@ -14,7 +14,8 @@ module dg_tests_mod
   ! ------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, gradient_wk, divergence, vorticity
   ! ------------------------
-  use edge_mod, only : newedgebuffer_t, newedgevpack, newedgevunpack
+  use edge_mod, only : newedgevpack, newedgevunpack
+  use edgetype_mod, only : newedgebuffer_t
   ! ------------------------
   use bndry_mod, only : bndry_exchangeV
   ! ------------------------

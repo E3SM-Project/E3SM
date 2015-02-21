@@ -14,7 +14,8 @@ module multicloud_mod
 #ifndef CAM
   use physics_mod, only        : elem_physics_t, Prim_Condense,getsurfpress,Temp2PotTemp
 #endif
-  use edge_mod, only           : oldEdgeBuffer_t, oldedgevpack, oldedgerotate, oldedgevunpack, initedgebuffer
+  use edge_mod, only           : oldedgevpack, oldedgerotate, oldedgevunpack, initedgebuffer
+  use edgetype_mod, only       : oldEdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use column_types_mod, only    : ColumnModelMulticloud_t

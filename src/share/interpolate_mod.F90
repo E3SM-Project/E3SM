@@ -19,7 +19,7 @@ module interpolate_mod
   use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
   use control_mod,            only : cubed_sphere_map
-  use edge_mod, only : ghostbuffertr_t
+  use edgetype_mod, only : ghostbuffertr_t
 
   implicit none
   private
@@ -615,7 +615,7 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   use fvm_control_volume_mod, only : fvm_struct
   use fvm_reconstruction_mod, only: reconstruction
   use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
-  use edge_mod, only : edgedescriptor_t
+  use edgetype_mod, only : edgedescriptor_t
   
   type (interpdata_t), intent(in)     :: interpdata                        
   real (kind=real_kind), intent(in)   :: f(1-nhc:nc+nhc,1-nhc:nc+nhc)
@@ -695,7 +695,7 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
   use dimensions_mod, only: nip, nipm, nep
   use coordinate_systems_mod, only : cartesian2d_t
   
-  use edge_mod, only : edgedescriptor_t
+  use edgetype_mod, only : edgedescriptor_t
   
   type (interpdata_t), intent(in)     :: interpdata                        
   real (kind=real_kind), intent(in)   :: f(1-nipm:nep+nipm,1-nipm:nep+nipm)

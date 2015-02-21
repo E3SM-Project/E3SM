@@ -1,5 +1,5 @@
-# Relevant Directories within the HOMME repository
 # holding source files needed for building the library
+# Relevant Directories within the HOMME repository
 # and executable sweqx.
 
 SET(SRC_BASE    ${CMAKE_CURRENT_SOURCE_DIR}/..)
@@ -31,6 +31,7 @@ SET(SWDGX_SRCS
     ${SRC_SHARE}/metagraph_mod.F90
     ${SRC_SHARE}/schedule_mod.F90
     ${SRC_SHARE}/schedtype_mod.F90
+    ${SRC_SHARE}/edgetype_mod.F90
     ${SRC_SHARE}/bndry_mod.F90
     ${SRC_SHARE}/derivative_mod.F90
     ${SRC_SHARE}/viscosity_mod.F90

@@ -3,7 +3,7 @@
 #endif
 
 module checksum_mod
-  use edge_mod, only : ghostbuffer3D_t, oldedgebuffer_t, ghostbuffer3d_t, ghostbufferTR_t
+  use edgetype_mod, only : ghostbuffer3D_t, oldedgebuffer_t, ghostbuffer3d_t, ghostbufferTR_t
   use kinds, only : real_kind
   use dimensions_mod, only : np, nlev, nelem, nelemd, max_corner_elem, nc
 
@@ -31,7 +31,8 @@ contains
     use parallel_mod, only : parallel_t, iam, syncmp
     use gridgraph_mod, only : gridedge_t,printchecksum
     use edge_mod, only : initedgebuffer, oldedgevpack, oldedgevunpack, oldedgedgvpack, &
-         oldedgedgvunpack, oldedgebuffer_t
+         oldedgedgvunpack
+    use edgetype_mod, only : oldedgebuffer_t
     use bndry_mod, only : bndry_exchangev
     use schedtype_mod, only : schedule_t, schedule
     use schedule_mod, only : checkschedule
@@ -356,9 +357,9 @@ contains
   use element_mod, only : element_t
   use bndry_mod, only : ghost_exchangevfull, bndry_exchangev
   use edge_mod, only : ghostvpackfull, ghostvunpackfull, &
-       oldedgebuffer_t, freeedgebuffer, initedgebuffer,&
-       oldedgevpack,oldedgevunpack, initghostbuffer3d, ghostvpack3d, ghostvunpack3d, &
-       freeghostbuffer3d
+       freeedgebuffer, initedgebuffer, oldedgevpack, oldedgevunpack, &
+       initghostbuffer3d, ghostvpack3d, ghostvunpack3d, freeghostbuffer3d
+  use edgetype_mod, only : oldedgebuffer_t
 
   use control_mod, only : north,south,east,west,neast, nwest, seast, swest
 
@@ -686,8 +687,8 @@ end subroutine
   use element_mod, only : element_t
   use fvm_control_volume_mod, only : fvm_struct
   use bndry_mod, only : bndry_exchangev
-  use edge_mod, only :  oldedgebuffer_t, oldedgevpack, oldedgevunpack, initedgebuffer, &
-       freeedgebuffer
+  use edge_mod, only :  oldedgevpack, oldedgevunpack, initedgebuffer, freeedgebuffer
+  use edgetype_mod, only : oldedgebuffer_t
   use coordinate_systems_mod, only : cartesian3D_t,cartesian2D_t,spherical_polar_t,&
        spherical_to_cart,cart2spherical
   use derivative_mod, only : remap_phys2gll

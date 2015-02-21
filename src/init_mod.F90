@@ -39,7 +39,8 @@ contains
          assign_node_numbers_to_elem
 
     ! --------------------------------
-    use edge_mod, only : EdgeDescriptor_t, newedgebuffer_t, initedgebuffer   
+    use edge_mod, only : initedgebuffer
+    use edgetype_mod, only : EdgeDescriptor_t, newedgebuffer_t
     ! --------------------------------
     use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_flops, red_timer, &
          red_sum, red_sum_int, red_max, red_max_int, InitReductionBuffer

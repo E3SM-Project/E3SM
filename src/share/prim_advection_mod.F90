@@ -856,7 +856,8 @@ module prim_advection_mod
   use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
         statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
         prescribed_wind, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
-  use edge_mod, only           : EdgeDescriptor_t, newEdgeBuffer_t, newedgevpack, newedgerotate, newedgevunpack, initedgebuffer, newedgevunpackmin, ghostbuffer3D_t
+  use edge_mod, only           : newedgevpack, newedgerotate, newedgevunpack, initedgebuffer, newedgevunpackmin
+  use edgetype_mod, only       : EdgeDescriptor_t, newEdgeBuffer_t, ghostbuffer3D_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax,newneighbor_minmax
@@ -1576,13 +1577,14 @@ end subroutine Cobra_SLBQP
 
 subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl)
 
-  use derivative_mod,         only : derivative_t, ugradv_sphere
-  use edge_mod      ,         only : newEdgeBuffer_t, newedgevpack, newedgevunpack
-  use bndry_mod     ,         only : bndry_exchangev
-  use kinds,                  only : real_kind
-  use hybrid_mod,             only : hybrid_t
-  use element_mod,            only : element_t
-  use dimensions_mod,         only : np, nlev
+  use derivative_mod,  only : derivative_t, ugradv_sphere
+  use edge_mod,        only : newedgevpack, newedgevunpack
+  use edgetype_mod,    only : newEdgeBuffer_t
+  use bndry_mod,       only : bndry_exchangev
+  use kinds,           only : real_kind
+  use hybrid_mod,      only : hybrid_t
+  use element_mod,     only : element_t
+  use dimensions_mod,   only : np, nlev
 
   implicit none
 
@@ -2812,7 +2814,8 @@ end subroutine ALE_parametric_coords
   use hybrid_mod     , only : hybrid_t
   use element_mod    , only : element_t
   use derivative_mod , only : derivative_t
-  use edge_mod       , only : newEdgeBuffer_t, newedgevpack, newedgevunpack
+  use edge_mod       , only : newedgevpack, newedgevunpack
+  use edgetype_mod   , only : newEdgeBuffer_t
   use bndry_mod      , only : bndry_exchangev
   use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
   implicit none

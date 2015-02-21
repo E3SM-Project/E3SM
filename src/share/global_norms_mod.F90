@@ -3,8 +3,10 @@
 #endif
 
 module global_norms_mod
+
   use kinds, only : iulog
-  use edge_mod, only : oldEdgeBuffer_t
+  use edgetype_mod, only : oldEdgeBuffer_t
+
   implicit none
   private
   save
@@ -107,7 +109,8 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edge_mod, only : oldEdgeBuffer_t, initedgebuffer, FreeEdgeBuffer, oldedgeVpack, oldedgeVunpack
+    use edgetype_mod, only : oldEdgeBuffer_t
+    use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, oldedgeVpack, oldedgeVunpack
     use bndry_mod, only : bndry_exchangeV
 
     type(element_t)      , intent(inout) :: elem(:)
@@ -253,7 +256,8 @@ contains
     use control_mod, only : tracer_transport_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edge_mod, only : oldEdgeBuffer_t, initedgebuffer, FreeEdgeBuffer, oldedgeVpack, oldedgeVunpack
+    use edgetype_mod, only : oldEdgeBuffer_t 
+    use edge_mod, only : initedgebuffer, FreeEdgeBuffer, oldedgeVpack, oldedgeVunpack
     use bndry_mod, only : bndry_exchangeV
     use time_mod, only : tstep
 

@@ -20,7 +20,7 @@ module surfaces_mod
                                      cube_face_number_from_cart, distance, sphere_tri_area
 
   use parallel_mod, only   : abortmp,  global_shared_buf, global_shared_sum
-  use edge_mod, only       : oldEdgeBuffer_t, Ghostbuffer3d_t
+  use edgetype_mod, only       : oldEdgeBuffer_t, Ghostbuffer3d_t
   use bndry_mod,    only : ghost_exchangevfull
   use dimensions_mod, only : np, ne, nelemd, max_elements_attached_to_node, s_nv
   use global_norms_mod, only: wrap_repro_sum

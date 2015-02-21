@@ -13,7 +13,7 @@ module spelt_mod
 
   use kinds, only : real_kind, int_kind
   use dimensions_mod, only: ne, nlev, ntrac, np, ntrac_d, nc, nhe, nip, nipm, nep
-  use edge_mod, only : ghostBuffertr_t,oldedgebuffer_t
+  use edgetype_mod, only : ghostBuffertr_t,oldedgebuffer_t
   use time_mod, only : timelevel_t
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2D_t
   use element_mod, only : element_t, timelevels
@@ -411,7 +411,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   use derivative_mod, only : derivative_t
   ! ---------------------------------------------------------------------------------
-  use edge_mod, only :  ghostVpack2d, ghostVunpack2d
+  use edge_mod, only :  ghostVpack2d, ghostVunpack2d, ghostvpackR, ghostvunpackR
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
@@ -419,7 +419,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------
-  use edge_mod, only : ghostbuffertr_t, ghostvpackR, ghostvunpackR
+  use edgetype_mod, only : ghostbuffertr_t
 
   implicit none
   type (element_t), intent(inout)             :: elem(:)
@@ -626,7 +626,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !
   use derivative_mod, only : derivative_t
   ! ---------------------------------------------------------------------------------
-  use edge_mod, only :  ghostVpack2d, ghostVunpack2d
+  use edge_mod, only :  ghostVpack2d, ghostVunpack2d, ghostvpackR, ghostvunpackR
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
@@ -634,7 +634,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------
-  use edge_mod, only : ghostbuffertr_t, ghostvpackR, ghostvunpackR
+  use edgetype_mod, only : ghostbuffertr_t
   use control_mod, only : test_cfldep
 
   implicit none

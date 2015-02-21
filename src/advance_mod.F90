@@ -22,7 +22,7 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : newEdgeBuffer_t
+    use edgetype_mod, only : newEdgeBuffer_t
     ! ---------------------
     use filter_mod, only : filter_t
     ! ---------------------
@@ -195,7 +195,8 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack, newedgedgvunpack
+    use edge_mod, only : newedgevpack, newedgevunpack, newedgedgvunpack
+    use edgetype_mod, only : newEdgeBuffer_t
     ! ---------------------
     use filter_mod, only : filter_t
     ! ---------------------
@@ -1404,7 +1405,8 @@ contains
     use hybrid_mod, only : hybrid_t
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-    use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack
+    use edge_mod, only : newedgevpack, newedgevunpack
+    use edgetype_mod, only : newEdgeBuffer_t
     use bndry_mod, only : bndry_exchangev
     use viscosity_mod, only : biharmonic_wk, neighbor_minmax
     ! ---------------------
@@ -1647,7 +1649,8 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack
+    use edge_mod, only : newedgevpack, newedgevunpack
+    use edgetype_mod, only : newEdgeBuffer_t
     ! ---------------------
     use filter_mod, only : filter_t, filter_P
     ! ---------------------
@@ -2274,7 +2277,8 @@ contains
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack
+  use edge_mod, only : newedgevpack, newedgevunpack
+  use edgetype_mod, only : newEdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   implicit none
 

@@ -70,6 +70,7 @@ SET(SWEQX_SRCS
                ${SRC_SHARE}/reduction_mod.F90
                ${SRC_SHARE}/schedule_mod.F90
                ${SRC_SHARE}/schedtype_mod.F90
+               ${SRC_SHARE}/edgetype_mod.F90
                ${SRC_SHARE}/solver_mod.F90
                ${SRC_SHARE}/spacecurve_mod.F90
                ${SRC_SHARE}/thread_mod.F90

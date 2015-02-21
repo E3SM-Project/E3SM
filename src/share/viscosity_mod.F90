@@ -18,8 +18,9 @@ use hybrid_mod, only : hybrid_t, hybrid_create
 use parallel_mod, only : parallel_t
 use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
-use edge_mod, only :  newEdgeBuffer_t, newedgevpack, newedgerotate, newedgevunpack, newedgevunpackmin, &
-    newedgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, EdgeDescriptor_t, newedgeSunpackmax, newedgeSunpackmin,newedgeSpack
+use edgetype_mod, only : newEdgeBuffer_t, EdgeDescriptor_t
+use edge_mod, only : newedgevpack, newedgerotate, newedgevunpack, newedgevunpackmin, &
+    newedgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, newedgeSunpackmax, newedgeSunpackmin,newedgeSpack
 
 use bndry_mod, only : bndry_exchangev, bndry_exchangeS
 use control_mod, only : hypervis_scaling, nu, nu_div

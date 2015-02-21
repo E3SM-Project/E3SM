@@ -7,7 +7,7 @@ module element_mod
   use kinds,                  only: real_kind, long_kind, int_kind
   use coordinate_systems_mod, only: spherical_polar_t, cartesian2D_t, cartesian3D_t, distance
   use dimensions_mod,         only: np, npsq, nlev, nlevp, qsize_d, max_neigh_edges
-  use edge_mod,               only: edgedescriptor_t, rotation_t
+  use edgetype_mod,           only: edgedescriptor_t, rotation_t
   use gridgraph_mod,          only: gridvertex_t
 
   implicit none

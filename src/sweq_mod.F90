@@ -34,7 +34,7 @@ contains
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
-    use edge_mod, only : newEdgeBuffer_t
+    use edgetype_mod, only : newEdgeBuffer_t
     ! ----------------
     use reduction_mod, only : ReductionBuffer_ordered_1d_t
     !-----------------
@@ -1013,7 +1013,7 @@ contains
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
-    use edge_mod, only : newEdgeBuffer_t
+    use edgetype_mod, only : newEdgeBuffer_t
     ! ----------------
     use reduction_mod, only : ReductionBuffer_ordered_1d_t
     !-----------------

@@ -41,7 +41,7 @@ subroutine primeq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete, my_hvcoord)
     !-----------------
     use quadrature_mod, only : quadrature_t, gauss,gausslobatto
     !-----------------
-    use edge_mod, only : newEdgeBuffer_t
+    use edgetype_mod, only : newEdgeBuffer_t
     ! ----------------
     use reduction_mod, only : ReductionBuffer_ordered_1d_t
     !-----------------

@@ -19,7 +19,8 @@
     !=========================================!
     use element_mod, only : element_t
     !=========================================!
-    use edge_mod, only : newEdgeBuffer_t, newedgevpack,newedgerotate,newedgevunpack,newedgeDGVpack,newedgeDGVunpack
+    use edge_mod, only : newedgevpack,newedgerotate,newedgevunpack,newedgeDGVpack,newedgeDGVunpack
+    use edgetype_mod, only : newEdgeBuffer_t
     !=========================================!
     use filter_mod, only : filter_t, filter_P
     !=========================================!

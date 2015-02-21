@@ -36,6 +36,7 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/metagraph_mod.F90
 					     ${SRC_SHARE_DIR}/schedule_mod.F90
 					     ${SRC_SHARE_DIR}/schedtype_mod.F90
+					     ${SRC_SHARE_DIR}/edgetype_mod.F90
 					     ${SRC_SHARE_DIR}/thread_mod.F90
 					     ${SRC_SHARE_DIR}/bndry_mod.F90
 					     ${SRC_SHARE_DIR}/derivative_mod.F90

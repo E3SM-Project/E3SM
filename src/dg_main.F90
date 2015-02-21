@@ -24,7 +24,7 @@ use dg_sweq_mod, only : sweq_dg
 ! -----------------------------------------------
 !      use state_mod
 ! -----------------------------------------------
-      use edge_mod, only : newEdgeBuffer_t
+      use edgetype_mod, only : newEdgeBuffer_t
 ! -----------------------------------------------
       use reduction_mod, only : ReductionBuffer_ordered_1d_t
 ! -----------------------------------------------

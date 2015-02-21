@@ -14,7 +14,8 @@ module shallow_water_mod
                              divergence, vorticity, laplace_sphere_wk, &
                              vlaplace_sphere_wk, divergence_sphere
   ! ------------------------
-  use edge_mod, only : newEdgeBuffer_t, newedgeVpack, newedgeVunpack
+  use edge_mod, only : newedgeVpack, newedgeVunpack
+  use edgetype_mod, only : newEdgeBuffer_t
   ! ------------------------
   use bndry_mod, only : bndry_exchangeV
   ! ------------------------
