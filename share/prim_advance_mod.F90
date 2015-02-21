@@ -10,7 +10,7 @@
 !
 !
 module prim_advance_mod
-  use edge_mod, only : EdgeDescriptor_t, oldEdgeBuffer_t, newEdgeBuffer_t
+  use edgetype_mod, only : EdgeDescriptor_t, oldEdgeBuffer_t, newEdgeBuffer_t
   use kinds, only : real_kind, iulog
   use perf_mod, only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod, only : abortmp, parallel_t, iam
@@ -94,7 +94,8 @@ contains
     use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
     use dimensions_mod, only : np, nlev, nlevp, nvar, nelemd
 !    use prim_state_mod, only : prim_printstate
-    use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack, initEdgeBuffer
+    use edge_mod, only : newedgevpack, newedgevunpack, initEdgeBuffer
+    use edgetype_mod, only : newEdgeBuffer_t
     use element_mod, only : element_t
     use hybvcoord_mod, only : hvcoord_t
     use hybrid_mod, only : hybrid_t
@@ -619,7 +620,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        use control_mod, only : filter_freq,debug_level, precon_method
        use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
        use dimensions_mod, only : np, nlev, nlevp
-       use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack, initEdgeBuffer
+       use edge_mod, only : newedgevpack, newedgevunpack, initEdgeBuffer
+       use edgetype_mod, only : newEdgeBuffer_t
        use element_mod, only : element_t
        use filter_mod, only : filter_t, preq_filter
        use hybvcoord_mod, only : hvcoord_t
@@ -1699,7 +1701,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-  use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack
+  use edge_mod, only : newedgevpack, newedgevunpack
+  use edgetype_mod, only : newEdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk
   use physical_constants, only: Cp
@@ -1986,7 +1989,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-  use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack
+  use edge_mod, only : newedgevpack, newedgevunpack
+  use edgetype_mod, only : newEdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk_dp3d
   use physical_constants, only: Cp
@@ -2253,7 +2257,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-  use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack
+  use edge_mod, only : newedgevpack, newedgevunpack
+  use edgetype_mod, only : newEdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk
   use physical_constants, only: Cp
@@ -4072,7 +4077,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use dimensions_mod, only : np, np, nlev
   use control_mod, only : smooth_phis_nudt, hypervis_scaling
   use hybrid_mod, only : hybrid_t
-  use edge_mod, only : newEdgeBuffer_t, newedgevpack, newedgevunpack, newedgevunpackmax, newedgevunpackmin
+  use edge_mod, only : newedgevpack, newedgevunpack, newedgevunpackmax, newedgevunpackmin
+  use edgetype_mod, only : newEdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -4214,7 +4220,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
     use dimensions_mod, only : np, nlev, nc,nhe
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : oldEdgeBuffer_t, oldedgevpack, oldedgevunpack, newedgevunpackmax, newedgevunpackmin
+    use edge_mod, only : oldedgevpack, oldedgevunpack, newedgevunpackmax, newedgevunpackmin
+    use edgetype_mod, only : oldEdgeBuffer_t
     use bndry_mod, only : bndry_exchangev
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t , laplace_sphere_wk

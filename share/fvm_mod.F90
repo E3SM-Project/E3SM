@@ -14,8 +14,9 @@
 
 module fvm_mod    
   use kinds, only : real_kind, int_kind, longdouble_kind
-  use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
-       ghostVpack, ghostVunpack,  oldedgebuffer_t, initEdgebuffer
+  use edge_mod, only : initghostbufferTR, freeghostbuffertr, &
+       ghostVpack, ghostVunpack,  initEdgebuffer
+  use edgetype_mod, only : ghostbuffertr_t, oldedgebuffer_t
   use bndry_mod, only: ghost_exchangeV                     
   use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhe, nlev, ntrac, np, ntrac_d,ns, nhr, nhc
   use time_mod, only : timelevel_t
@@ -61,7 +62,8 @@ contains
     ! ---------------------------------------------------------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! -----------------------------------------------
-    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
+    use edge_mod, only :  ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
+    use edgetype_mod, only : ghostBuffertr_t
     
 !    use fvm_control_volume_mod, only:  fvm_struct !dbg
 !    use control_mod, only : north, south, east, west, neast, nwest, seast, swest !dbg   
@@ -261,7 +263,8 @@ contains
     ! ---------------------------------------------------------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! -----------------------------------------------
-    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
+    use edge_mod, only :  ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
+    use edgetype_mod, only : ghostBuffertr_t
     
     
     implicit none

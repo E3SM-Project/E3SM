@@ -11,12 +11,15 @@ module edge_mod
   use coordinate_systems_mod, only : cartesian3D_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
   use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t
+  use edgetype_mod, only : edgedescriptor_t, oldEdgeBuffer_t, newedgebuffer_t, &
+         Longedgebuffer_t, Ghostbuffertr_t, Ghostbuffer3d_t
 
 
   implicit none
   private
   save
 
+#if 0
   type, public :: rotation_t
      integer  :: nbr                                        ! nbr direction: north south east west
      integer  :: reverse                                    ! 0 = do not reverse order
@@ -72,6 +75,7 @@ module edge_mod
      integer (kind=int_kind), dimension(:,:), pointer :: buf => null()
      integer (kind=int_kind), dimension(:,:), pointer :: receive => null()
   end type LongEdgeBuffer_t
+#endif
 
   ! 8-byte Integer routines 
   public :: initLongEdgeBuffer, FreeLongEdgeBuffer
@@ -121,6 +125,7 @@ module edge_mod
   logical, private :: threadsafe=.true.
 
 
+#if 0
   type, public :: GhostBufferTR_t
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf => null()
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive => null()
@@ -137,6 +142,7 @@ module edge_mod
      integer :: nbuf ! size of the horizontal dimension of the buffers.
      integer :: elem_size ! size of 2D array (first two dimensions of buf())
   end type GhostBuffer3D_t
+#endif
 
   real(kind=real_kind), parameter, public :: edgeDefaultVal = 1.11e+100_real_kind
 
@@ -767,6 +773,7 @@ endif
   end subroutine FreeNewEdgeBuffer
 
   subroutine FreeGhostBuffer3D(buffer) 
+    use edgetype_mod, only : ghostbuffer3d_t 
     implicit none
     type (Ghostbuffer3d_t),intent(inout) :: buffer
 
@@ -2479,6 +2486,7 @@ endif
   !  Freed an ghostpoints communication buffer
   ! =========================================
   subroutine FreeGhostBufferTR(ghost) 
+    use edgetype_mod, only : GhostBuffertr_t 
     implicit none
     type (GhostBuffertr_t),intent(inout) :: ghost
 
@@ -2514,9 +2522,12 @@ endif
   !! data will be located.
   ! =========================================
   subroutine GhostVpackfull(edge,v,nc1,nc2,nc,vlyr,kptr,desc)
+
     use dimensions_mod, only : max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use edgetype_mod, only : ghostbuffer3d_t
 
+    implicit none 
     type (Ghostbuffer3D_t)                      :: edge
     integer,              intent(in)   :: vlyr
     integer,              intent(in)   :: nc1,nc2,nc,kptr
@@ -2686,6 +2697,8 @@ endif
   subroutine GhostVunpackfull(edge,v,nc1,nc2,nc,vlyr,kptr,desc)
     use dimensions_mod, only : max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use edgetype_mod, only : Ghostbuffer3d_t
+    implicit none 
     type (Ghostbuffer3D_t),         intent(in)  :: edge
 
     integer,               intent(in)  :: vlyr
@@ -2863,6 +2876,8 @@ endif
   !! data will be located.
   ! =========================================
   subroutine GhostVpack_unoriented(edge,v,nc,vlyr,kptr,desc)
+    use edgetype_mod, only : edgedescriptor_t, ghostbuffer3d_t 
+    implicit none
     type (Ghostbuffer3D_t),intent(inout) :: edge
     integer,              intent(in)   :: vlyr
     integer,              intent(in)   :: nc
@@ -2897,6 +2912,7 @@ endif
   ! ========================================
   subroutine GhostVunpack_unoriented(edge,v,nc,vlyr,kptr,desc,GlobalId,u)
 
+    use edgetype_mod, only : Ghostbuffer3d_t, EdgeDescriptor_t
     implicit none
 
     type (Ghostbuffer3D_t),intent(inout)  :: edge
@@ -2998,8 +3014,12 @@ endif
 ! =========================================
 
 subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
+  
   use dimensions_mod, only : max_corner_elem
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+  use edgetype_mod, only : EdgeDescriptor_t, Ghostbuffertr_t
+
+  implicit none
 
   type (Ghostbuffertr_t)                      :: edge
   integer,              intent(in)   :: vlyr
@@ -3195,7 +3215,8 @@ end subroutine GhostVpack
 subroutine ghostVpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   use dimensions_mod, only : max_corner_elem!, ntrac_d
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-
+  use edgetype_mod, only : Ghostbuffertr_t
+  implicit none 
   type (Ghostbuffertr_t)                      :: edge
   integer,              intent(in)   :: vlyr
   integer,              intent(in)   :: ntrac
@@ -4997,6 +5018,8 @@ end subroutine ghostVunpackR
   subroutine ghostVpack3d(ghost, v, vlyr, kptr, desc)
     use dimensions_mod, only : max_corner_elem
     use control_mod,    only : north, south, east, west, neast, nwest, seast, swest
+    use edgetype_mod, only : edgedescriptor_t, ghostbuffer3d_t
+    implicit none
 
     type (Ghostbuffer3d_t)                :: ghost
     integer,              intent(in)      :: kptr,vlyr
@@ -5160,6 +5183,8 @@ end subroutine ghostVunpackR
   subroutine ghostVunpack3d(g, v, vlyr, kptr, desc, sw, se, nw, ne, mult)
     use dimensions_mod, only : max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use edgetype_mod, only : edgedescriptor_t, ghostbuffer3d_t
+    implicit none
     type (Ghostbuffer3d_t),         intent(in)  :: g
 
     integer,               intent(in)     :: kptr,vlyr
@@ -5434,7 +5459,7 @@ End module edge_mod
 ! such as cray.  if that is the case, try compiling with -DHAVE_F2003_PTR_BND_REMAP
 !
 subroutine remap_2D_ptr_buf(edge,nlyr,nbuf,src_array)
-use edge_mod, only       : oldEdgeBuffer_t ! _EXTERNAL                                                   
+use edgetype_mod, only       : oldEdgeBuffer_t ! _EXTERNAL                                                   
 use kinds, only          : real_kind
 ! input                                                                                               
 type (oldEdgeBuffer_t) :: edge
@@ -5446,7 +5471,7 @@ edge%buf  => src_array
 end subroutine remap_2D_ptr_buf
 
 subroutine remap_2D_ptr_receive(edge,nlyr,nbuf,src_array)
-use edge_mod, only       : oldEdgeBuffer_t ! _EXTERNAL                                                   
+use edgetype_mod, only       : oldEdgeBuffer_t ! _EXTERNAL                                                   
 use kinds, only          : real_kind
 implicit none 
 ! input                                                                                               

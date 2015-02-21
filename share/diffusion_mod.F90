@@ -14,8 +14,8 @@ module diffusion_mod
   ! =======================
   use element_mod, only : element_t
   ! =======================
-  use edge_mod, only : oldEdgeBuffer_t, initedgebuffer, newEdgeBuffer_t, &
-      newedgevpack, newedgevunpack, newedgerotate,EdgeDescriptor_t
+  use edge_mod, only : initedgebuffer, newedgevpack, newedgevunpack, newedgerotate
+  use edgetype_mod, only : oldEdgeBuffer_t, newEdgeBuffer_t, EdgeDescriptor_t
   ! =======================
   private
   save

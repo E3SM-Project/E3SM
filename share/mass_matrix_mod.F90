@@ -8,8 +8,9 @@ module mass_matrix_mod
   use quadrature_mod, only : quadrature_t, gauss ,gausslobatto
   use element_mod, only : element_t
   use parallel_mod, only : parallel_t
-  use edge_mod, only : oldedgebuffer_t, oldedgevpack, oldedgevunpack, &
+  use edge_mod, only : oldedgevpack, oldedgevunpack, &
        freeedgebuffer,initedgebuffer  
+  use edgetype_mod, only : oldedgebuffer_t
   use bndry_mod, only : bndry_exchangev
 implicit none
 private

@@ -8,8 +8,9 @@ module dof_mod
   use quadrature_mod, only : quadrature_t
   use element_mod, only : element_t,index_t
   use parallel_mod, only : parallel_t, mpiinteger_t
-  use edge_mod, only : longedgebuffer_t,initlongedgebuffer,freelongedgebuffer, &
+  use edge_mod, only : initlongedgebuffer,freelongedgebuffer, &
 		       longedgevpack, longedgevunpackmin
+  use edgetype_mod, only : longedgebuffer_t
   use bndry_mod, only : bndry_exchangev
 implicit none
 private

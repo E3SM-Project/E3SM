@@ -63,7 +63,8 @@ contains
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad
-    use edge_mod, only : newedgebuffer_t, newedgevpack, newedgevunpack!, edgerotate
+    use edge_mod, only : newedgevpack, newedgevunpack!, edgerotate
+    use edgetype_mod, only : newedgebuffer_t
     use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence
     use control_mod, only : maxits, while_iter, tol, precon_method
     use physical_constants, only : rrearth
@@ -1341,7 +1342,8 @@ tol=1.e-12
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad, cg_create
-    use edge_mod, only : newedgebuffer_t, newedgevpack, newedgevunpack!, edgerotate
+    use edge_mod, only : newedgevpack, newedgevunpack!, edgerotate
+    use edgetype_mod, only : newedgebuffer_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk
     use control_mod, only : maxits, while_iter, tol, precon_method
     use physical_constants, only : rrearth, dd_pi, rearth, omega

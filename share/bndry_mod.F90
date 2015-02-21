@@ -4,7 +4,7 @@
 
 module bndry_mod
   use parallel_mod, only : abortmp,iam
-  use edge_mod, only : Ghostbuffer3D_t
+  use edgetype_mod, only : Ghostbuffer3D_t
   implicit none
   private
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation
@@ -30,7 +30,7 @@ contains
 
   subroutine bndry_exchangeV_nonth(par,buffer)
     use kinds, only : log_kind
-    use edge_mod, only : oldEdgebuffer_t
+    use edgetype_mod, only : oldEdgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
@@ -148,7 +148,7 @@ contains
 
   subroutine bndry_exchangeV_nonth_recv_buf(par,buffer)
     use kinds, only : log_kind
-    use edge_mod, only : oldEdgebuffer_t
+    use edgetype_mod, only : oldEdgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
@@ -239,7 +239,7 @@ contains
 
   subroutine bndry_exchangeV_nonth_recv_newbuf(par,buffer)
     use kinds, only : log_kind
-    use edge_mod, only : newEdgebuffer_t
+    use edgetype_mod, only : newEdgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
@@ -338,7 +338,7 @@ contains
 
   subroutine bndry_exchangeS_nonth_recv_newbuf(par,buffer)
     use kinds, only : log_kind
-    use edge_mod, only : newEdgebuffer_t
+    use edgetype_mod, only : newEdgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
@@ -438,7 +438,7 @@ contains
 
   subroutine long_bndry_exchangeV_nonth(par,buffer)
     use kinds, only : log_kind
-    use edge_mod, only : LongEdgebuffer_t
+    use edgetype_mod, only : LongEdgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel
 #ifdef _MPI
@@ -541,7 +541,7 @@ contains
   !********************************************************************************
   subroutine bndry_exchangeV_thsave(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : oldEdgebuffer_t
+    use edgetype_mod, only : oldEdgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -566,7 +566,7 @@ contains
 
  subroutine bndry_exchangeV_thsave_new(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : newEdgebuffer_t
+    use edgetype_mod, only : newEdgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -589,7 +589,7 @@ contains
 
  subroutine bndry_exchangeS_thsave_new(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : newEdgebuffer_t
+    use edgetype_mod, only : newEdgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -736,7 +736,7 @@ contains
 !
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
-    use edge_mod, only : Ghostbuffertr_t
+    use edgetype_mod, only : Ghostbuffertr_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
 #ifdef _MPI
@@ -854,7 +854,8 @@ contains
   use parallel_mod, only : syncmp
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
-  use edge_mod, only : ghostbuffer3D_t, ghostvpackfull, ghostvunpackfull, &
+  use edgetype_mod, only : ghostbuffer3D_t
+  use edge_mod, only : ghostvpackfull, ghostvunpackfull, &
        initghostbuffer3D,freeghostbuffer3D
   use control_mod, only : north,south,east,west,neast, nwest, seast, swest
 
@@ -992,7 +993,8 @@ contains
   use parallel_mod, only : syncmp
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
-  use edge_mod, only : ghostbuffer3D_t, ghostvpack_unoriented, ghostvunpack_unoriented, &
+  use edgetype_mod, only : ghostbuffer3D_t
+  use edge_mod, only : ghostvpack_unoriented, ghostvunpack_unoriented, &
        initghostbuffer3D,freeghostbuffer3D
   use control_mod, only : north,south,east,west,neast, nwest, seast, swest
   use coordinate_systems_mod, only: cartesian3D_t
