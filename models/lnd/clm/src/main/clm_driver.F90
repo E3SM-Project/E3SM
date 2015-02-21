@@ -123,7 +123,7 @@ module clm_driver
   use TracerBalanceMod       , only : betr_tracer_massbalance_check
   use TracerBalanceMod       , only : begin_betr_tracer_massbalance
   use tracer_varcon          , only : is_active_betr_bgc
-  use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary  
+  use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary, CNFluxStateSummary
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
@@ -688,8 +688,7 @@ contains
                   atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
                   canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                   dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
-                  plantsoilnutrientflux_vars, &
-                  betrtracer_vars, tracerflux_vars, tracerstate_vars)
+                  plantsoilnutrientflux_vars)
 
          !do belowground bgc and transport         
          call t_startf('betr_nodrain')
@@ -705,6 +704,7 @@ contains
               tracerflux_vars, plantsoilnutrientflux_vars)
 
          call t_stopf('betr_nodrain')
+         
          !do ecosystem variable summary
          call CNEcosystemDynBetrSummary(bounds_clump,                                &
                   filter(nc)%num_soilc, filter(nc)%soilc,                        &
@@ -841,6 +841,7 @@ contains
            filter(nc)%num_soilc, filter(nc)%soilc,  betrtracer_vars , &
            tracerstate_vars,  tracerflux_vars)
          call t_stopf('betr balchk')  
+
            
        endif          
        ! ============================================================================
@@ -854,7 +855,12 @@ contains
             if(is_active_betr_bgc)then
                !extract nitrogen pool and flux from betr
                !summarize total column nitrogen and carbon
-               
+              call CNFluxStateBetrSummary(bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc,  &
+                filter(nc)%num_soilp, filter(nc)%soilp,                                      &
+                carbonflux_vars, carbonstate_vars,                                           &
+                c13_carbonflux_vars, c13_carbonstate_vars,                                   &
+                c14_carbonflux_vars, c14_carbonstate_vars, nitrogenflux_vars, nitrogenstate_vars, &
+                betrtracer_vars, tracerflux_vars, tracerstate_vars)                  
             else
              ! FIX(SPM,032414) there are use_ed checks in this routine...be consistent 
              ! (see comment above re: no leaching

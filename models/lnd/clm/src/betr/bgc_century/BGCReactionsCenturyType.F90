@@ -27,7 +27,8 @@ implicit none
   !
   ! !PUBLIC TYPES:
   public :: bgc_reaction_CENTURY_type
-
+  public :: assign_OM_CNpools
+  public :: assign_nitrogen_hydroloss
   type(centurybgc_type), private :: centurybgc_vars
 
 
@@ -452,6 +453,11 @@ contains
      nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
      k_decay(centurybgc_vars%lid_plant_minn, bounds%begc:bounds%endc ,1:ubj))
   
+  !apply root distribution here
+  call apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
+    carbonflux_vars%rr_col(bounds%begc:bounds%endc), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj),            &
+    k_decay(centurybgc_vars%lid_ar_rt, bounds%begc:bounds%endc, 1:ubj))
+  
   !do ode integration and update state variables for each layer
   do j = lbj, ubj
     do fc = 1, num_soilc
@@ -646,7 +652,7 @@ contains
     
  !do pool degradation
   do lk = 1, Extra_inst%nr
-    if(lk==centurybgc_vars%lid_plant_minn)then
+    if(lk == centurybgc_vars%lid_plant_minn .or. lk == centurybgc_vars%lid_ar_rt)then
       reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
     else
       reaction_rates(lk)=ystate(lk)*Extra_inst%k_decay(lk)
@@ -657,4 +663,103 @@ contains
 
   end subroutine one_box_century_bgc
   
+  
+  subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars,tracerstate_vars, betrtracer_vars)
+  
+  use clm_varcon               , only : natomw, catomw  
+  use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use CNCarbonStateType        , only : carbonstate_type
+  use CNNitrogenStateType      , only : nitrogenstate_type  
+  use tracerstatetype          , only : tracerstate_type
+  use BetrTracerType           , only : betrtracer_type
+  
+  type(bounds_type)                  , intent(in) :: bounds                             ! bounds
+  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
+  integer                            , intent(in) :: filter_soilc(:)                          ! column filter  
+  type(tracerstate_type)             , intent(in) :: tracerstate_vars
+  type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
+  type(carbonstate_type)             , intent(inout) :: carbonstate_vars
+  type(nitrogenstate_type)           , intent(inout) :: nitrogenstate_vars  
+  integer, parameter :: i_soil1 = 5
+  integer, parameter :: i_soil2 = 6
+  integer, parameter :: i_soil3 = 7
+  integer :: fc, c, j, k
+  associate(
+  
+  
+  id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
+  id_trc_nh3x        => betrtracer_vars%id_trc_nh3x            , &  
+  smin_no3_vr_col    => nitrogenstate_vars%smin_no3_vr_col     , &
+  smin_nh4_vr_col    => nitrogenstate_vars%smin_nh4_vr_col     , &
+  tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col, &
+  tracer_conc_solid_passive => tracerstate_vars%tracer_conc_solid_passive_col, &
+  c_loc              => centurybgc_vars%c_loc                  , &
+  n_loc              => centurybgc_vars%n_loc                  , &
+  lit1               => centurybgc_vars%lit1                   , &
+  lit2               => centurybgc_vars%lit2                   , &  
+  lit3               => centurybgc_vars%lit3                   , &  
+  som1               => centurybgc_vars%som1                   , &  
+  som2               => centurybgc_vars%som2                   , &    
+  som3               => centurybgc_vars%som3                   , &      
+  cwd                => centurybgc_vars%cwd                    , &
+  nelms              => centurybgc_vars%nelms                    &
+  )
+  
+  do fc = 1, num_soilc
+    c = filter_soilc(fc)
+    do j = 1, nlevtrc_soil
+      smin_no3_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_no3x)*natomw
+      smin_nh4_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_nh3x)*natomw
+      
+      k = lit1; decomp_cpools_vr(c,j,i_met_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
+      k = lit2; decomp_cpools_vr(c,j,i_cel_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
+      k = lit3; decomp_cpools_vr(c,j,i_lig_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
+      k = cwd ; decomp_cpools_vr(c,j,i_cwd    ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
+      k = som1; decomp_cpools_vr(c,j,i_soil1  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
+      k = som2; decomp_cpools_vr(c,j,i_soil2  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
+      k = som3; decomp_cpools_vr(c,j,i_soil3  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
+      
+      k = lit1; decomp_npools_vr(c,j,i_met_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
+      k = lit2; decomp_npools_vr(c,j,i_cel_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
+      k = lit3; decomp_npools_vr(c,j,i_lig_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
+      k = cwd ; decomp_npools_vr(c,j,i_cwd    ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
+      k = som1; decomp_npools_vr(c,j,i_soil1  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
+      k = som2; decomp_npools_vr(c,j,i_soil2  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
+      k = som3; decomp_npools_vr(c,j,i_soil3  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
+      
+    enddo        
+  enddo
+  
+  
+  end associate
+  end subroutine assign_OM_CNpools
+  
+  subroutine assign_nitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)
+
+  use tracerfluxType           , only : tracerflux_type
+  use BetrTracerType           , only : betrtracer_type
+  use CNNitrogenFluxType       , only : nitrogenflux_type
+  
+  type(bounds_type)                  , intent(in) :: bounds                             ! bounds
+  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
+  integer                            , intent(in) :: filter_soilc(:)                          ! column filter  
+  type(tracerflux_type)              , intent(in) :: tracerflux_vars
+  type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
+  type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars    
+  
+  integer :: fc, c
+  !get nitrogen leaching, and loss through surface runoff
+  
+  associate(                                     &
+  id_trc_no3x => betrtracer_vars%id_trc_no3x     &
+  )
+  
+  do fc = 1, num_soilc
+    c = filter_soilc(fc)
+    nitrogenflux_vars%smin_no3_leached_col(c) = tracerflux_vars%tracer_flx_totleached_col(c,id_trc_no3x)
+    nitrogenflux_vars%smin_no3_runoff_col(c)  = tracerflux_vars%tracer_flx_surfrun_col(c,id_trc_no3x)
+  enddo
+  
+  end associate
+  end subroutine assign_nitrogen_hydroloss
 end module BGCReactionsCenturyType

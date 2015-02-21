@@ -39,6 +39,7 @@ module TracerFluxType
     real(r8), pointer :: tracer_flx_surfrun_col(:,:)          !tracer loss thru runoff, mol tracer / second
     real(r8), pointer :: tracer_flx_netpro_vr_col(:,:,:)      !total source strength for the tracers, chemical production, root exudation, excludes incoming root transport (by exchange with air) and (infiltration?)
     real(r8), pointer :: tracer_flx_tparchm_col(:,:)             !total tracer flux through plant aerenchyma transport, for volatile species only, mol/m^2/s
+    real(r8), pointer :: tracer_flx_totleached_col(:,:)       !total leaching flux, vertical + lateral leaching
     !because the transpiration pathway and the arenchyma/parenchyma transport are different, so a specific transport through transpiration is considered, Jinyun Tang, 2011/10/16
     real(r8), pointer :: tracer_flx_vtrans_col(:,:)            !column level tracer flux through transpiration
     !real(r8), pointer :: tracer_flx_snowloss_col(:,:)         !tracer flux lost from snow dynamics, I forget what it is for, but I will figure it out later
@@ -55,6 +56,7 @@ module TracerFluxType
     real(r8), pointer :: tracer_flx_dew_snow_col(:,:)          !tracer flux to snow coming from dew formation
     real(r8), pointer :: tracer_flx_sub_snow_col(:,:)          !tracer flux loss from snow sublimation
     real(r8), pointer :: tracer_flx_h2osfc_snow_residual_col(:,:) !tracer flux coming from residual standing water and residual snow
+
    contains
      procedure, public  :: Init         
      procedure, public  :: Restart
@@ -137,6 +139,7 @@ contains
       allocate(this%tracer_flx_sub_snow_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_sub_snow_col (:,:) = nan
       
       allocate(this%tracer_flx_h2osfc_snow_residual_col(begc:endc, 1:ngwmobile_tracers));this%tracer_flx_h2osfc_snow_residual_col(:,:) = nan
+      allocate(this%tracer_flx_totleached_col(begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_totleached_col(:,:) = nan
     endif
     if(nvolatile_tracers>0)then
       allocate(this%tracer_flx_ebu_col         (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_ebu_col      (:,:) = nan
@@ -268,6 +271,12 @@ contains
          avgflag='A', long_name='transport through transpiration for '//trim(tracernames(jj)), &
          ptr_col=data1dptr, default='inactive')
 
+        this%tracer_flx_totleached_col(begc:endc, jj) = spval
+        data1dptr => this%tracer_flx_totleached_col(:, jj)
+        call hist_addfld1d (fname=trim(tracernames(jj))//'_FLX_TLEACH', units='none', &
+         avgflag='A', long_name='transport through leaching for '//trim(tracernames(jj)), &
+         ptr_col=data1dptr, default='inactive')
+        
         if(is_volatile(jj))then
           kk = volatileid(jj)
           this%tracer_flx_ebu_col(begc:endc, kk) = spval
@@ -391,6 +400,7 @@ contains
          this%tracer_flx_dew_snow_col   (c,:) = spval
          this%tracer_flx_sub_snow_col   (c,:) = spval
          this%tracer_flx_h2osfc_snow_residual_col(c,:) = spval
+         this%tracer_flx_totleached_col(c,:)  = spval
        endif
        
        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
@@ -414,6 +424,7 @@ contains
          this%tracer_flx_dew_snow_col   (c,:) = 0._r8
          this%tracer_flx_sub_snow_col   (c,:) = 0._r8
          this%tracer_flx_h2osfc_snow_residual_col(c,:) = 0._r8
+         this%tracer_flx_totleached_col (c,:) = 0._r8
        endif
     enddo
     
@@ -519,6 +530,8 @@ contains
     this%tracer_flx_dew_snow_col   (column,:)   = this%tracer_flx_dew_snow_col   (column,:)/dtime
     this%tracer_flx_sub_snow_col   (column,:)   = this%tracer_flx_sub_snow_col   (column,:)/dtime
     this%tracer_flx_h2osfc_snow_residual_col(column,:) =  this%tracer_flx_h2osfc_snow_residual_col(column,:)/dtime
+    
+    this%tracer_flx_totleached_col(column,:) = this%tracer_flx_drain_col(column,:) + this%tracer_flx_leaching_col(column,:)    
   end subroutine temporal_average
   
  !---------------------------------------------------------------- 
@@ -549,12 +562,14 @@ contains
     !lateral drainage, vertical leaching
     !for volatile tracers, this includes surface emission surface three different pathways
     this%tracer_flx_infl_col(c,jj) = this%tracer_flx_infl_col(c,jj)*dtime
+    
     this%tracer_flx_netphyloss_col(c,jj) = - this%tracer_flx_infl_col(c,jj) - this%tracer_flx_dew_grnd_col(c,jj) &
       - this%tracer_flx_dew_snow_col(c,jj) - this%tracer_flx_h2osfc_snow_residual_col(c,jj) &
       + this%tracer_flx_sub_snow_col(c,jj) + this%tracer_flx_drain_col(c,jj) + &
       this%tracer_flx_surfrun_col(c,jj) + this%tracer_flx_vtrans_col(c,jj) + this%tracer_flx_leaching_col(c,jj)
       
 
+    
     if(is_volatile(jj))then
       kk = volatileid(jj)
       this%tracer_flx_surfemi_col(c,kk) = this%tracer_flx_tparchm_col(c,kk) + this%tracer_flx_dif_col(c,kk) + &

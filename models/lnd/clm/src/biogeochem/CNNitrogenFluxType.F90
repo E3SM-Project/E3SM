@@ -2428,9 +2428,10 @@ contains
        this%supplement_to_sminn_col(c) = 0._r8
        this%som_n_leached_col(c)       = 0._r8
     end do
-
-    ! vertically integrate decomposing N cascade fluxes and soil mineral N fluxes associated with decomposition cascade
-    do k = 1, ndecomp_cascade_transitions
+    
+    if(.not. is_active_betr_bgc)then
+      ! vertically integrate decomposing N cascade fluxes and soil mineral N fluxes associated with decomposition cascade
+      do k = 1, ndecomp_cascade_transitions
        do j = 1,nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -2444,9 +2445,9 @@ contains
                   this%decomp_cascade_sminn_flux_vr_col(c,j,k) * dzsoi_decomp(j) 
           end do
        end do
-    end do
+      end do
 
-    if (.not. use_nitrif_denitrif) then
+      if (.not. use_nitrif_denitrif) then
        ! vertically integrate each denitrification flux
        do l = 1, ndecomp_cascade_transitions
           do j = 1, nlevdecomp
@@ -2490,7 +2491,7 @@ contains
                this%sminn_to_denit_excess_col(c)
        end do
 
-    else
+      else
 
        ! vertically integrate NO3 NH4 N2O fluxes and pools
        do j = 1, nlevdecomp
@@ -2539,8 +2540,9 @@ contains
           this%denit_col(c) = this%f_denit_col(c)
        end do
 
-    end if
-
+      end if
+    endif
+    
     ! vertically integrate column-level fire N losses
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp

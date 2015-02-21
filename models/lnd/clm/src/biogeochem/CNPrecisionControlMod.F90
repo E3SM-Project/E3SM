@@ -34,6 +34,7 @@ contains
     use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif
     use clm_varpar , only : nlevdecomp, crop_prog
     use pftvarcon  , only : nc3crop
+    use tracer_varcon          , only : is_active_betr_bgc    
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -580,6 +581,7 @@ contains
 
       end do ! end of pft loop
 
+    if(is_active_betr_bgc)then
       ! column loop
       do fc = 1,num_soilc
          c = filter_soilc(fc)
@@ -654,7 +656,7 @@ contains
             end do
          end do
       endif
-
+    endif
     end associate
 
  end subroutine CNPrecisionControl

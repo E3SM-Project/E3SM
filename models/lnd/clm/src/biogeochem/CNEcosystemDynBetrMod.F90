@@ -43,6 +43,7 @@ implicit none
   private
   public :: CNEcosystemDynBetrVeg
   public :: CNEcosystemDynBetrSummary
+  public :: CNFluxStateBetrSummary
   public :: CNEcosystemDynBetrInit
   contains
 
@@ -82,8 +83,7 @@ implicit none
        nitrogenflux_vars, nitrogenstate_vars, &
        atm2lnd_vars, waterstate_vars, waterflux_vars, &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
-       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars, &
-        betrtracer_vars, tracerflux_vars, tracerstate_vars)
+       dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars)
   
   !
   ! Update vegetation related state variables and fluxes
@@ -148,9 +148,7 @@ implicit none
   type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
   type(energyflux_type)    , intent(in)    :: energyflux_vars
   type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
-  type(betrtracer_type)    , intent(in)    :: betrtracer_vars                    ! betr configuration information  
-  type(tracerstate_type)   , intent(in)    :: tracerstate_vars
-  type(tracerflux_type)    , intent(in)    :: tracerflux_vars
+
   
 
   ! --------------------------------------------------
@@ -467,6 +465,8 @@ implicit none
        atm2lnd_vars, waterstate_vars, waterflux_vars, &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
        dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,plantsoilnutrientflux_vars)
+    !
+    ! this goes after leaching is done
     ! !USES:
     use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
     use CNMRespMod             , only: CNMResp
@@ -525,6 +525,7 @@ implicit none
     type(plantsoilnutrientflux_type), intent(in) :: plantsoilnutrientflux_vars   
   
 
+    
     call nitrogenstate_vars%nbuffer_update(bounds, num_soilc, filter_soilc, &
       plantsoilnutrientflux_vars%plant_minn_active_yield_flx_col(bounds%begc:bounds%endc),   &
       plantsoilnutrientflux_vars%plant_minn_passive_yield_flx_col(bounds%begc:bounds%endc))
@@ -537,14 +538,14 @@ implicit none
   end subroutine CNEcosystemDynBetrSummary
 
   !-----------------------------------------------------------------------    
-  subroutine CNFluxStateSummary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, carbonflux_vars, carbonstate_vars, &
+  subroutine CNFluxStateBetrSummary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, carbonflux_vars, carbonstate_vars, &
     c13_carbonflux_vars, c13_carbonstate_vars, c14_carbonflux_vars, c14_carbonstate_vars, nitrogenflux_vars, nitrogenstate_vars, &
     betrtracer_vars, tracerflux_vars, tracerstate_vars)
   !
   ! DESCRIPTION
   ! summarize all fluxes and state varaibles, prepare for mass balance analysis
   !
-
+  use  BGCReactionsCenturyType,  only : assign_OM_CNpools, assign_nitrogen_hydroloss
   implicit none
   type(bounds_type)        , intent(in)    :: bounds  
   integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
@@ -565,13 +566,23 @@ implicit none
   
   
   !assign state variables, leaching flux, runoff flux, hr, denitrification fluxes, f_nit_n2o for mass balance analysis
+
+  !hr, denitrification fluxes, f_nit_n2o are considered in the bgc integration
+  
+  call assign_OM_CNpools(bounds, num_soilc, filter_soilc, carbonstate_vars, nitrogenstate_vars,tracerstate_vars, betrtracer_vars)
+  
+  !get leaching flux and runoff flux, 
+  call assign_nitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)
   
   call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
+  
   call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
   if ( use_c13 ) then
     call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
+
     call c13_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
   end if
+  
   if ( use_c14 ) then
     call c14_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
     call c14_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
@@ -581,7 +592,7 @@ implicit none
 
   call t_stopf('CNsum')
 
-  end subroutine CNFluxStateSummary 
+  end subroutine CNFluxStateBetrSummary 
   !-----------------------------------------------------------------------    
   subroutine calc_fpg(bounds, num_soilc, filter_soilc, plant_totn_demand_flx, plant_nbuffer, fpg)
   !

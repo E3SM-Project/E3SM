@@ -2722,11 +2722,12 @@ contains
                 ptr_col=data2dptr, default='inactive')
         end do
 
-        this%decomp_cascade_hr_col(begc:endc,:)             = spval
-        this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
-        this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
-        this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
-        do l = 1, ndecomp_cascade_transitions
+        if(.not. is_active_betr_bgc)then
+          this%decomp_cascade_hr_col(begc:endc,:)             = spval
+          this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
+          this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
+          this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
+          do l = 1, ndecomp_cascade_transitions
 
            ! output the vertically integrated fluxes only as  default
            !-- HR fluxes (none from CWD)
@@ -2804,8 +2805,9 @@ contains
               endif
            end if
 
-        end do
-
+          end do
+        endif
+        
         this%t_scalar_col(begc:endc,:) = spval
         call hist_addfld_decomp (fname='T_SCALAR', units='unitless',  type2d='levdcmp', &
              avgflag='A', long_name='temperature inhibition of decomposition', &
@@ -2826,9 +2828,10 @@ contains
              avgflag='A', long_name='total flux of C from SOM pools due to leaching', &
              ptr_col=this%som_c_leached_col)!, default='inactive')
 
-        this%decomp_cpools_leached_col(begc:endc,:) = spval
-        this%decomp_cpools_transport_tendency_col(begc:endc,:,:) = spval
-        do k = 1, ndecomp_pools
+        if(.not. is_active_betr_bgc)then     
+          this%decomp_cpools_leached_col(begc:endc,:) = spval
+          this%decomp_cpools_transport_tendency_col(begc:endc,:,:) = spval
+          do k = 1, ndecomp_pools
            if ( .not. decomp_cascade_con%is_cwd(k) ) then
               data1dptr => this%decomp_cpools_leached_col(:,k)
               fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_LEACHING'
@@ -2844,8 +2847,8 @@ contains
                    avgflag='A', long_name=longname, &
                    ptr_col=data2dptr, default='inactive')
            endif
-        end do
-
+          end do
+        endif
         this%lithr_col(begc:endc) = spval
         call hist_addfld1d (fname='LITHR', units='gC/m^2/s', &
              avgflag='A', long_name='litter heterotrophic respiration', &
@@ -3061,12 +3064,12 @@ contains
               end if
            endif
         end do
-
-        this%decomp_cascade_hr_col(begc:endc,:)             = spval
-        this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
-        this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
-        this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
-        do l = 1, ndecomp_cascade_transitions
+        if(.not. is_active_betr_bgc)then
+          this%decomp_cascade_hr_col(begc:endc,:)             = spval
+          this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
+          this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
+          this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
+          do l = 1, ndecomp_cascade_transitions
            !-- HR fluxes (none from CWD)
            if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
               data2dptr => this%decomp_cascade_hr_vr_col(:,:,l)
@@ -3105,8 +3108,9 @@ contains
                    avgflag='A', long_name=longname, &
                    ptr_col=data2dptr, default='inactive')
            endif
-        end do
-
+          end do
+        endif
+        
         this%lithr_col(begc:endc) = spval
         call hist_addfld1d (fname='C13_LITHR', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 fine root C litterfall to litter 3 C', &
@@ -3260,12 +3264,12 @@ contains
               end if
            endif
         end do
-
-        this%decomp_cascade_hr_col(begc:endc,:)             = spval
-        this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
-        this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
-        this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
-        do l = 1, ndecomp_cascade_transitions
+        if(.not. is_active_betr_bgc)then
+          this%decomp_cascade_hr_col(begc:endc,:)             = spval
+          this%decomp_cascade_hr_vr_col(begc:endc,:,:)        = spval
+          this%decomp_cascade_ctransfer_col(begc:endc,:)      = spval
+          this%decomp_cascade_ctransfer_vr_col(begc:endc,:,:) = spval
+          do l = 1, ndecomp_cascade_transitions
            !-- HR fluxes (none from CWD)
            if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
               data2dptr => this%decomp_cascade_hr_vr_col(:,:,l)
@@ -3304,8 +3308,9 @@ contains
                    avgflag='A', long_name=longname, &
                    ptr_col=data2dptr, default='inactive')
            endif
-        end do
-
+          end do
+        endif
+        
         this%lithr_col(begc:endc) = spval
         call hist_addfld1d (fname='C14_LITHR', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 fine root C litterfall to litter 3 C', &
@@ -4540,9 +4545,9 @@ contains
        this%cwdc_loss_col(c)          = 0._r8
        this%som_c_leached_col(c)      = 0._r8
     end do
-
-    ! vertically integrate HR and decomposition cascade fluxes
-    do k = 1, ndecomp_cascade_transitions
+    if(.not. is_active_betr_bgc)then
+      ! vertically integrate HR and decomposition cascade fluxes
+      do k = 1, ndecomp_cascade_transitions
        do j = 1,nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -4556,10 +4561,10 @@ contains
                   this%decomp_cascade_ctransfer_vr_col(c,j,k) * dzsoi_decomp(j) 
           end do
        end do
-    end do
+      end do
 
-    ! litter heterotrophic respiration (LITHR)
-    do k = 1, ndecomp_cascade_transitions
+      ! litter heterotrophic respiration (LITHR)
+      do k = 1, ndecomp_cascade_transitions
        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -4568,10 +4573,10 @@ contains
                   this%decomp_cascade_hr_col(c,k)
           end do
        end if
-    end do
+      end do
 
-    ! soil organic matter heterotrophic respiration (SOMHR)
-    do k = 1, ndecomp_cascade_transitions
+      ! soil organic matter heterotrophic respiration (SOMHR)
+      do k = 1, ndecomp_cascade_transitions
        if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -4580,8 +4585,8 @@ contains
                   this%decomp_cascade_hr_col(c,k)
           end do
        end if
-    end do
-
+      end do
+    endif
     ! total heterotrophic respiration (HR)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -4746,7 +4751,9 @@ contains
           end do
        end if
     end do
-    do k = 1, ndecomp_cascade_transitions
+    
+    if(.not. is_active_betr_bgc)then    
+      do k = 1, ndecomp_cascade_transitions
        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -4755,10 +4762,10 @@ contains
                   this%decomp_cascade_ctransfer_col(c,k)
           end do
        end if
-    end do
+      end do
 
-    ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
-    do l = 1, ndecomp_pools
+      ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
+      do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%decomp_cpools_leached_col(c,l) = 0._r8
@@ -4777,8 +4784,8 @@ contains
                this%som_c_leached_col(c) + &
                this%decomp_cpools_leached_col(c,l)
        end do
-    end do
-
+      end do
+    endif
   end associate
   end subroutine Summary
 

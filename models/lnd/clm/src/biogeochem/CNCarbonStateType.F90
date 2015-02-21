@@ -694,33 +694,35 @@ contains
 
     if (carbon_type == 'c12') then
 
-       this%decomp_cpools_col(begc:endc,:) = spval
-       do l  = 1, ndecomp_pools
-          if ( nlevdecomp_full > 1 ) then
-             data2dptr => this%decomp_cpools_vr_col(:,:,l)
-             fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
-             longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
-             call hist_addfld2d (fname=fieldname, units='gC/m^3',  type2d='levdcmp', &
+
+         !those variables are now ouput in betr
+         this%decomp_cpools_col(begc:endc,:) = spval
+         do l  = 1, ndecomp_pools
+            if ( nlevdecomp_full > 1 ) then
+               data2dptr => this%decomp_cpools_vr_col(:,:,l)
+               fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
+               longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
+               call hist_addfld2d (fname=fieldname, units='gC/m^3',  type2d='levdcmp', &
                   avgflag='A', long_name=longname, &
                   ptr_col=data2dptr)
-          endif
+            endif
 
-          data1dptr => this%decomp_cpools_col(:,l)
-          fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
-          longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
-          call hist_addfld1d (fname=fieldname, units='gC/m^2', &
+            data1dptr => this%decomp_cpools_col(:,l)
+            fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
+            longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
+            call hist_addfld1d (fname=fieldname, units='gC/m^2', &
                avgflag='A', long_name=longname, &
                ptr_col=data1dptr)
 
-          if ( nlevdecomp_full > 1 ) then
+            if ( nlevdecomp_full > 1 ) then
              data1dptr => this%decomp_cpools_1m_col(:,l)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_1m'
              longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C to 1 meter'
              call hist_addfld1d (fname=fieldname, units='gC/m^2', &
                   avgflag='A', long_name=longname, &
                   ptr_col=data1dptr, default = 'inactive')
-          endif
-       end do
+           endif
+         end do
 
        if ( nlevdecomp_full > 1 ) then
           this%totlitc_1m_col(begc:endc) = spval
@@ -798,8 +800,9 @@ contains
 
     if ( carbon_type == 'c13' ) then
 
-       this%decomp_cpools_vr_col(begc:endc,:,:) = spval
-       do l = 1, ndecomp_pools
+
+         this%decomp_cpools_vr_col(begc:endc,:,:) = spval
+         do l = 1, ndecomp_pools
           if ( nlevdecomp_full > 1 ) then
              data2dptr => this%decomp_cpools_vr_col(:,:,l)
              fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
@@ -815,7 +818,7 @@ contains
           call hist_addfld1d (fname=fieldname, units='gC13/m^2', &
                avgflag='A', long_name=longname, &
                ptr_col=data1dptr)
-       end do
+         end do
 
        this%seedc_col(begc:endc) = spval
        call hist_addfld1d (fname='C13_SEEDC', units='gC13/m^2', &
@@ -2815,14 +2818,15 @@ contains
     ! column level summary
 
 
-    ! vertically integrate each of the decomposing C pools
-    do l = 1, ndecomp_pools
+
+      ! vertically integrate each of the decomposing C pools
+      do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%decomp_cpools_col(c,l) = 0._r8
        end do
-    end do
-    do l = 1, ndecomp_pools
+      end do
+      do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -2831,9 +2835,9 @@ contains
                   this%decomp_cpools_vr_col(c,j,l) * dzsoi_decomp(j)
           end do
        end do
-    end do
+      end do
 
-    if ( nlevdecomp > 1) then
+      if ( nlevdecomp > 1) then
 
        ! vertically integrate each of the decomposing C pools to 1 meter
        maxdepth = 1._r8
@@ -2895,14 +2899,14 @@ contains
           end if
        end do
 
-    endif
-
-    ! total litter carbon (TOTLITC)
-    do fc = 1,num_soilc
+      endif
+    
+      ! total litter carbon (TOTLITC)
+      do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%totlitc_col(c) = 0._r8
-    end do
-    do l = 1, ndecomp_pools
+      end do
+      do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -2911,14 +2915,14 @@ contains
                   this%decomp_cpools_col(c,l)
           end do
        endif
-    end do
+      end do
 
-    ! total soil organic matter carbon (TOTSOMC)
-    do fc = 1,num_soilc
+      ! total soil organic matter carbon (TOTSOMC)
+      do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%totsomc_col(c) = 0._r8
-    end do
-    do l = 1, ndecomp_pools
+      end do
+      do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_soil(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -2927,14 +2931,14 @@ contains
                   this%decomp_cpools_col(c,l)
           end do
        end if
-    end do
+      end do
 
-    ! coarse woody debris carbon
-    do fc = 1,num_soilc
+      ! coarse woody debris carbon
+      do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%cwdc_col(c) = 0._r8
-    end do
-    do l = 1, ndecomp_pools
+      end do
+      do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_cwd(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -2943,7 +2947,7 @@ contains
                   this%decomp_cpools_col(c,l)
           end do
        end if
-    end do
+      end do
 
     ! truncation carbon
     do fc = 1,num_soilc
