@@ -307,12 +307,15 @@ module BGCCenturySubMod
     c_loc     => centurybgc_vars%c_loc                , & !
     n_loc     => centurybgc_vars%n_loc                , & !
     nelms     => centurybgc_vars%nelms                , & !
+    lid_ar_rt => centurybgc_vars%lid_ar_rt            , & !
     lid_o2    => centurybgc_vars%lid_o2               , & !
     lid_co2   => centurybgc_vars%lid_co2              , & !
     lid_nh4   => centurybgc_vars%lid_nh4              , & !
     lid_no3   => centurybgc_vars%lid_no3              , & !
     lid_n2o   => centurybgc_vars%lid_n2o              , & !
-    lid_n2    => centurybgc_vars%lid_n2               , & !  
+    lid_n2    => centurybgc_vars%lid_n2               , & !
+    lid_co2_hr=> centurybgc_vars%lid_co2_hr           , & !
+    lid_n2o_nit=> centurybgc_vars%lid_n2o_nit         , & !
     lid_plant_minn => centurybgc_vars%lid_plant_minn    & !
   )
   !initialize all entries to zero
@@ -1090,7 +1093,7 @@ module BGCCenturySubMod
   real(r8):: sminn_tot(bounds%begc:bounds%endc)  !vertically integrated mineral nitrogen
   
  
-  SHR_ASSERT_ALL((ubound(dzsoi_decomp)     == (/nlevdecomp/)), errMsg(__FILE__, __LINE__))   
+  SHR_ASSERT_ALL((ubound(dzsoi)     == (/bounds%endc, nlevdecomp/)), errMsg(__FILE__, __LINE__))   
   SHR_ASSERT_ALL((ubound(sminn_nh4_vr)     == (/bounds%endc, nlevdecomp/)), errMsg(__FILE__, __LINE__))
   SHR_ASSERT_ALL((ubound(sminn_no3_vr)     == (/bounds%endc, nlevdecomp/)), errMsg(__FILE__, __LINE__))
   SHR_ASSERT_ALL((ubound(nfixation_prof)     == (/bounds%endc, nlevdecomp/)), errMsg(__FILE__, __LINE__))

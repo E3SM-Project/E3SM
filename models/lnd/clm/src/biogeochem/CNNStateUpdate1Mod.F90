@@ -85,8 +85,8 @@ contains
           do fc = 1,num_soilc
             c = filter_soilc(fc)
             ! N deposition and fixation (put all into NH4 pool)
-            ns%sminn_nh4_input_vr_col(c,j) = ns%sminn_nh4_input_vr_col(c,j) + nf%ndep_to_sminn_col(c)*dt * ndep_prof(c,j)
-            ns%sminn_nh4_input_vr_col(c,j) = ns%sminn_nh4_input_vr_col(c,j) + nf%nfix_to_sminn_col(c)*dt * nfixation_prof(c,j)
+            nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%ndep_to_sminn_col(c)*dt * ndep_prof(c,j)
+            nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%nfix_to_sminn_col(c)*dt * nfixation_prof(c,j)
             
             
             ! plant to litter fluxes
@@ -115,8 +115,8 @@ contains
 
 
                ! N deposition and fixation (put all into NH4 pool)
-               ns%sminn_nh4_input_vr_col(c,j) = ns%sminn_nh4_input_vr_col(c,j) + nf%fert_to_sminn_col(c)*dt * ndep_prof(c,j)
-               ns%sminn_nh4_input_vr_col(c,j) = ns%sminn_nh4_input_vr_col(c,j) + nf%soyfixn_to_sminn_col(c)*dt * nfixation_prof(c,j)
+               nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%fert_to_sminn_col(c)*dt * ndep_prof(c,j)
+               nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%soyfixn_to_sminn_col(c)*dt * nfixation_prof(c,j)
 
             end do
           end do

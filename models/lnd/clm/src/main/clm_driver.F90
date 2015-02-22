@@ -123,7 +123,7 @@ module clm_driver
   use TracerBalanceMod       , only : betr_tracer_massbalance_check
   use TracerBalanceMod       , only : begin_betr_tracer_massbalance
   use tracer_varcon          , only : is_active_betr_bgc
-  use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary, CNFluxStateSummary
+  use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary, CNFluxStateBetrSummary
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
