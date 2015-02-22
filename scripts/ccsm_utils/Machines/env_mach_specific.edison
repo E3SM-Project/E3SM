@@ -27,7 +27,6 @@ endif
 
 if ( $COMPILER == "intel" ) then
     module load PrgEnv-intel 
-    module switch intel      intel/13.1.3.192  
     module rm cray-libsci
     setenv MKL "-mkl=cluster"
     module use /global/project/projectdirs/ccsm1/modulefiles/edison
@@ -35,7 +34,7 @@ if ( $COMPILER == "intel" ) then
          module load esmf/6.2.0-defio-mpi-g
     else
          module load esmf/6.2.0-defio-mpi-O
-    endif  
+    endif
 endif    
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
