@@ -2362,6 +2362,7 @@ contains
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c 
+    use tracer_varcon , only: is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this

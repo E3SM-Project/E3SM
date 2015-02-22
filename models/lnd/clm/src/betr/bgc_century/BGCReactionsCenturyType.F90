@@ -15,6 +15,7 @@ module BGCReactionsCenturyType
 
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
+  use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod             , only : bounds_type
   use BGCReactionsMod       , only : bgc_reaction_type
   use clm_varcon            , only : spval
@@ -395,7 +396,7 @@ contains
   ! an reformulation of the nitrogen fixation cycle)
   !I did this in a quick and dirty way. 
   
-  call calc_extneral_bgc_input(bounds, 1, ubj, num_soilc, filter_soilc, dtime, carbonflux_vars, nitrogenflux_vars, &
+  call calc_extneral_bgc_input(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
     centurybgc_vars, betrtracer_vars, tracerstate_vars, cn_ratios, cp_ratios)
   
   !calculate nitrogen uptake profile
@@ -672,7 +673,7 @@ contains
   use CNNitrogenStateType      , only : nitrogenstate_type  
   use tracerstatetype          , only : tracerstate_type
   use BetrTracerType           , only : betrtracer_type
-  
+  use clm_varpar               , only : nlevtrc_soil 
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter  
@@ -684,11 +685,11 @@ contains
   integer, parameter :: i_soil2 = 6
   integer, parameter :: i_soil3 = 7
   integer :: fc, c, j, k
-  associate(
-  
-  
+  associate(                                                     &
   id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
   id_trc_nh3x        => betrtracer_vars%id_trc_nh3x            , &  
+  decomp_cpools_vr   => carbonstate_vars%decomp_cpools_vr_col  , &
+  decomp_npools_vr   => nitrogenstate_vars%decomp_npools_vr_col, &
   smin_no3_vr_col    => nitrogenstate_vars%smin_no3_vr_col     , &
   smin_nh4_vr_col    => nitrogenstate_vars%smin_nh4_vr_col     , &
   tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col, &

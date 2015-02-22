@@ -280,7 +280,7 @@ module BGCCenturySubMod
   ! calculate cascade matrix for the decomposition model
   !
   use clm_varcon                , only: nitrif_n2o_loss_frac
-
+  use BGCCenturyParMod          , only: CNDecompBgcParamsInst
   integer                       , intent(in) :: nstvars
   integer                       , intent(in) :: nreactions
   type(centurybgc_type)         , intent(in) :: centurybgc_vars
@@ -905,7 +905,7 @@ module BGCCenturySubMod
   use MathfuncMod         , only : dot_sum  
   use CNSharedParamsMod   , only : CNParamsShareInst
   use CNSharedParamsMod   , only : CNParamsShareInst
-  
+  use BGCCenturyParMod    , only : CNDecompBgcParamsInst 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -1166,12 +1166,18 @@ module BGCCenturySubMod
 
 
   use MathfuncMod         , only :  safe_div
-
+  use CNCarbonFluxType         , only : carbonflux_type
+  use CNNitrogenFluxType       , only : nitrogenflux_type    
+  use BetrTracerType           , only : betrtracer_type 
+  use tracerstatetype          , only : tracerstate_type 
+  use clm_varcon               , only : catomw, natomw
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
+  integer                            , intent(in) :: lbj, ubj
   type(carbonflux_type)              , intent(in) :: carbonflux_vars
   type(nitrogenflux_type)            , intent(in) :: nitrogenflux_vars
+  type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information
   type(centurybgc_type)              , intent(in) :: centurybgc_vars  
   type(tracerstate_type)             , intent(inout) :: tracerstate_vars
   real(r8)                           , intent(inout) :: cn_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
@@ -1206,26 +1212,26 @@ module BGCCenturySubMod
     
     do j = lbj, ubj
       k = lit1
-      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,n,k)/catomw      
-      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,n,k)/natomw
+      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,j,k)/catomw      
+      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,j,k)/natomw
       
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
 
       k = lit2
-      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,n,k)/catomw      
-      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,n,k)/natomw
+      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,j,k)/catomw      
+      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,j,k)/natomw
       
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
       
       k = lit3
-      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,n,k)/catomw      
-      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,n,k)/natomw
+      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,j,k)/catomw      
+      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,j,k)/natomw
       
       cn_ratios(k,c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
 
       k = cwd
-      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,n,k)/catomw      
-      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,n,k)/natomw
+      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,j,k)/catomw      
+      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,j,k)/natomw
       
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
       
@@ -1238,8 +1244,8 @@ module BGCCenturySubMod
       k = som3
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
 
-      tracer_conc_mobile(c, j, id_trc_nh3x) = tracer_conc_mobile(c, j, id_trc_nh3x) + sminn_nh4_input_vr_col(c,j)/natomw
-      tracer_conc_mobile(c, j, id_trc_no3x) = tracer_conc_mobile(c, j, id_trc_no3x) + sminn_no3_input_vr_col(c,j)/natomw
+      tracer_conc_mobile(c, j, id_trc_nh3x) = tracer_conc_mobile(c, j, id_trc_nh3x) + sminn_nh4_input_vr(c,j)/natomw
+      tracer_conc_mobile(c, j, id_trc_no3x) = tracer_conc_mobile(c, j, id_trc_no3x) + sminn_no3_input_vr(c,j)/natomw
       
     enddo
   enddo
@@ -1263,7 +1269,7 @@ module BGCCenturySubMod
   do j = 1, ubj  
     do fc = 1, num_soilc
       c = filter_soilc(fc)
-      col_rr_vr(1,c,j) = rr_col(c) * root_prof_col(c,j)
+      rr_col_vr(1,c,j) = rr_col(c) * root_prof_col(c,j)
     enddo
   enddo
     

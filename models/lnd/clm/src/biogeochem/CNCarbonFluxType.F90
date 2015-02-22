@@ -748,7 +748,8 @@ contains
      use clm_varpar , only : nlevdecomp, nlevdecomp_full, crop_prog, nlevgrnd
      use clm_varctl , only : hist_wrtch4diag
      use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
-     !
+     use tracer_varcon    , only : is_active_betr_bgc 
+    !
      ! !ARGUMENTS:
      class(carbonflux_type) :: this    
      type(bounds_type)         , intent(in) :: bounds 
