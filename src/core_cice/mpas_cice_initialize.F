@@ -171,7 +171,7 @@ contains
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
-    call cice_init_ijpop_from_ivertex(mesh)
+    !call cice_init_ijpop_from_ivertex(mesh)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
