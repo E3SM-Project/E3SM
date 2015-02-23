@@ -44,7 +44,7 @@ contains
 !-------------------------------------------------------------------------------
   subroutine run_betr_one_step_without_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, col, &
      atm2lnd_vars, soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, waterflux_vars, chemstate_vars, &
-     cnstate_vars, canopystate_vars, carbonflux_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction, tracerboundarycond_vars, tracercoeff_vars, &
+     cnstate_vars, canopystate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction, tracerboundarycond_vars, tracercoeff_vars, &
      tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! DESCRIPTION
@@ -76,7 +76,7 @@ contains
   use tracer_varcon            , only : is_active_betr_bgc
   use CNNitrogenFluxType       , only : nitrogenflux_type
   use CanopyStateType       , only : canopystate_type   
-
+  use CNCarbonStateType  , only : carbonstate_type
   
   type(bounds_type)            , intent(in) :: bounds                     ! bounds   
   integer                      , intent(in) :: num_soilc                       ! number of columns in column filter_soilc
@@ -97,6 +97,7 @@ contains
   type(cnstate_type)           , intent(inout) :: cnstate_vars
   type(canopystate_type)       , intent(in)   :: canopystate_vars  
   type(carbonflux_type)        , intent(inout) :: carbonflux_vars
+  type(carbonstate_type)       , intent(in)    :: carbonstate_vars
   type(nitrogenflux_type)      , intent(inout) :: nitrogenflux_vars
   type(waterflux_type)         , intent(inout) :: waterflux_vars  
   type(tracerboundarycond_type), intent(inout) :: tracerboundarycond_vars
@@ -119,7 +120,7 @@ contains
   tracerboundarycond_vars%jtops_col(:)=1
 
   !update npp for aerenchyma calculation
-  call betr_annualupdate(bounds, num_soilc, filter_soilc, num_methp, filter_methp, &
+  call betr_annualupdate(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, tracercoeff_vars)
   !in the future, one may want to reset jtops_col here. Right now it is set to 1
 
@@ -130,7 +131,7 @@ contains
        
   !calculate arenchyma conductance  
   call calc_aerecond(bounds, num_soilp, filter_soilp, jwt(bounds%begc:bounds%endc), &
-     temperature_vars%t_veg_patch(bounds%begp:bounds%endp), betrtracer_vars, &
+     soilstate_vars%rootfr_patch(bounds%begc:bounds%endc, 1:ubj), temperature_vars, betrtracer_vars, &
      canopystate_vars, carbonstate_vars, carbonflux_vars, tracercoeff_vars)
   
   !print*,'setup phase change parameters'

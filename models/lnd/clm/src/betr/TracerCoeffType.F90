@@ -24,12 +24,13 @@
     real(r8), pointer :: aqu2equilscef_col         (:,:,:)      !coefficient to convert solid phase (including ice) into aqueous phase
     real(r8), pointer :: henrycef_col              (:,:,:)      !henry's law constant
     real(r8), pointer :: bunsencef_col             (:,:,:)      !bunsen solubility
-    real(r8), pointer :: tracer_diffusivity_air_col(:,:, :)     !diffusivity in the air
+    real(r8), pointer :: tracer_diffusivity_air_col(:,:)        !diffusivity in the air
     real(r8), pointer :: aere_cond_col             (:,:)        !column level aerenchyma conductance (m/s)
     real(r8), pointer :: scal_aere_cond_col        (:,:)        !column level scaling factor for arenchyma or parenchyma transport
     real(r8), pointer :: diffgas_topsno_col        (:,:)        !gas diffusivity in top snow layer, this is not used currently
     real(r8), pointer :: diffgas_topsoi_col        (:,:)        !gas diffusivity in top soil layer, this is not used currently
     real(r8), pointer :: hmconductance_col         (:,:,:)      !geometrically weighted conductances (nlevsno+nlevtrc_soil)
+    real(r8), pointer :: annsum_counter_col        (:)
     contains
       procedure, public  :: Init         
       procedure, private :: InitAllocate 
@@ -78,10 +79,10 @@ contains
     allocate(this%gas2bulkcef_mobile_col     (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracers));  this%gas2bulkcef_mobile_col    (:,:,:) = nan
     allocate(this%henrycef_col               (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracers));  this%henrycef_col              (:,:,:) = nan  
     allocate(this%bunsencef_col              (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracers));  this%bunsencef_col             (:,:,:) = nan  
-    allocate(this%tracer_diffusivity_air_col (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracers));  this%tracer_diffusivity_air_col(:,:,:) = nan  
+    allocate(this%tracer_diffusivity_air_col (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%tracer_diffusivity_air_col(:,:) = nan  
     allocate(this%scal_aere_cond_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%scal_aere_cond_col        (:,:)   = nan
     allocate(this%aere_cond_col              (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%aere_cond_col             (:,:)   = nan
-
+    allocate(this%annsum_counter_col         (begc:endc))                                              ;  this%annsum_counter_col        (:)     = nan
     allocate(this%diffgas_topsno_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%diffgas_topsno_col        (:,:)   = nan
     allocate(this%diffgas_topsoi_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%diffgas_topsoi_col        (:,:)   = nan
     allocate(this%hmconductance_col          (begc:endc, lbj:ubj, 1:betrtracer_vars%ntracers));           this%hmconductance_col         (:,:,:) = nan
@@ -196,12 +197,13 @@ contains
          this%gas2bulkcef_mobile_col    (c,:,:) = spval
          this%henrycef_col              (c,:,:) = spval
          this%bunsencef_col             (c,:,:) = spval
-         this%tracer_diffusivity_air_col(c,:,:) = spval
+         this%tracer_diffusivity_air_col(c,:)   = spval
          this%scal_aere_cond_col        (c,:)   = spval
          this%aere_cond_col             (c,:)   = spval
          this%diffgas_topsno_col        (c,:)   = spval
          this%diffgas_topsoi_col        (c,:)   = spval
          this%hmconductance_col         (c,:,:) = spval
+         this%annsum_counter_col        (c)     = spval
        endif
        
        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
@@ -210,12 +212,13 @@ contains
          this%gas2bulkcef_mobile_col    (c,:,:) = 0._r8
          this%henrycef_col              (c,:,:) = 0._r8
          this%bunsencef_col             (c,:,:) = 0._r8
-         this%tracer_diffusivity_air_col(c,:,:) = 0._r8
+         this%tracer_diffusivity_air_col(c,:)   = 0._r8
          this%scal_aere_cond_col        (c,:)   = 0._r8
          this%aere_cond_col             (c,:)   = 0._r8
          this%diffgas_topsno_col        (c,:)   = 0._r8
          this%diffgas_topsoi_col        (c,:)   = 0._r8
          this%hmconductance_col         (c,:,:) = 0._r8
+         this%annsum_counter_col        (c)     = 0._r8
        endif
     enddo
     
