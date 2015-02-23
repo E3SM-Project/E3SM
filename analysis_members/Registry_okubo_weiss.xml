@@ -15,7 +15,7 @@
 	/>
 	<nml_option name="config_okubo_weiss_directory" 
 				type="character" 
-				default_value="eddy_census" 
+				default_value="analysis_members"
 				units="unitless"
 				description="subdirectory to write eddy census text files"
 				possible_values="any valid directory name"
@@ -48,11 +48,11 @@
 				description="If true, latitude/longitude coordinates are output for eddy census. Otherwise x/y/z coordinates are used. Ignored if not on a sphere."
 				possible_values=".true. or .false."
 	/>
-	<nml_option name="config_okubo_weiss_compute_connected_components" 
+	<nml_option name="config_okubo_weiss_compute_eddy_census" 
 				type="logical" 
 				default_value=".true." 
 				units="unitless"
-				description="If true, connected components of thresholded OW values are computed."
+				description="If true, connected components of thresholded OW values are computed, and used to compute an eddy census."
 				possible_values=".true. or .false."
 	/>
 	<nml_option name="config_okubo_weiss_eddy_min_cells"
