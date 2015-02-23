@@ -1443,7 +1443,7 @@ contains
           call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
        endif
 
-       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: '//trim(forcingTimeCycleStr))//' ' COMMA ierr
+       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: '//trim(forcingTimeCycleStr)//' ' COMMA ierr)
 
     endif ! forcingAlarmID ringing
 

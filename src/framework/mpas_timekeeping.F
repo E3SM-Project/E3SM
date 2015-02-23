@@ -1370,14 +1370,14 @@ module mpas_timekeeping
       end if
 
       if (present(H)) then
-         H = (seconds - mod(seconds,3600)) / 3600
+         H = (seconds - mod(seconds,3600_I8KIND)) / 3600
          seconds = seconds - H*3600
          H = H + days * 24
          days = 0
       end if
 
       if (present(M)) then
-         M = (seconds - mod(seconds,60)) / 60
+         M = (seconds - mod(seconds,60_I8KIND)) / 60
          seconds = seconds - M*60
          M = M + days * 1440
          days = 0
