@@ -1314,9 +1314,9 @@ contains
       open(fileID, file=trim(config_okubo_weiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
       
       if (use_lat_lon_coords) then
-         write (fileID, '(10A)') '"eddy ID", ', '"number of cells", ', '"volume sum, m^3", ',  '"average longitude, degrees", ',  '"average latitude, degrees", ',  '"average depth, m", ', '"average zonal velocity, m/s"', '"average meridional velocity, m/s"', '"average vertical velocity, m/s"'  
+         write (fileID, '(10A)') '"eddy ID, number of cells", "volume sum, m^3", "average longitude, degrees", "average latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average meridional velocity, m/s", "average vertical velocity, m/s"'  
       else
-         write (fileID, '(10A)') '"eddy ID", ', '"number of cells", ', '"volume sum, m^3", ',  '"average x-position, m", ',   '"average y-position, m", ',  '"average depth, m", ', '"average x-velocity, m/s"' , '"average y-velocity, m/s"' , '"average z-velocity, m/s"' 
+         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average x-position, m", "average y-position, m", "average depth, m", "average x-velocity, m/s", "average y-velocity, m/s", "average z-velocity, m/s"' 
       end if
 
       ! Output number of eddies and statistics for each eddy
