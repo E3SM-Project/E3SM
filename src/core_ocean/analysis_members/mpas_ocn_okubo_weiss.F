@@ -266,8 +266,6 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_directory',config_okubo_weiss_directory)
 
-      call system('mkdir -p '//trim(config_okubo_weiss_directory))
-
       dminfo = domain % dminfo
       block => domain % blocklist
       do while (associated(block))
@@ -1550,7 +1548,7 @@ contains
       real (kind=RKIND), dimension(:,:,:,:), pointer :: velocityGradient
       integer, dimension(:,:), pointer :: OW_thresh
 
-      logical, pointer :: config_compute_OW_CC
+      logical, pointer :: config_compute_OW_eddy_census
       real (kind=RKIND), pointer :: OW_normalization, Lam2_normalization, threshold
 
       call mpas_timer_start("compute_okubo_weiss", .false., amOkuboWeissTimer)
@@ -1559,7 +1557,7 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_normalization', OW_normalization)
       call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_lambda2_normalization', Lam2_normalization)
-      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_compute_connected_components', config_compute_OW_CC)
+      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_compute_eddy_census', config_compute_OW_eddy_census)
       call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_threshold_value', threshold)
 
       block => domain % blocklist
@@ -1619,7 +1617,7 @@ contains
          call ocn_threshold_OW(nVertLevels, nCells, threshold, OW, OW_thresh)
 
          ! Compute connected components of thresholded field
-         if (config_compute_OW_CC) then
+         if (config_compute_OW_eddy_census) then
             call mpas_timer_start("OW connected components", .false., amOWCCTimer)
             call ocn_compute_OW_component_IDs(dminfo, block, meshPool, dminfo % my_proc_id, nVertLevels, &
                                               nCells, OW_thresh, OW_cc_id)
