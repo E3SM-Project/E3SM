@@ -137,6 +137,8 @@ contains
 
       integer, pointer :: config_cvmix_kpp_niterate
       logical, pointer :: config_use_cvmix_shear, config_use_cvmix_convection, config_use_cvmix_kpp
+      logical, pointer :: config_use_cvmix_fixed_boundary_layer
+      real (kind=RKIND), pointer :: config_cvmix_kpp_boundary_layer_depth
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
       integer :: k, iCell, jCell, iNeighbor, iter, timeLevel
@@ -183,6 +185,8 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_shear_mixing_scheme', config_cvmix_shear_mixing_scheme)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_matching', config_cvmix_kpp_matching)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_fixed_boundary_layer', config_use_cvmix_fixed_boundary_layer)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_boundary_layer_depth', config_cvmix_kpp_boundary_layer_depth)
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -376,7 +380,12 @@ contains
             ! copy data into cvmix_variables, then iterate
             cvmix_variables % Mdiff_iface(:)=vertViscTopOfCell(:,iCell)
             cvmix_variables % Tdiff_iface(:)=vertDiffTopOfCell(:,iCell)
-            cvmix_variables % BoundaryLayerDepth = boundaryLayerDepth(iCell)
+
+            if (config_use_cvmix_fixed_boundary_layer) then
+               cvmix_variables % BoundaryLayerDepth = config_cvmix_kpp_boundary_layer_depth
+            else
+              cvmix_variables % BoundaryLayerDepth = boundaryLayerDepth(iCell)
+            endif
             cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface, cvmix_variables%zt_cntr, cvmix_variables%BoundaryLayerDepth)
 
             do iter=1,config_cvmix_kpp_niterate
@@ -424,7 +433,10 @@ contains
                     Nsqr_iface = Nsqr_iface(1:nVertLevels+1) )
 
                ! compute the boundary layer depth based on model state at current time step
-               call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
+               if(.not.config_use_cvmix_fixed_boundary_layer) then
+                 call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
+               endif
+               cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface, cvmix_variables%zt_cntr, cvmix_variables%BoundaryLayerDepth)
 
                ! given current estimate of OBL and vertical profile of visc/diff, compute boundary layer mixing
                call cvmix_coeffs_kpp( CVmix_vars = cvmix_variables )

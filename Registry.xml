@@ -484,6 +484,14 @@
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
 		/>
+                <nml_option name="config_use_cvmix_fixed_boundary_layer" type="logical" default_value=".false." units="NA"
+                                        description="If true, boundary layer depth is specified as config_cvmix_kpp_boundary_layer_depth"
+                                        possible_values="True or False"
+                />
+                <nml_option name="config_cvmix_kpp_boundary_layer_depth" type="real" default_value="30.0" units="m"
+                                        description="If config_use_cvmix_fixed_boundary_layer, then KPP OBL calculation is overwritten with this value"
+                                        possible_values="Any positive real value."
+                />
 		<nml_option name="config_cvmix_kpp_niterate" type="integer" default_value="2" units="NA"
 					description="Number of iterations used to solve for KPP ocean boundary layer depth"
 					possible_values="Any positive integer"
