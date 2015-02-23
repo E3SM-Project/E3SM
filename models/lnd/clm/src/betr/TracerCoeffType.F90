@@ -25,6 +25,7 @@
     real(r8), pointer :: henrycef_col              (:,:,:)      !henry's law constant
     real(r8), pointer :: bunsencef_col             (:,:,:)      !bunsen solubility
     real(r8), pointer :: tracer_diffusivity_air_col(:,:, :)     !diffusivity in the air
+    real(r8), pointer :: aere_cond_col             (:,:)        !column level aerenchyma conductance (m/s)
     real(r8), pointer :: scal_aere_cond_col        (:,:)        !column level scaling factor for arenchyma or parenchyma transport
     real(r8), pointer :: diffgas_topsno_col        (:,:)        !gas diffusivity in top snow layer, this is not used currently
     real(r8), pointer :: diffgas_topsoi_col        (:,:)        !gas diffusivity in top soil layer, this is not used currently
@@ -79,6 +80,8 @@ contains
     allocate(this%bunsencef_col              (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracers));  this%bunsencef_col             (:,:,:) = nan  
     allocate(this%tracer_diffusivity_air_col (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracers));  this%tracer_diffusivity_air_col(:,:,:) = nan  
     allocate(this%scal_aere_cond_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%scal_aere_cond_col        (:,:)   = nan
+    allocate(this%aere_cond_col              (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%aere_cond_col             (:,:)   = nan
+
     allocate(this%diffgas_topsno_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%diffgas_topsno_col        (:,:)   = nan
     allocate(this%diffgas_topsoi_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%diffgas_topsoi_col        (:,:)   = nan
     allocate(this%hmconductance_col          (begc:endc, lbj:ubj, 1:betrtracer_vars%ntracers));           this%hmconductance_col         (:,:,:) = nan
@@ -129,6 +132,12 @@ contains
         data1dptr => this%scal_aere_cond_col(begc:endc, kk)
         call hist_addfld1d (fname='SCAL_ARENCHYMA_'//tracernames(jj), units='none', &
          avgflag='A', long_name='scaling factor for tracer transport through arenchyma for '//trim(tracernames(jj)), &
+         ptr_col=data1dptr, default='inactive')
+
+        this%aere_cond_col(begc:endc, kk) = spval
+        data1dptr => this%aere_cond_col(begc:endc, kk)
+        call hist_addfld1d (fname='ARENCHYMA_'//tracernames(jj), units='m/s', &
+         avgflag='A', long_name='conductance for tracer transport through arenchyma for '//trim(tracernames(jj)), &
          ptr_col=data1dptr, default='inactive')
          
         this%diffgas_topsoi_col(begc:endc, kk) = spval
@@ -189,6 +198,7 @@ contains
          this%bunsencef_col             (c,:,:) = spval
          this%tracer_diffusivity_air_col(c,:,:) = spval
          this%scal_aere_cond_col        (c,:)   = spval
+         this%aere_cond_col             (c,:)   = spval
          this%diffgas_topsno_col        (c,:)   = spval
          this%diffgas_topsoi_col        (c,:)   = spval
          this%hmconductance_col         (c,:,:) = spval
@@ -202,6 +212,7 @@ contains
          this%bunsencef_col             (c,:,:) = 0._r8
          this%tracer_diffusivity_air_col(c,:,:) = 0._r8
          this%scal_aere_cond_col        (c,:)   = 0._r8
+         this%aere_cond_col             (c,:)   = 0._r8
          this%diffgas_topsno_col        (c,:)   = 0._r8
          this%diffgas_topsoi_col        (c,:)   = 0._r8
          this%hmconductance_col         (c,:,:) = 0._r8

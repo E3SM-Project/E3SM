@@ -698,8 +698,8 @@ contains
               filter(nc)%num_soilp, filter(nc)%soilp,                                &
               col, atm2lnd_vars,                                                     &
               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
-              waterflux_vars, chemstate_vars, cnstate_vars, carbonflux_vars,         &
-              nitrogenflux_vars, betrtracer_vars, bgc_reaction,                      &
+              waterflux_vars, chemstate_vars, cnstate_vars, canopystate_vars,        &
+              carbonflux_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction,     &
               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
               tracerflux_vars, plantsoilnutrientflux_vars)
 
@@ -786,8 +786,8 @@ contains
               filter(nc)%num_soilp, filter(nc)%soilp,                                &
               col, atm2lnd_vars,                                                     &
               soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, &
-              waterflux_vars, chemstate_vars, cnstate_vars, carbonflux_vars,         &
-              nitrogenflux_vars, betrtracer_vars, bgc_reaction,                      &
+              waterflux_vars, chemstate_vars, cnstate_vars, canopystate_vars,        &
+              carbonflux_vars,  nitrogenflux_vars, betrtracer_vars, bgc_reaction,    &
               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
               tracerflux_vars, plantsoilnutrientflux_vars)         
          endif

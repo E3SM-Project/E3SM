@@ -18,7 +18,9 @@ module TracerParamsMod
    use shr_log_mod           , only : errMsg => shr_log_errMsg
    use decompMod             , only : bounds_type
    use clm_varpar            , only : nlevsoi
-   use clm_varcon            , only : spval    
+   use clm_varcon            , only : spval
+   use PatchType             , only : pft
+   use ColumnType             , only : col        
    use tracer_varcon
    implicit none
    save
@@ -37,6 +39,8 @@ module TracerParamsMod
    public :: diagnose_drainage_water_flux
    public :: calc_smp_l
    public :: get_zwt
+   public :: calc_aerecond
+   public :: betr_annualupdate
    !parameters
    real(r8), parameter :: minval_diffus = 1.e-20_r8   !minimum diffusivity, m2/s
    real(r8), parameter :: minval_airvol = 1.e-10_r8   !minimum air-filled volume
@@ -1104,7 +1108,7 @@ module TracerParamsMod
    end subroutine convert_mobile2gas
 !-------------------------------------------------------------------------------
 
-   subroutine set_multi_phase_diffusion(bounds, lbj, ubj, jtops, numf, filter, col, soilstate_vars, waterstate_vars, &
+   subroutine set_multi_phase_diffusion(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, &
       temperature_vars, chemstate_vars, betrtracer_vars, tracercoeff_vars)
    !
    ! DESCRIPTION
@@ -1115,7 +1119,6 @@ module TracerParamsMod
    use SoilStateType      , only : soilstate_type
    use TemperatureType    , only : temperature_type
    use ChemStateType      , only : chemstate_type
-   use ColumnType         , only : column_type
    use BeTRTracerType     , only : betrtracer_type    
    implicit none
    type(bounds_type),      intent(in) :: bounds  ! bounds
@@ -1123,7 +1126,6 @@ module TracerParamsMod
    integer,                intent(in) :: jtops(bounds%begc: ) ! top label of each column   
    integer,                intent(in) :: numf                 ! number of columns in column filter
    integer,                intent(in) :: filter(:)            ! column filter
-   type(column_type),      intent(in) :: col
    type(betrtracer_type),  intent(in) :: betrtracer_vars      ! betr configuration information
    type(Waterstate_Type),  intent(in) :: waterstate_vars          ! water state variables
    type(soilstate_type),   intent(in) :: soilstate_vars          ! physical state variables
@@ -1322,8 +1324,7 @@ module TracerParamsMod
 
    use WaterFluxType        , only : waterflux_type  
    use clm_time_manager     , only : get_step_size
-   use clm_varcon        , only : denh2o
-   use ColumnType        , only : col     
+   use clm_varcon           , only : denh2o
    implicit none
    type(bounds_type)       , intent(in)    :: bounds               ! bounds
    integer                 , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
@@ -1650,19 +1651,22 @@ module TracerParamsMod
     type(waterstate_type)  , intent(in)   :: waterstate_vars
     type(temperature_type) , intent(in)   :: temperature_vars
     real(r8)               , intent(in)   :: zi(bounds%begc: , 0: )
-    real(r8)               , intent(inout):: zwt( bounds%begc: ) ! water table depth (-) [col]    
+    real(r8)               , intent(inout):: zwt( bounds%begc: ) ! water table depth (-) [col]
+    integer                , intent(inout):: jwt(bounds%begc: ) 
     !
     ! !LOCAL VARIABLES:
     real(r8) :: f_sat    ! volumetric soil water defining top of water table or where production is allowed
     integer  :: c,j,perch! indices
     integer  :: fc       ! filter column index
-    integer  :: jwt
+
     !-----------------------------------------------------------------------
     f_sat = 0.95_r8   !a number borrowed from zack's ch4 code
     
     SHR_ASSERT_ALL((ubound(zwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(zi) == (/bounds%endc, nlevsoi/)), errMsg(__FILE__, __LINE__))
-    
+    SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
+  
+  
     associate(                                          & 
          watsat     => soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)  ] volumetric soil water at saturation (porosity)   
          h2osoi_vol => waterstate_vars%h2osoi_vol_col , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
@@ -1705,5 +1709,233 @@ module TracerParamsMod
     end associate
 
   end subroutine get_zwt
+
+  !-----------------------------------------------------------------------  
+  subroutine calc_aerecond(bounds, num_soilp, filter_soilp, jwt, t_veg, betrtracer_vars, &
+     canopystate_vars, carbonstate_vars, carbonflux_vars, tracercoeff_vars)
+  !
+  ! DESCRIPTION
+  ! 
+  ! calculate aerenchyma conductance (m/s)
+  use clm_varcon            , only : tfrz, rpi, nongrassporosratio
+  use pftvarcon             , only : nc3_arctic_grass, crop, nc3_nonarctic_grass, nc4_grass, noveg
+  use CNCarbonFluxType      , only : carbonflux_type
+  use CNCarbonStateType     , only : carbonstate_type
+  use CanopyStateType       , only : canopystate_type  
+  use BetrTracerType        , only : betrtracer_type
+  use tracercoeffType       , only : tracercoeff_type
+    
+  type(bounds_type)            , intent(in)   :: bounds    
+  integer                      , intent(in)   :: num_soilp                 ! number of column soil points in column filter
+  integer                      , intent(in)   :: filter_soilp(:)           ! column filter for soil points
+  integer                      , intent(in)   :: jwt(bounds%begc: )
+  real(r8)                     , intent(in)   :: t_veg(bounds%begp: )
+  type(canopystate_type)       , intent(in)   :: canopystate_vars
+  type(carbonstate_type)       , intent(in)   :: carbonstate_vars
+  type(carbonflux_type)        , intent(in)   :: carbonflux_vars
+  type(betrtracer_type)        , intent(in)   :: betrtracer_vars            ! betr configuration information  
+  type(tracercoeff_type)       , intent(inout) :: tracercoeff_vars
   
+  real(r8) :: aerecond               !
+  real(r8) :: nppratio
+  real(r8) :: anpp
+  real(r8) :: m_tiller
+  real(r8) :: poros_tiller
+  real(r8) :: area_tiller
+  real(r8) :: porosmin = 0.05_r8                                     ! wait to be read in later
+  real(r8) :: rob = 3._r8                                            ! ratio of root length to vertical depth ("obliquity"), wait to be read in later
+  logical  :: usefrootc = .false.                                    ! wait to be read in later
+  integer  :: j, fp, p, c, g, kk, k
+  
+  SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_ALL((ubound(t_veg) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+    
+  associate(                                                   & !
+    z              =>    col%z                               , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)            
+    dz             =>    col%dz                              , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)       
+    wtcol          =>    pft%wtcol                           , & ! Input:  [real(r8) (:)    ]  weight (relative to column)
+    lbl_rsc_h2o    =>    canopystate_vars%lbl_rsc_h2o_patch  , & ! laminar layer resistance for h2o
+    annsum_npp     =>    carbonflux_vars%annsum_npp_patch    , & ! Input:  [real(r8) (:) ]  annual sum NPP (gC/m2/yr)
+    annavg_agnpp   =>    carbonflux_vars%annavg_agnpp_patch  , & ! Output: [real(r8) (:) ]  annual average above-ground NPP (gC/m2/s)         
+    annavg_bgnpp   =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Output: [real(r8) (:) ]  annual average below-ground NPP (gC/m2/s)         
+    frootc         =>    carbonstate_vars%frootc_patch       , & ! Input:  [real(r8) (:)    ]  (gC/m2) fine root C
+    aere_cond      =>    tracercoeff_vars%aere_cond_col        & !
+  )
+  
+  
+  do j=1,nlevsoi
+    do fp = 1, num_methp
+      p = filter_soilp (fp)
+      c = pft%column(p)
+      g = col%gridcell(c)
+
+      ! Calculate aerenchyma diffusion
+      if (j > jwt(c) .and. t_soisno(c,j) > tfrz .and. pft%itype(p) /= noveg) then
+        ! Attn EK: This calculation of aerenchyma properties is very uncertain. Let's check in once all
+        ! the new components are in; if there is any tuning to be done to get a realistic global flux,
+        ! this would probably be the place.  We will have to document clearly in the Tech Note
+        ! any major changes from the Riley et al. 2011 version. (There are a few other minor ones.)
+
+        anpp = annsum_npp(p) ! g C / m^2/yr
+        anpp = max(anpp, 0._r8) ! NPP can be negative b/c of consumption of storage pools
+
+        if (annavg_agnpp(p) /= spval .and. annavg_bgnpp(p) /= spval .and. &
+          annavg_agnpp(p) > 0._r8 .and. annavg_bgnpp(p) > 0._r8) then
+          nppratio = annavg_bgnpp(p) / (annavg_agnpp(p) + annavg_bgnpp(p))
+        else
+          nppratio = 0.5_r8
+        end if
+
+        ! Estimate area of tillers (see Wania thesis)
+        !m_tiller = anpp * r_leaf_root * lai ! (4.17 Wania)
+        !m_tiller = 600._r8 * 0.5_r8 * 2._r8  ! used to be 300
+        ! Note: this calculation is based on Arctic graminoids, and should be refined for woody plants, if not
+        ! done on a PFT-specific basis.
+
+        if (usefrootc) then
+          m_tiller = frootc(p) ! This will yield much smaller aere area.
+        else
+          m_tiller = anpp * nppratio * elai(p)
+        end if
+
+        n_tiller = m_tiller / 0.22_r8
+
+        if (pft%itype(p) == nc3_arctic_grass .or. crop(pft%itype(p)) == 1 .or. &
+          pft%itype(p) == nc3_nonarctic_grass .or. pft%itype(p) == nc4_grass) then
+          poros_tiller = 0.3_r8  ! Colmer 2003
+        else
+          poros_tiller = 0.3_r8 * nongrassporosratio
+        end if
+
+
+        poros_tiller = poros_tiller * unsat_aere_ratio
+
+        poros_tiller = max(poros_tiller, porosmin)
+
+        area_tiller = scale_factor_aere * n_tiller * poros_tiller * rpi * 2.9e-3_r8**2._r8 ! (m2/m2)
+        
+        do k = 1, ngwmobile_tracers
+          if(is_volatile(jj))then
+            kk = volatileid(jj)
+            aerecond = area_tiller * rootfr(p,j) * tracer_diffusivity_air(c,kk) / (z(c,j)*rob)
+            ! Add in boundary layer resistance
+            lbl_rsc = lbl_rsc_h2o(p) * (get_diffusivity_ratio_gas2h2o(k, t_veg(p), betrtracer_vars))**(-2._r8/3._r8)
+            !laminar boundary resistance + resistance in the aerenchyma
+            aerecond = 1._r8 / (safe_div(1._r8,aerecond) + safe_div(1._r8,lbl_rsc))
+            aere_cond(c,kk) = aere_cond(c,kk) + wtcol(p) * aerecond
+          endif  
+        enddo
+      endif
+    end do ! p filter
+  end do ! over levels
+
+
+  end associate
+
+  end subroutine calc_aerecond 
+
+
+  !-----------------------------------------------------------------------
+  subroutine betr_annualupdate(bounds, num_soilc, filter_soilc, num_methp, filter_methp, &
+       carbonflux_vars, tracercoeff_vars)
+    !
+    ! !DESCRIPTION: Annual mean fields.
+    !
+    ! !USES:
+    use clm_time_manager, only: get_step_size, get_days_per_year, get_nstep
+    use clm_varcon      , only: secspday
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)      , intent(in)    :: bounds  
+    integer                , intent(in)    :: num_soilc         ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:)   ! filter for soil columns
+    integer                , intent(in)    :: num_soilp         ! number of soil points in pft filter
+    integer                , intent(in)    :: filter_soilp(:)   ! patch filter for soil points
+    type(carbonflux_type)  , intent(inout) :: carbonflux_vars
+    type(tracerceoff_type) , intent(inout) :: tracerceoff_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c,p       ! indices
+    integer :: fc        ! soil column filter indices
+    integer :: fp        ! soil pft filter indices
+    real(r8):: dt        ! time step (seconds)
+    real(r8):: secsperyear
+    logical :: newrun
+    !-----------------------------------------------------------------------
+
+    associate(                                                      & 
+         agnpp          =>    carbonflux_vars%agnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) aboveground NPP                         
+         bgnpp          =>    carbonflux_vars%bgnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) belowground NPP                         
+         tempavg_agnpp  =>    carbonflux_vars%tempavg_agnpp_patch , & ! Output: [real(r8) (:) ]  temporary average above-ground NPP (gC/m2/s)      
+         annavg_agnpp   =>    carbonflux_vars%annavg_agnpp_patch  , & ! Output: [real(r8) (:) ]  annual average above-ground NPP (gC/m2/s)         
+         tempavg_bgnpp  =>    carbonflux_vars%tempavg_bgnpp_patch , & ! Output: [real(r8) (:) ]  temporary average below-ground NPP (gC/m2/s)      
+         annavg_bgnpp   =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Output: [real(r8) (:) ]  annual average below-ground NPP (gC/m2/s)         
+         
+         !finundated     =>    ch4_vars%finundated_col             , & ! Input:  [real(r8) (:) ]  fractional inundated area in soil column          
+         annsum_counter =>    tracercoeff_vars%annsum_counter_col         , & ! Output: [real(r8) (:) ]  seconds since last annual accumulator turnover    
+         !tempavg_somhr  =>    ch4_vars%tempavg_somhr_col          , & ! Output: [real(r8) (:) ]  temporary average SOM heterotrophic resp. (gC/m2/s)
+         !annavg_somhr   =>    ch4_vars%annavg_somhr_col           , & ! Output: [real(r8) (:) ]  annual average SOM heterotrophic resp. (gC/m2/s)  
+         !tempavg_finrw  =>    ch4_vars%tempavg_finrw_col          , & ! Output: [real(r8) (:) ]  respiration-weighted annual average of finundated 
+         !annavg_finrw   =>    ch4_vars%annavg_finrw_col             & ! Output: [real(r8) (:) ]  respiration-weighted annual average of finundated 
+         )
+
+      ! set time steps
+      dt = real(get_step_size(), r8)
+      secsperyear = real( get_days_per_year() * secspday, r8)
+
+      newrun = .false.
+
+      ! column loop
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+
+         if (annsum_counter(c) == spval) then
+            ! These variables are now in restart files for completeness, but might not be in inicFile and are not.
+            ! set for arbinit.
+            newrun = .true.
+            annsum_counter(c)    = 0._r8
+            tempavg_somhr(c)     = 0._r8
+            tempavg_finrw(c)     = 0._r8
+         end if
+
+         annsum_counter(c) = annsum_counter(c) + dt
+      end do
+
+      ! patch loop
+      do fp = 1,num_soilp
+         p = filter_soilp(fp)
+
+         if (newrun .or. tempavg_agnpp(p) == spval) then ! Extra check needed because for back-compatibility
+            tempavg_agnpp(p) = 0._r8
+            tempavg_bgnpp(p) = 0._r8
+         end if
+      end do
+
+
+      do fp = 1,num_methp
+         p = filter_methp(fp)
+         c = pft%column(p)
+         if (annsum_counter(c) >= secsperyear) then
+
+            annavg_agnpp(p) = tempavg_agnpp(p)
+            tempavg_agnpp(p) = 0._r8
+
+            annavg_bgnpp(p) = tempavg_bgnpp(p)
+            tempavg_bgnpp(p) = 0._r8
+
+         else
+            tempavg_agnpp(p) = tempavg_agnpp(p) + dt/secsperyear * agnpp(p)
+            tempavg_bgnpp(p) = tempavg_bgnpp(p) + dt/secsperyear * bgnpp(p)
+         end if
+      end do
+
+      ! column loop
+      do fc = 1,num_methc
+         c = filter_methc(fc)
+         if (annsum_counter(c) >= secsperyear) annsum_counter(c) = 0._r8
+      end do
+
+    end associate
+
+  end subroutine betr_annualupdate 
 end module TracerParamsMod

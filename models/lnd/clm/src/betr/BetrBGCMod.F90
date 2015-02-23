@@ -44,7 +44,7 @@ contains
 !-------------------------------------------------------------------------------
   subroutine run_betr_one_step_without_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, col, &
      atm2lnd_vars, soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, waterflux_vars, chemstate_vars, &
-     cnstate_vars, carbonflux_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction, tracerboundarycond_vars, tracercoeff_vars, &
+     cnstate_vars, canopystate_vars, carbonflux_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction, tracerboundarycond_vars, tracercoeff_vars, &
      tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! DESCRIPTION
@@ -58,7 +58,8 @@ contains
   use tracercoeffType       , only : tracercoeff_type  
   use TracerBoundaryCondType, only : TracerBoundaryCond_type
   use BetrTracerType        , only : betrtracer_type
-  use TracerParamsMod       , only : set_phase_convert_coeff, set_multi_phase_diffusion, calc_tracer_infiltration, get_zwt
+  use TracerParamsMod       , only : set_phase_convert_coeff, set_multi_phase_diffusion, calc_tracer_infiltration, &
+                                     get_zwt, calc_aerecond, betr_annualupdate
   use SoilStateType         , only : soilstate_type
   use WaterStateType        , only : Waterstate_Type  
   use TemperatureType       , only : temperature_type
@@ -73,8 +74,9 @@ contains
   use CNStateType              , only : cnstate_type
   use CNCarbonFluxType         , only : carbonflux_type
   use tracer_varcon            , only : is_active_betr_bgc
-  use CNNitrogenFluxType       , only : nitrogenflux_type    
-  implicit none
+  use CNNitrogenFluxType       , only : nitrogenflux_type
+  use CanopyStateType       , only : canopystate_type   
+
   
   type(bounds_type)            , intent(in) :: bounds                     ! bounds   
   integer                      , intent(in) :: num_soilc                       ! number of columns in column filter_soilc
@@ -93,6 +95,7 @@ contains
   type(atm2lnd_type)           , intent(in) :: atm2lnd_vars
   type(soilhydrology_type)     , intent(in) :: soilhydrology_vars
   type(cnstate_type)           , intent(inout) :: cnstate_vars
+  type(canopystate_type)       , intent(in)   :: canopystate_vars  
   type(carbonflux_type)        , intent(inout) :: carbonflux_vars
   type(nitrogenflux_type)      , intent(inout) :: nitrogenflux_vars
   type(waterflux_type)         , intent(inout) :: waterflux_vars  
@@ -106,14 +109,29 @@ contains
   real(r8) :: dtime2, dtime
   real(r8) :: Rfactor(bounds%begc:bounds%endc, lbj:ubj,1:betrtracer_vars%ngwmobile_tracers) !retardation factor
   integer  :: j
-
+  integer  :: jwt(bounds%begc:bounds%endc)
+  
   dtime = get_step_size()
   !initialize extra parameters
   dtime2 = dtime * 0.5_r8
   
   !set up jtops
   tracerboundarycond_vars%jtops_col(:)=1
+
+  !update npp for aerenchyma calculation
+  call betr_annualupdate(bounds, num_soilc, filter_soilc, num_methp, filter_methp, &
+       carbonflux_vars, tracercoeff_vars)
   !in the future, one may want to reset jtops_col here. Right now it is set to 1
+
+  !obtain water table depth
+  call get_zwt (bounds, num_soilc, filter_soilc, col%zi(bounds%begc:bounds%endc, 0:nlevsoi), &
+       soilstate_vars, waterstate_vars, temperature_vars, soilhydrology_vars%zwts_col(bounds%begc:bounds%endc), &
+       jwt(bounds%begc:bounds%endc))
+       
+  !calculate arenchyma conductance  
+  call calc_aerecond(bounds, num_soilp, filter_soilp, jwt(bounds%begc:bounds%endc), &
+     temperature_vars%t_veg_patch(bounds%begp:bounds%endp), betrtracer_vars, &
+     canopystate_vars, carbonstate_vars, carbonflux_vars, tracercoeff_vars)
   
   !print*,'setup phase change parameters'
   call set_phase_convert_coeff(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, &
@@ -121,7 +139,7 @@ contains
      temperature_vars=temperature_vars, chemstate_vars=chemstate_vars, betrtracer_vars=betrtracer_vars, tracercoeff_vars=tracercoeff_vars)
     
   !print*,'set up diffusivity'
-  call set_multi_phase_diffusion(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc,col, soilstate_vars=soilstate_vars, waterstate_vars=waterstate_vars,&
+  call set_multi_phase_diffusion(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, soilstate_vars=soilstate_vars, waterstate_vars=waterstate_vars,&
      temperature_vars=temperature_vars, chemstate_vars=chemstate_vars, betrtracer_vars=betrtracer_vars, tracercoeff_vars=tracercoeff_vars)
     
   !print*,'set up top boundary conditions for tracer transport'
@@ -172,10 +190,7 @@ contains
     betrtracer_vars, tracerboundarycond_vars, tracerstate_vars)
 
   !print*,'do ebullition of gas fluxes'
-  !obtain water table depth
-  call get_zwt (bounds, num_soilc, filter_soilc, col%zi(bounds%begc:bounds%endc, 0:nlevsoi), &
-       soilstate_vars, waterstate_vars, temperature_vars, soilhydrology_vars%zwts_col(bounds%begc:bounds%endc))
-
+  
   call calc_ebullition(bounds, 1, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, &
     atm2lnd_vars%forc_pbot_downscaled_col, col%zi(bounds%begc:bounds%endc, 0:ubj),&
     col%dz(bounds%begc:bounds%endc, 1:ubj), dtime, &

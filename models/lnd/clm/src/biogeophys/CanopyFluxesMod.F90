@@ -110,6 +110,7 @@ contains
     use QSatMod            , only : QSat
     use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
+    use SurfaceResistanceMod, only : getlblcef
     !
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds 
@@ -746,6 +747,7 @@ contains
             ! Bulk boundary layer resistance of leaves
 
             uaf(p) = um(p)*sqrt( 1._r8/(ram1(p)*um(p)) )
+
             cf  = 0.01_r8/(sqrt(uaf(p))*sqrt(dleaf(pft%itype(p))))
             rb(p)  = 1._r8/(cf*uaf(p))
             rb1(p) = rb(p)
@@ -1084,6 +1086,11 @@ contains
 
          end do   ! end of filtered pft loop
 
+         do f = 1, fn
+           p = filterp(f)
+           lbl_rsc_h2o(p) = getlblcef(forc_rho(c),t_veg(p))/uaf(p)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+         enddo
+            
          ! Test for convergence
 
          itlef = itlef+1
