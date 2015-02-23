@@ -1156,7 +1156,7 @@ contains
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
                waterflux_vars, waterstate_vars, EDbio_vars,                     &
                betrtracer_vars, tracerstate_vars, tracerflux_vars,              &
-               rdate=rdate )
+               tracercoeff_vars, rdate=rdate )
 
           call t_stopf('clm_drv_io_wrest')
        end if

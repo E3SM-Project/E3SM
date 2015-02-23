@@ -857,7 +857,7 @@ contains
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
                waterflux_vars, waterstate_vars, EDbio_vars,                     &    
-               betrtracer_vars, tracerstate_vars, tracerflux_vars )
+               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -871,7 +871,7 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
             waterflux_vars, waterstate_vars, EDbio_vars,                     &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars)
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
     end if
 
@@ -911,7 +911,7 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
             waterflux_vars, waterstate_vars, EDbio_vars,                     &
-           betrtracer_vars, tracerstate_vars, tracerflux_vars)
+           betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -925,7 +925,7 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
             waterflux_vars, waterstate_vars, EDbio_vars,  &
-            betrtracer_vars, tracerstate_vars, tracerflux_vars)
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)

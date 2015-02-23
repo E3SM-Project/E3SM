@@ -48,6 +48,7 @@ module restFileMod
   use BeTRTracerType       , only : BeTRTracer_Type    
   use TracerStateType      , only : TracerState_type
   use TracerFluxType       , only : TracerFlux_Type
+  use tracercoefftype      , only : tracercoeff_type
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
@@ -93,7 +94,7 @@ contains
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
        waterflux_vars, waterstate_vars, EDbio_vars,                     &
-       betrtracer_vars, tracerstate_vars, tracerflux_vars,             &
+       betrtracer_vars, tracerstate_vars, tracerflux_vars,   tracercoeff_vars,        &
        rdate, noptr)
     !
     ! !DESCRIPTION:
@@ -128,7 +129,8 @@ contains
     type(EDbio_type)         , intent(inout) :: EDbio_vars       ! due to EDrest call
     type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
     type(BeTRTracer_Type)    , intent(in)    :: betrtracer_vars
-    type(tracerflux_type)    , intent(inout) :: tracerflux_vars        
+    type(tracerflux_type)    , intent(inout) :: tracerflux_vars
+    type(tracercoeff_type)   , intent(inout) :: tracercoeff_vars
     character(len=*)         , intent(in), optional :: rdate     ! restart file time stamp for name
     logical                  , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
     !
@@ -235,7 +237,8 @@ contains
 
     if (use_betr) then
       call tracerstate_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
-      call tracerflux_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)      
+      call tracerflux_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+      call tracercoeff_vars%Restart(bonds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
     endif
 
     if (present(rdate)) then 
@@ -326,7 +329,8 @@ contains
 
     if(use_betr) then
        call tracerstate_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
-       call tracerflux_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)       
+       call tracerflux_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
+       call tracercoeff_vars%Restart(bonds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
     endif
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
@@ -359,7 +363,7 @@ contains
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
        waterflux_vars, waterstate_vars, EDbio_vars, betrtracer_vars, tracerstate_vars,&
-       tracerflux_vars)
+       tracerflux_vars, tracercoeff_vars)
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
@@ -398,7 +402,8 @@ contains
     type(EDbio_type)         , intent(inout) :: EDbio_vars
     type(tracerstate_type)   , intent(inout) :: tracerstate_vars ! due to Betrrest call
     type(BeTRTracer_Type)    , intent(in)    :: betrtracer_vars
-    type(tracerflux_type)    , intent(inout) :: tracerflux_vars      
+    type(tracerflux_type)    , intent(inout) :: tracerflux_vars
+    type(tracercoeff_type)   , intent(inout) :: tracercoeff_vars
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id
@@ -497,7 +502,8 @@ contains
 
     if (use_betr) then
       call tracerstate_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
-      call tracerflux_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)      
+      call tracerflux_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
+      call tracercoeff_vars%Restart(bonds, ncid, flag='read', betrtracer_vars=betrtracer_vars)
     endif
         
     call hist_restart_ncd (bounds, ncid, flag='read')

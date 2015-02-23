@@ -32,7 +32,8 @@
     real(r8), pointer :: hmconductance_col         (:,:,:)      !geometrically weighted conductances (nlevsno+nlevtrc_soil)
     real(r8), pointer :: annsum_counter_col        (:)
     contains
-      procedure, public  :: Init         
+      procedure, public  :: Init
+      procedure, public  :: Restart      
       procedure, private :: InitAllocate 
       procedure, private :: InitHistory  
       procedure, private :: InitCold      
@@ -55,6 +56,38 @@ contains
     call this%InitCold(bounds)
 
   end subroutine Init
+
+  !------------------------------------------------------------------------
+  subroutine Restart(this, bounds, ncid, flag, betrtracer_vars)
+    ! 
+    ! !DESCRIPTION:
+    ! Read/Write module information to/from restart file.
+    !
+    ! Now it is purposely empty, but will be potentially useful in the future
+    ! !USES:
+    use BetrTracerType        , only : betrtracer_type
+    use clm_varpar , only : nlevsno, nlevsoi
+    use clm_varcon , only : spval
+    use restUtilMod
+    use ncdio_pio
+    !
+    ! !ARGUMENTS:
+    class(TracerFlux_type) :: this
+    type(bounds_type)    , intent(in)    :: bounds                                   
+    type(file_desc_t)    , intent(inout) :: ncid                                         ! netcdf id
+    character(len=*)     , intent(in)    :: flag                                         ! 'read' or 'write'
+    type(BeTRTracer_Type), intent(in)    :: betrtracer_vars    
+    !
+    ! !LOCAL VARIABLES:
+    integer :: j,c ! indices
+    logical :: readvar      ! determine if variable is on initial file
+    
+
+     call restartvar(ncid=ncid, flag=flag, varname=trim('annsum_counter_betr', xtype=ncd_double,  &
+            dim1name='column', long_name='',  units='', &
+            interpinic_flag='interp' , readvar=readvar, data=this%annsum_counter_col)
+            
+   end subroutine Restart
   
   !-----------------------------------------------------------------------
   subroutine InitAllocate(this, bounds, lbj, ubj, betrtracer_vars)
