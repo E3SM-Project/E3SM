@@ -139,6 +139,7 @@ module ocn_okubo_weiss
       CCAggregateStatsT, CCAggGatherT, CCAggSortT, CCOutputT
    integer :: nCellsGlobal
    integer :: nTotalCellsGlobal
+   character (len=StrKIND), pointer :: config_okubo_weiss_directory
 
 !***********************************************************************
 
@@ -262,6 +263,11 @@ contains
       !-----------------------------------------------------------------
 
       cells = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_directory',config_okubo_weiss_directory)
+
+      call system('mkdir -p '//trim(config_okubo_weiss_directory))
+
       dminfo = domain % dminfo
       block => domain % blocklist
       do while (associated(block))
@@ -374,6 +380,9 @@ contains
             OW(k, iCell) = 0.0_RKIND
          end do
       end do
+      S(:, nCells+1) = 0.0_RKIND
+      om(:, nCells+1) = 0.0_RKIND
+      OW(:, nCells+1) = 0.0_RKIND
       OW = OW / OW_norm;
 
       ! Compute Lambda_2 parameter
@@ -409,6 +418,9 @@ contains
             Lam2_R3(k, iCell) = 0.0_RKIND
          end do
       end do
+      Lam1(:, nCells+1) = 0.0_RKIND
+      Lam2(:, nCells+1) = 0.0_RKIND
+      Lam2_R3(:, nCells+1) = 0.0_RKIND
 
       Lam2 = Lam2 / Lam2_norm;
       Lam2_R3 = Lam2_R3 / Lam2_norm;
@@ -1301,7 +1313,7 @@ contains
       fileID = mpas_get_free_unit()
 
       ! Create output file.
-      open(fileID, file='okubo_weiss_eddy_stats_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
+      open(fileID, file=trim(config_okubo_weiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
       
       if (use_lat_lon_coords) then
          write (fileID, '(10A)') '"eddy ID", ', '"number of cells", ', '"volume sum, m^3", ',  '"average longitude, degrees", ',  '"average latitude, degrees", ',  '"average depth, m", ', '"average zonal velocity, m/s"', '"average meridional velocity, m/s"', '"average vertical velocity, m/s"'  
