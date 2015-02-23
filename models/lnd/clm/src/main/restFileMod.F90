@@ -238,7 +238,7 @@ contains
     if (use_betr) then
       call tracerstate_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
       call tracerflux_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
-      call tracercoeff_vars%Restart(bonds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+      call tracercoeff_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
     endif
 
     if (present(rdate)) then 
@@ -330,7 +330,7 @@ contains
     if(use_betr) then
        call tracerstate_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
        call tracerflux_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
-       call tracercoeff_vars%Restart(bonds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
+       call tracercoeff_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
     endif
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
@@ -503,7 +503,7 @@ contains
     if (use_betr) then
       call tracerstate_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
       call tracerflux_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
-      call tracercoeff_vars%Restart(bonds, ncid, flag='read', betrtracer_vars=betrtracer_vars)
+      call tracercoeff_vars%Restart(bounds, ncid, flag='read', betrtracer_vars=betrtracer_vars)
     endif
         
     call hist_restart_ncd (bounds, ncid, flag='read')

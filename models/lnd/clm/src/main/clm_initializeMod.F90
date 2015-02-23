@@ -406,7 +406,7 @@ contains
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
     use betr_initializeMod    , only : betr_initialize
-    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars
+    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
     use tracer_varcon         , only : is_active_betr_bgc    
     !
     ! !ARGUMENTS    

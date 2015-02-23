@@ -72,7 +72,7 @@ contains
     use ncdio_pio
     !
     ! !ARGUMENTS:
-    class(TracerFlux_type) :: this
+    class(TracerCoeff_type) :: this
     type(bounds_type)    , intent(in)    :: bounds                                   
     type(file_desc_t)    , intent(inout) :: ncid                                         ! netcdf id
     character(len=*)     , intent(in)    :: flag                                         ! 'read' or 'write'
@@ -83,7 +83,7 @@ contains
     logical :: readvar      ! determine if variable is on initial file
     
 
-     call restartvar(ncid=ncid, flag=flag, varname=trim('annsum_counter_betr', xtype=ncd_double,  &
+     call restartvar(ncid=ncid, flag=flag, varname='annsum_counter_betr', xtype=ncd_double,  &
             dim1name='column', long_name='',  units='', &
             interpinic_flag='interp' , readvar=readvar, data=this%annsum_counter_col)
             
