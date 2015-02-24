@@ -127,7 +127,6 @@ contains
     integer,allocatable :: HeadPartition(:)
     real(kind=real_kind) :: approx_elements_per_task, xtmp
     type (quadrature_t)   :: gp                     ! element GLL points
-    type (EdgeDescriptor_t),allocatable  :: desc(:)
 
 
     ! =====================================
@@ -331,10 +330,6 @@ contains
     !JMD call PrintDofV(elem)
     !JMD call PrintDofP(elem)
 
-    allocate(desc(nelemd))
-    do ie=1,nelemd
-       desc(ie) = elem(ie)%desc
-    enddo
     n_domains = min(Nthreads,nelemd)
     call omp_set_num_threads(n_domains)
     allocate(dom_mt(0:n_domains-1))
@@ -347,15 +342,13 @@ contains
     ! Initialize shared boundary_exchange and reduction buffers
     ! =================================================================
     print *,'init: before first call to initEdgeBuffer'
-    call initEdgeBuffer(par,edge1,desc,nlev)
-!    print *,'init: After first call to initEdgeBuffer'
-!    stop
+    call initEdgeBuffer(par,edge1,elem,nlev)
 #ifdef _PRIMDG
-    call initEdgeBuffer(par,edge2,desc,4*nlev)
-    call initEdgeBuffer(par,edge3,desc,11*nlev)
+    call initEdgeBuffer(par,edge2,elem,4*nlev)
+    call initEdgeBuffer(par,edge3,elem,11*nlev)
 #else
-    call initEdgeBuffer(par,edge2,desc,2*nlev)
-    call initEdgeBuffer(par,edge3,desc,11*nlev)
+    call initEdgeBuffer(par,edge2,elem,2*nlev)
+    call initEdgeBuffer(par,edge3,elem,11*nlev)
 #endif
     print *,'init: after call to initEdgeBuffer'
     allocate(global_shared_buf(nelemd,nrepro_vars))
@@ -381,8 +374,7 @@ contains
     if(restartfreq > 0) then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
-    if (ntrac>0) call fvm_init1(par)
-    deallocate(desc)
+    if (ntrac>0) call fvm_init1(par,elem)
     
     call t_stopf('init')
   end subroutine init

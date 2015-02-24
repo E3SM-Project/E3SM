@@ -15,7 +15,7 @@ module diffusion_mod
   use element_mod, only : element_t
   ! =======================
   use edge_mod, only : initedgebuffer, newedgevpack, newedgevunpack, newedgerotate
-  use edgetype_mod, only : oldEdgeBuffer_t, newEdgeBuffer_t, EdgeDescriptor_t
+  use edgetype_mod, only : newEdgeBuffer_t, EdgeDescriptor_t
   ! =======================
   private
   save
@@ -32,24 +32,13 @@ contains
     type (element_t) :: elem(:)
 
     ! local 
-    type (EdgeDescriptor_t), allocatable :: desc(:)
     integer :: ie
 
-    allocate(desc(nelemd))
-    do ie=1,nelemd
-       desc(ie) = elem(ie)%desc
-    enddo
-   
-    call initEdgeBuffer(par,edgeS1,desc,qsize*nlev)
-!JMD    print *,'diffusion_init: after initEdgeBuffer(edgeS1)'
-    call initEdgeBuffer(par,edgeS2,desc,2*qsize*nlev)
-!JMD    print *,'diffusion_init: after initEdgeBuffer(edgeS2)'
-    call initEdgeBuffer(par,edge3,desc, 3*nlev)
-!JMD    print *,'diffusion_init: after initEdgeBuffer(edge3)'
-    call initEdgeBuffer(par,edge4,desc, 4*nlev)
-!JMD    print *,'diffusion_init: after initEdgeBuffer(edge4)'
+    call initEdgeBuffer(par,edgeS1,elem,qsize*nlev)
+    call initEdgeBuffer(par,edgeS2,elem,2*qsize*nlev)
+    call initEdgeBuffer(par,edge3,elem, 3*nlev)
+    call initEdgeBuffer(par,edge4,elem, 4*nlev)
 
-    deallocate(desc)
 
   end subroutine diffusion_init
 

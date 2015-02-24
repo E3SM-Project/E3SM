@@ -479,16 +479,9 @@ real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic,kptr
-type (EdgeDescriptor_t), allocatable :: desc(:)
 
 
-    allocate(desc(nelemd))
-    do ie=1,nelemd
-       desc(ie) = elem(ie)%desc
-    enddo
-
-    call initEdgeBuffer(hybrid%par,edge1,desc,nlev)
-    deallocate(desc)
+    call initEdgeBuffer(hybrid%par,edge1,elem,nlev)
 
 do ie=nets,nete
 #if (defined COLUMN_OPENMP)
@@ -530,14 +523,9 @@ real (kind=real_kind), dimension(np,np,2,nlev,nets:nete) :: v
 ! local
 integer :: k,i,j,ie,ic,kptr
 type (newEdgeBuffer_t)          :: edge2
-type (EdgeDescriptor_t), allocatable :: desc(:)
 
 
-    allocate(desc(nelemd))
-    do ie=1,nelemd
-       desc(ie) = elem(ie)%desc
-    enddo
-    call initEdgeBuffer(hybrid%par,edge2,desc,2*nlev)
+    call initEdgeBuffer(hybrid%par,edge2,elem,2*nlev)
 
 do ie=nets,nete
 #if (defined COLUMN_OPENMP)
@@ -933,16 +921,8 @@ integer :: ie,k,q
     enddo
   endif
 
-   allocate(desc(nelemd))
-   do ie=1,nelemd
-      desc(ie) = elem(ie)%desc
-   enddo
-      
-
-
     ! create edge buffer for 3 fields
-    call initEdgeBuffer(hybrid%par,edgebuf,desc,3*nlev)
-    deallocate(desc)
+    call initEdgeBuffer(hybrid%par,edgebuf,elem,3*nlev)
 
 
     ! compute p min, max

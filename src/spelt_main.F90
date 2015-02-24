@@ -88,7 +88,7 @@ program spelt_main
   ! =====================================
 
   call syncmp(par)
-  call spelt_init1(par)
+  call spelt_init1(par,elem)
 
 
   ! initialize time management

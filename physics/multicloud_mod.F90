@@ -14,8 +14,8 @@ module multicloud_mod
 #ifndef CAM
   use physics_mod, only        : elem_physics_t, Prim_Condense,getsurfpress,Temp2PotTemp
 #endif
-  use edge_mod, only           : oldedgevpack, oldedgerotate, oldedgevunpack, initedgebuffer
-  use edgetype_mod, only       : oldEdgeBuffer_t
+  use edge_mod, only           : newedgevpack, newedgerotate, newedgevunpack, initedgebuffer
+  use edgetype_mod, only       : newEdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use column_types_mod, only    : ColumnModelMulticloud_t
@@ -42,10 +42,10 @@ module multicloud_mod
   public :: ApplyShearDamping
   public :: InitShearDamping
 
-  type (oldEdgeBuffer_t) :: edgeMc	
-  type (oldEdgeBuffer_t) :: edgeS1,edgeS2
-  type (oldEdgeBuffer_t) :: edge3	
-  type (oldEdgeBuffer_t) :: edge4
+  type (newEdgeBuffer_t) :: edgeMc	
+  type (newEdgeBuffer_t) :: edgeS1,edgeS2
+  type (newEdgeBuffer_t) :: edge3	
+  type (newEdgeBuffer_t) :: edge4
 
   ! Interpolation hidden data
 
@@ -54,11 +54,12 @@ module multicloud_mod
 
 contains
 
-  subroutine Multicloud_Init(par)
+  subroutine Multicloud_Init(par,elem)
 
     use parallel_mod, only : parallel_t
     type(parallel_t) :: par
-    call Prim_Advance_Multicloud_init(par)
+    type(element_t) :: elem(:)
+    call Prim_Advance_Multicloud_init(par,elem)
 
   end subroutine Multicloud_Init
 
@@ -336,25 +337,27 @@ contains
 
   ! PRIVATE
 
-  subroutine Prim_Advance_Multicloud_Init(par)
+  subroutine Prim_Advance_Multicloud_Init(par,elem)
 
     use parallel_mod, only : parallel_t
     type(parallel_t) :: par
+    type(element_t) :: elem(:)
 
-    call initEdgeBuffer(par,edgeMc,2)
-    call Diffusion_Multicloud_init(par)
+    call initEdgeBuffer(par,edgeMc,elem,2)
+    call Diffusion_Multicloud_init(par,elem)
 
   end subroutine Prim_Advance_Multicloud_Init
 
-  subroutine diffusion_Multicloud_init(par)
+  subroutine diffusion_Multicloud_init(par,elem)
 
     use parallel_mod, only : parallel_t
     type(parallel_t) :: par
+    type(element_t) :: elem(:)
 
-       call initEdgeBuffer(par,edgeS1,2)
-       call initEdgeBuffer(par,edgeS2,4)
-       call initEdgeBuffer(par,edge3, 6)
-       call initEdgeBuffer(par,edge4, 8)
+       call initEdgeBuffer(par,edgeS1,elem,2)
+       call initEdgeBuffer(par,edgeS2,elem,4)
+       call initEdgeBuffer(par,edge3, elem,6)
+       call initEdgeBuffer(par,edge4, elem,8)
 
   end subroutine diffusion_Multicloud_init
 
@@ -436,15 +439,15 @@ contains
                 elem_physics(ie)%teb(i,j,nfilt) = elem_physics(ie)%mp(i,j)*elem_physics(ie)%teb(i,j,nfilt)
              end do
           end do
-          call oldedgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,elem(ie)%desc)
-          call oldedgeVpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,elem(ie)%desc)
+          call newedgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,ie)
+          call newedgeVpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,ie)
        end do
 
        call bndry_exchangeV(hybrid,edgeMc)
 
        do ie=nets,nete
-          call oldedgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,elem(ie)%desc)
-          call oldedgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,elem(ie)%desc)
+          call newedgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,ie)
+          call newedgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,ie)
           do j=1,np	
              do i=1,np
                 elem_physics(ie)%qmc(i,j,nfilt) = elem_physics(ie)%rmp(i,j)*elem_physics(ie)%qmc(i,j,nfilt)
@@ -753,16 +756,16 @@ contains
        if(Debug)print *,"t1  = ",sum(abs(t1(:,:)))
        if(Debug)print *,"t2  = ",sum(abs(t2(:,:)))
 
-       call oldedgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,elem(ie)%desc)
-       call oldedgeVpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,elem(ie)%desc)
+       call newedgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,ie)
+       call newedgeVpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,ie)
 
     end do
 
     call bndry_exchangeV(hybrid,edgeMc)
 
     do ie=nets,nete
-       call oldedgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,elem(ie)%desc)
-       call oldedgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,elem(ie)%desc)
+       call newedgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,ie)
+       call newedgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,ie)
 
        do j=1,np	
           do i=1,np
@@ -921,9 +924,9 @@ contains
           end do
        end do
 
-       call oldedgeVpack(edgeS2,grad_qmc_np1(:,:,:,ie),2,0,elem(ie)%desc)
-       call oldedgeVpack(edgeS2,grad_teb_np1(:,:,:,ie),2,2,elem(ie)%desc)
-       call oldedgerotate(edgeS2,4,0,elem(ie)%desc)
+       call newedgeVpack(edgeS2,grad_qmc_np1(:,:,:,ie),2,0,ie)
+       call newedgeVpack(edgeS2,grad_teb_np1(:,:,:,ie),2,2,ie)
+       call newedgerotate(edgeS2,4,0,elem(ie)%desc)
 
     end do
 
@@ -941,8 +944,8 @@ contains
        D        => elem(ie)%D
        Dinv     => elem(ie)%Dinv
 
-       call oldedgeVunpack(edgeS2, grad_qmc_np1(:,:,:,ie), 2, 0, elem(ie)%desc)
-       call oldedgeVunpack(edgeS2, grad_teb_np1(:,:,:,ie), 2, 2, elem(ie)%desc)
+       call newedgeVunpack(edgeS2, grad_qmc_np1(:,:,:,ie), 2, 0, ie)
+       call newedgeVunpack(edgeS2, grad_teb_np1(:,:,:,ie), 2, 2, ie)
 
        do j=1,np
           do i=1,np
@@ -963,8 +966,8 @@ contains
           end do
        end do
 
-       call oldedgeVpack(edgeS1, lap_qmc_np1(1,1,ie),1, 0,elem(ie)%desc)
-       call oldedgeVpack(edgeS1, lap_teb_np1(1,1,ie),1, 1,elem(ie)%desc)
+       call newedgeVpack(edgeS1, lap_qmc_np1(1,1,ie),1, 0,ie)
+       call newedgeVpack(edgeS1, lap_teb_np1(1,1,ie),1, 1,ie)
 
     end do
 
@@ -977,8 +980,8 @@ contains
        rmetdetv(:,:) = 1.0_real_kind/elem(ie)%metdet(:,:)
 
 
-       call oldedgeVunpack(edgeS1, lap_qmc_np1(1,1,ie), 1, 0, elem(ie)%desc)
-       call oldedgeVunpack(edgeS1, lap_teb_np1(1,1,ie), 1, 0, elem(ie)%desc)
+       call newedgeVunpack(edgeS1, lap_qmc_np1(1,1,ie), 1, 0, ie)
+       call newedgeVunpack(edgeS1, lap_teb_np1(1,1,ie), 1, 0, ie)
 
        do j=1,np
           do i=1,np

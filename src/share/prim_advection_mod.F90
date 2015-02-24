@@ -910,11 +910,6 @@ contains
     real(kind=real_kind), pointer :: receive_ptr(:) => null()
 
 
-    allocate(desc(nelemd))
-    do ie=1,nelemd
-       desc(ie) = elem(ie)%desc
-    enddo
-
     !JMD KLUDGE
     !JMD note that for not for testing of the newEdgeBuffer_t modifications I
     !JMD setting up separate edge buffers.  We can go back and address this memory
@@ -925,7 +920,7 @@ contains
     ! Currently this is never freed. If it was, only this first one should
     ! be freed, as only it knows the true size of the buffer.
     !call initEdgeBuffer(par,edgeAdvQ3,max(nlev,qsize*nlev*3), buf_ptr, receive_ptr)  ! Qtens,Qmin, Qmax
-    call initEdgeBuffer(par,edgeAdvQ3,desc,max(nlev,qsize*nlev*3))  ! Qtens,Qmin, Qmax
+    call initEdgeBuffer(par,edgeAdvQ3,elem,max(nlev,qsize*nlev*3))  ! Qtens,Qmin, Qmax
 
     ! remaining edge buffers can share %buf and %receive with edgeAdvQ3
     ! (This is done through the optional 1D pointer arguments.)
@@ -935,16 +930,12 @@ contains
     !call initEdgeBuffer(par,edgeAdvQ2,qsize*nlev*2,buf_ptr,receive_ptr)  ! Qtens,Qmin, Qmax
     !call initEdgeBuffer(par,edgeveloc,2*nlev)
 
-    call initEdgeBuffer(par,edgeAdv1,desc,nlev)
-    call initEdgeBuffer(par,edgeAdv,desc,qsize*nlev)
-    call initEdgeBuffer(par,edgeAdv_p1,desc,qsize*nlev + nlev)
-    call initEdgeBuffer(par,edgeAdvQ2,desc,qsize*nlev*2)  ! Qtens,Qmin, Qmax
-    call initEdgeBuffer(par,edgeveloc,desc,2*nlev)
-    call initEdgeBuffer(par,edgeAdvQ2JMD,desc,qsize*nlev*2,NewMethod=.TRUE.)
-!    print *,'After call to initEdgeBuffer in Prim_Advec_Init1'
-!    stop 
-
-    deallocate(desc)
+    call initEdgeBuffer(par,edgeAdv1,elem,nlev)
+    call initEdgeBuffer(par,edgeAdv,elem,qsize*nlev)
+    call initEdgeBuffer(par,edgeAdv_p1,elem,qsize*nlev + nlev)
+    call initEdgeBuffer(par,edgeAdvQ2,elem,qsize*nlev*2)  ! Qtens,Qmin, Qmax
+    call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
+    call initEdgeBuffer(par,edgeAdvQ2JMD,elem,qsize*nlev*2,NewMethod=.TRUE.)
 
     ! Don't actually want these saved, if this is ever called twice.
     nullify(buf_ptr)

@@ -90,7 +90,7 @@ program fvm_main
   ! =====================================
 
   call syncmp(par)
-  call fvm_init1(par)
+  call fvm_init1(par,elem)
 
 
   ! initialize time management

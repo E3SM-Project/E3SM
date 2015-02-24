@@ -8,9 +8,9 @@ module mass_matrix_mod
   use quadrature_mod, only : quadrature_t, gauss ,gausslobatto
   use element_mod, only : element_t
   use parallel_mod, only : parallel_t
-  use edge_mod, only : oldedgevpack, oldedgevunpack, &
+  use edge_mod, only : newedgevpack, newedgevunpack, &
        freeedgebuffer,initedgebuffer  
-  use edgetype_mod, only : oldedgebuffer_t
+  use edgetype_mod, only : newedgebuffer_t
   use bndry_mod, only : bndry_exchangev
 implicit none
 private
@@ -30,7 +30,7 @@ contains
     type (parallel_t),intent(in) :: par
     type (element_t) :: elem(:)
 
-    type (oldEdgeBuffer_t)    :: edge
+    type (newEdgeBuffer_t)    :: edge
 
     real(kind=real_kind)  da                     ! area element
 
@@ -45,7 +45,7 @@ contains
     ! begin code
     ! ===================
 
-    call initEdgeBuffer(par,edge,1)
+    call initEdgeBuffer(par,edge,elem,1)
 
     ! =================================================
     ! mass matrix on the velocity grid
@@ -63,7 +63,7 @@ contains
        end do
 
        kptr=0
-       call oldedgeVpack(edge,elem(ii)%rmp,1,kptr,elem(ii)%desc)
+       call newedgeVpack(edge,elem(ii)%rmp,1,kptr,ii)
 
     end do
 
@@ -76,7 +76,7 @@ contains
     do ii=1,nelemd
 
        kptr=0
-       call oldedgeVunpack(edge,elem(ii)%rmp,1,kptr,elem(ii)%desc)
+       call newedgeVunpack(edge,elem(ii)%rmp,1,kptr,ii)
 
        do j=1,np
           do i=1,np
@@ -103,12 +103,12 @@ contains
           end do
        end do
        kptr=0
-       call oldedgeVpack(edge,elem(ii)%rspheremp,1,kptr,elem(ii)%desc)
+       call newedgeVpack(edge,elem(ii)%rspheremp,1,kptr,ii)
     end do
     call bndry_exchangeV(par,edge)
     do ii=1,nelemd
        kptr=0
-       call oldedgeVunpack(edge,elem(ii)%rspheremp,1,kptr,elem(ii)%desc)
+       call newedgeVunpack(edge,elem(ii)%rspheremp,1,kptr,ii)
        do j=1,np
           do i=1,np
              elem(ii)%rspheremp(i,j)=1.0D0/elem(ii)%rspheremp(i,j)
@@ -119,20 +119,6 @@ contains
 !$OMP BARRIER
 #endif
 
-    ! =============================================
-    ! compute the mass matrix 
-    ! =============================================
-    ! Jose Garcia: Not sure but I think this code is just dead code
-    !do ii=1,nelemd
-    !   iptr=1
-    !   do j=1,np
-    !      do i=1,np
-    !         elem(ii)%mp(i,j)=elem(ii)%mp(i,j)
-    !         iptr=iptr+1
-    !      end do
-    !   end do
-    !end do
-   
     call FreeEdgeBuffer(edge)
        
   end subroutine mass_matrix

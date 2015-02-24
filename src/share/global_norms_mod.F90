@@ -5,7 +5,7 @@
 module global_norms_mod
 
   use kinds, only : iulog
-  use edgetype_mod, only : oldEdgeBuffer_t
+  use edgetype_mod, only : newEdgeBuffer_t
 
   implicit none
   private
@@ -25,7 +25,7 @@ module global_norms_mod
   public :: wrap_repro_sum
 
   private :: global_maximum
-  type (oldEdgeBuffer_t), private :: edgebuf
+  type (newEdgeBuffer_t), private :: edgebuf
 
 contains
 
@@ -109,8 +109,8 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edgetype_mod, only : oldEdgeBuffer_t
-    use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, oldedgeVpack, oldedgeVunpack
+    use edgetype_mod, only : newEdgeBuffer_t
+    use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, newedgeVpack, newedgeVunpack
     use bndry_mod, only : bndry_exchangeV
 
     type(element_t)      , intent(inout) :: elem(:)
@@ -256,8 +256,8 @@ contains
     use control_mod, only : tracer_transport_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edgetype_mod, only : oldEdgeBuffer_t 
-    use edge_mod, only : initedgebuffer, FreeEdgeBuffer, oldedgeVpack, oldedgeVunpack
+    use edgetype_mod, only : newEdgeBuffer_t 
+    use edge_mod, only : initedgebuffer, FreeEdgeBuffer, newedgeVpack, newedgeVunpack
     use bndry_mod, only : bndry_exchangeV
     use time_mod, only : tstep
 
@@ -416,14 +416,14 @@ contains
         normDinv_hypervis = ParallelMax(normDinv_hypervis, hybrid)
 
         ! apply DSS (aka assembly procedure) to variable_hyperviscosity (makes continuous)
-        call initEdgeBuffer(hybrid%par,edgebuf,1)
+        call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
         do ie=nets,nete
             zeta(:,:,ie) = elem(ie)%variable_hyperviscosity(:,:)*elem(ie)%spheremp(:,:)
-            call oldedgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
+            call newedgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
         end do
         call bndry_exchangeV(hybrid,edgebuf)
         do ie=nets,nete
-            call oldedgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
+            call newedgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
             elem(ie)%variable_hyperviscosity(:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
         end do
         call FreeEdgeBuffer(edgebuf)
@@ -468,17 +468,17 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    if (hypervis_scaling /= 0) then
 #if 1
-    call initEdgeBuffer(hybrid%par,edgebuf,1)
+    call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
     do rowind=1,2
       do colind=1,2
 	do ie=nets,nete
 	  zeta(:,:,ie) = elem(ie)%tensorVisc(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
-	  call oldedgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
+	  call newedgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
 	end do
 
 	call bndry_exchangeV(hybrid,edgebuf)
 	do ie=nets,nete
-	  call oldedgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
+	  call newedgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
           elem(ie)%tensorVisc(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
 	end do
       enddo !rowind

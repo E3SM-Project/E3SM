@@ -3,7 +3,7 @@
 #endif
 
 module checksum_mod
-  use edgetype_mod, only : ghostbuffer3D_t, oldedgebuffer_t, ghostbuffer3d_t, ghostbufferTR_t
+  use edgetype_mod, only : ghostbuffer3D_t, newedgebuffer_t, ghostbuffer3d_t, ghostbufferTR_t
   use kinds, only : real_kind
   use dimensions_mod, only : np, nlev, nelem, nelemd, max_corner_elem, nc
 
@@ -18,7 +18,7 @@ module checksum_mod
   type (ghostBuffer3D_t)   :: ghostbuf,ghostbuf_cv
   type (ghostBuffer3d_t) :: ghostbuf3d
   type (ghostBufferTR_t) :: ghostbuf_tr
-  type (oldedgeBuffer_t)    :: edge1
+  type (newedgeBuffer_t)    :: edge1
 
   public  :: testchecksum, test_ghost, test_bilin_phys2gll
   private :: genchecksum
@@ -30,9 +30,9 @@ contains
     use element_mod, only : element_t
     use parallel_mod, only : parallel_t, iam, syncmp
     use gridgraph_mod, only : gridedge_t,printchecksum
-    use edge_mod, only : initedgebuffer, oldedgevpack, oldedgevunpack, oldedgedgvpack, &
-         oldedgedgvunpack
-    use edgetype_mod, only : oldedgebuffer_t
+    use edge_mod, only : initedgebuffer, newedgevpack, newedgevunpack, newedgedgvpack, &
+         newedgedgvunpack
+    use edgetype_mod, only : newedgebuffer_t
     use bndry_mod, only : bndry_exchangev
     use schedtype_mod, only : schedule_t, schedule
     use schedule_mod, only : checkschedule
@@ -50,7 +50,7 @@ contains
          TestPattern_l(:,:,:,:), &
          Checksum_l(:,:,:,:), &
          Checksum_dg_l(:,:,:,:)
-    type (oldEdgeBuffer_t)                         :: buffer
+    type (newEdgeBuffer_t)                         :: buffer
 
     !==============Local Temporaries===========================================
     type (Schedule_t),   pointer                :: pSchedule
@@ -107,7 +107,7 @@ contains
     !  Allocate the communication Buffers
     !=======================================
 
-    call initEdgeBuffer(par,buffer,1)
+    call initEdgeBuffer(par,buffer,elem,1)
 
 
     !=======================================
@@ -123,7 +123,7 @@ contains
     do ie=1,nelemd
        kptr=0
        numlev=nlev
-       call oldedgeVpack(buffer,TestPattern_l(1,1,1,ie),numlev,kptr,elem(ie)%desc)
+       call newedgeVpack(buffer,TestPattern_l(1,1,1,ie),numlev,kptr,ie)
     enddo
     print *,'testchecksum: after call to edgeVpack'
 
@@ -140,7 +140,7 @@ contains
     do ie=1,nelemd
        kptr   = 0
        numlev = nlev
-       call oldedgeVunpack(buffer,Checksum_l(1,1,1,ie),numlev,kptr,elem(ie)%desc)
+       call newedgeVunpack(buffer,Checksum_l(1,1,1,ie),numlev,kptr,ie)
     enddo
     print *,'testchecksum: after call to edgeVunpack'
 
@@ -186,7 +186,7 @@ contains
     do ielem=1,nelemd
        kptr=0
        numlev=nlev
-       call oldedgeDGVpack(buffer,Checksum_l(1,1,1,ielem),numlev,kptr,elem(ielem)%desc)
+       call newedgeDGVpack(buffer,Checksum_l(1,1,1,ielem),numlev,kptr,ielem)
     enddo
     print *,'testchecksum: after call to edgeVpack'
 
@@ -204,7 +204,7 @@ contains
     do ielem=1,nelemd
        kptr   = 0
        numlev = nlev
-       call oldedgeDGVunpack(buffer,Checksum_dg_l(0,0,1,ielem),numlev,kptr,elem(ielem)%desc)
+       call newedgeDGVunpack(buffer,Checksum_dg_l(0,0,1,ielem),numlev,kptr,ielem)
     enddo
     print *,'testchecksum: after call to edgeDGVunpack'
 
@@ -357,9 +357,9 @@ contains
   use element_mod, only : element_t
   use bndry_mod, only : ghost_exchangevfull, bndry_exchangev
   use edge_mod, only : ghostvpackfull, ghostvunpackfull, &
-       freeedgebuffer, initedgebuffer, oldedgevpack, oldedgevunpack, &
+       freeedgebuffer, initedgebuffer, newedgevpack, newedgevunpack, &
        initghostbuffer3d, ghostvpack3d, ghostvunpack3d, freeghostbuffer3d
-  use edgetype_mod, only : oldedgebuffer_t
+  use edgetype_mod, only : newedgebuffer_t
 
   use control_mod, only : north,south,east,west,neast, nwest, seast, swest
 
@@ -420,18 +420,18 @@ contains
 
 #if 0
   ! DSS pin, to make all edge points agree exactly:
-  call initedgebuffer(edge1,nlev)
+  call initedgebuffer(edge1,elem,nlev)
   do ie=nets,nete
      kptr=0
      do k=1,nlev
         pin(:,:,k,ie)=pin(:,:,k,ie)*elem(ie)%spheremp(:,:)
      enddo
-     call oldedgeVpack(edge1, pin(:,:,:,ie),nlev,kptr,elem(ie)%desc)
+     call newedgeVpack(edge1, pin(:,:,:,ie),nlev,kptr,ie)
   end do
   call bndry_exchangeV(hybrid,edge1)
   do ie=nets,nete
      kptr=0
-     call oldedgeVunpack(edge1, pin(:,:,:,ie), nlev, kptr, elem(ie)%desc)
+     call newedgeVunpack(edge1, pin(:,:,:,ie), nlev, kptr, ie)
      do k=1,nlev
         pin(:,:,k,ie)=pin(:,:,k,ie)*elem(ie)%rspheremp(:,:)
      enddo
@@ -687,8 +687,8 @@ end subroutine
   use element_mod, only : element_t
   use fvm_control_volume_mod, only : fvm_struct
   use bndry_mod, only : bndry_exchangev
-  use edge_mod, only :  oldedgevpack, oldedgevunpack, initedgebuffer, freeedgebuffer
-  use edgetype_mod, only : oldedgebuffer_t
+  use edge_mod, only :  newedgevpack, newedgevunpack, initedgebuffer, freeedgebuffer
+  use edgetype_mod, only : newedgebuffer_t
   use coordinate_systems_mod, only : cartesian3D_t,cartesian2D_t,spherical_polar_t,&
        spherical_to_cart,cart2spherical
   use derivative_mod, only : remap_phys2gll
@@ -711,12 +711,12 @@ end subroutine
   real (kind=real_kind) :: exact_gll(np,np,nets:nete)
   real (kind=real_kind) :: exact_fvm(nc,nc,nets:nete)
   real (kind=real_kind) :: l2,linf
-  type (oldEdgeBuffer_t)                         :: buffer
+  type (newEdgeBuffer_t)                         :: buffer
 
   if (hybrid%masterthread) print *,'running test_bilin_phys2gll'
 
   call bilin_phys2gll_init(nc,elem,hybrid,nets,nete)
-  call initEdgeBuffer(hybrid%par,buffer,1)
+  call initEdgeBuffer(hybrid%par,buffer,elem,1)
 
   ! test the bilinear map from FVM cells to GLL points
   ! function:  1 + x + y^2 + z^3
@@ -745,11 +745,11 @@ end subroutine
      ! apply DSS:
      interpolated_gll(:,:,ie)=interpolated_gll(:,:,ie)*elem(ie)%spheremp(:,:)
      
-     call oldedgeVpack(buffer,interpolated_gll(:,:,ie),1,0,elem(ie)%desc)
+     call newedgeVpack(buffer,interpolated_gll(:,:,ie),1,0,ie)
   enddo
   call bndry_exchangeV(hybrid,buffer)
   do ie=nets,nete
-     call oldedgeVunpack(buffer,interpolated_gll(:,:,ie),1,0,elem(ie)%desc)
+     call newedgeVunpack(buffer,interpolated_gll(:,:,ie),1,0,ie)
      interpolated_gll(:,:,ie)=interpolated_gll(:,:,ie)*elem(ie)%rspheremp(:,:)
   enddo
   call freeEdgeBuffer(buffer)
