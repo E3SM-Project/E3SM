@@ -591,8 +591,8 @@ module mpas_block_decomp
          blocks_per_proc_min = total_blocks / dminfo % nProcs
          remaining_blocks = total_blocks - (blocks_per_proc_min * dminfo % nProcs)
          even_blocks = total_blocks - remaining_blocks
-  
-         if(global_block_number > even_blocks) then
+
+         if((global_block_number+1) > even_blocks) then
              owning_proc = global_block_number - even_blocks
          else
              owning_proc = global_block_number / blocks_per_proc_min
