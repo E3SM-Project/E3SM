@@ -438,7 +438,7 @@ contains
   
   call Extra_inst%Init_Allocate(centurybgc_vars%nom_pools, centurybgc_vars%nreactions, centurybgc_vars%nprimvars)
   
-  call set_reac_order( nreact, centurybgc_vars, Extra_inst%is_zero_order)
+  call set_reac_order( centurybgc_vars%nreactions, centurybgc_vars, Extra_inst%is_zero_order)
   
   !initialize local variables
   y0(:, :, :) = spval
@@ -713,27 +713,27 @@ contains
   do lk = 1, Extra_inst%nr
     if(Extra_inst%is_zero_order(lk))then
       if(    lk == centurybgc_vars%lid_ch4_aere_reac)then
-        jj = centrurybgc_vars%lid_ch4_paere
+        jj = centurybgc_vars%lid_ch4_paere
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
         
       elseif(lk == centurybgc_vars%lid_ar_aere_reac)then
-        jj = centrurybgc_vars%lid_ar_paere
+        jj = centurybgc_vars%lid_ar_paere
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
       
       elseif(lk == centurybgc_vars%lid_o2_aere_reac)then
-        jj = centrurybgc_vars%lid_o2_paere
+        jj = centurybgc_vars%lid_o2_paere
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
       
       elseif(lk == centurybgc_vars%lid_n2_aere_reac)then
-        jj = centrurybgc_vars%lid_n2_paere
+        jj = centurybgc_vars%lid_n2_paere
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
       
       elseif(lk == centurybgc_vars%lid_co2_aere_reac)then
-        jj = centrurybgc_vars%lid_co2_paere
+        jj = centurybgc_vars%lid_co2_paere
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
       
       elseif(lk == centurybgc_vars%lid_n2o_aere_reac)then
-        jj = centrurybgc_vars%lid_n2o_paere
+        jj = centurybgc_vars%lid_n2o_paere
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
         
       else

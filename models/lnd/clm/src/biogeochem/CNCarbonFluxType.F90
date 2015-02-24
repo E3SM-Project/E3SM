@@ -3592,7 +3592,7 @@ contains
     use shr_infnan_mod   , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
     use clm_time_manager , only : is_restart
     use clm_varcon       , only : c13ratio, c14ratio
-    use clm_varctl       , only : use_lch4
+    use clm_varctl       , only : use_lch4, use_betr
     use restUtilMod
     use ncdio_pio
     !
@@ -3660,7 +3660,7 @@ contains
 
     end if
 
-    if (use_lch4) then
+    if (use_lch4 .or. use_betr) then
        call restartvar(ncid=ncid, flag=flag, varname='tempavg_agnpp', xtype=ncd_double,  &
             dim1name='pft',&
             long_name='Temp. Average AGNPP',units='gC/m^2/s', &

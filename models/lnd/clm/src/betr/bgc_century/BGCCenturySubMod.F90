@@ -49,8 +49,8 @@ module BGCCenturySubMod
   real(r8) :: k_decay_som2 
   real(r8) :: k_decay_som3 
   real(r8) :: k_decay_cwd  
-  integer  :: lid_nh4, nh4_nit_reac                    !local position of nh4 in the state variable vector
-  integer  :: lid_no3, no3_den_reac                    !local position of no3 in the state variable vector
+  integer  :: lid_nh4, lid_nh4_nit_reac                    !local position of nh4 in the state variable vector
+  integer  :: lid_no3, lid_no3_den_reac                    !local position of no3 in the state variable vector
   integer  :: lid_plant_minn, lid_plant_minn_up_reac  !local position of plant consumption of mineral nitrogen in the state variable vector
   integer  :: lid_at_rt, lid_at_rt_reac       !root autotrophic respiration
   

@@ -147,7 +147,7 @@ contains
       allocate(this%tracer_flx_dif_col         (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_dif_col      (:,:) = nan
       allocate(this%tracer_flx_tparchm_col     (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_tparchm_col  (:,:) = nan
       allocate(this%tracer_flx_surfemi_col     (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_surfemi_col  (:,:) = nan
-      allocate(this%tracer_flx_parchm_vr_col   (begc:endc, lbu:ubj, 1:nvolatile_tracers)); this%tracer_flx_parchm_vr_col(:,:,:) = nan
+      allocate(this%tracer_flx_parchm_vr_col   (begc:endc, lbj:ubj, 1:nvolatile_tracers)); this%tracer_flx_parchm_vr_col(:,:,:) = nan
     endif
 
     allocate(this%tracer_flx_netpro_vr_col  (begc:endc, lbj:ubj, 1:ntracers)); this%tracer_flx_netpro_vr_col (:,:,:) = nan
@@ -544,7 +544,7 @@ contains
   use BetrTracerType        , only : betrtracer_type
   use clm_time_manager      , only : get_step_size
   use clm_varpar            , only : nlevtrc_soil
-  use MathfuncMod           , only : MathfuncMod
+  use MathfuncMod           , only : dot_sum
   class(TracerFlux_type)               :: this
   type(BeTRTracer_Type)  , intent(in)  :: betrtracer_vars
   integer                , intent(in)  :: c     ! column index
@@ -576,7 +576,7 @@ contains
     
     if(is_volatile(jj))then
       kk = volatileid(jj)
-      this%tracer_flx_tparchm_col(c,kk) = dot_sum(x=this%tracer_flx_parchm_vr_col(c,1:nlevtrc_soil,kk), y=col%dzsoi(c,1:nlevtrc_soil))
+      this%tracer_flx_tparchm_col(c,kk) = dot_sum(x=this%tracer_flx_parchm_vr_col(c,1:nlevtrc_soil,kk), y=col%dz(c,1:nlevtrc_soil))
       
       this%tracer_flx_surfemi_col(c,kk) = this%tracer_flx_tparchm_col(c,kk) + this%tracer_flx_dif_col(c,kk) + &
         this%tracer_flx_ebu_col(c,kk)  

@@ -294,7 +294,7 @@ contains
          call mbbks(ycp,f,nprimeq, neq,dt05,yf,pscal)
          
          !determine the relative error
-         rerr=get_rerr_v(yc,yf,nprimeq, neq)
+         rerr=get_rerr_v(yc,yf, neq)
          
          !determine time scalar factor
          call get_tscal(rerr,dt_scal,acc)

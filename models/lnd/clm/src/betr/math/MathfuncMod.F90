@@ -195,9 +195,9 @@ contains
   !return a variable with a + 1
   use shr_kind_mod, only: r8 => shr_kind_r8  
   implicit none
-  real(r8), intent(inout) :: a
+  integer, intent(inout) :: a
   
-  real(r8) :: ans
+  integer :: ans
   a = a + 1
   ans = a
   end function
