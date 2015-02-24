@@ -530,7 +530,7 @@ contains
 #if defined(_SPELT)
       call spelt_init1(par)
 #else
-      call fvm_init1(par)
+      call fvm_init1(par,elem)
 #endif
     endif
     call TimeLevel_init(tl)
@@ -1897,8 +1897,6 @@ contains
     subroutine smooth_topo_datasets(phis,sghdyn,sgh30dyn,elem,hybrid,nets,nete)
     use control_mod, only : smooth_phis_numcycle,smooth_sgh_numcycle
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : oldedgevpack, oldedgevunpack
-    use edgetype_mod, only : oldEdgeBuffer_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use viscosity_mod, only : biharmonic_wk

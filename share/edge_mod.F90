@@ -13,69 +13,12 @@ module edge_mod
   use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t
   use edgetype_mod, only : edgedescriptor_t, oldEdgeBuffer_t, newedgebuffer_t, &
          Longedgebuffer_t, Ghostbuffertr_t, Ghostbuffer3d_t
+  use element_mod, only : element_t
 
 
   implicit none
   private
   save
-
-#if 0
-  type, public :: rotation_t
-     integer  :: nbr                                        ! nbr direction: north south east west
-     integer  :: reverse                                    ! 0 = do not reverse order
-     ! 1 = reverse order
-     real (kind=real_kind), dimension(:,:,:), pointer :: R => null()  ! rotation matrix
-  end type rotation_t
-
-  type, public :: EdgeDescriptor_t
-     integer(kind=int_kind)  :: use_rotation
-     integer(kind=int_kind)  :: padding
-     integer(kind=int_kind), pointer  :: putmapP(:) => null()
-     integer(kind=int_kind), pointer  :: getmapP(:) => null()
-     integer(kind=int_kind), pointer  :: putmapP_ghost(:) => null()
-     integer(kind=int_kind), pointer  :: getmapP_ghost(:) => null()
-     integer(kind=int_kind), pointer  :: putmapS(:) => null()
-     integer(kind=int_kind), pointer  :: getmapS(:) => null()
-     integer(kind=int_kind), pointer  :: globalID(:) => null()
-     integer(kind=int_kind), pointer  :: loc2buf(:) => null()
-     type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
-     integer                          :: actual_neigh_edges  
-     logical(kind=log_kind), pointer  :: reverse(:) => null()
-     type (rotation_t), dimension(:), pointer :: rot => null() ! Identifies list of edges
-     !  that must be rotated, and how
-  end type EdgeDescriptor_t
-
-
-  type, public :: oldEdgeBuffer_t
-     real (kind=real_kind), dimension(:,:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:,:), pointer :: receive => null()
-     integer :: nlyr ! Number of layers
-     integer :: nbuf ! size of the horizontal dimension of the buffers.
-#ifdef MPI_PERSISTENT
-     integer, public, pointer :: Rrequest(:)
-     integer, public, pointer :: Srequest(:)
-#endif
-  end type oldEdgeBuffer_t
-
-  type, public :: newEdgeBuffer_t
-     real (kind=real_kind), dimension(:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:), allocatable :: receive
-     integer(kind=int_kind), pointer :: putmap(:,:) => null()
-     integer(kind=int_kind), pointer :: getmap(:,:) => null() 
-     logical(kind=log_kind), pointer :: reverse(:,:) => null()
-     integer(kind=int_kind), pointer :: moveLength(:) => null()
-     integer(kind=int_kind), pointer :: movePtr(:) => null()
-     integer :: nlyr ! Number of layers
-     integer :: nbuf ! total size of message passing buffer, includes vertical levels
-  end type newEdgeBuffer_t
-
-  type, public :: LongEdgeBuffer_t
-     integer :: nlyr
-     integer :: nbuf
-     integer (kind=int_kind), dimension(:,:), pointer :: buf => null()
-     integer (kind=int_kind), dimension(:,:), pointer :: receive => null()
-  end type LongEdgeBuffer_t
-#endif
 
   ! 8-byte Integer routines 
   public :: initLongEdgeBuffer, FreeLongEdgeBuffer
@@ -98,6 +41,7 @@ module edge_mod
   public :: oldedgeVpack, oldedgeVunpack
   public :: oldedgeVunpackMIN, oldedgeVunpackMAX
   public :: oldedgeDGVpack, oldedgeDGVunpack
+  public :: oldedgeVunpackVert
 
   !--------------------------------------------------------- 
   ! Pack/unpack routines that use the new format Edge buffer
@@ -105,6 +49,7 @@ module edge_mod
   public :: newedgeVpack, newedgeVunpack
   public :: newedgeVunpackMIN, newedgeVunpackMAX
   public :: newedgeDGVpack, newedgeDGVunpack
+  public :: newedgeVunpackVert
   
   !----------------------------------------------------------------
   ! Pack/unpack routines that communicate a fixed number values 
@@ -113,9 +58,6 @@ module edge_mod
   !----------------------------------------------------------------
   public :: newedgeSpack
   public :: newedgeSunpackMIN, newedgeSunpackMAX
-  
-
-  public :: edgeVunpackVert
 
 
   public :: newedgerotate
@@ -123,26 +65,6 @@ module edge_mod
   public :: buffermap
 
   logical, private :: threadsafe=.true.
-
-
-#if 0
-  type, public :: GhostBufferTR_t
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive => null()
-     integer :: nlyr ! Number of layers
-     integer :: nbuf ! size of the horizontal dimension of the buffers.
-  end type GhostBufferTR_t
-  
-  type, public :: GhostBuffer3D_t
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive => null()
-     integer :: nlyr ! Number of layers
-     integer :: nhc  ! Number of layers of ghost cells
-     integer :: np   ! Number of points in a cell
-     integer :: nbuf ! size of the horizontal dimension of the buffers.
-     integer :: elem_size ! size of 2D array (first two dimensions of buf())
-  end type GhostBuffer3D_t
-#endif
 
   real(kind=real_kind), parameter, public :: edgeDefaultVal = 1.11e+100_real_kind
 
@@ -429,13 +351,13 @@ contains
   !
   ! create an Real based communication buffer
   ! =========================================
-  subroutine initNewEdgeBuffer(par,edge,desc,nlyr,NewMethod)
+  subroutine initNewEdgeBuffer(par,edge,elem,nlyr,NewMethod)
     use dimensions_mod, only : np, nelemd, max_corner_elem
     use schedtype_mod, only : cycle_t, schedule_t, schedule
     implicit none
     type (parallel_t), intent(in) :: par
     type (newEdgeBuffer_t),intent(out), target :: edge
-    type (EdgeDescriptor_t),intent(in)  :: desc(:)
+    type (element_t),intent(in)  :: elem(:)
     integer,intent(in)                :: nlyr
     logical (kind=log_kind), intent(in), optional :: NewMethod
     ! integer, intent(in)  :: globalid(:)
@@ -470,6 +392,7 @@ contains
     type (Cycle_t), pointer :: pCycle
     type (Schedule_t), pointer :: pSchedule
     integer :: dest, source, length, tag, iptr
+    integer :: nlen
 
     ! call t_adj_detailf(+3)
     ! call t_startf('initnewedgebuffer')
@@ -497,37 +420,37 @@ contains
 if(present(NewMethod)) then 
     do ie=1,nelemd
        if(iam==1) then 
-          print *,'IAM: ',iam,' ie: ',ie, ' generic ORDERED putmap: ', desc(ie)%putmapS
+          print *,'IAM: ',iam,' ie: ',ie, ' generic ORDERED putmap: ', elem(ie)%desc%putmapS
        endif
     enddo
     do ie=1,nelemd
        if(iam==1) then 
-          print *,'IAM: ',iam,' ie: ',ie, ' generic ORDERED getmap: ', desc(ie)%getmapS
+          print *,'IAM: ',iam,' ie: ',ie, ' generic ORDERED getmap: ', elem(ie)%desc%getmapS
        endif
     enddo
 endif
 #endif
     do ie=1,nelemd
        do i=1,max_neigh_edges
-          if(desc(ie)%putmapP(i) == -1) then 
+          if(elem(ie)%desc%putmapP(i) == -1) then 
               edge%putmap(i,ie) = -1
           else
               if(present(NewMethod)) then 
-                  edge%putmap(i,ie) = nlyr*desc(ie)%putmapS(i)
+                  edge%putmap(i,ie) = nlyr*elem(ie)%desc%putmapS(i)
               else
-                  edge%putmap(i,ie) = nlyr*desc(ie)%putmapP(i)
+                  edge%putmap(i,ie) = nlyr*elem(ie)%desc%putmapP(i)
               endif
           endif
-          if(desc(ie)%getmapP(i) == -1) then 
+          if(elem(ie)%desc%getmapP(i) == -1) then 
               edge%getmap(i,ie) = -1
           else
               if(present(NewMethod)) then 
-                  edge%getmap(i,ie) = nlyr*desc(ie)%getmapS(i)
+                  edge%getmap(i,ie) = nlyr*elem(ie)%desc%getmapS(i)
               else
-                  edge%getmap(i,ie) = nlyr*desc(ie)%getmapP(i)
+                  edge%getmap(i,ie) = nlyr*elem(ie)%desc%getmapP(i)
               endif
           endif
-          edge%reverse(i,ie) = desc(ie)%reverse(i) 
+          edge%reverse(i,ie) = elem(ie)%desc%reverse(i) 
        enddo
     enddo
 
@@ -555,10 +478,15 @@ if(present(NewMethod)) then
     enddo
 endif
 #endif
-
+    if(nthreadshoriz<=0) then 
+       nlen=1
+    else
+       nlen=nthreadshoriz
+    endif
 !JMD    print *,'initNewedgebuffer: nthreadshoriz: ',nthreadshoriz
-    allocate(edge%moveLength(nthreadshoriz))
-    allocate(edge%movePtr(nthreadshoriz))
+     
+    allocate(edge%moveLength(nlen))
+    allocate(edge%movePtr(nlen))
 
     if (nthreadshoriz > 1) then 
        ! the master thread performs no data movement because it is busy with the
@@ -655,7 +583,6 @@ endif
 
     !call t_stopf('initnewedgebuffer')
     !call t_adj_detailf(-3)
-    
 
   end subroutine initNewEdgeBuffer
   ! =========================================
@@ -724,6 +651,37 @@ endif
     call newedgeVpack(edge,v,vlyr,kptr,ielem)
 
   end subroutine newedgeDGVpack
+
+  subroutine oldedgeDGVunpack(edge,v,vlyr,kptr,desc)
+    use dimensions_mod, only : np
+    use control_mod, only : north, south, east, west
+    type (oldEdgeBuffer_t),         intent(in)  :: edge
+    integer,               intent(in)  :: vlyr
+    real (kind=real_kind), intent(out) :: v(0:np+1,0:np+1,vlyr)
+    integer,               intent(in)  :: kptr
+    type (EdgeDescriptor_t)            :: desc
+ 
+     ! Local
+    integer :: i,k
+    integer :: is,ie,in,iw
+
+     threadsafe=.false.
+ 
+    is=desc%getmapP(south)
+    ie=desc%getmapP(east)
+    in=desc%getmapP(north)
+    iw=desc%getmapP(west)
+    do k=1,vlyr
+       do i=1,np
+          v(i   ,0   ,k)=edge%buf(kptr+k,is+i)
+          v(np+1,i   ,k)=edge%buf(kptr+k,ie+i)
+          v(i   ,np+1,k)=edge%buf(kptr+k,in+i)
+          v(0   ,i   ,k)=edge%buf(kptr+k,iw+i)
+       end do
+     end do
+ 
+  end subroutine oldedgeDGVunpack
+
 
   ! ===========================================
   !  FreeOldEdgeBuffer:
@@ -1543,7 +1501,7 @@ endif
 
   end subroutine newedgeVunpack
 
-  subroutine edgeVunpackVert(edge,v,desc)
+  subroutine oldedgeVunpackVert(edge,v,desc)
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use dimensions_mod, only : np, max_corner_elem, ne
     use coordinate_systems_mod, only: cartesian3D_t
@@ -1564,7 +1522,7 @@ endif
         !      currently only supported for the uniform grid. If
         !      this is desired on a refined grid, a little bit of
         !      work will be required.
-        call haltmp("edgeVunpackVert should not be called with unstructured meshes")
+        call haltmp("oldedgeVunpackVert should not be called with unstructured meshes")
     end if
 
     is=desc%getmapP(south)
@@ -1724,44 +1682,248 @@ endif
        v(4,1,i)%z  = v(1,1,i+1)%z
     end do
 
-  end subroutine edgeVunpackVert
+  end subroutine oldedgeVunpackVert
+
+  subroutine newedgeVunpackVert(edge,v,ielem)
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use dimensions_mod, only : np, max_corner_elem, ne
+    use coordinate_systems_mod, only: cartesian3D_t
+
+    type (newEdgeBuffer_t),   intent(inout)  :: edge
+    type (cartesian3D_t), intent(out) :: v(:,:,:)
+    integer, intent(in) :: ielem
+
+    ! Local
+    logical, parameter :: UseUnroll = .TRUE.
+    integer :: i,k,l
+    integer :: is,ie,in,iw,ine,inw,isw,ise
+
+    threadsafe=.false.
+
+    if (max_corner_elem.ne.1 .and. ne==0) then
+        ! MNL: this is used to construct the dual grid on the cube,
+        !      currently only supported for the uniform grid. If
+        !      this is desired on a refined grid, a little bit of
+        !      work will be required.
+        call haltmp("newedgeVunpackVert should not be called with unstructured meshes")
+    end if
+
+    is=edge%getmap(south,ielem)
+    ie=edge%getmap(east,ielem)
+    in=edge%getmap(north,ielem)
+    iw=edge%getmap(west,ielem)
+
+
+    ! N+S
+    do i=1,np/2
+       ! North
+       !kptr = 0
+       !iptr=np*(kptr+k-1)+in
+       ! iptr = np*(k-1)+in
+  
+!       v(3,i ,np)%x = edge%buf(1,in+i) 
+       ! iptr = np*(1-1)+in 
+       v(3,i ,np)%x = edge%buf(in+i) 
+
+!       v(3,i ,np)%y = edge%buf(2,in+i) 
+       ! iptr = np*(2-1)+in 
+!       iptr = np+in
+       v(3,i ,np)%y = edge%buf(np+in+i) 
+
+!       v(3,i ,np)%z = edge%buf(3,in+i) 
+!       iptr = np*(3-1)+in 
+!       iptr = 2*np+in
+       v(3,i ,np)%z = edge%buf(2*np+in+i) 
+
+       ! South
+       ! v(2,i ,1)%x  = edge%buf(1,is+i) 
+       v(2,i ,1)%x  = edge%buf(is+i) 
+       ! v(2,i ,1)%y  = edge%buf(2,is+i) 
+       v(2,i ,1)%y  = edge%buf(np+is+i) 
+       ! v(2,i ,1)%y  = edge%buf(3,is+i) 
+       v(2,i ,1)%z  = edge%buf(2*np+is+i) 
+    enddo
+
+    do i=np/2+1,np
+       ! North
+       ! v(4,i ,np)%x = edge%buf(1,in+i) 
+       v(4,i ,np)%x = edge%buf(in+i) 
+
+       ! v(4,i ,np)%y = edge%buf(2,in+i) 
+       v(4,i ,np)%y = edge%buf(np+in+i) 
+
+       ! v(4,i ,np)%z = edge%buf(3,in+i) 
+       v(4,i ,np)%z = edge%buf(2*np+in+i) 
+       ! South
+       ! v(1,i ,1)%x  = edge%buf(1,is+i) 
+       v(1,i ,1)%x  = edge%buf(is+i) 
+       ! v(1,i ,1)%y  = edge%buf(2,is+i) 
+       v(1,i ,1)%y  = edge%buf(np+is+i) 
+       ! v(1,i ,1)%z  = edge%buf(3,is+i)        
+       v(1,i ,1)%z  = edge%buf(2*np+is+i)        
+    enddo
+
+    do i=1,np/2
+       ! East
+       ! v(3,np,i)%x = edge%buf(1,ie+i)
+       v(3,np,i)%x = edge%buf(ie+i)
+       ! v(3,np,i)%y = edge%buf(2,ie+i)
+       v(3,np,i)%y = edge%buf(np+ie+i)
+       ! v(3,np,i)%z = edge%buf(3,ie+i)       
+       v(3,np,i)%z = edge%buf(2*np+ie+i)       
+       ! West
+       ! v(4,1,i)%x  = edge%buf(1,iw+i)
+       v(4,1,i)%x  = edge%buf(iw+i)
+       ! v(4,1,i)%y  = edge%buf(2,iw+i)
+       v(4,1,i)%y  = edge%buf(np+iw+i)
+       ! v(4,1,i)%z  = edge%buf(3,iw+i)
+       v(4,1,i)%z  = edge%buf(2*np+iw+i)
+    end do
+
+    do i=np/2+1,np
+       ! East
+       ! v(2,np,i)%x = edge%buf(1,ie+i)
+       v(2,np,i)%x = edge%buf(ie+i)
+
+       ! v(2,np,i)%y = edge%buf(2,ie+i)
+       v(2,np,i)%y = edge%buf(np+ie+i)
+
+       ! v(2,np,i)%z = edge%buf(3,ie+i)       
+       v(2,np,i)%z = edge%buf(2*np+ie+i)       
+       ! West
+
+       ! v(1,1,i)%x  = edge%buf(1,iw+i)
+       v(1,1,i)%x  = edge%buf(iw+i)
+
+       ! v(1,1,i)%y  = edge%buf(2,iw+i)
+       v(1,1,i)%y  = edge%buf(np+iw+i)
+
+       ! v(1,1,i)%z  = edge%buf(3,iw+i)
+       v(1,1,i)%z  = edge%buf(2*np+iw+i)
+    end do
+
+! SWEST
+    do l=swest,swest+max_corner_elem-1
+       ! find the one active corner, then exist
+        isw=edge%getmap(l,ielem)
+        if(isw /= -1) then 
+            ! v(1,1,1)%x=edge%buf(1,desc%getmapP(l)+1)
+            v(1,1,1)%x=edge%buf(isw+1)
+            ! v(1,1,1)%y=edge%buf(2,desc%getmapP(l)+1)
+            v(1,1,1)%y=edge%buf(np+isw+1)
+            ! v(1,1,1)%z=edge%buf(3,desc%getmapP(l)+1)
+            v(1,1,1)%z=edge%buf(2*np+isw+1)
+            exit 
+        else
+            v(1,1,1)%x=0_real_kind
+            v(1,1,1)%y=0_real_kind
+            v(1,1,1)%z=0_real_kind
+        endif
+    end do
+
+! SEAST
+    do l=swest+max_corner_elem,swest+2*max_corner_elem-1
+       ! find the one active corner, then exist
+        ise=edge%getmap(l,ielem)
+        if(ise /= -1) then 
+            ! v(2,np,1)%x=edge%buf(1,desc%getmapP(l)+1)
+            v(2,np,1)%x=edge%buf(ise+1)
+            ! v(2,np,1)%y=edge%buf(2,desc%getmapP(l)+1)
+            v(2,np,1)%y=edge%buf(np+ise+1)
+            ! v(2,np,1)%z=edge%buf(3,desc%getmapP(l)+1)
+            v(2,np,1)%z=edge%buf(2*np+ise+1)
+            exit
+        else
+            v(2,np,1)%x=0_real_kind
+            v(2,np,1)%y=0_real_kind
+            v(2,np,1)%z=0_real_kind
+        endif
+    end do
+
+! NEAST
+    do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+       ! find the one active corner, then exist
+        ine=edge%getmap(l,ielem)
+        if(ine /= -1) then 
+            v(3,np,np)%x=edge%buf(ine+1)
+            v(3,np,np)%y=edge%buf(np+ine+1)
+            v(3,np,np)%z=edge%buf(2*np+ine+1)
+            exit
+        else
+            v(3,np,np)%x=0_real_kind
+            v(3,np,np)%y=0_real_kind
+            v(3,np,np)%z=0_real_kind
+        endif
+    end do
+
+! NWEST
+    do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+       ! find the one active corner, then exist
+        inw = edge%getmap(l,ielem)
+        if(inw/= -1) then 
+            v(4,1,np)%x=edge%buf(inw+1)
+            v(4,1,np)%y=edge%buf(np+inw+1)
+            v(4,1,np)%z=edge%buf(2*np+inw+1)
+            exit
+        else
+            v(4,1,np)%x=0_real_kind
+            v(4,1,np)%y=0_real_kind
+            v(4,1,np)%z=0_real_kind
+        endif
+    end do
+
+    ! Fill the missing vertex info
+
+    do i=2,np/2
+       ! North
+       v(4,i ,np)%x = v(3,i-1 ,np)%x 
+       v(4,i ,np)%y = v(3,i-1 ,np)%y
+       v(4,i ,np)%z = v(3,i-1 ,np)%z
+       ! South
+       v(1,i ,1)%x  = v(2,i-1 ,1)%x 
+       v(1,i ,1)%y  = v(2,i-1 ,1)%y 
+       v(1,i ,1)%z  = v(2,i-1 ,1)%z 
+    enddo
+
+    do i=np/2+1,np-1
+       ! North
+       v(3,i ,np)%x = v(4,i+1 ,np)%x 
+       v(3,i ,np)%y = v(4,i+1 ,np)%y
+       v(3,i ,np)%z = v(4,i+1 ,np)%z
+       ! South
+       v(2,i ,1)%x  = v(1,i+1 ,1)%x 
+       v(2,i ,1)%y  = v(1,i+1 ,1)%y
+       v(2,i ,1)%z  = v(1,i+1 ,1)%z
+    enddo
+
+    do i=2,np/2
+       ! East
+       v(2,np,i)%x = v(3,np,i-1)%x
+       v(2,np,i)%y = v(3,np,i-1)%y
+       v(2,np,i)%z = v(3,np,i-1)%z
+       ! West
+       v(1,1,i)%x  = v(4,1,i-1)%x
+       v(1,1,i)%y  = v(4,1,i-1)%y
+       v(1,1,i)%z  = v(4,1,i-1)%z
+    end do
+
+    do i=np/2+1,np-1
+       ! East
+       v(3,np,i)%x = v(2,np,i+1)%x 
+       v(3,np,i)%y = v(2,np,i+1)%y
+       v(3,np,i)%z = v(2,np,i+1)%z
+       ! West
+       v(4,1,i)%x  = v(1,1,i+1)%x 
+       v(4,1,i)%y  = v(1,1,i+1)%y
+       v(4,1,i)%z  = v(1,1,i+1)%z
+    end do
+
+  end subroutine newedgeVunpackVert
   ! ========================================
   ! edgeDGVunpack:
   !
   ! Unpack edges from edge buffer into v...
   ! ========================================
-
-  subroutine oldedgeDGVunpack(edge,v,vlyr,kptr,desc)
-    use dimensions_mod, only : np
-    use control_mod, only : north, south, east, west
-
-    type (oldEdgeBuffer_t),         intent(in)  :: edge
-    integer,               intent(in)  :: vlyr
-    real (kind=real_kind), intent(out) :: v(0:np+1,0:np+1,vlyr)
-    integer,               intent(in)  :: kptr
-    type (EdgeDescriptor_t)            :: desc
-
-    ! Local
-
-    integer :: i,k
-    integer :: is,ie,in,iw
-
-    threadsafe=.false.
-
-    is=desc%getmapP(south)
-    ie=desc%getmapP(east)
-    in=desc%getmapP(north)
-    iw=desc%getmapP(west)
-    do k=1,vlyr
-       do i=1,np
-          v(i   ,0   ,k)=edge%buf(kptr+k,is+i)
-          v(np+1,i   ,k)=edge%buf(kptr+k,ie+i)
-          v(i   ,np+1,k)=edge%buf(kptr+k,in+i)
-          v(0   ,i   ,k)=edge%buf(kptr+k,iw+i)
-       end do
-    end do
-
-  end subroutine oldedgeDGVunpack
 
   subroutine newedgeDGVunpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np
