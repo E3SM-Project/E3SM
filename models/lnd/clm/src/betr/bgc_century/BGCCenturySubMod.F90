@@ -28,17 +28,18 @@ module BGCCenturySubMod
   type, public :: centurybgc_type
   
   integer :: nom_pools   !not include coarse wood debris
-  integer :: lit1  
-  integer :: lit2  
-  integer :: lit3  
-  integer :: som1  
-  integer :: som2  
-  integer :: som3    
-  integer :: cwd
+  integer :: lit1, lit1_dek_reac  
+  integer :: lit2, lit2_dek_reac  
+  integer :: lit3, lit3_dek_reac  
+  integer :: som1, som1_dek_reac  
+  integer :: som2, som2_dek_reac  
+  integer :: som3, som3_dek_reac    
+  integer :: cwd,  cwd_dek_reac
   
-  integer :: c_loc
-  integer :: n_loc
-  integer :: nelms                 !number of chemical elements in an om pool
+  
+  integer  :: c_loc
+  integer  :: n_loc
+  integer  :: nelms                 !number of chemical elements in an om pool
   !reactive primary variables
   real(r8) :: k_decay_lit1
   real(r8) :: k_decay_lit2 
@@ -47,20 +48,32 @@ module BGCCenturySubMod
   real(r8) :: k_decay_som2 
   real(r8) :: k_decay_som3 
   real(r8) :: k_decay_cwd  
-  integer :: lid_nh4         !local position of nh4 in the state variable vector
-  integer :: lid_no3         !local position of no3 in the state variable vector
-  integer :: lid_plant_minn  !local position of plant consumption of mineral nitrogen in the state variable vector
-  integer :: lid_at_rt       !root autotrophic respiration
+  integer  :: lid_nh4, nh4_nit_reac                    !local position of nh4 in the state variable vector
+  integer  :: lid_no3, no3_den_reac                    !local position of no3 in the state variable vector
+  integer  :: lid_plant_minn, lid_plant_minn_up_reac  !local position of plant consumption of mineral nitrogen in the state variable vector
+  integer  :: lid_at_rt, lid_at_rt_reac       !root autotrophic respiration
+  
   !non reactive primary variables
-  integer :: lid_ar          !local position of ar in the state variable vector
-  integer :: lid_ch4         !nonreactive primary variables
+  integer  :: lid_ar, lid_ar_aere_reac          !local position of ar in the state variable vector
+  integer  :: lid_ch4, lid_ch4_aere_reac         !nonreactive primary variables
+  
+  !secondary variables
+  integer  :: lid_o2,  lid_o2_aere_reac          !local position of o2 in the state variable vector
+  integer  :: lid_co2, lid_co2_aere_reac         !local position of co2 in the state variable vector
+  integer  :: lid_n2,  lid_n2_aere_reac
+  integer  :: lid_n2o, lid_n2o_aere_reac
+  
   !diagnostic variables
-  integer :: lid_o2          !local position of o2 in the state variable vector
-  integer :: lid_co2         !local position of co2 in the state variable vector
-  integer :: lid_n2
-  integer :: lid_n2o
   integer :: lid_n2o_nit     !n2o production from nitrification, used to for mass balance book keeping
   integer :: lid_co2_hr      !co2 production from heterotrophic respiration
+  !aerechyma transport, diagnostic efflux
+
+  integer :: lid_ar_paere
+  integer :: lid_n2_paere
+  integer :: lid_o2_paere
+  integer :: lid_co2_paere
+  integer :: lid_ch4_paere
+  integer :: lid_n2o_paere
   
   integer :: nstvars         !number of equations for the state variabile vector
   integer :: nprimvars       !total number of primary variables
@@ -123,39 +136,61 @@ module BGCCenturySubMod
   ! each reaction is associated with a primary species, the secondary species follows after primary species
   ! for the century model, the primary species are seven om pools and nh4, no3 and plant nitrogen 
   ! 
-
+  use MathfuncMod,   only : addone
   class(centurybgc_type) :: this
-  
+  integer :: itemp
+  integer :: ireac   !counter of reactions
+  itemp = 0
+  ireac = 0
   this%nom_pools = 7   !not include coarse wood debris
-  this%lit1 = 1
-  this%lit2 = 2
-  this%lit3 = 3
-  this%som1 = 4
-  this%som2 = 5
-  this%som3 = 6  
-  this%cwd  = 7
+  this%lit1 = addone(itemp); this%lit1_dek_reac = addone(ireac)
+  this%lit2 = addone(itemp); this%lit2_dek_reac = addone(ireac)
+  this%lit3 = addone(itemp); this%lit3_dek_reac = addone(ireac)
+  this%som1 = addone(itemp); this%som1_dek_reac = addone(ireac)
+  this%som2 = addone(itemp); this%som2_dek_reac = addone(ireac)
+  this%som3 = addone(itemp); this%som3_dek_reac = addone(ireac)
+  this%cwd  = addone(itemp); this%cwd_dek_reac  = addone(ireac)
   
   this%nelms = 2   !carbon and nitrogen
   this%c_loc = 1
   this%n_loc = 2
-  this%lid_nh4 = this%nom_pools*this%nelms        + 1   !this is also used to indicate the nitrification reaction
-  this%lid_no3 = this%nom_pools*this%nelms        + 2   !this is also used to indicate the denitrification reaction
-  this%lid_plant_minn = this%nom_pools*this%nelms + 3   !this is used to indicate plant mineral nitrogen uptake
-  this%lid_at_rt= this%nom_pools*this%nelms       + 4   !this is used to indicate plant autotrophic root respiration
-  !non-reactive primary variables  
-  this%lid_ch4  = this%nom_pools*this%nelms       + 5
-  this%lid_ar   = this%nom_pools*this%nelms       + 6
-  !diagnostic variables
-  this%lid_o2  = this%nom_pools*this%nelms        + 7
-  this%lid_co2 = this%nom_pools*this%nelms        + 8
-  this%lid_n2o = this%nom_pools*this%nelms        + 9
-  this%lid_n2  = this%nom_pools*this%nelms        + 10
-  this%lid_n2o_nit = this%nom_pools*this%nelms    + 11
-  this%lid_co2_hr  = this%nom_pools*this%nelms    + 12
   
-  this%nstvars = this%nom_pools*this%nelms + 12   !totally 14+12 state variables
-  this%nprimvars=this%nom_pools*this%nelms + 6    !primary state variables 14 + 6
-  this%nreactions = this%nom_pools + 4            !seven decomposition pathways plus root auto respiration, nitrification, denitrification and plant immobilization  
+  itemp = this%nom_pools*this%nelms
+  this%lid_nh4        = addone(itemp); this%lid_nh4_nit_reac = addone(ireac)   !this is also used to indicate the nitrification reaction
+  this%lid_no3        = addone(itemp); this%lid_no3_den_reac = addone(ireac)   !this is also used to indicate the denitrification reaction
+  this%lid_plant_minn = addone(itemp); this%lid_plant_minn_up_reac = addone(ireac)   !this is used to indicate plant mineral nitrogen uptake
+  this%lid_at_rt      = addone(itemp); this%lid_at_rt_reac = addone(ireac)  !this is used to indicate plant autotrophic root respiration
+  
+  !non-reactive primary variables  
+  this%lid_ch4        = addone(itemp); this%lid_ch4_aere_reac = addone(ireac)
+  this%lid_ar         = addone(itemp); this%lid_ar_aere_reac  = addone(ireac)
+  
+  
+  !second primary variables
+  this%lid_o2         = addone(itemp); this%lid_o2_aere_reac = addone(ireac)
+  this%lid_co2        = addone(itemp); this%lid_co2_aere_reac = addone(ireac)
+  this%lid_n2o        = addone(itemp); this%lid_n2o_aere_reac = addone(ireac)
+  this%lid_n2         = addone(itemp); this%lid_n2_aere_reac = addone(ireac)
+  
+  this%nprimvars      = itemp     !primary state variables 14 + 6
+  
+  !diagnostic variables
+  this%lid_n2o_nit    = addone(itemp)
+  this%lid_co2_hr     = addone(itemp)
+    
+  !aerechyma transport
+  this%lid_ar_paere   = addone(itemp)   !
+  this%lid_n2_paere   = addone(itemp)   !
+  this%lid_o2_paere   = addone(itemp)   !
+  this%lid_co2_paere  = addone(itemp)   !
+  this%lid_ch4_paere  = addone(itemp)   !
+  this%lid_n2o_paere  = addone(itemp)   !
+  
+  this%nstvars          = itemp          !totally 14+32 state variables
+
+
+
+  this%nreactions = ireac            !seven decomposition pathways plus root auto respiration, nitrification, denitrification and plant immobilization  
   end subroutine Init_pars
 !-------------------------------------------------------------------------------
 
@@ -319,12 +354,41 @@ module BGCCenturySubMod
     lid_o2    => centurybgc_vars%lid_o2               , & !
     lid_co2   => centurybgc_vars%lid_co2              , & !
     lid_nh4   => centurybgc_vars%lid_nh4              , & !
+    lid_ch4   => centurybgc_vars%lid_ch4              , &
+    lid_ar    => centurybgc_vars%lid_ar              , &    
     lid_no3   => centurybgc_vars%lid_no3              , & !
     lid_n2o   => centurybgc_vars%lid_n2o              , & !
     lid_n2    => centurybgc_vars%lid_n2               , & !
     lid_co2_hr=> centurybgc_vars%lid_co2_hr           , & !
     lid_n2o_nit=> centurybgc_vars%lid_n2o_nit         , & !
-    lid_plant_minn => centurybgc_vars%lid_plant_minn    & !
+    lid_plant_minn => centurybgc_vars%lid_plant_minn  , & !
+
+    lid_n2_paere=> centurybgc_vars%lid_n2_paere       , & !
+    lid_ch4_paere=> centurybgc_vars%lid_ch4_paere     , & !    
+    lid_n2o_paere=> centurybgc_vars%lid_n2o_paere     , & !
+    lid_o2_paere=> centurybgc_vars%lid_o2_paere       , & !
+    lid_ar_paere=> centurybgc_vars%lid_ar_paere       , & !
+    lid_co2_paere=> centurybgc_vars%lid_co2_paere     , & !
+
+
+    
+    lit1_dek_reac=> centurybgc_vars%lit1_dek_reac     , & !
+    lit2_dek_reac=> centurybgc_vars%lit2_dek_reac     , & !
+    lit3_dek_reac=> centurybgc_vars%lit3_dek_reac     , & !
+    som1_dek_reac=> centurybgc_vars%som1_dek_reac     , & !
+    som2_dek_reac=> centurybgc_vars%som2_dek_reac     , & !
+    som3_dek_reac=> centurybgc_vars%som3_dek_reac     , & !
+    cwd_dek_reac=> centurybgc_vars%cwd_dek_reac       , & !
+    lid_at_rt_reac=> centurybgc_vars%lid_at_rt_reac   , & !
+    lid_plant_minn_up_reac=> centurybgc_vars%lid_plant_minn_up_reac, & !
+    lid_nh4_nit_reac => centurybgc_vars%lid_nh4_nit_reac, & !
+    lid_no3_den_reac => centurybgc_vars%lid_no3_den_reac, & !
+    lid_n2_aere_reac => centurybgc_vars%lid_n2_aere_reac      , & !
+    lid_ch4_aere_reac=> centurybgc_vars%lid_ch4_aere_reac     , & !    
+    lid_n2o_aere_reac=> centurybgc_vars%lid_n2o_aere_reac     , & !
+    lid_o2_aere_reac => centurybgc_vars%lid_o2_aere_reac      , & !
+    lid_ar_aere_reac => centurybgc_vars%lid_ar_aere_reac      , & !
+    lid_co2_aere_reac=> centurybgc_vars%lid_co2_aere_reac       & !
   )
   !initialize all entries to zero
   cascade_matrix = 0._r8
@@ -334,7 +398,7 @@ module BGCCenturySubMod
   
   
   !reaction1, lit1 -> s1
-  reac=lit1
+  reac=lit1_dek_reac
   !lit1 + 0.55*o2 -> 0.45 som1 + 0.55co2 + (1/cn_ratios(lit1) - 0.45/cn_ratios(som1))min_n+ (1/cp_ratios(lit1)-0.45/cp_ratios(som1))min_p
   cascade_matrix((lit1-1)*nelms+c_loc   ,reac)  = -1._r8
   cascade_matrix((lit1-1)*nelms+n_loc   ,reac)  = -1._r8/cn_ratios(lit1)
@@ -348,7 +412,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2_hr             ,reac)  = CNDecompBgcParamsInst%rf_l1s1_bgc
 
   !reaction 2, lit2 -> s1
-  reac = lit2
+  reac = lit2_dek_reac
   !lit2 + 0.5 o2  -> 0.5 som1 + 0.5 co2 + (1/cn_ratios(lit2)-0.5/cn_ratios(som1))min_n +(1/cp_ratios(lit2)-0.5/cp_ratios(som1))min_p
   cascade_matrix((lit2-1)*nelms+c_loc   ,reac)   = -1._r8
   cascade_matrix((lit2-1)*nelms+n_loc   ,reac)   = -1._r8/cn_ratios(lit2)
@@ -362,7 +426,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_l2s1_bgc
   !reaction 3, lit3->s2
-  reac = lit3
+  reac = lit3_dek_reac
   !lit3 + 0.5 o2 -> 0.5 som2 + 0.5 co2 + (1/cn_ratios(lit3) - 0.5/cn_ratios(som2))min_n + (1/cp_ratios(lit3)-0.5_r8/cp_ratios(som2))minp
   cascade_matrix((lit3-1)*nelms+c_loc   ,reac) = -1._r8
   cascade_matrix((lit3-1)*nelms+n_loc   ,reac) = -1._r8/cn_ratios(lit3)
@@ -376,7 +440,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
   !double check those stoichiometry parameters
   !reaction 4, the partition into som2 and som3 is soil texture dependent
-  reac = som1
+  reac = som1_dek_reac
   !som1 + f(txt) o2 -> f1*som2 + f2*som3 + f(txt) co2 + (1/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)) +(1/cp_ratios(som1)-f1/cp_ratios(som2)-f2/cp_ratios(som3))
   !f(txt) = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - sand)
   !f1+f2+f(txt)=1._r8
@@ -397,7 +461,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_nh4                ,reac) = 1._r8/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)
   cascade_matrix(lid_co2_hr             ,reac) = ftxt
   !reaction 5, som2->som1, som3
-  reac = som2
+  reac = som2_dek_reac
   !som2 + 0.55 o2 -> 0.42 som1 + 0.03som3 + 0.55co2 + (1/cn_ratios(som2)-0.42/cn_ratios(som1)-0.03/cn_ratios(som3)) + (1/cp_raitos(som2)-0.42/cp_ratios(som1)-0.03/cp_ratios(som3))
   cascade_matrix((som2-1)*nelms+c_loc   ,reac)   = -1._r8
   cascade_matrix((som2-1)*nelms+n_loc   ,reac)   = -1._r8/cn_ratios(som2)
@@ -414,7 +478,7 @@ module BGCCenturySubMod
                                                 -0.07_r8*(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc)/cn_ratios(som3)
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_s2s1_bgc 
   !reaction 6, s3-> s1
-  reac = som3
+  reac = som3_dek_reac
   !som3 + 0.55 o2 -> 0.45*som1 + 0.55co2 + (1/cn_ratios(som3)-0.45/cn_ratios(som1)) + (1/cp_ratios(som3)-0.45/cp_ratios(som1))
   cascade_matrix((som3-1)*nelms+c_loc   ,reac) = -1._r8
   cascade_matrix((som3-1)*nelms+n_loc   ,reac) = -1._r8/cn_ratios(som3)
@@ -428,7 +492,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
   
   !reaction 7, the partition into lit1 and lit2 is nutrient dependent, respires co2?
-  reac = cwd
+  reac = cwd_dek_reac
   !cwd + o2 -> 0.76lit2 + 0.24*lit3 + (1/cn_ratios(cwd)-0.76/cn_ratios(lit2)-0.24/cn_ratios(lit3)) + (1/cp_ratios(cwd)-0.76/cp_ratios(lit2)-0.24/cp_ratios(lit3))
   cascade_matrix((cwd-1)*nelms+c_loc    ,reac) = -1._r8
   cascade_matrix((cwd-1)*nelms+n_loc    ,reac) = -1._r8/cn_ratios(cwd)
@@ -456,7 +520,7 @@ module BGCCenturySubMod
   enddo
   
   !reaction 8, nitrification
-  reac = lid_nh4
+  reac = lid_nh4_nit_reac
   !NH4(+) + (2-f)O2 + (2-f)OH(-)-> (1-f)NO3(-) + (f/2)N2O + (3-f/2) H2O 
   cascade_matrix(lid_nh4 ,reac) = -1._r8
   cascade_matrix(lid_o2  ,reac) = -(2._r8 - nitrif_n2o_loss_frac)
@@ -465,23 +529,50 @@ module BGCCenturySubMod
 
   cascade_matrix(lid_n2o_nit,reac) = nitrif_n2o_loss_frac  
   !reaction 9, denitrification
-  reac = lid_no3
+  reac = lid_no3_den_reac
   !NO3(-) -> 0.5*f N2O + 0.5* (1-f) N2, where f is a function determined from the century denitrification model
   cascade_matrix(lid_no3 ,reac) = -1._r8
   cascade_matrix(lid_n2o ,reac) = 0.5_r8 * 1._r8/(1._r8+n2_n2o_ratio_denit)
   cascade_matrix(lid_n2  ,reac) = 0.5_r8 * n2_n2o_ratio_denit/(1._r8+n2_n2o_ratio_denit)
 
   !reaction 10, plant mineral nitrogen uptake
-  reac = lid_plant_minn
+  reac = lid_plant_minn_up_reac
   ! f nh4 + (1-f) no3 -> plant_nitrogen
   cascade_matrix(lid_nh4, reac)        = -nh4_no3_ratio/(1._r8+nh4_no3_ratio)
   cascade_matrix(lid_no3, reac)        = -1._r8/(1._r8 + nh4_no3_ratio)
   cascade_matrix(lid_plant_minn, reac) = 1._r8
   
-  reac = lid_at_rt
+  reac = lid_at_rt_reac
   !ar + o2 -> co2
   cascade_matrix(lid_co2, reac) =  1._r8
   cascade_matrix(lid_o2,  reac) = -1._r8
+  
+  !arenchyma transport
+  reac = lid_ch4_aere_reac
+  cascade_matrix(lid_ch4, reac) = -1._r8
+  cascade_matrix(lid_ch4_paere, reac) = 1._r8
+  
+  reac = lid_ar_aere_reac         
+  cascade_matrix(lid_ar, reac)       = -1._r8
+  cascade_matrix(lid_ar_paere, reac) = 1._r8
+  
+  !second primary variables
+  reac = lid_o2_aere_reac
+  cascade_matrix(lid_o2, reac) = -1._r8
+  cascade_matrix(lid_o2_paere, reac) = 1._r8
+  
+  reac = lid_co2_aere_reac       
+  cascade_matrix(lid_co2, reac) = -1._r8
+  cascade_matrix(lid_co2_paere, reac) = 1._r8
+  
+  reac = lid_n2o_aere_reac       
+  cascade_matrix(lid_n2o, reac) = -1._r8
+  cascade_matrix(lid_n2o_paere, reac) = 1._r8
+  
+  reac = lid_n2_aere_reac          
+  cascade_matrix(lid_n2, reac) = -1._r8
+  cascade_matrix(lid_n2_paere, reac) = 1._r8
+  
   end associate
   end subroutine calc_cascade_matrix
 

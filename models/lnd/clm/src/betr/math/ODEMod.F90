@@ -25,13 +25,14 @@ implicit none
    
 contains
 
-   subroutine ode_ebbks1(odefun, y0, neq, t, dt, y)
+   subroutine ode_ebbks1(odefun, y0, nprimeq, neq, t, dt, y)
    !DESCRIPTION:
    !first order accurate explicit BBKS fixed time step positive preserving ode integrator
    !reference: Broekhuizen et al., 2008
    !!
    !
    implicit none
+   integer,  intent(in)  :: nprimeq
    integer,  intent(in)  :: neq
    real(r8), intent(in)  :: y0(neq)   
    real(r8), intent(in)  :: t
@@ -43,19 +44,20 @@ contains
    !local variables
    real(r8) :: f(neq)
 
-   call odefun(y0, dt, t, neq, f)
+   call odefun(y0, dt, t, nprimeq, neq, f)
    
-   call ebbks(y0, f, neq, dt, y)
+   call ebbks(y0, f, nprimeq, neq, dt, y)
    
    end subroutine ode_ebbks1
 !-------------------------------------------------------------------------------
-   subroutine ode_ebbks2(odefun, y0, neq, t, dt, y)
+   subroutine ode_ebbks2(odefun, y0, nprimeq, neq, t, dt, y)
    !DESCRIPTION:
    !second order accurate explicit BBKS fixed time step positive preserving ode integrator
    !reference: Broekhuizen et al., 2008
    !!
    !
    implicit none
+   integer,  intent(in)  :: nprimeq
    integer,  intent(in)  :: neq
    real(r8), intent(in)  :: y0(neq)   
    real(r8), intent(in)  :: t
@@ -72,20 +74,21 @@ contains
    real(r8) :: ti
    integer  :: n
 
-   call odefun(y0, dt, t, neq, f)
-   call ebbks(y0, f, neq, dt, y1)
+   call odefun(y0, dt, t, nprimeq, neq, f)
+   call ebbks(y0, f, nprimeq, neq, dt, y1)
    ti=t+dt
-   call odefun(y1, dt, ti, neq, f1)
+   call odefun(y1, dt, ti, nprimeq, neq, f1)
    do n = 1, neq
       f(n) = (f(n)+f1(n))*0.5_r8
    enddo
-   call ebbks(y0, f, neq, dt, y)
+   call ebbks(y0, f, nprimeq, neq, dt, y)
    end subroutine ode_ebbks2
 !-------------------------------------------------------------------------------
-   subroutine ode_mbbks1(odefun, y0, neq, t, dt, y, pscal)
+   subroutine ode_mbbks1(odefun, y0, nprimeq, neq, t, dt, y, pscal)
    !description
    !first order accurate implicit BBKS fixed time step positive preserving ode integrator
    implicit none
+   integer,  intent(in)  :: nprimeq
    integer,  intent(in)  :: neq
    real(r8), intent(in)  :: y0(neq)   
    real(r8), intent(in)  :: t
@@ -96,9 +99,9 @@ contains
    external :: odefun
    real(r8) :: f(neq)
    
-   call odefun(y0, dt, t, neq, f)
+   call odefun(y0, dt, t, nprimeq, neq, f)
 
-   call mbbks(y0, f, neq, dt, y, pscal)
+   call mbbks(y0, f, nprimeq, neq, dt, y, pscal)
    
    end subroutine ode_mbbks1
 !-------------------------------------------------------------------------------
@@ -130,11 +133,12 @@ contains
    
    end subroutine get_tscal   
 !-------------------------------------------------------------------------------
-   subroutine ode_mbbks2(odefun, y0, neq, t, dt, y)
+   subroutine ode_mbbks2(odefun, y0, nprimeq, neq, t, dt, y)
    !
    !description
    !second order implicit bkks ode integration with the adaptive time stepping   
    implicit none
+   integer,  intent(in)  :: nprimeq
    integer,  intent(in)  :: neq
    real(r8), intent(in)  :: y0(neq)   
    real(r8), intent(in)  :: t
@@ -153,18 +157,18 @@ contains
    real(r8) :: nJ, pp
    real(r8) :: pscal
    
-   call odefun(y0, dt, t, neq, f)
+   call odefun(y0, dt, t, nprimeq, neq, f)
    
-   call mbbks(y0, f, neq, dt, y1, pscal)
+   call mbbks(y0, f, nprimeq, neq, dt, y1, pscal)
    ti = t + dt
-   call odefun(y1, dt, ti,neq, f1)
+   call odefun(y1, dt, ti,nprimeq, neq, f1)
    
    pp = 1._r8
    nJ = 0._r8
    
    do n = 1, neq
       f(n) = (f(n) + f1(n))*0.5_r8
-      if(f(n)<0._r8)then
+      if(f(n)<0._r8 .and. n<=nprimeq)then
          pp = pp * y0(n) / y1(n)
          nJ = nJ + 1._r8
       endif
@@ -175,17 +179,18 @@ contains
       enddo
    endif
    
-   call mbbks(y0, f, neq, dt, y, pscal)
+   call mbbks(y0, f, nprimeq, neq, dt, y, pscal)
    
    end subroutine ode_mbbks2
 !-------------------------------------------------------------------------------
-   subroutine mbbks(y0, f, neq, dt, y, pscal)
+   subroutine mbbks(y0, f, nprimeq, neq, dt, y, pscal)
    !description
    !mbbks update
    implicit none
    real(r8), intent(in) :: y0(neq)  ! state variable at previous time step
    real(r8), intent(in) :: f(neq)   ! derivative
    real(r8), intent(in) :: dt       ! time stepping
+   integer,  intent(in) :: nprimeq  !
    integer,  intent(in) :: neq      ! number of equations
    real(r8), intent(out) :: y(neq)   ! updated state variable
    real(r8), intent(out):: pscal
@@ -199,7 +204,7 @@ contains
    aj => mbkks_data%aj
    nJ = 0
    pmax = 0._r8
-   do n = 1, neq
+   do n = 1, nprimeq
       if(f(n)<0._r8)then
          nJ = nJ  + 1
          pm = -y0(n)/(f(n)*dt)
@@ -234,7 +239,7 @@ contains
    end subroutine mbbks
    
 !-------------------------------------------------------------------------------
-    subroutine ode_adapt_mbbks1(odefun, y0, neq, t, dt, y)
+    subroutine ode_adapt_mbbks1(odefun, y0, nprimeq, neq, t, dt, y)
    !description
    !first order implicit bkks ode integration with the adaptive time stepping
    !This could be used as an example for the implementation of time-adaptive 
@@ -244,6 +249,7 @@ contains
    real(r8), intent(in) :: y0(neq)  ! state variable at previous time step
    real(r8), intent(in) :: t        ! time stamp
    real(r8), intent(in) :: dt       ! time stepping
+   integer,  intent(in) :: nprimeq  !
    integer,  intent(in) :: neq      ! number of equations   
    real(r8), intent(out) :: y(neq)   ! updated state variable
    external :: odefun
@@ -269,26 +275,26 @@ contains
    y=y0
    do
       if(dt2<=dtmin)then
-         call odefun(y, dt2, tt, neq, f)
-         call mbbks(y, f, neq, dt2, yc, pscal)
+         call odefun(y, dt2, tt, nprimeq, neq, f)
+         call mbbks(y, f, nprimeq, neq, dt2, yc, pscal)
          dtr=dtr-dt2
          tt=tt+dt2
          y=yc
       else
          !get coarse grid solution
-         call odefun(y, dt2, tt, neq, f)
-         call mbbks(y, f, neq, dt2, yc, pscal)
+         call odefun(y, dt2, tt, nprimeq, neq, f)
+         call mbbks(y, f, nprimeq, neq, dt2, yc, pscal)
          
          !get fine grid solution
          dt05=dt2*0.5_r8
-         call mbbks(y,f,neq,dt05, yf, pscal)
+         call mbbks(y,f,nprimeq, neq,dt05, yf, pscal)
          tt2=tt+dt05
          ycp=yf
-         call odefun(ycp, dt05, tt, neq, f)
-         call mbbks(ycp,f,neq,dt05,yf,pscal)
+         call odefun(ycp, dt05, tt, nprimeq, neq, f)
+         call mbbks(ycp,f,nprimeq, neq,dt05,yf,pscal)
          
          !determine the relative error
-         rerr=get_rerr_v(yc,yf,neq)
+         rerr=get_rerr_v(yc,yf,nprimeq, neq)
          
          !determine time scalar factor
          call get_tscal(rerr,dt_scal,acc)
@@ -391,7 +397,7 @@ contains
    end subroutine gfunc_mbkks
 
 !-------------------------------------------------------------------------------
-   subroutine ebbks(y0, f, neq, dt, y)
+   subroutine ebbks(y0, f, nprimeq, neq, dt, y)
    !DESCRIPTION:
    !ebbks update
    
@@ -399,6 +405,7 @@ contains
    real(r8), intent(in) :: y0(neq)
    real(r8), intent(in) :: f(neq)
    real(r8), intent(in) :: dt
+   integer,  intent(in) :: nprimeq
    integer,  intent(in) :: neq
    real(r8), intent(out):: y(neq)
 
@@ -409,7 +416,7 @@ contains
    
    
    nJ=0
-   do n = 1, neq
+   do n = 1, nprimeq
       if(f(n)<0._r8)then
          js = y0(n)/(-f(n)*dt)
          nJ=nJ+1

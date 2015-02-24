@@ -19,6 +19,7 @@ implicit none
    public :: diff
    public :: safe_div
    public :: dot_sum
+   public :: addone
    interface swap
       module procedure swap_i, swap_r, swap_rv
    end interface swap
@@ -188,4 +189,16 @@ contains
     ans = ans + x(j)*y(j)
   enddo 
   end function dot_sum
+!--------------------------------------------------------------------------------  
+  function addone(a)result(ans)
+  !
+  !return a variable with a + 1
+  use shr_kind_mod, only: r8 => shr_kind_r8  
+  implicit none
+  real(r8), intent(inout) :: a
+  
+  real(r8) :: ans
+  a = a + 1
+  ans = a
+  end function
 end module MathfuncMod

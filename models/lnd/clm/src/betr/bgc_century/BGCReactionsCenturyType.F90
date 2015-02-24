@@ -523,7 +523,7 @@ contains
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8 
-      call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
+      call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
     enddo
   enddo  
 
@@ -538,9 +538,7 @@ contains
   
   call Extra_inst%DDeallocate()
   
-
-  
-  
+    
   end subroutine calc_bgc_reaction
   
     
@@ -677,7 +675,7 @@ contains
 !-------------------------------------------------------------------------------
 
 
-  subroutine one_box_century_bgc(ystate, dtime, time, nstvars, dydt)
+  subroutine one_box_century_bgc(ystate, dtime, time, nprimvars, nstvars, dydt)
   !
   ! DESCRIPTIONS
   !do single box bgc
@@ -691,6 +689,7 @@ contains
   use BGCCenturySubMod      , only : calc_cascade_matrix
   implicit none
   integer,  intent(in)  :: nstvars
+  integer,  intent(in)  :: nprimvars
   real(r8), intent(in)  :: dtime
   real(r8), intent(in)  :: time
   real(r8), intent(in)  :: ystate(nstvars)
@@ -717,8 +716,9 @@ contains
     
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
+  
   !add aerechyma transport
-  do lk = 1, centurybgc_vars%nprimvars
+  do lk = 1, nprimvars
     if(Extra_inst%scal_f(lk)/=0._r8)then
       dydt(lk) = dydt(lk) - Extra_inst%scal_f(lk) * (ystate(lk)*Extra_inst%conv_f(lk)-Extra_inst%conc_f(lk))
     endif

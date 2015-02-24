@@ -38,7 +38,8 @@ module TracerFluxType
     real(r8), pointer :: tracer_flx_leaching_col(:,:)         !leaching fluxes
     real(r8), pointer :: tracer_flx_surfrun_col(:,:)          !tracer loss thru runoff, mol tracer / second
     real(r8), pointer :: tracer_flx_netpro_vr_col(:,:,:)      !total source strength for the tracers, chemical production, root exudation, excludes incoming root transport (by exchange with air) and (infiltration?)
-    real(r8), pointer :: tracer_flx_tparchm_col(:,:)             !total tracer flux through plant aerenchyma transport, for volatile species only, mol/m^2/s
+    real(r8), pointer :: tracer_flx_tparchm_col(:,:)          !total tracer flux through plant aerenchyma transport, for volatile species only, mol/m^2/s
+    real(r8), pointer :: tracer_flx_parchm_vr_col(:,:,:)      !vertical resolved tracer flux through aerenchyma transport, for volatile species only, mol/m^3/s
     real(r8), pointer :: tracer_flx_totleached_col(:,:)       !total leaching flux, vertical + lateral leaching
     !because the transpiration pathway and the arenchyma/parenchyma transport are different, so a specific transport through transpiration is considered, Jinyun Tang, 2011/10/16
     real(r8), pointer :: tracer_flx_vtrans_col(:,:)            !column level tracer flux through transpiration
@@ -146,6 +147,7 @@ contains
       allocate(this%tracer_flx_dif_col         (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_dif_col      (:,:) = nan
       allocate(this%tracer_flx_tparchm_col     (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_tparchm_col  (:,:) = nan
       allocate(this%tracer_flx_surfemi_col     (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_surfemi_col  (:,:) = nan
+      allocate(this%tracer_flx_parchm_vr_col   (begc:endc, lbu:ubj, 1:nvolatile_tracers)); this%tracer_flx_parchm_vr_col(:,:,:) = nan
     endif
 
     allocate(this%tracer_flx_netpro_vr_col  (begc:endc, lbj:ubj, 1:ntracers)); this%tracer_flx_netpro_vr_col (:,:,:) = nan
@@ -540,7 +542,9 @@ contains
   ! aggregate fluxes for mass balance check
   
   use BetrTracerType        , only : betrtracer_type
-  use clm_time_manager      , only : get_step_size    
+  use clm_time_manager      , only : get_step_size
+  use clm_varpar            , only : nlevtrc_soil
+  use MathfuncMod           , only : MathfuncMod
   class(TracerFlux_type)               :: this
   type(BeTRTracer_Type)  , intent(in)  :: betrtracer_vars
   integer                , intent(in)  :: c     ! column index
@@ -572,9 +576,12 @@ contains
     
     if(is_volatile(jj))then
       kk = volatileid(jj)
+      this%tracer_flx_tparchm_col(c,kk) = dot_sum(x=this%tracer_flx_parchm_vr_col(c,1:nlevtrc_soil,kk), y=col%dzsoi(c,1:nlevtrc_soil))
+      
       this%tracer_flx_surfemi_col(c,kk) = this%tracer_flx_tparchm_col(c,kk) + this%tracer_flx_dif_col(c,kk) + &
         this%tracer_flx_ebu_col(c,kk)  
       this%tracer_flx_netphyloss_col(c,jj) = this%tracer_flx_netphyloss_col(c,jj)  +  this%tracer_flx_surfemi_col(c,kk)
+
     endif 
   enddo
   
