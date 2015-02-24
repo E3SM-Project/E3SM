@@ -87,7 +87,7 @@ contains
    allocate(this%k_decay(nreacts))
    allocate(this%scal_f(nprimstvars));    this%scal_f(:) = 0._r8
    allocate(this%conv_f(nprimstvars));    this%conv_f(:) = 0._r8
-   allocate(this%conc_f(nprimstvars))     this%conc_f(:) = 0._r8
+   allocate(this%conc_f(nprimstvars));    this%conc_f(:) = 0._r8
    
    this%nr = nreacts
    
@@ -172,7 +172,7 @@ contains
        this%conc_f(centurybgc_vars%lid_n2o) = tracer_conc_atm(betrtracer_vars%volatileid(j))
        this%conv_f(centurybgc_vars%lid_n2o) = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
      endif
-     
+   enddo  
    end subroutine AAssign
    
 !-------------------------------------------------------------------------------
@@ -520,7 +520,7 @@ contains
         n2_n2o_r_denit=n2_n2o_ratio_denit(c,j), nh4_no3_r=nh4_no3_ratio(c,j)                 , &
         cell_sand=soilstate_vars%cellsand_col(c,j), betrtracer_vars=betrtracer_vars          , &
         gas2bulkcef=tracercoeff_vars%gas2bulkcef_mobile_col(c,j,:)                           , &
-        aere_cond=tracerceoff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
+        aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8 
       call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
