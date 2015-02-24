@@ -24,7 +24,8 @@ module BGCCenturySubMod
   public :: calc_nuptake_prof  
   public :: calc_plant_nitrogen_uptake_prof
   public :: calc_extneral_bgc_input
-
+  public :: set_reac_order
+  
   type, public :: centurybgc_type
   
   integer :: nom_pools   !not include coarse wood debris
@@ -167,10 +168,10 @@ module BGCCenturySubMod
   
   
   !second primary variables
-  this%lid_o2         = addone(itemp); this%lid_o2_aere_reac = addone(ireac)
+  this%lid_o2         = addone(itemp); this%lid_o2_aere_reac  = addone(ireac)
   this%lid_co2        = addone(itemp); this%lid_co2_aere_reac = addone(ireac)
   this%lid_n2o        = addone(itemp); this%lid_n2o_aere_reac = addone(ireac)
-  this%lid_n2         = addone(itemp); this%lid_n2_aere_reac = addone(ireac)
+  this%lid_n2         = addone(itemp); this%lid_n2_aere_reac  = addone(ireac)
   
   this%nprimvars      = itemp     !primary state variables 14 + 6
   
@@ -1372,5 +1373,27 @@ module BGCCenturySubMod
     enddo
   enddo
     
-  end subroutine apply_plant_root_respiration_prof    
+  end subroutine apply_plant_root_respiration_prof
+  
+ !-----------------------------------------------------------------------    
+  subroutine set_reac_order( nreact, centurybgc_vars, is_zero_order)
+  
+  integer                      , intent(in)  :: nreact
+  type(centurybgc_type)        , intent(in)  :: centurybgc_vars  
+  logical                      , intent(out) :: is_zero_order(nreact)
+
+  
+  
+  is_zero_order(:) = .false.
+  is_zero_order(centurybgc_vars%lid_n2o_aere_reac) = .true.
+  is_zero_order(centurybgc_vars%lid_ar_aere_reac)  = .true.
+  is_zero_order(centurybgc_vars%lid_ch4_aere_reac) = .true.
+  is_zero_order(centurybgc_vars%lid_o2_aere_reac)  = .true.
+  is_zero_order(centurybgc_vars%lid_o2_aere_reac)  = .true.
+  is_zero_order(centurybgc_vars%lid_co2_aere_reac) = .true.
+  is_zero_order(centurybgc_vars%lid_n2_aere_reac)  = .true.
+  is_zero_order(centurybgc_vars%lid_plant_minn_up_reac) = .true.
+  is_zero_order(centurybgc_vars%lid_at_rt_reac)    = .true.
+  
+  end subroutine set_reac_order  
 end module BGCCenturySubMod

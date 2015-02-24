@@ -57,6 +57,7 @@ implicit none
      real(r8)          :: n2_n2o_ratio_denit     !ratio of n2 to n2o during denitrification
      real(r8)          :: nh4_no3_ratio          !ratio of available nh4 to no3
      real(r8)          :: cellsand               !sand content
+     logical,  pointer :: is_zero_order(:)
      integer           :: nr                     !number of reactions involved
      contains 
      procedure, public :: Init_Allocate
@@ -88,7 +89,7 @@ contains
    allocate(this%scal_f(nprimstvars));    this%scal_f(:) = 0._r8
    allocate(this%conv_f(nprimstvars));    this%conv_f(:) = 0._r8
    allocate(this%conc_f(nprimstvars));    this%conc_f(:) = 0._r8
-   
+   allocate(this%is_zero_order(nreacts)); this%is_zero_order(:) = .false.
    this%nr = nreacts
    
    end subroutine Init_Allocate
@@ -437,6 +438,8 @@ contains
   
   call Extra_inst%Init_Allocate(centurybgc_vars%nom_pools, centurybgc_vars%nreactions, centurybgc_vars%nprimvars)
   
+  call set_reac_order( nreact, centurybgc_vars, Extra_inst%is_zero_order)
+  
   !initialize local variables
   y0(:, :, :) = spval
   yf(:, :, :) = spval
@@ -509,6 +512,7 @@ contains
   call apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
     carbonflux_vars%rr_col(bounds%begc:bounds%endc), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj),            &
     k_decay(centurybgc_vars%lid_at_rt, bounds%begc:bounds%endc, 1:ubj))
+  
   
   !do ode integration and update state variables for each layer
   do j = lbj, ubj
@@ -696,7 +700,7 @@ contains
   real(r8), intent(out) :: dydt(nstvars)
   
   !local variables
-  integer :: lk
+  integer :: lk, jj
   real(r8) :: cascade_matrix(nstvars, Extra_inst%nr)
   real(r8) :: reaction_rates(Extra_inst%nr)
   
@@ -707,8 +711,34 @@ contains
     
  !do pool degradation
   do lk = 1, Extra_inst%nr
-    if(lk == centurybgc_vars%lid_plant_minn .or. lk == centurybgc_vars%lid_at_rt)then
-      reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
+    if(Extra_inst%is_zero_order(lk))then
+      if(    lk == centurybgc_vars%lid_ch4_aere_reac)then
+        jj = centrurybgc_vars%lid_ch4_paere
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+        
+      elseif(lk == centurybgc_vars%lid_ar_aere_reac)then
+        jj = centrurybgc_vars%lid_ar_paere
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+      
+      elseif(lk == centurybgc_vars%lid_o2_aere_reac)then
+        jj = centrurybgc_vars%lid_o2_paere
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+      
+      elseif(lk == centurybgc_vars%lid_n2_aere_reac)then
+        jj = centrurybgc_vars%lid_n2_paere
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+      
+      elseif(lk == centurybgc_vars%lid_co2_aere_reac)then
+        jj = centrurybgc_vars%lid_co2_paere
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+      
+      elseif(lk == centurybgc_vars%lid_n2o_aere_reac)then
+        jj = centrurybgc_vars%lid_n2o_paere
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+        
+      else
+        reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
+      endif
     else
       reaction_rates(lk)=ystate(lk)*Extra_inst%k_decay(lk)
     endif
@@ -717,12 +747,6 @@ contains
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
   
-  !add aerechyma transport
-  do lk = 1, nprimvars
-    if(Extra_inst%scal_f(lk)/=0._r8)then
-      dydt(lk) = dydt(lk) - Extra_inst%scal_f(lk) * (ystate(lk)*Extra_inst%conv_f(lk)-Extra_inst%conc_f(lk))
-    endif
-  enddo
   end subroutine one_box_century_bgc
   
 !-------------------------------------------------------------------------------  
