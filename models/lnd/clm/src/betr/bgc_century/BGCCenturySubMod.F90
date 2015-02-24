@@ -39,6 +39,7 @@ module BGCCenturySubMod
   integer :: c_loc
   integer :: n_loc
   integer :: nelms                 !number of chemical elements in an om pool
+  !reactive primary variables
   real(r8) :: k_decay_lit1
   real(r8) :: k_decay_lit2 
   real(r8) :: k_decay_lit3 
@@ -46,20 +47,23 @@ module BGCCenturySubMod
   real(r8) :: k_decay_som2 
   real(r8) :: k_decay_som3 
   real(r8) :: k_decay_cwd  
-  
-  
-  integer :: lid_o2          !local position of o2 in the state variable vector
-  integer :: lid_co2         !local position of co2 in the state variable vector
   integer :: lid_nh4         !local position of nh4 in the state variable vector
   integer :: lid_no3         !local position of no3 in the state variable vector
+  integer :: lid_plant_minn  !local position of plant consumption of mineral nitrogen in the state variable vector
+  integer :: lid_at_rt       !root autotrophic respiration
+  !non reactive primary variables
+  integer :: lid_ar          !local position of ar in the state variable vector
+  integer :: lid_ch4         !nonreactive primary variables
+  !diagnostic variables
+  integer :: lid_o2          !local position of o2 in the state variable vector
+  integer :: lid_co2         !local position of co2 in the state variable vector
   integer :: lid_n2
   integer :: lid_n2o
-  integer :: lid_plant_minn  !local position of plant consumption of mineral nitrogen in the state variable vector
   integer :: lid_n2o_nit     !n2o production from nitrification, used to for mass balance book keeping
   integer :: lid_co2_hr      !co2 production from heterotrophic respiration
-  integer :: lid_ar_rt
   
-  integer :: nstvars            !number of equations for the state variabile vector
+  integer :: nstvars         !number of equations for the state variabile vector
+  integer :: nprimvars       !total number of primary variables
   integer :: nreactions      !seven decomposition pathways plus nitrification, denitrification and plant immobilization
 
   real(r8), pointer :: t_scalar_col(:,:)
@@ -88,9 +92,6 @@ module BGCCenturySubMod
   type(bounds_type),                intent(in) :: bounds
   integer,                          intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
 
-  type(file_desc_t) :: ncid
-  
-  ncid%fh=10
 
   call this%init_pars()
   
@@ -113,9 +114,12 @@ module BGCCenturySubMod
   ! s{4}
   ! ...
   ! s{n}
-  ! s{n+1}
+  ! s{n+1}  nonreactive primary variables
+  ! s{n+2}
   ! ...
   ! s{m}
+  ! s{m+1} diagnostic variables
+  ! s{p}
   ! each reaction is associated with a primary species, the secondary species follows after primary species
   ! for the century model, the primary species are seven om pools and nh4, no3 and plant nitrogen 
   ! 
@@ -137,16 +141,20 @@ module BGCCenturySubMod
   this%lid_nh4 = this%nom_pools*this%nelms        + 1   !this is also used to indicate the nitrification reaction
   this%lid_no3 = this%nom_pools*this%nelms        + 2   !this is also used to indicate the denitrification reaction
   this%lid_plant_minn = this%nom_pools*this%nelms + 3   !this is used to indicate plant mineral nitrogen uptake
-  this%lid_ar_rt= this%nom_pools*this%nelms       + 4   !this is used to indicate plant autotrophic root respiration
-  this%lid_o2  = this%nom_pools*this%nelms        + 5
-  this%lid_co2 = this%nom_pools*this%nelms        + 6
-  this%lid_n2o = this%nom_pools*this%nelms        + 7
-  this%lid_n2  = this%nom_pools*this%nelms        + 8
-  this%lid_n2o_nit = this%nom_pools*this%nelms    + 9
-  this%lid_co2_hr  = this%nom_pools*this%nelms    + 10
+  this%lid_at_rt= this%nom_pools*this%nelms       + 4   !this is used to indicate plant autotrophic root respiration
+  !non-reactive primary variables  
+  this%lid_ch4  = this%nom_pools*this%nelms       + 5
+  this%lid_ar   = this%nom_pools*this%nelms       + 6
+  !diagnostic variables
+  this%lid_o2  = this%nom_pools*this%nelms        + 7
+  this%lid_co2 = this%nom_pools*this%nelms        + 8
+  this%lid_n2o = this%nom_pools*this%nelms        + 9
+  this%lid_n2  = this%nom_pools*this%nelms        + 10
+  this%lid_n2o_nit = this%nom_pools*this%nelms    + 11
+  this%lid_co2_hr  = this%nom_pools*this%nelms    + 12
   
-  this%nstvars = this%nom_pools*this%nelms + 10    !totally 17 state variables
-  
+  this%nstvars = this%nom_pools*this%nelms + 12   !totally 14+12 state variables
+  this%nprimvars=this%nom_pools*this%nelms + 6    !primary state variables 14 + 6
   this%nreactions = this%nom_pools + 4            !seven decomposition pathways plus root auto respiration, nitrification, denitrification and plant immobilization  
   end subroutine Init_pars
 !-------------------------------------------------------------------------------
@@ -307,7 +315,7 @@ module BGCCenturySubMod
     c_loc     => centurybgc_vars%c_loc                , & !
     n_loc     => centurybgc_vars%n_loc                , & !
     nelms     => centurybgc_vars%nelms                , & !
-    lid_ar_rt => centurybgc_vars%lid_ar_rt            , & !
+    lid_at_rt => centurybgc_vars%lid_at_rt            , & !
     lid_o2    => centurybgc_vars%lid_o2               , & !
     lid_co2   => centurybgc_vars%lid_co2              , & !
     lid_nh4   => centurybgc_vars%lid_nh4              , & !
@@ -470,7 +478,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_no3, reac)        = -1._r8/(1._r8 + nh4_no3_ratio)
   cascade_matrix(lid_plant_minn, reac) = 1._r8
   
-  reac = lid_ar_rt
+  reac = lid_at_rt
   !ar + o2 -> co2
   cascade_matrix(lid_co2, reac) =  1._r8
   cascade_matrix(lid_o2,  reac) = -1._r8
@@ -1252,7 +1260,7 @@ module BGCCenturySubMod
   
   end associate
   end subroutine calc_extneral_bgc_input
-
+ !-----------------------------------------------------------------------  
   subroutine apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
     rr_col, root_prof_col, rr_col_vr)
     

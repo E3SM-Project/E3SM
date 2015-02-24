@@ -1832,6 +1832,7 @@ module TracerParamsMod
         do k = 1, ngwmobile_tracers
           if(is_volatile(k))then
             kk = volatileid(k)
+            tracer_diffusivity_air(c,kk) = get_gas_diffusivity(k,t_veg(p), betrtracer_vars)
             aerecond = scal_aere_cond(c, kk)*area_tiller * rootfr(p,j) * tracer_diffusivity_air(c,kk) / (z(c,j)*rob)
             ! Add in boundary layer resistance
             lbl_rsc = lbl_rsc_h2o(p) * (get_diffusivity_ratio_gas2h2o(k, t_veg(p), betrtracer_vars))**(-2._r8/3._r8)

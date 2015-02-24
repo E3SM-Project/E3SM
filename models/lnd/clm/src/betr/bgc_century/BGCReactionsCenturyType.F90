@@ -51,6 +51,9 @@ implicit none
      real(r8), pointer :: cn_ratios(:)           !cn ratio of om pool
      real(r8), pointer :: cp_ratios(:)           !cp ratio of om pool
      real(r8), pointer :: k_decay(:)             !decay parameter for all reactions
+     real(r8), pointer :: scal_f(:)              !scaling factor for first order sink
+     real(r8), pointer :: conv_f(:)              !converting factor for first order sink
+     real(r8), pointer :: conc_f(:)              !external forcing strength
      real(r8)          :: n2_n2o_ratio_denit     !ratio of n2 to n2o during denitrification
      real(r8)          :: nh4_no3_ratio          !ratio of available nh4 to no3
      real(r8)          :: cellsand               !sand content
@@ -71,17 +74,23 @@ implicit none
 
 contains
 
-   subroutine Init_Allocate(this, nompools, nreacts)
+   subroutine Init_Allocate(this, nompools, nreacts, nprimstvars)
    
    class(Extra_type) :: this
    
    integer, intent(in) :: nompools
    integer, intent(in) :: nreacts
+   integer, intent(in) :: nprimstvars     !number of primary state variables
    
    allocate(this%cn_ratios(nompools))
    allocate(this%cp_ratios(nompools))
    allocate(this%k_decay(nreacts))
+   allocate(this%scal_f(nprimstvars));    this%scal_f(:) = 0._r8
+   allocate(this%conv_f(nprimstvars));    this%conv_f(:) = 0._r8
+   allocate(this%conc_f(nprimstvars))     this%conc_f(:) = 0._r8
+   
    this%nr = nreacts
+   
    end subroutine Init_Allocate
 
 !-------------------------------------------------------------------------------   
@@ -94,11 +103,16 @@ contains
    deallocate(this%cn_ratios)
    deallocate(this%cp_ratios)
    deallocate(this%k_decay)
+   deallocate(this%scal_f)
+   deallocate(this%conv_f)
+   deallocate(this%conc_f)
+   
    end subroutine DDeallocate
 !-------------------------------------------------------------------------------   
 
-   subroutine AAssign(this, cn_r,cp_r, k_d,  n2_n2o_r_denit, nh4_no3_r, cell_sand)
-   
+   subroutine AAssign(this, cn_r,cp_r, k_d,  n2_n2o_r_denit, nh4_no3_r, cell_sand, betrtracer_vars, gas2bulkcef, aere_cond, tracer_conc_atm)
+   use BeTRTracerType              , only : betrtracer_type
+  
    class(Extra_type) :: this
    real(r8), dimension(:), intent(in) :: cn_r
    real(r8), dimension(:), intent(in) :: cp_r
@@ -106,8 +120,11 @@ contains
    real(r8)              , intent(in) :: n2_n2o_r_denit
    real(r8)              , intent(in) :: nh4_no3_r
    real(r8)              , intent(in) :: cell_sand
-   
-   integer :: n1, n2, n3
+   type(BeTRtracer_type ), intent(in) :: betrtracer_vars   
+   real(r8)              , intent(in) :: gas2bulkcef(1:betrtracer_vars%nvolatile_tracers)
+   real(r8)              , intent(in) :: aere_cond(1:betrtracer_vars%nvolatile_tracers)
+   real(r8)              , intent(in) :: tracer_conc_atm(1:betrtracer_vars%nvolatile_tracers)
+   integer :: n1, n2, n3, j
    
    
    n1 = size(cn_r)
@@ -121,7 +138,41 @@ contains
    this%n2_n2o_ratio_denit = n2_n2o_r_denit
    this%nh4_no3_ratio      = nh4_no3_r
    this%cellsand           = cell_sand
-   this%k_decay            = k_d  
+   this%k_decay            = k_d
+   
+
+   do j = 1, betrtracer_vars%ngwmobile_tracers
+     if(j == betrtracer_vars%id_trc_o2)then     
+       this%scal_f(centurybgc_vars%lid_o2)   = aere_cond(betrtracer_vars%volatileid(j))
+       this%conc_f(centurybgc_vars%lid_o2)   = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(centurybgc_vars%lid_o2)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       
+     elseif(j == betrtracer_vars%id_trc_n2)then
+       this%scal_f(centurybgc_vars%lid_n2) = aere_cond(betrtracer_vars%volatileid(j))
+       this%conc_f(centurybgc_vars%lid_n2) = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(centurybgc_vars%lid_n2)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       
+     elseif(j == betrtracer_vars%id_trc_ar)then
+       this%scal_f(centurybgc_vars%lid_ar) = aere_cond(betrtracer_vars%volatileid(j))
+       this%conc_f(centurybgc_vars%lid_ar) = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(centurybgc_vars%lid_ar)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       
+     elseif(j==betrtracer_vars%id_trc_co2x)then
+       this%scal_f(centurybgc_vars%lid_co2)  = aere_cond(betrtracer_vars%volatileid(j)) 
+       this%conc_f(centurybgc_vars%lid_co2) = tracer_conc_atm(betrtracer_vars%volatileid(j))     
+       this%conv_f(centurybgc_vars%lid_co2)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       
+     elseif(j==betrtracer_vars%id_trc_ch4) then
+       this%scal_f(centurybgc_vars%lid_ch4) = aere_cond(betrtracer_vars%volatileid(j)) 
+       this%conc_f(centurybgc_vars%lid_ch4) = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(centurybgc_vars%lid_ch4)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       
+     elseif(j==betrtracer_vars%id_trc_n2o) then
+       this%scal_f(centurybgc_vars%lid_n2o) = aere_cond(betrtracer_vars%volatileid(j))
+       this%conc_f(centurybgc_vars%lid_n2o) = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(centurybgc_vars%lid_n2o) = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+     endif
+     
    end subroutine AAssign
    
 !-------------------------------------------------------------------------------
@@ -384,7 +435,7 @@ contains
   
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
   
-  call Extra_inst%Init_Allocate(centurybgc_vars%nom_pools, centurybgc_vars%nreactions)
+  call Extra_inst%Init_Allocate(centurybgc_vars%nom_pools, centurybgc_vars%nreactions, centurybgc_vars%nprimvars)
   
   !initialize local variables
   y0(:, :, :) = spval
@@ -457,7 +508,7 @@ contains
   !apply root distribution here
   call apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
     carbonflux_vars%rr_col(bounds%begc:bounds%endc), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj),            &
-    k_decay(centurybgc_vars%lid_ar_rt, bounds%begc:bounds%endc, 1:ubj))
+    k_decay(centurybgc_vars%lid_at_rt, bounds%begc:bounds%endc, 1:ubj))
   
   !do ode integration and update state variables for each layer
   do j = lbj, ubj
@@ -465,7 +516,11 @@ contains
       c = filter_soilc(fc)
       if(j<jtops(c))cycle   
       !assign parameters for stoichiometric matrix calculation
-      call Extra_inst%AAssign(cn_ratios(:,c,j),cp_ratios(:,c,j), k_decay(:,c,j), n2_n2o_ratio_denit(c,j), nh4_no3_ratio(c,j), soilstate_vars%cellsand_col(c,j))
+      call Extra_inst%AAssign(cn_r=cn_ratios(:,c,j),cp_r=cp_ratios(:,c,j), k_d=k_decay(:,c,j), &
+        n2_n2o_r_denit=n2_n2o_ratio_denit(c,j), nh4_no3_r=nh4_no3_ratio(c,j)                 , &
+        cell_sand=soilstate_vars%cellsand_col(c,j), betrtracer_vars=betrtracer_vars          , &
+        gas2bulkcef=tracercoeff_vars%gas2bulkcef_mobile_col(c,j,:)                           , &
+        aere_cond=tracerceoff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8 
       call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
@@ -653,7 +708,7 @@ contains
     
  !do pool degradation
   do lk = 1, Extra_inst%nr
-    if(lk == centurybgc_vars%lid_plant_minn .or. lk == centurybgc_vars%lid_ar_rt)then
+    if(lk == centurybgc_vars%lid_plant_minn .or. lk == centurybgc_vars%lid_at_rt)then
       reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
     else
       reaction_rates(lk)=ystate(lk)*Extra_inst%k_decay(lk)
@@ -662,9 +717,15 @@ contains
     
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
+  !add aerechyma transport
+  do lk = 1, centurybgc_vars%nprimvars
+    if(Extra_inst%scal_f(lk)/=0._r8)then
+      dydt(lk) = dydt(lk) - Extra_inst%scal_f(lk) * (ystate(lk)*Extra_inst%conv_f(lk)-Extra_inst%conc_f(lk))
+    endif
+  enddo
   end subroutine one_box_century_bgc
   
-  
+!-------------------------------------------------------------------------------  
   subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars,tracerstate_vars, betrtracer_vars)
   
   use clm_varcon               , only : natomw, catomw  

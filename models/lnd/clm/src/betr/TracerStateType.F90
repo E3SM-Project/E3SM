@@ -28,7 +28,7 @@ module TracerStateType
     real(r8), pointer :: tracer_conc_aquifer_col       (:,:)      !tracer concentration in the flux to aquifer
     real(r8), pointer :: tracer_conc_grndwater_col     (:,:)      !tracer concentration in the flux to groundwater, include lateral drainage and discharge to aquifer
     real(r8), pointer :: tracer_col_molarmass_col      (:,:)      !for error tracking, column tracer mass
-
+    real(r8), pointer :: tracer_conc_atm_col           (:,:)      !colum volatile tracer in the atmosphere
     real(r8), pointer :: tracer_P_gas_col              (:,:)      !total gas pressure at different depth, sum of different gas species.
     real(r8), pointer :: tracer_P_gas_frac_col         (:,:,:)    !fraction of the volatile species in the overall pressure
     real(r8), pointer :: tracer_soi_molarmass_col      (:,:)      !vertically integrated tracer content (mol tracer/m2), only in the soil
@@ -100,7 +100,7 @@ contains
     allocate(this%tracer_col_molarmass_col      (begc:endc, 1:ntracers))          ; this%tracer_col_molarmass_col (:,:) = nan
     allocate(this%tracer_soi_molarmass_col      (begc:endc, 1:ntracers))          ; this%tracer_soi_molarmass_col (:,:) = nan
     allocate(this%errtracer_col                 (begc:endc, 1:ntracers))          ; this%errtracer_col            (:,:) = nan
-    
+    allocate(this%tracer_conc_atm_col           (begc:endc, 1:nvolatile_tracers)) ; this%tracer_conc_atm_col      (:,:) = nan
     allocate(this%tracer_conc_mobile_col        (begc:endc, lbj:ubj, 1:ngwmobile_tracers))     ; this%tracer_conc_mobile_col       (:,:,:) =  nan
     allocate(this%tracer_conc_solid_equil_col   (begc:endc, lbj:ubj, 1:nsolid_equil_tracers))  ; this%tracer_conc_solid_equil_col  (:,:,:) = nan
     allocate(this%tracer_conc_solid_passive_col (begc:endc, lbj:ubj, 1:nsolid_passive_tracers)); this%tracer_conc_solid_passive_col(:,:,:) = nan
@@ -161,6 +161,7 @@ contains
         call hist_addfld1d (fname=trim(tracernames(jj))//'_TRACER_CONC_SURFWATER', units='mol m-3', &
          avgflag='A', long_name='head concentration for tracer '//trim(tracernames(jj)), &
          ptr_col=data1dptr, default='inactive')
+   
    
         this%tracer_conc_aquifer_col(begc:endc, jj) = spval
         data1dptr => this%tracer_conc_aquifer_col(:, jj)      
