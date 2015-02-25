@@ -4,6 +4,8 @@
 
 module edge_mod
 
+#undef EXPORT_OLDEDGE 
+
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
@@ -11,7 +13,7 @@ module edge_mod
   use coordinate_systems_mod, only : cartesian3D_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
   use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t
-  use edgetype_mod, only : edgedescriptor_t, oldEdgeBuffer_t, edgebuffer_t, &
+  use edgetype_mod, only : edgedescriptor_t, edgebuffer_t, &
          Longedgebuffer_t, Ghostbuffertr_t, Ghostbuffer3d_t
   use element_mod, only : element_t
 
@@ -26,15 +28,20 @@ module edge_mod
 
 
   interface initEdgeBuffer
+#ifdef EXPORT_OLDEDGE
      module procedure initOldEdgeBuffer
+#endif
      module procedure initNewEdgeBuffer
   end interface 
   interface FreeEdgeBuffer
+#ifdef EXPORT_OLDEDGE
      module procedure FreeOldEdgeBuffer
+#endif
      module procedure FreeNewEdgeBuffer
   end interface
   public :: initEdgeBuffer, FreeEdgeBuffer
 
+#ifdef EXPORT_OLDEDGE
   !---------------------------------------------------------- 
   ! Pack/unpack routines that use the old format Edge buffer
   !---------------------------------------------------------- 
@@ -42,6 +49,8 @@ module edge_mod
   public :: oldedgeVunpackMIN, oldedgeVunpackMAX
   public :: oldedgeDGVpack, oldedgeDGVunpack
   public :: oldedgeVunpackVert
+  public :: oldedgerotate
+#endif
 
   !--------------------------------------------------------- 
   ! Pack/unpack routines that use the New format Edge buffer
@@ -60,7 +69,6 @@ module edge_mod
   public :: edgeSunpackMIN, edgeSunpackMAX
   public :: edgerotate
 
-  public :: oldedgerotate
   public :: buffermap
 
   logical, private :: threadsafe=.true.
@@ -191,6 +199,7 @@ module edge_mod
 
 contains
 
+#ifdef EXPORT_OLDEDGE
   ! =========================================
   ! initOldEdgeBuffer:
   !
@@ -259,7 +268,7 @@ contains
        edge%buf => tmp_ptr
 #else
        ! call F77 routine which will reshape array.
-       call remap_2D_ptr_buf(edge,nlyr,nbuf,buf_ptr)
+       call remap_1D_ptr_buf(edge,nlyr*nbuf,buf_ptr)
 #endif
     else
        allocate(edge%buf    (nlyr,nbuf))
@@ -278,7 +287,7 @@ contains
        edge%receive => tmp_ptr
 #else
        ! call F77 routine which will reshape array.
-       call remap_2D_ptr_receive(edge,nlyr,nbuf,receive_ptr)
+       call remap_1D_ptr_receive(edge,nlyr*nbuf,receive_ptr)
 #endif
     else
        allocate(edge%receive(nlyr,nbuf))
@@ -345,6 +354,7 @@ contains
     endif
 
   end subroutine initOldEdgeBuffer
+#endif
   ! =========================================
   ! initEdgeBuffer:
   !
@@ -619,6 +629,7 @@ endif
   !
   ! Pack edges of v into buf for DG stencil
   ! =========================================
+#ifdef EXPORT_OLDEDGE
   subroutine oldedgeDGVpack(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np
     type (oldEdgeBuffer_t)                      :: edge
@@ -634,6 +645,7 @@ endif
     call oldedgeVpack(edge,v,vlyr,kptr,desc)
 
   end subroutine oldedgeDGVpack
+#endif
 
   subroutine edgeDGVpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np
@@ -650,7 +662,7 @@ endif
     call edgeVpack(edge,v,vlyr,kptr,ielem)
 
   end subroutine edgeDGVpack
-
+#ifdef EXPORT_OLDEDGE
   subroutine oldedgeDGVunpack(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np
     use control_mod, only : north, south, east, west
@@ -704,7 +716,7 @@ endif
 #endif
 
   end subroutine FreeOldEdgeBuffer
-
+#endif
   ! ===========================================
   !  FreeNewEdgeBuffer:
   !
@@ -779,6 +791,7 @@ endif
   !! @param[in] kptr Vertical pointer to the place in the edge buffer where 
   !! data will be located.
   ! =========================================
+#ifdef EXPORT_OLDEDGE
   subroutine oldedgeVpack(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
@@ -919,7 +932,7 @@ endif
     call t_adj_detailf(-2)
 
   end subroutine oldedgeVpack
-
+#endif
   subroutine edgeVpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
@@ -1288,6 +1301,7 @@ endif
 
   end subroutine LongEdgeVpack
 
+#ifdef EXPORT_OLDEDGE
   ! ========================================
   ! oldedgeVunpack:
   !
@@ -1377,6 +1391,7 @@ endif
     call t_adj_detailf(-2)
 
   end subroutine oldedgeVunpack
+#endif
   subroutine edgeVunpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
@@ -1500,6 +1515,7 @@ endif
 
   end subroutine edgeVunpack
 
+#ifdef EXPORT_OLDEDGE
   subroutine oldedgeVunpackVert(edge,v,desc)
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use dimensions_mod, only : np, max_corner_elem, ne
@@ -1682,7 +1698,7 @@ endif
     end do
 
   end subroutine oldedgeVunpackVert
-
+#endif
   subroutine edgeVunpackVert(edge,v,ielem)
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use dimensions_mod, only : np, max_corner_elem, ne
@@ -1957,6 +1973,7 @@ endif
 
   end subroutine edgeDGVunpack
 
+#ifdef EXPORT_OLDEDGE
   ! ========================================
   ! oldedgeVunpackMIN/MAX:
   !
@@ -2031,7 +2048,7 @@ endif
     end do
     
   end subroutine oldedgeVunpackMAX
-
+#endif
   subroutine edgeVunpackMAX(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
@@ -2242,7 +2259,7 @@ endif
     end do
     
   end subroutine edgeSunpackMIN
-
+#ifdef EXPORT_OLDEDGE
   subroutine oldedgeVunpackMIN(edge,v,vlyr,kptr,desc)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
@@ -2311,7 +2328,7 @@ endif
     end do
     
   end subroutine oldedgeVunpackMIN
-
+#endif
   subroutine edgeVunpackMIN(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
@@ -2462,7 +2479,7 @@ endif
   !
   ! Rotate edges in buffer...
   ! =============================
-
+#ifdef EXPORT_OLEDGE
   subroutine oldedgerotate(edge,vlyr,kptr,desc)
     use dimensions_mod, only : np
     type (oldEdgeBuffer_t)           :: edge         ! edge struct
@@ -2537,7 +2554,7 @@ endif
        endif
 
   end subroutine oldedgerotate
-
+#endif
   subroutine edgerotate(edge,vlyr,kptr,desc)
     use dimensions_mod, only : np
     type (EdgeBuffer_t)           :: edge         ! edge struct
@@ -5600,16 +5617,6 @@ end subroutine ghostVunpackR
 
 End module edge_mod
 
-
-
-
-
-
-
-
-
-
-
 #ifndef HAVE_F2003_PTR_BND_REMAP
 !
 ! subroutine to allow sharing edge buffers
@@ -5619,29 +5626,29 @@ End module edge_mod
 ! some compilers dont allow the 'target' attribute to be used in a F77 subroutine
 ! such as cray.  if that is the case, try compiling with -DHAVE_F2003_PTR_BND_REMAP
 !
-subroutine remap_2D_ptr_buf(edge,nlyr,nbuf,src_array)
-use edgetype_mod, only       : oldEdgeBuffer_t ! _EXTERNAL                                                   
+subroutine remap_1D_ptr_buf(edge,nbuf,src_array)
+use edgetype_mod, only       : EdgeBuffer_t ! _EXTERNAL                                                   
 use kinds, only          : real_kind
 ! input                                                                                               
-type (oldEdgeBuffer_t) :: edge
-integer :: nlyr,nbuf
-real(kind=real_kind) , target :: src_array(nlyr,nbuf)
+type (EdgeBuffer_t) :: edge
+integer :: nbuf
+real(kind=real_kind) , target :: src_array(nbuf)
 
 edge%buf  => src_array
 
-end subroutine remap_2D_ptr_buf
+end subroutine remap_1D_ptr_buf
 
-subroutine remap_2D_ptr_receive(edge,nlyr,nbuf,src_array)
-use edgetype_mod, only       : oldEdgeBuffer_t ! _EXTERNAL                                                   
+subroutine remap_1D_ptr_receive(edge,nbuf,src_array)
+use edgetype_mod, only       : EdgeBuffer_t ! _EXTERNAL                                                   
 use kinds, only          : real_kind
 implicit none 
 ! input                                                                                               
-type (oldEdgeBuffer_t) :: edge
-integer :: nlyr,nbuf
-real(kind=real_kind) , target :: src_array(nlyr,nbuf)
+type (EdgeBuffer_t) :: edge
+integer :: nbuf
+real(kind=real_kind) , target :: src_array(nbuf)
 
 edge%receive  => src_array
 
-end subroutine remap_2D_ptr_receive
+end subroutine remap_1D_ptr_receive
 
 #endif

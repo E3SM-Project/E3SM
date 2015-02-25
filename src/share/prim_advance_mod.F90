@@ -20,8 +20,6 @@ module prim_advance_mod
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
   type (EdgeBuffer_t) :: edge3p1
-   
-!JMD  type (oldEdgeBuffer_t) :: oldedge3p1
 
   real (kind=real_kind) :: initialized_for_dt   = 0
 
@@ -47,11 +45,9 @@ contains
 !    print *,'prim_advance_init: before call to initNewEdgeBuffer rsplit: ',rsplit
     if (rsplit==0) then
        call initEdgeBuffer(par,edge3p1,elem,3*nlev+1)
-!JMD       call initEdgeBuffer(par,oldedge3p1,3*nlev+1)
     else
        ! need extra buffer space for dp3d
        call initEdgeBuffer(par,edge3p1,elem,4*nlev+1)
-!JMD       call initEdgeBuffer(par,oldedge3p1,4*nlev+1)
     endif
 
     if(integration == 'semi_imp') then
@@ -4160,7 +4156,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     use dimensions_mod, only : np, nlev, nc,nhe
     use hybrid_mod, only : hybrid_t
     use edge_mod, only : edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
-    use edgetype_mod, only : oldEdgeBuffer_t
     use bndry_mod, only : bndry_exchangev
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t , laplace_sphere_wk
