@@ -804,7 +804,7 @@ contains
 
     if (use_cn) then
        if(is_active_betr_bgc)then
-         call init_centurybgc_cold(bounds_proce, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+         call init_centurybgc_cold(bounds_proc, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
          call CNEcosystemDynBetrInit(bounds_proc)         
        else
          call CNEcosystemDynInit(bounds_proc)

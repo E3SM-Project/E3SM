@@ -772,6 +772,7 @@ contains
   integer, parameter :: i_soil3 = 7
   
   integer :: c, j, k
+
   associate(                                                     &
   id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
   id_trc_nh3x        => betrtracer_vars%id_trc_nh3x            , &  
@@ -819,6 +820,7 @@ contains
       
       enddo        
     enddo
+  end associate
   end subroutine init_centurybgc_cold    
 !-------------------------------------------------------------------------------  
   subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars)
@@ -837,7 +839,6 @@ contains
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
   type(carbonstate_type)             , intent(inout) :: carbonstate_vars
   type(nitrogenstate_type)           , intent(inout) :: nitrogenstate_vars
-  character(len=*), optional         , intent(in)  :: direction
   
   
   integer, parameter :: i_soil1 = 5
@@ -866,8 +867,6 @@ contains
   nelms              => centurybgc_vars%nelms                    &
   )
   
-  loc_direction='backward'
-  if(present(direction))loc_direction = direction
   
     do j = 1, nlevtrc_soil
       do fc = 1, num_soilc
