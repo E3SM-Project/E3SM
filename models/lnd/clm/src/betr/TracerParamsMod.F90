@@ -171,7 +171,7 @@ module TracerParamsMod
 !--------------------------------------------------------------------------------------------------------------     
 
    subroutine calc_bulk_diffusivity(bounds, lbj, ubj, jtops, numf, filter, bunsencef_col, &
-      waterstate_vars, tau_soi, betrtracer_vars, t_soisno,  bulkdiffus)
+      canopystate_vars, waterstate_vars, tau_soi, betrtracer_vars, t_soisno,  bulkdiffus)
    !
    ! DESCRIPTION
    ! compute the weighted bulk diffusivity in soil for dual-phase transport
@@ -183,23 +183,30 @@ module TracerParamsMod
    !USES
    use WaterStateType        , only : Waterstate_Type   
    use BeTRTracerType        , only : betrtracer_type
-         
-   implicit none
-   type(bounds_type),         intent(in) :: bounds                                  ! bounds   
-   integer,                   intent(in) :: numf                                    ! number of columns in column filter
-   integer,                   intent(in) :: filter(:)                               ! column filter
-   integer,                   intent(in) :: lbj, ubj                                ! lower and upper bounds, make sure they are > 0
-   integer,                   intent(in) :: jtops(bounds%begc: )                    ! top label of each column   
-   real(r8),                  intent(in) :: t_soisno(bounds%begc: ,  lbj: )         !soil temperature
-   type(betrtracer_type),     intent(in) :: betrtracer_vars                         ! betr configuration information
-   real(r8),                  intent(in) :: bunsencef_col(bounds%begc: ,lbj: ,1: )  !bunsen coefficient for gaseous-aqueous conversion
-   type(Waterstate_Type),     intent(in) :: waterstate_vars                                ! water state variables
-   type(soil_tortuosity_type),intent(in) :: tau_soi
+   use CanopyStateType       , only : canopystate_type
+   
+   
+   type(bounds_type)          , intent(in) :: bounds                                  ! bounds   
+   integer                    , intent(in) :: numf                                    ! number of columns in column filter
+   integer                    , intent(in) :: filter(:)                               ! column filter
+   integer                    , intent(in) :: lbj, ubj                                ! lower and upper bounds, make sure they are > 0
+   integer                    , intent(in) :: jtops(bounds%begc: )                    ! top label of each column   
+   real(r8)                   , intent(in) :: t_soisno(bounds%begc: ,  lbj: )         !soil temperature
+   real(r8)                   , intent(in) :: bunsencef_col(bounds%begc: ,lbj: ,1: )  !bunsen coefficient for gaseous-aqueous conversion
+   type(betrtracer_type)      , intent(in) :: betrtracer_vars                         ! betr configuration information
+   type(Waterstate_Type)      , intent(in) :: waterstate_vars                                ! water state variables
+   type(canopystate_type)     , intent(in) :: canopystate_vars
+   type(soil_tortuosity_type) ,intent(in) :: tau_soi
 
    
-   real(r8),                 intent(out) :: bulkdiffus(bounds%begc: ,lbj: , 1: )     !the returning variable
+   real(r8)                   ,intent(out) :: bulkdiffus(bounds%begc: ,lbj: , 1: )     !the returning variable
    
-   !local variables    
+   !local variables
+   real(r8) :: max_depth_cryoturb         = 3._r8  !m
+   !parameters below will be encapsulated into a structure later
+   real(r8) :: max_altdepth_cryoturbation = 1._r8  ! (m) maximum active layer thickness for cryoturbation to occur
+   real(r8) :: cryoturb_diffusion_k       = 1e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr = 1m^2/1000 yr
+   real(r8) :: som_diffus                 = 1e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr
    integer :: j, k, n, fc, c     !indices
    real(r8) :: diffaqu, diffgas
    character(len=255) :: subname = 'calc_bulk_diffusivity'
@@ -220,6 +227,8 @@ module TracerParamsMod
      volatileid           => betrtracer_vars%volatileid                   , & ! integer[intent(in)], location in the volatile vector
      air_vol              => waterstate_vars%air_vol_col                  , & ! volume possessed by air
      h2osoi_liqvol        => waterstate_vars%h2osoi_liqvol_col            , & ! soil volume possessed by liquid water
+     altmax               => canopystate_vars%altmax_col          , & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw                             
+     altmax_lastyear      => canopystate_vars%altmax_lastyear_col , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth o     
      tau_gas              => tau_soi%tau_gas                              , & ! real(r8)[intent(in)], gaseous tortuosity
      tau_liq              => tau_soi%tau_liq                                & ! real(r8)[intent(in)], aqueous tortuosity     
    )
@@ -287,11 +296,32 @@ module TracerParamsMod
    
    !do solid phase passive tracers
    do j = ngwmobile_tracers + 1, ntracers
-     do n = 1, ubj
-       do fc = 1,numf
-         c = filter(fc)
-         bulkdiffus(c,n,j) = 1e-4_r8 / (86400._r8 * 365._r8) * 1.e-36_r8  !set to very small number
-       enddo
+     do fc = 1,numf
+       c = filter(fc)
+         
+       if  ( ( max(altmax(c), altmax_lastyear(c)) <= max_altdepth_cryoturbation ) .and. &
+            ( max(altmax(c), altmax_lastyear(c)) > 0._r8) ) then
+               ! use mixing profile modified slightly from Koven et al. (2009): constant through active layer, linear decrease from base of active layer to zero at a fixed depth
+         do n = 1, ubj
+           if ( zisoi(j) < max(altmax(c), altmax_lastyear(c)) ) then
+             bulkdiffus(c,n,j) = cryoturb_diffusion_k 
+           else
+             bulkdiffus(c,n,j) = max(cryoturb_diffusion_k * & 
+                          ( 1._r8 - ( zisoi(j) - max(altmax(c), altmax_lastyear(c)) ) / &
+                          ( max_depth_cryoturb - max(altmax(c), altmax_lastyear(c)) ) ), 0._r8)  ! go linearly to zero between ALT and max_depth_cryoturb
+           endif
+         end do
+       elseif (  max(altmax(c), altmax_lastyear(c)) > 0._r8 ) then
+         ! constant advection, constant diffusion
+         do n = 1, ubj
+           bulkdiffus(c,n,j)= som_diffus
+         end do
+       else
+         ! completely frozen soils--no mixing
+         do n = 1, ubj
+           bulkdiffus(c,n,j) = 1e-4_r8 / (86400._r8 * 365._r8) * 1.e-36_r8  !set to very small number for numerical purpose
+         end do
+       endif            
      enddo  
    enddo
    end associate
@@ -1109,7 +1139,7 @@ module TracerParamsMod
 !-------------------------------------------------------------------------------
 
    subroutine set_multi_phase_diffusion(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, &
-      temperature_vars, chemstate_vars, betrtracer_vars, tracercoeff_vars)
+      canopystate_vars, temperature_vars, chemstate_vars, betrtracer_vars, tracercoeff_vars)
    !
    ! DESCRIPTION
    ! set parameters for the dual phase diffusion
@@ -1120,18 +1150,20 @@ module TracerParamsMod
    use TemperatureType    , only : temperature_type
    use ChemStateType      , only : chemstate_type
    use BeTRTracerType     , only : betrtracer_type    
-   implicit none
-   type(bounds_type),      intent(in) :: bounds  ! bounds
-   integer,                intent(in) :: lbj, ubj             ! lower and upper bounds, make sure they are > 0
-   integer,                intent(in) :: jtops(bounds%begc: ) ! top label of each column   
-   integer,                intent(in) :: numf                 ! number of columns in column filter
-   integer,                intent(in) :: filter(:)            ! column filter
-   type(betrtracer_type),  intent(in) :: betrtracer_vars      ! betr configuration information
-   type(Waterstate_Type),  intent(in) :: waterstate_vars          ! water state variables
-   type(soilstate_type),   intent(in) :: soilstate_vars          ! physical state variables
-   type(temperature_type), intent(in) :: temperature_vars          ! energy state variable
-   type(chemstate_type),   intent(in) :: chemstate_vars        ! chemistry state variable
-   type(tracercoeff_type), intent(inout) :: tracercoeff_vars ! structure containing tracer transport parameters
+   use CanopyStateType    , only : canopystate_type
+   
+   type(bounds_type)       , intent(in) :: bounds  ! bounds
+   integer                 , intent(in) :: lbj, ubj             ! lower and upper bounds, make sure they are > 0
+   integer                 , intent(in) :: jtops(bounds%begc: ) ! top label of each column   
+   integer                 , intent(in) :: numf                 ! number of columns in column filter
+   integer                 , intent(in) :: filter(:)            ! column filter
+   type(betrtracer_type)   , intent(in) :: betrtracer_vars      ! betr configuration information
+   type(Waterstate_Type)   , intent(in) :: waterstate_vars          ! water state variables
+   type(soilstate_type)    , intent(in) :: soilstate_vars          ! physical state variables
+   type(temperature_type)  , intent(in) :: temperature_vars          ! energy state variable
+   type(canopystate_type)  , intent(in) :: canopystate_vars
+   type(chemstate_type)    , intent(in) :: chemstate_vars        ! chemistry state variable
+   type(tracercoeff_type)  , intent(inout) :: tracercoeff_vars ! structure containing tracer transport parameters
       
    !
    real(r8) :: bulkdiffus(bounds%begc:bounds%endc,lbj:ubj,1:betrtracer_vars%ntracers )  !weighted bulk diffusivity for dual-phase diffusion
@@ -1150,9 +1182,9 @@ module TracerParamsMod
    call calc_aqueous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, tau_soil%tau_liq)
    
    !compute bulk diffusivity
-   call calc_bulk_diffusivity(bounds, lbj, ubj, jtops, numf, filter, &
-      tracercoeff_vars%bunsencef_col(bounds%begc:bounds%endc,lbj:ubj, : ), &
-      waterstate_vars, tau_soil, betrtracer_vars, &
+   call calc_bulk_diffusivity(bounds, lbj, ubj, jtops, numf, filter       , &
+      tracercoeff_vars%bunsencef_col(bounds%begc:bounds%endc,lbj:ubj, : ) , &
+      canopystate_vars, waterstate_vars, tau_soil, betrtracer_vars        , &
       temperature_vars%t_soisno_col(bounds%begc:bounds%endc, lbj:ubj), bulkdiffus)
       
    !compute weigthed conductances

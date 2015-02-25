@@ -32,7 +32,7 @@ contains
   ! DESCRIPTION
   ! initialize top/bottom boundary conditions
   !
-  implicit none
+  
   type(bounds_type),           intent(in) :: bounds          ! bounds
   type(betrtracer_type),      intent(in) :: betrtracer_vars        ! betr configuration information
   
@@ -134,32 +134,38 @@ contains
        
   !calculate arenchyma conductance  
   call calc_aerecond(bounds, num_soilp, filter_soilp, jwt(bounds%begc:bounds%endc), &
-     soilstate_vars%rootfr_patch(bounds%begc:bounds%endc, 1:ubj), temperature_vars, betrtracer_vars, &
-     canopystate_vars, carbonstate_vars, carbonflux_vars, tracercoeff_vars)
+     soilstate_vars%rootfr_patch(bounds%begc:bounds%endc, 1:ubj), temperature_vars, &
+     betrtracer_vars,canopystate_vars, carbonstate_vars, carbonflux_vars, tracercoeff_vars)
   
   !print*,'setup phase change parameters'
-  call set_phase_convert_coeff(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, &
-     col%dz(bounds%begc:bounds%endc, lbj:ubj), soilstate_vars=soilstate_vars, waterstate_vars=waterstate_vars,&
-     temperature_vars=temperature_vars, chemstate_vars=chemstate_vars, betrtracer_vars=betrtracer_vars, tracercoeff_vars=tracercoeff_vars)
+  call set_phase_convert_coeff(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc  , &
+     col%dz(bounds%begc:bounds%endc, lbj:ubj), soilstate_vars=soilstate_vars, waterstate_vars=waterstate_vars, &
+     temperature_vars=temperature_vars, chemstate_vars=chemstate_vars, betrtracer_vars=betrtracer_vars       , &
+     tracercoeff_vars=tracercoeff_vars)
     
   !print*,'set up diffusivity'
-  call set_multi_phase_diffusion(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, soilstate_vars=soilstate_vars, waterstate_vars=waterstate_vars,&
-     temperature_vars=temperature_vars, chemstate_vars=chemstate_vars, betrtracer_vars=betrtracer_vars, tracercoeff_vars=tracercoeff_vars)
+  call set_multi_phase_diffusion(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, &
+     soilstate_vars=soilstate_vars, waterstate_vars=waterstate_vars,canopystate_vars=canopystate_vars        , &
+     temperature_vars=temperature_vars, chemstate_vars=chemstate_vars, betrtracer_vars=betrtracer_vars       , &
+     tracercoeff_vars=tracercoeff_vars)
     
   !print*,'set up top boundary conditions for tracer transport'
-  call bgc_reaction%set_boundary_conditions(bounds, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1), betrtracer_vars, waterflux_vars, tracerboundarycond_vars)
+  call bgc_reaction%set_boundary_conditions(bounds, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1), &
+     betrtracer_vars, waterflux_vars, tracerboundarycond_vars)
 
   !print*,'set infiltrating tracer'
   !Eventually, this infiltration calculation will be removed when a consistent description of tracer transport in snow is used
   call calc_tracer_infiltration(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, &
-     tracercoeff_vars%bunsencef_col(bounds%begc:bounds%endc, 1, 1:betrtracer_vars%nvolatile_tracers), &
+     tracercoeff_vars%bunsencef_col(bounds%begc:bounds%endc, 1, 1:betrtracer_vars%nvolatile_tracers)        , &
      betrtracer_vars, tracerboundarycond_vars, waterflux_vars, tracerflux_vars%tracer_flx_infl_col)  
   
   !print*,'set up retardation factor, for '
-  call set_gwdif_Rfactor(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, tracercoeff_vars,betrtracer_vars, Rfactor)
+  call set_gwdif_Rfactor(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc       , &
+    tracercoeff_vars,betrtracer_vars, Rfactor)
   
   !calculate flux from merging with surface ponding water and snow
-  call calc_tracer_h2osfc_snow_residual_combine(bounds, num_soilc, filter_soilc, waterflux_vars, betrtracer_vars, tracerstate_vars, tracerflux_vars)
+  call calc_tracer_h2osfc_snow_residual_combine(bounds, num_soilc, filter_soilc, waterflux_vars, betrtracer_vars, &
+    tracerstate_vars, tracerflux_vars)
   
   ! do tracer wash with surface runoff
   call calc_tracer_surface_runoff(bounds, lbj, ubj, num_soilc, filter_soilc, soilhydrology_vars%fracice_col(bounds%begc:bounds%endc,1), &
@@ -219,13 +225,15 @@ contains
   ! 
   ! do solid phase transport, due to various turbation protemperature_varsses
   !
+  ! solid phase transport is assumed to occur in the form of diffusion
+  
   ! the surface flux of solid tracer is zero
   use tracerstateType       , only : tracerstate_type
   use tracerboundarycondtype, only : tracerboundarycond_type
   use TransportMod          , only : DiffusTransp
   use abortutils            , only : endrun
   
-  implicit none
+
   type(bounds_type),           intent(in) :: bounds
   integer,                     intent(in) :: lbj, ubj
   integer,                     intent(in) :: num_soilc                               ! number of columns in column filter_soilc
@@ -361,7 +369,7 @@ contains
   use WaterfluxType           , only : waterflux_type
   use BGCReactionsMod         , only : bgc_reaction_type
   use WaterStateType          , only : Waterstate_Type      
-  implicit none
+ 
   type(bounds_type),           intent(in) :: bounds
   integer,                     intent(in) :: lbj, ubj
   integer,                     intent(in) :: num_soilc                               ! number of columns in column filter_soilc
@@ -439,7 +447,7 @@ contains
   use abortutils            , only : endrun
   use WaterfluxType         , only : waterflux_type  
   use MathfuncMod           , only : dot_sum  
-  implicit none
+ 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: num_soilc                                  ! number of columns in column filter_soilc
@@ -646,7 +654,7 @@ contains
   use abortutils            , only : endrun
   use tracer_varcon         , only : bndcond_as_conc
   use WaterStateType        , only : Waterstate_Type    
-  implicit none
+ 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )        ! top label of each column  
@@ -811,7 +819,7 @@ contains
   !
   ! DESCRIPTIONS
   ! decide if the loop should be terminated based on threshold
-  implicit none
+ 
   integer,     intent(in) :: beg, end  
   real(r8),    intent(in) :: datain(beg:end)
   real(r8),    intent(in) :: threshold
@@ -843,7 +851,7 @@ contains
   ! set up the retardation factor
   
   use tracercoeffType       , only : tracercoeff_type
-  implicit none
+ 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )        ! top label of each column 
@@ -900,7 +908,7 @@ contains
   use tracerfluxType        , only : tracerflux_type
   use tracerstatetype       , only : tracerstate_type
   use clm_varcon            , only : grav, denh2o, oneatm
-  implicit none
+ 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )           ! top label of each column 
@@ -1016,7 +1024,7 @@ contains
   ! DESCRIPTION
   ! Calculate gas pressure using given conditions
   
-  implicit none
+ 
   
   real(r8), intent(in) :: tracer_conc   !tracer concentrations [mol/m3]
   real(r8), intent(in) :: aqu2bulkcef   !conversion parameter between aqueous and bulk tracer concentrations
@@ -1038,7 +1046,7 @@ contains
   ! DESCRIPTION
   ! calculate plant aqueous tracer uptake through transpiration into xylem
   
-  implicit none
+ 
   type(bounds_type),      intent(in)    :: bounds
   integer,                intent(in)    :: lbj, ubj
   integer,                intent(in)    :: num_soilc                                 ! number of columns in column filter_soilc
@@ -1089,7 +1097,7 @@ contains
   use tracercoeffType       , only : tracercoeff_type    
   use ColumnType            , only : column_type
   use MathfuncMod           , only : safe_div
-  implicit none
+ 
   type(bounds_type),        intent(in)    :: bounds
   integer,                  intent(in)    :: lbj, ubj
   integer,                  intent(in)    :: num_soilc                       ! number of columns in column filter_soilc
@@ -1156,7 +1164,7 @@ contains
   use tracercoeffType       , only : tracercoeff_type   
   use MathfuncMod           , only : safe_div
   use clm_varcon            , only : denh2o
-  implicit none
+ 
   type(bounds_type),        intent(in)    :: bounds
   integer,                  intent(in)    :: lbj, ubj
   integer,                  intent(in)    :: num_soilc                                   ! number of columns in column filter_soilc
@@ -1253,7 +1261,7 @@ contains
   use tracerstatetype       , only : tracerstate_type
   use clm_varcon            , only : denh2o,spval
   use landunit_varcon       , only : istsoil, istcrop
-  implicit none
+ 
   type(bounds_type)         , intent(in)    :: bounds  
   integer                   , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter_soilc
   integer                   , intent(in)    :: filter_soilc_hydrologyc(:) ! column filter_soilc for soil points     
@@ -1340,7 +1348,7 @@ contains
   use tracerfluxType        , only : tracerflux_type
   use tracerstatetype       , only : tracerstate_type
   use clm_varcon            , only : denh2o
-  implicit none
+ 
   type(bounds_type)         , intent(in)    :: bounds  
   integer                   , intent(in)    :: num_soilc       ! number of column soil points in column filter_soilc
   integer                   , intent(in)    :: filter_soilc(:)  ! column filter_soilc for soil points     
@@ -1395,7 +1403,7 @@ contains
   use tracerfluxType        , only : tracerflux_type
   use tracerstatetype       , only : tracerstate_type
   use MathfuncMod           , only : safe_div  
-  implicit none
+ 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: num_soilc                           ! number of columns in column filter_soilc
