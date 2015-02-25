@@ -2,6 +2,8 @@
 #include "config.h"
 #endif
 
+#undef EXPORT_OLDEDGE
+
 module bndry_mod
   use parallel_mod, only : abortmp,iam
   use edgetype_mod, only : Ghostbuffer3D_t
@@ -14,8 +16,10 @@ module bndry_mod
   public :: sort_neighbor_buffer_mapping
 
   interface bndry_exchangeV
+#ifdef EXPORT_OLDEDGE
      module procedure bndry_exchangeV_nonth_recv_buf
      module procedure bndry_exchangeV_thsave 
+#endif
      module procedure bndry_exchangeV_nonth_recv_newbuf
      module procedure bndry_exchangeV_thsave_new
      module procedure long_bndry_exchangeV_nonth
@@ -28,6 +32,7 @@ module bndry_mod
 
 contains 
 
+#ifdef EXPORT_OLDEDGE
   subroutine bndry_exchangeV_nonth(par,buffer)
     use kinds, only : log_kind
     use edgetype_mod, only : oldEdgebuffer_t
@@ -236,6 +241,7 @@ contains
     !$OMP END DO
 
   end subroutine bndry_exchangeV_nonth_recv_buf
+#endif
 
   subroutine bndry_exchangeV_nonth_recv_newbuf(par,buffer)
     use kinds, only : log_kind
@@ -539,6 +545,7 @@ contains
   !********************************************************************************
   !
   !********************************************************************************
+#ifdef EXPORT_OLDEDGE
   subroutine bndry_exchangeV_thsave(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
     use edgetype_mod, only : oldEdgebuffer_t
@@ -563,6 +570,7 @@ contains
     call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeV_thsave
+#endif
 
  subroutine bndry_exchangeV_thsave_new(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
