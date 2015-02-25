@@ -63,8 +63,8 @@ contains
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad
-    use edge_mod, only : newedgevpack, newedgevunpack!, edgerotate
-    use edgetype_mod, only : newedgebuffer_t
+    use edge_mod, only : edgevpack, edgevunpack!, edgerotate
+    use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence
     use control_mod, only : maxits, while_iter, tol, precon_method
     use physical_constants, only : rrearth
@@ -77,8 +77,8 @@ contains
     real (kind=real_kind), intent(in) :: rhs(np,np,nlev,nets:nete) ! right hand side of operator
     type (cg_t)                       :: cg             ! conjugate gradient    (private)
     type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
-    type (newEdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
-    type (newEdgeBuffer_t)               :: edge2          ! Laplacian gradient edge buffer (shared memory)
+    type (EdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
+    type (EdgeBuffer_t)               :: edge2          ! Laplacian gradient edge buffer (shared memory)
     real (kind=real_kind), intent(in) :: lambdasq(nlev) ! Helmholtz lengthscale (private)
     type (derivative_t), intent(in) :: deriv          ! non staggered derivative struct     (private)
     type (blkjac_t)                   :: blkjac(nets:) ! This is safe if blkjac is not allocated (identity precon)
@@ -228,7 +228,7 @@ contains
           end do
 
           kptr=0
-          call newedgeVpack(edge2,gradp(1,1,1,1,ie),2*nlev,kptr,ie)
+          call edgeVpack(edge2,gradp(1,1,1,1,ie),2*nlev,kptr,ie)
 
        end do
 
@@ -245,7 +245,7 @@ contains
           mp      => elem(ie)%mp
 
           kptr=0
-          call newedgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, ie)
+          call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, ie)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -288,7 +288,7 @@ contains
           end do
 
           kptr=0
-          call newedgeVpack(edge1, div(1,1,1,ie), nlev, kptr, ie )
+          call edgeVpack(edge1, div(1,1,1,ie), nlev, kptr, ie )
 
        end do
 
@@ -309,7 +309,7 @@ contains
           metdet   => elem(ie)%metdet
 
           kptr=0
-          call newedgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, ie)
+          call edgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, ie)
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
@@ -848,7 +848,7 @@ contains
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad, cg_create
-    use edge_mod, only : newedgebuffer_t, newedgevpack, newedgevunpack!, edgerotate
+    use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack!, edgerotate
     use derivative_mod, only : derivative_t, laplace_sphere_wk
     use control_mod, only : maxits, while_iter, tol, precon_method
     use physical_constants, only : rrearth, dd_pi, rearth, omega
@@ -918,7 +918,7 @@ contains
     type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
     type (derivative_t)               :: deriv          ! non staggered derivative struct     (private)
     type (hybrid_t)             :: hybrid
-    type (newEdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
+    type (EdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
 
 
     ! ===========
@@ -1024,7 +1024,7 @@ contains
        do k=1,nlev
           RHS(:,:,k,ie)=elem(ie)%spheremp(:,:)*sol(:,:,k,ie) + &
                alambda*laplace_sphere_wk(sol(:,:,k,ie),deriv,elem(ie),var_coef=.false.)
-          call newedgeVpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
        end do
     end do
     call bndry_exchangeV(cg%hybrid,edge1)
@@ -1033,7 +1033,7 @@ contains
 
     do ie=nets,nete
        ! unpack RHS
-       call newedgeVunpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
+       call edgeVunpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
        do k=1,nlev
           RHS(:,:,k,ie)=RHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
        enddo
@@ -1131,12 +1131,12 @@ contains
              !LHS(:,:,k,ie)=elem(ie)%rspheremp(:,:)*(elem(ie)%spheremp(:,:)*x(:,:) )
              
           end do
-          call newedgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
        end do
        call bndry_exchangeV(cg%hybrid,edge1)
        do ie=nets,nete
           ! unpack LHS
-          call newedgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
 
           ieptr=ie-nets+1
           do k=1,nlev
@@ -1240,12 +1240,12 @@ tol=1.e-12
              LHS(:,:,k,ie)=x(:,:)*elem(ie)%spheremp(:,:)
              
           end do
-          call newedgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
        end do
        call bndry_exchangeV(cg%hybrid,edge1)
        do ie=nets,nete
           ! unpack LHS
-          call newedgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
           do k=1,nlev
              LHS(:,:,k,ie)=LHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
           enddo
@@ -1342,8 +1342,8 @@ tol=1.e-12
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad, cg_create
-    use edge_mod, only : newedgevpack, newedgevunpack!, edgerotate
-    use edgetype_mod, only : newedgebuffer_t
+    use edge_mod, only : edgevpack, edgevunpack!, edgerotate
+    use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk
     use control_mod, only : maxits, while_iter, tol, precon_method
     use physical_constants, only : rrearth, dd_pi, rearth, omega
@@ -1358,7 +1358,7 @@ tol=1.e-12
     type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
     type (derivative_t), intent(in) :: deriv          ! non staggered derivative struct     (private)
     type (hybrid_t)             :: hybrid
-    type (newEdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
+    type (EdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
 
 
     ! ===========
@@ -1425,13 +1425,13 @@ tol=1.e-12
        do k=1,nlev
           RHS(:,:,k,ie)=elem(ie)%spheremp(:,:)*sol(:,:,k,ie) + &
                alambda*laplace_sphere_wk(sol(:,:,k,ie),deriv,elem(ie),var_coef=.false.)
-          call newedgeVpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
        end do
     end do
     call bndry_exchangeV(cg%hybrid,edge1)
     do ie=nets,nete
        ! unpack RHS
-       call newedgeVunpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
+       call edgeVunpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
        do k=1,nlev
           RHS(:,:,k,ie)=RHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
        enddo
@@ -1484,12 +1484,12 @@ tol=1.e-12
                   alambda*laplace_sphere_wk(x,deriv,elem(ie),var_coef=.false.)
              
           end do
-          call newedgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
        end do
        call bndry_exchangeV(cg%hybrid,edge1)
        do ie=nets,nete
           ! unpack LHS
-          call newedgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
           do k=1,nlev
              LHS(:,:,k,ie)=LHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
           enddo
@@ -1594,12 +1594,12 @@ tol=1.e-12
              LHS(:,:,k,ie)=x(:,:)*elem(ie)%spheremp(:,:)
              
           end do
-          call newedgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
        end do
        call bndry_exchangeV(cg%hybrid,edge1)
        do ie=nets,nete
           ! unpack LHS
-          call newedgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
           do k=1,nlev
              LHS(:,:,k,ie)=LHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
           enddo

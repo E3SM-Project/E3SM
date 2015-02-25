@@ -40,7 +40,7 @@ contains
 
     ! --------------------------------
     use edge_mod, only : initedgebuffer
-    use edgetype_mod, only : EdgeDescriptor_t, newedgebuffer_t
+    use edgetype_mod, only : EdgeDescriptor_t, edgebuffer_t
     ! --------------------------------
     use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_flops, red_timer, &
          red_sum, red_sum_int, red_max, red_max_int, InitReductionBuffer
@@ -94,9 +94,9 @@ contains
     type (element_t), pointer :: elem(:)
     type (fvm_struct), pointer, optional :: fvm(:)
         
-    type (newEdgeBuffer_t)           :: edge1
-    type (newEdgeBuffer_t)           :: edge2
-    type (newEdgeBuffer_t)           :: edge3
+    type (EdgeBuffer_t)           :: edge1
+    type (EdgeBuffer_t)           :: edge2
+    type (EdgeBuffer_t)           :: edge3
     type (ReductionBuffer_ordered_1d_t) :: red
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer :: dom_mt(:)

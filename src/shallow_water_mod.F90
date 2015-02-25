@@ -14,8 +14,8 @@ module shallow_water_mod
                              divergence, vorticity, laplace_sphere_wk, &
                              vlaplace_sphere_wk, divergence_sphere
   ! ------------------------
-  use edge_mod, only : newedgeVpack, newedgeVunpack
-  use edgetype_mod, only : newEdgeBuffer_t
+  use edge_mod, only : edgeVpack, edgeVunpack
+  use edgetype_mod, only : EdgeBuffer_t
   ! ------------------------
   use bndry_mod, only : bndry_exchangeV
   ! ------------------------
@@ -260,7 +260,7 @@ contains
     integer              , intent(in) :: iounit
     type (TimeLevel_t)  , intent(in) :: tl    
     real (kind=real_kind), intent(in) :: pmean
-    type (newEdgeBuffer_t)               :: edge3
+    type (EdgeBuffer_t)               :: edge3
     type (derivative_t)               :: deriv
     type (hybrid_t)      , intent(in) :: hybrid
     integer              , intent(in) :: nets,nete
@@ -394,12 +394,12 @@ contains
        vor(:,:,ie) = vorticity_sphere(vlatlon,deriv,elem(ie)) ! latlon vector -> scalar 
        penst(:,:,ie) = vor(:,:,ie)*elem(ie)%spheremp(:,:)
        kptr=0
-       call newedgeVpack(edge3, penst(1,1,ie), 1, kptr,ie)
+       call edgeVpack(edge3, penst(1,1,ie), 1, kptr,ie)
     end do
     call bndry_exchangeV(hybrid,edge3)
     do ie=nets,nete      
        kptr=0
-       call newedgeVunpack(edge3, penst(1,1,ie), 1, kptr, ie)
+       call edgeVunpack(edge3, penst(1,1,ie), 1, kptr, ie)
        penst(:,:,ie) = penst(:,:,ie)*elem(ie)%rspheremp(:,:)
        do j=1,np
           do i=1,np
@@ -1873,7 +1873,7 @@ contains
     integer              , intent(in) :: iounit
     type (TimeLevel_t)  , intent(in) :: tl    
     real (kind=real_kind), intent(in) :: pmean
-    type (newEdgeBuffer_t)               :: edge2
+    type (EdgeBuffer_t)               :: edge2
     type (derivative_t)               :: deriv
     type (hybrid_t)      , intent(in) :: hybrid
     integer              , intent(in) :: nets,nete
@@ -1948,10 +1948,10 @@ contains
        end do
 
        kptr=0
-       call newedgeVpack(edge2, zeta(1,1,ie), 1, kptr,ie)
+       call edgeVpack(edge2, zeta(1,1,ie), 1, kptr,ie)
 
        kptr=1
-       call newedgeVpack(edge2, div(1,1,ie), 1, kptr,ie)
+       call edgeVpack(edge2, div(1,1,ie), 1, kptr,ie)
 
     end do
 
@@ -1960,10 +1960,10 @@ contains
     do ie=nets,nete      
 
        kptr=0
-       call newedgeVunpack(edge2, zeta(1,1,ie), 1, kptr, ie)
+       call edgeVunpack(edge2, zeta(1,1,ie), 1, kptr, ie)
 
        kptr=1
-       call newedgeVunpack(edge2, div(1,1,ie), 1, kptr, ie)
+       call edgeVunpack(edge2, div(1,1,ie), 1, kptr, ie)
 
        do j=1,np
           do i=1,np
@@ -3184,7 +3184,7 @@ contains
     real (kind=real_kind) :: phiuv(3)
 !I am passing edge3 and hybrid because i want to test limiters
 !this is temporary change though
-    type (newEdgeBuffer_t)  , intent(inout),optional :: edge3 
+    type (EdgeBuffer_t)  , intent(inout),optional :: edge3 
     type (hybrid_t)      , intent(in),optional :: hybrid  
 
     ! Local variables

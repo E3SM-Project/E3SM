@@ -19,8 +19,8 @@
     !=========================================!
     use element_mod, only : element_t
     !=========================================!
-    use edge_mod, only : newedgevpack,newedgerotate,newedgevunpack,newedgeDGVpack,newedgeDGVunpack
-    use edgetype_mod, only : newEdgeBuffer_t
+    use edge_mod, only : edgevpack,edgerotate,edgevunpack,edgeDGVpack,edgeDGVunpack
+    use edgetype_mod, only : EdgeBuffer_t
     !=========================================!
     use filter_mod, only : filter_t, filter_P
     !=========================================!
@@ -75,7 +75,7 @@
       !=======================================================================================================!
       implicit none
       type (element_t)     , intent(inout) :: elem(:)
-      type (newEdgeBuffer_t)  , intent(in) :: edge3
+      type (EdgeBuffer_t)  , intent(in) :: edge3
       type (derivative_t)  , intent(in) :: deriv
       type (filter_t)                   :: flt
       type (hybrid_t)      , intent(in) :: hybrid
@@ -167,7 +167,7 @@
       implicit none
       !=======================================================================================================!
       type (Element_t)     , intent(inout), target :: elem(:)
-      type (newEdgeBuffer_t)  , intent(in) :: edge3
+      type (EdgeBuffer_t)  , intent(in) :: edge3
       type (derivative_t)  , intent(in) :: deriv
       type (filter_t)                   :: flt
       type (hybrid_t)      , intent(in) :: hybrid
@@ -326,15 +326,15 @@
                !       DG: Packing u,v  velocity & height fields
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
                kptr=2*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
                kptr=3*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
                kptr=4*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
                kptr=5*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
                !=======================================================================================================!
             enddo
 
@@ -343,15 +343,15 @@
          if (nu .ne. 0.0D0 )  then      !LDG diffusion activated 
             do ie=nets,nete
                kptr=0*nlev
-               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr =2*nlev
-               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
                kptr=3*nlev
-               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                kptr=4*nlev
-               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                kptr=5*nlev
-               call newedgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
 
              do k=1,nlev
                call dg3d_diff_grads_uv(elem(ie),deriv,uvbuf(:,:,:,k,ie),elem(ie)%state%v(:,:,:,k,n0),gr1,gr2)
@@ -362,18 +362,18 @@
 
             do ie = nets, nete
                kptr=6*nlev
-               call newedgeDGVpack(edge3,reshape(difgr1(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(difgr1(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr, ie)
                kptr=8*nlev
-               call newedgeDGVpack(edge3,reshape(difgr2(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(difgr2(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr, ie)
             end do
 
             call bndry_exchangeV(hybrid,edge3)
 
             do ie=nets,nete
                kptr=6*nlev
-               call newedgeDGVunpack(edge3, dubuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dubuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr=8*nlev
-               call newedgeDGVunpack(edge3, dvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
 
                do k=1,nlev
                   call dg3d_diff_flux(elem(ie),deriv,dubuf(0,0,1,k,ie),difgr1(1,1,1,k,ie),difu)
@@ -400,15 +400,15 @@
                ! SSPDG-RK1: Unpack the edges for uvcomp and height  (nair)
                !=======================================================================================================!
                   kptr=0*nlev
-                  call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+                  call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                   kptr=2*nlev
-                  call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+                  call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
                   kptr=3*nlev
-                  call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+                  call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                   kptr=4*nlev
-                  call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+                  call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                   kptr=5*nlev
-                  call newedgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
+                  call edgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
             enddo
           endif       ! LDG diffusion 
 
@@ -473,15 +473,15 @@
                !SSPDG-RK2: Packing  contravariant vectors,  ht-field
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
                kptr=2*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
                kptr=3*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
                kptr=4*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
                kptr=5*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
 
             enddo
 
@@ -493,15 +493,15 @@
                !       DG-RK3: Unpack the edges for  flux vectors and scalar fields
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr =2*nlev
-               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =3*nlev
-               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =4*nlev
-               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =5*nlev
-               call newedgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
                !=======================================================================================================!
                
                call gradient_p3d(elem(ie),deriv,elem(ie)%state%pr3d,elem(ie)%state%T(:,:,:,n0),elem(ie)%state%pgrads)
@@ -565,15 +565,15 @@
                ! Packing  u,v  vectors,  ht-field
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
                kptr=2*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
                kptr=3*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
                kptr=4*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
                kptr=5*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
 
             enddo
 
@@ -585,15 +585,15 @@
                !       DG-RK3: Unpack the edges for  flux vectors and scalar fields
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr =2*nlev
-               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =3*nlev
-               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =4*nlev
-               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =5*nlev
-               call newedgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
                !=======================================================================================================!
 
                call gradient_p3d(elem(ie),deriv,elem(ie)%state%pr3d,elem(ie)%state%T(:,:,:,n0),elem(ie)%state%pgrads)
@@ -701,7 +701,7 @@
       implicit none
       !=======================================================================================================!
       type (Element_t)     , intent(inout), target :: elem(:)
-      type (newEdgeBuffer_t)  , intent(in) :: edge3
+      type (EdgeBuffer_t)  , intent(in) :: edge3
       type (derivative_t)  , intent(in) :: deriv
       type (filter_t)                   :: flt
       type (hybrid_t)      , intent(in) :: hybrid
@@ -839,15 +839,15 @@
                !       DG: Packing Contravariant velocity & height fields
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
                kptr=2*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
                kptr=3*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
                kptr=4*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
                kptr=5*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
                !=======================================================================================================!
             enddo
             !=======================================================================================================!
@@ -858,15 +858,15 @@
             !=======================================================================================================!
             do ie=nets,nete
                kptr=0*nlev
-               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr =2*nlev
-               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
                kptr=3*nlev
-               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                kptr=4*nlev
-               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                kptr=5*nlev
-               call newedgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
 
              do k=1,nlev
                call dg3d_diff_grads_uv(elem(ie),deriv,uvbuf(:,:,:,k,ie),elem(ie)%state%v(:,:,:,k,n0),gr1,gr2)
@@ -877,18 +877,18 @@
 
             do ie = nets, nete
                kptr=6*nlev
-               call newedgeDGVpack(edge3,reshape(difgr1(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(difgr1(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr, ie)
                kptr=8*nlev
-               call newedgeDGVpack(edge3,reshape(difgr2(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(difgr2(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr, ie)
             end do
 
             call bndry_exchangeV(hybrid,edge3)
 
             do ie=nets,nete
                kptr=6*nlev
-               call newedgeDGVunpack(edge3, dubuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dubuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr=8*nlev
-               call newedgeDGVunpack(edge3, dvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
 
                do k=1,nlev
                   call dg3d_diff_flux(elem(ie),deriv,dubuf(0,0,1,k,ie),difgr1(1,1,1,k,ie),difu)
@@ -919,15 +919,15 @@
                ! SSPDG-RK1: Unpack the edges for uvcomp and height  (nair)
                !=======================================================================================================!
                !  kptr=0*nlev
-               !  call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               !  call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                !  kptr=2*nlev
-               !  call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+               !  call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
                !  kptr=3*nlev
-               !  call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+               !  call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                !  kptr=4*nlev
-               !  call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+               !  call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                !  kptr=5*nlev
-               !  call newedgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
+               !  call edgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
 
                !=======================================================================================================!
                tforce(:,:,:) = 0.0D0
@@ -995,15 +995,15 @@
                !SSPDG-RK2: Packing  contravariant vectors,  ht-field
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
                kptr=2*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
                kptr=3*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
                kptr=4*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
                kptr=5*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
 
             enddo
             !=======================================================================================================!
@@ -1016,15 +1016,15 @@
                !       DG-RK3: Unpack the edges for  flux vectors and scalar fields
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr =2*nlev
-               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =3*nlev
-               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =4*nlev
-               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =5*nlev
-               call newedgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
                !=======================================================================================================!
                tforce(:,:,:) = 0.0D0
                call gradient_p3d(elem(ie),deriv,elem(ie)%state%pr3d,elem(ie)%state%T(:,:,:,n0),elem(ie)%state%pgrads)
@@ -1151,7 +1151,7 @@
       implicit none
       !=======================================================================================================!
       type (Element_t)     , intent(inout), target :: elem(:)
-      type (newEdgeBuffer_t)  , intent(in) :: edge3
+      type (EdgeBuffer_t)  , intent(in) :: edge3
       type (derivative_t)  , intent(in) :: deriv
       type (filter_t)                   :: flt
       type (hybrid_t)      , intent(in) :: hybrid
@@ -1289,20 +1289,20 @@
                !       DG: Packing Contravariant velocity & height fields
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
+               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr, ie)
                kptr=2*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
                kptr=3*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
                kptr=4*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
                kptr=5*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
                !=======================================================================================================!
                !       DG: Rotating velocity (contra)
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
+               call edgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
                !=======================================================================================================!
             enddo
             !=======================================================================================================!
@@ -1320,16 +1320,16 @@
                !      ! Unpack the edges for uvcomp and height  (nair)
                !      !============================================================
                kptr=0*nlev
-               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr =2*nlev
-               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
 
                kptr=3*nlev
-               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                kptr=4*nlev
-               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                kptr=5*nlev
-               call newedgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
 
                do k=1,nlev
 
@@ -1343,22 +1343,22 @@
             end do
             do ie = nets, nete
                kptr=6*nlev
-               call newedgeDGVpack(edge3,reshape(difgr1(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr,ie)
+               call edgeDGVpack(edge3,reshape(difgr1(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr,ie)
                kptr=6*nlev
-               call newedgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
+               call edgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
                kptr=8*nlev
-               call newedgeDGVpack(edge3,reshape(difgr2(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr,ie)
+               call edgeDGVpack(edge3,reshape(difgr2(:,:,:,:,ie),(/np,np,2*nlev/)),2*nlev,kptr,ie)
                kptr=8*nlev
-               call newedgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
+               call edgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
             end do
 
             call bndry_exchangeV(hybrid,edge3)
 
             do ie=nets,nete
                kptr=6*nlev
-               call newedgeDGVunpack(edge3, dubuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dubuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr=8*nlev
-               call newedgeDGVunpack(edge3, dvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
 
 
                do k=1,nlev
@@ -1388,13 +1388,13 @@
                ! SSPDG-RK1: Unpack the edges for uvcomp and height  (nair)
                !=======================================================================================================!
                !  kptr=0*nlev
-               !  call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               !  call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                !  kptr=2*nlev
-               !  call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+               !  call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
                !  kptr=3*nlev
-               !  call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+               !  call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                !  kptr=4*nlev
-               !  call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+               !  call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                !=======================================================================================================!
                tforce(:,:,:) = 0.0D0
                call gradient_p3d(elem(ie),deriv,elem(ie)%state%pr3d,elem(ie)%state%T(:,:,:,n0),elem(ie)%state%pgrads)
@@ -1460,20 +1460,20 @@
                !SSPDG-RK2: Packing  contravariant vectors,  ht-field
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr,ie)
+               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr,ie)
                kptr=2*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr, ie)
                kptr=3*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr, ie)
                kptr=4*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr, ie)
                kptr=5*nlev
-               call newedgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
+               call edgeDGVpack(edge3,elem(ie)%state%qt3d,nlev,kptr, ie)
                !=======================================================================================================!
                !       DG: Rotating velocity (contra)
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
+               call edgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
                !=======================================================================================================!
             enddo
             !=======================================================================================================!
@@ -1493,15 +1493,15 @@
                !       DG-RK3: Unpack the edges for  flux vectors and scalar fields
                !=======================================================================================================!
                kptr=0*nlev
-               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
                kptr =2*nlev
-               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =3*nlev
-               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =4*nlev
-               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
                kptr =5*nlev
-               call newedgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
+               call edgeDGVunpack(edge3, qtbuf(0,0,1,ie), nlev, kptr, ie)
                !=======================================================================================================!
                tforce(:,:,:) = 0.0D0
                call gradient_p3d(elem(ie),deriv,elem(ie)%state%pr3d,elem(ie)%state%T(:,:,:,n0),elem(ie)%state%pgrads)
@@ -1632,7 +1632,7 @@
 !      implicit none
 !      !=======================================================================================================!
 !      type (Element_t)     , intent(inout), target :: elem(:)
-!      type (newEdgeBuffer_t)  , intent(in) :: edge3
+!      type (EdgeBuffer_t)  , intent(in) :: edge3
 !      type (derivative_t)  , intent(in) :: deriv
 !      type (filter_t)                   :: flt
 !      type (hybrid_t)      , intent(in) :: hybrid
@@ -1810,18 +1810,18 @@
 !               !	DG: Packing Contravariant velocity & height fields
 !               !=======================================================================================================!
 !               kptr=0*nlev
-!               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr,ie)
+!               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr,ie)
 !               kptr=2*nlev
-!               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr,ie)
+!               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr,ie)
 !               kptr=3*nlev
-!               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr,ie)
+!               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr,ie)
 !               kptr=4*nlev
-!               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr,ie)
+!               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr,ie)
 !               !=======================================================================================================!
 !               ! 	DG: Rotating velocity (contra)
 !               !=======================================================================================================!
 !               kptr=0*nlev
-!               call newedgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
+!               call edgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
 !               !=======================================================================================================!
 !            enddo
 !            !=======================================================================================================!
@@ -1838,13 +1838,13 @@
 !               !	DG-RK1: Unpack the edges for uvcomp and height  (nair)
 !               !=======================================================================================================!
 !               kptr=0*nlev
-!               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
 !               kptr=2*nlev
-!               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
 !               kptr=3*nlev
-!               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
 !               kptr=4*nlev
-!               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
 !               !=======================================================================================================! 
 !               tforce(:,:,:) = 0.0D0  
 !               do k=1,nlev
@@ -1903,18 +1903,18 @@
 !               !	DG-RK2: Packing  contravariant vectors,  ht-field 
 !               !=======================================================================================================!
 !               kptr=0*nlev
-!               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr,ie)
+!               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr,ie)
 !               kptr=2*nlev
-!               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr,ie)
+!               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr,ie)
 !               kptr=3*nlev
-!               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr,ie)
+!               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr,ie)
 !               kptr=4*nlev
-!               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr,ie)
+!               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr,ie)
 !               !=======================================================================================================!
 !               !	DG: Rotating vectors (nair)
 !               !=======================================================================================================!
 !               kptr=0*nlev
-!               call newedgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
+!               call edgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
 !            end do
 !            !=======================================================================================================!
 !            ! 	Insert communications here: for shared memory, just a single
@@ -1930,13 +1930,13 @@
 !               ! 	Unpack the edges for  vectors and scalar fields  (nair)
 !               !=======================================================================================================!
 !               kptr=0*nlev
-!               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
 !               kptr=2*nlev
-!               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
 !               kptr=3*nlev
-!               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
 !               kptr=4*nlev
-!               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
 !               !=======================================================================================================!   
 !               tforce(:,:,:) = 0.0D0  
 !               do k=1,nlev
@@ -1995,18 +1995,18 @@
 !               !	DG-Rk3: Packing  flux vectors,  psi-field  (nair)
 !               !=======================================================================================================!
 !               kptr=0*nlev
-!               call newedgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr,ie)
+!               call edgeDGVpack(edge3,reshape(elem(ie)%state%v(:,:,:,:,n0),(/np,np,2*nlev/)),2*nlev,kptr,ie)
 !               kptr=2*nlev
-!               call newedgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr,ie)
+!               call edgeDGVpack(edge3,elem(ie)%state%ht,nlev,kptr,ie)
 !               kptr=3*nlev
-!               call newedgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr,ie)
+!               call edgeDGVpack(edge3,elem(ie)%state%dp3d,nlev,kptr,ie)
 !               kptr=4*nlev
-!               call newedgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr,ie)
+!               call edgeDGVpack(edge3,elem(ie)%state%pt3d,nlev,kptr,ie)
 !               !=======================================================================================================!
 !               !	DG: Rotating contravariant  vectors (nair)
 !               !=======================================================================================================!
 !               kptr=0*nlev
-!               call newedgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
+!               call edgerotate(edge3,2*nlev,kptr,elem(ie)%desc)
 !            end do
 !            !=======================================================================================================!
 !            ! 	Insert communications here: for shared memory, just a single
@@ -2019,13 +2019,13 @@
 !               !	DG-RK3: Unpack the edges for  flux vectors and scalar fields
 !               !=======================================================================================================!
 !               kptr=0*nlev
-!               call newedgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, uvbuf(0,0,1,1,ie), 2*nlev, kptr, ie)
 !               kptr =2*nlev
-!               call newedgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, htbuf(0,0,1,ie), nlev, kptr, ie)
 !               kptr =3*nlev
-!               call newedgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, dpbuf(0,0,1,ie), nlev, kptr, ie)
 !               kptr =4*nlev
-!               call newedgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
+!               call edgeDGVunpack(edge3, ptbuf(0,0,1,ie), nlev, kptr, ie)
 !               !=======================================================================================================!
 !               tforce(:,:,:) = 0.0D0  
 !               do k=1,nlev

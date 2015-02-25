@@ -14,8 +14,8 @@ module multicloud_mod
 #ifndef CAM
   use physics_mod, only        : elem_physics_t, Prim_Condense,getsurfpress,Temp2PotTemp
 #endif
-  use edge_mod, only           : newedgevpack, newedgerotate, newedgevunpack, initedgebuffer
-  use edgetype_mod, only       : newEdgeBuffer_t
+  use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer
+  use edgetype_mod, only       : EdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use column_types_mod, only    : ColumnModelMulticloud_t
@@ -42,10 +42,10 @@ module multicloud_mod
   public :: ApplyShearDamping
   public :: InitShearDamping
 
-  type (newEdgeBuffer_t) :: edgeMc	
-  type (newEdgeBuffer_t) :: edgeS1,edgeS2
-  type (newEdgeBuffer_t) :: edge3	
-  type (newEdgeBuffer_t) :: edge4
+  type (EdgeBuffer_t) :: edgeMc	
+  type (EdgeBuffer_t) :: edgeS1,edgeS2
+  type (EdgeBuffer_t) :: edge3	
+  type (EdgeBuffer_t) :: edge4
 
   ! Interpolation hidden data
 
@@ -439,15 +439,15 @@ contains
                 elem_physics(ie)%teb(i,j,nfilt) = elem_physics(ie)%mp(i,j)*elem_physics(ie)%teb(i,j,nfilt)
              end do
           end do
-          call newedgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,ie)
-          call newedgeVpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,ie)
+          call edgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,ie)
+          call edgeVpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,ie)
        end do
 
        call bndry_exchangeV(hybrid,edgeMc)
 
        do ie=nets,nete
-          call newedgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,ie)
-          call newedgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,ie)
+          call edgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,ie)
+          call edgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,ie)
           do j=1,np	
              do i=1,np
                 elem_physics(ie)%qmc(i,j,nfilt) = elem_physics(ie)%rmp(i,j)*elem_physics(ie)%qmc(i,j,nfilt)
@@ -756,16 +756,16 @@ contains
        if(Debug)print *,"t1  = ",sum(abs(t1(:,:)))
        if(Debug)print *,"t2  = ",sum(abs(t2(:,:)))
 
-       call newedgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,ie)
-       call newedgeVpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,ie)
+       call edgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,ie)
+       call edgeVpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,ie)
 
     end do
 
     call bndry_exchangeV(hybrid,edgeMc)
 
     do ie=nets,nete
-       call newedgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,ie)
-       call newedgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,ie)
+       call edgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,ie)
+       call edgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,ie)
 
        do j=1,np	
           do i=1,np
@@ -924,9 +924,9 @@ contains
           end do
        end do
 
-       call newedgeVpack(edgeS2,grad_qmc_np1(:,:,:,ie),2,0,ie)
-       call newedgeVpack(edgeS2,grad_teb_np1(:,:,:,ie),2,2,ie)
-       call newedgerotate(edgeS2,4,0,elem(ie)%desc)
+       call edgeVpack(edgeS2,grad_qmc_np1(:,:,:,ie),2,0,ie)
+       call edgeVpack(edgeS2,grad_teb_np1(:,:,:,ie),2,2,ie)
+       call edgerotate(edgeS2,4,0,elem(ie)%desc)
 
     end do
 
@@ -944,8 +944,8 @@ contains
        D        => elem(ie)%D
        Dinv     => elem(ie)%Dinv
 
-       call newedgeVunpack(edgeS2, grad_qmc_np1(:,:,:,ie), 2, 0, ie)
-       call newedgeVunpack(edgeS2, grad_teb_np1(:,:,:,ie), 2, 2, ie)
+       call edgeVunpack(edgeS2, grad_qmc_np1(:,:,:,ie), 2, 0, ie)
+       call edgeVunpack(edgeS2, grad_teb_np1(:,:,:,ie), 2, 2, ie)
 
        do j=1,np
           do i=1,np
@@ -966,8 +966,8 @@ contains
           end do
        end do
 
-       call newedgeVpack(edgeS1, lap_qmc_np1(1,1,ie),1, 0,ie)
-       call newedgeVpack(edgeS1, lap_teb_np1(1,1,ie),1, 1,ie)
+       call edgeVpack(edgeS1, lap_qmc_np1(1,1,ie),1, 0,ie)
+       call edgeVpack(edgeS1, lap_teb_np1(1,1,ie),1, 1,ie)
 
     end do
 
@@ -980,8 +980,8 @@ contains
        rmetdetv(:,:) = 1.0_real_kind/elem(ie)%metdet(:,:)
 
 
-       call newedgeVunpack(edgeS1, lap_qmc_np1(1,1,ie), 1, 0, ie)
-       call newedgeVunpack(edgeS1, lap_teb_np1(1,1,ie), 1, 0, ie)
+       call edgeVunpack(edgeS1, lap_qmc_np1(1,1,ie), 1, 0, ie)
+       call edgeVunpack(edgeS1, lap_teb_np1(1,1,ie), 1, 0, ie)
 
        do j=1,np
           do i=1,np

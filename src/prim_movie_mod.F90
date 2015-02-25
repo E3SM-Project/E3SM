@@ -73,7 +73,7 @@ module prim_movie_mod
 
 
     use hybrid_mod, only : hybrid_t, hybrid_create
-    use edgetype_mod, only : newEdgeBuffer_t
+    use edgetype_mod, only : EdgeBuffer_t
 
     use common_movie_mod, only: varrequired, vartype, varnames, varcnt, vardims, &
 	dimnames, maxdims

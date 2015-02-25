@@ -239,7 +239,7 @@ contains
 
   subroutine bndry_exchangeV_nonth_recv_newbuf(par,buffer)
     use kinds, only : log_kind
-    use edgetype_mod, only : newEdgebuffer_t
+    use edgetype_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
@@ -249,7 +249,7 @@ contains
     use parallel_mod, only : parallel_t, abortmp
 #endif
     type (parallel_t)              :: par
-    type (newEdgeBuffer_t)            :: buffer
+    type (EdgeBuffer_t)            :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
     type (Cycle_t),pointer                        :: pCycle
@@ -338,7 +338,7 @@ contains
 
   subroutine bndry_exchangeS_nonth_recv_newbuf(par,buffer)
     use kinds, only : log_kind
-    use edgetype_mod, only : newEdgebuffer_t
+    use edgetype_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
@@ -348,7 +348,7 @@ contains
     use parallel_mod, only : parallel_t, abortmp
 #endif
     type (parallel_t)              :: par
-    type (newEdgeBuffer_t)            :: buffer
+    type (EdgeBuffer_t)            :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
     type (Cycle_t),pointer                        :: pCycle
@@ -566,15 +566,15 @@ contains
 
  subroutine bndry_exchangeV_thsave_new(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edgetype_mod, only : newEdgebuffer_t
+    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
     type (hybrid_t)                   :: hybrid
-    type (newEdgeBuffer_t)               :: buffer
+    type (EdgeBuffer_t)               :: buffer
 
     call t_adj_detailf(+2)
-    call t_startf('newbndry_exchange')
+    call t_startf('bndry_exchange')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -582,22 +582,22 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('newbndry_exchange')
+    call t_stopf('bndry_exchange')
     call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeV_thsave_new
 
  subroutine bndry_exchangeS_thsave_new(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edgetype_mod, only : newEdgebuffer_t
+    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
     type (hybrid_t)                   :: hybrid
-    type (newEdgeBuffer_t)               :: buffer
+    type (EdgeBuffer_t)               :: buffer
 
     call t_adj_detailf(+2)
-    call t_startf('newbndry_exchange')
+    call t_startf('bndry_exchange')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -605,7 +605,7 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('newbndry_exchange')
+    call t_stopf('bndry_exchange')
     call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeS_thsave_new

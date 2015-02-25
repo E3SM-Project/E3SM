@@ -40,7 +40,7 @@ subroutine sweq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
     !-----------------
     use quadrature_mod, only : quadrature_t, gauss,gausslobatto
     !-----------------
-    use edgetype_mod, only : newEdgeBuffer_t
+    use edgetype_mod, only : EdgeBuffer_t
     ! ----------------
     use reduction_mod, only : ReductionBuffer_ordered_1d_t
     !-----------------
@@ -73,9 +73,9 @@ subroutine sweq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
     integer, parameter :: facs = 4            ! starting face number to print
     integer, parameter :: face = 4            ! ending  face number to print
     type (element_t), intent(inout)             :: elem(:)
-    type (newEdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
-    type (newEdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
-    type (newEdgeBuffer_t), intent(in)             :: edge3 ! edge buffer entity             (shared)
+    type (EdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
+    type (EdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
+    type (EdgeBuffer_t), intent(in)             :: edge3 ! edge buffer entity             (shared)
     type (ReductionBuffer_ordered_1d_t),intent(in)    :: red   ! reduction buffer               (shared)
     type (parallel_t), intent(in)               :: par   ! distributed parallel structure (shared)
     integer, intent(in)                         :: ithr  ! thread number                  (private)
