@@ -82,6 +82,7 @@ implicit none
   call shr_mpi_bcast(bgc_method, mpicom)
 
   end subroutine betr_readNL
+  
 !-------------------------------------------------------------------------------  
   subroutine betr_initialize(bounds, lbj, ubj, waterstate_vars)
   !
@@ -133,7 +134,6 @@ implicit none
   call betrbgc_init(bounds, betrtracer_vars)  
   
   end subroutine betr_initialize
+!---------------------------------------------------------------------------------
 
-  
-  
 end module betr_initializeMod
