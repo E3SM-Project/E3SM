@@ -53,6 +53,7 @@ contains
   !USES
   !
   use clm_time_manager      , only : get_step_size
+  use clm_varctl            , only : use_cn
   use tracerfluxType        , only : tracerflux_type
   use tracerstatetype       , only : tracerstate_type
   use tracercoeffType       , only : tracercoeff_type  
@@ -119,9 +120,11 @@ contains
   !set up jtops
   tracerboundarycond_vars%jtops_col(:)=1
 
-  !update npp for aerenchyma calculation
-  call betr_annualupdate(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  if(use_cn)then
+    !update npp for aerenchyma calculation
+    call betr_annualupdate(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        carbonflux_vars, tracercoeff_vars)
+  endif
   !in the future, one may want to reset jtops_col here. Right now it is set to 1
 
   !obtain water table depth

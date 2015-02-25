@@ -1726,7 +1726,8 @@ module TracerParamsMod
   use tracercoeffType       , only : tracercoeff_type
   use clm_varpar            , only : nlevsoi 
   use TemperatureType       , only : temperature_type
-  use MathfuncMod           , only : safe_div 
+  use MathfuncMod           , only : safe_div
+  use clm_varctl            , only : use_cn
   type(bounds_type)            , intent(in)   :: bounds    
   integer                      , intent(in)   :: num_soilp                 ! number of column soil points in column filter
   integer                      , intent(in)   :: filter_soilp(:)           ! column filter for soil points
@@ -1790,29 +1791,32 @@ module TracerParamsMod
         ! the new components are in; if there is any tuning to be done to get a realistic global flux,
         ! this would probably be the place.  We will have to document clearly in the Tech Note
         ! any major changes from the Riley et al. 2011 version. (There are a few other minor ones.)
+        if(use_cn)then
+          anpp = annsum_npp(p) ! g C / m^2/yr
+          anpp = max(anpp, 0._r8) ! NPP can be negative b/c of consumption of storage pools
 
-        anpp = annsum_npp(p) ! g C / m^2/yr
-        anpp = max(anpp, 0._r8) ! NPP can be negative b/c of consumption of storage pools
-
-        if (annavg_agnpp(p) /= spval .and. annavg_bgnpp(p) /= spval .and. &
-          annavg_agnpp(p) > 0._r8 .and. annavg_bgnpp(p) > 0._r8) then
-          nppratio = annavg_bgnpp(p) / (annavg_agnpp(p) + annavg_bgnpp(p))
-        else
-          nppratio = 0.5_r8
-        end if
-
+          if (annavg_agnpp(p) /= spval .and. annavg_bgnpp(p) /= spval .and. &
+            annavg_agnpp(p) > 0._r8 .and. annavg_bgnpp(p) > 0._r8) then
+            nppratio = annavg_bgnpp(p) / (annavg_agnpp(p) + annavg_bgnpp(p))
+          else
+            nppratio = 0.5_r8
+          end if
+        endif
         ! Estimate area of tillers (see Wania thesis)
         !m_tiller = anpp * r_leaf_root * lai ! (4.17 Wania)
         !m_tiller = 600._r8 * 0.5_r8 * 2._r8  ! used to be 300
         ! Note: this calculation is based on Arctic graminoids, and should be refined for woody plants, if not
         ! done on a PFT-specific basis.
 
-        if (usefrootc) then
-          m_tiller = frootc(p) ! This will yield much smaller aere area.
+        if(.not. use_cn)then
+          m_tiller = 0._r8        !this was set to zero purposely
         else
-          m_tiller = anpp * nppratio * elai(p)
-        end if
-
+          if (usefrootc) then
+            m_tiller = frootc(p) ! This will yield much smaller aere area.
+          else
+            m_tiller = anpp * nppratio * elai(p)
+          end if
+        endif
         n_tiller = m_tiller / 0.22_r8
 
         if (pft%itype(p) == nc3_arctic_grass .or. crop(pft%itype(p)) == 1 .or. &
@@ -1858,8 +1862,8 @@ module TracerParamsMod
     ! !DESCRIPTION: Annual mean fields.
     !
     ! !USES:
-    use clm_time_manager   , only: get_step_size, get_days_per_year, get_nstep
-    use clm_varcon         , only: secspday
+    use clm_time_manager   , only : get_step_size, get_days_per_year, get_nstep
+    use clm_varcon         , only : secspday
     use CNCarbonFluxType   , only : carbonflux_type
     use tracercoeffType    , only : tracercoeff_type
     !
@@ -1869,7 +1873,7 @@ module TracerParamsMod
     integer                , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     integer                , intent(in)    :: num_soilp         ! number of soil points in pft filter
     integer                , intent(in)    :: filter_soilp(:)   ! patch filter for soil points
-    type(carbonflux_type)  , intent(inout) :: carbonflux_vars
+    type(Carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(tracercoeff_type) , intent(inout) :: tracercoeff_vars
     !
     ! !LOCAL VARIABLES:
