@@ -16,7 +16,7 @@ module fvm_mod
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : initghostbufferTR, freeghostbuffertr, &
        ghostVpack, ghostVunpack,  initEdgebuffer
-  use edgetype_mod, only : ghostbuffertr_t, newedgebuffer_t
+  use edgetype_mod, only : ghostbuffertr_t, edgebuffer_t
   use bndry_mod, only: ghost_exchangeV                     
   use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhe, nlev, ntrac, np, ntrac_d,ns, nhr, nhc
   use time_mod, only : timelevel_t
@@ -29,7 +29,7 @@ module fvm_mod
   save
   
   type (ghostBuffertr_t)                      :: cellghostbuf
-  type (newEdgeBuffer_t)                         :: edgeveloc
+  type (EdgeBuffer_t)                         :: edgeveloc
 
 
   
@@ -1236,7 +1236,7 @@ contains
   !-----------------------------------------------------------------------------------!
   subroutine fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, ordertaylor)
     use derivative_mod, only : derivative_t, ugradv_sphere
-    use edge_mod, only : newedgevpack, newedgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use bndry_mod, only : bndry_exchangev
     
     implicit none
@@ -1272,13 +1272,13 @@ contains
              ugradv(ie,:,:,1,k) = elem(ie)%spheremp(:,:)*ugradvtmp(:,:,1) 
              ugradv(ie,:,:,2,k) = elem(ie)%spheremp(:,:)*ugradvtmp(:,:,2) 
           enddo
-          call newedgeVpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,ie)
-          call newedgeVpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,ie)
+          call edgeVpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,ie)
+          call edgeVpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,ie)
        enddo
        call bndry_exchangeV(hybrid,edgeveloc)
        do ie=nets,nete
-          call newedgeVunpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,ie)
-          call newedgeVunpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,ie)
+          call edgeVunpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,ie)
+          call edgeVunpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,ie)
           do k=1, nlev  
              ugradv(ie,:,:,1,k)=ugradv(ie,:,:,1,k)*elem(ie)%rspheremp(:,:)
              ugradv(ie,:,:,2,k)=ugradv(ie,:,:,2,k)*elem(ie)%rspheremp(:,:)
@@ -1301,7 +1301,7 @@ contains
   !-----------------------------------------------------------------------------------!
   subroutine fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, tstep, ordertaylor)
     use derivative_mod, only : derivative_t, ugradv_sphere
-    use edge_mod, only : newedgevpack, newedgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
     use bndry_mod, only : bndry_exchangev
     
     implicit none
@@ -1350,11 +1350,11 @@ contains
           elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp(:,:)
           elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp(:,:)
        enddo
-       call newedgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
+       call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
     enddo
     call bndry_exchangeV(hybrid,edgeveloc)
     do ie=nets,nete
-       call newedgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
+       call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
        do k=1, nlev  
           elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
           elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)

@@ -44,7 +44,7 @@ module edgetype_mod
 #endif
   end type oldEdgeBuffer_t
 
-  type, public :: newEdgeBuffer_t
+  type, public :: EdgeBuffer_t
      real (kind=real_kind), dimension(:), pointer :: buf => null()
      real (kind=real_kind), dimension(:), allocatable :: receive
      integer(kind=int_kind), pointer :: putmap(:,:) => null()
@@ -54,7 +54,7 @@ module edgetype_mod
      integer(kind=int_kind), pointer :: movePtr(:) => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! total size of message passing buffer, includes vertical levels
-  end type newEdgeBuffer_t
+  end type EdgeBuffer_t
 
   type, public :: LongEdgeBuffer_t
      integer :: nlyr
