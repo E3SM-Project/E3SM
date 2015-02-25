@@ -15,8 +15,8 @@ module BGCCenturySubMod
   public :: calc_som_deacyK
   public :: calc_cascade_matrix
   public :: calc_sompool_decay
-  public :: retrieve_nutrient_flux
-  public :: retrieve_state_vector
+  public :: retrieve_flux_vars
+  public :: retrieve_state_vars
   public :: calc_nitrif_denitrif_rate
   public :: calc_anaerobic_frac
   public :: calc_potential_aerobic_hr
@@ -24,7 +24,7 @@ module BGCCenturySubMod
   public :: calc_nuptake_prof  
   public :: calc_plant_nitrogen_uptake_prof
   public :: calc_extneral_bgc_input
-  public :: set_reac_order
+  public :: set_reaction_order
   
   type, public :: centurybgc_type
   
@@ -236,17 +236,28 @@ module BGCCenturySubMod
   do fc = 1, numf
     c = filter(fc)
     do j = jtops(c), ubj
+      !zero out everything
+      y0(:, j, c ) = 0._r8
+      
+      !set up nonzero variables
       y0(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, j, c)    = tracerstate_vars%tracer_conc_solid_passive_col(c, j, :)
 
+      y0(centurybgc_vars%lid_n2,  j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2)
+      
       y0(centurybgc_vars%lid_o2,  j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2) 
 
+      y0(centurybgc_vars%lid_ar,  j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar) 
+            
       y0(centurybgc_vars%lid_co2, j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x)
+
+      y0(centurybgc_vars%lid_ch4, j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4)
   
       y0(centurybgc_vars%lid_nh4,j, c)         = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x)
       
       y0(centurybgc_vars%lid_no3,j, c)         = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x)
       
-      y0(centurybgc_vars%lid_plant_minn, j, c) = 0._r8  !initialize plant nitrogen uptake during the time step to zero
+      y0(centurybgc_vars%lid_n2o, j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o)
+      
     enddo
   enddo
   end subroutine init_state_vector
@@ -612,42 +623,86 @@ module BGCCenturySubMod
   
 !-------------------------------------------------------------------------------
 
-  subroutine retrieve_nutrient_flux(bounds, lbj, ubj, numf, filter, jtops, neq, dtime, yf, y0,  tracerflux_vars, centurybgc_vars, plantsoilnutrientflux_vars)
+  subroutine retrieve_flux_vars(bounds, lbj, ubj, numf, filter, jtops, neq, dtime, yf, y0,  &
+    centurybgc_vars, betrtracer_vars, tracerflux_vars, carbonflux_vars, nitrogenflux_vars, plantsoilnutrientflux_vars)
   !
   ! DESCRIPTION
   ! retrieve the fluxes
   use tracerfluxType           , only : tracerflux_type
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
+  use CNCarbonFluxType         , only : carbonflux_type
+  use CNNitrogenFluxType       , only : nitrogenflux_type
   
-
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
   integer,                intent(in) :: numf
   integer,                intent(in) :: filter(:)
   
-  integer                         , intent(in) :: neq
-  real(r8)                        , intent(in) :: dtime
-  real(r8)                        , intent(in) :: yf(neq, bounds%begc:bounds%endc, lbj:ubj) !
-  real(r8)                        , intent(in) :: y0(neq, bounds%begc:bounds%endc, lbj:ubj) !
-  type(centurybgc_type)           , intent(in) :: centurybgc_vars 
-  type(tracerflux_type)           , intent(inout) :: tracerflux_vars
-  class(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
+  integer                          , intent(in) :: neq
+  real(r8)                         , intent(in) :: dtime
+  real(r8)                         , intent(in) :: yf(neq, bounds%begc:bounds%endc, lbj:ubj) !
+  real(r8)                         , intent(in) :: y0(neq, bounds%begc:bounds%endc, lbj:ubj) !
+  type(centurybgc_type)            , intent(in) :: centurybgc_vars
+  type(betrtracer_type)            , intent(in) :: betrtracer_vars
+  type(carbonflux_type)            , intent(inout) :: carbonflux_vars
+  type(nitrogenflux_type)          , intent(inout) :: nitrogenflux_vars
+  type(tracerflux_type)            , intent(inout) :: tracerflux_vars  
+  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
   
   integer :: fc, c, j
   
+  associate(                                                          & !
+   nom_pools             => centurybgc_vars%nom_pools               , & !
+   nelms                 => centurybgc_vars%nelms                   , & !
+   c_loc                 => centurybgc_vars%c_loc                   , & !
+   n_loc                 => centurybgc_vars%n_loc                   , & !
+   f_n2o_nit_vr          => nitrogenflux_vars%f_n2o_nit_vr_col      , & !
+   hr_vr                 => carbonflux_vars%hr_vr_col               , & !
+   tracer_flx_netpro     => tracerflux_vars%tracer_flx_netpro_col   , & !
+   tracer_flx_parchm_vr  => tracerflux_vars%tracer_flx_parchm_vr_col  & !
+  )
   do fc = 1, numf
     c = filter(fc)    
     do j = jtops(c), ubj
       plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))/dtime
+      
+      hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))/dtime
+      f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))/dtime
+      !the temporal averaging for fluxes below will be done later
+      
+      tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_n2  ) = yf(centurybgc_vars%lid_n2_paere  ,c, j)  - y0(centurybgc_vars%lid_n2_paere , c, j)
+      tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_o2  ) = yf(centurybgc_vars%lid_o2_paere  ,c, j)  - y0(centurybgc_vars%lid_o2_paere , c, j)      
+      tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_ar  ) = yf(centurybgc_vars%lid_ar_paere  ,c, j)  - y0(centurybgc_vars%lid_ar_paere , c, j)      
+      tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_co2x) = yf(centurybgc_vars%lid_co2_paere ,c, j)  - y0(centurybgc_vars%lid_co2_paere, c, j)      
+      tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_ch4 ) = yf(centurybgc_vars%lid_ch4_paere ,c, j)  - y0(centurybgc_vars%lid_ch4_paere, c, j)      
+      tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_n2o ) = yf(centurybgc_vars%lid_n2o_paere ,c, j)  - y0(centurybgc_vars%lid_n2o_paere, c, j)      
+
+      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_nh3x   ) = yf(centurybgc_vars%lid_nh4       ,c, j)  - y0(centurybgc_vars%lid_nh4      , c, j)
+      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_no3x   ) = yf(centurybgc_vars%lid_no3       ,c, j)  - y0(centurybgc_vars%lid_no3      , c, j)
+      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)  &
+                                                              + tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_n2)
+      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_co2x   ) = yf(centurybgc_vars%lid_co2        ,c, j)  - y0(centurybgc_vars%lid_co2     , c, j)  &
+                                                              + tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_co2x)
+      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_n2o    ) = yf(centurybgc_vars%lid_n2o        ,c, j)  - y0(centurybgc_vars%lid_n2o     , c, j)  &
+                                                              + tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_n2o)
+      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_o2     ) = yf(centurybgc_vars%lid_o2        ,c, j)  - y0(centurybgc_vars%lid_o2       , c, j)  &
+                                                              + tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_o2)
+
+      !get net production for om pools
+      
+      do k = 1, nom_pools
+        tracer_flx_netpro(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
+        tracer_flx_netpro(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
+      enddo
     enddo
   enddo
   
-  
-  end subroutine retrieve_nutrient_flux
+  end associate
+  end subroutine retrieve_flux_vars
 !-------------------------------------------------------------------------------
 
-  subroutine retrieve_state_vector(bounds, lbj, ubj, numf, filter, jtops, neq, yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)
+  subroutine retrieve_state_vars(bounds, lbj, ubj, numf, filter, jtops, neq, yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)
   !
   ! number of equations, total number of carbon pools + o2 + co2
   use tracerstatetype       , only : tracerstate_type
@@ -674,7 +729,7 @@ module BGCCenturySubMod
     c = filter(fc)
     do j = jtops(c), ubj   !currently, om is added only to soil layers       
   
-      tracerstate_vars%tracer_conc_solid_passive_col(c, j, :) = yf(1:centurybgc_vars%nom_pools, c, j)
+      tracerstate_vars%tracer_conc_solid_passive_col(c, j, :) = yf(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, c, j)
 
       tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2) = yf(centurybgc_vars%lid_o2, c, j)
 
@@ -682,11 +737,18 @@ module BGCCenturySubMod
       
       tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x) = yf(centurybgc_vars%lid_nh4, c, j)
       
-      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x) = yf(centurybgc_vars%lid_no3, c, j)      
+      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x) = yf(centurybgc_vars%lid_no3, c, j)
+      
+      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2) = yf(centurybgc_vars%lid_n2, c, j)
+
+      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar) = yf(centurybgc_vars%lid_ar, c, j)
+
+      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o) = yf(centurybgc_vars%lid_n2o, c, j)
+      
     enddo
   enddo
   
-  end subroutine retrieve_state_vector
+  end subroutine retrieve_state_vars
   
 !-------------------------------------------------------------------------------  
 
@@ -1376,7 +1438,7 @@ module BGCCenturySubMod
   end subroutine apply_plant_root_respiration_prof
   
  !-----------------------------------------------------------------------    
-  subroutine set_reac_order( nreact, centurybgc_vars, is_zero_order)
+  subroutine set_reaction_order( nreact, centurybgc_vars, is_zero_order)
   
   integer                      , intent(in)  :: nreact
   type(centurybgc_type)        , intent(in)  :: centurybgc_vars  
@@ -1395,5 +1457,5 @@ module BGCCenturySubMod
   is_zero_order(centurybgc_vars%lid_plant_minn_up_reac) = .true.
   is_zero_order(centurybgc_vars%lid_at_rt_reac)    = .true.
   
-  end subroutine set_reac_order  
+  end subroutine set_reaction_order  
 end module BGCCenturySubMod

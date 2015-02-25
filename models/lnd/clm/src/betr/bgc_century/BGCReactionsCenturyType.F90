@@ -221,7 +221,7 @@ contains
   use CNSharedParamsMod     , only : CNParamsReadShared
   use ncdio_pio             , only : file_desc_t
   use BeTRTracerType        , only : betrtracer_type
-  
+  use MathfuncMod           , only : addone
   
   class(bgc_reaction_CENTURY_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
@@ -233,6 +233,7 @@ contains
 
   integer :: jj
   integer :: nelm
+  integer :: itemp
   !type(file_desc_t) :: ncid
   
   !ncid%fh=10
@@ -246,23 +247,26 @@ contains
   
 
   call betrtracer_vars%Init()
+  itemp = 0
+  betrtracer_vars%id_trc_n2   = addone(itemp)
+  betrtracer_vars%id_trc_o2   = addone(itemp)
+  betrtracer_vars%id_trc_ar   = addone(itemp)
+  betrtracer_vars%id_trc_co2x = addone(itemp)
+  betrtracer_vars%id_trc_ch4  = addone(itemp)
+  betrtracer_vars%id_trc_nh3x = addone(itemp)
+  betrtracer_vars%id_trc_no3x = addone(itemp)
+  betrtracer_vars%id_trc_n2o  = addone(itemp)
   
-  betrtracer_vars%id_trc_n2  = 1
-  betrtracer_vars%id_trc_o2  = 2
-  betrtracer_vars%id_trc_ar  = 3
-  betrtracer_vars%id_trc_co2x= 4
-  betrtracer_vars%id_trc_ch4 = 5
-  betrtracer_vars%id_trc_nh3x = 6
-  betrtracer_vars%id_trc_no3x = 7
+  jj = itemp
+  betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2)   = 'N2'
+  betrtracer_vars%tracernames(betrtracer_vars%id_trc_o2)   = 'O2'
+  betrtracer_vars%tracernames(betrtracer_vars%id_trc_ar)   = 'AR'
+  betrtracer_vars%tracernames(betrtracer_vars%id_trc_co2x) = 'CO2x'
+  betrtracer_vars%tracernames(betrtracer_vars%id_trc_ch4)  = 'CH4'
+  betrtracer_vars%tracernames(betrtracer_vars%id_trc_nh3x) = 'NH3X'
+  betrtracer_vars%tracernames(betrtracer_vars%id_trc_no3x) = 'NO3X'
+  betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2o)  = 'N2O'
   
-  jj = 7
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2)='N2'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_o2)='O2'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_ar)='AR'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_co2x)='CO2x'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_ch4)='CH4'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_nh3x)='NH3X'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_no3x)='NO3X'
   nelm=centurybgc_vars%nelms
   
   betrtracer_vars%tracernames(jj+centurybgc_vars%lit1*nelm-1)  = 'LIT1C'
@@ -286,26 +290,32 @@ contains
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_ar)  =.true.
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_co2x)=.true.
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_ch4) =.true.
+  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_n2o) =.true.
   
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_n2)   = 1
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_o2)   = 2
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_ar)   = 3
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_co2x) = 4
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_ch4)  = 5
+  itemp = 0
   
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2)   = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_o2)   = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ar)   = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_co2x) = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ch4)  = .true.
+  betrtracer_vars%volatileid(betrtracer_vars%id_trc_n2)   = addone(itemp)
+  betrtracer_vars%volatileid(betrtracer_vars%id_trc_o2)   = addone(itemp)
+  betrtracer_vars%volatileid(betrtracer_vars%id_trc_ar)   = addone(itemp)
+  betrtracer_vars%volatileid(betrtracer_vars%id_trc_co2x) = addone(itemp)
+  betrtracer_vars%volatileid(betrtracer_vars%id_trc_ch4)  = addone(itemp)
+  betrtracer_vars%volatileid(betrtracer_vars%id_trc_n2o)  = addone(itemp)
+  
+  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2)    = .true.
+  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_o2)    = .true.
+  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ar)    = .true.
+  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_co2x)  = .true.
+  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ch4)   = .true.
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_no3x)  = .true.
+  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2o)   = .true.
   
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2)   = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_o2)   = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ar)   = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_co2x) = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ch4)  = .true.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2)    = .true.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_o2)    = .true.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ar)    = .true.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_co2x)  = .true.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ch4)   = .true.
   betrtracer_vars%is_advective(betrtracer_vars%id_trc_no3x)  = .true.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2o)   = .true.
   
   
   
@@ -347,13 +357,15 @@ contains
   SHR_ASSERT_ALL((ubound(dz_top)                == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
 
 
+  !values below will be updated with datastream
   !eventually, the following code will be implemented using polymorphism
   tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%ngwmobile_tracers+1:betrtracer_vars%ntracers)=0._r8       !zero incoming flux
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_n2)=32.8_r8                         !mol m-3, contant boundary condition
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_o2)=8.78_r8                         !mol m-3, contant boundary condition
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_ar)=0.3924_r8                       !mol m-3, contant boundary condition
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_co2x)=0.0168_r8                     !mol m-3, contant boundary condition  
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_ch4)=6.939e-5_r8                    !mol m-3, contant boundary condition
+  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_n2)  =32.8_r8                         !mol m-3, contant boundary condition
+  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_o2)  =8.78_r8                         !mol m-3, contant boundary condition
+  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_ar)  =0.3924_r8                       !mol m-3, contant boundary condition
+  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_co2x)=0.0168_r8                       !mol m-3, contant boundary condition  
+  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_ch4) =6.939e-5_r8                     !mol m-3, contant boundary condition
+  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_n2o) =1.195e-5_r8                     !mol m-3, contant boundary condition
 
       
   tracerboundarycond_vars%bot_concflux_col(1,1,:) = 0._r8                                  !zero flux boundary condition
@@ -363,6 +375,7 @@ contains
   tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_ar)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
   tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_co2x) = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
   tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_ch4)  = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance  
+  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_n2o)  = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance  
   
   end subroutine set_boundary_conditions
 !-------------------------------------------------------------------------------
@@ -415,7 +428,7 @@ contains
   type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars  
   type(tracerstate_type)             , intent(inout) :: tracerstate_vars
   type(tracerflux_type)              , intent(inout) :: tracerflux_vars
-  class(plantsoilnutrientflux_type)   , intent(inout) :: plantsoilnutrientflux_vars
+  type(plantsoilnutrientflux_type)   , intent(inout) :: plantsoilnutrientflux_vars
   
   character(len=*), parameter :: subname ='calc_bgc_reaction'
 
@@ -439,7 +452,7 @@ contains
   
   call Extra_inst%Init_Allocate(centurybgc_vars%nom_pools, centurybgc_vars%nreactions, centurybgc_vars%nprimvars)
   
-  call set_reac_order( centurybgc_vars%nreactions, centurybgc_vars, Extra_inst%is_zero_order)
+  call set_reaction_order( centurybgc_vars%nreactions, centurybgc_vars, Extra_inst%is_zero_order)
   
   !initialize local variables
   y0(:, :, :) = spval
@@ -534,11 +547,12 @@ contains
 
   
   !retrieve the flux variable
-  call retrieve_nutrient_flux(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, dtime, yf, y0, tracerflux_vars, centurybgc_vars, plantsoilnutrientflux_vars)
+  call retrieve_flux_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, dtime, yf, y0, &
+     centurybgc_vars, betrtracer_vars, tracerflux_vars, carbonflux_vars, nitrogenflux_vars, plantsoilnutrientflux_vars)
 
   
   !retrieve the state variable    
-  call retrieve_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      
+  call retrieve_state_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      
   
   
   call Extra_inst%DDeallocate()

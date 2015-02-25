@@ -97,7 +97,7 @@ implicit none
    type(tracercoeff_type)     , intent(in) :: tracercoeff_vars
    type(tracerstate_type)     , intent(inout) :: tracerstate_vars
    type(tracerflux_type)      , intent(inout) :: tracerflux_vars
-   class(plantsoilnutrientflux_type), intent(inout) ::  plantsoilnutrientflux_vars                    !total nitrogen yield to plant     
+   type(plantsoilnutrientflux_type), intent(inout) ::  plantsoilnutrientflux_vars                    !total nitrogen yield to plant     
     
    end subroutine calc_bgc_reaction_interface
 !----------------------------------------------------------------------    

@@ -105,7 +105,7 @@ contains
   type(tracercoeff_type)       , intent(inout) :: tracercoeff_vars
   type(tracerstate_type)       , intent(inout) :: tracerstate_vars
   type(tracerflux_type)        , intent(inout) :: tracerflux_vars
-  class(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars 
+  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars 
   !local variables
   character(len=255) :: subname = 'run_betr_one_step_without_drainage'
   real(r8) :: dtime2, dtime

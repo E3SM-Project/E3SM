@@ -4136,12 +4136,13 @@ contains
     ! On the radiation time step, perform patch and column-level carbon summary calculations
     !
     ! !USES:
-    use clm_varctl       , only: iulog, use_cndv
-    use clm_time_manager , only: get_step_size
-    use clm_varcon       , only: secspday
-    use clm_varpar       , only: nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
-    use subgridAveMod    , only: p2c
+    use clm_varctl       , only : iulog, use_cndv
+    use clm_time_manager , only : get_step_size
+    use clm_varcon       , only : secspday
+    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+    use subgridAveMod    , only : p2c
     use tracer_varcon    , only : is_active_betr_bgc
+    use MathfuncMod      , only : dot_sum
     !
     ! !ARGUMENTS:
     class(carbonflux_type)                 :: this
@@ -4587,16 +4588,15 @@ contains
           end do
        end if
       end do
-    endif
-    ! total heterotrophic respiration (HR)
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%hr_col(c) = &
+
+      ! total heterotrophic respiration (HR)
+      do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%hr_col(c) = &
             this%lithr_col(c) + &
             this%somhr_col(c)
-    end do
+      end do
 
-    if(.not. is_active_betr_bgc)then
       ! total heterotrophic respiration, vertically resolved (HR)
       do j = 1,nlevdecomp
         do fc = 1,num_soilc
@@ -4615,6 +4615,11 @@ contains
           end do
         end do
       end do
+    else
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        this%hr_col(c) = dot_sum(this%hr_vr_col(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp)) 
+      enddo
     endif
     
     do fc = 1,num_soilc
@@ -4790,7 +4795,7 @@ contains
   end associate
   end subroutine Summary
 
-  
+  !------------------------------------------------------------  
   subroutine summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
   !
   ! description

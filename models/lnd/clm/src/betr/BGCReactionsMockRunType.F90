@@ -232,7 +232,7 @@ implicit none
    type(tracercoeff_type)              , intent(in) :: tracercoeff_vars
    type(tracerstate_type)              , intent(inout) :: tracerstate_vars
    type(tracerflux_type)               , intent(inout) :: tracerflux_vars
-   class(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars  
+   type(plantsoilnutrientflux_type)    , intent(inout) :: plantsoilnutrientflux_vars  
    character(len=*), parameter :: subname ='calc_bgc_reaction'
     
    

@@ -73,7 +73,7 @@ implicit none
     end if
 
   end subroutine CNEcosystemDynBetrInit
-  
+  !-----------------------------------------------------------------------
   subroutine CNEcosystemDynBetrVeg(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb, &
