@@ -184,7 +184,7 @@ module TracerParamsMod
    use WaterStateType        , only : Waterstate_Type   
    use BeTRTracerType        , only : betrtracer_type
    use CanopyStateType       , only : canopystate_type
-   
+   use clm_varcon            , only : zisoi 
    
    type(bounds_type)          , intent(in) :: bounds                                  ! bounds   
    integer                    , intent(in) :: numf                                    ! number of columns in column filter
@@ -303,11 +303,11 @@ module TracerParamsMod
             ( max(altmax(c), altmax_lastyear(c)) > 0._r8) ) then
                ! use mixing profile modified slightly from Koven et al. (2009): constant through active layer, linear decrease from base of active layer to zero at a fixed depth
          do n = 1, ubj
-           if ( zisoi(j) < max(altmax(c), altmax_lastyear(c)) ) then
+           if ( zisoi(n) < max(altmax(c), altmax_lastyear(c)) ) then
              bulkdiffus(c,n,j) = cryoturb_diffusion_k 
            else
              bulkdiffus(c,n,j) = max(cryoturb_diffusion_k * & 
-                          ( 1._r8 - ( zisoi(j) - max(altmax(c), altmax_lastyear(c)) ) / &
+                          ( 1._r8 - ( zisoi(n) - max(altmax(c), altmax_lastyear(c)) ) / &
                           ( max_depth_cryoturb - max(altmax(c), altmax_lastyear(c)) ) ), 0._r8)  ! go linearly to zero between ALT and max_depth_cryoturb
            endif
          end do
