@@ -632,7 +632,7 @@ module BGCCenturySubMod
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
-  
+  use BeTRTracerType           , only : betrtracer_type 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -650,7 +650,7 @@ module BGCCenturySubMod
   type(tracerflux_type)            , intent(inout) :: tracerflux_vars  
   type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
   
-  integer :: fc, c, j
+  integer :: fc, c, j, k
   
   associate(                                                          & !
    nom_pools             => centurybgc_vars%nom_pools               , & !
@@ -659,7 +659,8 @@ module BGCCenturySubMod
    n_loc                 => centurybgc_vars%n_loc                   , & !
    f_n2o_nit_vr          => nitrogenflux_vars%f_n2o_nit_vr_col      , & !
    hr_vr                 => carbonflux_vars%hr_vr_col               , & !
-   tracer_flx_netpro     => tracerflux_vars%tracer_flx_netpro_col   , & !
+   ngwmobile_tracers     => betrtracer_vars%ngwmobile_tracers       , & !
+   tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col, & !
    tracer_flx_parchm_vr  => tracerflux_vars%tracer_flx_parchm_vr_col  & !
   )
   do fc = 1, numf
@@ -678,22 +679,22 @@ module BGCCenturySubMod
       tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_ch4 ) = yf(centurybgc_vars%lid_ch4_paere ,c, j)  - y0(centurybgc_vars%lid_ch4_paere, c, j)      
       tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_n2o ) = yf(centurybgc_vars%lid_n2o_paere ,c, j)  - y0(centurybgc_vars%lid_n2o_paere, c, j)      
 
-      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_nh3x   ) = yf(centurybgc_vars%lid_nh4       ,c, j)  - y0(centurybgc_vars%lid_nh4      , c, j)
-      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_no3x   ) = yf(centurybgc_vars%lid_no3       ,c, j)  - y0(centurybgc_vars%lid_no3      , c, j)
-      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)  &
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = yf(centurybgc_vars%lid_nh4       ,c, j)  - y0(centurybgc_vars%lid_nh4      , c, j)
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = yf(centurybgc_vars%lid_no3       ,c, j)  - y0(centurybgc_vars%lid_no3      , c, j)
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_n2)
-      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_co2x   ) = yf(centurybgc_vars%lid_co2        ,c, j)  - y0(centurybgc_vars%lid_co2     , c, j)  &
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_co2x   ) = yf(centurybgc_vars%lid_co2        ,c, j)  - y0(centurybgc_vars%lid_co2     , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_co2x)
-      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_n2o    ) = yf(centurybgc_vars%lid_n2o        ,c, j)  - y0(centurybgc_vars%lid_n2o     , c, j)  &
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2o    ) = yf(centurybgc_vars%lid_n2o        ,c, j)  - y0(centurybgc_vars%lid_n2o     , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_n2o)
-      tracer_flx_netpro(c,j,betrtracer_vars%id_trc_o2     ) = yf(centurybgc_vars%lid_o2        ,c, j)  - y0(centurybgc_vars%lid_o2       , c, j)  &
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_o2     ) = yf(centurybgc_vars%lid_o2        ,c, j)  - y0(centurybgc_vars%lid_o2       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,betrtracer_vars%id_trc_o2)
 
       !get net production for om pools
       
       do k = 1, nom_pools
-        tracer_flx_netpro(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
-        tracer_flx_netpro(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
+        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
+        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
       enddo
     enddo
   enddo

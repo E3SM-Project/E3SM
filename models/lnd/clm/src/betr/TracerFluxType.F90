@@ -585,7 +585,9 @@ contains
     endif 
   enddo
   
-  
+  do jj = 1, ntracers
+    this%tracer_flx_netpro_col(c,jj) = dot_sum(x=this%tracer_flx_netpro_vr_col(c,1:nlevtrc_soil,jj),y=col%dz(c,1:nlevtrc_soil))
+  enddo 
   end associate
   end subroutine Flux_summary
   
