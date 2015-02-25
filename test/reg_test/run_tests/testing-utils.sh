@@ -297,6 +297,9 @@ createAllRunScripts() {
     echo "cd $outputDir" >> $RUN_SCRIPT
     echo "" >> $RUN_SCRIPT # new line
 
+    # Remove all existing netcdf files
+    echo "rm -f movies/*" >> $RUN_SCRIPT
+
     for testNum in $(seq 1 ${NUM_TESTS})
     do
       testExec=TEST_${testNum}
