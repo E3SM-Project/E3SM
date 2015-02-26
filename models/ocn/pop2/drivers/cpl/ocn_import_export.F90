@@ -414,7 +414,7 @@ contains
    type (block) :: this_block ! local block info
 
    integer (int_kind) :: nsend
-
+   character (char_len) ::  message
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -454,6 +454,30 @@ contains
 
 !-----------------------------------------------------------------------
 !
+!     convert and pack surface temperature for ice sheet coupling
+!
+!-----------------------------------------------------------------------
+
+!Jer note: this currently exactly replicates the conversion and pack
+!of surface temperature, see below.  I've not explored SBUFF_SUM yet, 
+!because I feel that's redundant given we'll be using MPAS instead.
+   write(stdout,*) 'index_o2x_So_tglc=',index_o2x_So_tglc 
+	   
+   n = 0
+   do iblock = 1, nblocks_clinic
+      this_block = get_block(blocks_clinic(iblock),iblock)
+      do j=this_block%jb,this_block%je
+      do i=this_block%ib,this_block%ie
+         n = n + 1
+         o2x(index_o2x_So_tglc,n) =   &
+             SBUFF_SUM(i,j,iblock,index_o2x_So_t)/tlast_coupled + T0_Kelvin
+      enddo
+      enddo
+   enddo
+   
+   
+!-----------------------------------------------------------------------
+!
 !     convert and pack surface temperature
 !
 !-----------------------------------------------------------------------
@@ -468,7 +492,7 @@ contains
              SBUFF_SUM(i,j,iblock,index_o2x_So_t)/tlast_coupled + T0_Kelvin
       enddo
       enddo
-   enddo
+   enddo   
 
 !-----------------------------------------------------------------------
 !

@@ -4,7 +4,8 @@ module prep_glc_mod
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
-  use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc
+  use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc, &
+                              num_inst_ocn  
   use seq_comm_mct    , only: CPLID, GLCID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
@@ -15,7 +16,7 @@ module prep_glc_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: glc, lnd
+  use component_type_mod, only: glc, lnd, ocn
 
   implicit none
   save
@@ -50,13 +51,18 @@ module prep_glc_mod
 
   ! mappers
   type(seq_map), pointer :: mapper_SFl2g
+  type(seq_map), pointer :: mapper_SFo2g
 
   ! attribute vectors 
   type(mct_aVect), pointer :: l2x_gx(:) ! Lnd export, glc grid, cpl pes - allocated in driver
+  type(mct_aVect), pointer :: o2x_gx(:) ! Ocn export, glc grid, cpl pes - allocated in driver
 
   ! accumulation variables
   type(mct_aVect), pointer :: l2gacc_lx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
   integer        , target :: l2gacc_lx_cnt ! l2gacc_lx: number of time samples accumulated
+  
+  type(mct_aVect), pointer :: o2gacc_ox(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
+  integer        , target :: o2gacc_ox_cnt ! l2gacc_lx: number of time samples accumulated  
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
@@ -66,7 +72,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_init(infodata, lnd_c2_glc)
+  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glc)
 
     !---------------------------------------------------------------
     ! Description
@@ -75,18 +81,22 @@ contains
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
+    logical                  , intent(in)    :: ocn_c2_glc ! .true.  => ocn to glc coupling on    
     !
     ! Local Variables
-    integer                          :: eli, egi
+    integer                          :: eli, egi, eoi
     integer                          :: lsize_l
     integer                          :: lsize_g
+     integer                         :: lsize_o   
     logical                          :: esmf_map_flag ! .true. => use esmf for mapping
     logical                          :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                          :: glc_present   ! .true. => glc is present
     character(CL)                    :: lnd_gnam      ! lnd grid
     character(CL)                    :: glc_gnam      ! glc grid
-    type(mct_avect), pointer         :: l2x_lx
+    character(CL)                    :: ocn_gnam      ! ocn grid    
+    type(mct_avect), pointer         :: l2x_lx  
     type(mct_avect), pointer         :: x2g_gx
+    type(mct_avect), pointer         :: o2x_ox      
     character(*), parameter          :: subname = '(prep_glc_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -95,20 +105,24 @@ contains
          esmf_map_flag=esmf_map_flag   , &
          glc_present=glc_present       , &
          lnd_gnam=lnd_gnam             , &
-         glc_gnam=glc_gnam)
+         glc_gnam=glc_gnam             , &
+	 ocn_gnam=ocn_gnam)
 
     allocate(mapper_SFl2g)
-
+    allocate(mapper_SFo2g)
+    
     if (glc_present) then
 
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-       l2x_lx => component_get_c2x_cx(lnd(1))
-       lsize_l = mct_aVect_lsize(l2x_lx)
-       
        x2g_gx => component_get_x2c_cx(glc(1))
        lsize_g = mct_aVect_lsize(x2g_gx)
+
+       !------------Land coupling setup------------!
+
+       l2x_lx => component_get_c2x_cx(lnd(1))
+       lsize_l = mct_aVect_lsize(l2x_lx)
        
        allocate(l2x_gx(num_inst_lnd))
        allocate(l2gacc_lx(num_inst_lnd))
@@ -127,6 +141,29 @@ contains
        end if
        call seq_map_init_rearrolap(mapper_SFl2g, lnd(1), glc(1), 'mapper_SFl2g')
        call shr_sys_flush(logunit)
+
+       !------------Ocean coupling setup------------!       
+
+       o2x_ox => component_get_c2x_cx(ocn(1))
+       lsize_o = mct_aVect_lsize(o2x_ox)
+
+       allocate(o2x_gx(num_inst_ocn))
+       allocate(o2gacc_ox(num_inst_ocn))
+       do eoi = 1,num_inst_ocn    
+          call mct_aVect_initSharedFields(o2x_ox, x2g_gx, o2x_gx(eoi) ,lsize=lsize_g)   !Jer does this overwrite land field call???   
+          call mct_aVect_zero(o2x_gx(eoi))
+  
+          call mct_aVect_initSharedFields(o2x_ox, x2g_gx, o2gacc_ox(eoi), lsize=lsize_o)
+          call mct_aVect_zero(o2gacc_ox(eoi))
+       enddo	   
+       o2gacc_ox_cnt = 0            
+       
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Initializing mapper_SFo2g'
+       end if
+       call seq_map_init_rearrolap(mapper_SFo2g, ocn(1), glc(1), 'mapper_SFo2g')
+       call shr_sys_flush(logunit)       
 
     end if
 

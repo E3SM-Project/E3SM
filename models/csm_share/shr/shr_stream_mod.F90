@@ -101,7 +101,7 @@ module shr_stream_mod
    end type shr_stream_fileType
 
    !--- hard-coded array dims ~ could allocate these at run time ---
-   integer(SHR_KIND_IN),parameter :: nFileMax = 1000  ! max number of files
+   integer(SHR_KIND_IN),parameter :: nFileMax = 2000  ! max number of files
 
    type shr_stream_streamType
       !private                                    ! no public access to internal components
