@@ -118,7 +118,7 @@ contains
 
   end subroutine CNParamsSharedReadFile
 
-  
+  !-----------------------------------------------------------------------
   subroutine readPrivateParameters
     ! read CN and BGC shared parameters
     !

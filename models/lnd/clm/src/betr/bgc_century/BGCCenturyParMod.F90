@@ -133,9 +133,10 @@ implicit none
     ! !DESCRIPTION:
     !
     ! !USES:
-    use ncdio_pio    , only: file_desc_t,ncd_io
-    use clm_varcon   , only : secspday
-    use clm_time_manager , only : get_days_per_year
+    use ncdio_pio              , only: file_desc_t,ncd_io
+    use clm_varcon             , only : secspday
+    use clm_time_manager       , only : get_days_per_year
+    use CNDecompCascadeConType , only : decomp_cascade_con
     !
     ! !ARGUMENTS:
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -155,11 +156,28 @@ implicit none
     real(r8) :: days_per_year
     real(r8) :: tau_cwd
     !-----------------------------------------------------------------------
-
+    associate(                                                                                 & !
+         floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
+         decomp_pool_name_restart       => decomp_cascade_con%decomp_pool_name_restart       , & ! Output: [character(len=8)  (:)     ]  name of pool for restart files                   
+         decomp_pool_name_history       => decomp_cascade_con%decomp_pool_name_history       , & ! Output: [character(len=8)  (:)     ]  name of pool for history files                   
+         decomp_pool_name_long          => decomp_cascade_con%decomp_pool_name_long          , & ! Output: [character(len=20) (:)     ]  name of pool for netcdf long names              
+         decomp_pool_name_short         => decomp_cascade_con%decomp_pool_name_short         , & ! Output: [character(len=8)  (:)     ]  name of pool for netcdf short names              
+         is_litter                      => decomp_cascade_con%is_litter                      , & ! Output: [logical           (:)     ]  TRUE => pool is a litter pool                             
+         is_soil                        => decomp_cascade_con%is_soil                        , & ! Output: [logical           (:)     ]  TRUE => pool is a soil pool                               
+         is_cwd                         => decomp_cascade_con%is_cwd                         , & ! Output: [logical           (:)     ]  TRUE => pool is a cwd pool                                
+         initial_cn_ratio               => decomp_cascade_con%initial_cn_ratio               , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools                    
+         initial_stock                  => decomp_cascade_con%initial_stock                  , & ! Output: [real(r8)          (:)     ]  initial concentration for seeding at spinup              
+         is_metabolic                   => decomp_cascade_con%is_metabolic                   , & ! Output: [logical           (:)     ]  TRUE => pool is metabolic material                        
+         is_cellulose                   => decomp_cascade_con%is_cellulose                   , & ! Output: [logical           (:)     ]  TRUE => pool is cellulose                                 
+         is_lignin                      => decomp_cascade_con%is_lignin                      , & ! Output: [logical           (:)     ]  TRUE => pool is lignin                                    
+         spinup_factor                  => decomp_cascade_con%spinup_factor                    & ! Output: [real(r8)          (:)
+    )
     ! These are not read off of netcdf file
     allocate(CNDecompBgcParamsInst%spinup_vector(CNDecompBgcParamsInst%nsompools))
     CNDecompBgcParamsInst%spinup_vector(:) = (/ 1.0_r8, 15.0_r8, 675.0_r8 /)
 
+
+      
     ! Read off of netcdf file
     tString='tau_l1'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
@@ -266,6 +284,126 @@ implicit none
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     CNDecompBgcParamsInst%cwd_flig_bgc=tempr 
 
+    !------- time-constant coefficients ---------- !
+    ! set soil organic matter compartment C:N ratios
+    cn_s1 = CNDecompBgcParamsInst%cn_s1_bgc
+    cn_s2 = CNDecompBgcParamsInst%cn_s2_bgc
+    cn_s3 = CNDecompBgcParamsInst%cn_s3_bgc
+
+    !-------------------  list of pools and their attributes  ------------
+    i_litr1 = i_met_lit
+    floating_cn_ratio_decomp_pools(i_litr1) = .true.
+    decomp_pool_name_restart(i_litr1) = 'litr1'
+    decomp_pool_name_history(i_litr1) = 'LITR1'
+    decomp_pool_name_long(i_litr1) = 'litter 1'
+    decomp_pool_name_short(i_litr1) = 'L1'
+    is_litter(i_litr1) = .true.
+    is_soil(i_litr1) = .false.
+    is_cwd(i_litr1) = .false.
+    initial_cn_ratio(i_litr1) = 90._r8
+    initial_stock(i_litr1) = 0._r8
+    is_metabolic(i_litr1) = .true.
+    is_cellulose(i_litr1) = .false.
+    is_lignin(i_litr1) = .false.
+
+    i_litr2 = i_cel_lit
+    floating_cn_ratio_decomp_pools(i_litr2) = .true.
+    decomp_pool_name_restart(i_litr2) = 'litr2'
+    decomp_pool_name_history(i_litr2) = 'LITR2'
+    decomp_pool_name_long(i_litr2) = 'litter 2'
+    decomp_pool_name_short(i_litr2) = 'L2'
+    is_litter(i_litr2) = .true.
+    is_soil(i_litr2) = .false.
+    is_cwd(i_litr2) = .false.
+    initial_cn_ratio(i_litr2) = 90._r8
+    initial_stock(i_litr2) = 0._r8
+    is_metabolic(i_litr2) = .false.
+    is_cellulose(i_litr2) = .true.
+    is_lignin(i_litr2) = .false.
+
+    i_litr3 = i_lig_lit
+    floating_cn_ratio_decomp_pools(i_litr3) = .true.
+    decomp_pool_name_restart(i_litr3) = 'litr3'
+    decomp_pool_name_history(i_litr3) = 'LITR3'
+    decomp_pool_name_long(i_litr3) = 'litter 3'
+    decomp_pool_name_short(i_litr3) = 'L3'
+    is_litter(i_litr3) = .true.
+    is_soil(i_litr3) = .false.
+    is_cwd(i_litr3) = .false.
+    initial_cn_ratio(i_litr3) = 90._r8
+    initial_stock(i_litr3) = 0._r8
+    is_metabolic(i_litr3) = .false.
+    is_cellulose(i_litr3) = .false.
+    is_lignin(i_litr3) = .true.
+
+    ! CWD
+    floating_cn_ratio_decomp_pools(i_cwd) = .true.
+    decomp_pool_name_restart(i_cwd) = 'cwd'
+    decomp_pool_name_history(i_cwd) = 'CWD'
+    decomp_pool_name_long(i_cwd) = 'coarse woody debris'
+    decomp_pool_name_short(i_cwd) = 'CWD'
+    is_litter(i_cwd) = .false.
+    is_soil(i_cwd) = .false.
+    is_cwd(i_cwd) = .true.
+    initial_cn_ratio(i_cwd) = 90._r8
+    initial_stock(i_cwd) = 0._r8
+    is_metabolic(i_cwd) = .false.
+    is_cellulose(i_cwd) = .false.
+    is_lignin(i_cwd) = .false.
+
+    i_soil1 = 5
+    floating_cn_ratio_decomp_pools(i_soil1) = .false.
+    decomp_pool_name_restart(i_soil1) = 'soil1'
+    decomp_pool_name_history(i_soil1) = 'SOIL1'
+    decomp_pool_name_long(i_soil1) = 'soil 1'
+    decomp_pool_name_short(i_soil1) = 'S1'
+    is_litter(i_soil1) = .false.
+    is_soil(i_soil1) = .true.
+    is_cwd(i_soil1) = .false.
+    initial_cn_ratio(i_soil1) = cn_s1
+    initial_stock(i_soil1) = 20._r8
+    is_metabolic(i_soil1) = .false.
+    is_cellulose(i_soil1) = .false.
+    is_lignin(i_soil1) = .false.
+
+    i_soil2 = 6
+    floating_cn_ratio_decomp_pools(i_soil2) = .false.
+    decomp_pool_name_restart(i_soil2) = 'soil2'
+    decomp_pool_name_history(i_soil2) = 'SOIL2'
+    decomp_pool_name_long(i_soil2) = 'soil 2'
+    decomp_pool_name_short(i_soil2) = 'S2'
+    is_litter(i_soil2) = .false.
+    is_soil(i_soil2) = .true.
+    is_cwd(i_soil2) = .false.
+    initial_cn_ratio(i_soil2) = cn_s2
+    initial_stock(i_soil2) = 20._r8
+    is_metabolic(i_soil2) = .false.
+    is_cellulose(i_soil2) = .false.
+    is_lignin(i_soil2) = .false.
+
+    i_soil3 = 7
+    floating_cn_ratio_decomp_pools(i_soil3) = .false.
+    decomp_pool_name_restart(i_soil3) = 'soil3'
+    decomp_pool_name_history(i_soil3) = 'SOIL3'
+    decomp_pool_name_long(i_soil3) = 'soil 3'
+    decomp_pool_name_short(i_soil3) = 'S3'
+    is_litter(i_soil3) = .false.
+    is_soil(i_soil3) = .true.
+    is_cwd(i_soil3) = .false.
+    initial_cn_ratio(i_soil3) = cn_s3
+    initial_stock(i_soil3) = 20._r8
+    is_metabolic(i_soil3) = .false.
+    is_cellulose(i_soil3) = .false.
+    is_lignin(i_soil3) = .false.
+
+    spinup_factor(i_litr1) = 1._r8
+    spinup_factor(i_litr2) = 1._r8
+    spinup_factor(i_litr3) = 1._r8
+    spinup_factor(i_cwd) = 1._r8
+    spinup_factor(i_soil1) = CNDecompBgcParamsInst%spinup_vector(1)
+    spinup_factor(i_soil2) = CNDecompBgcParamsInst%spinup_vector(2)
+    spinup_factor(i_soil3) = CNDecompBgcParamsInst%spinup_vector(3)
+    
     tau_l1 = 1./18.5
     tau_l2_l3 = 1./4.9
     tau_s1 = 1./7.3
@@ -281,6 +419,8 @@ implicit none
     CNDecompBgcParamsInst%k_decay_som1=1._r8/(secspday * days_per_year * tau_s1)
     CNDecompBgcParamsInst%k_decay_som2=1._r8/(secspday * days_per_year * tau_s2)
     CNDecompBgcParamsInst%k_decay_som3=1._r8/(secspday * days_per_year * tau_s3)
-    CNDecompBgcParamsInst%k_decay_cwd =1._r8/(secspday * days_per_year * tau_cwd)    
+    CNDecompBgcParamsInst%k_decay_cwd =1._r8/(secspday * days_per_year * tau_cwd)
+    
+    end associate
   end subroutine readCentDecompBgcParams
 end module BGCCenturyParMod

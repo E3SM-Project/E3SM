@@ -307,7 +307,8 @@ contains
       cn_s2 = CNDecompBgcParamsInst%cn_s2_bgc
       cn_s3 = CNDecompBgcParamsInst%cn_s3_bgc
 
-      ! set respiration fractions for fluxes between compartments
+
+        ! set respiration fractions for fluxes between compartments
       rf_l1s1 = CNDecompBgcParamsInst%rf_l1s1_bgc
       rf_l2s1 = CNDecompBgcParamsInst%rf_l2s1_bgc
       rf_l3s2 = CNDecompBgcParamsInst%rf_l3s2_bgc
@@ -318,25 +319,24 @@ contains
       rf_cwdl2 = CNDecompBgcParamsInst%rf_cwdl2_bgc
       rf_cwdl3 = CNDecompBgcParamsInst%rf_cwdl3_bgc
 
-      ! set the cellulose and lignin fractions for coarse woody debris
+        ! set the cellulose and lignin fractions for coarse woody debris
       cwd_fcel = CNDecompBgcParamsInst%cwd_fcel_bgc
       cwd_flig = CNDecompBgcParamsInst%cwd_flig_bgc
 
-      ! set path fractions
+        ! set path fractions
       f_s2s1 = 0.42_r8/(0.45_r8)
       f_s2s3 = 0.03_r8/(0.45_r8)
 
-      ! some of these are dependent on the soil texture properties
+        ! some of these are dependent on the soil texture properties
       do c = bounds%begc, bounds%endc
          do j = 1, nlevdecomp
-            t = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - cellsand(c,j))
-            f_s1s2(c,j) = 1._r8 - .004_r8 / (1._r8 - t)
-            f_s1s3(c,j) = .004_r8 / (1._r8 - t)
-            rf_s1s2(c,j) = t
-            rf_s1s3(c,j) = t
+           t = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - cellsand(c,j))
+           f_s1s2(c,j) = 1._r8 - .004_r8 / (1._r8 - t)
+           f_s1s3(c,j) = .004_r8 / (1._r8 - t)
+           rf_s1s2(c,j) = t
+           rf_s1s3(c,j) = t
          end do
       end do
-
       !-------------------  list of pools and their attributes  ------------
       i_litr1 = i_met_lit
       floating_cn_ratio_decomp_pools(i_litr1) = .true.
@@ -358,7 +358,7 @@ contains
       decomp_pool_name_restart(i_litr2) = 'litr2'
       decomp_pool_name_history(i_litr2) = 'LITR2'
       decomp_pool_name_long(i_litr2) = 'litter 2'
-      decomp_pool_name_short(i_litr2) = 'L2'
+      decomp_pool_name_short(i_litr2) = 'L2'      
       is_litter(i_litr2) = .true.
       is_soil(i_litr2) = .false.
       is_cwd(i_litr2) = .false.
@@ -451,6 +451,7 @@ contains
       spinup_factor(i_soil2) = CNDecompBgcParamsInst%spinup_vector(2)
       spinup_factor(i_soil3) = CNDecompBgcParamsInst%spinup_vector(3)
 
+
       !----------------  list of transitions and their time-independent coefficients  ---------------!
       i_l1s1 = 1
       cascade_step_name(i_l1s1) = 'L1S1'
@@ -521,7 +522,7 @@ contains
       cascade_donor_pool(i_cwdl3) = i_cwd
       cascade_receiver_pool(i_cwdl3) = i_litr3
       pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl3) = cwd_flig
-
+      
       deallocate(rf_s1s2)
       deallocate(rf_s1s3)
       deallocate(f_s1s2)
