@@ -694,10 +694,12 @@ contains
     ! Read in private parameters files, this should be preferred for mulitphysics
     ! implementation, jinyun Tang, Feb. 11, 2015
     ! ------------------------------------------------------------------------
+    if(use_cn) then
+       call init_decomp_cascade_constants()
+    endif
     call readPrivateParameters()
     
     if (use_cn) then
-       call init_decomp_cascade_constants()
        if(.not. is_active_betr_bgc)then
          if (use_century_decomp) then
           ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized

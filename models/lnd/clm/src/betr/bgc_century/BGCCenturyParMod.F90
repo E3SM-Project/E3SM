@@ -135,6 +135,7 @@ implicit none
     ! !USES:
     use ncdio_pio              , only: file_desc_t,ncd_io
     use clm_varcon             , only : secspday
+    use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
     use clm_time_manager       , only : get_days_per_year
     use CNDecompCascadeConType , only : decomp_cascade_con
     !
@@ -155,6 +156,15 @@ implicit none
     real(r8) :: tau_s3     
     real(r8) :: days_per_year
     real(r8) :: tau_cwd
+    real(r8) :: cn_s1
+    real(r8) :: cn_s2
+    real(r8) :: cn_s3
+    integer  :: i_litr1
+    integer  :: i_litr2
+    integer  :: i_litr3
+    integer  :: i_soil1
+    integer  :: i_soil2
+    integer  :: i_soil3
     !-----------------------------------------------------------------------
     associate(                                                                                 & !
          floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
