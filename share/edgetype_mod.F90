@@ -1,8 +1,6 @@
 
 module edgetype_mod 
 
-#undef EXPORT_OLDEDGE
-
   use kinds, only : int_kind, log_kind, real_kind
   use coordinate_systems_mod, only : cartesian3D_t
 
@@ -35,22 +33,9 @@ module edgetype_mod
      !  that must be rotated, and how
   end type EdgeDescriptor_t
 
-#ifdef EXPORT_OLDEDGE
-  type, public :: oldEdgeBuffer_t
-     real (kind=real_kind), dimension(:,:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:,:), pointer :: receive => null()
-     integer :: nlyr ! Number of layers
-     integer :: nbuf ! size of the horizontal dimension of the buffers.
-#ifdef MPI_PERSISTENT
-     integer, public, pointer :: Rrequest(:)
-     integer, public, pointer :: Srequest(:)
-#endif
-  end type oldEdgeBuffer_t
-#endif
-
   type, public :: EdgeBuffer_t
-     real (kind=real_kind), dimension(:), pointer :: buf => null()
-     real (kind=real_kind), dimension(:), pointer :: receive => null()
+     real (kind=real_kind), dimension(:), allocatable :: buf
+     real (kind=real_kind), dimension(:), allocatable :: receive
      integer(kind=int_kind), pointer :: putmap(:,:) => null()
      integer(kind=int_kind), pointer :: getmap(:,:) => null()
      logical(kind=log_kind), pointer :: reverse(:,:) => null()

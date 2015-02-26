@@ -856,11 +856,11 @@ module prim_advection_mod
   use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
         statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
         prescribed_wind, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
-  use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer, edgevunpackmin
+  use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer, initedgesbuffer, edgevunpackmin
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
-  use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax,newneighbor_minmax
+  use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   use parallel_mod, only   : abortmp
 
@@ -877,7 +877,7 @@ module prim_advection_mod
 #endif
   public :: vertical_remap
 
-  type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdvQ2JMD, edgeAdv1,  edgeveloc
+  type (EdgeBuffer_t)      :: edgeAdv, edgeAdvp1, edgeAdvQminmax, edgeAdv1,  edgeveloc
   type (ghostBuffer3D_t)   :: ghostbuf_tr
 
   integer,parameter :: DSSeta = 1
@@ -886,7 +886,6 @@ module prim_advection_mod
   integer,parameter :: DSSno_var = -1
 
   real(kind=real_kind), allocatable :: qmin(:,:,:), qmax(:,:,:)
-  real(kind=real_kind), allocatable :: qminJMD(:,:,:), qmaxJMD(:,:,:)
 
   type (derivative_t), public, allocatable   :: deriv(:) ! derivative struct (nthreads)
 
@@ -910,32 +909,19 @@ contains
     real(kind=real_kind), pointer :: receive_ptr(:) => null()
 
 
-    !JMD KLUDGE
-    !JMD note that for not for testing of the EdgeBuffer_t modifications I
-    !JMD setting up separate edge buffers.  We can go back and address this memory
-    !JMD saving modification later.
-    !JMD
     ! this might be called with qsize=0
     ! allocate largest one first
     ! Currently this is never freed. If it was, only this first one should
     ! be freed, as only it knows the true size of the buffer.
-    !call initEdgeBuffer(par,edgeAdvQ3,max(nlev,qsize*nlev*3), buf_ptr, receive_ptr)  ! Qtens,Qmin, Qmax
-    call initEdgeBuffer(par,edgeAdvQ3,elem,max(nlev,qsize*nlev*3))  ! Qtens,Qmin, Qmax
-
-    ! remaining edge buffers can share %buf and %receive with edgeAdvQ3
-    ! (This is done through the optional 1D pointer arguments.)
-    !call initEdgeBuffer(par,edgeAdv1,nlev,buf_ptr,receive_ptr)
-    !call initEdgeBuffer(par,edgeAdv,qsize*nlev,buf_ptr,receive_ptr)
-    !call initEdgeBuffer(par,edgeAdv_p1,qsize*nlev + nlev,buf_ptr,receive_ptr)
-    !call initEdgeBuffer(par,edgeAdvQ2,qsize*nlev*2,buf_ptr,receive_ptr)  ! Qtens,Qmin, Qmax
-    !call initEdgeBuffer(par,edgeveloc,2*nlev)
-
-    call initEdgeBuffer(par,edgeAdv1,elem,nlev)
+    call initEdgeBuffer(par,edgeAdvp1,elem,qsize*nlev + nlev)
     call initEdgeBuffer(par,edgeAdv,elem,qsize*nlev)
-    call initEdgeBuffer(par,edgeAdv_p1,elem,qsize*nlev + nlev)
-    call initEdgeBuffer(par,edgeAdvQ2,elem,qsize*nlev*2)  ! Qtens,Qmin, Qmax
+    call initEdgeBuffer(par,edgeAdv1,elem,nlev)
     call initEdgeBuffer(par,edgeveloc,elem,2*nlev)
-    call initEdgeBuffer(par,edgeAdvQ2JMD,elem,qsize*nlev*2,NewMethod=.TRUE.)
+
+    ! This is a different type of buffer pointer allocation 
+    ! used for determine the minimum and maximum value from 
+    ! neighboring  elements
+    call initEdgeSBuffer(par,edgeAdvQminmax,elem,qsize*nlev*2)
 
     ! Don't actually want these saved, if this is ever called twice.
     nullify(buf_ptr)
@@ -946,8 +932,6 @@ contains
     ! this static array is shared by all threads, so dimension for all threads (nelemd), not nets:nete:
     allocate (qmin(nlev,qsize,nelemd))
     allocate (qmax(nlev,qsize,nelemd))
-    allocate (qminJMD(nlev,qsize,nelemd))
-    allocate (qmaxJMD(nlev,qsize,nelemd))
 
   end subroutine Prim_Advec_Init1
 
@@ -2025,45 +2009,7 @@ end subroutine ALE_parametric_coords
         enddo
       enddo
       ! update qmin/qmax based on neighbor data for lim8
-#if 1
-      call newneighbor_minmax(hybrid,edgeAdvQ2JMD,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-!      call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-#else
-      ! test code for newneighbor_minmax()
-      qminJMD=qmin
-      qmaxJMD=qmax
-      call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-      call newneighbor_minmax(hybrid,edgeAdvQ2JMD,nets,nete,qminJMD(:,:,nets:nete), qmaxJMD(:,:,nets:nete))
-      if(any(qmin.ne.qminJMD) ) then 
-            print *,'IAM: ',iam,' ERROR detected: count(qmin.ne.qminJMD): ',count(qmin.ne.qminJMD)
-            do ie = nets, nete
-            do k=1,nlev
-            do q=1,qsize
-               if(qmin(k,q,ie) .ne. qminJMD(k,q,ie)) then 
-                  print *,IAM,k,q,ie,qmin(k,q,ie),qminJMD(k,q,ie)
-               endif
-            enddo
-            enddo
-            enddo
-      else
-            print *,'prim_advection: qmin matches'
-      endif
-      if(any(qmax.ne.qmaxJMD) ) then 
-            print *,'IAM: ',iam,' ERROR detected: count(qmax.ne.qmaxJMD): ',count(qmax.ne.qmaxJMD)
-            do ie = nets, nete
-            do k=1,nlev
-            do q=1,qsize
-               if(qmax(k,q,ie) .ne. qmaxJMD(k,q,ie)) then 
-                  print *,IAM, k,q,ie,qmax(k,q,ie),qmaxJMD(k,q,ie)
-               endif
-            enddo
-            enddo
-            enddo
-      else
-            print *,'prim_advection: qmax matches'
-      endif
-!      call abortmp('after newneighbor_minmax')
-#endif
+      call neighbor_minmax(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
       
     endif
 
@@ -2121,12 +2067,12 @@ end subroutine ALE_parametric_coords
 !   Previous version of biharmonic_wk_scalar_minmax included a min/max
 !   calculation into the boundary exchange.  This was causing cache issues.
 !   Split the single operation into two separate calls 
-!      call newneighbor_minmax()
+!      call neighbor_minmax()
 !      call biharmonic_wk_scalar() 
 ! 
 !      call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
 !           nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
-      call newneighbor_minmax(hybrid,edgeAdvQ2JMD,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
+      call neighbor_minmax(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
       call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
 
       do ie = nets , nete
@@ -2231,9 +2177,9 @@ end subroutine ALE_parametric_coords
     enddo
 
     if ( DSSopt == DSSno_var ) then
-      call edgeVpack(edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie)
+      call edgeVpack(edgeAdv   , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie)
     else
-      call edgeVpack(edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
+      call edgeVpack(edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
       ! also DSS extra field
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -2241,14 +2187,14 @@ end subroutine ALE_parametric_coords
       do k = 1 , nlev
         DSSvar(:,:,k) = elem(ie)%spheremp(:,:) * DSSvar(:,:,k)
       enddo
-      call edgeVpack( edgeAdv_p1 , DSSvar(:,:,1:nlev) , nlev , nlev*qsize , ie)
+      call edgeVpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , nlev*qsize , ie)
     endif
   enddo
 
   if ( DSSopt == DSSno_var ) then
     call bndry_exchangeV( hybrid , edgeAdv    )
   else
-    call bndry_exchangeV( hybrid , edgeAdv_p1 )
+    call bndry_exchangeV( hybrid , edgeAdvp1 )
   endif
 
   do ie = nets , nete
@@ -2257,7 +2203,7 @@ end subroutine ALE_parametric_coords
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
     if ( DSSopt == DSSno_var ) then
-      call edgeVunpack( edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
+      call edgeVunpack( edgeAdv, elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,q)
 #endif
@@ -2267,7 +2213,7 @@ end subroutine ALE_parametric_coords
         enddo
       enddo
     else
-      call edgeVunpack( edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
+      call edgeVunpack( edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
 #if (defined COLUMN_OPENMP)
       !$omp parallel do private(q,k)
 #endif
@@ -2276,7 +2222,7 @@ end subroutine ALE_parametric_coords
           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
         enddo
       enddo
-      call edgeVunpack( edgeAdv_p1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
+      call edgeVunpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
 
       do k = 1 , nlev
         DSSvar(:,:,k) = DSSvar(:,:,k) * elem(ie)%rspheremp(:,:)
@@ -2374,7 +2320,7 @@ end subroutine ALE_parametric_coords
      if(DSSopt==DSSno_var)then
 	call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,ie)
      else
-	call edgeVpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,ie)
+	call edgeVpack(edgeAdvp1,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,ie)
 	! also DSS extra field
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -2382,7 +2328,7 @@ end subroutine ALE_parametric_coords
 	do k=1,nlev
 	    DSSvar(:,:,k) = elem(ie)%spheremp(:,:)*DSSvar(:,:,k)
 	enddo
-	call edgeVpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,nlev*qsize,ie)
+	call edgeVpack(edgeAdvp1,DSSvar(:,:,1:nlev),nlev,nlev*qsize,ie)
      endif
 
   end do
@@ -2390,7 +2336,7 @@ end subroutine ALE_parametric_coords
   if(DSSopt==DSSno_var)then
      call bndry_exchangeV(hybrid,edgeAdv)
   else
-     call bndry_exchangeV(hybrid,edgeAdv_p1)
+     call bndry_exchangeV(hybrid,edgeAdvp1)
   endif
 
   do ie=nets,nete
@@ -2402,8 +2348,8 @@ end subroutine ALE_parametric_coords
      if(DSSopt==DSSno_var)then
 	call edgeDGVunpack(edgeAdv,qedges,nlev*qsize,0,ie)
      else
-	call edgeDGVunpack(edgeAdv_p1,qedges,nlev*qsize,0,ie)
-	call edgeVunpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,ie)
+	call edgeDGVunpack(edgeAdvp1,qedges,nlev*qsize,0,ie)
+	call edgeVunpack(edgeAdvp1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,ie)
 	do k=1,nlev
 	  DSSvar(:,:,k)=DSSvar(:,:,k)*elem(ie)%rspheremp(:,:)
 	enddo
