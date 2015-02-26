@@ -778,7 +778,7 @@ end subroutine
 
 #ifdef _PRIM
 
-subroutine NewNeighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
+subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
  
    type (hybrid_t)      , intent(in) :: hybrid
    type (EdgeBuffer_t)  , intent(inout) :: edgeMinMax
@@ -811,9 +811,9 @@ subroutine NewNeighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
       enddo
    enddo
   
-end subroutine NewNeighbor_minmax
+end subroutine neighbor_minmax
 
-subroutine neighbor_minmax(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
+subroutine oldneighbor_minmax(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
 !
 ! compute Q min&max over the element and all its neighbors
 !
@@ -880,7 +880,7 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
 #endif
 #endif
 
-end subroutine
+end subroutine oldneighbor_minmax
 
 
 #else
@@ -1020,6 +1020,7 @@ integer :: ie,k,q
     enddo
   endif
 end subroutine
+
 #endif
 
 

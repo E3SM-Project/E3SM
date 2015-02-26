@@ -697,6 +697,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        real(kind=real_kind) :: Vscript(np,np,2,nlev,nets:nete)
        real(kind=real_kind) :: Tscript(np,np,nlev,nets:nete)
        real(kind=real_kind) :: Pscript(np,np,nets:nete)
+       real(kind=real_kind) :: Vtemp(np,np,2,nlev,nets:nete)
 
        real(kind=real_kind), dimension(np,np)      :: HrefTscript
        real(kind=real_kind), dimension(np,np)      :: suml
@@ -1327,6 +1328,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                    gGr2 = grad_Gref(i,j,2,k)
                    elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%Dinv(i,j,1,1)*gGr1 + elem(ie)%Dinv(i,j,2,1)*gGr2
                    elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%Dinv(i,j,1,2)*gGr1 + elem(ie)%Dinv(i,j,2,2)*gGr2
+                   Vtemp(i,j,1,k,ie) = elem(ie)%state%v(i,j,1,k,np1)
+                   Vtemp(i,j,2,k,ie) = elem(ie)%state%v(i,j,2,k,np1)
                 end do
              end do
 
@@ -1365,7 +1368,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! ===============================================
 
           kptr=0
-          call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
+!          call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
+          call edgeVpack(edge3p1, Vtemp(:,:,:,:,ie),2*nlev,kptr,ie)
 
           kptr=2*nlev
           call edgeVpack(edge3p1, Tscript(:,:,:,ie),nlev,kptr,ie)
@@ -1389,7 +1393,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! ===================================
 
           kptr=0
-          call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
+          call edgeVunpack(edge3p1, Vtemp(:,:,:,:,ie), 2*nlev, kptr, ie)
+!JMD          call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
+!JMD          elem(ie)%state%v(:,:,:,:,np1) = Vtemp(:,:,:,:,ie)
+
 
           kptr=2*nlev
           call edgeVunpack(edge3p1, Tscript(:,:,:,ie), nlev, kptr, ie)
@@ -1414,8 +1421,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
              do j=1,np
                 do i=1,np
-                   elem(ie)%state%v(i,j,1,k,np1) = Vscript(i,j,1,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,1,k,np1)
-                   elem(ie)%state%v(i,j,2,k,np1) = Vscript(i,j,2,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,2,k,np1)
+!                   elem(ie)%state%v(i,j,1,k,np1) = Vscript(i,j,1,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,1,k,np1)
+!                   elem(ie)%state%v(i,j,2,k,np1) = Vscript(i,j,2,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,2,k,np1)
+                   elem(ie)%state%v(i,j,1,k,np1) = Vscript(i,j,1,k,ie) + dt*elem(ie)%rmp(i,j)*Vtemp(i,j,1,k,ie)
+                   elem(ie)%state%v(i,j,2,k,np1) = Vscript(i,j,2,k,ie) + dt*elem(ie)%rmp(i,j)*Vtemp(i,j,2,k,ie)
                    elem(ie)%state%T(i,j,k,np1)   = elem(ie)%rmp(i,j)*Tscript(i,j,k,ie)
                 end do
              end do
@@ -1427,17 +1436,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                 elem(ie)%state%lnps(i,j,np1) = elem(ie)%rmp(i,j)*Pscript(i,j,ie)
              end do
           end do
-
-!JMD #if (defined COLUMN_OPENMP)
-!JMD !$omp parallel do private(k,i,j)
-!JMD #endif
-!JMD          do k=1,nlev
-!JMD             do j=1,np
-!JMD                do i=1,np
-!JMD                   elem(ie)%state%T(i,j,k,np1)   = elem(ie)%rmp(i,j)*Tscript(i,j,k,ie)
-!JMD                end do
-!JMD             end do
-!JMD          end do
 
        end do
 !KGEN END(prim_advance_si_bug1)
