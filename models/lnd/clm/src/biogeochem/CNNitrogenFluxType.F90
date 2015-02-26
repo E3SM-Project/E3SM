@@ -668,6 +668,7 @@ contains
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use clm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
+    use tracer_varcon  , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class(nitrogenflux_type) :: this
@@ -1131,6 +1132,7 @@ contains
        endif
     end do
 
+    if(.not. is_active_betr_bgc)then
     do l = 1, ndecomp_cascade_transitions
        ! vertically integrated fluxes
        !-- mineralization/immobilization fluxes (none from CWD)
@@ -1209,7 +1211,7 @@ contains
 
        endif
     end do
-
+    endif
 
     this%sminn_no3_input_vr_col(begc:endc,:) = spval
     data2dptr => this%sminn_no3_input_vr_col(:,:)
