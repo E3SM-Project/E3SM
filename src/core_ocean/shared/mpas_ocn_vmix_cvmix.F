@@ -435,13 +435,13 @@ contains
                ! compute the boundary layer depth based on model state at current time step
                if(.not.config_use_cvmix_fixed_boundary_layer) then
                  call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
+                 cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface, cvmix_variables%zt_cntr, cvmix_variables%BoundaryLayerDepth)
                endif
-               cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface, cvmix_variables%zt_cntr, cvmix_variables%BoundaryLayerDepth)
-
-               ! given current estimate of OBL and vertical profile of visc/diff, compute boundary layer mixing
-               call cvmix_coeffs_kpp( CVmix_vars = cvmix_variables )
 
             end do ! iterate
+
+            ! given current estimate of OBL and vertical profile of visc/diff, compute boundary layer mixing
+            call cvmix_coeffs_kpp( CVmix_vars = cvmix_variables )
 
             ! intent out of BoundaryLayerDepth is boundary layer depth measured in meters and vertical index
             boundaryLayerDepth(iCell) = cvmix_variables % BoundaryLayerDepth
