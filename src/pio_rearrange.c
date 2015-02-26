@@ -1012,6 +1012,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
     for(i=0;i<ndims;i++)
       iodesc->llen *= iodesc->firstregion->count[i];
   }
+  determine_fill(ios, iodesc, gsize);
 
   /* 
   if(ios.ioproc){
@@ -1033,6 +1034,10 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   pio_swapm(&(iodesc->llen), sndlths, sdispls, dtypes,
 	    iomaplen, recvlths, rdispls, dtypes, 	
 	    ios.union_comm, false, false, maxreq);
+
+
+
+
   /*
   printf("%s %d %d\n",__FILE__,__LINE__,nioprocs);
   for(i=0; i<nioprocs; i++){
@@ -1099,8 +1104,6 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
 
   compute_counts(ios, iodesc, maplen, dest_ioproc, dest_ioindex, ios.union_comm);
 
-  determine_fill(ios, iodesc, gsize);
-
   if(ios.ioproc){
     compute_maxIObuffersize(ios.io_comm, iodesc);
   }
@@ -1127,27 +1130,27 @@ int compare_offsets(const void *a,const void *b)
 /**
  ** @internal
  ** Each region is a block of output which can be represented in a single call to the underlying 
- ** netcdf library.  This can be as small as a single data point, but we hope we've aggrigated better than that. 
+ ** netcdf library.  This can be as small as a single data point, but we hope we've aggragated better than that. 
  ** @endinternal
  */
-void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, const int gdims[],const PIO_Offset map[])
+void get_start_and_count_regions(const int ndims, const int gdims[],const int maplen, 
+				 const PIO_Offset map[], int *maxregions, io_region *firstregion)
 {
   int i;
   int nmaplen;
   int regionlen;
   io_region *region, *prevregion;
-  int ndims=iodesc->ndims;
 
   nmaplen = 0;
-  region = iodesc->firstregion;
+  region = firstregion;
   while(map[nmaplen++]<=0);
   nmaplen--;
   region->loffset=nmaplen;
 
-  iodesc->maxregions = 1;
+  *maxregions = 1;
   prevregion=NULL;
 
-  while(nmaplen < iodesc->llen){
+  while(nmaplen < maplen){
     // Here we find the largest region from the current offset into the iomap
     // regionlen is the size of that region and we step to that point in the map array
     // until we reach the end 
@@ -1155,29 +1158,24 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
       region->count[i]=1;
     }
 
-    regionlen = find_region(ndims, gdims, iodesc->llen-nmaplen, 
+    regionlen = find_region(ndims, gdims, maplen-nmaplen, 
 				  map+nmaplen, region->start, region->count);
 
     pioassert(region->start[0]>=0,"failed to find region",__FILE__,__LINE__);
     
-
-    
     nmaplen = nmaplen+regionlen;
-    if(region->next==NULL && nmaplen<iodesc->llen){
-      region->next = alloc_region(iodesc->ndims);
+    if(region->next==NULL && nmaplen< maplen){
+      region->next = alloc_region(ndims);
       // The offset into the local array buffer is the sum of the sizes of all of the previous regions (loffset) 
       region=region->next;
       region->loffset = nmaplen;
       // The calls to the io library are collective and so we must have the same number of regions on each
-      // io task iodesc->maxregions will be the total number of regions on this task 
-      iodesc->maxregions++;
+      // io task maxregions will be the total number of regions on this task 
+      (*maxregions)++;
     }
   }
 
-  // pad maxregions on all tasks to the maximum and use this to assure that collective io calls are made.
-#ifndef _MPISERIAL  
-  MPI_Allreduce(MPI_IN_PLACE,&(iodesc->maxregions), 1, MPI_INTEGER, MPI_MAX, io_comm);
-#endif
+
 }
 
 /** 
@@ -1231,6 +1229,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   mapsort *map=NULL;
   PIO_Offset totalgridsize;
   PIO_Offset *srcindex=NULL;
+  PIO_Offset *myfillgrid = NULL;
   
   int maxreq = MAX_GATHER_BLOCK_SIZE;
   int rank, ntasks, rcnt;
@@ -1331,7 +1330,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       rdispls[i]=0;
     }
   }
-
+  determine_fill(ios, iodesc, gsize);
 
   // Pass the sindex from each compute task to its associated IO task
 
@@ -1432,13 +1431,104 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     srcindex[ (cnt[iodesc->rfrom[i]])++   ]=mptr->soffset;
   }
 
+  if(ios.ioproc && iodesc->needsfill){
+    /* we need the list of offsets which are not in the union of iomap */
+    PIO_Offset thisgridsize[ios.num_iotasks];
+    PIO_Offset thisgridmin[ios.num_iotasks], thisgridmax[ios.num_iotasks];
+    int nio;
+    PIO_Offset *myusegrid = NULL;
+    int gcnt[ios.num_iotasks];
+    int displs[ios.num_iotasks];
+
+    thisgridmin[0] = 1;
+    thisgridsize[0] =  totalgridsize/ios.num_iotasks;
+    thisgridmax[0] = thisgridsize[0];
+    int xtra = totalgridsize - thisgridsize[0]*ios.num_iotasks;
+  
+    for(nio=0;nio<ios.num_iotasks;nio++){
+      int cnt=0;
+      int imin=0;
+      if(nio>0){
+	thisgridsize[nio] =  totalgridsize/ios.num_iotasks;
+	if(nio>=ios.num_iotasks-xtra) thisgridsize[nio]++;
+	thisgridmin[nio]=thisgridmax[nio-1]+1;
+	thisgridmax[nio]= thisgridmin[nio] + thisgridsize[nio]-1;
+      }
+      for(int i=0;i<iodesc->llen;i++){
+	//	printf("%s %d %d %d %ld %d %d\n",__FILE__,__LINE__,i,nio,iomap[i],thisgridmin[nio],thisgridmax[nio]);
+	if(iomap[i]>=thisgridmin[nio] && iomap[i]<=thisgridmax[nio]){
+	  cnt++;
+	  if(cnt==1) imin=i;
+	}
+      }
+      //      printf("%s %d %d %d %d\n",__FILE__,__LINE__,nio,cnt,imin);
+      MPI_Gather(&cnt, 1, MPI_INT, gcnt, 1, MPI_INT, nio, ios.io_comm);
+      if(nio==ios.io_rank){
+	displs[0]=0;
+	//	printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,nio,0,gcnt[0],displs[0]);
+	for(i=1;i<ios.num_iotasks;i++){
+	  displs[i] = displs[i-1]+gcnt[i-1];
+	  //	  printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,nio,i,gcnt[i],displs[i]);
+	} 
+	myusegrid = (PIO_Offset *) bget(thisgridsize[nio]*sizeof(PIO_Offset));
+	for(i=0;i<thisgridsize[nio];i++){
+	  myusegrid[i]=-1;
+	}
+      }
+      pio_fc_gatherv((void *) (iomap+imin), cnt, PIO_OFFSET,
+		 (void *) myusegrid, gcnt, displs, PIO_OFFSET,  
+		 nio, ios.io_comm, maxreq);
+    }
+    PIO_Offset grid[thisgridsize[ios.io_rank]];
+    for(i=0;i<thisgridsize[ios.io_rank];i++){
+      grid[i]=0;
+    }
+    int cnt=0;
+    for(i=0;i<thisgridsize[ios.io_rank];i++){
+      int j = myusegrid[i] - thisgridmin[ios.io_rank];
+      //      printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,i,j,thisgridmin[ios.io_rank],myusegrid[i]);
+
+      pioassert(j<thisgridsize[ios.io_rank] ,"out of bounds array index",__FILE__,__LINE__);
+      if(j>=0){
+	grid[j]=1;
+	cnt++;
+      }
+    }
+    if(myusegrid!=NULL){
+      brel(myusegrid);
+    }
+    iodesc->holegridsize=thisgridsize[ios.io_rank]-cnt;
+    if(iodesc->holegridsize>0){
+      myfillgrid = (PIO_Offset *) bget(iodesc->holegridsize * sizeof(PIO_Offset));
+    }
+    for(i=0;i<iodesc->holegridsize;i++){
+      myfillgrid[i]=-1;
+    }
+	
+    j=0;
+    for(i=0;i<thisgridsize[ios.io_rank];i++){
+      if(grid[i]==0 ){
+	if(myfillgrid[j] == -1){
+	  myfillgrid[j++]=thisgridmin[ios.io_rank]+i;
+	}else{
+	  piodie("something wrong",__FILE__,__LINE__);
+	  // printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,j,myfillgrid[j]);
+	}
+      }
+    }
+    if(myfillgrid!=NULL){
+      iodesc->fillregion = alloc_region(iodesc->ndims);
+      get_start_and_count_regions(iodesc->ndims,gsize,iodesc->holegridsize, myfillgrid,&(iodesc->maxfillregions),
+				  iodesc->fillregion);
+      brel(myfillgrid);
+    }
+  }
+
   CheckMPIReturn(MPI_Scatterv((void *) srcindex, recvlths, rdispls, PIO_OFFSET, 
 			      (void *) iodesc->sindex, iodesc->scount[0],  PIO_OFFSET,
 			      0, iodesc->subset_comm),__FILE__,__LINE__);
 
 
-
-  determine_fill(ios, iodesc, gsize);
 
   if(ios.ioproc){
 
@@ -1448,10 +1538,13 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       printf("%d ",iomap[i]);
     printf("\n");
     */
-    get_start_and_count_regions(ios.io_comm,iodesc,gsize,iomap);
+    get_start_and_count_regions(iodesc->ndims,gsize,iodesc->llen, iomap,&(iodesc->maxregions),
+				iodesc->firstregion);
+
   
     if(iomap != NULL)
       brel(iomap);
+    
     
     if(map != NULL)
       brel(map);
