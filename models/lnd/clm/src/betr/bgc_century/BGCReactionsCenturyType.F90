@@ -234,19 +234,17 @@ contains
   integer :: jj
   integer :: nelm
   integer :: itemp
+  integer :: c_loc, n_loc
   !type(file_desc_t) :: ncid
   
   !ncid%fh=10
 
   call centurybgc_vars%Init(bounds, lbj, ubj)
 
-  betrtracer_vars%ngwmobile_tracers=7                                ! n2, o2, ar, co2, ch4, nh3x and no3x
-  betrtracer_vars%nsolid_passive_tracers=centurybgc_vars%nom_pools    !
-  betrtracer_vars%nvolatile_tracers=6                                 ! n2, o2, ar, co2, ch4 and nh3x 
-  betrtracer_vars%ntracers=betrtracer_vars%ngwmobile_tracers+betrtracer_vars%nsolid_passive_tracers
-  
+  nelm =centurybgc_vars%nelms
+  c_loc=centurybgc_vars%c_loc
+  n_loc=centurybgc_vars%n_loc
 
-  call betrtracer_vars%Init()
   itemp = 0
   betrtracer_vars%id_trc_n2   = addone(itemp)
   betrtracer_vars%id_trc_o2   = addone(itemp)
@@ -257,6 +255,12 @@ contains
   betrtracer_vars%id_trc_no3x = addone(itemp)
   betrtracer_vars%id_trc_n2o  = addone(itemp)
   
+  betrtracer_vars%ngwmobile_tracers=itemp                                  ! n2, o2, ar, co2, ch4, n2o, nh3x and no3x
+  betrtracer_vars%nvolatile_tracers=itemp-2                                ! n2, o2, ar, co2, ch4 and n2o
+  betrtracer_vars%nsolid_passive_tracers=centurybgc_vars%nom_pools*nelm    !
+  betrtracer_vars%ntracers=betrtracer_vars%ngwmobile_tracers+betrtracer_vars%nsolid_passive_tracers
+  call betrtracer_vars%Init()
+
   jj = itemp
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2)   = 'N2'
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_o2)   = 'O2'
@@ -267,22 +271,21 @@ contains
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_no3x) = 'NO3X'
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2o)  = 'N2O'
   
-  nelm=centurybgc_vars%nelms
   
-  betrtracer_vars%tracernames(jj+centurybgc_vars%lit1*nelm-1)  = 'LIT1C'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%lit2*nelm-1)  = 'LIT2C'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%lit3*nelm-1)  = 'LIT3C'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%som1*nelm-1)  = 'SOM1C'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%som2*nelm-1)  = 'SOM2C'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%som3*nelm-1)  = 'SOM3C'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%cwd*nelm-1)   = 'CWDC'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%lit1*nelm)    = 'LIT1N'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%lit2*nelm)    = 'LIT2N'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%lit3*nelm)    = 'LIT3N'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%som1*nelm)    = 'SOM1N'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%som2*nelm)    = 'SOM2N'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%som3*nelm)    = 'SOM3N'
-  betrtracer_vars%tracernames(jj+centurybgc_vars%cwd*nelm)     = 'CWDN'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit1-1)*nelm+c_loc)  = 'LIT1C'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit2-1)*nelm+c_loc)  = 'LIT2C'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit3-1)*nelm+c_loc)  = 'LIT3C'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%som1-1)*nelm+c_loc)  = 'SOM1C'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%som2-1)*nelm+c_loc)  = 'SOM2C'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%som3-1)*nelm+c_loc)  = 'SOM3C'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+c_loc)  = 'CWDC'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit1-1)*nelm+n_loc)  = 'LIT1N'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit2-1)*nelm+n_loc)  = 'LIT2N'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit3-1)*nelm+n_loc)  = 'LIT3N'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%som1-1)*nelm+n_loc)  = 'SOM1N'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%som2-1)*nelm+n_loc)  = 'SOM2N'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%som3-1)*nelm+n_loc)  = 'SOM3N'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+n_loc)  = 'CWDN'
   
     
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_n2)  =.true.

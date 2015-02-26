@@ -160,34 +160,34 @@ contains
     )
     begc=bounds%begc; endc=bounds%endc 
     do jj = 1, ntracers
-      if(is_volatile(jj))then
-        kk = volatileid(jj)
-        this%scal_aere_cond_col(begc:endc, kk) = spval
-        data1dptr => this%scal_aere_cond_col(begc:endc, kk)
-        call hist_addfld1d (fname='SCAL_ARENCHYMA_'//tracernames(jj), units='none', &
-         avgflag='A', long_name='scaling factor for tracer transport through arenchyma for '//trim(tracernames(jj)), &
-         ptr_col=data1dptr, default='inactive')
-
-        this%aere_cond_col(begc:endc, kk) = spval
-        data1dptr => this%aere_cond_col(begc:endc, kk)
-        call hist_addfld1d (fname='ARENCHYMA_'//tracernames(jj), units='m/s', &
-         avgflag='A', long_name='conductance for tracer transport through arenchyma for '//trim(tracernames(jj)), &
-         ptr_col=data1dptr, default='inactive')
-         
-        this%diffgas_topsoi_col(begc:endc, kk) = spval
-        data1dptr => this%diffgas_topsoi_col(begc:endc, kk)
-        call hist_addfld1d (fname='CDIFF_TOPSOI_'//tracernames(jj), units='none', &
-         avgflag='A', long_name='gas diffusivity in top soil layer for '//trim(tracernames(jj)), &
-         ptr_col=data1dptr, default='inactive')
-
-        this%gas2bulkcef_mobile_col(:,:,kk) = spval
-        data2dptr => this%gas2bulkcef_mobile_col(:,:,kk)
-        call hist_addfld2d (fname='CGAS2BULK_'//tracernames(jj), units='none', type2d='levtrc',  &
-         avgflag='A', long_name='converting factor from gas to bulk phase for '//trim(tracernames(jj)), &
-         ptr_col=data2dptr, default='inactive')        
-      endif
-      
       if(jj <= ngwmobile_tracers)then
+        if(is_volatile(jj))then
+          kk = volatileid(jj)
+          this%scal_aere_cond_col(begc:endc, kk) = spval
+          data1dptr => this%scal_aere_cond_col(begc:endc, kk)
+          call hist_addfld1d (fname='SCAL_ARENCHYMA_'//tracernames(jj), units='none', &
+           avgflag='A', long_name='scaling factor for tracer transport through arenchyma for '//trim(tracernames(jj)), &
+           ptr_col=data1dptr, default='inactive')
+
+          this%aere_cond_col(begc:endc, kk) = spval
+          data1dptr => this%aere_cond_col(begc:endc, kk)
+          call hist_addfld1d (fname='ARENCHYMA_'//tracernames(jj), units='m/s', &
+            avgflag='A', long_name='conductance for tracer transport through arenchyma for '//trim(tracernames(jj)), &
+           ptr_col=data1dptr, default='inactive')
+         
+          this%diffgas_topsoi_col(begc:endc, kk) = spval
+          data1dptr => this%diffgas_topsoi_col(begc:endc, kk)
+          call hist_addfld1d (fname='CDIFF_TOPSOI_'//tracernames(jj), units='none', &
+             avgflag='A', long_name='gas diffusivity in top soil layer for '//trim(tracernames(jj)), &
+             ptr_col=data1dptr, default='inactive')
+
+          this%gas2bulkcef_mobile_col(:,:,kk) = spval
+          data2dptr => this%gas2bulkcef_mobile_col(:,:,kk)
+          call hist_addfld2d (fname='CGAS2BULK_'//tracernames(jj), units='none', type2d='levtrc',  &
+            avgflag='A', long_name='converting factor from gas to bulk phase for '//trim(tracernames(jj)), &
+            ptr_col=data2dptr, default='inactive')        
+        endif
+      
         this%aqu2bulkcef_mobile_col(:,:,jj) = spval
         data2dptr => this%aqu2bulkcef_mobile_col(:,:,jj)
         call hist_addfld2d (fname='CAQU2BULK_vr_'//tracernames(jj), units='none', type2d='levtrc',  &

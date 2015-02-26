@@ -301,6 +301,11 @@ contains
             
          endif
 
+         this%tracer_flx_drain_col(begc:endc, jj) = spval
+         data1dptr => this%tracer_flx_drain_col(:, jj)
+         call hist_addfld1d (fname=trim(tracernames(jj))//'_FLX_DRAIN', units='none', &
+          avgflag='A', long_name='loss from drainage for '//trim(tracernames(jj)), &
+          ptr_col=data1dptr,  default='inactive')
       endif
       this%tracer_flx_netphyloss_col(begc:endc, jj) = spval
       data1dptr => this%tracer_flx_netphyloss_col(:, jj)
@@ -325,12 +330,6 @@ contains
       call hist_addfld1d (fname=trim(tracernames(jj))//'_FLX_PREC', units='none', &
         avgflag='A', long_name='incoming from precipitation for '//trim(tracernames(jj)), &
         ptr_col=data1dptr,  default='inactive')
-
-      this%tracer_flx_drain_col(begc:endc, jj) = spval
-      data1dptr => this%tracer_flx_drain_col(:, jj)
-      call hist_addfld1d (fname=trim(tracernames(jj))//'_FLX_DRAIN', units='none', &
-        avgflag='A', long_name='loss from drainage for '//trim(tracernames(jj)), &
-        ptr_col=data1dptr,  default='inactive')      
 
     enddo
            
