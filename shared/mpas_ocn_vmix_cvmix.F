@@ -435,13 +435,31 @@ contains
                ! compute the boundary layer depth based on model state at current time step
                if(.not.config_use_cvmix_fixed_boundary_layer) then
                  call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
-                 cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface, cvmix_variables%zt_cntr, cvmix_variables%BoundaryLayerDepth)
+                 cvmix_variables % kOBL_depth = &
+                      cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface(1:nVertLevels+1), &
+                      cvmix_variables%zt_cntr(1:nVertLevels), &
+                      cvmix_variables%BoundaryLayerDepth)
                endif
 
             end do ! iterate
 
-            ! given current estimate of OBL and vertical profile of visc/diff, compute boundary layer mixing
-            call cvmix_coeffs_kpp( CVmix_vars = cvmix_variables )
+            call cvmix_coeffs_kpp(                                              &
+                          cvmix_variables % Mdiff_iface(1:nVertLevels+1),       &
+                          cvmix_variables % Tdiff_iface(1:nVertLevels+1),       &
+                          cvmix_variables % Sdiff_iface(1:nVertLevels+1),       &
+                          cvmix_variables%zw_iface(1:nVertLevels+1),            &
+                          cvmix_variables%zt_cntr(1:nVertLevels),               &
+                          cvmix_variables%Mdiff_iface(1:nVertLevels+1),         &
+                          cvmix_variables%Tdiff_iface(1:nVertLevels+1),         &
+                          cvmix_variables%Sdiff_iface(1:nVertLevels+1),         &
+                          cvmix_variables%BoundaryLayerDepth,                   &
+                          cvmix_variables%kOBL_depth,                           &
+                          cvmix_variables%kpp_Tnonlocal_iface(1:nVertLevels+1), &
+                          cvmix_variables%kpp_Snonlocal_iface(1:nVertLevels+1), &
+                          cvmix_variables%SurfaceFriction,                      &
+                          cvmix_variables%SurfaceBuoyancyForcing,               &
+                          maxLevelCell(iCell),                                  &
+                          nVertLevels)
 
             ! intent out of BoundaryLayerDepth is boundary layer depth measured in meters and vertical index
             boundaryLayerDepth(iCell) = cvmix_variables % BoundaryLayerDepth
