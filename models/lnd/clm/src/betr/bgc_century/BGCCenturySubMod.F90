@@ -147,10 +147,10 @@ module BGCCenturySubMod
   this%lit1 = addone(itemp); this%lit1_dek_reac = addone(ireac)
   this%lit2 = addone(itemp); this%lit2_dek_reac = addone(ireac)
   this%lit3 = addone(itemp); this%lit3_dek_reac = addone(ireac)
+  this%cwd  = addone(itemp); this%cwd_dek_reac  = addone(ireac)
   this%som1 = addone(itemp); this%som1_dek_reac = addone(ireac)
   this%som2 = addone(itemp); this%som2_dek_reac = addone(ireac)
   this%som3 = addone(itemp); this%som3_dek_reac = addone(ireac)
-  this%cwd  = addone(itemp); this%cwd_dek_reac  = addone(ireac)
   
   this%nelms = 2   !carbon and nitrogen
   this%c_loc = 1
@@ -237,26 +237,26 @@ module BGCCenturySubMod
     c = filter(fc)
     do j = jtops(c), ubj
       !zero out everything
-      y0(:, j, c ) = 0._r8
+      y0(:, c, j ) = 0._r8
       
       !set up nonzero variables
-      y0(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, j, c)    = tracerstate_vars%tracer_conc_solid_passive_col(c, j, :)
+      y0(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, c, j)    = tracerstate_vars%tracer_conc_solid_passive_col(c, j, :)
 
-      y0(centurybgc_vars%lid_n2,  j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2)
+      y0(centurybgc_vars%lid_n2,  c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2)
       
-      y0(centurybgc_vars%lid_o2,  j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2) 
+      y0(centurybgc_vars%lid_o2,  c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2) 
 
-      y0(centurybgc_vars%lid_ar,  j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar) 
+      y0(centurybgc_vars%lid_ar,  c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar) 
             
-      y0(centurybgc_vars%lid_co2, j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x)
+      y0(centurybgc_vars%lid_co2, c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x)
 
-      y0(centurybgc_vars%lid_ch4, j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4)
+      y0(centurybgc_vars%lid_ch4, c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4)
   
-      y0(centurybgc_vars%lid_nh4,j, c)         = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x)
+      y0(centurybgc_vars%lid_nh4, c, j)         = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x)
       
-      y0(centurybgc_vars%lid_no3,j, c)         = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x)
+      y0(centurybgc_vars%lid_no3, c, j)         = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x)
       
-      y0(centurybgc_vars%lid_n2o, j, c)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o)
+      y0(centurybgc_vars%lid_n2o, c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o)
       
     enddo
   enddo
@@ -316,13 +316,13 @@ module BGCCenturySubMod
   do fc = 1, numf
     c = filter(fc)
     do j = jtops(c), ubj
-      k_decay(lit1, j, c) = k_decay_lit1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(lit2, j, c) = k_decay_lit2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(lit3, j, c) = k_decay_lit3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(som1, j, c) = k_decay_som1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(som2, j, c) = k_decay_som2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(som3, j, c) = k_decay_som3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(cwd,  j, c) = k_decay_cwd  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+      k_decay(lit1, c, j) = k_decay_lit1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+      k_decay(lit2, c, j) = k_decay_lit2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+      k_decay(lit3, c, j) = k_decay_lit3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+      k_decay(som1, c, j) = k_decay_som1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+      k_decay(som2, c, j) = k_decay_som2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+      k_decay(som3, c, j) = k_decay_som3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+      k_decay(cwd,  c, j) = k_decay_cwd  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
     enddo  
   enddo
   end associate
@@ -874,7 +874,7 @@ module BGCCenturySubMod
       endif  
   
       !pot_f_nit_vr is the rate parameter to be returned
-      decay_nh4(j,c) = pot_f_nit_vr(c,j) 
+      decay_nh4(c,j) = pot_f_nit_vr(c,j) 
       !---------------- denitrification
       ! first some input variables an unit conversions
       soil_hr_vr(c,j) = pot_co2_hr(c,j) * catomw
@@ -909,7 +909,7 @@ module BGCCenturySubMod
       ! limit to anoxic fraction of soils
       pot_f_denit_vr(c,j) = f_denit_base_vr(c,j) * anaerobic_frac(c,j)
       
-      decay_no3(j,c) = safe_div(pot_f_denit_vr(c,j), smin_no3_vr(c,j)) ![1/s]
+      decay_no3(c,j) = safe_div(pot_f_denit_vr(c,j), smin_no3_vr(c,j)) ![1/s]
 
       ! now calculate the ratio of N2O to N2 from denitrifictaion, following Del Grosso et al., 2000
       ! diffusivity constant (figure 6b)

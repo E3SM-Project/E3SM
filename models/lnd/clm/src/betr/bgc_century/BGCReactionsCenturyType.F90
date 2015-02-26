@@ -208,7 +208,8 @@ contains
 
 
   tracerboundarycond_vars%topbc_type(1:betrtracer_vars%ngwmobile_tracers) = bndcond_as_conc
-    
+  tracerboundarycond_vars%topbc_type(betrtracer_vars%id_trc_no3x) = bndcond_as_flux
+  
   tracerboundarycond_vars%topbc_type(betrtracer_vars%ngwmobile_tracers+1:betrtracer_vars%ntracers) = bndcond_as_flux
   end subroutine init_boundary_condition_type
 
@@ -356,30 +357,33 @@ contains
 
   !local variables
   character(len=255) :: subname = 'set_boundary_conditions'
+  integer :: fc, c
 
   SHR_ASSERT_ALL((ubound(dz_top)                == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
 
 
-  !values below will be updated with datastream
-  !eventually, the following code will be implemented using polymorphism
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%ngwmobile_tracers+1:betrtracer_vars%ntracers)=0._r8       !zero incoming flux
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_n2)  =32.8_r8                         !mol m-3, contant boundary condition
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_o2)  =8.78_r8                         !mol m-3, contant boundary condition
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_ar)  =0.3924_r8                       !mol m-3, contant boundary condition
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_co2x)=0.0168_r8                       !mol m-3, contant boundary condition  
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_ch4) =6.939e-5_r8                     !mol m-3, contant boundary condition
-  tracerboundarycond_vars%tracer_gwdif_concflux_top_col(1,1:2,betrtracer_vars%id_trc_n2o) =1.195e-5_r8                     !mol m-3, contant boundary condition
+  do fc = 1, num_soilc
+    c = filter_soilc(fc)
+    !values below will be updated with datastream
+    !eventually, the following code will be implemented using polymorphism
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%ngwmobile_tracers+1:betrtracer_vars%ntracers)=0._r8       !zero incoming flux
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_n2)  =32.8_r8                         !mol m-3, contant boundary condition
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_o2)  =8.78_r8                         !mol m-3, contant boundary condition
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_ar)  =0.3924_r8                       !mol m-3, contant boundary condition
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_co2x)=0.0168_r8                       !mol m-3, contant boundary condition  
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_ch4) =6.939e-5_r8                     !mol m-3, contant boundary condition
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_n2o) =1.195e-5_r8                     !mol m-3, contant boundary condition
 
-      
-  tracerboundarycond_vars%bot_concflux_col(1,1,:) = 0._r8                                  !zero flux boundary condition
-  !those will be updated with snow resistance and hydraulic wicking resistance
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_n2)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_o2)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_ar)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_co2x) = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_ch4)  = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance  
-  tracerboundarycond_vars%condc_toplay_col(1,betrtracer_vars%id_trc_n2o)  = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance  
-  
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_no3x) = 0._r8   
+    tracerboundarycond_vars%bot_concflux_col(c,1,:) = 0._r8                                  !zero flux boundary condition
+    !those will be updated with snow resistance and hydraulic wicking resistance
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_n2)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_o2)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ar)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_co2x) = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ch4)  = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance  
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_n2o)  = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance  
+  enddo
   end subroutine set_boundary_conditions
 !-------------------------------------------------------------------------------
 
@@ -494,7 +498,7 @@ contains
   
   !calculate potential decay rates, without nutrient constraint
   call calc_sompool_decay(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, &
-     k_decay(1:centurybgc_vars%nom_pools,  bounds%begc:bounds%endc, lbj:ubj), y0(1:centurybgc_vars%nom_pools, lbj:ubj, bounds%begc:bounds%endc),&
+     k_decay(1:centurybgc_vars%nom_pools,  bounds%begc:bounds%endc, lbj:ubj), y0(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj),&
      pot_decay_rates)
       
   !calculate potential respiration rates by summarizing all om decomposition pathways

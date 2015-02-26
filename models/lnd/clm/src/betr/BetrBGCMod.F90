@@ -42,10 +42,10 @@ contains
   
   end subroutine betrbgc_init
 !-------------------------------------------------------------------------------
-  subroutine run_betr_one_step_without_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, col, &
+  subroutine run_betr_one_step_without_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, col , &
      atm2lnd_vars, soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, waterflux_vars, chemstate_vars, &
-     cnstate_vars, canopystate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction, tracerboundarycond_vars, tracercoeff_vars, &
-     tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+     cnstate_vars, canopystate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction, &
+     tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! DESCRIPTION
   ! run betr code one step forward, without drainage calculation
@@ -134,7 +134,7 @@ contains
        
   !calculate arenchyma conductance  
   call calc_aerecond(bounds, num_soilp, filter_soilp, jwt(bounds%begc:bounds%endc), &
-     soilstate_vars%rootfr_patch(bounds%begc:bounds%endc, 1:ubj), temperature_vars, &
+     soilstate_vars%rootfr_patch(bounds%begp:bounds%endp, 1:ubj), temperature_vars, &
      betrtracer_vars,canopystate_vars, carbonstate_vars, carbonflux_vars, tracercoeff_vars)
   
   !print*,'setup phase change parameters'
@@ -718,7 +718,6 @@ contains
       update_col(c) = .true.
           
     enddo
-
     !Do adpative time stepping to avoid negative tracer
     do      
       call DiffusTransp(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, tracer_conc_mobile_col( : , : ,j), &
@@ -1309,7 +1308,6 @@ contains
       if(snl(c)+1>=1)then
         tracer_flx_dew_grnd(c, j) = (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime/denh2o
         tracer_flx_dew_snow(c, j) = (1._r8 - frac_h2osfc(c))*qflx_dew_snow(c) * dtime/denh2o
-        
         if(h2osoi_ice(c,1)==0._r8)then
           tracer_flx_sub_snow(c, j) = qflx_sub_snow(c) * dtime/denh2o
         else

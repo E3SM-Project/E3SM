@@ -1306,7 +1306,6 @@ module TracerParamsMod
        if(j==betrtracer_vars%id_trc_o18_h2o)then         
          tracer_flx_infl(c,j) = qflx_gross_infl_soil(c)/denh2o    !kg m-2 s-1/ kg m-3 = m/s 
        else
-         
          if(betrtracer_vars%is_volatile(j))then
            !for volatile non water tracer, infiltration is calculated based dissolution of the gas in the water, this may need
            !improvement when tracers are allowed to transport inside snow, such that the tracer infiltration is derived from mass balance in snow
