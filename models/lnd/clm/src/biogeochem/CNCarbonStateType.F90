@@ -702,6 +702,7 @@ contains
                data2dptr => this%decomp_cpools_vr_col(:,:,l)
                fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
                longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
+               print*,fieldname,longname,ndecomp_pools
                call hist_addfld2d (fname=fieldname, units='gC/m^3',  type2d='levdcmp', &
                   avgflag='A', long_name=longname, &
                   ptr_col=data2dptr)

@@ -697,16 +697,16 @@ contains
     call readPrivateParameters()
     
     if (use_cn) then
-
        call init_decomp_cascade_constants()
-       if (use_century_decomp) then
+       if(.not. is_active_betr_bgc)then
+         if (use_century_decomp) then
           ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
-          call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
-       else 
+            call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
+         else 
           ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
-          call init_decompcascade_cn(bounds_proc, cnstate_vars)
-       end if
-
+            call init_decompcascade_cn(bounds_proc, cnstate_vars)
+         end if
+       endif
        ! Note - always initialize the memory for the c13_carbonstate_vars and
        ! c14_carbonstate_vars data structure so that they can be used in 
        ! associate statements (nag compiler complains otherwise)
