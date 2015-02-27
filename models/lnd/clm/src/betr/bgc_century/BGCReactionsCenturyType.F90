@@ -548,6 +548,7 @@ contains
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8 
+      print*,c,j
       call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
     enddo
   enddo  
@@ -773,7 +774,8 @@ contains
       reaction_rates(lk)=ystate(lk)*Extra_inst%k_decay(lk)
     endif
   enddo
-    
+  print*,dydt(1:14)
+  print*,ystate(  
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
   
