@@ -17,6 +17,7 @@ module control_mod
   integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation
   integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
   logical, public  :: use_semi_lagrange_transport   = .false.
+  logical, public  :: use_semi_lagrange_transport_local_conservation   = .false.
 
 ! Tracer transport type
 ! We potentially have five types of tracer advection. However, not all of them

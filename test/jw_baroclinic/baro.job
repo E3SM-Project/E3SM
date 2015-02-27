@@ -172,7 +172,7 @@ cd $run
 # default: assume pure sigma levels:
 set vfile_mid     = "./sabm-$nlev.ascii"
 set vfile_int     = "./sabi-$nlev.ascii"
-cp $vdir/sab?-*..ascii  $run   
+cp $vdir/sab?-*.ascii  $run   
 
 # special cases:
 # copy vertical level files to run directory

@@ -76,6 +76,7 @@ SET(SWEQX_SRCS
                ${SRC_SHARE}/thread_mod.F90
                ${SRC_SHARE}/time_mod.F90
                ${SRC_SHARE}/viscosity_mod.F90
+               ${SRC_SHARE}/unit_tests_mod.F90
                ${SRC_UTILS}/shr_file_mod.F90
                ${SRC_UTILS}/shr_kind_mod.F90
                ${SRC_UTILS}/shr_mpi_mod.F90

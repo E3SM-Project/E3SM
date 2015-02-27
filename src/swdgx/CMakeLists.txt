@@ -35,6 +35,7 @@ SET(SWDGX_SRCS
     ${SRC_SHARE}/bndry_mod.F90
     ${SRC_SHARE}/derivative_mod.F90
     ${SRC_SHARE}/viscosity_mod.F90
+    ${SRC_SHARE}/unit_tests_mod.F90
     ${SRC_SHARE}/time_mod.F90
     ${SRC_SHARE}/fvm_bsp_mod.F90
     ${SRC_SHARE}/fvm_transformation_mod.F90

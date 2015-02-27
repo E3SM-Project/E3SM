@@ -39,7 +39,7 @@ module shallow_water_mod
   ! ------------------------
   use common_io_mod, only: output_prefix     ! Added to support output_prefix 
   ! ------------------------
-  use viscosity_mod, only: biharmonic_wk, test_ibyp, neighbor_minmax, check_edge_flux
+  use viscosity_mod, only: biharmonic_wk, neighbor_minmax
   ! ------------------------
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, &
                            kmass, g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation
