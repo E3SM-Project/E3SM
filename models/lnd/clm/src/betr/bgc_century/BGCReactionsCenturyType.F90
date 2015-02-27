@@ -518,8 +518,8 @@ contains
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x), &     
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_no3x), &
      soilstate_vars, waterstate_vars, centurybgc_vars, n2_n2o_ratio_denit, nh4_no3_ratio, &
-     k_decay(centurybgc_vars%lid_nh4, bounds%begc:bounds%endc, lbj:ubj), &
-     k_decay(centurybgc_vars%lid_no3, bounds%begc:bounds%endc, lbj:ubj))
+     k_decay(centurybgc_vars%lid_nh4_nit_reac, bounds%begc:bounds%endc, lbj:ubj), &
+     k_decay(centurybgc_vars%lid_no3_den_reac, bounds%begc:bounds%endc, lbj:ubj))
      
   !now there is no plant nitrogen uptake, I tend to create a new structure to indicate plant nutrient demand when it is hooked
   !back with CLM
@@ -527,12 +527,12 @@ contains
   call calc_plant_nitrogen_uptake_prof(bounds, ubj, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc, lbj:ubj), &
      plantsoilnutrientflux_vars%plant_totn_demand_flx_col(bounds%begc:bounds%endc), &
      nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
-     k_decay(centurybgc_vars%lid_plant_minn, bounds%begc:bounds%endc ,1:ubj))
+     k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj))
   
   !apply root distribution here
   call apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
     carbonflux_vars%rr_col(bounds%begc:bounds%endc), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj),            &
-    k_decay(centurybgc_vars%lid_at_rt, bounds%begc:bounds%endc, 1:ubj))
+    k_decay(centurybgc_vars%lid_at_rt_reac, bounds%begc:bounds%endc, 1:ubj))
   
   
   !do ode integration and update state variables for each layer
