@@ -863,11 +863,15 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   //
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
-
+#if DEBUG
+  printf("%s %d \n",__FILE__,__LINE__);
+#endif
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
-
+#if DEBUG
+  printf("%s %d \n",__FILE__,__LINE__);
+#endif
   brel(sendcounts);
   brel(recvcounts); 
   brel(sdispls);

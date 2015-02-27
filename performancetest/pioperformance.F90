@@ -237,7 +237,7 @@ contains
                    if(mype==0) print *,__FILE__,__LINE__,frame
                    do nv=1,nvars   
                       call PIO_setframe(File, vari(nv), frame)
-                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval=c0)
+                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= -nv)
                    enddo
 ! multiversion  
 !                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
