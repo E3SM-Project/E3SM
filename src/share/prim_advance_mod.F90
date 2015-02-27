@@ -11,6 +11,8 @@ module prim_advance_mod
   use kinds, only : real_kind, iulog
   use perf_mod, only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod, only : abortmp, parallel_t, iam
+  use control_mod, only : se_prescribed_wind_2d
+
   implicit none
   private
   save
@@ -86,7 +88,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use hybrid_mod, only : hybrid_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
-    use time_mod, only : TimeLevel_t,  timelevel_qdp
+    use time_mod, only : TimeLevel_t,  timelevel_qdp, tevolve
     use diffusion_mod, only :  prim_diffusion
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
@@ -95,6 +97,8 @@ contains
 
 #ifndef CAM
     use asp_tests, only : asp_advection_vertical
+#else
+    use control_mod, only : prescribed_vertwind
 #endif
 
     implicit none
@@ -120,6 +124,7 @@ contains
     real (kind=real_kind) ::  tempdp3d(np,np)
     real (kind=real_kind) ::  tempmass(nc,nc)
     real (kind=real_kind) ::  tempflux(nc,nc,4)
+    real (kind=real_kind) ::  deta
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
     integer :: n,i,j,lx,lenx
 
@@ -220,19 +225,27 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     ! fix dynamical variables, skip dynamics
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-    if (1==prescribed_wind) then
+    if (1==prescribed_wind .and. .not.se_prescribed_wind_2d) then
        time=tl%nstep*dt
        do ie=nets,nete
+
 #ifdef CAM
-          ! read in omega met data and store it in derived%omega_prescribed
-          ! --- compute eta_dot_dpdn from omega_prescribed ...
-          eta_dot_dpdn(:,:,nlev+1) = 0.0d0
+          
+          if (prescribed_vertwind==1) then
 
-          do k = nlev,2,-1
-             eta_dot_dpdn(:,:,k) = eta_dot_dpdn(:,:,k+1) - 2.d0*elem(ie)%derived%omega_prescribed(:,:,k)
-          enddo
+             eta_dot_dpdn(:,:,1) = 0.0d0
+             eta_dot_dpdn(:,:,nlev+1) = 0.0d0
 
-          eta_dot_dpdn(:,:,1) = 0.0d0
+             do k = 2,nlev
+                dp(:,:) =&
+                     (hvcoord%hyam(k) - hvcoord%hyam(k-1))*hvcoord%ps0 + &
+                     (hvcoord%hybm(k) - hvcoord%hybm(k-1))*elem(ie)%state%ps_v(:,:,tl%n0)
+                deta = hvcoord%etam(k)-hvcoord%etam(k-1)
+                eta_dot_dpdn(:,:,k) = dp(:,:)*elem(ie)%derived%etadot_prescribed(:,:,k)/deta
+             end do
+
+          endif
+
 #else
           ! assume most fields are constant in time
           elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,n0)
@@ -245,17 +258,32 @@ contains
               eta_dot_dpdn)
 #endif
           ! accumulate mean fluxes for advection
-          elem(ie)%derived%eta_dot_dpdn(:,:,:) = &
-               elem(ie)%derived%eta_dot_dpdn(:,:,:) + eta_dot_dpdn(:,:,:)*eta_ave_w
+          if (rsplit==0) then
+             elem(ie)%derived%eta_dot_dpdn(:,:,:) = &
+                  elem(ie)%derived%eta_dot_dpdn(:,:,:) + eta_dot_dpdn(:,:,:)*eta_ave_w
+          else
+             ! lagrangian case.  mean vertical velocity = 0
+             ! compute dp3d on floating levels
+             elem(ie)%derived%eta_dot_dpdn(:,:,:) = 0
 
+             do k=1,nlev
+                elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%state%dp3d(:,:,k,n0)  &
+                     + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
+             enddo
+
+          end if
           ! subcycling code uses a mean flux to advect tracers
 #if (defined COLUMN_OPENMP)
           !$omp parallel do private(k,dp)
 #endif
           do k=1,nlev
-             dp(:,:) =&
-                  ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+             if (rsplit==0) then
+                dp(:,:) =&
+                     ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                     ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0) 
+             else
+                dp(:,:) = elem(ie)%state%dp3d(:,:,k,tl%n0)
+             end if
 
              elem(ie)%derived%vn0(:,:,1,k)=elem(ie)%derived%vn0(:,:,1,k)+&
                   eta_ave_w*elem(ie)%state%v(:,:,1,k,n0)*dp(:,:)
@@ -596,6 +624,8 @@ contains
        enddo
     endif
 #endif
+
+    tevolve=tevolve+dt
 
     call t_stopf('prim_advance_exp')
     call t_adj_detailf(-1)
@@ -2156,11 +2186,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                     vtens(i,j,2,k,ie)=vtens_tmp
                  enddo
               enddo
-              if (0<ntrac) then
-                dpflux(:,:,:,k,ie) = -nu_p*dpflux(:,:,:,k,ie)
+              if (0<ntrac) then 
+                elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - &
+                                              eta_ave_w*nu_p*dpflux(:,:,:,k,ie)/hypervis_subcycle
                 if (nu_top>0 .and. k<=3) then
                   laplace_fluxes=subcell_Laplace_fluxes(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),np,nc)
-                  dpflux(:,:,:,k,ie) = dpflux(:,:,:,k,ie) + nu_scale_top*nu_top*laplace_fluxes
+                  elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
+                                           eta_ave_w*nu_scale_top*nu_top*laplace_fluxes/hypervis_subcycle
                 endif
               endif
            enddo
@@ -2206,8 +2238,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            if (0<ntrac) then
              temp =  dptens(:,:,:,ie)/dt - temp
              do k=1,nlev
-               dpflux(:,:,:,k,ie) = dpflux(:,:,:,k,ie) + &
-                 subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet)
+               elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) + &
+                 eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet)/hypervis_subcycle
              end do
            endif
 
@@ -2237,10 +2269,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  enddo
               enddo
            enddo
-           if (0<ntrac) then
-             elem(ie)%sub_elem_mass_flux = &
-                elem(ie)%sub_elem_mass_flux + eta_ave_w*dpflux(:,:,:,:,ie)
-           endif
         enddo
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
@@ -2569,7 +2597,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   ! ===================================
   use kinds, only : real_kind
-  use dimensions_mod, only : np, np, nc, nlev, ntrac, nelemd
+  use dimensions_mod, only : np, nc, nlev, ntrac, nelemd
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t,PrintElem
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
@@ -2582,7 +2610,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
   use physics_mod, only : virtual_specific_heat, virtual_temperature
   use prim_si_mod, only : preq_vertadv, preq_omega_ps, preq_hydrostatic
+#if ( defined CAM )
+  use control_mod, only: se_met_nudge_u, se_met_nudge_p, se_met_nudge_t, se_met_tevolve
+#endif
 
+  use time_mod, only : tevolve
 
   implicit none
   integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
@@ -2611,6 +2643,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np)      :: Ephi       ! kinetic energy + PHI term
   real (kind=real_kind), dimension(np,np,2)      :: grad_ps    ! lat-lon coord version
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
+  real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p_m_pmet  ! gradient(p - p_met)
   real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
   real (kind=real_kind), dimension(np,np,nlev)   :: p          ! pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: dp         ! delta pressure
@@ -2630,7 +2663,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
   integer :: i,j,k,kptr,ie
-  integer :: cnt_ps_v,cnt_T
+  real (kind=real_kind) ::  u_m_umet, v_m_vmet, t_m_tmet 
 
 !JMD  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
 
@@ -2710,7 +2743,18 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            end do
         end do
 
-
+#if ( defined CAM )
+        ! ============================
+        ! compute grad(P-P_met)
+        ! ============================
+        if (se_met_nudge_p.gt.0.D0) then
+           grad_p_m_pmet(:,:,:,k) = &
+                grad_p(:,:,:,k) - &
+                hvcoord%hybm(k)* &
+                gradient_sphere( elem(ie)%derived%ps_met(:,:)+tevolve*elem(ie)%derived%dpsdt_met(:,:), &
+                                 deriv,elem(ie)%Dinv)
+        endif
+#endif
 
         ! ================================
         ! Accumulate mean Vel_rho flux in vn0
@@ -2856,7 +2900,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2)
 #endif
-     do k=1,nlev
+     vertloop: do k=1,nlev
         do j=1,np
            do i=1,np
               v1     = elem(ie)%state%v(i,j,1,k,n0)
@@ -2909,10 +2953,57 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               !
               ! phl: add forcing term to T
               !
+
+#if ( defined CAM )
+              
+              if (se_prescribed_wind_2d) then
+                 vtens1(i,j,k) = 0.D0
+                 elem(ie)%derived%Utnd(i+(j-1)*np,k) = 0.D0
+                 vtens2(i,j,k) = 0.D0
+                 elem(ie)%derived%Vtnd(i+(j-1)*np,k) = 0.D0
+                 ttens(i,j,k) = 0.D0
+                 elem(ie)%derived%Ttnd(i+(j-1)*np,k) = 0.D0
+              else
+                 if(se_met_nudge_u.gt.0.D0)then
+                    u_m_umet = v1 - &
+                         elem(ie)%derived%u_met(i,j,k) - &
+                         se_met_tevolve*tevolve*elem(ie)%derived%dudt_met(i,j,k)
+                    v_m_vmet = v2 - &
+                         elem(ie)%derived%v_met(i,j,k) - &
+                         se_met_tevolve*tevolve*elem(ie)%derived%dvdt_met(i,j,k)
+
+                    vtens1(i,j,k) =   vtens1(i,j,k) - se_met_nudge_u*u_m_umet * elem(ie)%state%nudge_factor(i,j)
+
+                    elem(ie)%derived%Utnd(i+(j-1)*np,k) = elem(ie)%derived%Utnd(i+(j-1)*np,k) &
+                         + se_met_nudge_u*u_m_umet * elem(ie)%state%nudge_factor(i,j)
+
+                    vtens2(i,j,k) =   vtens2(i,j,k) - se_met_nudge_u*v_m_vmet * elem(ie)%state%nudge_factor(i,j)
+
+                    elem(ie)%derived%Vtnd(i+(j-1)*np,k) = elem(ie)%derived%Vtnd(i+(j-1)*np,k) &
+                         + se_met_nudge_u*v_m_vmet * elem(ie)%state%nudge_factor(i,j)
+
+                 endif
+
+                 if(se_met_nudge_p.gt.0.D0)then
+                    vtens1(i,j,k) =   vtens1(i,j,k) - se_met_nudge_p*grad_p_m_pmet(i,j,1,k)  * elem(ie)%state%nudge_factor(i,j)
+                    vtens2(i,j,k) =   vtens2(i,j,k) - se_met_nudge_p*grad_p_m_pmet(i,j,2,k)  * elem(ie)%state%nudge_factor(i,j)
+                 endif
+
+                 if(se_met_nudge_t.gt.0.D0)then
+                    t_m_tmet = elem(ie)%state%T(i,j,k,n0) - &
+                         elem(ie)%derived%T_met(i,j,k) - &
+                         se_met_tevolve*tevolve*elem(ie)%derived%dTdt_met(i,j,k)
+                    ttens(i,j,k)  = ttens(i,j,k) - se_met_nudge_t*t_m_tmet * elem(ie)%state%nudge_factor(i,j)
+                    elem(ie)%derived%Ttnd(i+(j-1)*np,k) = elem(ie)%derived%Ttnd(i+(j-1)*np,k) &
+                         + se_met_nudge_t*t_m_tmet * elem(ie)%state%nudge_factor(i,j)
+                 endif
+              endif
+#endif
+
            end do
         end do
 
-     end do
+     end do vertloop
 
 #ifdef ENERGY_DIAGNOSTICS
      ! =========================================================

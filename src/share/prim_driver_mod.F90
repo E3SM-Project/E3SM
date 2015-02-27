@@ -83,7 +83,9 @@ contains
     ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
-    use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs, PrintGridVertex
+    use derivative_mod, only : allocate_subcell_integration_matrix
+    ! --------------------------------
+    use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
     ! --------------------------------
     use schedtype_mod, only : schedule
     ! --------------------------------
@@ -118,6 +120,7 @@ contains
     use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, &
          repro_sum_setopts
 #else
+    use infnan,           only: nan, assignment(=)
     use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
 #endif
     implicit none
@@ -474,6 +477,12 @@ contains
 
        elem(ie)%derived%Omega_p=0
        elem(ie)%state%dp3d=0
+
+#ifdef CAM
+       elem(ie)%derived%u_met = nan
+       elem(ie)%derived%v_met = nan
+       elem(ie)%derived%T_met = nan
+#endif
     enddo
 
 
@@ -535,6 +544,11 @@ contains
       call fvm_init1(par,elem)
 #endif
     endif
+
+    ! =======================================================
+    ! Allocate memory for subcell flux calculations.
+    ! =======================================================
+    call allocate_subcell_integration_matrix(np, nc)
 
     if ( use_semi_lagrange_transport) then
       call sort_neighbor_buffer_mapping(par, elem,1,nelemd)
@@ -1433,7 +1447,7 @@ contains
        enddo
        ! DEBUGDP step: ps_v should not be used for rsplit>0 code during prim_step
        ! vertical_remap.  so to this for debugging:
-       elem(ie)%state%ps_v(:,:,tl%n0)=-9e9
+!       elem(ie)%state%ps_v(:,:,tl%n0)=-9e9 !outcommented so the pre_scribed winds work with rsplit>0
     enddo
     endif
 
@@ -1610,6 +1624,7 @@ contains
        !       
        do ie=nets,nete
           fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0)
+          elem(ie)%sub_elem_mass_flux=0
        end do
     end if
  
@@ -1677,8 +1692,8 @@ contains
             hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
-#if HOMME_TEST_SUB_ELEMENT_MASS_FLUX
-    if (0<ntrac) then
+#ifdef HOMME_TEST_SUB_ELEMENT_MASS_FLUX
+    if (0<ntrac.and.rstep==1) then
       do ie=nets,nete
       do k=1,nlev
         tempdp3d = elem(ie)%state%dp3d(:,:,k,tl%np1) - &
