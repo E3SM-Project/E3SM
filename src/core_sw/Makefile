@@ -18,7 +18,7 @@ core_reg:
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.sw )
-	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.sw stream_list.sw. )
+	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.sw stream_list.sw. listed )
 
 post_build:
 	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi

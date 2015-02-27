@@ -14,7 +14,10 @@
 #define SINGLE 0
 #define SEPARATE 1
 
-int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int pairs, char **keys, char **values);
+#define ORDER_LISTED 0
+#define ORDER_MUTABLE 1
+
+int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int order, int pairs, char **keys, char **values);
 void write_stream_header(ezxml_t stream_xml, FILE *fd);
 
 int main(int argc, char ** argv)/*{{{*/
@@ -24,10 +27,11 @@ int main(int argc, char ** argv)/*{{{*/
 	char *stream_file_prefix;
 	char **keys, **values;
 	char *string, *tofree, *token;
+	int order;
 
-	if (! (argc >= 4) ) {
+	if (! (argc >= 5) ) {
 		fprintf(stderr, "\nError: Not enough input arguments...\n\n");
-		fprintf(stderr, "\nUSAGE: ./streams_gen registry_file streams_file_output stream_file_prefix [key1=value1] [key2=value2]...\n\n");
+		fprintf(stderr, "\nUSAGE: ./streams_gen registry_file streams_file_output stream_file_prefix stream_order [key1=value1] [key2=value2]...\n\n");
 		return 1;
 	}
 
@@ -42,7 +46,20 @@ int main(int argc, char ** argv)/*{{{*/
 
 	stream_file_prefix=strdup(argv[3]);
 
-	pairs = argc-4;
+	if (strcmp(argv[4], "listed") == 0 ){
+		order = ORDER_LISTED;
+	} else if (strcmp(argv[4], "mutable") == 0){
+		order = ORDER_MUTABLE;
+	} else {
+		fprintf(stderr, "\nError: Option %s is not valid for stream order.\n", argv[4]);
+		fprintf(stderr, "\tOrder values are:\n");
+		fprintf(stderr, "\t\tlisted -- Defines streams in the listed order in registry.\n");
+		fprintf(stderr, "\t\tmutable -- Defines immutable streams first, followed by mutable streams.\n");
+		return 1;
+	}
+
+
+	pairs = argc-5;
 	if ( pairs > 0 ) {
 		keys = malloc(sizeof(char*) * pairs);
 		values = malloc(sizeof(char*) * pairs);
@@ -68,7 +85,7 @@ int main(int argc, char ** argv)/*{{{*/
 
 	ezxml_t registry = ezxml_parse_fp(regfile);
 
-	err = generate_streams(registry, streamsfile, stream_file_prefix, pairs, keys, values);
+	err = generate_streams(registry, streamsfile, stream_file_prefix, order, pairs, keys, values);
 
 	if ( pairs > 0 ) {
 		free(keys);
@@ -82,7 +99,7 @@ int main(int argc, char ** argv)/*{{{*/
 	return 0;
 }/*}}}*/
 
-int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int pairs, char **keys, char **values){/*{{{*/
+int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int order, int pairs, char **keys, char **values){/*{{{*/
 	ezxml_t streams_xml, stream_xml;
 	ezxml_t member_xml;
 
@@ -99,35 +116,48 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int p
 
 	fprintf(fd, "<streams>\n");
 
-	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
+	if ( order == ORDER_MUTABLE ) {
+		for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
 
-		// First pass, only pull out immutable streams. Put these at the top of the file. Since they *have* to be defined.
-		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
-			immutable = ezxml_attr(stream_xml, "immutable");
+			// First pass, only pull out immutable streams. Put these at the top of the file. Since they *have* to be defined.
+			for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
+				immutable = ezxml_attr(stream_xml, "immutable");
 
-			write_stream = is_structure_writable(stream_xml, pairs, keys, values);
+				write_stream = is_structure_writable(stream_xml, pairs, keys, values);
 
-			if ( write_stream == -1 ) write_stream = 1; // If key is missing, make stream writable
+				if ( write_stream == -1 ) write_stream = 1; // If key is missing, make stream writable
 
-			if ( immutable != NULL && strcmp(immutable, "true") == 0) {
-				if ( write_stream == 1 ) {
-					write_stream_header(stream_xml, fd);
+				if ( immutable != NULL && strcmp(immutable, "true") == 0) {
+					if ( write_stream == 1 ) {
+						write_stream_header(stream_xml, fd);
+					}
 				}
 			}
 		}
 	}
 
 	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next){
-
-		// Second pass, only pull out mutable streams. Put these below any immutable streams.
+		/* Second pass is intended to pull out mutable streams when order is mutable, but pulls out all streams when order is listed. */
 		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next){
 			stream_written = 0;
-			write_stream = 0;
 
 			name = ezxml_attr(stream_xml, "name");
 			runtime = ezxml_attr(stream_xml, "runtime_format");
 
 			immutable = ezxml_attr(stream_xml, "immutable");
+
+			write_stream = is_structure_writable(stream_xml, pairs, keys, values);
+
+			if ( write_stream == -1 ) write_stream = 1; // If key is missing, make stream writable
+
+			/* If order was listed, then write immutable streams where they are defined. */
+			if ( order == ORDER_LISTED ) {
+				if ( immutable != NULL && strcmp(immutable, "true") == 0){
+					if ( write_stream == 1) {
+						write_stream_header(stream_xml, fd);
+					}
+				}
+			}
 
 			if ( immutable == NULL || (immutable != NULL && strcmp(immutable, "false") == 0) ) {
 
