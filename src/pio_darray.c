@@ -5,6 +5,7 @@
 PIO_Offset PIO_BUFFER_SIZE_LIMIT= 10485760; // 10MB default limit
 bufsize PIO_CNBUFFER_LIMIT=10485760; // 10MB default limit
 static void *CN_bpool=NULL; 
+static PIO_Offset maxusage=0;
 
  // Changes to PIO_BUFFER_SIZE_LIMIT only apply to files opened after the change
  PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
@@ -100,14 +101,7 @@ void compute_buffer_init(iosystem_desc_t ios)
 #ifdef _PNETCDF
      if(file->iotype == PIO_IOTYPE_PNETCDF){
        // make sure we have room in the buffer ;
-	 ierr = ncmpi_inq_buffer_usage(ncid, &usage);
-	 usage += tsize*(iodesc->maxiobuflen);
-	 MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
-	 //         if(ios->io_rank==0) printf("%s %d %d %d\n",__FILE__,__LINE__,iodesc->maxregions,usage);
-	 if(usage >= PIO_BUFFER_SIZE_LIMIT){
-	   flush_output_buffer(file);
-	 }
-
+       flush_output_buffer(file, false, tsize*(iodesc->maxiobuflen));
      }
 #endif
 
@@ -280,12 +274,14 @@ void compute_buffer_init(iosystem_desc_t ios)
    return ierr;
  }
 
-int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nvars, const int vid[], 
-			      void *IOBUF, const int frame[], void *fillvalue)
+int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[], 
+			      const int iodesc_ndims, MPI_Datatype basetype, const PIO_Offset gsize[],
+			      const int maxregions, io_region *firstregion, const PIO_Offset llen,
+			      const int maxiobuflen, const int num_aiotasks,
+			      void *IOBUF, const int frame[])
  {
    iosystem_desc_t *ios;
    var_desc_t *vdesc;
-   int ndims;
    int ierr;
    int i;
    int msg;
@@ -313,7 +309,6 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
      fprintf(stderr,"Failed to find variable handle %d\n",vid[0]);
      return PIO_EBADID;
    }
-   ndims = iodesc->ndims;
    msg = 0;
 
    if(ios->async_interface && ! ios->ioproc){
@@ -323,114 +318,29 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
    }
 
    ierr = PIOc_inq_varndims(file->fh, vid[0], &fndims);
-   MPI_Type_size(iodesc->basetype, &tsize);
-
-   if(iodesc->needsfill && 
-      file->iotype == PIO_IOTYPE_PNETCDF && 
-      iodesc->rearranger==PIO_REARR_SUBSET){
-     PIO_Offset start[fndims];
-     PIO_Offset count[fndims];
-     void *bufptr=NULL;
-     size_t totalsize=0;
-
-     //     printf("%s %d \n",__FILE__,__LINE__);
-     for(int nv=0;nv<nvars;nv++){
-	 //       printf("%s %d %d\n",__FILE__,__LINE__,nv);
-       vdesc = (file->varlist)+vid[nv];
-
-       if(fndims>ndims && file->indep_rank == ios->io_rank){
-	 start[0]=frame[nv];
-	 count[0]=1;
-       }
-       
-       if(file->indep_rank== ios->io_rank){
-	 totalsize=1;
-	 for(int id=(fndims-ndims);id<fndims;id++){
-	   start[id]=0;
-	   count[id]=iodesc->gsize[id-(fndims-ndims)];
-	   totalsize*=count[id];
-	 }
-	 bufptr = malloc(tsize*totalsize);
-       }else{
-	 for(int id=0;id<fndims;id++){
-	   start[id]=0;
-	   count[id]=0;
-	 }
-       }
-       
-       if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
-	 for(i=0;i<totalsize;i++){
-	   ((double *)bufptr)[i]  = ((double *) fillvalue)[nv];
-	 }
-	 PIOc_put_vara_double(ncid, vid[nv], start, count, (const double *) bufptr);
-       }else if(iodesc->basetype == MPI_INTEGER){
-	 for(i=0;i<totalsize;i++){
-	   ((int *)bufptr)[i]  = ((int *) fillvalue)[nv];
-	 }
-	 PIOc_put_vara_int(ncid, vid[nv], start, count, (const int *) bufptr);
-
-       }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
-	 
-	 for(i=0;i<totalsize;i++){
-	   ((float *)bufptr)[i]  = ((float *) fillvalue)[nv];
-	 }
-	 PIOc_put_vara_float(ncid, vid[nv], start, count, (const float *) bufptr);
-       }else{
-	 fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
-       }
-     }
-     if(totalsize>0){
-       free(bufptr);
-     }
-#ifdef _PNETCDF
-     // Need to flush the buffer of fill values before the next write
-     //     printf("%s %d \n",__FILE__,__LINE__);
-     if(ios->ioproc && file->iotype == PIO_IOTYPE_PNETCDF){
-       flush_output_buffer(file);
-     }
-#endif
-   }
-
-
+   MPI_Type_size(basetype, &tsize);
 
    if(ios->ioproc){
      io_region *region;
      int regioncnt;
      int rrcnt;
      void *bufptr;
-      int buflen, j;
+     int buflen, j;
      size_t start[fndims];
      size_t count[fndims];
+     int ndims = iodesc_ndims;
 
-
-     PIO_Offset *startlist[iodesc->maxregions];
-     PIO_Offset *countlist[iodesc->maxregions];
+     PIO_Offset *startlist[maxregions];
+     PIO_Offset *countlist[maxregions];
 
      ncid = file->fh;
-     region = iodesc->firstregion;
+     region = firstregion;
 
-     if(vdesc->record >= 0 && ndims<fndims)
+     if(vdesc->record >= 0 && ndims<fndims){
        ndims++;
-#ifdef _PNETCDF
-     if(file->iotype == PIO_IOTYPE_PNETCDF){
-       // make sure we have room in the buffer ;
-	 ierr = ncmpi_inq_buffer_usage(ncid, &usage);
-	 usage += nvars*tsize*(iodesc->maxiobuflen);
-	 //printf("%s %d %ld %ld\n",__FILE__,__LINE__,usage,PIO_BUFFER_SIZE_LIMIT);
-	 MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
-
-	 if(usage >= PIO_BUFFER_SIZE_LIMIT){	   
-	 //  printf("%s %d %ld %d %ld %ld\n",__FILE__,__LINE__,usage,nvars,PIO_BUFFER_SIZE_LIMIT,nvars*tsize*(iodesc->maxiobuflen));
-	   flush_output_buffer(file);
-	   ierr = ncmpi_inq_buffer_usage(ncid, &usage);
-	  // printf("%s %d %ld \n",__FILE__,__LINE__,usage);
-	 }
-
      }
-#endif
-
      rrcnt=0;
-     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
+     for(regioncnt=0;regioncnt<maxregions;regioncnt++){
        for(i=0;i<ndims;i++){
 	 start[i] = 0;
 	 count[i] = 0;
@@ -463,11 +373,11 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	     start[0] = frame[nv];
 	   }
 	   if(region != NULL){
-	     bufptr = (void *)((char *) IOBUF + tsize*(nv*iodesc->llen + region->loffset));
+	     bufptr = (void *)((char *) IOBUF + tsize*(nv*llen + region->loffset));
 	   }
 	   ierr = nc_var_par_access(ncid, vid[nv], NC_COLLECTIVE);
 
-	   switch(iodesc->basetype){
+	   switch(basetype){
 	   case MPI_DOUBLE:
 	   case MPI_REAL8:
 	     ierr = nc_put_vara_double (ncid, vid[nv],(size_t *) start,(size_t *) count, (const double *) bufptr); 
@@ -480,7 +390,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	     ierr = nc_put_vara_float (ncid, vid[nv], (size_t *) start, (size_t *) count, (const float *) bufptr); 
 	     break;
 	   default:
-	     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
+	     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) basetype);
 	   }
 	 }
 	 break;
@@ -488,10 +398,10 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 #endif
        case PIO_IOTYPE_NETCDF:
 	 {
-	   mpierr = MPI_Type_size(iodesc->basetype, &dsize);
+	   mpierr = MPI_Type_size(basetype, &dsize);
 	   size_t tstart[ndims], tcount[ndims];
 	   if(ios->io_rank==0){
-	     for(int iorank=0;iorank<iodesc->num_aiotasks;iorank++){
+	     for(int iorank=0;iorank<num_aiotasks;iorank++){
 	       if(iorank==0){	    
 	         buflen=1;
 		 for(j=0;j<ndims;j++){
@@ -519,19 +429,19 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 
 		   if(iorank>0){
 		     bufptr = malloc(buflen*tsize) ;
-		     mpierr = MPI_Recv( bufptr, buflen, iodesc->basetype, iorank, iorank, ios->io_comm, &status);
+		     mpierr = MPI_Recv( bufptr, buflen, basetype, iorank, iorank, ios->io_comm, &status);
 		   }else{
-		     bufptr = (void *)((char *) IOBUF+ tsize*(nv*iodesc->llen + region->loffset));
+		     bufptr = (void *)((char *) IOBUF+ tsize*(nv*llen + region->loffset));
 		   }
 		   //		   printf("%s %d %d %X %X\n",__FILE__,__LINE__,vid[nv],IOBUF,bufptr);
-		   if(iodesc->basetype == MPI_INTEGER){
+		   if(basetype == MPI_INTEGER){
 		     ierr = nc_put_vara_int (ncid, vid[nv], tstart, tcount, (const int *) bufptr); 
-		   }else if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
+		   }else if(basetype == MPI_DOUBLE || basetype == MPI_REAL8){
 		     ierr = nc_put_vara_double (ncid, vid[nv], tstart, tcount, (const double *) bufptr); 
-		   }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
+		   }else if(basetype == MPI_FLOAT || basetype == MPI_REAL4){
 		     ierr = nc_put_vara_float (ncid,vid[nv], tstart, tcount, (const float *) bufptr); 
 		   }else{
-		     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
+		     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) basetype);
 		   }
 		   if(iorank>0){
 		     free(bufptr);
@@ -543,7 +453,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	         }
 	       }
 	     }
-	   }else if(ios->io_rank < iodesc->num_aiotasks ){
+	   }else if(ios->io_rank < num_aiotasks ){
 	     buflen=1;
 	     for(i=0;i<ndims;i++){
 	       tstart[i] = (size_t) start[i];
@@ -559,10 +469,10 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	       mpierr = MPI_Rsend( tcount, ndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
 
 	       for(int nv=0; nv<nvars; nv++){
-       	         bufptr = (void *)((char *) IOBUF + tsize*(nv*iodesc->llen + region->loffset));
+       	         bufptr = (void *)((char *) IOBUF + tsize*(nv*llen + region->loffset));
 		 //		 printf("%d %d %d\n",__LINE__,iodesc->llen,region->loffset);
 		 // printf("%d %d %d %d %d %d\n",__LINE__,((int *)bufptr)[0],((int *)bufptr)[1],((int *)bufptr)[2],((int *)bufptr)[3],((int *)bufptr)[4]);
-	         mpierr = MPI_Send( bufptr, buflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
+	         mpierr = MPI_Send( bufptr, buflen, basetype, 0, ios->io_rank, ios->io_comm);
 	       }
 	     }
 	   }
@@ -587,7 +497,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 	   }
 	   rrcnt++;
 	 }	 
-	 if(regioncnt==iodesc->maxregions-1){
+	 if(regioncnt==maxregions-1){
 	   //printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,ios->io_rank,iodesc->llen, tdsize);
 	   //	   ierr = ncmpi_put_varn_all(ncid, vid, iodesc->maxregions, startlist, countlist, 
 	   //			     IOBUF, iodesc->llen, iodesc->basetype);
@@ -599,10 +509,10 @@ int pio_write_darray_multi_nc(file_desc_t *file, io_desc_t *iodesc,const int nva
 		 startlist[rc][0] = frame[nv];
 	       }
 	     }
-	     bufptr = (void *)((char *) IOBUF + nv*tsize*iodesc->llen);
+	     bufptr = (void *)((char *) IOBUF + nv*tsize*llen);
 
 	     ierr = ncmpi_iput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
-				    bufptr, iodesc->llen, iodesc->basetype, &request);
+				    bufptr, llen, basetype, &request);
 	     /*
 	     ierr = ncmpi_bput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
 				    bufptr, iodesc->llen, iodesc->basetype, &request);
@@ -639,6 +549,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    void *iobuf;
    int vsize, rlen;
    int ierr;
+   void *fillbuf = NULL;
 
    ierr = PIO_NOERR;
 
@@ -682,13 +593,13 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	 if(vsize==4){
 	   for(int nv=0;nv < nvars; nv++){
 	     for(int i=0;i<iodesc->maxiobuflen;i++){
-	       ((float *)iobuf)[nv+i*nvars] = ((float *)fillvalue)[nv];
+	       ((float *)iobuf)[i+nv*(iodesc->maxiobuflen)] = ((float *)fillvalue)[nv];
 	     }
 	   }
 	 }else if(vsize==8){
 	   for(int nv=0;nv < nvars; nv++){
 	     for(int i=0;i<iodesc->maxiobuflen;i++){
-	       ((double *)iobuf)[nv+i*nvars] = ((double *)fillvalue)[nv];
+	       ((double *)iobuf)[i+nv*(iodesc->maxiobuflen)] = ((double *)fillvalue)[nv];
 	     }
 	   }
 	 }
@@ -721,17 +632,46 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
    switch(file->iotype){
    case PIO_IOTYPE_PNETCDF:
+     //     printf("%s %d \n",__FILE__,__LINE__);
+     if(iodesc->rearranger == PIO_REARR_SUBSET && iodesc->needsfill &&
+	iodesc->holegridsize>0){
+       fillbuf = bget(iodesc->holegridsize*vsize*nvars);
+       if(vsize==4){
+	 for(int nv=0;nv<nvars;nv++){
+	   for(int i=0;i<iodesc->holegridsize;i++){
+	     ((float *) fillbuf)[i+nv*iodesc->holegridsize] = ((float *) fillvalue)[nv];
+	   }
+	 
+	   //         printf("%s %d %d %d\n",__FILE__,__LINE__,nv,((int *)fillbuf)[0]);
+          }
+       }else if(vsize==8){
+	 for(int nv=0;nv<nvars;nv++){
+	   for(int i=0;i<iodesc->holegridsize;i++){
+	     ((double *) fillbuf)[i+nv*iodesc->holegridsize] = ((double *) fillvalue)[nv];
+	   }
+	 }
+       }
+             
+       ierr = pio_write_darray_multi_nc(file, nvars, vid,  
+					iodesc->ndims, iodesc->basetype, iodesc->gsize,
+					iodesc->maxfillregions, iodesc->fillregion, iodesc->holegridsize,
+					iodesc->holegridsize, iodesc->num_aiotasks,
+					fillbuf, frame);
+     }
    case PIO_IOTYPE_NETCDF:
    case PIO_IOTYPE_NETCDF4P:
    case PIO_IOTYPE_NETCDF4C:
-     /*     for(int ivar=0; ivar < nvars; ivar ++){
-       ierr = pio_write_darray_nc(file, iodesc, vid[ivar], iobuf+vsize*ivar*(iodesc->llen), fillvalue);
-     }
-     */
-     ierr = pio_write_darray_multi_nc(file, iodesc, nvars, vid, iobuf, frame, fillvalue);
+
+     ierr = pio_write_darray_multi_nc(file, nvars, vid,  
+				      iodesc->ndims, iodesc->basetype, iodesc->gsize,
+				      iodesc->maxregions, iodesc->firstregion, iodesc->llen,
+				      iodesc->maxiobuflen, iodesc->num_aiotasks,
+				      iobuf, frame);
+     
    }
    
-   flush_output_buffer(file);
+   /* We cannot free the iobuf and the fillbuf until the flush completes */
+   flush_output_buffer(file, true, 0);
 
    //printf("%s %d %ld\n",__FILE__,__LINE__,iobuf);
    if(iobuf != NULL && iobuf != array){
@@ -739,6 +679,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      free(iobuf);
      //     brel(iobuf);
      //  printf("%s %d\n",__FILE__,__LINE__);
+   }
+   if(fillbuf != NULL){
+       brel(fillbuf);
    }
    return ierr;
 
@@ -1017,7 +960,6 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
   MPI_Status status;
   int i;
 
-
   ios = file->iosystem;
   if(ios == NULL)
     return PIO_EBADID;
@@ -1207,7 +1149,6 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    }
             rrlen++;
 	  }
-
 	  if(regioncnt==iodesc->maxregions-1){
 	    ierr = ncmpi_get_varn_all(file->fh, vid, rrlen, startlist, 
 				      countlist, IOBUF, iodesc->llen, iodesc->basetype);
@@ -1243,7 +1184,6 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   int ierr, tsize;
   MPI_Datatype vtype;
  
-
   file = pio_get_file_from_id(ncid);
 
   if(file == NULL){
@@ -1261,6 +1201,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   }else{
     rlen = iodesc->llen;
   }
+
   if(iodesc->rearranger > 0){
     if(ios->ioproc && rlen>0){
        MPI_Type_size(iodesc->basetype, &tsize);	
@@ -1281,9 +1222,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
     ierr = pio_read_darray_nc(file, iodesc, vid, iobuf);
   }
   if(iodesc->rearranger > 0){
-    //	      printf("%s %d %d\n",__FILE__,__LINE__,ierr);
     ierr = rearrange_io2comp(*ios, iodesc, iobuf, array, 0, 0);
-    //	      printf("%s %d %d\n",__FILE__,__LINE__,ierr);
 
     if(rlen>0)
       brel(iobuf);
@@ -1293,7 +1232,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
 
 }
 
-int flush_output_buffer(file_desc_t *file)
+int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 {
   var_desc_t *vardesc;
   int ierr=PIO_NOERR;
@@ -1301,6 +1240,25 @@ int flush_output_buffer(file_desc_t *file)
 //  if(file->nreq==0)
 //    return ierr;
   int status[file->nreq];
+  PIO_Offset usage;
+
+  ierr = ncmpi_inq_buffer_usage(file->fh, &usage);
+
+  if(!force){
+    usage += addsize;
+    MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_OFFSET,  MPI_MAX, 
+		  file->iosystem->io_comm);
+    if(usage<PIO_BUFFER_SIZE_LIMIT){
+      return ierr;
+    }
+  }
+  if(usage > maxusage){
+    maxusage = usage;
+  }
+  if(force && file->iosystem->iomaster){
+    printf("%s %d %ld\n",__FILE__,__LINE__,maxusage);
+  }
+
 
   if(file->nreq>PIO_MAX_REQUESTS){
     fprintf(stderr,"Need to increase PIO_MAX_REQUESTS %d\n",file->nreq);

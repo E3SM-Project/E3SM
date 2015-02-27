@@ -109,8 +109,11 @@ typedef struct io_desc_t
   MPI_Datatype *rtype;
   MPI_Datatype *stype;
   int num_stypes;
-  
+  int holegridsize;
+  int maxfillregions;
   io_region *firstregion;
+  io_region *fillregion;
+  
   MPI_Comm subset_comm;
   struct io_desc_t *next;
 } io_desc_t;
