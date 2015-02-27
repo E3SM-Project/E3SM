@@ -771,11 +771,10 @@ contains
         reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
       endif
     else
-      reaction_rates(lk)=ystate(lk)*Extra_inst%k_decay(lk)
+      reaction_rates(lk)=ystate(centurybgc_vars%primvarid(lk))*Extra_inst%k_decay(lk)
     endif
   enddo
-  print*,dydt(1:14)
-  print*,ystate(  
+
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
   

@@ -84,7 +84,7 @@ module BGCCenturySubMod
   real(r8), pointer :: w_scalar_col(:,:)
   real(r8), pointer :: o_scalar_col(:,:)
   real(r8), pointer :: depth_scalar_col(:,:)
-   
+  integer , pointer :: primvarid(:) 
   contains
     procedure, public  :: Init
     procedure, private :: Init_pars
@@ -190,8 +190,9 @@ module BGCCenturySubMod
   this%nstvars          = itemp          !totally 14+32 state variables
 
 
-
+  
   this%nreactions = ireac            !seven decomposition pathways plus root auto respiration, nitrification, denitrification and plant immobilization  
+  allocate(this%primvarid(ireac)); this%primvarid(:) = nan
   end subroutine Init_pars
 !-------------------------------------------------------------------------------
 
@@ -384,7 +385,7 @@ module BGCCenturySubMod
     lid_co2_paere=> centurybgc_vars%lid_co2_paere     , & !
 
 
-    
+    primvarid    => centurybgc_vars%primvarid         , & !
     lit1_dek_reac=> centurybgc_vars%lit1_dek_reac     , & !
     lit2_dek_reac=> centurybgc_vars%lit2_dek_reac     , & !
     lit3_dek_reac=> centurybgc_vars%lit3_dek_reac     , & !
@@ -409,7 +410,8 @@ module BGCCenturySubMod
   !note all reactions are in the form products - substrates = 0, therefore
   !mass balance is automatically ensured.
   
-  
+  !set up first order reactions
+  !----------------------------------------------------------------------
   !reaction1, lit1 -> s1
   reac=lit1_dek_reac
   !lit1 + 0.55*o2 -> 0.45 som1 + 0.55co2 + (1/cn_ratios(lit1) - 0.45/cn_ratios(som1))min_n+ (1/cp_ratios(lit1)-0.45/cp_ratios(som1))min_p
@@ -424,6 +426,20 @@ module BGCCenturySubMod
 
   cascade_matrix(lid_co2_hr             ,reac)  = CNDecompBgcParamsInst%rf_l1s1_bgc
 
+  primvarid(reac) = (lit1-1)*nelms+c_loc
+
+  if(cascade_matrix(lid_nh4, reac)<0._r8)then
+    !Note: Jinyun Tang, Dec 26, 2014
+    !When a reaction needs mineral nitrogen to balance the elements, it takes mineral nitrogen proportionally from nh4 and no3.
+    !This formulation assumes that the nitrogen mineralized from om decomposition is equally accessible to plants and decomposers. Such
+    !a formulation is different from the century BGC in CLM4.5. Rather, CLM4.5 bgc assumes that the nitrogen mineralized from nitrogen releasing
+    !decomposition pathways is first used to meet the nitrogen demand from nitrogen immobilizing decomposition pathways. In the later case, the stoichiometry becomes
+    !rate dependent.     
+    !it requires nitrogen uptake  
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+  endif
+  !----------------------------------------------------------------------  
   !reaction 2, lit2 -> s1
   reac = lit2_dek_reac
   !lit2 + 0.5 o2  -> 0.5 som1 + 0.5 co2 + (1/cn_ratios(lit2)-0.5/cn_ratios(som1))min_n +(1/cp_ratios(lit2)-0.5/cp_ratios(som1))min_p
@@ -438,6 +454,15 @@ module BGCCenturySubMod
   cascade_matrix(lid_nh4                ,reac)   = safe_div(1._r8,cn_ratios(lit2)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc,cn_ratios(som1))
   
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_l2s1_bgc
+  
+  primvarid(reac) = (lit2-1)*nelms+c_loc
+  if(cascade_matrix(lid_nh4, reac)<0._r8)then
+    
+    !it requires nitrogen uptake  
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+  endif
+  !----------------------------------------------------------------------  
   !reaction 3, lit3->s2
   reac = lit3_dek_reac
   !lit3 + 0.5 o2 -> 0.5 som2 + 0.5 co2 + (1/cn_ratios(lit3) - 0.5/cn_ratios(som2))min_n + (1/cp_ratios(lit3)-0.5_r8/cp_ratios(som2))minp
@@ -451,6 +476,15 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2                ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(lit3)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc,cn_ratios(som2))
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
+  
+  primvarid(reac) = (lit3-1)*nelms+c_loc
+  if(cascade_matrix(lid_nh4, reac)<0._r8)then
+   
+    !it requires nitrogen uptake  
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+  endif
+  !----------------------------------------------------------------------  
   !double check those stoichiometry parameters
   !reaction 4, the partition into som2 and som3 is soil texture dependent
   reac = som1_dek_reac
@@ -473,6 +507,14 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2                ,reac) = ftxt
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(som1))-safe_div(f1,cn_ratios(som2))-safe_div(f2,cn_ratios(som3))
   cascade_matrix(lid_co2_hr             ,reac) = ftxt
+  
+  primvarid(reac) = (som1-1)*nelms+c_loc
+  if(cascade_matrix(lid_nh4, reac)<0._r8)then   
+    !it requires nitrogen uptake  
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+  endif
+  !----------------------------------------------------------------------  
   !reaction 5, som2->som1, som3
   reac = som2_dek_reac
   !som2 + 0.55 o2 -> 0.42 som1 + 0.03som3 + 0.55co2 + (1/cn_ratios(som2)-0.42/cn_ratios(som1)-0.03/cn_ratios(som3)) + (1/cp_raitos(som2)-0.42/cp_ratios(som1)-0.03/cp_ratios(som3))
@@ -489,7 +531,16 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2                ,reac)   =  CNDecompBgcParamsInst%rf_s2s1_bgc
   cascade_matrix(lid_nh4                ,reac)   =  safe_div(1._r8,cn_ratios(som2))-0.93_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som1)) &
                                                 -0.07_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som3))
-  cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_s2s1_bgc 
+  cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_s2s1_bgc
+  
+  primvarid(reac) = (som2-1)*nelms+c_loc
+  if(cascade_matrix(lid_nh4, reac)<0._r8)then
+
+    !it requires nitrogen uptake  
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+  endif
+  !----------------------------------------------------------------------  
   !reaction 6, s3-> s1
   reac = som3_dek_reac
   !som3 + 0.55 o2 -> 0.45*som1 + 0.55co2 + (1/cn_ratios(som3)-0.45/cn_ratios(som1)) + (1/cp_ratios(som3)-0.45/cp_ratios(som1))
@@ -504,6 +555,14 @@ module BGCCenturySubMod
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(som3)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc,cn_ratios(som1))
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
   
+  primvarid(reac) = (som3-1)*nelms+c_loc
+  if(cascade_matrix(lid_nh4, reac)<0._r8)then
+    
+    !it requires nitrogen uptake  
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+  endif
+  !----------------------------------------------------------------------  
   !reaction 7, the partition into lit1 and lit2 is nutrient dependent, respires co2?
   reac = cwd_dek_reac
   !cwd + o2 -> 0.76lit2 + 0.24*lit3 + (1/cn_ratios(cwd)-0.76/cn_ratios(lit2)-0.24/cn_ratios(lit3)) + (1/cp_ratios(cwd)-0.76/cp_ratios(lit2)-0.24/cp_ratios(lit3))
@@ -518,21 +577,15 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(cwd)) - safe_div(CNDecompBgcParamsInst%cwd_fcel_bgc,cn_ratios(lit2)) - &
                                                  safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3))
-    
-  do k = 1, 7
-    !Note: Jinyun Tang, Dec 26, 2014
-    !When a reaction needs mineral nitrogen to balance the elements, it takes mineral nitrogen proportionally from nh4 and no3.
-    !This formulation assumes that the nitrogen mineralized from om decomposition is equally accessible to plants and decomposers. Such
-    !a formulation is different from the century BGC in CLM4.5. Rather, CLM4.5 bgc assumes that the nitrogen mineralized from nitrogen releasing
-    !decomposition pathways is first used to meet the nitrogen demand from nitrogen immobilizing decomposition pathways. In the later case, the stoichiometry becomes
-    !rate dependent. 
-    if(cascade_matrix(lid_nh4, k)<0._r8)then
-      !it requires nitrogen uptake
-      cascade_matrix(lid_no3, k) = cascade_matrix(lid_nh4, k) / (1._r8 + nh4_no3_ratio)
-      cascade_matrix(lid_nh4, k) = cascade_matrix(lid_nh4, k) - cascade_matrix(lid_no3, k)
-    endif
-  enddo
+  primvarid(reac) = (cwd-1)*nelms+c_loc
+  if(cascade_matrix(lid_nh4, reac)<0._r8)then
+     
+    !it requires nitrogen uptake  
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+  endif
   
+  !----------------------------------------------------------------------  
   !reaction 8, nitrification
   reac = lid_nh4_nit_reac
   !NH4(+) + (2-f)O2 + (2-f)OH(-)-> (1-f)NO3(-) + (f/2)N2O + (3-f/2) H2O 
@@ -541,7 +594,9 @@ module BGCCenturySubMod
   cascade_matrix(lid_no3 ,reac) = 1._r8 - nitrif_n2o_loss_frac
   cascade_matrix(lid_n2o, reac) = 0.5_r8 * nitrif_n2o_loss_frac
 
-  cascade_matrix(lid_n2o_nit,reac) = nitrif_n2o_loss_frac  
+  cascade_matrix(lid_n2o_nit,reac) = nitrif_n2o_loss_frac
+  primvarid(reac) = lid_nh4
+  !----------------------------------------------------------------------  
   !reaction 9, denitrification
   reac = lid_no3_den_reac
   !NO3(-) -> 0.5*f N2O + 0.5* (1-f) N2, where f is a function determined from the century denitrification model
@@ -549,6 +604,10 @@ module BGCCenturySubMod
   cascade_matrix(lid_n2o ,reac) = 0.5_r8 * 1._r8/(1._r8+n2_n2o_ratio_denit)
   cascade_matrix(lid_n2  ,reac) = 0.5_r8 * n2_n2o_ratio_denit/(1._r8+n2_n2o_ratio_denit)
 
+  primvarid(reac)=lid_No3
+  !----------------------------------------------------------------------  
+  !below are zero order reactions
+  !----------------------------------------------------------------------  
   !reaction 10, plant mineral nitrogen uptake
   reac = lid_plant_minn_up_reac
   ! f nh4 + (1-f) no3 -> plant_nitrogen
