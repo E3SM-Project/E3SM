@@ -549,6 +549,9 @@ contains
       !update state variables
       time = 0._r8 
       print*,c,j
+      print*,'y0'
+      print*,y0(:,c,j)
+      
       call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
     enddo
   enddo  
@@ -742,6 +745,8 @@ contains
     
  !do pool degradation
   do lk = 1, Extra_inst%nr
+    print*,'lk=',lk
+    print*,cascade_matrix(:,lk)
     if(Extra_inst%is_zero_order(lk))then
       if(lk == centurybgc_vars%lid_ch4_aere_reac)then
         jj = centurybgc_vars%lid_ch4

@@ -192,7 +192,7 @@ module BGCCenturySubMod
 
   
   this%nreactions = ireac            !seven decomposition pathways plus root auto respiration, nitrification, denitrification and plant immobilization  
-  allocate(this%primvarid(ireac)); this%primvarid(:) = nan
+  allocate(this%primvarid(ireac)); this%primvarid(:) = -1
   end subroutine Init_pars
 !-------------------------------------------------------------------------------
 
@@ -1440,36 +1440,42 @@ module BGCCenturySubMod
       k = lit1
       tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw      
       tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-      
+      if(c==229)print*,k,tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc),tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) 
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
 
       k = lit2
       tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
       tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
       
+      if(c==229)print*,k,tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc),tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) 
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
       
       k = lit3
       tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
       tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
       
+      if(c==229)print*,k,tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc),tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) 
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
       
       k = cwd
       tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
       tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
       
+      if(c==229)print*,k,tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc),tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) 
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))      
       
       k = som1
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))     
 
+      if(c==229)print*,k,tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc),tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) 
       k = som2
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
 
+      if(c==229)print*,k,tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc),tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) 
       k = som3
       cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
 
+      if(c==229)print*,k,tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc),tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) 
       tracer_conc_mobile(c, j, id_trc_nh3x) = tracer_conc_mobile(c, j, id_trc_nh3x) + sminn_nh4_input_vr(c,j)/natomw
       tracer_conc_mobile(c, j, id_trc_no3x) = tracer_conc_mobile(c, j, id_trc_no3x) + sminn_no3_input_vr(c,j)/natomw
       
