@@ -430,7 +430,6 @@ implicit none
     CNDecompBgcParamsInst%k_decay_som2=1._r8/(secspday * days_per_year * tau_s2)
     CNDecompBgcParamsInst%k_decay_som3=1._r8/(secspday * days_per_year * tau_s3)
     CNDecompBgcParamsInst%k_decay_cwd =1._r8/(secspday * days_per_year * tau_cwd)
-    
     end associate
   end subroutine readCentDecompBgcParams
 end module BGCCenturyParMod

@@ -334,8 +334,9 @@ module BGCCenturySubMod
   ! DESCRIPTION
   ! calculate cascade matrix for the decomposition model
   !
-  use clm_varcon                , only: nitrif_n2o_loss_frac
-  use BGCCenturyParMod          , only: CNDecompBgcParamsInst
+  use clm_varcon                , only : nitrif_n2o_loss_frac
+  use BGCCenturyParMod          , only : CNDecompBgcParamsInst
+  use MathfuncMod               , only : safe_div
   integer                       , intent(in) :: nstvars
   integer                       , intent(in) :: nreactions
   type(centurybgc_type)         , intent(in) :: centurybgc_vars
@@ -413,13 +414,13 @@ module BGCCenturySubMod
   reac=lit1_dek_reac
   !lit1 + 0.55*o2 -> 0.45 som1 + 0.55co2 + (1/cn_ratios(lit1) - 0.45/cn_ratios(som1))min_n+ (1/cp_ratios(lit1)-0.45/cp_ratios(som1))min_p
   cascade_matrix((lit1-1)*nelms+c_loc   ,reac)  = -1._r8
-  cascade_matrix((lit1-1)*nelms+n_loc   ,reac)  = -1._r8/cn_ratios(lit1)
+  cascade_matrix((lit1-1)*nelms+n_loc   ,reac)  = -safe_div(1._r8,cn_ratios(lit1))
   
   cascade_matrix(lid_o2                 ,reac)  = -CNDecompBgcParamsInst%rf_l1s1_bgc
   cascade_matrix((som1-1)*nelms+c_loc   ,reac)  = 1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc
-  cascade_matrix((som1-1)*nelms+n_loc   ,reac)  = (1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc)/cn_ratios(som1)
+  cascade_matrix((som1-1)*nelms+n_loc   ,reac)  = safe_div(1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc,cn_ratios(som1))
   cascade_matrix(lid_co2                ,reac)  =  CNDecompBgcParamsInst%rf_l1s1_bgc
-  cascade_matrix(lid_nh4                ,reac)  =  1._r8/cn_ratios(lit1) - (1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc)/cn_ratios(som1)
+  cascade_matrix(lid_nh4                ,reac)  = safe_div(1._r8,cn_ratios(lit1)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc,cn_ratios(som1))
 
   cascade_matrix(lid_co2_hr             ,reac)  = CNDecompBgcParamsInst%rf_l1s1_bgc
 
@@ -427,28 +428,28 @@ module BGCCenturySubMod
   reac = lit2_dek_reac
   !lit2 + 0.5 o2  -> 0.5 som1 + 0.5 co2 + (1/cn_ratios(lit2)-0.5/cn_ratios(som1))min_n +(1/cp_ratios(lit2)-0.5/cp_ratios(som1))min_p
   cascade_matrix((lit2-1)*nelms+c_loc   ,reac)   = -1._r8
-  cascade_matrix((lit2-1)*nelms+n_loc   ,reac)   = -1._r8/cn_ratios(lit2)
+  cascade_matrix((lit2-1)*nelms+n_loc   ,reac)   = -safe_div(1._r8,cn_ratios(lit2))
   
   cascade_matrix(lid_o2                 ,reac)   = -CNDecompBgcParamsInst%rf_l2s1_bgc
   cascade_matrix((som1-1)*nelms+c_loc   ,reac)   =  1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc
-  cascade_matrix((som1-1)*nelms+n_loc   ,reac)   =  (1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc)/cn_ratios(som1)
+  cascade_matrix((som1-1)*nelms+n_loc   ,reac)   =  safe_div(1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc,cn_ratios(som1))
   
   cascade_matrix(lid_co2                ,reac)   =  CNDecompBgcParamsInst%rf_l2s1_bgc
-  cascade_matrix(lid_nh4                ,reac)   = 1._r8/cn_ratios(lit2) - (1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc)/cn_ratios(som1)
+  cascade_matrix(lid_nh4                ,reac)   = safe_div(1._r8,cn_ratios(lit2)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc,cn_ratios(som1))
   
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_l2s1_bgc
   !reaction 3, lit3->s2
   reac = lit3_dek_reac
   !lit3 + 0.5 o2 -> 0.5 som2 + 0.5 co2 + (1/cn_ratios(lit3) - 0.5/cn_ratios(som2))min_n + (1/cp_ratios(lit3)-0.5_r8/cp_ratios(som2))minp
   cascade_matrix((lit3-1)*nelms+c_loc   ,reac) = -1._r8
-  cascade_matrix((lit3-1)*nelms+n_loc   ,reac) = -1._r8/cn_ratios(lit3)
+  cascade_matrix((lit3-1)*nelms+n_loc   ,reac) = -safe_div(1._r8,cn_ratios(lit3))
   
   cascade_matrix(lid_o2                 ,reac) = -CNDecompBgcParamsInst%rf_l3s2_bgc
   cascade_matrix((som2-1)*nelms+c_loc   ,reac) =  1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc
-  cascade_matrix((som2-1)*nelms+n_loc   ,reac) =  (1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc)/cn_ratios(som2)
+  cascade_matrix((som2-1)*nelms+n_loc   ,reac) =  safe_div(1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc,cn_ratios(som2))
   
   cascade_matrix(lid_co2                ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
-  cascade_matrix(lid_nh4                ,reac) = 1._r8/cn_ratios(lit3) - (1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc)/cn_ratios(som2)
+  cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(lit3)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc,cn_ratios(som2))
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
   !double check those stoichiometry parameters
   !reaction 4, the partition into som2 and som3 is soil texture dependent
@@ -460,62 +461,63 @@ module BGCCenturySubMod
   f1 = 0.996*(1._r8-ftxt)
   f2 = 0.004*(1._r8-ftxt)
   cascade_matrix((som1-1)*nelms+c_loc   ,reac)  = -1._r8
-  cascade_matrix((som1-1)*nelms+n_loc   ,reac)  = -1._r8/cn_ratios(som1)
+  cascade_matrix((som1-1)*nelms+n_loc   ,reac)  = -safe_div(1._r8,cn_ratios(som1))
   
   cascade_matrix(lid_o2                 ,reac) = -ftxt
   cascade_matrix((som3-1)*nelms+c_loc   ,reac)  = f2
-  cascade_matrix((som3-1)*nelms+n_loc   ,reac)  = f2/cn_ratios(som3)
+  cascade_matrix((som3-1)*nelms+n_loc   ,reac)  = safe_div(f2,cn_ratios(som3))
   
   cascade_matrix((som2-1)*nelms+c_loc   ,reac) = f1
-  cascade_matrix((som2-1)*nelms+n_loc   ,reac) = f1/cn_ratios(som2)
+  cascade_matrix((som2-1)*nelms+n_loc   ,reac) = safe_div(f1,cn_ratios(som2))
   
   cascade_matrix(lid_co2                ,reac) = ftxt
-  cascade_matrix(lid_nh4                ,reac) = 1._r8/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)
+  cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(som1))-safe_div(f1,cn_ratios(som2))-safe_div(f2,cn_ratios(som3))
   cascade_matrix(lid_co2_hr             ,reac) = ftxt
   !reaction 5, som2->som1, som3
   reac = som2_dek_reac
   !som2 + 0.55 o2 -> 0.42 som1 + 0.03som3 + 0.55co2 + (1/cn_ratios(som2)-0.42/cn_ratios(som1)-0.03/cn_ratios(som3)) + (1/cp_raitos(som2)-0.42/cp_ratios(som1)-0.03/cp_ratios(som3))
   cascade_matrix((som2-1)*nelms+c_loc   ,reac)   = -1._r8
-  cascade_matrix((som2-1)*nelms+n_loc   ,reac)   = -1._r8/cn_ratios(som2)
+  cascade_matrix((som2-1)*nelms+n_loc   ,reac)   = -safe_div(1._r8,cn_ratios(som2))
   
   cascade_matrix(lid_o2                 ,reac)   = -CNDecompBgcParamsInst%rf_s2s1_bgc
   cascade_matrix((som1-1)*nelms+c_loc   ,reac)   =  0.93_r8*(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc)
-  cascade_matrix((som1-1)*nelms+n_loc   ,reac)   =  0.93_r8*(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc)/cn_ratios(som1)
+  cascade_matrix((som1-1)*nelms+n_loc   ,reac)   =  0.93_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som1))
   
   cascade_matrix((som3-1)*nelms+c_loc   ,reac)   =  0.07_r8*(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc)
-  cascade_matrix((som3-1)*nelms+n_loc   ,reac)   =  0.07_r8*(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc)/cn_ratios(som3)
+  cascade_matrix((som3-1)*nelms+n_loc   ,reac)   =  0.07_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som3))
   
   cascade_matrix(lid_co2                ,reac)   =  CNDecompBgcParamsInst%rf_s2s1_bgc
-  cascade_matrix(lid_nh4                ,reac)   =  1._r8/cn_ratios(som2)-0.93_r8*(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc)/cn_ratios(som1) &
-                                                -0.07_r8*(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc)/cn_ratios(som3)
+  cascade_matrix(lid_nh4                ,reac)   =  safe_div(1._r8,cn_ratios(som2))-0.93_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som1)) &
+                                                -0.07_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som3))
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_s2s1_bgc 
   !reaction 6, s3-> s1
   reac = som3_dek_reac
   !som3 + 0.55 o2 -> 0.45*som1 + 0.55co2 + (1/cn_ratios(som3)-0.45/cn_ratios(som1)) + (1/cp_ratios(som3)-0.45/cp_ratios(som1))
   cascade_matrix((som3-1)*nelms+c_loc   ,reac) = -1._r8
-  cascade_matrix((som3-1)*nelms+n_loc   ,reac) = -1._r8/cn_ratios(som3)
+  cascade_matrix((som3-1)*nelms+n_loc   ,reac) = -safe_div(1._r8,cn_ratios(som3))
   
   cascade_matrix(lid_o2                 ,reac) = -CNDecompBgcParamsInst%rf_s3s1_bgc
   cascade_matrix((som1-1)*nelms+c_loc   ,reac) = 1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc
-  cascade_matrix((som1-1)*nelms+n_loc   ,reac) = (1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc)/cn_ratios(som1)
+  cascade_matrix((som1-1)*nelms+n_loc   ,reac) = safe_div(1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc,cn_ratios(som1))
   
   cascade_matrix(lid_co2                ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
-  cascade_matrix(lid_nh4                ,reac) = 1._r8/cn_ratios(som3) - (1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc)/cn_ratios(som1)
+  cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(som3)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc,cn_ratios(som1))
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
   
   !reaction 7, the partition into lit1 and lit2 is nutrient dependent, respires co2?
   reac = cwd_dek_reac
   !cwd + o2 -> 0.76lit2 + 0.24*lit3 + (1/cn_ratios(cwd)-0.76/cn_ratios(lit2)-0.24/cn_ratios(lit3)) + (1/cp_ratios(cwd)-0.76/cp_ratios(lit2)-0.24/cp_ratios(lit3))
   cascade_matrix((cwd-1)*nelms+c_loc    ,reac) = -1._r8
-  cascade_matrix((cwd-1)*nelms+n_loc    ,reac) = -1._r8/cn_ratios(cwd)
+  cascade_matrix((cwd-1)*nelms+n_loc    ,reac) = -safe_div(1._r8,cn_ratios(cwd))
   
   cascade_matrix((lit2-1)*nelms+c_loc   ,reac) = CNDecompBgcParamsInst%cwd_fcel_bgc
-  cascade_matrix((lit2-1)*nelms+n_loc   ,reac) = CNDecompBgcParamsInst%cwd_fcel_bgc/cn_ratios(lit2)
+  cascade_matrix((lit2-1)*nelms+n_loc   ,reac) = safe_div(CNDecompBgcParamsInst%cwd_fcel_bgc,cn_ratios(lit2))
   
   cascade_matrix((lit3-1)*nelms+c_loc   ,reac) = CNDecompBgcParamsInst%cwd_flig_bgc
-  cascade_matrix((lit3-1)*nelms+n_loc   ,reac) = CNDecompBgcParamsInst%cwd_flig_bgc/cn_ratios(lit3)
+  cascade_matrix((lit3-1)*nelms+n_loc   ,reac) = safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3))
   
-  cascade_matrix(lid_nh4                ,reac) = 1._r8/cn_ratios(cwd) - CNDecompBgcParamsInst%cwd_fcel_bgc/cn_ratios(lit2) - CNDecompBgcParamsInst%cwd_flig_bgc/cn_ratios(lit3)
+  cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(cwd)) - safe_div(CNDecompBgcParamsInst%cwd_fcel_bgc,cn_ratios(lit2)) - &
+                                                 safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3))
     
   do k = 1, 7
     !Note: Jinyun Tang, Dec 26, 2014
@@ -1358,6 +1360,8 @@ module BGCCenturySubMod
     som3           => centurybgc_vars%som3                                         , & !
     cwd            => centurybgc_vars%cwd                                          , & !
     nelm           => centurybgc_vars%nelms                                        , & !
+    c_loc          => centurybgc_vars%c_loc                                        , & !
+    n_loc          => centurybgc_vars%n_loc                                        , & !
     id_trc_nh3x    => betrtracer_vars%id_trc_nh3x                                  , & !
     id_trc_no3x    => betrtracer_vars%id_trc_no3x                                  , & !   
     ngwmobile_tracers => betrtracer_vars%ngwmobile_tracers                         , & !
@@ -1375,37 +1379,37 @@ module BGCCenturySubMod
     
     do j = lbj, ubj
       k = lit1
-      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,j,k)/catomw      
-      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,j,k)/natomw
+      tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw      
+      tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
       
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
 
       k = lit2
-      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,j,k)/catomw      
-      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,j,k)/natomw
+      tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
+      tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
       
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
       
       k = lit3
-      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,j,k)/catomw      
-      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,j,k)/natomw
+      tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
+      tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
       
-      cn_ratios(k,c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
-
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
+      
       k = cwd
-      tracer_conc_solid_passive(c,j,k*nelm-1) = tracer_conc_solid_passive(c,j,k*nelm-1) + bgc_cpool_inputs_vr(c,j,k)/catomw      
-      tracer_conc_solid_passive(c,j,k*nelm)   = tracer_conc_solid_passive(c,j,k*nelm) +   bgc_npool_inputs_vr(c,j,k)/natomw
+      tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
+      tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
       
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))      
       
       k = som1
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))     
 
       k = som2
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
 
       k = som3
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,k*nelm-1), tracer_conc_solid_passive(c,j,k*nelm))
+      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
 
       tracer_conc_mobile(c, j, id_trc_nh3x) = tracer_conc_mobile(c, j, id_trc_nh3x) + sminn_nh4_input_vr(c,j)/natomw
       tracer_conc_mobile(c, j, id_trc_no3x) = tracer_conc_mobile(c, j, id_trc_no3x) + sminn_no3_input_vr(c,j)/natomw

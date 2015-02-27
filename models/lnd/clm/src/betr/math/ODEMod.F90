@@ -207,6 +207,7 @@ contains
    do n = 1, nprimeq
       if(f(n)<0._r8)then
          nJ = nJ  + 1
+         print*,'n=',n
          pm = -y0(n)/(f(n)*dt)
          aj(nJ) = -1._r8/pm
          if(nJ==1)then

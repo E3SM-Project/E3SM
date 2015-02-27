@@ -655,7 +655,9 @@ contains
     begg = bounds%begg; endg= bounds%endg
     !-----------------------------------------------------------------------
 
-    
+    associate(                                    &
+      volatileid => betrtracer_vars%volatileid    &
+    )  
     do c = bounds%begc, bounds%endc
        l = col%landunit(c)
        if (lun%ifspecial(l)) then
@@ -664,6 +666,7 @@ contains
            tracerstate_vars%tracer_conc_surfwater_col(c,:)       = spval
            tracerstate_vars%tracer_conc_aquifer_col(c,:)         = spval
            tracerstate_vars%tracer_conc_grndwater_col(c,:)       = spval           
+           tracerstate_vars%tracer_conc_atm_col(c,:)             = spval
          endif
          if(betrtracer_vars%ntracers > betrtracer_vars%ngwmobile_tracers)then
            tracerstate_vars%tracer_conc_solid_passive_col(c,:,:) = spval
@@ -681,7 +684,12 @@ contains
          tracerstate_vars%tracer_conc_surfwater_col(c,:)          = 0._r8
          tracerstate_vars%tracer_conc_aquifer_col(c,:)            = 0._r8
          tracerstate_vars%tracer_conc_grndwater_col(c,:)          = 0._r8                      
-
+         tracerstate_vars%tracer_conc_atm_col(c,volatileid(betrtracer_vars%id_trc_n2))  = 32.8_r8
+         tracerstate_vars%tracer_conc_atm_col(c,volatileid(betrtracer_vars%id_trc_o2))  = 8.78_r8
+         tracerstate_vars%tracer_conc_atm_col(c,volatileid(betrtracer_vars%id_trc_ar))  = 0.3924_r8
+         tracerstate_vars%tracer_conc_atm_col(c,volatileid(betrtracer_vars%id_trc_co2x))= 0.0168_r8
+         tracerstate_vars%tracer_conc_atm_col(c,volatileid(betrtracer_vars%id_trc_ch4)) = 6.939e-5_r8
+         tracerstate_vars%tracer_conc_atm_col(c,volatileid(betrtracer_vars%id_trc_n2o)) = 1.195e-5_r8
       
          !solid tracers
          if(betrtracer_vars%ngwmobile_tracers < betrtracer_vars%ntracers)then
@@ -694,7 +702,7 @@ contains
          tracerstate_vars%tracer_soi_molarmass_col(c,:)          = 0._r8
        endif
     enddo
-    
+   end associate 
   end subroutine InitCold
 
 
@@ -734,28 +742,28 @@ contains
  !do pool degradation
   do lk = 1, Extra_inst%nr
     if(Extra_inst%is_zero_order(lk))then
-      if(    lk == centurybgc_vars%lid_ch4_aere_reac)then
-        jj = centurybgc_vars%lid_ch4_paere
+      if(lk == centurybgc_vars%lid_ch4_aere_reac)then
+        jj = centurybgc_vars%lid_ch4
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
         
       elseif(lk == centurybgc_vars%lid_ar_aere_reac)then
-        jj = centurybgc_vars%lid_ar_paere
+        jj = centurybgc_vars%lid_ar
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
       
       elseif(lk == centurybgc_vars%lid_o2_aere_reac)then
-        jj = centurybgc_vars%lid_o2_paere
+        jj = centurybgc_vars%lid_o2
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
       
       elseif(lk == centurybgc_vars%lid_n2_aere_reac)then
-        jj = centurybgc_vars%lid_n2_paere
+        jj = centurybgc_vars%lid_n2
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
       
       elseif(lk == centurybgc_vars%lid_co2_aere_reac)then
-        jj = centurybgc_vars%lid_co2_paere
+        jj = centurybgc_vars%lid_co2
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
       
       elseif(lk == centurybgc_vars%lid_n2o_aere_reac)then
-        jj = centurybgc_vars%lid_n2o_paere
+        jj = centurybgc_vars%lid_n2o
         reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
         
       else
