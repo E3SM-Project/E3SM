@@ -38,7 +38,6 @@ private
 
   real (kind=real_kind), allocatable :: integration_matrix(:,:)
   real (kind=real_kind), allocatable :: boundary_interp_matrix(:,:,:)
-  private :: allocate_subcell_integration_matrix
 
 ! ======================================
 ! Public Interfaces
@@ -48,6 +47,7 @@ private
   public :: subcell_dss_fluxes
   public :: subcell_div_fluxes
   public :: subcell_Laplace_fluxes
+  public :: allocate_subcell_integration_matrix
 
   public :: derivinit
   public :: deriv_print
@@ -2453,7 +2453,7 @@ end do
     if (.not.ALLOCATED(integration_matrix)      .or. &
         SIZE(integration_matrix,1).ne.n .or. &
         SIZE(integration_matrix,2).ne.p) then
-      call allocate_subcell_integration_matrix(p,n)
+      call abortmp( 'FATAL ERROR: allocate_subcell_integration_matrix not called')
     end if
 
     v(:,:,1) = u(:,:,1)*metdet(:,:)
@@ -2557,7 +2557,7 @@ end do
     if (.not.ALLOCATED(integration_matrix)      .or. &
         SIZE(integration_matrix,1).ne.intervals .or. &
         SIZE(integration_matrix,2).ne.np) then
-      call allocate_subcell_integration_matrix(np,intervals)
+      call abortmp( 'FATAL ERROR: allocate_subcell_integration_matrix not called')
     end if
 
     ! Multiply sampled values by spectral element weights

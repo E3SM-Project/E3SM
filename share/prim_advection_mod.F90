@@ -554,7 +554,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
   !
   ! output: remaped Qdp, conserving mass
   !
-  use control_mod, only        : prescribed_wind, vert_remap_q_alg
+  use control_mod, only        : vert_remap_q_alg
   implicit none
   integer,intent(in) :: nx,qsize
   real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
@@ -855,7 +855,7 @@ module prim_advection_mod
   use diffusion_mod, only      : scalar_diffusion, diffusion_init
   use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
         statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
-        prescribed_wind, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
+        nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
 !<<<<<<< .working
   use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer, initedgesbuffer, &
         edgevunpackmin, initghostbuffer3D
@@ -3195,9 +3195,12 @@ end subroutine ALE_parametric_coords
             enddo
           enddo
         enddo
+        
+        if (limiter_option .ne. 0 ) then
+           ! smooth some of the negativities introduced by diffusion:
+           call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,nt_qdp) )
+        endif
 
-        ! smooth some of the negativities introduced by diffusion:
-        call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,nt_qdp))
       enddo
       call edgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
     enddo
@@ -3258,6 +3261,7 @@ end subroutine ALE_parametric_coords
 #if USE_CUDA_FORTRAN
   use cuda_mod, only: vertical_remap_cuda
 #endif
+  use control_mod, only : se_prescribed_wind_2d
 
   type (hybrid_t), intent(in) :: hybrid  ! distributed parallel structure (shared)
 #if defined(_SPELT)
@@ -3276,6 +3280,7 @@ end subroutine ALE_parametric_coords
   real (kind=real_kind)             :: dt
 
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp,np1_fvm
+  integer :: q
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
 
@@ -3349,8 +3354,10 @@ end subroutine ALE_parametric_coords
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
         call remap1(ttmp,np,2,dp_star,dp)
 !        call remap1_nofilter(ttmp,np,2,dp_star,dp)
-        elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
-        elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
+        if ( .not. se_prescribed_wind_2d ) &
+             elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
+        if ( .not. se_prescribed_wind_2d ) &
+             elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
 #ifdef REMAP_TE
         ! back out T from TE
         elem(ie)%state%t(:,:,:,np1) = &
@@ -3362,7 +3369,25 @@ end subroutine ALE_parametric_coords
 
      ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp
      if (qsize>0) then
-        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
+        if ( se_prescribed_wind_2d ) then
+           ! Peter Lauritzen et al, "The terminator 'toy'-chemistry test: A simple tool to assess errors in transport schemes",
+           !   submitted to Geosci Model Dev, Oct 2014
+           ! -- code to let dp evolve without vertical transport of tracers (consistent mass tracer coupling)
+           do q=1,qsize
+              do i=1,np
+                 do j=1,np
+                    do k=1,nlev
+                       !elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp) * dp(i,j,k)/dp_star(i,j,k)
+                       ttmp(i,j,k,1)= elem(ie)%state%Qdp(i,j,k,q,np1_qdp) / dp_star(i,j,k) ! This is the actual q
+                       elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = ttmp(i,j,k,1) * dp(i,j,k)
+                    enddo
+                 enddo
+              enddo
+           enddo
+
+        else
+           call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
+        endif
      endif
 
 

@@ -100,8 +100,13 @@ module namelist_mod
        TRACER_GRIDTYPE_GLL,             &
        TRACER_GRIDTYPE_FVM,             &
 #endif
-       test_cfldep
+       test_cfldep, &
+       se_prescribed_wind_2d
       
+
+#if ( defined CAM )
+  use control_mod, only: se_met_nudge_u, se_met_nudge_p, se_met_nudge_t, se_met_tevolve
+#endif
 
   !-----------------
   use thread_mod, only : nthreads, nthreads_accel, omp_get_max_threads, vert_num_threads
@@ -318,7 +323,8 @@ module namelist_mod
                      rotate_grid,   &
                      mesh_file,     &               ! Name of mesh file
                      vert_remap_q_alg, &
-                     test_cfldep                  ! fvm: test shape of departure grid cell and cfl number
+                     test_cfldep, &                  ! fvm: test shape of departure grid cell and cfl number
+                     se_prescribed_wind_2d
 
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &       ! number of dynamics steps per physics timestep
@@ -327,6 +333,7 @@ module namelist_mod
                        se_fv_nphys,    &      ! Linear size of FV physics grid
                        se_write_phys_grid, &  ! Write physics grid file if .true.
                        se_phys_grid_file      ! Physics grid filename
+    namelist  /ctl_nl/ se_met_nudge_u, se_met_nudge_p, se_met_nudge_t, se_met_tevolve
 #else
     namelist /ctl_nl/test_case,       &       ! test case
                      sub_case,        &       ! generic test case parameter
@@ -701,10 +708,12 @@ module namelist_mod
        replace_vec_by_vordiv(:)=.false.
        vector_uvars(:)=''
        vector_vvars(:)=''
-       vector_uvars(1:10) = (/'U       ','UBOT    ','U200    ','U250    ',&
-            'U850    ','FU      ','CONVU   ','DIFFU   ','UTGWORO ','UFLX    '/)
-       vector_vvars(1:10) = (/'V       ','VBOT    ','V200    ','V250    ',&
-            'V850    ','FV      ','CONVV   ','DIFFV   ','VTGWORO ','VFLX    '/)
+       vector_uvars(1:12) = (/ &
+            'U         ','UBOT      ','U200      ','U250      ','U850      ','FU        ',&
+            'CONVU     ','DIFFU     ','UTGWORO   ','UFLX      ','MET_U     ','MET_U_tend' /)
+       vector_vvars(1:12) = (/ &
+            'V         ','VBOT      ','V200      ','V250      ','V850      ','FV        ',&
+            'CONVV     ','DIFFV     ','VTGWORO   ','VFLX      ','MET_V     ','MET_V_tend' /)
 #ifndef CAM
        infilenames(:) = ''
        output_prefix = ""
@@ -884,6 +893,14 @@ module namelist_mod
     call MPI_bcast(nu_div       ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nu_p         ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nu_top   ,1,MPIreal_t   ,par%root,par%comm,ierr)
+
+#if ( defined CAM )
+    call MPI_bcast(se_met_nudge_u, 1, MPIreal_t, par%root,par%comm,ierr)
+    call MPI_bcast(se_met_nudge_p, 1, MPIreal_t, par%root,par%comm,ierr)
+    call MPI_bcast(se_met_nudge_t, 1, MPIreal_t, par%root,par%comm,ierr)
+    call MPI_bcast(se_met_tevolve, 1, MPIinteger_t, par%root,par%comm,ierr)
+#endif
+
     call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)
@@ -944,6 +961,7 @@ module namelist_mod
     call MPI_bcast(vform    ,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(vfile_mid,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(vfile_int,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
+    call MPI_bcast(se_prescribed_wind_2d,1 ,MPIlogical_t  ,par%root,par%comm,ierr)
 #ifndef CAM
 #ifdef _PRIM
     if(test_case(1:10)=="aquaplanet") then
@@ -1262,6 +1280,9 @@ module namelist_mod
 
        write(iulog,*)"readnl: energy_fixer  = ",energy_fixer
        write(iulog,*)"readnl: runtype       = ",runtype
+
+       write(iulog,*)"readnl: se_prescribed_wind_2d = ", se_prescribed_wind_2d
+
        if (integration == "semi_imp") then
           print *
           write(iulog,*)"solver: precon_method  = ",precon_method
@@ -1291,6 +1312,13 @@ module namelist_mod
        write(iulog,'(a,2e9.2)')"viscosity:  nu_top      = ",nu_top
        write(iulog,*)"PHIS smoothing:  ",smooth_phis_numcycle,smooth_phis_nudt
        write(iulog,*)"SGH  smoothing:  ",smooth_sgh_numcycle
+
+#if ( defined CAM )
+       write(iulog,'(a,e14.6)')"nudging:  se_met_nudge_u = ", se_met_nudge_u
+       write(iulog,'(a,e14.6)')"nudging:  se_met_nudge_p = ", se_met_nudge_p
+       write(iulog,'(a,e14.6)')"nudging:  se_met_nudge_t = ", se_met_nudge_t
+       write(iulog,'(a,I4)')   "nudging:  se_met_tevolve = ", se_met_tevolve
+#endif
 
        if(initial_total_mass>0) then
           write(iulog,*) "initial_total_mass = ",initial_total_mass
