@@ -376,7 +376,7 @@ contains
   end subroutine bndry_exchangeS_thsave_new
 
 
-  subroutine ghost_exchangeVfull(hybrid,buffer)
+  subroutine ghost_exchangeVfull(par,ithr,buffer)
 !
 !   MT 2011:  derived from bndry_exchange, but copies an entire
 !             element of ghost cell information, including corner
@@ -388,13 +388,15 @@ contains
     use dimensions_mod, only: nelemd
 #ifdef _MPI
     use parallel_mod, only : abortmp, status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success
+         mpireal_t, mpiinteger_t, mpi_success, parallel_t
 #else
-    use parallel_mod, only : abortmp
+    use parallel_mod, only : abortmp, parallel_t
 #endif
     implicit none
+    type (parallel_t)              :: par
+    integer                        :: ithr     ! hybrid%ithr 0 if called outside threaded region
 
-    type (hybrid_t)                   :: hybrid
+!    type (hybrid_t)                   :: hybrid
     type (GhostBuffer3D_t)               :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
@@ -413,7 +415,8 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    if(hybrid%ithr == 0) then 
+    if(ithr == 0) then 
+
 
 #ifdef _MPI
        ! Setup the pointer to proper Schedule
@@ -433,7 +436,7 @@ contains
           tag             = pCycle%tag
           iptr            = pCycle%ptrP_ghost
           !print *,'ghost_exchangeV: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
-          call MPI_Isend(buffer%buf(1,1,1,iptr),length,MPIreal_t,dest,tag,hybrid%par%comm,Srequest(icycle),ierr)
+          call MPI_Isend(buffer%buf(1,1,1,iptr),length,MPIreal_t,dest,tag,par%comm,Srequest(icycle),ierr)
           if(ierr .ne. MPI_SUCCESS) then
              errorcode=ierr
              call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
@@ -452,7 +455,7 @@ contains
           iptr            = pCycle%ptrP_ghost
           !print *,'ghost_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
           call MPI_Irecv(buffer%receive(1,1,1,iptr),length,MPIreal_t, &
-               source,tag,hybrid%par%comm,Rrequest(icycle),ierr)
+               source,tag,par%comm,Rrequest(icycle),ierr)
           if(ierr .ne. MPI_SUCCESS) then
              errorcode=ierr
              call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
@@ -665,7 +668,7 @@ contains
      kptr=0
      call ghostVpackfull(ghostbuf_cv, cin(:,:,:,ie),1,nc,nc,nlev,kptr,elem(ie)%desc)
   end do
-  call ghost_exchangeVfull(hybrid,ghostbuf_cv)
+  call ghost_exchangeVfull(hybrid%par,hybrid%ithr,ghostbuf_cv)
   do ie=nets,nete
      kptr=0
      call ghostVunpackfull(ghostbuf_cv, cout(:,:,:,ie), nc1,nc2,nc,nlev, kptr, elem(ie)%desc)
@@ -742,7 +745,7 @@ contains
   end subroutine
 
 
-  subroutine sort_neighbor_buffer_mapping(hybrid,elem,nets,nete)
+  subroutine sort_neighbor_buffer_mapping(par,elem,nets,nete)
 !
 !  gather global ID's of all neighbor elements.  Then create sorted (in global ID numbering)
 !  mapping between edge buffer for each neighbor and a local map.  
@@ -755,8 +758,7 @@ contains
 !
   use kinds, only : real_kind
   use dimensions_mod, only: nelemd, np, max_neigh_edges
-  use parallel_mod, only : syncmp
-  use hybrid_mod, only : hybrid_t
+  use parallel_mod, only : syncmp, parallel_t
   use element_mod, only : element_t
   use edgetype_mod, only : ghostbuffer3D_t
   use edge_mod, only : ghostvpack_unoriented, ghostvunpack_unoriented, &
@@ -765,7 +767,7 @@ contains
   use coordinate_systems_mod, only: cartesian3D_t
   implicit none
 
-  type (hybrid_t)      , intent(in) :: hybrid
+  type (parallel_t)      , intent(in) :: par
   type (element_t)     , intent(inout), target :: elem(:)
   integer :: nets,nete
   type (ghostBuffer3D_t)   :: ghostbuf_cv
@@ -777,9 +779,9 @@ contains
   logical :: fail,fail1,fail2
   real (kind=real_kind) :: tol=.1
 
-  call syncmp(hybrid%par)
-  if (hybrid%par%masterproc) print *,'checking ghost cell neighbor buffer sorting...'
 
+  if (par%masterproc) print *,'creating sorted ghost cell neigbor map...' 
+  if (par%masterproc) print *,'checking ghost cell neighbor buffer sorting...' 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! first test on the Gauss Grid with same number of ghost cells:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -787,6 +789,7 @@ contains
   nlev=4
   call initghostbuffer3D(ghostbuf_cv,nlev,nc)
 
+  call syncmp(par)
 
   do ie=nets,nete
      cin(:,:,nlev,ie)=  elem(ie)%GlobalID
@@ -814,7 +817,7 @@ contains
   if (int(maxval(  cout(:,:,:,:,:))) /= -1 ) then
      call abortmp('ghost excchange unoriented failure ob1')
   endif
-  call ghost_exchangeVfull(hybrid,ghostbuf_cv)
+  call ghost_exchangeVfull(par,0,ghostbuf_cv)
   if (int(maxval(  cout(:,:,:,:,:))) /= -1 ) then
      call abortmp('ghost excchange unoriented failure ob2')
   endif
@@ -879,7 +882,7 @@ contains
   enddo
 
   call freeghostbuffer3D(ghostbuf_cv)
-  if (hybrid%par%masterproc) print *,'passed.'
+  if (par%masterproc) print *,'passed.'
   end subroutine
 
 

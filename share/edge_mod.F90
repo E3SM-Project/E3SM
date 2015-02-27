@@ -4327,9 +4327,7 @@ end subroutine ghostVunpackR
     endif
 
     nbuf=max_neigh_edges*nelemd
-#if (defined HORIZ_OPENMP)
-!$OMP MASTER
-#endif
+
     ghost%nlyr    = nlyr
     ghost%nhc     = nhc
     ghost%np      = np
@@ -4339,10 +4337,6 @@ end subroutine ghostVunpackR
     allocate(ghost%receive(np,(nhc+1),nlyr,nbuf))
     ghost%buf=0
     ghost%receive=0
-#if (defined HORIZ_OPENMP)
-!$OMP END MASTER
-!$OMP BARRIER
-#endif
 
     
     
