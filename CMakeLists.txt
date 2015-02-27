@@ -43,7 +43,7 @@ ENDIF()
 
 # Netcdf is required
 
-FIND_PACKAGE(NETCDFC)
+FIND_PACKAGE(NETCDF)
 IF (${NETCDF_FOUND})
   MESSAGE("Building PIO with netcdf support ") 
   LIST(APPEND bld_PIO_DEFINITIONS  -D_NETCDF)
