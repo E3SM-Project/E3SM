@@ -13,7 +13,7 @@ module viscosity_mod
 !
 use thread_mod
 use kinds, only : real_kind, iulog
-use dimensions_mod, only : np, nlev,qsize,nelemd
+use dimensions_mod, only : np, nc, nlev,qsize,nelemd
 use hybrid_mod, only : hybrid_t, hybrid_create
 use parallel_mod, only : parallel_t
 use element_mod, only : element_t
@@ -197,7 +197,9 @@ end subroutine
 
 
 #ifdef _PRIM
-subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+subroutine biharmonic_wk_dp3d(elem,dptens,dpflux,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
+use derivative_mod, only :  subcell_Laplace_fluxes
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute weak biharmonic operator
 !    input:  h,v (stored in elem()%, in lat-lon coordinates
@@ -206,6 +208,7 @@ subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+real (kind=real_kind), intent(out), dimension(nc,nc,4,nlev,nets:nete) :: dpflux
 integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens,dptens
@@ -213,13 +216,14 @@ type (EdgeBuffer_t)  , intent(inout) :: edge3
 type (derivative_t)  , intent(in) :: deriv
 
 ! local
-integer :: k,kptr,ie
+integer :: i,j,k,kptr,ie
 real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2
 logical var_coef1
 
+   dpflux = 0
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
    var_coef1 = .true.
@@ -288,7 +292,7 @@ logical var_coef1
          ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
          tmp(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
          dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
-
+         dpflux(:,:,:,k,ie) = subcell_Laplace_fluxes(tmp, deriv, elem(ie), np, nc) 
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),&

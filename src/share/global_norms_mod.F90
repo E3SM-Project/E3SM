@@ -246,14 +246,14 @@ contains
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
-    use dimensions_mod, only : np,ne,nelem,nelemd,nc,nhe
+    use dimensions_mod, only : np,ne,nelem,nelemd,nc,nhe,ntrac,qsize
     use quadrature_mod, only : gausslobatto, quadrature_t
 
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
                             fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling
-    use control_mod, only : tracer_transport_type
+    use control_mod, only : tracer_transport_type, tstep_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edgetype_mod, only : EdgeBuffer_t 
@@ -380,8 +380,8 @@ contains
 
            ! dx_long
            elem(ie)%variable_hyperviscosity = sqrt((elem(ie)%dx_long/max_unif_dx) ** hypervis_power)
-           elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) &
-                                 * (lambda_vis**2) * ((rrearth*elem(ie)%normDinv)**4)
+           elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) * &
+                (lambda_vis**2) * ((rrearth*elem(ie)%normDinv)**4)
 
             ! Check to see if this is stable
             if (elem(ie)%hv_courant.gt.max_hypervis_courant) then
@@ -527,11 +527,10 @@ contains
           write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', &
                min_gw/(120.0d0*max_normDinv*rrearth),'s'
        endif
-       if (tracer_transport_type == TRACERTRANSPORT_SE_GLL) then
+       if (qsize>0) &
           write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *',&
                1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
-       else if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM   .or.&
-                tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
+       if (ntrac>0) then
           !
           ! rough estimate of Courant number limted time-step:
           !
@@ -574,7 +573,7 @@ contains
 !         print*, 'fine_ne = ', fine_ne
 !         print*, 'Using max_unif_dx = ', max_unif_dx
       end if
-
+      write(iulog,*) 'tstep_type = ',tstep_type
     end if
 
   end subroutine print_cfl

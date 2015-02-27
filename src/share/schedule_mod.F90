@@ -278,14 +278,6 @@ contains
     enddo
     nPackPoints = nComPoints + LSchedule%MoveCycle(1)%lengthP
 
-
-    !   nbuf = 4*(nv+1)*nelemd*8*4*nlev
-    !   write(iulog,*)'before call to allocate(combuffer) ',nbuf
-    !   allocate(combuffer(nbuf))
-    !   write(iulog,*)'IAM: ',iSched,'Before call to MPI_Buffer_Attach '
-    !   call MPI_Buffer_Attach(combuffer,nbuf,ierr)
-    !   write(iulog,*)'IAM: ',iSched,'After call to MPI_Buffer_Attach '
-
 #endif
 #ifdef DEBUGPART
     call haltmp("genEdgeSched: Just testing the partitioning algorithms")

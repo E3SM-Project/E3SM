@@ -37,6 +37,7 @@ private
   end type derivative_stag_t
 
   real (kind=real_kind), allocatable :: integration_matrix(:,:)
+  real (kind=real_kind), allocatable :: boundary_interp_matrix(:,:,:)
   private :: allocate_subcell_integration_matrix
 
 ! ======================================
@@ -45,6 +46,8 @@ private
 
   public :: subcell_integration
   public :: subcell_dss_fluxes
+  public :: subcell_div_fluxes
+  public :: subcell_Laplace_fluxes
 
   public :: derivinit
   public :: deriv_print
@@ -2347,105 +2350,206 @@ end do
 
  
 
-  function subcell_dss_fluxes(dss, p, n) result(fluxes)
+  function subcell_dss_fluxes(dss, p, n, metdet) result(fluxes)
 
     implicit none
 
     integer              , intent(in)  :: p
     integer              , intent(in)  :: n
     real (kind=real_kind), intent(in)  :: dss     (p,p)
+    real (kind=real_kind), intent(in)  :: metdet  (p,p)
     real (kind=real_kind)              :: fluxes  (n,n,4)
 
+    real (kind=real_kind)              :: Bp(p,p)
+    real (kind=real_kind)              :: Tp(p,p)
     real (kind=real_kind)              :: Lp(p,p)
     real (kind=real_kind)              :: Rp(p,p)
-    real (kind=real_kind)              :: Tp(p,p)
-    real (kind=real_kind)              :: Bp(p,p)
 
+    real (kind=real_kind)              :: B(n,n)
+    real (kind=real_kind)              :: T(n,n)
     real (kind=real_kind)              :: L(n,n)
     real (kind=real_kind)              :: R(n,n)
-    real (kind=real_kind)              :: T(n,n)
-    real (kind=real_kind)              :: B(n,n)
 
     integer            :: i,j
 
     fluxes  = 0
 
-    Lp = 0
-    Rp = 0
     Bp = 0
     Tp = 0
+    Rp = 0
+    Lp = 0
 
-    Lp(:,1)  = dss(:,1)
-    Rp(:,p)  = dss(:,p)
-    Bp(p,:)  = dss(p,:)
-    Tp(1,:)  = dss(1,:)
+    Bp(:,1)  = dss(:,1)  ! bottom
+    Tp(:,p)  = dss(:,p)  ! top
+    Rp(p,:)  = dss(p,:)  ! right
+    Lp(1,:)  = dss(1,:)  ! left
 
+    Bp(1,1)  = Bp(1,1)/2
     Lp(1,1)  = Lp(1,1)/2
-    Tp(1,1)  = Tp(1,1)/2
-    Lp(p,1)  = Lp(p,1)/2
     Bp(p,1)  = Bp(p,1)/2
+    Rp(p,1)  = Rp(p,1)/2
 
-    Rp(1,p)  = Rp(1,p)/2
     Tp(1,p)  = Tp(1,p)/2
+    Lp(1,p)  = Lp(1,p)/2
+    Tp(p,p)  = Tp(p,p)/2
     Rp(p,p)  = Rp(p,p)/2
-    Bp(p,p)  = Bp(p,p)/2
 
-    L = subcell_integration(Lp, p, n)
-    R = subcell_integration(Rp, p, n)
-    T = subcell_integration(Tp, p, n)
-    B = subcell_integration(Bp, p, n)
+    B = subcell_integration(Bp, p, n, metdet)
+    T = subcell_integration(Tp, p, n, metdet)
+    L = subcell_integration(Lp, p, n, metdet)
+    R = subcell_integration(Rp, p, n, metdet)
 
     do i = 1,n
     do j = 1,n
-      if (1<j) R(i,j) = R(i,j) + R(i,j-1) 
-      if (1<i) B(i,j) = B(i,j) + B(i-1,j) 
+      if (1<j) T(i,j) = T(i,j) + T(i,j-1) 
+      if (1<i) R(i,j) = R(i,j) + R(i-1,j) 
     end do
     end do
 
     do i = n,1,-1
     do j = n,1,-1
-      if (j<n) L(i,j) = L(i,j) + L(i,j+1) 
-      if (i<n) T(i,j) = T(i,j) + T(i+1,j) 
+      if (j<n) B(i,j) = B(i,j) + B(i,j+1) 
+      if (i<n) L(i,j) = L(i,j) + L(i+1,j) 
     end do
     end do
 
 
     do i = 1,n
       do j = 1,n
-        if (1==j) fluxes(i,j,1) =  L(i,j)
-        if (n==i) fluxes(i,j,2) =  B(i,j)
-        if (j==n) fluxes(i,j,3) =  R(i,j)
-        if (1==i) fluxes(i,j,4) =  T(i,j)
+        if (1==j) fluxes(i,j,1) =  B(i,j)
+        if (n==i) fluxes(i,j,2) =  R(i,j)
+        if (j==n) fluxes(i,j,3) =  T(i,j)
+        if (1==i) fluxes(i,j,4) =  L(i,j)
 
-        if (1< j) fluxes(i,j,1) =   L(i,j) - R(i,j-1)
-        if (i< n) fluxes(i,j,2) =   B(i,j) - T(i+1,j)
-        if (j< n) fluxes(i,j,3) =   R(i,j) - L(i,j+1)
-        if (1< i) fluxes(i,j,4) =   T(i,j) - B(i-1,j)
+        if (1< j) fluxes(i,j,1) =   B(i,j) - T(i,j-1)
+        if (i< n) fluxes(i,j,2) =   R(i,j) - L(i+1,j)
+        if (j< n) fluxes(i,j,3) =   T(i,j) - B(i,j+1)
+        if (1< i) fluxes(i,j,4) =   L(i,j) - R(i-1,j)
       end do
     end do
 
-  end function
+  end function subcell_dss_fluxes
 
+  function subcell_div_fluxes(u, p, n, metdet) result(fluxes)
+
+    implicit none
+
+    integer              , intent(in)  :: p
+    integer              , intent(in)  :: n
+    real (kind=real_kind), intent(in)  :: u(p,p,2)
+    real (kind=real_kind), intent(in)  :: metdet(p,p)
+
+    real (kind=real_kind)              :: v(p,p,2)
+    real (kind=real_kind)              :: fluxes(n,n,4)
+    real (kind=real_kind)              :: tb(n,p)
+    real (kind=real_kind)              :: lr(p,n)
+    real (kind=real_kind)              :: flux_l(n,n)
+    real (kind=real_kind)              :: flux_r(n,n)
+    real (kind=real_kind)              :: flux_b(n,n)
+    real (kind=real_kind)              :: flux_t(n,n)
+    
+    integer i,j
+
+    if (.not.ALLOCATED(integration_matrix)      .or. &
+        SIZE(integration_matrix,1).ne.n .or. &
+        SIZE(integration_matrix,2).ne.p) then
+      call allocate_subcell_integration_matrix(p,n)
+    end if
+
+    v(:,:,1) = u(:,:,1)*metdet(:,:)
+    v(:,:,2) = u(:,:,2)*metdet(:,:)
+
+    tb = MATMUL(integration_matrix, v(:,:,2))
+    flux_b(:,:) = MATMUL(tb,TRANSPOSE(boundary_interp_matrix(:,1,:)))
+    flux_t(:,:) = MATMUL(tb,TRANSPOSE(boundary_interp_matrix(:,2,:)))
+
+    lr = MATMUL(v(:,:,1),TRANSPOSE(integration_matrix))
+    flux_l(:,:) = MATMUL(boundary_interp_matrix(:,1,:),lr)
+    flux_r(:,:) = MATMUL(boundary_interp_matrix(:,2,:),lr)
+
+    fluxes(:,:,1) = -flux_b(:,:)*rrearth
+    fluxes(:,:,2) =  flux_r(:,:)*rrearth
+    fluxes(:,:,3) =  flux_t(:,:)*rrearth
+    fluxes(:,:,4) = -flux_l(:,:)*rrearth
+
+  end function subcell_div_fluxes
+
+  function subcell_Laplace_fluxes(u, deriv, elem, p, n) result(fluxes)
+
+    implicit none
+
+    integer              , intent(in)  :: p
+    integer              , intent(in)  :: n
+    type (derivative_t)  , intent(in)  :: deriv
+    type (element_t)     , intent(in)  :: elem
+    real (kind=real_kind), intent(in)  :: u(p,p)
+
+    real (kind=real_kind)              :: g(p,p,2)
+    real (kind=real_kind)              :: v(p,p,2)
+    real (kind=real_kind)              :: div(p,p,2)
+    real (kind=real_kind)              :: sub_int(n,n,2)
+    real (kind=real_kind)              :: fluxes(n,n,4)
+    
+    integer i,j
+
+    g = gradient_sphere(u,deriv,elem%Dinv)
+
+    v(:,:,1) = elem%Dinv(1,1,:,:)*g(:,:,1) + elem%Dinv(1,2,:,:)*g(:,:,2)
+    v(:,:,2) = elem%Dinv(2,1,:,:)*g(:,:,1) + elem%Dinv(2,2,:,:)*g(:,:,2)
+    do j=1,p
+    do i=1,p
+       div(i,j,1) = -SUM(elem%spheremp(:,j)*v(:,j,1)*deriv%Dvv(i,:))
+       div(i,j,2) = -SUM(elem%spheremp(i,:)*v(i,:,2)*deriv%Dvv(j,:))
+    end do
+    end do
+    div = div * rrearth
+
+    div(:,:,1) = div(:,:,1) / elem%spheremp(:,:)
+    div(:,:,2) = div(:,:,2) / elem%spheremp(:,:)
+
+    sub_int(:,:,1)  = subcell_integration(div(:,:,1), p, n, elem%metdet)
+    sub_int(:,:,2)  = subcell_integration(div(:,:,2), p, n, elem%metdet)
+
+    do i=1,n
+    do j=2,n
+      sub_int(j,i,1) = sub_int(j,i,1) + sub_int(j-1,i,1) 
+      sub_int(i,j,2) = sub_int(i,j,2) + sub_int(i,j-1,2) 
+    end do
+    end do
+
+    fluxes = 0
+    do i=1,n
+    do j=1,n
+      if (1.lt.j) fluxes(i,j,1) = -sub_int(i,  j-1,2)
+      if (i.lt.n) fluxes(i,j,2) =  sub_int(i,  j,  1)
+      if (j.lt.n) fluxes(i,j,3) =  sub_int(i,  j,  2)
+      if (1.lt.i) fluxes(i,j,4) = -sub_int(i-1,j,  1)
+    end do
+    end do
+
+  end function subcell_Laplace_fluxes
 
 
   ! Given a field defined on the unit element, [-1,1]x[-1,1]
-  ! sample values, sampled_val, and integration weights, metdet,
-  ! at a number, np, of Gauss-Lobatto-Legendre points. Divide
+  ! sample values, sampled_val, premultiplied by integration weights,
+  ! and a number, np, of Gauss-Lobatto-Legendre points. Divide
   ! the square up into intervals by intervals sub-squares so that
   ! there are now intervals**2 sub-cells.  Integrate the 
-  ! function defined by sampled_val and metdet over each of these
+  ! function defined by sampled_val over each of these
   ! sub-cells and return the integrated values as an 
   ! intervals by intervals matrix.
   !
   ! Efficiency is obtained by computing and caching the appropriate
   ! integration matrix the first time the function is called.
-  function subcell_integration(sampled_val, np, intervals) result(values)
+  function subcell_integration(sampled_val, np, intervals, metdet) result(values)
 
     implicit none
 
     integer              , intent(in)  :: np
     integer              , intent(in)  :: intervals
     real (kind=real_kind), intent(in)  :: sampled_val(np,np)
+    real (kind=real_kind), intent(in)  :: metdet(np,np)
+    real (kind=real_kind)              :: val(np,np)
     real (kind=real_kind)              :: values(intervals,intervals)
 
     integer i,j
@@ -2456,12 +2560,15 @@ end do
       call allocate_subcell_integration_matrix(np,intervals)
     end if
 
+    ! Multiply sampled values by spectral element weights
+    val = sampled_val * metdet 
+
     ! Multiply the sampled values by the weighted jacobians.  
     ! Symmetry allows us to write this as J^t V J
     ! where J is a vector.  
 
     values = MATMUL(integration_matrix, &
-             MATMUL(sampled_val,TRANSPOSE(integration_matrix)))
+             MATMUL(val,TRANSPOSE(integration_matrix)))
 
   end function subcell_integration
 
@@ -2501,6 +2608,8 @@ end do
 
     if (ALLOCATED(integration_matrix)) deallocate(integration_matrix)
     allocate(integration_matrix(intervals,np))
+    if (ALLOCATED(boundary_interp_matrix)) deallocate(boundary_interp_matrix)
+    allocate(boundary_interp_matrix(intervals,2,np))
 
     gll = gausslobatto(np)
  
@@ -2573,6 +2682,7 @@ end do
     ! they are defined for a 2x2 square
     integration_matrix = integration_matrix/intervals
 
+    boundary_interp_matrix(:,:,:) = Lagrange_interp(:,(/1,np/),:)
   end subroutine allocate_subcell_integration_matrix
 
 end module derivative_mod

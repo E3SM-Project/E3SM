@@ -6,7 +6,7 @@ module element_mod
 
   use kinds,                  only: real_kind, long_kind, int_kind
   use coordinate_systems_mod, only: spherical_polar_t, cartesian2D_t, cartesian3D_t, distance
-  use dimensions_mod,         only: np, npsq, nlev, nlevp, qsize_d, max_neigh_edges
+  use dimensions_mod,         only: np, nc, npsq, nlev, nlevp, qsize_d, max_neigh_edges
   use edgetype_mod,           only: edgedescriptor_t, rotation_t
   use gridgraph_mod,          only: gridvertex_t
 
@@ -294,6 +294,43 @@ module element_mod
      real (kind=real_kind)    :: rmetdet(np,np)                       ! 1/metdet on velocity pressure grid
      real (kind=real_kind)    :: D(np,np,2,2)                         ! Map covariant field on cube to vector field on the sphere
      real (kind=real_kind)    :: Dinv(np,np,2,2)                      ! Map vector field on the sphere to covariant v on cube
+
+
+     ! Mass flux across the sides of each sub-element.
+     ! The storage is redundent since the mass across shared sides
+     ! must be equal in magnitude and opposite in sign.
+     ! The layout is like:
+     !   --------------------------------------------------------------
+     ! ^|    (1,4,3)     |                |              |    (4,4,3) |
+     ! ||                |                |              |            |
+     ! ||(1,4,4)         |                |              |(4,4,4)     |
+     ! ||         (1,4,2)|                |              |     (4,4,2)|
+     ! ||                |                |              |            |
+     ! ||   (1,4,1)      |                |              |  (4,4,1)   |
+     ! |---------------------------------------------------------------
+     ! S|                |                |              |            |
+     ! e|                |                |              |            |
+     ! c|                |                |              |            |
+     ! o|                |                |              |            |
+     ! n|                |                |              |            |
+     ! d|                |                |              |            |
+     !  ---------------------------------------------------------------
+     ! C|                |                |              |            |
+     ! o|                |                |              |            |
+     ! o|                |                |              |            |
+     ! r|                |                |              |            |
+     ! d|                |                |              |            |
+     ! i|                |                |              |            |
+     ! n---------------------------------------------------------------
+     ! a|    (1,1,3)     |                |              |    (4,1,3) |
+     ! t|                |                |              |(4,1,4)     |
+     ! e|(1,1,4)         |                |              |            |
+     !  |         (1,1,2)|                |              |     (4,1,2)|
+     !  |                |                |              |            |
+     !  |    (1,1,1)     |                |              |  (4,1,1)   |
+     !  ---------------------------------------------------------------
+     !          First Coordinate ------->
+     real (kind=real_kind) :: sub_elem_mass_flux(nc,nc,4,nlev)
 
      ! Convert vector fields from spherical to rectangular components
      ! The transpose of this operation is its pseudoinverse.
