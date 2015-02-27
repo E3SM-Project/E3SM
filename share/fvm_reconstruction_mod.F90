@@ -83,16 +83,16 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
   type (fvm_struct), intent(in)                                   :: fvm
         
 
-!  real (kind=real_kind)  , dimension(1-nht:nc+nht, 1-nht:nc+nht ), intent(out) :: fpanel
-!  real   (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2), intent(out) :: fotherpanel
-  real (kind=real_kind)  , dimension(1-nht:, 1-nht:),  intent(out) :: fpanel
-  real   (kind=real_kind), dimension(1-nht:,1-nht:,:), intent(out) :: fotherpanel
+  real (kind=real_kind)  , dimension(1-nht:nc+nht, 1-nht:nc+nht ), intent(out) :: fpanel
+  real   (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2), intent(out) :: fotherpanel
+!  real (kind=real_kind)  , dimension(1-nht:, 1-nht:),  intent(out) :: fpanel
+!  real   (kind=real_kind), dimension(1-nht:,1-nht:,:), intent(out) :: fotherpanel
 
 
   integer (kind=int_kind)                                         :: i, j, halo,ibaseref
-  real (kind=real_kind), dimension(1-nh:nc+nh,1:nhr,1:ns) :: w
+  real (kind=real_kind), dimension(1:ns,1-nh:nc+nh,1:nhr) :: w
   !
-  fpanel = 1.0E19 !dbg
+!  fpanel = 1.0E19 !dbg
   !
   ! 
   ! Stencil for reconstruction is:
@@ -204,11 +204,11 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
         do i=halo-nh,nc+nh-(halo-1)
            ibaseref=fvm%ibase(i,halo,1)                                              
 !           ibaseref = ibase(i,halo,1)
-           fpanel(1-halo ,i) = matmul_w(w(i,halo,:),fcube(1-halo ,ibaseref:ibaseref+ns-1))
+           fpanel(1-halo ,i) = matmul_w(w(:,i,halo),fcube(1-halo ,ibaseref:ibaseref+ns-1))
            !
            ! Exploit symmetry in interpolation weights
            !
-           fotherpanel(halo,i,1)     = matmul_w(w(i,halo,:),fcube(halo   ,ibaseref:ibaseref+ns-1))
+           fotherpanel(halo,i,1)     = matmul_w(w(:,i,halo),fcube(halo   ,ibaseref:ibaseref+ns-1))
         end do
      end do
   else if (fvm%cubeboundary==east) then
@@ -260,8 +260,8 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
         do i=halo-nh,nc+nh-(halo-1)
 !           ibaseref=fvm%ibase(i,halo,1 )                                              
            ibaseref = fvm%ibase(i,halo,1)
-           fpanel      (nc+halo   ,i  ) = matmul_w(w(i,halo,:),fcube(nc  +halo,ibaseref:ibaseref+ns-1))
-           fotherpanel (nc+1-halo ,i,1) = matmul_w(w(i,halo,:),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
+           fpanel      (nc+halo   ,i  ) = matmul_w(w(:,i,halo),fcube(nc  +halo,ibaseref:ibaseref+ns-1))
+           fotherpanel (nc+1-halo ,i,1) = matmul_w(w(:,i,halo),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
         end do
      end do
   else if (fvm%cubeboundary==north) then
@@ -306,8 +306,8 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,nc+nh-(halo-1)
            ibaseref = fvm%ibase(i,halo,1)
-           fpanel      (i,nc+halo    ) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+halo  )) !north
-           fotherpanel (i,nc+1-halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
+           fpanel      (i,nc+halo    ) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,nc+halo  )) !north
+           fotherpanel (i,nc+1-halo,1) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
         end do
      end do
 
@@ -351,8 +351,8 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,nc+nh-(halo-1)
            ibaseref=fvm%ibase(i,halo,1)!fvm%ibase(i,halo,2) 
-           fpanel      (i,1-halo ) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,1-halo))  !south
-           fotherpanel (i,  halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,  halo))
+           fpanel      (i,1-halo ) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,1-halo))  !south
+           fotherpanel (i,  halo,1) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,  halo))
         end do
      end do
   else if (fvm%cubeboundary==swest) then
@@ -401,8 +401,8 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
            ibaseref=fvm%ibase(i,halo,1)!fvm%ibase(i,halo,1)      
-           fpanel(1-halo ,i) = matmul_w(w(i,halo,:),fcube(1-halo ,ibaseref:ibaseref+ns-1)) !west
-           fpanel(i,1-halo ) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,1-halo))  !south
+           fpanel(1-halo ,i) = matmul_w(w(:,i,halo),fcube(1-halo ,ibaseref:ibaseref+ns-1)) !west
+           fpanel(i,1-halo ) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,1-halo))  !south
         end do
      end do
      !
@@ -460,7 +460,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
            !
            ! use same weights as interpolation south from main panel (symmetric)
            !
-           fotherpanel(i,halo,1)  = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,halo)) 
+           fotherpanel(i,halo,1)  = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,halo)) 
         end do
      end do
      !
@@ -486,7 +486,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
            ! !              |              |
            ! ===============================
            !
-           fotherpanel(1-halo,i-nc,1)  = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,halo)) 
+           fotherpanel(1-halo,i-nc,1)  = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,halo)) 
         end do
      end do
      fotherpanel(0,1,1) = 0.25D0*(fotherpanel(-1,1,1)+fotherpanel(1,1,1)+fotherpanel(0,2,1)+fotherpanel(0,0,1))
@@ -549,7 +549,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
            !
            ! use same weights as interpolation south from main panel (symmetric)
            !
-           fotherpanel(halo,i,2)  = matmul_w(w(i,halo,:),fcube(halo,ibaseref:ibaseref+ns-1)) 
+           fotherpanel(halo,i,2)  = matmul_w(w(:,i,halo),fcube(halo,ibaseref:ibaseref+ns-1)) 
         end do
      end do
      !
@@ -575,7 +575,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
            ! !              |              |
            ! ===============================
            !
-           fotherpanel(i-nc,1-halo,2)  = matmul_w(w(i,halo,:),fcube(halo,ibaseref:ibaseref+ns-1)) 
+           fotherpanel(i-nc,1-halo,2)  = matmul_w(w(:,i,halo),fcube(halo,ibaseref:ibaseref+ns-1)) 
         end do
      end do
      fotherpanel(1,0,2) = 0.25D0*(fotherpanel(0,0,2)+fotherpanel(2,0,2)+fotherpanel(1,-1,2)+fotherpanel(1,1,2))
@@ -616,7 +616,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
            ibaseref = fvm%ibase(i,halo,1)
-           fpanel(nc+halo,i) = matmul_w(w(i,halo,:),fcube(nc  +halo,ibaseref:ibaseref+ns-1))
+           fpanel(nc+halo,i) = matmul_w(w(:,i,halo),fcube(nc  +halo,ibaseref:ibaseref+ns-1))
         end do
      end do
      !
@@ -626,7 +626,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
            ibaseref = fvm%ibase(i,halo,2)
-           fpanel(i,1-halo ) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,1-halo))  !south
+           fpanel(i,1-halo ) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,1-halo))  !south
         end do
      end do
      fpanel(nc+1,0   )=0.25D0*(&
@@ -682,7 +682,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
            ibaseref = fvm%ibase(i,halo,2)
-           fotherpanel (i,halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,  halo))
+           fotherpanel (i,halo,1) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,  halo))
         end do
      end do
      !
@@ -698,7 +698,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
            ! use symmetry for weights (same weights as East from main panel but for south panel
            ! projection the indecies are rotated)
            !
-           fotherpanel (nc+halo ,1-i,1) = matmul_w(w(i,halo,:),fcube(nc+ibaseref:nc+ibaseref+ns-1,halo))
+           fotherpanel (nc+halo ,1-i,1) = matmul_w(w(:,i,halo),fcube(nc+ibaseref:nc+ibaseref+ns-1,halo))
         end do
      end do
      fotherpanel(nc+1,1,1) = 0.25D0*(fotherpanel(nc+2,1,1)+fotherpanel(nc,1,1)&
@@ -758,7 +758,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=0,nc+nh-(halo-1)
            ibaseref = fvm%ibase(i,halo,1)
-           fotherpanel(nc+1-halo,i,2) = matmul_w(w(i,halo,:),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
+           fotherpanel(nc+1-halo,i,2) = matmul_w(w(:,i,halo),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
         end do
      end do
      !
@@ -793,7 +793,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
            !
            ! fcube index: due to rotation (see Figure above)
            !
-           fotherpanel(nc+(nc+1-i),1-halo,2) = matmul_w(w(i,halo,:),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
+           fotherpanel(nc+(nc+1-i),1-halo,2) = matmul_w(w(:,i,halo),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
         end do
      end do
      fotherpanel(nc,0,2) = 0.25D0*(fotherpanel(nc+1,0,2)+fotherpanel(nc-1,0,2)&
@@ -833,7 +833,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
            ibaseref=fvm%ibase(i,halo,1)                                              
-           fpanel(1-halo ,i) = matmul_w(w(i,halo,:),fcube(1-halo ,ibaseref:ibaseref+ns-1))
+           fpanel(1-halo ,i) = matmul_w(w(:,i,halo),fcube(1-halo ,ibaseref:ibaseref+ns-1))
         end do
      end do
      ! 
@@ -843,7 +843,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
            ibaseref = fvm%ibase(i,halo,2)
-           fpanel(i,nc+halo) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+halo  )) !north
+           fpanel(i,nc+halo) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,nc+halo  )) !north
         end do
      end do
      fpanel(0   ,nc+1)=0.25D0*(&
@@ -888,7 +888,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
            ibaseref = fvm%ibase(i,halo,2)
-           fotherpanel(i,nc+1-halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+1-halo  ))
+           fotherpanel(i,nc+1-halo,1) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,nc+1-halo  ))
         end do
      end do
      !
@@ -900,7 +900,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=nc+1-nht+halo,nc+1
            ibaseref=fvm%ibase(i,halo,1)-nc
-           fotherpanel(1-halo,nc-(i-(nc+1)),1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
+           fotherpanel(1-halo,nc-(i-(nc+1)),1) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
         end do
      end do
      fotherpanel(0,nc,1)=0.25D0*(&
@@ -953,7 +953,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
            ibaseref=fvm%ibase(i,halo,1)                                              
-           fotherpanel(halo ,i,2) = matmul_w(w(i,halo,:),fcube(halo ,ibaseref:ibaseref+ns-1))
+           fotherpanel(halo ,i,2) = matmul_w(w(:,i,halo),fcube(halo ,ibaseref:ibaseref+ns-1))
         end do
      end do
      !
@@ -966,7 +966,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=0,nht-halo
            ibaseref = fvm%ibase(i,halo,2)+nc
-           fotherpanel(1-i,nc+halo,2) = matmul_w(w(i,halo,:),fcube(halo,ibaseref:ibaseref+ns-1)) !north
+           fotherpanel(1-i,nc+halo,2) = matmul_w(w(:,i,halo),fcube(halo,ibaseref:ibaseref+ns-1)) !north
         end do
      end do
      fotherpanel(1,nc+1,2)=0.25D0*(&
@@ -1008,7 +1008,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
            ibaseref=fvm%ibase(i,halo,1 )                                              
-           fpanel(nc+halo,i) = matmul_w(w(i,halo,:),fcube(nc  +halo,ibaseref:ibaseref+ns-1))
+           fpanel(nc+halo,i) = matmul_w(w(:,i,halo),fcube(nc  +halo,ibaseref:ibaseref+ns-1))
         end do
      end do
      !
@@ -1018,7 +1018,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
            ibaseref=fvm%ibase(i,halo,1) 
-           fpanel(i,nc+halo) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+halo  )) !north
+           fpanel(i,nc+halo) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,nc+halo  )) !north
         end do
      end do
      fpanel(nc+1,nc+1)=0.25D0*(&
@@ -1074,7 +1074,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
            ibaseref=fvm%ibase(i,halo,1) 
-           fotherpanel (i,nc+1-halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
+           fotherpanel (i,nc+1-halo,1) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
         end do
      end do
      !
@@ -1088,7 +1088,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
            ! fotherpanel uses indexing of main panel's projection
            ! fcube: rotated indexing
            !
-           fotherpanel (nc+halo,nc+i,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
+           fotherpanel (nc+halo,nc+i,1) = matmul_w(w(:,i,halo),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
         end do
      end do
      fotherpanel(nc+1,nc,1)=0.25D0*(&
@@ -1151,7 +1151,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
            ibaseref=fvm%ibase(i,halo,1 )                                              
-           fotherpanel(nc+1-halo,i,2) = matmul_w(w(i,halo,:),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
+           fotherpanel(nc+1-halo,i,2) = matmul_w(w(:,i,halo),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
         end do
      end do
      !
@@ -1165,7 +1165,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
            ! fotherpanel uses indexing of main panel's projection
            ! fcube: rotated indexing
            !
-           fotherpanel (nc+i,nc+halo,2) = matmul_w(w(i,halo,:),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
+           fotherpanel (nc+i,nc+halo,2) = matmul_w(w(:,i,halo),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
         end do
      end do
      fotherpanel(nc,nc+1,2)=0.25D0*(&
@@ -1179,16 +1179,14 @@ subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons)
   implicit none
 
   type (fvm_struct), intent(in)                                     :: fvm
-!  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht  ), intent(in)   :: fpanel
-!  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht,2), intent(in)   :: fotherpanel
-!  real (kind=real_kind), dimension(1:5,1-nhe:nc+nhe,1-nhe:nc+nhe  ), intent(inout):: recons
-!  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5)   :: fcube_matrix
+  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht  ), intent(in)   :: fpanel
+  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht,2), intent(in)   :: fotherpanel
+  real (kind=real_kind), dimension(1:5,1-nhe:nc+nhe,1-nhe:nc+nhe  ), intent(inout):: recons
+  real (kind=real_kind), dimension(1:5,1:5,1-nht:nc+nht,1-nht:nc+nht)             :: fcube_matrix
+!  real (kind=real_kind), dimension(  1-nht:,1-nht:  ), intent(in)   :: fpanel
+!  real (kind=real_kind), dimension(  1-nht:,1-nht:,:), intent(in)   :: fotherpanel
+!  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:  ), intent(inout):: recons
 
-  real (kind=real_kind), dimension(  1-nht:,1-nht:  ), intent(in)   :: fpanel
-  real (kind=real_kind), dimension(  1-nht:,1-nht:,:), intent(in)   :: fotherpanel
-  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:  ), intent(inout):: recons
-
-  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5)   :: fcube_matrix
   integer  :: i, j, k, h
   !
   ! on panel reconstruction
@@ -1202,12 +1200,13 @@ subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons)
         !
         ! loop over reconstruction coefficients
         !
-        do k=1,5
-           do h=1,5
+        do h=1,5
+           do k=1,5
+
               !
               ! loop over finite-difference (and metric terms) matrix
               !
-              recons(k,i,j) = recons(k,i,j) + fvm%recons_matrix(h,k,i,j)*fcube_matrix(i,j,k,h)
+              recons(k,i,j) = recons(k,i,j) + fvm%recons_matrix(h,k,i,j)*fcube_matrix(k,h,i,j)
            end do
         end do
         !
@@ -1219,46 +1218,57 @@ subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons)
   end do
 end subroutine get_reconstruction
 
+
 subroutine fill_fcube_matrix(fvm,fpanel,fotherpanel,fcube_matrix)
   implicit none
-  type (fvm_struct), intent(in)                                                    :: fvm
-!  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht        ), intent(in)  :: fpanel
-!  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2      ), intent(in)  :: fotherpanel
-!  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5), intent(out) :: fcube_matrix
-  real (kind=real_kind), dimension(1-nht:,1-nht:    ), intent(in)  :: fpanel
-  real (kind=real_kind), dimension(1-nht:,1-nht:,:  ), intent(in)  :: fotherpanel
-  real (kind=real_kind), dimension(1-nht:,1-nht:,:,:), intent(out) :: fcube_matrix
-  integer  :: i,j, k
+  type (fvm_struct), intent(in) :: fvm
+  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht        ), intent(in)  :: fpanel
+  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2      ), intent(in)  :: fotherpanel
+  real (kind=real_kind), dimension(1:5,1:5,1-nht:nc+nht,1-nht:nc+nht), intent(out) :: fcube_matrix
+
+!  real (kind=real_kind), dimension(1-nht:,1-nht:    ), intent(in)  :: fpanel
+!  real (kind=real_kind), dimension(1-nht:,1-nht:,:  ), intent(in)  :: fotherpanel
+!  real (kind=real_kind), dimension(1-nht:,1-nht:,:,:), intent(out) :: fcube_matrix
+
+
+  integer  :: i,j, k, kmax
 
   integer, dimension(2)  :: imin,imax,jmin,jmax,invx,invy
   logical, dimension(2)  :: swap
 
   do j = fvm%jy_min, fvm%jy_max-1
      do i = fvm%jx_min, fvm%jx_max-1
-        call get_fcube_matrix(fcube_matrix(i,j,:,:),fpanel(i-2:i+2,j-2:j+2))
+        call get_fcube_matrix(fcube_matrix(:,:,i,j),fpanel(i-2:i+2,j-2:j+2))
      end do
   end do
-  
+
   if (fvm%cubeboundary>0) then
-     imin(1) = fvm%jx_min1; imax(1) = fvm%jx_max1-1; imin(2) = fvm%jx_min2; imax(2) = fvm%jx_max2-1     
-     jmin(1) = fvm%jy_min1; jmax(1) = fvm%jy_max1-1; jmin(2) = fvm%jy_min2; jmax(2) = fvm%jy_max2-1
-     swap(1) = fvm%swap1  ; swap(2) = fvm%swap2
-     invx(1) = fvm%invx1   ; invx(2) = fvm%invx2
-     invy(1) = fvm%invy1   ; invy(2) = fvm%invy2
-     
-     do k=1,2
+     imin(1) = fvm%jx_min1; imax(1) = fvm%jx_max1-1; jmin(1) = fvm%jy_min1; jmax(1) = fvm%jy_max1-1
+     swap(1) = fvm%swap1  ; invx(1) = fvm%invx1    ; invy(1) = fvm%invy1
+     if (fvm%cubeboundary>4) then
+        kmax = 2
+        imin(2) = fvm%jx_min2; imax(2) = fvm%jx_max2-1
+        jmin(2) = fvm%jy_min2; jmax(2) = fvm%jy_max2-1
+        swap(2) = fvm%swap2
+        invx(2) = fvm%invx2  ; invy(2) = fvm%invy2
+     else
+        kmax = 1
+     end if
+
+     do k=1,kmax
         if (swap(k)) then
            do j=jmin(k),jmax(k)
               do i=imin(k),imax(k)
+
                  call get_fcube_matrix_otherpanel_swap(&
-                      fcube_matrix(i,j,:,:),fotherpanel(i-2:i+2,j-2:j+2,k),invx(k),invy(k))
+                      fcube_matrix(:,:,i,j),fotherpanel(i-2:i+2,j-2:j+2,k),invx(k),invy(k))
               end do
            end do
         else
            do j=jmin(k),jmax(k)
               do i=imin(k),imax(k)
                  call get_fcube_matrix_otherpanel(&
-                      fcube_matrix(i,j,:,:),fotherpanel(i-2:i+2,j-2:j+2,k),invx(k),invy(k))
+                      fcube_matrix(:,:,i,j),fotherpanel(i-2:i+2,j-2:j+2,k),invx(k),invy(k))
               end do
            end do
         end if
@@ -1270,7 +1280,7 @@ subroutine get_fcube_matrix(fcube_matrix,f)
   implicit none
 !  real (kind=real_kind), dimension(1:5,1:5),intent(out) :: fcube_matrix
   real (kind=real_kind), dimension(:,:),intent(out) :: fcube_matrix
-  real (kind=real_kind), dimension(-2:2,-2:2), intent(in)   :: f
+  real (kind=real_kind), dimension(-2:,-2:), intent(in)   :: f
   ! for x-derivative
   fcube_matrix(1,:) = f(:,0); fcube_matrix(3,:) = fcube_matrix(1,:)
   ! for y-derivative
@@ -1285,7 +1295,7 @@ subroutine get_fcube_matrix_otherpanel(fcube_matrix,f,invx,invy)
   implicit none
 !  real (kind=real_kind), dimension(1:5,1:5)  , intent(out) :: fcube_matrix
   real (kind=real_kind), dimension(:,:)  , intent(out) :: fcube_matrix
-  real (kind=real_kind), dimension(-2:2,-2:2), intent(in)  :: f
+  real (kind=real_kind), dimension(-2:,-2:), intent(in)  :: f
   integer                                    , intent(in)  :: invx, invy
 
   integer                                                  :: inv
@@ -1306,7 +1316,7 @@ subroutine get_fcube_matrix_otherpanel_swap(fcube_matrix,f,invx,invy)
   implicit none
 !  real (kind=real_kind), dimension(1:5,1:5)  , intent(out) :: fcube_matrix
   real (kind=real_kind), dimension(:,:)  , intent(out) :: fcube_matrix
-  real (kind=real_kind), dimension(-2:2,-2:2), intent(in)  :: f
+  real (kind=real_kind), dimension(-2:,-2:), intent(in)  :: f
   integer                                    , intent(in)  :: invx, invy
 
   integer                                                  :: inv
@@ -1519,9 +1529,8 @@ subroutine debug_halo_neighbor_recons(fvm,recons,recons_trunk)
                  if (ABS(recons(k,i,j)-recons_trunk(k,i,j))>1.0E-12&
                       .or.recons(k,i,j).ne.recons(k,i,j).or.&
                       recons(k,i,j).ne.recons(k,i,j)) then
-                    write(*,*) "recons difference neighbor h,k,i,j",h,k,i,j, &
-                               recons(k,i,j)-recons_trunk(k,i,j),recons(k,i,j), &
-                               recons_trunk(k,i,j)
+                    write(*,*) "recons difference neighbor h,k,i,j",h,k,i,j,  &
+                         recons(k,i,j)-recons_trunk(k,i,j),recons(k,i,j), recons_trunk(k,i,j)
                     stop
                  else
 !                    write(*,*) "recons pass test neighbor h,k,i,j",h,k,i,j,recons(k,i,j)-recons_trunk(k,i,j),recons(k,i,j),recons_trunk(k,i,j)

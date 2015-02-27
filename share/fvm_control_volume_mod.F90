@@ -37,12 +37,13 @@ module fvm_control_volume_mod
 
   type, public :: fvm_struct
     ! fvm tracer mixing ratio: (kg/kg)
-    real (kind=real_kind) :: c     (1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,timelevels)
+    real (kind=real_kind) :: c     (1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,2)
     ! fvm tracer mixing ratio tendency: (kg/kg/s)
     real (kind=real_kind) :: fc(nc,nc,nlev,ntrac_d)
-    real (kind=real_kind) :: dp_fvm(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev        ,timelevels)
+    real (kind=real_kind) :: dp_fvm(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev        ,2)
     real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nc:nc+nhc)
     real (kind=real_kind) :: cstart(1:nc,1:nc)
+    real (kind=real_kind) :: div_fvm(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev) !divergence implied by fvm - mostly for debugging
 !-----------------------------------------------------------------------------------!
     ! define the arrival grid, which is build on the original HOMME elements
     type (spherical_polar_t) :: asphere(nc+1,nc+1) ! spherical coordinates
@@ -91,7 +92,7 @@ module fvm_control_volume_mod
     ! provide fixed interpolation points with respect to the arrival grid for 
     ! reconstruction   
     integer                  :: ibase(1-nh:nc+nh,1:nhr,2)  
-    real (kind=real_kind)    :: halo_interp_weight(1-nh:nc+nh,1:nhr,1:ns,2)
+    real (kind=real_kind)    :: halo_interp_weight(1:ns,1-nh:nc+nh,1:nhr,2)
 !------------------------------------------------------------------------------------
     !
     ! for finite-difference reconstruction - computed in computexytosphere_moments
@@ -102,7 +103,9 @@ module fvm_control_volume_mod
   public :: fvm_mesh_ari
   
   real (kind=real_kind),parameter, public   :: bignum = 1.0D20
-  
+
+  integer, public :: n0_fvm, np1_fvm !fvm time-levels
+  integer, parameter, public :: fvm_supercycling = 3
 contains
 
 ! ----------------------------------------------------------------------------------!
@@ -116,6 +119,7 @@ contains
 ! INTPUT/OUTPUT:                                                                    !
 !        fvm   ...  structure                                                       !
 !-----------------------------------------------------------------------------------!
+  ! phl: is tl needed as input?
 subroutine fvm_mesh_ari(elem, fvm, tl)
   use time_mod, only : timelevel_t
   implicit none
@@ -1176,7 +1180,7 @@ subroutine compute_halo_weights(fvm)
               ibaseref=ibase_tmp(i,halo,iinterp)
               fvm%ibase(i,halo,1) = ibaseref
               call get_equispace_weights(fvm%dbeta, interp(i,halo,iinterp),&
-                   fvm%halo_interp_weight(i,halo,:,1))
+                   fvm%halo_interp_weight(:,i,halo,1))
            end do
         end do
      else
@@ -1195,12 +1199,12 @@ subroutine compute_halo_weights(fvm)
            do i=imin,imax
               ibaseref=ibase_tmp(i,halo,1)
               fvm%ibase(i,halo,1) = ibaseref
-              call get_equispace_weights(fvm%dbeta, interp(i,halo,1),fvm%halo_interp_weight(i,halo,:,1))
+              call get_equispace_weights(fvm%dbeta, interp(i,halo,1),fvm%halo_interp_weight(:,i,halo,1))
            end do
            !
            ! reverse weights/indices for fotherpanel (see details on reconstruct_matrix)
            !
-           fvm%halo_interp_weight(jmin:jmax,halo,1:ns,2) = fvm%halo_interp_weight(imax:imin:-1,halo,ns:1:-1,1)
+           fvm%halo_interp_weight(1:ns,jmin:jmax,halo,2) = fvm%halo_interp_weight(ns:1:-1,imax:imin:-1,halo,1)
            fvm%ibase       (jmin:jmax,halo     ,2) = nc+1-(ns-1)-fvm%ibase(imax:imin:-1,halo        ,1)
         end do
      end if
@@ -1216,7 +1220,7 @@ end subroutine compute_halo_weights
 !                                                                      !
 !----------------------------------------------------------------------!
 
-subroutine get_equispace_weights(dx, x,w)
+subroutine get_equispace_weights(dx, x, w)
   !
   ! Coordinate system for Lagrange interpolation:
   !

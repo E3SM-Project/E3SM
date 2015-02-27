@@ -42,17 +42,29 @@ module fvm_mod
   integer, public, parameter            :: IDEAL_TEST_SOLIDBODY = 2
   integer, public                       :: fvm_test_type = IDEAL_TEST_BOOMERANG
 
+  integer, private, parameter :: num_weights      = 10*(nc+2*nhe)*(nc+2*nhe)
+  integer, private, parameter :: num_weights_flux = 4*(nc+2*nhe)*(nc+nhe)
+
   public :: cslam_runairdensity, cslam_runflux
   
   public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
   public :: fvm_init3, fvm_rkdss
 contains
-  
-  
-  subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+
+
+  !
+  !**************************************************************************************
+  !
+  !
+  ! ff-cslam subroutines
+  !
+  !
+  !**************************************************************************************
+  !  
+  subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
-    use fvm_line_integrals_mod, only: compute_weights , ldbg!dbg
-    use fvm_line_integrals_flux_mod, only: compute_weights_fluxform !dbg
+    use fvm_line_integrals_flux_mod, only: compute_weights_fluxform
+    use fvm_control_volume_mod     , only: n0_fvm, np1_fvm
     ! ---------------------------------------------------------------------------------  
     use fvm_filter_mod, only: monotonic_gradient_cart
     ! ---------------------------------------------------------------------------------
@@ -62,11 +74,17 @@ contains
     ! ---------------------------------------------------------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! -----------------------------------------------
+!<<<<<<< .working
     use edge_mod, only :  ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
     use edgetype_mod, only : ghostBuffertr_t
-    
-!    use fvm_control_volume_mod, only:  fvm_struct !dbg
-!    use control_mod, only : north, south, east, west, neast, nwest, seast, swest !dbg   
+    use control_mod, only : qsplit
+    use time_mod   , only : TimeLevel_Qdp
+!=======
+!    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,&
+!         initghostbufferTR,freeghostbuffertr
+!    use control_mod, only : qsplit
+!    use time_mod   , only : TimeLevel_Qdp
+!>>>>>>> .merge-right.r4402
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)
@@ -75,14 +93,15 @@ contains
     integer, intent(in)                         :: nets  ! starting thread element number (private)
     integer, intent(in)                         :: nete  ! ending thread element number   (private)
     real (kind=real_kind)                       :: tstep
+    real (kind=real_kind), intent(in)           :: p_top
     
-    integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
+    integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h, ntmp
     type (TimeLevel_t)                          :: tl              ! time level struct
     type (derivative_t)                         :: deriv           ! derivative struct
     
-    real (kind=real_kind)   , dimension(4*(nc+2*nhe)*(nc+nhe),6,2)  :: weights_all
-    integer (kind=int_kind),  dimension(4*(nc+2*nhe)*(nc+nhe),2,2)  :: weights_eul_index_all
-    integer (kind=int_kind),  dimension(4*(nc+2*nhe)*(nc+nhe),2,2)  :: weights_lgr_index_all
+    real (kind=real_kind)   , dimension(num_weights_flux,6,2)  :: weights_all_flux
+    integer (kind=int_kind),  dimension(num_weights_flux,2,2)  :: weights_eul_index_all_flux
+    integer (kind=int_kind),  dimension(num_weights_flux,2,2)  :: weights_lgr_index_all_flux
     integer (kind=int_kind), dimension(2)                            :: jall
 
     integer (kind=int_kind)                            :: jall_max !dbg
@@ -91,131 +110,143 @@ contains
     
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
     
-    real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nc:nc+nhc)        :: tracer_air0   
-!    real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 !dbg
-    real (kind=real_kind), dimension(1:nc,1:nc):: cslam_area, fluxform_effective_area, &
-         area_flux !dbg
-    integer (kind=int_kind) :: itmp, jtmp
+    real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_air
     real (kind=real_kind), dimension(1:nc+1,1:nc+1,2)                  :: flux_tracer
     real (kind=real_kind) :: q0,q1,rho0,rho1,area,diff_dbg 
-    !dbg start
-    
-    !dbg end
+
+    real (kind=real_kind)                                              :: flux_area(1:nc+1,1:nc+1,2)
     
     type (ghostBuffertr_t)                      :: buflatlon
     
-    call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
+!xx    call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
     
-    call t_startf('Fluxform-CSLAM scheme') 
+    call t_startf('ff-cslam scheme') 
     
+!    call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
+
     do ie=nets, nete
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
        end do
+       !       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!       
     end do
-
-
-    
-    
+    !
+    ! fill halo for dp_fvm and c
+    !
     do ie=nets,nete
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
        !
-       ! if changing to nhe>1 the 3rd argument has to be changed to nhe+1
+       ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
+       ! the reconstruction and following evaluation of reconstruction function on lat-lon points
        !
-       call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc) !kptr = 1 for lat
-       call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
     end do
-    !-----------------------------------------------------------------------------------! 
-    call ghost_exchangeV(hybrid,buflatlon,2,nc+1,2)
-    !-----------------------------------------------------------------------------------!  
+    call t_startf('FVM Communication')
+    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+    call t_stopf('FVM Communication')
+    !-----------------------------------------------------------------------------------!
+    call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
-       call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc)
-       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
-       
-    end do
-
-!    write(*,*) "xxx",tl%nstep
-!    if (tl%nstep==179) ldbg = .true.
-
-
-
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+    enddo
+    call t_stopf('FVM Unpack')
+    
     jall_max=0
     do ie=nets, nete
        do k=1,nlev
           !
           ! zero velocity - for debugging
           !
-!          if (fvm(ie)%cubeboundary > 0) then
-!             do j=1,nc+1                                                                             
-!                do i=1,nc+1                                                                              
-!                   if (i==1.or.j==1.or.i==nc+1.or.j==nc+1) then
-!                      fvm%dsphere(i,j,k)=fvm%asphere(i,j) !zero velocity
-!                   end if
-!                end do
-!             end do
-!          end if
-
-          call compute_weights_fluxform(fvm(ie),6,weights_all,weights_eul_index_all, &
-             weights_lgr_index_all,k,jall)
-          if (jall(1)>4*(nc+2*nhe)*(nc+nhe)) then
-             write(*,*) "jall(1)>4*(nc+2*nhe)*(nc+nhe)"
+          !          if (fvm(ie)%cubeboundary > 0) then
+          !             do j=1,nc+1                                                                             
+          !                do i=1,nc+1                                                                              
+          !                   if (i==1.or.j==1.or.i==nc+1.or.j==nc+1) then
+          !                      fvm%dsphere(i,j,k)=fvm%asphere(i,j) !zero velocity
+          !                   end if
+          !                end do
+          !             end do
+          !          end if
+          
+          call compute_weights_fluxform(fvm(ie),6,weights_all_flux,weights_eul_index_all_flux, &
+               weights_lgr_index_all_flux,k,jall)
+          
+          if (jall(1)>num_weights_flux) then
+             write(*,*) "jall(1)>num_weights_flux"
              stop
           endif
-          if (jall(2)>4*(nc+2*nhe)*(nc+nhe)) then
-             write(*,*) "jall(2)>4*(nc+2*nhe)*(nc+nhe)"
+          if (jall(2)>num_weights_flux) then
+             write(*,*) "jall(2)>num_weights_flux"
              stop
           endif
-
-          tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)       
+          
+          tracer_air0=fvm(ie)%dp_fvm(:,:,k,n0_fvm)       
           call reconstruction(tracer_air0, fvm(ie),recons)
-!          recons = 0.0!dbg
-          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
+          !
+          ! limiter is usually not needed for air mass
+          !
+          !call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
           !
           ! do remapping for x (j=1) and y (j=2) fluxes
           !
-          do j=1,2
-             call cslam_remap(tracer_air0,flux_air(:,:,j),weights_all(1:jall(j),:,j), &
-                  recons, &
-                  fvm(ie)%spherecentroid, weights_eul_index_all(1:jall(j),:,j),&
-                  weights_lgr_index_all(1:jall(j),:,j), jall(j),1)  
-          end do
+          call ff_cslam_remap(tracer_air0,flux_air,weights_all_flux,recons, &
+               fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
+               weights_lgr_index_all_flux, jall)  
+          !
+          ! compute flux-areas (to be used for tracer advection)
+          !
+          call ff_cslam_flux_area(flux_area,weights_all_flux, &
+               weights_eul_index_all_flux, weights_lgr_index_all_flux, jall)
           !
           ! forecast equation for air density
           !
           do j=1,nc
              do i=1,nc
-                fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air0(i,j)-(&  
+!                fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air0(i,j)-(&  
+                fvm(ie)%dp_fvm(i,j,k,np1_fvm)=tracer_air0(i,j)-(&  
                      flux_air(i+1,j,1)-flux_air(i,j,1)+flux_air(i,j+1,2)-flux_air(i,j,2)&
                      )/fvm(ie)%area_sphere(i,j)
-                
+                !
+                ! Lagrangian divergence: D = (1/(dA*dt))*(dA-da), where da departure area
+                !
+                ! For ff-cslam: 
+                !
+                !    da = dA-(flux_area(i+1,j,1)-flux_area(i,j,1)+flux_area(i  ,j+1,2)-flux_area(i,j,2))
+                !                     
+                !
+                !
+                ! note: div_fvm is mostly for debugging - uncomment this for production runs
+                !
+                fvm(ie)%div_fvm(i,j,k) = (1.0D0/(fvm(ie)%area_sphere(i,j)*tstep))*&
+                     (flux_area(i+1,j  ,1)-flux_area(i,j,1)+&
+                      flux_area(i  ,j+1,2)-flux_area(i,j,2))
              end do
           end do
           !
           !loop through all tracers
           !
           do itr=1,ntrac
-             tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+!             tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+             tracer0=fvm(ie)%c(:,:,k,itr,n0_fvm)
              call reconstruction(tracer0, fvm(ie),recons)
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
 !             recons=0.0
              !
-             ! do remapping for x (j=1) and y (j=2) fluxes
+             ! do remapping for x-y fluxes
              !
-             do j=1,2
-                call cslam_remap_q(tracer0,flux_tracer(:,:,j),weights_all(:,:,j), &
-                     recons, &
-                     fvm(ie)%spherecentroid, weights_eul_index_all(:,:,j),&
-                     weights_lgr_index_all(:,:,j), jall(j))  
-             end do
+             call ff_cslam_remap_q(tracer0,flux_tracer,weights_all_flux, &
+                  recons, &
+                  fvm(ie)%spherecentroid, weights_eul_index_all_flux,&
+                  weights_lgr_index_all_flux, jall, flux_area)  
              !
              ! forecast equation for tracer (kg/kg)
              !
              do j=1,nc
                 do i=1,nc
-                   q0   = fvm(ie)%c(i,j,k,itr,tl%n0)
-                   rho0 = fvm(ie)%dp_fvm(i,j,k,tl%n0)
-                   rho1 = fvm(ie)%dp_fvm(i,j,k,tl%np1)
+                   q0   = fvm(ie)%c(i,j,k,itr,n0_fvm)
+                   rho0 = fvm(ie)%dp_fvm(i,j,k,n0_fvm)
+                   rho1 = fvm(ie)%dp_fvm(i,j,k,np1_fvm)
                    area = fvm(ie)%area_sphere(i,j)
                    !
                    q1=q0*rho0-(&  
@@ -225,35 +256,196 @@ contains
                         flux_air(i  ,j+1,2)*flux_tracer(i  ,j+1,2)-&
                         flux_air(i  ,j  ,2)*flux_tracer(i  ,j  ,2)&
                         )/area
-                   fvm(ie)%c(i,j,k,itr,tl%np1)=q1/rho1
+!                   fvm(ie)%c(i,j,k,itr,tl%np1)=q1/rho1
+                   fvm(ie)%c(i,j,k,itr,np1_fvm)=q1/rho1
                 end do
              end do
           enddo  !End Tracer
        end do  !End Level
+       !
+       ! Compute surface pressure implied by fvm
+       !
+       do j=1,nc
+          do i=1,nc
+             fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,np1_fvm)) +  p_top
+          end do
+       end do
+       !fvm(ie)%c(1:nc,1:nc,:,1,tl%np1)=fvm(ie)%div_fvm !dbg
        !note write tl%np1 in buffer
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,nlev,elem(ie)%desc)
+!phl       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+!phl       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+       !
+       ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
+       ! the reconstruction and following evaluation of reconstruction function on lat-lon points
+       ! 
+       ! Note done for performance reasons - a hack is to put div_fvm into fvm(ie)%c(1:nc,1:nc,:,1,tl%np1)
+       !
     end do
-    call t_stopf('Fluxform-CSLAM scheme')
-    call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
-    call t_stopf('FVM Communication')
+    !
+    ! advance fvm time-levels
+    !
+    ntmp     = np1_fvm
+    np1_fvm  = n0_fvm
+    n0_fvm   = ntmp
+
+
+    call t_stopf('ff-cslam scheme')
+!phl    call t_startf('FVM Communication')
+!phl    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+!phl    call t_stopf('FVM Communication')
     !-----------------------------------------------------------------------------------!
-    call t_startf('FVM Unpack')
-    do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nhc, nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,nlev,elem(ie)%desc)
-    enddo
-    call t_stopf('FVM Unpack')
-    call freeghostbuffertr(buflatlon)
+!phl    call t_startf('FVM Unpack')
+!phl    do ie=nets,nete
+!phl       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+!phl       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+!phl    enddo
+!phl    call t_stopf('FVM Unpack')
+!xxx    call freeghostbuffertr(buflatlon)
     
   end subroutine cslam_runflux
 
+  subroutine ff_cslam_remap(tracer0,flux_air,weights_all_flux,recons,centroid, &
+       weights_eul_index_all_flux, weights_lgr_index_all_flux, jall)
+    
+    real (kind=real_kind)                                  ,   intent(in):: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind)  , dimension(1:nc+1,1:nc+1,2)    , intent(inout):: flux_air
+    integer (kind=int_kind), dimension(2)                  , intent(in)  :: jall  
+    real (kind=real_kind)                                  , intent(in)  :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind)  ,                                 intent(in)  :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind)  , dimension(num_weights_flux,6,2), intent(in)  :: weights_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_eul_index_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_lgr_index_all_flux
+    !
+    ! should make  dimension(num_weights_flux,2,2) to dimension(2,num_weights_flux,2)
+    !
+    integer :: h, jx, jy, jdx, jdy, k
+    
+    flux_air = 0.0D0
+    do k=1,2
+       do h=1,jall(k)
+          jx  = weights_lgr_index_all_flux(h,1,k)
+          jy  = weights_lgr_index_all_flux(h,2,k)
+          jdx = weights_eul_index_all_flux(h,1,k)
+          jdy = weights_eul_index_all_flux(h,2,k)
+          
+          flux_air(jx,jy,k) = flux_air(jx,jy,k)+weights_all_flux(h,1,k)*(&
+               ! all constant terms 
+               tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
+               - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
+               + recons(3,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)**2 -centroid(3,jdx,jdy)) &
+               + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
+               + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
+               ! linear terms
+               weights_all_flux(h,2,k)*&
+               (recons(1,jdx,jdy) - recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
+               - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
+               weights_all_flux(h,3,k)*&
+               (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
+               - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
+               ! quadratic terms
+               weights_all_flux(h,4,k)*recons(3,jdx,jdy)+&
+               weights_all_flux(h,5,k)*recons(4,jdx,jdy)+&
+               weights_all_flux(h,6,k)*recons(5,jdx,jdy)
+       end do
+    end do
+  end subroutine ff_cslam_remap
+  !
+  ! compute flux areas
+  !
+  subroutine ff_cslam_flux_area(flux_area,weights_all_flux, &
+       weights_eul_index_all_flux, weights_lgr_index_all_flux, jall)
+    
+    real (kind=real_kind)                                   , intent(inout) :: flux_area(1:nc+1,1:nc+1,2)
+    integer (kind=int_kind), dimension(2)                   , intent(in)    :: jall  
+    real (kind=real_kind)  , dimension(num_weights_flux,6,2), intent(in)    :: weights_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)    :: weights_eul_index_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)    :: weights_lgr_index_all_flux
+ 
+    integer                                     :: h, jx, jy, jdx, jdy, k
+    
+    flux_area = 0.0D0
+    do k=1,2
+       do h=1,jall(k)
+          jx  = weights_lgr_index_all_flux(h,1,k)
+          jy  = weights_lgr_index_all_flux(h,2,k)
+          jdx = weights_eul_index_all_flux(h,1,k)
+          jdy = weights_eul_index_all_flux(h,2,k)
+          
+          flux_area(jx,jy,k) =  flux_area(jx,jy,k)+weights_all_flux(h,1,k)
+       end do
+    end do
+  end subroutine ff_cslam_flux_area
+
+  subroutine ff_cslam_remap_q(tracer0,flux,weights_all_flux,recons,centroid, &
+       weights_eul_index_all_flux, weights_lgr_index_all_flux, jall,flux_area)
+    
+    real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1,2)
+    integer (kind=int_kind), dimension(2), intent(in)         :: jall  
+    real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind)  , dimension(num_weights_flux,6,2), intent(in)  :: weights_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_eul_index_all_flux
+    integer (kind=int_kind), dimension(num_weights_flux,2,2), intent(in)  :: weights_lgr_index_all_flux
+    real (kind=real_kind)                                   , intent(in)  :: flux_area(1:nc+1,1:nc+1,2)
+
+    integer                                     :: h, jx, jy, jdx, jdy, k
+    
+    flux   = 0.0D0
+    do k=1,2
+       do h=1,jall(k)
+          jx  = weights_lgr_index_all_flux(h,1,k)
+          jy  = weights_lgr_index_all_flux(h,2,k)
+          jdx = weights_eul_index_all_flux(h,1,k)
+          jdy = weights_eul_index_all_flux(h,2,k)
+          
+          flux(jx,jy,k) = flux(jx,jy,k)+weights_all_flux(h,1,k)*(&
+               ! all constant terms 
+               tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
+               - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
+               + recons(3,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)**2 -centroid(3,jdx,jdy)) &
+               + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
+               + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
+               ! linear terms
+               weights_all_flux(h,2,k)*&
+               (recons(1,jdx,jdy) - recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
+               - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
+               weights_all_flux(h,3,k)*&
+               (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
+               - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
+               ! quadratic terms
+               weights_all_flux(h,4,k)*recons(3,jdx,jdy)+&
+               weights_all_flux(h,5,k)*recons(4,jdx,jdy)+&
+               weights_all_flux(h,6,k)*recons(5,jdx,jdy)
+       end do
+       do jy=1,nc+1
+          do jx=1,nc+1
+             if (abs(flux_area(jx,jy,k))<1.0E-12) then
+                flux(jx,jy,k) = 0.0D0
+             else
+                flux(jx,jy,k) = flux(jx,jy,k)/flux_area(jx,jy,k)
+             end if
+          end do
+       end do
+    end do
+  end subroutine ff_cslam_remap_q
+
+  !
+  !**************************************************************************************
+  !
+  !
+  ! cslam subroutines
+  !
+  !
+  !**************************************************************************************
+  !
+
 
   ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
-  subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+  subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete,p_top)
     ! ---------------------------------------------------------------------------------
     use fvm_line_integrals_mod, only: compute_weights
+    use fvm_control_volume_mod, only: n0_fvm, np1_fvm
     ! ---------------------------------------------------------------------------------  
     use fvm_filter_mod, only: monotonic_gradient_cart
     ! ---------------------------------------------------------------------------------
@@ -265,7 +457,9 @@ contains
     ! -----------------------------------------------
     use edge_mod, only :  ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
     use edgetype_mod, only : ghostBuffertr_t
-    
+    use control_mod, only : qsplit
+    use time_mod   , only : TimeLevel_Qdp    
+
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)
@@ -274,14 +468,15 @@ contains
     integer, intent(in)                         :: nets  ! starting thread element number (private)
     integer, intent(in)                         :: nete  ! ending thread element number   (private)
     real (kind=real_kind)                       :: tstep
+    real (kind=real_kind), intent(in)           :: p_top
     
-    integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
+    integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h, ntmp
     type (TimeLevel_t)                          :: tl              ! time level struct
     type (derivative_t)                         :: deriv           ! derivative struct
     
-    real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: weights_all
-    integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
-    integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
+    real (kind=real_kind)   , dimension(num_weights,6)  :: weights_all
+    integer (kind=int_kind),  dimension(num_weights,2)  :: weights_eul_index_all
+    integer (kind=int_kind),  dimension(num_weights,2)  :: weights_lgr_index_all
     integer (kind=int_kind)                                          :: jall
     
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
@@ -295,15 +490,19 @@ contains
     type (ghostBuffertr_t)                      :: buflatlon
 
     call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
-    call t_startf('CSLAM scheme') 
-    
+    call t_startf('cslam scheme') 
+
     do ie=nets, nete
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
        end do
     end do
-    
+
+    !
+    ! is this boundary exchange necessary? only of .EOC.=.TRUE. in fvm_lineintegrals_mod
+    !    
     do ie=nets,nete
+       ! if changing to nhe>1 the 3rd argument has to be changed to nhe+1
        call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc) !kptr = 1 for lat
        call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
     end do
@@ -313,88 +512,125 @@ contains
     do ie=nets,nete
        call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
        call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc)
-       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
-       
+       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!       
     end do
+
+    !
+    ! fill halo for dp_fvm and c
+    !
+    do ie=nets,nete
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+       !
+       ! if one wants to output div_fvm on lat-lon grid then a boundary exchange is necessary for
+       ! the reconstruction and following evaluation of reconstruction function on lat-lon points
+    end do
+    call t_startf('FVM Communication')
+    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+    call t_stopf('FVM Communication')
+    !-----------------------------------------------------------------------------------!
+    call t_startf('FVM Unpack')
+    do ie=nets,nete
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:  ,n0_fvm), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c     (:,:,:,:,n0_fvm),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+    enddo
+    call t_stopf('FVM Unpack')
+
+
+
     do ie=nets, nete
        do k=1,nlev
           !-Departure fvm Meshes, initialization done                                                               
           call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
                weights_lgr_index_all,k,jall)     
-          
-          tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)       
+          tracer_air0=fvm(ie)%dp_fvm(:,:,k,n0_fvm)     
           call reconstruction(tracer_air0, fvm(ie),recons_air)
-          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
-          
+!          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
           tracer_air1=0.0D0   
-          
-          call cslam_remap(tracer_air0,tracer_air1,weights_all(1:jall,:), recons_air, &
-               fvm(ie)%spherecentroid, weights_eul_index_all(1:jall,:), weights_lgr_index_all(1:jall,:), jall,0)
+          call cslam_remap(tracer_air0,tracer_air1,weights_all, recons_air, &
+               fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall,0)
           ! finish scheme
           do j=1,nc
              do i=1,nc
                 tracer_air1(i,j)=tracer_air1(i,j)/fvm(ie)%area_sphere(i,j)
-                fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air1(i,j)
+                fvm(ie)%dp_fvm(i,j,k,np1_fvm)=tracer_air1(i,j)
              end do
           end do
           !loop through all tracers
           do itr=1,ntrac
-             tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+             tracer0=fvm(ie)%c(:,:,k,itr,n0_fvm)
              call reconstruction(tracer0, fvm(ie),recons)
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
-             
              tracer1=0.0D0   
              
-             !         call cslam_remap(tracer0,tracer1,weights_all, recons, &
-             !                    fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)                   
-             call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all(1:jall,:), recons,recons_air,&
-                  fvm(ie)%spherecentroid,weights_eul_index_all(1:jall,:), weights_lgr_index_all(1:jall,:), jall)  
+             call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
+                  fvm(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)  
+
              ! finish scheme
              do j=1,nc
                 do i=1,nc
-                   fvm(ie)%c(i,j,k,itr,tl%np1)= &
+                   fvm(ie)%c(i,j,k,itr,np1_fvm)= &
                         (tracer1(i,j)/fvm(ie)%area_sphere(i,j))/tracer_air1(i,j)
-                   !             fvm(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
+                   !             fvm(ie)%c(i,j,k,itr,np1_fvm)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
                 end do
              end do
           enddo  !End Tracer
        end do  !End Level
+
+       !
+       ! Compute surface pressure implied by fvm
+       !
+       do j=1,nc
+          do i=1,nc
+             fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,np1_fvm)) +  p_top
+          end do
+       end do
+
        !note write tl%np1 in buffer                                                                 
 
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
+!       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
+!       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
     end do
-    call t_stopf('CSLAM scheme')
-    call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
-    call t_stopf('FVM Communication')
+
+    !
+    ! advance fvm time-levels
+    !
+    ntmp     = np1_fvm
+    np1_fvm  = n0_fvm
+    n0_fvm   = ntmp
+
+
+
+    call t_stopf('cslam scheme')
+!    call t_startf('FVM Communication')
+!    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
+!    call t_stopf('FVM Communication')
     !-----------------------------------------------------------------------------------!                         
-    call t_startf('FVM Unpack')
-    do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nhc, nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
-    enddo
-    call t_stopf('FVM Unpack')
+!    call t_startf('FVM Unpack')
+!    do ie=nets,nete
+!       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nhc, nc,nlev,1,    0,   elem(ie)%desc)
+!       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
+!    enddo
+!    call t_stopf('FVM Unpack')
     call freeghostbuffertr(buflatlon)
 
     
   end subroutine cslam_runairdensity
-  
-  
-  
-  ! do the remapping
-  subroutine cslam_remap(tracer0,tracer1,weights,recons,centroid, &
+
+
+  subroutine cslam_remap(tracer0,tracer1,weights_all,recons,centroid, &
        weights_eul_index_all, weights_lgr_index_all, jall, iflux)
     
     real (kind=real_kind),   intent(in)        :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
     integer (kind=int_kind), intent(in)        :: iflux !to accomodate flux call
     real (kind=real_kind),   intent(inout)     :: tracer1(1:nc+iflux,1:nc+iflux)
     integer (kind=int_kind), intent(in)        :: jall  
-    real (kind=real_kind),   intent(in)        :: weights(:,:)
     real (kind=real_kind),   intent(in)        :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind),   intent(in)        :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(:,:)
-    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(:,:)
+    real (kind=real_kind)   , dimension(num_weights,6), intent(in)  :: weights_all
+    integer (kind=int_kind),  dimension(num_weights,2), intent(in)  :: weights_eul_index_all
+    integer (kind=int_kind),  dimension(num_weights,2), intent(in)  :: weights_lgr_index_all
+
  
     integer                                     :: h, jx, jy, jdx, jdy
     
@@ -405,7 +641,7 @@ contains
        jdx = weights_eul_index_all(h,1)
        jdy = weights_eul_index_all(h,2)
        
-       tracer1(jx,jy) = tracer1(jx,jy)+weights(h,1)*(&
+       tracer1(jx,jy) = tracer1(jx,jy)+weights_all(h,1)*(&
             ! all constant terms 
             tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
             - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
@@ -413,75 +649,21 @@ contains
             + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
             + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
             ! linear terms
-            weights(h,2)*&
+            weights_all(h,2)*&
             (recons(1,jdx,jdy) - recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
             - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
-            weights(h,3)*&
+            weights_all(h,3)*&
             (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
             - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
             ! quadratic terms
-            weights(h,4)*recons(3,jdx,jdy)+&
-            weights(h,5)*recons(4,jdx,jdy)+&
-            weights(h,6)*recons(5,jdx,jdy)
+            weights_all(h,4)*recons(3,jdx,jdy)+&
+            weights_all(h,5)*recons(4,jdx,jdy)+&
+            weights_all(h,6)*recons(5,jdx,jdy)
     end do
   end subroutine cslam_remap
 
-  ! do the remapping
-  subroutine cslam_remap_q(tracer0,flux,weights,recons,centroid, &
-       weights_eul_index_all, weights_lgr_index_all, jall)
-    
-    real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
-    real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1)
-    integer (kind=int_kind), intent(in)         :: jall  
-    real (kind=real_kind), intent(in)           :: weights(:,:)
-    real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(:,:)
-    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(:,:)
-    
-    real (kind=real_kind)        :: flux_area(1:nc+1,1:nc+1)
-    
-    integer                                     :: h, jx, jy, jdx, jdy
-    
-    flux   = 0.0D0
-    flux_area = 0.0D0
-    do h=1,jall
-       jx  = weights_lgr_index_all(h,1)
-       jy  = weights_lgr_index_all(h,2)
-       jdx = weights_eul_index_all(h,1)
-       jdy = weights_eul_index_all(h,2)
-       
-       flux_area(jx,jy) =  flux_area(jx,jy)+weights(h,1)
 
-       flux(jx,jy) = flux(jx,jy)+weights(h,1)*(&
-            ! all constant terms 
-            tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
-            - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
-            + recons(3,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)**2 -centroid(3,jdx,jdy)) &
-            + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
-            + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
-            ! linear terms
-            weights(h,2)*&
-            (recons(1,jdx,jdy) - recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
-            - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
-            weights(h,3)*&
-            (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
-            - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
-            ! quadratic terms
-            weights(h,4)*recons(3,jdx,jdy)+&
-            weights(h,5)*recons(4,jdx,jdy)+&
-            weights(h,6)*recons(5,jdx,jdy)
-    end do
-    do jy=1,nc+1
-       do jx=1,nc+1
-          if (abs(flux_area(jx,jy))<1.0E-12) then
-             flux(jx,jy) = 0.0D0
-          else
-             flux(jx,jy) = flux(jx,jy)/flux_area(jx,jy)
-          end if
-       end do
-    end do
-  end subroutine cslam_remap_q
+
   
   subroutine cslam_get_area(fvm,area,k)
     use fvm_line_integrals_mod, only: compute_weights !dbg
@@ -549,7 +731,7 @@ contains
   ! do remapping with air (i.e. conserve mass of air density * concentration),
   ! see Nair et.al 2010 in JCP: A class of deformational flow test cases for linear transport
   ! schemes on the sphere, Appendix B
-  subroutine cslam_remap_air(tracer0,tracer1,tracer_air, weights,recons, recons_air, centroid, &
+  subroutine cslam_remap_air(tracer0,tracer1,tracer_air, weights_all,recons, recons_air, centroid, &
        weights_eul_index_all, weights_lgr_index_all, jall)
     
     real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
@@ -559,10 +741,10 @@ contains
     real (kind=real_kind), intent(in)           :: recons_air(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
  
     integer (kind=int_kind), intent(in)         :: jall  
-    real (kind=real_kind), intent(in)           :: weights(jall,6)
+    real (kind=real_kind), intent(in)           :: weights_all(num_weights,6)
     real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)         :: weights_eul_index_all(jall,2)
-    integer (kind=int_kind), intent(in)         :: weights_lgr_index_all(jall,2)
+    integer (kind=int_kind), intent(in)         :: weights_eul_index_all(num_weights,2)
+    integer (kind=int_kind), intent(in)         :: weights_lgr_index_all(num_weights,2)
  
     integer                                     :: h, jx, jy, jdx, jdy    
  
@@ -573,7 +755,7 @@ contains
        jdy = weights_eul_index_all(h,2)                     
        tracer1(jx,jy) = tracer1(jx,jy)+&
             ! air density times tracer reconstruction
-            tracer_air(jdx,jdy)*(weights(h,1)*(&      ! 1 is for air
+            tracer_air(jdx,jdy)*(weights_all(h,1)*(&      ! 1 is for air
             ! all constant terms 
             tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
             - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
@@ -581,19 +763,19 @@ contains
             + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
             + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
             ! linear terms
-            weights(h,2)* &
+            weights_all(h,2)* &
             (recons(1,jdx,jdy)- recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
             - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
-            weights(h,3)* &
+            weights_all(h,3)* &
             (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
             - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
             ! quadratic terms
-            weights(h,4)*recons(3,jdx,jdy) + &
-            weights(h,5)*recons(4,jdx,jdy) + &
-            weights(h,6)*recons(5,jdx,jdy)) + &
+            weights_all(h,4)*recons(3,jdx,jdy) + &
+            weights_all(h,5)*recons(4,jdx,jdy) + &
+            weights_all(h,6)*recons(5,jdx,jdy)) + &
             
             !tracer times air reconstruction
-            tracer0(jdx,jdy)*(weights(h,1)*(&      
+            tracer0(jdx,jdy)*(weights_all(h,1)*(&      
             ! all constant terms 
             !       tracer_air &  this term cancels it out
             - recons_air(1,jdx,jdy)*centroid(1,jdx,jdy) - recons_air(2,jdx,jdy)*centroid(2,jdx,jdy) &
@@ -601,16 +783,16 @@ contains
             + recons_air(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
             + recons_air(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
             ! linear terms
-            weights(h,2)* &
+            weights_all(h,2)* &
             (recons_air(1,jdx,jdy) - recons_air(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
             - recons_air(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
-            weights(h,3)* &
+            weights_all(h,3)* &
             (recons_air(2,jdx,jdy) - recons_air(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
             - recons_air(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
             ! quadratic terms
-            weights(h,4)*recons_air(3,jdx,jdy)+&
-            weights(h,5)*recons_air(4,jdx,jdy)+&
-            weights(h,6)*recons_air(5,jdx,jdy))
+            weights_all(h,4)*recons_air(3,jdx,jdy)+&
+            weights_all(h,5)*recons_air(4,jdx,jdy)+&
+            weights_all(h,6)*recons_air(5,jdx,jdy))
     end do
   end subroutine cslam_remap_air
   
@@ -618,12 +800,58 @@ contains
   ! initialize global buffers shared by all threads
   subroutine fvm_init1(par,elem)
     use parallel_mod, only : parallel_t, haltmp
+    use control_mod, only : tracer_transport_type, tracer_grid_type, rsplit
+    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACER_GRIDTYPE_FVM
+    use fvm_control_volume_mod, only: n0_fvm, np1_fvm, fvm_supercycling
+    use dimensions_mod, only: qsize
     type (parallel_t) :: par
     type (element_t)  :: elem(:)
 
+    !
+    ! initialize fvm time-levels
+    !
+    n0_fvm  = 1
+    np1_fvm = 2
+    !
+    if (par%masterproc) then 
+       print *, "                                       "
+       print *, "|-------------------------------------|"
+       print *, "| Tracer transport scheme information |"
+       print *, "|-------------------------------------|"
+       print *, "                                       "
+    end if
+    if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
+       if (par%masterproc) then 
+          print *, "Running Lagrangian CSLAM, Lauritzen et al., (2010), J. Comput. Phys."
+          print *, "Possibly with `Enforcement Of Consistency (EOC)', Erath et al., (2013), Mon. Wea. Rev."
+          print *, "(EOC is hardcoded in fvm_lineintegrals_mod with logical EOC"
+          print *, "CSLAM = Conservative Semi-LAgrangian Multi-tracer scheme"
+          print *, "  "
+       end if
+    else if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
+       if (par%masterproc) then 
+          print *, "Running Flux-form CSLAM, Harris et al. (2011), J. Comput. Phys."
+          print *, "CSLAM = Conservative Semi-LAgrangian Multi-tracer scheme"
+          print *, "Lauritzen et al., (2010), J. Comput. Phys."
+          print *, "  "
+       end if
+    else
+       call haltmp("going into fvm_init1 with inconsistent tracer_transport_type")
+    end if
+
+    if (par%masterproc) print *, "fvm resolution is nc*nc in each element: nc = ",nc
+
+    if (tracer_grid_type.ne.TRACER_GRIDTYPE_FVM) then
+       if (par%masterproc) then 
+         print *, "ERROR: tracer_grid_type is not TRACER_GRIDTYPE_FVM"
+         print *, "tracer_grid_type = ",tracer_grid_type
+       end if
+       call haltmp("going into fvm_init1 with inconsistent tracer_grid_type")
+    end if
+
     if (nc<3) then
-       if (par%masterproc) then
-          print *, "NUMBER OF CELLS ERROR for fvm: Number of cells parmeter"
+       if (par%masterproc) then 
+          print *, "NUMBER OF CELLS ERROR for fvm: Number of cells parameter"
           print *, "parameter nc at least 3 (nc>=3), nc*nc cells per element. This is"
           print *, "needed for the cubic reconstruction, which is only implemented yet! STOP"
        endif
@@ -631,6 +859,7 @@ contains
     end if
 
     if (par%masterproc) then
+       print *, "  "
        if (ns==1) then
           print *, "ns==1: using no interpolation for mapping cell averages values across edges"
           print *, "Note: this is not a recommended setting - large errors at panel edges!"
@@ -645,7 +874,7 @@ contains
           print *, "so this option is slightly less accurate (but the stencil is smaller near panel edges!)"
        else if (ns==4) then
           print *, "ns==4: using cubic interpolation for mapping cell averages values across edges"
-          print *, "default CSLAM setting used in Lauritzen et al. (2010)"
+          print *, "This is default CSLAM setting used in Lauritzen et al. (2010)"
        else 
           print *, "Not a tested value for ns but it should work! You choose ns = ",ns
        end if
@@ -684,15 +913,37 @@ contains
 
     if (nhe .ne. 1) then
        if (par%masterproc) then
-          print *, "PARAMTER ERROR for fvm: Number of halo zone for the extended"
+          print *, "PARAMETER ERROR for fvm: Number of halo zone for the extended"
           print *,"element nhe has to be 1, only this is available now! STOP!"
        endif
        call haltmp("stopping")
     end if
     if (ntrac>ntrac_d) then
        if (par%masterproc) print *,'ntrac,ntrac_d=',ntrac,ntrac_d
-       call haltmp("PARAMTER ERROR for fvm: ntrac > ntrac_d")
+       call haltmp("PARAMETER ERROR for fvm: ntrac > ntrac_d")
     endif
+
+    if (qsize>0) then
+       if (par%masterproc) then
+          print *, 'FYI: running both SE and fvm tracers!'
+       end if
+    end if
+
+    if (qsize>0.and.mod(rsplit,fvm_supercycling).ne.0) then
+       if (par%masterproc) then
+          print *,'cannot supercycle fvm tracers with respect to se tracers'
+          print *,'with this choice of rsplit =',rsplit
+          print *,'rsplit must be a multiple of fvm_supercycling=',fvm_supercycling
+          call haltmp("PARAMETER ERROR for fvm: mod(rsplit,fvm_supercycling<>0")
+       end if
+    endif
+
+
+    if (par%masterproc) then 
+       print *, "                                            "
+       print *, "Done Tracer transport scheme information    "
+       print *, "                                            "
+    end if
     
     call initghostbufferTR(cellghostbuf,nlev,ntrac+1,nhc,nc) !+1 for the air_density, which comes from SE
 
@@ -813,10 +1064,10 @@ contains
   !        fvm   ...  structure                                                       !
   ! INPUT: nstep   ... actual step                                                    !
   !-----------------------------------------------------------------------------------!
-  subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
+  subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl,klev)
     use coordinate_systems_mod, only : cartesian2D_t
     use element_mod, only : element_t
-    use fvm_control_volume_mod, only: fvm_struct
+    use fvm_control_volume_mod, only: fvm_struct, fvm_supercycling
     use time_mod, only : timelevel_t, time_at
     use parallel_mod, only : haltmp
     use control_mod, only : test_cfldep
@@ -839,13 +1090,16 @@ contains
 !phl    ! for the benchmark test, use more accurate departure point creation
     if (fvm_ideal_test == IDEAL_TEST_OFF) then
   ! for given velocities in the element structure
-      call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)    
+      call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt*fvm_supercycling,tl,klev)    
     else
 !phl    !CE: define new mesh for fvm fvm on an equal angular grid
 !phl    ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
       do j = 1, nc+1
         do i = 1, nc+1               
           if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
+             !
+             ! broken
+             ! 
             call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
           else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
             call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
