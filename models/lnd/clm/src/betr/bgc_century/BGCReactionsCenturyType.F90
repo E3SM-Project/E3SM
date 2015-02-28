@@ -549,10 +549,6 @@ contains
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8 
-      if(c==1629)then
-      print*,c,j,centurybgc_vars%lid_no3
-      print*,'y0',y0(centurybgc_vars%lid_no3,c,j),nh4_no3_ratio(c,j)
-      endif
       call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
     enddo
   enddo  

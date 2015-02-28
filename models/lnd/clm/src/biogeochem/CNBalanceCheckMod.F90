@@ -178,6 +178,14 @@ contains
             c = err_index
             write(iulog,*)'column cbalance error = ', col_errcb(c), c
             write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+            write(iulog,*)'input=',col_cinputs*dt
+            write(iulog,*)'output=',col_coutputs*dt
+            write(iulog,*)'er=',er(c)*dt
+            write(iulog,*)'fire=',col_fire_closs(c)*dt
+            write(iulog,*)'dwt=',dwt_closs(c)*dt
+            write(iulog,*)'product=',product_closs(c)*dt
+            write(iulog,*)'hrv=',col_hrv_xsmrpool_to_atm(c)*dt
+            write(iulog,*)'leach=',som_c_leached(c)*dt
             write(iulog,*)'begcb       = ',col_begcb(c)
             write(iulog,*)'endcb       = ',col_endcb(c)
             write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)

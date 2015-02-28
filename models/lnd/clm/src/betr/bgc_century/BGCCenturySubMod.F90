@@ -395,6 +395,7 @@ module BGCCenturySubMod
     som3_dek_reac=> centurybgc_vars%som3_dek_reac     , & !
     cwd_dek_reac=> centurybgc_vars%cwd_dek_reac       , & !
     lid_at_rt_reac=> centurybgc_vars%lid_at_rt_reac   , & !
+    lid_no3_den  => centurybgc_vars%lid_no3_den       , & !
     lid_plant_minn_up_reac=> centurybgc_vars%lid_plant_minn_up_reac, & !
     lid_nh4_nit_reac => centurybgc_vars%lid_nh4_nit_reac, & !
     lid_no3_den_reac => centurybgc_vars%lid_no3_den_reac, & !
@@ -693,6 +694,7 @@ module BGCCenturySubMod
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
   use BeTRTracerType           , only : betrtracer_type 
+  use clm_varcon               , only : catomw, natomw
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -730,9 +732,9 @@ module BGCCenturySubMod
     do j = jtops(c), ubj
       plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))/dtime
       
-      hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))*catom/dtime
-      f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))*natom/dtime
-      f_denit_vr  (c,j)  = (yf(centurybgc_vars%lid_no3_den,c, j) - y0(centurybgc_vars%lid_no3_den,c, j))*natom/dtime
+      hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))*catomw/dtime
+      f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))*natomw/dtime
+      f_denit_vr  (c,j)  = (yf(centurybgc_vars%lid_no3_den,c, j) - y0(centurybgc_vars%lid_no3_den,c, j))*natomw/dtime
       !the temporal averaging for fluxes below will be done later
       
       tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2)  ) = yf(centurybgc_vars%lid_n2_paere  ,c, j)  - y0(centurybgc_vars%lid_n2_paere , c, j)
