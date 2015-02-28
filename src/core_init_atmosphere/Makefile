@@ -25,8 +25,8 @@ core_reg:
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.init_atmosphere )
-	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.init_atmosphere stream_list.init_atmosphere. listed )
+	( cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.init_atmosphere in_defaults=true )
+	( cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.init_atmosphere stream_list.init_atmosphere. listed )
 
 post_build:
 	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
