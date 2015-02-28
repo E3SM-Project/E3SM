@@ -497,6 +497,7 @@ contains
       this%tracer_flx_dew_snow_col   (column,:)   = 0._r8
       this%tracer_flx_sub_snow_col   (column,:)   = 0._r8
       this%tracer_flx_h2osfc_snow_residual_col(column,:)   = 0._r8
+      this%tracer_flx_netpro_vr_col  (column,:,:)   = 0._r8
     enddo 
     
   end subroutine Reset

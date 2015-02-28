@@ -2000,6 +2000,7 @@ contains
     ! !DESCRIPTION:
     ! Set nitrogen flux variables
     !
+    use tracer_varcon , only : is_active_betr_bgc
     ! !ARGUMENTS:
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -2225,6 +2226,8 @@ contains
           this%supplement_to_sminn_vr_col(i,j)           = value_column
           this%gross_nmin_vr_col(i,j)                    = value_column
           this%net_nmin_vr_col(i,j)                      = value_column
+          this%sminn_nh4_input_vr_col(i,j)               = value_column
+          this%sminn_no3_input_vr_col(i,j)               = value_column
        end do
     end do
 
@@ -2288,19 +2291,20 @@ contains
        end do
     end do
 
-    do l = 1, ndecomp_cascade_transitions
-       do fi = 1,num_column
+    if(.not. is_active_betr_bgc)then
+      do l = 1, ndecomp_cascade_transitions
+         do fi = 1,num_column
           i = filter_column(fi)
           this%decomp_cascade_ntransfer_col(i,l) = value_column
           this%decomp_cascade_sminn_flux_col(i,l) = value_column
           if (.not. use_nitrif_denitrif) then
              this%sminn_to_denit_decomp_cascade_col(i,l) = value_column
           end if
-       end do
-    end do
+         end do
+      end do
 
-    do l = 1, ndecomp_cascade_transitions
-       do j = 1, nlevdecomp_full
+      do l = 1, ndecomp_cascade_transitions
+         do j = 1, nlevdecomp_full
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_cascade_ntransfer_vr_col(i,j,l) = value_column
@@ -2309,9 +2313,9 @@ contains
                 this%sminn_to_denit_decomp_cascade_vr_col(i,j,l) = value_column
              end if
           end do
-       end do
-    end do
-
+         end do
+      end do
+    endif
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp_full
           do fi = 1,num_column

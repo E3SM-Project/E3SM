@@ -5,7 +5,8 @@ module BGCReactionsMod
 ! This is dirty version just to make sure the model is running
 ! Eventually, I want to introduce polymorphism to make it
 ! consistent with other developments in soil hydrology and the clm4.5/clm5 bgc
-
+  use LandunitType , only : lun
+  use ColumnType , only : col 
 implicit none
   save
   private
@@ -52,7 +53,7 @@ implicit none
     end subroutine Init_betrbgc_interface
 !----------------------------------------------------------------------    
     subroutine calc_bgc_reaction_interface(this, bounds, lbj, ubj, num_soilc, filter_soilc,num_soilp,filter_soilp, jtops, dtime, &
-       col, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, &
+       betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, &
        soilstate_vars, chemstate_vars, cnstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
@@ -65,7 +66,6 @@ implicit none
    use WaterStateType           , only : Waterstate_Type  
    use TemperatureType          , only : temperature_type
    use ChemStateType            , only : chemstate_type
-   use ColumnType               , only : column_type
    use SoilStatetype            , only : soilstate_type
    use decompMod                , only : bounds_type
    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
@@ -85,7 +85,6 @@ implicit none
    integer                    , intent(in) :: jtops( : )               ! top index of each column
    integer                    , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
    real(r8)                   , intent(in) :: dtime                              ! model time step
-   type(column_type)          , intent(in) :: col                                ! column type
    type(Waterstate_Type)      , intent(in) :: waterstate_vars                    ! water state variables
    type(temperature_type)     , intent(in) :: temperature_vars                   ! energy state variable
    type(chemstate_type)       , intent(in) :: chemstate_vars

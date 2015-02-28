@@ -685,7 +685,6 @@ contains
              this%decomp_npools_col(c,k)    = decomp_cpools_col(c,k)    / decomp_cascade_con%initial_cn_ratio(k)
              this%decomp_npools_1m_col(c,k) = decomp_cpools_1m_col(c,k) / decomp_cascade_con%initial_cn_ratio(k)
           end do
-
           if (use_nitrif_denitrif) then
              do j = 1, nlevdecomp_full
                 this%smin_nh4_vr_col(c,j) = 0._r8

@@ -186,6 +186,7 @@ contains
    subroutine mbbks(y0, f, nprimeq, neq, dt, y, pscal)
    !description
    !mbbks update
+   use MathfuncMod   , only : safe_div
    implicit none
    real(r8), intent(in) :: y0(neq)  ! state variable at previous time step
    real(r8), intent(in) :: f(neq)   ! derivative
@@ -207,9 +208,8 @@ contains
    do n = 1, nprimeq
       if(f(n)<0._r8)then
          nJ = nJ  + 1
-         print*,'n=',n,f(n),dt
          pm = -y0(n)/(f(n)*dt)
-         aj(nJ) = -1._r8/pm
+         aj(nJ) = -safe_div(1._r8,pm)
          if(nJ==1)then
             pmax= pm
          else
@@ -223,8 +223,12 @@ contains
       !solve the gradient modifier function
       mbkks_data%nJ=nJ
       mbkks_data%iJ=1._r8/nJ
-      pscal=GetGdtScalar(aj,nJ,pmax)
-      pscal=pscal**(1._r8/nJ)
+      if(pmax==0._r8)then
+        pscal=0._r8
+      else
+        pscal=GetGdtScalar(aj,nJ,pmax)
+        pscal=pscal**(1._r8/nJ)
+      endif
       do n = 1, neq
          y(n) = y0(n) + f(n) * dt * pscal
       enddo

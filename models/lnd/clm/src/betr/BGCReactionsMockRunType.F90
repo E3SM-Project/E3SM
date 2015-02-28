@@ -16,7 +16,8 @@ module BGCReactionsMockRunType
   use decompMod             , only : bounds_type
   use BGCReactionsMod       , only : bgc_reaction_type
   use tracer_varcon         , only : bndcond_as_conc, bndcond_as_flux
-
+  use LandunitType , only : lun
+  use ColumnType , only : col 
 implicit none
 
   save
@@ -189,7 +190,7 @@ implicit none
 !-------------------------------------------------------------------------------
   
   subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, &
-       dtime, col, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars,&
+       dtime, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars,&
        cnstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
@@ -204,7 +205,6 @@ implicit none
    use TemperatureType          , only : temperature_type
    use SoilStatetype            , only : soilstate_type
    use ChemStateType            , only : chemstate_type
-   use ColumnType               , only : column_type
    use CanopyStateType          , only : canopystate_type
    use CNStateType              , only : cnstate_type     
    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
@@ -220,7 +220,6 @@ implicit none
    integer                             , intent(in) :: jtops(bounds%begc: )               ! top index of each column
    integer                             , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
    real(r8)                            , intent(in) :: dtime                              ! model time step
-   type(column_type)                   , intent(in) :: col                                ! column type
    type(Waterstate_Type)               , intent(in) :: waterstate_vars                    ! water state variables
    type(temperature_type)              , intent(in) :: temperature_vars                   ! energy state variable
    type(soilstate_type)                , intent(in) :: soilstate_vars
@@ -290,8 +289,6 @@ implicit none
     use BeTRTracerType           , only : BeTRTracer_Type
     use tracerstatetype          , only : tracerstate_type
     use WaterstateType           , only : waterstate_type    
-    use LandunitType             , only : lun                
-    use ColumnType               , only : col                
     use PatchType                , only : pft
     use clm_varcon               , only : spval, ispval
     use landunit_varcon          , only : istsoil, istcrop    

@@ -15,12 +15,15 @@ module BGCReactionsCenturyType
 
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use shr_kind_mod          , only : r8 => shr_kind_r8
-  use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
+  use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
   use decompMod             , only : bounds_type
   use BGCReactionsMod       , only : bgc_reaction_type
   use clm_varcon            , only : spval
   use tracer_varcon         , only : bndcond_as_conc, bndcond_as_flux
   use BGCCenturySubMod     
+  use LandunitType          , only : lun
+  use ColumnType            , only : col 
+  use landunit_varcon       , only : istsoil, istcrop    
 implicit none
 
   save
@@ -387,7 +390,7 @@ contains
   end subroutine set_boundary_conditions
 !-------------------------------------------------------------------------------
 
-  subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, dtime, col, &
+  subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, dtime, &
     betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, &
     cnstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
@@ -405,7 +408,6 @@ contains
   use WaterStateType           , only : Waterstate_Type
   use TemperatureType          , only : temperature_type
   use ChemStateType            , only : chemstate_type
-  use ColumnType               , only : column_type
   use SoilStatetype            , only : soilstate_type
   use ODEMod                   , only : ode_adapt_mbbks1
   use CNStateType              , only : cnstate_type  
@@ -423,7 +425,6 @@ contains
   integer                            , intent(in) :: jtops(bounds%begc: )               ! top index of each column
   integer                            , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
   real(r8)                           , intent(in) :: dtime                              ! model time step
-  type(column_type)                  , intent(in) :: col                                ! column type
   type(Waterstate_Type)              , intent(in) :: waterstate_vars                    ! water state variables
   type(temperature_type)             , intent(in) :: temperature_vars                   ! energy state variable
   type(soilstate_type)               , intent(in) :: soilstate_vars  
@@ -472,7 +473,7 @@ contains
   !I did this in a quick and dirty way. 
   
   call calc_extneral_bgc_input(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
-    centurybgc_vars, betrtracer_vars, tracerstate_vars, cn_ratios, cp_ratios)
+    centurybgc_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars, cn_ratios, cp_ratios)
   
   !calculate nitrogen uptake profile
   call calc_nuptake_prof(bounds, ubj, num_soilc, filter_soilc, &
@@ -548,10 +549,10 @@ contains
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8 
-      print*,c,j
-      print*,'y0'
-      print*,y0(:,c,j)
-      
+      if(c==1629)then
+      print*,c,j,centurybgc_vars%lid_no3
+      print*,'y0',y0(centurybgc_vars%lid_no3,c,j),nh4_no3_ratio(c,j)
+      endif
       call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
     enddo
   enddo  
@@ -638,7 +639,6 @@ contains
     use ColumnType               , only : col                
     use PatchType                , only : pft
     use clm_varcon               , only : spval, ispval
-    use landunit_varcon          , only : istsoil, istcrop    
     
     ! !ARGUMENTS:
     class(bgc_reaction_CENTURY_type) , intent(in)    :: this    
@@ -742,11 +742,10 @@ contains
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_no3_ratio, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
-    
+
+
  !do pool degradation
   do lk = 1, Extra_inst%nr
-    print*,'lk=',lk
-    print*,cascade_matrix(:,lk)
     if(Extra_inst%is_zero_order(lk))then
       if(lk == centurybgc_vars%lid_ch4_aere_reac)then
         jj = centurybgc_vars%lid_ch4
@@ -794,7 +793,7 @@ contains
   use tracerstatetype          , only : tracerstate_type
   use BetrTracerType           , only : betrtracer_type
   use clm_varpar               , only : nlevtrc_soil
-  
+  use landunit_varcon          , only : istsoil, istcrop  
   type(bounds_type)                  , intent(in) :: bounds
   type(tracerstate_type)             , intent(inout) :: tracerstate_vars
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
@@ -805,8 +804,8 @@ contains
   integer, parameter :: i_soil1 = 5
   integer, parameter :: i_soil2 = 6
   integer, parameter :: i_soil3 = 7
-  
-  integer :: c, j, k
+  character(len=255)   :: subname = 'init_centurybgc_cold' 
+  integer :: c, j, k, l
 
   associate(                                                     &
   id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
@@ -828,31 +827,30 @@ contains
   cwd                => centurybgc_vars%cwd                    , &
   nelms              => centurybgc_vars%nelms                    &
   )
-  
     !initialize tracer based on carbon/nitrogen pools
     !eventually, this will replace the century bgc
     do j = 1, nlevtrc_soil
       do c = bounds%begc, bounds%endc
-    
-        tracer_conc_mobile(c,j,id_trc_no3x)=smin_no3_vr_col(c,j) /natomw
-        tracer_conc_mobile(c,j,id_trc_nh3x)=smin_nh4_vr_col(c,j) /natomw
+        l = col%landunit(c)
+        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then    
+          tracer_conc_mobile(c,j,id_trc_no3x)=smin_no3_vr_col(c,j) /natomw
+          tracer_conc_mobile(c,j,id_trc_nh3x)=smin_nh4_vr_col(c,j) /natomw
+          k = lit1; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_met_lit) / catomw
+          k = lit2; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_cel_lit) / catomw
+          k = lit3; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_lig_lit) / catomw
+          k = cwd ; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_cwd    ) / catomw
+          k = som1; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_soil1  ) / catomw
+          k = som2; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_soil2  ) / catomw
+          k = som3; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_soil3  ) / catomw
       
-        k = lit1; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_met_lit) / catomw
-        k = lit2; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_cel_lit) / catomw
-        k = lit3; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_lig_lit) / catomw
-        k = cwd ; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_cwd    ) / catomw
-        k = som1; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_soil1  ) / catomw
-        k = som2; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_soil2  ) / catomw
-        k = som3; tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) = decomp_cpools_vr(c,j,i_soil3  ) / catomw
-      
-        k = lit1; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_met_lit) / natomw
-        k = lit2; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_cel_lit) / natomw
-        k = lit3; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_lig_lit) / natomw
-        k = cwd ; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_cwd    ) / natomw
-        k = som1; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_soil1  ) / natomw
-        k = som2; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_soil2  ) / natomw
-        k = som3; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_soil3  ) / natomw
-      
+          k = lit1; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_met_lit) / natomw
+          k = lit2; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_cel_lit) / natomw
+          k = lit3; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_lig_lit) / natomw
+          k = cwd ; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_cwd    ) / natomw
+          k = som1; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_soil1  ) / natomw
+          k = som2; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_soil2  ) / natomw
+          k = som3; tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) = decomp_npools_vr(c,j,i_soil3  ) / natomw
+        endif
       enddo        
     enddo
   end associate
