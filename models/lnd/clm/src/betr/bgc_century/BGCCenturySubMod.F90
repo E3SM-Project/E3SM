@@ -67,6 +67,7 @@ module BGCCenturySubMod
   !diagnostic variables
   integer :: lid_n2o_nit     !n2o production from nitrification, used to for mass balance book keeping
   integer :: lid_co2_hr      !co2 production from heterotrophic respiration
+  integer :: lid_no3_den     !no3 consumption due to denitrification
   !aerechyma transport, diagnostic efflux
 
   integer :: lid_ar_paere
@@ -178,7 +179,7 @@ module BGCCenturySubMod
   !diagnostic variables
   this%lid_n2o_nit    = addone(itemp)
   this%lid_co2_hr     = addone(itemp)
-    
+  this%lid_no3_den    = addone(itemp)  
   !aerechyma transport
   this%lid_ar_paere   = addone(itemp)   !
   this%lid_n2_paere   = addone(itemp)   !
@@ -601,8 +602,8 @@ module BGCCenturySubMod
   cascade_matrix(lid_no3 ,reac) = -1._r8
   cascade_matrix(lid_n2o ,reac) = 0.5_r8 * 1._r8/(1._r8+n2_n2o_ratio_denit)
   cascade_matrix(lid_n2  ,reac) = 0.5_r8 * n2_n2o_ratio_denit/(1._r8+n2_n2o_ratio_denit)
-
-  primvarid(reac)=lid_No3
+  cascade_matrix(lid_no3_den,reac) = 1._r8
+  primvarid(reac)=lid_no3
   !----------------------------------------------------------------------  
   !below are zero order reactions
   !----------------------------------------------------------------------  
@@ -717,6 +718,7 @@ module BGCCenturySubMod
    c_loc                 => centurybgc_vars%c_loc                   , & !
    n_loc                 => centurybgc_vars%n_loc                   , & !
    f_n2o_nit_vr          => nitrogenflux_vars%f_n2o_nit_vr_col      , & !
+   f_denit_vr            => nitrogenflux_vars%f_denit_vr_col        , & !
    hr_vr                 => carbonflux_vars%hr_vr_col               , & !
    volatileid            => betrtracer_vars%volatileid              , & !
    ngwmobile_tracers     => betrtracer_vars%ngwmobile_tracers       , & !
@@ -728,8 +730,9 @@ module BGCCenturySubMod
     do j = jtops(c), ubj
       plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))/dtime
       
-      hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))/dtime
-      f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))/dtime
+      hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))*catom/dtime
+      f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))*natom/dtime
+      f_denit_vr  (c,j)  = (yf(centurybgc_vars%lid_no3_den,c, j) - y0(centurybgc_vars%lid_no3_den,c, j))*natom/dtime
       !the temporal averaging for fluxes below will be done later
       
       tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2)  ) = yf(centurybgc_vars%lid_n2_paere  ,c, j)  - y0(centurybgc_vars%lid_n2_paere , c, j)

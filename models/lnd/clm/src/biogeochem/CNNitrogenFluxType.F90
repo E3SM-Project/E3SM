@@ -2548,6 +2548,19 @@ contains
        end do
 
       end if
+    else
+       do j = 1, nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)    
+             this%f_denit_col(c) = &
+                  this%f_denit_col(c) + &
+                  this%f_denit_vr_col(c,j) * dzsoi_decomp(j)
+          enddo
+       enddo   
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%denit_col(c) = this%f_denit_col(c)
+       end do      
     endif
     
     ! vertically integrate column-level fire N losses
