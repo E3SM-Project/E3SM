@@ -1526,6 +1526,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 				  iodesc->fillregion);
       brel(myfillgrid);
     }
+    MPI_Allreduce(MPI_IN_PLACE,&(iodesc->maxfillregions),1, MPI_INT, MPI_MAX, ios.io_comm);
   }
 
   CheckMPIReturn(MPI_Scatterv((void *) srcindex, recvlths, rdispls, PIO_OFFSET, 
@@ -1545,6 +1546,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
     get_start_and_count_regions(iodesc->ndims,gsize,iodesc->llen, iomap,&(iodesc->maxregions),
 				iodesc->firstregion);
 
+    MPI_Allreduce(MPI_IN_PLACE,&(iodesc->maxregions),1, MPI_INT, MPI_MAX, ios.io_comm);
   
     if(iomap != NULL)
       brel(iomap);
