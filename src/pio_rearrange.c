@@ -1234,7 +1234,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   PIO_Offset totalgridsize;
   PIO_Offset *srcindex=NULL;
   PIO_Offset *myfillgrid = NULL;
-  
+  int maxregions;  
   int maxreq = MAX_GATHER_BLOCK_SIZE;
   int rank, ntasks, rcnt;
   size_t pio_offset_size=sizeof(PIO_Offset);
@@ -1519,14 +1519,18 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 	  // printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,j,myfillgrid[j]);
 	}
       }
-    }
+    } 
+    maxregions = 0;	
     if(myfillgrid!=NULL){
       iodesc->fillregion = alloc_region(iodesc->ndims);
       get_start_and_count_regions(iodesc->ndims,gsize,iodesc->holegridsize, myfillgrid,&(iodesc->maxfillregions),
 				  iodesc->fillregion);
       brel(myfillgrid);
+      maxregions = iodesc->maxfillregions;
     }
-    MPI_Allreduce(MPI_IN_PLACE,&(iodesc->maxfillregions),1, MPI_INT, MPI_MAX, ios.io_comm);
+
+    MPI_Allreduce(MPI_IN_PLACE,&maxregions,1, MPI_INT, MPI_MAX, ios.io_comm);
+    iodesc->maxfillregions = maxregions;
   }
 
   CheckMPIReturn(MPI_Scatterv((void *) srcindex, recvlths, rdispls, PIO_OFFSET, 
@@ -1543,11 +1547,12 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       printf("%d ",iomap[i]);
     printf("\n");
     */
+    iodesc->maxregions = 0;
     get_start_and_count_regions(iodesc->ndims,gsize,iodesc->llen, iomap,&(iodesc->maxregions),
 				iodesc->firstregion);
-
-    MPI_Allreduce(MPI_IN_PLACE,&(iodesc->maxregions),1, MPI_INT, MPI_MAX, ios.io_comm);
-  
+    maxregions = iodesc->maxregions;
+    MPI_Allreduce(MPI_IN_PLACE,&maxregions,1, MPI_INT, MPI_MAX, ios.io_comm);
+    iodesc->maxregions = maxregions; 
     if(iomap != NULL)
       brel(iomap);
     
