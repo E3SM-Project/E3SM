@@ -663,7 +663,7 @@ contains
      allocate(this%prod100c_loss_col                 (begc:endc))                  ; this%prod100c_loss_col         (:)  =nan
      allocate(this%product_closs_col                 (begc:endc))                  ; this%product_closs_col         (:)  =nan
 
-     allocate(this%bgc_cpool_inputs_vr_col           (begc:endc, 1:nlevdecomp_full,4));this%bgc_cpool_inputs_vr_col (:,:,:) = nan
+     allocate(this%bgc_cpool_inputs_vr_col           (begc:endc, 1:nlevdecomp_full,ndecomp_pools));this%bgc_cpool_inputs_vr_col (:,:,:) = nan
      allocate(this%lf_conv_cflux_col                 (begc:endc))                  ; this%lf_conv_cflux_col         (:)  =nan
      allocate(this%lithr_col                         (begc:endc))                  ; this%lithr_col                 (:)  =nan
      allocate(this%somhr_col                         (begc:endc))                  ; this%somhr_col                 (:)  =nan
@@ -3037,7 +3037,27 @@ contains
     call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
         avgflag='A', long_name=longname, &
         ptr_col=data2dptr, default='inactive')
-     
+
+    this%bgc_cpool_inputs_vr_col(begc:endc, :, 5) = spval
+    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,5)
+    fieldname='BGC_CPOOL_INPUT_'//'_SOM1_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+    this%bgc_cpool_inputs_vr_col(begc:endc, :, 6) = spval
+    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,6)
+    fieldname='BGC_CPOOL_INPUT_'//'_SOM2_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+    this%bgc_cpool_inputs_vr_col(begc:endc, :, 7) = spval
+    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,7)
+    fieldname='BGC_CPOOL_INPUT_'//'_SOM3_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')     
      !-------------------------------
      ! C13 flux variables - native to column 
      !-------------------------------

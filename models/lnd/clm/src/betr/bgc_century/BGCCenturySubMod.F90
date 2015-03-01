@@ -7,6 +7,7 @@ module BGCCenturySubMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use clm_varcon         , only : spval  
+  use ColumnType            , only : col 
   implicit none
   save
   private
@@ -712,6 +713,8 @@ module BGCCenturySubMod
   type(tracerflux_type)            , intent(inout) :: tracerflux_vars  
   type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
   
+  real(r8) :: deltac
+  real(r8) :: err
   integer :: fc, c, j, k
   
   associate(                                                          & !
@@ -727,8 +730,10 @@ module BGCCenturySubMod
    tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col, & !
    tracer_flx_parchm_vr  => tracerflux_vars%tracer_flx_parchm_vr_col  & !
   )
+
   do fc = 1, numf
     c = filter(fc)    
+    err = 0._r8
     do j = jtops(c), ubj
       plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))/dtime
       
@@ -756,13 +761,17 @@ module BGCCenturySubMod
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2))
 
       !get net production for om pools
-      
+      deltac=0._r8      
       do k = 1, nom_pools
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
+        deltac = deltac + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
       enddo
-      
+      if(c==5657)then
+        err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
+      endif
     enddo
+    if(c==5657)print*,'err',err
   enddo
   
   end associate
@@ -1445,47 +1454,17 @@ module BGCCenturySubMod
     c = filter_soilc(fc)
     
     do j = lbj, ubj
-      k = lit1
-      tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw      
-      tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
 
-      tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
-      tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-
-      k = lit2
-      tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
-      tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-      
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
-      tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
-      tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-      
-      k = lit3
-      tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
-      tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-      
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
-      tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
-      tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-      
-      k = cwd
-      tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
-      tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-      
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))      
-      tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
-      tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-      
-      k = som1
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))     
-
-      k = som2
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
-
-      k = som3
-      cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
-
+      do k = 1,7
+        tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
+        tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
+        cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
+        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
+        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
+        if(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc)<0._r8)then
+          print*,c,'cng',k,j
+        endif
+      enddo
       tracer_conc_mobile(c, j, id_trc_nh3x) = tracer_conc_mobile(c, j, id_trc_nh3x) + sminn_nh4_input_vr(c,j)/natomw
       tracer_conc_mobile(c, j, id_trc_no3x) = tracer_conc_mobile(c, j, id_trc_no3x) + sminn_no3_input_vr(c,j)/natomw
 

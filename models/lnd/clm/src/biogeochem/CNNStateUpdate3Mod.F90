@@ -40,7 +40,7 @@ contains
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     !
     ! !LOCAL VARIABLES:

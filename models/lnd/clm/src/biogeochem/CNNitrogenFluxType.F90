@@ -572,7 +572,7 @@ contains
 
     allocate(this%sminn_no3_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_no3_input_vr_col      (:,:) = nan
     allocate(this%sminn_nh4_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_nh4_input_vr_col           (:,:) = nan
-    allocate(this%bgc_npool_inputs_vr_col     (begc:endc,1:nlevdecomp_full,4)) ;this%bgc_npool_inputs_vr_col      (:,:,:) = nan
+    allocate(this%bgc_npool_inputs_vr_col     (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_inputs_vr_col      (:,:,:) = nan
      
     allocate(this%smin_no3_massdens_vr_col    (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_massdens_vr_col         (:,:) = nan
     allocate(this%soil_bulkdensity_col        (begc:endc,1:nlevdecomp_full)) ; this%soil_bulkdensity_col             (:,:) = nan
@@ -1251,6 +1251,27 @@ contains
     this%bgc_npool_inputs_vr_col(begc:endc, :, 4) = spval    
     data2dptr => this%bgc_npool_inputs_vr_col(:,:,4)
     fieldname='BGC_NPOOL_INPUT_'//'_CWD_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+    this%bgc_npool_inputs_vr_col(begc:endc, :, 5) = spval
+    data2dptr => this%bgc_npool_inputs_vr_col(:,:,5)
+    fieldname='BGC_NPOOL_INPUT_'//'_SOM1_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+    this%bgc_npool_inputs_vr_col(begc:endc, :, 6) = spval
+    data2dptr => this%bgc_npool_inputs_vr_col(:,:,6)
+    fieldname='BGC_NPOOL_INPUT_'//'_SOM2_'//'vr'
+    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+
+    this%bgc_npool_inputs_vr_col(begc:endc, :, 7) = spval
+    data2dptr => this%bgc_npool_inputs_vr_col(:,:,7)
+    fieldname='BGC_NPOOL_INPUT_'//'_SOM3_'//'vr'
     call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
         avgflag='A', long_name=longname, &
         ptr_col=data2dptr, default='inactive')

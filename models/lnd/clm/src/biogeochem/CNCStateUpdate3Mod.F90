@@ -37,7 +37,7 @@ contains
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
     !
     ! !LOCAL VARIABLES:

@@ -2,6 +2,8 @@ module FindRootMod
 !module contains functions to solve simple equations
 !created by Jinyun Tang, 2013
   use shr_kind_mod, only: r8 => shr_kind_r8 
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use abortutils          , only : endrun
 implicit none
   interface hybrid_findroot
      module procedure hybrid_findroot_np, hybrid_findroot_p
@@ -216,8 +218,9 @@ contains
    fb=f2
    if((fa > 0._r8 .and. fb > 0._r8).or.(fa < 0._r8 .and. fb < 0._r8))then
       write(iulog,*) 'root must be bracketed for brent'
+      write(iulog,*) 'a=',a,' b=',b,' fa=',fa,' fb=',fb
       !call endrun()
-      stop
+      call endrun(msg=errmsg(__FILE__, __LINE__))
    endif 
    c=b
    fc=fb
