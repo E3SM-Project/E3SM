@@ -4568,6 +4568,7 @@ contains
        this%cwdc_loss_col(c)          = 0._r8
        this%som_c_leached_col(c)      = 0._r8
     end do
+    
     if(.not. is_active_betr_bgc)then
       ! vertically integrate HR and decomposition cascade fluxes
       do k = 1, ndecomp_cascade_transitions
@@ -4641,7 +4642,7 @@ contains
         c = filter_soilc(fc)
         this%hr_col(c) = dot_sum(this%hr_vr_col(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp)) 
       enddo
-    endif
+    endif  !is_active_betr_bgc
     
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -4734,6 +4735,7 @@ contains
 
     ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
 
+    if(.not. is_active_betr_bgc)then    
     ! _col(cWDC_HR) - coarse woody debris heterotrophic respiration
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -4779,7 +4781,7 @@ contains
        end if
     end do
     
-    if(.not. is_active_betr_bgc)then    
+ 
       do k = 1, ndecomp_cascade_transitions
        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
           do fc = 1,num_soilc

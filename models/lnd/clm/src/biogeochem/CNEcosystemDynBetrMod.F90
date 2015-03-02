@@ -105,7 +105,6 @@ implicit none
   use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
   use CNC14DecayMod          , only: C14Decay, C14BombSpike
   use CNWoodProductsMod      , only: CNWoodProducts
-  use CNSoilLittVertTranspMod, only: CNSoilLittVertTransp
   use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
   use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
   use CropType               , only: crop_type
@@ -172,6 +171,7 @@ implicit none
        num_soilp, filter_soilp, 0._r8, &
        num_soilc, filter_soilc, 0._r8)
   end if
+  
        call nitrogenflux_vars%SetValues( &
             num_soilp, filter_soilp, 0._r8, &
             num_soilc, filter_soilc, 0._r8)
@@ -311,7 +311,6 @@ implicit none
             cnstate_vars, nitrogenflux_vars, nitrogenstate_vars)
     call t_stopf('CNUpdate1')
 
-    call t_startf('CNSoilLittVertTransp')
 
 
     call t_startf('CNGapMortality')
@@ -483,7 +482,6 @@ implicit none
     use CNCIsoFluxMod          , only: CIsoFlux1, CIsoFlux2, CIsoFlux2h, CIsoFlux3
     use CNC14DecayMod          , only: C14Decay, C14BombSpike
     use CNWoodProductsMod      , only: CNWoodProducts
-    use CNSoilLittVertTranspMod, only: CNSoilLittVertTransp
     use CNDecompCascadeBGCMod  , only: decomp_rate_constants_bgc
     use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type

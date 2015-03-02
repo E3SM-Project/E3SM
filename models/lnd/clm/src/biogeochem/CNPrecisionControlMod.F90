@@ -581,7 +581,7 @@ contains
 
       end do ! end of pft loop
 
-    if(is_active_betr_bgc)then
+    if(.not. is_active_betr_bgc)then
       ! column loop
       do fc = 1,num_soilc
          c = filter_soilc(fc)
