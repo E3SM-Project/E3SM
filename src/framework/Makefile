@@ -29,12 +29,11 @@ OBJS = mpas_kind_types.o \
        streams.o \
        pool_hash.o \
        xml_stream_parser.o \
-       ../registry/ezxml/ezxml.o
 
 all: framework $(DEPS)
 
 framework: $(OBJS)
-	ar -ru libframework.a $(OBJS)
+	ar -ru libframework.a $(OBJS) ../external/ezxml/ezxml.o
 
 mpas_configure.o: mpas_dmpar.o mpas_io_units.o $(DEPS)
 
@@ -86,7 +85,7 @@ mpas_stream_manager.o: mpas_io_streams.o mpas_timekeeping.o mpas_grid_types.o mp
 mpas_forcing.o: mpas_grid_types.o mpas_timekeeping.o mpas_io_streams.o mpas_stream_manager.o
 
 xml_stream_parser.o: xml_stream_parser.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPINCLUDES) -I../registry -c xml_stream_parser.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPINCLUDES) -I../external/ezxml -c xml_stream_parser.c
 
 clean:
 	$(RM) *.o *.mod *.f90 libframework.a
@@ -104,4 +103,4 @@ else
 endif
 
 .c.o:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPINCLUDES) -c $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPINCLUDES) -I../external/ezxml -c $<

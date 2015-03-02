@@ -7,7 +7,7 @@
 //
 //
 
-#include "ezxml/ezxml.h"
+#include "ezxml.h"
 
 void write_model_variables(ezxml_t registry);
 int write_field_pointers(FILE* fd);

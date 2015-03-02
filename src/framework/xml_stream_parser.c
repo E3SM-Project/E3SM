@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include "ezxml/ezxml.h"
+#include "ezxml.h"
 
 #ifdef _MPI
 #include "mpi.h"
