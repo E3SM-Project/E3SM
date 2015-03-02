@@ -44,8 +44,8 @@
 
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
-		            description="Selection of the method for solving ice velocity."
-		            possible_values="'sia'"
+		            description="Selection of the method for solving ice velocity. 'none' skips the calculation of velocity so the velocity field will be 0 or set to a field read from an input file."
+		            possible_values="'sia', 'none'"
 		/>
 		<nml_option name="config_sia_tangent_slope_calculation" type="character" default_value="from_vertex_barycentric" units="unitless"
 		            description="Selection of the method for calculating the tangent component of surface slope at edges needed by the SIA velocity solver.
