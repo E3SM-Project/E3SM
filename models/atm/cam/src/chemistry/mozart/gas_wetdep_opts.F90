@@ -9,7 +9,7 @@ module gas_wetdep_opts
   use cam_logfile,  only : iulog
   use constituents, only : pcnst
   use spmd_utils,   only : masterproc
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
 
   implicit none
 
@@ -24,7 +24,7 @@ contains
 
   subroutine gas_wetdep_readnl(nlfile)
 
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
     use namelist_utils,  only: find_group_name
     use units,           only: getunit, freeunit
 #ifdef SPMD

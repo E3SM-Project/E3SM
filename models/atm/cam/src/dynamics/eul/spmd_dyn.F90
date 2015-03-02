@@ -19,7 +19,7 @@ module spmd_dyn
    use spmd_utils,   only: iam, masterproc, npes, proc_smp_map
    use scanslt,      only: beglatex, endlatex, numbnd, numlatsex
    use mpishorthand, only: mpir8, mpicom
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 
    implicit none

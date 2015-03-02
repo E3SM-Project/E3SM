@@ -32,7 +32,7 @@ contains
 
     use physconst, only          : zvir, cappa
     use spmd_utils, only         : iam
-    use abortutils, only         : endrun
+    use cam_abortutils, only         : endrun
     use dynamics_vars, only      : T_FVDYCORE_GRID
     use hycoef, only             : ps0
     use interpolate_data, only   : vertinterp
@@ -641,7 +641,7 @@ lat_loop3 : &
     use namelist_utils, only: find_group_name
     use units,          only: getunit, freeunit
     use mpishorthand
-    use abortutils,     only: endrun
+    use cam_abortutils,     only: endrun
 
     implicit none
 

@@ -66,7 +66,7 @@
 
 ! !USES:
    use modal_aero_data
-   use abortutils,    only: endrun
+   use cam_abortutils,    only: endrun
    use cam_history,   only: outfld, fieldname_len
    use chem_mods,     only: adv_mass
    use constituents,  only: pcnst, cnst_name
@@ -1429,7 +1429,7 @@ subroutine modal_aero_newnuc_init
 use modal_aero_data
 use modal_aero_rename
 
-use abortutils,   only:  endrun
+use cam_abortutils,   only:  endrun
 use cam_history,  only:  addfld, add_default, fieldname_len, phys_decomp
 use constituents, only:  pcnst, cnst_get_ind, cnst_name
 use spmd_utils,   only:  masterproc

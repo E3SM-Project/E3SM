@@ -64,7 +64,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 
    implicit none
@@ -90,7 +90,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 
    implicit none
@@ -114,7 +114,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 
    implicit none
@@ -144,7 +144,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 
    implicit none
@@ -178,7 +178,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 
    implicit none
@@ -213,7 +213,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -270,7 +270,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -313,7 +313,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -356,7 +356,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -399,7 +399,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -442,7 +442,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -478,7 +478,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -515,7 +515,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -557,7 +557,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -599,7 +599,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -641,7 +641,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -685,7 +685,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -729,7 +729,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -774,7 +774,7 @@
 !
    use shr_kind_mod, only: r4 => shr_kind_r4, r8 => shr_kind_r8
    use mpishorthand
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -819,7 +819,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -864,7 +864,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -906,7 +906,7 @@
 ! 
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -950,7 +950,7 @@
 ! 
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -994,7 +994,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -1031,7 +1031,7 @@
 ! Allreduce integer vector maximum
 ! 
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -1072,7 +1072,7 @@
 ! 
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -1117,7 +1117,7 @@
 ! 
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -1161,7 +1161,7 @@
 ! 
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -1205,7 +1205,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -1245,7 +1245,7 @@
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -1290,7 +1290,7 @@
 !
 #else
    subroutine wrap_mpi
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    implicit none
 !
 ! A unused stub routine to make the compiler happy when SPMD is

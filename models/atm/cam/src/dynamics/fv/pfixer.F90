@@ -13,7 +13,7 @@ module pfixer
 !
 ! !USES
   use shr_kind_mod,  only: r8 => shr_kind_r8
-  use abortutils,    only: endrun
+  use cam_abortutils,    only: endrun
   use dynamics_vars, only: T_FVDYCORE_GRID
   use cam_logfile,   only: iulog
   use metdata,       only: met_rlx

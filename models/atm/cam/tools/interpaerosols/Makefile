@@ -102,7 +102,7 @@ endif
 #------------------------------------------------------------------------
 
 OBJS := addglobal.o driver.o fmain.o globals.o preserve_mean.o error_messages.o\
-        interpolate_data.o shr_kind_mod.o abortutils.o shr_sys_mod.o shr_mpi_mod.o 
+        interpolate_data.o shr_kind_mod.o cam_abortutils.o shr_sys_mod.o shr_mpi_mod.o 
 
 .SUFFIXES:
 .SUFFIXES: .F90 .f90 .o
@@ -120,13 +120,13 @@ clean:
 	$(RM) -f $(OBJS) *.mod $(EXEDIR)/$(EXENAME)
 
 addglobal.o: error_messages.o
-interpolate_data.o: abortutils.o shr_kind_mod.o
+interpolate_data.o: cam_abortutils.o shr_kind_mod.o
 driver.o: shr_kind_mod.o globals.o preserve_mean.o interpolate_data.o
 fmain.o: globals.o
 preserve_mean.o: shr_kind_mod.o globals.o
-abortutils.o: shr_sys_mod.o
+cam_abortutils.o: shr_sys_mod.o
 shr_sys_mod.o: shr_mpi_mod.o
-error_messages.o: abortutils.o
+error_messages.o: cam_abortutils.o
 shr_mpi_mod.o: shr_kind_mod.o
 
 VPATH = . ../../src/control ../../../../csm_share/shr ../../src/utils

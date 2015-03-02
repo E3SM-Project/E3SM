@@ -54,7 +54,7 @@ contains
     use namelist_utils, only: find_group_name
     use units,          only: getunit, freeunit
     use mpishorthand
-    use abortutils,     only: endrun
+    use cam_abortutils,     only: endrun
 
     implicit none
 

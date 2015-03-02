@@ -14,7 +14,7 @@ use phys_control,  only: phys_getopts
 use constituents,  only: pcnst
 
 use cam_logfile,   only: iulog
-use abortutils,    only: endrun
+use cam_abortutils,    only: endrun
 use perf_mod
 
 implicit none

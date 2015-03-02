@@ -27,7 +27,7 @@ module cam_history
    use ppgrid,       only: pcols, psubcols
    use cam_instance, only: inst_suffix
    use filenames,    only: interpret_filename_spec, ncdata, bnd_topo
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use pmgrid,       only: dyndecomp_set
 
    use units,        only: getunit
@@ -3299,7 +3299,7 @@ CONTAINS
      use time_manager,  only: get_step_size, get_ref_date, timemgr_get_calendar_cf
      use filenames,     only: caseid
      use string_utils,  only: to_upper
-     use abortutils,    only: endrun
+     use cam_abortutils,    only: endrun
      use dycore,        only: dycore_is
      use physconst,     only: pi
      use spmd_utils,    only: iam, nsmps, npes, mpicom

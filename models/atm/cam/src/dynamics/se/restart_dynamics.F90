@@ -333,7 +333,7 @@ CONTAINS
          pio_read_darray, pio_setframe, file_desc_t, io_desc_t, pio_double
     use dyn_comp, only : dyn_init1, dyn_init2
     use dimensions_mod, only : nlev, np, ne, nelemd, qsize_d
-    use abortutils,   only: endrun
+    use cam_abortutils,   only: endrun
     use namelist_mod, only: readnl
     use constituents, only : cnst_name
     use bndry_mod,   only: bndry_exchangeV

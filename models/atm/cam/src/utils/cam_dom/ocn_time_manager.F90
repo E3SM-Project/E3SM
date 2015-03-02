@@ -3,7 +3,7 @@ module ocn_time_manager
    use shr_kind_mod, only: r8 => shr_kind_r8, SHR_KIND_CS
    use shr_cal_mod,  only: shr_cal_noleap, shr_cal_gregorian
    use string_utils, only: to_upper
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use ESMF
    use ocn_spmd
    use cam_logfile,  only: iulog

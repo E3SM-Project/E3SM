@@ -8,7 +8,7 @@ module interp_mod
   use spmd_utils,       only : masterproc, iam
   use cam_pio_utils,  only: phys_decomp, fillvalue
   use hybrid_mod,     only : hybrid_t, hybrid_create
-  use abortutils, only: endrun
+  use cam_abortutils, only: endrun
 
   implicit none
   private
@@ -115,7 +115,7 @@ contains
     use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
     use bndry_mod, only : bndry_exchangeV
     use parallel_mod,   only: par
-    use abortutils, only : endrun
+    use cam_abortutils, only : endrun
     
     implicit none
     type(file_desc_t), intent(inout) :: File

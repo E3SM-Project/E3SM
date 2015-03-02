@@ -1,7 +1,7 @@
 module cam_history_buffers
   use shr_kind_mod, only: r8 => shr_kind_r8
   use cam_history_support, only: max_chars, field_info, hentry
-  use abortutils, only : endrun
+  use cam_abortutils, only : endrun
   use pio, only : var_desc_t
   
   implicit none

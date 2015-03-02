@@ -8,7 +8,7 @@
     use ncdio_atm,    only: infld
     use pmgrid,       only: plat, plev, plevp, plon
     use ppgrid,       only: pcols, pver, pverp
-    use abortutils,   only: endrun
+    use cam_abortutils,   only: endrun
 
     real(r8), intent(out)   :: h2so4(pver)     ! midpoint h2so4 mmr (kg/kg)
 

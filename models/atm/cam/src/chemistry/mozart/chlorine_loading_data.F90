@@ -4,7 +4,7 @@
 module chlorine_loading_data
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmd_utils,   only: masterproc
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use cam_logfile,  only: iulog
   use linoz_data,   only: has_linoz_data
 

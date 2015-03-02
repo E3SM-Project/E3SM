@@ -11,7 +11,7 @@ module sat_hist
   use ppgrid,        only: pcols, pver, begchunk, endchunk
   use cam_history_support, only: fieldname_lenp2, max_string_len, ptapes
   use spmd_utils,    only: masterproc, iam
-  use abortutils,    only: endrun
+  use cam_abortutils,    only: endrun
 
   use pio,           only: file_desc_t, iosystem_desc_t, iosystem_desc_t, var_desc_t, io_desc_t
   use pio,           only: pio_openfile, pio_redef, pio_enddef, pio_inq_dimid, pio_inq_varid, pio_seterrorhandling, pio_def_var

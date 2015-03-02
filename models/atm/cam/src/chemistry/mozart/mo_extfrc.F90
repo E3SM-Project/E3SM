@@ -7,7 +7,7 @@ module mo_extfrc
   use ppgrid,       only : pcols, begchunk, endchunk, pver, pverp
   use chem_mods,    only : gas_pcnst, extcnt
   use spmd_utils,   only : masterproc,iam
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use cam_history,  only : addfld, outfld, phys_decomp, add_default
   use cam_logfile,  only : iulog
   use tracer_data,  only : trfld,trfile

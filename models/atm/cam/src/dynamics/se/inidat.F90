@@ -39,7 +39,7 @@ contains
     use ncdio_atm, only : infld
     use shr_vmath_mod, only: shr_vmath_log
     use hycoef,           only: ps0
-    use abortutils,     only: endrun
+    use cam_abortutils,     only: endrun
     use pio, only : file_desc_t, io_desc_t, pio_double, pio_get_local_array_size, pio_freedecomp
     use dyn_grid, only : get_horiz_grid_dim_d
     use chemistry   , only: chem_implements_cnst, chem_init_cnst
@@ -373,7 +373,7 @@ contains
   function get_ldof(elem, nlev) result(ldof)
     use dimensions_mod,     only: nelemd
     use dyn_grid, only : get_horiz_grid_dim_d
-    use abortutils,     only: endrun
+    use cam_abortutils,     only: endrun
 
     type(element_t), pointer :: elem(:)
     integer, intent(in) :: nlev

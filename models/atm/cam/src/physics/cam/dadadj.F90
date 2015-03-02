@@ -18,7 +18,7 @@ subroutine dadadj (lchnk   ,ncol    , &
    use ppgrid
    use phys_grid,       only: get_lat_p, get_lon_p
    use physconst,       only: cappa
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use cam_control_mod, only: nlvdry
    use cam_logfile,     only: iulog
    implicit none

@@ -27,7 +27,7 @@
    use cam_logfile,   only : iulog
    use fv_control_mod, only: div24del2flag, del2coef
    use spmd_utils,     only: masterproc
-   use abortutils,     only: endrun
+   use cam_abortutils,     only: endrun
 
 #if defined( SPMD )
    use mod_comm,      only : mp_send4d_ns, mp_recv4d_ns,     &

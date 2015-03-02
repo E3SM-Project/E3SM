@@ -30,7 +30,7 @@ subroutine initcom
    use commap
    use physconst,       only: rair, rearth, ra
    use time_manager,    only: get_step_size
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use scamMod,         only: scmlat,scmlon,single_column
    use cam_control_mod, only: nsrest
    use hycoef,          only: hypd, hypm
