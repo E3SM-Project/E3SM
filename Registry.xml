@@ -54,6 +54,10 @@
 'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method."
 		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
 		/>
+		<nml_option name="config_flowParamA_calculation" type="character" default_value="constant" units="unitless"
+			description="Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field."
+			possible_values="'constant', 'PB1982', 'CP2010'"
+		/>
 	</nml_record>
 
 
@@ -91,6 +95,10 @@
 		<nml_option name="config_default_flowParamA" type="real" default_value="3.1709792e-24" units="s^{-1} Pa^{-n}"
 		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  Defaults to the SI representation of 1.0e-16 yr^{-1} Pa^{-3}."
 		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_enhancementFactor" type="real" default_value="1.0" units="none"
+			description="multiplier on the flow parameter A"
+			possible_values="Any positive real value"
 		/>
 		<nml_option name="config_flowLawExponent" type="real" default_value="3.0" units="none"
 		            description="Defines the value of the Glen flow law exponent, n."
@@ -379,6 +387,9 @@
 		/>
 		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge"
+		/>
+		<var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
+		     description="flow law parameter, A"
 		/>
 			<!-- normalVelocity needs to be input/restart for iterative velocity solvers -->
 		<var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
