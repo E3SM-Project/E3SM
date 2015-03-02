@@ -70,6 +70,12 @@ module li_mask
    end interface
 
 
+   interface li_mask_is_dynamic_ice_int
+      module procedure li_mask_is_dynamic_ice_intout_1d
+      module procedure li_mask_is_dynamic_ice_intout_0d
+   end interface
+
+
    interface li_mask_is_floating_ice
       module procedure li_mask_is_floating_ice_logout_1d
       module procedure li_mask_is_floating_ice_logout_0d
@@ -462,6 +468,20 @@ contains
 
       li_mask_is_dynamic_ice_logout_0d = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
    end function li_mask_is_dynamic_ice_logout_0d
+
+   function li_mask_is_dynamic_ice_intout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      integer, dimension(size(mask)) :: li_mask_is_dynamic_ice_intout_1d
+
+      li_mask_is_dynamic_ice_intout_1d = iand(mask, li_mask_ValueDynamicIce) / li_mask_ValueDynamicIce
+   end function li_mask_is_dynamic_ice_intout_1d
+
+   function li_mask_is_dynamic_ice_intout_0d(mask)
+      integer, intent(in) :: mask
+      integer :: li_mask_is_dynamic_ice_intout_0d
+
+      li_mask_is_dynamic_ice_intout_0d = iand(mask, li_mask_ValueDynamicIce) / li_mask_ValueDynamicIce
+   end function li_mask_is_dynamic_ice_intout_0d
 
 
    ! -- Functions that check for presence of floating ice --
