@@ -136,19 +136,13 @@ void compute_buffer_init(iosystem_desc_t ios)
 #ifdef _NETCDF4
        case PIO_IOTYPE_NETCDF4P:
 	 ierr = nc_var_par_access(ncid, vid, NC_COLLECTIVE);
-	 switch(iodesc->basetype){
-	 case MPI_DOUBLE:
-	 case MPI_REAL8:
+	 if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 	   ierr = nc_put_vara_double (ncid, vid,(size_t *) start,(size_t *) count, (const double *) bufptr); 
-	   break;
-	 case MPI_INTEGER:
+	 } else if(iodesc->basetype == MPI_INTEGER){
 	   ierr = nc_put_vara_int (ncid, vid, (size_t *) start, (size_t *) count, (const int *) bufptr); 
-	   break;
-	 case MPI_FLOAT:
-	 case MPI_REAL4:
+	 }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
 	   ierr = nc_put_vara_float (ncid, vid, (size_t *) start, (size_t *) count, (const float *) bufptr); 
-	   break;
-	 default:
+	 }else{
 	   fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	 }
 	 break;
@@ -159,7 +153,7 @@ void compute_buffer_init(iosystem_desc_t ios)
 	   mpierr = MPI_Type_size(iodesc->basetype, &dsize);
 	   size_t tstart[ndims], tcount[ndims];
 	   if(ios->io_rank==0){
-         // FIX(SPM, 100714)  don't use i, use something like myrank and iam
+
 	     for(i=0;i<iodesc->num_aiotasks;i++){
 	       if(i==0){	    
 		 buflen=1;
@@ -377,22 +371,16 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	   }
 	   ierr = nc_var_par_access(ncid, vid[nv], NC_COLLECTIVE);
 
-	   switch(basetype){
-	   case MPI_DOUBLE:
-	   case MPI_REAL8:
+	   if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 	     ierr = nc_put_vara_double (ncid, vid[nv],(size_t *) start,(size_t *) count, (const double *) bufptr); 
-	     break;
-	   case MPI_INTEGER:
+	   } else if(iodesc->basetype == MPI_INTEGER){
 	     ierr = nc_put_vara_int (ncid, vid[nv], (size_t *) start, (size_t *) count, (const int *) bufptr); 
-	     break;
-	   case MPI_FLOAT:
-	   case MPI_REAL4:
+	   }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
 	     ierr = nc_put_vara_float (ncid, vid[nv], (size_t *) start, (size_t *) count, (const float *) bufptr); 
-	     break;
-	   default:
-	     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) basetype);
+	   }else{
+	     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	   }
-	 }
+
 	 break;
        case PIO_IOTYPE_NETCDF4C:
 #endif
@@ -1040,21 +1028,15 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 #ifdef _NETCDF
 #ifdef _NETCDF4
       case PIO_IOTYPE_NETCDF4P:
-	switch(iodesc->basetype){
-	case MPI_DOUBLE:
-	case MPI_REAL8:
-	  ierr = nc_get_vara_double (file->fh, vid,start,count, bufptr); 
-	  break;
-	case MPI_INTEGER:
-	  ierr = nc_get_vara_int (file->fh, vid, start, count,  bufptr); 
-	  break;
-	case MPI_FLOAT:
-	case MPI_REAL4:
-	  ierr = nc_get_vara_float (file->fh, vid, start,  count,  bufptr); 
-	  break;
-	default:
-	  fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
-	}	
+	 if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
+	   ierr = nc_get_vara_double (file->fh, vid,start,count, bufptr); 
+	 } else if(iodesc->basetype == MPI_INTEGER){
+	   ierr = nc_get_vara_int (file->fh, vid, start, count,  bufptr); 
+	 }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
+	   ierr = nc_get_vara_float (file->fh, vid, start,  count,  bufptr); 
+	 }else{
+	   fprintf(stderr,"Type not recognized %d in pioc_read_darray\n",(int) iodesc->basetype);
+	 }
 	break;
       case PIO_IOTYPE_NETCDF4C:
 #endif
