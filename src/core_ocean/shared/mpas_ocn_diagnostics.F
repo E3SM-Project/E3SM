@@ -1256,34 +1256,19 @@ contains
          enddo
 
          buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / config_density0
-         shearContribution = max(deltaVelocitySquared,1.0e-10)
+         shearContribution = max(deltaVelocitySquared,1.0e-15)
 
-        ! compute bulk Richardson number
-        ! we estimate the bulk Richardson number here, but its value will be updated
-        ! in the ocn_vmix_coefs_cvmix_build when we have access to the turbulent velocity scale and unresolved shear
+         ! store the buoyancy and resolved shear contributions to bulk Richardson number
          bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
          bulkRichardsonNumberShear(k,iCell) = shearContribution
 
         enddo ! do k=1,maxLevelCell(iCell)
 
-       ! remove 2dz mode from bulkRichardsonNumber{Buoy,Shear}
-        buoySmoothed(:) = 0.0
-        shearSmoothed(:) = 0.0
-        do k=2,maxLevelCell(iCell)-1
-          buoySmoothed(k)  =  (bulkRichardsonNumberBuoy(k-1,iCell) + 2*bulkRichardsonNumberBuoy(k,iCell) + bulkRichardsonNumberBuoy(k+1,iCell)) / 4.0
-          shearSmoothed(k) =  (bulkRichardsonNumberShear(k-1,iCell) + 2*bulkRichardsonNumberShear(k,iCell) + bulkRichardsonNumberShear(k+1,iCell)) / 4.0
-        enddo
-        buoySmoothed(1) = buoySmoothed(2)
-        shearSmoothed(1) = shearSmoothed(2)
-        buoySmoothed(maxLevelCell(iCell))=buoySmoothed(maxLevelCell(iCell)-1)
-        shearSmoothed(maxLevelCell(iCell))=shearSmoothed(maxLevelCell(iCell)-1)
-
-        bulkRichardsonNumberBuoy(1:maxLevelCell(iCell),iCell) = buoySmoothed(1:maxLevelCell(iCell))
-        bulkRichardsonNumberShear(1:maxLevelCell(iCell),iCell) = shearSmoothed(1:maxLevelCell(iCell))
-
-       ! bulkRichardsonNumberBuoy to a negative value within surface layer to prevent CVMix/KPP from
+       ! set bulkRichardsonNumberBuoy to a negative value within surface layer to prevent CVMix/KPP from
        ! incorrectly diagnosing OBL to be within surface layer
-       bulkRichardsonNumberBuoy(1:int(indexSurfaceLayerDepth(iCell)),iCell) = -1.0
+       ! require boundary layer to be below the top layer
+       k=max(int(indexSurfaceLayerDepth(iCell)),1)
+       bulkRichardsonNumberBuoy(1:k,iCell) = -1.0
 
       enddo
 
