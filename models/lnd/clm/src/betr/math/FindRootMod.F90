@@ -337,8 +337,8 @@ contains
    fb=f2
    if((fa > 0._r8 .and. fb > 0._r8).or.(fa < 0._r8 .and. fb < 0._r8))then
       write(iulog,*) 'root must be bracketed for brent'
-      !call endrun()
-      stop
+      write(iulog,*) 'a=',a,' b=',b,' fa=',fa,' fb=',fb
+      call endrun(msg=errmsg(__FILE__, __LINE__))
    endif 
    c=b
    fc=fb
