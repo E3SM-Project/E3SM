@@ -141,7 +141,7 @@ contains
       real (kind=RKIND), pointer :: config_cvmix_kpp_boundary_layer_depth
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
-      integer :: k, iCell, jCell, iNeighbor, iter, timeLevel
+      integer :: k, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL
       integer, pointer :: nVertLevels, nCells
       real (kind=RKIND) :: r, layerSum
       real (kind=RKIND), dimension(:), allocatable :: sigma, Nsqr_iface, turbulentScalarVelocityScale, tmp
@@ -329,14 +329,14 @@ contains
          ! eliminate 2dz mode from BVF
          BVFSmoothed(1:nVertLevels) = BruntVaisalaFreqTop(1:nVertLevels,iCell)
          BVFSmoothed(nVertLevels+1) = BVFSmoothed(nVertLevels)
-         do k=2,maxLevelCell(iCell)
-            tmp(k) = (BVFSmoothed(k-1)+2*BVFSmoothed(k)+BVFSmoothed(k+1))/4.0
-         enddo
-         k=1
-         tmp(k)=tmp(k+1)
-         k=maxLevelCell(iCell)+1
-         tmp(k:nVertLevels+1)=tmp(k-1)
-         BVFSmoothed(:) = tmp(:)
+     !   do k=2,maxLevelCell(iCell)
+     !      tmp(k) = (BVFSmoothed(k-1)+2*BVFSmoothed(k)+BVFSmoothed(k+1))/4.0
+     !   enddo
+     !   k=1
+     !   tmp(k)=tmp(k+1)
+     !   k=maxLevelCell(iCell)+1
+     !   tmp(k:nVertLevels+1)=tmp(k-1)
+     !   BVFSmoothed(:) = tmp(:)
          cvmix_variables%SqrBuoyancyFreq_iface => BVFSmoothed
 
          ! fill the intent(in) KPP
@@ -383,65 +383,72 @@ contains
 
             if (config_use_cvmix_fixed_boundary_layer) then
                cvmix_variables % BoundaryLayerDepth = config_cvmix_kpp_boundary_layer_depth
+
             else
-              cvmix_variables % BoundaryLayerDepth = boundaryLayerDepth(iCell)
-            endif
-            cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface, cvmix_variables%zt_cntr, cvmix_variables%BoundaryLayerDepth)
 
-            do iter=1,config_cvmix_kpp_niterate
-
-               if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0) then
-                  cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0 + 0.01
-               endif
-
-               if(cvmix_variables % BoundaryLayerDepth .gt. abs(cvmix_variables%zw_iface(maxLevelCell(iCell)+1))) then
-                  cvmix_variables % BoundaryLayerDepth = abs(cvmix_variables%zt_cntr(maxLevelCell(iCell))) + 0.01
-               endif
-
-               ! compute ocean boundary layer depth 
-               do k=1,maxLevelCell(iCell)
-                  sigma(k) = -cvmix_variables % zt_cntr(k) / cvmix_variables % BoundaryLayerDepth
+              ! set stratification
+              do k=1,maxLevelCell(iCell)
                   Nsqr_iface(k) = BVFSmoothed(k)
-               enddo
-               k=maxLevelCell(iCell)+1
-               sigma(k:nVertLevels) = sigma(k-1)
-               Nsqr_iface(k:nVertLevels+1) = Nsqr_iface(k-1)
+              enddo
+              k=min(maxLevelCell(iCell)+1,nVertLevels)
+              Nsqr_iface(k:nVertLevels+1) = Nsqr_iface(k-1)
 
-               ! eliminate 2dz mode from N2
-               tmp(:)=0.0
-               do k=2,maxLevelCell(iCell)
-                  tmp(k) = (Nsqr_iface(k-1)+2*Nsqr_iface(k)+Nsqr_iface(k+1))/4.0
-               enddo
-               k=maxLevelCell(iCell)+1
-               tmp(1)=tmp(2)
-               tmp(k:nVertLevels+1)=tmp(k-1)
-               Nsqr_iface(:)=tmp(:)
+              ! compute bulk Richardson number
+              ! assume boundary layer depth is at bottom of every kIndexOBL cell
+              do kIndexOBL=1,maxLevelCell(iCell)
 
-               ! compute the turbulent scales in order to compute the bulk Richardson number
-               call cvmix_kpp_compute_turbulent_scales( &
-                    sigma(:), &
+                 ! set OBL at bottome of kIndexOBL cell for computation of bulk Richardson number
+                 cvmix_variables % BoundaryLayerDepth = cvmix_variables % zw_iface(kIndexOBL+1)
+   
+                 ! define sigma based on assumption of where OBL bottom resides
+                 do k=1,maxLevelCell(iCell)
+                    sigma(k) = -cvmix_variables % zt_cntr(k) / cvmix_variables % BoundaryLayerDepth
+                 enddo
+                 do k=maxLevelCell(iCell)+1,nVertLevels
+                    sigma(k) = sigma(maxLevelCell(iCell))
+                 enddo
+  
+                 ! compute the turbulent scales in order to compute the bulk Richardson number
+                 call cvmix_kpp_compute_turbulent_scales( &
+                      sigma(1:nVertLevels), &
+                      cvmix_variables % BoundaryLayerDepth, &
+                      cvmix_variables % SurfaceBuoyancyForcing, &
+                      cvmix_variables % SurfaceFriction, &
+                      w_s = turbulentScalarVelocityScale(1:nVertLevels))
+  
+                 cvmix_variables % BulkRichardson_cntr  = cvmix_kpp_compute_bulk_Richardson( &
+                      cvmix_variables % zt_cntr(1:nVertLevels), & 
+                      bulkRichardsonNumberBuoy(1:nVertLevels,iCell), &
+                      bulkRichardsonNumberShear(1:nVertLevels,iCell), &
+                      ws_cntr = turbulentScalarVelocityScale(:), &
+                      Nsqr_iface = Nsqr_iface(1:nVertLevels+1) )
+  
+                 ! each level of bulk Richardson is computed as if OBL resided at bottom of that level
+                 bulkRichardsonNumber(kIndexOBL,iCell) = cvmix_variables % BulkRichardson_cntr(kIndexOBL)
+  
+               end do
+  
+               call cvmix_kpp_compute_OBL_depth(  &
+                    bulkRichardsonNumber(1:nVertLevels,iCell), &
+                    cvmix_variables % zw_iface(1:nVertLevels+1), &
                     cvmix_variables % BoundaryLayerDepth, &
-                    cvmix_variables % SurfaceBuoyancyForcing, &
-                    cvmix_variables % SurfaceFriction, &
-                    w_s = turbulentScalarVelocityScale(:) )
-
-               cvmix_variables % BulkRichardson_cntr  = cvmix_kpp_compute_bulk_Richardson( &
+                    cvmix_variables % kOBL_depth, &
                     cvmix_variables % zt_cntr(1:nVertLevels), & 
-                    bulkRichardsonNumberBuoy(1:nVertLevels,iCell), &
-                    bulkRichardsonNumberShear(1:nVertLevels,iCell), &
-                    ws_cntr = turbulentScalarVelocityScale(:), &
-                    Nsqr_iface = Nsqr_iface(1:nVertLevels+1) )
+                    cvmix_variables % SurfaceFriction, &
+                    cvmix_variables % SurfaceBuoyancyForcing, &
+                    cvmix_variables % Coriolis)
 
-               ! compute the boundary layer depth based on model state at current time step
-               if(.not.config_use_cvmix_fixed_boundary_layer) then
-                 call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
-                 cvmix_variables % kOBL_depth = &
-                      cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface(1:nVertLevels+1), &
-                      cvmix_variables%zt_cntr(1:nVertLevels), &
-                      cvmix_variables%BoundaryLayerDepth)
-               endif
+             endif  ! if (config_use_cvmix_fixed_boundary_layer) then
 
-            end do ! iterate
+             ! apply minimum limit to OBL
+             if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0) then
+                cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0 + 0.01
+             endif
+
+             ! apply maximum limit to OBL
+             if(cvmix_variables % BoundaryLayerDepth .gt. abs(cvmix_variables%zw_iface(maxLevelCell(iCell)+1))) then
+                cvmix_variables % BoundaryLayerDepth = abs(cvmix_variables%zt_cntr(maxLevelCell(iCell))) + 0.01
+             endif
 
             call cvmix_coeffs_kpp(                                              &
                           cvmix_variables % Mdiff_iface(1:nVertLevels+1),       &
@@ -464,7 +471,6 @@ contains
             ! intent out of BoundaryLayerDepth is boundary layer depth measured in meters and vertical index
             boundaryLayerDepth(iCell) = cvmix_variables % BoundaryLayerDepth
             indexBoundaryLayerDepth(iCell) = cvmix_variables % kOBL_depth
-            bulkRichardsonNumber(:,iCell) = cvmix_variables % BulkRichardson_cntr(:)
 
             ! if using KPP with "MatchBoth"   matching, then the output from KPP is the full viscosity/diffusivity
             ! if using KPP with "SimpleShape" matching, then the output from KPP needs to be added to current viscosity/diffusivity
