@@ -249,36 +249,35 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), pointer :: thickness, layerInterfaceSigma, dcEdge, dvEdge
+      real (kind=RKIND), dimension(:), pointer :: thickness, layerInterfaceSigma
       real (kind=RKIND), dimension(:), pointer :: slopeEdge, normalSlopeEdge
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
-      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
-      integer, dimension(:), pointer :: edgeMask
-      integer, pointer :: nVertInterfaces, nEdges, nVertices, vertexDegree
-      integer :: iLevel, iEdge, iCell, iVertex, cell1, cell2, cellIndex
-      real (kind=RKIND) :: basalVelocity, &
-               layerInterfaceHeightOnEdge, thicknessEdge, hVertexAccum
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, flowParamA
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:), pointer :: edgeMask, cellMask
+      integer, pointer :: nVertInterfaces, nEdges
+      integer :: iLevel, iEdge
+      integer :: cell1, cell2
+      real (kind=RKIND) :: thicknessEdge, flwaLevelEdge
+      real (kind=RKIND) :: positionIndependentFactor ! The portion of the velocity calculation that is completely independent of position
+      real (kind=RKIND) :: levelIndependentFactor ! The portion of the velocity calculation that depends on horizontal location but not vertical position
       real (kind=RKIND), pointer :: rhoi         ! ice density
-      real (kind=RKIND), pointer :: ratefactor   ! flow law parameter, A
       real (kind=RKIND), pointer :: n            ! flow law exponent, n
+      integer :: cell1_is_dynamic, cell2_is_dynamic
 
       err = 0
 
       ! Set needed variables and pointers
       call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
-      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
-      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'flowParamA', flowParamA, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'slopeEdge', slopeEdge, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
 
@@ -286,33 +285,46 @@ contains
       ! Get parameters specified in the namelist
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', n)
-      call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', ratefactor)  ! units of s^{-1} Pa^{-n}
-      ! Calculate ratefactor (A) at edge - TODO This should be calculated external to this subroutine and as a function of temperature
 
-      basalVelocity = 0.0_RKIND  ! Assume no sliding
+      positionIndependentFactor = -0.5_RKIND * (rhoi * gravity)**n  ! could be calculated once on init
 
       ! Loop over edges
       do iEdge = 1, nEdges
+
          ! Only calculate velocity for edges that are part of the dynamic ice sheet.(thick ice)
          ! Also, the velocity calculation should be valid for non-ice edges (i.e. returns 0).
          if ( li_mask_is_dynamic_ice(edgeMask(iEdge)) ) then
              cell1 = cellsOnEdge(1,iEdge)
              cell2 = cellsOnEdge(2,iEdge)
+             cell1_is_dynamic = li_mask_is_dynamic_ice_int(cellMask(cell1))
+             cell2_is_dynamic = li_mask_is_dynamic_ice_int(cellMask(cell2))
+
              ! Calculate thickness on edge - 2nd order
              thicknessEdge = (thickness(cell1) + thickness(cell2) ) * 0.5_RKIND
-             ! Loop over layers
-             do iLevel = 1, nVertInterfaces
-                ! Determine the height of each layer above the bed
-                layerInterfaceHeightOnEdge = thicknessEdge * (1.0_RKIND - layerInterfaceSigma(iLevel) )
-                ! Calculate SIA velocity
-                normalVelocity(iLevel,iEdge) = basalVelocity + &
-                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeEdge(iEdge)**(n-1) * normalSlopeEdge(iEdge) * &
-                    (thicknessEdge**(n+1) - (thicknessEdge - layerInterfaceHeightOnEdge)**(n+1))
-             end do  ! Levels
+!             thicknessEdge = (thickness(cell1) * cell1_is_dynamic + thickness(cell2) * cell2_is_dynamic) / (cell1_is_dynamic + cell2_is_dynamic)  ! this version does an upwind thickness on margin edges only.  Most Halfar error stats are higher by about 10-20%
+             ! Also tried upwind everywhere [for dome can be hacked with: thicknessEdge = max(thickness(cell1), thickness(cell2) ]  This results in Halfar errors that are about 5x larger than centered difference
+
+             levelIndependentFactor = slopeEdge(iEdge)**(n-1) * normalSlopeEdge(iEdge) * thicknessEdge**(n+1)
+
+             normalVelocity(nVertInterfaces, iEdge) = 0.0_RKIND  ! Assume no sliding
+
+             do iLevel = nVertInterfaces-1, 1, -1  ! Loop upwards from second lowest level to surface
+                ! Calculate flwa on edge for this level - 2nd order, except can't do centered difference into areas where flwa may not be valid, so excluding the downwind flwa value in non-dynamic cells
+!                flwaLevelEdge = (flowParamA(iLevel, cell1) + flowParamA(iLevel, cell2) ) * 0.5_RKIND
+                flwaLevelEdge = (flowParamA(iLevel, cell1) * cell1_is_dynamic +  &
+                   flowParamA(iLevel, cell2) * cell2_is_dynamic) / &
+                   (cell1_is_dynamic + cell2_is_dynamic)
+
+                ! Calculate SIA velocity for this layer interface by adding on incremental velocity for the layer below
+                ! (This requires that flwa be constant over that layer, which it is.)
+                normalVelocity(iLevel, iEdge) = normalVelocity(iLevel+1, iEdge) +  &
+                   positionIndependentFactor * levelIndependentFactor * flwaLevelEdge *  &
+                   ( (layerInterfaceSigma(iLevel))**(n+1) - (layerInterfaceSigma(iLevel+1))**(n+1) )
+             end do
          else
-             normalVelocity(:,iEdge) = 0.0_RKIND
+             normalVelocity(:,iEdge) = 0.0_RKIND  ! zero velocity on non-dynamic edges
          endif
-      end do  ! edges  
+      end do  ! edges
 
      ! === error check
      if (err > 0) then
