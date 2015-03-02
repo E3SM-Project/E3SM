@@ -110,6 +110,8 @@ contains
 
       write(*,*) 'Using ', trim(config_velocity_solver), ' dynamical core.'
       select case (config_velocity_solver)
+      case ('none')
+         ! Do nothing
       case ('sia')
           call li_sia_init(domain, err)
 !!!      case ('L1L2')
@@ -183,6 +185,8 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       select case (config_velocity_solver)
+      case ('none')
+         ! Do nothing
       case ('sia')
           call li_sia_block_init(block, err)
 !!!      case ('L1L2')
@@ -270,6 +274,8 @@ contains
 !      edgeMask => state % edgeMask % array
 
       select case (config_velocity_solver)
+      case ('none')
+         ! Do nothing
       case ('sia')
           call li_sia_solve(meshPool, statePool, timeLevel, err)
 !!!      case ('L1L2')
@@ -354,6 +360,8 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       select case (config_velocity_solver)
+      case ('none')
+         ! Do nothing
       case ('sia')
           call li_sia_finalize(domain, err)
 !!!      case ('L1L2')
