@@ -22,7 +22,7 @@ SET(PIO_TUTIL_GEN_PATH ${CMAKE_CURRENT_SOURCE_DIR}/util)
 # Test source files that are generated (from template files)
 SET(SRCS_GENERATED pio_file_simple_tests.F90 pio_init_finalize.F90 pio_fail.F90 
     pio_file_fail.F90 ncdf_simple_tests.F90 ncdf_get_put.F90 ncdf_fail.F90 
-    pio_decomp_tests.F90)
+    pio_decomp_tests.F90 pio_decomp_fillval.F90)
 
 # Generate test cases from template files
 FOREACH(gen_src IN LISTS SRCS_GENERATED)
@@ -135,3 +135,12 @@ add_mpi_test("pio_decomp_tests_4p_3iop" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_
 
 add_mpi_test("pio_decomp_tests_4p_2iop_2str" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-io-tasks=2 --pio-tf-stride=2" 4 ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test("pio_decomp_tests_4p_2iop_1agg" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests" "--pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1" 4 ${DEFAULT_TEST_TIMEOUT})
+
+###-------------------------------------------------------------------------###
+# test pio_decomp_fillval
+###-------------------------------------------------------------------------###
+
+ADD_EXECUTABLE(pio_decomp_fillval pio_decomp_fillval.F90 ${SRCS_PIO_TUTIL})
+TARGET_LINK_LIBRARIES(pio_decomp_fillval  piof pioc ${TIMING_LINK_LIB} )
+
+add_mpi_test("pio_decomp_fillval" "${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_fillval" "" 4 ${DEFAULT_TEST_TIMEOUT})
