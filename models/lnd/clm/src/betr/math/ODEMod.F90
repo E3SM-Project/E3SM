@@ -398,7 +398,8 @@ contains
    do jj = 1, nJ
       value = value * (1._r8 + aj(jj) * p**(iJ))
    enddo
-   value = value - p   
+   value = value - p
+   if(abs(value)<1.e-20_r8)value=0._r8
    end subroutine gfunc_mbkks
 
 !-------------------------------------------------------------------------------
