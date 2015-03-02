@@ -2299,6 +2299,7 @@ contains
           i = filter_column(fi)
           this%decomp_npools_leached_col(i,k) = value_column
           this%m_decomp_npools_to_fire_col(i,k) = value_column
+          this%bgc_npool_inputs_vr_col (i,:,k) = value_column
        end do
     end do
 

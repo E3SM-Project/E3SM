@@ -739,7 +739,6 @@ contains
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_no3_ratio, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
 
-
  !do pool degradation
   do lk = 1, Extra_inst%nr
     if(Extra_inst%is_zero_order(lk))then

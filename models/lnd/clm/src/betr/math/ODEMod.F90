@@ -374,7 +374,6 @@ contains
 
    call gfunc_mbkks(0._r8, f1)
    call gfunc_mbkks(pmax, f2)
-   
    call brent(pp, 0._r8, pmax, f1, f2, macheps, tol, gfunc_mbkks)
       
    end function GetGdtScalar   

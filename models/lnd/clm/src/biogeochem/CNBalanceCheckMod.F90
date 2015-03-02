@@ -180,7 +180,7 @@ contains
             write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
             write(iulog,*)'input=',col_cinputs*dt
             write(iulog,*)'output=',col_coutputs*dt
-            write(iulog,*)'er=',er(c)*dt
+            write(iulog,*)'er=',er(c)*dt,carbonflux_vars%hr_col(c)*dt
             write(iulog,*)'fire=',col_fire_closs(c)*dt
             write(iulog,*)'dwt=',dwt_closs(c)*dt
             write(iulog,*)'product=',product_closs(c)*dt

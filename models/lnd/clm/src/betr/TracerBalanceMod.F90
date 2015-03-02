@@ -126,6 +126,7 @@ implicit none
     enddo
     do kk = ngwmobile_tracers+1, ntracers
       errtracer(c,kk) = beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk) + tracer_flx_netpro(c,kk)
+      if(c==5657)print*,kk,errtracer(c,kk)*12.011_r8
       if(abs(errtracer(c,kk))>err_min)then
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), 'err=',errtracer(c,kk), 'col=',c
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))

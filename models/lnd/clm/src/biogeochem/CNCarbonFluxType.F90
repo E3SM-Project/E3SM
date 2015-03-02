@@ -4058,6 +4058,7 @@ contains
           i = filter_column(fi)
           this%decomp_cpools_leached_col(i,k) = value_column
           this%m_decomp_cpools_to_fire_col(i,k) = value_column
+          this%bgc_cpool_inputs_vr_col(i,:, k) = value_column
        end do
     end do
 
