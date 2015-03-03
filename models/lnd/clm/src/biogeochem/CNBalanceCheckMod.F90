@@ -170,7 +170,7 @@ contains
             err_found = .true.
             err_index = c
          end if
-
+         if(c==5657)print*,'som',carbonstate_vars%totsomc_col(c)
       end do ! end of columns loop
 
       if (.not. use_ed) then
@@ -187,7 +187,7 @@ contains
             write(iulog,*)'hrv=',col_hrv_xsmrpool_to_atm(c)*dt
             write(iulog,*)'leach=',som_c_leached(c)*dt
             write(iulog,*)'begcb       = ',col_begcb(c)
-            write(iulog,*)'endcb       = ',col_endcb(c)
+            write(iulog,*)'endcb       = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
             write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if

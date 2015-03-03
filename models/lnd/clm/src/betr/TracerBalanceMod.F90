@@ -75,7 +75,7 @@ implicit none
   
   integer  :: jj, fc, c, kk
   real(r8) :: dtime
-  real(r8) :: err_rel
+  real(r8) :: err_rel, bal_beg, bal_end
   real(r8), parameter :: err_min = 1.e-8_r8
   real(r8), parameter :: err_min_rel=1.e-3_r8
   associate(                                                                         &
@@ -124,15 +124,22 @@ implicit none
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))        
       endif      
     enddo
+    bal_beg=0._r8
+    bal_end=0._r8
     do kk = ngwmobile_tracers+1, ntracers
+      if(mod(kk,2)==1)then
+         bal_beg=bal_beg+beg_tracer_molarmass(c,kk)*12.011_r8
+         bal_end=bal_end+end_tracer_molarmass(c,kk)*12.011_r8
+      endif
       errtracer(c,kk) = beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk) + tracer_flx_netpro(c,kk)
-      if(c==5657)print*,kk,errtracer(c,kk)*12.011_r8
       if(abs(errtracer(c,kk))>err_min)then
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), 'err=',errtracer(c,kk), 'col=',c
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo
-    
+    if(c==5657)then
+       print*,'c mas',bal_beg,bal_end
+    endif 
     call tracerflux_vars%Temporal_average(c,dtime)
   enddo
   
