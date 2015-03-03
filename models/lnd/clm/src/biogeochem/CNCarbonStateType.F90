@@ -2992,6 +2992,11 @@ contains
             this%totprodc_col(c) + &
             this%seedc_col(c)    + &
             this%ctrunc_col(c)
+       this%totabgc_col(c) = &
+            this%totpftc_col(c)  + &
+            this%totprodc_col(c) + &
+            this%seedc_col(c)    + &
+            this%ctrunc_col(c)    
     end do
 
   end subroutine Summary

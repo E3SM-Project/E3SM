@@ -894,7 +894,8 @@ contains
        if(.not. use_ed)then
           if (use_cn) then
              nstep = get_nstep()
-            print*,'cm',carbonstate_vars%totsomc_col(5657)+carbonstate_vars%totlitc_col(5657)+carbonstate_vars%cwdc_col(5657) 
+             print*,'cm',carbonstate_vars%totsomc_col(5657)+carbonstate_vars%totlitc_col(5657)+carbonstate_vars%cwdc_col(5657)
+             print*,'cabgc',carbonstate_vars%totabgc_col(5657)
              if (nstep < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
