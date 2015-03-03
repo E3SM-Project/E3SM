@@ -36,7 +36,7 @@ implicit none
   public :: init_centurybgc_cold
   type(centurybgc_type), private :: centurybgc_vars
 
-
+  integer, private :: lpr
   type, extends(bgc_reaction_type) :: &
   bgc_reaction_CENTURY_type
   private
@@ -549,6 +549,7 @@ contains
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8 
+      lpr = .false.
       call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
     enddo
   enddo  
@@ -738,7 +739,10 @@ contains
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_no3_ratio, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
-
+  if(lpr)then
+    print*,'reac'
+    print*,reaction_rates
+  endif
  !do pool degradation
   do lk = 1, Extra_inst%nr
     if(Extra_inst%is_zero_order(lk))then
@@ -881,6 +885,7 @@ contains
   decomp_npools_vr   => nitrogenstate_vars%decomp_npools_vr_col, &
   smin_no3_vr_col    => nitrogenstate_vars%smin_no3_vr_col     , &
   smin_nh4_vr_col    => nitrogenstate_vars%smin_nh4_vr_col     , &
+  sminn_vr_col       => nitrogenstate_vars%sminn_vr_col        , &
   tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col, &
   tracer_conc_solid_passive => tracerstate_vars%tracer_conc_solid_passive_col, &
   c_loc              => centurybgc_vars%c_loc                  , &
@@ -902,7 +907,7 @@ contains
     
         smin_no3_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_no3x)*natomw
         smin_nh4_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_nh3x)*natomw
-      
+        sminn_vr_col   (c,j) = smin_no3_vr_col(c,j) + smin_nh4_vr_col(c,j)
         k = lit1; decomp_cpools_vr(c,j,i_met_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
         k = lit2; decomp_cpools_vr(c,j,i_cel_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
         k = lit3; decomp_cpools_vr(c,j,i_lig_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
@@ -927,11 +932,14 @@ contains
   end subroutine assign_OM_CNpools
 !-------------------------------------------------------------------------------    
   subroutine assign_nitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)
-
+  
+  !
+  ! DESCRIPTION
+  ! feedback the nitrogen hydrological fluxes, this comes after tracer mass balance, so the flux is with the unit of st/m2/s
   use tracerfluxType           , only : tracerflux_type
   use BetrTracerType           , only : betrtracer_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
-  
+  use clm_varcon               , only : natomw 
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter  
@@ -948,8 +956,8 @@ contains
   
   do fc = 1, num_soilc
     c = filter_soilc(fc)
-    nitrogenflux_vars%smin_no3_leached_col(c) = tracerflux_vars%tracer_flx_totleached_col(c,id_trc_no3x)
-    nitrogenflux_vars%smin_no3_runoff_col(c)  = tracerflux_vars%tracer_flx_surfrun_col(c,id_trc_no3x)
+    nitrogenflux_vars%smin_no3_leached_col(c) = tracerflux_vars%tracer_flx_totleached_col(c,id_trc_no3x)*natomw
+    nitrogenflux_vars%smin_no3_runoff_col(c)  = tracerflux_vars%tracer_flx_surfrun_col(c,id_trc_no3x)*natomw
   enddo
   
   end associate

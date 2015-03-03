@@ -12,6 +12,7 @@ module CNCStateUpdate2Mod
   use clm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
+  use PatchType           , only : pft   
   !
   implicit none
   save
@@ -74,6 +75,24 @@ contains
 
          end do
         end do
+      else
+         do j = 1,nlevdecomp
+         ! column loop
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+
+            ! column gap mortality fluxes
+            cf%bgc_cpool_inputs_vr_col(c,j,i_met_lit) = &
+                 cf%bgc_cpool_inputs_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
+            cf%bgc_cpool_inputs_vr_col(c,j,i_cel_lit) = &
+                 cf%bgc_cpool_inputs_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
+            cf%bgc_cpool_inputs_vr_col(c,j,i_lig_lit) = &
+                 cf%bgc_cpool_inputs_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
+            cf%bgc_cpool_inputs_vr_col(c,j,i_cwd) = &
+                 cf%bgc_cpool_inputs_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
+
+         end do
+        end do  
       endif
       ! patch loop
       do fp = 1,num_soilp
@@ -87,7 +106,6 @@ contains
          cs%deadstemc_patch(p)           = cs%deadstemc_patch(p)          - cf%m_deadstemc_to_litter_patch(p)          * dt
          cs%livecrootc_patch(p)          = cs%livecrootc_patch(p)         - cf%m_livecrootc_to_litter_patch(p)         * dt
          cs%deadcrootc_patch(p)          = cs%deadcrootc_patch(p)         - cf%m_deadcrootc_to_litter_patch(p)         * dt
-
          ! storage pools
          cs%leafc_storage_patch(p)       = cs%leafc_storage_patch(p)      - cf%m_leafc_storage_to_litter_patch(p)      * dt
          cs%frootc_storage_patch(p)      = cs%frootc_storage_patch(p)     - cf%m_frootc_storage_to_litter_patch(p)     * dt
@@ -193,7 +211,6 @@ contains
 
          ! xsmrpool
          cs%xsmrpool_patch(p)            = cs%xsmrpool_patch(p)           - cf%hrv_xsmrpool_to_atm_patch(p)              * dt
-
          ! storage pools
          cs%leafc_storage_patch(p)       = cs%leafc_storage_patch(p)      - cf%hrv_leafc_storage_to_litter_patch(p)      * dt
          cs%frootc_storage_patch(p)      = cs%frootc_storage_patch(p)     - cf%hrv_frootc_storage_to_litter_patch(p)     * dt
