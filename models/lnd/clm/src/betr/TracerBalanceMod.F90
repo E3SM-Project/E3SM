@@ -63,7 +63,7 @@ implicit none
   use abortutils            , only : endrun
   use clm_varctl            , only : iulog
   use clm_time_manager      , only : get_step_size
-  use clm_varcon            , only : namec  
+  use clm_varcon            , only : namec,catomw,natomw
   implicit none
   type(bounds_type),      intent(in)    :: bounds
   integer,                intent(in)    :: lbj, ubj
@@ -75,7 +75,8 @@ implicit none
   
   integer  :: jj, fc, c, kk
   real(r8) :: dtime
-  real(r8) :: err_rel, bal_beg, bal_end
+  real(r8) :: atw
+  real(r8) :: err_rel, bal_beg, bal_end, bal_flx
   real(r8), parameter :: err_min = 1.e-8_r8
   real(r8), parameter :: err_min_rel=1.e-3_r8
   associate(                                                                         &
@@ -126,20 +127,24 @@ implicit none
     enddo
     bal_beg=0._r8
     bal_end=0._r8
+    bal_flx=0._r8
     do kk = ngwmobile_tracers+1, ntracers
-      if(mod(kk,2)==1)then
-         bal_beg=bal_beg+beg_tracer_molarmass(c,kk)*12.011_r8
-         bal_end=bal_end+end_tracer_molarmass(c,kk)*12.011_r8
-      endif
       errtracer(c,kk) = beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk) + tracer_flx_netpro(c,kk)
+      if(mod(kk,2)==0)then
+        bal_beg = bal_beg + beg_tracer_molarmass(c,kk)
+        bal_end = bal_end + end_tracer_molarmass(c,kk)
+        bal_flx = bal_flx + tracer_flx_netpro(c,kk)
+      endif
       if(abs(errtracer(c,kk))>err_min)then
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), 'err=',errtracer(c,kk), 'col=',c
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo
-    if(c==5657)then
-       print*,'c mas',bal_beg,bal_end
-    endif 
+    if(c==5663)then
+      atw=natomw
+      print*,'trc',bal_beg*atw,bal_end*atw
+      print*,'netp',bal_flx *atw 
+    endif
     call tracerflux_vars%Temporal_average(c,dtime)
   enddo
   

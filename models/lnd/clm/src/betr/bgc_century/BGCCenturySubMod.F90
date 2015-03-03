@@ -773,7 +773,7 @@ module BGCCenturySubMod
         err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
       endif
     enddo
-    if(c==5657)print*,'err',err, hr*dtime
+    if(c==5663)print*,'err',err, hr*dtime
   enddo
   
   end associate

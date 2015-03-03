@@ -376,7 +376,10 @@ contains
       ! carbon flux that must be accounted for through downregulation
       plant_calloc(p) = plant_nalloc(p) * (c_allometry(p)/n_allometry(p))
       excess_cflux(p) = availc(p) - plant_calloc(p)
-
+      if(c==5663)then
+        print*,'callc',plant_calloc(p)
+        print*,'excc',excess_cflux(p)
+      endif
       ! reduce gpp fluxes due to N limitation
       if (gpp(p) > 0.0_r8) then
          downreg(p) = excess_cflux(p)/gpp(p)

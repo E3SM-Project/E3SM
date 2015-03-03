@@ -217,14 +217,16 @@ contains
          endif   
       endif
    enddo
-   
+      
    if(nJ>0)then
       pmax=min(1._r8,pmax**(nJ))
+
+
       !solve the gradient modifier function
       mbkks_data%nJ=nJ
       mbkks_data%iJ=1._r8/nJ
-      if(pmax==0._r8)then
-        pscal=0._r8
+      if(pmax<1.e-8_r8)then
+        pscal=pmax
       else
         pscal=GetGdtScalar(aj,nJ,pmax)
         pscal=pscal**(1._r8/nJ)
