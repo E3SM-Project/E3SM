@@ -87,6 +87,7 @@ module CNCarbonStateType
      real(r8), pointer :: totsomc_1m_col           (:)     ! col (gC/m2) total soil organic matter carbon to 1 meter
      real(r8), pointer :: totecosysc_col           (:)     ! col (gC/m2) total ecosystem carbon, incl veg but excl cpool
      real(r8), pointer :: totcolc_col              (:)     ! col (gC/m2) total column carbon, incl veg and cpool
+     real(r8), pointer :: totabgc_col              (:)     ! col (gC/m2) total column above ground carbon, excluding som 
 
      ! Balance checks
      real(r8), pointer :: begcb_patch              (:)     ! patch carbon mass, beginning of time step (gC/m**2)
@@ -202,6 +203,7 @@ contains
     allocate(this%totpftc_col              (begc :endc))                   ;     this%totpftc_col              (:)   = nan
     allocate(this%totvegc_col              (begc :endc))                   ;     this%totvegc_col              (:)   = nan
 
+    allocate(this%totabgc_col              (begc :endc))                   ;     this%totabgc_col              (:)   = nan
     allocate(this%decomp_cpools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))  
     this%decomp_cpools_vr_col(:,:,:)= nan
 
