@@ -35,6 +35,7 @@
   integer, public :: lspectoo_pcage(maxspec_pcage)
 
   real(r8), parameter, public :: n_so4_monolayers_pcage = 8.0_r8
+
 ! number of so4(+nh4) monolayers needed to "age" a carbon particle
 
   real(r8), parameter, public :: &
