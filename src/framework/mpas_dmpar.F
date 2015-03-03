@@ -817,8 +817,10 @@ include 'mpif.h'
       integer, intent(out) :: local_start !< Output: Starting index in local range
       integer, intent(out) :: local_end !< Output: Ending index in local range
 
-      local_start = nint(real(dminfo % my_proc_id) * real(global_end - global_start + 1) / real(dminfo % nprocs)) + 1
-      local_end   = nint(real(dminfo % my_proc_id + 1) * real(global_end - global_start + 1) / real(dminfo % nprocs)) 
+      local_start = nint(real(dminfo % my_proc_id,R8KIND) * real(global_end - global_start + 1,R8KIND) &
+                       / real(dminfo % nprocs,R8KIND)) + 1
+      local_end   = nint(real(dminfo % my_proc_id + 1,R8KIND) * real(global_end - global_start + 1,R8KIND) &
+                       / real(dminfo % nprocs,R8KIND)) 
 
    end subroutine mpas_dmpar_get_index_range!}}}
 
