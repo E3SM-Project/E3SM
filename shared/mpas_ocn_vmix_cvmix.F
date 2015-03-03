@@ -135,17 +135,18 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer, pointer :: index_vertNonLocalFluxTemp
 
-      integer, pointer :: config_cvmix_kpp_niterate
       logical, pointer :: config_use_cvmix_shear, config_use_cvmix_convection, config_use_cvmix_kpp
       logical, pointer :: config_use_cvmix_fixed_boundary_layer
+      real (kind=RKIND), pointer :: config_cvmix_kpp_stop_OBL_search, config_cvmix_kpp_criticalBulkRichardsonNumber
       real (kind=RKIND), pointer :: config_cvmix_kpp_boundary_layer_depth
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
       integer :: k, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL
       integer, pointer :: nVertLevels, nCells
-      real (kind=RKIND) :: r, layerSum
+      real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop
       real (kind=RKIND), dimension(:), allocatable :: sigma, Nsqr_iface, turbulentScalarVelocityScale, tmp
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed
+      logical :: bulkRichardsonFlag
 
       real (kind=RKIND), pointer :: config_cvmix_background_viscosity, config_cvmix_background_diffusion
 
@@ -168,7 +169,6 @@ contains
          timeLevel = 1
       end if
 
-      !     write(stdoutUnit,*) 'TDR: ocn_vmix_coefs_cvmix_build enter'
       !
       ! only build up viscosity/diffusivity if CVMix is turned on
       !
@@ -179,7 +179,8 @@ contains
       !
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_background_viscosity', config_cvmix_background_viscosity)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_background_diffusion', config_cvmix_background_diffusion)
-      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_niterate', config_cvmix_kpp_niterate)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_stop_OBL_search', config_cvmix_kpp_stop_OBL_search)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_criticalBulkRichardsonNumber', config_cvmix_kpp_criticalBulkRichardsonNumber)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_shear', config_use_cvmix_shear)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_convection', config_use_cvmix_convection)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
@@ -312,31 +313,18 @@ contains
          cvmix_variables % WaterDensity_cntr => density(:,iCell)
          cvmix_variables % AdiabWaterDensity_cntr => displacedDensity(:,iCell)
 
-         ! eliminate 2dz mode from Ri
+         ! fill Ri
          RiSmoothed(1:nVertLevels) = RiTopOfCell(1:nVertLevels,iCell)
          RiSmoothed(nVertLevels+1) = RiSmoothed(nVertLevels)
          do k=2,maxLevelCell(iCell)
             ! For input to cvmix, Richardson number should be positive.
-            tmp(k) = max(0.0, (RiSmoothed(k-1)+2*RiSmoothed(k)+RiSmoothed(k+1))/4.0 )
+             RiSmoothed(k)=max(0.0, RiSmoothed(k))
          enddo
-         k=1
-         tmp(k)=tmp(k+1)
-         k=maxLevelCell(iCell)+1
-         tmp(k:nVertLevels+1)=tmp(k-1)
-         RiSmoothed(:) = tmp(:)
          cvmix_variables%ShearRichardson_iface => RiSmoothed
 
-         ! eliminate 2dz mode from BVF
+         ! fill BVF
          BVFSmoothed(1:nVertLevels) = BruntVaisalaFreqTop(1:nVertLevels,iCell)
          BVFSmoothed(nVertLevels+1) = BVFSmoothed(nVertLevels)
-     !   do k=2,maxLevelCell(iCell)
-     !      tmp(k) = (BVFSmoothed(k-1)+2*BVFSmoothed(k)+BVFSmoothed(k+1))/4.0
-     !   enddo
-     !   k=1
-     !   tmp(k)=tmp(k+1)
-     !   k=maxLevelCell(iCell)+1
-     !   tmp(k:nVertLevels+1)=tmp(k-1)
-     !   BVFSmoothed(:) = tmp(:)
          cvmix_variables%SqrBuoyancyFreq_iface => BVFSmoothed
 
          ! fill the intent(in) KPP
@@ -377,7 +365,7 @@ contains
          ! call kpp ocean mixed layer scheme
          if (cvmixKPPOn) then
 
-            ! copy data into cvmix_variables, then iterate
+            ! copy data into cvmix_variables
             cvmix_variables % Mdiff_iface(:)=vertViscTopOfCell(:,iCell)
             cvmix_variables % Tdiff_iface(:)=vertDiffTopOfCell(:,iCell)
 
@@ -395,7 +383,11 @@ contains
 
               ! compute bulk Richardson number
               ! assume boundary layer depth is at bottom of every kIndexOBL cell
-              do kIndexOBL=1,maxLevelCell(iCell)
+              bulkRichardsonNumberStop = config_cvmix_kpp_stop_OBL_search * config_cvmix_kpp_criticalBulkRichardsonNumber
+              bulkRichardsonNumber(:,iCell) = bulkRichardsonNumberStop - 1.0
+              kIndexOBL=1
+              bulkRichardsonFlag = .false.
+              do while (.not.bulkRichardsonFlag)
 
                  ! set OBL at bottome of kIndexOBL cell for computation of bulk Richardson number
                  cvmix_variables % BoundaryLayerDepth = cvmix_variables % zw_iface(kIndexOBL+1)
@@ -426,8 +418,15 @@ contains
                  ! each level of bulk Richardson is computed as if OBL resided at bottom of that level
                  bulkRichardsonNumber(kIndexOBL,iCell) = cvmix_variables % BulkRichardson_cntr(kIndexOBL)
   
-               end do
-  
+                 ! test to see if search should be ended
+                 if(kIndexOBL.eq.maxLevelCell(iCell)) bulkRichardsonFlag=.true.
+                 if(bulkRichardsonNumber(kIndexOBL,iCell).gt.bulkRichardsonNumberStop) bulkRichardsonFlag=.true.
+
+                 ! move downward one level
+                 kIndexOBL = kIndexOBL + 1
+
+               enddo ! do while (.not.bulkRichardsonFlag)
+
                call cvmix_kpp_compute_OBL_depth(  &
                     bulkRichardsonNumber(1:nVertLevels,iCell), &
                     cvmix_variables % zw_iface(1:nVertLevels+1), &
@@ -605,7 +604,8 @@ contains
       character (len=StrKIND), pointer :: config_cvmix_kpp_matching, config_cvmix_kpp_interpolationOMLType
       logical, pointer :: config_cvmix_kpp_EkmanOBL, config_cvmix_kpp_MonObOBL
       real (kind=RKIND), pointer :: config_cvmix_kpp_criticalBulkRichardsonNumber, &
-                                    config_cvmix_kpp_surface_layer_extent
+                                    config_cvmix_kpp_surface_layer_extent, &
+                                    config_cvmix_kpp_stop_OBL_search
       !
       ! assume no errors during initialization and set to 1 when error is encountered
       !
@@ -630,6 +630,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_double_diffusion', config_use_cvmix_double_diffusion)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_criticalBulkRichardsonNumber', config_cvmix_kpp_criticalBulkRichardsonNumber)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_stop_OBL_search', config_cvmix_kpp_stop_OBL_search)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_interpolationOMLType', config_cvmix_kpp_interpolationOMLType)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_interpolationOMLType', config_cvmix_kpp_interpolationOMLType)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_EkmanOBL', config_cvmix_kpp_EkmanOBL)
