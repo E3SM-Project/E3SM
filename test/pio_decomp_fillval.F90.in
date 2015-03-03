@@ -90,7 +90,8 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
   type(io_desc_t) :: iodesc
   integer, dimension(:), allocatable :: compdof, compdof_rel_disps
   integer :: compdof_sz
-  PIO_TF_FC_DATA_TYPE, dimension(VEC_LOCAL_SZ) :: wbuf, rbuf, exp_val
+  PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: wbuf
+  PIO_TF_FC_DATA_TYPE, dimension(VEC_LOCAL_SZ) :: rbuf, exp_val
   ! The buffer fillvalue to be used when writing data
   PIO_TF_FC_DATA_TYPE, PARAMETER :: BUF_FILLVAL = -2
   integer, dimension(1) :: dims
@@ -105,6 +106,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
   ! implicitly stated (by not specifying them rather than filling it with 0s)
   compdof_sz = min(pio_tf_world_rank_+1, VEC_LOCAL_SZ) 
   allocate(compdof(compdof_sz))
+  allocate(wbuf(compdof_sz))
   allocate(compdof_rel_disps(compdof_sz))
 
   do i=1,compdof_sz
@@ -166,6 +168,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
   end if
 
   call PIO_freedecomp(pio_tf_iosystem_, iodesc)
+  deallocate(wbuf)
   deallocate(compdof)
   deallocate(compdof_rel_disps)
 PIO_TF_AUTO_TEST_SUB_END nc_write_1d_implicit_fval
