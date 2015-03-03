@@ -902,7 +902,7 @@ contains
     
         smin_no3_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_no3x)*natomw
         smin_nh4_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_nh3x)*natomw
-      
+        
         k = lit1; decomp_cpools_vr(c,j,i_met_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
         k = lit2; decomp_cpools_vr(c,j,i_cel_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
         k = lit3; decomp_cpools_vr(c,j,i_lig_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw

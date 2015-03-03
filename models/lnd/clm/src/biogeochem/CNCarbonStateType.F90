@@ -2806,10 +2806,7 @@ contains
 
     end do
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%totpftc_patch(bounds%begp:bounds%endp), &
-         this%totpftc_col(bounds%begc:bounds%endc))
-    
+
     call p2c(bounds, num_soilc, filter_soilc, &
          this%totpftc_patch(bounds%begp:bounds%endp), &
          this%totpftc_col(bounds%begc:bounds%endc))
@@ -2992,6 +2989,7 @@ contains
             this%totprodc_col(c) + &
             this%seedc_col(c)    + &
             this%ctrunc_col(c)
+            
        this%totabgc_col(c) = &
             this%totpftc_col(c)  + &
             this%totprodc_col(c) + &

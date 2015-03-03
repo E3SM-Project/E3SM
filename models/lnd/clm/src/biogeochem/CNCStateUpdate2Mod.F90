@@ -74,6 +74,7 @@ contains
 
          end do
         end do
+        
       endif
       ! patch loop
       do fp = 1,num_soilp
