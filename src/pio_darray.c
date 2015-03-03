@@ -620,6 +620,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
    switch(file->iotype){
    case PIO_IOTYPE_PNETCDF:
+   case PIO_IOTYPE_NETCDF:
+   case PIO_IOTYPE_NETCDF4P:
+   case PIO_IOTYPE_NETCDF4C:
      //     printf("%s %d \n",__FILE__,__LINE__);
      if(iodesc->rearranger == PIO_REARR_SUBSET && iodesc->needsfill &&
 	iodesc->holegridsize>0){
@@ -639,16 +642,12 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	   }
 	 }
        }
-             
        ierr = pio_write_darray_multi_nc(file, nvars, vid,  
 					iodesc->ndims, iodesc->basetype, iodesc->gsize,
 					iodesc->maxfillregions, iodesc->fillregion, iodesc->holegridsize,
 					iodesc->holegridsize, iodesc->num_aiotasks,
 					fillbuf, frame);
      }
-   case PIO_IOTYPE_NETCDF:
-   case PIO_IOTYPE_NETCDF4P:
-   case PIO_IOTYPE_NETCDF4C:
 
      ierr = pio_write_darray_multi_nc(file, nvars, vid,  
 				      iodesc->ndims, iodesc->basetype, iodesc->gsize,
@@ -1237,9 +1236,9 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
   if(usage > maxusage){
     maxusage = usage;
   }
-  if(force && file->iosystem->iomaster){
-    printf("%s %d %ld\n",__FILE__,__LINE__,maxusage);
-  }
+  //  if(force && file->iosystem->iomaster){
+  //   printf("%s %d %ld\n",__FILE__,__LINE__,maxusage);
+  // }
 
 
   if(file->nreq>PIO_MAX_REQUESTS){
