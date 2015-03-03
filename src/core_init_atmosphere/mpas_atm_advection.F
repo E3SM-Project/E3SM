@@ -432,9 +432,9 @@ module atm_advection
       real (kind=RKIND) :: s                ! Semiperimeter of the triangle
       real (kind=RKIND) :: sin_angle
    
-      a = acos(max(min(bx*cx + by*cy + bz*cz,1.0_RKIND),-1.0_RKIND))      ! Eqn. (3)
-      b = acos(max(min(ax*cx + ay*cy + az*cz,1.0_RKIND),-1.0_RKIND))      ! Eqn. (2)
-      c = acos(max(min(ax*bx + ay*by + az*bz,1.0_RKIND),-1.0_RKIND))      ! Eqn. (1)
+      a = arc_length(bx, by, bz, cx, cy, cz)
+      b = arc_length(ax, ay, az, cx, cy, cz)
+      c = arc_length(ax, ay, az, bx, by, bz)
    
       ABx = bx - ax
       ABy = by - ay
