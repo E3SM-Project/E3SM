@@ -371,16 +371,16 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	   }
 	   ierr = nc_var_par_access(ncid, vid[nv], NC_COLLECTIVE);
 
-	   if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
+	   if(basetype == MPI_DOUBLE ||basetype == MPI_REAL8){
 	     ierr = nc_put_vara_double (ncid, vid[nv],(size_t *) start,(size_t *) count, (const double *) bufptr); 
-	   } else if(iodesc->basetype == MPI_INTEGER){
+	   } else if(basetype == MPI_INTEGER){
 	     ierr = nc_put_vara_int (ncid, vid[nv], (size_t *) start, (size_t *) count, (const int *) bufptr); 
-	   }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
+	   }else if(basetype == MPI_FLOAT || basetype == MPI_REAL4){
 	     ierr = nc_put_vara_float (ncid, vid[nv], (size_t *) start, (size_t *) count, (const float *) bufptr); 
 	   }else{
-	     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
+	     fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) basetype);
 	   }
-
+	 }
 	 break;
        case PIO_IOTYPE_NETCDF4C:
 #endif
