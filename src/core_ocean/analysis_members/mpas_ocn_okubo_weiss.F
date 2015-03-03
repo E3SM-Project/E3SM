@@ -17,61 +17,6 @@
 !
 !-----------------------------------------------------------------------
 
-module Sort
-   use iso_c_binding
-   use mpas_grid_types
-
-   implicit none
-
-#ifdef SINGLE_PRECISION
-   integer, parameter :: C_REAL = C_FLOAT
-   integer, parameter :: SIZE_REAL = 4
-#else
-   integer, parameter :: C_REAL = C_DOUBLE
-   integer, parameter :: SIZE_REAL = 8
-#endif
-
-   interface
-      subroutine qsort(array, elem_count, elem_size, compare) bind(C, name="qsort")!{{{
-         import
-         type(c_ptr), value       :: array
-         integer(c_size_t), value :: elem_count
-         integer(c_size_t), value :: elem_size
-         type(c_funptr), value    :: compare ! int (*compare)(const void*, const void*)
-      end subroutine qsort!}}}
-   end interface
-
-   public :: compareIntDescending, compareRealDescending
-
-   contains
-
-   integer(c_int) function compareIntDescending(a, b) bind(C)!{{{
-      integer(c_int), intent(in) :: a, b
-
-      if (a < b) then
-         compareIntDescending = 1
-      else if (a == b) then
-         compareIntDescending = 0
-      else
-         compareIntDescending = -1
-      end if
-   end function compareIntDescending!}}}
-
-   integer(c_int) function compareRealDescending( a, b ) bind(C)!{{{
-      real (C_REAL), intent(in) :: a, b
-
-      if (a < b) then
-         compareRealDescending = 1
-      else if (a == b) then
-         compareRealDescending = 0
-      else
-         compareRealDescending = -1
-      end if
-   end function compareRealDescending!}}}
-
-end module Sort
-
-
 module ocn_okubo_weiss
 
    use mpas_grid_types
@@ -90,23 +35,13 @@ module ocn_okubo_weiss
    private
    save
 
-   interface
-      subroutine compute_ev_2(A, wr, wi)!{{{
-         use iso_c_binding, only: c_double
-         real (c_double), dimension(2,2) :: A
-         real (c_double), dimension(2) :: wr
-         real (c_double), dimension(2) :: wi
-      end subroutine compute_ev_2!}}}
-   end interface
-
-   interface
-      subroutine compute_ev_3(A, wr, wi)!{{{
-         use iso_c_binding, only: c_double
-         real (c_double), dimension(3,3) :: A
-         real (c_double), dimension(3) :: wr
-         real (c_double), dimension(3) :: wi
-      end subroutine compute_ev_3!}}}
-   end interface
+#ifdef SINGLE_PRECISION
+   integer, parameter :: C_REAL = C_FLOAT
+   integer, parameter :: SIZE_REAL = 4
+#else
+   integer, parameter :: C_REAL = C_DOUBLE
+   integer, parameter :: SIZE_REAL = 8
+#endif
 
    !--------------------------------------------------------------------
    !
@@ -132,6 +67,34 @@ module ocn_okubo_weiss
    ! Private module variables
    !
    !--------------------------------------------------------------------
+
+   interface
+      subroutine qsort(array, elem_count, elem_size, compare) bind(C, name="qsort")!{{{
+         import
+         type(c_ptr), value       :: array
+         integer(c_size_t), value :: elem_count
+         integer(c_size_t), value :: elem_size
+         type(c_funptr), value    :: compare ! int (*compare)(const void*, const void*)
+      end subroutine qsort!}}}
+   end interface
+
+   interface
+      subroutine compute_ev_2(A, wr, wi)!{{{
+         use iso_c_binding, only: c_double
+         real (c_double), dimension(2,2) :: A
+         real (c_double), dimension(2) :: wr
+         real (c_double), dimension(2) :: wi
+      end subroutine compute_ev_2!}}}
+   end interface
+
+   interface
+      subroutine compute_ev_3(A, wr, wi)!{{{
+         use iso_c_binding, only: c_double
+         real (c_double), dimension(3,3) :: A
+         real (c_double), dimension(3) :: wr
+         real (c_double), dimension(3) :: wi
+      end subroutine compute_ev_3!}}}
+   end interface
 
    type (timer_node), pointer :: amOkuboWeissTimer
    type (timer_node), pointer :: amOWCCTimer, &
@@ -1261,7 +1224,6 @@ contains
 
    subroutine ocn_sort_eddy_stats(stats, numRecords, recordLength)!{{{
       use iso_c_binding
-      use Sort
 
       integer, intent(in) :: numRecords, recordLength
       real (kind=RKIND), dimension(numRecords*recordLength), intent(inout), target :: stats
@@ -1273,6 +1235,31 @@ contains
       call qsort(c_loc(stats(1)), elemCount, elemSize, c_funloc(compareRealDescending))
 
    end subroutine ocn_sort_eddy_stats!}}}
+
+
+   integer(c_int) function compareIntDescending(a, b) bind(C)!{{{
+      integer(c_int), intent(in) :: a, b
+
+      if (a < b) then
+         compareIntDescending = 1
+      else if (a == b) then
+         compareIntDescending = 0
+      else
+         compareIntDescending = -1
+      end if
+   end function compareIntDescending!}}}
+
+   integer(c_int) function compareRealDescending( a, b ) bind(C)!{{{
+      real (C_REAL), intent(in) :: a, b
+
+      if (a < b) then
+         compareRealDescending = 1
+      else if (a == b) then
+         compareRealDescending = 0
+      else
+         compareRealDescending = -1
+      end if
+   end function compareRealDescending!}}}
 
 
 !***********************************************************************
@@ -1314,7 +1301,7 @@ contains
       open(fileID, file=trim(config_okubo_weiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
       
       if (use_lat_lon_coords) then
-         write (fileID, '(10A)') '"eddy ID, number of cells", "volume sum, m^3", "average longitude, degrees", "average latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average meridional velocity, m/s", "average vertical velocity, m/s"'  
+         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average longitude, degrees", "average latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average meridional velocity, m/s", "average vertical velocity, m/s"'  
       else
          write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average x-position, m", "average y-position, m", "average depth, m", "average x-velocity, m/s", "average y-velocity, m/s", "average z-velocity, m/s"' 
       end if
