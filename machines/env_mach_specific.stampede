@@ -1,0 +1,75 @@
+#! /bin/csh -f
+
+# -------------------------------------------------------------------------
+# Stampede build specific settings
+# -------------------------------------------------------------------------
+
+set COMPILER = `./xmlquery COMPILER -value`
+set MPILIB   = `./xmlquery MPILIB   -value`
+
+source /etc/profile.d/tacc_modules.csh
+
+module purge
+module load TACC TACC-paths Linux cluster cluster-paths perl cmake
+
+echo "**These are the modules loaded before compiler and mpi are selected**"
+module list
+
+if ( $COMPILER == "intel" || $COMPILER == "intel14") then
+  echo "Buidling for Xeon Host"
+  if ( $COMPILER == "intel" ) then
+    module load intel/13.1.1.163
+    if( $MPILIB != "mpi-serial" ) then
+      module load pnetcdf/1.3.1
+    endif 
+  else if ($COMPILER == "intel14") then
+    module load intel/14.0.1.106
+  endif
+  if ( $MPILIB == "mvapich2") then
+    module load mvapich2
+  else if ( $MPILIB == "impi") then
+     module unload mvapich2
+     if ( $COMPILER == "intel14" ) then
+     module load impi/4.1.2.040
+     else 	
+     module load impi
+     endif
+  endif
+  if ( $COMPILER == "intel14" ) then
+    setenv TACC_NETCDF_DIR /work/02463/srinathv/netcdf/4.2.1.1/intel/14.0.1.106/snb
+  else
+    module load hdf5
+    module load netcdf
+  endif
+else if ( $COMPILER == "intelmic" || $COMPILER == "intelmic14" ) then
+  echo "Building for Xeon Phi"
+  if ( $COMPILER == "intelmic" ) then
+    module load intel/13.1.1.163
+  else if ( $COMPILER == "intelmic14" ) then
+    module load intel/14.0.1.106
+  endif
+  if ( $MPILIB == "impi") then
+      module unload mvapich2
+      if ( $COMPILER == "intelmic14" ) then
+	module load impi/4.1.2.040
+      else
+	module load impi
+      endif
+  endif
+  if ( $COMPILER == "intelmic14" ) then
+    setenv TACC_NETCDF_DIR /work/02463/srinathv/netcdf/4.2.1.1/intel/14.0.1.106/mic
+  else
+    setenv TACC_NETCDF_DIR /work/02463/srinathv/netcdf/4.2.1.1/intel/13.1.1.163/mic
+  endif
+endif
+
+#transfer netcdf from stampdede var to cesm var
+setenv NETCDF_PATH $TACC_NETCDF_DIR
+module list
+
+# -------------------------------------------------------------------------
+# Build and runtime environment variables - edit before the initial build 
+# -------------------------------------------------------------------------
+limit stacksize unlimited
+limit datasize  unlimited
+

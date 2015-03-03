@@ -1,0 +1,442 @@
+#!/usr/bin/env perl
+
+#-----------------------------------------------------------------------------------------------
+# cesm_setup - create the $caseroot/$case.run script and user_nl_xxx component namelist mod files
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+use Cwd;
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+
+#-----------------------------------------------------------------------------------------------
+# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
+# descriptions to be printed to STDOUT before the error messages start.
+
+*STDOUT->autoflush();                  
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains this script.
+
+my $caseroot = getcwd();   # current working directory
+$ENV{CASEROOT}=$caseroot;  # put this in environment
+my $eol = "\n";
+
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+
+SYNOPSIS
+     Creates Macros file for target machine if it does not exist
+     Creates user_nl_xxx files for target components (and number of instances) if 
+        they do not exist
+     Creates batch run script (case.run) for target machine
+
+USAGE
+     cesm_setup [options]
+OPTIONS
+     -help [or -h]        Print usage to STDOUT.
+     -clean               Removes the batch run script for target machine	
+                          Removes the Macros file for the target machine and target MPI library
+                          If the testmode argument is present then keep the test 
+			  test script if it is present - otherwise remove it
+                          The user_nl_xxx files are never removed by cesm_setup - 
+                          you must remove them manually
+     -testmode            Keeps the test script when the -clean argument is used
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = ();
+
+GetOptions(
+    "h|help"     => \$opts{'help'},
+    "clean"      => \$opts{'clean'}, 	
+    "testmode"   => \$opts{'testmode'}, 	
+)  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Check for unparsed argumentss
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+
+my $clean = 0;
+if ($opts{'clean'}) {
+    $clean = 1;
+}
+
+my $testmode = 0;
+if ($opts{'testmode'}) {
+    $testmode = 1;
+}
+
+my $dirs = "$caseroot/Tools";
+unshift @INC, $dirs;
+require SetupTools;
+
+my %xmlvars=();
+SetupTools::getxmlvars($caseroot, \%xmlvars);
+
+# Check that userdefine settings are specified before expanding variable
+my $fail_setup = 0;
+my $strmacros;
+my $strbuild;
+my $strrun;
+foreach my $attr (keys %xmlvars) {
+    if ( $xmlvars{$attr} =~ m/USERDEFINED_required_macros/ ) {
+	$strmacros.="ERROR: must set xml variable $attr to generate Macros file \n";
+	$fail_setup = 1;
+    }
+    if ( $xmlvars{$attr} =~ m/USERDEFINED_required_build/ ) {
+	$strbuild.="ERROR: must set xml variable $attr to build the model \n";
+	$fail_setup = 1;
+    }
+    if ( $xmlvars{$attr} =~ m/USERDEFINED_required_run/ ) {
+	$strrun.="ERROR: must set xml variable $attr to run the model \n";
+	$fail_setup = 1;
+    }
+    $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
+}
+if ($fail_setup) { 
+    print "$strmacros" if(defined($strmacros));
+    print "$strbuild" if(defined($strbuild));
+    print "$strrun" if(defined($strrun));
+    die "Correct above and issue cesm_setup again \n";
+}
+
+#-----------------------------------------------------------------------------------------------
+# Create batch script 
+#-----------------------------------------------------------------------------------------------
+
+if (! $clean ) {
+
+    my $mach = $xmlvars{'MACH'};
+    my $case = $xmlvars{'CASE'};
+
+    #--------------------------------------------------------------------------
+    # Create Macros file only if it does not exist
+    #--------------------------------------------------------------------------
+    if (!-f "./Macros") {
+	print "Creating Macros file for $mach$eol";
+	SetupTools::set_compiler($xmlvars{OS},"$xmlvars{CCSM_MACHDIR}/config_compilers.xml",
+				 $xmlvars{COMPILER},$xmlvars{MACH}, $xmlvars{MPILIB}, 0, 'Macros'  );
+    } else {
+	print "Macros script already created ...skipping$eol ";
+    }
+    # Set tasks to 1 if mpi-serial library
+    if($xmlvars{MPILIB} eq "mpi-serial"){
+	foreach my $attr (keys %xmlvars){
+	    if($attr =~ /NTASKS_/){
+		$xmlvars{$attr}=1;
+		my $sysmod = "./xmlchange -file env_mach_pes.xml -id $attr -val 1";
+		system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+		
+	    }
+	}
+    }
+
+    my $ninst_fail = 0;    
+    foreach my $comp (qw(ATM LND ROF OCN ICE GLC WAV)){
+	my $ninst = "NINST_".$comp;
+	my $ntasks = "NTASKS_".$comp;
+	if ($xmlvars{$ninst} > $xmlvars{$ntasks}) {
+	    if($xmlvars{$ntasks}==1){
+		system("./xmlchange $ntasks=$xmlvars{$ninst}");
+		$xmlvars{$ntasks}=$xmlvars{$ninst};
+	    }else{
+		die "ERROR cesm_setup: $comp NINST value greater than $comp NTASKS";
+	    }
+	}
+    }
+
+    if (-f "$caseroot/$case.run") {
+	print "Machine/Decomp/Pes configuration has already been done ...skipping$eol ";
+
+    } else {
+
+	my $sysmod = "./Tools/check_lockedfiles";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
+	$sysmod = "./xmlchange -file env_mach_pes.xml -id TOTALPES -val $pestot";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+        # Compute cost based on PE count
+	my $pval = 1;
+	my $pcnt = 0;
+	while ($pval < $pestot) {
+	    $pval = $pval * 2;
+	    #$pcnt = $pcnt + 10;      # (perfect scaling)
+	    $pcnt = $pcnt + 6;       # (scaling like sqrt(6/10))
+	}
+	my $pcost = 3 - int($pcnt / 10); # (3 is 64 with 6)
+
+        # Compute cost based on DEBUG
+	my $ccsm_dcost = 0;
+	if ($xmlvars{'DEBUG'} == "TRUE") {$ccsm_dcost = 3;}
+
+        # Compute cost based on run length 
+        # For simplicity, we use a heuristic just based on STOP_OPTION (not considering
+        # STOP_N), and only deal with options longer than ndays
+        my $ccsm_lcost = 0;
+        if ($xmlvars{'STOP_OPTION'} =~ /nmonth/) {
+           # N months costs 30x as much as N days; since cost is based on log-base-2, add 5
+           $ccsm_lcost = 5;
+        }
+        elsif ($xmlvars{'STOP_OPTION'} =~ /nyear/) {
+           # N years costs 365x as much as N days; since cost is based on log-base-2, add 9
+           $ccsm_lcost = 9;
+        }
+           
+	my $CCSM_CCOST = $xmlvars{'CCSM_CCOST'};
+	my $CCSM_GCOST = $xmlvars{'CCSM_GCOST'};
+	my $CCSM_TCOST = $xmlvars{'CCSM_TCOST'};
+	my $CCSM_MCOST = $xmlvars{'CCSM_MCOST'};
+	my $estcost = $CCSM_CCOST + $CCSM_GCOST + $CCSM_MCOST + $CCSM_TCOST + $pcost + $ccsm_dcost + $ccsm_lcost;
+	
+	my $sysmod = "./xmlchange -file env_mach_pes.xml -id TOTALPES -val $pestot";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+
+	$sysmod = "./xmlchange -file env_mach_pes.xml -id CCSM_PCOST -val $pcost";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+
+	$sysmod = "./xmlchange -file env_mach_pes.xml -id CCSM_ESTCOST -val $estcost";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	#--------------------------------------------------------------
+	# create batch file
+	#--------------------------------------------------------------
+	print "Creating batch script $case.run $eol";
+	my $fh = new IO::File;
+	my $file = "${caseroot}/${case}.run";
+	
+	$sysmod = "env PHASE=set_batch CASEROOT=$caseroot ./Tools/mkbatch.${mach}";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	$sysmod = "${caseroot}/Tools/taskmaker.pl -document >> $file";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	$sysmod = "echo cd $caseroot >> $file";  
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	$sysmod = "cat ${caseroot}/Tools/cesm_prerun_setup >> $file";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	$sysmod = "cat ${caseroot}/Tools/cesm_buildnml >> $file";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+
+	$sysmod = "cat ${caseroot}/Tools/cesm_prestage >> $file";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	$sysmod = "cat ${caseroot}/Tools/cesm_buildnml >> $file";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	$sysmod = "env PHASE=set_exe CASE=$case CASEROOT=$caseroot ./Tools/mkbatch.${mach}";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	$sysmod = "cat ${caseroot}/Tools/cesm_postrun_setup >> $file";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	$fh->close();
+	
+	$sysmod = "chmod 755 $file";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	
+	# Make a copy of env_mach_pes.xml in order to be able 
+	# to check that it does not change once cesm_setup is invoked
+	if (! -e "LockedFiles/env_mach_pes.xml.locked") {
+	    $sysmod = "cp env_mach_pes.xml  LockedFiles/env_mach_pes.xml.locked";
+	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	    print "Locking file env_mach_pes.xml $eol";
+	}
+    }
+
+    #--------------------------------------------------------------------------
+    # Create user_nl files for the required number of instances
+    #--------------------------------------------------------------------------
+    if (!-f "./user_nl_cpl") {
+	print "Creating user_nl_xxx files for components and cpl$eol";
+    }
+    my @models = qw( ATM LND ICE OCN GLC ROF WAV );
+    my @multi_support = qw(cam datm clm dlnd cice dice pop2 docn rtm drof cism ww3);
+    # loop over target models
+    foreach my $model (@models) {
+	# what is component for target model
+	my $comp = $xmlvars{"COMP_${model}"};
+
+	# loop over components 
+	foreach my $comp_multi (@multi_support) {
+	    # determine if component is one that has multi-instance support and 
+	    # if have multi-instance support - then create appropriate user_nl_fiels
+	    if ($comp eq $comp_multi) {
+		build_usernl_files($caseroot, $model, $comp);
+		last;
+	    }
+	}
+	if ($comp eq "cism")  {
+	    my $sysmod = "$caseroot/Buildconf/cism.template $caseroot";
+	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	}
+    }
+    build_usernl_files($caseroot, "drv", "cpl");
+
+    #--------------------------------------------------------------------------
+    # Run preview namelists for scripts
+    #--------------------------------------------------------------------------
+    print "Running preview_namelist script $eol";
+    my $sysmod = "$caseroot/preview_namelists";
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    print "See ./CaseDoc for component namelists $eol";
+    print "If an old case build already exists, might want to run ${case}.clean_build before building $eol";
+
+    #--------------------------------------------------------------------------
+    # Create test script if appropriate
+    #--------------------------------------------------------------------------
+    if( -e "$caseroot/env_test.xml") {
+	if ( -e "$caseroot/$case.test") {
+	    # do nothing
+	} else {
+	    print "Starting testcase_setup \n";
+	    my $sysmod = "./testcase_setup -caseroot $caseroot";
+	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	    print "Finished testcase_setup \n";
+	}
+    }
+
+}
+    
+#-----------------------------------------------------------------------------------------------
+# Clean batch script 
+#-----------------------------------------------------------------------------------------------
+
+if ($clean) {
+
+    my $case = $xmlvars{'CASE'};
+    if (!-f "$caseroot/$case.run" ) {
+	print "clean option has already been invoked ...skipping $eol";
+	exit;
+    }
+	
+    my $sysmod;
+    my $id = `date +%y%m%d-%H%M%S`; 
+    my $backupdir = "PESetupHist/b.${id}";
+    if (!-d ${backupdir}) {
+	$sysmod = "mkdir -p ${backupdir}";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    }
+    # back up relevant files
+    $sysmod = "cp ${case}.run env_build.xml env_mach_pes.xml Macros ${backupdir}";
+    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+
+    # remove relevant files from $caseroot
+    $sysmod = "rm ./${case}.run";
+    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    $sysmod = "rm Macros";
+    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+
+    # remove relevant files from $caseroot/LockedFiels
+    my @files = <${caseroot}/LockedFiles/*build* ${caseroot}/LockedFiles/*mach_pes*>;
+    foreach my $file (@files) {
+	$sysmod = "rm $file";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    }
+
+    # only do the following if are NOT in testmode
+    if (! $testmode)  {
+	# rebuild the models (even on restart)
+	$sysmod = "./xmlchange -file env_build.xml -id BUILD_COMPLETE -val FALSE";
+	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    
+	# backup and then clean test script
+	if( -e "$caseroot/$case.test") {
+	    $sysmod = "cp ${case}.test ${backupdir}";
+	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+
+	    $sysmod = "rm ./${case}.test";
+	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	    print "Successfully cleaned test script $case.test $eol";
+	}
+    }
+
+    print "Successfully cleaned batch script $case.run $eol";
+    print "Some files have been saved to ${backupdir}$eol";
+
+    my $fh = new IO::File;
+    $fh->open(">>CaseStatus") or die "can't open file: CaseStatus\n";
+    my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
+    print $fh "cesm_setup -clean $sdate $eol";
+    $fh->close();
+
+}
+
+#-----------------------------------------------------------------------------------------------
+# Create user_nl_xxx files
+#-----------------------------------------------------------------------------------------------
+
+sub build_usernl_files {
+
+    my ($CASEROOT, $model, $comp) = @_;
+
+    my $model = uc($model);
+    my $sysmod;
+    my $CCSMROOT  = `./xmlquery CCSMROOT  -value`;
+    
+    if ($comp eq 'cpl') {
+	if ( ! -f "$CASEROOT/user_nl_${comp}" ) {
+	    my $sysmod = "cp $CCSMROOT/cime/driver_cpl/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
+	    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
+	}
+    } else {
+	my $NINST = `./xmlquery  NINST_${model} -value`;  
+	if ($NINST > 1) {
+	    my $inst_string;
+	    my $inst_counter = 1;
+	    while ($inst_counter <= $NINST) {
+		$inst_string = `printf _%04d $inst_counter`;
+		if ( ! -f "$CASEROOT/user_nl_${comp}${inst_string}" ) {
+		    if ($comp =~ /^d[ailor]/) {
+			my $sysmod = "cp $CCSMROOT/cime/models/data/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}${inst_string}";
+			system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
+		    } elsif ($comp =~ /^s[aiglor]/) {
+			# do nothing
+		    } elsif ($comp =~ /^x[aiglor]/) {
+			# do nothing
+		    } else {
+			if (-f "$CCSMROOT/components/${comp}/bld/user_nl_${comp}") {
+			    my $sysmod = "cp $CCSMROOT/components/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}${inst_string}";
+			    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
+			}
+		    }
+		}
+		$inst_counter = $inst_counter + 1;
+	    }
+	} else {
+	    if ( ! -f "$CASEROOT/user_nl_${comp}" ) {
+		if ($comp =~ /^d[ailor]/) {
+		    my $sysmod = "cp $CCSMROOT/cime/models/data/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
+		    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
+		} elsif ($comp =~ /^s[aiglor]/) {
+		    # do nothing
+		} elsif ($comp =~ /^x[aiglor]/) {
+		    # do nothing
+		} else {
+		    if (-f "$CCSMROOT/components/${comp}/bld/user_nl_${comp}") {
+			my $sysmod = "cp $CCSMROOT/components/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
+			system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
+		    }
+		}		    
+	    }
+	}
+    }
+}
+
+
+
+

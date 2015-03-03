@@ -1,0 +1,114 @@
+#! /bin/csh -f
+
+# env variables used are 
+#   CASEROOT, CASE
+#   MAX_TASKS_PER_NODE, PES_PER_NODE
+#   MODELS, NTHRDS (derived arrays)
+#   ACCOUNT, QUEUE
+#   TESTMODE
+#   CCSM_ESTCOST
+
+#################################################################################
+if ($PHASE == set_batch) then
+#################################################################################
+
+source ./Tools/ccsm_getenv || exit -1
+
+set mppsize = `${CASEROOT}/Tools/taskmaker.pl -sumonly`
+if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
+  @ mppnodes = $mppsize / ${MAX_TASKS_PER_NODE}
+  @ mppnodes = $mppnodes + 1
+  @ mppsize = $mppnodes * ${MAX_TASKS_PER_NODE}
+endif
+
+#--- Job name is first fifteen characters of case name ---
+set jobname = `echo ${CASE} | cut -c1-15`
+
+set walltime = "00:45:00"
+if ($CCSM_ESTCOST > 1) set walltime = "01:50:00"
+if ($CCSM_ESTCOST > 3 || $DEBUG == "TRUE") set walltime = "05:00:00"
+
+if ($?TESTMODE) then
+ set file = $CASEROOT/${CASE}.test 
+else
+ set file = $CASEROOT/${CASE}.run 
+endif
+if ($mppsize > 860) then
+  set partition="c2"
+  set queue="batch"
+else
+  set partition="c1"
+  set queue="debug"
+endif
+
+
+cat >! $file << EOF1
+#!/bin/csh -f
+#PBS -N ${jobname}
+#PBS -q ${queue}
+#PBS -l partition=${partition}
+#PBS -l size=${mppsize}
+#PBS -l walltime=${walltime}
+#PBS -A cpo
+#PBS -j oe
+#PBS -E 
+#PBS -d ${RUNDIR}
+#PBS -o ${RUNDIR}/${jobname}.out
+#PBS -S /bin/csh -V
+EOF1
+
+#################################################################################
+else if ($PHASE == set_exe) then
+#################################################################################
+
+set maxthrds = `./Tools/taskmaker.pl -maxthrds`
+set myaprun  = `./Tools/taskmaker.pl -aprun`
+
+cat >> ${CASEROOT}/${CASE}.run << EOF1
+sleep 25
+cd \$RUNDIR
+echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
+
+setenv OMP_NUM_THREADS ${maxthrds}
+if (\$MPILIB != "mpi-serial") then
+   aprun ${myaprun} >&! cesm.log.\$LID
+else
+   \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+endif
+wait
+
+echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+EOF1
+
+
+#################################################################################
+else if ($PHASE == set_larch) then
+#################################################################################
+
+cat >! $CASEROOT/${CASE}.l_archive << EOF1
+#! /bin/csh -f
+#PBS -N ${CASE}.l_archive
+#PBS -q xe
+#PBS -l mppwidth=0
+#PBS -l walltime=01:30:00
+#PBS -j oe
+#PBS -S /bin/csh -V
+
+cd \$DOUT_S_ROOT
+$CASEROOT/Tools/lt_archive.csh
+exit 0
+EOF1
+chmod 775 ${CASEROOT}/${CASE}.l_archive
+
+#################################################################################
+else
+#################################################################################
+
+    echo "  PHASE setting of $PHASE is not an accepted value"
+    echo "  accepted values are set_batch, set_exe and set_larch"
+    exit 1
+
+#################################################################################
+endif
+#################################################################################

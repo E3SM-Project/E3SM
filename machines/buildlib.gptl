@@ -1,0 +1,26 @@
+#! /bin/csh -f
+
+#==============================================================================
+# Purpose: Build gptl library
+#==============================================================================
+
+cd $CASEROOT
+
+set CCSMROOT	= `./xmlquery  CCSMROOT	-value `
+set GMAKE	= `./xmlquery  GMAKE	-value ` 
+
+# NOTE- (mv, 2015-01-02) SHAREDPATH is an environment variable set in 
+# the $CASE.build script
+
+setenv SHAREDPATH  $1
+setenv TIMING_DIR  $CCSMROOT/cime/timing  # location of timing directory
+setenv GPTL_DIR    $CCSMROOT/utils/gptl   # location gptl directory
+setenv GPTL_LIBDIR $SHAREDPATH/gptl
+
+echo "Copying source to CESM EXEROOT..."
+
+cd $GPTL_LIBDIR
+
+$GMAKE  -f $TIMING_DIR/Makefile install  MACFILE=$CASEROOT/Macros || exit 1
+
+exit 0
