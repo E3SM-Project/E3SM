@@ -1,12 +1,14 @@
-.SUFFIXES: .F .o
+.SUFFIXES: .F .c .o
 
 OBJS = mpas_ocn_analysis_driver.o \
        mpas_ocn_global_stats.o \
+       mpas_ocn_okubo_weiss.o \
+       mpas_ocn_okubo_weiss_eigenvalues.o \
        mpas_ocn_zonal_mean.o
 
 all: $(OBJS)
 
-mpas_ocn_analysis_driver.o: mpas_ocn_global_stats.o mpas_ocn_zonal_mean.o
+mpas_ocn_analysis_driver.o: mpas_ocn_global_stats.o mpas_ocn_okubo_weiss.o mpas_ocn_zonal_mean.o mpas_ocn_okubo_weiss_eigenvalues.o
 
 mpas_ocn_global_stats.o:
 
@@ -23,3 +25,6 @@ ifeq "$(GEN_F90)" "true"
 else
 	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) 
 endif
+
+.c.o:
+	$(CC) $(CFLAGS) $(CINCLUDES) -c $<
