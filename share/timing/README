@@ -1,0 +1,11 @@
+This directory provides interface functionality between the GPTL timing library and
+CESM.   For more information on GPTL see https://github.com/jmrosinski/GPTL
+for more information on CESM see http://www2.cesm.ucar.edu/
+
+Send feedback on the use of GPTL in CESM to the CESM forum at 
+http://forum.cgd.ucar.edu/
+
+Contributers include:
+Jim Edwards
+Pat Worley
+Jim Rosinski
