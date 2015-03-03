@@ -91,6 +91,7 @@ contains
     logical                          :: esmf_map_flag ! .true. => use esmf for mapping
     logical                          :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                          :: glc_present   ! .true. => glc is present
+    logical                          :: samegrid_go   ! .true. => samegrid ocean and glc
     character(CL)                    :: lnd_gnam      ! lnd grid
     character(CL)                    :: glc_gnam      ! glc grid
     character(CL)                    :: ocn_gnam      ! ocn grid    
@@ -162,7 +163,14 @@ contains
           write(logunit,*) ' '
           write(logunit,F00) 'Initializing mapper_SFo2g'
        end if
-       call seq_map_init_rearrolap(mapper_SFo2g, ocn(1), glc(1), 'mapper_SFo2g')
+       
+       samegrid_go = .true.
+       if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
+       
+       call seq_map_init_rcfile(mapper_SFo2g, ocn(1), glc(1), &
+       'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
+       'mapper_SFo2g initialization',esmf_map_flag)
+       
        call shr_sys_flush(logunit)       
 
     end if
