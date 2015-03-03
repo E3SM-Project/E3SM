@@ -885,7 +885,6 @@
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
-			<var name="boundaryLayerDepth"/>
 		</stream>
 		<stream name="restart"
 				type="input;output"
@@ -911,7 +910,6 @@
 			<var name="xtime"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
-			<var name="boundaryLayerDepth"/>
 		</stream>
 		<stream name="output" 
 				type="output"
