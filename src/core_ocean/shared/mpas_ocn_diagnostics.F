@@ -1263,7 +1263,7 @@ contains
        ! incorrectly diagnosing OBL to be within surface layer
        ! require boundary layer to be below the top layer
        k=max(int(indexSurfaceLayerDepth(iCell)),1)
-       bulkRichardsonNumberBuoy(1:k,iCell) = -1.0
+       bulkRichardsonNumberBuoy(1:k,iCell) = 0.0
 
       enddo
 
