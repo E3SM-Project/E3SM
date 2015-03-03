@@ -27,6 +27,7 @@ module ocn_analysis_driver
    use ocn_constants
    use ocn_global_stats
    use ocn_zonal_mean
+   use ocn_okubo_weiss
 !   use ocn_TEMPLATE
 
    implicit none
@@ -110,6 +111,7 @@ contains
 
       integer :: err_tmp
       logical, pointer :: config_use_global_stats, config_use_zonal_mean 
+      logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -124,6 +126,12 @@ contains
       call mpas_pool_get_config(configPool, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_setup_packages_zonal_mean(configPool, packagePool, err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(configPool, 'config_use_okubo_weiss', config_use_okubo_weiss)
+      if (config_use_okubo_weiss) then
+         call ocn_setup_packages_okubo_weiss(configPool, packagePool, err_tmp)
          err = ior(err, err_tmp)
       endif
 
@@ -180,6 +188,7 @@ contains
 
       integer :: err_tmp
       logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -193,6 +202,12 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_init_zonal_mean(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
+      if (config_use_okubo_weiss) then
+         call ocn_init_okubo_weiss(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
@@ -252,6 +267,7 @@ contains
 
       logical, pointer :: config_use_global_stats, config_global_stats_compute_startup
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
+      logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
 !      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
 
       err = 0
@@ -274,6 +290,14 @@ contains
          call mpas_timer_start('io_write', .false.)
          call mpas_stream_mgr_write(stream_manager, streamID='zonalMeanOutput', forceWriteNow=.true., ierr=err_tmp)
          call mpas_timer_stop('io_write')
+         err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
+      call mpas_pool_get_config(domain % configs, 'config_okubo_weiss_compute_startup', config_okubo_weiss_compute_startup)
+      if (config_use_okubo_weiss.and.config_okubo_weiss_compute_startup) then
+         call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
+         call mpas_stream_mgr_write(stream_manager, streamID='okuboWeissOutput', forceWriteNow=.true., ierr=err_tmp)
          err = ior(err, err_tmp)
       endif
 
@@ -334,6 +358,7 @@ contains
       integer :: timeLevel, err_tmp
 
       logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -347,6 +372,11 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
+      if (config_use_okubo_weiss) then
+         call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
       endif
 
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
@@ -402,6 +432,7 @@ contains
 
       integer :: timeLevel, err_tmp
       logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -418,6 +449,13 @@ contains
       if (config_use_zonal_mean) then
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='zonalMeanOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
+         endif
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
+      if (config_use_okubo_weiss) then
+         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='okuboWeissOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+            call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
          endif
       endif
 
@@ -475,6 +513,7 @@ contains
 
       integer :: err_tmp
       logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -488,6 +527,12 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_restart_zonal_mean(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
+      if (config_use_okubo_weiss) then
+         call ocn_restart_okubo_weiss(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
@@ -547,6 +592,7 @@ contains
       integer :: err_tmp
 
       logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -570,6 +616,18 @@ contains
          call mpas_timer_start('io_reset_alarms', .false.)
          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='zonalMeanOutput', ierr=err_tmp)
          call mpas_timer_stop('io_reset_alarms')
+         err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_okubo_weiss', config_use_okubo_weiss)
+      if (config_use_okubo_weiss) then
+         call mpas_timer_start('io_write', .false.)
+         call mpas_stream_mgr_write(stream_manager, streamID='okuboWeissOutput', ierr=err_tmp)
+         call mpas_timer_stop('io_write')
+         call mpas_timer_start('io_reset_alarms', .false.)
+         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='okuboWeissOutput', ierr=err_tmp)
+         call mpas_timer_stop('io_reset_alarms')
+         err = ior(err, err_tmp)
       endif
 
 !      call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
@@ -630,6 +688,7 @@ contains
 
       integer :: err_tmp
       logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -643,6 +702,12 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_finalize_zonal_mean(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
+      if (config_use_okubo_weiss) then
+         call ocn_finalize_okubo_weiss(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 

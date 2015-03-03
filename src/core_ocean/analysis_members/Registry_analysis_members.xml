@@ -1,2 +1,3 @@
 #include "Registry_global_stats.xml"
 #include "Registry_zonal_mean.xml"
+#include "Registry_okubo_weiss.xml"
