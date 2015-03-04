@@ -128,7 +128,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
-      real (kind=RKIND), dimension(:),   pointer :: boundaryLayerDepth, boundaryLayerDepthEdge
       real (kind=RKIND), dimension(:),   pointer :: normalVelocitySurfaceLayer
       real (kind=RKIND), dimension(:),   pointer :: indexSurfaceLayerDepth
 
@@ -139,7 +138,7 @@ contains
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
       logical, pointer :: config_use_cvmix_kpp
-      real (kind=RKIND), pointer :: config_density0, config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_extent
+      real (kind=RKIND), pointer :: config_density0, config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_averaging
       character (len=StrKIND), pointer :: config_pressure_gradient_type
 
       if (present(timeLevelIn)) then
@@ -152,7 +151,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_apvm_scale_factor', config_apvm_scale_factor)
       call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(ocnConfigs, 'config_coef_3rd_order', config_coef_3rd_order)
-      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_extent', config_cvmix_kpp_surface_layer_extent)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_averaging', config_cvmix_kpp_surface_layer_averaging)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
 
       call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
@@ -227,8 +226,6 @@ contains
 
       call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
       call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceLayerValue', tracersSurfaceLayerValue)
-      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
-      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepthEdge', boundaryLayerDepthEdge)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
 
@@ -607,7 +604,7 @@ contains
         tracersSurfaceLayerValue(:,:) = 0.0
         indexSurfaceLayerDepth(:) = -9.e30
         do iCell=1,nCells
-          surfaceLayerDepth = boundaryLayerDepth(iCell) * config_cvmix_kpp_surface_layer_extent
+          surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
           sumSurfaceLayer=0.0
           do k=1,maxLevelCell(iCell)
            sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
@@ -636,8 +633,7 @@ contains
         do iEdge=1,nEdges
           cell1=cellsOnEdge(1,iEdge)
           cell2=cellsOnEdge(2,iEdge)
-          boundaryLayerDepthEdge(iEdge) = 0.5*( boundaryLayerDepth(cell1)+boundaryLayerDepth(cell2) )
-          surfaceLayerDepth = boundaryLayerDepthEdge(iEdge) * config_cvmix_kpp_surface_layer_extent
+          surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
           sumSurfaceLayer=0.0
           do k=1,maxLevelEdgeTop(iEdge)
            rSurfaceLayer = k
@@ -1110,7 +1106,7 @@ contains
       ! real pointers
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceMassFlux, &
-           surfaceBuoyancyForcing, surfaceFrictionVelocity, boundaryLayerDepth, penetrativeTemperatureFluxOBL, &
+           surfaceBuoyancyForcing, surfaceFrictionVelocity, penetrativeTemperatureFluxOBL, &
            normalVelocitySurfaceLayer
       real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
@@ -1165,7 +1161,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue ', tracersSurfaceValues)
-      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', surfaceFrictionVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberBuoy', bulkRichardsonNumberBuoy)
@@ -1256,34 +1251,19 @@ contains
          enddo
 
          buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / config_density0
-         shearContribution = max(deltaVelocitySquared,1.0e-10)
+         shearContribution = max(deltaVelocitySquared,1.0e-15)
 
-        ! compute bulk Richardson number
-        ! we estimate the bulk Richardson number here, but its value will be updated
-        ! in the ocn_vmix_coefs_cvmix_build when we have access to the turbulent velocity scale and unresolved shear
+         ! store the buoyancy and resolved shear contributions to bulk Richardson number
          bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
          bulkRichardsonNumberShear(k,iCell) = shearContribution
 
         enddo ! do k=1,maxLevelCell(iCell)
 
-       ! remove 2dz mode from bulkRichardsonNumber{Buoy,Shear}
-        buoySmoothed(:) = 0.0
-        shearSmoothed(:) = 0.0
-        do k=2,maxLevelCell(iCell)-1
-          buoySmoothed(k)  =  (bulkRichardsonNumberBuoy(k-1,iCell) + 2*bulkRichardsonNumberBuoy(k,iCell) + bulkRichardsonNumberBuoy(k+1,iCell)) / 4.0
-          shearSmoothed(k) =  (bulkRichardsonNumberShear(k-1,iCell) + 2*bulkRichardsonNumberShear(k,iCell) + bulkRichardsonNumberShear(k+1,iCell)) / 4.0
-        enddo
-        buoySmoothed(1) = buoySmoothed(2)
-        shearSmoothed(1) = shearSmoothed(2)
-        buoySmoothed(maxLevelCell(iCell))=buoySmoothed(maxLevelCell(iCell)-1)
-        shearSmoothed(maxLevelCell(iCell))=shearSmoothed(maxLevelCell(iCell)-1)
-
-        bulkRichardsonNumberBuoy(1:maxLevelCell(iCell),iCell) = buoySmoothed(1:maxLevelCell(iCell))
-        bulkRichardsonNumberShear(1:maxLevelCell(iCell),iCell) = shearSmoothed(1:maxLevelCell(iCell))
-
-       ! bulkRichardsonNumberBuoy to a negative value within surface layer to prevent CVMix/KPP from
+       ! set bulkRichardsonNumberBuoy to a negative value within surface layer to prevent CVMix/KPP from
        ! incorrectly diagnosing OBL to be within surface layer
-       bulkRichardsonNumberBuoy(1:int(indexSurfaceLayerDepth(iCell)),iCell) = -1.0
+       ! require boundary layer to be below the top layer
+       k=max(int(indexSurfaceLayerDepth(iCell)),1)
+       bulkRichardsonNumberBuoy(1:k,iCell) = 0.0
 
       enddo
 

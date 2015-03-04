@@ -484,10 +484,14 @@
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_cvmix_kpp_niterate" type="integer" default_value="2" units="NA"
-					description="Number of iterations used to solve for KPP ocean boundary layer depth"
-					possible_values="Any positive integer"
-		/>
+                <nml_option name="config_use_cvmix_fixed_boundary_layer" type="logical" default_value=".false." units="NA"
+                                        description="If true, boundary layer depth is specified as config_cvmix_kpp_boundary_layer_depth"
+                                        possible_values="True or False"
+                />
+                <nml_option name="config_cvmix_kpp_boundary_layer_depth" type="real" default_value="30.0" units="m"
+                                        description="If config_use_cvmix_fixed_boundary_layer, then KPP OBL calculation is overwritten with this value"
+                                        possible_values="Any positive real value."
+                />
 		<nml_option name="config_cvmix_kpp_criticalBulkRichardsonNumber" type="real" default_value="0.25" units="non-dimensional"
 					description="Critical bulk Richardson number used to determine bottom of ocean mixed layer"
 					possible_values="Any positive real value."
@@ -512,6 +516,14 @@
 					description="The non-dimensional extent of the surface layer, measured as fraction of boundary layer depth"
 					possible_values="Any value between 0 and 1"
 		/>
+                <nml_option name="config_cvmix_kpp_surface_layer_averaging" type="real" default_value="5.0" units="m"
+                                        description="The thickness over which to average when computing surface-averaged velocity and buoyancy"
+                                        possible_values="Any positive real value, but typically should be between 1 and 20 meters"
+                />
+                <nml_option name="config_cvmix_kpp_stop_OBL_search" type="real" default_value="100.0" units="non-dimensional"
+                                        description="The search for boundary layer depth is terminated when bulk Richardson number is greater than config_cvmix_kpp_stop_OBL_search*config_cvmix_kpp_criticalBulkRichardsonNumber"
+                                        possible_values="Any positive value"
+                />
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
 		<nml_option name="config_forcing_type" type="character" default_value="off" units="unitless"
@@ -873,7 +885,6 @@
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
-			<var name="boundaryLayerDepth"/>
 		</stream>
 		<stream name="restart"
 				type="input;output"
@@ -899,7 +910,6 @@
 			<var name="xtime"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
-			<var name="boundaryLayerDepth"/>
 		</stream>
 		<stream name="output" 
 				type="output"
