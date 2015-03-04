@@ -62,6 +62,8 @@ module mpas_stream_manager
               MPAS_stream_mgr_add_att, &
               MPAS_stream_mgr_write, &
               MPAS_stream_mgr_read, &
+              MPAS_stream_mgr_begin_iteration, &
+              MPAS_stream_mgr_get_next_stream, &
               MPAS_build_stream_filename
 
     private
@@ -77,6 +79,7 @@ module mpas_stream_manager
         type (MPAS_Pool_type), pointer :: allStructs
         type (MPAS_Pool_type), pointer :: defaultAtts
 
+        type (MPAS_stream_list_type), pointer :: currentStream => NULL()
         type (MPAS_stream_list_type), pointer :: streams
         type (MPAS_stream_list_type), pointer :: alarms_in
         type (MPAS_stream_list_type), pointer :: alarms_out
@@ -4547,6 +4550,108 @@ module mpas_stream_manager
         end do
 
     end subroutine postread_reindex !}}}
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_begin_iteration
+    !
+    !> \brief Reset iterator within stream manager
+    !> \author Doug Jacobsen
+    !> \date   03/03/2015
+    !> \details
+    !>  This routine resets the iterator within a stream manager to point to
+    !>  the head of the stream list.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_begin_iteration(manager)!{{{
+        type (MPAS_streamManager_type), intent(inout) :: manager !< Input: Stream manager to begin iteration for
+
+        nullify(manager % currentStream)
+    end subroutine MPAS_stream_mgr_begin_iteration!}}}
+
+    !-----------------------------------------------------------------------
+    !  logical function MPAS_stream_mgr_get_next_stream
+    !
+    !> \brief Retrieve information about next stream
+    !> \author Doug Jacobsen
+    !> \date   03/03/2015
+    !> \details
+    !>  This routine advances the internal iterator to the next stream, and
+    !>  returns information about it.
+    !
+    !-----------------------------------------------------------------------
+    logical function MPAS_stream_mgr_get_next_stream(manager, stream, streamID, directionProperty, activeProperty, immutableProperty, filenameTemplateProperty, &!{{{
+                                                     referenceTimeProperty, recordIntervalProperty, precisionProperty, &
+                                                     filenameIntervalProperty, clobberProperty) result(validStream)
+        type (MPAS_streamManager_type), intent(inout) :: manager !< Input: Stream manager to iterate over
+        type (MPAS_stream_list_type), pointer :: stream
+        character (len=StrKIND), intent(out), optional :: streamID !< Output: Name of next stream
+        integer, intent(out), optional :: directionProperty !< Output: Integer describing the direction of the stream
+        logical, intent(out), optional :: activeProperty !< Output: Logical describing if the stream is active or not
+        logical, intent(out), optional :: immutableProperty !< Output: Logical describing if the stream is immutable or not
+        character (len=StrKIND), intent(out), optional :: filenameTemplateProperty !< Output: String containing the filename template for the stream
+        character (len=StrKIND), intent(out), optional :: referenceTimeProperty !< Output: String containing the reference time for the stream
+        character (len=StrKIND), intent(out), optional :: recordIntervalProperty !< Output: String containing the record interval for the stream
+        integer, intent(out), optional :: precisionProperty !< Output: Integer describing the precision of the stream
+        character (len=StrKIND), intent(out), optional :: filenameIntervalProperty !< Output: String containing the filename interval for the stream
+        integer, intent(out), optional :: clobberProperty !< Output: Interger describing the clobber mode of the stream
+
+        if ( associated(manager % currentStream) .and. .not. associated(manager % currentStream % next) ) then
+            validStream = .false.
+            nullify(stream)
+            return
+        end if
+
+        if ( .not. associated(manager % currentStream) ) then
+           validStream = .true.
+           manager % currentStream => manager % streams % head
+        else
+           validStream = .true.
+           manager % currentStream => manager % currentStream % next
+        end if
+
+        stream => manager % currentStream
+
+        if ( present(streamID) ) then
+           streamID = manager % currentStream % name
+        end if
+
+        if ( present(directionProperty) ) then
+            directionProperty = manager % currentStream % direction
+        end if
+
+        if ( present(activeProperty) ) then
+            activeProperty = manager % currentStream % active_stream
+        end if
+
+        if ( present(immutableProperty) ) then
+            immutableProperty = manager % currentStream % immutable
+        end if
+
+        if ( present(filenameTemplateProperty) ) then
+            filenameTemplateProperty = manager % currentStream % filename_template
+        end if
+
+        if ( present(referenceTimeProperty) ) then
+            call mpas_get_time(manager % currentStream % referenceTime, dateTimeString=referenceTimeProperty)
+        end if
+
+        if ( present(recordIntervalProperty) ) then
+            call mpas_get_timeInterval(manager % currentStream % recordInterval, timeString=recordIntervalProperty)
+        end if
+
+        if ( present(precisionProperty) ) then
+            precisionProperty = manager % currentStream % precision
+        end if
+
+        if ( present(filenameIntervalProperty)) then
+            filenameIntervalProperty = manager % currentStream % filename_interval
+        end if
+
+        if ( present(clobberProperty) ) then
+            clobberProperty = manager % currentStream % clobber_mode
+        end if
+
+    end function MPAS_stream_mgr_get_next_stream!}}}
  
 
 end module mpas_stream_manager
