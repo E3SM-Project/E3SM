@@ -117,7 +117,7 @@ contains
                ! N deposition and fixation (put all into NH4 pool)
                nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%fert_to_sminn_col(c)*dt * ndep_prof(c,j)
                nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%soyfixn_to_sminn_col(c)*dt * nfixation_prof(c,j)
-
+               nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%supplement_to_sminn_vr_col(c,j)*dt
             end do
           end do
         end if
