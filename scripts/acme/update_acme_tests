@@ -21,7 +21,6 @@ TEST_SUITES = {
          'ERS.f45_g37.B1850C5',
          'ERS.f45_g37_rx1.DTEST',
          'ERS.ne30_g16_rx1.A',
-         'ERS_D.f45_g37.B1850C5',
          'ERS_IOP.f19_g16_rx1.A',
          'ERS_IOP.f45_g37_rx1.DTEST',
          'ERS_IOP.ne30_g16_rx1.A',
