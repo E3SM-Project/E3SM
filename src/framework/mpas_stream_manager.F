@@ -64,6 +64,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_read, &
               MPAS_stream_mgr_begin_iteration, &
               MPAS_stream_mgr_get_next_stream, &
+              MPAS_get_stream_filename, &
               MPAS_build_stream_filename
 
     private
@@ -3252,6 +3253,69 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
+    !  routine mpas_get_stream_filename
+    !
+    !> \brief Determine the filename that contains a specific time in a stream
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   21 August 2014
+    !> \details
+    !>  Given a stream manger, a stream name, and an optional time stamp,
+    !>  return the filename that would contain that time stamp, or the filename
+    !>  that should contain the current time as defined by the clock associated
+    !>  with the stream manager.
+    !>
+    !>  Return error codes:
+    !>  0 no error
+    !-----------------------------------------------------------------------
+    subroutine mpas_get_stream_filename(manager, streamID, when, filename, ierr) !{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(in) :: manager !< Input: Stream manager to get stream from
+        character (len=*), intent(in) :: streamID !< Input: Stream name to use for building the filename
+        character (len=*), intent(in), optional :: when !< Optional Input: Time file should contain
+        character (len=StrKIND), intent(out) :: filename !< Output: Name of file containing time
+        integer, intent(out), optional :: ierr !< Optional Output: Error code
+
+        type (mpas_stream_list_type), pointer :: streamCursor
+
+        integer :: err_local
+
+        character(len=StrKIND) :: when_string
+        type (MPAS_TimeInterval_type) :: filename_interval
+        type (MPAS_Time_type) :: now_time
+
+        ierr = 0
+
+        if ( mpas_stream_list_query(manager % streams, streamID, streamCursor, err_local) ) then
+           if ( present(when) ) then
+              call mpas_set_time(now_time, dateTimeString=when, ierr=err_local)
+           else
+              now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=err_local)
+           end if
+
+           !
+           ! First we need to build the filename for the current read time.
+           !
+           if ( streamCursor % filename_interval /= 'none' ) then
+               call mpas_set_timeInterval(filename_interval, timeString=streamCursor % filename_interval)
+               call mpas_build_stream_filename(streamCursor % referenceTime, now_time, filename_interval, streamCursor % filename_template, filename, ierr=err_local)
+           else
+               call mpas_get_time(now_time, dateTimeString=when_string, ierr=err_local)
+               call mpas_expand_string(when_string, streamCursor % filename_template, filename)
+           end if
+
+        else
+            if ( present(ierr) ) ierr = MPAS_STREAM_MGR_ERROR
+            if ( manager % errorLevel /= MPAS_STREAM_ERR_SILENT ) then
+                write(stderrUnit, *) 'ERROR: Stream ' // trim(streamID) // ' does not exist. Filename creation failed...'
+            end if
+        end if
+
+    end subroutine mpas_get_stream_filename !}}}
+
+
+    !-----------------------------------------------------------------------
     !  routine mpas_build_stream_filename
     !
     !> \brief Construct the filename that contains a specific time in a stream
@@ -3265,6 +3329,9 @@ module mpas_stream_manager
     !>  Filenames are assumed to start at the earliest time. In other words, a
     !>  file name is expanded using the earliest time that could possibly be
     !>  stored in the file.
+    !>
+    !>  This is a low level subroutine to complement the
+    !>  mpas_get_stream_Filename routine
     !>  
     !>  Return error codes:
     !>  0 no error
