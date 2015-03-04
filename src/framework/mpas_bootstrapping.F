@@ -28,15 +28,18 @@ module mpas_bootstrapping
 
    !***********************************************************************
    !
-   !  routine mpas_bootstrap_framework
+   !  routine mpas_bootstrap_framework_phase1
    !
    !> \brief   Obtains mesh partition, builds halos, and allocates blocks.
-   !> \author  Michael Duda
-   !> \date    7 September 2014
+   !> \author  Michael Duda, Doug Jacobsen
+   !> \date    03/04/2015
    !> \details
    !>  This routine is responsible for reading basic decomposed field dimensions,
    !>  determining a block decomposition of the mesh, building halos for fields,
    !>  and, finally, allocating blocklist for a domain.
+   !>
+   !>  Phase1 does not currently allocate fields, or define any other
+   !>  dimensions aside from the ones listed below.
    !>
    !>  Dimensions required to be present in the grid file:
    !>      nCells
@@ -44,7 +47,6 @@ module mpas_bootstrapping
    !>      nVertices
    !>      vertexDegree
    !>      maxEdges
-   !>      ***** and, at present, all other dimensions so we can allocate all fields
    !>
    !>  Fields required to be present in the grid file:
    !>      indexToCellID
@@ -64,27 +66,27 @@ module mpas_bootstrapping
    !>      on_a_sphere
    !>      sphere_radius
    !>      ***** these are needed by mpas_block_creator_finalize_block_init()
-   !>            so they can be set in the mesh pool and queried by, e.g., 
+   !>            so they can be set in the mesh pool and queried by, e.g.,
    !>            mpas_initialize_vectors()
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_bootstrap_framework(domain, mesh_filename) !{{{
+   subroutine mpas_bootstrap_framework_phase1(domain, mesh_filename) !{{{
 
       implicit none
-   
+
       type (domain_type), pointer :: domain
       character(len=*), intent(in) :: mesh_filename
 
       type (block_type), pointer :: readingBlock
-   
-#include "dim_dummy_defines_noinput.inc"
+
+      integer :: nCells, nEdges, maxEdges, nVertices, vertexDegree
 
       integer :: ierr
       type (MPAS_IO_Handle_type) :: inputHandle
 
       character (len=StrKIND) :: c_on_a_sphere
       real (kind=RKIND) :: r_sphere_radius
-   
+
       type (field1dInteger), pointer :: indexToCellIDField
       type (field1dInteger), pointer :: indexToEdgeIDField
       type (field1dInteger), pointer :: indexToVertexIDField
@@ -153,21 +155,23 @@ module mpas_bootstrapping
       !
       ! Read global number of cells/edges/vertices
       !
-!MGD for bootstrapping, we really only need a small, fixed set of dimensions
-!    HOWEVER: in order to allocate all fields, we need all non-derived dimensions...
-#include "read_dimensions.inc"
-   
+      call mpas_io_inq_dim(inputHandle, 'nCells', nCells, ierr)
+      call mpas_io_inq_dim(inputHandle, 'nEdges', nEdges, ierr)
+      call mpas_io_inq_dim(inputHandle, 'maxEdges', maxEdges, ierr)
+      call mpas_io_inq_dim(inputHandle, 'nVertices', nVertices, ierr)
+      call mpas_io_inq_dim(inputHandle, 'vertexDegree', vertexDegree, ierr)
+
       !
       ! Determine the range of cells/edges/vertices that a processor will initially read
       !   from the input file
       !
-      call mpas_dmpar_get_index_range(domain % dminfo, 1, nCells, readCellStart, readCellEnd)   
+      call mpas_dmpar_get_index_range(domain % dminfo, 1, nCells, readCellStart, readCellEnd)
       nReadCells = readCellEnd - readCellStart + 1
-   
-      call mpas_dmpar_get_index_range(domain % dminfo, 1, nEdges, readEdgeStart, readEdgeEnd)   
+
+      call mpas_dmpar_get_index_range(domain % dminfo, 1, nEdges, readEdgeStart, readEdgeEnd)
       nReadEdges = readEdgeEnd - readEdgeStart + 1
-   
-      call mpas_dmpar_get_index_range(domain % dminfo, 1, nVertices, readVertexStart, readVertexEnd)   
+
+      call mpas_dmpar_get_index_range(domain % dminfo, 1, nVertices, readVertexStart, readVertexEnd)
       nReadVertices = readVertexEnd - readVertexStart + 1
 
       allocate(readingBlock)
@@ -191,7 +195,7 @@ module mpas_bootstrapping
                                              indexToVertexIDField, xVertexField, yVertexField, zVertexField, cellsOnVertexField, &
                                              nHalos)
       !
-      ! Set up a graph derived data type describing the connectivity for the cells 
+      ! Set up a graph derived data type describing the connectivity for the cells
       !   that were read by this process
       ! A partial description is passed to the block decomp module by each process,
       !   and the block decomp module returns with a list of global cell indices
@@ -204,11 +208,11 @@ module mpas_bootstrapping
       allocate(partial_global_graph_info % vertexID(nReadCells))
       allocate(partial_global_graph_info % nAdjacent(nReadCells))
       allocate(partial_global_graph_info % adjacencyList(maxEdges, nReadCells))
-   
+
       partial_global_graph_info % vertexID(:) = indexToCellIDField % array(:)
       partial_global_graph_info % nAdjacent(:) = nEdgesOnCellField % array(:)
       partial_global_graph_info % adjacencyList(:,:) = cellsOnCellField % array(:,:)
-   
+
       ! TODO: Ensure (by renaming or exchanging) that initial cell range on each proc is contiguous
       !       This situation may occur when reading a restart file with cells/edges/vertices written
       !       in a scrambled order
@@ -275,12 +279,9 @@ module mpas_bootstrapping
 
 
      ! Allocate blocks, and copy indexTo arrays into blocks
-     call mpas_block_creator_finalize_block_init(nHalos, domain % blocklist, &
-#include "dim_dummy_args.inc"         
-                             , nCellsSolveField, nEdgesSolveField, nVerticesSolveField, indexToCellID_Block, indexToEdgeID_Block, &
-                             indexToVertexID_Block)
-
-      call mpas_link_fields(domain)
+     call mpas_block_creator_finalize_block_phase1(nHalos, domain % blocklist, &
+             nCellsSolveField, nEdgesSolveField, nVerticesSolveField, vertexDegree, maxEdges, &
+             indexToCellID_Block, indexToEdgeID_Block, indexToVertexID_Block)
 
       call MPAS_io_close(inputHandle, ierr)
 
@@ -326,7 +327,8 @@ module mpas_bootstrapping
       deallocate(block_start)
       deallocate(block_count)
       deallocate(readingBlock)
-   end subroutine mpas_bootstrap_framework !}}}
+
+   end subroutine mpas_bootstrap_framework_phase1 !}}}
 
 
    !***********************************************************************
@@ -683,7 +685,7 @@ module mpas_bootstrapping
      call mpas_dmpar_init_multihalo_exchange_list(indexToCellID % recvList, nHalos)
      call mpas_dmpar_init_multihalo_exchange_list(indexToCellID % copyList, nHalos)
      nullify(indexToCellID % next)
-   
+
 
      ! Number of cell/edges/vertices adjacent to each cell
      allocate(nEdgesOnCell)
@@ -701,7 +703,7 @@ module mpas_bootstrapping
      nEdgesOnCell % recvList => indexToCellID % recvList
      nEdgesOnCell % copyList => indexToCellID % copyList
      nullify(nEdgesOnCell % next)
-   
+
      ! Global indices of cells adjacent to each cell
      allocate(cellsOnCell)
      allocate(cellsOnCell % ioinfo)
@@ -721,7 +723,7 @@ module mpas_bootstrapping
      cellsOnCell % recvList => indexToCellID % recvList
      cellsOnCell % copyList => indexToCellID % copyList
      nullify(cellsOnCell % next)
-   
+
      ! Global indices of edges adjacent to each cell
      allocate(edgesOnCell)
      allocate(edgesOnCell % ioinfo)
@@ -741,7 +743,7 @@ module mpas_bootstrapping
      edgesOnCell % recvList => indexToCellID % recvList
      edgesOnCell % copyList => indexToCellID % copyList
      nullify(edgesOnCell % next)
-   
+
      ! Global indices of vertices adjacent to each cell
      allocate(verticesOnCell)
      allocate(verticesOnCell % ioinfo)
@@ -763,7 +765,7 @@ module mpas_bootstrapping
      nullify(verticesOnCell % next)
 
      deallocate(readIndices)
-   
+
    end subroutine mpas_io_setup_cell_block_fields !}}}
 
 
@@ -813,10 +815,10 @@ module mpas_bootstrapping
      call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeID % recvList, nHalos+1)
      call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeID % copyList, nHalos+1)
      nullify(indexToEdgeID % next)
-   
-   
+
+
      ! Global indices of cells adjacent to each edge
-     !    used for determining which edges are owned by a block, where 
+     !    used for determining which edges are owned by a block, where
      !    iEdge is owned iff cellsOnEdge(1,iEdge) is an owned cell
      allocate(cellsOnEdge)
      allocate(cellsOnEdge % ioinfo)
@@ -838,7 +840,7 @@ module mpas_bootstrapping
      nullify(cellsOnEdge % next)
 
      deallocate(readIndices)
-   
+
    end subroutine mpas_io_setup_edge_block_fields !}}}
 
 
@@ -882,10 +884,10 @@ module mpas_bootstrapping
      call mpas_dmpar_init_multihalo_exchange_list(indexToVertexID % recvList, nHalos+1)
      call mpas_dmpar_init_multihalo_exchange_list(indexToVertexID % copyList, nHalos+1)
      nullify(indexToVertexID % next)
-   
-   
+
+
      ! Global indices of cells adjacent to each vertex
-     !    used for determining which vertices are owned by a block, where 
+     !    used for determining which vertices are owned by a block, where
      !    iVtx is owned iff cellsOnVertex(1,iVtx) is an owned cell
      allocate(cellsOnVertex)
      allocate(cellsOnVertex % ioinfo)

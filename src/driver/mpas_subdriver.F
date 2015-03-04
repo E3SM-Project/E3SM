@@ -35,7 +35,7 @@ module mpas_subdriver
       use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : MPAS_Time_type, mpas_get_clock_time, mpas_get_time
-      use mpas_bootstrapping, only : mpas_bootstrap_framework, mpas_setup_immutable_streams
+      use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2, mpas_setup_immutable_streams
  
       implicit none
 
@@ -89,6 +89,7 @@ module mpas_subdriver
       ! Initialize infrastructure
       !
       call mpas_framework_init(dminfo, domain_ptr)
+
       call mpas_core_setup_packages(domain_ptr % configs, domain_ptr % packages, ierr)
       call mpas_core_setup_clock(domain_ptr % clock, domain_ptr % configs, ierr)
 
@@ -129,7 +130,7 @@ module mpas_subdriver
           call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
       end if
       write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
-      call mpas_bootstrap_framework(domain_ptr, mesh_filename)
+      call mpas_bootstrap_framework_phase1(domain_ptr, mesh_filename)
 
       !
       ! Set up run-time streams
@@ -146,6 +147,10 @@ module mpas_subdriver
          call mpas_dmpar_abort(dminfo)
       end if
 
+      !
+      ! Finalize the setup of blocks and fields
+      !
+      call mpas_bootstrap_framework_phase2(stream_manager, domain_ptr)
 
       !
       ! Initialize core

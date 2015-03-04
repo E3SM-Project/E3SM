@@ -814,9 +814,7 @@ module mpas_grid_types
 !> that are members of the block type.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_block(nHaloLayers, b, dom, blockID, &!{{{
-#include "dim_dummy_args.inc"
-                            )
+   subroutine mpas_allocate_block(nHaloLayers, b, dom, blockID) !{{{
 
       implicit none
 
@@ -824,7 +822,6 @@ module mpas_grid_types
       type (block_type), pointer :: b !< Input/Output: Block structure
       type (domain_type), pointer :: dom !< Input: Domain structure
       integer, intent(in) :: blockID !< Input: Global ID of block
-#include "dim_dummy_defines_input.inc"
 
       integer :: i
 
@@ -3253,9 +3250,8 @@ module mpas_grid_types
 #include "pool_subroutines.inc"
 
 
-#include "define_dimensions.inc"
 #include "define_packages.inc"
-!#include "link_fields.inc"
+
 #include "structs_and_variables.inc"
 
 

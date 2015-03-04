@@ -961,35 +961,42 @@ module mpas_block_creator
 
 !***********************************************************************
 !
-!  routine mpas_block_creator_finalize_block_init
+!  routine mpas_block_creator_finalize_block_phase1
 !
-!> \brief   Finalize block creation
+!> \brief   Phase 1 of block creation finalization
 !> \author  Doug Jacobsen
 !> \date    05/31/12
 !> \details 
 !>  This routine finalizes the block initialization processor. It calls
 !>  mpas_block_allocate to allocate space for all fields in a block. Then the 0
 !>  halo indices for each element and the exchange lists are copied into the
-!>  appropriate block. A halo update is required after this routien is called
+!>  appropriate block. A halo update is required after this routine is called
 !>  to make sure all data in a block is valid.
+!>
+!>  Fields and non-framework required dimensions are not setup after this
+!>  routine returns. To complete setup, a call to
+!>  mpas_block_creator_finalize_block_phase2 must follow.
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_block_creator_finalize_block_init(nHalos, blocklist, &  !{{{
-#include "dim_dummy_args.inc"
-                                                     , nCellsSolve, nEdgesSolve, nVerticesSolve, indexToCellID, indexToEdgeID, indexToVertexID)
+   subroutine mpas_block_creator_finalize_block_phase1(nHalos, blocklist, nCellsSolve, & !{{{
+                                                       nEdgesSolve, nVerticesSolve, vertexDegree, maxEdges, &
+                                                       indexToCellID, indexToEdgeID, &
+                                                       indexToVertexID)
      integer, intent(in) :: nHalos !< Input: Number of halos for cell fields
      type (block_type), pointer :: blocklist !< Input/Output: Linked List of blocks
-#include "dim_dummy_defines_inout.inc"
      type (field1dInteger), pointer :: nCellsSolve !< Input: nCellsSolve field information
      type (field1dInteger), pointer :: nEdgesSolve !< Input: nEdgesSolve field information
      type (field1dInteger), pointer :: nVerticesSolve !< Input: nVerticesSolve field information
+     integer, intent(in) :: vertexDegree !< Input: vertexDegree dimension
+     integer, intent(in) :: maxEdges !< Input: maxEdges dimension
      type (field1dInteger), pointer :: indexToCellID !< Input: indexToCellID field information
      type (field1dInteger), pointer :: indexToEdgeID !< Input: indexToEdgeID field information
      type (field1dInteger), pointer :: indexToVertexID !< Input: indexToVertexID field information
 
      type (domain_type), pointer :: domain
 
+     type (field1dInteger), pointer :: indexToCellIDPoolField, indexToEdgeIDPoolField, indexToVertexIDPoolField
      integer, dimension(:), pointer :: indexToCellIDPool, indexToEdgeIDPool, indexToVertexIDPool
 
      type (block_type), pointer :: block_ptr
@@ -997,7 +1004,7 @@ module mpas_block_creator
      type (field1dInteger), pointer :: indexToCellCursor, indexToEdgeCursor, indexToVertexCursor
 
      integer :: nCellsSolve_0Halo, nVerticesSolve_0Halo, nEdgesSolve_0Halo
-     integer :: blockID, localBlockID
+     integer :: blockID, localBlockID, err_level
 
      domain => blocklist % domain
 
@@ -1024,11 +1031,14 @@ module mpas_block_creator
        localBlockID = block_ptr % localBlockID
 
        ! Allocate fields in block
-       call mpas_allocate_block(nHalos, block_ptr, domain, blockID, &
-#include "dim_dummy_args.inc"
-                               )
+       call mpas_allocate_block(nHalos, block_ptr, domain, blockID)
 
-#include "add_dims_to_pool.inc"
+       ! Define block's static dimensions
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nCells', nCells)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nEdges', nEdges)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nVertices', nVertices)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'vertexDegree', vertexDegree)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'maxEdges', maxEdges)
 
        ! Set block's *Solve dimensions
        call mpas_pool_add_dimension(block_ptr % dimensions, 'nCellsSolve', nCellsSolve_0Halo)
@@ -1039,20 +1049,81 @@ module mpas_block_creator
        call mpas_pool_add_dimension(block_ptr % dimensions, 'nEdgesArray', nEdgesCursor % array(:))
        call mpas_pool_add_dimension(block_ptr % dimensions, 'nVerticesArray', nVerticesCursor % array(:))
 
-       call mpas_define_derived_dimensions(block_ptr % dimensions, block_ptr % configs)
-
        call mpas_generate_structs(block_ptr, block_ptr % structs, block_ptr % dimensions, block_ptr % packages)
 
        ! Set block's local id
        block_ptr % localBlockID = localBlockID
 
+       err_level = mpas_pool_get_error_level()
+       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+       ! Setup block's index fields
+       allocate(indexToCellIDPoolField)
+       indexToCellIDPoolField % block => block_ptr
+       indexToCellIDPoolField % fieldName = 'indexToCellID'
+       indexToCellIDPoolField % dimNames(1) = 'nCells'
+       indexToCellIDPoolField % dimSizes(1) = nCells+1
+       indexToCellIDPoolField % hasTimeDimension = .false.
+       indexToCellIDPoolField % isActive = .true.
+       indexToCellIDPoolField % isVarArray = .false.
+       indexToCellIDPoolField % isPersistent = .true.
+       nullify(indexToCellIDPoolField % next)
+       nullify(indexToCellIDPoolField % prev)
+       nullify(indexToCellIDPoolField % ioinfo)
+       nullify(indexToCellIDPoolField % sendList)
+       nullify(indexToCellIDPoolField % recvList)
+       nullify(indexToCellIDPoolField % copyList)
+       allocate(indexToCellIDPoolField % array(nCells+1))
+
+       call mpas_pool_add_field(block_ptr % allFields, 'indexToCellID_blk', indexToCellIDPoolField)
+
+       allocate(indexToEdgeIDPoolField)
+       indexToEdgeIDPoolField % block => block_ptr
+       indexToEdgeIDPoolField % fieldName = 'indexToEdgeID'
+       indexToEdgeIDPoolField % dimNames(1) = 'nEdges'
+       indexToEdgeIDPoolField % dimSizes(1) = nEdges+1
+       indexToEdgeIDPoolField % hasTimeDimension = .false.
+       indexToEdgeIDPoolField % isActive = .true.
+       indexToEdgeIDPoolField % isVarArray = .false.
+       indexToEdgeIDPoolField % isPersistent = .true.
+       nullify(indexToEdgeIDPoolField % next)
+       nullify(indexToEdgeIDPoolField % prev)
+       nullify(indexToEdgeIDPoolField % ioinfo)
+       nullify(indexToEdgeIDPoolField % sendList)
+       nullify(indexToEdgeIDPoolField % recvList)
+       nullify(indexToEdgeIDPoolField % copyList)
+       allocate(indexToEdgeIDPoolField % array(nEdges+1))
+
+       call mpas_pool_add_field(block_ptr % allFields, 'indexToEdgeID_blk', indexToEdgeIDPoolField)
+
+       allocate(indexToVertexIDPoolField)
+
+       indexToVertexIDPoolField % block => block_ptr
+       indexToVertexIDPoolField % fieldName = 'indexToVertexID'
+       indexToVertexIDPoolField % dimNames(1) = 'nVertices'
+       indexToVertexIDPoolField % dimSizes(1) = nVertices+1
+       indexToVertexIDPoolField % hasTimeDimension = .false.
+       indexToVertexIDPoolField % isActive = .true.
+       indexToVertexIDPoolField % isVarArray = .false.
+       indexToVertexIDPoolField % isPersistent = .true.
+       nullify(indexToVertexIDPoolField % next)
+       nullify(indexToVertexIDPoolField % prev)
+       nullify(indexToVertexIDPoolField % ioinfo)
+       nullify(indexToVertexIDPoolField % sendList)
+       nullify(indexToVertexIDPoolField % recvList)
+       nullify(indexToVertexIDPoolField % copyList)
+       allocate(indexToVertexIDPoolField % array(nVertices+1))
+
+       call mpas_pool_add_field(block_ptr % allFields, 'indexToVertexID_blk', indexToVertexIDPoolField)
+
        ! Set block's 0 halo indices
-       call mpas_pool_get_array(block_ptr % allFields, 'indexToCellID', indexToCellIDPool)
-       call mpas_pool_get_array(block_ptr % allFields, 'indexToEdgeID', indexToEdgeIDPool)
-       call mpas_pool_get_array(block_ptr % allFields, 'indexToVertexID', indexToVertexIDPool)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToCellID_blk', indexToCellIDPool)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToEdgeID_blk', indexToEdgeIDPool)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToVertexID_blk', indexToVertexIDPool)
        indexToCellIDPool(1:nCellsSolve_0Halo) = indexToCellCursor % array(1:nCellsSolve_0Halo)
        indexToEdgeIDPool(1:nEdgesSolve_0Halo) = indexToEdgeCursor % array(1:nEdgesSolve_0Halo)
        indexToVertexIDPool(1:nVerticesSolve_0Halo) = indexToVertexCursor % array(1:nVerticesSolve_0Halo)
+       call mpas_pool_set_error_level(err_level)
 
        ! Set block's exchange lists and nullify unneeded exchange lists
        block_ptr % parinfo % cellsToSend => indexToCellCursor % sendList
@@ -1117,8 +1188,8 @@ module mpas_block_creator
        indexToEdgeCursor => indexToEdgeCursor % next
        indexToVertexCursor => indextoVertexcursor % next
      end do
-  end subroutine mpas_block_creator_finalize_block_init!}}}
 
+   end subroutine mpas_block_creator_finalize_block_phase1!}}}
 
 
 !***********************************************************************
@@ -1183,7 +1254,7 @@ module mpas_block_creator
        end do
        call mpas_pool_set_error_level(err_level)
 
-!      call mpas_setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
+       call mpas_setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
 
        call mpas_block_creator_allocate_pool_fields(block_ptr % structs, block_ptr % dimensions)
 
@@ -1632,5 +1703,7 @@ module mpas_block_creator
       end do
 
    end subroutine mpas_block_creator_allocate_pool_fields!}}}
+
+#include "block_dimension_routines.inc"
 
 end module mpas_block_creator
