@@ -896,6 +896,7 @@ contains
              nstep = get_nstep()
              c = 4973
              print*,'smin',nitrogenstate_vars%sminn_col(c)
+             print*,'abgn',nitrogenstate_vars%totabgn_col(c)
              if (nstep < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'

@@ -85,7 +85,7 @@ module CNNitrogenStateType
      real(r8), pointer :: totsomn_1m_col               (:)     ! col (gN/m2) total soil organic matter nitrogen to 1 meter
      real(r8), pointer :: totecosysn_col               (:)     ! col (gN/m2) total ecosystem nitrogen, incl veg 
      real(r8), pointer :: totcoln_col                  (:)     ! col (gN/m2) total column nitrogen, incl veg
-
+     real(r8), pointer :: totabgn_col                  (:)     ! col (gN/m2)
      ! patch averaged to column variables 
      real(r8), pointer :: totvegn_col                  (:)     ! col (gN/m2) total vegetation nitrogen (p2c)
      real(r8), pointer :: totpftn_col                  (:)     ! col (gN/m2) total pft-level nitrogen (p2c)
@@ -206,7 +206,7 @@ contains
     allocate(this%decomp_npools_1m_col     (begc:endc,1:ndecomp_pools))   ; this%decomp_npools_1m_col     (:,:) = nan
     allocate(this%totpftn_col              (begc:endc))                   ; this%totpftn_col              (:)   = nan
     allocate(this%totvegn_col              (begc:endc))                   ; this%totvegn_col              (:)   = nan
-
+    allocate(this%totabgn_col              (begc:endc))                   ; this%totabgn_col              (:)   = nan
     allocate(this%decomp_npools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools));
     this%decomp_npools_vr_col(:,:,:)= nan
 
@@ -1538,6 +1538,13 @@ contains
            this%seedn_col(c) + &
            this%ntrunc_col(c) + &
            this%plant_nbuffer_col(c)
+           
+      this%totabgn_col (c) =  &
+           this%totpftn_col(c) + &
+           this%totprodn_col(c) + &
+           this%seedn_col(c) + &
+           this%ntrunc_col(c) + &
+           this%plant_nbuffer_col(c)     
    end do
 
  end subroutine Summary
