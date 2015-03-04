@@ -479,9 +479,20 @@ contains
        elem(ie)%state%dp3d=0
 
 #ifdef CAM
+       elem(ie)%derived%etadot_prescribed = nan
        elem(ie)%derived%u_met = nan
        elem(ie)%derived%v_met = nan
+       elem(ie)%derived%dudt_met = nan
+       elem(ie)%derived%dvdt_met = nan
        elem(ie)%derived%T_met = nan
+       elem(ie)%derived%dTdt_met = nan
+       elem(ie)%derived%ps_met = nan
+       elem(ie)%derived%dpsdt_met = nan
+       elem(ie)%derived%nudge_factor = nan
+
+       elem(ie)%derived%Utnd=0.D0
+       elem(ie)%derived%Vtnd=0.D0
+       elem(ie)%derived%Ttnd=0.D0
 #endif
     enddo
 
@@ -1636,7 +1647,6 @@ contains
       elem(ie)%derived%eta_dot_dpdn=0     ! mean vertical mass flux
       elem(ie)%derived%vn0=0              ! mean horizontal mass flux
       elem(ie)%derived%omega_p=0
-      elem(ie)%sub_elem_mass_flux=0
       if (nu_p>0) then
          elem(ie)%derived%dpdiss_ave=0
          elem(ie)%derived%dpdiss_biharmonic=0
@@ -1699,7 +1709,7 @@ contains
         tempdp3d = elem(ie)%state%dp3d(:,:,k,tl%np1) - &
                    elem(ie)%derived%dp(:,:,k) 
         tempmass = subcell_integration(tempdp3d, np, nc, elem(ie)%metdet)
-        tempflux = dt*elem(ie)%sub_elem_mass_flux(:,:,:,k)
+        tempflux = dt_q*elem(ie)%sub_elem_mass_flux(:,:,:,k)
         do i=1,nc
         do j=1,nc
           x = SUM(tempflux(i,j,:))

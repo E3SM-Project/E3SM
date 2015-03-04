@@ -16,7 +16,7 @@ contains
     !-----------------
     use time_mod, only : timelevel_t , tstep, secpday, time_at, nmax, timelevel_update, timelevel_init
     !-----------------
-    use derivative_mod, only : derivative_t, derivinit, deriv_print
+    use derivative_mod, only : derivative_t, derivinit, deriv_print, allocate_subcell_integration_matrix
     !-----------------
     use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc, ntrac
     !-----------------
@@ -58,6 +58,8 @@ contains
     use, intrinsic :: iso_c_binding 
     !-----------------
     use derived_type_mod ,only : derived_type, initialize
+
+
     use precon_type_mod ,only : precon_type, init_precon
     use solver_mod, only : solver_test, solver_test_ml
 #endif
@@ -177,20 +179,24 @@ contains
 
 #ifdef TRILINOS
   interface 
-    subroutine noxinit(vectorSize,vector,comm,v_container,p_container) &
-        bind(C,name='noxinit')
-    use ,intrinsic :: iso_c_binding
-      integer(c_int)                :: vectorSize,comm
-      real(c_double)  ,dimension(*) :: vector
-      type(c_ptr)                   :: v_container
-      type(c_ptr)                   :: p_container  !precon ptr
-    end subroutine noxinit
+     subroutine noxinit(vectorSize, vector, comm, v_container, p_container) &
+          bind(C,name='noxinit')
+       use ,intrinsic :: iso_c_binding
+       integer(c_int)                :: vectorSize,comm
+       real(c_double)  ,dimension(*) :: vector
+       type(c_ptr)                   :: v_container
+       type(c_ptr)                   :: p_container  !precon ptr
+     end subroutine noxinit
 
     subroutine noxfinish() bind(C,name='noxfinish')
-    use ,intrinsic :: iso_c_binding ,only : c_double ,c_int ,c_ptr
+      use ,intrinsic :: iso_c_binding ,only : c_double ,c_int ,c_ptr
     end subroutine noxfinish
 
   end interface
+#endif
+
+#if 0
+     call allocate_subcell_integration_matrix(np,  6)
 #endif
 
 
@@ -322,7 +328,7 @@ contains
     call test_subcell_div_fluxes(elem,deriv,nets,nete)
     call test_subcell_Laplace_fluxes(elem,deriv,nets,nete)
     call test_subcell_div_fluxes_again(elem,deriv,nets,nete)
-    call test_subcell_dss_fluxes_again(elem,deriv,nets,nete)
+!   call test_subcell_dss_fluxes_again(elem,deriv,nets,nete)
     call test_subcell_Laplace_fluxes_again(elem,deriv,nets,nete)
     stop
 #endif
@@ -525,7 +531,7 @@ contains
 ! only nonstagger is coded
              allocate(blkjac(nets:nete))
              lambdasq(:) = pmean*dt*dt
-             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
+!             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
 !             if (precon_method == "block_jacobi") then
 !                call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
 !             end if

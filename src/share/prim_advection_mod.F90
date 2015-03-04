@@ -2354,7 +2354,6 @@ end subroutine ALE_parametric_coords
           do q = 1 , qsize
             qmin(k,q,ie)=minval(Qtens_biharmonic(:,:,k,q,ie))
             qmax(k,q,ie)=maxval(Qtens_biharmonic(:,:,k,q,ie))
-            qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
           enddo
         enddo
       enddo
@@ -2369,7 +2368,6 @@ end subroutine ALE_parametric_coords
         do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
           do q = 1 , qsize
             qmin(k,q,ie)=min(qmin(k,q,ie),minval(Qtens_biharmonic(:,:,k,q,ie)))
-            qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
             qmax(k,q,ie)=max(qmax(k,q,ie),maxval(Qtens_biharmonic(:,:,k,q,ie)))
           enddo
         enddo
@@ -2385,7 +2383,6 @@ end subroutine ALE_parametric_coords
           do q = 1 , qsize
             qmin(k,q,ie)=minval(Qtens_biharmonic(:,:,k,q,ie))
             qmax(k,q,ie)=maxval(Qtens_biharmonic(:,:,k,q,ie))
-            qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
           enddo
         enddo
       enddo
@@ -2490,6 +2487,8 @@ end subroutine ALE_parametric_coords
             dpdiss(:,:) = elem(ie)%derived%dpdiss_biharmonic(:,:,k)
             dp_star(:,:,k) = dp_star(:,:,k) - rhs_viss * dt * nu_q * dpdiss(:,:) / elem(ie)%spheremp(:,:)
           endif
+          ! IMPOSE ZERO THRESHOLD.  do this here so it can be turned off for testing
+          qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
         enddo
         ! apply limiter to Q = Qtens / dp_star
         call limiter_optim_iter_full( Qtens(:,:,:) , elem(ie)%spheremp(:,:) , qmin(:,q,ie) , &

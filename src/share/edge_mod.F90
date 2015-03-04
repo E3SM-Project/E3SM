@@ -1096,7 +1096,6 @@ print *,'nthreadshoriz: ',nthreadshoriz
     call t_adj_detailf(-2)
 
   end subroutine edgeVunpack
-
   subroutine edgeVunpackVert(edge,v,ielem)
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use dimensions_mod, only : np, max_corner_elem, ne
@@ -1339,8 +1338,8 @@ print *,'nthreadshoriz: ',nthreadshoriz
   ! ========================================
 
   subroutine edgeDGVunpack(edge,v,vlyr,kptr,ielem)
-    use dimensions_mod, only : np
-    use control_mod, only : north, south, east, west
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr
@@ -1369,8 +1368,44 @@ print *,'nthreadshoriz: ',nthreadshoriz
        end do
     end do
 
+    nce = max_corner_elem
+    i = swest
+    if(edge%getmap(i,ielem) /= -1) then
+      do k=1,vlyr
+        iptr=nce*(kptr+k-1)   
+        v(0,0,k) = edge%receive(iptr+edge%getmap(i,ielem)+1)
+      end do
+    end if
+    i = swest+max_corner_elem
+    if(edge%getmap(i,ielem) /= -1) then
+      do k=1,vlyr
+        iptr=nce*(kptr+k-1)   
+        v(np+1,0,k) = edge%receive(iptr+edge%getmap(i,ielem)+1)
+      end do
+    end if
+    i = swest+3*max_corner_elem
+    if(edge%getmap(i,ielem) /= -1) then
+      do k=1,vlyr
+        iptr=nce*(kptr+k-1)   
+        v(np+1,np+1,k) = edge%receive(iptr+edge%getmap(i,ielem)+1)
+      end do
+    end if
+    i = swest+2*max_corner_elem
+    if(edge%getmap(i,ielem) /= -1) then
+      do k=1,vlyr
+        iptr=nce*(kptr+k-1)   
+        v(0,np+1,k) = edge%receive(iptr+edge%getmap(i,ielem)+1)
+      end do
+    end if
+
   end subroutine edgeDGVunpack
 
+!<<<<<<< .working
+  ! ========================================
+  ! edgeVunpackMIN/MAX:
+  !
+  ! Finds the Min/Max edges from edge buffer into v...
+  ! ========================================
   subroutine edgeVunpackMAX(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest

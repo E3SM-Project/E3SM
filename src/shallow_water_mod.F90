@@ -1794,7 +1794,7 @@ contains
     !$OMP BARRIER
 #endif
 !  Parallel version of ref_state, comment out if writing above
-!    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
+    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -2251,7 +2251,7 @@ contains
 !    !$OMP BARRIER
 #endif
 !  Parallel version of ref_state, comment out if writing above
-!    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
+    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -4002,7 +4002,7 @@ contains
     !$OMP BARRIER
 #endif
 !  Parallel version of ref_state, comment out if writing above
-!   call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
+   call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
 #if (defined HORIZ_OPENMP)
    !$OMP BARRIER
 #endif

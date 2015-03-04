@@ -447,7 +447,8 @@ logical var_coef1
            ! note: only need to consider the corners, since the data we packed was
            ! constant within each element
            emin(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))
-           emin(k,q,ie)=max(emin(k,q,ie),0d0)
+! dont add threshold in this routine - it should be done by calling routine, if needed
+!           emin(k,q,ie)=max(emin(k,q,ie),0d0)
            emax(k,q,ie)=max(qmax(1,1,k,q),qmax(1,np,k,q),qmax(np,1,k,q),qmax(np,np,k,q))
         enddo
       enddo
@@ -870,7 +871,8 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
              ! note: only need to consider the corners, since the data we packed was
              ! constant within each element
              min_neigh(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))
-             min_neigh(k,q,ie)=max(min_neigh(k,q,ie),0d0)
+! dont add threshold in this routine - it should be done by calling routine, if needed
+!             min_neigh(k,q,ie)=max(min_neigh(k,q,ie),0d0)
              max_neigh(k,q,ie)=max(qmax(1,1,k,q),qmax(1,np,k,q),qmax(np,1,k,q),qmax(np,np,k,q))
           enddo
        end do
