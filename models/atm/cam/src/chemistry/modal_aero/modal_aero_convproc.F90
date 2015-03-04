@@ -209,7 +209,7 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
    use constituents,  only: pcnst, cnst_name
    use error_messages, only: alloc_err	
 
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use modal_aero_data, only: deepconv_wetdep_history, &
                               lmassptr_amode, nspec_amode, ntot_amode, numptr_amode, &
                               species_class, spec_class_aerosol, spec_class_gas
@@ -510,7 +510,7 @@ subroutine ma_convproc_dp_intr(                &
 
    use physconst,      only: gravit, rair
    use phys_grid,      only: get_lat_all_p, get_lon_all_p, get_rlat_all_p, get_rlon_all_p
-   use abortutils,     only: endrun
+   use cam_abortutils,     only: endrun
 
    use modal_aero_data, only: lmassptr_amode, nspec_amode, ntot_amode, numptr_amode, &
                               species_class, spec_class_aerosol, spec_class_gas
@@ -938,7 +938,7 @@ subroutine ma_convproc_sh_intr(                 &
 
    use physconst,      only: gravit, rair
    use phys_grid,      only: get_lat_all_p, get_lon_all_p, get_rlat_all_p, get_rlon_all_p
-   use abortutils,     only: endrun
+   use cam_abortutils,     only: endrun
 
    use modal_aero_data, only: lmassptr_amode, nspec_amode, ntot_amode, numptr_amode, &
                               species_class, spec_class_aerosol, spec_class_gas
@@ -1500,7 +1500,7 @@ subroutine ma_convproc_tend(                                           &
    use ppgrid, only: pcols, pver
    use physconst, only: gravit, rair, rhoh2o
    use constituents, only: pcnst, cnst_name
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
 
    use modal_aero_data, only:  cnst_name_cw, &
       lmassptr_amode, lmassptrcw_amode, &
