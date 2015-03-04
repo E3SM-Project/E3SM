@@ -50,6 +50,11 @@ class nightlyBuilder(object):
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/glade/scratch/jedwards/nightlyPioBuild'
          self.python = '/glade/apps/opt/python/2.7.7/gnu-westmere/4.8.2/bin/python'
+      if self.platform == "mira":
+         self.compilers = ['ibm']
+         self.subject='Nightly Build: pio 2.0 - '+self.platform
+         self.buildDir = os.environ["SCRATCH"]+"/nightlyPioBuild"
+         self.python = '/home/jayesh/utils/Python-3.4.2-install//bin/python'
       os.chdir(self.buildDir)
       os.mkdir(self.dirName)
       os.chdir(self.dirName)

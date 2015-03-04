@@ -2,7 +2,7 @@
 ### CMakeList.txt for tests of pio
 ###-------------------------------------------------------------------------###
 cmake_minimum_required(VERSION 2.8.5)
-
+cmake_policy(SET CMP0043 OLD)
 # Adding PIO definitions - defined in the root directory
 ADD_DEFINITIONS(${PIO_DEFINITIONS})
 
@@ -61,6 +61,7 @@ endif()
 ADD_EXECUTABLE(pio_init_finalize pio_init_finalize.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc ${TIMING_LINK_LIB} )
 
+
 # Default timeout 4 min = 240s
 SET(DEFAULT_TEST_TIMEOUT 240)
 
@@ -74,7 +75,7 @@ add_mpi_test("init_finalize_2_proc_with_args" "${CMAKE_CURRENT_BINARY_DIR}/pio_i
 
 ADD_EXECUTABLE(pio_file_simple_tests pio_file_simple_tests.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_file_simple_tests  piof pioc ${TIMING_LINK_LIB} )
-
+set_target_properties(pio_file_simple_tests PROPERTIES LINK_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
 add_mpi_test("pio_file_simple_tests" "${CMAKE_CURRENT_BINARY_DIR}/pio_file_simple_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###
@@ -100,8 +101,7 @@ add_mpi_test("ncdf_simple_tests" "${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests"
 ###-------------------------------------------------------------------------###
 
 ADD_EXECUTABLE(ncdf_get_put ncdf_get_put.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(ncdf_get_put  piof pioc ${TIMING_LINK_LIB} )
-
+TARGET_LINK_LIBRARIES(ncdf_get_put  piof pioc ${TIMING_LINK_LIB} ${LINKER_FLAGS})
 add_mpi_test("ncdf_get_put_1proc" "${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests" "" 1 ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test("ncdf_get_put_2proc" "${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
@@ -111,7 +111,6 @@ add_mpi_test("ncdf_get_put_2proc" "${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
 
 ADD_EXECUTABLE(ncdf_fail ncdf_fail.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(ncdf_fail  piof pioc ${TIMING_LINK_LIB} )
-
 add_mpi_test("ncdf_fail" "${CMAKE_CURRENT_BINARY_DIR}/ncdf_fail" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###

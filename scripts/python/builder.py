@@ -322,11 +322,11 @@ class cetus(platformBuilder):
 
         self.CMAKE_EXE = 'cmake '
 
-        self.FC = '/home/pkcoff/mpich-opensrc/install-xl.legacy.ndebug/bin/mpif2003'
-        self.CC = '/home/pkcoff/mpich-opensrc/install-xl.legacy.ndebug/bin/mpicc'
-        self.CXX = '/home/pkcoff/mpich-opensrc/install-xl.legacy.ndebug/bin/mpic++'
+        self.FC = ' /home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlf2003_r'
+        self.CC = ' /home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlc_r'
+        self.CXX = '/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlcxx'
 
-        self.LDFLAGS = '-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib'
+#        self.LDFLAGS = '-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib'
 #        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.NUMPE = '4'
 

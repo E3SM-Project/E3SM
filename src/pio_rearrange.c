@@ -1521,6 +1521,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       }
     } 
     maxregions = 0;	
+    iodesc->maxfillregions=0;
     if(myfillgrid!=NULL){
       iodesc->fillregion = alloc_region(iodesc->ndims);
       get_start_and_count_regions(iodesc->ndims,gsize,iodesc->holegridsize, myfillgrid,&(iodesc->maxfillregions),
@@ -1528,7 +1529,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       brel(myfillgrid);
       maxregions = iodesc->maxfillregions;
     }
-
     MPI_Allreduce(MPI_IN_PLACE,&maxregions,1, MPI_INT, MPI_MAX, ios.io_comm);
     iodesc->maxfillregions = maxregions;
   }
