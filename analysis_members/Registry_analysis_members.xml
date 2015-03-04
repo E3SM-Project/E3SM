@@ -7,3 +7,4 @@
 #include "Registry_meridional_heat_transport.xml"
 #include "Registry_test_compute_interval.xml"
 #include "Registry_high_frequency_output.xml"
+#include "Registry_time_averages.xml"
