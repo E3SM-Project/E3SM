@@ -12,7 +12,8 @@ contains
     use physical_constants, only : g
     use element_mod, only : element_t
     use parallel_mod, only : parallel_t, abortmp
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
           divergence_sphere, vorticity_sphere, divergence_sphere_wk
@@ -215,7 +216,8 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only: EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
           divergence_sphere, vorticity_sphere, divergence_sphere_wk
@@ -445,9 +447,9 @@ contains
 		! Pack cube edges of tendencies, rotate velocities
 		! ===================================================
 		kptr=0
-		call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
+		call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,ie)
 		kptr=nlev
-		call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+		call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
 	end do
 
    !pw++
@@ -477,10 +479,10 @@ contains
 	   ! Unpack the edges for vgradp and vtens
 	   ! ===========================================================
 	   kptr=0
-	   call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
+	   call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, ie) 
 
 	   kptr=nlev
-	   call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+	   call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
 
    end do !ie
 
@@ -537,7 +539,8 @@ contains
     use physical_constants, only : g
     use element_mod, only : element_t
 !    use parallel_mod, only : parallel_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
 !    use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
           divergence_sphere, vorticity_sphere, divergence_sphere_wk
@@ -636,7 +639,8 @@ contains
     use physical_constants, only : rearth, g
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use derivative_mod, only : derivative_t,  gradient_wk, divergence, &
          vorticity_sphere, gradient_sphere, divergence_sphere
@@ -780,7 +784,7 @@ contains
        end do
        !DBG print *,'advance_si: point #14'
        kptr=0
-       call edgeVpack(pptr%edge1, Rs(1,1,1,ie),nlev,kptr,pptr%base(ie)%desc)
+       call edgeVpack(pptr%edge1, Rs(1,1,1,ie),nlev,kptr,ie)
 
     end do
 
@@ -789,7 +793,7 @@ contains
 
     do ie=ns,ne
        kptr=0
-       call edgeVunpack(pptr%edge1, Rs(1,1,1,ie), nlev, kptr, pptr%base(ie)%desc)
+       call edgeVunpack(pptr%edge1, Rs(1,1,1,ie), nlev, kptr, ie)
        do k=1,nlev
           do j=1,np
              do i=1,np
@@ -835,7 +839,7 @@ contains
        enddo
 
        kptr=0
-       call edgeVpack(pptr%edge2, grad_dp(1,1,1,1,ie),2*nlev,kptr,pptr%base(ie)%desc)
+       call edgeVpack(pptr%edge2, grad_dp(1,1,1,1,ie),2*nlev,kptr,ie)
     end do
 
     !$OMP BARRIER
@@ -844,7 +848,7 @@ contains
     do ie=ns,ne
 
        kptr=0      
-       call edgeVunpack(pptr%edge2, grad_dp(1,1,1,1,ie), 2*nlev, kptr, pptr%base(ie)%desc)
+       call edgeVunpack(pptr%edge2, grad_dp(1,1,1,1,ie), 2*nlev, kptr, ie)
 
        do k=1,nlev
 
@@ -913,7 +917,8 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
          divergence_sphere, vorticity_sphere, divergence_sphere_wk
@@ -1027,7 +1032,7 @@ contains
        ! Pack cube edges of tendencies, rotate velocities
        ! ===================================================
        kptr=0
-       call edgeVpack(fptr%edge2, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+       call edgeVpack(fptr%edge2, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
     end do !ie
 
     !$OMP BARRIER
@@ -1040,7 +1045,7 @@ contains
        ! Unpack the edges for vgradp and vtens
        ! ===========================================================
        kptr=0
-       call edgeVunpack(fptr%edge2, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+       call edgeVunpack(fptr%edge2, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
 
     end do !ie
 
@@ -1171,7 +1176,7 @@ contains
        ! Pack cube edges of tendencies, rotate velocities
        ! ===================================================
        kptr=0
-       call edgeVpack(fptr%edge1, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
+       call edgeVpack(fptr%edge1, ptens(1,1,1,ie),nlev,kptr,ie)
     end do !ie
 
     !$OMP BARRIER
@@ -1184,7 +1189,7 @@ contains
        ! Unpack the edges for vgradp and vtens
        ! ===========================================================
        kptr=0
-       call edgeVunpack(fptr%edge1, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
+       call edgeVunpack(fptr%edge1, ptens(1,1,1,ie), nlev, kptr, ie)
     end do !ie
 
     ! ===========================================================
@@ -1219,7 +1224,8 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
          divergence_sphere, vorticity_sphere, divergence_sphere_wk
@@ -1321,7 +1327,7 @@ contains
        ! Pack cube edges of tendencies, rotate velocities
        ! ===================================================
        kptr=0
-       call edgeVpack(fptr%edge2, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+       call edgeVpack(fptr%edge2, vtens(1,1,1,1,ie),2*nlev,kptr, ie)
     end do !ie
 
     !$OMP BARRIER
@@ -1334,7 +1340,7 @@ contains
        ! Unpack the edges for vgradp and vtens
        ! ===========================================================
        kptr=0
-       call edgeVunpack(fptr%edge2, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+       call edgeVunpack(fptr%edge2, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
 
     end do !ie
 
@@ -1396,7 +1402,8 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
          divergence_sphere, vorticity_sphere, divergence_sphere_wk
@@ -1541,9 +1548,9 @@ contains
        ! Pack cube edges of tendencies, rotate velocities
        ! ===================================================
        kptr=0
-       call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
+       call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,ie)
        kptr=nlev
-       call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+       call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
     end do !ie
 
     !$OMP BARRIER
@@ -1556,9 +1563,9 @@ contains
        ! Unpack the edges for vgradp and vtens
        ! ===========================================================
        kptr=0
-       call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
+       call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, ie)
        kptr=nlev
-       call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+       call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
 
     end do !ie
     ! ===========================================================
@@ -1605,7 +1612,8 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
          divergence_sphere, vorticity_sphere, divergence_sphere_wk
@@ -1733,7 +1741,7 @@ contains
        ! Pack cube edges of tendencies, rotate velocities
        ! ===================================================
        kptr=0
-       call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
+       call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,ie)
     end do !ie
 
     !$OMP BARRIER
@@ -1746,7 +1754,7 @@ contains
        ! Unpack the edges for vgradp and vtens
        ! ===========================================================
        kptr=0
-       call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
+       call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, ie)
 
     end do !ie
     ! ===========================================================
@@ -1777,7 +1785,8 @@ contains
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     use hybrid_mod, only : hybrid_t
     use derivative_mod, only : derivative_t, gradient_sphere, &
          divergence_sphere, vorticity_sphere, divergence_sphere_wk, &
@@ -1989,9 +1998,9 @@ contains
        ! Pack cube edges of tendencies, rotate velocities
        ! ===================================================
        kptr=0
-       call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
+       call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,ie)
        kptr=nlev
-       call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+       call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
     end do !ie
 
     !$OMP BARRIER
@@ -2004,9 +2013,9 @@ contains
        ! Unpack the edges for vgradp and vtens
        ! ===========================================================
        kptr=0
-       call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
+       call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, ie)
        kptr=nlev
-       call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+       call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
 
     end do !ie
     ! ===========================================================

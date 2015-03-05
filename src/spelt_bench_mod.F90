@@ -260,8 +260,8 @@ DO WHILE(tl%nstep<nmax)
 !       vstar=elem(ie)%derived%vstar(:,:,:,k)/rearth
 !       do j=1,np
 !         do i=1,np
-!           v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
-!           v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+!           v1 = spelt(ie)%Dinv(i,j,1,1)*vstar(i,j,1) + spelt(ie)%Dinv(i,j,1,2)*vstar(i,j,2)
+!           v2 = spelt(ie)%Dinv(i,j,2,1)*vstar(i,j,1) + spelt(ie)%Dinv(i,j,2,2)*vstar(i,j,2)
 !           vstar(i,j,1)=v1
 !           vstar(i,j,2)=v2
 !         enddo
@@ -281,8 +281,8 @@ DO WHILE(tl%nstep<nmax)
 !     vstar=spelt(ie)%vn12(:,:,:,k)/rearth
 ! !     do j=1,np
 ! !       do i=1,np
-! !         v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
-! !         v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+! !         v1 = spelt(ie)%Dinv(i,j,1,1)*vstar(i,j,1) + spelt(ie)%Dinv(i,j,1,2)*vstar(i,j,2)
+! !         v2 = spelt(ie)%Dinv(i,j,2,1)*vstar(i,j,1) + spelt(ie)%Dinv(i,j,2,2)*vstar(i,j,2)
 ! !         vstar(i,j,1)=v1
 ! !         vstar(i,j,2)=v2
 ! !       enddo
@@ -301,8 +301,8 @@ DO WHILE(tl%nstep<nmax)
 !       vstar=spelt(ie)%vn0(:,:,:,k)/rearth
 ! !     do j=1,np
 ! !       do i=1,np
-! !         v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
-! !         v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+! !         v1 = spelt(ie)%Dinv(i,j,1,1)*vstar(i,j,1) + spelt(ie)%Dinv(i,j,1,2)*vstar(i,j,2)
+! !         v2 = spelt(ie)%Dinv(i,j,2,1)*vstar(i,j,1) + spelt(ie)%Dinv(i,j,2,2)*vstar(i,j,2)
 ! !         vstar(i,j,1)=v1
 ! !         vstar(i,j,2)=v2
 ! !       enddo

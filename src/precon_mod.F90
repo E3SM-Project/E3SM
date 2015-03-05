@@ -126,7 +126,7 @@ contains
 
        do ie=nets,nete
           ieptr=ie-nets+1
-          metinv = elem(ie)%metinvJMD
+          metinv = elem(ie)%metinv
           metdet = elem(ie)%metdet
           rmetdet  = elem(ie)%rmetdet
           rmp     = elem(ie)%rmp
@@ -206,7 +206,7 @@ contains
           end do
 
           kptr=0
-          call edgeVpack(edge2,gradp(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge2,gradp(1,1,1,1,ie),2*nlev,kptr,ie)
 
           kptr=0
           call edgerotate(edge2,2*nlev,kptr,elem(ie)%desc)
@@ -224,7 +224,7 @@ contains
           ieptr=ie-nets+1
 
           kptr=0
-          call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, ie)
 
           do k=1,nlev
              if (.not.cg%converged(k)) then
@@ -258,7 +258,7 @@ contains
           end do
 
           k=0
-          call edgeVpack(edge1, div(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+          call edgeVpack(edge1, div(1,1,1,ie), nlev, kptr, ie)
 
        end do
 
@@ -282,7 +282,7 @@ contains
           metdet   = elem(ie)%metdet
 
           kptr=0
-          call edgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, ie)
 
           do k=1,nlev
              if (.not.cg%converged(k)) then

@@ -250,10 +250,10 @@ subroutine fvm_grid_init(elem,fvm,nets,nete,tl)
         call vmap(tmpD,elem(ie)%cartp(i,j)%x,elem(ie)%cartp(i,j)%y,elem(ie)%FaceNum)
         detD = tmpD(1,1)*tmpD(2,2) - tmpD(1,2)*tmpD(2,1)      
 
-        fvm(ie)%Dinv(1,1,i,j) =  tmpD(2,2)/detD
-        fvm(ie)%Dinv(1,2,i,j) = -tmpD(1,2)/detD
-        fvm(ie)%Dinv(2,1,i,j) = -tmpD(2,1)/detD
-        fvm(ie)%Dinv(2,2,i,j) =  tmpD(1,1)/detD
+        fvm(ie)%Dinv(i,j,1,1) =  tmpD(2,2)/detD
+        fvm(ie)%Dinv(i,j,1,2) = -tmpD(1,2)/detD
+        fvm(ie)%Dinv(i,j,2,1) = -tmpD(2,1)/detD
+        fvm(ie)%Dinv(i,j,2,2) =  tmpD(1,1)/detD
       enddo
     enddo
   end do
@@ -309,13 +309,13 @@ subroutine fvm_mcgregordsscwfv(elem,fvm,nets,nete, hybrid, deriv, tstep, orderta
         ugradv(ie,:,:,1,k) = elem(ie)%spheremp(:,:)*ugradvtmp(:,:,1) 
         ugradv(ie,:,:,2,k) = elem(ie)%spheremp(:,:)*ugradvtmp(:,:,2) 
       enddo 
-      call edgeVpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,elem(ie)%desc)
-      call edgeVpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,elem(ie)%desc)
+      call edgeVpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,ie)
+      call edgeVpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,ie)
     enddo 
     call bndry_exchangeV(hybrid,edgeveloc)
     do ie=nets,nete
-       call edgeVunpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,elem(ie)%desc)
-       call edgeVunpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,elem(ie)%desc)
+       call edgeVunpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,ie)
+       call edgeVunpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,ie)
        do k=1, nlev  
          ugradv(ie,:,:,1,k)=ugradv(ie,:,:,1,k)*elem(ie)%rspheremp(:,:)
          ugradv(ie,:,:,2,k)=ugradv(ie,:,:,2,k)*elem(ie)%rspheremp(:,:)
