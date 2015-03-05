@@ -18,9 +18,11 @@ use hybrid_mod, only : hybrid_t, hybrid_create
 use parallel_mod, only : parallel_t
 use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
-use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
-    edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer
-use bndry_mod, only : bndry_exchangev
+use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
+use edge_mod, only : edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
+    edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, edgeSunpackmax, edgeSunpackmin,edgeSpack
+
+use bndry_mod, only : bndry_exchangev, bndry_exchangeS
 use control_mod, only : hypervis_scaling, nu, nu_div
 
 implicit none
@@ -139,13 +141,13 @@ logical var_coef1
 
       enddo
       kptr=0
-      call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+      call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
       kptr=nlev
-      call edgeVpack(edge3, vtens(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+      call edgeVpack(edge3, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
 
 #ifdef _PRIM
       kptr=3*nlev
-      call edgeVpack(edge3, pstens(1,1,ie),1,kptr,elem(ie)%desc)
+      call edgeVpack(edge3, pstens(1,1,ie),1,kptr,ie)
 #endif
    enddo
    
@@ -155,9 +157,9 @@ logical var_coef1
       rspheremv     => elem(ie)%rspheremp(:,:)
       
       kptr=0
-      call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+      call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
       kptr=nlev
-      call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+      call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
       
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
@@ -178,7 +180,7 @@ logical var_coef1
          
 #ifdef _PRIM
       kptr=3*nlev
-      call edgeVunpack(edge3, pstens(1,1,ie), 1, kptr, elem(ie)%desc)
+      call edgeVunpack(edge3, pstens(1,1,ie), 1, kptr, ie)
       ! apply inverse mass matrix, then apply laplace again
       lap_ps(:,:)=rspheremv(:,:)*pstens(:,:,ie)
       pstens(:,:,ie)=laplace_sphere_wk(lap_ps,deriv,elem(ie),var_coef=.true.)
@@ -261,11 +263,11 @@ logical var_coef1
               var_coef=var_coef1,nu_ratio=nu_ratio1)
       enddo
       kptr=0
-      call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+      call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
       kptr=nlev
-      call edgeVpack(edge3, vtens(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+      call edgeVpack(edge3, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
       kptr=3*nlev
-      call edgeVpack(edge3, dptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+      call edgeVpack(edge3, dptens(1,1,1,ie),nlev,kptr,ie)
 
    enddo
    
@@ -275,11 +277,11 @@ logical var_coef1
       rspheremv     => elem(ie)%rspheremp(:,:)
       
       kptr=0
-      call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+      call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
       kptr=nlev
-      call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+      call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
       kptr=3*nlev
-      call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+      call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, ie)
       
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
@@ -344,13 +346,13 @@ logical var_coef1
            qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
          enddo
       enddo
-      call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
+      call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,ie)
    enddo
 
    call bndry_exchangeV(hybrid,edgeq)
    
    do ie=nets,nete
-      call edgeVunpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
+      call edgeVunpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,ie)
 
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
@@ -415,9 +417,9 @@ logical var_coef1
          qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
       enddo
       enddo
-      call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
-      call edgeVpack(edgeq,Qmin,nlev*qsize,nlev*qsize,elem(ie)%desc)
-      call edgeVpack(edgeq,Qmax,nlev*qsize,2*nlev*qsize,elem(ie)%desc)
+      call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,ie)
+      call edgeVpack(edgeq,Qmin,nlev*qsize,nlev*qsize,ie)
+      call edgeVpack(edgeq,Qmax,nlev*qsize,2*nlev*qsize,ie)
    enddo
    
    call bndry_exchangeV(hybrid,edgeq)
@@ -430,9 +432,9 @@ logical var_coef1
       enddo
       enddo
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-      call edgeVunpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
-      call edgeVunpackMin(edgeq, Qmin,qsize*nlev,qsize*nlev,elem(ie)%desc)
-      call edgeVunpackMax(edgeq, Qmax,qsize*nlev,2*qsize*nlev,elem(ie)%desc)
+      call edgeVunpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,ie)
+      call edgeVunpackMin(edgeq, Qmin,qsize*nlev,qsize*nlev,ie)
+      call edgeVunpackMax(edgeq, Qmax,qsize*nlev,2*qsize*nlev,ie)
 
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
@@ -481,7 +483,7 @@ real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 integer :: k,i,j,ie,ic,kptr
 
 
-call initEdgeBuffer(hybrid%par,edge1,nlev)
+    call initEdgeBuffer(hybrid%par,edge1,elem,nlev)
 
 do ie=nets,nete
 #if (defined COLUMN_OPENMP)
@@ -491,12 +493,12 @@ do ie=nets,nete
       zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%spheremp(:,:)
    enddo
    kptr=0
-   call edgeVpack(edge1, zeta(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+   call edgeVpack(edge1, zeta(1,1,1,ie),nlev,kptr,ie)
 enddo
 call bndry_exchangeV(hybrid,edge1)
 do ie=nets,nete
    kptr=0
-   call edgeVunpack(edge1, zeta(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+   call edgeVunpack(edge1, zeta(1,1,1,ie),nlev,kptr, ie)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -525,7 +527,7 @@ integer :: k,i,j,ie,ic,kptr
 type (EdgeBuffer_t)          :: edge2
 
 
-call initEdgeBuffer(hybrid%par,edge2,2*nlev)
+    call initEdgeBuffer(hybrid%par,edge2,elem,2*nlev)
 
 do ie=nets,nete
 #if (defined COLUMN_OPENMP)
@@ -536,12 +538,12 @@ do ie=nets,nete
       v(:,:,2,k,ie)=v(:,:,2,k,ie)*elem(ie)%spheremp(:,:)
    enddo
    kptr=0
-   call edgeVpack(edge2, v(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+   call edgeVpack(edge2, v(1,1,1,1,ie),2*nlev,kptr,ie)
 enddo
 call bndry_exchangeV(hybrid,edge2)
 do ie=nets,nete
    kptr=0
-   call edgeVunpack(edge2, v(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+   call edgeVunpack(edge2, v(1,1,1,1,ie),2*nlev,kptr,ie)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -591,8 +593,8 @@ do k=1,nlev
 do ie=nets,nete
     v1 = elem(ie)%state%v(:,:,1,k,nt)
     v2 = elem(ie)%state%v(:,:,2,k,nt)
-    ulatlon(:,:,1) = elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2
-    ulatlon(:,:,2) = elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2
+    ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
+    ulatlon(:,:,2) = elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2
    !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
    zeta(:,:,k,ie)=vorticity_sphere(ulatlon,deriv,elem(ie))
 enddo
@@ -631,8 +633,8 @@ do k=1,nlev
 do ie=nets,nete
     v1 = elem(ie)%state%v(:,:,1,k,nt)
     v2 = elem(ie)%state%v(:,:,2,k,nt)
-    ulatlon(:,:,1) = elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2
-    ulatlon(:,:,2) = elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2
+    ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
+    ulatlon(:,:,2) = elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2
    !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
    zeta(:,:,k,ie)=divergence_sphere(ulatlon,deriv,elem(ie))
 enddo
@@ -777,7 +779,43 @@ end subroutine
 
 
 #ifdef _PRIM
-subroutine neighbor_minmax(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
+
+subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
+ 
+   type (hybrid_t)      , intent(in) :: hybrid
+   type (EdgeBuffer_t)  , intent(inout) :: edgeMinMax
+   integer :: nets,nete
+   real (kind=real_kind) :: min_neigh(nlev,qsize,nets:nete)
+   real (kind=real_kind) :: max_neigh(nlev,qsize,nets:nete)
+
+   ! local 
+   integer :: ie,q, k,kptr
+
+   
+   do ie=nets,nete
+      kptr = 0
+      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      kptr = qsize*nlev
+      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+   enddo
+   
+   call bndry_exchangeS(hybrid,edgeMinMax)
+
+   do ie=nets,nete
+      kptr = 0
+      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      kptr = qsize*nlev
+      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      do q=1,qsize
+      do k=1,nlev
+          min_neigh(k,q,ie) = max(min_neigh(k,q,ie),0d0)
+      enddo
+      enddo
+   enddo
+  
+end subroutine neighbor_minmax
+
+subroutine oldneighbor_minmax(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
 !
 ! compute Q min&max over the element and all its neighbors
 !
@@ -806,8 +844,8 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
              Qmax(:,:,k,q)=max_neigh(k,q,ie)
           enddo
        end do
-       call edgeVpack(edgeMinMax,Qmin,nlev*qsize,0,elem(ie)%desc)
-       call edgeVpack(edgeMinMax,Qmax,nlev*qsize,nlev*qsize,elem(ie)%desc)
+       call edgeVpack(edgeMinMax,Qmin,nlev*qsize,0,ie)
+       call edgeVpack(edgeMinMax,Qmax,nlev*qsize,nlev*qsize,ie)
     enddo
 
     call bndry_exchangeV(hybrid,edgeMinMax)
@@ -823,8 +861,8 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
           enddo
        end do
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-       call edgeVunpackMin(edgeMinMax,Qmin,nlev*qsize,0,elem(ie)%desc)
-       call edgeVunpackMax(edgeMinMax,Qmax,nlev*qsize,nlev*qsize,elem(ie)%desc)
+       call edgeVunpackMin(edgeMinMax,Qmin,nlev*qsize,0,ie)
+       call edgeVunpackMax(edgeMinMax,Qmax,nlev*qsize,nlev*qsize,ie)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q)
 #endif
@@ -845,7 +883,7 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
 #endif
 #endif
 
-end subroutine
+end subroutine oldneighbor_minmax
 
 
 #else
@@ -869,6 +907,7 @@ real (kind=real_kind) :: Qmax(np,np,nlev)
 real (kind=real_kind) :: Qvar(np,np,nlev)
 type (EdgeBuffer_t)          :: edgebuf
 integer, optional :: kmass
+type (EdgeDescriptor_t), allocatable :: desc(:)
 
 ! local
 integer :: ie,k,q
@@ -885,10 +924,8 @@ integer :: ie,k,q
     enddo
   endif
 
-
-
     ! create edge buffer for 3 fields
-    call initEdgeBuffer(hybrid%par,edgebuf,3*nlev)
+    call initEdgeBuffer(hybrid%par,edgebuf,elem,3*nlev)
 
 
     ! compute p min, max
@@ -902,9 +939,9 @@ integer :: ie,k,q
           ! max - min - crude approximation to TV within the element:
           Qvar(:,:,k)=Qmax(1,1,k)-Qmin(1,1,k)
        enddo
-       call edgeVpack(edgebuf,Qmax,nlev,0,elem(ie)%desc)
-       call edgeVpack(edgebuf,Qmin,nlev,nlev,elem(ie)%desc)
-       call edgeVpack(edgebuf,Qvar,nlev,2*nlev,elem(ie)%desc)
+       call edgeVpack(edgebuf,Qmax,nlev,0,ie)
+       call edgeVpack(edgebuf,Qmin,nlev,nlev,ie)
+       call edgeVpack(edgebuf,Qvar,nlev,2*nlev,ie)
     enddo
     
     call bndry_exchangeV(hybrid,edgebuf)
@@ -927,7 +964,7 @@ integer :: ie,k,q
              Qvar(:,:,k)=Qmax(1,1,k)-Qmin(1,1,k)
           enddo
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-          call edgeVunpackMin(edgebuf,Qvar,nlev,2*nlev,elem(ie)%desc)
+          call edgeVunpackMin(edgebuf,Qvar,nlev,2*nlev,ie)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -945,7 +982,7 @@ integer :: ie,k,q
              Qvar(:,:,k)=Qmax(1,1,k)-Qmin(1,1,k)
           enddo
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-          call edgeVunpackMax(edgebuf,Qvar,nlev,2*nlev,elem(ie)%desc)
+          call edgeVunpackMax(edgebuf,Qvar,nlev,2*nlev,ie)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -956,8 +993,8 @@ integer :: ie,k,q
 
 
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-       call edgeVunpackMax(edgebuf,Qmax,nlev,0,elem(ie)%desc)
-       call edgeVunpackMin(edgebuf,Qmin,nlev,nlev,elem(ie)%desc)
+       call edgeVunpackMax(edgebuf,Qmax,nlev,0,ie)
+       call edgeVunpackMin(edgebuf,Qmin,nlev,nlev,ie)
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -986,8 +1023,6 @@ integer :: ie,k,q
     enddo
   endif
 end subroutine
+
 #endif
-
-
-
 end module

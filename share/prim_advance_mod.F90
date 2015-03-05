@@ -7,10 +7,10 @@
 !
 !
 module prim_advance_mod
-  use edge_mod, only : EdgeBuffer_t
+  use edgetype_mod, only : EdgeDescriptor_t, EdgeBuffer_t
   use kinds, only : real_kind, iulog
   use perf_mod, only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
-  use parallel_mod, only : abortmp, parallel_t
+  use parallel_mod, only : abortmp, parallel_t, iam
   use control_mod, only : se_prescribed_wind_2d
 
   implicit none
@@ -29,24 +29,32 @@ module prim_advance_mod
 
 contains
 
-  subroutine prim_advance_init(par,integration)
+  subroutine prim_advance_init(par, elem,integration)
     use edge_mod, only : initEdgeBuffer
-    use dimensions_mod, only : nlev
+    use element_mod, only : element_t
+    use dimensions_mod, only : nlev, nelemd
     use control_mod, only : qsplit,rsplit
-    type(parallel_t) :: par
+    type (parallel_t) :: par
+    type (element_t), intent(inout), target   :: elem(:)
     character(len=*)    , intent(in) :: integration
     integer :: i
+    integer :: ie
+!    integer, allocatable :: globalid(:)
 
+!    print *,'prim_advance_init: nelemd:= ',nelemd
+!    allocate(globalid(nelemd))
+!    print *,'prim_advance_init: after allocate '
+!    print *,'prim_advance_init: before call to initNewEdgeBuffer rsplit: ',rsplit
     if (rsplit==0) then
-       call initEdgeBuffer(par,edge3p1,3*nlev+1)
+       call initEdgeBuffer(par,edge3p1,elem,3*nlev+1)
     else
        ! need extra buffer space for dp3d
-       call initEdgeBuffer(par,edge3p1,4*nlev+1)
+       call initEdgeBuffer(par,edge3p1,elem,4*nlev+1)
     endif
 
     if(integration == 'semi_imp') then
-       call initEdgeBuffer(par,edge1,nlev)
-       call initEdgeBuffer(par,edge2,2*nlev)
+       call initEdgeBuffer(par,edge1,elem,nlev)
+       call initEdgeBuffer(par,edge2,elem,2*nlev)
     end if
 
     ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
@@ -72,9 +80,10 @@ contains
     use bndry_mod, only : bndry_exchangev
     use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture, integration
     use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
-    use dimensions_mod, only : np, nlev, nlevp, nvar, nc
+    use dimensions_mod, only : np, nlev, nlevp, nvar, nc, nelemd
 !    use prim_state_mod, only : prim_printstate
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
+    use edge_mod, only : edgevpack, edgevunpack, initEdgeBuffer
+    use edgetype_mod, only : EdgeBuffer_t
     use element_mod, only : element_t
     use hybvcoord_mod, only : hvcoord_t
     use hybrid_mod, only : hybrid_t
@@ -635,7 +644,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        use control_mod, only : filter_freq,debug_level, precon_method
        use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
        use dimensions_mod, only : np, nlev, nlevp
-       use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
+       use edge_mod, only : edgevpack, edgevunpack, initEdgeBuffer
+       use edgetype_mod, only : EdgeBuffer_t
        use element_mod, only : element_t
        use filter_mod, only : filter_t, preq_filter
        use hybvcoord_mod, only : hvcoord_t
@@ -725,6 +735,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        real(kind=real_kind) :: Vscript(np,np,2,nlev,nets:nete)
        real(kind=real_kind) :: Tscript(np,np,nlev,nets:nete)
        real(kind=real_kind) :: Pscript(np,np,nets:nete)
+       real(kind=real_kind) :: Vtemp(np,np,2,nlev,nets:nete)
 
        real(kind=real_kind), dimension(np,np)      :: HrefTscript
        real(kind=real_kind), dimension(np,np)      :: suml
@@ -840,17 +851,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           call preq_filter(elem, edge3p1, flt, cg%hybrid, nfilt, nets, nete)
        end if
 
-       do ie = nets, nete
-
-          elem(ie)%derived%grad_lnps(:,:,:) = gradient(elem(ie)%state%lnps(:,:,n0),deriv)*rrearth
-
-       end do
-
        ! ================================================
        ! boundary exchange grad_lnps
        ! ================================================
 
        do ie = nets, nete
+
+          elem(ie)%derived%grad_lnps(:,:,:) = gradient(elem(ie)%state%lnps(:,:,n0),deriv)*rrearth
 
           do k=1,nlevp
              pintref(k)  = hvcoord%hyai(k)*ps0 + hvcoord%hybi(k)*psref
@@ -884,8 +891,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
                    ! Contravariant velocities
 
-                   vco(i,j,1) = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-                   vco(i,j,2) = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+                   vco(i,j,1) = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+                   vco(i,j,2) = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
 
                    vgrad_ps(i,j,k) = ps(i,j)*(vco(i,j,1)*elem(ie)%derived%grad_lnps(i,j,1) + &
                         vco(i,j,2)*elem(ie)%derived%grad_lnps(i,j,2))
@@ -953,8 +960,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
                    ! Contravariant velocities
 
-                   vco(i,j,1) = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-                   vco(i,j,2) = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+                   vco(i,j,1) = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+                   vco(i,j,2) = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
 
                    vgradT = vco(i,j,1)*gradT(i,j,1) + vco(i,j,2)*gradT(i,j,2)
 
@@ -995,8 +1002,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
                    ! covariant velocity
 
-                   vco(i,j,1) = elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(2,1,i,j)*v2
-                   vco(i,j,2) = elem(ie)%D(1,2,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2
+                   vco(i,j,1) = elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,2,1)*v2
+                   vco(i,j,2) = elem(ie)%D(i,j,1,2)*v1 + elem(ie)%D(i,j,2,2)*v2
 
                    E(i,j) = 0.5_real_kind*( v1*v1 + v2*v2 )
 
@@ -1018,13 +1025,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                    elem(ie)%derived%zeta(i,j,k) = elem(ie)%rmetdet(i,j)*elem(ie)%derived%zeta(i,j,k)
                    hybfac =  hvcoord%hybm(k)*(ps(i,j)*rpmid(i,j,k))
 
-                   glnps1 = elem(ie)%Dinv(1,1,i,j)*elem(ie)%derived%grad_lnps(i,j,1) + &
-                        elem(ie)%Dinv(2,1,i,j)*elem(ie)%derived%grad_lnps(i,j,2)
-                   glnps2 = elem(ie)%Dinv(1,2,i,j)*elem(ie)%derived%grad_lnps(i,j,1) + &
-                        elem(ie)%Dinv(2,2,i,j)*elem(ie)%derived%grad_lnps(i,j,2)
+                   glnps1 = elem(ie)%Dinv(i,j,1,1)*elem(ie)%derived%grad_lnps(i,j,1) + &
+                        elem(ie)%Dinv(i,j,2,1)*elem(ie)%derived%grad_lnps(i,j,2)
+                   glnps2 = elem(ie)%Dinv(i,j,1,2)*elem(ie)%derived%grad_lnps(i,j,1) + &
+                        elem(ie)%Dinv(i,j,2,2)*elem(ie)%derived%grad_lnps(i,j,2)
 
-                   v1 = elem(ie)%Dinv(1,1,i,j)*grad_Phi(i,j,1) + elem(ie)%Dinv(2,1,i,j)*grad_Phi(i,j,2)
-                   v2 = elem(ie)%Dinv(1,2,i,j)*grad_Phi(i,j,1) + elem(ie)%Dinv(2,2,i,j)*grad_Phi(i,j,2)
+                   v1 = elem(ie)%Dinv(i,j,1,1)*grad_Phi(i,j,1) + elem(ie)%Dinv(i,j,2,1)*grad_Phi(i,j,2)
+                   v2 = elem(ie)%Dinv(i,j,1,2)*grad_Phi(i,j,1) + elem(ie)%Dinv(i,j,2,2)*grad_Phi(i,j,2)
 
                    Vscript(i,j,1,k,ie) = - v_vadv(i,j,1,k) &
                         + elem(ie)%state%v(i,j,2,k,n0) * (elem(ie)%fcor(i,j) + elem(ie)%derived%zeta(i,j,k)) &
@@ -1045,8 +1052,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           do k=1,nlev
              do j=1,np
                 do i=1,np
-                   Vs1 = elem(ie)%Dinv(1,1,i,j)*grad_dGref(i,j,1,k) + elem(ie)%Dinv(2,1,i,j)*grad_dGref(i,j,2,k)
-                   Vs2 = elem(ie)%Dinv(1,2,i,j)*grad_dGref(i,j,1,k) + elem(ie)%Dinv(2,2,i,j)*grad_dGref(i,j,2,k)
+                   Vs1 = elem(ie)%Dinv(i,j,1,1)*grad_dGref(i,j,1,k) + elem(ie)%Dinv(i,j,2,1)*grad_dGref(i,j,2,k)
+                   Vs2 = elem(ie)%Dinv(i,j,1,2)*grad_dGref(i,j,1,k) + elem(ie)%Dinv(i,j,2,2)*grad_dGref(i,j,2,k)
 
                    Vscript(i,j,1,k,ie) = elem(ie)%mp(i,j)*Vscript(i,j,1,k,ie) + Vs1
                    Vscript(i,j,2,k,ie) = elem(ie)%mp(i,j)*Vscript(i,j,2,k,ie) + Vs2
@@ -1075,7 +1082,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           end do
 
           kptr=0
-          call edgeVpack(edge2, Vscript(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge2, Vscript(1,1,1,1,ie),2*nlev,kptr,ie)
 
        end do
 
@@ -1084,7 +1091,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        do ie = nets, nete
 
           kptr=0
-          call edgeVunpack(edge2, Vscript(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge2, Vscript(1,1,1,1,ie), 2*nlev, kptr, ie)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -1107,10 +1114,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
                    ! Contravariant Vscript
 
-                   gVscript(i,j,1) = elem(ie)%Dinv(1,1,i,j)*Vscript(i,j,1,k,ie) + &
-                        elem(ie)%Dinv(1,2,i,j)*Vscript(i,j,2,k,ie)
-                   gVscript(i,j,2) = elem(ie)%Dinv(2,1,i,j)*Vscript(i,j,1,k,ie) + &
-                        elem(ie)%Dinv(2,2,i,j)*Vscript(i,j,2,k,ie)
+                   gVscript(i,j,1) = elem(ie)%Dinv(i,j,1,1)*Vscript(i,j,1,k,ie) + &
+                        elem(ie)%Dinv(i,j,1,2)*Vscript(i,j,2,k,ie)
+                   gVscript(i,j,2) = elem(ie)%Dinv(i,j,2,1)*Vscript(i,j,1,k,ie) + &
+                        elem(ie)%Dinv(i,j,2,2)*Vscript(i,j,2,k,ie)
 
                    gVscript(i,j,1) = elem(ie)%metdet(i,j)*gVscript(i,j,1)
                    gVscript(i,j,2) = elem(ie)%metdet(i,j)*gVscript(i,j,2)
@@ -1163,7 +1170,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! ===================================
 
           kptr=0
-          call edgeVpack(edge1,C(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge1,C(1,1,1,ie),nlev,kptr,ie)
 
        end do
 
@@ -1180,7 +1187,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! ===================================
 
           kptr=0
-          call edgeVunpack(edge1, C(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge1, C(1,1,1,ie), nlev, kptr, ie)
 
           ! ===============================================
           ! Complete global assembly by normalizing by rmp
@@ -1242,7 +1249,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
             nete,       &
             blkjac)
 
-
        ! ================================================================
        ! Backsubstitute Gamma_ref into semi-implicit system of equations
        ! to find prognostic variables at time level n+1
@@ -1278,7 +1284,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-          call edgeVpack(edge1,B(:,:,:,ie),nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge1,B(:,:,:,ie),nlev,kptr,ie)
 
        end do
 
@@ -1287,7 +1293,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        do ie = nets, nete
 
           kptr=0
-          call edgeVunpack(edge1, B(:,:,:,ie), nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge1, B(:,:,:,ie), nlev, kptr, ie)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -1358,8 +1364,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                 do i=1,np
                    gGr1 = grad_Gref(i,j,1,k)
                    gGr2 = grad_Gref(i,j,2,k)
-                   elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%Dinv(1,1,i,j)*gGr1 + elem(ie)%Dinv(2,1,i,j)*gGr2
-                   elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%Dinv(1,2,i,j)*gGr1 + elem(ie)%Dinv(2,2,i,j)*gGr2
+                   elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%Dinv(i,j,1,1)*gGr1 + elem(ie)%Dinv(i,j,2,1)*gGr2
+                   elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%Dinv(i,j,1,2)*gGr1 + elem(ie)%Dinv(i,j,2,2)*gGr2
+                   Vtemp(i,j,1,k,ie) = elem(ie)%state%v(i,j,1,k,np1)
+                   Vtemp(i,j,2,k,ie) = elem(ie)%state%v(i,j,2,k,np1)
                 end do
              end do
 
@@ -1398,13 +1406,14 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! ===============================================
 
           kptr=0
-          call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,elem(ie)%desc)
+!          call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
+          call edgeVpack(edge3p1, Vtemp(:,:,:,:,ie),2*nlev,kptr,ie)
 
           kptr=2*nlev
-          call edgeVpack(edge3p1, Tscript(:,:,:,ie),nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge3p1, Tscript(:,:,:,ie),nlev,kptr,ie)
 
           kptr=3*nlev
-          call edgeVpack(edge3p1, Pscript(:,:,ie),1,kptr,elem(ie)%desc)
+          call edgeVpack(edge3p1, Pscript(:,:,ie),1,kptr,ie)
 
        end do
 
@@ -1414,6 +1423,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        call bndry_exchangeV(cg%hybrid,edge3p1)
 
+!KGEN START(prim_advance_si_bug1)
        do ie=nets,nete
 
           ! ===================================
@@ -1421,18 +1431,26 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! ===================================
 
           kptr=0
-          call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge3p1, Vtemp(:,:,:,:,ie), 2*nlev, kptr, ie)
+!JMD          call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
+!JMD          elem(ie)%state%v(:,:,:,:,np1) = Vtemp(:,:,:,:,ie)
+
 
           kptr=2*nlev
-          call edgeVunpack(edge3p1, Tscript(:,:,:,ie), nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge3p1, Tscript(:,:,:,ie), nlev, kptr, ie)
 
           kptr=3*nlev
-          call edgeVunpack(edge3p1, Pscript(:,:,ie), 1, kptr, elem(ie)%desc)
+          call edgeVunpack(edge3p1, Pscript(:,:,ie), 1, kptr, ie)
 
           ! ==========================================================
           ! Complete global assembly by normalizing velocity by rmp
           ! Vscript = Vscript - dt*grad(Gref)
           ! ==========================================================
+          if(iam==1) then           
+!BUG  There appears to be a bug in the Intel 15.0.1 compiler that generates
+!BUG  incorrect code for this loop if the following print * statement is removed.
+             print *,'IAM: ',iam, ' prim_advance_si: after SUM(v(np1)) ',sum(elem(ie)%state%v(:,:,:,:,np1)) 
+          endif
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
@@ -1441,8 +1459,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
              do j=1,np
                 do i=1,np
-                   elem(ie)%state%v(i,j,1,k,np1) = Vscript(i,j,1,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,1,k,np1)
-                   elem(ie)%state%v(i,j,2,k,np1) = Vscript(i,j,2,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,2,k,np1)
+!                   elem(ie)%state%v(i,j,1,k,np1) = Vscript(i,j,1,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,1,k,np1)
+!                   elem(ie)%state%v(i,j,2,k,np1) = Vscript(i,j,2,k,ie) + dt*elem(ie)%rmp(i,j)*elem(ie)%state%v(i,j,2,k,np1)
+                   elem(ie)%state%v(i,j,1,k,np1) = Vscript(i,j,1,k,ie) + dt*elem(ie)%rmp(i,j)*Vtemp(i,j,1,k,ie)
+                   elem(ie)%state%v(i,j,2,k,np1) = Vscript(i,j,2,k,ie) + dt*elem(ie)%rmp(i,j)*Vtemp(i,j,2,k,ie)
+                   elem(ie)%state%T(i,j,k,np1)   = elem(ie)%rmp(i,j)*Tscript(i,j,k,ie)
                 end do
              end do
 
@@ -1454,26 +1475,15 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              end do
           end do
 
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j)
-#endif
-          do k=1,nlev
-             do j=1,np
-                do i=1,np
-                   elem(ie)%state%T(i,j,k,np1) = elem(ie)%rmp(i,j)*Tscript(i,j,k,ie)
-                end do
-             end do
-          end do
-
        end do
+!KGEN END(prim_advance_si_bug1)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
-#if 1
+
        call prim_diffusion(elem, nets,nete,np1,deriv,dt2,cg%hybrid)
-#endif
        call t_stopf('prim_advance_si')
        call t_adj_detailf(-1)
 #endif
@@ -1713,7 +1723,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : edgevpack, edgevunpack
+  use edgetype_mod, only : EdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk
   use physical_constants, only: Cp
@@ -1787,9 +1798,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
 
            kptr=0
-           call edgeVpack(edge3, elem(ie)%state%T(:,:,:,nt),nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3, elem(ie)%state%T(:,:,:,nt),nlev,kptr,ie)
            kptr=nlev
-           call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
         call bndry_exchangeV(hybrid,edge3)
@@ -1797,9 +1808,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge3, elem(ie)%state%T(:,:,:,nt), nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, elem(ie)%state%T(:,:,:,nt), nlev, kptr, ie)
            kptr=nlev
-           call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
 
            ! apply inverse mass matrix
 #if (defined COLUMN_OPENMP)
@@ -1909,11 +1920,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
            pstens(:,:,ie)  =  -nu_p*pstens(:,:,ie)
            kptr=0
-           call edgeVpack(edge3, ptens(:,:,:,ie),nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3, ptens(:,:,:,ie),nlev,kptr,ie)
            kptr=nlev
-           call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
            kptr=3*nlev
-           call edgeVpack(edge3,pstens(:,:,ie),1,kptr,elem(ie)%desc)
+           call edgeVpack(edge3,pstens(:,:,ie),1,kptr,ie)
         enddo
 
 
@@ -1922,9 +1933,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge3, ptens(:,:,:,ie), nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, ptens(:,:,:,ie), nlev, kptr, ie)
            kptr=nlev
-           call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
 
 
            ! apply inverse mass matrix, accumulate tendencies
@@ -1962,7 +1973,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
            if (nu_p>0) then
               kptr=3*nlev
-              call edgeVunpack(edge3, pstens(:,:,ie), 1, kptr, elem(ie)%desc)
+              call edgeVunpack(edge3, pstens(:,:,ie), 1, kptr, ie)
               pstens(:,:,ie)=dt*pstens(:,:,ie)*elem(ie)%rspheremp(:,:)
               elem(ie)%state%ps_v(:,:,nt)=elem(ie)%state%ps_v(:,:,nt) + pstens(:,:,ie)
            endif
@@ -2001,7 +2012,12 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use derivative_mod, only : subcell_Laplace_fluxes, subcell_dss_fluxes
-  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, EdgeDescriptor_t, edgeDGVunpack
+!<<<<<<< .working
+  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
+  use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
+!=======
+!  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, EdgeDescriptor_t, edgeDGVunpack
+!>>>>>>> .merge-right.r4537
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk_dp3d
   use physical_constants, only: Cp
@@ -2084,9 +2100,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
 
            kptr=0
-           call edgeVpack(edge3, elem(ie)%state%T(:,:,:,nt),nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3, elem(ie)%state%T(:,:,:,nt),nlev,kptr,ie)
            kptr=nlev
-           call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
         call bndry_exchangeV(hybrid,edge3)
@@ -2094,9 +2110,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge3, elem(ie)%state%T(:,:,:,nt), nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, elem(ie)%state%T(:,:,:,nt), nlev, kptr, ie)
            kptr=nlev
-           call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
 
            ! apply inverse mass matrix
 #if (defined COLUMN_OPENMP)
@@ -2195,11 +2211,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
            kptr=0
-           call edgeVpack(edge3, ttens(:,:,:,ie),nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3, ttens(:,:,:,ie),nlev,kptr,ie)
            kptr=nlev
-           call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
            kptr=3*nlev
-           call edgeVpack(edge3,dptens(:,:,:,ie),nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3,dptens(:,:,:,ie),nlev,kptr,ie)
         enddo
 
 
@@ -2208,9 +2224,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge3, ttens(:,:,:,ie), nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, ttens(:,:,:,ie), nlev, kptr, ie)
            kptr=nlev
-           call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
            kptr=3*nlev
            if (0<ntrac) then
              do k=1,nlev
@@ -2219,7 +2235,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              corners = 0.0d0
              corners(1:np,1:np,:) = dptens(:,:,:,ie)
            endif
-           call edgeVunpack(edge3, dptens(:,:,:,ie), nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, dptens(:,:,:,ie), nlev, kptr, ie)
 
 
            ! apply inverse mass matrix, accumulate tendencies
@@ -2239,7 +2255,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              kptr=3*nlev
              desc = elem(ie)%desc
              
-             call edgeDGVunpack(edge3, corners, nlev, kptr, desc)
+             call edgeDGVunpack(edge3, corners, nlev, kptr, ie) 
              
              corners = corners/dt
              
@@ -2317,7 +2333,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : edgevpack, edgevunpack
+  use edgetype_mod, only : EdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk
   use physical_constants, only: Cp
@@ -2396,9 +2413,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
 
            kptr=0
-           call edgeVpack(edge3, elem(ie)%state%T(:,:,:,nt),nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3, elem(ie)%state%T(:,:,:,nt),nlev,kptr,ie)
            kptr=nlev
-           call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
         call bndry_exchangeV(hybrid,edge3)
@@ -2406,9 +2423,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge3, elem(ie)%state%T(:,:,:,nt), nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, elem(ie)%state%T(:,:,:,nt), nlev, kptr, ie)
            kptr=nlev
-           call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
 
            ! apply inverse mass matrix
 #if (defined COLUMN_OPENMP)
@@ -2492,11 +2509,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
            pstens(:,:,ie)  =  -nu_p*pstens(:,:,ie)
            kptr=0
-           call edgeVpack(edge3, ptens(:,:,:,ie),nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3, ptens(:,:,:,ie),nlev,kptr,ie)
            kptr=nlev
-           call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,elem(ie)%desc)
+           call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
            kptr=3*nlev
-           call edgeVpack(edge3,pstens(:,:,ie),1,kptr,elem(ie)%desc)
+           call edgeVpack(edge3,pstens(:,:,ie),1,kptr,ie)
         enddo
 
 
@@ -2505,11 +2522,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
 
            kptr=0
-           call edgeVunpack(edge3, ptens(:,:,:,ie), nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, ptens(:,:,:,ie), nlev, kptr, ie)
            kptr=nlev
-           call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, vtens(:,:,:,:,ie), 2*nlev, kptr, ie)
            kptr=3*nlev
-           call edgeVunpack(edge3, pstens(:,:,ie), 1, kptr, elem(ie)%desc)
+           call edgeVunpack(edge3, pstens(:,:,ie), 1, kptr, ie)
 
            if (psurf_vis == 1 ) then
               ! apply p-surface correction
@@ -2611,10 +2628,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use kinds, only : real_kind
   use dimensions_mod, only : np, nc, nlev, ntrac, max_corner_elem
   use hybrid_mod, only : hybrid_t
-  use element_mod, only : element_t
+  use element_mod, only : element_t,PrintElem
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
-  use edge_mod, only : edgevpack, edgevunpack, edgedescriptor_t, edgeDGVunpack
+  use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
+  use edgetype_mod, only : edgedescriptor_t
   use bndry_mod, only : bndry_exchangev
   use control_mod, only : moisture, qsplit, use_cpstar, rsplit, swest
   use hybvcoord_mod, only : hvcoord_t
@@ -2682,6 +2700,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind) ::  u_m_umet, v_m_vmet, t_m_tmet 
 
 !JMD  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
+
   call t_adj_detailf(+1)
   call t_startf('compute_and_apply_rhs')
   do ie=nets,nete
@@ -3190,8 +3209,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               elem(ie)%state%dp3d(:,:,k,np1) = -elem(ie)%spheremp(:,:)*&
               (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k))
            if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
-              v(:,:,1) =  elem(ie)%Dinv(1,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(1,2,:,:)*vdp(:,:,2,k)
-              v(:,:,2) =  elem(ie)%Dinv(2,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(2,2,:,:)*vdp(:,:,2,k)
+              v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
+              v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
               tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
               elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
            end if
@@ -3212,8 +3231,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
            if (0<rsplit.and.0<ntrac.and.eta_ave_w.ne.0.) then
-              v(:,:,1) =  elem(ie)%Dinv(1,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(1,2,:,:)*vdp(:,:,2,k)
-              v(:,:,2) =  elem(ie)%Dinv(2,1,:,:)*vdp(:,:,1,k) + elem(ie)%Dinv(2,2,:,:)*vdp(:,:,2,k)
+              v(:,:,1) =  elem(ie)%Dinv(:,:,1,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,1,2)*vdp(:,:,2,k)
+              v(:,:,2) =  elem(ie)%Dinv(:,:,2,1)*vdp(:,:,1,k) + elem(ie)%Dinv(:,:,2,2)*vdp(:,:,2,k)
               tempflux =  eta_ave_w*subcell_div_fluxes(v, np, nc, elem(ie)%metdet)
               elem(ie)%sub_elem_mass_flux(:,:,:,k) = elem(ie)%sub_elem_mass_flux(:,:,:,k) - tempflux
            end if
@@ -3229,17 +3248,17 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      !
      ! =========================================================
      kptr=0
-     call edgeVpack(edge3p1, elem(ie)%state%ps_v(:,:,np1),1,kptr,elem(ie)%desc)
+     call edgeVpack(edge3p1, elem(ie)%state%ps_v(:,:,np1),1,kptr,ie)
 
      kptr=1
-     call edgeVpack(edge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,elem(ie)%desc)
+     call edgeVpack(edge3p1, elem(ie)%state%T(:,:,:,np1),nlev,kptr,ie)
 
      kptr=nlev+1
-     call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,elem(ie)%desc)
+     call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,ie)
 
      if (rsplit>0) then
         kptr=kptr+2*nlev
-        call edgeVpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
+        call edgeVpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr, ie)
      endif
   end do
 
@@ -3253,13 +3272,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Unpack the edges for vgrad_T and v tendencies...
      ! ===========================================================
      kptr=0
-     call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, kptr, elem(ie)%desc)
+     call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, kptr, ie)
 
      kptr=1
-     call edgeVunpack(edge3p1, elem(ie)%state%T(:,:,:,np1), nlev, kptr, elem(ie)%desc)
+     call edgeVunpack(edge3p1, elem(ie)%state%T(:,:,:,np1), nlev, kptr, ie)
 
      kptr=nlev+1
-     call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, elem(ie)%desc)
+     call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, ie)
 
      if (rsplit>0) then
         if (0<ntrac.and.eta_ave_w.ne.0.) then
@@ -3271,11 +3290,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         corners = 0.0d0
         corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,np1)
         kptr=kptr+2*nlev
-        call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
+        call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,ie)
 
         if  (0<ntrac.and.eta_ave_w.ne.0.) then
           desc = elem(ie)%desc
-          call edgeDGVunpack(edge3p1, corners, nlev, kptr, desc)
+          call edgeDGVunpack(edge3p1, corners, nlev, kptr, ie)
           corners = corners/dt2
 
           do k=1,nlev
@@ -4040,17 +4059,17 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      !
      ! =========================================================
      kptr=0
-     call edgeVpack(edge3p1, fpstens(:,:,ie),1,kptr,fptr%base(ie)%desc)
+     call edgeVpack(edge3p1, fpstens(:,:,ie),1,kptr,ie)
 
      kptr=1
-     call edgeVpack(edge3p1, fttens(:,:,:,ie),nlev,kptr,fptr%base(ie)%desc)
+     call edgeVpack(edge3p1, fttens(:,:,:,ie),nlev,kptr,ie)
 
      kptr=nlev+1
-     call edgeVpack(edge3p1, fvtens(:,:,:,:,ie),2*nlev,kptr,fptr%base(ie)%desc)
+     call edgeVpack(edge3p1, fvtens(:,:,:,:,ie),2*nlev,kptr,ie)
 
      if (rsplit>0) then
         kptr=kptr+2*nlev
-        call edgeVpack(edge3p1, fdptens(:,:,:,ie),nlev,kptr,fptr%base(ie)%desc)
+        call edgeVpack(edge3p1, fdptens(:,:,:,ie),nlev,kptr,ie)
      endif
   end do
 
@@ -4066,17 +4085,17 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Unpack the edges for vgrad_T and v tendencies...
      ! ===========================================================
      kptr=0
-     call edgeVunpack(edge3p1, fpstens(:,:,ie), 1, kptr, fptr%base(ie)%desc)
+     call edgeVunpack(edge3p1, fpstens(:,:,ie), 1, kptr, ie)
 
      kptr=1
-     call edgeVunpack(edge3p1, fttens(:,:,:,ie), nlev, kptr, fptr%base(ie)%desc)
+     call edgeVunpack(edge3p1, fttens(:,:,:,ie), nlev, kptr, ie)
 
      kptr=nlev+1
-     call edgeVunpack(edge3p1, fvtens(:,:,:,:,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+     call edgeVunpack(edge3p1, fvtens(:,:,:,:,ie), 2*nlev, kptr, ie)
 
      if (rsplit>0) then
         kptr=kptr+2*nlev
-        call edgeVunpack(edge3p1, fdptens(:,:,:,ie),nlev,kptr,fptr%base(ie)%desc)
+        call edgeVunpack(edge3p1, fdptens(:,:,:,ie),nlev,kptr, ie)
      endif
 
      ! ====================================================
@@ -4264,7 +4283,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use dimensions_mod, only : np, np, nlev
   use control_mod, only : smooth_phis_nudt, hypervis_scaling
   use hybrid_mod, only : hybrid_t
-  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
+  use edge_mod, only : edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
+  use edgetype_mod, only : EdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -4290,20 +4310,20 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   ! compute local element neighbor min/max
   do ie=nets,nete
      pstens(:,:,ie)=minval(phis(:,:,ie))
-     call edgeVpack(edge3p1,pstens(:,:,ie),1,0,elem(ie)%desc)
+     call edgeVpack(edge3p1,pstens(:,:,ie),1,0,ie)
   enddo
   call bndry_exchangeV(hybrid,edge3p1)
   do ie=nets,nete
-     call edgeVunpackMin(edge3p1, pstens(:,:,ie), 1, 0, elem(ie)%desc)
+     call edgeVunpackMin(edge3p1, pstens(:,:,ie), 1, 0, ie)
      pmin(ie)=minval(pstens(:,:,ie))
   enddo
   do ie=nets,nete
      pstens(:,:,ie)=maxval(phis(:,:,ie))
-     call edgeVpack(edge3p1,pstens(:,:,ie),1,0,elem(ie)%desc)
+     call edgeVpack(edge3p1,pstens(:,:,ie),1,0,ie)
   enddo
   call bndry_exchangeV(hybrid,edge3p1)
   do ie=nets,nete
-     call edgeVunpackMax(edge3p1, pstens(:,:,ie), 1, 0, elem(ie)%desc)
+     call edgeVunpackMax(edge3p1, pstens(:,:,ie), 1, 0, ie)
      pmax(ie)=maxval(pstens(:,:,ie))
   enddo
 
@@ -4332,11 +4352,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
         do ie=nets,nete
            pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=use_var_coef)
-           call edgeVpack(edge3p1,pstens(:,:,ie),1,0,elem(ie)%desc)
+           call edgeVpack(edge3p1,pstens(:,:,ie),1,0,ie)
         enddo
         call bndry_exchangeV(hybrid,edge3p1)
         do ie=nets,nete
-           call edgeVunpack(edge3p1, pstens(:,:,ie), 1, 0, elem(ie)%desc)
+           call edgeVunpack(edge3p1, pstens(:,:,ie), 1, 0, ie)
            pstens(:,:,ie)=pstens(:,:,ie)*elem(ie)%rspheremp(:,:)
         enddo
 #ifdef DEBUGOMP
@@ -4385,11 +4405,12 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         enddo
 
         phis(:,:,ie)=phis(:,:,ie)*elem(ie)%spheremp(:,:)
-        call edgeVpack(edge3p1,phis(:,:,ie),1,0,elem(ie)%desc)
+        call edgeVpack(edge3p1,phis(:,:,ie),1,0,ie)
+
      enddo
      call bndry_exchangeV(hybrid,edge3p1)
      do ie=nets,nete
-        call edgeVunpack(edge3p1, phis(:,:,ie), 1, 0, elem(ie)%desc)
+        call edgeVunpack(edge3p1, phis(:,:,ie), 1, 0, ie)
         phis(:,:,ie)=phis(:,:,ie)*elem(ie)%rspheremp(:,:)
      enddo
 #ifdef DEBUGOMP
@@ -4405,7 +4426,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
     use dimensions_mod, only : np, nlev, nc,nhe
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
+    use edge_mod, only : edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
     use bndry_mod, only : bndry_exchangev
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -4485,11 +4506,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         end do
       end do
       elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%spheremp(:,:)
-     call edgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,np1),1,0,elem(ie)%desc)
+     call edgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,np1),1,0,ie)
   enddo
   call bndry_exchangeV(hybrid,edge3p1)
   do ie=nets,nete
-     call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, 0, elem(ie)%desc)
+     call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, 0, ie)
      elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%rspheremp(:,:)
   enddo
 #endif

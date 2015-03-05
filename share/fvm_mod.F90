@@ -14,8 +14,9 @@
 
 module fvm_mod    
   use kinds, only : real_kind, int_kind, longdouble_kind
-  use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
-       ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
+  use edge_mod, only : initghostbufferTR, freeghostbuffertr, &
+       ghostVpack, ghostVunpack,  initEdgebuffer
+  use edgetype_mod, only : ghostbuffertr_t, edgebuffer_t
   use bndry_mod, only: ghost_exchangeV                     
   use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhe, nlev, ntrac, np, ntrac_d,ns, nhr, nhc
   use time_mod, only : timelevel_t
@@ -73,10 +74,17 @@ contains
     ! ---------------------------------------------------------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! -----------------------------------------------
-    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,&
-         initghostbufferTR,freeghostbuffertr
+!<<<<<<< .working
+    use edge_mod, only :  ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
+    use edgetype_mod, only : ghostBuffertr_t
     use control_mod, only : qsplit
     use time_mod   , only : TimeLevel_Qdp
+!=======
+!    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,&
+!         initghostbufferTR,freeghostbuffertr
+!    use control_mod, only : qsplit
+!    use time_mod   , only : TimeLevel_Qdp
+!>>>>>>> .merge-right.r4402
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)
@@ -447,7 +455,8 @@ contains
     ! ---------------------------------------------------------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! -----------------------------------------------
-    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
+    use edge_mod, only :  ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
+    use edgetype_mod, only : ghostBuffertr_t
     use control_mod, only : qsplit
     use time_mod   , only : TimeLevel_Qdp    
 
@@ -789,13 +798,14 @@ contains
   
   
   ! initialize global buffers shared by all threads
-  subroutine fvm_init1(par)
+  subroutine fvm_init1(par,elem)
     use parallel_mod, only : parallel_t, haltmp
     use control_mod, only : tracer_transport_type, tracer_grid_type, rsplit
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACER_GRIDTYPE_FVM
     use fvm_control_volume_mod, only: n0_fvm, np1_fvm, fvm_supercycling
     use dimensions_mod, only: qsize
     type (parallel_t) :: par
+    type (element_t)  :: elem(:)
 
     !
     ! initialize fvm time-levels
@@ -939,7 +949,7 @@ contains
 
 !    call initghostbufferTR(cellghostbuf,nlev,1,nc,nc) !+1 for the air_density, which comes from SE
     
-    call initEdgebuffer(par,edgeveloc,2*nlev)
+    call initEdgebuffer(par,edgeveloc,elem,2*nlev)
   end subroutine fvm_init1
   
   
@@ -1516,13 +1526,13 @@ contains
              ugradv(ie,:,:,1,k) = elem(ie)%spheremp(:,:)*ugradvtmp(:,:,1) 
              ugradv(ie,:,:,2,k) = elem(ie)%spheremp(:,:)*ugradvtmp(:,:,2) 
           enddo
-          call edgeVpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,elem(ie)%desc)
-          call edgeVpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,elem(ie)%desc)
+          call edgeVpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,ie)
+          call edgeVpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,ie)
        enddo
        call bndry_exchangeV(hybrid,edgeveloc)
        do ie=nets,nete
-          call edgeVunpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,elem(ie)%desc)
-          call edgeVunpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,elem(ie)%desc)
+          call edgeVunpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,ie)
+          call edgeVunpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,ie)
           do k=1, nlev  
              ugradv(ie,:,:,1,k)=ugradv(ie,:,:,1,k)*elem(ie)%rspheremp(:,:)
              ugradv(ie,:,:,2,k)=ugradv(ie,:,:,2,k)*elem(ie)%rspheremp(:,:)
@@ -1594,11 +1604,11 @@ contains
           elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp(:,:)
           elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp(:,:)
        enddo
-       call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
+       call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
     enddo
     call bndry_exchangeV(hybrid,edgeveloc)
     do ie=nets,nete
-       call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
+       call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
        do k=1, nlev  
           elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
           elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)

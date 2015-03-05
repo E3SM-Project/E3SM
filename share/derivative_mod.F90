@@ -531,12 +531,9 @@ end do
     integer i
     integer j
     integer l
-    logical, parameter :: UseUnroll = .TRUE.
 
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumy00,sumy01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  sumy10,sumy11
+    real(kind=real_kind)  sumx00
+    real(kind=real_kind)  sumy00
 
     real(kind=real_kind) :: vtemp(np,np,2)
     
@@ -544,89 +541,12 @@ end do
 #ifdef DEBUG
     print *, "divergence_stag"
 #endif
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    !JMD====================================
-    !JMD  2*np*np*np Flops
-    !JMD====================================
-    do j=1,np,2
-       do l=1,np,2
-
-          sumx00=0.0d0
-          sumx01=0.0d0
-          sumx10=0.0d0
-          sumx11=0.0d0
-
-          sumy00=0.0d0
-          sumy01=0.0d0
-          sumy10=0.0d0
-          sumy11=0.0d0
-
-          do i=1,np
-             sumx00 = sumx00 + deriv%D(i,l  )*v(i,j  ,1)
-             sumx01 = sumx01 + deriv%D(i,l+1)*v(i,j  ,1)
-             sumx10 = sumx10 + deriv%D(i,l  )*v(i,j+1,1)
-             sumx11 = sumx11 + deriv%D(i,l+1)*v(i,j+1,1)
-
-             sumy00 = sumy00 + deriv%M(i,l  )*v(i,j  ,2)
-             sumy01 = sumy01 + deriv%M(i,l+1)*v(i,j  ,2)
-             sumy10 = sumy10 + deriv%M(i,l  )*v(i,j+1,2)
-             sumy11 = sumy11 + deriv%M(i,l+1)*v(i,j+1,2)
-          end do
-
-          vtemp(j  ,l  ,1) = sumx00
-          vtemp(j  ,l+1,1) = sumx01
-          vtemp(j+1,l  ,1) = sumx10
-          vtemp(j+1,l+1,1) = sumx11
-
-          vtemp(j  ,l  ,2) = sumy00
-          vtemp(j  ,l+1,2) = sumy01
-          vtemp(j+1,l  ,2) = sumy10
-          vtemp(j+1,l+1,2) = sumy11
-
-       end do
-    end do
-
-
-    !JMD====================================
-    !JMD  2*np*np*np Flops
-    !JMD====================================
-    do j=1,np,2
-       do i=1,np,2
-          sumx00=0.0d0
-          sumx01=0.0d0
-          sumx10=0.0d0
-          sumx11=0.0d0
-
-          sumy00=0.0d0
-          sumy01=0.0d0
-          sumy10=0.0d0
-          sumy11=0.0d0
-
-          do l=1,np
-             sumx00 = sumx00 +  deriv%M(l,j  )*vtemp(l,i  ,1)
-             sumx01 = sumx01 +  deriv%M(l,j+1)*vtemp(l,i  ,1)
-             sumx10 = sumx10 +  deriv%M(l,j  )*vtemp(l,i+1,1)
-             sumx11 = sumx11 +  deriv%M(l,j+1)*vtemp(l,i+1,1)
-
-             sumy00 = sumy00 +  deriv%D(l,j  )*vtemp(l,i  ,2)
-             sumy01 = sumy01 +  deriv%D(l,j+1)*vtemp(l,i  ,2)
-             sumy10 = sumy10 +  deriv%D(l,j  )*vtemp(l,i+1,2)
-             sumy11 = sumy11 +  deriv%D(l,j+1)*vtemp(l,i+1,2)
-          end do
-
-          div(i  ,j  ) = sumx00 + sumy00
-          div(i  ,j+1) = sumx01 + sumy01
-          div(i+1,j  ) = sumx10 + sumy10
-          div(i+1,j+1) = sumx11 + sumy11
-
-       end do
-    end do
-else
      do j=1,np
         do l=1,np
  
            sumx00=0.0d0
            sumy00=0.0d0
+!DIR$ UNROLL(NP)
            do i=1,np
               sumx00 = sumx00 + deriv%D(i,l  )*v(i,j  ,1)
               sumy00 = sumy00 + deriv%M(i,l  )*v(i,j  ,2)
@@ -639,6 +559,7 @@ else
        do i=1,np
           sumx00=0.0d0
           sumy00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%M(l,j  )*vtemp(l,i  ,1)
              sumy00 = sumy00 +  deriv%D(l,j  )*vtemp(l,i  ,2)
@@ -647,7 +568,6 @@ else
 
        enddo
     enddo
-endif
 
   end function divergence_stag
 
@@ -670,77 +590,27 @@ endif
     integer j
     integer l
 
-    logical, parameter :: UseUnroll = .TRUE.
-
-    real(kind=real_kind) ::  dudx00,dudx01
-    real(kind=real_kind) ::  dudx10,dudx11
-
-    real(kind=real_kind) ::  dvdy00,dvdy01
-    real(kind=real_kind) ::  dvdy10,dvdy11
+    real(kind=real_kind) ::  dudx00
+    real(kind=real_kind) ::  dvdy00
 
     real(kind=real_kind) ::  vvtemp(np,np)
 
     !write(*,*) "divergence_nonstag"
-if(modulo(np,2) .eq. 0 .and. UseUnroll) then
-! this is just loop unrolling - a good compiler should do it for you jpe
-       do j=1,np,2
-          do l=1,np,2
 
-             dudx00=0.0d0
-             dudx01=0.0d0
-             dudx10=0.0d0
-             dudx11=0.0d0
+     do j=1,np
+        do l=1,np
+           dudx00=0.0d0
+           dvdy00=0.0d0
+!DIR$ UNROLL(NP)
+           do i=1,np
+              dudx00 = dudx00 + deriv%Dvv(i,l  )*v(i,j  ,1)
+              dvdy00 = dvdy00 + deriv%Dvv(i,l  )*v(j  ,i,2)
+           end do
 
-             dvdy00=0.0d0
-             dvdy01=0.0d0
-             dvdy10=0.0d0
-             dvdy11=0.0d0
-
-             do i=1,np
-                
-                dudx00 = dudx00 + deriv%Dvv(i,l  )*v(i,j  ,1)
-                dudx01 = dudx01 + deriv%Dvv(i,l+1)*v(i,j  ,1)
-                dudx10 = dudx10 + deriv%Dvv(i,l  )*v(i,j+1,1)
-                dudx11 = dudx11 + deriv%Dvv(i,l+1)*v(i,j+1,1)
-                
-                dvdy00 = dvdy00 + deriv%Dvv(i,l  )*v(j  ,i,2)
-                dvdy01 = dvdy01 + deriv%Dvv(i,l+1)*v(j  ,i,2)
-                dvdy10 = dvdy10 + deriv%Dvv(i,l  )*v(j+1,i,2)
-                dvdy11 = dvdy11 + deriv%Dvv(i,l+1)*v(j+1,i,2)
-
-             end do
-
-             div(l  ,j  ) = dudx00
-             div(l+1,j  ) = dudx01
-             div(l  ,j+1) = dudx10
-             div(l+1,j+1) = dudx11
-
-             vvtemp(j  ,l  ) = dvdy00
-             vvtemp(j  ,l+1) = dvdy01
-             vvtemp(j+1,l  ) = dvdy10
-             vvtemp(j+1,l+1) = dvdy11
-
-          end do
-       end do
-    else
-
-       do j=1,np
-          do l=1,np
-             dudx00=0.0d0
-             dvdy00=0.0d0
-
-             do i=1,np
-                dudx00 = dudx00 + deriv%Dvv(i,l  )*v(i,j  ,1)
-                dvdy00 = dvdy00 + deriv%Dvv(i,l  )*v(j  ,i,2)
-             end do
-
-             div(l  ,j  ) = dudx00
-             vvtemp(j  ,l  ) = dvdy00
-
-
-          end do
-       end do
-    end if
+           div(l  ,j  ) = dudx00
+           vvtemp(j  ,l  ) = dvdy00
+        end do
+    end do
     do j=1,np
        do i=1,np
           div(i,j)=div(i,j)+vvtemp(i,j)
@@ -769,12 +639,9 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
     integer i
     integer j
     integer l
-    logical, parameter :: UseUnroll = .TRUE.
 
     real(kind=real_kind)  sumx00,sumx01
     real(kind=real_kind)  sumy00,sumy01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  sumy10,sumy11
 
     real(kind=real_kind)  :: vtempt(np,np,2)
 
@@ -785,91 +652,11 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
     !JMD 2*np*np*np Flops 
     !JMD ================================
 
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-
-
-    do j=1,np,2
-       do l=1,np,2
-          sumx00=0.0d0
-          sumx01=0.0d0
-          sumx10=0.0d0
-          sumx11=0.0d0
-
-          sumy00=0.0d0
-          sumy01=0.0d0
-          sumy10=0.0d0
-          sumy11=0.0d0
-
-          do i=1,np
-             sumx00 = sumx00 + deriv%D_twt(i,l  )*p(i,j  )
-             sumx01 = sumx01 + deriv%D_twt(i,l+1)*p(i,j  )
-             sumx10 = sumx10 + deriv%D_twt(i,l  )*p(i,j+1)
-             sumx11 = sumx11 + deriv%D_twt(i,l+1)*p(i,j+1)
-
-             sumy00 = sumy00 + deriv%M_twt(i,l  )*p(i,j  )
-             sumy01 = sumy01 + deriv%M_twt(i,l+1)*p(i,j  )
-             sumy10 = sumy10 + deriv%M_twt(i,l  )*p(i,j+1)
-             sumy11 = sumy11 + deriv%M_twt(i,l+1)*p(i,j+1)
-          end do
-
-          vtempt(j  ,l  ,1) = sumx00
-          vtempt(j  ,l+1,1) = sumx01
-          vtempt(j+1,l  ,1) = sumx10
-          vtempt(j+1,l+1,1) = sumx11
-
-          vtempt(j  ,l  ,2) = sumy00
-          vtempt(j  ,l+1,2) = sumy01
-          vtempt(j+1,l  ,2) = sumy10
-          vtempt(j+1,l+1,2) = sumy11
-       end do
-    end do
-
-
-    !JMD ================================
-    !JMD 2*np*np*np Flops 
-    !JMD ================================
-
-    do j=1,np,2
-       do i=1,np,2
-          sumx00=0.0d0
-          sumx01=0.0d0
-          sumx10=0.0d0
-          sumx11=0.0d0
-
-          sumy00=0.0d0
-          sumy01=0.0d0
-          sumy10=0.0d0
-          sumy11=0.0d0
-
-          do l=1,np
-             sumx00 = sumx00 +  deriv%M_twt(l,j  )*vtempt(l,i  ,1)
-             sumx01 = sumx01 +  deriv%M_twt(l,j+1)*vtempt(l,i  ,1)
-             sumx10 = sumx10 +  deriv%M_twt(l,j  )*vtempt(l,i+1,1)
-             sumx11 = sumx11 +  deriv%M_twt(l,j+1)*vtempt(l,i+1,1)
-
-             sumy00 = sumy00 +  deriv%D_twt(l,j  )*vtempt(l,i  ,2)
-             sumy01 = sumy01 +  deriv%D_twt(l,j+1)*vtempt(l,i  ,2)
-             sumy10 = sumy10 +  deriv%D_twt(l,j  )*vtempt(l,i+1,2)
-             sumy11 = sumy11 +  deriv%D_twt(l,j+1)*vtempt(l,i+1,2)
-          end do
-
-          dp(i  ,j  ,1) = sumx00
-          dp(i  ,j+1,1) = sumx01
-          dp(i+1,j  ,1) = sumx10
-          dp(i+1,j+1,1) = sumx11
-
-          dp(i  ,j  ,2) = sumy00
-          dp(i  ,j+1,2) = sumy01
-          dp(i+1,j  ,2) = sumy10
-          dp(i+1,j+1,2) = sumy11
-
-       end do
-    end do
-else
     do j=1,np
        do l=1,np
           sumx00=0.0d0
           sumy00=0.0d0
+!DIR$ UNROLL(NP)
            do i=1,np
               sumx00 = sumx00 + deriv%D_twt(i,l  )*p(i,j  )
               sumy00 = sumy00 + deriv%M_twt(i,l  )*p(i,j  )
@@ -882,6 +669,7 @@ else
        do i=1,np
           sumx00=0.0d0
           sumy00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%M_twt(l,j  )*vtempt(l,i  ,1)
              sumy00 = sumy00 +  deriv%D_twt(l,j  )*vtempt(l,i  ,2)
@@ -890,7 +678,6 @@ else
           dp(i  ,j  ,2) = sumy00
       enddo
     enddo
-endif
 
 
   end function gradient_wk_stag
@@ -915,12 +702,9 @@ endif
     integer i
     integer j
     integer l
-    logical, parameter :: UseUnroll = .TRUE.
 
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumy00,sumy01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  sumy10,sumy11
+    real(kind=real_kind)  sumx00
+    real(kind=real_kind)  sumy00
 
     real(kind=real_kind)  :: vvtempt(np,np,2)
 
@@ -929,113 +713,17 @@ endif
     !JMD ================================
 
 !   print *, "gradient_wk_nonstag"
-    if(modulo(np,2) .eq. 0 .and. UseUnroll) then
-! this is just loop unrolling - a good compiler should do it for you jpe
-
-       do j=1,np,2
-          do l=1,np,2
-             sumx00=0.0d0
-             sumx01=0.0d0
-             sumx10=0.0d0
-             sumx11=0.0d0
-
-             sumy00=0.0d0
-             sumy01=0.0d0
-             sumy10=0.0d0
-             sumy11=0.0d0
-
-             do i=1,np
-                sumx00 = sumx00 + deriv%Dvv_twt(i,l  )*p(i,j  )
-                sumx01 = sumx01 + deriv%Dvv_twt(i,l+1)*p(i,j  )
-                sumx10 = sumx10 + deriv%Dvv_twt(i,l  )*p(i,j+1)
-                sumx11 = sumx11 + deriv%Dvv_twt(i,l+1)*p(i,j+1)
-
-                sumy00 = sumy00 + deriv%Mvv_twt(i,l  )*p(i,j  )
-                sumy01 = sumy01 + deriv%Mvv_twt(i,l+1)*p(i,j  )
-                sumy10 = sumy10 + deriv%Mvv_twt(i,l  )*p(i,j+1)
-                sumy11 = sumy11 + deriv%Mvv_twt(i,l+1)*p(i,j+1)
-             end do
-
-             vvtempt(j  ,l  ,1) = sumx00
-             vvtempt(j  ,l+1,1) = sumx01
-             vvtempt(j+1,l  ,1) = sumx10
-             vvtempt(j+1,l+1,1) = sumx11
-
-             vvtempt(j  ,l  ,2) = sumy00
-             vvtempt(j  ,l+1,2) = sumy01
-             vvtempt(j+1,l  ,2) = sumy10
-             vvtempt(j+1,l+1,2) = sumy11
-
-          end do
-       end do
-       ! vvtempt1 = p'*Dvv_twt
-       ! vvtempt2 = p'*Mvv_twt
-       ! dp1 = dy*Mvv_twt*vvtempt1' = dy*Mvv_twt*(p'*Dvv_twt)' = dy*Mvv_twt*Dvv_twt'*p
-       ! dp2 = dx*Dvv_twt*vvtempt2' = dx*Dvv_twt*(p'*Mvv_twt)' = dx*Dvv_twt*Mvv_twt'*p
-       !     New formulation 
-       ! dp1 = dy*MvvDvvt*p
-       ! dp2 = dx*DvvMvvt*p
-       ! MvvDvvt = Mvv_twt*Dvv_twt'
-       ! DvvMvvt = Dvv_twt*Mvv_twt'
-
-
-       !JMD ================================
-       !JMD 2*np*np*np Flops 
-       !JMD ================================
-
-       do j=1,np,2
-          do i=1,np,2
-             sumx00=0.0d0
-             sumx01=0.0d0
-             sumx10=0.0d0
-             sumx11=0.0d0
-             
-             sumy00=0.0d0
-             sumy01=0.0d0
-             sumy10=0.0d0
-             sumy11=0.0d0
-             
-             do l=1,np
-                sumx00 = sumx00 +  deriv%Mvv_twt(l,j  )*vvtempt(l,i  ,1)
-                sumx01 = sumx01 +  deriv%Mvv_twt(l,j+1)*vvtempt(l,i  ,1)
-                sumx10 = sumx10 +  deriv%Mvv_twt(l,j  )*vvtempt(l,i+1,1)
-                sumx11 = sumx11 +  deriv%Mvv_twt(l,j+1)*vvtempt(l,i+1,1)
-
-                sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i  ,2)
-                sumy01 = sumy01 +  deriv%Dvv_twt(l,j+1)*vvtempt(l,i  ,2)
-                sumy10 = sumy10 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i+1,2)
-                sumy11 = sumy11 +  deriv%Dvv_twt(l,j+1)*vvtempt(l,i+1,2)
-             end do
-             
-             dp(i  ,j  ,1) = sumx00
-             dp(i  ,j+1,1) = sumx01
-             dp(i+1,j  ,1) = sumx10
-             dp(i+1,j+1,1) = sumx11
-             
-             dp(i  ,j  ,2) = sumy00
-             dp(i  ,j+1,2) = sumy01
-             dp(i+1,j  ,2) = sumy10
-             dp(i+1,j+1,2) = sumy11
-
-          end do
-       end do
-    else
-
        do j=1,np
           do l=1,np
              sumx00=0.0d0
-
              sumy00=0.0d0
-
+!DIR$ UNROLL(NP)
              do i=1,np
                 sumx00 = sumx00 + deriv%Dvv_twt(i,l  )*p(i,j  )
-
                 sumy00 = sumy00 + deriv%Mvv_twt(i,l  )*p(i,j  )
              end do
-
              vvtempt(j  ,l  ,1) = sumx00
              vvtempt(j  ,l  ,2) = sumy00
-
           end do
        end do
 
@@ -1046,22 +734,16 @@ endif
        do j=1,np
           do i=1,np
              sumx00=0.0d0
-             
              sumy00=0.0d0
-             
+!DIR$ UNROLL(NP)
              do l=1,np
                 sumx00 = sumx00 +  deriv%Mvv_twt(l,j  )*vvtempt(l,i  ,1)
-
                 sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i  ,2)
              end do
-             
              dp(i  ,j  ,1) = sumx00
-             
              dp(i  ,j  ,2) = sumy00
-
           end do
        end do
-    end if
   end function gradient_wk_nonstag
 
 !  ================================================
@@ -1085,99 +767,18 @@ endif
     integer j
     integer l
 
-    logical, parameter :: UseUnroll=.TRUE.
-
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumy00,sumy01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  sumy10,sumy11
+    real(kind=real_kind)  sumx00
+    real(kind=real_kind)  sumy00
 
     real(kind=real_kind)  :: vtempt(np,np,2)
 #ifdef DEBUG
     print *, "gradient_str_stag"
 #endif
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    do j=1,np,2
-       do l=1,np,2
-          sumx00=0.0d0
-          sumx01=0.0d0
-          sumx10=0.0d0
-          sumx11=0.0d0
-
-          sumy00=0.0d0
-          sumy01=0.0d0
-          sumy10=0.0d0
-          sumy11=0.0d0
-
-          do i=1,np
-             sumx00 = sumx00 + deriv%Dpv(i,l  )*p(i,j  )
-             sumx01 = sumx01 + deriv%Dpv(i,l+1)*p(i,j  )
-             sumx10 = sumx10 + deriv%Dpv(i,l  )*p(i,j+1)
-             sumx11 = sumx11 + deriv%Dpv(i,l+1)*p(i,j+1)
-
-             sumy00 = sumy00 + deriv%M_t(i,l  )*p(i,j  )
-             sumy01 = sumy01 + deriv%M_t(i,l+1)*p(i,j  )
-             sumy10 = sumy10 + deriv%M_t(i,l  )*p(i,j+1)
-             sumy11 = sumy11 + deriv%M_t(i,l+1)*p(i,j+1)
-          end do
-
-          vtempt(j  ,l  ,1) = sumx00
-          vtempt(j  ,l+1,1) = sumx01
-          vtempt(j+1,l  ,1) = sumx10
-          vtempt(j+1,l+1,1) = sumx11
-
-          vtempt(j  ,l  ,2) = sumy00
-          vtempt(j  ,l+1,2) = sumy01
-          vtempt(j+1,l  ,2) = sumy10
-          vtempt(j+1,l+1,2) = sumy11
-
-       end do
-    end do
-
-
-
-
-    do j=1,np,2
-       do i=1,np,2
-          sumx00=0.0d0
-          sumx01=0.0d0
-          sumx10=0.0d0
-          sumx11=0.0d0
-
-          sumy00=0.0d0
-          sumy01=0.0d0
-          sumy10=0.0d0
-          sumy11=0.0d0
-
-          do l=1,np
-             sumx00 = sumx00 +  deriv%M_t(l,j  )*vtempt(l,i  ,1)
-             sumx01 = sumx01 +  deriv%M_t(l,j+1)*vtempt(l,i  ,1)
-             sumx10 = sumx10 +  deriv%M_t(l,j  )*vtempt(l,i+1,1)
-             sumx11 = sumx11 +  deriv%M_t(l,j+1)*vtempt(l,i+1,1)
-
-             sumy00 = sumy00 +  deriv%Dpv(l,j  )*vtempt(l,i  ,2)
-             sumy01 = sumy01 +  deriv%Dpv(l,j+1)*vtempt(l,i  ,2)
-             sumy10 = sumy10 +  deriv%Dpv(l,j  )*vtempt(l,i+1,2)
-             sumy11 = sumy11 +  deriv%Dpv(l,j+1)*vtempt(l,i+1,2)
-          end do
-
-          dp(i  ,j  ,1) = sumx00
-          dp(i  ,j+1,1) = sumx01
-          dp(i+1,j  ,1) = sumx10
-          dp(i+1,j+1,1) = sumx11
-
-          dp(i  ,j  ,2) = sumy00
-          dp(i  ,j+1,2) = sumy01
-          dp(i+1,j  ,2) = sumy10
-          dp(i+1,j+1,2) = sumy11
-
-       end do
-    end do
-else
     do j=1,np
        do l=1,np
           sumx00=0.0d0
           sumy00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Dpv(i,l  )*p(i,j  )
              sumy00 = sumy00 + deriv%M_t(i,l  )*p(i,j  )
@@ -1190,6 +791,7 @@ else
        do i=1,np
           sumx00=0.0d0
           sumy00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%M_t(l,j  )*vtempt(l,i  ,1)
              sumy00 = sumy00 +  deriv%Dpv(l,j  )*vtempt(l,i  ,2)
@@ -1198,7 +800,6 @@ else
           dp(i  ,j  ,2) = sumy00
        enddo
     enddo
-endif
 
   end function gradient_str_stag
 
@@ -1219,79 +820,25 @@ endif
     integer i
     integer j
     integer l
-    logical, parameter :: UseUnroll = .TRUE.
-
     real(kind=real_kind) ::  dsdx00,dsdx01
-    real(kind=real_kind) ::  dsdx10,dsdx11
-
     real(kind=real_kind) ::  dsdy00,dsdy01
-    real(kind=real_kind) ::  dsdy10,dsdy11
 #ifdef DEBUG
     print *, "gradient_str_nonstag"
 !   write(17) np,s,deriv
 #endif
-    if(modulo(np,2) .eq. 0 .and. UseUnroll) then
-       do j=1,np,2
-          do l=1,np,2
-             dsdx00=0.0d0
-             dsdx01=0.0d0
-             dsdx10=0.0d0
-             dsdx11=0.0d0
-
-             dsdy00=0.0d0
-             dsdy01=0.0d0
-             dsdy10=0.0d0
-             dsdy11=0.0d0
-
-             do i=1,np
-                dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
-                dsdx01 = dsdx01 + deriv%Dvv(i,l+1)*s(i,j  )
-                dsdx10 = dsdx10 + deriv%Dvv(i,l  )*s(i,j+1)
-                dsdx11 = dsdx11 + deriv%Dvv(i,l+1)*s(i,j+1)
-
-                dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
-                dsdy01 = dsdy01 + deriv%Dvv(i,l+1)*s(j  ,i)
-                dsdy10 = dsdy10 + deriv%Dvv(i,l  )*s(j+1,i)
-                dsdy11 = dsdy11 + deriv%Dvv(i,l+1)*s(j+1,i)
-             end do
-#ifdef DEBUG
-             if(j.eq.3.and.l.eq.1) then
-                print *, dsdx00
-             endif
-#endif
-             ds(l  ,j  ,1) = dsdx00
-             ds(l+1,j  ,1) = dsdx01
-             ds(l  ,j+1,1) = dsdx10
-             ds(l+1,j+1,1) = dsdx11
-
-             ds(j  ,l  ,2) = dsdy00
-             ds(j  ,l+1,2) = dsdy01
-             ds(j+1,l  ,2) = dsdy10
-             ds(j+1,l+1,2) = dsdy11
-
-          end do
-
-       end do
-    else
        do j=1,np
           do l=1,np
              dsdx00=0.0d0
-
              dsdy00=0.0d0
-
+!DIR$ UNROLL(NP)
              do i=1,np
                 dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
-
                 dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
              end do
              ds(l  ,j  ,1) = dsdx00
-
              ds(j  ,l  ,2) = dsdy00
-
           end do
-
        end do
-    end if
   end function gradient_str_nonstag
 
 !  ================================================
@@ -1312,74 +859,23 @@ endif
     integer j
     integer l
     
-    logical, parameter :: UseUnroll = .TRUE.
-
     real(kind=real_kind) ::  dvdx00,dvdx01
-    real(kind=real_kind) ::  dvdx10,dvdx11
-
     real(kind=real_kind) ::  dudy00,dudy01
-    real(kind=real_kind) ::  dudy10,dudy11
 
     real(kind=real_kind)  :: vvtemp(np,np)
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    do j=1,np,2
-       do l=1,np,2
-
-          dudy00=0.0d0
-          dudy01=0.0d0
-          dudy10=0.0d0
-          dudy11=0.0d0
-
-          dvdx00=0.0d0
-          dvdx01=0.0d0
-          dvdx10=0.0d0
-          dvdx11=0.0d0
-
-          do i=1,np
-
-             dvdx00 = dvdx00 + deriv%Dvv(i,l  )*v(i,j  ,2)
-             dvdx01 = dvdx01 + deriv%Dvv(i,l+1)*v(i,j  ,2)
-             dvdx10 = dvdx10 + deriv%Dvv(i,l  )*v(i,j+1,2)
-             dvdx11 = dvdx11 + deriv%Dvv(i,l+1)*v(i,j+1,2)
-
-             dudy00 = dudy00 + deriv%Dvv(i,l  )*v(j  ,i,1)
-             dudy01 = dudy01 + deriv%Dvv(i,l+1)*v(j  ,i,1)
-             dudy10 = dudy10 + deriv%Dvv(i,l  )*v(j+1,i,1)
-             dudy11 = dudy11 + deriv%Dvv(i,l+1)*v(j+1,i,1)
-
-          end do
-
-          vort(l  ,j  ) = dvdx00
-          vort(l+1,j  ) = dvdx01
-          vort(l  ,j+1) = dvdx10
-          vort(l+1,j+1) = dvdx11
-
-          vvtemp(j  ,l  ) = dudy00
-          vvtemp(j  ,l+1) = dudy01
-          vvtemp(j+1,l  ) = dudy10
-          vvtemp(j+1,l+1) = dudy11
-
-        end do
-    end do
-else
     do j=1,np
        do l=1,np
-
           dudy00=0.0d0
           dvdx00=0.0d0
-
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )*v(i,j  ,2)
              dudy00 = dudy00 + deriv%Dvv(i,l  )*v(j  ,i,1)
           enddo
- 
           vort(l  ,j  ) = dvdx00
           vvtemp(j  ,l  ) = dudy00
        enddo
     enddo
-
-endif
-
     do j=1,np
        do i=1,np
           vort(i,j)=vort(i,j)-vvtemp(i,j)
@@ -1415,6 +911,7 @@ endif
     do j=1,np
        do l=1,nc
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Cfvm(i,l  )*v(i,j  )
           enddo
@@ -1424,6 +921,7 @@ endif
     do j=1,nc
        do i=1,nc
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 + deriv%Cfvm(l,j  )*vtemp(l,i)
           enddo
@@ -1452,6 +950,7 @@ endif
     do j=1,np
        do l=1,nep
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Sfvm(i,l  )*v(i,j  )
           enddo
@@ -1461,6 +960,7 @@ endif
     do j=1,nep
        do i=1,nep
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 + deriv%Sfvm(l,j  )*vtemp(l,i)
           enddo
@@ -1493,6 +993,7 @@ endif
     do j=1,np
        do l=1,nc+1
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Mfvm(i,l  )*v(i,j  )
           enddo
@@ -1502,6 +1003,7 @@ endif
     do j=1,nc+1
        do i=1,nc+1
           sumx00=0.0d0
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 + deriv%Mfvm(l,j  )*vtemp(l,i)
           enddo
@@ -1803,7 +1305,7 @@ endif
     
 !----------------------------------------------------------------
 
-
+!DIR$ ATTRIBUTES FORCEINLINE :: gradient_sphere
   function gradient_sphere(s,deriv,Dinv) result(ds)
 !
 !   input s:  scalar
@@ -1811,7 +1313,7 @@ endif
 !
 
     type (derivative_t), intent(in) :: deriv
-    real(kind=real_kind), intent(in), dimension(2,2,np,np) :: Dinv
+    real(kind=real_kind), intent(in), dimension(np,np,2,2) :: Dinv
     real(kind=real_kind), intent(in) :: s(np,np)
 
     real(kind=real_kind) :: ds(np,np,2)
@@ -1820,14 +1322,14 @@ endif
     integer j
     integer l
 
-    real(kind=real_kind) ::  dsdx00
-    real(kind=real_kind) ::  dsdy00
+    real(kind=real_kind) ::  dsdx00, dsdy00
     real(kind=real_kind) ::  v1(np,np),v2(np,np)
 
     do j=1,np
        do l=1,np
           dsdx00=0.0d0
           dsdy00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
              dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
@@ -1839,8 +1341,8 @@ endif
     ! convert covarient to latlon
     do j=1,np
        do i=1,np
-          ds(i,j,1)=Dinv(1,1,i,j)*v1(i,j) + Dinv(2,1,i,j)*v2(i,j)
-          ds(i,j,2)=Dinv(1,2,i,j)*v1(i,j) + Dinv(2,2,i,j)*v2(i,j)
+          ds(i,j,1)=Dinv(i,j,1,1)*v1(i,j) + Dinv(i,j,2,1)*v2(i,j)
+          ds(i,j,2)=Dinv(i,j,1,2)*v1(i,j) + Dinv(i,j,2,2)*v2(i,j)
        enddo
     enddo
 
@@ -1890,6 +1392,7 @@ endif
     dscontra=0
     do n=1,np
        do m=1,np
+!DIR$ UNROLL(NP)
           do j=1,np
              ! phi(n)_y  sum over second index, 1st index fixed at m
              dscontra(m,n,1)=dscontra(m,n,1)-(elem%mp(m,j)*s(m,j)*deriv%Dvv(n,j) )*rrearth
@@ -1902,8 +1405,8 @@ endif
     ! convert contra -> latlon 
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(1,1,i,j)*dscontra(i,j,1) + elem%D(1,2,i,j)*dscontra(i,j,2))
-          ds(i,j,2)=(elem%D(2,1,i,j)*dscontra(i,j,1) + elem%D(2,2,i,j)*dscontra(i,j,2))
+          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2))
+          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2))
        enddo
     enddo
     end function curl_sphere_wk_testcov
@@ -1951,15 +1454,16 @@ endif
     dscontra=0
     do n=1,np
        do m=1,np
+!DIR$ UNROLL(NP)
           do j=1,np
              dscontra(m,n,1)=dscontra(m,n,1)-(&
-                  (elem%mp(j,n)*elem%metinv(1,1,m,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
-                  (elem%mp(m,j)*elem%metinv(2,1,m,n)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
+                  (elem%mp(j,n)*elem%metinv(m,n,1,1)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
+                  (elem%mp(m,j)*elem%metinv(m,n,2,1)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
                   ) *rrearth
 
              dscontra(m,n,2)=dscontra(m,n,2)-(&
-                  (elem%mp(j,n)*elem%metinv(1,2,m,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
-                  (elem%mp(m,j)*elem%metinv(2,2,m,n)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
+                  (elem%mp(j,n)*elem%metinv(m,n,1,2)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
+                  (elem%mp(m,j)*elem%metinv(m,n,2,2)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
                   ) *rrearth
           enddo
        enddo
@@ -1967,8 +1471,8 @@ endif
     ! convert contra -> latlon 
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(1,1,i,j)*dscontra(i,j,1) + elem%D(1,2,i,j)*dscontra(i,j,2))
-          ds(i,j,2)=(elem%D(2,1,i,j)*dscontra(i,j,1) + elem%D(2,2,i,j)*dscontra(i,j,2))
+          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2))
+          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2))
        enddo
     enddo
 
@@ -2012,6 +1516,7 @@ endif
     dscov=0
     do n=1,np
        do m=1,np
+!DIR$ UNROLL(NP)
           do j=1,np
              ! phi(m)_x  sum over first index, second index fixed at n
              dscov(m,n,1)=dscov(m,n,1)-(elem%mp(j,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) )*rrearth
@@ -2029,8 +1534,8 @@ endif
           vcontra(m,n,1)=1
 
           ! contra->latlon:
-          v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
-          v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
+          v(:,:,1)=(elem%D(:,:,1,1)*vcontra(:,:,1) + elem%D(:,:,1,2)*vcontra(:,:,2))
+          v(:,:,2)=(elem%D(:,:,2,1)*vcontra(:,:,1) + elem%D(:,:,2,2)*vcontra(:,:,2))
 
 
           ! compute div(metdet phivec) * s
@@ -2047,8 +1552,8 @@ endif
           vcontra(m,n,2)=1
 
           ! contra->latlon:
-          v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
-          v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
+          v(:,:,1)=(elem%D(:,:,1,1)*vcontra(:,:,1) + elem%D(:,:,1,2)*vcontra(:,:,2))
+          v(:,:,2)=(elem%D(:,:,2,1)*vcontra(:,:,1) + elem%D(:,:,2,2)*vcontra(:,:,2))
 
           ! compute div(metdet phivec) * s
           div = divergence_sphere(v,deriv,elem)
@@ -2069,13 +1574,10 @@ endif
     dscov=ds
 #endif
     ! convert covariant -> latlon 
-    ds(:,:,1)=elem%Dinv(1,1,:,:)*dscov(:,:,1) + elem%Dinv(2,1,:,:)*dscov(:,:,2)
-    ds(:,:,2)=elem%Dinv(1,2,:,:)*dscov(:,:,1) + elem%Dinv(2,2,:,:)*dscov(:,:,2)
+    ds(:,:,1)=elem%Dinv(:,:,1,1)*dscov(:,:,1) + elem%Dinv(:,:,2,1)*dscov(:,:,2)
+    ds(:,:,2)=elem%Dinv(:,:,1,2)*dscov(:,:,1) + elem%Dinv(:,:,2,2)*dscov(:,:,2)
 
     end function gradient_sphere_wk_testcontra
-
-
-
 
   function ugradv_sphere(u,v,deriv,elem) result(ugradv)
 !
@@ -2099,6 +1601,8 @@ endif
        ! since reindexing the inputs to use the intrinsic effectively would be
        ! just asking for trouble.)
        dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+!       dum_cart(:,:,component)= elem%vec_sphere2cart(:,:,component,1)*v(:,:,1) + &
+!                                elem%vec_sphere2cart(:,:,component,2)*v(:,:,2)
     end do
 
     ! Do ugradv on the cartesian components.
@@ -2111,7 +1615,10 @@ endif
     ! cartesian -> latlon
     do component=1,2
        ! vec_sphere2cart is its own pseudoinverse.
-       ugradv(:,:,component)=sum( dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component) ,3)
+       ugradv(:,:,component) = sum(dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component), 3)
+!       ugradv(:,:,component) = dum_cart(:,:,1)*elem%vec_sphere2cart(:,:,1,component) + &
+!                               dum_cart(:,:,2)*elem%vec_sphere2cart(:,:,2,component) + &
+!                               dum_cart(:,:,3)*elem%vec_sphere2cart(:,:,3,component)
     end do
 
   end function ugradv_sphere
@@ -2148,6 +1655,7 @@ endif
        do l=1,np
           dsdx00=0.0d0
           dsdy00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
              dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
@@ -2159,8 +1667,8 @@ endif
     ! convert contra -> latlon *and* divide by jacobian
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(1,1,i,j)*v1(i,j) + elem%D(1,2,i,j)*v2(i,j))/elem%metdet(i,j)
-          ds(i,j,2)= (elem%D(2,1,i,j)*v1(i,j) + elem%D(2,2,i,j)*v2(i,j))/elem%metdet(i,j)
+          ds(i,j,1)=(elem%D(i,j,1,1)*v1(i,j) + elem%D(i,j,1,2)*v2(i,j))/elem%metdet(i,j)
+          ds(i,j,2)= (elem%D(i,j,2,1)*v1(i,j) + elem%D(i,j,2,2)*v2(i,j))/elem%metdet(i,j)
        enddo
     enddo
  
@@ -2200,8 +1708,8 @@ endif
     ! latlon- > contra
     do j=1,np
        do i=1,np
-          vtemp(i,j,1)=(elem%Dinv(1,1,i,j)*v(i,j,1) + elem%Dinv(1,2,i,j)*v(i,j,2))
-          vtemp(i,j,2)=(elem%Dinv(2,1,i,j)*v(i,j,1) + elem%Dinv(2,2,i,j)*v(i,j,2))
+          vtemp(i,j,1)=(elem%Dinv(i,j,1,1)*v(i,j,1) + elem%Dinv(i,j,1,2)*v(i,j,2))
+          vtemp(i,j,2)=(elem%Dinv(i,j,2,1)*v(i,j,1) + elem%Dinv(i,j,2,2)*v(i,j,2))
        enddo
     enddo
 
@@ -2209,6 +1717,7 @@ endif
        do m=1,np
 
           div(m,n)=0
+!DIR$ UNROLL(NP)
           do j=1,np
              div(m,n)=div(m,n)-(elem%spheremp(j,n)*vtemp(j,n,1)*deriv%Dvv(m,j) &
                               +elem%spheremp(m,j)*vtemp(m,j,2)*deriv%Dvv(n,j)) &
@@ -2223,8 +1732,8 @@ endif
           ! latlon -> covarient
           do j=1,np
              do i=1,np
-                gtemp(i,j,1)=(elem%D(1,1,i,j)*ggtemp(i,j,1) + elem%D(2,1,i,j)*ggtemp(i,j,2))
-                gtemp(i,j,2)=(elem%D(1,2,i,j)*ggtemp(i,j,1) + elem%D(2,2,i,j)*ggtemp(i,j,2))
+                gtemp(i,j,1)=(elem%D(i,j,1,1)*ggtemp(i,j,1) + elem%D(i,j,2,1)*ggtemp(i,j,2))
+                gtemp(i,j,2)=(elem%D(i,j,1,2)*ggtemp(i,j,1) + elem%D(i,j,2,2)*ggtemp(i,j,2))
              enddo
           enddo
 ! grad(psi) dot v:
@@ -2265,8 +1774,8 @@ endif
     ! latlon->contra
     do j=1,np
        do i=1,np
-          ucontra(i,j,1)=(elem%Dinv(1,1,i,j)*v(i,j,1) + elem%Dinv(1,2,i,j)*v(i,j,2))
-          ucontra(i,j,2)=(elem%Dinv(2,1,i,j)*v(i,j,1) + elem%Dinv(2,2,i,j)*v(i,j,2))
+          ucontra(i,j,1)=(elem%Dinv(i,j,1,1)*v(i,j,1) + elem%Dinv(i,j,1,2)*v(i,j,2))
+          ucontra(i,j,2)=(elem%Dinv(i,j,2,1)*v(i,j,1) + elem%Dinv(i,j,2,2)*v(i,j,2))
        enddo
     enddo
 
@@ -2329,8 +1838,8 @@ endif
        ! latlon->contra
        do j=1,np
           do i=1,np
-             ucontra(i,j,1)=(elem%Dinv(1,1,i,j)*v(i,j,1) + elem%Dinv(1,2,i,j)*v(i,j,2))
-             ucontra(i,j,2)=(elem%Dinv(2,1,i,j)*v(i,j,1) + elem%Dinv(2,2,i,j)*v(i,j,2))
+             ucontra(i,j,1)=(elem%Dinv(i,j,1,1)*v(i,j,1) + elem%Dinv(i,j,1,2)*v(i,j,2))
+             ucontra(i,j,2)=(elem%Dinv(i,j,2,1)*v(i,j,1) + elem%Dinv(i,j,2,2)*v(i,j,2))
           enddo
        enddo
     endif
@@ -2393,7 +1902,7 @@ endif
   end function edge_flux_u_cg
 
     
-
+!DIR$ ATTRIBUTES FORCEINLINE :: vorticity_sphere
   function vorticity_sphere(v,deriv,elem) result(vort)
 !
 !   input:  v = velocity in lat-lon coordinates
@@ -2410,16 +1919,15 @@ endif
     integer j
     integer l
     
-    real(kind=real_kind) ::  dvdx00
-    real(kind=real_kind) ::  dudy00
+    real(kind=real_kind) ::  dvdx00,dudy00
     real(kind=real_kind) ::  vco(np,np,2)
     real(kind=real_kind) ::  vtemp(np,np)
 
     ! convert to covariant form
     do j=1,np
        do i=1,np
-          vco(i,j,1)=(elem%D(1,1,i,j)*v(i,j,1) + elem%D(2,1,i,j)*v(i,j,2))
-          vco(i,j,2)=(elem%D(1,2,i,j)*v(i,j,1) + elem%D(2,2,i,j)*v(i,j,2))
+          vco(i,j,1)=(elem%D(i,j,1,1)*v(i,j,1) + elem%D(i,j,2,1)*v(i,j,2))
+          vco(i,j,2)=(elem%D(i,j,1,2)*v(i,j,1) + elem%D(i,j,2,2)*v(i,j,2))
        enddo
     enddo
 
@@ -2429,6 +1937,7 @@ endif
           dudy00=0.0d0
           dvdx00=0.0d0
 
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )*vco(i,j  ,2)
              dudy00 = dudy00 + deriv%Dvv(i,l  )*vco(j  ,i,1)
@@ -2463,9 +1972,8 @@ endif
       integer j
       integer l
 
-      real(kind=real_kind) ::  dvdx00
-      real(kind=real_kind) ::  dudy00
-      real(kind=real_kind) ::  vco(np,np,2)
+      real(kind=real_kind) :: dvdx00,dudy00
+      real(kind=real_kind) :: vco(np,np,2)
       real(kind=real_kind) :: vtemp(np,np)
       real(kind=real_kind) :: rdx
       real(kind=real_kind) :: rdy
@@ -2474,25 +1982,21 @@ endif
                                                                     
       do j=1,np
          do i=1,np
-            vco(i,j,1)=(elem%D(1,1,i,j)*v(i,j,1) + elem%D(2,1,i,j)*v(i,j,2))
-            vco(i,j,2)=(elem%D(1,2,i,j)*v(i,j,1) + elem%D(2,2,i,j)*v(i,j,2))
-
-
+            vco(i,j,1)=(elem%D(i,j,1,1)*v(i,j,1) + elem%D(i,j,2,1)*v(i,j,2))
+            vco(i,j,2)=(elem%D(i,j,1,2)*v(i,j,1) + elem%D(i,j,2,2)*v(i,j,2))
          enddo
       enddo
 
                                                                                                                
       do j=1,np
          do l=1,np
-          
             dudy00=0.0d0
             dvdx00=0.0d0
-
+!DIR$ UNROLL(NP)
             do i=1,np
                dvdx00 = dvdx00 + deriv%Dvv_diag(i,l)*vco(i,j ,2)
                dudy00 = dudy00 + deriv%Dvv_diag(i,l)*vco(j ,i,1)
             enddo 
-     
             vort(l ,j) = dvdx00 
             vtemp(j ,l) = dudy00
          enddo
@@ -2506,8 +2010,7 @@ endif
      
   end function vorticity_sphere_diag
 
-
-
+!DIR$ ATTRIBUTES FORCEINLINE :: divergence_sphere
   function divergence_sphere(v,deriv,elem) result(div)
 !
 !   input:  v = velocity in lat-lon coordinates
@@ -2533,8 +2036,8 @@ endif
     ! convert to contra variant form and multiply by g
     do j=1,np
        do i=1,np
-          gv(i,j,1)=elem%metdet(i,j)*(elem%Dinv(1,1,i,j)*v(i,j,1) + elem%Dinv(1,2,i,j)*v(i,j,2))
-          gv(i,j,2)=elem%metdet(i,j)*(elem%Dinv(2,1,i,j)*v(i,j,1) + elem%Dinv(2,2,i,j)*v(i,j,2))
+          gv(i,j,1)=elem%metdet(i,j)*(elem%Dinv(i,j,1,1)*v(i,j,1) + elem%Dinv(i,j,1,2)*v(i,j,2))
+          gv(i,j,2)=elem%metdet(i,j)*(elem%Dinv(i,j,2,1)*v(i,j,1) + elem%Dinv(i,j,2,2)*v(i,j,2))
        enddo
     enddo
 
@@ -2543,6 +2046,7 @@ endif
        do l=1,np
           dudx00=0.0d0
           dvdy00=0.0d0
+!DIR$ UNROLL(NP)
           do i=1,np
              dudx00 = dudx00 + deriv%Dvv(i,l  )*gv(i,j  ,1)
              dvdy00 = dvdy00 + deriv%Dvv(i,l  )*gv(j  ,i,2)
@@ -2561,7 +2065,7 @@ endif
   end function divergence_sphere
 
 
-
+!DIR$ ATTRIBUTES FORCEINLINE :: laplace_sphere_wk
   function laplace_sphere_wk(s,deriv,elem,var_coef) result(laplace)
 !
 !   input:  s = scalar
@@ -2591,8 +2095,12 @@ endif
           oldgrads=grads
           do j=1,np
              do i=1,np
-                grads(i,j,1) = sum(oldgrads(i,j,:)*elem%tensorVisc(1,:,i,j))
-                grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorVisc(2,:,i,j))
+!JMD                grads(i,j,1) = sum(oldgrads(i,j,:)*elem%tensorVisc(i,j,1,:))
+!JMD                grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorVisc(i,j,2,:))
+                grads(i,j,1) = oldgrads(i,j,1)*elem%tensorVisc(i,j,1,1) + &
+                               oldgrads(i,j,2)*elem%tensorVisc(i,j,1,2)
+                grads(i,j,2) = oldgrads(i,j,1)*elem%tensorVisc(i,j,2,1) + &
+                               oldgrads(i,j,2)*elem%tensorVisc(i,j,2,2)
              end do
           end do
        else
@@ -2606,7 +2114,7 @@ endif
 
   end function laplace_sphere_wk
 
-
+!DIR$ ATTRIBUTES FORCEINLINE :: vlaplace_sphere_wk
   function vlaplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
@@ -2661,7 +2169,9 @@ endif
 
     ! latlon -> cartesian
     do component=1,3
-       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+!JMD       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+       dum_cart(:,:,component) = elem%vec_sphere2cart(:,:,component,1)*v(:,:,1) + &
+                                elem%vec_sphere2cart(:,:,component,2)*v(:,:,2)
     end do
 
     ! Do laplace on cartesian comps
@@ -2672,7 +2182,10 @@ endif
     ! cartesian -> latlon
     do component=1,2
        ! vec_sphere2cart is its own pseudoinverse.
-       laplace(:,:,component)=sum( dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component) ,3)
+!JMD       laplace(:,:,component)=sum( dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component) ,3)
+       laplace(:,:,component) = dum_cart(:,:,1)*elem%vec_sphere2cart(:,:,1,component) + &
+                                dum_cart(:,:,2)*elem%vec_sphere2cart(:,:,2,component) + &
+                                dum_cart(:,:,3)*elem%vec_sphere2cart(:,:,3,component) 
     end do 
 
 #undef UNDAMPRRCART
@@ -2761,6 +2274,7 @@ endif
     ! N^3 tensor product formulation:
     do m=1,npdg
     do j=1,np
+!DIR$ UNROLL(NP)
     do i=1,np
        A(j,m)=A(j,m)+( p(i,j)*deriv%Mvv_twt(i,i)*deriv%Mvv_twt(j,j)  )*deriv%legdg(m,i)
     enddo
@@ -2769,6 +2283,7 @@ endif
 
     do n=1,npdg
     do m=1,npdg
+!DIR$ UNROLL(NP)
     do j=1,np
        phat(m,n)=phat(m,n)+A(j,m)*deriv%legdg(n,j)
     enddo
@@ -3171,14 +2686,4 @@ endif
     boundary_interp_matrix(:,:,:) = Lagrange_interp(:,(/1,np/),:)
   end subroutine allocate_subcell_integration_matrix
 
-
-
 end module derivative_mod
-
-
-
-
-
-
-
-

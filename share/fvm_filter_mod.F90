@@ -40,7 +40,7 @@ contains
 !-----------------------------------------------------------------------------------!
 subroutine monotonic_gradient_cart(fcube,fvm,recons,desc)
   use fvm_control_volume_mod, only: fvm_struct
-  use edge_mod, only : edgedescriptor_t
+  use edgetype_mod, only : edgedescriptor_t
   
   implicit none
   !
@@ -261,7 +261,7 @@ end subroutine monotonic_int
 !-----------------------------------------------------------------------------------!
 subroutine monotonic_halo(fcube,recons,acartx,acarty,centroid,&
                               jx_min,jx_max,jy_min,jy_max,cubeboundary,desc)
-  use edge_mod, only : edgedescriptor_t
+  use edgetype_mod, only : edgedescriptor_t
   
   implicit none
   !
@@ -415,7 +415,7 @@ end subroutine monotonic_halo
 !-----------------------------------------------------------------------------------!
 subroutine monotonic_haloswap(fcube,recons,acartx,acarty,centroid,&
                               jx_min,jx_max,jy_min,jy_max,cubeboundary,desc)
-  use edge_mod, only : edgedescriptor_t
+  use edgetype_mod, only : edgedescriptor_t
   
   implicit none
   !

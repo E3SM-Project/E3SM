@@ -7,7 +7,7 @@ module element_mod
   use kinds,                  only: real_kind, long_kind, int_kind
   use coordinate_systems_mod, only: spherical_polar_t, cartesian2D_t, cartesian3D_t, distance
   use dimensions_mod,         only: np, nc, npsq, nlev, nlevp, qsize_d, max_neigh_edges
-  use edge_mod,               only: edgedescriptor_t, rotation_t
+  use edgetype_mod,           only: edgedescriptor_t, rotation_t
   use gridgraph_mod,          only: gridvertex_t
 
   implicit none
@@ -286,7 +286,7 @@ module element_mod
 
      real (kind=real_kind)    :: variable_hyperviscosity(np,np)       ! hyperviscosity based on above
      real (kind=real_kind)    :: hv_courant                           ! hyperviscosity courant number
-     real (kind=real_kind)    :: tensorVisc(2,2,np,np)                !og, matrix V for tensor viscosity
+     real (kind=real_kind)    :: tensorVisc(np,np,2,2)                !og, matrix V for tensor viscosity
 
      ! Edge connectivity information
 !     integer(kind=int_kind)   :: node_numbers(4)
@@ -302,12 +302,12 @@ module element_mod
      type (elem_accum_t)       :: accum
 #endif
      ! Metric terms
-     real (kind=real_kind)    :: met(2,2,np,np)                       ! metric tensor on velocity and pressure grid
-     real (kind=real_kind)    :: metinv(2,2,np,np)                    ! metric tensor on velocity and pressure grid
+     real (kind=real_kind)    :: met(np,np,2,2)                       ! metric tensor on velocity and pressure grid
+     real (kind=real_kind)    :: metinv(np,np,2,2)                    ! metric tensor on velocity and pressure grid
      real (kind=real_kind)    :: metdet(np,np)                        ! g = SQRT(det(g_ij)) on velocity and pressure grid
      real (kind=real_kind)    :: rmetdet(np,np)                       ! 1/metdet on velocity pressure grid
-     real (kind=real_kind)    :: D(2,2,np,np)                         ! Map covariant field on cube to vector field on the sphere
-     real (kind=real_kind)    :: Dinv(2,2,np,np)                      ! Map vector field on the sphere to covariant v on cube
+     real (kind=real_kind)    :: D(np,np,2,2)                         ! Map covariant field on cube to vector field on the sphere
+     real (kind=real_kind)    :: Dinv(np,np,2,2)                      ! Map vector field on the sphere to covariant v on cube
 
 
      ! Mass flux across the sides of each sub-element.
@@ -381,9 +381,20 @@ module element_mod
   public :: element_var_coordinates3D
   public :: GetColumnIdP,GetColumnIdV
   public :: allocate_element_desc
+  public :: PrintElem
 
 contains
 
+  subroutine PrintElem(arr)
+   
+    real(kind=real_kind) :: arr(:,:)
+    integer :: i,j
+
+      do j=np,1,-1
+         write(6,*) (arr(i,j), i=1,np)
+      enddo
+
+  end subroutine PrintElem
 ! ===================== ELEMENT_MOD METHODS ==========================
 
   function GetColumnIdP(elem,i,j) result(col_id)
@@ -516,6 +527,8 @@ contains
        allocate(elem(j)%desc%getmapP(max_neigh_edges))
        allocate(elem(j)%desc%putmapP_ghost(max_neigh_edges))
        allocate(elem(j)%desc%getmapP_ghost(max_neigh_edges))
+       allocate(elem(j)%desc%putmapS(max_neigh_edges))
+       allocate(elem(j)%desc%getmapS(max_neigh_edges))
        allocate(elem(j)%desc%reverse(max_neigh_edges))
        allocate(elem(j)%desc%globalID(max_neigh_edges))
        allocate(elem(j)%desc%loc2buf(max_neigh_edges))

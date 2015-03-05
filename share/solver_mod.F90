@@ -63,7 +63,8 @@ contains
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad
-    use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack!, edgerotate
+    use edge_mod, only : edgevpack, edgevunpack!, edgerotate
+    use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence
     use control_mod, only : maxits, while_iter, tol, precon_method
     use physical_constants, only : rrearth
@@ -213,13 +214,13 @@ contains
                       gradp1       = gradp(i,j,1,k,ie)
                       gradp2       = gradp(i,j,2,k,ie)
 #if 1
-                      gradp(i,j,1,k,ie) = Dinv(1,1,i,j)*gradp1 + &
-                           Dinv(2,1,i,j)*gradp2
-                      gradp(i,j,2,k,ie) = Dinv(1,2,i,j)*gradp1 + &
-                           Dinv(2,2,i,j)*gradp2
+                      gradp(i,j,1,k,ie) = Dinv(i,j,1,1)*gradp1 + &
+                           Dinv(i,j,2,1)*gradp2
+                      gradp(i,j,2,k,ie) = Dinv(i,j,1,2)*gradp1 + &
+                           Dinv(i,j,2,2)*gradp2
 #else
-                      gradp(i,j,1,k,ie) = (metinv(1,1,i,j)*gradp1 + metinv(1,2,i,j)*gradp2)
-                      gradp(i,j,2,k,ie) = (metinv(2,1,i,j)*gradp1 + metinv(2,2,i,j)*gradp2)
+                      gradp(i,j,1,k,ie) = (metinv(i,j,1,1)*gradp1 + metinv(i,j,1,2)*gradp2)
+                      gradp(i,j,2,k,ie) = (metinv(i,j,2,1)*gradp1 + metinv(i,j,2,2)*gradp2)
 #endif
                    end do
                 end do
@@ -227,7 +228,7 @@ contains
           end do
 
           kptr=0
-          call edgeVpack(edge2,gradp(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge2,gradp(1,1,1,1,ie),2*nlev,kptr,ie)
 
        end do
 
@@ -244,7 +245,7 @@ contains
           mp      => elem(ie)%mp
 
           kptr=0
-          call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, ie)
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -265,9 +266,9 @@ contains
                       gradp1 = gradp(i,j,1,k,ie)
                       gradp2 = gradp(i,j,2,k,ie)
                       gradp(i,j,1,k,ie) = metdet(i,j) * rmp(i,j) * &
-                             (Dinv(1,1,i,j)*gradp1 + Dinv(1,2,i,j)*gradp2)
+                             (Dinv(i,j,1,1)*gradp1 + Dinv(i,j,1,2)*gradp2)
                       gradp(i,j,2,k,ie) = metdet(i,j) * rmp(i,j) * &
-                             (Dinv(2,1,i,j)*gradp1 + Dinv(2,2,i,j)*gradp2)
+                             (Dinv(i,j,2,1)*gradp1 + Dinv(i,j,2,2)*gradp2)
                    end do
                 end do
 
@@ -287,7 +288,7 @@ contains
           end do
 
           kptr=0
-          call edgeVpack(edge1, div(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+          call edgeVpack(edge1, div(1,1,1,ie), nlev, kptr, ie )
 
        end do
 
@@ -308,7 +309,7 @@ contains
           metdet   => elem(ie)%metdet
 
           kptr=0
-          call edgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, ie)
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
@@ -457,8 +458,8 @@ contains
                 do i=1,np
                    gradp1       = gradp(i,j,1)
                    gradp2       = gradp(i,j,2)
-                   gradp(i,j,1) = metdet(i,j)*(metinv(1,1,i,j)*gradp1 + metinv(1,2,i,j)*gradp2)
-                   gradp(i,j,2) = metdet(i,j)*(metinv(2,1,i,j)*gradp1 + metinv(2,2,i,j)*gradp2)
+                   gradp(i,j,1) = metdet(i,j)*(metinv(i,j,1,1)*gradp1 + metinv(i,j,1,2)*gradp2)
+                   gradp(i,j,2) = metdet(i,j)*(metinv(i,j,2,1)*gradp1 + metinv(i,j,2,2)*gradp2)
                 end do
              end do
 
@@ -1023,7 +1024,7 @@ contains
        do k=1,nlev
           RHS(:,:,k,ie)=elem(ie)%spheremp(:,:)*sol(:,:,k,ie) + &
                alambda*laplace_sphere_wk(sol(:,:,k,ie),deriv,elem(ie),var_coef=.false.)
-          call edgeVpack(edge1, RHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
        end do
     end do
     call bndry_exchangeV(cg%hybrid,edge1)
@@ -1032,7 +1033,7 @@ contains
 
     do ie=nets,nete
        ! unpack RHS
-       call edgeVunpack(edge1, RHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+       call edgeVunpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
        do k=1,nlev
           RHS(:,:,k,ie)=RHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
        enddo
@@ -1130,12 +1131,12 @@ contains
              !LHS(:,:,k,ie)=elem(ie)%rspheremp(:,:)*(elem(ie)%spheremp(:,:)*x(:,:) )
              
           end do
-          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
        end do
        call bndry_exchangeV(cg%hybrid,edge1)
        do ie=nets,nete
           ! unpack LHS
-          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
 
           ieptr=ie-nets+1
           do k=1,nlev
@@ -1239,12 +1240,12 @@ tol=1.e-12
              LHS(:,:,k,ie)=x(:,:)*elem(ie)%spheremp(:,:)
              
           end do
-          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
        end do
        call bndry_exchangeV(cg%hybrid,edge1)
        do ie=nets,nete
           ! unpack LHS
-          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
           do k=1,nlev
              LHS(:,:,k,ie)=LHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
           enddo
@@ -1341,7 +1342,8 @@ tol=1.e-12
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad, cg_create
-    use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack!, edgerotate
+    use edge_mod, only : edgevpack, edgevunpack!, edgerotate
+    use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk
     use control_mod, only : maxits, while_iter, tol, precon_method
     use physical_constants, only : rrearth, dd_pi, rearth, omega
@@ -1423,13 +1425,13 @@ tol=1.e-12
        do k=1,nlev
           RHS(:,:,k,ie)=elem(ie)%spheremp(:,:)*sol(:,:,k,ie) + &
                alambda*laplace_sphere_wk(sol(:,:,k,ie),deriv,elem(ie),var_coef=.false.)
-          call edgeVpack(edge1, RHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
        end do
     end do
     call bndry_exchangeV(cg%hybrid,edge1)
     do ie=nets,nete
        ! unpack RHS
-       call edgeVunpack(edge1, RHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+       call edgeVunpack(edge1, RHS(1,1,1,ie), nlev, 0, ie)
        do k=1,nlev
           RHS(:,:,k,ie)=RHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
        enddo
@@ -1482,12 +1484,12 @@ tol=1.e-12
                   alambda*laplace_sphere_wk(x,deriv,elem(ie),var_coef=.false.)
              
           end do
-          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
        end do
        call bndry_exchangeV(cg%hybrid,edge1)
        do ie=nets,nete
           ! unpack LHS
-          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
           do k=1,nlev
              LHS(:,:,k,ie)=LHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
           enddo
@@ -1592,12 +1594,12 @@ tol=1.e-12
              LHS(:,:,k,ie)=x(:,:)*elem(ie)%spheremp(:,:)
              
           end do
-          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
        end do
        call bndry_exchangeV(cg%hybrid,edge1)
        do ie=nets,nete
           ! unpack LHS
-          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, ie)
           do k=1,nlev
              LHS(:,:,k,ie)=LHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
           enddo

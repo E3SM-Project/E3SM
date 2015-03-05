@@ -3,8 +3,10 @@
 #endif
 
 module global_norms_mod
+
   use kinds, only : iulog
-  use edge_mod, only : EdgeBuffer_t
+  use edgetype_mod, only : EdgeBuffer_t
+
   implicit none
   private
   save
@@ -68,6 +70,7 @@ contains
 !
     J_tmp = 0.0D0
 
+!JMD    print *,'global_integral: before loop'
        do ie=nets,nete
           do j=1,np
              do i=1,np
@@ -79,8 +82,11 @@ contains
     do ie=nets,nete
       global_shared_buf(ie,1) = J_tmp(ie)
     enddo
+!JMD    print *,'global_integral: before wrap_repro_sum'
     call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+!JMD    print *,'global_integral: after wrap_repro_sum'
     I_tmp = global_shared_sum(1)
+!JMD    print *,'global_integral: after global_shared_sum'
     I_sphere = I_tmp(1)/(4.0D0*DD_PI)
 
   end function global_integral
@@ -103,7 +109,8 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edge_mod, only : EdgeBuffer_t, initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
+    use edgetype_mod, only : EdgeBuffer_t
+    use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
     use bndry_mod, only : bndry_exchangeV
 
     type(element_t)      , intent(inout) :: elem(:)
@@ -249,7 +256,8 @@ contains
     use control_mod, only : tracer_transport_type, tstep_type
     use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edge_mod, only : EdgeBuffer_t, initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
+    use edgetype_mod, only : EdgeBuffer_t 
+    use edge_mod, only : initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
     use bndry_mod, only : bndry_exchangeV
     use time_mod, only : tstep
 
@@ -408,14 +416,14 @@ contains
         normDinv_hypervis = ParallelMax(normDinv_hypervis, hybrid)
 
         ! apply DSS (aka assembly procedure) to variable_hyperviscosity (makes continuous)
-        call initEdgeBuffer(hybrid%par,edgebuf,1)
+        call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
         do ie=nets,nete
             zeta(:,:,ie) = elem(ie)%variable_hyperviscosity(:,:)*elem(ie)%spheremp(:,:)
-            call edgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
+            call edgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
         end do
         call bndry_exchangeV(hybrid,edgebuf)
         do ie=nets,nete
-            call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
+            call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
             elem(ie)%variable_hyperviscosity(:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
         end do
         call FreeEdgeBuffer(edgebuf)
@@ -460,18 +468,18 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    if (hypervis_scaling /= 0) then
 #if 1
-    call initEdgeBuffer(hybrid%par,edgebuf,1)
+    call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
     do rowind=1,2
       do colind=1,2
 	do ie=nets,nete
-	  zeta(:,:,ie) = elem(ie)%tensorVisc(rowind,colind,:,:)*elem(ie)%spheremp(:,:)
-	  call edgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
+	  zeta(:,:,ie) = elem(ie)%tensorVisc(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
+	  call edgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
 	end do
 
 	call bndry_exchangeV(hybrid,edgebuf)
 	do ie=nets,nete
-	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
-          elem(ie)%tensorVisc(rowind,colind,:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
+	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
+          elem(ie)%tensorVisc(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
 	end do
       enddo !rowind
     enddo !colind
@@ -484,15 +492,15 @@ contains
       do colind=1,2
     ! replace hypervis w/ bilinear based on continuous corner values
 	do ie=nets,nete
-	  noreast = elem(ie)%tensorVisc(rowind,colind,np,np)
-	  nw = elem(ie)%tensorVisc(rowind,colind,1,np)
-	  se = elem(ie)%tensorVisc(rowind,colind,np,1)
-	  sw = elem(ie)%tensorVisc(rowind,colind,1,1)
+	  noreast = elem(ie)%tensorVisc(np,np,rowind,colind)
+	  nw = elem(ie)%tensorVisc(1,np,rowind,colind)
+	  se = elem(ie)%tensorVisc(np,1,rowind,colind)
+	  sw = elem(ie)%tensorVisc(1,1,rowind,colind)
 	  do i=1,np
 	    x = gp%points(i)
 	    do j=1,np
 		y = gp%points(j)
-		elem(ie)%tensorVisc(rowind,colind,i,j) = 0.25d0*( &
+		elem(ie)%tensorVisc(i,j,rowind,colind) = 0.25d0*( &
 					(1.0d0-x)*(1.0d0-y)*sw + &
 					(1.0d0-x)*(y+1.0d0)*nw + &
 					(x+1.0d0)*(1.0d0-y)*se + &
@@ -692,11 +700,11 @@ contains
              vt1     = vt(i,j,1,ie)
              vt2     = vt(i,j,2,ie)
 
-             dvco(i,j,1) = met(1,1,i,j)*dv1 + met(1,2,i,j)*dv2
-             dvco(i,j,2) = met(2,1,i,j)*dv1 + met(2,2,i,j)*dv2
+             dvco(i,j,1) = met(i,j,1,1)*dv1 + met(i,j,1,2)*dv2
+             dvco(i,j,2) = met(i,j,2,1)*dv1 + met(i,j,2,2)*dv2
 
-             vtco(i,j,1) = met(1,1,i,j)*vt1 + met(1,2,i,j)*vt2
-             vtco(i,j,2) = met(2,1,i,j)*vt1 + met(2,2,i,j)*vt2
+             vtco(i,j,1) = met(i,j,1,1)*vt1 + met(i,j,1,2)*vt2
+             vtco(i,j,2) = met(i,j,2,1)*vt1 + met(i,j,2,2)*vt2
 
              dvsq(i,j,ie) = SQRT(dvco(i,j,1)*dv1 + dvco(i,j,2)*dv2)
              vtsq(i,j,ie) = SQRT(vtco(i,j,1)*vt1 + vtco(i,j,2)*vt2)
@@ -800,11 +808,11 @@ contains
              vt1     = vt(i,j,1,ie)
              vt2     = vt(i,j,2,ie)
 
-             dvco(i,j,1) = met(1,1,i,j)*dv1 + met(1,2,i,j)*dv2
-             dvco(i,j,2) = met(2,1,i,j)*dv1 + met(2,2,i,j)*dv2
+             dvco(i,j,1) = met(i,j,1,1)*dv1 + met(i,j,1,2)*dv2
+             dvco(i,j,2) = met(i,j,2,1)*dv1 + met(i,j,2,2)*dv2
 
-             vtco(i,j,1) = met(1,1,i,j)*vt1 + met(1,2,i,j)*vt2
-             vtco(i,j,2) = met(2,1,i,j)*vt1 + met(2,2,i,j)*vt2
+             vtco(i,j,1) = met(i,j,1,1)*vt1 + met(i,j,1,2)*vt2
+             vtco(i,j,2) = met(i,j,2,1)*vt1 + met(i,j,2,2)*vt2
 
              dvsq(i,j,ie) = dvco(i,j,1)*dv1 + dvco(i,j,2)*dv2
              vtsq(i,j,ie) = vtco(i,j,1)*vt1 + vtco(i,j,2)*vt2
@@ -907,11 +915,11 @@ contains
              vt1     = vt(i,j,1,ie)
              vt2     = vt(i,j,2,ie)
 
-             dvco(i,j,1) = met(1,1,i,j)*dv1 + met(1,2,i,j)*dv2
-             dvco(i,j,2) = met(2,1,i,j)*dv1 + met(2,2,i,j)*dv2
+             dvco(i,j,1) = met(i,j,1,1)*dv1 + met(i,j,1,2)*dv2
+             dvco(i,j,2) = met(i,j,2,1)*dv1 + met(i,j,2,2)*dv2
 
-             vtco(i,j,1) = met(1,1,i,j)*vt1 + met(1,2,i,j)*vt2
-             vtco(i,j,2) = met(2,1,i,j)*vt1 + met(2,2,i,j)*vt2
+             vtco(i,j,1) = met(i,j,1,1)*vt1 + met(i,j,1,2)*vt2
+             vtco(i,j,2) = met(i,j,2,1)*vt1 + met(i,j,2,2)*vt2
 
              dvsq(i,j,ie) = SQRT(dvco(i,j,1)*dv1 + dvco(i,j,2)*dv2)
              vtsq(i,j,ie) = SQRT(vtco(i,j,1)*vt1 + vtco(i,j,2)*vt2)
