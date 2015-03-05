@@ -130,7 +130,7 @@ contains
         vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
         zMid, zTop, density, displacedDensity, potentialDensity, &
         bulkRichardsonNumber, RiTopOfCell, BruntVaisalaFreqTop, &
-        bulkRichardsonNumberBuoy, bulkRichardsonNumberShear
+        bulkRichardsonNumberBuoy, bulkRichardsonNumberShear, unresolvedShear
 
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer, pointer :: index_vertNonLocalFluxTemp
@@ -218,6 +218,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
       call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
       call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumber', bulkRichardsonNumber)
+      call mpas_pool_get_array(diagnosticsPool, 'unresolvedShear', unresolvedShear)
       call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
       call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop',BruntVaisalaFreqTop)
@@ -415,6 +416,11 @@ contains
                       ws_cntr = turbulentScalarVelocityScale(:), &
                       Nsqr_iface = Nsqr_iface(1:nVertLevels+1) )
   
+                 unresolvedShear(:,iCell) = cvmix_kpp_compute_unresolved_shear( &
+                      cvmix_variables % zt_cntr(1:nVertLevels), &
+                      ws_cntr = turbulentScalarVelocityScale(1:nVertLevels), &
+                      Nsqr_iface = Nsqr_iface(1:nVertLevels+1))
+
                  ! each level of bulk Richardson is computed as if OBL resided at bottom of that level
                  bulkRichardsonNumber(kIndexOBL,iCell) = cvmix_variables % BulkRichardson_cntr(kIndexOBL)
   
@@ -752,7 +758,8 @@ contains
                lEkman = config_cvmix_kpp_EkmanOBL, &
                lMonOb = config_cvmix_kpp_MonObOBL, &
                MatchTechnique = config_cvmix_kpp_matching, &
-               surf_layer_ext = config_cvmix_kpp_surface_layer_extent) 
+               surf_layer_ext = config_cvmix_kpp_surface_layer_extent, &
+               lavg_N_or_Nsqr = .true. )
       endif
 
 
