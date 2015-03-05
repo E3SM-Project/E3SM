@@ -1687,6 +1687,9 @@
 		<var name="bulkRichardsonNumberShear" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="CVMix/KPP: contribution of shear to bulk Richardson number"
 		/>
+                <var name="unresolvedShear" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+                         description="CVMix/KPP: contribution of unresolved velocity to vertical shear"
+                />
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
 			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer"
 		/>
