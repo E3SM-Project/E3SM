@@ -421,8 +421,8 @@ contains
 
       div  = divergence_sphere(u, deriv, elem(ie))
    
-      v(:,:,1) = elem(ie)%Dinv(1,1,:,:)*u(:,:,1) + elem(ie)%Dinv(1,2,:,:)*u(:,:,2)
-      v(:,:,2) = elem(ie)%Dinv(2,1,:,:)*u(:,:,1) + elem(ie)%Dinv(2,2,:,:)*u(:,:,2)
+      v(:,:,1) = elem(ie)%Dinv(:,:,1,1)*u(:,:,1) + elem(ie)%Dinv(:,:,1,2)*u(:,:,2)
+      v(:,:,2) = elem(ie)%Dinv(:,:,2,1)*u(:,:,1) + elem(ie)%Dinv(:,:,2,2)*u(:,:,2)
 
       values = subcell_integration(div, np, intervals, elem(ie)%metdet) 
       fluxes = subcell_div_fluxes (v,   np, intervals, elem(ie)%metdet) 
@@ -1030,8 +1030,8 @@ contains
   do ie=nets,nete
      call random_number(ucontra)
      ! contra->latlon
-     ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%D(2,1,:,:)*ucontra(:,:,1) + elem(ie)%D(2,2,:,:)*ucontra(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%D(:,:,1,1)*ucontra(:,:,1) + elem(ie)%D(:,:,1,2)*ucontra(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%D(:,:,2,1)*ucontra(:,:,1) + elem(ie)%D(:,:,2,2)*ucontra(:,:,2))
      phidivu = elem(ie)%spheremp(:,:)*divergence_sphere(ulatlon,deriv,elem(ie))
      ugradphi = divergence_sphere_wk(ulatlon,deriv,elem(ie))
      lhs = phidivu - ugradphi
@@ -1067,8 +1067,8 @@ contains
      ucontra(:,:,1)=p  ! PHIvec_1 * p
      ucontra(:,:,2)=0
      ! contra->latlon
-     ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%D(2,1,:,:)*ucontra(:,:,1) + elem(ie)%D(2,2,:,:)*ucontra(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%D(:,:,1,1)*ucontra(:,:,1) + elem(ie)%D(:,:,1,2)*ucontra(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%D(:,:,2,1)*ucontra(:,:,1) + elem(ie)%D(:,:,2,2)*ucontra(:,:,2))
 
      rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
      lhs = gradp(:,:,1)-gradp_wk(:,:,1)
@@ -1076,8 +1076,8 @@ contains
      ucontra(:,:,1)=0  ! PHIvec_2 * p
      ucontra(:,:,2)=p
      ! contra->latlon
-     ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%D(2,1,:,:)*ucontra(:,:,1) + elem(ie)%D(2,2,:,:)*ucontra(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%D(:,:,1,1)*ucontra(:,:,1) + elem(ie)%D(:,:,1,2)*ucontra(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%D(:,:,2,1)*ucontra(:,:,1) + elem(ie)%D(:,:,2,2)*ucontra(:,:,2))
      rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
      lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)  
 
@@ -1086,8 +1086,8 @@ contains
      ! cov -> latlon
      gradp(:,:,1)=rhs
      gradp(:,:,2)=rhs2
-     rhs(:,:)=elem(ie)%Dinv(1,1,:,:)*gradp(:,:,1) + elem(ie)%Dinv(2,1,:,:)*gradp(:,:,2)
-     rhs2(:,:)=elem(ie)%Dinv(1,2,:,:)*gradp(:,:,1) + elem(ie)%Dinv(2,2,:,:)*gradp(:,:,2)
+     rhs(:,:)=elem(ie)%Dinv(:,:,1,1)*gradp(:,:,1) + elem(ie)%Dinv(:,:,2,1)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%Dinv(:,:,1,2)*gradp(:,:,1) + elem(ie)%Dinv(:,:,2,2)*gradp(:,:,2)
 
 
      do j=1,np
@@ -1129,15 +1129,15 @@ contains
      ucov(:,:,1)=p  ! PHIvec_1 * p
      ucov(:,:,2)=0
      ! cov->latlon
-     ulatlon(:,:,1)=(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%Dinv(:,:,1,1)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,1)*ucov(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%Dinv(:,:,1,2)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,2)*ucov(:,:,2))
      rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
 
      ucov(:,:,1)=0  ! PHIvec_2 * p
      ucov(:,:,2)=p
      ! cov->latlon
-     ulatlon(:,:,1)=(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
-     ulatlon(:,:,2)=(elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     ulatlon(:,:,1)=(elem(ie)%Dinv(:,:,1,1)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,1)*ucov(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%Dinv(:,:,1,2)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,2)*ucov(:,:,2))
      rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
 
 
@@ -1145,8 +1145,8 @@ contains
      ! contra -> latlon
      gradp(:,:,1)=rhs
      gradp(:,:,2)=rhs2
-     rhs(:,:) =elem(ie)%D(1,1,:,:)*gradp(:,:,1) + elem(ie)%D(1,2,:,:)*gradp(:,:,2)
-     rhs2(:,:)=elem(ie)%D(2,1,:,:)*gradp(:,:,1) + elem(ie)%D(2,2,:,:)*gradp(:,:,2)
+     rhs(:,:) =elem(ie)%D(:,:,1,1)*gradp(:,:,1) + elem(ie)%D(:,:,1,2)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%D(:,:,2,1)*gradp(:,:,1) + elem(ie)%D(:,:,2,2)*gradp(:,:,2)
 
 
      do j=1,np
@@ -1185,15 +1185,15 @@ contains
      ucov(:,:,1)=p  ! PHIvec_1 * p
      ucov(:,:,2)=0
      ! cov->latlon, and then u cross khat:
-     ulatlon(:,:,2)=-(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
-     ulatlon(:,:,1)= (elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     ulatlon(:,:,2)=-(elem(ie)%Dinv(:,:,1,1)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,1)*ucov(:,:,2))
+     ulatlon(:,:,1)= (elem(ie)%Dinv(:,:,1,2)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,2)*ucov(:,:,2))
      rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
 
      ucov(:,:,1)=0  ! PHIvec_2 * p
      ucov(:,:,2)=p
      ! cov->latlon, and u cross khat:
-     ulatlon(:,:,2)=-(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
-     ulatlon(:,:,1)= (elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     ulatlon(:,:,2)=-(elem(ie)%Dinv(:,:,1,1)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,1)*ucov(:,:,2))
+     ulatlon(:,:,1)= (elem(ie)%Dinv(:,:,1,2)*ucov(:,:,1) + elem(ie)%Dinv(:,:,2,2)*ucov(:,:,2))
      rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
 
 
@@ -1201,8 +1201,8 @@ contains
      ! contra -> latlon
      gradp(:,:,1)=rhs
      gradp(:,:,2)=rhs2
-     rhs(:,:) =elem(ie)%D(1,1,:,:)*gradp(:,:,1) + elem(ie)%D(1,2,:,:)*gradp(:,:,2)
-     rhs2(:,:)=elem(ie)%D(2,1,:,:)*gradp(:,:,1) + elem(ie)%D(2,2,:,:)*gradp(:,:,2)
+     rhs(:,:) =elem(ie)%D(:,:,1,1)*gradp(:,:,1) + elem(ie)%D(:,:,1,2)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%D(:,:,2,1)*gradp(:,:,1) + elem(ie)%D(:,:,2,2)*gradp(:,:,2)
 
 
      do j=1,np

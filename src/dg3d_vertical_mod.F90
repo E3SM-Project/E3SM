@@ -768,7 +768,7 @@ function intp_cubiclag(xi,yy,xval) result(yval)
 !=======================================================================================================!
     Implicit None
     integer, parameter :: south=1, east=2, north=3, west=4
-    real (kind=real_kind),                                  intent(in)   :: metinv(2,2,np,np)
+    real (kind=real_kind),                                  intent(in)   :: metinv(np,np,2,2)
     real (kind=real_kind), dimension(0:np+1,0:np+1,nlev),   intent(in)   :: dpbuf, ptbuf
     real (kind=real_kind), dimension(0:np+1,0:np+1,2,nlev), intent(in)   :: uvbuf
     real (kind=real_kind), dimension(np,np,2,nlev),         intent(in)   :: uvcomp
@@ -846,10 +846,10 @@ function intp_cubiclag(xi,yy,xval) result(yval)
     gbot_edge(i,north) = gbot(i,np)
     gbot_edge(i,west)  = gbot(1, i)
 
-    gij_edge(i,south) = sqrt(metinv(2,2,i,1))
-    gij_edge(i,north) = sqrt(metinv(2,2,i,np))
-    gij_edge(i,east)  = sqrt(metinv(1,1,np,i))
-    gij_edge(i,west)  = sqrt(metinv(1,1,1,i))
+    gij_edge(i,south) = sqrt(metinv(i,1,2,2))
+    gij_edge(i,north) = sqrt(metinv(i,np,2,2))
+    gij_edge(i,east)  = sqrt(metinv(np,i,1,1))
+    gij_edge(i,west)  = sqrt(metinv(1,i,1,1))
   end do
 
 ! For pressure thickness case

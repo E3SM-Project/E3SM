@@ -56,8 +56,8 @@ contains
        do k=1,nlev
           do j=1,np
              do i=1,np
-                v1     = elem(ie)%D(1,1,i,j)*elem(ie)%state%v(i,j,1,k,n0)+elem(ie)%D(1,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
-                v2     = elem(ie)%D(2,1,i,j)*elem(ie)%state%v(i,j,1,k,n0)+elem(ie)%D(2,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
+                v1     = elem(ie)%D(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0)+elem(ie)%D(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
+                v2     = elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0)+elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0)
                 max_vel = max(max_vel, sqrt(v1*v1+v2*v2))
              enddo
           enddo
@@ -72,8 +72,8 @@ contains
        do k=1,nlev
           do j=1,np
              do i=1,np
-                v1     = elem(ie)%D(1,1,i,j)*elem(ie)%state%v(i,j,1,k,n0)+elem(ie)%D(1,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
-                v2     = elem(ie)%D(2,1,i,j)*elem(ie)%state%v(i,j,1,k,n0)+elem(ie)%D(2,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
+                v1     = elem(ie)%D(i,j,1,1)*elem(ie)%state%v(i,j,1,k,n0)+elem(ie)%D(i,j,1,2)*elem(ie)%state%v(i,j,2,k,n0)
+                v2     = elem(ie)%D(i,j,2,1)*elem(ie)%state%v(i,j,1,k,n0)+elem(ie)%D(i,j,2,2)*elem(ie)%state%v(i,j,2,k,n0)
                 max_vel = max(max_vel, sqrt(v1*v1+v2*v2) + sqrt(pmean + elem(ie)%state%p(i,j,k,n0)))
              enddo
           enddo

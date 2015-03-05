@@ -22,7 +22,7 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : EdgeBuffer_t
+    use edgetype_mod, only : EdgeBuffer_t
     ! ---------------------
     use filter_mod, only : filter_t
     ! ---------------------
@@ -195,7 +195,8 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, edgedgvunpack
+    use edge_mod, only : edgevpack, edgevunpack, edgedgvunpack
+    use edgetype_mod, only : EdgeBuffer_t
     ! ---------------------
     use filter_mod, only : filter_t
     ! ---------------------
@@ -377,8 +378,8 @@ contains
                  do i=1,np
                     v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
                     v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
-                    elem(ie)%state%v(i,j,1,k,n0)=elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(1,2,i,j)*v2   ! contra->latlon
-                    elem(ie)%state%v(i,j,2,k,n0)=elem(ie)%D(2,1,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2   ! contra->latlon
+                    elem(ie)%state%v(i,j,1,k,n0)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+                    elem(ie)%state%v(i,j,2,k,n0)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
                  enddo
               enddo
            enddo
@@ -391,8 +392,8 @@ contains
                  do i=1,np
                     v1=elem(ie)%state%v(i,j,1,k,n0)
                     v2=elem(ie)%state%v(i,j,2,k,n0)
-                    elem(ie)%state%v(i,j,1,k,n0) = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-                    elem(ie)%state%v(i,j,2,k,n0) = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+                    elem(ie)%state%v(i,j,1,k,n0) = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+                    elem(ie)%state%v(i,j,2,k,n0) = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
                  enddo
               enddo
            enddo
@@ -442,8 +443,8 @@ contains
 
                    v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
                    v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
-                   ulatlon(i,j,1)=elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(1,2,i,j)*v2   ! contra->latlon
-                   ulatlon(i,j,2)=elem(ie)%D(2,1,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2   ! contra->latlon
+                   ulatlon(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+                   ulatlon(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
 
                    E(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  +&
                         elem(ie)%state%p(i,j,k,n0) + elem(ie)%state%ps(i,j)
@@ -525,9 +526,9 @@ contains
              enddo
           endif
           kptr=0
-          call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
           kptr=nlev
-          call edgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,ie)
 
        end do
 
@@ -552,10 +553,10 @@ contains
           ! ===========================================================
           if (npdg==0) then
              kptr=0
-             call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+             call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
           endif
           kptr=nlev
-          call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
 
           ! ===========================================================
           ! Compute velocity and pressure tendencies for all levels
@@ -568,15 +569,15 @@ contains
                    vtens2=rspheremp(i,j)*vtens(i,j,2,k,ie)
 
                    ! lat-lon -> contra
-                   vtens(i,j,1,k,ie) = elem(ie)%Dinv(1,1,i,j)*vtens1 + elem(ie)%Dinv(1,2,i,j)*vtens2
-                   vtens(i,j,2,k,ie) = elem(ie)%Dinv(2,1,i,j)*vtens1 + elem(ie)%Dinv(2,2,i,j)*vtens2
+                   vtens(i,j,1,k,ie) = elem(ie)%Dinv(i,j,1,1)*vtens1 + elem(ie)%Dinv(i,j,1,2)*vtens2
+                   vtens(i,j,2,k,ie) = elem(ie)%Dinv(i,j,2,1)*vtens1 + elem(ie)%Dinv(i,j,2,2)*vtens2
                 end do
              end do
           end do
 
           if (npdg>0) then
              kptr=0
-             call edgeDGVunpack(edge3, pedges, nlev, kptr, elem(ie)%desc)
+             call edgeDGVunpack(edge3, pedges, nlev, kptr, ie)
              pedges=pedges+pmean  ! add in mean value, to get edge flux correct
              do k=1,nlev
                 plocal(:,:)=elem(ie)%state%p(:,:,k,n0)+pmean  ! add in mean value
@@ -1404,7 +1405,8 @@ contains
     use hybrid_mod, only : hybrid_t
     use element_mod, only : element_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     use bndry_mod, only : bndry_exchangev
     use viscosity_mod, only : biharmonic_wk, neighbor_minmax
     ! ---------------------
@@ -1452,8 +1454,8 @@ contains
              do i=1,np
                 v1     = elem(ie)%state%v(i,j,1,k,nt)   ! contra
                 v2     = elem(ie)%state%v(i,j,2,k,nt)   ! contra 
-                elem(ie)%state%v(i,j,1,k,nt)=elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(1,2,i,j)*v2   ! contra->latlon
-                elem(ie)%state%v(i,j,2,k,nt)=elem(ie)%D(2,1,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2   ! contra->latlon
+                elem(ie)%state%v(i,j,1,k,nt)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+                elem(ie)%state%v(i,j,2,k,nt)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
              enddo
           enddo
        enddo
@@ -1496,9 +1498,9 @@ contains
              enddo
 
              kptr=0
-             call edgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,elem(ie)%desc)
+             call edgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,ie)
              kptr=nlev
-             call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
+             call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
           enddo
 
           call bndry_exchangeV(hybrid,edge3)
@@ -1507,9 +1509,9 @@ contains
              rspheremp     => elem(ie)%rspheremp
 
              kptr=0
-             call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, elem(ie)%desc)
+             call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, ie)
              kptr=nlev
-             call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
+             call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
 
              ! apply inverse mass matrix
              do k=1,nlev
@@ -1580,9 +1582,9 @@ contains
 
 
              kptr=0
-             call edgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,elem(ie)%desc)
+             call edgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,ie)
              kptr=nlev
-             call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,elem(ie)%desc)
+             call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
           enddo
 
           call bndry_exchangeV(hybrid,edge3)
@@ -1591,9 +1593,9 @@ contains
              rspheremp     => elem(ie)%rspheremp
 
              kptr=0
-             call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, elem(ie)%desc)
+             call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,nt), nlev, kptr, ie)
              kptr=nlev
-             call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
+             call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, ie)
 
              ! apply inverse mass matrix
              do k=1,nlev
@@ -1617,8 +1619,8 @@ contains
              do i=1,np
                 v1=elem(ie)%state%v(i,j,1,k,nt)
                 v2=elem(ie)%state%v(i,j,2,k,nt)
-                elem(ie)%state%v(i,j,1,k,nt) = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-                elem(ie)%state%v(i,j,2,k,nt) = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+                elem(ie)%state%v(i,j,1,k,nt) = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+                elem(ie)%state%v(i,j,2,k,nt) = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
              enddo
           enddo
        enddo
@@ -1647,7 +1649,8 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     ! ---------------------
     use filter_mod, only : filter_t, filter_P
     ! ---------------------
@@ -1734,9 +1737,6 @@ contains
 !    real (kind=real_kind) :: et,st
     integer i,j,k,ie
     integer kptr
-#ifdef _HTRACE
-!    integer point
-#endif
     integer iptr
     integer nm1,n0,np1
     integer nstep
@@ -1780,10 +1780,10 @@ contains
           do k=1,nlev
              call filter_P(elem(ie)%state%p(:,:,k,n0),flt)
 
-             ulatlon(:,:,1)=elem(ie)%D(1,1,:,:)*elem(ie)%state%v(:,:,1,k,n0)+&
-                            elem(ie)%D(1,2,:,:)*elem(ie)%state%v(:,:,2,k,n0)
-             ulatlon(:,:,2)=elem(ie)%D(2,1,:,:)*elem(ie)%state%v(:,:,1,k,n0)+&
-                            elem(ie)%D(2,2,:,:)*elem(ie)%state%v(:,:,2,k,n0)
+             ulatlon(:,:,1)=elem(ie)%D(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0)+&
+                            elem(ie)%D(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
+             ulatlon(:,:,2)=elem(ie)%D(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0)+&
+                            elem(ie)%D(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
 
              do j=1,np
                 do i=1,np
@@ -1795,9 +1795,9 @@ contains
 
           end do
           kptr=0
-          call edgeVpack(edge3, elem(ie)%state%v(:,:,:,:,n0),2*nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge3, elem(ie)%state%v(:,:,:,:,n0),2*nlev,kptr,ie)
           kptr=2*nlev
-          call edgeVpack(edge3, elem(ie)%state%p(:,:,:,n0),nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge3, elem(ie)%state%p(:,:,:,n0),nlev,kptr,ie)
           kptr=0
           !DBG print *,'advance_si: point #6'
        end do
@@ -1815,15 +1815,15 @@ contains
        do ie=nets,nete
 
           kptr=0
-          call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,n0), 2*nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,n0), 2*nlev, kptr, ie)
           kptr=2*nlev
-          call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,n0), nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge3, elem(ie)%state%p(:,:,:,n0), nlev, kptr, ie)
 
           do k=1,nlev
-             vco(:,:,1) = elem(ie)%Dinv(1,1,:,:)*elem(ie)%state%v(:,:,1,k,n0)+&
-                          elem(ie)%Dinv(1,2,:,:)*elem(ie)%state%v(:,:,2,k,n0)
-             vco(:,:,2) = elem(ie)%Dinv(2,1,:,:)*elem(ie)%state%v(:,:,1,k,n0)+&
-                          elem(ie)%Dinv(2,2,:,:)*elem(ie)%state%v(:,:,2,k,n0)
+             vco(:,:,1) = elem(ie)%Dinv(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0)+&
+                          elem(ie)%Dinv(:,:,1,2)*elem(ie)%state%v(:,:,2,k,n0)
+             vco(:,:,2) = elem(ie)%Dinv(:,:,2,1)*elem(ie)%state%v(:,:,1,k,n0)+&
+                          elem(ie)%Dinv(:,:,2,2)*elem(ie)%state%v(:,:,2,k,n0)
              do j=1,np
                 do i=1,np
                    elem(ie)%state%v(i,j,1,k,n0) = elem(ie)%rmp(i,j)*vco(i,j,1)
@@ -1890,8 +1890,8 @@ contains
                 v1     = elem(ie)%state%v(i,j,1,k,n0)
                 v2     = elem(ie)%state%v(i,j,2,k,n0)
 
-                vco(i,j,1) = elem(ie)%met(1,1,i,j)*v1 + elem(ie)%met(1,2,i,j)*v2
-                vco(i,j,2) = elem(ie)%met(2,1,i,j)*v1 + elem(ie)%met(2,2,i,j)*v2
+                vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+                vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
 
                 E(i,j) = 0.5D0*( vco(i,j,1)*v1 + vco(i,j,2)*v2 )
 
@@ -1938,8 +1938,8 @@ contains
                 Ru2 =  mp(i,j)*( - elem(ie)%state%v(i,j,1,k,n0)*(metdet(i,j)*fcor(i,j) + zeta(i,j)) &
                      - grade(i,j,2))                                               &
                      + gradpm1(i,j,2) + elem(ie)%state%gradps(i,j,2)
-                Ru(i,j,1,k,ie)   = dt2*(Dinv(1,1,i,j)*Ru1 + Dinv(2,1,i,j)*Ru2)
-                Ru(i,j,2,k,ie)   = dt2*(Dinv(1,2,i,j)*Ru1 + Dinv(2,2,i,j)*Ru2)
+                Ru(i,j,1,k,ie)   = dt2*(Dinv(i,j,1,1)*Ru1 + Dinv(i,j,2,1)*Ru2)
+                Ru(i,j,2,k,ie)   = dt2*(Dinv(i,j,1,2)*Ru1 + Dinv(i,j,2,2)*Ru2)
 
                 vgradp(i,j,k,ie)  =  elem(ie)%state%v(i,j,1,k,n0)*gradp(i,j,1) + &
                      elem(ie)%state%v(i,j,2,k,n0)*gradp(i,j,2)
@@ -1958,10 +1958,10 @@ contains
 
        !DBG print *,'advance_si: point #14'
        kptr=0
-       call edgeVpack(edge3, vgradp(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call edgeVpack(edge3, vgradp(1,1,1,ie),nlev,kptr,ie)
 
        kptr=nlev
-       call edgeVpack(edge3,Ru(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+       call edgeVpack(edge3,Ru(1,1,1,1,ie),2*nlev,kptr,ie)
        !DBG print *,'advance_si: point #15'
 
        ! =============================================================
@@ -1996,10 +1996,10 @@ contains
        ! ===========================================================
 
        kptr=0
-       call edgeVunpack(edge3, vgradp(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call edgeVunpack(edge3, vgradp(1,1,1,ie), nlev, kptr, ie)
 
        kptr=nlev
-       call edgeVunpack(edge3, Ru(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+       call edgeVunpack(edge3, Ru(1,1,1,1,ie), 2*nlev, kptr, ie)
 
        ! ===========================================================
        ! Compute velocity and pressure tendencies for all levels
@@ -2022,8 +2022,8 @@ contains
 
                 Ru1 = Ru(i,j,1,k,ie)
                 Ru2 = Ru(i,j,2,k,ie)
-                Ru(i,j,1,k,ie) = rmp(i,j)*(Dinv(1,1,i,j)*Ru1+Dinv(1,2,i,j)*Ru2)
-                Ru(i,j,2,k,ie) = rmp(i,j)*(Dinv(2,1,i,j)*Ru1+Dinv(2,2,i,j)*Ru2)
+                Ru(i,j,1,k,ie) = rmp(i,j)*(Dinv(i,j,1,1)*Ru1+Dinv(i,j,1,2)*Ru2)
+                Ru(i,j,2,k,ie) = rmp(i,j)*(Dinv(i,j,2,1)*Ru1+Dinv(i,j,2,2)*Ru2)
 
                 gv(i,j,1)   = metdet(i,j)*elem(ie)%state%v(i,j,1,k,n0)
                 gv(i,j,2)   = metdet(i,j)*elem(ie)%state%v(i,j,2,k,n0)
@@ -2063,7 +2063,7 @@ contains
        end do
        !DBG print *,'advance_si: point #14'
        kptr=0
-       call edgeVpack(edge1, Rs(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+       call edgeVpack(edge1, Rs(1,1,1,ie),nlev,kptr,ie)
 
     end do
 
@@ -2076,7 +2076,7 @@ contains
 
        rmp     => elem(ie)%rmp
        kptr=0
-       call edgeVunpack(edge1, Rs(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       call edgeVunpack(edge1, Rs(1,1,1,ie), nlev, kptr, ie)
        do k=1,nlev
           do j=1,np
              do i=1,np
@@ -2091,12 +2091,6 @@ contains
     ! ======================================================
 
     !DBG print *,'advance_si: before call to pcg_solver'
-#ifdef _HTRACE
-!    point = 3
-    !JMD    call EVENT_POINT(point)
-! ---
-#endif
-! --- endif _HTRACE
 
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
@@ -2114,13 +2108,6 @@ contains
          nets,            &     ! starting element number
          nete,            &     ! ending   element number
          blkjac)
-
-#ifdef _HTRACE
-!    point = 4
-    !JMD   call EVENT_POINT(point)
-! ---
-#endif
-! --- endif _HTRACE
 
     do ie=nets,nete
 
@@ -2148,8 +2135,8 @@ contains
              do i=1,np
                 grad_dp1 = grad_dp(i,j,1,k,ie)
                 grad_dp2 = grad_dp(i,j,2,k,ie)
-                grad_dp(i,j,1,k,ie) = Dinv(1,1,i,j)*grad_dp1 + Dinv(2,1,i,j)*grad_dp2
-                grad_dp(i,j,2,k,ie) = Dinv(1,2,i,j)*grad_dp1 + Dinv(2,2,i,j)*grad_dp2
+                grad_dp(i,j,1,k,ie) = Dinv(i,j,1,1)*grad_dp1 + Dinv(i,j,2,1)*grad_dp2
+                grad_dp(i,j,2,k,ie) = Dinv(i,j,1,2)*grad_dp1 + Dinv(i,j,2,2)*grad_dp2
 
              end do
           end do
@@ -2157,7 +2144,7 @@ contains
        enddo
 
        kptr=0
-       call edgeVpack(edge2, grad_dp(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+       call edgeVpack(edge2, grad_dp(1,1,1,1,ie),2*nlev,kptr,ie)
     end do
 
 #if (defined HORIZ_OPENMP)
@@ -2174,7 +2161,7 @@ contains
 
        kptr=0      
 
-       call edgeVunpack(edge2, grad_dp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+       call edgeVunpack(edge2, grad_dp(1,1,1,1,ie), 2*nlev, kptr, ie)
 
        do k=1,nlev
 
@@ -2202,9 +2189,9 @@ contains
           do j=1,np
              do i=1,np
                 grad_dp1 = rmp(i,j)* &
-                          (Dinv(1,1,i,j)*grad_dp(i,j,1,k,ie)+Dinv(1,2,i,j)*grad_dp(i,j,2,k,ie))
+                          (Dinv(i,j,1,1)*grad_dp(i,j,1,k,ie)+Dinv(i,j,1,2)*grad_dp(i,j,2,k,ie))
                 grad_dp2 = rmp(i,j)* &
-                          (Dinv(2,1,i,j)*grad_dp(i,j,1,k,ie)+Dinv(2,2,i,j)*grad_dp(i,j,2,k,ie))
+                          (Dinv(i,j,2,1)*grad_dp(i,j,1,k,ie)+Dinv(i,j,2,2)*grad_dp(i,j,2,k,ie))
 
                 elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%state%v(i,j,1,k,nm1) + Ru(i,j,1,k,ie) + dt*grad_dp1
                 elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%state%v(i,j,2,k,nm1) + Ru(i,j,2,k,ie) + dt*grad_dp2
@@ -2290,7 +2277,8 @@ contains
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
-  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : edgevpack, edgevunpack
+  use edgetype_mod, only : EdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
   implicit none
 
@@ -2339,8 +2327,8 @@ contains
               
               v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
               v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
-              ulatlon(i,j,1)=elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(1,2,i,j)*v2   ! contra->latlon
-              ulatlon(i,j,2)=elem(ie)%D(2,1,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2   ! contra->latlon
+              ulatlon(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+              ulatlon(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
               
               E(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  +&
                    elem(ie)%state%p(i,j,k,n0) + elem(ie)%state%ps(i,j)
@@ -2370,9 +2358,9 @@ contains
      ! Pack cube edges of tendencies, rotate velocities
      ! ===================================================
      kptr=0
-     call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+     call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,ie)
      kptr=nlev
-     call edgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+     call edgeVpack(edge3,vtens(1,1,1,1,ie),2*nlev,kptr,ie)
   end do
   
   
@@ -2391,10 +2379,10 @@ contains
      ! Unpack the edges for vgradp and vtens
      ! ===========================================================
      kptr=0
-     call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+     call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
      
      kptr=nlev
-     call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+     call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
      
      ! ===========================================================
      ! Compute velocity and pressure tendencies for all levels
@@ -2407,8 +2395,8 @@ contains
               vtens2=rspheremp(i,j)*vtens(i,j,2,k,ie)
               
               ! lat-lon -> contra
-              vtens(i,j,1,k,ie) = elem(ie)%Dinv(1,1,i,j)*vtens1 + elem(ie)%Dinv(1,2,i,j)*vtens2
-              vtens(i,j,2,k,ie) = elem(ie)%Dinv(2,1,i,j)*vtens1 + elem(ie)%Dinv(2,2,i,j)*vtens2
+              vtens(i,j,1,k,ie) = elem(ie)%Dinv(i,j,1,1)*vtens1 + elem(ie)%Dinv(i,j,1,2)*vtens2
+              vtens(i,j,2,k,ie) = elem(ie)%Dinv(i,j,2,1)*vtens1 + elem(ie)%Dinv(i,j,2,2)*vtens2
            end do
         end do
      end do
@@ -2568,8 +2556,8 @@ end function adv_flux_term
     g11=0
     g22=0
 #else
-    g11=(elem%metinv(1,1,:,:))   ! sqrt(g11)=contra component of nhat on east/west edges
-    g22=(elem%metinv(2,2,:,:))   ! sgrt(g22)=contra component of nhat on north/south edges
+    g11=(elem%metinv(:,:,1,1))   ! sqrt(g11)=contra component of nhat on east/west edges
+    g22=(elem%metinv(:,:,2,2))   ! sgrt(g22)=contra component of nhat on north/south edges
 #endif
 
     gh11(:,:) = (si(:,:))*g11(:,:)

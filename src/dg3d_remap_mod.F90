@@ -204,7 +204,7 @@ subroutine linear_remap(ie,sgp,ptop,pt3d,uv3d,dp3d)
 !=======================================================================================================!
 subroutine energy_remap(metinv,sgp,ptop,pt3d,uv3d,thick)
 
-    real (kind=real_kind), intent(in)    :: metinv(2,2,np,np)
+    real (kind=real_kind), intent(in)    :: metinv(np,np,2,2)
     real (kind=real_kind), intent(in)    :: sgp(np,np), ptop(np,np)
     !real (kind=real_kind), intent(inout) :: pt3d(np,np,nlev), u3d(np,np,nlev),v3d(np,np,nlev)
     real (kind=real_kind), intent(inout) :: pt3d(np,np,nlev),uv3d(np,np,2,nlev)   
@@ -322,8 +322,8 @@ subroutine energy_remap(metinv,sgp,ptop,pt3d,uv3d,thick)
              !!Note : (v1,v2) --> covariant;  (u1,u2) --> contravariant
                     v1 = uv3d(i,j,1,k)
                     v2 = uv3d(i,j,2,k)
-                    u1 = metinv(1,1,i,j)*v1 + metinv(1,2,i,j)*v2
-                    u2 = metinv(2,1,i,j)*v1 + metinv(2,2,i,j)*v2
+                    u1 = metinv(i,j,1,1)*v1 + metinv(i,j,1,2)*v2
+                    u2 = metinv(i,j,2,1)*v1 + metinv(i,j,2,2)*v2
              e_ke = 0.5D0 * (u1*v1 + u2*v2)
 
              energy_lag(i,j,k) = (e_th + e_pe + e_ke)
@@ -517,8 +517,8 @@ subroutine energy_remap(metinv,sgp,ptop,pt3d,uv3d,thick)
              !!Note : (v1,v2) --> covariant;  (u1,u2) --> contravariant
                 v1 = uv3d(i,j,1,k)
                 v2 = uv3d(i,j,2,k)
-                u1 = metinv(1,1,i,j)*v1 + metinv(1,2,i,j)*v2
-                u2 = metinv(2,1,i,j)*v1 + metinv(2,2,i,j)*v2
+                u1 = metinv(i,j,1,1)*v1 + metinv(i,j,1,2)*v2
+                u2 = metinv(i,j,2,1)*v1 + metinv(i,j,2,2)*v2
 
               e_ke = 0.5D0 * (u1*v1 + u2*v2)     !new KE
 
@@ -884,7 +884,7 @@ function intp_cubiclag(xi,yy,xval) result(yval)
 !=======================================================================================================!
 subroutine parabolic_remap(metinv,sgp,ptop,pt3d,uv3d,thick,qt3d)
 
-    real (kind=real_kind), intent(in)    :: metinv(2,2,np,np)
+    real (kind=real_kind), intent(in)    :: metinv(np,np,2,2)
     real (kind=real_kind), intent(in)    :: sgp(np,np), ptop(np,np)
     real (kind=real_kind), intent(inout) :: pt3d(np,np,nlev),uv3d(np,np,2,nlev)   
     real (kind=real_kind), intent(inout) :: thick(np,np,nlev)     !thickness (dP or dGP)
@@ -1114,7 +1114,7 @@ end subroutine parabolic_remap
 !=======================================================================================================!
 subroutine monotonic_remap(metinv,sgp,ptop,pt3d,uv3d,thick)
 
-    real (kind=real_kind), intent(in)    :: metinv(2,2,np,np)
+    real (kind=real_kind), intent(in)    :: metinv(np,np,2,2)
     real (kind=real_kind), intent(in)    :: sgp(np,np), ptop(np,np)
     real (kind=real_kind), intent(inout) :: pt3d(np,np,nlev),uv3d(np,np,2,nlev)   
     real (kind=real_kind), intent(inout) :: thick(np,np,nlev)     !thickness (dP or dGP)

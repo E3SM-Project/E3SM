@@ -6,7 +6,7 @@
 module init_mod
 contains
 ! not a nice way to integrate fvm but otherwise DG does not work anymore
-  subroutine init(elem, edge1,edge2,edge3,red,par, fvm)
+  subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt, fvm)
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
     use thread_mod, only : nthreads
@@ -39,7 +39,8 @@ contains
          assign_node_numbers_to_elem
 
     ! --------------------------------
-    use edge_mod, only : edgebuffer_t, initedgebuffer   
+    use edge_mod, only : initedgebuffer
+    use edgetype_mod, only : EdgeDescriptor_t, edgebuffer_t
     ! --------------------------------
     use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_flops, red_timer, &
          red_sum, red_sum_int, red_max, red_max_int, InitReductionBuffer
@@ -72,6 +73,11 @@ contains
     use restart_mod, only : initRestartFile
     ! --------------------------------
     use params_mod, only : SFCURVE
+    ! ---------------------------------
+    use thread_mod, only : nThreadsHoriz, omp_get_num_threads
+    ! ---------------------------------
+    use domain_mod, only: domain1d_t, decompose 
+    ! ---------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! --------------------------------
     use fvm_mod, only : fvm_init1
@@ -93,6 +99,7 @@ contains
     type (EdgeBuffer_t)           :: edge3
     type (ReductionBuffer_ordered_1d_t) :: red
     type (parallel_t), intent(in) :: par
+    type (domain1d_t), pointer :: dom_mt(:)
     ! Local Variables
 
     type (GridVertex_t), target,allocatable :: GridVertex(:)
@@ -108,6 +115,7 @@ contains
     integer :: nlyr
     integer :: iMv
     integer :: nxyp, istartP
+    integer :: n_domains
     real(kind=real_kind) :: et,st
 
     character(len=80) rot_type   ! cube edge rotation type
@@ -119,6 +127,7 @@ contains
     integer,allocatable :: HeadPartition(:)
     real(kind=real_kind) :: approx_elements_per_task, xtmp
     type (quadrature_t)   :: gp                     ! element GLL points
+
 
     ! =====================================
     ! Read in model control information
@@ -226,38 +235,6 @@ contains
        TailPartition(i)=GridEdge(i)%tail%processor_number
        HeadPartition(i)=GridEdge(i)%head%processor_number
     enddo
-#ifdef _PREDICT
-    allocate(MetaVertex(npart))
-    allocate(Schedule(npart))
-#ifdef _MPI
-    call haltmp("init: PREDICT code branch not supported under MPI")
-#else
-    nelemd = nelem
-    print *,'init: before allocation of elem nelemd:',nelemd
-    !JMDallocate(elem(nelemd))
-    print *,'init: after allocation of elem'
-#endif
-    do iMv = 1,npart
-       ! ====================================================
-       !  Generate the communication graph 
-       ! ====================================================
-       !JMDcall initMetaGraph(iMv,MetaVertex(iMv),TailPartition,HeadPartition,GridVertex,GridEdge)
-       call initMetaGraph(iMv,MetaVertex(iMv),GridVertex,GridEdge)
-
-       !JMD nelemd = LocalElemCount(MetaVertex(iMv))
-
-       ! ====================================================
-       !  Generate the communication schedule
-       ! ====================================================
-       if (MODULO(iMv,100) ==0) print *,'init: before call to genEdgeSched iMv :',iMv
-       call genEdgeSched(iMv,Schedule(iMv),MetaVertex(iMv))
-
-    enddo
-
-    print *,'init: before MessageStats'
-    call MessageStats(nlyr)
-    print *,'init: after MessageStats'
-#else
     allocate(MetaVertex(1))
     allocate(Schedule(1))
 
@@ -291,8 +268,6 @@ contains
     call genEdgeSched(elem, iam,Schedule(1),MetaVertex(1))
     !call PrintSchedule(Schedule(1))
     
-
-#endif
     deallocate(TailPartition)
     deallocate(HeadPartition)
 
@@ -355,18 +330,27 @@ contains
     !JMD call PrintDofV(elem)
     !JMD call PrintDofP(elem)
 
+    n_domains = min(Nthreads,nelemd)
+    call omp_set_num_threads(n_domains)
+    allocate(dom_mt(0:n_domains-1))
+    do ithr=0,NThreads-1
+       dom_mt(ithr)=decompose(1,nelemd,NThreads,ithr)
+    end do
+    nThreadsHoriz = NThreads
+
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
     ! =================================================================
-
-    call initEdgeBuffer(par,edge1,nlev)
+    print *,'init: before first call to initEdgeBuffer'
+    call initEdgeBuffer(par,edge1,elem,nlev)
 #ifdef _PRIMDG
-    call initEdgeBuffer(par,edge2,4*nlev)
-    call initEdgeBuffer(par,edge3,11*nlev)
+    call initEdgeBuffer(par,edge2,elem,4*nlev)
+    call initEdgeBuffer(par,edge3,elem,11*nlev)
 #else
-    call initEdgeBuffer(par,edge2,2*nlev)
-    call initEdgeBuffer(par,edge3,11*nlev)
+    call initEdgeBuffer(par,edge2,elem,2*nlev)
+    call initEdgeBuffer(par,edge3,elem,11*nlev)
 #endif
+    print *,'init: after call to initEdgeBuffer'
     allocate(global_shared_buf(nelemd,nrepro_vars))
     call InitReductionBuffer(red,3*nlev,nthreads)
     call InitReductionBuffer(red_sum,1)
@@ -380,11 +364,6 @@ contains
 
     allocate(mass(np,np,nelemd))
 
-#ifdef _HTRACE
-    htype = 19
-    pflag = 1
-    call TRACE_INIT(htype,pflag)
-#endif
     while_iter = 0
     filter_counter = 0
 
@@ -395,7 +374,7 @@ contains
     if(restartfreq > 0) then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
-    if (ntrac>0) call fvm_init1(par)
+    if (ntrac>0) call fvm_init1(par,elem)
     
     call t_stopf('init')
   end subroutine init

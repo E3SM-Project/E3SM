@@ -367,8 +367,8 @@ contains
              do ie=1,nelemdmax
                 if(ie<=nelemd) then
                    do k=1,nlev
-                      varvTMP(:,:,k) = elem(ie)%D(2,1,:,:)*elem(ie)%state%v(:,:,1,k,tl%n0)+ &
-                           elem(ie)%D(2,2,:,:)*elem(ie)%state%v(:,:,2,k,tl%n0)
+                      varvTMP(:,:,k) = elem(ie)%D(:,:,2,1)*elem(ie)%state%v(:,:,1,k,tl%n0)+ &
+                           elem(ie)%D(:,:,2,2)*elem(ie)%state%v(:,:,2,k,tl%n0)
                    end do
                    start(1)=elem(ie)%idxV%UniquPtOffset
                    count(1)=elem(ie)%idxV%NumUniquePts

@@ -8,7 +8,7 @@ module prim_state_mod
   ! ------------------------------
   use dimensions_mod, only : nlev, np, nc, qsize_d, qsize, nelemd, ntrac, ntrac_d
   ! ------------------------------
-  use parallel_mod, only :  ordered, parallel_t, syncmp
+  use parallel_mod, only :  iam, ordered, parallel_t, syncmp
   use parallel_mod, only: global_shared_buf, global_shared_sum
   ! ------------------------------
   use global_norms_mod, only: wrap_repro_sum
@@ -532,6 +532,10 @@ contains
        do ie=nets,nete
           tmp(:,:,ie)=elem(ie)%accum%IEner(:,:,n)
        enddo
+!BUG: prim_advance_si_bug1
+!BUG To observe the prim_advance_si_bug1 uncomment the following line.  It
+!BUG should after several iterations generate NaN's
+!BUG       print *,'IAM: ',iam,' prim_printstate: SUM(tmp): ',SUM(tmp)
        IEner(n) = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
        IEner(n) = IEner(n)*scale
        

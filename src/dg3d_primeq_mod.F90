@@ -41,7 +41,7 @@ subroutine primeq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete, my_hvcoord)
     !-----------------
     use quadrature_mod, only : quadrature_t, gauss,gausslobatto
     !-----------------
-    use edge_mod, only : EdgeBuffer_t
+    use edgetype_mod, only : EdgeBuffer_t
     ! ----------------
     use reduction_mod, only : ReductionBuffer_ordered_1d_t
     !-----------------
@@ -299,10 +299,6 @@ endif
 #ifdef _BGL
  call trace_start()
 #endif        
-#ifdef _HTRACE
- point= 1
- call EVENT_POINT(point)
-#endif
 #ifdef _HPM
  call f_hpmstart(5,'dg3d advance')
 #endif
@@ -320,10 +316,6 @@ endif
 !=======================================================================================================!
 #ifdef _BGL
  call trace_stop()
-#endif
-#ifdef _HTRACE
- point = 2
- call EVENT_POINT(point)
 #endif
 #ifdef _HPM
  call f_hpmstop(5)

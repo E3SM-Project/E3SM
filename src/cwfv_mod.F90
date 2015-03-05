@@ -182,10 +182,11 @@ subroutine spelt_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
 end subroutine spelt_run
 
 ! initialize global buffers shared by all threads
-subroutine fvm_init1(par)
+subroutine fvm_init1(par,elem)
   use edge_mod, only : initghostbuffer,initEdgebuffer
   use parallel_mod, only : parallel_t, haltmp
   type (parallel_t) :: par
+  type (element_t) :: elem(:)
   
   if (ntrac>ntrac_d) then
      if (par%masterproc) print *,'ntrac,ntrac_d=',ntrac,ntrac_d
@@ -193,7 +194,7 @@ subroutine fvm_init1(par)
   endif
 
   call initghostbuffer(cellghostbuf,nlev,ntrac,nipm,nep) !+1 for the air_density, which comes from SE
-  call initEdgebuffer(edgeveloc,2*nlev)
+  call initEdgebuffer(edgeveloc,elem,2*nlev)
 end subroutine fvm_init1
 
 ! initialization that can be done in threaded regions

@@ -44,7 +44,7 @@ module dg3d_core_mod
 function  real_vorticity(uv,sg,D,deriv) result(vor)
 !==========================================================================================
     type (derivative_t)         :: deriv
-    real (kind=real_kind), intent(in) :: D(2,2,np,np)
+    real (kind=real_kind), intent(in) :: D(np,np,2,2)
     real (kind=real_kind), dimension(np,np), intent(in) :: sg
     real (kind=real_kind), dimension(np,np,2), intent(in) :: uv
     real (kind=real_kind), dimension(np,np,2) :: couv
@@ -61,6 +61,7 @@ function  real_vorticity(uv,sg,D,deriv) result(vor)
        do l=1,np
           dudy00=0.0D0
           dvdx00=0.0D0
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l)* couv(i,j,2)
              dudy00 = dudy00 + deriv%Dvv(i,l)* couv(j,i,1)
@@ -83,88 +84,15 @@ function dg3d_gradient_mass(deriv,uvflx)  result(gradf)
     real(kind=real_kind), intent(in) :: uvflx(np,np,2)
     real(kind=real_kind)             :: gradf(np,np)
     integer:: i,j,l
-    logical, parameter :: UseUnroll = .TRUE.
-    real(kind=real_kind)  sumx00,sumx01
-    real(kind=real_kind)  sumy00,sumy01
-    real(kind=real_kind)  sumx10,sumx11
-    real(kind=real_kind)  sumy10,sumy11
+    real(kind=real_kind)  sumx00,sumy00
 
     real (kind=real_kind) :: vvtempt(np,np,2)
 !=======================================================================================!
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    do j=1,np,2
-       do l=1,np,2
-          sumx00=zero
-          sumx01=zero
-          sumx10=zero
-          sumx11=zero
-
-          sumy00=zero
-          sumy01=zero
-          sumy10=zero
-          sumy11=zero
-
-          do i=1,np
-             sumx00  = sumx00  + deriv%Dvv_twt(i,l  ) * uvflx(i,  j,1)
-             sumx01  = sumx01  + deriv%Dvv_twt(i,l+1) * uvflx(i,  j,1)
-             sumx10  = sumx10  + deriv%Dvv_twt(i,l  ) * uvflx(i,j+1,1)
-             sumx11  = sumx11  + deriv%Dvv_twt(i,l+1) * uvflx(i,j+1,1)
-
-             sumy00  = sumy00  + deriv%Mvv_twt(i,  l) * uvflx(i,  j,2)
-             sumy01  = sumy01  + deriv%Mvv_twt(i,l+1) * uvflx(i,  j,2)
-             sumy10  = sumy10  + deriv%Mvv_twt(i,  l) * uvflx(i,j+1,2)
-             sumy11  = sumy11  + deriv%Mvv_twt(i,l+1) * uvflx(i,j+1,2)
-          end do
-
-          vvtempt(j  ,l  ,1) = sumx00
-          vvtempt(j  ,l+1,1) = sumx01
-          vvtempt(j+1,l  ,1) = sumx10
-          vvtempt(j+1,l+1,1) = sumx11
-
-          vvtempt(j  ,l  ,2) = sumy00
-          vvtempt(j  ,l+1,2) = sumy01
-          vvtempt(j+1,l  ,2) = sumy10
-          vvtempt(j+1,l+1,2) = sumy11
-
-       end do
-    end do
-
-
-    do j=1,np,2
-       do i=1,np,2
-          sumx00=zero
-          sumx01=zero
-          sumx10=zero
-          sumx11=zero
-
-          sumy00=zero
-          sumy01=zero
-          sumy10=zero
-          sumy11=zero
-
-          do l=1,np
-             sumx00 = sumx00 +  deriv%Mvv_twt(l,j  )*vvtempt(l,i  ,1)
-             sumx01 = sumx01 +  deriv%Mvv_twt(l,j+1)*vvtempt(l,i  ,1)
-             sumx10 = sumx10 +  deriv%Mvv_twt(l,j  )*vvtempt(l,i+1,1)
-             sumx11 = sumx11 +  deriv%Mvv_twt(l,j+1)*vvtempt(l,i+1,1)
-
-             sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i  ,2)
-             sumy01 = sumy01 +  deriv%Dvv_twt(l,j+1)*vvtempt(l,i  ,2)
-             sumy10 = sumy10 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i+1,2)
-             sumy11 = sumy11 +  deriv%Dvv_twt(l,j+1)*vvtempt(l,i+1,2)
-          end do
-
-          gradf(i,j)    = (sumx00 + sumy00) * rrearth
-          gradf(i,j+1)  = (sumx01 + sumy01) * rrearth
-          gradf(i+1,j)  = (sumx10 + sumy10) * rrearth
-          gradf(i+1,j+1)= (sumx11 + sumy11) * rrearth
-       end do
-    end do
-else
     do j=1,np
        do l=1,np
           sumx00=zero
 	  sumy00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00  = sumx00  + deriv%Dvv_twt(i,l) * uvflx(i,j,1)
              sumy00  = sumy00  + deriv%Mvv_twt(i,l) * uvflx(i,j,2)
@@ -177,6 +105,7 @@ else
        do i=1,np
           sumx00=zero
 	  sumy00=zero
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%Mvv_twt(l,j)*vvtempt(l,i,1)
              sumy00 = sumy00 +  deriv%Dvv_twt(l,j)*vvtempt(l,i,2)
@@ -184,7 +113,6 @@ else
           gradf(i,j) = (sumx00 + sumy00) * rrearth
        enddo
     enddo
-endif
 
 !=======================================================================================!
 end function  dg3d_gradient_mass
@@ -199,96 +127,17 @@ subroutine dg3d_gradient_mom(deriv,energy,gradu1,gradu2)
     real(kind=real_kind), intent(in) :: energy(np,np)
     real(kind=real_kind), intent(out):: gradu1(np,np), gradu2(np,np)
     integer:: i,j,l    
-    logical, parameter :: UseUnroll = .TRUE.
-    real(kind=real_kind):: sumx00,sumx01
-    real(kind=real_kind):: sumy00,sumy01
-    real(kind=real_kind):: sumx10,sumx11
-    real(kind=real_kind):: sumy10,sumy11
+    real(kind=real_kind):: sumx00,sumy00
     real (kind=real_kind) :: vvtempt(np,np,2)
 !=======================================================================================!
     !Grad-u 
     !Grad-v 
 
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    do j=1,np,2
-       do l=1,np,2
-          sumx00=zero
-          sumx01=zero
-          sumx10=zero
-          sumx11=zero
-
-          sumy00=zero
-          sumy01=zero
-          sumy10=zero
-          sumy11=zero
-
-          do i=1,np
-             sumx00 = sumx00 + deriv%Dvv_twt(i,l)  * energy(i,j)
-             sumx01 = sumx01 + deriv%Dvv_twt(i,l+1)* energy(i,j)
-             sumx10 = sumx10 + deriv%Dvv_twt(i,l)  * energy(i,j+1)
-             sumx11 = sumx11 + deriv%Dvv_twt(i,l+1)* energy(i,j+1)
-
-             sumy00 = sumy00 + deriv%Mvv_twt(i,l)  * energy(i,j)
-             sumy01 = sumy01 + deriv%Mvv_twt(i,l+1)* energy(i,j)
-             sumy10 = sumy10 + deriv%Mvv_twt(i,l)  * energy(i,j+1)
-             sumy11 = sumy11 + deriv%Mvv_twt(i,l+1)* energy(i,j+1)
-          end do
-
-          vvtempt(j  ,l  ,1) = sumx00
-          vvtempt(j  ,l+1,1) = sumx01
-          vvtempt(j+1,l  ,1) = sumx10
-          vvtempt(j+1,l+1,1) = sumx11
-
-          vvtempt(j  ,l  ,2) = sumy00
-          vvtempt(j  ,l+1,2) = sumy01
-          vvtempt(j+1,l  ,2) = sumy10
-          vvtempt(j+1,l+1,2) = sumy11
-
-       end do
-    end do
-
-
-
-
-    do j=1,np,2
-       do i=1,np,2
-          sumx00=zero
-          sumx01=zero
-          sumx10=zero
-          sumx11=zero
-
-          sumy00=zero
-          sumy01=zero
-          sumy10=zero
-          sumy11=zero
-
-          do l=1,np
-             sumx00 = sumx00 +  deriv%Mvv_twt(l,j)*vvtempt(l,i,1)
-             sumx01 = sumx01 +  deriv%Mvv_twt(l,j+1)*vvtempt(l,i,1)
-             sumx10 = sumx10 +  deriv%Mvv_twt(l,j)*vvtempt(l,i+1,1)
-             sumx11 = sumx11 +  deriv%Mvv_twt(l,j+1)*vvtempt(l,i+1,1)
-
-             sumy00 = sumy00 +  deriv%Dvv_twt(l,j)*vvtempt(l,i,2)
-             sumy01 = sumy01 +  deriv%Dvv_twt(l,j+1)*vvtempt(l,i,2)
-             sumy10 = sumy10 +  deriv%Dvv_twt(l,j)*vvtempt(l,i+1,2)
-             sumy11 = sumy11 +  deriv%Dvv_twt(l,j+1)*vvtempt(l,i+1,2)
-          end do
-          gradu1(i,j)    = rrearth*sumx00 
-          gradu1(i,j+1)  = rrearth*sumx01 
-          gradu1(i+1,j)  = rrearth*sumx10 
-          gradu1(i+1,j+1)= rrearth*sumx11 
-
-          gradu2(i,j)    = rrearth*sumy00
-          gradu2(i,j+1)  = rrearth*sumy01
-          gradu2(i+1,j)  = rrearth*sumy10
-          gradu2(i+1,j+1)= rrearth*sumy11
-       end do
-    end do
-else
     do j=1,np
        do l=1,np
           sumx00=zero
           sumy00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              sumx00 = sumx00 + deriv%Dvv_twt(i,l) * energy(i,j)
              sumy00 = sumy00 + deriv%Mvv_twt(i,l) * energy(i,j)
@@ -301,6 +150,7 @@ else
        do i=1,np
           sumx00=zero
 	  sumy00=zero
+!DIR$ UNROLL(NP)
           do l=1,np
              sumx00 = sumx00 +  deriv%Mvv_twt(l,j)*vvtempt(l,i,1)
              sumy00 = sumy00 +  deriv%Dvv_twt(l,j)*vvtempt(l,i,2)
@@ -309,7 +159,6 @@ else
           gradu2(i,j) = rrearth*sumy00
        enddo
     enddo
-endif
 !=======================================================================================!
 end subroutine  dg3d_gradient_mom
 !=======================================================================================================!
@@ -325,13 +174,10 @@ subroutine dg3d_source_term(mv,rmv,deriv,gcori,contrauv,couv,pgrad,force,source)
     real (kind=real_kind), dimension(np,np,4), intent(in)::  force     
     real (kind=real_kind), dimension(np,np,4), intent(out):: source     
     real (kind=real_kind), dimension(np,np) :: vor, vort
-    real(kind=real_kind) ::  dvdx00,dvdx01
-    real(kind=real_kind) ::  dvdx10,dvdx11
-    real(kind=real_kind) ::  dudy00,dudy01
-    real(kind=real_kind) ::  dudy10,dudy11
+
+    real(kind=real_kind) ::  dvdx00,dudy00
     real (kind=real_kind):: term,delm
     integer:: i,j,k,l    
-    logical, parameter :: UseUnroll = .TRUE.    
     real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!    
 !  mv  => elem(ie)%mv   
@@ -344,51 +190,11 @@ subroutine dg3d_source_term(mv,rmv,deriv,gcori,contrauv,couv,pgrad,force,source)
   enddo 
   enddo 
 !=======================================================================================================!
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    do j=1,np,2
-       do l=1,np,2
-
-          dudy00=zero
-          dudy01=zero
-          dudy10=zero
-          dudy11=zero
-
-          dvdx00=zero
-          dvdx01=zero
-          dvdx10=zero
-          dvdx11=zero
-
-          do i=1,np
-
-             dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
-             dvdx01 = dvdx01 + deriv%Dvv(i,l+1)* couv(i  ,j,2)
-             dvdx10 = dvdx10 + deriv%Dvv(i,l  )* couv(i,j+1,2)
-             dvdx11 = dvdx11 + deriv%Dvv(i,l+1)* couv(i,j+1,2)
-
-             dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
-             dudy01 = dudy01 + deriv%Dvv(i,l+1)* couv(j  ,i,1)
-             dudy10 = dudy10 + deriv%Dvv(i,l  )* couv(j+1,i,1)
-             dudy11 = dudy11 + deriv%Dvv(i,l+1)* couv(j+1,i,1)
-
-          end do
-
-          vor(l  ,j  ) = dvdx00
-          vor(l+1,j  ) = dvdx01
-          vor(l  ,j+1) = dvdx10
-          vor(l+1,j+1) = dvdx11
-
-          vvtemp(j  ,l  ) = dudy00
-          vvtemp(j  ,l+1) = dudy01
-          vvtemp(j+1,l  ) = dudy10
-          vvtemp(j+1,l+1) = dudy11
-
-       end do
-    end do
-else
     do j=1,np
        do l=1,np
           dudy00=zero
 	  dvdx00=zero
+!DIR$ UNROLL(NP)
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l)* couv(i,j,2)
              dudy00 = dudy00 + deriv%Dvv(i,l)* couv(j,i,1)
@@ -397,9 +203,6 @@ else
           vvtemp(j,l) = dudy00
        enddo
     enddo
-endif
-
-
     do j=1,np
        do i=1,np
           vor(i,j)=(vor(i,j)-vvtemp(i,j))*rrearth 

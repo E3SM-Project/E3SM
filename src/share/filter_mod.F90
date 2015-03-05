@@ -335,103 +335,11 @@ contains
     real(kind=real_kind) :: sumx10,sumx11
 
     integer(kind=int_kind) :: rem,n2,npr,nprp1
-    logical, parameter :: UseUnroll = .TRUE.
 
-    !JMD if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    if(UseUnroll) then 
-       rem = MODULO(np,unroll)
-       npr  = np - rem 
-       nprp1 = npr+1
-       !JMD    print *,'Filter_P: np,npr,nprp1,rem:',np,npr,nprp1,rem
-
-       do j=1,npr,2
-          do l=1,npr,2
-             sumx00=0.0d0
-             sumx01=0.0d0
-             sumx10=0.0d0
-             sumx11=0.0d0
-
-             do i=1,np
-                sumx00 = sumx00 + flt%FmatP(i,l  )*p(i,j  )
-                sumx01 = sumx01 + flt%FmatP(i,l+1)*p(i,j  )
-                sumx10 = sumx10 + flt%FmatP(i,l  )*p(i,j+1)
-                sumx11 = sumx11 + flt%FmatP(i,l+1)*p(i,j+1)
-             end do
-
-             temptP(j  ,l  ) = sumx00
-             temptP(j  ,l+1) = sumx01
-             temptP(j+1,l  ) = sumx10
-             temptP(j+1,l+1) = sumx11
-
-          end do
-       end do
-       if(rem>0) then 
-          ! =======================
-          ! Calculate the remainder
-          ! =======================
-          do l=1,npr
-             sumx00=0.0d0
-             sumx01=0.0d0
-             do i=1,np
-                sumx00 = sumx00 + flt%FmatP(i,l  )*p(i,np  )
-                sumx01 = sumx01 + flt%FmatP(i,np  )*p(i,l  )
-             enddo
-             temptP(np  ,l  ) = sumx00	
-             temptP(l  ,np  ) = sumx01	
-          enddo
-          sumx00=0.0d0
-          do i=1,np
-             sumx00 = sumx00 + flt%FmatP(i,np  )*p(i,np  )
-          enddo
-          temptP(np  ,np  ) = sumx00
-       endif
-
-       do j=1,npr,2
-          do i=1,npr,2
-             sumx00=0.0d0
-             sumx01=0.0d0
-             sumx10=0.0d0
-             sumx11=0.0d0
-
-             do l=1,np
-                sumx00 = sumx00 +  flt%FmatP(l,j  )*temptP(l,i  )
-                sumx01 = sumx01 +  flt%FmatP(l,j+1)*temptP(l,i  )
-                sumx10 = sumx10 +  flt%FmatP(l,j  )*temptP(l,i+1)
-                sumx11 = sumx11 +  flt%FmatP(l,j+1)*temptP(l,i+1)
-             end do
-
-             p(i  ,j  ) = sumx00
-             p(i  ,j+1) = sumx01
-             p(i+1,j  ) = sumx10
-             p(i+1,j+1) = sumx11
-
-          end do
-       end do
-       if(rem>0) then 
-          ! =======================
-          ! Calculate the remainder
-          ! =======================
-          do i=1,npr
-             sumx00=0.0d0
-             sumx01=0.0d0
-             do l=1,np
-                sumx00 = sumx00 +  flt%FmatP(l,i  )*temptP(l,np  )
-                sumx01 = sumx01 +  flt%FmatP(l,np  )*temptP(l,i  )
-             enddo
-             p(np  ,i  ) = sumx00
-             p(i  ,np  ) = sumx01
-          enddo
-          sumx00=0.0d0
-          do l=1,np
-             sumx00 = sumx00 +  flt%FmatP(l,np  )*temptP(l,np  )
-          enddo
-          p(np  ,np  ) = sumx00
-
-       endif
-    else
        do j=1,np
           do l=1,np
              sumx00=0.0d0
+!DIR$ UNROLL(NP)
              do i=1,np
 		sumx00 = sumx00 + flt%FmatP(i,l  )*p(i,j  )
              enddo
@@ -441,13 +349,13 @@ contains
        do j=1,np
 	  do i=1,np
 	     sumx00=0.0d0
+!DIR$ UNROLL(NP)
 	     do l=1,np
 		sumx00 = sumx00 +  flt%FmatP(l,j  )*temptP(l,i  )
 	     enddo
 	     p(i  ,j  ) = sumx00
           enddo
        enddo
-    endif
 
   end subroutine filter_P
   
@@ -681,7 +589,8 @@ contains
 #ifdef _PRIM
   subroutine preq_filter(elem, edge3p1, flt, hybrid, nfilt, nets, nete)
     use element_mod, only : element_t
-    use edge_mod, only  : Edgebuffer_t, edgevpack, edgevunpack
+    use edge_mod, only  :  edgevpack, edgevunpack
+    use edgetype_mod, only : edgebuffer_t 
     use bndry_mod, only : bndry_exchangev
     use hybrid_mod, only  : hybrid_t
     use dimensions_mod, only : nlev
@@ -721,13 +630,13 @@ contains
           end do
 
           kptr=0
-          call edgeVpack(edge3p1,elem(ie)%state%v(:,:,1,1,nfilt),2*nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge3p1,elem(ie)%state%v(:,:,1,1,nfilt),2*nlev,kptr,ie)
 
           kptr=2*nlev
-          call edgeVpack(edge3p1,elem(ie)%state%T(:,:,1,nfilt),nlev,kptr,elem(ie)%desc)
+          call edgeVpack(edge3p1,elem(ie)%state%T(:,:,1,nfilt),nlev,kptr,ie)
 
           kptr=3*nlev
-          call edgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,nfilt),1,kptr,elem(ie)%desc)
+          call edgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,nfilt),1,kptr,ie)
 
           !          kptr=0
           !          call edgerotate(edge3p1,2*nlev,kptr,elem(ie)%desc)
@@ -738,13 +647,13 @@ contains
 
        do ie=nets,nete
           kptr=0
-          call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,1,1,nfilt), 2*nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,1,1,nfilt), 2*nlev, kptr, ie)
 
           kptr=2*nlev
-          call edgeVunpack(edge3p1, elem(ie)%state%T(:,:,1,nfilt), nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge3p1, elem(ie)%state%T(:,:,1,nfilt), nlev, kptr, ie)
 
           kptr=3*nlev
-          call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,nfilt), 1, kptr, elem(ie)%desc)
+          call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,nfilt), 1, kptr, ie)
 
           do j=1,np
              do i=1,np
@@ -826,8 +735,8 @@ contains
     real(kind=real_kind), intent(inout) :: v(np,np,2,nlev)
 
     type (filter_t), intent(in)      :: flt
-    real(kind=real_kind), intent(in) :: D(2,2,np,np)
-    real(kind=real_kind), intent(in) :: Dinv(2,2,np,np)
+    real(kind=real_kind), intent(in) :: D(np,np,2,2)
+    real(kind=real_kind), intent(in) :: Dinv(np,np,2,2)
 
     integer :: i,j,k
     real(kind=real_kind) :: v1,v2
@@ -847,8 +756,8 @@ contains
              do i=1,np
                 v1 = v(i,j,1,k)
                 v2 = v(i,j,2,k)
-                usph(i,j)= v1*Dinv(1,1,i,j) + v2*Dinv(2,1,i,j)
-                vsph(i,j)= v1*Dinv(1,2,i,j) + v2*Dinv(2,2,i,j)
+                usph(i,j)= v1*Dinv(i,j,1,1) + v2*Dinv(i,j,2,1)
+                vsph(i,j)= v1*Dinv(i,j,1,2) + v2*Dinv(i,j,2,2)
              end do
           end do
        else
@@ -856,8 +765,8 @@ contains
              do i=1,np
                 v1 = v(i,j,1,k)
                 v2 = v(i,j,2,k)
-                usph(i,j)= v1*D(1,1,i,j) + v2*D(1,2,i,j)
-                vsph(i,j)= v1*D(2,1,i,j) + v2*D(2,2,i,j)
+                usph(i,j)= v1*D(i,j,1,1) + v2*D(i,j,1,2)
+                vsph(i,j)= v1*D(i,j,2,1) + v2*D(i,j,2,2)
              end do
           end do
        endif
@@ -876,8 +785,8 @@ contains
              do i=1,np
                 v1 = usph(i,j)
                 v2 = vsph(i,j)
-                v(i,j,1,k)= v1*D(1,1,i,j) + v2*D(2,1,i,j)
-                v(i,j,2,k)= v1*D(1,2,i,j) + v2*D(2,2,i,j)
+                v(i,j,1,k)= v1*D(i,j,1,1) + v2*D(i,j,2,1)
+                v(i,j,2,k)= v1*D(i,j,1,2) + v2*D(i,j,2,2)
              end do
           end do
        else
@@ -885,8 +794,8 @@ contains
              do i=1,np
                 v1 = usph(i,j)
                 v2 = vsph(i,j)
-                v(i,j,1,k)= v1*Dinv(1,1,i,j) + v2*Dinv(1,2,i,j)
-                v(i,j,2,k)= v1*Dinv(2,1,i,j) + v2*Dinv(2,2,i,j)
+                v(i,j,1,k)= v1*Dinv(i,j,1,1) + v2*Dinv(i,j,1,2)
+                v(i,j,2,k)= v1*Dinv(i,j,2,1) + v2*Dinv(i,j,2,2)
              end do
           end do
        endif
@@ -898,7 +807,8 @@ contains
     use element_mod, only : element_t
     use parallel_mod, only : syncmp
     use dimensions_mod, only : nlev
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : edgevpack, edgevunpack
+    use edgetype_mod, only : EdgeBuffer_t
     use bndry_mod, only : bndry_exchangev
     use hybrid_mod, only : hybrid_t
     use physical_constants, only : rearth,rrearth
@@ -968,21 +878,21 @@ contains
                elem(ie)%state%lnps(:,:,nfilt), &
                1,                         &
                kptr,                      &
-               elem(ie)%desc)
+               ie)
 
           kptr=1
           call edgeVpack(edge_3lp1,                 &
                elem(ie)%state%T(:,:,1,nfilt),  &
                nlev,                      &
                kptr,                      &
-               elem(ie)%desc)
+               ie)
 
           kptr=1+nlev
           call edgeVpack(edge_3lp1,                 &
                elem(ie)%state%v(:,:,1,1,nfilt),&
                2*nlev,                    &
                kptr,                      &
-               elem(ie)%desc)
+               ie)
 
 
        end do
@@ -995,13 +905,13 @@ contains
           mp  => elem(ie)%mp
 
           kptr=0
-          call edgeVunpack(edge_3lp1, elem(ie)%state%lnps(:,:,nfilt), 1, kptr, elem(ie)%desc)
+          call edgeVunpack(edge_3lp1, elem(ie)%state%lnps(:,:,nfilt), 1, kptr, ie)
 
           kptr=1
-          call edgeVunpack(edge_3lp1, elem(ie)%state%T(:,:,1,nfilt), nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge_3lp1, elem(ie)%state%T(:,:,1,nfilt), nlev, kptr, ie)
 
           kptr=1+nlev
-          call edgeVunpack(edge_3lp1, elem(ie)%state%v(:,:,1,1,nfilt), 2*nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge_3lp1, elem(ie)%state%v(:,:,1,1,nfilt), 2*nlev, kptr, ie)
 
           elem(ie)%state%lnps(:,:,nfilt) = rmp*elem(ie)%state%lnps(:,:,nfilt)
 
@@ -1056,8 +966,8 @@ contains
                    do i=1,np
                       v1 = elem(ie)%state%v(i,j,1,k,nfilt)*rrearth
                       v2 = elem(ie)%state%v(i,j,2,k,nfilt)*rrearth
-                      u(i,j)= v1*elem(ie)%Dinv(1,1,i,j) + v2*elem(ie)%Dinv(2,1,i,j)
-                      v(i,j)= v1*elem(ie)%Dinv(1,2,i,j) + v2*elem(ie)%Dinv(2,2,i,j)
+                      u(i,j)= v1*elem(ie)%Dinv(i,j,1,1) + v2*elem(ie)%Dinv(i,j,2,1)
+                      v(i,j)= v1*elem(ie)%Dinv(i,j,1,2) + v2*elem(ie)%Dinv(i,j,2,2)
                    end do
                 end do
              else
@@ -1065,8 +975,8 @@ contains
                    do i=1,np
                       v1 = elem(ie)%state%v(i,j,1,k,nfilt)*rrearth
                       v2 = elem(ie)%state%v(i,j,2,k,nfilt)*rrearth
-                      u(i,j)= v1*elem(ie)%D(1,1,i,j) + v2*elem(ie)%D(1,2,i,j)
-                      v(i,j)= v1*elem(ie)%D(2,1,i,j) + v2*elem(ie)%D(2,2,i,j)
+                      u(i,j)= v1*elem(ie)%D(i,j,1,1) + v2*elem(ie)%D(i,j,1,2)
+                      v(i,j)= v1*elem(ie)%D(i,j,2,1) + v2*elem(ie)%D(i,j,2,2)
                    end do
                 end do
              endif
@@ -1079,8 +989,8 @@ contains
                    do i=1,np
                       v1 = u(i,j)*rearth
                       v2 = v(i,j)*rearth
-                      elem(ie)%state%v(i,j,1,k,nfilt)= v1*elem(ie)%D(1,1,i,j) + v2*elem(ie)%D(2,1,i,j)
-                      elem(ie)%state%v(i,j,2,k,nfilt)= v1*elem(ie)%D(1,2,i,j) + v2*elem(ie)%D(2,2,i,j)
+                      elem(ie)%state%v(i,j,1,k,nfilt)= v1*elem(ie)%D(i,j,1,1) + v2*elem(ie)%D(i,j,2,1)
+                      elem(ie)%state%v(i,j,2,k,nfilt)= v1*elem(ie)%D(i,j,1,2) + v2*elem(ie)%D(i,j,2,2)
                    end do
                 end do
              else
@@ -1088,8 +998,8 @@ contains
                    do i=1,np
                       v1 = u(i,j)*rearth
                       v2 = v(i,j)*rearth
-                      elem(ie)%state%v(i,j,1,k,nfilt)= v1*elem(ie)%Dinv(1,1,i,j) + v2*elem(ie)%Dinv(1,2,i,j)
-                      elem(ie)%state%v(i,j,2,k,nfilt)= v1*elem(ie)%Dinv(2,1,i,j) + v2*elem(ie)%Dinv(2,2,i,j)
+                      elem(ie)%state%v(i,j,1,k,nfilt)= v1*elem(ie)%Dinv(i,j,1,1) + v2*elem(ie)%Dinv(i,j,1,2)
+                      elem(ie)%state%v(i,j,2,k,nfilt)= v1*elem(ie)%Dinv(i,j,2,1) + v2*elem(ie)%Dinv(i,j,2,2)
                    end do
                 end do
              endif

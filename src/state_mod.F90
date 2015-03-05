@@ -64,15 +64,15 @@ private
      !  do lev=1,nlev
      !      v1 = elem(ie)%state%couv(:,:,1,lev)
      !      v2 = elem(ie)%state%couv(:,:,2,lev)
-     !      ulatlon(:,:,1,lev)=elem(ie)%Dinv(1,1,:,:)*v1 + elem(ie)%Dinv(2,1,:,:)*v2   ! co->latlon
-     !      ulatlon(:,:,2,lev)=elem(ie)%Dinv(1,2,:,:)*v1 + elem(ie)%Dinv(2,2,:,:)*v2   ! co->latlon
+     !      ulatlon(:,:,1,lev)=elem(ie)%Dinv(:,:,1,1)*v1 + elem(ie)%Dinv(:,:,2,1)*v2   ! co->latlon
+     !      ulatlon(:,:,2,lev)=elem(ie)%Dinv(:,:,1,2)*v1 + elem(ie)%Dinv(:,:,2,2)*v2   ! co->latlon
      !  end do
      ! Convert cotravariant wind to latlon 
         do lev=1,nlev
             v1 = elem(ie)%state%v(:,:,1,lev,n0)
             v2 = elem(ie)%state%v(:,:,2,lev,n0)
-            ulatlon(:,:,1,lev)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2 
-            ulatlon(:,:,2,lev)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2  
+            ulatlon(:,:,1,lev)=elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2 
+            ulatlon(:,:,2,lev)=elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2  
         end do
      !     ulatlon(:,:,1,:)=elem(ie)%state%v(:,:,1,:,n0)   !if output is in spherical (u,v) 
      !     ulatlon(:,:,2,:)=elem(ie)%state%v(:,:,2,:,n0)
@@ -201,8 +201,8 @@ private
         ! Convert wind to lat-lon
        v1     = elem(ie)%state%v(:,:,1,k,n0)   ! contra
        v2     = elem(ie)%state%v(:,:,2,k,n0)   ! contra 
-       ulatlon(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-       ulatlon(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+       ulatlon(:,:,1)=elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2   ! contra->latlon
+       ulatlon(:,:,2)=elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2   ! contra->latlon
 
      if ((kmass>0).AND.(k.ne.kmass)) then
 !======================================================

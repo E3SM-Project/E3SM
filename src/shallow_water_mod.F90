@@ -14,7 +14,8 @@ module shallow_water_mod
                              divergence, vorticity, laplace_sphere_wk, &
                              vlaplace_sphere_wk, divergence_sphere
   ! ------------------------
-  use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : edgeVpack, edgeVunpack
+  use edgetype_mod, only : EdgeBuffer_t
   ! ------------------------
   use bndry_mod, only : bndry_exchangeV
   ! ------------------------
@@ -322,8 +323,8 @@ contains
              do i=1,np
                 v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
                 v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
-                v(i,j,1)=elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(1,2,i,j)*v2   ! contra->latlon
-                v(i,j,2)=elem(ie)%D(2,1,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2   ! contra->latlon
+                v(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+                v(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
              enddo
           enddo
        enddo
@@ -344,8 +345,8 @@ contains
              do i=1,np
                 v1=v(i,j,1)
                 v2=v(i,j,2)
-                v(i,j,1) = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-                v(i,j,2) = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+                v(i,j,1) = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+                v(i,j,2) = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
              enddo
           enddo
        enddo
@@ -359,8 +360,8 @@ contains
              k1=1
              v1     = elem(ie)%state%v(i,j,1,k1,n0)   ! contra
              v2     = elem(ie)%state%v(i,j,2,k1,n0)   ! contra
-             vlatlon(i,j,1) =elem(ie)%D(1,1,i,j)*v1 + elem(ie)%D(1,2,i,j)*v2   ! contra->latlon
-             vlatlon(i,j,2) =elem(ie)%D(2,1,i,j)*v1 + elem(ie)%D(2,2,i,j)*v2   ! contra->latlon
+             vlatlon(i,j,1) =elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
+             vlatlon(i,j,2) =elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
              
              E(i,j) = 0.5D0*(vlatlon(i,j,1)**2 + vlatlon(i,j,2)**2) 
              hstar         = (elem(ie)%state%p(i,j,1,n0) + pmean)/g
@@ -393,12 +394,12 @@ contains
        vor(:,:,ie) = vorticity_sphere(vlatlon,deriv,elem(ie)) ! latlon vector -> scalar 
        penst(:,:,ie) = vor(:,:,ie)*elem(ie)%spheremp(:,:)
        kptr=0
-       call edgeVpack(edge3, penst(1,1,ie), 1, kptr,elem(ie)%desc)
+       call edgeVpack(edge3, penst(1,1,ie), 1, kptr,ie)
     end do
     call bndry_exchangeV(hybrid,edge3)
     do ie=nets,nete      
        kptr=0
-       call edgeVunpack(edge3, penst(1,1,ie), 1, kptr, elem(ie)%desc)
+       call edgeVunpack(edge3, penst(1,1,ie), 1, kptr, ie)
        penst(:,:,ie) = penst(:,:,ie)*elem(ie)%rspheremp(:,:)
        do j=1,np
           do i=1,np
@@ -632,7 +633,7 @@ contains
   function tc1_velocity(sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -673,8 +674,8 @@ contains
              ! using the D^-T mapping matrix (see Loft notes for details)
              ! =====================================================
 
-             v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-             v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+             v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+             v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
           end do
        end do
     end do
@@ -1168,7 +1169,7 @@ contains
 
     integer, intent(in)                  :: npts
     type (spherical_polar_t), intent(in) :: sphere(npts,npts)
-    real (kind=real_kind), intent(in)    :: D(2,2,npts,npts)
+    real (kind=real_kind), intent(in)    :: D(npts,npts,2,2)
     real (kind=real_kind), intent(in)    :: latc,lonc
     real (kind=real_kind)                :: grad(npts,npts,2)
 
@@ -1208,8 +1209,8 @@ contains
              grad(i,j,2) = 0.0D0
           end if
 
-          grad1=D(1,1,i,j)*grad(i,j,1) + D(1,2,i,j)*grad(i,j,2)     ! assumes input is DV = v_i 
-          grad2=D(2,1,i,j)*grad(i,j,1) + D(2,2,i,j)*grad(i,j,2)     !  "               "     "
+          grad1=D(i,j,1,1)*grad(i,j,1) + D(i,j,1,2)*grad(i,j,2)     ! assumes input is DV = v_i 
+          grad2=D(i,j,2,1)*grad(i,j,1) + D(i,j,2,2)*grad(i,j,2)     !  "               "     "
 
           grad(i,j,1)=grad1
           grad(i,j,2)=grad2
@@ -1520,7 +1521,7 @@ contains
   function tc5_velocity(sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -1557,8 +1558,8 @@ contains
           ! using the D mapping matrix (see Loft notes for details)
           ! =====================================================
 
-          v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-          v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+          v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
        end do
     end do
 
@@ -1927,8 +1928,8 @@ contains
              v1     = elem(ie)%state%v(i,j,1,1,n0)
              v2     = elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%met(1,1,i,j)*v1 + elem(ie)%met(1,2,i,j)*v2
-             vco(i,j,2) = elem(ie)%met(2,1,i,j)*v1 + elem(ie)%met(2,2,i,j)*v2
+             vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
 
              gv(i,j,1) = elem(ie)%metdet(i,j)*v1
              gv(i,j,2) = elem(ie)%metdet(i,j)*v2
@@ -1947,10 +1948,10 @@ contains
        end do
 
        kptr=0
-       call edgeVpack(edge2, zeta(1,1,ie), 1, kptr,elem(ie)%desc)
+       call edgeVpack(edge2, zeta(1,1,ie), 1, kptr,ie)
 
        kptr=1
-       call edgeVpack(edge2, div(1,1,ie), 1, kptr,elem(ie)%desc)
+       call edgeVpack(edge2, div(1,1,ie), 1, kptr,ie)
 
     end do
 
@@ -1959,10 +1960,10 @@ contains
     do ie=nets,nete      
 
        kptr=0
-       call edgeVunpack(edge2, zeta(1,1,ie), 1, kptr, elem(ie)%desc)
+       call edgeVunpack(edge2, zeta(1,1,ie), 1, kptr, ie)
 
        kptr=1
-       call edgeVunpack(edge2, div(1,1,ie), 1, kptr, elem(ie)%desc)
+       call edgeVunpack(edge2, div(1,1,ie), 1, kptr, ie)
 
        do j=1,np
           do i=1,np
@@ -1978,8 +1979,8 @@ contains
              v1     = elem(ie)%state%v(i,j,1,1,n0)
              v2     = elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%met(1,1,i,j)*v1 + elem(ie)%met(1,2,i,j)*v2
-             vco(i,j,2) = elem(ie)%met(2,1,i,j)*v1 + elem(ie)%met(2,2,i,j)*v2
+             vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
              E(i,j) = 0.5D0*( vco(i,j,1)*v1 + vco(i,j,2)*v2 )
 
           end do
@@ -2146,7 +2147,7 @@ contains
   function tc6_velocity(sphere,D) result(v) 
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -2174,8 +2175,8 @@ contains
           ! using the D mapping matrix (see Loft notes for details)
           ! =====================================================
 
-          v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-          v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+          v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 
        end do
     end do
@@ -2514,7 +2515,7 @@ contains
   function tc8_velocity(sphere,D) result(v) 
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -2542,8 +2543,8 @@ contains
           ! using the D^-T mapping matrix (see Loft notes for details)
           ! =====================================================
 
-          v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-          v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+          v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 
        end do
     end do
@@ -2627,7 +2628,7 @@ contains
   function vortex_velocity(t,sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: t,D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: t,D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -2675,8 +2676,8 @@ contains
                 V1=0.0D0
                 V2=0.0D0
              endif
-             v(i,j,1)= (V1+phiuv(2))*D(1,1,i,j) + (V2+phiuv(3))*D(1,2,i,j)
-             v(i,j,2)= (V1+phiuv(2))*D(2,1,i,j) + (V2+phiuv(3))*D(2,2,i,j)
+             v(i,j,1)= (V1+phiuv(2))*D(i,j,1,1) + (V2+phiuv(3))*D(i,j,1,2)
+             v(i,j,2)= (V1+phiuv(2))*D(i,j,2,1) + (V2+phiuv(3))*D(i,j,2,2)
           end do
        end do
     end do
@@ -3506,7 +3507,7 @@ contains
   function swirl_velocity(t,sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: t,D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: t,D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -3574,8 +3575,8 @@ contains
 	      IF (ABS(v1_new)<1.0E-10) v1_new=0.0d0
 	      V1=v1_new
 	      V2=v2_new
-	      v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-	      v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+	      v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+	      v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 	  end do
 	end do
     end do
@@ -3606,8 +3607,8 @@ contains
 	    IF (ABS(v1_new)<1.0E-10) v1_new=0.0d0
 	    V1=v1_new
 	    V2=v2_new
-	    v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-	    v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+	    v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+	    v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 	  end do
 	end do
       end do
@@ -3637,8 +3638,8 @@ contains
 	    IF (ABS(v1_new)<1.0E-10) v1_new=0.0d0
 	    V1=v1_new
 	    V2=v2_new
-	    v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-	    v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+	    v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+	    v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
 	  end do
 	end do
       end do
@@ -3679,8 +3680,8 @@ contains
              IF (ABS(v1_new)<1.0E-10) v1_new=0.0d0
              V1=v1_new
              V2=v2_new
-             v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-             v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+             v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+             v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
           end do
        end do
       end do
@@ -3916,7 +3917,7 @@ contains
   function sj1_velocity_cubedsphere(sphere,D) result(v) 
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -3932,8 +3933,8 @@ contains
           V1  = sj1_velocity(lat)
           
           ! Map onto contravariant velocities
-          v(i,j,1)= V1*D(1,1,i,j)
-          v(i,j,2)= V1*D(2,1,i,j)
+          v(i,j,1)= V1*D(i,j,1,1)
+          v(i,j,2)= V1*D(i,j,2,1)
        end do
     end do
 

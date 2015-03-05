@@ -673,8 +673,8 @@ contains
     real (kind=real_kind), dimension(np,np)     :: rspheremp
     real (kind=real_kind), dimension(np,np)     :: spheremp
     real (kind=real_kind), dimension(np,np)     :: metdet
-    real (kind=real_kind), dimension(2,2,np,np) :: met
-    real (kind=real_kind), dimension(2,2,np,np) :: metinv
+    real (kind=real_kind), dimension(np,np,2,2) :: met
+    real (kind=real_kind), dimension(np,np,2,2) :: metinv
 
     ! Thread private working set ...
 
@@ -756,8 +756,8 @@ contains
              do i=1,np
 
 
-             gvm1(i,j,1) = pptr%base(ie)%D(1,1,i,j)*zv(i,j,1,k,ie) + pptr%base(ie)%D(1,2,i,j)*zv(i,j,2,k,ie)
-             gvm1(i,j,2) = pptr%base(ie)%D(2,1,i,j)*zv(i,j,1,k,ie) + pptr%base(ie)%D(2,2,i,j)*zv(i,j,2,k,ie)
+             gvm1(i,j,1) = pptr%base(ie)%D(i,j,1,1)*zv(i,j,1,k,ie) + pptr%base(ie)%D(i,j,1,2)*zv(i,j,2,k,ie)
+             gvm1(i,j,2) = pptr%base(ie)%D(i,j,2,1)*zv(i,j,1,k,ie) + pptr%base(ie)%D(i,j,2,2)*zv(i,j,2,k,ie)
 
              end do
           end do
@@ -804,19 +804,10 @@ contains
     ! ======================================================
 
     !DBG print *,'advance_si: before call to pcg_presolver'
-    point = 3
-#ifdef _HTRACE
-    !JMD    call EVENT_POINT(point)
-#endif
     !$OMP BARRIER
 
     dp(:,:,:,ns:ne) = pcg_presolver_nonstag(pptr, &
          Rs(:,:,:,ns:ne) )     ! rhs of Helmholtz problem
-
-    point = 4 
-#ifdef _HTRACE
-    !JMD   call EVENT_POINT(point)
-#endif
 
     do ie=ns,ne
 
@@ -866,10 +857,10 @@ contains
              do i=1,np
                grad_dp1 = pptr%base(ie)%rspheremp(i,j)*grad_dp(i,j,1,k,ie)
                grad_dp2 = pptr%base(ie)%rspheremp(i,j)*grad_dp(i,j,2,k,ie)
-           grad_dp(i,j,1,k,ie)   = pptr%base(ie)%Dinv(1,1,i,j)*grad_dp1 + &
-                      pptr%base(ie)%Dinv(1,2,i,j)*grad_dp2
-           grad_dp(i,j,2,k,ie)   = pptr%base(ie)%Dinv(2,1,i,j)*grad_dp1 + &
-                      pptr%base(ie)%Dinv(2,2,i,j)*grad_dp2
+           grad_dp(i,j,1,k,ie)   = pptr%base(ie)%Dinv(i,j,1,1)*grad_dp1 + &
+                      pptr%base(ie)%Dinv(i,j,1,2)*grad_dp2
+           grad_dp(i,j,2,k,ie)   = pptr%base(ie)%Dinv(i,j,2,1)*grad_dp1 + &
+                      pptr%base(ie)%Dinv(i,j,2,2)*grad_dp2
 
                dv(i,j,1,k,ie) = zv(i,j,1,k,ie) - pptr%dt*grad_dp(i,j,1,k,ie)
                dv(i,j,2,k,ie) = zv(i,j,2,k,ie) - pptr%dt*grad_dp(i,j,2,k,ie)  

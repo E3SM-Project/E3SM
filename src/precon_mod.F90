@@ -64,7 +64,7 @@ contains
     ! Local
     ! ===========
 
-    real (kind=real_kind), dimension(2,2,np,np) :: metinv
+    real (kind=real_kind), dimension(np,np,2,2) :: metinv
     real (kind=real_kind), dimension(np,np) :: metdet
     real (kind=real_kind), dimension(np,np) :: rmetdet
     real (kind=real_kind), dimension(np,np) :: rmp
@@ -125,7 +125,7 @@ contains
 
        do ie=nets,nete
           ieptr=ie-nets+1
-          metinv = elem(ie)%metinv
+          metinv = elem(ie)%metinvJMD
           metdet = elem(ie)%metdet
           rmetdet  = elem(ie)%rmetdet
           rmp     = elem(ie)%rmp
@@ -191,13 +191,13 @@ contains
                       gradp1       = gradp(i,j,1,k,ie)
                       gradp2       = gradp(i,j,2,k,ie)
 #if 1
-                      gradp(i,j,1,k,ie) = metdet(i,j)*(metinv(1,1,i,j)*gradp1 + &
-                           metinv(1,2,i,j)*gradp2)
-                      gradp(i,j,2,k,ie) = metdet(i,j)*(metinv(2,1,i,j)*gradp1 + &
-                           metinv(2,2,i,j)*gradp2)
+                      gradp(i,j,1,k,ie) = metdet(i,j)*(metinv(i,j,1,1)*gradp1 + &
+                           metinv(i,j,1,2)*gradp2)
+                      gradp(i,j,2,k,ie) = metdet(i,j)*(metinv(i,j,2,1)*gradp1 + &
+                           metinv(i,j,2,2)*gradp2)
 #else
-                      gradp(i,j,1,k,ie) = (metinv(1,1,i,j)*gradp1 + metinv(1,2,i,j)*gradp2)
-                      gradp(i,j,2,k,ie) = (metinv(2,1,i,j)*gradp1 + metinv(2,2,i,j)*gradp2)
+                      gradp(i,j,1,k,ie) = (metinv(i,j,1,1)*gradp1 + metinv(i,j,1,2)*gradp2)
+                      gradp(i,j,2,k,ie) = (metinv(i,j,2,1)*gradp1 + metinv(i,j,2,2)*gradp2)
 #endif
                    end do
                 end do

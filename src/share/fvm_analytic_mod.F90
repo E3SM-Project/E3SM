@@ -27,7 +27,7 @@ contains
 subroutine computexytosphere_moments(fvm,desc)
   use fvm_control_volume_mod, only: fvm_struct
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-  use edge_mod, only : edgedescriptor_t
+  use edgetype_mod, only : edgedescriptor_t
   implicit none
   
   type (fvm_struct), intent(inout)                    :: fvm

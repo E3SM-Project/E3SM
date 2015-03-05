@@ -14,7 +14,8 @@ module multicloud_mod
 #ifndef CAM
   use physics_mod, only        : elem_physics_t, Prim_Condense,getsurfpress,Temp2PotTemp
 #endif
-  use edge_mod, only           : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, initedgebuffer
+  use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer
+  use edgetype_mod, only       : EdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use column_types_mod, only    : ColumnModelMulticloud_t
@@ -53,11 +54,12 @@ module multicloud_mod
 
 contains
 
-  subroutine Multicloud_Init(par)
+  subroutine Multicloud_Init(par,elem)
 
     use parallel_mod, only : parallel_t
     type(parallel_t) :: par
-    call Prim_Advance_Multicloud_init(par)
+    type(element_t) :: elem(:)
+    call Prim_Advance_Multicloud_init(par,elem)
 
   end subroutine Multicloud_Init
 
@@ -335,25 +337,27 @@ contains
 
   ! PRIVATE
 
-  subroutine Prim_Advance_Multicloud_Init(par)
+  subroutine Prim_Advance_Multicloud_Init(par,elem)
 
     use parallel_mod, only : parallel_t
     type(parallel_t) :: par
+    type(element_t) :: elem(:)
 
-    call initEdgeBuffer(par,edgeMc,2)
-    call Diffusion_Multicloud_init(par)
+    call initEdgeBuffer(par,edgeMc,elem,2)
+    call Diffusion_Multicloud_init(par,elem)
 
   end subroutine Prim_Advance_Multicloud_Init
 
-  subroutine diffusion_Multicloud_init(par)
+  subroutine diffusion_Multicloud_init(par,elem)
 
     use parallel_mod, only : parallel_t
     type(parallel_t) :: par
+    type(element_t) :: elem(:)
 
-       call initEdgeBuffer(par,edgeS1,2)
-       call initEdgeBuffer(par,edgeS2,4)
-       call initEdgeBuffer(par,edge3, 6)
-       call initEdgeBuffer(par,edge4, 8)
+       call initEdgeBuffer(par,edgeS1,elem,2)
+       call initEdgeBuffer(par,edgeS2,elem,4)
+       call initEdgeBuffer(par,edge3, elem,6)
+       call initEdgeBuffer(par,edge4, elem,8)
 
   end subroutine diffusion_Multicloud_init
 
@@ -435,15 +439,15 @@ contains
                 elem_physics(ie)%teb(i,j,nfilt) = elem_physics(ie)%mp(i,j)*elem_physics(ie)%teb(i,j,nfilt)
              end do
           end do
-          call edgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,elem(ie)%desc)
-          call edgeVpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,elem(ie)%desc)
+          call edgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,ie)
+          call edgeVpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,ie)
        end do
 
        call bndry_exchangeV(hybrid,edgeMc)
 
        do ie=nets,nete
-          call edgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,elem(ie)%desc)
-          call edgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,elem(ie)%desc)
+          call edgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,nfilt),1,0,ie)
+          call edgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,nfilt),1,1,ie)
           do j=1,np	
              do i=1,np
                 elem_physics(ie)%qmc(i,j,nfilt) = elem_physics(ie)%rmp(i,j)*elem_physics(ie)%qmc(i,j,nfilt)
@@ -495,8 +499,8 @@ contains
                   0.0D0*elem_physics(ie)%ubar(i,j,2,n0v))*q
 
              ! project from sphere to contravariant velocities
-             vcon1 = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-             vcon2 = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+             vcon1 = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+             vcon2 = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
 
              gv(i,j,1) = elem(ie)%metdet(i,j)*vcon1
              gv(i,j,2) = elem(ie)%metdet(i,j)*vcon2
@@ -512,8 +516,8 @@ contains
              v2 = elem_physics(ie)%uproj1(i,j,2,n0v)*cm%D%Qt1 + elem_physics(ie)%uproj2(i,j,2,n0v)*cm%D%Qt2
 
              ! project from sphere to contravariant velocities
-             vcon1 = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-             vcon2 = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+             vcon1 = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+             vcon2 = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
 
              gv(i,j,1) = elem(ie)%metdet(i,j)*vcon1
              gv(i,j,2) = elem(ie)%metdet(i,j)*vcon2
@@ -526,8 +530,8 @@ contains
              v2 = elem_physics(ie)%ubar(i,j,2,n0v)
 
              ! project from sphere to contravariant velocities
-             vcon1 = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
-             vcon2 = elem(ie)%Dinv(2,1,i,j)*v1 + elem(ie)%Dinv(2,2,i,j)*v2
+             vcon1 = elem(ie)%Dinv(i,j,1,1)*v1 + elem(ie)%Dinv(i,j,1,2)*v2
+             vcon2 = elem(ie)%Dinv(i,j,2,1)*v1 + elem(ie)%Dinv(i,j,2,2)*v2
 
              ! 5/21/2009 was missing q
              q  = elem_physics(ie)%qmc(i,j,n0v)
@@ -595,8 +599,8 @@ contains
              ubar2 = elem(ie)%state%v(i,j,2,nlev,n0v)
 
              ! project from sphere to contravariant velocities
-             vcon1 = elem(ie)%Dinv(1,1,i,j)*ubar1 + elem(ie)%Dinv(1,2,i,j)*ubar2
-             vcon2 = elem(ie)%Dinv(2,1,i,j)*ubar1 + elem(ie)%Dinv(2,2,i,j)*ubar2
+             vcon1 = elem(ie)%Dinv(i,j,1,1)*ubar1 + elem(ie)%Dinv(i,j,1,2)*ubar2
+             vcon2 = elem(ie)%Dinv(i,j,2,1)*ubar1 + elem(ie)%Dinv(i,j,2,2)*ubar2
 
              !qtens   = vcon1*gradqmc(i,j,1)   + vcon2*gradqmc(i,j,2)
              qtens = 0.0D0
@@ -752,16 +756,16 @@ contains
        if(Debug)print *,"t1  = ",sum(abs(t1(:,:)))
        if(Debug)print *,"t2  = ",sum(abs(t2(:,:)))
 
-       call edgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,elem(ie)%desc)
-       call edgeVpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,elem(ie)%desc)
+       call edgeVpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,ie)
+       call edgeVpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,ie)
 
     end do
 
     call bndry_exchangeV(hybrid,edgeMc)
 
     do ie=nets,nete
-       call edgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,elem(ie)%desc)
-       call edgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,elem(ie)%desc)
+       call edgeVunpack(edgeMc,elem_physics(ie)%qmc(:,:,np1),1,0,ie)
+       call edgeVunpack(edgeMc,elem_physics(ie)%teb(:,:,np1),1,1,ie)
 
        do j=1,np	
           do i=1,np
@@ -910,18 +914,18 @@ contains
           do i=1,np
              v1 = mv(i,j)*gradqmc_tmp(i,j,1)
              v2 = mv(i,j)*gradqmc_tmp(i,j,2)
-             grad_qmc_np1(i,j,1,ie) = metdet(i,j)*(metinv(1,1,i,j)*v1 + metinv(1,2,i,j)*v2)
-             grad_qmc_np1(i,j,2,ie) = metdet(i,j)*(metinv(2,1,i,j)*v1 + metinv(2,2,i,j)*v2)
+             grad_qmc_np1(i,j,1,ie) = metdet(i,j)*(metinv(i,j,1,1)*v1 + metinv(i,j,1,2)*v2)
+             grad_qmc_np1(i,j,2,ie) = metdet(i,j)*(metinv(i,j,2,1)*v1 + metinv(i,j,2,2)*v2)
 
              v1 = mv(i,j)*gradteb_tmp(i,j,1)
              v2 = mv(i,j)*gradteb_tmp(i,j,2)
-             grad_teb_np1(i,j,1,ie) = metdet(i,j)*(metinv(1,1,i,j)*v1 + metinv(1,2,i,j)*v2)
-             grad_teb_np1(i,j,2,ie) = metdet(i,j)*(metinv(2,1,i,j)*v1 + metinv(2,2,i,j)*v2)
+             grad_teb_np1(i,j,1,ie) = metdet(i,j)*(metinv(i,j,1,1)*v1 + metinv(i,j,1,2)*v2)
+             grad_teb_np1(i,j,2,ie) = metdet(i,j)*(metinv(i,j,2,1)*v1 + metinv(i,j,2,2)*v2)
           end do
        end do
 
-       call edgeVpack(edgeS2,grad_qmc_np1(:,:,:,ie),2,0,elem(ie)%desc)
-       call edgeVpack(edgeS2,grad_teb_np1(:,:,:,ie),2,2,elem(ie)%desc)
+       call edgeVpack(edgeS2,grad_qmc_np1(:,:,:,ie),2,0,ie)
+       call edgeVpack(edgeS2,grad_teb_np1(:,:,:,ie),2,2,ie)
        call edgerotate(edgeS2,4,0,elem(ie)%desc)
 
     end do
@@ -940,8 +944,8 @@ contains
        D        => elem(ie)%D
        Dinv     => elem(ie)%Dinv
 
-       call edgeVunpack(edgeS2, grad_qmc_np1(:,:,:,ie), 2, 0, elem(ie)%desc)
-       call edgeVunpack(edgeS2, grad_teb_np1(:,:,:,ie), 2, 2, elem(ie)%desc)
+       call edgeVunpack(edgeS2, grad_qmc_np1(:,:,:,ie), 2, 0, ie)
+       call edgeVunpack(edgeS2, grad_teb_np1(:,:,:,ie), 2, 2, ie)
 
        do j=1,np
           do i=1,np
@@ -962,8 +966,8 @@ contains
           end do
        end do
 
-       call edgeVpack(edgeS1, lap_qmc_np1(1,1,ie),1, 0,elem(ie)%desc)
-       call edgeVpack(edgeS1, lap_teb_np1(1,1,ie),1, 1,elem(ie)%desc)
+       call edgeVpack(edgeS1, lap_qmc_np1(1,1,ie),1, 0,ie)
+       call edgeVpack(edgeS1, lap_teb_np1(1,1,ie),1, 1,ie)
 
     end do
 
@@ -976,8 +980,8 @@ contains
        rmetdetv(:,:) = 1.0_real_kind/elem(ie)%metdet(:,:)
 
 
-       call edgeVunpack(edgeS1, lap_qmc_np1(1,1,ie), 1, 0, elem(ie)%desc)
-       call edgeVunpack(edgeS1, lap_teb_np1(1,1,ie), 1, 0, elem(ie)%desc)
+       call edgeVunpack(edgeS1, lap_qmc_np1(1,1,ie), 1, 0, ie)
+       call edgeVunpack(edgeS1, lap_teb_np1(1,1,ie), 1, 0, ie)
 
        do j=1,np
           do i=1,np

@@ -61,6 +61,7 @@ SET(SPELT_SRCS ${SRC_SHARE_DIR}/bndry_mod.F90
                ${SRC_DIR}/restart_io_mod.F90
                ${SRC_SHARE_DIR}/schedule_mod.F90
                ${SRC_SHARE_DIR}/schedtype_mod.F90
+               ${SRC_SHARE_DIR}/edgetype_mod.F90
                ${SRC_SHARE_DIR}/spacecurve_mod.F90
                ${SRC_DIR}/surfaces_mod.F90
                ${SRC_DIR}/state_mod.F90

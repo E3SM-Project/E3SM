@@ -14,7 +14,8 @@ module dg_tests_mod
   ! ------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, gradient_wk, divergence, vorticity
   ! ------------------------
-  use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack
+  use edge_mod, only : edgevpack, edgevunpack
+  use edgetype_mod, only : edgebuffer_t
   ! ------------------------
   use bndry_mod, only : bndry_exchangeV
   ! ------------------------
@@ -181,7 +182,7 @@ end subroutine sw1_init_state
 function sw1_velocity(sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -222,8 +223,8 @@ function sw1_velocity(sphere,D) result(v)
              ! using the D^-T mapping matrix (see Loft notes for details)
              ! =====================================================
 
-           !v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-           !v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+           !v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+           !v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
           end do
        end do
     end do
@@ -612,7 +613,7 @@ subroutine galewsky_init_state(elem,nets,nete,pmean,deriv)
   function galewsky_velocity(sphere,D) result(v)
 !=======================================================================================================!
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -645,8 +646,8 @@ subroutine galewsky_init_state(elem,nets,nete,pmean,deriv)
              V1 =  ulat
              V2 =  0.0D0
 
-          !v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)   !contravariant vectors 
-          !v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          !v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)   !contravariant vectors 
+          !v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
           v(i,j,1)= V1
           v(i,j,2)= V2
 
@@ -779,7 +780,7 @@ end subroutine sw5_init_state
 function sw5_velocity(sphere,D) result(v)
 
     type (spherical_polar_t), intent(in) :: sphere(np,np)
-    real (kind=real_kind),    intent(in) :: D(2,2,np,np)
+    real (kind=real_kind),    intent(in) :: D(np,np,2,2)
     real (kind=real_kind)                :: v(np,np,2)
 
     ! Local variables
@@ -818,8 +819,8 @@ function sw5_velocity(sphere,D) result(v)
 
            v(i,j,1)= V1
            v(i,j,2)= V2
-          !v(i,j,1)= V1*D(1,1,i,j) + V2*D(1,2,i,j)
-          !v(i,j,2)= V1*D(2,1,i,j) + V2*D(2,2,i,j)
+          !v(i,j,1)= V1*D(i,j,1,1) + V2*D(i,j,1,2)
+          !v(i,j,2)= V1*D(i,j,2,1) + V2*D(i,j,2,2)
        end do
     end do
 
@@ -1040,8 +1041,8 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
              v1= elem(ie)%state%v(i,j,1,1,n0)
              v2= elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%met(1,1,i,j)*v1 + elem(ie)%met(1,2,i,j)*v2
-             vco(i,j,2) = elem(ie)%met(2,1,i,j)*v1 + elem(ie)%met(2,2,i,j)*v2
+             vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
 
              gv(i,j,1) = elem(ie)%metdet(i,j)*v1
              gv(i,j,2) = elem(ie)%metdet(i,j)*v2
@@ -1060,10 +1061,10 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
        end do
 
        kptr=0
-       call edgeVpack(edge2, zeta(1,1,ie), 1, kptr,elem(ie)%desc)
+       call edgeVpack(edge2, zeta(1,1,ie), 1, kptr,ie)
 
        kptr=1
-       call edgeVpack(edge2, div(1,1,ie), 1, kptr,elem(ie)%desc)
+       call edgeVpack(edge2, div(1,1,ie), 1, kptr,ie)
 
     end do
 !=======================================================================================================!
@@ -1072,10 +1073,10 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
     do ie=nets,nete      
 
        kptr=0
-       call edgeVunpack(edge2, zeta(1,1,ie), 1, kptr, elem(ie)%desc)
+       call edgeVunpack(edge2, zeta(1,1,ie), 1, kptr, ie)
 
        kptr=1
-       call edgeVunpack(edge2, div(1,1,ie), 1, kptr, elem(ie)%desc)
+       call edgeVunpack(edge2, div(1,1,ie), 1, kptr, ie)
 
        do j=1,np
           do i=1,np
@@ -1091,8 +1092,8 @@ subroutine sw5_invariants(elem, iounit,tl,pmean,edge2,deriv,hybrid,nets,nete)
              v1     = elem(ie)%state%v(i,j,1,1,n0)
              v2     = elem(ie)%state%v(i,j,2,1,n0)
 
-             vco(i,j,1) = elem(ie)%met(1,1,i,j)*v1 + elem(ie)%met(1,2,i,j)*v2
-             vco(i,j,2) = elem(ie)%met(2,1,i,j)*v1 + elem(ie)%met(2,2,i,j)*v2
+             vco(i,j,1) = elem(ie)%met(i,j,1,1)*v1 + elem(ie)%met(i,j,1,2)*v2
+             vco(i,j,2) = elem(ie)%met(i,j,2,1)*v1 + elem(ie)%met(i,j,2,2)*v2
              E(i,j) = 0.5D0*( vco(i,j,1)*v1 + vco(i,j,2)*v2 )
 
           end do
@@ -1211,7 +1212,7 @@ subroutine sw5_init(elem,tl,ie,k,pmean)
     nstep = tl%nstep  
 !=======================================================================================================!
     elem(ie)%fcor=sw5_coreolis_init(elem(ie)%spherep)
-    elem(ie)%state%v(:,:,:,k,n0)= sw5_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)	   
+    elem(ie)%state%v(:,:,:,k,n0)= sw5_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
     Call sw5_phi(elem(ie)%spherep(:,:),hts,hll)           
     elem(ie)%state%ht(:,:,k)= hts(:,:)/g 
     elem(ie)%state%hs(:,:,k)= hll(:,:)/g

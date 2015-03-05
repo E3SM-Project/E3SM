@@ -73,7 +73,7 @@ module prim_movie_mod
 
 
     use hybrid_mod, only : hybrid_t, hybrid_create
-    use edge_mod, only : EdgeBuffer_t
+    use edgetype_mod, only : EdgeBuffer_t
 
     use common_movie_mod, only: varrequired, vartype, varnames, varcnt, vardims, &
 	dimnames, maxdims
@@ -288,7 +288,7 @@ contains
             (nf_selectedvar('cv_lon', output_varnames)) ) then
           if (.not. allocated(cvlist)) then
              if (par%masterproc) print *,'computing GLL dual grid for  control volumes:'
-             call InitControlVolumesData(par,nelemd)
+             call InitControlVolumesData(par,elem,nelemd)
              ! single thread
              hybrid = hybrid_create(par,0,1)
              call InitControlVolumes(elem,hybrid,1,nelemd)

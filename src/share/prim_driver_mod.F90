@@ -30,7 +30,7 @@ module prim_driver_mod
 #endif
 
   use element_mod, only : element_t, timelevels,  allocate_element_desc
-  use thread_mod, only : omp_get_num_threads
+  use thread_mod, only : nThreadsHoriz, omp_get_num_threads
   implicit none
   private
   public :: prim_init1, prim_init2 , prim_run, prim_run_subcycle, prim_finalize, leapfrog_bootstrap
@@ -81,7 +81,7 @@ contains
          MeshCubeElemCount, MeshCubeEdgeCount
     use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
     ! --------------------------------
-    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph
+    use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
     use derivative_mod, only : allocate_subcell_integration_matrix
     ! --------------------------------
@@ -146,6 +146,7 @@ contains
     integer :: nlyr
     integer :: iMv
     integer :: err, ierr, l, j
+    logical, parameter :: Debug = .FALSE.
 
     real(kind=real_kind), allocatable :: aratio(:,:)
     real(kind=real_kind) :: area(1),xtmp
@@ -259,7 +260,7 @@ contains
     end if
     if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
 
-    !debug  call PrintGridVertex(GridVertex)
+    !DBG if(par%masterproc) call PrintGridVertex(GridVertex)
 
 
     if(partmethod .eq. SFCURVE) then
@@ -293,6 +294,9 @@ contains
 
 
     nelemd = LocalElemCount(MetaVertex(1))
+    if(par%masterproc .and. Debug) then 
+        call PrintMetaVertex(MetaVertex(1))
+    endif
 
     if(nelemd .le. 0) then
        call abortmp('Not yet ready to handle nelemd = 0 yet' )
@@ -308,7 +312,6 @@ contains
     if (nelemd>0) then
        allocate(elem(nelemd))
        call allocate_element_desc(elem)
-
 #ifndef CAM
        call ManagerInit()
 #endif
@@ -327,7 +330,6 @@ contains
     ! ====================================================
 
     call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
-
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
     global_shared_buf=0.0_real_kind
@@ -537,18 +539,20 @@ contains
     ith=0
     nets=1
     nete=nelemd
+    ! set the actual number of threads which will be used in the horizontal
+    nThreadsHoriz = n_domains
 #ifndef CAM
     allocate(cm(0:n_domains-1))
 #endif
     allocate(cg(0:n_domains-1))
-    call prim_advance_init(par,integration)
-    call Prim_Advec_Init1(par, n_domains)
-    call diffusion_init(par)
+    call prim_advance_init(par,elem,integration)
+    call Prim_Advec_Init1(par, elem,n_domains)
+    call diffusion_init(par,elem)
     if (ntrac>0) then
 #if defined(_SPELT)
       call spelt_init1(par)
 #else
-      call fvm_init1(par)
+      call fvm_init1(par,elem)
 #endif
     endif
 
@@ -1978,7 +1982,6 @@ contains
     subroutine smooth_topo_datasets(phis,sghdyn,sgh30dyn,elem,hybrid,nets,nete)
     use control_mod, only : smooth_phis_numcycle,smooth_sgh_numcycle
     use hybrid_mod, only : hybrid_t
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use viscosity_mod, only : biharmonic_wk

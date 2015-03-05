@@ -20,7 +20,7 @@ module surfaces_mod
                                      cube_face_number_from_cart, distance, sphere_tri_area
 
   use parallel_mod, only   : abortmp,  global_shared_buf, global_shared_sum
-  use edge_mod, only       : EdgeBuffer_t, Ghostbuffer3d_t
+  use edgetype_mod, only       : EdgeBuffer_t, Ghostbuffer3d_t
   use bndry_mod,    only : ghost_exchangevfull
   use dimensions_mod, only : np, ne, nelemd, max_elements_attached_to_node, s_nv
   use global_norms_mod, only: wrap_repro_sum
@@ -106,14 +106,16 @@ contains
     vol => cvlist(elemid)%vol
 
   end function GetVolumeLocal
-  subroutine InitControlVolumesData(par,nelemd)
+  subroutine InitControlVolumesData(par,elem,nelemd)
     use edge_mod, only :   initedgebuffer, initGhostBuffer3d
     use parallel_mod, only : parallel_t
+    use element_mod, only : element_t
     type(parallel_t) :: par
+    type(element_t) :: elem(:)
     integer, intent(in) :: nelemd
     ! Cannot be done in a threaded region
     allocate(cvlist(nelemd))
-    call initedgebuffer(par,edge1,3)
+    call initedgebuffer(par,edge1,elem,3)
     call initGhostBuffer3d(ghost_buf, 3, np+1, 1)
   end subroutine InitControlVolumesData
 
@@ -238,7 +240,7 @@ contains
           enddo
        enddo
        test(:,:,1) = cvlist(ie)%vol(:,:)
-       call edgeVpack(edge1,test,1,0,elem(ie)%desc)
+       call edgeVpack(edge1,test,1,0,ie)
     enddo
 
     _DBG_
@@ -248,7 +250,7 @@ contains
     test = 0
     do ie=nets,nete
        test(:,:,1) = cvlist(ie)%vol(:,:)
-       call edgeVunpack(edge1, test, 1, 0, elem(ie)%desc)
+       call edgeVunpack(edge1, test, 1, 0, ie)
        cvlist(ie)%totvol(:,:) = test(:,:,1) 
        cvlist(ie)%invvol(:,:)=1.0_real_kind/cvlist(ie)%totvol(:,:)
     enddo
@@ -1792,7 +1794,7 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
 
        kptr=0
        test(:,:,1) = cvlist(ie)%vol(:,:)
-       call edgeVpack(edge1,test(1,1,1),1,kptr,elem(ie)%desc)
+       call edgeVpack(edge1,test(1,1,1),1,kptr,ie)
 
        cvlist(ie)%invvol(:,:) = cvlist(ie)%vol(:,:)
 
@@ -1805,7 +1807,7 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
 
     do ie=nets,nete
        kptr=0
-       call edgeVunpack(edge1, cvlist(ie)%invvol(1,1),1, kptr, elem(ie)%desc)
+       call edgeVunpack(edge1, cvlist(ie)%invvol(1,1),1, kptr, ie)
        cvlist(ie)%totvol(:,:)=cvlist(ie)%invvol(:,:)
        cvlist(ie)%invvol(:,:)=1.0_real_kind/cvlist(ie)%invvol(:,:)
     enddo
@@ -1876,14 +1878,14 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
        enddo
 
        kptr=0
-       call edgeVpack(edge1,vertpack,3,kptr,elem(ie)%desc)
+       call edgeVpack(edge1,vertpack,3,kptr,ie)
     enddo
 
     call bndry_exchangeV(hybrid,edge1)
 
     do ie=nets,nete
        kptr=0
-       call edgeVunpackVert(edge1, cvlist(ie)%vert,elem(ie)%desc)       
+       call edgeVunpackVert(edge1, cvlist(ie)%vert,ie)       
        ! Count and orient vert array
        ! nvert is an integer: -4,-3,3,4
        ! Positive: 1->2->3->4 is counter clockwise on the sphere
