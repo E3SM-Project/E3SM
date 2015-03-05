@@ -34,7 +34,9 @@ module cice_debug
        cice_time_output_variable_int_2D, &
        cice_plot_vertices_planar, &
        cice_plot_cells_planar, &
-       cice_debug_output_array
+       cice_debug_output_array, &
+       cice_debug_output_block, &
+       cice_debug_output_domain
 
   integer, private :: &
        iObject = 2, &
@@ -2607,6 +2609,8 @@ contains
 
     close(22)
 
+    stop
+
   end subroutine cice_time_output_variable_int_2D
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2636,7 +2640,79 @@ contains
 
     close(60)
 
+    write(stderrUnit,*) "cice_debug_output_array"
+
+    stop
+
   end subroutine cice_debug_output_array
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_debug_output_block
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date Feburary 11th 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_output_block(block)
+
+    type(block_type) :: block
+
+    type(mpas_pool_type), pointer :: &
+         pool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         array
+
+    call MPAS_pool_get_subpool(block % structs, "", pool)
+
+    call MPAS_pool_get_array(pool, "", array)
+
+    call cice_debug_output_array(array)
+
+  end subroutine cice_debug_output_block
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_debug_output_block
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date Feburary 11th 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_output_domain(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(mpas_pool_type), pointer :: &
+         pool
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         array
+
+    block => domain % blocklist
+    do while (associated(block))
+       
+       call MPAS_pool_get_subpool(block % structs, "tracers", pool)
+
+       call MPAS_pool_get_array(pool, "iceEnthalpy", array, 1)
+
+       call cice_debug_output_array(array(1,1,:))
+
+       block => block % next
+    end do
+    
+  end subroutine cice_debug_output_domain
 
 !-----------------------------------------------------------------------
 

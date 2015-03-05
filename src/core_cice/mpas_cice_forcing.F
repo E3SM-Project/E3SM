@@ -387,7 +387,7 @@ contains
        ! perform post forcing
        call post_atmospheric_forcing(block)
 
-       call forcing_testing(block)
+       !call forcing_testing(block)
 
        block => block % next
     end do
@@ -1474,6 +1474,8 @@ contains
          oceanForcing
 
     real(kind=RKIND), dimension(:), pointer :: &
+         airTemperature, &
+         airPotentialTemperature, &
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
          seaFreezingTemperature
@@ -1495,11 +1497,21 @@ contains
        
        call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
+       call MPAS_pool_get_array(atmosCoupling, "airTemperature", airTemperature)
+       call MPAS_pool_get_array(atmosCoupling, "airPotentialTemperature", airPotentialTemperature)
+
        call MPAS_pool_get_array(oceanCoupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(oceanCoupling, "seaSurfaceSalinity", seaSurfaceSalinity)
        call MPAS_pool_get_array(oceanCoupling, "seaFreezingTemperature", seaFreezingTemperature)
 
        do iCell = 1, nCells
+
+          !-----------------------------------------------------------------------
+          ! atmospheric state
+          !-----------------------------------------------------------------------
+
+          airTemperature(iCell) = 253.0_RKIND
+          airPotentialTemperature(iCell) = 253.0_RKIND
 
           !-----------------------------------------------------------------------
           ! ocean state

@@ -13,11 +13,12 @@
 		<dim name="FIFTEEN"            definition="15"/>
 		<dim name="TWENTYONE"          definition="21"/>
 		<dim name="vertexDegree"/>
-		<dim name="nCategories"        definition="1"/>
-		<dim name="nIceLayers"         definition="1"/>
+		<dim name="nCategories"        definition="5"/>
+		<dim name="nIceLayers"         definition="7"/>
 		<dim name="nSnowLayers"        definition="1"/>
 		<dim name="nHemispheres"       definition="3"/>
 		<dim name="nIceLayersP1"       definition="nIceLayers+1"/>
+		<dim name="nCategoriesP1"      definition="nCategories+1"/>
 		<dim name="nAerosols"          definition="0"/>
 		<dim name="nSpectralIntervals" definition="3"/>
 		<dim name="nZBGCTracers"       definition="0"/>
@@ -915,6 +916,7 @@
 	<var_struct name="initial" time_levs="1">
 		<var name="initialSalinityProfile"            type="real"     dimensions="nIceLayersP1 nCells"              name_in_code="initialSalinityProfile" packages="pkgColumnVerticalThermodynamics;pkgColumnITDThermodynamics"/>
 		<var name="initialMeltingTemperatureProfile"  type="real"     dimensions="nIceLayersP1 nCells"              name_in_code="initialMeltingTemperatureProfile" packages="pkgColumnVerticalThermodynamics;pkgColumnITDThermodynamics"/>
+		<var name="categoryThicknessLimits"           type="real"     dimensions="nCategoriesP1"                    name_in_code="categoryThicknessLimits"/>
 	</var_struct>
 
 	<!-- Plotting -->

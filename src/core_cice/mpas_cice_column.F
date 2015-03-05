@@ -80,11 +80,6 @@ module cice_column
 
   type(ciceTracerObjectType), private :: ciceTracerObject
 
-  ! category thickness limits
-  real(kind=RKIND), dimension(:), allocatable, private :: &
-       categoryThicknessLimits
-
-
 contains
 
 !-----------------------------------------------------------------------
@@ -139,19 +134,35 @@ contains
     
     type(domain_type), intent(inout) :: domain
     
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         initial
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         categoryThicknessLimits
+
     integer, pointer :: &
          nCategories
     
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
     
-    ! allocate the thickness limit array
-    allocate(categoryThicknessLimits(0:nCategories))
+    block => domain % blocklist
+    do while (associated(block))
 
-    call colpkg_init_itd(&
-         nCategories, &
-         categoryThicknessLimits, &
-         stdoutUnit)
+       call MPAS_pool_get_subpool(block % structs, "initial", initial)
+
+       call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
+
+       call colpkg_init_itd(&
+            nCategories, &
+            categoryThicknessLimits, &
+            stdoutUnit)
     
+       block => block % next
+    end do
+
   end subroutine init_column_itd
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -301,7 +312,7 @@ contains
     character(len=strKIND), pointer :: &
          config_shortwave_type
 
-    call MPAS_pool_get_config(domain % blocklist % dimensions, "config_shortwave_type", config_shortwave_type)
+    call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
 
     if (trim(config_shortwave_type) == "dEdd") then
 
@@ -425,7 +436,7 @@ contains
          mesh, &
          tracers, &
          atmos_coupling, &
-         ocean_forcing, &
+         ocean_coupling, &
          initial
 
     real(kind=RKIND), dimension(:), pointer :: &
@@ -457,7 +468,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
-       call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
@@ -467,7 +478,7 @@ contains
 
        call MPAS_pool_get_array(atmos_coupling, "airTemperature", airTemperature)
 
-       call MPAS_pool_get_array(ocean_forcing, "seaFreezingTemperature", seaFreezingTemperature)
+       call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
        call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
        call MPAS_pool_get_array(initial, "initialMeltingTemperatureProfile", initialMeltingTemperatureProfile)
@@ -1397,7 +1408,8 @@ contains
          oceanFreshWaterFlux, &
          oceanSaltFlux, &
          oceanHeatFlux, &
-         freezeOnset
+         freezeOnset, &
+         categoryThicknessLimits
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -1494,6 +1506,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
 
        call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
+       call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
        call MPAS_pool_get_array(diagnostics, "freezeOnset", freezeOnset)
 
@@ -1586,7 +1599,7 @@ contains
 
   subroutine column_prep_radiation(domain)
 
-    use ice_colpkg, only: colpkg_step_radiation
+    use ice_colpkg, only: colpkg_prep_radiation
 
     type(domain_type), intent(inout) :: domain
 
@@ -1990,7 +2003,8 @@ contains
          ocean_fluxes, &
          ridging, &
          aerosols, &
-         biogeochemistry
+         biogeochemistry, &
+         initial
 
     ! configs
     real(kind=RKIND), pointer :: &
@@ -2020,7 +2034,8 @@ contains
          areaLossRidge, &
          areaGainRidge, &
          iceVolumeRidged, &
-         openingRateRidge
+         openingRateRidge, &
+         categoryThicknessLimits
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          oceanAerosolFlux, &
@@ -2067,6 +2082,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ridging", ridging)
        call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+       call MPAS_pool_get_subpool(block % structs, "initial", initial)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
@@ -2110,6 +2126,8 @@ contains
 
        call MPAS_pool_get_array(biogeochemistry, "newlyFormedIce", newlyFormedIce)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
+
+       call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
@@ -3688,6 +3706,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_high_frequency_coupling", config_use_high_frequency_coupling)
     call MPAS_pool_get_config(domain % configs, "config_boundary_layer_iteration_number", config_boundary_layer_iteration_number)
     call MPAS_pool_get_config(domain % configs, "config_use_ocean_mixed_layer", config_use_ocean_mixed_layer)
+    call MPAS_pool_get_config(domain % configs, "config_itd_conversion_type", config_itd_conversion_type)
+    call MPAS_pool_get_config(domain % configs, "config_category_bounds_type", config_category_bounds_type)
     call MPAS_pool_get_config(domain % configs, "config_snow_to_ice_transition_depth", config_snow_to_ice_transition_depth)
     call MPAS_pool_get_config(domain % configs, "config_adjust_shortwave_meltwater_infiltration", config_adjust_shortwave_meltwater_infiltration)
     call MPAS_pool_get_config(domain % configs, "config_pond_refreezing_type", config_pond_refreezing_type)

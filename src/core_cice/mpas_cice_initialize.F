@@ -49,7 +49,8 @@ contains
     use cice_mesh, only: cice_init_boundary
     use cice_advection, only: cice_init_advection
     use cice_velocity_solver, only: cice_init_velocity_solver
-    use cice_debug, only: cice_test_case_output
+    use cice_debug, only: cice_test_case_output, cice_debug_output_domain
+    use cice_column, only: cice_init_column_physics_package
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output: 
@@ -67,13 +68,14 @@ contains
          config_use_velocity_solver, &
          config_use_advection, &
          config_use_forcing, &
-         config_do_restart
-
+         config_do_restart, &
+         config_use_column_physics_package
 
     call MPAS_pool_get_config(domain % configs, "config_use_velocity_solver", config_use_velocity_solver)
     call MPAS_pool_get_config(domain % configs, "config_use_advection", config_use_advection)
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_physics_package", config_use_column_physics_package)
 
     block => domain % blocklist
     do while (associated(block))
@@ -102,9 +104,18 @@ contains
        end do
     endif
 
+    ! column physics initialization
+    if (config_use_column_physics_package) then
+       call cice_init_column_physics_package(&
+            domain, &
+            clock)
+    endif
+
     ! init ice state
     if (.not. config_do_restart) &
          call init_ice_state(domain)
+
+    call cice_debug_output_domain(domain)
 
     block => domain % blocklist
     do while (associated(block))
@@ -259,6 +270,12 @@ contains
        else if (trim(config_initial_condition_type) == "square_point") then
 
           call cice_init_square_point_test_case_hex(&
+               block, &
+               domain % configs)
+
+       else if (trim(config_initial_condition_type) == "cice_default") then
+
+          call init_ice_cice_default(&
                block, &
                domain % configs)
 
@@ -447,6 +464,285 @@ contains
 
   end subroutine init_ice_state_uniform_ice!}}}
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_ice_cice_default
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date March 2nd 1015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_ice_cice_default(&
+       block, &
+       configs)!{{{
+
+    use cice_constants, only: &
+         ciceDegreesToRadians
+
+    use ice_colpkg, only: &
+         colpkg_init_trcr, &
+         colpkg_enthalpy_snow
+
+    type(block_type), intent(inout) :: &
+         block !< Input/Output: 
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         configs !< Input: 
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         atmos_coupling, &
+         ocean_coupling, &
+         initial
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nCategories, &
+         nIceLayers, &
+         nSnowLayers
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell, &
+         airTemperature, &
+         seaSurfaceTemperature, &
+         seaFreezingTemperature
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         initialSalinityProfile, &
+         initialMeltingTemperatureProfile
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         surfaceTemperature, &
+         iceEnthalpy, &
+         snowEnthalpy, &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         iceSalinity
+
+    real(kind=RKIND), pointer :: &
+         config_initial_latitude_north, &
+         config_initial_latitude_south
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         initialCategoryIceArea, &
+         initialCategoryIceThickness
+
+    integer :: &
+         iCell, &
+         iCategory, &
+         iIceLayer
+
+    real(kind=RKIND), parameter :: &
+         initialCategorySnowThickness = 0.2_RKIND
+
+    call MPAS_pool_get_config(configs, "config_initial_latitude_north", config_initial_latitude_north)
+    call MPAS_pool_get_config(configs, "config_initial_latitude_south", config_initial_latitude_south)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
+    call MPAS_pool_get_subpool(block % structs, "initial", initial)
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
+    call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
+
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature)
+    call MPAS_pool_get_array(tracers, "iceEnthalpy", iceEnthalpy)
+    call MPAS_pool_get_array(tracers, "snowEnthalpy", snowEnthalpy)
+    call MPAS_pool_get_array(tracers, "iceSalinity", iceSalinity, 1)
+
+    call MPAS_pool_get_array(atmos_coupling, "airTemperature", airTemperature)
+
+    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
+    call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+
+    call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
+    call MPAS_pool_get_array(initial, "initialMeltingTemperatureProfile", initialMeltingTemperatureProfile)
+
+    ! initial volumes and areas
+    allocate(initialCategoryIceArea(nCategories))
+    allocate(initialCategoryIceThickness(nCategories))
+    
+    call initial_category_areas_and_volumes(&
+         block, &
+         initialCategoryIceArea, &
+         initialCategoryIceThickness)
+
+    do iCell = 1, nCellsSolve
+
+       if (seaSurfaceTemperature(iCell) <= seaFreezingTemperature(iCell) + 0.2_RKIND .and. &
+          (latCell(iCell) > config_initial_latitude_north * ciceDegreesToRadians .or. &
+           latCell(iCell) < config_initial_latitude_south * ciceDegreesToRadians)) then
+
+          ! has ice
+          do iCategory = 1, nCategories
+
+             iceAreaCategory(1,iCategory,iCell)    = initialCategoryIceArea(iCategory)
+             iceVolumeCategory(1,iCategory,iCell)  = initialCategoryIceArea(iCategory) * initialCategoryIceThickness(iCategory)
+             snowVolumeCategory(1,iCategory,iCell) = min(iceAreaCategory(1,iCategory,iCell) * initialCategorySnowThickness, &
+                                                         0.2_RKIND * iceVolumeCategory(1,iCategory,iCell))
+
+             call colpkg_init_trcr(&
+                  airTemperature(iCell), &
+                  seaFreezingTemperature(iCell), &
+                  initialSalinityProfile(:,iCell), &
+                  initialMeltingTemperatureProfile(:,iCell), &
+                  surfaceTemperature(1,iCategory,iCell), &
+                  nIceLayers, &
+                  nSnowLayers, &
+                  iceEnthalpy(:,iCategory,iCell), &
+                  snowEnthalpy(:,iCategory,iCell))
+
+          enddo ! iCategory
+
+       else
+
+          ! no ice
+          iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+          iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+          snowVolumeCategory(1,:,iCell) = 0.0_RKIND
+
+          surfaceTemperature(1,:,iCell) = seaFreezingTemperature(iCell)
+
+          snowEnthalpy(1,:,iCell) = colpkg_enthalpy_snow(0.0_RKIND)
+
+       endif
+
+    enddo ! iCell
+
+    ! get vertical salinity profiles
+    call MPAS_pool_get_subpool(block % structs, "initial", initial)
+    call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
+
+    do iCell = 1, nCellsSolve
+       do iCategory = 1, nCategories
+          do iIceLayer = 1, nIceLayers
+             iceSalinity(iIceLayer,iCategory,iCell) = initialSalinityProfile(iIceLayer,iCell)
+          enddo ! iIceLayer
+       enddo ! iCategory
+    enddo ! iCell
+
+    ! clean up
+    deallocate(initialCategoryIceArea)
+    deallocate(initialCategoryIceThickness)
+
+  end subroutine init_ice_cice_default!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  initial_category_areas_and_volumes
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date March 2nd 1015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine initial_category_areas_and_volumes(&
+       block, &
+       initialCategoryIceArea, &
+       initialCategoryIceThickness)
+
+    use cice_constants, only: &
+         cicePuny
+
+    ! Note: the resulting average ice thickness 
+    ! tends to be less than hbar due to the
+    ! nonlinear distribution of ice thicknesses 
+    
+    type(block_type), intent(in) :: block
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         initialCategoryIceArea, &
+         initialCategoryIceThickness
+ 
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         initial
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         categoryThicknessLimits
+
+    real(kind=RKIND) :: &
+         areaCategorySum
+
+    integer, pointer :: &
+         nCategories
+
+    integer :: &
+         iCategory
+
+    real(kind=RKIND), parameter :: &
+         thicknessWithLargestArea = 3.0_RKIND ! initial ice thickness with greatest area
+
+    call MPAS_pool_get_subpool(block % structs, "initial", initial)
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+
+    call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+
+    !--------------------------------------------------------
+    ! volumes
+    !--------------------------------------------------------
+
+    ! loop over categories to set initial volumes
+    do iCategory = 1, nCategories-1
+
+       ! middle of the category limits
+       initialCategoryIceThickness(iCategory) = &
+            0.5_RKIND * (categoryThicknessLimits(iCategory) + categoryThicknessLimits(iCategory+1))
+       
+    enddo ! iCategory
+
+    ! thicknest category
+    initialCategoryIceThickness(nCategories) = &
+         categoryThicknessLimits(nCategories) + 1.0_RKIND
+
+    !--------------------------------------------------------
+    ! areas
+    !--------------------------------------------------------
+
+    ! initialize sum of areas in categories
+    areaCategorySum = 0.0_RKIND
+
+    do iCategory = 1, nCategories
+
+       ! parabola, max at h=thicknessWithLargestArea, zero at h=0, 2*thicknessWithLargestArea
+       initialCategoryIceArea(iCategory) = &
+            max(0.0_RKIND, &
+            (2.0_RKIND * thicknessWithLargestArea * initialCategoryIceThickness(iCategory) - &
+             initialCategoryIceThickness(iCategory)**2))
+
+       areaCategorySum = areaCategorySum + initialCategoryIceArea(iCategory)
+
+    enddo ! iCategory
+
+    ! normalize
+    do iCategory = 1, nCategories
+
+       initialCategoryIceArea(iCategory) = initialCategoryIceArea(iCategory) / &
+            (areaCategorySum + cicePuny / nCategories)
+
+    enddo ! iCategory
+
+  end subroutine initial_category_areas_and_volumes
+    
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  init_ice_state_uniform_interior_ice

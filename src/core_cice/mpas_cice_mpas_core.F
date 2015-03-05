@@ -597,6 +597,12 @@ module mpas_core
         pkgColumnRidgingActive                = .false.
      endif
 
+     pkgColumnShortwaveActive              = .true.
+     pkgColumnVerticalThermodynamicsActive = .true.
+     !pkgColumnBiogeochemistryActive        = .true.
+     pkgColumnITDThermodynamicsActive      = .true.
+     pkgColumnRidgingActive                = .true.
+
      !-----------------------------------------------------------------------
      ! tracers
      !-----------------------------------------------------------------------
@@ -641,6 +647,13 @@ module mpas_core
         pkgColumnTracerAerosolsActive     = .false.
      endif
 
+     pkgColumnTracerIceAgeActive       = .true.
+     pkgColumnTracerFirstYearIceActive = .true.
+     pkgColumnTracerLevelIceActive     = .true.
+     pkgColumnTracerPondsActive        = .true.
+     pkgColumnTracerLidThicknessActive = .true.
+     pkgColumnTracerAerosolsActive     = .true.
+
      !-----------------------------------------------------------------------
      ! other column packages
      !-----------------------------------------------------------------------
@@ -651,6 +664,8 @@ module mpas_core
      call MPAS_pool_get_config(configPool, "config_use_form_drag", config_use_form_drag)
      call MPAS_pool_get_package(packagePool, "pkgColumnFormDragActive", pkgColumnFormDragActive)
      pkgColumnFormDragActive = (config_use_column_physics_package .and. config_use_column_vertical_thermodynamics .and.config_use_form_drag)
+
+     pkgColumnFormDragActive = .true.
 
    end subroutine setup_packages_column_physics!}}}
 

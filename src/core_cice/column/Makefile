@@ -73,8 +73,9 @@ ice_shortwave.o: ice_kinds_mod.o ice_constants_colpkg.o ice_orbital.o
 ice_mechred.o: ice_kinds_mod.o ice_constants_colpkg.o ice_itd.o ice_tracers.o
 
 .F90.o:
-	$(CPP) $< > $*.f95
-	$(FC) -c $*.f95
+	$(RM) $@ $*.mod
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.i90
+	$(FC) $(FFLAGS) -c $*.i90 $(FCINCLUDES)
 
 clean:
-	$(RM) *.o *.mod *.f95
+	$(RM) *.o *.mod *.i90
