@@ -9,7 +9,7 @@ contains
   subroutine init(elem, edge1,edge2,edge3,red,par, dom_mt, fvm)
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
-    use thread_mod, only : nthreads
+    use thread_mod, only : nthreads, omp_set_num_threads
     ! --------------------------------
     use control_mod, only : filter_counter, restartfreq, topology, &
           partmethod, while_iter
