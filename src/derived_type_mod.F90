@@ -8,7 +8,7 @@ module derived_type_mod
    use dimensions_mod, only : nelemd, nlev
    use kinds, only : real_kind
    use element_mod, only : element_t
-   use edge_mod, only : EdgeBuffer_t
+   use edgetype_mod, only : EdgeBuffer_t
    use hybrid_mod, only : hybrid_t
    use derivative_mod, only : derivative_t
    use time_mod, only : TimeLevel_t
@@ -47,7 +47,7 @@ module derived_type_mod
    use dimensions_mod, only : nelemd
    use kinds, only : real_kind
    use element_mod, only : element_t
-   use edge_mod, only : EdgeBuffer_t
+   use edgetype_mod, only : EdgeBuffer_t
    use hybrid_mod, only : hybrid_t
    use derivative_mod, only : derivative_t
    use time_mod, only : TimeLevel_t

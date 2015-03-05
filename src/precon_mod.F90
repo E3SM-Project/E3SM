@@ -36,7 +36,8 @@ contains
     use precon_type_mod, only : precon_type
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad
-    use edge_mod, only : edgebuffer_t, edgevpack, edgerotate, edgevunpack
+    use edge_mod, only : edgevpack, edgerotate, edgevunpack
+    use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence
     use control_mod, only : maxits, while_iter, tol, precon_method
     use physical_constants, only : rrearth
