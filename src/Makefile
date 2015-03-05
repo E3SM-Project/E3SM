@@ -1,10 +1,8 @@
 .SUFFIXES: .F .c .o
 
-ifeq "$(CESM)" "true"
+ifeq "$(ESM)" "true"
 
-ifeq "$(CORE)" "ocean"
-include Makefile.in.CESM_OCN
-endif
+include Makefile.in.ESM
 
 else
 
