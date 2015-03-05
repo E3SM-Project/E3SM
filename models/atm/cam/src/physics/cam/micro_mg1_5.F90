@@ -167,7 +167,7 @@ real(r8), parameter :: f2r = 0.308_r8
 real(r8), parameter :: eii = 0.1_r8
 
 ! autoconversion size threshold for cloud ice to snow (m)
-real(r8), parameter :: dcs = 250.e-6_r8
+!real(r8), parameter :: dcs = 250.e-6_r8
 
 ! smallest mixing ratio considered in microphysics
 real(r8), parameter :: qsmall = 1.e-18_r8  
@@ -191,6 +191,9 @@ real(r8), parameter :: minrefl = 1.26e-10_r8    ! minrefl = 10._r8**(mindbz/10._
 !=========================================================
 ! Constants set in initialization
 !=========================================================
+
+! autoconversion size threshold for cloud ice to snow (m)
+real(r8) :: dcs
 
 ! Set using arguments to micro_mg_init
 real(r8) :: g           ! gravity
@@ -257,7 +260,7 @@ subroutine micro_mg_init( &
      kind, gravit, rair, rh2o, cpair,    &
      tmelt_in, latvap, latice,           &
      rhmini_in, microp_uniform_in, do_cldice_in, &
-     errstring)
+     errstring, dcs_in)
   
   !----------------------------------------------------------------------- 
   ! 
@@ -283,6 +286,7 @@ subroutine micro_mg_init( &
   logical,  intent(in)  :: do_cldice_in     ! .true. = do all processes (standard)
                                             ! .false. = skip all processes affecting
                                             !           cloud ice
+  real(r8), intent(in)  :: dcs_in !autoconversion size threshold for cloud ice to snow (m)
 
   character(128), intent(out) :: errstring    ! Output status (non-blank for error return)
 
@@ -325,6 +329,8 @@ subroutine micro_mg_init( &
 
   ! Ice nucleation temperature
   icenuct  = tmelt - 5._r8
+
+  dcs = dcs_in
 
   ! Define constants to help speed up code (this limits calls to gamma function)
   ! Unused names: cons6, cons15, cons21, cons26
@@ -3003,7 +3009,10 @@ elemental subroutine size_dist_param_ice(qiic, niic, lami, n0i)
 
   ! local parameters
   real(r8), parameter :: lammaxi = 1._r8/10.e-6_r8
-  real(r8), parameter :: lammini = 1._r8/(2._r8*dcs)
+
+  real(r8) :: lammini
+
+  lammini = 1._r8/(2._r8*dcs)
 
   if (qiic > qsmall) then
 
