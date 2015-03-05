@@ -28,7 +28,7 @@ module pio_io_mod
 !commented out the above private line because gfortran has trouble:
 !Error: The component 'decomplist' is a PRIVATE type and cannot be a component of 'nf_handle', which is PUBLIC at (1)
 
-  interface nf_put_var
+  interface nf_put_var_pio
      module procedure nf_put0DI
      module procedure nf_put0DR
      module procedure nf_put1DI
@@ -39,7 +39,7 @@ module pio_io_mod
 
   ! public interfaces  
   public :: nf_output_init_begin, nf_output_init_complete, nf_output_register_variables, &
-       nf_put_var, nf_close, nf_close_all, &
+       nf_put_var_pio, nf_close, nf_close_all, &
        nf_output_register_dims, nf_advance_frame, nf_handle, nf_variable, get_variable_handle, &
        nf_variable_attributes, nf_get_frame, nfsizekind, nf_dim, nf_init_decomp
   public :: unlim_dim

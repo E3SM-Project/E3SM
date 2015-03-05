@@ -51,7 +51,7 @@ module prim_movie_mod
        nf_global_attribute, &
        nf_output_init_complete,  &
        nf_output_register_variables,&
-       nf_put_var, &
+       nf_put_var => nf_put_var_netcdf, &
        nf_close_all, &
        nf_output_register_dims, &
        nf_advance_frame, &

@@ -25,7 +25,7 @@ module netcdf_io_mod
   type(iosystem_desc_t), save ,public :: pio_subsystem
 
 
-  interface nf_put_var
+  interface nf_put_var_netcdf
      module procedure nf_put0DR
      module procedure nf_put1DI
      module procedure nf_put1DR
@@ -35,7 +35,7 @@ module netcdf_io_mod
 
   ! public interfaces  
   public :: nf_output_init_begin, nf_output_init_complete, nf_output_register_variables, &
-       nf_put_var, nf_close, nf_close_all,  &
+       nf_put_var_netcdf, nf_close, nf_close_all,  &
        nf_output_register_dims, nf_advance_frame,  &
        nf_variable_attributes, nf_get_frame, nf_global_attribute
 

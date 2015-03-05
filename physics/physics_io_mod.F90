@@ -7,9 +7,9 @@ module physics_io_mod
   use common_io_mod, only : nf_selectedvar, nf_handle, nfsizekind
 #ifdef PIO_INTERP
   use pio_io_mod, only :  nf_output_register_variables,  &
-       nf_put_var, nf_get_frame
+       nf_put_var => nf_put_var_pio, nf_get_frame
 #else
-  use netcdf_io_mod, only :  nf_output_register_variables, nf_put_var, nf_get_frame 
+  use netcdf_io_mod, only :  nf_output_register_variables, nf_put_var => nf_put_var_netcdf, nf_get_frame 
 #endif
   implicit none
   private
@@ -228,114 +228,4 @@ contains
   end subroutine physics_movie_output
 #endif
 
-#ifdef XXXXXX
-! obsolete. HOMME only supports PIO or PIO_INTERP   defined(NETCDF) || defined(PNETCDF)
-  subroutine physics_movie_output(ncdf, elem, output_varnames, nxyp)
-    use dimensions_mod, only : nelemd, nelemdmax, nlev
-    use dof_mod, only : Uniquepoints
-    use physics_types_mod, only : pelem
-    use element_mod, only : element_t
-    type(nf_handle), intent(inout) :: ncdf
-    type(element_t), intent(in) :: elem(:)
-    character*(*), intent(in) :: output_varnames(:)
-    integer, intent(in) :: nxyp
-    real(kind=real_kind) :: var2d(nxyp)
-    integer :: ie
-    integer(kind=nfsizekind) :: start(2), count(2)
-
-    start(2)=nf_get_frame(ncdf)
-
-    if(nf_selectedvar('precip', output_varnames)) then
-       start(1)=1
-       count(1)=0
-       count(2)=1
-       do ie=1,nelemdmax
-          if(ie<=nelemd) then
-             start(1)=elem(ie)%idxp%UniquePtOffset
-             count(1)=elem(ie)%idxp%numUniquePts
-             call UniquePoints(elem(ie)%idxP,pelem(ie)%surfc%precip,var2D)
-          else
-             count=0
-          end if
-          call nf_put_var(ncdf, var2d, start, count, name='precip')
-       enddo
-    endif
-    if(nf_selectedvar('tprecip', output_varnames)) then
-       start(1)=1
-       count(1)=0
-       count(2)=1
-       do ie=1,nelemdmax
-          if(ie<=nelemd) then
-             start(1)=elem(ie)%idxp%UniquePtOffset
-             count(1)=elem(ie)%idxp%numUniquePts
-             call UniquePoints(elem(ie)%idxP,pelem(ie)%accum%precip,var2D)
-          else
-             count=0
-          end if
-          call nf_put_var(ncdf, var2d,start, count,name='tprecip')
-       enddo
-    endif
-    if(nf_selectedvar('CBMF', output_varnames)) then
-       start(1)=1
-       count(1)=0
-       count(2)=1
-       do ie=1,nelemdmax
-          if(ie<=nelemd) then
-             start(1)=elem(ie)%idxp%UniquePtOffset
-             count(1)=elem(ie)%idxp%numUniquePts
-             call UniquePoints(elem(ie)%idxP,pelem(ie)%state%CBMF,var2D)
-          else
-             count=0
-          end if
-          call nf_put_var(ncdf, var2d,start, count,name='CBMF')
-       enddo
-    endif
-    if(nf_selectedvar('Wd', output_varnames)) then
-       start(1)=1
-       count(1)=0
-       count(2)=1
-       do ie=1,nelemdmax
-          if(ie<=nelemd) then
-             start(1)=elem(ie)%idxp%UniquePtOffset
-             count(1)=elem(ie)%idxp%numUniquePts
-             call UniquePoints(elem(ie)%idxP,pelem(ie)%surfc%Wd,var2D)
-          else
-             count=0
-          end if
-          call nf_put_var(ncdf, var2d,start, count, name='Wd')
-       enddo
-    endif
-    if(nf_selectedvar('Tprime', output_varnames)) then
-       start(1)=1
-       count(1)=0
-       count(2)=1
-       do ie=1,nelemdmax
-          if(ie<=nelemd) then
-             start(1)=elem(ie)%idxp%UniquePtOffset
-             count(1)=elem(ie)%idxp%numUniquePts
-             call UniquePoints(elem(ie)%idxP,pelem(ie)%surfc%Tprime,var2D)
-          else
-             count=0
-          end if
-          call nf_put_var(ncdf, var2d,start, count, name='Tprime')
-       enddo
-    endif
-    if(nf_selectedvar('Qprime', output_varnames)) then
-       start(1)=1
-       count(1)=0
-       count(2)=1
-       do ie=1,nelemdmax
-          if(ie<=nelemd) then
-             start(1)=elem(ie)%idxp%UniquePtOffset
-             count(1)=elem(ie)%idxp%numUniquePts
-             call UniquePoints(elem(ie)%idxP,pelem(ie)%surfc%Qprime,var2D)
-          else
-             count=0
-          end if
-          call nf_put_var(ncdf, var2d,start, count, name='Qprime')
-       enddo
-
-    endif
-  end subroutine physics_movie_output
-#endif
 end module physics_io_mod

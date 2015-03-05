@@ -15,7 +15,7 @@ module interp_movie_mod
        nf_output_init_begin,&
        nf_output_init_complete,  &
        nf_output_register_variables,&
-       nf_put_var, &
+       nf_put_var => nf_put_var_pio, &
        nf_close_all, &
        nf_output_register_dims, &
        nf_selectedvar, &

@@ -479,7 +479,7 @@ contains
   subroutine interpolate_vars(infile, outfile, elem, par, interpdata)
     use dof_mod, only : putuniquepoints
     use kinds, only : real_kind
-    use pio_io_mod, only : nf_handle, nf_put_var ! _EXTERNAL
+    use pio_io_mod, only : nf_handle, nf_put_var => nf_put_var_pio! _EXTERNAL
     use interpolate_mod, only : interpdata_t, interpolate_scalar, interpolate_vector, &
          get_interp_parameter,var_is_vector_vvar,var_is_vector_uvar, replace_vec_by_vordiv
     use element_mod, only : element_t
