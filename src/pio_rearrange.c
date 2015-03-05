@@ -897,7 +897,7 @@ void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[], c
   }else{
     for(i=0;i<iodesc->ndof;i++){
       if(compmap[i]>0){
-	totallen++;
+	totalllen++;
       }
     }
   }
