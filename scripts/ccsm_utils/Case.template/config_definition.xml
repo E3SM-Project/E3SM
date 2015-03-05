@@ -114,7 +114,7 @@
 
 <entry id="COMP_GLC" 
  type="char"
- valid_values="cism,xglc,sglc" 
+ valid_values="cism,xglc,sglc,mpas-li"
  value="sglc"  
  group="case_comp" 
  sdesc="Name of land ice-sheet component"
