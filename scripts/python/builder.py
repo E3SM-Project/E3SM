@@ -314,7 +314,7 @@ class cetus(platformBuilder):
         super(cetus,self).__init__( compiler, test, mpilib, debug)
 
         self.moduleList = ['+mpiwrapper-xl ',
-                           '@ibm-compilers-2014-02 ',
+                           '@ibm-compilers-2015-02 ',
                            '+cmake ']
 
         self.BUILD_DIR = "build_cetus_" + compiler
@@ -325,7 +325,7 @@ class cetus(platformBuilder):
         self.FC = ' /home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlf2003_r'
         self.CC = ' /home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlc_r'
         self.CXX = '/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlcxx'
-
+        self.LDFLAGS = '-Wl,--relax -Wl,--allow-multiple-definition -Wl,--whole-archive -L/soft/libraries/hdf5/1.8.14/cnk-xl/V1R2M2-20150213/lib -lhdf5_hl -lhdf5 -L /soft/libraries/alcf/current/xl/ZLIB/lib -lz  -Wl,--no-whole-archive '        
 #        self.LDFLAGS = '-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib'
 #        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.NUMPE = '4'
@@ -400,7 +400,7 @@ class cetus(platformBuilder):
         self.envMod['FC'] = self.FC
         self.envMod['CC'] = self.CC
         self.envMod['CXX'] = self.CXX
-        self.envMod['LDFLAGS'] = self.LDFLAGS
+#        self.envMod['LDFLAGS'] = self.LDFLAGS
 
         cmakeString = (self.CMAKE_EXE + self.OFLAGS + " ..")
         cmakeString = ("/bin/csh -c \"" + "source ../scripts/cetus_env.sh && " +

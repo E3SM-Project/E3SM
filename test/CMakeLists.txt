@@ -74,7 +74,6 @@ add_mpi_test("init_finalize_2_proc_with_args" "${CMAKE_CURRENT_BINARY_DIR}/pio_i
 
 ADD_EXECUTABLE(pio_file_simple_tests pio_file_simple_tests.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_file_simple_tests  piof pioc ${TIMING_LINK_LIB} )
-set_target_properties(pio_file_simple_tests PROPERTIES LINK_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
 add_mpi_test("pio_file_simple_tests" "${CMAKE_CURRENT_BINARY_DIR}/pio_file_simple_tests" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###
@@ -83,7 +82,6 @@ add_mpi_test("pio_file_simple_tests" "${CMAKE_CURRENT_BINARY_DIR}/pio_file_simpl
 
 ADD_EXECUTABLE(pio_file_fail pio_file_fail.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(pio_file_fail  piof pioc ${TIMING_LINK_LIB} )
-
 add_mpi_test("pio_file_fail" "${CMAKE_CURRENT_BINARY_DIR}/pio_file_fail" "" 2 ${DEFAULT_TEST_TIMEOUT})
 
 ###-------------------------------------------------------------------------###
