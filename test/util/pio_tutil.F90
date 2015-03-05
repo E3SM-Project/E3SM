@@ -17,7 +17,7 @@ MODULE pio_tutil
     ! hack below. Don't forget to update when adding more argvs
     ENUMERATOR  ::  NUM_IARGS = IARG_NUM_AGGREGATORS_SIDX
     ENUMERATOR  ::  IARG_MAX_SIDX = NUM_IARGS
-  ENDENUM
+  END ENUM
 
   ! PIO specific info
   INTEGER :: pio_tf_stride_, pio_tf_num_io_tasks_, pio_tf_num_aggregators_
