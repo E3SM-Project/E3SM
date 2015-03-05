@@ -2,7 +2,6 @@
 ### CMakeList.txt for tests of pio
 ###-------------------------------------------------------------------------###
 cmake_minimum_required(VERSION 2.8.5)
-cmake_policy(SET CMP0043 OLD)
 # Adding PIO definitions - defined in the root directory
 ADD_DEFINITIONS(${PIO_DEFINITIONS})
 

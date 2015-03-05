@@ -884,9 +884,9 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 
 }
 
-void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[])
+void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[], const PIO_Offset compmap[])
 {
-  PIO_Offset totalllen;
+  PIO_Offset totalllen=0;
   PIO_Offset totalgridsize=1;
   int i;
   for( i=0;i<iodesc->ndims;i++){
@@ -895,7 +895,11 @@ void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[])
   if(iodesc->rearranger==PIO_REARR_SUBSET){
     totalllen=iodesc->llen;
   }else{
-    totalllen = iodesc->ndof;
+    for(i=0;i<iodesc->ndof;i++){
+      if(compmap[i]>0){
+	totallen++;
+      }
+    }
   }
   //  printf("%s %d %ld %ld\n",__FILE__,__LINE__,totalllen,totalgridsize);
 
@@ -1016,7 +1020,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
     for(i=0;i<ndims;i++)
       iodesc->llen *= iodesc->firstregion->count[i];
   }
-  determine_fill(ios, iodesc, gsize);
+  determine_fill(ios, iodesc, gsize, compmap);
 
   /* 
   if(ios.ioproc){
@@ -1334,7 +1338,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
       rdispls[i]=0;
     }
   }
-  determine_fill(ios, iodesc, gsize);
+  determine_fill(ios, iodesc, gsize, compmap);
 
   // Pass the sindex from each compute task to its associated IO task
 

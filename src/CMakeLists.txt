@@ -2,7 +2,6 @@ PROJECT(PIO C Fortran)
 ENABLE_LANGUAGE(Fortran)
 #INCLUDE(FortranCInterface)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
-cmake_policy(SET CMP0043 OLD)
 SET(SRCS_C topology.c pio_nc.c pio_file.c pioc_support.c pio_lists.c pioc.c
         pioc_sc.c pio_spmd.c pio_rearrange.c pio_darray.c pio_put_nc.c 
         pio_get_nc.c bget.c)
