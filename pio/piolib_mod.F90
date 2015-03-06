@@ -2730,7 +2730,7 @@ contains
     end if
 
     select case(file%iotype)
-    case( pio_iotype_pnetcdf, pio_iotype_netcdf)
+    case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c,pio_iotype_netcdf4p)
        call darray_write_complete(file)
        ierr = sync_nf(file)
     case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
