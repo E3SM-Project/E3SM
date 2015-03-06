@@ -437,7 +437,6 @@
 			<var name="lai"/>
 			<var name="noahres"/>
 			<var name="potevp"/>
-			<var name="qz0"/>
 			<var name="sfc_albedo"/>
 			<var name="sfc_emiss"/>
 			<var name="sfc_emibck"/>
@@ -1368,7 +1367,6 @@
                 <!-- lai            :leaf area index                                                                [-] -->
                 <!-- noahres        :residual of the noah land-surface scheme energy budget                     [W m-2] -->
                 <!-- potevp         :potential evaporation                                                      [W m-2] -->
-                <!-- qz0            :specific humidity at znt                                                 [kg kg-1] -->
                 <!-- sfc_albedo     :surface albedo                                                                 [-] -->
                 <!-- sfc_embck      :background emissivity                                                          [-] -->
                 <!-- sfc_emiss      :surface emissivity                                                             [-] -->
@@ -1394,7 +1392,6 @@
                 <var name="lai"           type="real"     dimensions="nCells Time"/>
                 <var name="noahres"       type="real"     dimensions="nCells Time"/>
                 <var name="potevp"        type="real"     dimensions="nCells Time"/>
-                <var name="qz0"           type="real"     dimensions="nCells Time"/>
                 <var name="sfc_albedo"    type="real"     dimensions="nCells Time"/>
                 <var name="sfc_emiss"     type="real"     dimensions="nCells Time"/>
                 <var name="sfc_emibck"    type="real"     dimensions="nCells Time"/>
