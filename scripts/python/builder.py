@@ -318,19 +318,20 @@ class cetus(platformBuilder):
                            '+cmake ']
 
         self.BUILD_DIR = "build_cetus_" + compiler
-        self.runModuleCmd()
 
         self.CMAKE_EXE = 'cmake '
 
-        self.FC = ' /home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlf2003_r'
-        self.CC = ' /home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlc_r'
+        self.FC = '/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlf2003_r'
+        self.CC = '/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlc_r'
         self.CXX = '/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlcxx'
         self.LDFLAGS = '-Wl,--relax -Wl,--allow-multiple-definition -Wl,--whole-archive -L/soft/libraries/hdf5/1.8.14/cnk-xl/V1R2M2-20150213/lib -lhdf5_hl -lhdf5 -L /soft/libraries/alcf/current/xl/ZLIB/lib -lz  -Wl,--no-whole-archive '        
 #        self.LDFLAGS = '-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib'
 #        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.NUMPE = '4'
 
-        self.OFLAGS += (' -D PLATFORM:STRING=cetus ')
+        self.OFLAGS += (' -D PLATFORM:STRING=cetus -DCMAKE_C_COMPILER='+self.CC)
+        self.OFLAGS += (' -DCMAKE_Fortran_COMPILER='+self.FC)
+        self.OFLAGS += (' -DCMAKE_CXX_COMPILER='+self.CXX)
 
         os.environ['BGQ_RUNJOB'] = os.getcwd().strip() + '/scripts/pio_runjob.sh'
         """ qsub on Cetus does not allow specifying scripts or executables
@@ -343,8 +344,9 @@ class cetus(platformBuilder):
             go with Option 2
         """
         self.TEST_CMD = ('qsub -t 15 -n 1 --mode script ../scripts/cetus_test.sh')
-        self.MAKE_CMD = ("/bin/csh -c \"" + "source ../scripts/cetus_env.sh && " +
-                          "make all " + "\"")
+        self.MAKE_CMD = ("/bin/sh"+" ./cetus_env.sh"+" make all ")
+        self.srcroot = os.getcwd()
+        self.runModuleCmd()
 
     def buildCmd(self):
         """ run build
@@ -370,29 +372,26 @@ class cetus(platformBuilder):
             the script. Note that there are no soft environments for
             these libraries on Cetus
         """
-        cmd = ("/bin/csh -c \"" + "source ./scripts/cetus_env.sh && " +
-                          "env " + "\"")
-        p = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE)
-        p.wait()
-        for line in p.stdout:
-          line = line.decode("UTF-8")
-          (key, _, val) = line.partition("=")
-          if key == "PNETCDF" or key == "NETCDF":
-            os.environ[key] = val.rstrip()
-          else:
-            pass
-				
+        # ~# make build directory and move to it.
+        if not os.path.exists(self.BUILD_DIR):
+            os.makedirs(self.BUILD_DIR)
+
+        os.chdir(self.BUILD_DIR)
+        f = open("cetus_env.sh", 'w')
+        f.write("#!/bin/sh -x\n")
+        f.write(". /etc/profile.d/00softenv.sh\n")
+        for line in self.moduleList: 
+            f.write("soft add "+line+"\n")
+        f.write("export LDFLAGS=\""+self.LDFLAGS+"\"\n")
+        f.write("$*\n")
+        f.close()
+      				
     def cmakeCmd(self):
         """ cmake command to run
             For cetus the cetus environment script, cetus_env.sh,
             is sourced before running cmake. Overriding this function
             makes this workflow easier.
         """
-        # ~# make build directory and move to it.
-        if not os.path.exists(self.BUILD_DIR):
-            os.makedirs(self.BUILD_DIR)
-
-        os.chdir(self.BUILD_DIR)
 
         # ~# change environemnt, first get existing env
         self.envMod = dict(os.environ)
@@ -402,11 +401,11 @@ class cetus(platformBuilder):
         self.envMod['CXX'] = self.CXX
 #        self.envMod['LDFLAGS'] = self.LDFLAGS
 
-        cmakeString = (self.CMAKE_EXE + self.OFLAGS + " ..")
-        cmakeString = ("/bin/csh -c \"" + "source ../scripts/cetus_env.sh && " +
-                        cmakeString.replace('"', r'\"') +
-                       "\"")
-#        print(cmakeString)
+        cmakeString = (self.CMAKE_EXE + self.OFLAGS + " "+self.srcroot)
+        cmakeString = ("/bin/sh"+" ./cetus_env.sh " +
+                       cmakeString )
+
+        print(cmakeString)
 
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
