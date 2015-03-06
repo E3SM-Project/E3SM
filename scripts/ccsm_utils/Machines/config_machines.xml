@@ -873,7 +873,7 @@
 <machine MACH="mustang">
          <DESC>LANL Linux Cluster, 24 pes/node, batch system Moab</DESC>
          <COMPILERS>intel,gnu</COMPILERS>
-         <MPILIBS>openmpi,mvapich</MPILIBS>
+         <MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
          <OS>LINUX</OS>
          <RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
@@ -882,6 +882,8 @@
          <DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+         <CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+         <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
          <BATCHQUERY>mshow</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>
          <GMAKE_J>4</GMAKE_J>
@@ -892,7 +894,7 @@
 <machine MACH="wolf">
          <DESC>LANL Linux Cluster, 16 pes/node, batch system Moab</DESC>
          <COMPILERS>intel,gnu</COMPILERS>
-         <MPILIBS>openmpi,mvapich</MPILIBS>
+         <MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
          <OS>LINUX</OS>
          <RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
@@ -901,6 +903,8 @@
          <DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+         <CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+         <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
          <BATCHQUERY>mshow</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>
          <GMAKE_J>4</GMAKE_J>

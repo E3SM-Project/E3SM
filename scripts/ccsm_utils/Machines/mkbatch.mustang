@@ -66,13 +66,17 @@ echo "\`date\` -- CSM EXECUTION BEGINS HERE"
 
 setenv MP_LABELIO yes
 sleep 10
-setenv OMP_NUM_THREADS ${maxthrds}
+setenv OMP_NUM_THREADS $maxthrds
+if ( "\$MPILIB" == "mpi-serial" ) then
+	\$EXEROOT/cesm.exe >&! cesm.log.\$LID
+endif
+
 if ( "\$MPILIB" == "openmpi" ) then
-	mpirun -np ${ntasks_tot}  $EXEROOT/cesm.exe >&! cesm.log.\$LID
+	mpirun -np $ntasks_tot  \$EXEROOT/cesm.exe >&! cesm.log.\$LID
 endif
 
 if ( "\$MPILIB" == "mvapich" ) then
-	srun -n ${ntasks_tot}  $EXEROOT/cesm.exe >&! cesm.log.\$LID
+	srun -n $ntasks_tot  \$EXEROOT/cesm.exe >&! cesm.log.\$LID
 endif
 wait
 
