@@ -65,6 +65,7 @@
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
         <machine compiler="nag" testtype="acme_developer">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel " testtype="acme_developer">edison</machine>
@@ -106,6 +107,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -174,6 +177,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -240,6 +245,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -319,6 +326,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -447,6 +456,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -511,6 +522,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -567,6 +579,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -641,6 +655,7 @@
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
         <machine compiler="nag" testtype="acme_developer">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel " testtype="acme_developer">edison</machine>
@@ -687,6 +702,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -755,6 +772,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -821,6 +840,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -976,6 +997,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1012,6 +1034,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1050,6 +1073,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1085,6 +1109,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1139,6 +1164,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1172,6 +1198,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1210,6 +1237,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -1271,6 +1300,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1308,6 +1338,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1794,6 +1825,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -2467,6 +2499,7 @@
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
         <machine compiler="nag" testtype="acme_developer">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel " testtype="acme_developer">edison</machine>
@@ -2505,6 +2538,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -2873,6 +2908,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -2908,6 +2944,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3101,6 +3138,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3142,6 +3180,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3192,6 +3231,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3236,6 +3276,7 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3306,6 +3347,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -5531,6 +5573,8 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -5744,6 +5788,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -5788,6 +5833,7 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
