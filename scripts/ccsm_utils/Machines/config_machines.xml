@@ -83,6 +83,27 @@
         <MAX_TASKS_PER_NODE>8 </MAX_TASKS_PER_NODE>
 </machine>
 
+<machine MACH="skybridge">
+        <DESC>SNL Redsky cluster, Linux (x86_64)</DESC>                                 <!-- can be anything -->
+        <OS>LINUX</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
+        <COMPILERS>intel</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
+        <MPILIBS>openmpi,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
+        <CESMSCRATCHROOT>/gscratch1/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
+        <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+        <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+        <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
+        <DIN_LOC_ROOT_CLMFORC>/glade/proj2/cgd/tss</DIN_LOC_ROOT_CLMFORC>
+        <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
+        <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
+        <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
+        <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+        <BATCHQUERY>qstat</BATCHQUERY>
+        <BATCHSUBMIT>sbatch &lt;</BATCHSUBMIT>
+        <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+        <GMAKE_J>4</GMAKE_J>
+        <MAX_TASKS_PER_NODE>8 </MAX_TASKS_PER_NODE>
+</machine>
+
 <machine MACH="bluewaters">
          <DESC>ORNL XE6, os is CNL, 32 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>pgi,cray,gnu</COMPILERS>
