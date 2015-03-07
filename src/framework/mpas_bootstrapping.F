@@ -767,6 +767,10 @@ module mpas_bootstrapping
    !>  If the specified field is a var_array, the dimNames array will have one
    !>  fewer dimension than that of the var_array, and it will be filled with 
    !>  the outer-most dimension names.
+   !>
+   !>  If the specified field is is inactive (in a package sense) at the time 
+   !>  of the call to this routine, the dimNames array will be returned with 
+   !>  zero size.
    !
    !-----------------------------------------------------------------------
    subroutine get_dimlist_for_field(allFields, fieldName, dimNames)
@@ -790,6 +794,11 @@ module mpas_bootstrapping
 
 
       call mpas_pool_get_field_info(allFields, fieldName, fieldInfo)
+
+      if ( .not. fieldInfo % isActive ) then
+         allocate(dimNames(0))
+         return
+      end if
 
       if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
 
