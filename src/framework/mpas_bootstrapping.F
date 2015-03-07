@@ -778,7 +778,7 @@ module mpas_bootstrapping
       implicit none
 
       type (mpas_pool_type), intent(in) :: allFields
-      character (len=StrKIND), intent(in) :: fieldName
+      character (len=*), intent(in) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: dimNames
 
       type (mpas_pool_field_info_type) :: fieldInfo

@@ -4642,7 +4642,7 @@ module mpas_stream_manager
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager     !< Input: Stream manager to begin iteration for
-        character (len=StrKIND), intent(in), optional :: streamID    !< Input: Name of the stream to iterate over
+        character (len=*), intent(in), optional :: streamID          !< Input: Name of the stream to iterate over
         integer, intent(out), optional :: ierr                       !< Output: Return error code
 
         type (MPAS_stream_list_type), pointer :: stream
@@ -4781,7 +4781,7 @@ module mpas_stream_manager
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager    !< Input: Stream manager containing stream indicated by streamID
-        character (len=StrKIND), intent(in) :: streamID             !< Input: Name of the stream to iterate over
+        character (len=*), intent(in) :: streamID                   !< Input: Name of the stream to iterate over
         character (len=StrKIND), intent(out) :: fieldName           !< Output: Name of the next field in streamID
 
         type (MPAS_stream_list_type), pointer :: stream
