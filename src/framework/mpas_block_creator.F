@@ -961,35 +961,42 @@ module mpas_block_creator
 
 !***********************************************************************
 !
-!  routine mpas_block_creator_finalize_block_init
+!  routine mpas_block_creator_finalize_block_phase1
 !
-!> \brief   Finalize block creation
+!> \brief   Phase 1 of block creation finalization
 !> \author  Doug Jacobsen
 !> \date    05/31/12
 !> \details 
 !>  This routine finalizes the block initialization processor. It calls
 !>  mpas_block_allocate to allocate space for all fields in a block. Then the 0
 !>  halo indices for each element and the exchange lists are copied into the
-!>  appropriate block. A halo update is required after this routien is called
+!>  appropriate block. A halo update is required after this routine is called
 !>  to make sure all data in a block is valid.
+!>
+!>  Fields and non-framework required dimensions are not setup after this
+!>  routine returns. To complete setup, a call to
+!>  mpas_block_creator_finalize_block_phase2 must follow.
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_block_creator_finalize_block_init(nHalos, blocklist, &  !{{{
-#include "dim_dummy_args.inc"
-                                                     , nCellsSolve, nEdgesSolve, nVerticesSolve, indexToCellID, indexToEdgeID, indexToVertexID)
+   subroutine mpas_block_creator_finalize_block_phase1(nHalos, blocklist, nCellsSolve, & !{{{
+                                                       nEdgesSolve, nVerticesSolve, vertexDegree, maxEdges, &
+                                                       indexToCellID, indexToEdgeID, &
+                                                       indexToVertexID)
      integer, intent(in) :: nHalos !< Input: Number of halos for cell fields
      type (block_type), pointer :: blocklist !< Input/Output: Linked List of blocks
-#include "dim_dummy_defines_inout.inc"
      type (field1dInteger), pointer :: nCellsSolve !< Input: nCellsSolve field information
      type (field1dInteger), pointer :: nEdgesSolve !< Input: nEdgesSolve field information
      type (field1dInteger), pointer :: nVerticesSolve !< Input: nVerticesSolve field information
+     integer, intent(in) :: vertexDegree !< Input: vertexDegree dimension
+     integer, intent(in) :: maxEdges !< Input: maxEdges dimension
      type (field1dInteger), pointer :: indexToCellID !< Input: indexToCellID field information
      type (field1dInteger), pointer :: indexToEdgeID !< Input: indexToEdgeID field information
      type (field1dInteger), pointer :: indexToVertexID !< Input: indexToVertexID field information
 
      type (domain_type), pointer :: domain
 
+     type (field1dInteger), pointer :: indexToCellIDPoolField, indexToEdgeIDPoolField, indexToVertexIDPoolField
      integer, dimension(:), pointer :: indexToCellIDPool, indexToEdgeIDPool, indexToVertexIDPool
 
      type (block_type), pointer :: block_ptr
@@ -997,7 +1004,7 @@ module mpas_block_creator
      type (field1dInteger), pointer :: indexToCellCursor, indexToEdgeCursor, indexToVertexCursor
 
      integer :: nCellsSolve_0Halo, nVerticesSolve_0Halo, nEdgesSolve_0Halo
-     integer :: blockID, localBlockID
+     integer :: blockID, localBlockID, err_level
 
      domain => blocklist % domain
 
@@ -1024,11 +1031,14 @@ module mpas_block_creator
        localBlockID = block_ptr % localBlockID
 
        ! Allocate fields in block
-       call mpas_allocate_block(nHalos, block_ptr, domain, blockID, &
-#include "dim_dummy_args.inc"
-                               )
+       call mpas_allocate_block(nHalos, block_ptr, domain, blockID)
 
-#include "add_dims_to_pool.inc"
+       ! Define block's static dimensions
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nCells', nCells)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nEdges', nEdges)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'nVertices', nVertices)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'vertexDegree', vertexDegree)
+       call mpas_pool_add_dimension(block_ptr % dimensions, 'maxEdges', maxEdges)
 
        ! Set block's *Solve dimensions
        call mpas_pool_add_dimension(block_ptr % dimensions, 'nCellsSolve', nCellsSolve_0Halo)
@@ -1039,20 +1049,81 @@ module mpas_block_creator
        call mpas_pool_add_dimension(block_ptr % dimensions, 'nEdgesArray', nEdgesCursor % array(:))
        call mpas_pool_add_dimension(block_ptr % dimensions, 'nVerticesArray', nVerticesCursor % array(:))
 
-       call mpas_define_derived_dimensions(block_ptr % dimensions, block_ptr % configs)
-
        call mpas_generate_structs(block_ptr, block_ptr % structs, block_ptr % dimensions, block_ptr % packages)
 
        ! Set block's local id
        block_ptr % localBlockID = localBlockID
 
+       err_level = mpas_pool_get_error_level()
+       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+       ! Setup block's index fields
+       allocate(indexToCellIDPoolField)
+       indexToCellIDPoolField % block => block_ptr
+       indexToCellIDPoolField % fieldName = 'indexToCellID'
+       indexToCellIDPoolField % dimNames(1) = 'nCells'
+       indexToCellIDPoolField % dimSizes(1) = nCells+1
+       indexToCellIDPoolField % hasTimeDimension = .false.
+       indexToCellIDPoolField % isActive = .true.
+       indexToCellIDPoolField % isVarArray = .false.
+       indexToCellIDPoolField % isPersistent = .true.
+       nullify(indexToCellIDPoolField % next)
+       nullify(indexToCellIDPoolField % prev)
+       nullify(indexToCellIDPoolField % ioinfo)
+       nullify(indexToCellIDPoolField % sendList)
+       nullify(indexToCellIDPoolField % recvList)
+       nullify(indexToCellIDPoolField % copyList)
+       allocate(indexToCellIDPoolField % array(nCells+1))
+
+       call mpas_pool_add_field(block_ptr % allFields, 'indexToCellID_blk', indexToCellIDPoolField)
+
+       allocate(indexToEdgeIDPoolField)
+       indexToEdgeIDPoolField % block => block_ptr
+       indexToEdgeIDPoolField % fieldName = 'indexToEdgeID'
+       indexToEdgeIDPoolField % dimNames(1) = 'nEdges'
+       indexToEdgeIDPoolField % dimSizes(1) = nEdges+1
+       indexToEdgeIDPoolField % hasTimeDimension = .false.
+       indexToEdgeIDPoolField % isActive = .true.
+       indexToEdgeIDPoolField % isVarArray = .false.
+       indexToEdgeIDPoolField % isPersistent = .true.
+       nullify(indexToEdgeIDPoolField % next)
+       nullify(indexToEdgeIDPoolField % prev)
+       nullify(indexToEdgeIDPoolField % ioinfo)
+       nullify(indexToEdgeIDPoolField % sendList)
+       nullify(indexToEdgeIDPoolField % recvList)
+       nullify(indexToEdgeIDPoolField % copyList)
+       allocate(indexToEdgeIDPoolField % array(nEdges+1))
+
+       call mpas_pool_add_field(block_ptr % allFields, 'indexToEdgeID_blk', indexToEdgeIDPoolField)
+
+       allocate(indexToVertexIDPoolField)
+
+       indexToVertexIDPoolField % block => block_ptr
+       indexToVertexIDPoolField % fieldName = 'indexToVertexID'
+       indexToVertexIDPoolField % dimNames(1) = 'nVertices'
+       indexToVertexIDPoolField % dimSizes(1) = nVertices+1
+       indexToVertexIDPoolField % hasTimeDimension = .false.
+       indexToVertexIDPoolField % isActive = .true.
+       indexToVertexIDPoolField % isVarArray = .false.
+       indexToVertexIDPoolField % isPersistent = .true.
+       nullify(indexToVertexIDPoolField % next)
+       nullify(indexToVertexIDPoolField % prev)
+       nullify(indexToVertexIDPoolField % ioinfo)
+       nullify(indexToVertexIDPoolField % sendList)
+       nullify(indexToVertexIDPoolField % recvList)
+       nullify(indexToVertexIDPoolField % copyList)
+       allocate(indexToVertexIDPoolField % array(nVertices+1))
+
+       call mpas_pool_add_field(block_ptr % allFields, 'indexToVertexID_blk', indexToVertexIDPoolField)
+
        ! Set block's 0 halo indices
-       call mpas_pool_get_array(block_ptr % allFields, 'indexToCellID', indexToCellIDPool)
-       call mpas_pool_get_array(block_ptr % allFields, 'indexToEdgeID', indexToEdgeIDPool)
-       call mpas_pool_get_array(block_ptr % allFields, 'indexToVertexID', indexToVertexIDPool)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToCellID_blk', indexToCellIDPool)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToEdgeID_blk', indexToEdgeIDPool)
+       call mpas_pool_get_array(block_ptr % allFields, 'indexToVertexID_blk', indexToVertexIDPool)
        indexToCellIDPool(1:nCellsSolve_0Halo) = indexToCellCursor % array(1:nCellsSolve_0Halo)
        indexToEdgeIDPool(1:nEdgesSolve_0Halo) = indexToEdgeCursor % array(1:nEdgesSolve_0Halo)
        indexToVertexIDPool(1:nVerticesSolve_0Halo) = indexToVertexCursor % array(1:nVerticesSolve_0Halo)
+       call mpas_pool_set_error_level(err_level)
 
        ! Set block's exchange lists and nullify unneeded exchange lists
        block_ptr % parinfo % cellsToSend => indexToCellCursor % sendList
@@ -1118,7 +1189,107 @@ module mpas_block_creator
        indexToVertexCursor => indextoVertexcursor % next
      end do
 
-   end subroutine mpas_block_creator_finalize_block_init!}}}
+   end subroutine mpas_block_creator_finalize_block_phase1!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_block_creator_finalize_block_phase2
+!
+!> \brief   Phase 2 of block creation finalization
+!> \author  Doug Jacobsen
+!> \date    05/31/12
+!> \details
+!>  This routine finalizes the block setup process. It sets up all additional
+!>  dimensions, and allocates space for fields. In addition, it groups all fields
+!>  into their respective structures and puts them into the correct blocks.
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_block_creator_finalize_block_phase2(stream_manager, blocklist, readableDimensions) !{{{
+
+     use mpas_stream_manager
+
+     type (mpas_streamManager_type), pointer :: stream_manager !< Input: Stream manager structure
+     type (block_type), pointer :: blocklist !< Input/Output: Linked List of blocks
+     type (mpas_pool_type), intent(inout) :: readableDimensions
+
+     type (domain_type), pointer :: domain
+
+     type (block_type), pointer :: block_ptr
+
+     type (mpas_pool_iterator_type) :: itr
+
+     type (field1dInteger), pointer :: indexField, indexFieldBlk
+
+     integer :: err_level
+     integer, pointer :: dim0d
+     integer, dimension(:), pointer :: dim1d
+
+     domain => blocklist % domain
+
+     ! Loop over blocks
+     block_ptr => blocklist
+     do while(associated(block_ptr))
+
+       err_level = mpas_pool_get_error_level()
+       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+       call mpas_pool_begin_iteration(readableDimensions)
+       do while (mpas_pool_get_next_member(readableDimensions, itr))
+          if ( itr % memberType == MPAS_POOL_DIMENSION ) then
+             if ( itr % nDims == 0 ) then
+                call mpas_pool_get_dimension(block_ptr % dimensions, trim(itr % memberName), dim0d)
+                if ( .not. associated(dim0d) ) then
+                    call mpas_pool_get_dimension(readableDimensions, itr % memberName, dim0d)
+                    call mpas_pool_add_dimension(block_ptr % dimensions, trim(itr % memberName), dim0d)
+                end if
+             else if ( itr % nDims == 1 ) then
+                call mpas_pool_get_dimension(block_ptr % dimensions, trim(itr % memberName), dim1d)
+                if ( .not. associated(dim1d) ) then
+                    call mpas_pool_get_dimension(readableDimensions, itr % memberName, dim1d)
+                    call mpas_pool_add_dimension(block_ptr % dimensions, trim(itr % memberName), dim1d)
+                end if
+             end if
+          end if
+       end do
+       call mpas_pool_set_error_level(err_level)
+
+       call mpas_setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
+
+       call mpas_block_creator_allocate_pool_fields(block_ptr % structs, block_ptr % dimensions)
+
+       err_level = mpas_pool_get_error_level()
+       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToCellID', indexField)
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToCellID_blk', indexFieldBlk)
+
+       indexField % array(:) = indexFieldBlk % array(:)
+
+       call mpas_pool_remove_field(block_ptr % allFields, 'indextoCellID_blk')
+       call mpas_deallocate_field(indexFieldBlk)
+
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToEdgeID', indexField)
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToEdgeID_blk', indexFieldBlk)
+
+       indexField % array(:) = indexFieldBlk % array(:)
+
+       call mpas_pool_remove_field(block_ptr % allFields, 'indextoEdgeID_blk')
+       call mpas_deallocate_field(indexFieldBlk)
+
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToVertexID', indexField)
+       call mpas_pool_get_field(block_ptr % allFields, 'indexToVertexID_blk', indexFieldBlk)
+
+       indexField % array(:) = indexFieldBlk % array(:)
+
+       call mpas_pool_remove_field(block_ptr % allFields, 'indextoVertexID_blk')
+       call mpas_deallocate_field(indexFieldBlk)
+       call mpas_pool_set_error_level(err_level)
+
+       block_ptr => block_ptr % next
+     end do
+
+   end subroutine mpas_block_creator_finalize_block_phase2!}}}
+
 
 !***********************************************************************
 !
@@ -1280,5 +1451,257 @@ module mpas_block_creator
      end do
 
    end subroutine mpas_block_creator_reindex_block_fields!}}}
+
+!***********************************************************************
+!
+!  routine mpas_block_creator_allocate_pool_fields
+!
+!> \brief   Pool field allocator
+!> \author  Doug Jacobsen
+!> \date    02/05/2015
+!> \details
+!>  This routine iterates over all pools, and allocates the fields in each pool
+!>  based on their pre-defined dimension information.
+!>  On each field, the dimNames array is used to query the correct dimension information
+!>  and populate the dimSizes array.
+!>  This routine also copies all dimensions from dimensionPool to currentPool
+!
+!-----------------------------------------------------------------------
+   recursive subroutine mpas_block_creator_allocate_pool_fields(currentPool, dimensionPool)!{{{
+      type (mpas_pool_type), pointer :: currentPool !< Input: Current pool to allocate and copy dimensions.
+      type (mpas_pool_type), pointer :: dimensionPool !< Input: Pool of dimensions for the current block
+      type (mpas_pool_type), pointer :: subPool
+      type (mpas_pool_iterator_type) :: poolItr
+
+      type (field1DReal), pointer :: real1DField
+      type (field2DReal), pointer :: real2DField
+      type (field3DReal), pointer :: real3DField
+      type (field4DReal), pointer :: real4DField
+      type (field5DReal), pointer :: real5DField
+      type (field1DInteger), pointer :: int1DField
+      type (field2DInteger), pointer :: int2DField
+      type (field3DInteger), pointer :: int3DField
+      type (field1DChar), pointer :: char1DField
+
+      integer :: timeLev, iDim
+      integer, pointer :: tempDim
+      integer, dimension(:), pointer :: tempDim1D
+      integer :: dimSize
+      integer :: localErr
+
+      call mpas_pool_begin_iteration(dimensionPool)
+      do while( mpas_pool_get_next_member(dimensionPool, poolItr) )
+         if (poolItr % memberType == MPAS_POOL_DIMENSION) then
+            if (poolItr % nDims == 0) then
+               call mpas_pool_get_dimension(dimensionPool, poolItr % memberName, tempDim)
+               call mpas_pool_add_dimension(currentPool, poolItr % memberName, tempDim)
+            else if (poolItr % nDims == 1) then
+               call mpas_pool_get_dimension(dimensionPool, poolItr % memberName, tempDim1D)
+               call mpas_pool_add_dimension(currentPool, poolItr % memberName, tempDim1D)
+            end if
+         end if
+      end do
+
+      call mpas_pool_begin_iteration(currentPool)
+      do while ( mpas_pool_get_next_member(currentPool, poolItr) )
+         if ( poolItr % memberType == MPAS_POOL_SUBPOOL ) then
+            call mpas_pool_get_subpool(currentPool, poolItr % memberName, subPool)
+            call mpas_block_creator_allocate_pool_fields(subPool, dimensionPool)
+         else if ( poolItr % memberType == MPAS_POOL_FIELD ) then
+            if ( poolItr % dataType == MPAS_POOL_REAL ) then
+               if ( poolItr % nDims == 1 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real1DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real1DField % dimNames(iDim), tempDim)
+
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call missing_dim_abort(real1DField % dimNames(iDim), poolItr % memberName)
+                        end if
+                        real1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real1DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real1DField % isActive .and. real1DField % isPersistent ) then
+                        allocate(real1DField % array(real1DField % dimSizes(1)))
+                        real1DField % array(:) = real1DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 2 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real2DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real2DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call missing_dim_abort(real2DField % dimNames(iDim), poolItr % memberName)
+                        end if
+                        real2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real2DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real2DField % isActive .and. real2DField % isPersistent ) then
+                        allocate(real2DField % array(real2DField % dimSizes(1), real2DField % dimSizes(2)))
+                        real2DField % array(:,:) = real2DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 3 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real3DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real3DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call missing_dim_abort(real3DField % dimNames(iDim), poolItr % memberName)
+                        end if
+                        real3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real3DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real3DField % isActive .and. real3DField % isPersistent ) then
+                        allocate(real3DField % array(real3DField % dimSizes(1), real3DField % dimSizes(2), real3DField % dimSizes(3)))
+                        real3DField % array(:,:,:) = real3DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 4 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real4DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real4DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call missing_dim_abort(real4DField % dimNames(iDim), poolItr % memberName)
+                        end if
+                        real4DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real4DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real4DField % isActive .and. real4DField % isPersistent ) then
+                        allocate(real4DField % array(real4DField % dimSizes(1), real4DField % dimSizes(2), &
+                                                     real4DField % dimSizes(3), real4DField % dimSizes(4)))
+                        real4DField % array(:,:,:,:) = real4DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 5 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, real5DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, real5DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call missing_dim_abort(real5DField % dimNames(iDim), poolItr % memberName)
+                        end if
+                        real5DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       real5DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( real5DField % isActive .and. real5DField % isPersistent ) then
+                        allocate(real5DField % array(real5DField % dimSizes(1), real5DField % dimSizes(2), &
+                                                     real5DField % dimSizes(3), real5DField % dimSizes(4), &
+                                                     real5DField % dimSizes(5)))
+                        real5DField % array(:,:,:,:,:) = real5DField % defaultValue
+                     end if
+                  end do
+               end if
+            else if ( poolItr % dataType == MPAS_POOL_INTEGER ) then
+               if ( poolItr % nDims == 1 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, int1DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, int1DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call missing_dim_abort(int1DField % dimNames(iDim), poolItr % memberName)
+                        end if
+                        int1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                      int1DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( int1DField % isActive .and. int1DField % isPersistent ) then
+                        allocate(int1DField % array(int1DField % dimSizes(1)))
+                        int1DField % array(:) = int1DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 2 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, int2DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, int2DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call missing_dim_abort(int2DField % dimNames(iDim), poolItr % memberName)
+                        end if
+                        int2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                      int2DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( int2DField % isActive .and. int2DField % isPersistent ) then
+                        allocate(int2DField % array(int2DField % dimSizes(1), int2DField % dimSizes(2)))
+                        int2DField % array(:,:) = int2DField % defaultValue
+                     end if
+                  end do
+               else if ( poolItr % nDims == 3 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, int3DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, int3DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call missing_dim_abort(int3DField % dimNames(iDim), poolItr % memberName)
+                        end if
+                        int3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                      int3DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( int3DField % isActive .and. int3DField % isPersistent ) then
+                        allocate(int3DField % array(int3DField % dimSizes(1), int3DField % dimSizes(2), int3DField % dimSizes(3)))
+                        int3DField % array(:,:,:) = int3DField % defaultValue
+                     end if
+                  end do
+               end if
+            else if ( poolItr % dataType == MPAS_POOL_CHARACTER ) then
+               if ( poolItr % nDims == 1 ) then
+                  do timeLev = 1, poolItr % nTimeLevels
+                     call mpas_pool_get_field(currentPool, poolItr % memberName, char1DField, timeLev)
+
+                     do iDim = 1, poolItr % nDims
+                        call mpas_pool_get_dimension(currentPool, char1DField % dimNames(iDim), tempDim)
+                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                            call missing_dim_abort(char1DField % dimNames(iDim), poolItr % memberName)
+                        end if
+                        char1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                       char1DField % dimNames(iDim), iErr = localErr)
+                     end do
+
+                     if ( char1DField % isActive .and. char1DField % isPersistent ) then
+                        allocate(char1DField % array(char1DField % dimSizes(1)))
+                        char1DField % array(:) = char1DField % defaultValue
+                     end if
+                  end do
+               end if
+            end if
+         end if
+      end do
+
+   end subroutine mpas_block_creator_allocate_pool_fields!}}}
+
+
+   subroutine missing_dim_abort(dimName, fieldName)
+
+      implicit none
+
+      character(len=*), intent(in) :: dimName
+      character(len=*), intent(in) :: fieldName
+
+
+      write(stderrUnit,*) '********************************************************************************'
+      write(stderrUnit,*) 'ERROR: Dimension '''//trim(dimName)//''' required by field '''//trim(fieldName)//'''' &
+                          //' was neither read nor defined.'
+      call mpas_dmpar_global_abort('********************************************************************************')
+
+   end subroutine missing_dim_abort 
+
+#include "block_dimension_routines.inc"
 
 end module mpas_block_creator

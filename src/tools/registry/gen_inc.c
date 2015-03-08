@@ -606,11 +606,10 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	char option_name[1024];
 	char core_string[1024];
-	char dim_args[2048];
 
-	FILE *fd, *fd2, *fd3, *fd4, *fd5, *fd6;
+	FILE *fd;
 
-	int in_subpool;
+	int in_subpool, readable;
 
 	corename = ezxml_attr(registry, "core");
 
@@ -619,77 +618,41 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	// For now, don't include core name in subroutines
 	sprintf(core_string, "_");
 
-	// Open files
-	fd = fopen("read_dimensions.inc", "w+");
-	fd2 = fopen("dim_dummy_args.inc", "w+");
-	fd3 = fopen("add_dims_to_pool.inc", "w+");
-	fd4 = fopen("dim_dummy_defines_input.inc", "w+");
-	fd5 = fopen("dim_dummy_defines_noinput.inc", "w+");
-	fd6 = fopen("dim_dummy_defines_inout.inc", "w+");
+	fd = fopen("block_dimension_routines.inc", "w+");
 
-	dim_args[0] = '\0';
-
-	// Parse dimensions that need to be read in
-	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
-		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
-			dimname = ezxml_attr(dim_xml, "name");
-			dimdef = ezxml_attr(dim_xml, "definition");
-
-			// Only dimensions that don't have a definition
-			if(dimdef == NULL){
-				// Write the read_dimension file, which reads dimensions from the input file
-				fortprintf(fd, "      call mpas_io_inq_dim(inputHandle, '%s', %s, ierr)\n", dimname, dimname);
-
-				// Write the dim dummy args list, which defines the argument list for subroutines that pass dimensions.
-				if(strlen(dim_args) <= 1){
-					sprintf(dim_args, "%s", dimname);
-				} else {
-					sprintf(dim_args, "%s, %s", dim_args, dimname);
-				}
-
-
-				fortprintf(fd3, "      call mpas_pool_add_dimension(block_ptr %% dimensions, '%s', %s)\n", dimname, dimname);
-
-				// Write the dim dummy defines files, which defines the dimension within a subroutine.
-				fortprintf(fd4, "      integer, intent(in) :: %s\n", dimname);
-				fortprintf(fd5, "      integer :: %s\n", dimname);
-				fortprintf(fd6, "      integer, intent(inout) :: %s\n", dimname);
-
-			}
-		}
-	}
-
-	fortprintf(fd2, "%s &\n", dim_args);
-
-	// Close files
-	fclose(fd);
-	fclose(fd2);
-	fclose(fd3);
-	fclose(fd4);
-	fclose(fd5);
-	fclose(fd6);
-
-	// Write subroutine to defined derived dimensions
-	fd = fopen("define_dimensions.inc", "w+");
-	fortprintf(fd, "   subroutine mpas_define%sderived_dimensions(dimensionPool, configPool)\n", core_string);
-	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: dimensionPool\n");
-	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool\n");
+	fortprintf(fd, "   subroutine mpas_setup%sderived_dimensions(readDimensions, dimensionPool, configPool)\n", core_string);
+	fortprintf(fd, "\n");
+	fortprintf(fd, "      use mpas_grid_types\n");
+	fortprintf(fd, "\n");
+	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: readDimensions !< Input: Pool to pull read dimensions from\n");
+	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool !< Input: Pool containing namelist options with configs\n");
+	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: dimensionPool !< Input/Output: Pool to add dimensions into\n");
+	fortprintf(fd, "\n");
+	fortprintf(fd, "      integer :: iErr, errLevel\n");
 	fortprintf(fd, "\n");
 
 	// Define all dimensions
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
 		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
 			dimname = ezxml_attr(dim_xml, "name");
-			dimdef = ezxml_attr(dim_xml, "definition");
 
 			fortprintf(fd, "      integer, pointer :: %s\n", dimname);
+		}
+	}
+
+
+	// Define all namelist options that will be used
+	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
+		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
+			dimname = ezxml_attr(dim_xml, "name");
+			dimdef = ezxml_attr(dim_xml, "definition");
 
 			if(dimdef != NULL){
-				// Namelist defined dimension
+				/* Namelist defined dimension */
 				if(strncmp(dimdef, "namelist:", 9) == 0){
 					snprintf(option_name, 1024, "%s", (dimdef)+9);
-					// Need to define a variable to hold the namelist value
-					// First need to find the registry defined namlist option, so we can determine type:
+					/* Need to define a variable to hold the namelist value */
+					/* First need to find the registry defined namlist option, so we can determine type: */
 					for (nmlrec_xml = ezxml_child(registry, "nml_record"); nmlrec_xml; nmlrec_xml = nmlrec_xml->next){
 						nmlrecname = ezxml_attr(nmlrec_xml, "name");
 						for (nmlopt_xml = ezxml_child(nmlrec_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
@@ -714,73 +677,97 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 		}
 	}
 
-	fortprintf(fd,"\n");
+	fortprintf(fd, "\n");
 
-	// Get values of all read in dimensions from pool
-	// And config options from namelist defined dimensions.
-	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
-		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
-			dimname = ezxml_attr(dim_xml, "name");
-			dimdef = ezxml_attr(dim_xml, "definition");
+	fortprintf(fd, "      errLevel = mpas_pool_get_error_level()\n");
+	fortprintf(fd, "      call mpas_pool_set_error_level(MPAS_POOL_SILENT)\n");
 
-			if(dimdef == NULL){
-				fortprintf(fd, "      call mpas_pool_get_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
-			} else {
-				// Namelist defined dimension
-				if(strncmp(dimdef, "namelist:", 9) == 0){
-					snprintf(option_name, 1024, "%s", (dimdef)+9);
-					// Need to define a variable to hold the namelist value
-					// First need to find the registry defined namlist option, so we can determine type:
-					for (nmlrec_xml = ezxml_child(registry, "nml_record"); nmlrec_xml; nmlrec_xml = nmlrec_xml->next){
-						nmlrecname = ezxml_attr(nmlrec_xml, "name");
-						nmlrecinsub = ezxml_attr(nmlrec_xml, "in_subpool");
+	fortprintf(fd, "\n");
 
-						in_subpool = 0;
-
-						if(nmlrecinsub && strcmp(nmlrecinsub, "true") == 0){
-							in_subpool = 1;
-						}
-
-						for (nmlopt_xml = ezxml_child(nmlrec_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
-							nmloptname = ezxml_attr(nmlopt_xml, "name");
-							if(strcmp(option_name, nmloptname) == 0){
-								if(in_subpool){
-									fortprintf(fd, "      call mpas_pool_get_config(configPool, '%s', %s, '%s')\n", nmloptname, nmloptname, nmlrecname);
-								} else {
-									fortprintf(fd, "      call mpas_pool_get_config(configPool, '%s', %s)\n", nmloptname, nmloptname);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	fortprintf(fd,"\n");
-
-	// Define and add dimensions to pool
+	/* Get all namelist options first, so any derived dimensions can be properly defined based on them */
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
 		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
 			dimname = ezxml_attr(dim_xml, "name");
 			dimdef = ezxml_attr(dim_xml, "definition");
 
 			if(dimdef != NULL){
-				fortprintf(fd, "      allocate(%s)\n", dimname);
-				// Namelist defined dimension
+				/* Namelist defined dimension */
 				if(strncmp(dimdef, "namelist:", 9) == 0){
 					snprintf(option_name, 1024, "%s", (dimdef)+9);
-					fortprintf(fd, "      %s = %s\n", dimname, option_name);
-				} else {
-					fortprintf(fd, "      %s = %s\n", dimname, dimdef);
-				}
 
-				fortprintf(fd, "      call mpas_pool_add_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
+					fortprintf(fd, "      nullify(%s)\n", option_name);
+					fortprintf(fd, "      call mpas_pool_get_config(configPool, '%s', %s)\n", option_name, option_name);
+				}
 			}
 		}
 	}
+
 	fortprintf(fd, "\n");
-	fortprintf(fd, "   end subroutine mpas_define%sderived_dimensions\n", core_string);
+
+	/* Get all dimensions first, so any derived dimensions can be properly defined based on them */
+	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next) {
+		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next) {
+			dimname = ezxml_attr(dim_xml, "name");
+
+			fortprintf(fd, "      nullify(%s)\n", dimname);
+			fortprintf(fd, "      call mpas_pool_get_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
+		}
+	}
+
+	fortprintf(fd, "\n");
+
+	fortprintf(fd, "write(stderrUnit,\'(a)\') \'Assigning remaining dimensions from definitions in Registry.xml ...\'\n");
+
+	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next) {
+		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next) {
+			dimname = ezxml_attr(dim_xml, "name");
+			dimdef = ezxml_attr(dim_xml, "definition");
+
+			/* If dimension has a definition, check if the value of the dim is NaN, then write the definition */
+			if ( dimdef != NULL ) {
+				fortprintf(fd, "      call mpas_pool_get_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
+				fortprintf(fd, "      if ( .not. associated(%s) ) then\n", dimname);
+				fortprintf(fd, "         allocate(%s)\n", dimname);
+				// Namelist defined dimension
+				if(strncmp(dimdef, "namelist:", 9) == 0){
+					snprintf(option_name, 1024, "%s", (dimdef)+9);
+					fortprintf(fd, "         %s = %s\n", dimname, option_name);
+					fortprintf(fd, "write(stderrUnit,\'(a,a20,a,i8,a)\') \'       \', \'%s\', \' =\', %s, \' (%s)\'\n", dimname, option_name, option_name);
+				} else {
+					fortprintf(fd, "         %s = %s\n", dimname, dimdef);
+					fortprintf(fd, "write(stderrUnit,\'(a,a20,a,i8)\') \'       \', \'%s\', \' =\', %s\n", dimname, dimdef);
+				}
+				fortprintf(fd, "         call mpas_pool_add_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
+
+				fortprintf(fd, "	  else if ( %s == MPAS_MISSING_DIM ) then\n", dimname, dimname);
+				// Namelist defined dimension
+				if(strncmp(dimdef, "namelist:", 9) == 0){
+					snprintf(option_name, 1024, "%s", (dimdef)+9);
+					fortprintf(fd, "         %s = %s\n", dimname, option_name);
+				} else {
+					fortprintf(fd, "         %s = %s\n", dimname, dimdef);
+				}
+
+				fortprintf(fd, "	  end if\n\n");
+			} else {
+				fortprintf(fd, "      if ( .not. associated(%s) ) then\n", dimname);
+				fortprintf(fd, "         allocate(%s)\n", dimname);
+				fortprintf(fd, "         %s = MPAS_MISSING_DIM\n", dimname);
+				fortprintf(fd, "         call mpas_pool_add_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
+				fortprintf(fd, "      end if\n\n");
+			}
+		}
+	}
+	fortprintf(fd, "write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "write(stderrUnit,\'(a)\') \' ----- done assigning dimensions from Registry.xml -----\'\n");
+	fortprintf(fd, "write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "write(stderrUnit,*) \' '\n");
+
+	fortprintf(fd, "      call mpas_pool_set_error_level(errLevel)\n\n");
+
+	fortprintf(fd, "   end subroutine mpas_setup%sderived_dimensions\n", core_string);
+
+	fclose(fd);
 
 	return 0;
 }/*}}}*/
@@ -1082,7 +1069,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 		fortprintf(fd, "! Setup dimensions for       \n", vararrname);
 		i = 1;
 		fortprintf(fd, "      %s(%d) %% dimNames(%d) = 'num_%s'\n", pointer_name, time_lev, i, vararrname);
-		fortprintf(fd, "      %s(%d) %% dimSizes(%d) = numConstituents\n", pointer_name, time_lev, i);
 
 		string = strdup(vararrdims);
 		tofree = string;
@@ -1092,10 +1078,8 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 			i++;
 			if(strncmp(token, "nCells", 1024) == 0 || strncmp(token, "nEdges", 1024) == 0 || strncmp(token, "nVertices", 1024) == 0){
 				fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
-				fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s+1\n", pointer_name, time_lev, i, token);
 			} else {
 				fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
-				fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
 			}
 		}
 		while( (token = strsep(&string, " ")) != NULL){
@@ -1103,10 +1087,8 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				i++;
 				if(strncmp(token, "nCells", 1024) == 0 || strncmp(token, "nEdges", 1024) == 0 || strncmp(token, "nVertices", 1024) == 0){
 					fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
-					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s+1\n", pointer_name, time_lev, i, token);
 				} else {
 					fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
-					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
 				}
 			}
 		}
@@ -1114,6 +1096,12 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 		fortprintf(fd, "\n");
 
+		if ( ndims > 0 ) {
+			fortprintf(fd, "      nullify(%s(%d) %% array)\n", pointer_name, time_lev);
+		} else {
+			fortprintf(fd, "      %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
+		}
+		fortprintf(fd, "      %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
 		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
@@ -1131,55 +1119,18 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 		tofree = string;
 		token = strsep(&string, ";");
 		fortprintf(fd, "%sActive", token);
+		sprintf(spacing, "   ");
 
 		while( (token = strsep(&string, ";")) != NULL){
 			fortprintf(fd, " .or. %sActive", token);
 		}
-
 		fortprintf(fd, ") then\n");
-		snprintf(spacing, 1024, "         ");
 	}
 
-	// Add field to pool
-	fortprintf(fd, "! Add field to pool\n");
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
-		fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", spacing, pointer_name, time_lev);
-
-		// Setup array pointer
-		fortprintf(fd, "! Allocate space for data\n");
-		if(!vararrpersistence || strcmp(vararrpersistence, "scratch") != 0){
-			switch(ndims){
-				default:
-					break;
-				case 1:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 2:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n", spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 3:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n", 
-							   spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 4:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n", 
-							  spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 5:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n", 
-							  spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-			}
-
-			fortprintf(fd, "%s%s(%d) %% array = %s\n", spacing, pointer_name, time_lev, default_value);
-
-		} else {
-			if(ndims > 0){
-				fortprintf(fd, "%snullify(%s(%d) %% array)\n", spacing, pointer_name, time_lev);
-			}
-		}
+		fortprintf(fd, "      %s%s(%d) %% isActive = .true.\n", spacing, pointer_name, time_lev);
 	}
-	fortprintf(fd, "%scall mpas_pool_add_field(newSubPool, '%s', %s)\n", spacing, vararrname_in_code, pointer_name);
+	fortprintf(fd, "      %scall mpas_pool_add_field(newSubPool, '%s', %s)\n", spacing, vararrname_in_code, pointer_name);
 
 	if (!no_packages) {
 		fortprintf(fd, "      end if\n");
@@ -1265,7 +1216,6 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	// Determine name of pointer for this field.
 	set_pointer_name(type, ndims, pointer_name);
 
-
 	fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
 
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
@@ -1297,27 +1247,23 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 			token = strsep(&string, " ");
 			if(strncmp(token, "Time", 1024) != 0){
 				fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
-				if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
-					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s + 1\n", pointer_name, time_lev, i, token);
-				} else {
-					fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
-				}
 				i++;
 			}
 			while( (token = strsep(&string, " ")) != NULL){
 				if(strncmp(token, "Time", 1024) != 0){
 					fortprintf(fd, "      %s(%d) %% dimNames(%d) = '%s'\n", pointer_name, time_lev, i, token);
-					if(strcmp(token, "nCells") == 0 || strcmp(token, "nEdges") == 0 || strcmp(token, "nVertices") == 0){
-						fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s + 1\n", pointer_name, time_lev, i, token);
-					} else {
-						fortprintf(fd, "      %s(%d) %% dimSizes(%d) = %s\n", pointer_name, time_lev, i, token);
-					}
 					i++;
 				}
 			}
 			free(tofree);
 		}
 
+		if ( ndims > 0 ) {
+			fortprintf(fd, "     %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
+			fortprintf(fd, "     nullify(%s(%d) %% array)\n", pointer_name, time_lev);
+		} else {
+			fortprintf(fd, "     %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
+		}
 		fortprintf(fd, "      nullify(%s(%d) %% next)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% prev)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
@@ -1328,62 +1274,31 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	// Parse packages if they are defined
 	fortprintf(fd, "\n");
-	snprintf(package_spacing, 1024, "      ");
+	package_spacing[0] = '\0';
 	if(varpackages != NULL){
 		fortprintf(fd, "      if (");
 		string = strdup(varpackages);
 		tofree = string;
 		token = strsep(&string, ";");
 		fortprintf(fd, "%sActive", token);
+		sprintf(package_spacing, "   ");
 
 		while( (token = strsep(&string, ";")) != NULL){
 			fortprintf(fd, " .or. %sActive", token);
 		}
 
 		fortprintf(fd, ") then\n");
-		snprintf(package_spacing, 1024, "         ");
 	}
 
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
-		fortprintf(fd, "%s%s(%d) %% isActive = .true.\n", package_spacing, pointer_name, time_lev);
-
-
-		if(ndims > 0){
-			fortprintf(fd, "! Allocate space for data\n");
-			switch(ndims){
-				default:
-					break;
-				case 1:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1)))\n", package_spacing, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 2:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 3:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 4:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-				case 5:
-					fortprintf(fd, "%sallocate(%s(%d) %% array(%s(%d) %% dimSizes(1), %s(%d) %% dimSizes(2), %s(%d) %% dimSizes(3), %s(%d) %% dimSizes(4), %s(%d) %% dimSizes(5)))\n",
-							package_spacing, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev, pointer_name, time_lev);
-					break;
-			}
-
-			fortprintf(fd, "%s%s(%d) %% array = %s\n", package_spacing, pointer_name, time_lev, default_value);
-		} else if(ndims == 0){
-			fortprintf(fd, "%s%s(%d) %% scalar = %s\n", package_spacing, pointer_name, time_lev, default_value);
-		}
+		fortprintf(fd, "      %s%s(%d) %% isActive = .true.\n", package_spacing, pointer_name, time_lev);
 	}
-	fortprintf(fd, "%scall mpas_pool_add_field(newSubPool, '%s', %s)\n", package_spacing , varname_in_code, pointer_name);
+	fortprintf(fd, "      %scall mpas_pool_add_field(newSubPool, '%s', %s)\n", package_spacing, varname_in_code, pointer_name);
 
 	if(varpackages != NULL){
 		fortprintf(fd, "      end if\n");
 	}
+
 	fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%s', %s)\n", varname, pointer_name);
 	fortprintf(fd, "\n");
 
@@ -1393,12 +1308,10 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, const char *parentname, const char * corename)/*{{{*/
 {
-	ezxml_t dims_xml, dim_xml;
 	ezxml_t struct_xml, var_arr_xml, var_xml, var_xml2;
 	ezxml_t struct_xml2;
 	ezxml_t packages_xml, package_xml;
 
-	const char *dimname;
 	const char *structname, *structlevs, *structpackages;
 	const char *structname2;
 	const char *substructname;
@@ -1447,9 +1360,6 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	fortprintf(fd, "      type (mpas_pool_type), intent(in) :: packagePool\n");
 	write_field_pointer_arrays(fd);
 	fortprintf(fd, "      type (mpas_pool_type), pointer :: newSubPool\n");
-	fortprintf(fd, "      type (mpas_pool_iterator_type) :: dimItr\n");
-	fortprintf(fd, "      integer, pointer :: dim0D\n");
-	fortprintf(fd, "      integer, dimension(:), pointer :: dim1D\n");
 	fortprintf(fd, "      integer :: group_counter\n");
 	fortprintf(fd, "      logical :: group_started\n");
 	fortprintf(fd, "      integer :: group_start\n");
@@ -1467,15 +1377,6 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	}
 
 	fortprintf(fd, "\n");
-
-	// Need to define integers for all dimensions
-	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
-		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
-			dimname = ezxml_attr(dim_xml, "name");
-
-			fortprintf(fd, "      integer, pointer :: %s\n", dimname);
-		}
-	}
 
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      integer :: numConstituents\n");
@@ -1528,15 +1429,6 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 		fortprintf(fd, "      end if\n");
 	}
 
-	// Need to get value of dimensions
-	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
-		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
-			dimname = ezxml_attr(dim_xml, "name");
-
-			fortprintf(fd, "      call mpas_pool_get_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
-		}
-	}
-
 	fortprintf(fd, "\n");
 
 	// All sub-structs have been parsed and generated at this point. Time to generate this struct
@@ -1562,18 +1454,6 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	fortprintf(fd, "      if (associated(newSubPool)) then\n");
 	fortprintf(fd, "         call mpas_pool_add_config(newSubPool, 'on_a_sphere', block %% domain %% on_a_sphere)\n");
 	fortprintf(fd, "         call mpas_pool_add_config(newSubPool, 'sphere_radius', block %% domain %% sphere_radius)\n");
-	fortprintf(fd, "         call mpas_pool_begin_iteration(dimensionPool)\n");
-	fortprintf(fd, "         do while( mpas_pool_get_next_member(dimensionPool, dimItr) )\n");
-	fortprintf(fd, "            if (dimItr %% memberType == MPAS_POOL_DIMENSION) then\n");
-	fortprintf(fd, "               if (dimItr %% nDims == 0) then\n");
-	fortprintf(fd, "                  call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim0d)\n");
-	fortprintf(fd, "                  call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim0d)\n");
-	fortprintf(fd, "               else if (dimItr %% nDims == 1) then\n");
-	fortprintf(fd, "                  call mpas_pool_get_dimension(dimensionPool, dimItr %% memberName, dim1d)\n");
-	fortprintf(fd, "                  call mpas_pool_add_dimension(newSubPool, dimItr %% memberName, dim1d)\n");
-	fortprintf(fd, "               end if\n");
-	fortprintf(fd, "            end if\n");
-	fortprintf(fd, "         end do\n");
 	fortprintf(fd, "      end if\n");
 	fortprintf(fd, "\n");
 
@@ -1933,7 +1813,8 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 	fortprintf(fd, "subroutine mpas%ssetup_immutable_streams(manager)\n\n", core_string);
 	fortprintf(fd, "   use MPAS_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT_OUTPUT, MPAS_STREAM_INPUT, &\n");
 	fortprintf(fd, "                                   MPAS_STREAM_OUTPUT, MPAS_STREAM_NONE, MPAS_STREAM_PROPERTY_IMMUTABLE, &\n");
-	fortprintf(fd, "                                   MPAS_stream_mgr_create_stream, MPAS_stream_mgr_add_field, MPAS_stream_mgr_set_property\n\n");
+	fortprintf(fd, "                                   MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property, &\n");
+	fortprintf(fd, "                                   MPAS_stream_mgr_add_field\n\n");
 	fortprintf(fd, "   implicit none\n\n");
 	fortprintf(fd, "   type (MPAS_streamManager_type), pointer :: manager\n\n");
 	fortprintf(fd, "   integer :: ierr\n\n");
@@ -1958,6 +1839,7 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_OUTPUT, \'%s\', ierr=ierr)\n", optname, optfilename);
 				else
 					fortprintf(fd, "   call MPAS_stream_mgr_create_stream(manager, \'%s\', MPAS_STREAM_NONE, \'%s\', ierr=ierr)\n", optname, optfilename);
+
 
 				/* Loop over streams listed within the stream (only use immutable streams) */
 				for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
@@ -2025,11 +1907,13 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 
 				fortprintf(fd, "   call MPAS_stream_mgr_set_property(manager, \'%s\', MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=ierr)\n\n", optname);
 			}
-
 		}
 	}
 
+
 	fortprintf(fd, "end subroutine mpas%ssetup_immutable_streams\n", core_string);
+
+	fortprintf(fd, "\n\n");
 
 	fclose(fd);
 

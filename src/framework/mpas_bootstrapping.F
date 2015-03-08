@@ -28,15 +28,18 @@ module mpas_bootstrapping
 
    !***********************************************************************
    !
-   !  routine mpas_bootstrap_framework
+   !  routine mpas_bootstrap_framework_phase1
    !
    !> \brief   Obtains mesh partition, builds halos, and allocates blocks.
-   !> \author  Michael Duda
-   !> \date    7 September 2014
+   !> \author  Michael Duda, Doug Jacobsen
+   !> \date    03/04/2015
    !> \details
    !>  This routine is responsible for reading basic decomposed field dimensions,
    !>  determining a block decomposition of the mesh, building halos for fields,
    !>  and, finally, allocating blocklist for a domain.
+   !>
+   !>  Phase1 does not currently allocate fields, or define any other
+   !>  dimensions aside from the ones listed below.
    !>
    !>  Dimensions required to be present in the grid file:
    !>      nCells
@@ -44,7 +47,6 @@ module mpas_bootstrapping
    !>      nVertices
    !>      vertexDegree
    !>      maxEdges
-   !>      ***** and, at present, all other dimensions so we can allocate all fields
    !>
    !>  Fields required to be present in the grid file:
    !>      indexToCellID
@@ -64,27 +66,27 @@ module mpas_bootstrapping
    !>      on_a_sphere
    !>      sphere_radius
    !>      ***** these are needed by mpas_block_creator_finalize_block_init()
-   !>            so they can be set in the mesh pool and queried by, e.g., 
+   !>            so they can be set in the mesh pool and queried by, e.g.,
    !>            mpas_initialize_vectors()
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_bootstrap_framework(domain, mesh_filename) !{{{
+   subroutine mpas_bootstrap_framework_phase1(domain, mesh_filename) !{{{
 
       implicit none
-   
+
       type (domain_type), pointer :: domain
       character(len=*), intent(in) :: mesh_filename
 
       type (block_type), pointer :: readingBlock
-   
-#include "dim_dummy_defines_noinput.inc"
+
+      integer :: nCells, nEdges, maxEdges, nVertices, vertexDegree
 
       integer :: ierr
       type (MPAS_IO_Handle_type) :: inputHandle
 
       character (len=StrKIND) :: c_on_a_sphere
       real (kind=RKIND) :: r_sphere_radius
-   
+
       type (field1dInteger), pointer :: indexToCellIDField
       type (field1dInteger), pointer :: indexToEdgeIDField
       type (field1dInteger), pointer :: indexToVertexIDField
@@ -153,21 +155,23 @@ module mpas_bootstrapping
       !
       ! Read global number of cells/edges/vertices
       !
-!MGD for bootstrapping, we really only need a small, fixed set of dimensions
-!    HOWEVER: in order to allocate all fields, we need all non-derived dimensions...
-#include "read_dimensions.inc"
-   
+      call mpas_io_inq_dim(inputHandle, 'nCells', nCells, ierr)
+      call mpas_io_inq_dim(inputHandle, 'nEdges', nEdges, ierr)
+      call mpas_io_inq_dim(inputHandle, 'maxEdges', maxEdges, ierr)
+      call mpas_io_inq_dim(inputHandle, 'nVertices', nVertices, ierr)
+      call mpas_io_inq_dim(inputHandle, 'vertexDegree', vertexDegree, ierr)
+
       !
       ! Determine the range of cells/edges/vertices that a processor will initially read
       !   from the input file
       !
-      call mpas_dmpar_get_index_range(domain % dminfo, 1, nCells, readCellStart, readCellEnd)   
+      call mpas_dmpar_get_index_range(domain % dminfo, 1, nCells, readCellStart, readCellEnd)
       nReadCells = readCellEnd - readCellStart + 1
-   
-      call mpas_dmpar_get_index_range(domain % dminfo, 1, nEdges, readEdgeStart, readEdgeEnd)   
+
+      call mpas_dmpar_get_index_range(domain % dminfo, 1, nEdges, readEdgeStart, readEdgeEnd)
       nReadEdges = readEdgeEnd - readEdgeStart + 1
-   
-      call mpas_dmpar_get_index_range(domain % dminfo, 1, nVertices, readVertexStart, readVertexEnd)   
+
+      call mpas_dmpar_get_index_range(domain % dminfo, 1, nVertices, readVertexStart, readVertexEnd)
       nReadVertices = readVertexEnd - readVertexStart + 1
 
       allocate(readingBlock)
@@ -191,7 +195,7 @@ module mpas_bootstrapping
                                              indexToVertexIDField, xVertexField, yVertexField, zVertexField, cellsOnVertexField, &
                                              nHalos)
       !
-      ! Set up a graph derived data type describing the connectivity for the cells 
+      ! Set up a graph derived data type describing the connectivity for the cells
       !   that were read by this process
       ! A partial description is passed to the block decomp module by each process,
       !   and the block decomp module returns with a list of global cell indices
@@ -204,11 +208,11 @@ module mpas_bootstrapping
       allocate(partial_global_graph_info % vertexID(nReadCells))
       allocate(partial_global_graph_info % nAdjacent(nReadCells))
       allocate(partial_global_graph_info % adjacencyList(maxEdges, nReadCells))
-   
+
       partial_global_graph_info % vertexID(:) = indexToCellIDField % array(:)
       partial_global_graph_info % nAdjacent(:) = nEdgesOnCellField % array(:)
       partial_global_graph_info % adjacencyList(:,:) = cellsOnCellField % array(:,:)
-   
+
       ! TODO: Ensure (by renaming or exchanging) that initial cell range on each proc is contiguous
       !       This situation may occur when reading a restart file with cells/edges/vertices written
       !       in a scrambled order
@@ -275,12 +279,9 @@ module mpas_bootstrapping
 
 
      ! Allocate blocks, and copy indexTo arrays into blocks
-     call mpas_block_creator_finalize_block_init(nHalos, domain % blocklist, &
-#include "dim_dummy_args.inc"         
-                             , nCellsSolveField, nEdgesSolveField, nVerticesSolveField, indexToCellID_Block, indexToEdgeID_Block, &
-                             indexToVertexID_Block)
-
-      call mpas_link_fields(domain)
+     call mpas_block_creator_finalize_block_phase1(nHalos, domain % blocklist, &
+             nCellsSolveField, nEdgesSolveField, nVerticesSolveField, vertexDegree, maxEdges, &
+             indexToCellID_Block, indexToEdgeID_Block, indexToVertexID_Block)
 
       call MPAS_io_close(inputHandle, ierr)
 
@@ -327,7 +328,164 @@ module mpas_bootstrapping
       deallocate(block_count)
       deallocate(readingBlock)
 
-   end subroutine mpas_bootstrap_framework !}}}
+   end subroutine mpas_bootstrap_framework_phase1 !}}}
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_bootstrap_framework_phase2
+   !
+   !> \brief   Defines dimensions and allocates fields
+   !> \author  Doug Jacobsen, Michael Duda
+   !> \date    03/04/2015
+   !> \details
+   !>  This routine assumes blocks have already been setup correctly (some
+   !>  fields have the correct indices, and exchange lists are created).
+   !>  It will finish the setup of blocks by defining all remaining dimensions,
+   !>  and allocating all fields and structs.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_bootstrap_framework_phase2(stream_manager, domain) !{{{
+
+      use mpas_stream_manager
+      use mpas_stream_list
+
+      implicit none
+
+      type (mpas_streamManager_type), pointer :: stream_manager
+      type (domain_type), pointer :: domain
+
+      type (mpas_pool_type), pointer :: readableDimensions
+      type (mpas_pool_type), pointer :: streamDimensions
+
+      character (len=StrKIND) :: streamName, streamFilenameTemplate, streamFilenameInterval, streamReferenceTime, streamFilename
+      character (len=StrKIND) :: fieldName
+      integer :: streamDirection
+      logical :: streamActive
+
+      type (mpas_pool_iterator_type) :: poolItr
+
+      type (MPAS_IO_Handle_type) :: inputHandle
+
+      character (len=StrKIND), dimension(:), pointer :: dimNames
+      integer, pointer :: dimValue
+      integer :: tempDim
+      integer :: i, err_level, err_local
+
+
+      call mpas_pool_create_pool(readableDimensions)
+
+      err_level = mpas_pool_get_error_level()
+      call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+      write(stderrUnit, *) ' '
+      write(stderrUnit, *) ' '
+
+      ! Reading dimensions from streams
+      write(stderrUnit,'(a)') 'Reading dimensions from input streams ...'
+      call mpas_stream_mgr_begin_iteration(stream_manager)
+      do while ( mpas_stream_mgr_get_next_stream(stream_manager, streamID = streamName, directionProperty = streamDirection, &
+                                                 activeProperty = streamActive) )
+
+         if ( streamActive .and. ( streamDirection == MPAS_STREAM_INPUT .or. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) ) then
+
+            call mpas_stream_mgr_begin_iteration(stream_manager, streamID=streamName)
+
+            ! Build stream dimension pool from the list of fields
+            call mpas_pool_create_pool(streamDimensions)
+
+            do while ( mpas_stream_mgr_get_next_field(stream_manager, streamName, fieldName) )
+
+               call get_dimlist_for_field(domain % blocklist % allFields, fieldName, dimNames)
+
+               do i=1,size(dimNames)
+                  call mpas_pool_get_dimension(streamDimensions, dimNames(i), dimValue)
+                  if ( .not. associated(dimValue) ) then
+                     call mpas_pool_add_dimension(streamDimensions, dimNames(i), MPAS_MISSING_DIM)
+                  end if
+               end do
+               deallocate(dimNames)
+
+            end do
+
+            ! Determine stream filename
+            call mpas_get_stream_filename(stream_manager, streamID = streamName, filename = streamFilename, ierr = err_local)
+
+            ! Try to open file
+            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr = err_local)
+
+            ! If to determine if file was opened or not.
+            if ( err_local == MPAS_IO_NOERR ) then
+
+               write(stderrUnit, *) ' '
+               write(stderrUnit, *) '----- reading dimensions from stream '''//trim(streamName)//''' using file ' &
+                                    //trim(streamFilename)
+
+               ! Iterate over list of dimensions we determined we need from the above loop
+               call mpas_pool_begin_iteration(streamDimensions)
+               do while ( mpas_pool_get_next_member(streamDimensions, poolItr) )
+                  if ( poolItr % memberType == MPAS_POOL_DIMENSION ) then
+                     ! Try to read the dimension
+                     call mpas_io_inq_dim(inputHandle, trim(poolItr % memberName), tempDim, ierr = err_local)
+
+                     ! Check to see if the dimension has already been defined
+                     call mpas_pool_get_dimension(readableDimensions, poolItr % memberName, dimValue)
+
+                     ! If to see if dimension was read or not
+                     if ( err_local == MPAS_IO_NOERR ) then
+                        write(stderrUnit,'(a,a20,a,i8)') '       ', trim(poolItr % memberName), ' =', tempDim
+
+                        if ( .not. associated(dimValue) ) then
+                           call mpas_pool_add_dimension(readableDimensions, poolItr % memberName, tempDim)
+                        else if ( dimValue /= tempDim .and. dimValue == MPAS_MISSING_DIM ) then
+                           dimValue = tempDim
+                        else if ( dimValue /= tempDim ) then
+                           write(stderrUnit, *) '********************************************************************************'
+                           write(stderrUnit, *) 'ERROR: Dimension ' // trim(poolItr % membername) &
+                                                // ' was read with an inconsistent value.'
+                           call mpas_dmpar_global_abort('********************************************************************************')
+                        end if
+                     else
+                        write(stderrUnit,'(a,a20,a)') '       ', trim(poolItr % memberName), ' *** not found in stream ***'
+                     end if
+
+                  end if
+               end do
+
+               ! Close file
+               call mpas_io_close(inputHandle)
+            else
+               write(stderrUnit, *) ' '
+               write(stderrUnit, *) '  *** unable to open input file '//trim(streamFilename)//' for stream ''' &
+                                    //trim(streamName)//''''
+            end if
+
+            ! Destroy pool that contains list of streams dimensions
+            call mpas_pool_destroy_pool(streamDimensions)
+
+         else if ( .not. streamActive .and. ( streamDirection == MPAS_STREAM_INPUT .or. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) ) then
+
+            write(stderrUnit, *) ' '
+            write(stderrUnit, *) '----- skipping inactive stream '''//trim(streamName)//''''
+            
+         end if
+
+      end do
+
+      write(stderrUnit, *) ' '
+      write(stderrUnit, *) '----- done reading dimensions from input streams -----'
+      write(stderrUnit, *) ' '
+      write(stderrUnit, *) ' '
+
+      call mpas_pool_set_error_level(err_level)
+
+      ! Allocate blocks, and copy indexTo arrays into blocks
+      call mpas_block_creator_finalize_block_phase2(stream_manager, domain % blocklist, readableDimensions)
+      call mpas_link_fields(domain)
+
+      call mpas_pool_destroy_pool(readableDimensions)
+
+   end subroutine mpas_bootstrap_framework_phase2 !}}}
 
 
    subroutine mpas_io_setup_cell_block_fields(inputHandle, nReadCells, readCellStart, readingBlock, maxEdges, indexToCellID, &
@@ -378,7 +536,7 @@ module mpas_bootstrapping
      call mpas_dmpar_init_multihalo_exchange_list(indexToCellID % recvList, nHalos)
      call mpas_dmpar_init_multihalo_exchange_list(indexToCellID % copyList, nHalos)
      nullify(indexToCellID % next)
-   
+
 
      ! Number of cell/edges/vertices adjacent to each cell
      allocate(nEdgesOnCell)
@@ -396,7 +554,7 @@ module mpas_bootstrapping
      nEdgesOnCell % recvList => indexToCellID % recvList
      nEdgesOnCell % copyList => indexToCellID % copyList
      nullify(nEdgesOnCell % next)
-   
+
      ! Global indices of cells adjacent to each cell
      allocate(cellsOnCell)
      allocate(cellsOnCell % ioinfo)
@@ -416,7 +574,7 @@ module mpas_bootstrapping
      cellsOnCell % recvList => indexToCellID % recvList
      cellsOnCell % copyList => indexToCellID % copyList
      nullify(cellsOnCell % next)
-   
+
      ! Global indices of edges adjacent to each cell
      allocate(edgesOnCell)
      allocate(edgesOnCell % ioinfo)
@@ -436,7 +594,7 @@ module mpas_bootstrapping
      edgesOnCell % recvList => indexToCellID % recvList
      edgesOnCell % copyList => indexToCellID % copyList
      nullify(edgesOnCell % next)
-   
+
      ! Global indices of vertices adjacent to each cell
      allocate(verticesOnCell)
      allocate(verticesOnCell % ioinfo)
@@ -458,7 +616,7 @@ module mpas_bootstrapping
      nullify(verticesOnCell % next)
 
      deallocate(readIndices)
-   
+
    end subroutine mpas_io_setup_cell_block_fields !}}}
 
 
@@ -508,10 +666,10 @@ module mpas_bootstrapping
      call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeID % recvList, nHalos+1)
      call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeID % copyList, nHalos+1)
      nullify(indexToEdgeID % next)
-   
-   
+
+
      ! Global indices of cells adjacent to each edge
-     !    used for determining which edges are owned by a block, where 
+     !    used for determining which edges are owned by a block, where
      !    iEdge is owned iff cellsOnEdge(1,iEdge) is an owned cell
      allocate(cellsOnEdge)
      allocate(cellsOnEdge % ioinfo)
@@ -533,7 +691,7 @@ module mpas_bootstrapping
      nullify(cellsOnEdge % next)
 
      deallocate(readIndices)
-   
+
    end subroutine mpas_io_setup_edge_block_fields !}}}
 
 
@@ -577,10 +735,10 @@ module mpas_bootstrapping
      call mpas_dmpar_init_multihalo_exchange_list(indexToVertexID % recvList, nHalos+1)
      call mpas_dmpar_init_multihalo_exchange_list(indexToVertexID % copyList, nHalos+1)
      nullify(indexToVertexID % next)
-   
-   
+
+
      ! Global indices of cells adjacent to each vertex
-     !    used for determining which vertices are owned by a block, where 
+     !    used for determining which vertices are owned by a block, where
      !    iVtx is owned iff cellsOnVertex(1,iVtx) is an owned cell
      allocate(cellsOnVertex)
      allocate(cellsOnVertex % ioinfo)
@@ -604,6 +762,168 @@ module mpas_bootstrapping
      deallocate(readIndices)
 
    end subroutine mpas_io_setup_vertex_block_fields !}}}
+
+
+   !***********************************************************************
+   !
+   !  routine get_dimlist_for_field
+   !
+   !> \brief   Returns an array of dimension names for the specified field
+   !> \author  Michael Duda
+   !> \date    06 March 2015
+   !> \details
+   !>  Given a pool containing the field indicated by the 'fieldName' argument,
+   !>  this routine allocates the output array, 'dimNames', to the
+   !>  dimensionality of the field and fills the array with the dimension names.
+   !>  
+   !>  If the specified field is a var_array, the dimNames array will have one
+   !>  fewer dimension than that of the var_array, and it will be filled with 
+   !>  the outer-most dimension names.
+   !>
+   !>  If the specified field is is inactive (in a package sense) at the time 
+   !>  of the call to this routine, the dimNames array will be returned with 
+   !>  zero size.
+   !
+   !-----------------------------------------------------------------------
+   subroutine get_dimlist_for_field(allFields, fieldName, dimNames)
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: allFields
+      character (len=*), intent(in) :: fieldName
+      character (len=StrKIND), dimension(:), pointer :: dimNames
+
+      type (mpas_pool_field_info_type) :: fieldInfo
+      type (field1DReal), pointer :: real1DField
+      type (field2DReal), pointer :: real2DField
+      type (field3DReal), pointer :: real3DField
+      type (field4DReal), pointer :: real4DField
+      type (field5DReal), pointer :: real5DField
+      type (field1DInteger), pointer :: int1DField
+      type (field2DInteger), pointer :: int2DField
+      type (field3DInteger), pointer :: int3DField
+      type (field1DChar), pointer :: char1DField
+
+
+      call mpas_pool_get_field_info(allFields, fieldName, fieldInfo)
+
+      if ( .not. fieldInfo % isActive ) then
+         allocate(dimNames(0))
+         return
+      end if
+
+      if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
+
+         if ( fieldInfo % nDims == 1 ) then
+            call mpas_pool_get_field(allFields, fieldName, real1DField)
+            if ( .not. real1DField % isVarArray ) then
+               allocate(dimNames(1))
+               dimNames(:) = real1DField % dimNames(:)
+            else
+               allocate(dimNames(0))
+            end if
+
+         else if ( fieldInfo % nDims == 2 ) then
+            call mpas_pool_get_field(allFields, fieldName, real2DField)
+            if ( .not. real2DField % isVarArray ) then
+               allocate(dimNames(2))
+               dimNames(:) = real2DField % dimNames(:)
+            else
+               allocate(dimNames(1))
+               dimNames(1:1) = real2DField % dimNames(2:2)
+            end if
+
+         else if ( fieldInfo % nDims == 3 ) then
+            call mpas_pool_get_field(allFields, fieldName, real3DField)
+            if ( .not. real3DField % isVarArray ) then
+               allocate(dimNames(3))
+               dimNames(:) = real3DField % dimNames(:)
+            else
+               allocate(dimNames(2))
+               dimNames(1:2) = real3DField % dimNames(2:3)
+            end if
+
+         else if ( fieldInfo % nDims == 4 ) then
+            call mpas_pool_get_field(allFields, fieldName, real4DField)
+            if ( .not. real4DField % isVarArray ) then
+               allocate(dimNames(4))
+               dimNames(:) = real4DField % dimNames(:)
+            else
+               allocate(dimNames(3))
+               dimNames(1:3) = real4DField % dimNames(2:4)
+            end if
+
+         else if ( fieldInfo % nDims == 5 ) then
+            call mpas_pool_get_field(allFields, fieldName, real5DField)
+            if ( .not. real5DField % isVarArray ) then
+               allocate(dimNames(5))
+               dimNames(:) = real5DField % dimNames(:)
+            else
+               allocate(dimNames(4))
+               dimNames(1:4) = real5DField % dimNames(2:5)
+            end if
+
+         else
+            allocate(dimNames(0))
+         end if
+
+      else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
+
+         if ( fieldInfo % nDims == 1 ) then
+            call mpas_pool_get_field(allFields, fieldName, int1DField)
+            if ( .not. int1DField % isVarArray ) then
+               allocate(dimNames(1))
+               dimNames(:) = int1DField % dimNames(:)
+            else
+               allocate(dimNames(0))
+            end if
+
+         else if ( fieldInfo % nDims == 2 ) then
+            call mpas_pool_get_field(allFields, fieldName, int2DField)
+            if ( .not. int2DField % isVarArray ) then
+               allocate(dimNames(2))
+               dimNames(:) = int2DField % dimNames(:)
+            else
+               allocate(dimNames(1))
+               dimNames(1:1) = int2DField % dimNames(2:2)
+            end if
+
+         else if ( fieldInfo % nDims == 3 ) then
+            call mpas_pool_get_field(allFields, fieldName, int3DField)
+            if ( .not. int3DField % isVarArray ) then
+               allocate(dimNames(3))
+               dimNames(:) = int3DField % dimNames(:)
+            else
+               allocate(dimNames(2))
+               dimNames(1:2) = int3DField % dimNames(2:3)
+            end if
+
+         else
+            allocate(dimNames(0))
+         end if
+
+      else if ( fieldInfo % fieldType == MPAS_POOL_CHARACTER ) then
+
+         if ( fieldInfo % nDims == 1 ) then
+            call mpas_pool_get_field(allFields, fieldName, char1DField)
+            if ( .not. char1DField % isVarArray ) then
+               allocate(dimNames(1))
+               dimNames(:) = char1DField % dimNames(:)
+            else
+               allocate(dimNames(0))
+            end if
+
+         else
+            allocate(dimNames(0))
+         end if
+
+      else
+
+         allocate(dimNames(0))
+
+      end if
+
+   end subroutine get_dimlist_for_field
 
 #include "setup_immutable_streams.inc"
 

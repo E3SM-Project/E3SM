@@ -71,7 +71,8 @@ module mpas_io
                          MPAS_IO_ERR_NO_UNLIMITED_DIM   = -17, &
                          MPAS_IO_ERR_UNIMPLEMENTED      = -18, &
                          MPAS_IO_ERR_WOULD_CLOBBER      = -19, &
-                         MPAS_IO_ERR_NOEXIST_READ       = -20
+                         MPAS_IO_ERR_NOEXIST_READ       = -20, &
+                         MPAS_IO_ERR_MISSING_DIM        = -21
 
 
    type MPAS_IO_Handle_type
@@ -502,10 +503,9 @@ module mpas_io
 
       pio_ierr = PIO_inq_dimid(handle % pio_file, trim(dimname), new_dimlist_node % dimhandle % dimid)
       if (pio_ierr /= PIO_noerr) then
-         if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+         if (present(ierr)) ierr = MPAS_IO_ERR_MISSING_DIM
          deallocate(new_dimlist_node % dimhandle)
          deallocate(new_dimlist_node)
-         write(stderrUnit,*) 'WARNING: Dimension ', trim(dimname), ' not in input file.'
          dimsize = -1
          return
       end if
