@@ -86,6 +86,7 @@ module CNNitrogenStateType
      real(r8), pointer :: totecosysn_col               (:)     ! col (gN/m2) total ecosystem nitrogen, incl veg 
      real(r8), pointer :: totcoln_col                  (:)     ! col (gN/m2) total column nitrogen, incl veg
      real(r8), pointer :: totabgn_col                  (:)     ! col (gN/m2)
+     real(r8), pointer :: totblgn_col                  (:)     ! col (gN/m2) total below ground nitrogen
      ! patch averaged to column variables 
      real(r8), pointer :: totvegn_col                  (:)     ! col (gN/m2) total vegetation nitrogen (p2c)
      real(r8), pointer :: totpftn_col                  (:)     ! col (gN/m2) total pft-level nitrogen (p2c)
@@ -207,6 +208,7 @@ contains
     allocate(this%totpftn_col              (begc:endc))                   ; this%totpftn_col              (:)   = nan
     allocate(this%totvegn_col              (begc:endc))                   ; this%totvegn_col              (:)   = nan
     allocate(this%totabgn_col              (begc:endc))                   ; this%totabgn_col              (:)   = nan
+    allocate(this%totblgn_col              (begc:endc))                   ; this%totblgn_col              (:)   = nan
     allocate(this%decomp_npools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools));
     this%decomp_npools_vr_col(:,:,:)= nan
 
@@ -1544,7 +1546,14 @@ contains
            this%totprodn_col(c) + &
            this%seedn_col(c) + &
            this%ntrunc_col(c) + &
-           this%plant_nbuffer_col(c)     
+           this%plant_nbuffer_col(c)
+
+      this%totblgn_col(c) = &
+           this%cwdn_col(c) + &
+           this%totlitn_col(c) + &
+           this%totsomn_col(c) + &
+           this%sminn_col(c) 
+           
       if(c==4973)then
         print*,'abgcomp'
         print*,'pft',this%totpftn_col(c)
@@ -1552,6 +1561,8 @@ contains
         print*,'seedn',this%seedn_col(c)
         print*,'ntru',this%ntrunc_col(c)
         print*,'nbuf',this%plant_nbuffer_col(c)
+        print*,'xxxxxxxxxxxxxxxxxxxxxxxxxxx'
+        print*,'totblgn',this%totblgn_col(c)
       endif
    end do
 
