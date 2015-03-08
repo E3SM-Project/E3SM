@@ -186,7 +186,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: nfix_to_sminn_col                         (:)     ! col symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s) 
      real(r8), pointer :: fert_to_sminn_col                         (:)     ! col fertilizer N to soil mineral N (gN/m2/s)
      real(r8), pointer :: soyfixn_to_sminn_col                      (:)     ! col soybean fixation to soil mineral N (gN/m2/s)
-
+      
      ! phenology: litterfall and crop fluxes
      real(r8), pointer :: phenology_n_to_litr_met_n_col             (:,:)   ! col N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
      real(r8), pointer :: phenology_n_to_litr_cel_n_col             (:,:)   ! col N fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gN/m3/s)
@@ -220,7 +220,9 @@ module CNNitrogenFluxType
 
      real(r8), pointer :: sminn_no3_input_vr_col                    (:,:)   !col no3 input, gN/m3/time step
      real(r8), pointer :: sminn_nh4_input_vr_col                    (:,:)   !col nh4 input, gN/m3/time step
+     real(r8), pointer :: sminn_input_col                           (:)     !col minn input, gN/m2
      real(r8), pointer :: bgc_npool_inputs_vr_col                   (:,:,:) !col organic nitrogen input, gN/m3/time step
+     real(r8), pointer :: bgc_npool_inputs_col                      (:,:)   !col organic N input, gN/m2/time step
      ! ---------- NITRIF_DENITRIF  ---------------------
 
      ! nitrification / denitrification fluxes
@@ -572,7 +574,9 @@ contains
 
     allocate(this%sminn_no3_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_no3_input_vr_col      (:,:) = nan
     allocate(this%sminn_nh4_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_nh4_input_vr_col           (:,:) = nan
+    allocate(this%sminn_input_col      (begc:endc)) ; this%sminn_input_col           (:) = nan
     allocate(this%bgc_npool_inputs_vr_col     (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_inputs_vr_col      (:,:,:) = nan
+    allocate(this%bgc_npool_inputs_col        (begc:endc,ndecomp_pools))     ;this%bgc_npool_inputs_col              (:,:) = nan
      
     allocate(this%smin_no3_massdens_vr_col    (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_massdens_vr_col         (:,:) = nan
     allocate(this%soil_bulkdensity_col        (begc:endc,1:nlevdecomp_full)) ; this%soil_bulkdensity_col             (:,:) = nan
@@ -1626,6 +1630,7 @@ contains
             ptr_col=this%sminn_to_plant_vr_col, default='inactive')
     end if
 
+
     if ( use_nitrif_denitrif .and. nlevdecomp_full > 1 ) then
        this%supplement_to_sminn_vr_col(begc:endc,:) = spval
        call hist_addfld_decomp (fname='SUPPLEMENT_TO_SMINN'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
@@ -2288,7 +2293,7 @@ contains
        this%noutputs_col(i)                  = value_column
        this%fire_nloss_col(i)                = value_column
        this%som_n_leached_col(i)             = value_column
-
+       this%sminn_input_col(i)               = value_column
        ! Zero p2c column fluxes
        this%fire_nloss_col(i) = value_column
        this%wood_harvestn_col(i) = value_column
@@ -2300,6 +2305,7 @@ contains
           this%decomp_npools_leached_col(i,k) = value_column
           this%m_decomp_npools_to_fire_col(i,k) = value_column
           this%bgc_npool_inputs_vr_col (i,:,k) = value_column
+          this%bgc_npool_inputs_col (i,k) = value_column
        end do
     end do
 
@@ -2618,6 +2624,10 @@ contains
           this%supplement_to_sminn_col(c) = &
                this%supplement_to_sminn_col(c) + &
                this%supplement_to_sminn_vr_col(c,j) * dzsoi_decomp(j)
+
+          this%sminn_input_col(c) = &
+               this%sminn_input_col(c) + &
+               (this%sminn_nh4_input_vr_col(c,j)+this%sminn_no3_input_vr_col(c,j))*dzsoi_decomp(j)
        end do
     end do
 
@@ -2647,6 +2657,7 @@ contains
              this%decomp_npools_leached_col(c,l) = &
                   this%decomp_npools_leached_col(c,l) + &
                   this%decomp_npools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
+             this%bgc_npool_inputs_col(c,l) = this%bgc_npool_inputs_col(c,l) + this%bgc_npool_inputs_vr_col(c,j,l)*dzsoi_decomp(j)
           end do
        end do
 

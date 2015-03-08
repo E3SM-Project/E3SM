@@ -311,6 +311,9 @@ contains
            write(iulog,*)'fertm=',fert_to_sminn(c)*dt
            write(iulog,*)'soyfx=',soyfixn_to_sminn(c)*dt
          endif
+         write(iulog,*)'fire', col_fire_nloss(c)
+         write(iulog,*)'dwt',  dwt_nloss(c) 
+         write(iulog,*)'prod', product_nloss(c)
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 

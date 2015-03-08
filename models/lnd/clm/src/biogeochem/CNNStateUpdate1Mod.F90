@@ -91,16 +91,16 @@ contains
             
             ! plant to litter fluxes
             ! phenology and dynamic landcover fluxes
-            nf%bgc_npool_inputs_vr_col(c,j,i_met_lit) = &
+            nf%bgc_npool_inputs_vr_col(c,j,i_met_lit) = nf%bgc_npool_inputs_vr_col(c,j,i_met_lit) + &
                  ( nf%phenology_n_to_litr_met_n_col(c,j) + nf%dwt_frootn_to_litr_met_n_col(c,j) ) * dt
 
-            nf%bgc_npool_inputs_vr_col(c,j,i_cel_lit) = &
+            nf%bgc_npool_inputs_vr_col(c,j,i_cel_lit) = nf%bgc_npool_inputs_vr_col(c,j,i_cel_lit) + &
                  ( nf%phenology_n_to_litr_cel_n_col(c,j) + nf%dwt_frootn_to_litr_cel_n_col(c,j) ) * dt
 
-            nf%bgc_npool_inputs_vr_col(c,j,i_lig_lit) = &
+            nf%bgc_npool_inputs_vr_col(c,j,i_lig_lit) = nf%bgc_npool_inputs_vr_col(c,j,i_lig_lit) + &
                  ( nf%phenology_n_to_litr_lig_n_col(c,j) + nf%dwt_frootn_to_litr_lig_n_col(c,j) ) * dt
 
-            nf%bgc_npool_inputs_vr_col(c,j,i_cwd)     = &
+            nf%bgc_npool_inputs_vr_col(c,j,i_cwd)     = nf%bgc_npool_inputs_vr_col(c,j,i_cwd) + &
                  ( nf%dwt_livecrootn_to_cwdn_col(c,j)    + nf%dwt_deadcrootn_to_cwdn_col(c,j) )   * dt            
           enddo
         enddo

@@ -140,11 +140,16 @@ implicit none
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo
-    if(c==5663)then
+    if(c==4973)then
       atw=natomw
-      print*,'trc',bal_beg*atw,bal_end*atw
-      print*,'netp',bal_flx *atw 
+      print*,'somn',bal_beg*atw,bal_end*atw
+      print*,'netpsomn',bal_flx *atw 
+      print*,'begminn',(beg_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + beg_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
+      print*,'endminn',(end_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + end_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
+      print*,'nflxminn',(tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x))*atw
+      print*,'nflxloss',(tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))*atw 
     endif
+    
     call tracerflux_vars%Temporal_average(c,dtime)
   enddo
   

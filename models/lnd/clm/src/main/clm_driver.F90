@@ -895,8 +895,11 @@ contains
           if (use_cn) then
              nstep = get_nstep()
              c = 4973
-             print*,'smin',nitrogenstate_vars%sminn_col(c)
-             print*,'abgn',nitrogenstate_vars%totabgn_col(c)
+             print*,'-----------'
+             print*,'soiln',nitrogenstate_vars%totcoln_col(c)-nitrogenstate_vars%totabgn_col (c)
+             print*,'nflx',sum(nitrogenflux_vars%bgc_npool_inputs_col(c,:))+nitrogenflux_vars%sminn_input_col(c)-&
+               (nitrogenflux_vars%denit_col(c)-nitrogenflux_vars%smin_no3_leached_col(c)-nitrogenflux_vars%smin_no3_runoff_col(c)-&
+               nitrogenflux_vars%f_n2o_nit_col(c))*get_step_size()
              if (nstep < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'

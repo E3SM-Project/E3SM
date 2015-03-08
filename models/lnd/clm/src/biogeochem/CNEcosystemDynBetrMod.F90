@@ -603,7 +603,7 @@ implicit none
   integer                  , intent(in)    :: num_soilc                         ! number of soil columns in filter
   integer                  , intent(in)    :: filter_soilc(:)                   ! filter for soil columns  
   real(r8)                 , intent(inout) :: plant_totn_demand_flx(bounds%begc:bounds%endc)
-  real(r8)                 , intent(in)    :: plant_nbuffer(bounds%begc:bounds%endc)
+  real(r8)                 , intent(inout) :: plant_nbuffer(bounds%begc:bounds%endc)
   real(r8)                 , intent(inout) :: fpg(bounds%begc:bounds%endc)
   
   integer :: fc, c
@@ -618,7 +618,11 @@ implicit none
     ! now a silly question here is does plant take more than necessary?
     if (plant_totn_demand_flx(c) > 0.0_r8) then
       fpg(c) = min(plant_nbuffer(c) / (plant_totn_demand_flx(c)*dtime),1._r8)
-      
+      if(fpg(c)<1._r8)then
+        plant_nbuffer(c) = 0._r8
+      else
+        plant_nbuffer(c) = plant_nbuffer(c)-plant_totn_demand_flx(c)*dtime
+      endif
       plant_totn_demand_flx(c) = plant_totn_demand_flx(c)* (1._r8-fpg(c))
     else
       fpg(c) = 1.0_r8
