@@ -3,6 +3,8 @@ from __future__ import print_function
 import abc
 import os
 import sys
+import fileinput
+
 # imports of NCAR scripts
 lib_path = os.path.join('scripts/python/contrib/unit_testing')
 sys.path.append(lib_path)
@@ -265,7 +267,7 @@ class yellowstone(platformBuilder):
 
         self.OFLAGS += ('-D PLATFORM:STRING=yellowstone ')
 
-        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
+        self.MPIEXEC = (' -D MPIEXEC:FILEPATH="mpirun.lsf " ')
         self.TEST_CMD = ('execca ctest --verbose -D Experimental')
 
     def testCmd(self):
@@ -317,7 +319,8 @@ class cetus(platformBuilder):
                            '@ibm-compilers-2015-02 ',
                            '+cmake ']
 
-        self.BUILD_DIR = "build_cetus_" + compiler
+        self.srcroot = os.getcwd()
+        self.BUILD_DIR = self.srcroot+"/build_cetus_" + compiler
 
         self.CMAKE_EXE = 'cmake '
 
@@ -325,27 +328,16 @@ class cetus(platformBuilder):
         self.CC = '/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlc_r'
         self.CXX = '/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlcxx'
         self.LDFLAGS = '-Wl,--relax -Wl,--allow-multiple-definition -Wl,--whole-archive -L/soft/libraries/hdf5/1.8.14/cnk-xl/V1R2M2-20150213/lib -lhdf5_hl -lhdf5 -L /soft/libraries/alcf/current/xl/ZLIB/lib -lz  -Wl,--no-whole-archive '        
-#        self.LDFLAGS = '-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib'
-#        self.MPIEXEC = ('-D MPIEXEC:FILEPATH="mpirun.lsf " ')
-        self.NUMPE = '4'
+        self.MPIEXEC = (' -D  MPIEXEC:FILEPATH=/usr/bin/runjob')
+#        self.OFLAGS += ('-D  MPIEXEC_PREFLAGS:STRING=\"--block \$ENV{COBALT_PARTNAME}\" ')
+
+        self.NUMPE = ''
 
         self.OFLAGS += (' -D PLATFORM:STRING=cetus -DCMAKE_C_COMPILER='+self.CC)
         self.OFLAGS += (' -DCMAKE_Fortran_COMPILER='+self.FC)
         self.OFLAGS += (' -DCMAKE_CXX_COMPILER='+self.CXX)
-
-        os.environ['BGQ_RUNJOB'] = os.getcwd().strip() + '/scripts/pio_runjob.sh'
-        """ qsub on Cetus does not allow specifying scripts or executables
-            when submitting interactive jobs. So we only have two options,
-            1. Open an interactive shell and ask user to type "ctest" from
-              the interactive shell
-            2. Submit the test as a script job
-            Option 1 is not feasible since we don't know how long the user 
-            might have to wait for the interactive command prompt. So we
-            go with Option 2
-        """
-        self.TEST_CMD = ('qsub -t 15 -n 1 --mode script ../scripts/cetus_test.sh')
+        self.TEST_CMD = ('qsub -t 30 -n 1 --mode script '+self.srcroot+'/scripts/cetus_test.sh ')
         self.MAKE_CMD = ("/bin/sh"+" ./cetus_env.sh"+" make all ")
-        self.srcroot = os.getcwd()
         self.runModuleCmd()
 
     def buildCmd(self):
@@ -401,7 +393,7 @@ class cetus(platformBuilder):
         self.envMod['CXX'] = self.CXX
 #        self.envMod['LDFLAGS'] = self.LDFLAGS
 
-        cmakeString = (self.CMAKE_EXE + self.OFLAGS + " "+self.srcroot)
+        cmakeString = (self.CMAKE_EXE + self.OFLAGS + self.MPIEXEC+" "+self.srcroot)
         cmakeString = ("/bin/sh"+" ./cetus_env.sh " +
                        cmakeString )
 
@@ -410,4 +402,16 @@ class cetus(platformBuilder):
         p = subprocess.Popen(cmakeString,
                              shell=True, env=self.envMod)
         p.wait()
+# The cmake generated CTestTestfile.cmake has incorrect formating 
+# I havent found a way to fix it in cmake (where it should be fixed)
+# replace all occurrences of '\$' with '$' 
+
+        for i, line in enumerate(fileinput.input(self.BUILD_DIR+'/unittests/CTestTestfile.cmake', inplace=1)):
+            sys.stdout.write(line.replace('\$', '$'))  
+
+        for i, line in enumerate(fileinput.input(self.BUILD_DIR+'/test/CTestTestfile.cmake', inplace=1)):
+            sys.stdout.write(line.replace('\$', '$'))  
+
+
+
 

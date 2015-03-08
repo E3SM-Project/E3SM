@@ -152,7 +152,7 @@ if(${PIO_BUILD_TESTS})
   if(${PIO_BUILD_TIMING})
     ADD_SUBDIRECTORY(performancetest)
   endif()
-	ADD_SUBDIRECTORY(scripts)
+#	ADD_SUBDIRECTORY(scripts)
 endif()
 
 # Build documentation
