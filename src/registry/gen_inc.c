@@ -973,6 +973,8 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	fortprintf(fd, "\n");
 
+	fortprintf(fd, "write(stderrUnit,\'(a)\') \'Assigning remaining dimensions from definitions in Registry.xml ...\'\n");
+
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next) {
 		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next) {
 			dimname = ezxml_attr(dim_xml, "name");
@@ -987,8 +989,10 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				if(strncmp(dimdef, "namelist:", 9) == 0){
 					snprintf(option_name, 1024, "%s", (dimdef)+9);
 					fortprintf(fd, "         %s = %s\n", dimname, option_name);
+					fortprintf(fd, "write(stderrUnit,\'(a,a20,a,i8,a)\') \'       \', \'%s\', \' =\', %s, \' (%s)\'\n", dimname, option_name, option_name);
 				} else {
 					fortprintf(fd, "         %s = %s\n", dimname, dimdef);
+					fortprintf(fd, "write(stderrUnit,\'(a,a20,a,i8)\') \'       \', \'%s\', \' =\', %s\n", dimname, dimdef);
 				}
 				fortprintf(fd, "         call mpas_pool_add_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
 
@@ -1011,6 +1015,10 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 			}
 		}
 	}
+	fortprintf(fd, "write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "write(stderrUnit,\'(a)\') \' ----- done assigning dimensions from Registry.xml -----\'\n");
+	fortprintf(fd, "write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "write(stderrUnit,*) \' '\n");
 
 	fortprintf(fd, "      call mpas_pool_set_error_level(errLevel)\n\n");
 

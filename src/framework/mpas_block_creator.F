@@ -1517,9 +1517,7 @@ module mpas_block_creator
                         call mpas_pool_get_dimension(currentPool, real1DField % dimNames(iDim), tempDim)
 
                         if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real1DField % dimNames(iDim)) &
-                                                          // ' was not read or defined, but is required for field ' &
-                                                          // trim(poolItr % memberName) // '. Exiting...')
+                            call missing_dim_abort(real1DField % dimNames(iDim), poolItr % memberName)
                         end if
                         real1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
                                                        real1DField % dimNames(iDim), iErr = localErr)
@@ -1537,9 +1535,7 @@ module mpas_block_creator
                      do iDim = 1, poolItr % nDims
                         call mpas_pool_get_dimension(currentPool, real2DField % dimNames(iDim), tempDim)
                         if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real2DField % dimNames(iDim)) &
-                                                          // ' was not read or defined, but is required for field ' &
-                                                          // trim(poolItr % memberName) // '. Exiting...')
+                            call missing_dim_abort(real2DField % dimNames(iDim), poolItr % memberName)
                         end if
                         real2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
                                                        real2DField % dimNames(iDim), iErr = localErr)
@@ -1557,9 +1553,7 @@ module mpas_block_creator
                      do iDim = 1, poolItr % nDims
                         call mpas_pool_get_dimension(currentPool, real3DField % dimNames(iDim), tempDim)
                         if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real3DField % dimNames(iDim)) &
-                                                          // ' was not read or defined, but is required for field ' &
-                                                          // trim(poolItr % memberName) // '. Exiting...')
+                            call missing_dim_abort(real3DField % dimNames(iDim), poolItr % memberName)
                         end if
                         real3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
                                                        real3DField % dimNames(iDim), iErr = localErr)
@@ -1577,9 +1571,7 @@ module mpas_block_creator
                      do iDim = 1, poolItr % nDims
                         call mpas_pool_get_dimension(currentPool, real4DField % dimNames(iDim), tempDim)
                         if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real4DField % dimNames(iDim)) &
-                                                          // ' was not read or defined, but is required for field ' &
-                                                          // trim(poolItr % memberName) // '. Exiting...')
+                            call missing_dim_abort(real4DField % dimNames(iDim), poolItr % memberName)
                         end if
                         real4DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
                                                        real4DField % dimNames(iDim), iErr = localErr)
@@ -1598,9 +1590,7 @@ module mpas_block_creator
                      do iDim = 1, poolItr % nDims
                         call mpas_pool_get_dimension(currentPool, real5DField % dimNames(iDim), tempDim)
                         if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(real5DField % dimNames(iDim)) &
-                                                          // ' was not read or defined, but is required for field ' &
-                                                          // trim(poolItr % memberName) // '. Exiting...')
+                            call missing_dim_abort(real5DField % dimNames(iDim), poolItr % memberName)
                         end if
                         real5DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
                                                        real5DField % dimNames(iDim), iErr = localErr)
@@ -1622,9 +1612,7 @@ module mpas_block_creator
                      do iDim = 1, poolItr % nDims
                         call mpas_pool_get_dimension(currentPool, int1DField % dimNames(iDim), tempDim)
                         if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(int1DField % dimNames(iDim)) &
-                                                          // ' was not read or defined, but is required for field ' &
-                                                          // trim(poolItr % memberName) // '. Exiting...')
+                            call missing_dim_abort(int1DField % dimNames(iDim), poolItr % memberName)
                         end if
                         int1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
                                                       int1DField % dimNames(iDim), iErr = localErr)
@@ -1642,9 +1630,7 @@ module mpas_block_creator
                      do iDim = 1, poolItr % nDims
                         call mpas_pool_get_dimension(currentPool, int2DField % dimNames(iDim), tempDim)
                         if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(int2DField % dimNames(iDim)) &
-                                                          // ' was not read or defined, but is required for field ' &
-                                                          // trim(poolItr % memberName) // '. Exiting...')
+                            call missing_dim_abort(int2DField % dimNames(iDim), poolItr % memberName)
                         end if
                         int2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
                                                       int2DField % dimNames(iDim), iErr = localErr)
@@ -1662,9 +1648,7 @@ module mpas_block_creator
                      do iDim = 1, poolItr % nDims
                         call mpas_pool_get_dimension(currentPool, int3DField % dimNames(iDim), tempDim)
                         if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(int3DField % dimNames(iDim)) &
-                                                          // ' was not read or defined, but is required for field ' &
-                                                          // trim(poolItr % memberName) // '. Exiting...')
+                            call missing_dim_abort(int3DField % dimNames(iDim), poolItr % memberName)
                         end if
                         int3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
                                                       int3DField % dimNames(iDim), iErr = localErr)
@@ -1684,9 +1668,7 @@ module mpas_block_creator
                      do iDim = 1, poolItr % nDims
                         call mpas_pool_get_dimension(currentPool, char1DField % dimNames(iDim), tempDim)
                         if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call mpas_dmpar_global_abort( 'ERROR: Dimension ' // trim(char1DField % dimNames(iDim)) &
-                                                          // ' was not read or defined, but is required for field ' &
-                                                          // trim(poolItr % memberName) // '. Exiting...')
+                            call missing_dim_abort(char1DField % dimNames(iDim), poolItr % memberName)
                         end if
                         char1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
                                                        char1DField % dimNames(iDim), iErr = localErr)
@@ -1703,6 +1685,22 @@ module mpas_block_creator
       end do
 
    end subroutine mpas_block_creator_allocate_pool_fields!}}}
+
+
+   subroutine missing_dim_abort(dimName, fieldName)
+
+      implicit none
+
+      character(len=*), intent(in) :: dimName
+      character(len=*), intent(in) :: fieldName
+
+
+      write(stderrUnit,*) '********************************************************************************'
+      write(stderrUnit,*) 'ERROR: Dimension '''//trim(dimName)//''' required by field '''//trim(fieldName)//'''' &
+                          //' was neither read nor defined.'
+      call mpas_dmpar_global_abort('********************************************************************************')
+
+   end subroutine missing_dim_abort 
 
 #include "block_dimension_routines.inc"
 
