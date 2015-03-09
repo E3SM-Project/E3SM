@@ -894,11 +894,10 @@ void velocity_solver_extrude_3d_grid(double const* levelsRatio_F,
   }
 }
 
-//This function computes the average normal velocity on the edges/faces of MPAS cells.
-//The function rely on the assumption that the locations of the circumcenters of two triangles sharing an edge are inside the union of the triangles and that
-//the locations of the cicumcenters should not coincide and should not be inverted(i.e. if triangle 1 precedes triangle 2 on the circumcenters line, then circumcenter 1 should preced circumceter 2).
-//The flux obtained multiplying normal velocity with the area of the face corresponding that edge will be exact for linear-bilinear finite elements on the prisms.
-//The flux will be second order accurate for other finite elements (e.g. linear or quadratic on Tetrahedra).
+//This function computes the normal velocity on the edges midpoints of MPAS 2d cells.
+//The function rely on the assumption that the locations of the edges midpoints are inside the union of the triangles that share the dual of that edge.
+//The normal velocity is computed assuming to have linear/bilinear finite elements on the prisms.
+//The normal velocity will be second order accurate for other finite elements (e.g. linear or quadratic on Tetrahedra).
 
 void get_prism_velocity_on_FEdges(double * uNormal,
     const std::vector<double>& velocityOnCells,
@@ -926,15 +925,10 @@ void get_prism_velocity_on_FEdges(double * uNormal,
     nx /= n;
     ny /= n;
 
-    //computing midpoint of triangle edge
-    double p_mid[2] = {0.5*(xCell_F[iCell1] + xCell_F[iCell0]), 0.5*(yCell_F[iCell1] + yCell_F[iCell0])};
-
     //identifying triangles that shares the edge
     ID iEdge = edgeToFEdge[i];
     ID fVertex0 = verticesOnEdge_F[2 * iEdge] - 1;
     ID fVertex1 = verticesOnEdge_F[2 * iEdge + 1] - 1;
-    ID triaId0 = fVertexToTriangleID[fVertex0];
-    ID triaId1 = fVertexToTriangleID[fVertex1];
     double t0[2*3], t1[2*3]; //t0[0] contains the x-coords of vertices of triangle 0 and t0[1] its y-coords.
     for (int j = 0; j < 3; j++) {
       int iCell = cellsOnVertex_F[3 * fVertex0 + j] - 1;
@@ -946,85 +940,50 @@ void get_prism_velocity_on_FEdges(double * uNormal,
     }
 
     //getting triangle circumcenters (vertices of MPAS cells).
-    double circ[2][2] ,p[2],bcoords[2][3];
-    circ[0][0] = xVertex_F[fVertex0]; circ[0][1] = yVertex_F[fVertex0];
-    circ[1][0] = xVertex_F[fVertex1]; circ[1][1] = yVertex_F[fVertex1];
+    double bcoords[3];
 
-    //Identify to what triangle the circumcenters belong and compute its baricentric coordinates
-    ID circToTria[2];
-    ID iCells[2][3]; //iCells[k] is the array of cells indexes of triangle k on iEdge
-    for (int i=0; i<2; ++i) { //loop on the two vertices of mpas edge iEdge
-      if(belongToTria(circ[i], t0, bcoords[i])) {
-        circToTria[i] = fVertex0;
-        for (int j = 0; j < 3; j++)
-          iCells[i][j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
-      }
-      else if(belongToTria(circ[i], t1, bcoords[i])) {
-        circToTria[i] = fVertex1;
-        for (int j = 0; j < 3; j++)
-          iCells[i][j] = cellsOnVertex_F[3 * fVertex1 + j] - 1;
-      }
-      else { //error, edge midpont does not belong to either triangles
-        std::cout << "Error, edge midpont does not belong to either triangles" << std::endl;
-        for (int j = 0; j < 3; j++)
-          std::cout << "("<<t0[0 + 2 * j]<<","<<t0[1 + 2 * j]<<") ";
-        std::cout <<std::endl;
-        for (int j = 0; j < 3; j++)
-          std::cout << "("<<t1[0 + 2 * j]<<","<<t1[1 + 2 * j]<<") ";
-        std::cout <<"\n = ("<<circ[i][0]<<","<<circ[i][1]<<")"<<std::endl;
-        exit(1);
-      }
+   ID iCells[3]; //iCells[k] is the array of cells indexes of triangle k on iEdge
+
+   //computing midpoint of fortran edge
+   double e_mid[2];
+   e_mid[0] =  0.5*(xVertex_F[fVertex0] + xVertex_F[fVertex1]);
+   e_mid[1] =  0.5*(yVertex_F[fVertex0] + yVertex_F[fVertex1]);
+
+   if(belongToTria(e_mid, t0, bcoords)) {
+    for (int j = 0; j < 3; j++)
+      iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
+    }
+    else if(belongToTria(e_mid, t1, bcoords)) {
+      for (int j = 0; j < 3; j++)
+        iCells[j] = cellsOnVertex_F[3 * fVertex1 + j] - 1;
+    }
+    else { //error, edge midpont does not belong to either triangles
+      std::cout << "Error, edge midpont does not belong to either triangles" << std::endl;
+      for (int j = 0; j < 3; j++)
+        std::cout << "("<<t0[0 + 2 * j]<<","<<t0[1 + 2 * j]<<") ";
+      std::cout <<std::endl;
+      for (int j = 0; j < 3; j++)
+        std::cout << "("<<t1[0 + 2 * j]<<","<<t1[1 + 2 * j]<<") ";
+      std::cout <<"\n midpoint: ("<<e_mid[0]<<","<<e_mid[1]<<")"<<std::endl;
+      exit(1);
     }
 
-    //compute signed distance between circumcenters and triangle edge midpoint.
-    //The distance will be positive if circumcenter is inside its triangle, otherwise it will be negative.
-    //In this way the calculation below is correct also when circumcenters are in the "other" triangle.
-    double pc[2], fVertex[2] = {fVertex0, fVertex1};
-    for(int i=0; i<2; ++i) {
-      pc[i]= std::sqrt(std::pow(p_mid[0]-circ[i][0],2)+std::pow(p_mid[1]-circ[i][1],2));
-      pc[i] *= (circToTria[i] == fVertex[i]) ? 1 : -1;
-    }
-
-    if (pc[0]+pc[1] <= 0) {std::cout << "Error, circumcenters' locations of adjacent triangles is reversed"<<std::endl; exit(2);}
-
-    //Computing normal average velocity on the cell edge.
-    //For each level:
-    //1. We split the edge in the two parts that belong to the two triangles: p_mid-circ0, p_mid-circ1.
-    // (It may happen that these parts belong to the same triangle but the algorithm still work by setting the part length to be negative when the circumcenter belong to the "other" triangle.)
-    //2. compute the average normal velocity on each of the two edge parts by averaging the normal velocity on the 2 vertices of each part.
-    //3. compute the average normal velocity on the whole edge by weighing the velocities computed in 2. by the ratio of the edge part length and the edge length.
-    //Points 1. 2. 3. are compressed in the code below and x and y component of normal velocity are computed separately.
 
     for (int il = 0; il < nLayers+1; il++) { //loop over layers
       int ilReversed = nLayers - il;
       int index = iEdge * (nLayers+1) + ilReversed;
       uNormal[index] = 0;
       for(int j=0; j<3; ++j) {
-        for(int i=0; i<2; ++i) {
-        ID iCell3D = il * columnShift + layerShift * iCells[i][j];
-
-        //contribution of x component of velocity at vertex circ[i]
-        uNormal[index] += 0.5* pc[i]/(pc[0]+pc[1])*bcoords[i][j] * nx * velocityOnCells[iCell3D];
-
+        ID iCell3D = il * columnShift + layerShift * iCells[j];
+        //contribution of x component of velocity at the edge midpoint
+        uNormal[index] += bcoords[j] * nx * velocityOnCells[iCell3D];
         //getting IDs for y component of velocities
         iCell3D += nPoints3D;
-        //contribution of y component of velocity at vertex circ[i]
-        uNormal[index] += 0.5* pc[i]/(pc[0]+pc[1])*bcoords[i][j] * ny * velocityOnCells[iCell3D];
-        }
+        //contribution of y component of velocity at the edge midpoint
+        uNormal[index] += bcoords[j] * ny * velocityOnCells[iCell3D];
       }
-      ID iCell3D0 = il * columnShift + layerShift * iCell0;
-      ID iCell3D1 = il * columnShift + layerShift * iCell1;
-      //contribution of x component of velocity at vertex p_mid
-      uNormal[index] += 0.25 * nx * (velocityOnCells[iCell3D0] + velocityOnCells[iCell3D1]);
-
-      //getting IDs for y component of velocities
-      iCell3D0 += nPoints3D;
-      iCell3D1 += nPoints3D;
-      //contribution of y component of velocity at vertex p_mid
-      uNormal[index] += 0.25* ny * (velocityOnCells[iCell3D0] + velocityOnCells[iCell3D1]);
     } //end loop over layers
   }
-
 }
 
 void mapVerticesToCells(const std::vector<double>& velocityOnVertices,
