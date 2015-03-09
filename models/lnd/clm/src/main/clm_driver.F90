@@ -897,6 +897,7 @@ contains
              c = 4973
              print*,'-------------------------------------------------------'
              print*,'soiln',nitrogenstate_vars%totcoln_col(c)-nitrogenstate_vars%totabgn_col (c)
+
              print*,'nflx',sum(nitrogenflux_vars%bgc_npool_inputs_col(c,:))+nitrogenflux_vars%sminn_input_col(c)-&
                (nitrogenflux_vars%denit_col(c)+nitrogenflux_vars%smin_no3_leached_col(c)+nitrogenflux_vars%smin_no3_runoff_col(c)+&
                nitrogenflux_vars%f_n2o_nit_col(c))*get_step_size()

@@ -768,12 +768,12 @@ module BGCCenturySubMod
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
         deltac = deltac + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
       enddo
-      if(c==5657)then
+      if(c==4973)then
         hr = hr + col%dz(c,j)*hr_vr(c,j)
         err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
       endif
     enddo
-    if(c==5663)print*,'err',err, hr*dtime
+    if(c==4973)print*,'err',err, hr*dtime
   enddo
   
   end associate
@@ -1470,6 +1470,7 @@ module BGCCenturySubMod
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) + sminn_no3_input_vr(c,j)/natomw
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) + sminn_nh4_input_vr(c,j)/natomw
     enddo
+
   enddo
   
   end associate
