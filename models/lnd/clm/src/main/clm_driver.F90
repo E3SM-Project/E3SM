@@ -901,7 +901,10 @@ contains
              print*,'nflx',sum(nitrogenflux_vars%bgc_npool_inputs_col(c,:))+nitrogenflux_vars%sminn_input_col(c)-&
                (nitrogenflux_vars%denit_col(c)+nitrogenflux_vars%smin_no3_leached_col(c)+nitrogenflux_vars%smin_no3_runoff_col(c)+&
                nitrogenflux_vars%f_n2o_nit_col(c))*get_step_size()
-               
+             
+             print*,'nimmob',nitrogenflux_vars%actual_immob_col(c)
+             print*,'nbgcinput',sum(nitrogenflux_vars%bgc_npool_inputs_col(c,:))
+             print*,'bgcnpool',nitrogenstate_vars%totblgn_col(c)-nitrogenstate_vars%sminn_col(c)
              if (nstep < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'

@@ -2583,6 +2583,9 @@ contains
              this%f_denit_col(c) = &
                   this%f_denit_col(c) + &
                   this%f_denit_vr_col(c,j) * dzsoi_decomp(j)
+             this%actual_immob_col(c) = &
+                 this%actual_immob_col(c) + &
+                 this%actual_immob_vr_col(c,j) * dzsoi_decomp(j)
           enddo
        enddo   
        do fc = 1,num_soilc
