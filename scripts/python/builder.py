@@ -49,7 +49,7 @@ class platformBuilder(object):
                                   '-D PIO_BUILD_TIMING:LOGICAL=TRUE '.format(bldtype))
         self.MPIEXEC = ''
         self.EXECCA = ''
-        self.TEST_CMD = 'ctest --verbose'
+        self.TEST_CMD = 'ctest '
         self.MAKE_CMD = 'make all'
 
     @classmethod
@@ -336,7 +336,7 @@ class cetus(platformBuilder):
         self.OFLAGS += (' -D PLATFORM:STRING=cetus -DCMAKE_C_COMPILER='+self.CC)
         self.OFLAGS += (' -DCMAKE_Fortran_COMPILER='+self.FC)
         self.OFLAGS += (' -DCMAKE_CXX_COMPILER='+self.CXX)
-        self.TEST_CMD = ('qsub -t 30 -n 1 --mode script '+self.srcroot+'/scripts/cetus_test.sh ')
+        self.TEST_CMD = ('qsub -o pio2build.out  -t 30 -n 1 --mode script '+self.srcroot+'/scripts/cetus_test.sh ')
         self.MAKE_CMD = ("/bin/sh"+" ./cetus_env.sh"+" make all ")
         self.runModuleCmd()
 

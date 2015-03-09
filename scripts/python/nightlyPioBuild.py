@@ -55,6 +55,7 @@ class nightlyBuilder(object):
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir = os.environ["SCRATCH"]+"/nightlyPioBuild"
          self.python = '/home/jayesh/utils/Python-3.4.2-install//bin/python'
+         self.machurl = 'https://svn-ccsm-models.cgd.ucar.edu/Machines/branches/Machines_150226_mira_updates'
       os.chdir(self.buildDir)
       os.mkdir(self.dirName)
       os.chdir(self.dirName)
@@ -70,14 +71,14 @@ class nightlyBuilder(object):
       #~# don't use pysvn since it's not standard
       self.cmd = ['svn','co',self.url]
       proc = subprocess.Popen(self.cmd,
-            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE, universal_newlines=True)
       out, err = proc.communicate()
       self.svnLog = out + err
       os.chdir(self.repoName)
       # Checkout the machines directory
       self.cmd = ['svn','co',self.machurl, 'Machines']
       proc = subprocess.Popen(self.cmd,
-            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
       out, err = proc.communicate()
       self.svnLog += out + err
 
@@ -92,10 +93,10 @@ class nightlyBuilder(object):
                      +'  --mach '+self.platform+' --xmlpath Machines --test')
          proc = subprocess.Popen(args,
                                  stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT)
+                                 stderr=subprocess.STDOUT, universal_newlines=True)
          out,err = proc.communicate() 
          if err == None:
-            self.outTest += out 
+            self.outTest += out
          else:
             self.outTest += out + err
 
