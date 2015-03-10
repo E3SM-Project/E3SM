@@ -1,6 +1,112 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!           POOL SUBROUTINES
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+! and the University Corporation for Atmospheric Research (UCAR).
+!
+! Unless noted otherwise source code is licensed under the BSD license.
+! Additional copyright and license information can be found in the LICENSE file
+! distributed with this code, or at http://mpas-dev.github.com/license.html
+!
+!***********************************************************************
+!
+!  mpas_pool_routines
+!
+!> \brief   MPAS Pool Routines
+!> \author  Michael Duda, Doug Jacobsen
+!> \date    04/02/13
+!> \details 
+!> This module defines subroutines and functions for handling pools.
+!
+!-----------------------------------------------------------------------
+module mpas_pool_routines
+
+   use mpas_kind_types
+   use mpas_derived_types
+   use mpas_io_units
+   use mpas_field_routines
+   
+   interface mpas_pool_add_field
+      module procedure mpas_pool_add_field_0d_real
+      module procedure mpas_pool_add_field_1d_real
+      module procedure mpas_pool_add_field_2d_real
+      module procedure mpas_pool_add_field_3d_real
+      module procedure mpas_pool_add_field_4d_real
+      module procedure mpas_pool_add_field_5d_real
+      module procedure mpas_pool_add_field_0d_int
+      module procedure mpas_pool_add_field_1d_int
+      module procedure mpas_pool_add_field_2d_int
+      module procedure mpas_pool_add_field_3d_int
+      module procedure mpas_pool_add_field_0d_char
+      module procedure mpas_pool_add_field_1d_char
+      module procedure mpas_pool_add_field_0d_reals
+      module procedure mpas_pool_add_field_1d_reals
+      module procedure mpas_pool_add_field_2d_reals
+      module procedure mpas_pool_add_field_3d_reals
+      module procedure mpas_pool_add_field_4d_reals
+      module procedure mpas_pool_add_field_5d_reals
+      module procedure mpas_pool_add_field_0d_ints
+      module procedure mpas_pool_add_field_1d_ints
+      module procedure mpas_pool_add_field_2d_ints
+      module procedure mpas_pool_add_field_3d_ints
+      module procedure mpas_pool_add_field_0d_chars
+      module procedure mpas_pool_add_field_1d_chars
+   end interface
+
+   interface mpas_pool_get_field
+      module procedure mpas_pool_get_field_0d_real
+      module procedure mpas_pool_get_field_1d_real
+      module procedure mpas_pool_get_field_2d_real
+      module procedure mpas_pool_get_field_3d_real
+      module procedure mpas_pool_get_field_4d_real
+      module procedure mpas_pool_get_field_5d_real
+      module procedure mpas_pool_get_field_0d_int
+      module procedure mpas_pool_get_field_1d_int
+      module procedure mpas_pool_get_field_2d_int
+      module procedure mpas_pool_get_field_3d_int
+      module procedure mpas_pool_get_field_0d_char
+      module procedure mpas_pool_get_field_1d_char
+   end interface
+
+   interface mpas_pool_get_array
+      module procedure mpas_pool_get_array_0d_real
+      module procedure mpas_pool_get_array_1d_real
+      module procedure mpas_pool_get_array_2d_real
+      module procedure mpas_pool_get_array_3d_real
+      module procedure mpas_pool_get_array_4d_real
+      module procedure mpas_pool_get_array_5d_real
+      module procedure mpas_pool_get_array_0d_int
+      module procedure mpas_pool_get_array_1d_int
+      module procedure mpas_pool_get_array_2d_int
+      module procedure mpas_pool_get_array_3d_int
+      module procedure mpas_pool_get_array_0d_char
+      module procedure mpas_pool_get_array_1d_char
+   end interface
+
+   interface mpas_pool_add_config
+      module procedure mpas_pool_add_config_real
+      module procedure mpas_pool_add_config_int
+      module procedure mpas_pool_add_config_char
+      module procedure mpas_pool_add_config_logical
+   end interface
+
+   interface mpas_pool_get_config
+      module procedure mpas_pool_get_config_real
+      module procedure mpas_pool_get_config_int
+      module procedure mpas_pool_get_config_char
+      module procedure mpas_pool_get_config_logical
+   end interface
+
+   interface mpas_pool_add_dimension
+      module procedure mpas_pool_add_dimension_0d
+      module procedure mpas_pool_add_dimension_1d
+   end interface
+
+   interface mpas_pool_get_dimension
+      module procedure mpas_pool_get_dimension_0d
+      module procedure mpas_pool_get_dimension_1d
+   end interface
+
+   integer :: currentErrorLevel = MPAS_POOL_SILENT
+
+   contains
 
 
 !-----------------------------------------------------------------------
@@ -5365,7 +5471,7 @@
 
 !!!!!!!!!! Private subroutines !!!!!!!!!!
 
-   logical function pool_add_member(inPool, key, newmem)
+   logical function pool_add_member(inPool, key, newmem)!{{{
 
       implicit none
 
@@ -5403,10 +5509,10 @@
          ptr % next => newmem
       end if
 
-   end function pool_add_member
+   end function pool_add_member!}}}
 
 
-   function pool_get_member(inPool, key, memType)
+   function pool_get_member(inPool, key, memType)!{{{
 
       implicit none
 
@@ -5440,7 +5546,7 @@
          ptr => ptr % next
       end do
 
-   end function pool_get_member
+   end function pool_get_member!}}}
 
 
    logical function pool_remove_member(inPool, key, memType)!{{{
@@ -5501,7 +5607,7 @@
    end function pool_remove_member!}}}
 
 
-   subroutine pool_mesg(mesg)
+   subroutine pool_mesg(mesg)!{{{
 
       implicit none
 
@@ -5514,10 +5620,10 @@
          call mpas_dmpar_global_abort(trim(mesg))
       end if
 
-   end subroutine pool_mesg
+   end subroutine pool_mesg!}}}
 
 
-   subroutine pool_print_table_size(pool)
+   subroutine pool_print_table_size(pool)!{{{
 
       implicit none
 
@@ -5541,9 +5647,10 @@
       write(stderrUnit,*) '----------------'
       write(stderrUnit,*) 'Total: ', total_size
 
-   end subroutine pool_print_table_size
+   end subroutine pool_print_table_size!}}}
 
-   recursive subroutine pool_print_members(pool)
+
+   recursive subroutine pool_print_members(pool)!{{{
 
       implicit none
 
@@ -5588,9 +5695,10 @@
       write(stderrUnit, *) 'Done with pool'
       write(stderrUnit, *) ''
 
-   end subroutine pool_print_members
+   end subroutine pool_print_members!}}}
 
-   integer function pool_get_member_decomp_type(dimName) result(decompType)
+
+   integer function pool_get_member_decomp_type(dimName) result(decompType)!{{{
       character (len=*) :: dimName
 
 
@@ -5604,8 +5712,7 @@
          decompType = MPAS_DECOMP_VERTICES
       end if
 
-   end function pool_get_member_decomp_type
+   end function pool_get_member_decomp_type!}}}
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!           END POOL SUBROUTINES
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+end module mpas_pool_routines

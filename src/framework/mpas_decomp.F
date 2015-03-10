@@ -25,36 +25,11 @@
 module mpas_decomp
 
    use mpas_kind_types
-   use mpas_grid_types
+   use mpas_derived_types
    use mpas_stream_manager
    use mpas_io_units
 
    implicit none
-
-   integer, parameter :: MPAS_DECOMP_NOERR = 1000, &
-                         MPAS_DECOMP_ERROR = 1001
-
-   abstract interface
-      function mpas_decomp_function(block, manager, globalDimSize, numBlocks) result(ownedIndices)
-         use mpas_grid_types
-         use mpas_stream_manager
-
-         type (block_type), intent(in) :: block
-         type (mpas_streamManager_type), intent(inout) :: manager
-         integer, intent(in) :: globalDimSize
-         integer, intent(in) :: numBlocks
-         integer, dimension(:), pointer :: ownedIndices
-      end function
-   end interface
-
-   type mpas_decomp_list
-      integer :: nameLen
-      character (len=StrKIND) :: decompName
-      procedure (mpas_decomp_function), pointer, nopass :: decompFunc => null()
-      type (mpas_decomp_list), pointer :: next => null()
-   end type mpas_decomp_list
-
-   type (mpas_decomp_list), save, pointer :: decompositions => null()
 
    contains
 

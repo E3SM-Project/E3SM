@@ -17,7 +17,9 @@ module mpas_forcing
 #define FORCING_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
 #define FORCING_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
 
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_field_routines
+  use mpas_pool_routines
   use mpas_timekeeping
   use mpas_io_streams
   use mpas_stream_manager
@@ -32,99 +34,6 @@ module mpas_forcing
        mpas_forcing_get_forcing, &
        mpas_forcing_get_forcing_time, &
        mpas_forcing_write_restart_times
-
-  ! abstract interface for variable interface function
-  abstract interface
-     function variable_interval(currentTime) result(variableInterval)
-       use mpas_timekeeping
-       type(MPAS_Time_type), intent(in) :: currentTime
-       type(MPAS_TimeInterval_type) :: variableInterval
-     end function variable_interval
-  end interface
-
-  ! individual forcing field associated with a forcing stream
-  type, private :: mpas_forcing_field_type
-
-     ! variable identificaion
-     character(len=strKIND) :: forcingName
-
-     character(len=strKIND) :: poolname  ! pool name of the input field
-     character(len=strKIND) :: fieldname ! field name of the output field
-
-     ! linked list next pointer
-     type (mpas_forcing_field_type), pointer :: next => null()
-
-  end type mpas_forcing_field_type
-
-  ! forcing stream associated with a forcing group
-  type, private :: mpas_forcing_stream_type
-
-     ! stream identification
-     character(len=strKIND) :: forcingStreamID ! the stream ID for this forcing stream
-
-     ! alarm for reading in the next forcing time
-     character(len=ShortStrKind) :: forcingAlarmID ! the alarm ID for this forcing stream
-
-     ! interpolation
-     character(len=strKIND) :: interpolationType ! the interpolation type (e.g. 'linear', 'constant')
-     integer :: nTimeStencil ! the number of forcing data times
-     integer :: nTimeStencilLower ! the number of forcing data times less than the current forcing time
-     integer :: nTimeStencilUpper ! the number of forcing data times more than the current forcing time
-     type(MPAS_time_type), dimension(:), allocatable :: forcingTimes ! the forcing data times
-     
-     ! forcing times definition
-     type(MPAS_TimeInterval_type) :: forcingIntervalConstant ! the forcing interval
-     type(MPAS_Time_type) :: forcingReferenceTime ! the forcing reference time
-
-     ! forcing initialization type
-     character(len=strKIND) :: forcingInitializationType
-
-     ! optional functions to calculate variable intervals
-     procedure (variable_interval), pointer, nopass :: variable_interval_forward_ptr => null ()
-     procedure (variable_interval), pointer, nopass :: variable_interval_backward_ptr => null ()
-
-     ! function pointer to new functions to test same as stream ones
-     procedure (variable_interval), pointer, nopass :: variable_interval_forward_test_ptr => null ()
-     procedure (variable_interval), pointer, nopass :: variable_interval_backward_test_ptr => null ()
-
-     ! linked list of individual forcing fields
-     type (mpas_forcing_field_type), pointer :: field => null()
-
-     ! linked list next pointer
-     type (mpas_forcing_stream_type), pointer :: next => null()
-
-  end type mpas_forcing_stream_type
-
-  ! collection of forcing steams and fields using the same forcing clock
-  type, public :: mpas_forcing_group_type
-
-     private
-
-     ! the forcings name
-     character(len=strKIND) :: forcingGroupName ! the forcing group identifying name
-
-     ! pointer to the forcing group domain
-     type(domain_type), pointer :: domain_ptr
-
-     ! forcing clock and cycling times
-     type (MPAS_Clock_type) :: forcingClock ! the forcing clock
-
-     logical                       :: forcingCycleUse            ! whether we cycle the forcing clock
-     type (MPAS_Time_Type)         :: forcingCycleStart          ! the start year of the forcing cycle
-     type (MPAS_Time_Type)         :: forcingCycleEnd            ! the end year of the forcing cycle
-     type (MPAS_TimeInterval_Type) :: forcingCycleDuration       ! the duration of the forcing cycle
-     logical                       :: forcingCycleStartInclusive ! cycle start time is inclusive to the cycle
-
-      ! the alarm ID for cycling the clock
-     character(len=ShortStrKIND) :: forcingCycleAlarmID = "forcingCycleAlarmID"
-
-     ! linked list of individual streams
-     type (mpas_forcing_stream_type), pointer :: stream => null()
-
-     ! linked list next pointer
-     type (mpas_forcing_group_type), pointer :: next => null()
-
-  end type mpas_forcing_group_type
 
 contains
 
@@ -154,7 +63,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine mpas_forcing_init_group(&
+  subroutine mpas_forcing_init_group(&!{{{
        forcingGroupHead, &
        forcingGroupName, &
        domain, &
@@ -163,7 +72,7 @@ contains
        forcingCycleDuration, &
        restart, &
        forcingRestartFile, &
-       forcingCycleStartInclusive)!{{{
+       forcingCycleStartInclusive)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! !< Input: The forcing group linked list
@@ -303,7 +212,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine mpas_forcing_init_field(&
+  subroutine mpas_forcing_init_field(&!{{{
        streamManager, &
        forcingGroupHead, &
        forcingGroupName, &
@@ -316,7 +225,7 @@ contains
        forcingIntervalStr, &
        forcingInitializationType, &
        variable_interval_forward, &
-       variable_interval_backward)!{{{
+       variable_interval_backward)
 
     type (MPAS_streamManager_type), intent(inout) :: &
          streamManager ! the stream manager handle
@@ -479,7 +388,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine create_new_forcing_stream(&
+  subroutine create_new_forcing_stream(&!{{{
        forcingStreamNew, &
        forcingGroup, &
        streamManager, &
@@ -490,7 +399,7 @@ contains
        forcingIntervalStr, &
        forcingInitializationType, &
        variable_interval_forward, &
-       variable_interval_backward)!{{{
+       variable_interval_backward)
 
     type(mpas_forcing_stream_type), pointer :: &
          forcingStreamNew ! the new forcing stream
@@ -642,7 +551,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine add_forcing_field_to_forcing_stream(&
+  subroutine add_forcing_field_to_forcing_stream(&!{{{
        forcingStream, &
        domain, &
        streamManager, &
@@ -654,7 +563,7 @@ contains
        forcingIntervalStr, &
        forcingInitializationType, &
        variable_interval_forward, &
-       variable_interval_backward)!{{{
+       variable_interval_backward)
 
     type(mpas_forcing_stream_type), pointer :: &
          forcingStream ! the forcing stream to add the new field to
@@ -870,9 +779,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_initial_forcing_times(&
+  subroutine get_initial_forcing_times(&!{{{
        forcingGroup, &
-       forcingStream)!{{{
+       forcingStream)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group interval
@@ -950,10 +859,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine populate_forcing_times(&
+  subroutine populate_forcing_times(&!{{{
        forcingStream, &
        forcingTimeSlot, &
-       forcingSlot)!{{{
+       forcingSlot)
 
     type(mpas_forcing_stream_type), pointer :: &
          forcingStream ! forcing object
@@ -1011,10 +920,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine mpas_forcing_init_field_data(&
+  subroutine mpas_forcing_init_field_data(&!{{{
        forcingGroupHead, &
        forcingGroupName, &
-       streamManager)!{{{
+       streamManager)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! the forcing group linked list
@@ -1069,10 +978,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_initial_forcing_data(&
+  subroutine get_initial_forcing_data(&!{{{
        forcingGroup, &
        forcingStream, &
-       streamManager)!{{{
+       streamManager)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group object
@@ -1192,11 +1101,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine mpas_forcing_get_forcing(&
+  subroutine mpas_forcing_get_forcing(&!{{{
        forcingGroupHead, &
        forcingGroupName, &
        streamManager, &
-       dt)!{{{
+       dt)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! the forcing group linked list
@@ -1274,9 +1183,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine advance_forcing_clock(&
+  subroutine advance_forcing_clock(&!{{{
        forcingGroup, &
-       dt)!{{{
+       dt)
     
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group object
@@ -1305,7 +1214,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cycle_forcing_clock(&
+  subroutine cycle_forcing_clock(&!{{{
        forcingGroup)
     
     type(mpas_forcing_group_type), pointer :: &
@@ -1362,10 +1271,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine mpas_forcing_get_forcing_time(&
+  subroutine mpas_forcing_get_forcing_time(&!{{{
        forcingGroupHead, &
        forcingGroupName, &
-       forcingTime)!{{{
+       forcingTime)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupHead ! the forcing group linked list
@@ -1408,10 +1317,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_forcing(&
+  subroutine get_forcing(&!{{{
        forcingGroup, &
        forcingStream, &
-       streamManager)!{{{
+       streamManager)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! the forcing group object
@@ -1518,11 +1427,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine interpolation_time_stencil_info(&
+  subroutine interpolation_time_stencil_info(&!{{{
        interpolationType, &
        stencilSize, &
        stencilSizeLower, &
-       stencilSizeUpper)!{{{
+       stencilSizeUpper)
 
     character(len=*), intent(in) :: &
          interpolationType !< Input: the interpolation type
@@ -1744,11 +1653,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine setup_input_fields(&
+  subroutine setup_input_fields(&!{{{
        forcingField, &
        forcingStream, &
        streamManager, &
-       domain)!{{{
+       domain)
 
     type(mpas_forcing_field_type), pointer :: &
          forcingField ! forcing field object
@@ -2199,10 +2108,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine forcing_data_interpolation(&
+  subroutine forcing_data_interpolation(&!{{{
        domain, &
        forcingStream, &
-       currentTime)!{{{
+       currentTime)
 
     type (domain_type), pointer :: &
          domain ! domain object
@@ -2409,9 +2318,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine forcing_shift_data(&
+  subroutine forcing_shift_data(&!{{{
        domain, &
-       forcingStream)!{{{
+       forcingStream)
 
     type(domain_type), pointer :: &
          domain ! domain type
@@ -2590,11 +2499,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine read_restart_times(&
+  subroutine read_restart_times(&!{{{
        forcingGroup, &
        forcingTimeRestartFilename, &
        timeStep, &
-       stopTime)!{{{
+       stopTime)
 
     type(mpas_forcing_group_type), pointer :: &
          forcingGroup ! forcing group to restart
