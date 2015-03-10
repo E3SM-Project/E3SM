@@ -4,9 +4,7 @@
 # build-namelist
 #
 # The simplest use of build-namelist is to execute it from the build directory where configure
-# was run.  By default it will use the config_cache.xml file that was written by 
-# drof.cpl7.template to determine the build time properties of the executable, and will write 
-# the files that contain  the output namelists in that same directory. 
+# was run.  
 #
 # Date        Contributor      Modification
 # -------------------------------------------------------------------------------------------
@@ -16,14 +14,12 @@
 use strict;
 #use warnings;
 #use diagnostics;
-
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use English;
 use Getopt::Long;
 use IO::File;
 use File::Basename;
 use Data::Dumper;
-
 #-----------------------------------------------------------------------------------------------
 
 sub usage {
@@ -74,7 +70,7 @@ my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 my $nm = "ProgName::";                 # name to use if script dies
 if ($ProgDir) { 
-    $cfgdir = absolute_path($ProgDir);
+    $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
 }
@@ -159,20 +155,20 @@ EOF
 # The root directory for the input data files must be specified.
 
 #The root directory to cesm utils Tools
-my $cesm_tools = &absolute_path( "$SCRIPTSROOT/ccsm_utils/Tools" );
-my $ccsmroot   = &absolute_path( "$SCRIPTSROOT/../../" );
+my $cesmroot = abs_path("$SCRIPTSROOT/../../");
+my $perl5lib = "$cesmroot/cime/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
-(-f "$ccsmroot/cime/perl5lib/XML/Lite.pm")  or  die <<"EOF";
+(-f "$perl5lib/XML/Lite.pm")  or  die <<"EOF";
 ** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory 
-    \"$ccsmroot/cime/perl5lib\" **
+    \"$perl5lib\" **
 EOF
 
 # The Build::Config module provides utilities to access the configuration information
 # in the config_cache.xml file
-(-f "$ccsmroot/cime/perl5lib/Build/Config.pm")  or  die <<"EOF";
+(-f "$perl5lib/Build/Config.pm")  or  die <<"EOF";
 ** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory 
-    \"$ccsmroot/cime/perl5lib\" **
+    \"$perl5lib\" **
 EOF
 
 # The namelist definition file contains entries for all namelist variables that
@@ -197,9 +193,9 @@ if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol";
 
 # The Build::NamelistDefinition module provides utilities to validate that the output
 # namelists are consistent with the namelist definition file
-(-f "$ccsmroot/cime/perl5lib/Build/NamelistDefinition.pm")  or  die <<"EOF";
+(-f "$perl5lib/Build/NamelistDefinition.pm")  or  die <<"EOF";
 ** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory 
-    \"$ccsmroot/cime/perl5lib\" **
+    \"$perl5lib\" **
 EOF
     
 # The namelist defaults file contains default values for most namelist variables
@@ -224,21 +220,21 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
 # The Build::NamelistDefaults module provides a utility to obtain default values of namelist
 # variables based on finding a best fit with the attributes specified in the defaults file.
-(-f "$ccsmroot/cime/perl5lib/Build/NamelistDefaults.pm")  or  die <<"EOF";
+(-f "$perl5lib/Build/NamelistDefaults.pm")  or  die <<"EOF";
 ** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory 
-    \"$cesm_tools//perl5lib\" **
+    \"$perl5lib\" **
 EOF
 
 # The Build::Namelist module provides utilities to parse input namelists, to query and modify
 # namelists, and to write output namelists.
-(-f "$ccsmroot/cime/perl5lib/Build/Namelist.pm")  or  die <<"EOF";
+(-f "$perl5lib/Build/Namelist.pm")  or  die <<"EOF";
 ** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory 
-    \"$ccsmroot/cime/perl5lib\" **
+    \"$perl5lib\" **
 EOF
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ( "$cfgdir/..", "$ccsmroot/cime/perl5lib", "$CASEROOT/Tools");
+my @dirs = ( "$cfgdir/..", "$perl5lib", "$CASEROOT/Tools");
 unshift @INC, @dirs;
 require XML::Lite;
 require Build::Config;
@@ -763,69 +759,6 @@ sub set_abs_filepath {
 
 #-----------------------------------------------------------------------------------------------
 
-sub absolute_path {
-#
-# Convert a pathname into an absolute pathname, expanding any . or .. characters.
-# Assumes pathnames refer to a local filesystem.
-# Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $cwd = getcwd();  # current working directory
-  my $abspath;         # resulting absolute pathname
-
-# Strip off any leading or trailing whitespace.  (This pattern won't match if
-# there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
-
-# Convert relative to absolute path.
-
-  if ($path =~ m!^\.$!) {          # path is "."
-      return $cwd;
-  } elsif ($path =~ m!^\./!) {     # path starts with "./"
-      $path =~ s!^\.!$cwd!;
-  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
-      $path = "$cwd/..";
-  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
-      $path = "$cwd/$path";
-  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
-      $path = "$cwd/$path";
-  }
-
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
-
-  # Remove any "" that are not leading.
-  for (my $i=0; $i<=$#dirs; ++$i) {
-      if ($i == 0 or $dirs[$i] ne "") {
-	  push @dirs2, $dirs[$i];
-      }
-  }
-  @dirs = ();
-
-  # Remove any "."
-  foreach $dir (@dirs2) {
-      unless ($dir eq ".") {
-	  push @dirs, $dir;
-      }
-  }
-  @dirs2 = ();
-
-  # Remove the "subdir/.." parts.
-  foreach $dir (@dirs) {
-    if ( $dir !~ /\.\./ ) {
-        push @dirs2, $dir;
-    } else {
-        pop @dirs2;   # remove previous dir when current dir is ..
-    }
-  }
-  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
-  $abspath = join '/', @dirs2;
-  return( $abspath );
-}
-
-#-------------------------------------------------------------------------------
-
 sub valid_option {
 
     my ($val, @expect) = @_;
@@ -839,7 +772,7 @@ sub valid_option {
     return undef;
 }
 
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------
 
 sub validate_options {
 
@@ -850,7 +783,7 @@ sub validate_options {
     my ($opt, $old, @expect);
 }
 
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------
 
 sub quote_string {
     my $str = shift;
@@ -862,5 +795,4 @@ sub quote_string {
     return $str;
 }
 
-#-------------------------------------------------------------------------------
 

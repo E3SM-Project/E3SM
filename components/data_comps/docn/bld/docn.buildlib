@@ -23,7 +23,7 @@ chdir "${OBJROOT}/${model}/obj";
 
 open(file,">Filepath") or die "Could not open file Filepath to write";
 print file "${CASEROOT}/SourceMods/src.${comp}\n";
-print file "${CCSMROOT}/cime/models/data/${comp}\n";
+print file "${CCSMROOT}/cime/components/data_comps/${comp}\n";
 close(file);
 
 my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=${model} COMPLIB=${LIBROOT}/lib${model}.a -f ${CASETOOLS}/Makefile MACFILE=${CASEROOT}/Macros.${MACH}";

@@ -57,7 +57,7 @@ while ($inst_counter <= $NINST_ICE) {
     # call build-namelist
     # -----------------------------------------------------
 
-    $sysmod = "$CCSMROOT/cime/models/data/dice/bld/build-namelist";
+    $sysmod = "$CCSMROOT/cime/components/data_comps/dice/bld/build-namelist";
     $sysmod = "$sysmod -infile $CASEBUILD/diceconf/cesm_namelist";
     $sysmod = "$sysmod -caseroot $CASEROOT";
     $sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";
