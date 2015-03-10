@@ -1,6 +1,6 @@
 !===============================================================================
 ! SVN $Id: seq_timemgr_mod.F90 68253 2015-02-18 22:24:57Z mvertens $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_1_13/shr/seq_timemgr_mod.F90 $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_1_15/shr/seq_timemgr_mod.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !

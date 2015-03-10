@@ -1,6 +1,6 @@
 !===============================================================================
 ! SVN $Id: seq_diag_mct.F90 61512 2014-06-26 21:59:35Z tcraig $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_1_13/driver/seq_diag_mct.F90 $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/trunk_tags/drvseq5_1_15/driver/seq_diag_mct.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !

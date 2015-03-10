@@ -60,7 +60,6 @@
         <machine compiler="intel" testtype="prebeta">janus</machine>
         <machine compiler="intel" testtype="prealpha">stampede</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
-        <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_D_Ld3">
