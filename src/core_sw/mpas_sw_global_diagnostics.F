@@ -7,7 +7,8 @@
 !
 module sw_global_diagnostics
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_configure
    use mpas_constants
    use mpas_dmpar
