@@ -1,0 +1,31 @@
+#! /bin/csh -f
+
+#--- set modules
+source /etc/profile.d/modules.csh
+#source /share/apps/modules/Modules/3.2.7/init/csh
+module purge
+module load precision/i4
+module load pgi/11.8
+module load mvapich2/1.7
+module load netcdf/4.1.3
+#module list
+
+#--- set paths
+#setenv PGI_PATH /share/apps/pgi/linux86-64/9.0-4
+#setenv MPICH_PATH /share/apps/mvapich-1.0.1/pgi
+#setenv MPICH_PATH /share/apps/mvapich2-1.0.3/pgi
+#setenv MPICH_PATH /share/apps/openmpi-1.2.6/pgi
+#setenv PATH ${PGI_PATH}/bin:${MPICH_PATH}/bin:${PATH}
+#setenv LD_LIBRARY_PATH ${MPICH_PATH}/lib:${LD_LIBRARY_PATH}
+
+#--- set env variables for Macros if needed
+#setenv NETCDF ${NETCDF_HOME}
+#setenv PNETCDF /share/apps/pnetcdf/mvapich-1.0.1/pgi
+#setenv LD_LIBRARY_PATH ${NETCDF}/lib:${LD_LIBRARY_PATH}
+
+#-------------------------------------------------------------------------------
+
+limit coredumpsize 1000000
+limit stacksize unlimited
+
+

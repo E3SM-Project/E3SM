@@ -1,0 +1,33 @@
+&gptlnl
+! These settings are all the opposite of the default--for testing
+ sync_mpi        = .true.
+ wall            = .false.
+ cpu             = .true.
+ abort_on_error  = .true.
+ overhead        = .true.
+ depthlimit      = 1
+! verbose         = .true.
+ narrowprint     = .false.
+ percent         = .true.
+! Comment out persec and multiplex so "nlreader" test won't fail even if 
+!   PAPI unavailable
+! persec          = .false.
+! multiplex       = .true.
+ dopr_preamble   = .false.
+ dopr_threadsort = .false.
+ dopr_multparent = .false.
+ dopr_collision  = .false.
+
+! utr, print_method, and eventlist use character variables instead of integer 
+! to avoid "magic number" settings in the namelist. Leave utr commented
+! so that abort_on_error doesn't make tests fail if chosen timer unavailable
+
+! utr             = 'nanotime'
+ print_method    = 'full_tree'
+!print_method    = 'first_parent'
+!print_method    = 'last_parent'
+!print_method    = 'most_frequent'  ! default
+
+! Comment out eventlist so "nlreader" test won't fail even if PAPI unavailable
+! eventlist       = 'PAPI_FP_OPS','GPTL_CI'
+/

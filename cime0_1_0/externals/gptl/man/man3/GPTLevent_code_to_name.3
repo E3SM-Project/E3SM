@@ -1,0 +1,48 @@
+.\" $Id$
+.TH GPTLevent_code_to_name 3 "October, 2008" "GPTL"
+
+.SH NAME
+GPTLevent_code_to_name \- Convert a PAPI event or derived event to a string
+.TP
+GPTLevent_name_to_code \- Convert a string to a PAPI event id or derived event id
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLevent_code_to_name (const int code, char *name);
+int GPTLevent_name_to_code (const char *name, int *code);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlevent_code_to_name (integer code, character(len=*) name)
+integer gptlevent_name_to_code (character(len=*) name, integer code)
+.fi
+
+.SH DESCRIPTION
+.B GPTLevent_code_to_name()
+converts an input PAPI or derived event id into a string. Derived events
+involve taking the ratio of two PAPI events. An example is L1 miss rate
+(GPTL_DCMRT), which is defined by PAPI_L1_DCM / PAPI_L1_DCA.
+.B GPTLevent_name_to_code()
+converts a string into a PAPI or derived event id (whichever applies).
+
+.SH ARGUMENTS
+.TP
+.I code
+-- PAPI event code or GPTL derived event id. The code can be subsequently passed into
+.B GPTLsetoption()
+
+.TP
+.I name
+-- name corresponding to code.
+
+.SH RESTRICTIONS
+.B none
+
+.SH RETURN VALUE
+On success, this function returns 0.
+On error, -1 is returned.
+
+.SH SEE ALSO
+.BR GPTLsetoption "(3)" 

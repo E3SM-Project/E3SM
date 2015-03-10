@@ -1,0 +1,95 @@
+.\" $Id$
+.TH GPTLquery 3 "January, 2009" "GPTL"
+
+.SH NAME
+GPTLquery \- Request current values of all data for an existing timer
+.TP
+GPTLquerycounters \- Request current values of PAPI counters for an existing timer
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLquery (const char *name, int t, int *count, 
+               int *onflg, double *wallclock, double *usr, double *sys,
+               long long *counters, const int maxcounters);
+int GPTLquerycounters (const char *name, int t, long long *counters);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlquery (character(len=*) name, integer t, integer count, 
+                   integer onflg, real*8 wallclock, real*8 usr, real*8 sys, 
+                   integer*8 counters, integer maxcounters)
+integer gptlquerycounters (character(len=*) name, integer t, integer*8 counters)
+.fi
+
+.SH DESCRIPTION
+If PAPI and/or derived event information is desired, consider using
+.B GPTLget_eventvalue()
+instead of either of these functions.
+.B GPTLquery()
+Requests all information about the timer identified by 
+.IR name .
+.B GPTLquerycounters()
+Requests PAPI counter information about the timer identified by
+.IR name .
+
+Only the first 15 characters of
+.IR name
+are significant, but this limit can be modified in the GPTL library code via the 
+.B #define 
+of MAX_CHARS.  Longer names are truncated.  All
+statistics set by earlier calls to 
+.B GPTLsetoption()
+(e.g. cpu time), or otherwise on by default (e.g. wallclock time), are counted.
+
+.SH ARGUMENTS
+.TP
+.I name
+-- existing timer name
+.TP
+.I t
+-- thread number. If < 0, return results for the current thread.
+.TP
+.I count
+-- the number of start/stop pairs that have been invoked (output).
+.TP
+.I onflg
+-- non-zero returned value (true) means the timer is currently on. zero means
+the timer is currently off (output).
+.TP
+.I wallclock
+-- accumulated wallclock time (output).
+.TP
+.I usr
+-- accumulated user CPU time (output).
+.TP
+.I sys
+-- accumulated system CPU time (output).
+.TP
+.I counters
+-- an array to hold the values of the PAPI counters (output).
+.TP
+.I maxcounters
+-- maximum number of PAPI counters to return. Note that this argument is not
+present in
+.B GPTLquerycounters().
+In this case, the
+.B counters
+array must be large enough to hold all enabled PAPI counters.
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called. To obtain any useful data, one or more
+pairs of 
+.B GPTLstart()/GPTLstop()
+calls need to have been exercised (or their variants such as
+.B GPTLstart_handle()
+
+.SH RETURN VALUE
+On success, these functions return 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH SEE ALSO
+.BR GPTLsetoption "(3)" 

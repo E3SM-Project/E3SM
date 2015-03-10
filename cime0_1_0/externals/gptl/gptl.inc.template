@@ -1,0 +1,166 @@
+!
+! $Id: gptl.inc.template,v 1.3 2011-03-28 20:55:19 rosinski Exp $
+!
+! Author: Jim Rosinski
+!
+! GPTL header file to be included in user code. Values match
+! their counterparts in gptl.h. See that file or man pages
+! or web-based documenation for descriptions of each value
+!
+      integer GPTLsync_mpi
+      integer GPTLwall
+      integer GPTLcpu
+      integer GPTLabort_on_error
+      integer GPTLoverhead
+      integer GPTLdepthlimit
+      integer GPTLverbose
+      integer GPTLnarrowprint
+      integer GPTLpercent
+      integer GPTLpersec
+      integer GPTLmultiplex
+      integer GPTLdopr_preamble
+      integer GPTLdopr_threadsort
+      integer GPTLdopr_multparent
+      integer GPTLdopr_collision
+      integer GPTLdopr_memusage
+      integer GPTLprint_method
+      integer GPTLtablesize
+      integer GPTLmaxthreads
+
+      integer GPTL_IPC
+      integer GPTL_CI
+      integer GPTL_FPC
+      integer GPTL_FPI
+      integer GPTL_LSTPI
+      integer GPTL_DCMRT
+      integer GPTL_LSTPDCM
+      integer GPTL_L2MRT
+      integer GPTL_LSTPL2M
+      integer GPTL_L3MRT
+
+      integer GPTLnanotime
+      integer GPTLmpiwtime
+      integer GPTLclockgettime
+      integer GPTLgettimeofday
+      integer GPTLpapitime
+      integer GPTLplacebo
+      integer GPTLread_real_time
+
+      integer GPTLfirst_parent
+      integer GPTLlast_parent
+      integer GPTLmost_frequent
+      integer GPTLfull_tree
+
+      parameter (GPTLsync_mpi       = #GPTLsync_mpi)
+      parameter (GPTLwall           = #GPTLwall)
+      parameter (GPTLcpu            = #GPTLcpu)
+      parameter (GPTLabort_on_error = #GPTLabort_on_error)
+      parameter (GPTLoverhead       = #GPTLoverhead)
+      parameter (GPTLdepthlimit     = #GPTLdepthlimit)
+      parameter (GPTLverbose        = #GPTLverbose)
+      parameter (GPTLnarrowprint    = #GPTLnarrowprint)
+      parameter (GPTLpercent        = #GPTLpercent)
+      parameter (GPTLpersec         = #GPTLpersec)
+      parameter (GPTLmultiplex      = #GPTLmultiplex)
+      parameter (GPTLdopr_preamble  = #GPTLdopr_preamble)
+      parameter (GPTLdopr_threadsort= #GPTLdopr_threadsort)
+      parameter (GPTLdopr_multparent= #GPTLdopr_multparent)
+      parameter (GPTLdopr_collision = #GPTLdopr_collision)
+      parameter (GPTLdopr_memusage  = #GPTLdopr_memusage)
+      parameter (GPTLprint_method   = #GPTLprint_method)
+      parameter (GPTLtablesize      = #GPTLtablesize)
+      parameter (GPTLmaxthreads     = #GPTLmaxthreads)
+
+      parameter (GPTL_IPC           = #GPTL_IPC)
+      parameter (GPTL_CI            = #GPTL_CI)
+      parameter (GPTL_FPC           = #GPTL_FPC)
+      parameter (GPTL_FPI           = #GPTL_FPI)
+      parameter (GPTL_LSTPI         = #GPTL_LSTPI)
+      parameter (GPTL_DCMRT         = #GPTL_DCMRT)
+      parameter (GPTL_LSTPDCM       = #GPTL_LSTPDCM)
+      parameter (GPTL_L2MRT         = #GPTL_L2MRT)
+      parameter (GPTL_LSTPL2M       = #GPTL_LSTPL2M)
+      parameter (GPTL_L3MRT         = #GPTL_L3MRT)
+
+      parameter (GPTLgettimeofday   = #GPTLgettimeofday)
+      parameter (GPTLnanotime       = #GPTLnanotime)
+      parameter (GPTLmpiwtime       = #GPTLmpiwtime)
+      parameter (GPTLclockgettime   = #GPTLclockgettime)
+      parameter (GPTLpapitime       = #GPTLpapitime)
+      parameter (GPTLplacebo        = #GPTLplacebo)
+      parameter (GPTLread_real_time = #GPTLread_real_time)
+
+      parameter (GPTLfirst_parent   = #GPTLfirst_parent)
+      parameter (GPTLlast_parent    = #GPTLlast_parent)
+      parameter (GPTLmost_frequent  = #GPTLmost_frequent)
+      parameter (GPTLfull_tree      = #GPTLfull_tree)
+
+! Externals
+
+      integer gptlsetoption
+      integer gptlinitialize
+      integer gptlstart
+      integer gptlstart_handle
+      integer gptlinit_handle
+      integer gptlstop
+      integer gptlstop_handle
+      integer gptlstamp 
+      integer gptlpr
+      integer gptlpr_file
+      integer gptlpr_summary
+      integer gptlpr_summary_file
+      integer gptlbarrier
+      integer gptlreset 
+      integer gptlfinalize
+      integer gptlget_memusage
+      integer gptlprint_memusage
+      integer gptlprint_rusage
+      integer gptlenable
+      integer gptldisable
+      integer gptlsetutr
+      integer gptlquery
+      integer gptlquerycounters
+      integer gptlget_wallclock
+      integer gptlget_eventvalue
+      integer gptlget_nregions
+      integer gptlget_regionname
+      integer gptl_papilibraryinit
+      integer gptlevent_name_to_code
+      integer gptlevent_code_to_name
+      integer gptlnum_errors
+      integer gptlnum_warn
+      integer gptlget_count
+
+      external gptlsetoption
+      external gptlinitialize
+      external gptlstart
+      external gptlstart_handle
+      external gptlinit_handle
+      external gptlstop
+      external gptlstop_handle
+      external gptlstamp 
+      external gptlpr
+      external gptlpr_file
+      external gptlpr_summary
+      external gptlpr_summary_file
+      external gptlbarrier
+      external gptlreset 
+      external gptlfinalize
+      external gptlget_memusage
+      external gptlprint_memusage
+      external gptlprint_rusage
+      external gptlenable
+      external gptldisable
+      external gptlsetutr
+      external gptlquery
+      external gptlquerycounters
+      external gptlget_wallclock
+      external gptlget_eventvalue
+      external gptlget_nregions
+      external gptlget_regionname
+      external gptl_papilibraryinit
+      external gptlevent_name_to_code
+      external gptlevent_code_to_name
+      external gptlnum_errors
+      external gptlnum_warn
+      external gptlget_count

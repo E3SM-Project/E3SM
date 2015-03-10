@@ -1,0 +1,48 @@
+.\" $Id: GPTLget_wallclock.3,v 1.1 2009-01-15 21:08:05 rosinski Exp $
+.TH GPTLget_wallclock 3 "Janary, 2009" "GPTL"
+
+.SH NAME
+GPTLget_wallclock \- Request current wallclock accumulation for a timer
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLget_wallclock (const char *name, int t, double *value);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlget_wallclock (character(len=*) name, integer t, real*8 value)
+.fi
+
+.SH DESCRIPTION
+.B GPTLget_wallclock()
+Returns current wallclock time for the region
+.IR name.
+
+.SH ARGUMENTS
+.TP
+.I name
+-- existing region name
+.TP
+.I t
+-- thread number. If < 0, return results for the current thread.
+.TP
+.I *value
+-- output 64-bit current wallclock accumulation for the region.
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called, and at least one pair of calls to
+.B GPTLstart()
+and 
+.B GPTLstop()
+for the desired region.
+
+.SH RETURN VALUE
+On success, 0 is returned.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH SEE ALSO
+.BR GPTLsetoption "(3)" 

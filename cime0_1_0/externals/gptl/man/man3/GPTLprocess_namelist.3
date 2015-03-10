@@ -1,0 +1,113 @@
+.\" $Id$
+.TH gptlprocess_namelist 3 "December, 2012" "GPTL"
+
+.SH NAME
+gptlprocess_namelist \- Parse an input Fortran namelist and call
+.B gptlsetoption() 
+and/or 
+.B gptlsetutr() 
+appropriately.
+
+.SH SYNOPSIS
+.B Fortran Interface:
+.nf
+subroutine gptlprocess_namelist (character(len=*) filename, integer unitno, integer ret)
+.fi
+
+.SH DESCRIPTION
+.B gptlprocess_namelist()
+is a utility subroutine provided for convenience to Fortran applications. It
+allows the specification of input to
+.B gptlsetoption()
+and/or
+.B gptlsetutr()
+via namelist input. This avoids the necessity of recompiling and relinking
+the user application when changing
+.B GPTL
+options. The routine is a subroutine rather than a function to
+get around problems encountered when gptl.inc declares the
+function to be external.
+
+.SH ARGUMENTS
+.TP
+.I filename
+-- file name containing the namelist (namelist group &gptlnl).
+
+.TP
+.I unitno
+-- Fortran unit number to use when opening the namelist file.
+
+.TP
+.I ret
+-- output return code
+
+.SH RESTRICTIONS
+.B gptlinitialize()
+must 
+.B NOT
+have been called. Generally the user invokes
+.B gptlinitialize()
+right after calling
+.B gptlprocess_namelist().
+
+.SH RETURN VALUES
+On success, 0 is returned in output argument
+.B ret.
+On error, 
+.B ret
+is negative and a descriptive message
+printed. As long as the namelist file can be opened and read, 
+.B ret 
+is set to 0. This is true even if some of the individual settings fail (e.g. if
+a requested PAPI event is not available).
+
+.SH EXAMPLES
+An example namelist (group name &gptlnl) is shown below. The same file is available in
+ftests/gptnl. When 
+.B gptlprocess_namelist()
+is called, it parses the namelist and calls the
+appropriate GPTL functions accordingly. Namelist variable names match
+their counterparts in calls to
+.B gptlsetoption() 
+and 
+.B gptlsetutr(), 
+with the leading "gptl" left off. For example, the namelist can be used to
+enable printing of overhead statistics by setting overhead = .true.; the same
+thing is accomplished with the GPTL API by invoking 
+.B gptlsetoption (gptloverhead, 1).
+.nf         
+
+&gptlnl
+! These settings are all the opposite of the default--for testing
+ sync_mpi        = .true.
+ wall            = .false.
+ cpu             = .true.
+ abort_on_error  = .true.
+ overhead        = .true.
+ depthlimit      = 1
+ verbose         = .true.
+ narrowprint     = .false.
+ percent         = .true.
+ persec          = .false.
+ multiplex       = .true.
+ dopr_preamble   = .false.
+ dopr_threadsort = .false.
+ dopr_multparent = .false.
+ dopr_collision  = .false.
+
+! The next 3 use character variables instead of integer to avoid 
+! "magic number" settings in the namelist
+
+ utr             = 'nanotime'
+ print_method    = 'full_tree'      ! default
+!print_method    = 'first_parent'
+!print_method    = 'last_parent'
+!print_method    = 'most_frequent'
+ eventlist       = 'PAPI_FP_OPS','GPTL_CI' ! enable 2 events
+/
+
+.fi
+
+.SH SEE ALSO
+.BR GPTLsetoption "(3)" 
+.BR GPTLsetutr "(3)" 

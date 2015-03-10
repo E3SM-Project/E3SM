@@ -1,0 +1,168 @@
+<html>
+<head>
+<title>GPTL usage example 2</title>
+<meta name="example" content="Automatic GPTL instrumentation">
+<meta name="Keywords" content="gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Author" content="Jim Rosinski">
+</head>
+<body bgcolor="peachpuff">
+
+<hr />
+<a href="example1.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Example 1"
+				  /></a> 
+<a href="example3.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 3" /></a>
+
+<br />
+
+<h2>Example 2: Auto-instrumentation</h2>
+This example is a C code compiled with auto-instrumentation enabled. It
+uses <b>PAPI</b> to count total instructions, and instructions per cycle. Note
+that function <em>B</em> has multiple parents, and <b>GPTL</b> reports the
+	multiple parent information in the output produced by the call
+	to <b>GPTLpr_file()</b>. 
+<p>
+<b><em>main.c:</em></b>
+<pre>
+<div style="background-color:white;">
+#include &#60gptl.h&gt
+#include &#60papi.h&gt
+
+int main ()
+{
+  void do_work (void);
+  int i, ret;
+  ret = GPTLsetoption (GPTL_IPC, 1);     // Count instructions per cycle
+  ret = GPTLsetoption (PAPI_TOT_INS, 1); // Print total instructions
+  ret = GPTLsetoption (GPTLoverhead, 0); // Don't print overhead estimate
+  ret = GPTLinitialize ();               // Initialize GPTL
+  ret = GPTLstart ("main");              // Start a manual timer
+  do_work ();                            // Do some work 
+  ret = GPTLstop ("main");               // Stop the manual timer
+  ret = GPTLpr_file ("outfile");         // Write output to "outfile"
+}
+</div>
+</pre>
+
+<b><em>subs.c:</em></b>
+<div style="background-color:white;">
+<pre>
+#include &#60unistd.h&gt
+
+extern void A(void);
+extern void AA(void);
+extern void B(void);
+
+void do_work ()
+{
+  A ();
+  AA ();
+  B ();
+}
+
+void A ()
+{
+  B ();
+}
+
+void AA ()
+{
+}
+
+void B ()
+{
+  sleep (1);
+}
+</div>
+</pre>
+Compile all but <em>main.c</em> with auto-instrumentation, then link and
+run. Useful auto-instrumentation of the main program is not possible,
+because the call to <b>GPTLinitialize()</b> must be done manually and
+needs to preceed all calls to <b>GPTLstart</b> and <b>GPTLstop</b>. 
+<pre>
+% gcc -c main.c
+% gcc -finstrument-functions subs.c main.o -lgptl -lpapi
+% ./a.out
+</pre>
+
+Now convert the auto-instrumented output to human-readable form:
+<pre>
+% hex2name.pl a.out outfile > outfile.converted
+</pre>
+
+Output file <em> outfile.converted</em> looks like this:
+<pre>
+<div style="background-color:white;">
+PAPI event multiplexing was OFF
+Description of printed events (PAPI and derived):
+  GPTL_IPC: Instructions per cycle
+  Instr completed  
+
+PAPI events enabled (including those required for derived events):
+  PAPI_TOT_INS
+  PAPI_TOT_CYC
+
+Underlying timing routine was gettimeofday.
+Per-call utr overhead est: 1.65e-06 sec.
+Per-call PAPI overhead est: 3.4e-07 sec.
+If overhead stats are printed, roughly half the estimated number is
+embedded in the wallclock stats for each timer.
+Print method was most_frequent.
+If a '%_of' field is present, it is w.r.t. the first timer for thread 0.
+If a 'e6_per_sec' field is present, it is in millions of PAPI counts per sec.
+
+A '*' in column 1 below means the timer had multiple parents, though the
+values printed are for all calls. Further down the listing is more detailed
+information about multiple parents. Look for 'Multiple parent info'
+
+Stats for thread 0:
+                       Called  Recurse Wallclock max       min       IPC      TOT_INS  e6_/_sec 
+  main                       1     -       2.000     2.000     2.000 2.81e-01    18060     0.01 
+    do_work                  1     -       2.000     2.000     2.000 2.61e-01    12547     0.01 
+      A                      1     -       1.000     1.000     1.000 3.01e-01     4958     0.00 
+*       B                    2     -       2.000     1.000     1.000 1.09e-01     2812     0.00 
+      AA                     1     -       0.000     0.000     0.000 7.77e-01      488   244.00 
+Total calls           = 6
+Total recursive calls = 0
+
+Multiple parent info (if any) for thread 0:
+Columns are count and name for the listed child
+Rows are each parent, with their common child being the last entry, which is indented
+Count next to each parent is the number of times it called the child
+Count next to child is total number of times it was called by the listed parents
+
+       1 A                         
+       1 do_work                         
+       2   B                         
+</div>
+</pre>
+<h3>Explanation of the above output</h3>
+<b>PAPI</b> event "Total instructions executed"
+(PAPI_TOT_INS) and derived event "Instructions per
+cycle" (GPTL_IPC) were enabled. To compute instructions per
+cycle, <b>GPTL</b> made the 
+<b>PAPI</b> library call to count total cycles (PAPI_TOT_CYC) in addition to
+the already-enabled event PAPI_TOT_INS. When
+<b>GPTLpr_file()</b> was called, it computed:
+<pre>
+      GPTL_IPC = PAPI_TOT_INS / PAPI_TOT_CYC;
+</pre>
+<p>
+Note the asterisk in front of region "B". This
+indicates that region "B" had multiple parents. It is presented as a child of
+region "A" because that is the first region that invoked it. Information
+about other parents is presented after the main call tree. It shows that
+region "B" had two parents, "A", and "do_work". Each parent invoked "B" once,
+for a total of 2 calls.
+
+<hr />
+<a href="example1.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Example 1"
+				  /></a> 
+<a href="example3.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 3" /></a>
+
+<br />
+
+</html>
