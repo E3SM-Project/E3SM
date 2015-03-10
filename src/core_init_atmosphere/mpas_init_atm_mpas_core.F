@@ -11,9 +11,9 @@ module mpas_core
    contains
 
 
-   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)
+   subroutine mpas_core_init(domain, startTimeStamp)
    
-      use mpas_grid_types
+      use mpas_derived_types
       use mpas_stream_manager
       use mpas_io_streams, only : MPAS_STREAM_NEAREST
       use mpas_configure
@@ -22,7 +22,6 @@ module mpas_core
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
 
       type (block_type), pointer :: block
@@ -49,23 +48,23 @@ module mpas_core
          block => block % next
       end do 
 
-      call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius, streamID='output', ierr=ierr)
-      call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius, streamID='surface', ierr=ierr)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius, streamID='output', ierr=ierr)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius, streamID='surface', ierr=ierr)
 
       !
       ! We don't actually expect the time in the (most likely 'static') file to
       !    match the time in the namelist, so just read whatever time we find in
       !    the input file.
       !
-      call MPAS_stream_mgr_read(stream_manager, whence=MPAS_STREAM_NEAREST, ierr=ierr)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+      call MPAS_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_NEAREST, ierr=ierr)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
    end subroutine mpas_core_init
    
    
-   subroutine mpas_core_run(domain, stream_manager)
+   subroutine mpas_core_run(domain)
    
-      use mpas_grid_types
+      use mpas_derived_types
       use mpas_stream_manager
       use mpas_timer
       use init_atm_cases
@@ -73,11 +72,10 @@ module mpas_core
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
    
       integer :: ierr
       
-      call init_atm_setup_case(domain, stream_manager)
+      call init_atm_setup_case(domain, domain % streamManager)
    
    !
    ! Note: The following initialization calls have been moved to the mpas_init_atm_case_*() subroutines,
@@ -86,32 +84,31 @@ module mpas_core
    !   call atm_initialize_advection_rk(mesh)
    !   call atm_initialize_deformation_weights(mesh)
   
-      call mpas_stream_mgr_write(stream_manager, streamID='output', ierr=ierr)
-      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+      call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
    
    end subroutine mpas_core_run
    
    
-   subroutine mpas_core_finalize(domain, stream_manager)
+   subroutine mpas_core_finalize(domain)
    
-      use mpas_grid_types
+      use mpas_derived_types
       use mpas_decomp
       use mpas_stream_manager
    
       implicit none
    
       type (domain_type), intent(inout) :: domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
 
-      call mpas_decomp_destroy_decomp_list(decompositions)
+      call mpas_decomp_destroy_decomp_list(domain % decompositions)
    
    end subroutine mpas_core_finalize
 
 
    subroutine mpas_core_setup_packages(configs, packages, ierr)
 
-      use mpas_packages
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
 
       implicit none
 
@@ -174,9 +171,9 @@ module mpas_core
    !-----------------------------------------------------------------------
    subroutine mpas_core_setup_clock(core_clock, configs, ierr)
 
-      use mpas_timekeeping, only : MPAS_Clock_type, MPAS_Time_type, MPAS_Timeinterval_type, &
-                                   mpas_set_time, mpas_set_timeInterval, mpas_create_clock
-      use mpas_grid_types, only : mpas_pool_type, mpas_pool_get_config
+      use mpas_timekeeping, only : mpas_set_time, mpas_set_timeInterval, mpas_create_clock
+      use mpas_derived_types, only : MPAS_Clock_type, MPAS_Time_type, MPAS_Timeinterval_type, mpas_pool_type
+      use mpas_pool_routines, only : mpas_pool_get_config
       use mpas_kind_types, only : StrKIND
 
       implicit none
@@ -222,7 +219,8 @@ module mpas_core
    !-----------------------------------------------------------------------
    subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
-      use mpas_grid_types, only : mpas_pool_type, mpas_pool_get_config
+      use mpas_derived_types, only : mpas_pool_type
+      use mpas_pool_routines, only : mpas_pool_get_config
 
       implicit none
 
@@ -250,22 +248,25 @@ module mpas_core
    !>  domain type, and register any decompositons the core wants within it.
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_decompositions(ierr)
+   subroutine mpas_core_setup_decompositions(domain, ierr)
 
+      use mpas_derived_types
       use mpas_decomp
 
       implicit none
+
+      type (domain_type), intent(in) :: domain
 
       integer, intent(out) :: ierr
       procedure (mpas_decomp_function), pointer :: decompFunc
 
       ierr = 0
 
-      call mpas_decomp_create_decomp_list(decompositions)
+      call mpas_decomp_create_decomp_list(domain % decompositions)
 
       decompFunc => mpas_uniform_decomp
 
-      call mpas_decomp_register_method(decompositions, 'uniform', decompFunc, iErr)
+      call mpas_decomp_register_method(domain % decompositions, 'uniform', decompFunc, iErr)
 
    end subroutine mpas_core_setup_decompositions
 
