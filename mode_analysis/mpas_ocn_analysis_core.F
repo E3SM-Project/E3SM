@@ -57,15 +57,15 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)!{{{
+   subroutine mpas_core_init(domain, startTimeStamp)!{{{
 
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_stream_manager
 
       implicit none
 
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
 
       type (block_type), pointer :: block
@@ -101,8 +101,8 @@ module mpas_core
       !
       ! Read input data for model
       !
-      call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=err)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
+      call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err)
 
       dminfo = domain % dminfo
       err = 0
@@ -224,7 +224,8 @@ module mpas_core
 !-----------------------------------------------------------------------
    subroutine mpas_init_block(block, dt, err)!{{{
    
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_rbf_interpolation
       use mpas_vector_operations
       use mpas_vector_reconstruction
@@ -370,17 +371,17 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain, stream_manager)!{{{
+   subroutine mpas_core_run(domain)!{{{
    
       use mpas_kind_types
       use mpas_stream_manager
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_timer
    
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
    
       integer :: itimestep
       real (kind=RKIND) :: dt
@@ -427,26 +428,24 @@ module mpas_core
 
       if (config_write_output_on_startup) then
          call ocn_analysis_compute(domain, err) 
-         call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       endif
 
    end subroutine mpas_core_run!}}}
    
-   subroutine mpas_core_finalize(domain, stream_manager)!{{{
+   subroutine mpas_core_finalize(domain)!{{{
    
-      use mpas_grid_types
+      use mpas_derived_types
       use mpas_decomp
-      use mpas_stream_manager
    
       implicit none
 
       type (domain_type), intent(inout) :: domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       integer :: ierr
 
       call mpas_destroy_clock(clock, ierr)
 
-      call mpas_decomp_destroy_decomp_list(decompositions)
+      call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
    end subroutine mpas_core_finalize!}}}
 
@@ -465,8 +464,6 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
    subroutine mpas_core_setup_packages(configPool, packagePool, ierr)!{{{
-
-      use mpas_packages
 
       implicit none
 
@@ -497,22 +494,25 @@ module mpas_core
    !>  domain type, and register any decompositons the core wants within it.
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_decompositions(ierr)!{{{
+   subroutine mpas_core_setup_decompositions(domain, ierr)!{{{
 
+      use mpas_derived_types
       use mpas_decomp
 
       implicit none
+
+      type (domain_type), intent(in) :: domain
 
       integer, intent(out) :: ierr
       procedure (mpas_decomp_function), pointer :: decompFunc
 
       ierr = 0
 
-      call mpas_decomp_create_decomp_list(decompositions)
+      call mpas_decomp_create_decomp_list(domain % decompositions)
 
       decompFunc => mpas_uniform_decomp
 
-      call mpas_decomp_register_method(decompositions, 'uniform', decompFunc, iErr)
+      call mpas_decomp_register_method(domain % decompositions, 'uniform', decompFunc, iErr)
 
    end subroutine mpas_core_setup_decompositions!}}}
 

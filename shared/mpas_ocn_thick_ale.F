@@ -19,10 +19,10 @@
 
 module ocn_thick_ale
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_constants
    use mpas_timer
-   use mpas_packages
 
    use ocn_constants
 

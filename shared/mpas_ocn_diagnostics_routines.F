@@ -19,7 +19,8 @@
 
 module ocn_diagnostics_routines
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_constants
    use mpas_timer
 
