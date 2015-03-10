@@ -329,7 +329,14 @@ class cetus(platformBuilder):
         self.CXX = '/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlcxx'
         self.LDFLAGS = '-Wl,--relax -Wl,--allow-multiple-definition -Wl,--whole-archive -L/soft/libraries/hdf5/1.8.14/cnk-xl/V1R2M2-20150213/lib -lhdf5_hl -lhdf5 -L /soft/libraries/alcf/current/xl/ZLIB/lib -lz  -Wl,--no-whole-archive '        
         self.MPIEXEC = (' -D  MPIEXEC:FILEPATH=/usr/bin/runjob')
-#        self.OFLAGS += ('-D  MPIEXEC_PREFLAGS:STRING=\"--block \$ENV{COBALT_PARTNAME}\" ')
+        self.OFLAGS += ('-D  MPIEXEC_PREFLAGS:STRING=\"--envs GPFSMPIO_NAGG_PSET=16 ')
+        self.OFLAGS += ('--envs ROMIO_HINTS=/home/pkcoff/public/romio_hints ')
+        self.OFLAGS += ('--envs GPFSMPIO_BALANCECONTIG=1 ')
+        self.OFLAGS += ('--envs GPFSMPIO_AGGMETHOD=2 ')
+        self.OFLAGS += ('--envs PAMID_TYPED_ONESIDED=1 ')
+        self.OFLAGS += ('--envs PAMID_RMA_PENDING=1M ')
+        self.OFLAGS += ('--envs GPFSMPIO_BRIDGERINGAGG=1\" ')
+    
 
         self.NUMPE = ''
 
