@@ -219,16 +219,11 @@ EOF
 if ($print>=2) { print "Setting configuration directory to $scriptdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Add $scriptdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = (  $scriptdir, 
-	      "$scriptdir/ccsm_utils/Case.template", 
-	      "$scriptdir/ccsm_utils/Tools",
-	      "$ccsmroot/cime/perl5lib" )
+my @dirs = (  "$scriptdir/ccsm_utils/Case.template", "$scriptdir/ccsm_utils/Tools" )
 
 unshift @INC, @dirs;
 require ConfigCase;
 require SetupTools;
-
 
 #-----------------------------------------------------------------------------------------------
 # If just listing valid values then exit after completion of lists

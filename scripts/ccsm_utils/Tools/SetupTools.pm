@@ -87,16 +87,16 @@ sub read_compiler_xml
     $name eq "config_compilers" or die
 	"file $compiler_file is not a compiler parameters file\n";
 
-#
-# Read all settings for the given compiler and optionally the Machine
-# more general settings are overwritten by more specific ones
-# 
+    #
+    # Read all settings for the given compiler and optionally the Machine
+    # more general settings are overwritten by more specific ones
+    # 
     my @elem = $xml->elements_by_name("compiler");
     my %a=();
     my $e;
     foreach $e (@elem){
 	%a = $e->get_attributes();
-# Only pick up settings for which the defined attributes match
+	# Only pick up settings for which the defined attributes match
 	next if(defined $a{COMPILER} && $a{COMPILER} ne $compiler);
 	next if(defined $a{MACH} && $a{MACH} ne $machine);
 	next if(defined $a{OS} && $a{OS} ne $os);
@@ -131,11 +131,11 @@ sub set_compiler
     my $macros;
     $macros->{_COND_}={};
 
-#
-# Parse the xml settings into the $macros hash structure
-# put conditional settings in the _COND_ portion of the hash
-# and handle them seperately
-#
+    #
+    # Parse the xml settings into the $macros hash structure
+    # put conditional settings in the _COND_ portion of the hash
+    # and handle them seperately
+    #
     my %a = ();
     foreach $flag (@compiler_settings){
 	my $name = $flag->get_name();

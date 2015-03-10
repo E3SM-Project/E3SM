@@ -212,7 +212,7 @@ else:
 
     if cesm_root_dir is not None:
         cesm_cmake_guesses.append(
-            os.path.join(cesm_root_dir, "utils", "CMake")
+            os.path.join(cesm_root_dir, "cime", "externals", "CMake")
             )
 
     cesm_cmake_dir = search_paths("CESM_utils.cmake", cesm_cmake_guesses)

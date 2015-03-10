@@ -343,9 +343,9 @@ sub initialize()
 
   my $ccsmroot = abs_path("$cfgdir/../../");
   my @dirs = ("$cfgdir", 
-	      "$cfgdir/ccsm_utils/Case.template", 
-	      "$cfgdir/ccsm_utils/Tools", 
-	      "$ccsmroot/cime/perl5lib");
+	      "$ccsmroot/cime/scripts/ccsm_utils/Case.template", 
+	      "$ccsmroot/cime/scripts/ccsm_utils/Tools", 
+	      "$ccsmroot/cime/utils/perl5lib");
 
   unshift @INC, @dirs;
   require XML::Lite;
@@ -365,7 +365,7 @@ sub initialize()
   %opts = (
            autosubmit           => 'on',
            baselineroot         => undef,
-           cesmroot             => abs_path( "$scriptsroot/../../" ),
+           cesmroot             => "$ccsmroot",
            clean                => "off",
            compiler             => undef,
            compset_file         => undef,
@@ -378,7 +378,7 @@ sub initialize()
            xml_mach             => undef,
            xml_compiler         => undef,
            xml_category         => undef,
-           mach_dir             => abs_path( "$scriptsroot/../machines"),
+           mach_dir             => "$ccsmroot/cime/machines",
            mach                 => undef,
            mpilib               => undef,
            nlcompareonly        => undef,
@@ -387,9 +387,9 @@ sub initialize()
            pes_file             => undef,
            project              => undef,
            reruntests           => 'off',
-           testid               => $testlid,
+           testid               => "$testlid",
            testname             => undef,
-           testroot             => $cwd,
+           testroot             => "$cwd",
            scratchroot          => undef,
            sharedlibroot        => undef,
            verbose              => 0,
@@ -472,7 +472,6 @@ sub options
 	    pop		=> abs_path( "$ccsmroot/components/pop2/cesmtest/testmods_dirs/"),
 	    drv		=> abs_path( "$ccsmroot/cime/driver_cpl/cesmtest/testmods_dirs/"),
 	    );
-
 
 	my $component = $opts{'component'};
 	if ($component) {
@@ -1158,6 +1157,7 @@ sub runCreateNewcase
   my %test = %{ shift() };
   my $caseroot = "$opts{'testroot'}/$test{'case'}";
   my $cn_args = " -silent -case $caseroot -res $test{'grid'} -mach $test{'mach'} -compset $test{'compset'} -testname $test{'testname'}";
+
   if(defined $test{'confopts'})
   {
     $cn_args .= " -confopts $test{'confopts'}";
@@ -1226,8 +1226,10 @@ sub runCreateNewcase
      if ($testmods =~ /^pop\//) {
 	 $xml_testmod_dir = $xml_testmod_dirs{'pop'};
      }
-     $testmods = "$xml_testmod_dir/".$testmods;
-     $cn_args .= " -user_mods_dir $testmods";
+     if (defined $xml_testmod_dir) {
+	 $testmods = "$xml_testmod_dir/".$testmods;
+	 $cn_args .= " -user_mods_dir $testmods";
+     }
   }
 
   my $createnewcase = "$opts{'cesmroot'}/cime/scripts/create_newcase $cn_args";
@@ -1807,6 +1809,7 @@ sub doonetest{
     my $testhash;
 
     $testhash = ParseTestName($testname);
+
 
     checkTestCase($testhash);
     documentTestCase($testhash);

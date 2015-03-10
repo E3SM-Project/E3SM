@@ -404,7 +404,7 @@ sub buildLibraries()
     chdir $EXEROOT;
 
     if ($MPILIB eq 'mpi-serial') {
-	my $sysmod = "cp -p -f $CCSMROOT/utils/mct/mpi-serial/\*.h  $LIBROOT/include/.";
+	my $sysmod = "cp -p -f $CCSMROOT/cime/externals/mct/mpi-serial/\*.h  $LIBROOT/include/.";
 	system($sysmod) == 0 or die "$sysmod failed: $?\n";
     }
     

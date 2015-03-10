@@ -101,6 +101,7 @@ function Usage {
     echo "     PASS    : success"
     echo ""
     echo "OPTIONS"
+    echo "     -cprnc_exe <name>      Full pathname to cprnc executable "
     echo "     -baseline_dir <name>   Full path to the baseline directory for this test (required)"
     echo "     -baseline_hist <name>  Name used for history file in the baseline directory (required)"
     echo "     -test_dir <name>       Full path to the directory containing history files for this test (required)"
@@ -145,15 +146,9 @@ function absolute_path {
 function print_result {
     status="$1"
     info="$2"
-
+    
     echo "${status}:${info}"
 }
-
-#======================================================================
-# Set parameters
-#======================================================================
-# If cprnc isn't in your path, this is where to find it
-cprnc_default=/glade/p/cesm/cseg/tools/cprnc/cprnc
 
 #======================================================================
 # Begin main script
@@ -174,6 +169,7 @@ info=''
 #----------------------------------------------------------------------
 # Define default values for command-line arguments
 #----------------------------------------------------------------------
+cprnc_exe=''
 baseline_dir=''
 baseline_hist=''
 test_dir=''
@@ -188,6 +184,10 @@ test_hist=$test_hist_init
 #----------------------------------------------------------------------
 while [ $# -gt 0 ]; do
     case $1 in
+	-cprnc_exe )
+	    cprnc_exe=$2
+	    shift
+	    ;;
 	-baseline_dir )
 	    baseline_dir=$2
 	    shift
@@ -225,6 +225,10 @@ done
 #----------------------------------------------------------------------
 error=0  # no errors yet
 
+if [ -z "$cprnc_exe" ]; then
+    echo "$progname: cprnc_exe must be provided" >&2
+    error=1
+fi
 if [ -z "$baseline_dir" ]; then
     echo "$progname: baseline_dir must be provided" >&2
     error=1
@@ -248,15 +252,6 @@ if [ $error -gt 0 ]; then
     # return default values for status & info
     print_result $status "$info"
     exit 1
-fi
-
-#----------------------------------------------------------------------
-# Determine path to cprnc
-#----------------------------------------------------------------------
-cprnc_path=`command -v cprnc`
-if [ $? -gt 0 ]; then
-    # cprnc not found in path; use default
-    cprnc_path=$cprnc_default
 fi
 
 #----------------------------------------------------------------------
@@ -313,15 +308,31 @@ fi
 # Compare history files, get test status
 # Put output in a file named ${test_dir}/${test_hist}.cprnc.out
 #----------------------------------------------------------------------
-# We cd to test_dir so that cprnc.out is put there (note that this
-# assumes that the user has write permission in test_dir)
+
+# We cd to test_dir so that $testhist.out.out is put there 
+# (note that this assumes that the user has write permission in test_dir)
+
 curdir=`pwd`
 cd $test_dir
 
-status=`CCSM_CPRNC=$cprnc_path $tools_dir/hist_compare $test_dir/$test_hist $baseline_dir/$baseline_hist | tail -1`
-mv cprnc.out ${test_hist}.cprnc.out
+$cprnc_exe $test_dir/$test_hist $baseline_dir/$baseline_hist > ${test_hist}.cprnc.out
+diff_test=`grep "diff_test" ${test_dir}/${test_hist}.cprnc.out | grep IDENTICAL | wc -l`
+
+status="FAIL"
+if [ $diff_test -gt 0 ]; then
+    status="PASS"
+else
+    diff_test=`grep -a "diff_test" ${test_dir}/${test_hist}.cprnc.out | grep IDENTICAL | wc -l`
+    if [ $diff_test -gt 0 ]; then
+	status="PASS"
+    fi
+fi
 
 cd $curdir
 
 print_result $status "$info"
+
 exit 0
+
+
+

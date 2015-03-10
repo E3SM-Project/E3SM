@@ -174,12 +174,22 @@ if [ $error -gt 0 ]; then
 fi
 
 #------------------------------------------------------------------
+# Determine location of cprnc
+#------------------------------------------------------------------
+if [ -z $CASEROOT ]; then
+    echo " environment variable CASEROOT is not defined "
+    exit 1
+fi
+cd $CASEROOT
+cprnc_exe=`./xmlquery CCSM_CPRNC -value`
+
+#------------------------------------------------------------------
 # Loop over models
 #------------------------------------------------------------------
 
+cd $rundir
 overall_status='PASS'
 
-cd $rundir
 models=(cam cice clm2 pop cism cpl)
 for model in ${models[*]}; do
     
@@ -226,7 +236,7 @@ for model in ${models[*]}; do
 		if [ "$model" != "cpl" ]; then
 		    # do all model comparisons except for cpl, since cpl history does not write out all instances - but just instance 1
 
-		    compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2_0001"`
+		    compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2_0001" -cprnc_exe "$cprnc_exe"`
 		    compare_status=`get_status "$compare_result"`
 		    compare_info=`get_info "$compare_result"`
 		    print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} for _0001)"
@@ -234,7 +244,7 @@ for model in ${models[*]}; do
 			overall_status="FAIL"
 		    fi
 
-		    compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2_0002"`
+		    compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2_0002" -cprnc_exe "$cprnc_exe"`
 		    compare_status=`get_status "$compare_result"`
 		    compare_info=`get_info "$compare_result"`
 		    print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} for _0002)"
@@ -245,7 +255,6 @@ for model in ${models[*]}; do
 		fi
 	    fi		
 
-
 	elif [[ "$testcase" =~ .*_N2.* ]]; then
 
 	    hist1_0001=`cd $rundir; ls -1 ${testcase}.${model}_0001.${extension}.*.nc.${suffix1} 2>/dev/null | tail -1`
@@ -255,7 +264,7 @@ for model in ${models[*]}; do
 
 	    if  [[ -f ${hist1_0001} ]] && [[ -f ${hist1_0002} ]] && [[ -f ${hist2_0001} ]] && [[ -f ${hist2_0001} ]] ; then
 
-		compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1_0001" -test_hist "$hist1_0002"`
+		compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1_0001" -test_hist "$hist1_0002" -cprnc_exe "$cprnc_exe"`
 		compare_status=`get_status "$compare_result"`
 		compare_info=`get_info "$compare_result"`
 		print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} for _0001 and .${suffix2} for _0001)"
@@ -263,7 +272,7 @@ for model in ${models[*]}; do
 		    overall_status="FAIL"
 		fi
 
-		compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist2_0002" -test_hist "$hist2_0002"`
+		compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist2_0002" -test_hist "$hist2_0002" -cprnc_exe "$cprnc_exe"`
 		compare_status=`get_status "$compare_result"`
 		compare_info=`get_info "$compare_result"`
 		print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} for _0002 and .${suffix2} for _0002)"
@@ -284,7 +293,7 @@ for model in ${models[*]}; do
 		hist2=`cd $rundir; ls -1 ${testcase}.${model}.${extension}.*.nc.${suffix2} 2>/dev/null | tail -1`
 		
 		if  [[ -f ${hist1} ]] && [[ -f ${hist2} ]] ; then
-		    compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2"`
+		    compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2" -cprnc_exe "$cprnc_exe"`
 		    compare_status=`get_status "$compare_result"`
 		    compare_info=`get_info "$compare_result"`
 		    print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} files)"
@@ -302,7 +311,7 @@ for model in ${models[*]}; do
 		hist2=`cd $rundir; ls -1 ${testcase}.${model}*.${extension}.*.nc.${suffix1}_${add_iop} 2>/dev/null | tail -1`
 
 		if  [[ -f ${hist1} ]] && [[ -f ${hist2} ]] ; then
-		    compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2"`
+		    compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2" -cprnc_exe "$cprnc_exe"`
 		    compare_status=`get_status "$compare_result"`
 		    if [ "$compare_status" != "PASS" ]; then
 			overall_status="FAIL"
@@ -315,7 +324,7 @@ for model in ${models[*]}; do
 		hist2=`cd $rundir; ls -1 ${testcase}.${model}*.${extension}.*.nc.${suffix2}_${add_iop} 2>/dev/null | tail -1`
 
 		if  [[ -f ${hist1} ]] && [[ -f ${hist2} ]] ; then
-		    compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2"`
+		    compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2" -cprnc_exe "$cprnc_exe"`
 		    compare_status=`get_status "$compare_result"`
 		    if [ "$compare_status" != "PASS" ]; then
 			overall_status="FAIL"
@@ -329,11 +338,10 @@ for model in ${models[*]}; do
 	else
 
 	    # No _IOP_ or _N2_ attributes or multi-instance NCK_ or NCR_ tests
-
 	    hist1=`cd $rundir; ls -1 ${testcase}.${model}.${extension}.*.nc.${suffix1} 2>/dev/null | tail -1`
 	    hist2=`cd $rundir; ls -1 ${testcase}.${model}.${extension}.*.nc.${suffix2} 2>/dev/null | tail -1`
 	    if  [[ -f ${hist1} ]] && [[ -f ${hist2} ]] ; then
-		compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2"`
+		compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2" -cprnc_exe "$cprnc_exe"`
 		compare_status=`get_status "$compare_result"`
 		compare_info=`get_info "$compare_result"`
 		print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} files)"

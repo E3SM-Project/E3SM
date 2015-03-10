@@ -1,7 +1,7 @@
 #! /bin/csh -fx
+
 #==============================================================================
-# Purpose:
-#     (a) Build mct library
+# Purpose: Build the mct library
 #==============================================================================
 
 cd $CASEROOT
@@ -14,10 +14,11 @@ set MACH	= `./xmlquery  MACH	 -value `
 set MPILIB	= `./xmlquery  MPILIB	 -value ` 
 set OS		= `./xmlquery  OS	 -value ` 
 
-setenv MCT_DIR $CCSMROOT/utils/mct   # mct directory
-setenv LIBDIR $1
+setenv LIBDIR     $1
+setenv MCT_DIR    $CCSMROOT/cime/externals/mct   # mct directory
 setenv MCT_LIBDIR $LIBDIR/mct
-echo MCT_LIBDIR $MCT_LIBDIR
+
+echo "MCT_LIBDIR   $MCT_LIBDIR"
 
   cd $MCT_LIBDIR
   echo "Copying source to CCSM EXEROOT..."

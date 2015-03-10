@@ -17,6 +17,7 @@ use IO::File;
 use IO::Handle;
 use Data::Dumper;
 use File::Basename;
+use File::Path qw(make_path);
 
 # Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.  
 # If not found, print a warning message then exit. 
@@ -218,10 +219,14 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
     } else {
 	die "ERROR: create_newcase must include the input argument, -case \n";
     }
-    $caseroot = abs_path("$case");
-    if (-d $caseroot) {
-	die "Caseroot directory $caseroot already exists \n";
+	
+    if (-d $case) {
+	die "Case directory $case already exists \n";
     }
+
+    make_path($case); 
+    $caseroot = abs_path("$case");
+
     my @dirs = split "/", $caseroot, -1;  # The -1 prevents split from stripping trailing nulls
     my $num = scalar @dirs;
     $case = $dirs[$num-1];
@@ -359,33 +364,33 @@ EOF
 EOF
 
 # The XML::Lite module is required to parse the XML configuration files.
-(-f "$ccsmroot/cime/perl5lib/XML/Lite.pm")  or  die <<"EOF";
+(-f "$ccsmroot/cime/utils/perl5lib/XML/Lite.pm")  or  die <<"EOF";
 ** Cannot find perl module \"XML/Lite.pm\" in directory 
-    \"$ccsmroot/cime/perl5lib\" **
+    \"$ccsmroot/cime/utils/perl5lib\" **
 EOF
 
 # Tests file
-    my $tests_file = 'config_tests.xml';
-(-f "$cfgdir/ccsm_utils/Testcases/$tests_file")  or  die <<"EOF";
+my $tests_file = 'config_tests.xml';
+(-f "$ccsmroot/cime/scripts/ccsm_utils/Testcases/$tests_file")  or  die <<"EOF";
 ** Cannot find test parameters file \"$tests_file\" in directory 
-    \"$cfgdir/ccsm_utils/Testcases\" **
+    \"$ccsmroot/cime/scripts/ccsm_utils/Testcases\" **
 EOF
 
 # The ConfigCase module provides utilities to store and manipulate the configuration.
-(-f "$cfgdir/ccsm_utils/Case.template/ConfigCase.pm")  or  die <<"EOF";
+(-f "$ccsmroot/cime/scripts/ccsm_utils/Case.template/ConfigCase.pm")  or  die <<"EOF";
 ** Cannot find perl module \"ConfigCase.pm\" in directory 
-    \"$cfgdir/ccsm_utils/Case.template\" **
+    \"$ccsmroot/cime/scripts/ccsm_utils/Case.template\" **
 EOF
 
-    if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
+if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
 
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
 my @dirs = ("$cfgdir", 
-	    "$cfgdir/ccsm_utils/Case.template", 
-	    "$cfgdir/ccsm_utils/Tools", 
-	    "$ccsmroot/cime/perl5lib");
+	    "$ccsmroot/cime/scripts/ccsm_utils/Case.template", 
+	    "$ccsmroot/cime/scripts/ccsm_utils/Tools", 
+	    "$ccsmroot/cime/utils/perl5lib");
 
 unshift @INC, @dirs;
 require XML::Lite;
@@ -436,9 +441,6 @@ my $cfg_ref = ConfigCase->new("$cfgdir/ccsm_utils/Case.template/$config_def_file
 
 #-----------------------------------------------------------------------------------------------
 # (1) Set compset/grid parameters
-my $sysmod = "mkdir -p $caseroot"; 
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
 my $file = "$caseroot/README.case";
 my $fh = IO::File->new($file, '>' ) or die "can't open file: $file\n";
 print $fh "$commandline\n\n\n";
@@ -868,12 +870,12 @@ my $sysmod;
 my $scriptsroot = "$ccsmroot/cime/scripts";
 
 print "Creating $caseroot $eol";
+chdir ("$caseroot");
 
 # Create relevant directories in $caseroot
-my @mkdirs = qw(. SourceMods LockedFiles Buildconf Tools/XML/Lite Tools/pythonlib);
-foreach my $mkdir ( @mkdirs ) {
-    $sysmod = "mkdir -p $caseroot/$mkdir"; 
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+my @newdirs = qw(. SourceMods LockedFiles Buildconf Tools Tools/XML/Lite Tools/pythonlib);
+foreach my $newdir ( @newdirs ) {
+    make_path($newdir); 
 }
 
 # Copy relevant files into $caseroot
@@ -921,22 +923,20 @@ if (! -f "$mkbatch") {
     "$scriptsroot/ccsm_utils/Tools/getTiming", 
     "$scriptsroot/ccsm_utils/Tools/SetupTools.pm",
     "$scriptsroot/ccsm_utils/Tools/compare_namelists.pl",
-    "$scriptsroot/ccsm_utils/Tools/cesm_tseries_generator.py",
-    "$scriptsroot/ccsm_utils/Tools/tseries_generate.submit", 
-    "$scriptsroot/ccsm_utils/Tools/tseries_generate.run", 
     "$machdir/ccsm_getenv", 
     "$machdir/taskmaker.pl", 
     "$machdir/Makefile",
     "$machdir/mkSrcfiles", 
     "$machdir/mkDepends", 
     "$mkbatch");
+
 foreach my $file (@files) {
-    $sysmod = "cp -p $file $caseroot/Tools/."; 
+    $sysmod = "cp -p $file $caseroot/Tools/. "; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # Copy relevant files into $caseroot/Tools/pythonlib
-@files = ("$ccsmroot/cime/pythonlib/cesmEnvLib.py");
+@files = ("$ccsmroot/cime/utils/pythonlib/cesmEnvLib.py");
 foreach my $file (@files) {
     $sysmod = "cp -p $file $caseroot/Tools/pythonlib/."; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -974,9 +974,9 @@ $sysmod = "chmod 755 $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Copy relevant files into $caseroot/Tools/XML directory
-$sysmod = "cp -p $ccsmroot/cime/perl5lib/XML/Lite.pm    $caseroot/Tools/XML"; 
+$sysmod = "cp -p $ccsmroot/cime/utils/perl5lib/XML/Lite.pm    $caseroot/Tools/XML"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "cp -p $ccsmroot/cime/perl5lib/XML/Lite/Element.pm  $caseroot/Tools/XML/Lite"; 
+$sysmod = "cp -p $ccsmroot/cime/utils/perl5lib/XML/Lite/Element.pm  $caseroot/Tools/XML/Lite"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create relevant files in the $caseroot/Buildconf
@@ -994,11 +994,11 @@ foreach my $comp (@comps)  {
     $comp =~ s/\'//g;
     my $compdir;
     if ($comp =~ /^d[ailor]/) {
-	$compdir = "$ccsmroot/cime/models/data/$comp/bld";
+	$compdir = "$ccsmroot/cime/components/data_comps/$comp/bld";
     } elsif ($comp =~ /^s[aiglorw]/) {
-	$compdir = "$ccsmroot/cime/models/stub/$comp/bld";
+	$compdir = "$ccsmroot/cime/components/stub_comps/$comp/bld";
     } elsif ($comp =~ /^x[aiglorw]/) {
-	$compdir = "$ccsmroot/cime/models/testcpl/$comp/bld";
+	$compdir = "$ccsmroot/cime/components/xcpl_comps/$comp/bld";
     } else {
 	$compdir = "$ccsmroot/components/$comp/bld";
     }
@@ -1034,11 +1034,9 @@ foreach my $lib ("gptl", "mct", "csm_share", "pio") {
 # Create the relevant $caseroot/Sourcemods directories
 my $moddir = "$caseroot/SourceMods";
 foreach my $comp (@comps)  {
-    $sysmod = "mkdir -p $moddir/src.$comp"; 
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    make_path("$moddir/src.$comp"); 
     if ($comp eq 'cism') {
-	$sysmod = "mkdir $moddir/src.$comp/glimmer-cism";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	make_path("$moddir/src.$comp/glimmer-cism");
 	open(README, ">", "$moddir/src.$comp/README") or
 	    die "cannot open > $moddir/src.$comp/README: $!";
 	print README
@@ -1048,12 +1046,8 @@ foreach my $comp (@comps)  {
 	close(README);
     }
 }
-$sysmod = "mkdir -p $caseroot/SourceMods/src.share"; 
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "mkdir -p $caseroot/SourceMods/src.drv"  ; 
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "chmod -R u+w $caseroot/SourceMods"; 
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+make_path("$caseroot/SourceMods/src.share"); 
+make_path("$caseroot/SourceMods/src.drv"); 
 
 # Create machine specific environment file (env_mach_specific)
 if(-e "$machdir/env_mach_specific.$mach" ) {

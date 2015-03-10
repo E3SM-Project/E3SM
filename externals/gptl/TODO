@@ -1,0 +1,9 @@
+o For THREADED_PTHREADS, improve speed of finding threadid
+o Why does C++ test break when use prototypes for pr_summary*?
+o "make clean" should always get rid of everything that might have been built
+o Revamp test suite. Suggestions:
+  - More, shorter tests
+  - "make test" should only build what is going to be run
+  - Overload specific tests only when necessary
+  - Rewrite runalltests* in Perl
+o GPU port

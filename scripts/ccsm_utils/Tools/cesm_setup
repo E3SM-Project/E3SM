@@ -78,8 +78,11 @@ if ($opts{'testmode'}) {
     $testmode = 1;
 }
 
-my $dirs = "$caseroot/Tools";
-unshift @INC, $dirs;
+chdir "$caseroot";
+my $ccsmroot  = `./xmlquery CCSMROOT  -value`;
+my @dirs = ("$caseroot/Tools", "$ccsmroot/cime/utils/perl5lib");
+
+unshift @INC, @dirs;
 require SetupTools;
 
 my %xmlvars=();
@@ -402,7 +405,7 @@ sub build_usernl_files {
 		$inst_string = `printf _%04d $inst_counter`;
 		if ( ! -f "$CASEROOT/user_nl_${comp}${inst_string}" ) {
 		    if ($comp =~ /^d[ailor]/) {
-			my $sysmod = "cp $CCSMROOT/cime/models/data/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}${inst_string}";
+			my $sysmod = "cp $CCSMROOT/cime/components/data_comps/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}${inst_string}";
 			system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 		    } elsif ($comp =~ /^s[aiglor]/) {
 			# do nothing
@@ -420,7 +423,7 @@ sub build_usernl_files {
 	} else {
 	    if ( ! -f "$CASEROOT/user_nl_${comp}" ) {
 		if ($comp =~ /^d[ailor]/) {
-		    my $sysmod = "cp $CCSMROOT/cime/models/data/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
+		    my $sysmod = "cp $CCSMROOT/cime/components/data_comps/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
 		    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 		} elsif ($comp =~ /^s[aiglor]/) {
 		    # do nothing

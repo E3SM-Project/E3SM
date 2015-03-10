@@ -16,8 +16,8 @@ cd $pio_dir
 # Set options to cmake
 # ----------------------------------------------------------------------
 # Note that some other generic CMAKE options are set in the Makefile
-set cmake_opts=" -D USER_CMAKE_MODULE_PATH=$CCSMROOT/utils/CMake"
-set cmake_opts="$cmake_opts -D GENF90_PATH=$CCSMROOT/cime/genf90"
+set cmake_opts=" -D USER_CMAKE_MODULE_PATH=$CCSMROOT/cime/externals/CMake"
+set cmake_opts="$cmake_opts -D GENF90_PATH=$CCSMROOT/cime/externals/genf90"
 
 # ----------------------------------------------------------------------
 # create the pio makefile by running cmake (done via a rule

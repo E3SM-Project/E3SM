@@ -67,7 +67,7 @@ while ($inst_counter <= $NINST_ROF) {
     # call build-namelist
     # -----------------------------------------------------
 
-    $sysmod = "$CCSMROOT/cime/models/data/drof/bld/build-namelist";
+    $sysmod = "$CCSMROOT/cime/components/data_comps/drof/bld/build-namelist";
     $sysmod = "$sysmod -infile $CASEBUILD/drofconf/cesm_namelist";
     $sysmod = "$sysmod -caseroot $CASEROOT";
     $sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";

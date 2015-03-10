@@ -4,11 +4,21 @@
 # Yellowstone build specific settings
 # -------------------------------------------------------------------------
 
-set COMPILER            = `./xmlquery  COMPILER		   -value`
-set MPILIB              = `./xmlquery  MPILIB		   -value`
-set DEBUG               = `./xmlquery  DEBUG		   -value`
-set OS                  = `./xmlquery  OS		   -value`
-set PROFILE_PAPI_ENABLE = `./xmlquery  PROFILE_PAPI_ENABLE -value`
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER            = `./xmlquery  COMPILER		   -value`
+  set MPILIB              = `./xmlquery  MPILIB		   -value`
+  set DEBUG               = `./xmlquery  DEBUG		   -value`
+  set OS                  = `./xmlquery  OS		   -value`
+  set PROFILE_PAPI_ENABLE = `./xmlquery  PROFILE_PAPI_ENABLE -value`
+else
+  echo $0 using settings from environment:
+endif
+echo "COMPILER=$COMPILER"
+echo "MPILIB=$MPILIB"
+echo "DEBUG=$DEBUG"
+echo "OS=$OS"
+echo "PROFILE_PAPI_ENABLE=$PROFILE_PAPI_ENABLE"
 
 source /glade/apps/opt/lmod/lmod/init/csh
 

@@ -1,0 +1,224 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>GPTL timing library Home Page</title>
+<meta name="description" content="Profile multi-threaded and multi-tasked 
+C, C++, and Fortran codes. Optional PAPI interface. Automatically generate a
+dynamic call tree">
+<meta name="Keywords" content="gptl" ,"papi","profile","call="" tree","timing","performance="" analysis"="">
+<meta name="Author" content="Jim Rosinski">
+</head><body bgcolor="peachpuff"><h1>GPTL - General Purpose Timing Library</h1>
+<h2>(with optional PAPI interface)</h2>
+<h2>Download the latest source code <a href="https://github.com/jmrosinski/GPTL">here</a></h2>
+
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h2>Description</h2>
+<b>GPTL</b> is a library to instrument C, C++, and Fortran codes for
+performance analysis and profiling. The instrumentation can be inserted
+manually by the user wherever they wish, or it can be done automatically by
+the compiler at function entry and exit points if the application being
+profiled is built with GNU, Pathscale, Intel, PGI (8.0.2 or later), or AIX
+compilers. To auto-instrument an application, add
+<b><em>-finstrument-functions</em></b> (Pathscale, GNU, Intel) or
+<b><em>-Minstrument:functions</em></b> (PGI) or
+<b><em>-qdebug=function_trace</em></b> (AIX) 
+to the compile and link flags of the source files to be profiled.
+<p>
+Automatic instrumentation of a number of MPI routines is also possible. In this
+case no special compiler flags are necessary, and profiles are obtained
+with zero changes to application source files. See 
+<a href="example6.html">Example 6</a> for further details.  
+</p><p>
+Here is a portion of <b>GPTL</b> printout after running the HPCC benchmark
+with compiler-based automatic instrumentation enabled: 
+</p><pre><div style="background-color:white;">
+Stats for thread 0:
+                                             Called  Recurse Wallclock max       min       FP_OPS   e6_/_sec CI       
+  total                                            1     -      64.021    64.021    64.021 3.50e+08     5.47 7.20e-02 
+    HPCC_Init                                     11      10     0.157     0.157     0.000    95799     0.61 8.90e-02 
+*     HPL_pdinfo                                 120     118     0.019     0.018     0.000    96996     4.99 8.56e-02 
+*       HPL_all_reduce                             7     -       0.043     0.036     0.000      448     0.01 1.03e-02 
+*         HPL_broadcast                           21     -       0.041     0.036     0.000      126     0.00 6.72e-03 
+        HPL_pdlamch                                2     -       0.004     0.004     0.000    94248    21.21 1.13e-01 
+*       HPL_fprintf                              240     120     0.001     0.000     0.000     1200     0.93 6.67e-03 
+      HPCC_InputFileInit                          41      40     0.001     0.001     0.000      194     0.27 8.45e-03 
+        ReadInts                                   2     -       0.000     0.000     0.000       12     3.00 1.61e-02 
+    PTRANS                                        21      20    22.667    22.667     0.000 4.19e+07     1.85 3.19e-02 
+      MaxMem                                       5       4     0.000     0.000     0.000      796     2.70 1.79e-02 
+*     iceil_                                     132     -       0.000     0.000     0.000      792     2.88 1.75e-02 
+*     ilcm_                                       14     -       0.000     0.000     0.000       84     2.71 1.71e-02 
+      param_dump                                  18      12     0.000     0.000     0.000       84     0.82 7.05e-03 
+      Cblacs_get                                   5     -       0.000     0.000     0.000       30     1.43 1.67e-02 
+      Cblacs_gridmap                              35      30     0.005     0.001     0.000      225     0.05 1.79e-03 
+*       Cblacs_pinfo                               7       1     0.000     0.000     0.000       40     3.08 1.54e-02 
+*     Cblacs_gridinfo                             60      50     0.000     0.000     0.000      260     2.28 2.10e-02 
+      Cigsum2d                                     5     -       0.088     0.047     0.000      165     0.00 6.37e-03 
+      pdmatgen                                    20     -      21.497     1.213     0.942 4.00e+07     1.86 3.08e-02 
+*       numroc_                                   96     -       0.000     0.000     0.000      576     2.87 1.69e-02 
+*       setran_                                   25     -       0.000     0.000     0.000      150     2.94 1.72e-02 
+*       pdrand                               3.7e+06   2e+06    15.509     0.041     0.000 1.72e+07     1.11 2.24e-02 
+        xjumpm_                                57506   57326     0.219     0.030     0.000   230384     1.05 2.66e-02 
+        jumpit_                                60180   40120     0.214     0.021     0.000   280840     1.32 2.18e-02 
+      slboot_                                      5     -       0.000     0.000     0.000       30     1.30 1.01e-02 
+      Cblacs_barrier                              10       5     0.481     0.167     0.000       50     0.00 3.26e-03 
+      sltimer_                                    10     -       0.000     0.000     0.000      614     3.05 1.90e-02 
+*       dwalltime00                               15     -       0.000     0.000     0.000      150     2.54 2.57e-02 
+*       dcputime00                                15     -       0.000     0.000     0.000      373     3.06 1.91e-02 
+*         HPL_ptimer_cputime                      17     -       0.000     0.000     0.000      170     2.66 2.29e-02 
+      pdtrans                                     14       9     0.124     0.045     0.000   573505     4.61 1.36e-01 
+        Cblacs_dSendrecv                          12       8     0.115     0.042     0.000       56     0.00 2.24e-03 
+      pdmatcmp                                     5     -       0.448     0.295     0.003 1.29e+06     2.87 2.94e-01 
+*       HPL_daxpy                               2596     -       0.008     0.000     0.000 1.34e+06   177.06 4.40e-01 
+*       HPL_idamax                              2966     -       0.007     0.000     0.000   767291   104.75 4.15e-01 
+...
+</div>
+</pre>
+    Function names on the left of the output are indented to indicate their
+    parent, and depth in the call tree. An asterisk next to an entry means it
+    has more than one parent (see <a href="example2.html">Example 2</a> for
+    further details). Other entries in this output show the number of
+    invocations, number of recursive invocations, wallclock timing
+    statistics, and PAPI-based information. In this example, HPL_daxpy
+    produced 1.34e6 floating point operations, 177.06 MFlops/sec, and had a
+    computational intensity (floating point ops per memory reference) of
+    0.415. 
+<p>
+    If the <a href="http://icl.cs.utk.edu/papi">PAPI</a> library is
+    installed on the target platform, <b>GPTL</b> can be used to
+    access all available <b>PAPI</b> events.
+    To count floating point operations for example, one need only add
+    a call that looks like: 
+
+    </p><pre>    ret = GPTLsetoption (PAPI_FP_OPS, 1);
+    </pre>
+
+    The second argument "1" in the above call means "enable". Any non-zero
+    integer means "enable", and a zero means "disable".
+    Multiple <b>GPTL</b> or <b>PAPI</b> options can be specified with additional
+    calls to <b>GPTLsetoption()</b>. The man pages provided with the
+    distribution describe the full API specification. The interface is
+    identical for both Fortran and C/C++ 
+    codes, modulo the case-insensitivity of Fortran. 
+<p>
+    Calls to <b>GPTLstart()</b> and <b>GPTLstop()</b> can be nested to an
+    arbitrary depth. As shown above, <b>GPTL</b> handles nested regions by
+    presenting output in an indented fashion. The example also shows how
+    auto-instrumentation 
+    can be used to easily produce a dynamic call tree of
+    the application being profiled, where region names correspond to function
+	entry and exit points.
+
+</p><hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h2>What's new in the latest release (gptl-v5.4.3)</h2>
+<ul>
+<li> Support for Cray compilers
+</li><li> New function <b>GPTLpr_summary_file()</b> allows user-specification of 
+    output file to hold summary information. Thanks to Jim Edwards of NCAR
+    for his contribution.
+</li>
+</ul>
+
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h2>Description of what was new in earlier releases is <a href="earlier.html">here</a>.</h2>
+
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h2>Features</h2>
+<ul>
+<li> Low overhead.
+</li><li> No external dependencies (<b>PAPI</b> interface is optional).
+</li><li> Automatically multiplexes requested <b>PAPI</b> counters when required.
+</li><li> Thread-safe, and reports per-thread statistics for multi-threaded
+	codes.
+</li><li> Includes utility functions to print memory usage
+	(<b>GPTLprint_memusage()</b>) and get timestamps (<b>GPTLstamp()</b>).
+</li><li> Support for derived (<b>PAPI</b>-based) events such as computational
+	intensity and instructions per cycle. Run ctests/gptl_avail to list
+	available events.
+</li></ul>
+
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h2>Download and Installation</h2>
+<ul> 
+<li> Download the most recent release <a href="https://github.com/jmrosinski/GPTL">here</a>.
+</li><li> To build and install <b>GPTL</b>, see the file named INSTALL after downloading.
+  You'll need to create a <b><em>macros.make</em></b> file appropriate for your target
+  platform. Example files for various architectures are
+  included in the tar file (e.g. <b><em>macros.make.linux</em></b>). An autoconf-based 
+  script named <b><em>suggestions</em></b> is included to help in editing this
+  file. Example usage might be:
+<pre>./suggestions FC=gfortran CC=gcc
+</pre>
+Comments in the sample <b><em>macros.make</em></b> files describe 
+  each required setting.
+</li><li> For information on using <b>GPTL</b>, refer to 
+  <a href="#EXAMPLES">EXAMPLES</a> below, and the man pages provided with the
+  distribution. 
+</li></ul>
+
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
+<a name="EXAMPLES"></a>
+<h2>Examples</h2>
+  These pages contain simple codes which illustrate the use of some features of
+  <b>GPTL</b>. All examples were run on a Linux x86 using GNU compilers. 
+  <p>
+  <a href="example1.html">Example 1</a> is a manually-instrumented
+  Fortran code which uses <b>PAPI</b> to count floating point
+  operations. 
+  </p><p>
+  <a href="example2.html">Example 2</a> is a C code compiled
+  with gcc's auto-instrumentation hooks to print a dynamic call tree. Perl
+  script <b><em>hex2name.pl</em></b> is used to convert addresses to 
+  human-readable names.
+  </p><p>
+  <a href="example3.html">Example 3</a> demonstrates the use of
+  <b>GPTLpr_summary()</b> to obtain a statistical summary of timing statistics across OpenMP 
+  threads and MPI tasks.
+  </p><p>
+  <a href="example4.html">Example 4</a> is an auto-instrumented C++ code.
+  Issues related to in-line constructors are illustrated.
+  </p><p>
+  <a href="example5.html">Example 5</a> is a Fortran code which uses
+  <b>gptlprocess_namelist()</b> and an associated namelist file to
+  set <b>GPTL</b> options.
+  </p><p>
+  <a href="example6.html">Example 6</a> is a Fortran code which utilizes the
+  <b>ENABLE_PMPI</b> option to automatically time various MPI calls and print the
+  average number of bytes transferred.
+  </p><p>
+  <a href="example7.html">Example 7</a> is a Fortran code which utilizes the
+  functions <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>, which
+  avoid much of the table lookup overhead of their siblings
+  <b>GPTLstart()</b> and <b>GPTLstop()</b>.
+
+</p><hr noshade="noshade" size="2" width="100%" align="LEFT">
+
+<h2>Bugs</h2>
+<ul>
+<li> PMPI interface doesn't work on AIX. The problem has to do with the MPI definition
+  of MPI_STATUS_SIZE.
+</li><li> PAPI developers have warned about using <b>omp_get_thread_num()</b> as the
+  underlying routine to get the thread number. Therefore for threaded codes it's probably 
+  better to build <b>GPTL</b> with PTHREADS than OPENMP (see macros.make.linux).
+</li></ul>
+
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
+
+<h2>Bug Reports</h2>
+Please email me bug reports and/or feature requests (jmrosinski AT gmail DOT com).
+
+<h2>Author</h2>
+<b>GPTL</b> was written
+by Jim Rosinski, currently at <a href="http://www.esrl.noaa.gov/">NOAA/ESRL</a>, formerly
+  at <a href="http://www.ornl.gov/">ORNL</a>, <a href="http://www.sicortex.com/">SiCortex</a>,
+and <a href="http://www.ucar.edu/">NCAR</a>. 
+<h2>Copyright</h2>
+This software is <b>Open Source</b>. My only requests are proper attribution when you use 
+the software, and that you don't embed <b>GPTL</b> library source in software that you 
+intend to sell.
+
+<hr>
+<a href="example1.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 1"
+			     /></a>
+
+<br />
+</body></html>

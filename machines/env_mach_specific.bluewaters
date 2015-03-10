@@ -4,8 +4,15 @@
 # Build time settings
 #===============================================================================
 
-set COMPILER = `./xmlquery COMPILER -value`
-set MPILIB   = `./xmlquery MPILIB   -value`
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER = `./xmlquery COMPILER -value`
+  set MPILIB   = `./xmlquery MPILIB   -value`
+else
+  echo $0 using settings from environment:
+endif
+echo "COMPILER=$COMPILER"
+echo "MPILIB=$MPILIB"
 
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh

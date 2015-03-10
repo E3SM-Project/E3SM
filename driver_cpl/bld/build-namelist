@@ -20,7 +20,7 @@
 # 2012-01-30  Vertenstein      Original version
 #--------------------------------------------------------------------------------------------
 use strict;
-use Cwd;
+use Cwd qw( getcwd abs_path chdir);
 use English;
 use Getopt::Long;
 use IO::File;
@@ -67,7 +67,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 if ($ProgDir) { 
-    $cfgdir = absolute_path($ProgDir);
+    $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
 }
@@ -163,7 +163,7 @@ EOF
 # Look for them under the directory that contains the configure script.
     
 # The root directory for the perl5 required utilities 
-my $perl5lib_dir = "${SCRIPTSROOT}/../perl5lib";
+my $perl5lib_dir = "${SCRIPTSROOT}/../utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
 (-f "$perl5lib_dir/XML/Lite.pm")  or  die <<"EOF";
@@ -1120,71 +1120,7 @@ sub set_abs_filepath {
     return $out;
 }
 
-#-----------------------------------------------------------------------------------------------
-
-
-sub absolute_path {
-#
-# Convert a pathname into an absolute pathname, expanding any . or .. characters.
-# Assumes pathnames refer to a local filesystem.
-# Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $cwd = getcwd();  # current working directory
-  my $abspath;         # resulting absolute pathname
-
-# Strip off any leading or trailing whitespace.  (This pattern won't match if
-# there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
-
-# Convert relative to absolute path.
-
-  if ($path =~ m!^\.$!) {          # path is "."
-      return $cwd;
-  } elsif ($path =~ m!^\./!) {     # path starts with "./"
-      $path =~ s!^\.!$cwd!;
-  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
-      $path = "$cwd/..";
-  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
-      $path = "$cwd/$path";
-  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
-      $path = "$cwd/$path";
-  }
-
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
-
-  # Remove any "" that are not leading.
-  for (my $i=0; $i<=$#dirs; ++$i) {
-      if ($i == 0 or $dirs[$i] ne "") {
-	  push @dirs2, $dirs[$i];
-      }
-  }
-  @dirs = ();
-
-  # Remove any "."
-  foreach $dir (@dirs2) {
-      unless ($dir eq ".") {
-	  push @dirs, $dir;
-      }
-  }
-  @dirs2 = ();
-
-  # Remove the "subdir/.." parts.
-  foreach $dir (@dirs) {
-    if ( $dir !~ /\.\./ ) {
-        push @dirs2, $dir;
-    } else {
-        pop @dirs2;   # remove previous dir when current dir is ..
-    }
-  }
-  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
-  $abspath = join '/', @dirs2;
-  return( $abspath );
-}
-
-#-------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 
 sub valid_option {
 
@@ -1199,7 +1135,7 @@ sub valid_option {
     return undef;
 }
 
-#-------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 
 sub validate_options {
 
@@ -1210,7 +1146,7 @@ sub validate_options {
 
 }
 
-#-------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 
 sub quote_string {
     my $str = shift;

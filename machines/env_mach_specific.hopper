@@ -4,9 +4,17 @@
 # Modules and library paths
 #-------------------------------------------------------------------------------
 
-set COMPILER = `./xmlquery COMPILER -value`
-set MPILIB   = `./xmlquery MPILIB   -value`
-set DEBUG    = `./xmlquery DEBUG    -value`
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER = `./xmlquery COMPILER -value`
+  set MPILIB   = `./xmlquery MPILIB   -value`
+  set DEBUG    = `./xmlquery DEBUG    -value`
+else
+  echo $0 using settings from environment:
+endif
+echo "COMPILER=$COMPILER"
+echo "MPILIB=$MPILIB"
+echo "DEBUG=$DEBUG"
 
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh

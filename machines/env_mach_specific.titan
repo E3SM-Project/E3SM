@@ -4,8 +4,15 @@
 # Titan machine specific settings
 #===============================================================================
 
-set COMPILER = `./xmlquery COMPILER -value`
-set MPILIB   = `./xmlquery MPILIB   -value`
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER = `./xmlquery COMPILER -value`
+  set MPILIB   = `./xmlquery MPILIB   -value`
+else
+  echo $0 using settings from environment:
+endif
+echo "COMPILER=$COMPILER"
+echo "MPILIB=$MPILIB"
 
 #-------------------------------------------------------------------------------
 # Modules
@@ -32,9 +39,6 @@ if (-e /opt/modules/default/init/csh) then
   module rm cray-netcdf
   module rm cray-netcdf-hdf5parallel
   module rm cray-parallel-netcdf
-  module rm craype-interlagos
-
-  module load craype-interlagos.orig
   
   if ($COMPILER == "pgicuda") then
     module add cudatoolkit

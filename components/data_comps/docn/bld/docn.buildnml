@@ -57,7 +57,7 @@ while ($inst_counter <= $NINST_OCN) {
     # call build-namelist
     # -----------------------------------------------------
 
-    $sysmod = "$CCSMROOT/cime/models/data/docn/bld/build-namelist";
+    $sysmod = "$CCSMROOT/cime/components/data_comps/docn/bld/build-namelist";
     $sysmod = "$sysmod -infile $CASEBUILD/docnconf/cesm_namelist";
     $sysmod = "$sysmod -caseroot $CASEROOT";
     $sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";

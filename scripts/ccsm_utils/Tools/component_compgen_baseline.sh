@@ -152,6 +152,16 @@ if [ $error -gt 0 ]; then
 fi
 
 #------------------------------------------------------------------
+# Determine location of cprnc
+#------------------------------------------------------------------
+if [ -z $CASEROOT ]; then
+    echo " environment variable CASEROOT is not defined "
+    exit 1
+fi
+cd $CASEROOT
+cprnc_exe=`./xmlquery CCSM_CPRNC -value`
+
+#------------------------------------------------------------------
 # Loop over models
 #------------------------------------------------------------------
 
@@ -202,7 +212,7 @@ for model in ${models[*]}; do
             # Do comparison, if desired
             #-------------------------------------------------------------
 	    if [ -n "$compare_tag" ]; then
-		compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$baseline_dir" -baseline_hist "$baseline_hist" -test_dir "$test_dir" -test_hist "$test_hist"`
+		compare_result=`${tools_dir}/component_compare.sh  -baseline_dir "$baseline_dir" -baseline_hist "$baseline_hist" -test_dir "$test_dir" -test_hist "$test_hist" -cprnc_exe "$cprnc_exe"`
 		compare_status=`get_status "$compare_result"`
 		compare_info=`get_info "$compare_result"`
 		if [ "$compare_status" != "BFAIL_NA" ]; then

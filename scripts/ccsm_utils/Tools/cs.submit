@@ -96,7 +96,7 @@ $scriptsroot =~ s/\<\/scriptsroot\>//g;
 $scriptsroot =~ s/\s+//g;
 
 # require/import XML::Lite
-my @dirs = ( "$scriptsroot/../perl5lib");
+my @dirs = ( "$scriptsroot/../utils/perl5lib");
 
 unshift @INC, @dirs;
 require XML::Lite;

@@ -152,6 +152,10 @@ print $testfh " $eol cd $caseroot  $eol";
 # interpolate variables in following EOF block
 my $testcase_interp = <<END_INTERP;
 
+    setenv CASEROOT  $caseroot
+
+    source env_mach_specific
+
     # valid test output states are:  
     #   PASS      Test passed
     #   FAIL      Test failed
@@ -174,7 +178,6 @@ my $testcase_interp = <<END_INTERP;
     set CASE			=  $case
     set CASEBASEID		=  $casebaseid
     set TEST_TESTID		=  $test_testid 
-    set CASEROOT		=  $caseroot
     set CCSMROOT		=  $ccsmroot
     set UTILROOT                =  $utilroot
     set RUNDIR                  =  $rundir

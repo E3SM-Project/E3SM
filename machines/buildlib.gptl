@@ -4,7 +4,7 @@
 # Purpose: Build gptl library
 #==============================================================================
 
-cd $CASEROOT
+cd $CASEROOT # CASEROOT is always assumed to be an environment variable
 
 set CCSMROOT	= `./xmlquery  CCSMROOT	-value `
 set GMAKE	= `./xmlquery  GMAKE	-value ` 
@@ -13,8 +13,8 @@ set GMAKE	= `./xmlquery  GMAKE	-value `
 # the $CASE.build script
 
 setenv SHAREDPATH  $1
-setenv TIMING_DIR  $CCSMROOT/cime/share/timing  # location of timing directory
-setenv GPTL_DIR    $CCSMROOT/utils/gptl   # location gptl directory
+setenv TIMING_DIR  $CCSMROOT/cime/share/timing    # location of timing directory
+setenv GPTL_DIR    $CCSMROOT/cime/externals/gptl  # location gptl directory
 setenv GPTL_LIBDIR $SHAREDPATH/gptl
 
 echo "Copying source to CESM EXEROOT..."

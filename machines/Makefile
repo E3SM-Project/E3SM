@@ -442,7 +442,7 @@ endif
 
 $(MCT_LIBDIR)/Makefile.conf: 
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CCSMROOT)/utils/mct/configure $(CONFIG_ARGS) --srcdir $(CCSMROOT)/utils/mct
+	$(CONFIG_SHELL) $(CCSMROOT)/cime/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CCSMROOT)/cime/externals/mct
 
 $(MCT_LIBDIR)/mpeu/libmpeu.a: $(MCT_LIBDIR)/Makefile.conf
 	$(MAKE) -C $(MCT_LIBDIR)/mpeu
@@ -512,7 +512,7 @@ $(GLC_DIR)/Makefile:
 
 $(PIO_LIBDIR)/Makefile:
 	cd $(PIO_LIBDIR); \
-	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CCSMROOT)/utils/pio
+	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CCSMROOT)/cime/externals/pio
 
 #-------------------------------------------------------------------------------
 # Build & include dependency files
@@ -689,7 +689,7 @@ $(LIBROOT)/libcvmix.a:
 	$(CXX) -c $(INCLDIR) $(INCS) $(CXXFLAGS)  $<
 
 %.F90: %.F90.in
-	$(CCSMROOT)/cime/genf90/genf90.pl $< > $@
+	$(CCSMROOT)/cime/externals/genf90/genf90.pl $< > $@
 
 
 mostlyclean:

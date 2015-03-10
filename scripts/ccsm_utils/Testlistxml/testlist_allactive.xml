@@ -46,9 +46,9 @@
   <compset name="B1850C5CN">
     <grid name="f09_g16">
       <test name="ERS">
-        <machine compiler="pgi" testtype="prealpha">bluewaters</machine>
-        <machine compiler="ibm" testtype="prealpha">mira</machine>
-        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
+        <machine compiler="pgi" testtype="prealpha" testmods="allactive/default">bluewaters</machine>
+        <machine compiler="ibm" testtype="prealpha" testmods="allactive/default">mira</machine>
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
       </test>
     </grid>
   </compset>

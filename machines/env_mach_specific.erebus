@@ -5,7 +5,9 @@
 # -------------------------------------------------------------------------
 
 
-set COMPILER = `./xmlquery COMPILER -value`
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER = `./xmlquery COMPILER -value`
 
 source /glade/apps/opt/lmod/lmod/init/csh
 
