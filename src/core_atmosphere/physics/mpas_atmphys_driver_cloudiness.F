@@ -8,7 +8,8 @@
 !==================================================================================================
  module mpas_atmphys_driver_cloudiness
  use mpas_kind_types
- use mpas_grid_types
+ use mpas_derived_types
+ use mpas_pool_routines
 
  use mpas_atmphys_constants, only: ep_2
  use mpas_atmphys_vars

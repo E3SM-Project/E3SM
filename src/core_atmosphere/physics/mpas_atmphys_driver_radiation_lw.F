@@ -8,7 +8,8 @@
 !==================================================================================================
  module mpas_atmphys_driver_radiation_lw
  use mpas_kind_types
- use mpas_grid_types
+ use mpas_pool_routines
+ use mpas_derived_types
  use mpas_timer
 
  use mpas_atmphys_driver_radiation_sw, only: radconst
