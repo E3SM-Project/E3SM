@@ -456,8 +456,8 @@ module BGCCenturySubMod
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
-    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
-    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)
+    cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)
   endif
   !----------------------------------------------------------------------  
   !reaction 2, lit2 -> s1
@@ -482,8 +482,8 @@ module BGCCenturySubMod
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
-    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
-    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
+    cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !reaction 3, lit3->s2
@@ -508,8 +508,8 @@ module BGCCenturySubMod
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
-    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
-    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
+    cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !double check those stoichiometry parameters
@@ -542,8 +542,8 @@ module BGCCenturySubMod
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
-    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
-    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
+    cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !reaction 5, som2->som1, som3
@@ -572,8 +572,8 @@ module BGCCenturySubMod
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
-    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
-    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
+    cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !reaction 6, s3-> s1
@@ -598,8 +598,8 @@ module BGCCenturySubMod
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
-    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
-    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
+    cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !reaction 7, the partition into lit1 and lit2 is nutrient dependent, respires co2?
@@ -624,8 +624,8 @@ module BGCCenturySubMod
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
-    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
-    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
+    cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)    
   endif
   
   !----------------------------------------------------------------------  
@@ -769,6 +769,7 @@ module BGCCenturySubMod
    n_loc                 => centurybgc_vars%n_loc                   , & !
    f_n2o_nit_vr          => nitrogenflux_vars%f_n2o_nit_vr_col      , & !
    f_denit_vr            => nitrogenflux_vars%f_denit_vr_col        , & !
+   f_nit_vr              => nitrogenflux_vars%f_nit_vr_col          , & !  
    actual_immob_no3_vr   => nitrogenflux_vars%actual_immob_no3_vr_col   , & !
    actual_immob_nh4_vr   => nitrogenflux_vars%actual_immob_nh4_vr_col   , & !
    smin_no3_to_plant_vr  => nitrogenflux_vars%smin_no3_to_plant_vr_col  , & !
