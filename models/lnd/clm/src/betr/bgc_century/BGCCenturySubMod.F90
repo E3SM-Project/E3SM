@@ -759,6 +759,7 @@ module BGCCenturySubMod
   
   real(r8) :: deltac
   real(r8) :: delta_nh4, delta_no3
+  real(r8) :: delta_nh4_m,delta_no3_m
   real(r8) :: err,hr
   integer :: fc, c, j, k
   
@@ -824,6 +825,8 @@ module BGCCenturySubMod
       deltac=0._r8
       delta_nh4 = 0._r8
       delta_no3 = 0._r8
+      delta_nh4_m=0._r8
+      delta_no3_m=0._r8
       do k = 1, nom_pools
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
@@ -834,11 +837,17 @@ module BGCCenturySubMod
         err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
         delta_no3 = delta_no3+(tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )*natomw+&
            (actual_immob_no3_vr(c,j)+smin_no3_to_plant_vr(c,j)+f_denit_vr(c,j)-(f_nit_vr(c,j)-f_n2o_nit_vr(c,j)))*dtime)*col%dz(c,j)
+        delta_no3_m = delta_no3_m +  (actual_immob_no3_vr(c,j)+smin_no3_to_plant_vr(c,j)+f_denit_vr(c,j)-(f_nit_vr(c,j)-f_n2o_nit_vr(c,j)))*dtime*col%dz(c,j)
+        
         delta_nh4 = delta_nh4+(tracer_flx_netpro_vr(c,j, betrtracer_vars%id_trc_nh3x)*natomw + &
            (actual_immob_nh4_vr(c,j)+smin_nh4_to_plant_vr(c,j)+f_nit_vr(c,j))*dtime)*col%dz(c,j)
+        delta_nh4_m=delta_nh4_m +  (actual_immob_nh4_vr(c,j)+smin_nh4_to_plant_vr(c,j)+f_nit_vr(c,j))*dtime*col%dz(c,j)  
       endif
     enddo
-    if(c==4689)print*,'err_no3, err_nh4',delta_no3,delta_nh4
+    if(c==4689)then
+      print*,'err_no3, err_nh4',delta_no3,delta_nh4
+      print*,'no3_m, nh4_m', delta_no3_m,delta_nh4_m
+    endif
   enddo
   
   end associate
