@@ -757,10 +757,11 @@ module BGCCenturySubMod
   type(tracerflux_type)            , intent(inout) :: tracerflux_vars  
   type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
   
-  real(r8) :: deltac
+  real(r8) :: deltac, fnit
   real(r8) :: delta_nh4, delta_no3
   real(r8) :: delta_nh4_m,delta_no3_m
-  real(r8) :: err,hr
+  real(r8) :: sminn_plant, sminn_plant2
+  real(r8) :: err,hr, immob
   integer :: fc, c, j, k
   
   associate(                                                          & !
@@ -786,9 +787,18 @@ module BGCCenturySubMod
   do fc = 1, numf
     c = filter(fc)    
     err = 0._r8
-     hr = 0._r8
+    hr = 0._r8
+    delta_nh4_m=0._r8
+    delta_no3_m=0._r8
+    immob = 0._r8
+    fnit = 0._r8
+    delta_nh4 = 0._r8
+    delta_no3 = 0._r8
+    sminn_plant = 0._r8
+    sminn_plant2= 0._r8
+
     do j = jtops(c), ubj
-      plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))/dtime
+      plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))*natomw
       smin_no3_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_plant, c, j) - y0(centurybgc_vars%lid_minn_no3_plant, c, j))*natomw/dtime
       smin_nh4_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_plant, c, j) - y0(centurybgc_vars%lid_minn_nh4_plant, c, j))*natomw/dtime
       
@@ -799,7 +809,6 @@ module BGCCenturySubMod
       
       actual_immob_no3_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_immob,c, j) - y0(centurybgc_vars%lid_minn_no3_immob,c, j))*natomw/dtime
       actual_immob_nh4_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_immob,c, j) - y0(centurybgc_vars%lid_minn_nh4_immob,c, j))*natomw/dtime
-      
       
       !the temporal averaging for fluxes below will be done later
       
@@ -823,10 +832,6 @@ module BGCCenturySubMod
 
       !get net production for om pools
       deltac=0._r8
-      delta_nh4 = 0._r8
-      delta_no3 = 0._r8
-      delta_nh4_m=0._r8
-      delta_no3_m=0._r8
       do k = 1, nom_pools
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
@@ -835,18 +840,25 @@ module BGCCenturySubMod
       if(c==4689)then
         hr = hr + col%dz(c,j)*hr_vr(c,j)
         err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
-        delta_no3 = delta_no3+(tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )*natomw+&
-           (actual_immob_no3_vr(c,j)+smin_no3_to_plant_vr(c,j)+f_denit_vr(c,j)-(f_nit_vr(c,j)-f_n2o_nit_vr(c,j)))*dtime)*col%dz(c,j)
+        delta_no3 = delta_no3+tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )*natomw*col%dz(c,j)
+
         delta_no3_m = delta_no3_m +  (actual_immob_no3_vr(c,j)+smin_no3_to_plant_vr(c,j)+f_denit_vr(c,j)-(f_nit_vr(c,j)-f_n2o_nit_vr(c,j)))*dtime*col%dz(c,j)
         
-        delta_nh4 = delta_nh4+(tracer_flx_netpro_vr(c,j, betrtracer_vars%id_trc_nh3x)*natomw + &
-           (actual_immob_nh4_vr(c,j)+smin_nh4_to_plant_vr(c,j)+f_nit_vr(c,j))*dtime)*col%dz(c,j)
+        sminn_plant = sminn_plant + (smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j))*dtime*col%dz(c,j)
+
+        delta_nh4 = delta_nh4+tracer_flx_netpro_vr(c,j, betrtracer_vars%id_trc_nh3x)*natomw*col%dz(c,j)  
+
         delta_nh4_m=delta_nh4_m +  (actual_immob_nh4_vr(c,j)+smin_nh4_to_plant_vr(c,j)+f_nit_vr(c,j))*dtime*col%dz(c,j)  
+        fnit = fnit+f_nit_vr(c,j)*dtime*col%dz(c,j)
+        immob = immob + (actual_immob_nh4_vr(c,j) + actual_immob_no3_vr(c,j))*dtime*col%dz(c,j)
+        sminn_plant2 = sminn_plant2 + plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j)*col%dz(c,j)
       endif
     enddo
     if(c==4689)then
       print*,'err_no3, err_nh4',delta_no3,delta_nh4
       print*,'no3_m, nh4_m', delta_no3_m,delta_nh4_m
+      print*,'immob fnit',immob,fnit
+      print*,'sminnplt',sminn_plant,sminn_plant2
     endif
   enddo
   
@@ -1500,7 +1512,7 @@ module BGCCenturySubMod
   real(r8)                           , intent(inout) :: cn_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   real(r8)                           , intent(inout) :: cp_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   
-
+  real(r8) :: delta_no3, delta_nh4
   integer :: k, fc, c, j
  
   associate(                                                                         & !  
@@ -1529,7 +1541,8 @@ module BGCCenturySubMod
 
   do fc = 1, num_soilc
     c = filter_soilc(fc)
-    
+    delta_nh4 =0._r8
+    delta_no3 =0._r8
     do j = lbj, ubj
       do k = 1, ndecomp_pools
         tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
@@ -1543,8 +1556,14 @@ module BGCCenturySubMod
 
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) + sminn_no3_input_vr(c,j)/natomw
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) + sminn_nh4_input_vr(c,j)/natomw
+      if(c==4689)then
+        delta_nh4=delta_nh4 + tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) * col%dz(c,j)*natomw
+        delta_no3=delta_no3 + tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) * col%dz(c,j)*natomw
+      endif
     enddo
-
+    if(c==4689)then
+      print*,'ext nh4,no3',delta_nh4,delta_no3
+    endif
   enddo
   
   end associate

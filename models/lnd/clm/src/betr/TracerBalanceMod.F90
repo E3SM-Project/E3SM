@@ -147,8 +147,8 @@ implicit none
       print*,'begminn',(beg_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + beg_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
       print*,'endminn',(end_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + end_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
       print*,'nflxminn',(tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x))*atw
-      print*,'netpro nh4',tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)*atw
-      print*,'netpro no3',tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x)*atw
+      print*,'netpro nh4',tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x)*atw
+      print*,'netpro no3',tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)*atw
       print*,'netpro n2',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2) * atw *2._r8
       print*,'netpro n2o',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2o) *atw * 2._r8
       print*,'nflxloss',(tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))*atw
