@@ -69,7 +69,11 @@ module BGCCenturySubMod
   integer :: lid_n2o_nit     !n2o production from nitrification, used to for mass balance book keeping
   integer :: lid_co2_hr      !co2 production from heterotrophic respiration
   integer :: lid_no3_den     !no3 consumption due to denitrification
-  integer :: lid_minn_immob  !net mineral N immobilization for decomposition
+  integer :: lid_minn_nh4_immob  !net mineral N immobilization for decomposition
+  integer :: lid_minn_no3_immob
+  integer :: lid_minn_nh4_plant
+  integer :: lid_minn_no3_plant
+  integer :: lid_nh4_nit
   !aerechyma transport, diagnostic efflux
 
   integer :: lid_ar_paere
@@ -182,7 +186,11 @@ module BGCCenturySubMod
   this%lid_n2o_nit    = addone(itemp)
   this%lid_co2_hr     = addone(itemp)
   this%lid_no3_den    = addone(itemp)  
-  this%lid_minn_immob = addone(itemp)
+  this%lid_minn_nh4_immob = addone(itemp)
+  this%lid_minn_no3_immob = addone(itemp)
+  this%lid_minn_nh4_plant = addone(itemp)
+  this%lid_minn_no3_plant = addone(itemp)
+  this%lid_nh4_nit    = addone(itemp)
   !aerechyma transport
   this%lid_ar_paere   = addone(itemp)   !
   this%lid_n2_paere   = addone(itemp)   !
@@ -357,50 +365,54 @@ module BGCCenturySubMod
   integer :: k, reac
   
   
-  associate(                                            & !
-    lit1      => centurybgc_vars%lit1                 , & !
-    lit2      => centurybgc_vars%lit2                 , & !
-    lit3      => centurybgc_vars%lit3                 , & !
-    som1      => centurybgc_vars%som1                 , & !
-    som2      => centurybgc_vars%som2                 , & !
-    som3      => centurybgc_vars%som3                 , & !
-    cwd       => centurybgc_vars%cwd                  , & !
-    c_loc     => centurybgc_vars%c_loc                , & !
-    n_loc     => centurybgc_vars%n_loc                , & !
-    nelms     => centurybgc_vars%nelms                , & !
-    lid_at_rt => centurybgc_vars%lid_at_rt            , & !
-    lid_o2    => centurybgc_vars%lid_o2               , & !
-    lid_co2   => centurybgc_vars%lid_co2              , & !
-    lid_nh4   => centurybgc_vars%lid_nh4              , & !
-    lid_ch4   => centurybgc_vars%lid_ch4              , &
-    lid_ar    => centurybgc_vars%lid_ar              , &    
-    lid_no3   => centurybgc_vars%lid_no3              , & !
-    lid_n2o   => centurybgc_vars%lid_n2o              , & !
-    lid_n2    => centurybgc_vars%lid_n2               , & !
-    lid_co2_hr=> centurybgc_vars%lid_co2_hr           , & !
-    lid_n2o_nit=> centurybgc_vars%lid_n2o_nit         , & !
-    lid_plant_minn => centurybgc_vars%lid_plant_minn  , & !
-    lid_minn_immob => centurybgc_vars%lid_minn_immob  , & !
-    
-    lid_n2_paere=> centurybgc_vars%lid_n2_paere       , & !
-    lid_ch4_paere=> centurybgc_vars%lid_ch4_paere     , & !    
-    lid_n2o_paere=> centurybgc_vars%lid_n2o_paere     , & !
-    lid_o2_paere=> centurybgc_vars%lid_o2_paere       , & !
-    lid_ar_paere=> centurybgc_vars%lid_ar_paere       , & !
-    lid_co2_paere=> centurybgc_vars%lid_co2_paere     , & !
+  associate(                                               & !
+    lit1      => centurybgc_vars%lit1                    , & !
+    lit2      => centurybgc_vars%lit2                    , & !
+    lit3      => centurybgc_vars%lit3                    , & !
+    som1      => centurybgc_vars%som1                    , & !
+    som2      => centurybgc_vars%som2                    , & !
+    som3      => centurybgc_vars%som3                    , & !
+    cwd       => centurybgc_vars%cwd                     , & !
+    c_loc     => centurybgc_vars%c_loc                   , & !
+    n_loc     => centurybgc_vars%n_loc                   , & !
+    nelms     => centurybgc_vars%nelms                   , & !
+    lid_at_rt => centurybgc_vars%lid_at_rt               , & !
+    lid_o2    => centurybgc_vars%lid_o2                  , & !
+    lid_co2   => centurybgc_vars%lid_co2                 , & !
+    lid_nh4   => centurybgc_vars%lid_nh4                 , & !
+    lid_ch4   => centurybgc_vars%lid_ch4                 , & !
+    lid_ar    => centurybgc_vars%lid_ar                  , & !    
+    lid_no3   => centurybgc_vars%lid_no3                 , & !
+    lid_n2o   => centurybgc_vars%lid_n2o                 , & !
+    lid_n2    => centurybgc_vars%lid_n2                  , & !
+    lid_co2_hr=> centurybgc_vars%lid_co2_hr                  , & !
+    lid_n2o_nit=> centurybgc_vars%lid_n2o_nit                , & !
+    lid_plant_minn => centurybgc_vars%lid_plant_minn         , & !
+    lid_minn_nh4_immob => centurybgc_vars%lid_minn_nh4_immob , & !
+    lid_minn_no3_immob => centurybgc_vars%lid_minn_no3_immob , & !
+    lid_minn_nh4_plant => centurybgc_vars%lid_minn_nh4_plant , & !
+    lid_minn_no3_plant => centurybgc_vars%lid_minn_no3_plant , & !
+    lid_nh4_nit        => centurybgc_vars%lid_nh4_nit        , & !
+    lid_n2_paere=> centurybgc_vars%lid_n2_paere              , & !
+    lid_ch4_paere=> centurybgc_vars%lid_ch4_paere       , & !    
+    lid_n2o_paere=> centurybgc_vars%lid_n2o_paere       , & !
+    lid_o2_paere=> centurybgc_vars%lid_o2_paere         , & !
+    lid_ar_paere=> centurybgc_vars%lid_ar_paere         , & !
+    lid_co2_paere=> centurybgc_vars%lid_co2_paere       , & !
 
 
-    primvarid    => centurybgc_vars%primvarid         , & !
-    lit1_dek_reac=> centurybgc_vars%lit1_dek_reac     , & !
-    lit2_dek_reac=> centurybgc_vars%lit2_dek_reac     , & !
-    lit3_dek_reac=> centurybgc_vars%lit3_dek_reac     , & !
-    som1_dek_reac=> centurybgc_vars%som1_dek_reac     , & !
-    som2_dek_reac=> centurybgc_vars%som2_dek_reac     , & !
-    som3_dek_reac=> centurybgc_vars%som3_dek_reac     , & !
-    cwd_dek_reac=> centurybgc_vars%cwd_dek_reac       , & !
-    lid_at_rt_reac=> centurybgc_vars%lid_at_rt_reac   , & !
-    lid_no3_den  => centurybgc_vars%lid_no3_den       , & !
+    primvarid    => centurybgc_vars%primvarid           , & !
+    lit1_dek_reac=> centurybgc_vars%lit1_dek_reac       , & !
+    lit2_dek_reac=> centurybgc_vars%lit2_dek_reac       , & !
+    lit3_dek_reac=> centurybgc_vars%lit3_dek_reac       , & !
+    som1_dek_reac=> centurybgc_vars%som1_dek_reac       , & !
+    som2_dek_reac=> centurybgc_vars%som2_dek_reac       , & !
+    som3_dek_reac=> centurybgc_vars%som3_dek_reac       , & !
+    cwd_dek_reac=> centurybgc_vars%cwd_dek_reac         , & !
+    lid_at_rt_reac=> centurybgc_vars%lid_at_rt_reac     , & !
+    lid_no3_den  => centurybgc_vars%lid_no3_den         , & !
     lid_plant_minn_up_reac=> centurybgc_vars%lid_plant_minn_up_reac, & !
+    
     lid_nh4_nit_reac => centurybgc_vars%lid_nh4_nit_reac, & !
     lid_no3_den_reac => centurybgc_vars%lid_no3_den_reac, & !
     lid_n2_aere_reac => centurybgc_vars%lid_n2_aere_reac      , & !
@@ -429,9 +441,9 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2                ,reac)  =  CNDecompBgcParamsInst%rf_l1s1_bgc
   cascade_matrix(lid_nh4                ,reac)  = safe_div(1._r8,cn_ratios(lit1)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc,cn_ratios(som1))
 
-  cascade_matrix(lid_minn_immob         ,reac)  = -cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_nh4_immob     ,reac)  = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac)  = CNDecompBgcParamsInst%rf_l1s1_bgc
-
+  
   primvarid(reac) = (lit1-1)*nelms+c_loc
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
     !Note: Jinyun Tang, Dec 26, 2014
@@ -444,6 +456,8 @@ module BGCCenturySubMod
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
+    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)
   endif
   !----------------------------------------------------------------------  
   !reaction 2, lit2 -> s1
@@ -458,7 +472,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_co2                ,reac)   =  CNDecompBgcParamsInst%rf_l2s1_bgc
   cascade_matrix(lid_nh4                ,reac)   = safe_div(1._r8,cn_ratios(lit2)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc,cn_ratios(som1))
-  cascade_matrix(lid_minn_immob         ,reac)   = -cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_nh4_immob     ,reac)   = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_l2s1_bgc
   
   primvarid(reac) = (lit2-1)*nelms+c_loc
@@ -467,6 +481,9 @@ module BGCCenturySubMod
     !it requires nitrogen uptake  
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+    
+    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !reaction 3, lit3->s2
@@ -481,7 +498,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_co2                ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(lit3)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc,cn_ratios(som2))
-  cascade_matrix(lid_minn_immob         ,reac) = -cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_nh4_immob     ,reac) = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
   
   primvarid(reac) = (lit3-1)*nelms+c_loc
@@ -490,6 +507,9 @@ module BGCCenturySubMod
     !it requires nitrogen uptake  
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+    
+    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !double check those stoichiometry parameters
@@ -513,7 +533,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_co2                ,reac) = ftxt
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(som1))-safe_div(f1,cn_ratios(som2))-safe_div(f2,cn_ratios(som3))
-  cascade_matrix(lid_minn_immob         ,reac) = -cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_nh4_immob     ,reac) = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac) = ftxt
   
   primvarid(reac) = (som1-1)*nelms+c_loc
@@ -521,6 +541,9 @@ module BGCCenturySubMod
     !it requires nitrogen uptake  
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+    
+    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !reaction 5, som2->som1, som3
@@ -539,7 +562,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2                ,reac)   =  CNDecompBgcParamsInst%rf_s2s1_bgc
   cascade_matrix(lid_nh4                ,reac)   =  safe_div(1._r8,cn_ratios(som2))-0.93_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som1)) &
                                                 -0.07_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som3))
-  cascade_matrix(lid_minn_immob         ,reac)   = -cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_nh4_immob     ,reac)   = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_s2s1_bgc
   
   primvarid(reac) = (som2-1)*nelms+c_loc
@@ -548,6 +571,9 @@ module BGCCenturySubMod
     !it requires nitrogen uptake  
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+    
+    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !reaction 6, s3-> s1
@@ -562,7 +588,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_co2                ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(som3)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc,cn_ratios(som1))
-  cascade_matrix(lid_minn_immob         ,reac) = -cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_nh4_immob     ,reac) = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
   
   primvarid(reac) = (som3-1)*nelms+c_loc
@@ -571,6 +597,9 @@ module BGCCenturySubMod
     !it requires nitrogen uptake  
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+    
+    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
   endif
   !----------------------------------------------------------------------  
   !reaction 7, the partition into lit1 and lit2 is nutrient dependent, respires co2?
@@ -587,13 +616,16 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(cwd)) - safe_div(CNDecompBgcParamsInst%cwd_fcel_bgc,cn_ratios(lit2)) - &
                                                  safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3))
-  cascade_matrix(lid_minn_immob         ,reac) = -cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_nh4_immob     ,reac) = -cascade_matrix(lid_nh4         ,reac)
   primvarid(reac) = (cwd-1)*nelms+c_loc
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
      
     !it requires nitrogen uptake  
     cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+    
+    cascade_matrix(lid_minn_nh4_immob) = -cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_no3_immob) = -cascade_matrix(lid_no3, reac)    
   endif
   
   !----------------------------------------------------------------------  
@@ -604,7 +636,8 @@ module BGCCenturySubMod
   cascade_matrix(lid_o2  ,reac) = -(2._r8 - nitrif_n2o_loss_frac)
   cascade_matrix(lid_no3 ,reac) = 1._r8 - nitrif_n2o_loss_frac
   cascade_matrix(lid_n2o, reac) = 0.5_r8 * nitrif_n2o_loss_frac
-
+  
+  cascade_matrix(lid_nh4_nit,reac) = 1._r8
   cascade_matrix(lid_n2o_nit,reac) = nitrif_n2o_loss_frac
   primvarid(reac) = lid_nh4
   !----------------------------------------------------------------------  
@@ -625,7 +658,8 @@ module BGCCenturySubMod
   cascade_matrix(lid_nh4, reac)        = -nh4_no3_ratio/(1._r8+nh4_no3_ratio)
   cascade_matrix(lid_no3, reac)        = -1._r8/(1._r8 + nh4_no3_ratio)
   cascade_matrix(lid_plant_minn, reac) = 1._r8
-  
+  cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
+  cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
   reac = lid_at_rt_reac
   !ar + o2 -> co2
   cascade_matrix(lid_co2, reac) =  1._r8
@@ -724,6 +758,7 @@ module BGCCenturySubMod
   type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
   
   real(r8) :: deltac
+  real(r8) :: delta_nh4, delta_no3
   real(r8) :: err,hr
   integer :: fc, c, j, k
   
@@ -734,7 +769,11 @@ module BGCCenturySubMod
    n_loc                 => centurybgc_vars%n_loc                   , & !
    f_n2o_nit_vr          => nitrogenflux_vars%f_n2o_nit_vr_col      , & !
    f_denit_vr            => nitrogenflux_vars%f_denit_vr_col        , & !
-   actual_immob_vr       => nitrogenflux_vars%actual_immob_vr_col   , & !
+   actual_immob_no3_vr   => nitrogenflux_vars%actual_immob_no3_vr_col   , & !
+   actual_immob_nh4_vr   => nitrogenflux_vars%actual_immob_nh4_vr_col   , & !
+   smin_no3_to_plant_vr  => nitrogenflux_vars%smin_no3_to_plant_vr_col  , & !
+   smin_nh4_to_plant_vr  => nitrogenflux_vars%smin_nh4_to_plant_vr_col  , & !
+   
    hr_vr                 => carbonflux_vars%hr_vr_col               , & !
    volatileid            => betrtracer_vars%volatileid              , & !
    ngwmobile_tracers     => betrtracer_vars%ngwmobile_tracers       , & !
@@ -748,11 +787,18 @@ module BGCCenturySubMod
      hr = 0._r8
     do j = jtops(c), ubj
       plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))/dtime
+      smin_no3_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_plant, c, j) - y0(centurybgc_vars%lid_minn_no3_plant, c, j))*natomw/dtime
+      smin_nh4_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_plant, c, j) - y0(centurybgc_vars%lid_minn_nh4_plant, c, j))*natomw/dtime
       
       hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))*catomw/dtime
+      f_nit_vr    (c,j)  = (yf(centurybgc_vars%lid_nh4_nit,c, j) - y0(centurybgc_vars%lid_nh4_nit,c, j))*natomw/dtime
       f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))*natomw/dtime
       f_denit_vr  (c,j)  = (yf(centurybgc_vars%lid_no3_den,c, j) - y0(centurybgc_vars%lid_no3_den,c, j))*natomw/dtime
-      actual_immob_vr(c,j) = (yf(centurybgc_vars%lid_minn_immob,c, j) - y0(centurybgc_vars%lid_minn_immob,c, j))*natomw/dtime
+      
+      actual_immob_no3_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_immob,c, j) - y0(centurybgc_vars%lid_minn_no3_immob,c, j))*natomw/dtime
+      actual_immob_nh4_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_immob,c, j) - y0(centurybgc_vars%lid_minn_nh4_immob,c, j))*natomw/dtime
+      
+      
       !the temporal averaging for fluxes below will be done later
       
       tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2)  ) = yf(centurybgc_vars%lid_n2_paere  ,c, j)  - y0(centurybgc_vars%lid_n2_paere , c, j)
@@ -774,7 +820,9 @@ module BGCCenturySubMod
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2))
 
       !get net production for om pools
-      deltac=0._r8      
+      deltac=0._r8
+      delta_nh4 = 0._r8
+      delta_no3 = 0._r8
       do k = 1, nom_pools
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
@@ -783,9 +831,13 @@ module BGCCenturySubMod
       if(c==4689)then
         hr = hr + col%dz(c,j)*hr_vr(c,j)
         err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
+        delta_no3 = delta_no3+(tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )*natomw+&
+           (actual_immob_no3_vr(c,j)+smin_no3_to_plant_vr(c,j)+f_denit_vr(c,j)-(f_nit_vr(c,j)-f_n2o_nit_vr(c,j)))*dtime)*col%dz(c,j)
+        delta_nh4 = delta_nh4+(tracer_flx_netpro_vr(c,j, betrtracer_vars%id_trc_nh3x)*natomw + &
+           (actual_immob_nh4_vr(c,j)+smin_nh4_to_plant_vr(c,j)+f_nit_vr(c,j))*dtime)*col%dz(c,j)
       endif
     enddo
-    if(c==4689)print*,'err',err, hr*dtime
+    if(c==4689)print*,'err_no3, err_nh4',delta_no3,delta_nh4
   enddo
   
   end associate

@@ -566,6 +566,9 @@ contains
     allocate(this%actual_immob_nh4_vr_col     (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_nh4_vr_col          (:,:) = nan
     allocate(this%smin_no3_to_plant_vr_col    (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_to_plant_vr_col         (:,:) = nan
     allocate(this%smin_nh4_to_plant_vr_col    (begc:endc,1:nlevdecomp_full)) ; this%smin_nh4_to_plant_vr_col         (:,:) = nan
+    allocate(this%smin_no3_to_plant_col       (begc:endc))                   ; this%smin_no3_to_plant_col         (:) = nan
+    allocate(this%smin_nh4_to_plant_col       (begc:endc))                   ; this%smin_nh4_to_plant_col         (:) = nan
+    
     allocate(this%f_nit_col                   (begc:endc))                   ; this%f_nit_col                        (:)   = nan
     allocate(this%f_denit_col                 (begc:endc))                   ; this%f_denit_col                      (:)   = nan
     allocate(this%n2_n2o_ratio_denit_vr_col   (begc:endc,1:nlevdecomp_full)) ; this%n2_n2o_ratio_denit_vr_col        (:,:) = nan
@@ -2212,7 +2215,7 @@ contains
           this%harvest_n_to_litr_lig_n_col(i,j)          = value_column             
           this%harvest_n_to_cwdn_col(i,j)                = value_column  
 
-          if (.not. use_nitrif_denitrif) then
+          if (.not. use_nitrif_denitrif .and. (.not.is_active_betr_bgc )) then
              this%sminn_to_denit_excess_vr_col(i,j)      = value_column
              this%sminn_leached_vr_col(i,j)              = value_column
           else
@@ -2280,7 +2283,7 @@ contains
        this%gross_nmin_col(i)                = value_column
        this%net_nmin_col(i)                  = value_column
        this%denit_col(i)                     = value_column
-       if (use_nitrif_denitrif) then
+       if (use_nitrif_denitrif .or. is_active_betr_bgc) then
           this%f_nit_col(i)                  = value_column
           this%pot_f_nit_col(i)              = value_column
           this%f_denit_col(i)                = value_column
@@ -2289,6 +2292,8 @@ contains
           this%f_n2o_nit_col(i)              = value_column
           this%smin_no3_leached_col(i)       = value_column
           this%smin_no3_runoff_col(i)        = value_column
+          this%smin_nh4_to_plant_col(i)      = value_column
+          this%smin_no3_to_plant_col(i)      = value_column          
        else
           this%sminn_to_denit_excess_col(i)  = value_column
           this%sminn_leached_col(i)          = value_column
@@ -2589,9 +2594,27 @@ contains
              this%f_denit_col(c) = &
                   this%f_denit_col(c) + &
                   this%f_denit_vr_col(c,j) * dzsoi_decomp(j)
+             
+             this%actual_immob_vr_col(c,j) = &
+                this%actual_immob_nh4_vr_col(c,j)  + &
+                this%actual_immob_no3_vr_col(c,j)
+                
              this%actual_immob_col(c) = &
                  this%actual_immob_col(c) + &
                  this%actual_immob_vr_col(c,j) * dzsoi_decomp(j)
+                 
+             this%f_nit_col(c) = &
+               this%f_nit_col(c) + &
+               this%f_nit_vr_col(c,j) * dzsoi_decomp(j)
+               
+             this%smin_nh4_to_plant_col(c) = &
+               this%smin_nh4_to_plant_col(c) + &
+               this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j)
+
+             this%smin_no3_to_plant_col(c) = &
+               this%smin_no3_to_plant_col(c) + &
+               this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
+               
           enddo
        enddo   
        do fc = 1,num_soilc
