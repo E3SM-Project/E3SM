@@ -1005,14 +1005,14 @@ contains
 !>   \[
 !>   A(T^{*})=A0 \exp \left(\frac{-Q}{RT^{*}}\right)
 !>   \]
-!>   This is equation 9 in {\em Payne and Dongelmans}. $A)$ is a constant of proportionality,
+!>   This is equation 9 in {\em Payne and Dongelmans}. $A0$ is a constant of proportionality,
 !>   $Q$ is the activation energy for for ice creep, and $R$ is the universal gas constant.
 !>   The pressure-corrected temperature, $T^{*}$ is given by:
 !>   \[
-!>   T^{*}=T+T_{pmp}
+!>   T^{*} = T - T_{pmp} + T_0
 !>   \]
 !>   \[
-!>   T_{pmp}=\sigma \rho g H \Phi
+!>   T_{pmp} = T_0 - \sigma \rho g H \Phi
 !>   \]
 !>   $T$ is the ice temperature, $T_0$ is the triple point of water,
 !>   $\rho$ is the ice density, and $\Phi$ is the (constant) rate of change of
@@ -1099,7 +1099,7 @@ contains
       case('PB1982')
           pressureMeltPointSlope = 9.7456e-8_RKIND
           do iCell = 1, nCells
-            if (thickness(iCell) > config_dynamic_thickness) then
+            if (thickness(iCell) > 0.0_RKIND) then
               do iLevel = 1, nVertLevels
                 ! Calculate the pressure-corrected temperature
                 temperatureCorrected = min(273.15_RKIND, temperature(iLevel,iCell) + pressureMeltPointSlope * &
@@ -1115,6 +1115,8 @@ contains
                 endif
                 flowParamA(iLevel,iCell) = A0 * exp(-1.0_RKIND * Q / (idealGasConstant * temperatureCorrected))
               enddo ! levels
+            else
+              flowParamA(:,iCell) = 0.0_RKIND  ! non-ice cells get 0
             endif ! if dynamic ice
           enddo ! cells
       !-----------------------------------------------------------------
