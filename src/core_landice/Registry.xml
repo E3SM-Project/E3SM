@@ -33,7 +33,7 @@
 		<dim name="nVertLevels" units="unitless"
 		     description="The number of levels in the vertical direction. All vertical levels share the same horizontal locations."
 		/>
-		<dim name="nVertLevelsP1" definition="nVertLevels+1" units="unitless"
+		<dim name="nVertInterfaces" definition="nVertLevels+1" units="unitless"
 		     description="The number of interfaces in the vertical direction."
 		/>
 	</dims>
@@ -44,8 +44,8 @@
 
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
-		            description="Selection of the method for solving ice velocity."
-		            possible_values="'sia'"
+		            description="Selection of the method for solving ice velocity. 'none' skips the calculation of velocity so the velocity field will be 0 or set to a field read from an input file."
+		            possible_values="'sia', 'none'"
 		/>
 		<nml_option name="config_sia_tangent_slope_calculation" type="character" default_value="from_vertex_barycentric" units="unitless"
 		            description="Selection of the method for calculating the tangent component of surface slope at edges needed by the SIA velocity solver.
@@ -53,6 +53,10 @@
 'from_vertex_barycentric_kiteareas' interpolates upperSurface values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles.
 'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method."
 		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
+		/>
+		<nml_option name="config_flowParamA_calculation" type="character" default_value="constant" units="unitless"
+			description="Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field."
+			possible_values="'constant', 'PB1982', 'CP2010'"
 		/>
 	</nml_record>
 
@@ -91,6 +95,10 @@
 		<nml_option name="config_default_flowParamA" type="real" default_value="3.1709792e-24" units="s^{-1} Pa^{-n}"
 		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  Defaults to the SI representation of 1.0e-16 yr^{-1} Pa^{-3}."
 		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_enhancementFactor" type="real" default_value="1.0" units="none"
+			description="multiplier on the flow parameter A"
+			possible_values="Any positive real value"
 		/>
 		<nml_option name="config_flowLawExponent" type="real" default_value="3.0" units="none"
 		            description="Defines the value of the Glen flow law exponent, n."
@@ -377,28 +385,37 @@
 		<var name="vertexMask" type="integer" dimensions="nVertices Time" units="none"
 		     description="bitmask indicating various properties about the ice sheet on vertices."
 		/>
-		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge"
 		/>
+		<var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
+		     description="flow law parameter, A"
+		/>
 			<!-- normalVelocity needs to be input/restart for iterative velocity solvers -->
-		<var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructY"                     type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="y-component of velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructZ"                     type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="z-component of velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructZonal"                 type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructZonal"                 type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="zonal velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructMeridional"            type="real"     dimensions="nVertLevels nCells Time"    
+		<var name="uReconstructMeridional"            type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
 		/>
 		<!-- Variables related to the sia_velocity package (only needed by SIA solver) -->
 		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
 		     description="elevation at top of ice on vertices" packages="SIAvelocity"
+		/>
+		<var name="surfaceSpeed"                     type="real"     dimensions="nCells Time"
+		     units="m s^{-1}"  description="ice surface speed reconstructed at cell centers"
+		/>
+		<var name="basalSpeed"                     type="real"     dimensions="nCells Time"
+		     units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
 		/>
 		<var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
 		     units="m m^{-1}"  description="normal surface slope on edges" packages="SIAvelocity"
@@ -561,7 +578,7 @@
 		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
 		     description="Sigma (fractional) level at center of each layer"
 		/>
-		<var name="layerInterfaceSigma" type="real" dimensions="nVertLevelsP1" units="none"
+		<var name="layerInterfaceSigma" type="real" dimensions="nVertInterfaces" units="none"
 		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
 		/>
 		<var name="bedTopography" type="real" dimensions="nCells" units="m above datum"

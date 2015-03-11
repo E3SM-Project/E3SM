@@ -111,13 +111,18 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
+      character (len=StrKIND), pointer :: config_velocity_solver
       type (field2DReal), pointer :: normalVelocityField, layerThicknessEdgeField
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
+      real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
+      integer, pointer :: nVertInterfaces
       integer :: err_tmp
 !!!      integer :: blockVertexMaskChanged, procVertexMaskChanged, anyVertexMaskChanged
 
 
       err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       ! ===
       ! === Diagnostic solve of variables prior to velocity 
@@ -201,17 +206,29 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
-
-         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+         call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
          call mpas_pool_get_array(statePool, 'uReconstructX', uReconstructX, timeLevel=timeLevel)
          call mpas_pool_get_array(statePool, 'uReconstructY', uReconstructY, timeLevel=timeLevel)
-         call mpas_pool_get_array(statePool, 'uReconstructZ', uReconstructZ, timeLevel=timeLevel)
-         call mpas_pool_get_array(statePool, 'uReconstructZonal', uReconstructZonal, timeLevel=timeLevel)
-         call mpas_pool_get_array(statePool, 'uReconstructMeridional', uReconstructMeridional, timeLevel=timeLevel)
+         call mpas_pool_get_array(statePool, 'surfaceSpeed', surfaceSpeed, timeLevel=timeLevel)
+         call mpas_pool_get_array(statePool, 'basalSpeed', basalSpeed, timeLevel=timeLevel)
 
-         call mpas_reconstruct(meshPool, normalVelocity,               &
-                          uReconstructX, uReconstructY, uReconstructZ, &
-                          uReconstructZonal, uReconstructMeridional )
+         ! Native SIA dycore needs to have reconstructed velocities calculated.
+         ! External dycores return their native velocities at cell center locations,
+         ! but these can optionally be overwritten by reconstructed velocities for testing.
+         if ( (trim(config_velocity_solver) == 'sia') ) then
+            call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+            call mpas_pool_get_array(statePool, 'uReconstructZ', uReconstructZ, timeLevel=timeLevel)
+            call mpas_pool_get_array(statePool, 'uReconstructZonal', uReconstructZonal, timeLevel=timeLevel)
+            call mpas_pool_get_array(statePool, 'uReconstructMeridional', uReconstructMeridional, timeLevel=timeLevel)
+
+            call mpas_reconstruct(meshPool, normalVelocity,               &
+                            uReconstructX, uReconstructY, uReconstructZ, &
+                            uReconstructZonal, uReconstructMeridional )
+         endif
+
+         ! Calculate diagnostic speed arrays
+         surfaceSpeed = sqrt(uReconstructX(1,:)**2 + uReconstructY(1,:)**2)
+         basalSpeed   = sqrt(uReconstructX(nVertInterfaces,:)**2 + uReconstructY(nVertInterfaces,:)**2)
 
          block => block % next
       end do
@@ -310,7 +327,9 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, baryWeightsOnVertex
+      real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      integer, pointer :: index_temperature
       type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField
       integer, pointer :: nCells, nVertices, nEdges
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
@@ -381,7 +400,9 @@ contains
           call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel=timeLevel)
+          call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
           call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography)
+
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
@@ -418,7 +439,11 @@ contains
              call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
              call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
              call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
+             call mpas_pool_get_array(statePool, 'flowParamA', flowParamA, timeLevel=timeLevel)
 
+             ! Calculate flowA
+             call calculate_flowParamA(meshPool, tracers(index_temperature,:,:), thickness, flowParamA, err_tmp)
+             err = ior(err, err_tmp)
 
              ! Calculate normal slope
              do iEdge = 1, nEdges
@@ -962,6 +987,176 @@ contains
       enddo
 
    end subroutine cells_to_vertices_1dfield_using_kiteAreas
+
+
+!***********************************************************************
+!
+!  subroutine calculate_flowParamA
+!
+!> \brief   Calculates the flow law parameter A based on temperature
+!> \author  Matt Hoffman
+!> \date    23 Jan 2014
+!> \details
+!>  This routine calculates the flow law parameter A based on temperature
+!>  depending on what option is chosen.
+!>  The default option is a constant A assigned from config_default_flowParamA.
+!>  The PB1982 option uses this equation from \emph{Paterson and Budd} [1982]
+!>  and \emph{Paterson} [1994] (copied from CISM):
+!>   \[
+!>   A(T^{*})=A0 \exp \left(\frac{-Q}{RT^{*}}\right)
+!>   \]
+!>   This is equation 9 in {\em Payne and Dongelmans}. $A0$ is a constant of proportionality,
+!>   $Q$ is the activation energy for for ice creep, and $R$ is the universal gas constant.
+!>   The pressure-corrected temperature, $T^{*}$ is given by:
+!>   \[
+!>   T^{*} = T - T_{pmp} + T_0
+!>   \]
+!>   \[
+!>   T_{pmp} = T_0 - \sigma \rho g H \Phi
+!>   \]
+!>   $T$ is the ice temperature, $T_0$ is the triple point of water,
+!>   $\rho$ is the ice density, and $\Phi$ is the (constant) rate of change of
+!>   melting point temperature with pressure.
+!>
+!>  The CP2010 option uses this equation from the 4th Edition of Physics of Glaciers (Eq. 3.35):
+!>   \[
+!>   A(T^{*})=A0 \exp \left(\frac{-Q}{R} ( \frac{1}{T^{*}} - \frac{1}{T_t})\right)
+!>   \]
+!>   where the variables are the same as above and $T_t$ is the pressure corrected
+!>   transition temperature (-10 deg C at 0 pressure).
+!>   Values for $A0, Q, \Phi$ differ from PB1982.
+!>
+!>  All options are adjusted by the enhancement factor (which defaults to 1.0).
+!-----------------------------------------------------------------------
+   subroutine calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err)
+      use mpas_constants, only: gravity
+      use li_constants, only: idealGasConstant
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         temperature    !< Input: temperature
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         thickness    !< Input: thickness
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      integer, intent(inout) :: err
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         flowParamA    !< Input: flowParamA
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+      integer, pointer :: nCells, nVertLevels
+      character (len=StrKIND), pointer :: config_flowParamA_calculation
+      real (kind=RKIND), pointer :: config_default_flowParamA, &
+                                    config_enhancementFactor,  &
+                                    config_dynamic_thickness,  &
+                                    config_ice_density
+      integer :: iCell, iLevel, err_tmp
+      real (kind=RKIND), dimension(:), pointer :: layerCenterSigma
+      real (kind=RKIND) :: A0, Q, pressureMeltPointSlope
+      real (kind=RKIND) :: temperatureCorrected, transitionTemperatureCorrected
+
+      err_tmp = 0
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+
+      call mpas_pool_get_config(liConfigs, 'config_flowParamA_calculation', config_flowParamA_calculation)
+      call mpas_pool_get_config(liConfigs, 'config_enhancementFactor', config_enhancementFactor)
+      call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA)
+      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+
+
+      select case(config_flowParamA_calculation)
+      !-----------------------------------------------------------------
+      case('constant')
+          flowParamA = config_default_flowParamA
+      !-----------------------------------------------------------------
+      case('PB1982')
+          pressureMeltPointSlope = 9.7456e-8_RKIND
+          do iCell = 1, nCells
+            if (thickness(iCell) > 0.0_RKIND) then
+              do iLevel = 1, nVertLevels
+                ! Calculate the pressure-corrected temperature
+                temperatureCorrected = min(273.15_RKIND, temperature(iLevel,iCell) + pressureMeltPointSlope * &
+                         thickness(iCell) * config_ice_density * gravity * layerCenterSigma(iLevel) )
+                temperatureCorrected = max(223.15_RKIND, temperatureCorrected)
+                ! Calculate flow A
+                if (temperatureCorrected > 263.15_RKIND) then
+                  A0 = 1.733e3_RKIND
+                  Q  = 139.0e3_RKIND
+                else
+                  A0 = 3.613e-13_RKIND
+                  Q  = 60.0e3_RKIND
+                endif
+                flowParamA(iLevel,iCell) = A0 * exp(-1.0_RKIND * Q / (idealGasConstant * temperatureCorrected))
+              enddo ! levels
+            else
+              flowParamA(:,iCell) = 0.0_RKIND  ! non-ice cells get 0
+            endif ! if dynamic ice
+          enddo ! cells
+      !-----------------------------------------------------------------
+      case('CP2010')
+          pressureMeltPointSlope = 7.0e-8_RKIND
+          do iCell = 1, nCells
+            if (thickness(iCell) > 0.0_RKIND) then  ! SIA solver could make use of A on thin ice if doing 2nd order averaging of flwa onto edges (otherwise this could be the dynamic thickness limit)
+              do iLevel = 1, nVertLevels
+                ! Calculate the pressure-corrected temperature
+                temperatureCorrected = min(273.15_RKIND, temperature(iLevel,iCell) + pressureMeltPointSlope * &
+                         thickness(iCell) * config_ice_density * gravity * layerCenterSigma(iLevel) )
+                temperatureCorrected = max(223.15_RKIND, temperatureCorrected)
+                transitionTemperatureCorrected = 263.15_RKIND + pressureMeltPointSlope * &
+                         thickness(iCell) * config_ice_density * gravity * layerCenterSigma(iLevel)
+                ! Calculate flow A
+                A0 = 3.5e-25_RKIND
+                if (temperatureCorrected > 263.15_RKIND) then
+                  Q  = 115.0e3_RKIND
+                else
+                  Q  = 6.0e4_RKIND
+                endif
+                flowParamA(iLevel,iCell) = A0 * exp(-1.0_RKIND * Q / idealGasConstant * (1.0_RKIND/temperatureCorrected - 1.0_RKIND/transitionTemperatureCorrected))
+              enddo ! levels
+            else
+              flowParamA(:,iCell) = 0.0_RKIND  ! non-ice cells get 0
+            endif ! if dynamic ice
+          enddo ! cells
+      !-----------------------------------------------------------------
+      end select
+
+      !print *,'max flwa', maxval(flowParamA)
+      !print *,'config_enhancementFactor', config_enhancementFactor
+
+      ! Include enhancement factor
+      flowParamA = flowParamA * config_enhancementFactor
+
+      err = ior(err, err_tmp)
+
+   end subroutine calculate_flowParamA
+
 
 end module li_diagnostic_vars
 
