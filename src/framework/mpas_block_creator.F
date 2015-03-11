@@ -1209,6 +1209,7 @@ module mpas_block_creator
    subroutine mpas_block_creator_finalize_block_phase2(stream_manager, blocklist, readableDimensions) !{{{
 
      use mpas_stream_manager
+     use mpas_block_decomp
 
      type (mpas_streamManager_type), pointer :: stream_manager !< Input: Stream manager structure
      type (block_type), pointer :: blocklist !< Input/Output: Linked List of blocks
@@ -1220,7 +1221,7 @@ module mpas_block_creator
 
      type (mpas_pool_iterator_type) :: itr
 
-     type (field1dInteger), pointer :: indexField, indexFieldBlk
+     type (field1dInteger), pointer :: indexField, indexFieldBlk, ownedIndices
 
      integer :: err_level
      integer, pointer :: dim0d
@@ -1254,7 +1255,18 @@ module mpas_block_creator
        end do
        call mpas_pool_set_error_level(err_level)
 
+       call mpas_setup_decomposed_dimensions(block_ptr, stream_manager, readableDimensions, block_ptr % dimensions, total_blocks)
        call mpas_setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
+
+       call mpas_pool_begin_iteration(block_ptr % dimensions)
+       do while (mpas_pool_get_next_member(block_ptr % dimensions, itr))
+          if ( itr % memberType == MPAS_POOL_DIMENSION ) then
+             if ( itr % nDims == 0 ) then
+                call mpas_pool_get_dimension(block_ptr % dimensions, trim(itr % memberName), dim0d)
+                write(0, *) ' * Dimension ' // trim(itr % memberName) // ' has value ', dim0d
+             end if
+          end if
+       end do
 
        call mpas_block_creator_allocate_pool_fields(block_ptr % structs, block_ptr % dimensions)
 
@@ -1262,6 +1274,18 @@ module mpas_block_creator
        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
        call mpas_pool_get_field(block_ptr % allFields, 'indexToCellID', indexField)
        call mpas_pool_get_field(block_ptr % allFields, 'indexToCellID_blk', indexFieldBlk)
+       call mpas_pool_get_dimension(block_ptr % dimensions, 'nCellsSolve', dim0d)
+       allocate(ownedIndices)
+       ownedIndices % fieldName = 'nCellsOwnedIndices'
+       ownedIndices % dimNames(1) = 'nCells'
+       ownedIndices % dimSizes(1) = dim0d
+       allocate(ownedIndices % array(dim0d))
+       ownedIndices % isDecomposed = .false.
+       ownedIndices % hasTimeDimension = .false.
+       ownedIndices % isActive = .true.
+       ownedIndices % isVarArray = .false.
+       ownedIndices % isPersistent = .true.
+       call mpas_pool_add_field(block_ptr % allFields, 'nCellsOwnedIndices', ownedIndices)
 
        indexField % array(:) = indexFieldBlk % array(:)
 
@@ -1270,6 +1294,18 @@ module mpas_block_creator
 
        call mpas_pool_get_field(block_ptr % allFields, 'indexToEdgeID', indexField)
        call mpas_pool_get_field(block_ptr % allFields, 'indexToEdgeID_blk', indexFieldBlk)
+       call mpas_pool_get_dimension(block_ptr % dimensions, 'nEdgesSolve', dim0d)
+       allocate(ownedIndices)
+       ownedIndices % fieldName = 'nEdgesOwnedIndices'
+       ownedIndices % dimNames(1) = 'nEdges'
+       ownedIndices % dimSizes(1) = dim0d
+       allocate(ownedIndices % array(dim0d))
+       ownedIndices % isDecomposed = .false.
+       ownedIndices % hasTimeDimension = .false.
+       ownedIndices % isActive = .true.
+       ownedIndices % isVarArray = .false.
+       ownedIndices % isPersistent = .true.
+       call mpas_pool_add_field(block_ptr % allFields, 'nEdgesOwnedIndices', ownedIndices)
 
        indexField % array(:) = indexFieldBlk % array(:)
 
@@ -1278,6 +1314,18 @@ module mpas_block_creator
 
        call mpas_pool_get_field(block_ptr % allFields, 'indexToVertexID', indexField)
        call mpas_pool_get_field(block_ptr % allFields, 'indexToVertexID_blk', indexFieldBlk)
+       call mpas_pool_get_dimension(block_ptr % dimensions, 'nVerticesSolve', dim0d)
+       allocate(ownedIndices)
+       ownedIndices % fieldName = 'nVerticesOwnedIndices'
+       ownedIndices % dimNames(1) = 'nVertices'
+       ownedIndices % dimSizes(1) = dim0d
+       allocate(ownedIndices % array(dim0d))
+       ownedIndices % isDecomposed = .false.
+       ownedIndices % hasTimeDimension = .false.
+       ownedIndices % isActive = .true.
+       ownedIndices % isVarArray = .false.
+       ownedIndices % isPersistent = .true.
+       call mpas_pool_add_field(block_ptr % allFields, 'nVerticesOwnedIndices', ownedIndices)
 
        indexField % array(:) = indexFieldBlk % array(:)
 
