@@ -181,7 +181,7 @@ module nudging
   use shr_kind_mod,only:r8=>SHR_KIND_R8,cs=>SHR_KIND_CS,cl=>SHR_KIND_CL
   use time_manager,only:timemgr_time_ge,timemgr_time_inc,get_curr_date,dtime
   use phys_grid   ,only:scatter_field_to_chunk
-  use abortutils  ,only:endrun
+  use cam_abortutils  ,only:endrun
   use spmd_utils  ,only:masterproc
   use cam_logfile ,only:iulog
 #ifdef SPMD
