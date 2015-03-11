@@ -823,13 +823,20 @@ module BGCCenturySubMod
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) + yf(centurybgc_vars%lid_no3       ,c, j)  - y0(centurybgc_vars%lid_no3      , c, j)
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2))
+
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_co2x   ) = yf(centurybgc_vars%lid_co2        ,c, j)  - y0(centurybgc_vars%lid_co2     , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_co2x))
+
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2o    ) = yf(centurybgc_vars%lid_n2o        ,c, j)  - y0(centurybgc_vars%lid_n2o     , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2o))
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_o2     ) = yf(centurybgc_vars%lid_o2        ,c, j)  - y0(centurybgc_vars%lid_o2       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2))
 
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ch4    ) = yf(centurybgc_vars%lid_ch4       ,c, j) - y0(centurybgc_vars%lid_ch4       , c, j)  &
+                                                              + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ch4))
+
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ar     ) = yf(centurybgc_vars%lid_ar       ,c, j) - y0(centurybgc_vars%lid_ar       , c, j)  &
+                                                              + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ar))
       !get net production for om pools
       deltac=0._r8
       do k = 1, nom_pools
@@ -837,7 +844,7 @@ module BGCCenturySubMod
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
         deltac = deltac + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
       enddo
-      if(c==4689)then
+      if(c==31367)then
         hr = hr + col%dz(c,j)*hr_vr(c,j)
         err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
         delta_no3 = delta_no3+tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )*natomw*col%dz(c,j)
@@ -854,7 +861,7 @@ module BGCCenturySubMod
         sminn_plant2 = sminn_plant2 + plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j)*col%dz(c,j)
       endif
     enddo
-    if(c==4689)then
+    if(c==31367)then
       print*,'err_no3, err_nh4',delta_no3,delta_nh4
       print*,'no3_m, nh4_m', delta_no3_m,delta_nh4_m
       print*,'immob fnit',immob,fnit
@@ -906,6 +913,8 @@ module BGCCenturySubMod
       tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2) = yf(centurybgc_vars%lid_n2, c, j)
 
       tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar) = yf(centurybgc_vars%lid_ar, c, j)
+
+      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4) = yf(centurybgc_vars%lid_ch4, c, j)
 
       tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o) = yf(centurybgc_vars%lid_n2o, c, j)
       

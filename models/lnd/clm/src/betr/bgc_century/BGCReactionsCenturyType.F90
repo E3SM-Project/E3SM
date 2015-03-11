@@ -380,12 +380,12 @@ contains
     tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_no3x) = 0._r8   
     tracerboundarycond_vars%bot_concflux_col(c,1,:) = 0._r8                                  !zero flux boundary condition
     !those will be updated with snow resistance and hydraulic wicking resistance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_n2)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_o2)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ar)   = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_co2x) = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ch4)  = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance  
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_n2o)  = 2._r8*1.267e-5_r8/dz_top(1)     !m/s surface conductance  
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_n2)   = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_o2)   = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ar)   = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_co2x) = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ch4)  = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance  
+    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_n2o)  = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance  
   enddo
   end subroutine set_boundary_conditions
 !-------------------------------------------------------------------------------

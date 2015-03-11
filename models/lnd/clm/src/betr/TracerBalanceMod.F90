@@ -140,7 +140,7 @@ implicit none
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo
-    if(c==4689)then
+    if(c==31367)then
       atw=natomw
       print*,'somn',bal_beg*atw,bal_end*atw
       print*,'netpsomn',bal_flx *atw 
@@ -151,7 +151,9 @@ implicit none
       print*,'netpro no3',tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)*atw
       print*,'netpro n2',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2) * atw *2._r8
       print*,'netpro n2o',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2o) *atw * 2._r8
+
       print*,'nflxloss',(tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))*atw
+      print*,'nflxloss no3 nh4',tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x)*atw, tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x)*atw
     endif
     
     call tracerflux_vars%Temporal_average(c,dtime)

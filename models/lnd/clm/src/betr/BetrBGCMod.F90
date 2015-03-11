@@ -172,19 +172,19 @@ contains
      col%dz(bounds%begc:bounds%endc, 1:2), waterstate_vars, &
      waterflux_vars, betrtracer_vars, tracerstate_vars, tracercoeff_vars, tracerflux_vars)
   
-  !print*,'do diffusion advection transport'  
+  print*,'do diffusion advection transport'  
   call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
        col%dz(bounds%begc:bounds%endc,lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
        waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
        (/do_advection,do_diffusion/), dtime2, betrtracer_vars, tracerboundarycond_vars,&
        tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
     
-  !print*,'do bgc_reaction'
+  print*,'do bgc_reaction'
   call bgc_reaction%calc_bgc_reaction(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, tracerboundarycond_vars%jtops_col,&
        dtime, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, cnstate_vars, &
        carbonflux_vars,nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   
-  !print*,'do advection diffusion transport ' 
+  print*,'do advection diffusion transport ' 
   call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
       col%dz(bounds%begc:bounds%endc, lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
       waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
@@ -742,7 +742,8 @@ contains
               if(abs(dtracer(c,l))<tiny_val)dtracer(c,l) = 0._r8
               if(tracer_conc_mobile_col(c,l,j)<0._r8)then
                 !write error message and stop
-                print*,tracer_conc_mobile_col(c,l,j),tracernames(j),c
+                print*,tracernames(j),c
+                print*,tracer_conc_mobile_col(c,l,j),dtracer(c,l),dtime_loc(c)
                 call endrun('stopped '//trim(subname))
               endif
               
@@ -1119,6 +1120,7 @@ contains
   associate(                                                                & !   
     ngwmobile_tracers        => betrtracer_vars%ngwmobile_tracers         , & !
     is_h2o                   => betrtracer_vars%is_h2o                    , & !
+    is_advective             => betrtracer_vars%is_advective              , & !
     aqu2bulkcef_mobile       => tracercoeff_vars%aqu2bulkcef_mobile_col   , & !
     tracer_conc_mobile       => tracerstate_vars%tracer_conc_mobile_col   , & !
     dz                       => col%dz                                    , & !
@@ -1132,7 +1134,7 @@ contains
       if(j>=jtops(c))then
         do k = 1, ngwmobile_tracers
           !obtain aqueous concentration
-
+          if(.not. is_advective(k))cycle
           aqucon = safe_div(tracer_conc_mobile(c,j,k),aqu2bulkcef_mobile(c,j,k))
           if(.not. is_h2o(k))then
             tracer_flx_drain(c,k)     = tracer_flx_drain(c,k)  + aqucon * qflx_drain_vr(c,j)
