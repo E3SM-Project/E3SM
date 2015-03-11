@@ -220,6 +220,8 @@ module CNNitrogenFluxType
 
      real(r8), pointer :: sminn_no3_input_vr_col                    (:,:)   !col no3 input, gN/m3/time step
      real(r8), pointer :: sminn_nh4_input_vr_col                    (:,:)   !col nh4 input, gN/m3/time step
+     real(r8), pointer :: sminn_no3_input_col                       (:)     !col no3 input, gN/m2
+     real(r8), pointer :: sminn_nh4_input_col                       (:)     !col nh4 input, gN/m2
      real(r8), pointer :: sminn_input_col                           (:)     !col minn input, gN/m2
      real(r8), pointer :: bgc_npool_inputs_vr_col                   (:,:,:) !col organic nitrogen input, gN/m3/time step
      real(r8), pointer :: bgc_npool_inputs_col                      (:,:)   !col organic N input, gN/m2/time step
@@ -574,6 +576,8 @@ contains
 
     allocate(this%sminn_no3_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_no3_input_vr_col      (:,:) = nan
     allocate(this%sminn_nh4_input_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%sminn_nh4_input_vr_col           (:,:) = nan
+    allocate(this%sminn_nh4_input_col         (begc:endc))                   ; this%sminn_nh4_input_col              (:) = nan
+    allocate(this%sminn_no3_input_col         (begc:endc))                   ; this%sminn_no3_input_col              (:) = nan
     allocate(this%sminn_input_col      (begc:endc)) ; this%sminn_input_col           (:) = nan
     allocate(this%bgc_npool_inputs_vr_col     (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_inputs_vr_col      (:,:,:) = nan
     allocate(this%bgc_npool_inputs_col        (begc:endc,ndecomp_pools))     ;this%bgc_npool_inputs_col              (:,:) = nan
@@ -2294,6 +2298,8 @@ contains
        this%fire_nloss_col(i)                = value_column
        this%som_n_leached_col(i)             = value_column
        this%sminn_input_col(i)               = value_column
+       this%sminn_nh4_input_col(i)           = value_column
+       this%sminn_no3_input_col(i)           = value_column
        ! Zero p2c column fluxes
        this%fire_nloss_col(i) = value_column
        this%wood_harvestn_col(i) = value_column
@@ -2631,6 +2637,14 @@ contains
           this%sminn_input_col(c) = &
                this%sminn_input_col(c) + &
                (this%sminn_nh4_input_vr_col(c,j)+this%sminn_no3_input_vr_col(c,j))*dzsoi_decomp(j)
+
+          this%sminn_nh4_input_col(c) = &
+               this%sminn_nh4_input_col(c) + &
+               this%sminn_nh4_input_vr_col(c,j)*dzsoi_decomp(j)
+
+          this%sminn_no3_input_col(c) = &
+               this%sminn_no3_input_col(c) + &
+               this%sminn_no3_input_vr_col(c,j)*dzsoi_decomp(j)
        end do
     end do
 

@@ -140,14 +140,18 @@ implicit none
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo
-    if(c==4973)then
+    if(c==4689)then
       atw=natomw
       print*,'somn',bal_beg*atw,bal_end*atw
       print*,'netpsomn',bal_flx *atw 
       print*,'begminn',(beg_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + beg_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
       print*,'endminn',(end_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + end_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
       print*,'nflxminn',(tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x))*atw
-      print*,'nflxloss',(tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))*atw 
+      print*,'netpro nh4',tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)*atw
+      print*,'netpro no3',tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x)*atw
+      print*,'netpro n2',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2) * atw *2._r8
+      print*,'netpro n2o',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2o) *atw * 2._r8
+      print*,'nflxloss',(tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))*atw
     endif
     
     call tracerflux_vars%Temporal_average(c,dtime)

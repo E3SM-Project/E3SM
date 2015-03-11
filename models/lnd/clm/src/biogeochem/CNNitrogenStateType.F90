@@ -1554,16 +1554,6 @@ contains
            this%totsomn_col(c) + &
            this%sminn_col(c) 
            
-      if(c==4973)then
-        print*,'abgcomp'
-        print*,'pft',this%totpftn_col(c)
-        print*,'prod',this%totprodn_col(c)
-        print*,'seedn',this%seedn_col(c)
-        print*,'ntru',this%ntrunc_col(c)
-        print*,'nbuf',this%plant_nbuffer_col(c)
-        print*,'xxxxxxxxxxxxxxxxxxxxxxxxxxx'
-        print*,'totblgn',this%totblgn_col(c)
-      endif
    end do
 
  end subroutine Summary
@@ -1591,9 +1581,6 @@ contains
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       this%plant_nbuffer_col(c) =this%plant_nbuffer_col(c)+ (plant_minn_active_yield_flx_col(c) + plant_minn_passive_yield_flx_col(c))*dtime
-      if(c==4973)then
-        print*,'npass, ac',plant_minn_passive_yield_flx_col(c)*dtime, plant_minn_active_yield_flx_col(c)*dtime
-      endif 
     enddo
       
   end subroutine nbuffer_update      

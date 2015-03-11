@@ -2797,10 +2797,6 @@ contains
             this%xsmrpool_patch(p) + &
             this%ctrunc_patch(p)
        c = pft%column(p)
-       if(c==5663)then
-          print*,'csum',p
-           print*,'leafc', this%leafc_storage_patch(p)      
-       endif
        ! (WOODC) - wood C
        this%woodc_patch(p) = &
             this%deadstemc_patch(p)    + &

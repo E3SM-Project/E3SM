@@ -1189,13 +1189,15 @@ contains
   real(r8) :: dtmp 
   associate(                                                               &
     ngwmobile_tracers     => betrtracer_vars%ngwmobile_tracers           , & !
+    is_advective          => betrtracer_vars%is_advective                , &
     is_h2o                => betrtracer_vars%is_h2o                      , & !Input [logical (:)] indicator whether it is a H2O tracer
     h2osoi_liqvol         => waterstate_vars%h2osoi_liqvol_col           , &
     qflx_surf             => waterflux_vars%qflx_surf_col                , & !Input [real(r8) (:)]   surface runoff [mm H2O/s]
     tracer_conc_surfwater => tracerstate_vars%tracer_conc_surfwater_col  , & !Inout [real(r8) (:,:)] tracer concentration in surface water
     tracer_conc_mobile    => tracerstate_vars%tracer_conc_mobile_col     , & !
-    aqu2bulkcef_mobile    => tracercoeff_vars%aqu2bulkcef_mobile_col     , & !
+    aqu2bulkcef_mobile    => tracercoeff_vars%aqu2bulkcef_mobile_col     , & !    
     tracer_flx_surfrun    => tracerflux_vars%tracer_flx_surfrun_col        & !Output[real(r8) (:,:)] tracer loss through surface runoff
+   
   )
   dtime = get_step_size()
   do fc = 1, num_soilc
@@ -1213,6 +1215,7 @@ contains
     
     do j = 1, ngwmobile_tracers
     
+      if(.not. is_advective(j))cycle
       !Do not do this for water tracer, maybe I can do it.
       if(is_h2o(j))cycle
       tracer_conc_surfwater(c,j)  = 0._r8   !at this moment it is set to zero, however, when tracer is tracked in snow, it should be non-zero

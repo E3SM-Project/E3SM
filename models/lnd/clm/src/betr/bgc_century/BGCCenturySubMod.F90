@@ -429,7 +429,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2                ,reac)  =  CNDecompBgcParamsInst%rf_l1s1_bgc
   cascade_matrix(lid_nh4                ,reac)  = safe_div(1._r8,cn_ratios(lit1)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc,cn_ratios(som1))
 
-  cascade_matrix(lid_minn_immob         ,reac)  = cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_immob         ,reac)  = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac)  = CNDecompBgcParamsInst%rf_l1s1_bgc
 
   primvarid(reac) = (lit1-1)*nelms+c_loc
@@ -458,7 +458,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_co2                ,reac)   =  CNDecompBgcParamsInst%rf_l2s1_bgc
   cascade_matrix(lid_nh4                ,reac)   = safe_div(1._r8,cn_ratios(lit2)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc,cn_ratios(som1))
-  cascade_matrix(lid_minn_immob         ,reac)   = cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_immob         ,reac)   = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_l2s1_bgc
   
   primvarid(reac) = (lit2-1)*nelms+c_loc
@@ -481,7 +481,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_co2                ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(lit3)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc,cn_ratios(som2))
-  cascade_matrix(lid_minn_immob         ,reac) = cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_immob         ,reac) = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
   
   primvarid(reac) = (lit3-1)*nelms+c_loc
@@ -513,7 +513,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_co2                ,reac) = ftxt
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(som1))-safe_div(f1,cn_ratios(som2))-safe_div(f2,cn_ratios(som3))
-  cascade_matrix(lid_minn_immob         ,reac) = cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_immob         ,reac) = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac) = ftxt
   
   primvarid(reac) = (som1-1)*nelms+c_loc
@@ -539,7 +539,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2                ,reac)   =  CNDecompBgcParamsInst%rf_s2s1_bgc
   cascade_matrix(lid_nh4                ,reac)   =  safe_div(1._r8,cn_ratios(som2))-0.93_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som1)) &
                                                 -0.07_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som3))
-  cascade_matrix(lid_minn_immob         ,reac)   = cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_immob         ,reac)   = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_s2s1_bgc
   
   primvarid(reac) = (som2-1)*nelms+c_loc
@@ -562,7 +562,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_co2                ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(som3)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc,cn_ratios(som1))
-  cascade_matrix(lid_minn_immob         ,reac) = cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_immob         ,reac) = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
   
   primvarid(reac) = (som3-1)*nelms+c_loc
@@ -587,7 +587,7 @@ module BGCCenturySubMod
   
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(cwd)) - safe_div(CNDecompBgcParamsInst%cwd_fcel_bgc,cn_ratios(lit2)) - &
                                                  safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3))
-  cascade_matrix(lid_minn_immob         ,reac) = cascade_matrix(lid_nh4         ,reac)
+  cascade_matrix(lid_minn_immob         ,reac) = -cascade_matrix(lid_nh4         ,reac)
   primvarid(reac) = (cwd-1)*nelms+c_loc
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
      
@@ -734,7 +734,7 @@ module BGCCenturySubMod
    n_loc                 => centurybgc_vars%n_loc                   , & !
    f_n2o_nit_vr          => nitrogenflux_vars%f_n2o_nit_vr_col      , & !
    f_denit_vr            => nitrogenflux_vars%f_denit_vr_col        , & !
-   actual_immob_vr_col   => nitrogenflux_vars%actual_immob_vr_col   , & !
+   actual_immob_vr       => nitrogenflux_vars%actual_immob_vr_col   , & !
    hr_vr                 => carbonflux_vars%hr_vr_col               , & !
    volatileid            => betrtracer_vars%volatileid              , & !
    ngwmobile_tracers     => betrtracer_vars%ngwmobile_tracers       , & !
@@ -780,12 +780,12 @@ module BGCCenturySubMod
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
         deltac = deltac + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
       enddo
-      if(c==4973)then
+      if(c==4689)then
         hr = hr + col%dz(c,j)*hr_vr(c,j)
         err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
       endif
     enddo
-    if(c==4973)print*,'err',err, hr*dtime
+    if(c==4689)print*,'err',err, hr*dtime
   enddo
   
   end associate

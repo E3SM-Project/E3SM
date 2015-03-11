@@ -894,7 +894,7 @@ contains
        if(.not. use_ed)then
           if (use_cn) then
              nstep = get_nstep()
-             c = 4973
+             c = 4689
              print*,'-------------------------------------------------------'
              print*,'soiln',nitrogenstate_vars%totcoln_col(c)-nitrogenstate_vars%totabgn_col (c)
 
@@ -902,9 +902,17 @@ contains
                (nitrogenflux_vars%denit_col(c)+nitrogenflux_vars%smin_no3_leached_col(c)+nitrogenflux_vars%smin_no3_runoff_col(c)+&
                nitrogenflux_vars%f_n2o_nit_col(c))*get_step_size()
              
-             print*,'nimmob',nitrogenflux_vars%actual_immob_col(c)
+             print*,'nimmob',nitrogenflux_vars%actual_immob_col(c)*get_step_size()
              print*,'nbgcinput',sum(nitrogenflux_vars%bgc_npool_inputs_col(c,:))
              print*,'bgcnpool',nitrogenstate_vars%totblgn_col(c)-nitrogenstate_vars%sminn_col(c)
+             print*,'----------'
+             print*,'sminn',nitrogenstate_vars%sminn_col(c)
+             print*,'minn input',nitrogenflux_vars%sminn_input_col(c)
+             print*,'min nh4 input',nitrogenflux_vars%sminn_nh4_input_col(c)
+             print*,'min no3 input',nitrogenflux_vars%sminn_no3_input_col(c)
+             print*,'minneralization',nitrogenflux_vars%actual_immob_col(c)*get_step_size()
+             print*,'minn output', (nitrogenflux_vars%denit_col(c)+nitrogenflux_vars%smin_no3_leached_col(c)+nitrogenflux_vars%smin_no3_runoff_col(c)+&
+               nitrogenflux_vars%f_n2o_nit_col(c))*get_step_size()
              if (nstep < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
