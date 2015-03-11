@@ -286,73 +286,132 @@ int build_struct_package_lists(ezxml_t currentPosition, char * out_packages){/*{
 }/*}}}*/
 
 
-int get_dimension_information(const char *dims, int *ndims, int *has_time, int *decomp){/*{{{*/
+int get_dimension_information(ezxml_t registry, const char *test_dimname, int *time_dim, int *decomp){/*{{{*/
+	ezxml_t dims_xml, dim_xml;
+	const char *dimname, *dimdecomp;
+
+	int found;
+
+	found = 0;
+	(*time_dim) = 0;
+	(*decomp) = -1;
+
+	if ( strcmp(test_dimname, "Time") == 0 ){
+		(*time_dim) = 1;
+		found = 1;
+		return found;
+	}
+
+	for (dims_xml = ezxml_child(registry, "dims"); dims_xml && !found; dims_xml = dims_xml->next){
+		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml && !found; dim_xml = dim_xml->next){
+			dimname = ezxml_attr(dim_xml, "name");
+			dimdecomp = ezxml_attr(dim_xml, "decomposition");
+
+			if ( dimname != NULL && strcmp(dimname, test_dimname) == 0 ) {
+				found = 1;
+
+				/* Determine decomposition */
+				if ( strcmp(dimname, "nCells") == 0 ) {
+					if ( (*decomp) == -1 ) {
+						(*decomp) = CELLS;
+					} else {
+						fprintf(stderr, "ERROR: Multiple decomposition types...\n");
+						return 1;
+					}
+				} else if ( strcmp(dimname, "nEdges") == 0 ) {
+					if ( (*decomp) == -1 ) {
+						(*decomp) = EDGES;
+					} else {
+						fprintf(stderr, "ERROR: Multiple decomposition types...\n");
+						return 1;
+					}
+				} else if ( strcmp(dimname, "nVertices") == 0 ) {
+					if ( (*decomp) == -1 ) {
+						(*decomp) = VERTICES;
+					} else {
+						fprintf(stderr, "ERROR: Multiple decomposition types...\n");
+						return 1;
+					}
+				} else {
+					if ( dimdecomp != NULL ) {
+						if ( strcmp(dimdecomp, "none") != 0 ) {
+							if ( (*decomp) == -1 ) {
+							(*decomp) = INTERNAL;
+					} else {
+						fprintf(stderr, "ERROR: Multiple decomposition types...\n");
+						return 1;
+					}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return found;
+}/*}}}*/
+
+
+int build_dimension_information(ezxml_t registry, ezxml_t var, int *ndims, int *has_time, int *decomp){/*{{{*/
+	const char *vardims;
+	const char *varname;
+
+	int dim_exists, is_time, dim_decomp;
+
 	char *string, *tofree, *token;
 
+	varname = ezxml_attr(var, "name");
+	vardims = ezxml_attr(var, "dimensions");
 	(*ndims) = 0;
 	(*decomp) = -1;
 	(*has_time) = 0;
-	string = strdup(dims);
+
+	string = strdup(vardims);
 	tofree = string;
 	token = strsep(&string, " ");
-	if(strlen(token) > 0){
-		if(strcmp(token, "Time") != 0){
-			if(strcmp(token, "nCells") == 0){
-				if((*decomp) == -1){
-					(*decomp) = CELLS;
-				} else {
-					printf("ERROR: Multiple decomposition types\n");
-					return 1;
-				}
-			} else if (strcmp(token, "nEdges") == 0){
-				if((*decomp) == -1){
-					(*decomp) = EDGES;
-				} else {
-					printf("ERROR: Multiple decomposition types\n");
-					return 1;
-				}
-			} else if (strcmp(token, "nVertices") == 0){
-				if((*decomp) == -1){
-					(*decomp) = VERTICES;
-				} else {
-					printf("ERROR: Multiple decomposition types\n");
-					return 1;
-				}
-			}
+
+	/* Handle first dimension in list */
+	if ( strlen(token) > 0 ) {
+		dim_exists = get_dimension_information(registry, token, &is_time, &dim_decomp);
+
+		if ( dim_exists && !is_time) {
 			(*ndims)++;
-		} else {
-			(*has_time) = 1;
+
+			if ( (*decomp) == -1 ) {
+				(*decomp) = dim_decomp;
+			} else if ( (*decomp) != -1 && dim_decomp != -1) {
+				fprintf(stderr, "ERROR: Variable %s contains multiple decomposed dimensions in list: %s\n", varname, vardims);
+				return 1;
+			}
+        } else if (is_time) {
+            (*has_time) = 1;
+		} else if (!dim_exists) {
+			fprintf(stderr, "ERROR: Dimension %s on variable %s doesn't exist.\n", token, varname);
+			return 1;
 		}
 	}
-	while( (token = strsep(&string, " ")) != NULL){
-		if(strcmp(token, "Time") != 0){
-			if(strcmp(token, "nCells") == 0){
-				if((*decomp) == -1){
-					(*decomp) = CELLS;
-				} else {
-					printf("ERROR: Multiple decomposition types\n");
-					return 1;
-				}
-			} else if (strcmp(token, "nEdges") == 0){
-				if((*decomp) == -1){
-					(*decomp) = EDGES;
-				} else {
-					printf("ERROR: Multiple decomposition types\n");
-					return 1;
-				}
-			} else if (strcmp(token, "nVertices") == 0){
-				if((*decomp) == -1){
-					(*decomp) = VERTICES;
-				} else {
-					printf("ERROR: Multiple decomposition types\n");
-					return 1;
-				}
-			}
+
+	/* Handle remaining dimensions in list */
+	while( (token = strsep(&string, " ")) != NULL ){
+		dim_exists = get_dimension_information(registry, token, &is_time, &dim_decomp);
+
+		if ( dim_exists && !is_time ) {
 			(*ndims)++;
-		} else {
-			(*has_time) = 1;
+
+			if ( (*decomp) == -1 ) {
+				(*decomp) = dim_decomp;
+			} else if ( (*decomp) != -1 && dim_decomp != -1) {
+				fprintf(stderr, "ERROR: Variable %s contains multiple decomposed dimensions in list: %s\n", varname, vardims);
+				return 1;
+			}
+        } else if (is_time) {
+            (*has_time) = 1;
+		} else if (!dim_exists) {
+			fprintf(stderr, "ERROR: Dimension %s on variable %s doesn't exist.\n", token, varname);
+			return 1;
 		}
 	}
+
 	free(tofree);
 
 	return 0;
@@ -601,7 +660,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	ezxml_t nmlrec_xml, nmlopt_xml;
 
 	const char *nmlrecname, *nmlrecinsub, *nmloptname, *nmlopttype;
-	const char *dimname, *dimunits, *dimdesc, *dimdef;
+	const char *dimname, *dimunits, *dimdesc, *dimdef, *dimdecomp;
 	const char *corename;
 
 	char option_name[1024];
@@ -848,7 +907,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	get_field_information(vararrtype, vararrdefaultval, default_value, &type);
 
 	// Determine ndims, hasTime, and decomp type
-	get_dimension_information(vararrdims, &ndims, &hasTime, &decomp);
+	build_dimension_information(registry, var_arr_xml, &ndims, &hasTime, &decomp);
 	ndims++; // Add a dimension for constituents in var_array
 
 	// Determine name of pointer for this field.
@@ -1031,6 +1090,11 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 		fortprintf(fd, "      allocate( %s(%d) %% constituentNames(numConstituents) )\n", pointer_name, time_lev);
 		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n", pointer_name, time_lev);
 		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, vararrname);
+		if (decomp != -1) {
+			fortprintf(fd, "      %s(%d) %% isDecomposed = .true.\n", pointer_name, time_lev);
+		} else {
+			fortprintf(fd, "      %s(%d) %% isDecomposed = .false.\n", pointer_name, time_lev);
+		}
 		if (hasTime) {
 			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .true.\n", pointer_name, time_lev);
 		} else {
@@ -1211,7 +1275,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	get_field_information(vartype, vardefaultval, default_value, &type);
 
 	// Determine ndims, hasTime, and decomp type
-	get_dimension_information(vardims, &ndims, &hasTime, &decomp);
+	build_dimension_information(registry, var_xml, &ndims, &hasTime, &decomp);
 
 	// Determine name of pointer for this field.
 	set_pointer_name(type, ndims, pointer_name);
@@ -1224,6 +1288,12 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n", pointer_name, time_lev);
 		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, varname);
 		fortprintf(fd, "      %s(%d) %% isVarArray = .false.\n", pointer_name, time_lev);
+		if (decomp != -1) {
+			fortprintf(fd, "      %s(%d) %% isDecomposed = .true.\n", pointer_name, time_lev);
+		} else {
+			fortprintf(fd, "      %s(%d) %% isDecomposed = .false.\n", pointer_name, time_lev);
+		}
+
 		if(hasTime) {
 			fortprintf(fd, "      %s(%d) %% hasTimeDimension = .true.\n", pointer_name, time_lev);
 		} else {
@@ -1483,7 +1553,7 @@ int determine_struct_depth(int curLevel, ezxml_t superStruct){/*{{{*/
 }/*}}}*/
 
 
-int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct){/*{{{*/
+int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t registry){/*{{{*/
 	ezxml_t subStruct;
 	ezxml_t var_arr_xml, var_xml;
 	const char *structname;
@@ -1561,7 +1631,7 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct){/*{{{*/
 
 			// Determine number of dimensions
 			// and decomp type
-			get_dimension_information(vardims, &ndims, &has_time, &decomp);
+			build_dimension_information(registry, var_arr_xml, &ndims, &has_time, &decomp);
 			ndims++; // Add a dimension for var_arrays
 
 			// Using type and ndims, determine name of pointer for field.
@@ -1632,7 +1702,7 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct){/*{{{*/
 
 			// Determine number of dimensions
 			// and decomp type
-			get_dimension_information(vardims, &ndims, &has_time, &decomp);
+			build_dimension_information(registry, var_xml, &ndims, &has_time, &decomp);
 
 			// Using type and ndims, determine name of pointer for field.
 			set_pointer_name(type, ndims, pointer_name);
@@ -1670,7 +1740,7 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct){/*{{{*/
 			}
 		}/*}}}*/
 
-		err = generate_struct_links(fd, curLevel+1, subStruct);
+		err = generate_struct_links(fd, curLevel+1, subStruct, registry);
 	}
 
 	return 0;
@@ -1737,7 +1807,7 @@ int generate_field_links(ezxml_t registry){/*{{{*/
 	}
 	fortprintf(fd, "\n");
 
-	err = generate_struct_links(fd, 0, registry);
+	err = generate_struct_links(fd, 0, registry, registry);
 
 	fortprintf(fd, "   end subroutine mpas%slink_blocks\n", core_string);
 

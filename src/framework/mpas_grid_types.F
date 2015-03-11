@@ -58,6 +58,7 @@ module mpas_grid_types
       character (len=StrKIND), dimension(5) :: dimNames
       integer, dimension(5) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -90,6 +91,7 @@ module mpas_grid_types
       character (len=StrKIND), dimension(4) :: dimNames
       integer, dimension(4) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -123,6 +125,7 @@ module mpas_grid_types
       character (len=StrKIND), dimension(3) :: dimNames
       integer, dimension(3) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -155,6 +158,7 @@ module mpas_grid_types
       character (len=StrKIND), dimension(2) :: dimNames
       integer, dimension(2) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -187,6 +191,7 @@ module mpas_grid_types
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -217,6 +222,7 @@ module mpas_grid_types
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -248,6 +254,7 @@ module mpas_grid_types
       character (len=StrKIND), dimension(3) :: dimNames
       integer :: defaultValue
       integer, dimension(3) :: dimSizes
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -280,6 +287,7 @@ module mpas_grid_types
       character (len=StrKIND), dimension(2) :: dimNames
       integer :: defaultValue
       integer, dimension(2) :: dimSizes
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -312,6 +320,7 @@ module mpas_grid_types
       character (len=StrKIND), dimension(1) :: dimNames
       integer :: defaultValue
       integer, dimension(1) :: dimSizes
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -342,6 +351,7 @@ module mpas_grid_types
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       integer :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -373,6 +383,7 @@ module mpas_grid_types
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
       character (len=StrKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -403,6 +414,7 @@ module mpas_grid_types
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -432,6 +444,7 @@ module mpas_grid_types
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       logical :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray

@@ -13,6 +13,7 @@
 #define CELLS 0
 #define EDGES 1
 #define VERTICES 2
+#define INTERNAL 3
 
 #define PERSISTENT 0
 #define SCRATCH    1
