@@ -220,11 +220,11 @@ class yellowstone(platformBuilder):
                                            'python ',
                            'ncarbinlibs/1.1 ']
         if compiler == 'intel':
-            self.moduleList += ['intel/15.0.0',
+            self.moduleList += ['intel/15.0.1',
                            'ncarcompilers/1.0']
             if mpilib is not "mpi-serial":
                 self.moduleList += ['netcdf-mpi/4.3.2']
-                os.environ["PNETCDF"]="/glade/u/home/jedwards/pnetcdf/svn1920/intel"
+                os.environ["PNETCDF"]="/glade/u/home/jedwards/pnetcdf/svn2013/"
             else:
                 self.moduleList += ['netcdf/4.3.2']
                 self.CC = 'icc'
