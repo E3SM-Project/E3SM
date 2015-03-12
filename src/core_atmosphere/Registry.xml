@@ -691,6 +691,7 @@
                 <var name="dcEdge"                    type="real"     dimensions="nEdges"/>
                 <var name="angleEdge"                 type="real"     dimensions="nEdges"/>
                 <var name="areaCell"                  type="real"     dimensions="nCells"/>
+                <var name="invAreaCell"               type="real"     dimensions="nCells"/>
                 <var name="areaTriangle"              type="real"     dimensions="nVertices"/>
                 <var name="edgeNormalVectors"         type="real"     dimensions="R3 nEdges"/>
                 <var name="localVerticalUnitVectors"  type="real"     dimensions="R3 nCells"/>

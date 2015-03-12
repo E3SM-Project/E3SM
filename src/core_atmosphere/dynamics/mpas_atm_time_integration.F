@@ -1589,6 +1589,13 @@ module atm_time_integration
       real (kind=RKIND) :: dt
       logical, intent(in), optional :: advance_density
 
+      real (kind=RKIND), dimension(nVertLevels) :: scalar_weight1
+      real (kind=RKIND), dimension(nVertLevels, 10) :: scalar_weight2
+      integer:: jj
+      integer, dimension(10) :: ica
+      real (kind=RKIND), dimension(:), pointer :: invAreaCell
+      real (kind=RKIND) :: rho_zz_new_inv
+
       integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
       real (kind=RKIND) :: scalar_weight
 
@@ -1652,6 +1659,7 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
       call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
 
       call mpas_pool_get_array(mesh, 'fzm', fnm)
@@ -1702,16 +1710,57 @@ module atm_time_integration
             !  flux_arr stores the value of the scalar at the edge.
             !  a better name perhaps would be scalarEdge
 
-            flux_arr(:,:) = 0.
-            do i=1,nAdvCellsForEdge(iEdge)
-               iCell = advCellsForEdge(i,iEdge)
+            select case(nAdvCellsForEdge(iEdge))
+            case(10)
+               do jj=1,10
+                  do k=1,nVertLevels
+                     scalar_weight2(k,jj) = uhAvg(k,iEdge)*(adv_coefs(jj,iEdge) + &
+                          sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(jj,iEdge))
+                  enddo
+               enddo
+               do jj=1,10
+                  ica(jj) = advCellsForEdge(jj,iEdge)
+               enddo
+
                do k=1,nVertLevels
-                  scalar_weight = adv_coefs(i,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge)
-                  do iScalar=1,num_scalars
-                     flux_arr(iScalar,k) = flux_arr(iScalar,k) + scalar_weight* scalar_new(iScalar,k,iCell)
-                  end do
+               do iScalar=1,num_scalars
+                  flux_arr(iscalar,k) = &
+                       scalar_weight2(k,1)  * scalar_new(iScalar,k,ica(1)) + &
+                       scalar_weight2(k,2)  * scalar_new(iScalar,k,ica(2)) + &
+                       scalar_weight2(k,3)  * scalar_new(iScalar,k,ica(3)) + &
+                       scalar_weight2(k,4)  * scalar_new(iScalar,k,ica(4)) + &
+                       scalar_weight2(k,5)  * scalar_new(iScalar,k,ica(5)) + &
+                       scalar_weight2(k,6)  * scalar_new(iScalar,k,ica(6)) + &
+                       scalar_weight2(k,7)  * scalar_new(iScalar,k,ica(7)) + &
+                       scalar_weight2(k,8)  * scalar_new(iScalar,k,ica(8)) + &
+                       scalar_weight2(k,9)  * scalar_new(iScalar,k,ica(9)) + &
+                       scalar_weight2(k,10) * scalar_new(iScalar,k,ica(10))
                end do
-            end do
+               end do
+
+            case default
+               do i=1,nAdvCellsForEdge(iEdge)
+                  iCell = advCellsForEdge(i,iEdge)
+                  do k=1,nVertLevels
+                     scalar_weight1(k) = uhAvg(k,iEdge)*(adv_coefs(i,iEdge) + &
+                          sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge))
+                  enddo
+                  if(i == 1) then
+                     do k=1,nVertLevels
+                     do iScalar=1,num_scalars
+                        flux_arr(iScalar,k) = scalar_weight1(k) * scalar_new(iScalar,k,iCell)
+                     end do
+                     end do
+                  else
+                     do k=1,nVertLevels
+                     do iScalar=1,num_scalars
+                        flux_arr(iScalar,k) = flux_arr(iScalar,k) + &
+                             scalar_weight1(k) * scalar_new(iScalar,k,iCell)
+                     end do
+                     end do
+                  endif
+               enddo
+            end select
 
             ! here we add the horizontal flux divergence into the scalar tendency.
             ! note that the scalar tendency is modified.
@@ -1719,9 +1768,9 @@ module atm_time_integration
             do k=1,nVertLevels
             do iScalar=1,num_scalars
                   scalar_tend(iScalar,k,cell1) = scalar_tend(iScalar,k,cell1) &
-                         - uhAvg(k,iEdge)*flux_arr(iScalar,k)/areaCell(cell1)
+                         - flux_arr(iScalar,k) * invAreaCell(cell1)
                   scalar_tend(iScalar,k,cell2) = scalar_tend(iScalar,k,cell2) &
-                         + uhAvg(k,iEdge)*flux_arr(iScalar,k)/areaCell(cell2)
+                         + flux_arr(iScalar,k) * invAreaCell(cell2)
             end do
             if (local_advance_density) then
                rho_zz_int(k,cell1) = rho_zz_int(k,cell1) - uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(cell1)
@@ -1788,9 +1837,10 @@ module atm_time_integration
             end do
 
             do k=1,nVertLevels
+               rho_zz_new_inv = 1.0_RKIND / rho_zz_int(k,iCell)
                do iScalar=1,num_scalars
                   scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/rho_zz_int(k,iCell)
+                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) ) * rho_zz_new_inv
                end do
             end do
 
@@ -1884,8 +1934,13 @@ module atm_time_integration
       real (kind=RKIND), intent(in)        :: dt
       logical, intent(in), optional :: advance_density
 
+      integer :: ii,jj
+      integer, dimension(10) :: ica
+      real (kind=RKIND), dimension(10,2) :: swa
+
       integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
       real (kind=RKIND) :: flux, scalar_weight
+      real (kind=RKIND) :: f1, f2
 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
@@ -2103,19 +2158,42 @@ module atm_time_integration
 
       ! pull s_min and s_max from the (horizontal) surrounding cells
 
-            do i=1, nEdgesOnCell(iCell)
+            ! speclal treatment of calculations involving hexagonal cells
+            ! original code retained in select "default" case
+            select case(nEdgesOnCell(iCell))
+            case(6)
                do k=1, nVertLevels
-                  s_max(k,iCell) = max(s_max(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
-                  s_min(k,iCell) = min(s_min(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
+                  s_max(k,iCell) = max(s_max(k,iCell), &
+                       scalar_old(k, cellsOnCell(1,iCell)), &
+                       scalar_old(k, cellsOnCell(2,iCell)), &
+                       scalar_old(k, cellsOnCell(3,iCell)), &
+                       scalar_old(k, cellsOnCell(4,iCell)), &
+                       scalar_old(k, cellsOnCell(5,iCell)), &
+                       scalar_old(k, cellsOnCell(6,iCell)))
+                  s_min(k,iCell) = min(s_min(k,iCell), &
+                       scalar_old(k, cellsOnCell(1,iCell)), &
+                       scalar_old(k, cellsOnCell(2,iCell)), &
+                       scalar_old(k, cellsOnCell(3,iCell)), &
+                       scalar_old(k, cellsOnCell(4,iCell)), &
+                       scalar_old(k, cellsOnCell(5,iCell)), &
+                       scalar_old(k, cellsOnCell(6,iCell)))
+               enddo
+
+            case default
+               do i=1, nEdgesOnCell(iCell)
+                  do k=1, nVertLevels
+                     s_max(k,iCell) = max(s_max(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
+                     s_min(k,iCell) = min(s_min(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
+                  end do
                end do
-            end do
+            end select
 
          end do
 
       !
       !  horizontal flux divergence
 
-         flux_arr(:,:) = 0.
+         !flux_arr(:,:) = 0. ! Now only initialized as needed (see default case)
          do iEdge=1,nEdges
 
             cell1 = cellsOnEdge(1,iEdge)
@@ -2123,13 +2201,39 @@ module atm_time_integration
 
             if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
   
-               do i=1,nAdvCellsForEdge(iEdge)
-                  iCell = advCellsForEdge(i,iEdge)
+               ! speclal treatment of calculations involving edges between hexagonal cells
+               ! also took advantage of fact that coef_3rd_order is never negative
+               ! original code retained in select "default" case
+               ! be sure to see additional declarations near top of subroutine
+               select case(nAdvCellsForEdge(iEdge))
+               case(10)
+                  do jj=1,10
+                     ica(jj)    = advCellsForEdge(jj,iEdge)
+                     swa(jj,1)  = adv_coefs(jj,iEdge)   + coef_3rd_order*adv_coefs_3rd(jj,iEdge)
+                     swa(jj,2)  = adv_coefs(jj,iEdge)   - coef_3rd_order*adv_coefs_3rd(jj,iEdge)
+                  enddo
                   do k=1,nVertLevels
-                     scalar_weight = uhAvg(k,iEdge)*(adv_coefs(i,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge))
-                     flux_arr(k,iEdge) = flux_arr(k,iEdge) + scalar_weight* scalar_new(k,iCell)
+                     ii = merge(1, 2, uhAvg(k,iEdge) > 0)
+                     flux_arr(k,iEdge) = uhAvg(k,iEdge)*( &
+                          swa(1,ii)*scalar_new(k,ica(1)) + swa(2,ii)*scalar_new(k,ica(2)) + &
+                          swa(3,ii)*scalar_new(k,ica(3)) + swa(4,ii)*scalar_new(k,ica(4)) + &
+                          swa(5,ii)*scalar_new(k,ica(5)) + swa(6,ii)*scalar_new(k,ica(6)) + &
+                          swa(7,ii)*scalar_new(k,ica(7)) + swa(8,ii)*scalar_new(k,ica(8)) + &
+                          swa(9,ii)*scalar_new(k,ica(9)) + swa(10,ii)*scalar_new(k,ica(10)))
+                  enddo
+
+               case default
+                  do k=1,nVertLevels
+                     flux_arr(k,iEdge) = 0.0_RKIND
+                  enddo
+                  do i=1,nAdvCellsForEdge(iEdge)
+                     iCell = advCellsForEdge(i,iEdge)
+                     do k=1,nVertLevels
+                        scalar_weight = uhAvg(k,iEdge)*(adv_coefs(i,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge))
+                        flux_arr(k,iEdge) = flux_arr(k,iEdge) + scalar_weight* scalar_new(k,iCell)
+                     end do
                   end do
-               end do
+               end select
 
             end if
 
@@ -2164,6 +2268,7 @@ module atm_time_integration
 
          !  upwind flux computation
 
+         ! Precompute the flux_arr/areaCell before updating scale_arr
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -2174,47 +2279,39 @@ module atm_time_integration
                   flux_arr(k,iEdge) = dt*flux_arr(k,iEdge) - flux_upwind
                   scalar_new(k,cell1) = scalar_new(k,cell1) - flux_upwind / areaCell(cell1)
                   scalar_new(k,cell2) = scalar_new(k,cell2) + flux_upwind / areaCell(cell2)
- 
-                  scale_arr(SCALE_OUT,k,cell1) = scale_arr(SCALE_OUT,k,cell1) - max(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell1)
-                  scale_arr(SCALE_IN, k,cell1) = scale_arr(SCALE_IN, k,cell1) - min(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell1)
-                  scale_arr(SCALE_OUT,k,cell2) = scale_arr(SCALE_OUT,k,cell2) + min(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell2)
-                  scale_arr(SCALE_IN, k,cell2) = scale_arr(SCALE_IN, k,cell2) + max(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell2)
- 
+                  
+                  f1 = flux_arr(k,iEdge) / areaCell(cell1)
+                  scale_arr(SCALE_OUT,k,cell1) = scale_arr(SCALE_OUT,k,cell1) - max(0.0_RKIND,f1)
+                  scale_arr(SCALE_IN, k,cell1) = scale_arr(SCALE_IN, k,cell1) - min(0.0_RKIND,f1)
+                  
+                  f2 = flux_arr(k,iEdge) / areaCell(cell2)
+                  scale_arr(SCALE_OUT,k,cell2) = scale_arr(SCALE_OUT,k,cell2) + min(0.0_RKIND,f2)
+                  scale_arr(SCALE_IN, k,cell2) = scale_arr(SCALE_IN, k,cell2) + max(0.0_RKIND,f2)
+
+                  ! scale_arr(SCALE_OUT,k,cell1) = scale_arr(SCALE_OUT,k,cell1) - max(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell1)
+                  ! scale_arr(SCALE_IN, k,cell1) = scale_arr(SCALE_IN, k,cell1) - min(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell1)
+                  ! scale_arr(SCALE_OUT,k,cell2) = scale_arr(SCALE_OUT,k,cell2) + min(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell2)
+                  ! scale_arr(SCALE_IN, k,cell2) = scale_arr(SCALE_IN, k,cell2) + max(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell2)
+
                end do
             end if
          end do
 
 !  next, the limiter
 
+         ! simplification of limiter calculations
+         ! worked through algebra and found equivalent form
+         ! added benefit that it should address ifort single prec overflow issue
          do iCell = 1, nCellsSolve
             do k = 1, nVertLevels
-               s_min_update = (scalar_new(k,iCell)+scale_arr(SCALE_OUT,k,iCell))/rho_zz_int(k,iCell)
-               s_max_update = (scalar_new(k,iCell)+scale_arr(SCALE_IN,k,iCell))/rho_zz_int(k,iCell)
-               s_upwind = scalar_new(k,iCell)/rho_zz_int(k,iCell)
 
-#ifdef SINGLE_PRECISION_IFORT
-               ! ifort 13.0.1 seems to have problems optimizing this particular
-               ! bit of code without generating NaNs in single precision, so we write it differently
-               if ((s_max_update - s_upwind) /= 0.0) then
-                  scale_factor = (s_max(k,iCell)-s_upwind)/(s_max_update-s_upwind)
-                  scale_arr(SCALE_IN,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
-               else
-                  scale_arr(SCALE_IN,k,iCell) = 1.0
-               end if
-
-               if ((s_upwind - s_min_update) /= 0.0) then
-                  scale_factor = (s_upwind-s_min(k,iCell))/(s_upwind-s_min_update)
-                  scale_arr(SCALE_OUT,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
-               else
-                  scale_arr(SCALE_OUT,k,iCell) = 1.0
-               end if
-#else
-               scale_factor = (s_max(k,iCell)-s_upwind)/(s_max_update-s_upwind+eps)
+               scale_factor = (s_max(k,iCell)*rho_zz_int(k,iCell) - scalar_new(k,iCell)) / &
+                    (scale_arr(SCALE_IN,k,iCell)  + eps)
                scale_arr(SCALE_IN,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
- 
-               scale_factor = (s_upwind-s_min(k,iCell))/(s_upwind-s_min_update+eps)
+
+               scale_factor = (s_min(k,iCell)*rho_zz_int(k,iCell) - scalar_new(k,iCell)) / &
+                    (scale_arr(SCALE_OUT,k,iCell) - eps)
                scale_arr(SCALE_OUT,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
-#endif
             end do
          end do
 
@@ -2240,6 +2337,8 @@ module atm_time_integration
 !
 !  rescale the fluxes
 !
+         ! moved assignment to scalar_new from separate loop (see commented code below)
+         ! into the following loops. Avoids having to save elements of flux array
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -2248,7 +2347,9 @@ module atm_time_integration
                   flux = flux_arr(k,iEdge)
                   flux = max(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k,cell1), scale_arr(SCALE_IN, k,cell2)) &
                        + min(0.0_RKIND,flux) * min(scale_arr(SCALE_IN, k,cell1), scale_arr(SCALE_OUT,k,cell2))
-                  flux_arr(k,iEdge) = flux
+                  ! flux_arr(k,iEdge) = flux
+                  scalar_new(k,cell1) = scalar_new(k,cell1) - flux/areaCell(cell1)
+                  scalar_new(k,cell2) = scalar_new(k,cell2) + flux/areaCell(cell2)
                end do
             end if
          end do
@@ -2266,16 +2367,6 @@ module atm_time_integration
 !
 !  do the scalar update now that we have the fluxes
 !
-         do iEdge=1,nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
-               do k=1,nVertLevels
-                  scalar_new(k,cell1) = scalar_new(k,cell1) - flux_arr(k,iEdge)/areaCell(cell1)
-                  scalar_new(k,cell2) = scalar_new(k,cell2) + flux_arr(k,iEdge)/areaCell(cell2)
-               end do
-            end if
-         end do
 
          do iCell=1,nCellsSolve
             do k=1,nVertLevels
@@ -3586,9 +3677,10 @@ module atm_time_integration
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i
       real (kind=RKIND) :: h_vertex, r
+      real (kind=RKIND) :: invAreaTriangle, r1, r2
 
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
-      real (kind=RKIND), dimension(:), pointer :: fVertex, fEdge, dvEdge, dcEdge, areaCell, areaTriangle
+      real (kind=RKIND), dimension(:), pointer :: fVertex, fEdge, dvEdge, dcEdge, areaCell, areaTriangle, invAreaCell
       real (kind=RKIND), dimension(:,:), pointer :: vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, &
                                                     circulation, vorticity, ke, pv_edge, pv_vertex, pv_cell, gradPVn, gradPVt, &
                                                     divergence
@@ -3632,6 +3724,7 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
       call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
       call mpas_pool_get_array(mesh, 'fVertex', fVertex)
       call mpas_pool_get_array(mesh, 'fEdge', fEdge)
@@ -3666,8 +3759,9 @@ module atm_time_integration
          end do
       end do
       do iVertex=1,nVertices
+         invAreaTriangle = 1.0_RKIND / areaTriangle(iVertex)
          do k=1,nVertLevels
-            vorticity(k,iVertex) = circulation(k,iVertex) / areaTriangle(iVertex)
+            vorticity(k,iVertex) = circulation(k,iVertex) * invAreaTriangle
          end do
       end do
 
@@ -3696,15 +3790,17 @@ module atm_time_integration
       ! Compute kinetic energy in each cell (Ringler et al JCP 2009)
       !
       ke(:,:) = 0.0
+      ! Replace 2.0 with 2 in exponentiation to avoid outside chance that
+      ! compiler will actually allow "float raised to float" operation
       do iCell=1,nCells
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
             do k=1,nVertLevels
-               ke(k,iCell) = ke(k,iCell) + 0.25 * dcEdge(iEdge) * dvEdge(iEdge) * u(k,iEdge)**2.0
+               ke(k,iCell) = ke(k,iCell) + 0.25 * dcEdge(iEdge) * dvEdge(iEdge) * u(k,iEdge)**2
             end do
          end do
          do k=1,nVertLevels
-            ke(k,iCell) = ke(k,iCell) / areaCell(iCell)
+            ke(k,iCell) = ke(k,iCell) * invAreaCell(iCell)
          end do
       end do
 
@@ -3715,13 +3811,16 @@ module atm_time_integration
          !
 
          allocate (ke_vertex(nVertLevels,nVertices))
+         ! Precalculate inverse area triangle to avoid repeated divisions
+         ! Replace 2.0 with 2 in exponentiation to avoid outside chance that
+         ! compiler will actually allow "float raised to float" operation
          do iVertex=1,nVertices
+            invAreaTriangle = 1.0_RKIND / areaTriangle(iVertex)
             do k=1,nVertLevels
-
-               ke_vertex(k,iVertex) = (  dcEdge(EdgesOnVertex(1,iVertex))*dvEdge(EdgesOnVertex(1,iVertex))*u(k,EdgesOnVertex(1,iVertex))**2.0  &
-                                        +dcEdge(EdgesOnVertex(2,iVertex))*dvEdge(EdgesOnVertex(2,iVertex))*u(k,EdgesOnVertex(2,iVertex))**2.0  &
-                                        +dcEdge(EdgesOnVertex(3,iVertex))*dvEdge(EdgesOnVertex(3,iVertex))*u(k,EdgesOnVertex(3,iVertex))**2.0  &
-                                                    ) * 0.25 / AreaTriangle(iVertex)
+               ke_vertex(k,iVertex) = (  dcEdge(EdgesOnVertex(1,iVertex))*dvEdge(EdgesOnVertex(1,iVertex))*u(k,EdgesOnVertex(1,iVertex))**2  &
+                                        +dcEdge(EdgesOnVertex(2,iVertex))*dvEdge(EdgesOnVertex(2,iVertex))*u(k,EdgesOnVertex(2,iVertex))**2  &
+                                        +dcEdge(EdgesOnVertex(3,iVertex))*dvEdge(EdgesOnVertex(3,iVertex))*u(k,EdgesOnVertex(3,iVertex))**2  &
+                                                    ) * 0.25 * invAreaTriangle
 
             end do
          end do
@@ -3745,7 +3844,7 @@ module atm_time_integration
             do i=1,vertexDegree
                iCell = cellsOnVertex(i,iVertex)
                do k = 1,nVertLevels
-                  ke(k,iCell) = ke(k,iCell) + (1.-ke_fact)*kiteAreasOnVertex(i, iVertex) * ke_vertex(k, iVertex) / areaCell(iCell)
+                  ke(k,iCell) = ke(k,iCell) + (1.-ke_fact)*kiteAreasOnVertex(i, iVertex) * ke_vertex(k, iVertex) * invAreaCell(iCell)
                end do
             end do
          end do
@@ -3771,15 +3870,15 @@ module atm_time_integration
       ! Compute height at vertices, pv at vertices, and average pv to edge locations
       !  ( this computes pv_vertex at all vertices bounding real cells )
       !
+      ! Avoid dividing h_vertex by areaTriangle and move areaTriangle into
+      ! numerator for the pv_vertex calculation
       do iVertex = 1,nVertices
          do k=1,nVertLevels
             h_vertex = 0.0
             do i=1,vertexDegree
                h_vertex = h_vertex + h(k,cellsOnVertex(i,iVertex)) * kiteAreasOnVertex(i,iVertex)
             end do
-            h_vertex = h_vertex / areaTriangle(iVertex)
-
-            pv_vertex(k,iVertex) = (fVertex(iVertex) + vorticity(k,iVertex)) / h_vertex
+            pv_vertex(k,iVertex) = (fVertex(iVertex) + vorticity(k,iVertex)) * areaTriangle(iVertex) / h_vertex
          end do
       end do
 
@@ -3807,7 +3906,7 @@ module atm_time_integration
          do i=1,vertexDegree
             iCell = cellsOnVertex(i,iVertex)
             do k = 1,nVertLevels
-               pv_cell(k,iCell) = pv_cell(k,iCell) + kiteAreasOnVertex(i, iVertex) * pv_vertex(k, iVertex) / areaCell(iCell)
+               pv_cell(k,iCell) = pv_cell(k,iCell) + kiteAreasOnVertex(i, iVertex) * pv_vertex(k, iVertex) * invAreaCell(iCell)
             end do
          end do
       end do
@@ -3821,36 +3920,22 @@ module atm_time_integration
          ! Compute gradient of PV in the tangent direction
          !   ( this computes gradPVt at all edges bounding real cells )
          !
-         do iEdge = 1,nEdges
-            do k = 1,nVertLevels
-               gradPVt(k,iEdge) = (pv_vertex(k,verticesOnEdge(2,iEdge)) - pv_vertex(k,verticesOnEdge(1,iEdge))) / &
-                                  dvEdge(iEdge)
-            end do
-         end do
-
-         !
          ! Compute gradient of PV in normal direction
          !   (tdr: 2009-10-02: this is not correct because the pv_cell in the halo is not correct)
          !
-         gradPVn(:,:) = 0.0
-         do iEdge = 1,nEdges
-            do k = 1,nVertLevels
-               gradPVn(k,iEdge) = (pv_cell(k,cellsOnEdge(2,iEdge)) - pv_cell(k,cellsOnEdge(1,iEdge))) / &
-                                    dcEdge(iEdge)
-            end do
-         end do
-
-         do iEdge = 1,nEdges
-            do k = 1,nVertLevels
-               pv_edge(k,iEdge) = pv_edge(k,iEdge) - config_apvm_upwinding * v(k,iEdge) * dt * gradPVt(k,iEdge)
-            end do
-         end do
-
          ! Modify PV edge with upstream bias.
          !
+         ! Merged loops for calculating gradPVt, gradPVn and pv_edge
+         ! Also precomputed inverses of dvEdge and dcEdge to avoid repeated divisions
+         !
          do iEdge = 1,nEdges
+            r1 = 1.0_RKIND / dvEdge(iEdge)
+            r2 = 1.0_RKIND / dcEdge(iEdge)
             do k = 1,nVertLevels
-               pv_edge(k,iEdge) = pv_edge(k,iEdge) - config_apvm_upwinding * u(k,iEdge) *dt * gradPVn(k,iEdge)
+               gradPVt(k,iEdge) = (pv_vertex(k,verticesOnEdge(2,iEdge)) - pv_vertex(k,verticesOnEdge(1,iEdge))) * r1
+               gradPVn(k,iEdge) = (pv_cell(k,cellsOnEdge(2,iEdge)) - pv_cell(k,cellsOnEdge(1,iEdge))) * r2
+               pv_edge(k,iEdge) = pv_edge(k,iEdge) - config_apvm_upwinding * dt * &
+                    (v(k,iEdge) * gradPVt(k,iEdge) + u(k,iEdge) * gradPVn(k,iEdge))
             end do
          end do
 
