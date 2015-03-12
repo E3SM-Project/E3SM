@@ -167,6 +167,33 @@ class elm(darwin):
         """
         super(elm,self).__init__(compiler, test,mpilib,debug)
 
+class cray(platformBuilder):
+    def __init__(self, compiler, test,mpilib,debug):
+        """ user defined ctor so we can put stuff in a class instead of as
+            class attributes
+        """
+        
+        super(cray, self).__init__(compiler, test,mpilib, debug)
+        
+        self.BUILD_DIR = "build_cray_" + compiler
+        self.OFLAGS += ( '-D CMAKE_SYSTEM_NAME:STRING=Catamount ')
+
+
+class bluewaters(cray):
+
+    def __init__(self, compiler, test,mpilib,debug):
+        """ user defined ctor so we can put stuff in a class instead of as
+            class attributes
+        """
+        super(bluewaters,self).__init__(compiler, test,mpilib,debug)
+        if compiler == 'cray':            
+            self.moduleList = ['PrgEnv-cray/5.2.40','cce/8.3.8']
+        if compiler == 'pgi':
+            self.moduleList = ['PrgEnv-pgi/5.2.40','pgi/14.2.0']
+        self.moduleList += ['cray-netcdf-hdf5parallel/4.3.2',
+                            'cmake']
+
+
 class goldbach(platformBuilder):
     
     def __init__(self, compiler, test,mpilib,debug):
@@ -223,7 +250,7 @@ class yellowstone(platformBuilder):
             self.moduleList += ['intel/15.0.1',
                            'ncarcompilers/1.0']
             if mpilib is not "mpi-serial":
-                self.moduleList += ['netcdf-mpi/4.3.2']
+                self.moduleList += ['netcdf-mpi/4.3.3-rc3']
                 os.environ["PNETCDF"]="/glade/u/home/jedwards/pnetcdf/svn2013/"
             else:
                 self.moduleList += ['netcdf/4.3.2']
