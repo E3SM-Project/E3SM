@@ -312,9 +312,11 @@ contains
       integer, pointer :: num_tracers, nCellsSolve, nVertLevels, nZonalMeanBins
       integer, dimension(:), pointer :: maxLevelCell
 
+      real (kind=RKIND) :: volume
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryZonalMean
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
-      real (kind=RKIND), dimension(:,:), pointer :: velocityZonalZonalMean, velocityMeridionalZonalMean
+      real (kind=RKIND), dimension(:,:), pointer :: volumeZonalSum, velocityZonalZonalMean, velocityMeridionalZonalMean
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       real (kind=RKIND), dimension(:,:,:), allocatable :: sumZonalMean, totalSumZonalMean, normZonalMean
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersZonalMean
@@ -366,9 +368,10 @@ contains
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)        
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)    
          call mpas_pool_get_array(statePool, 'tracers', tracers,timeLevel)         
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness,timeLevel)         
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
-
+         
          ! Bin by latitude on a sphere, by yCell otherwise.
          if (on_a_sphere) then
             call mpas_pool_get_array(meshPool, 'latCell', binVariable)
@@ -376,7 +379,6 @@ contains
             call mpas_pool_get_array(meshPool, 'yCell', binVariable)
          end if 
 
-         ! note that sum is for each vertical index, which is a little wrong for z-star and very wrong for PBCs.
          do iCell = 1, nCellsSolve
             kMax = maxLevelCell(iCell)
 
@@ -387,17 +389,19 @@ contains
 
                   do k = 1, kMax
 
-                     ! Field 1 is the total area in this bin, which can vary by level due to land.
-                     sumZonalMean(1,k,iBin) = sumZonalMean(1,k,iBin) + areaCell(iCell)
+                     volume = areaCell(iCell)*layerThickness(k,iCell)
+
+                     ! Field 1 is the total volume in this bin, which can vary by level due to land.
+                     sumZonalMean(1,k,iBin) = sumZonalMean(1,k,iBin) + volume
 
                      do iField = 1,num_tracers
-                        sumZonalMean(iField+1,k,iBin) = sumZonalMean(iField+1,k,iBin) + tracers(iField,k,iCell)*areaCell(iCell)
+                        sumZonalMean(iField+1,k,iBin) = sumZonalMean(iField+1,k,iBin) + tracers(iField,k,iCell)*volume
                      enddo
 
                      iField = num_tracers+2
-                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityZonal(k,iCell)*areaCell(iCell)
+                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityZonal(k,iCell)*volume
                      iField = iField+1
-                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityMeridional(k,iCell)*areaCell(iCell)
+                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityMeridional(k,iCell)*volume
 
                   end do
                   exit
@@ -442,11 +446,14 @@ contains
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
          call mpas_pool_get_array(amZonalMeanPool, 'tracersZonalMean', tracersZonalMean)
+         call mpas_pool_get_array(amZonalMeanPool, 'volumeZonalSum', volumeZonalSum)
          call mpas_pool_get_array(amZonalMeanPool, 'velocityZonalZonalMean', velocityZonalZonalMean)
          call mpas_pool_get_array(amZonalMeanPool, 'velocityMeridionalZonalMean', velocityMeridionalZonalMean)
 
-         do iBin = 1, nZonalMeanBins
+         do iBin = 1, nZonalMeanBinsUsed
             do k = 1, nVertLevels
+
+               volumeZonalSum(k,iBin) = totalSumZonalMean(1,k,iBin)
 
                do iField = 1, num_tracers
                   tracersZonalMean(iField,k,iBin) = normZonalMean(iField+1,k,iBin)

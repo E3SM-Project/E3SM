@@ -59,6 +59,9 @@
 		<var name="binBoundaryZonalMean" type="real" dimensions="nZonalMeanBinsP1" units="varies"
 			 description="Coordinate of lower edge of zonal mean bin, either in latitude or y, for plotting."
 		/>
+		<var name="volumeZonalSum" type="real" dimensions="nVertLevels nZonalMeanBins Time" units="m^{3}"
+			 description="Total volume in zonal bin, for normalization" 
+		/>
 		<var name="velocityZonalZonalMean" type="real" dimensions="nVertLevels nZonalMeanBins Time" units="m s^{-1}"
 			 description="Zonal mean of component of horizontal velocity in the eastward direction"
 		/>
