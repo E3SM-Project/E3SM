@@ -3102,7 +3102,7 @@ RUNDIR allows you to keep the run directory separate from the build directory."
 
 <entry id="CPL_SEQ_OPTION"
  type="char"
- valid_values="CESM1_ORIG,CESM!_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2"
+ valid_values="CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2"
  value="CESM1_MOD"
  group="run_coupling"
  sdesc="coupler sequencing option"
