@@ -1,5 +1,5 @@
 # cime
-Common Infrastructure for Modeling the Environment
+Common Infrastructure for Modeling the Earth
 
 cime represents the infrastructure code for the 
 <a href="http://www2.cesm.ucar.edu">Community Earth System Model </a>
