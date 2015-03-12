@@ -140,7 +140,7 @@ implicit none
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo
-    if(c==31367)then
+    if(c==2195)then
       atw=natomw
       print*,'somn',bal_beg*atw,bal_end*atw
       print*,'netpsomn',bal_flx *atw 

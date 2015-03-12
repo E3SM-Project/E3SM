@@ -10,6 +10,7 @@ module BetrBGCMod
   use decompMod          , only : bounds_type
   use BeTRTracerType     , only : betrtracer_type  
   use clm_varctl         , only : iulog
+  use clm_time_manager    , only: get_nstep
 implicit none
   private
   
@@ -605,7 +606,6 @@ contains
           else
             err_relative = err_tracer(c)/maxval((/abs(inflx_top(c)*dtime_loc(c)),abs(leaching_mass(c)),tiny_val/))
           endif
-
           if(abs(err_relative)<err_relative_threshold)then
             leaching_mass(c) = leaching_mass(c) - err_tracer(c)
           else
@@ -615,7 +615,6 @@ contains
           endif
           tracer_flx_vtrans(c, j)  = tracer_flx_vtrans(c,j) + transp_mass(c)
           tracer_flx_leaching(c,j) = tracer_flx_leaching(c, j) + leaching_mass(c)
-          
         endif
       enddo
       
@@ -623,6 +622,11 @@ contains
         c = filter_soilc(fc)
         if(update_col(c))then
           time_remain(c) = time_remain(c) - dtime_loc(c)
+        endif
+        if(c==2195 .and. j==betrtracer_vars%id_trc_no3x)then
+          print*,'xxxxxxxxxxx'
+          print*,get_nstep(),h2osoi_liqvol(c,1)
+          print*,'no3adv',tracer_conc_mobile_col(c,1:10,j)
         endif
       enddo
       ! do loop control test
@@ -742,7 +746,7 @@ contains
               if(abs(dtracer(c,l))<tiny_val)dtracer(c,l) = 0._r8
               if(tracer_conc_mobile_col(c,l,j)<0._r8)then
                 !write error message and stop
-                print*,tracernames(j),c
+                print*,tracernames(j),c,l
                 print*,tracer_conc_mobile_col(c,l,j),dtracer(c,l),dtime_loc(c)
                 call endrun('stopped '//trim(subname))
               endif
@@ -1139,6 +1143,10 @@ contains
           if(.not. is_h2o(k))then
             tracer_flx_drain(c,k)     = tracer_flx_drain(c,k)  + aqucon * qflx_drain_vr(c,j)
             tracer_conc_mobile(c,j,k) =  tracer_conc_mobile(c,j,k) - aqucon * qflx_drain_vr(c,j)/dz(c,j)
+            if(tracer_conc_mobile(c,j,k)<0._r8)then
+              tracer_flx_drain(c,k) = tracer_flx_drain(c,k)+tracer_conc_mobile(c,j,k)*dz(c,j)
+              tracer_conc_mobile(c,j,k)=0._r8
+            endif
           else
             tracer_flx_drain(c,k)     = tracer_flx_drain(c,k)  + aqucon * max(qflx_drain_vr(c,j),0._r8)
             tracer_conc_mobile(c,j,k) =  tracer_conc_mobile(c,j,k) - aqucon * max(qflx_drain_vr(c,j),0._r8)/dz(c,j)

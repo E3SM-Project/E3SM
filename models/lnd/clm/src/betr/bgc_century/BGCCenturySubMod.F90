@@ -917,7 +917,10 @@ module BGCCenturySubMod
       tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4) = yf(centurybgc_vars%lid_ch4, c, j)
 
       tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o) = yf(centurybgc_vars%lid_n2o, c, j)
-      
+      if(c==52589 .and. j==10)then
+         print*,'-------------------'
+         print*,'no3',tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x)
+      endif 
     enddo
   enddo
   

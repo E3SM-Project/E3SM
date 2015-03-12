@@ -4,6 +4,7 @@ module TransportMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use tracer_varcon       , only : bndcond_as_conc, bndcond_as_flux
   use clm_varctl          , only : iulog
+  use abortutils            , only : endrun
    !
    ! DESCRIPTIONS
    !
@@ -685,7 +686,17 @@ module TransportMod
      do k = lbn(c), ubj
        j = k - lbn(c) + 1      
        mass_new(j) = mass_curve_correct(mass_new(j))
+       !correct for small negative values
        trcin(c,k)=mass_new(j)/dz(c,k)
+       if(trcin(c,k)<0._r8)then
+         if(present(leaching_mass))then
+           leaching_mass(c)=leaching_mass(c)+mass_new(j)
+         endif
+         print*,k,mass_new(j)
+         
+         print*,cmass_new(0:length)
+         trcin(c,k)=0._r8
+       endif
      enddo
 
 
@@ -700,8 +711,9 @@ module TransportMod
    real(r8), intent(in) :: mass_curve
 
    real(r8) :: ans
+   real(r8) :: eps = 1.e-15_r8
    !using the error tolerance from the eps function
-   if(abs(mass_curve)<2.2204e-16_r8)then
+   if(abs(mass_curve)<eps)then
       ans = 0._r8
    else
       ans = mass_curve
