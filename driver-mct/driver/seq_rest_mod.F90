@@ -193,8 +193,10 @@ contains
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
       if (atm_present) then
          gsmap => component_get_gsmap_cx(atm(1))
+         xao_ax        => prep_aoflux_get_xao_ax()
          call seq_io_read(rest_file, gsmap, fractions_ax, 'fractions_ax')
          call seq_io_read(rest_file, atm, 'c2x', 'a2x_ax')
+         call seq_io_read(rest_file, gsmap, xao_ax, 'xao_ax')
       endif
       if (lnd_present) then
          gsmap => component_get_gsmap_cx(lnd(1))
@@ -220,10 +222,10 @@ contains
          x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
          xao_ox        => prep_aoflux_get_xao_ox()
          call seq_io_read(rest_file, gsmap, fractions_ox, 'fractions_ox')
+         call seq_io_read(rest_file, ocn, 'c2x', 'o2x_ox')  ! get o2x_ox
          call seq_io_read(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox')
          call seq_io_read(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt')
          call seq_io_read(rest_file, gsmap, xao_ox, 'xao_ox')
-         call seq_io_read(rest_file, ocn, 'c2x', 'o2x_ox')  ! get o2x_ox
       endif
       if (ice_present) then
          gsmap => component_get_gsmap_cx(ice(1))
@@ -434,10 +436,13 @@ subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
 
          if (atm_present) then
             gsmap => component_get_gsmap_cx(atm(1))
+            xao_ax        => prep_aoflux_get_xao_ax()
             call seq_io_write(rest_file, gsmap, fractions_ax, 'fractions_ax', &
                  whead=whead, wdata=wdata)
             call seq_io_write(rest_file, atm, 'c2x', 'a2x_ax', &
                  whead=whead, wdata=wdata) 
+            call seq_io_write(rest_file, gsmap, xao_ax, 'xao_ax', &
+                 whead=whead, wdata=wdata)
          endif
          if (lnd_present) then
             gsmap => component_get_gsmap_cx(lnd(1))

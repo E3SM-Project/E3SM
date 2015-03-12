@@ -125,7 +125,7 @@ contains
     type(mct_gsMap), pointer :: gsMap
     type(mct_gGrid), pointer :: dom
     integer(in)              :: nloc
-    integer                  :: kx,kr     ! fractions indices
+    integer                  :: ko,ki     ! fractions indices
     integer                  :: ier
     real(r8), pointer        :: rmask(:)  ! ocn domain mask
     character(*),parameter   :: subName =   '(seq_flux_init_mct) '
@@ -199,13 +199,31 @@ contains
     if(ier/=0) call mct_die(subName,'allocate rmask',ier)
     call mct_gGrid_exportRAttr(dom, 'lat' , lats , nloc) 
     call mct_gGrid_exportRAttr(dom, 'lon' , lons , nloc) 
+
+    ! setup the compute mask.
+    ! prefer to compute just where ocean exists, so setup a mask here.
+    ! this could be run with either the ocean or atm grid so need to be careful.
+    ! really want the ocean mask on ocean grid or ocean mask mapped to atm grid,
+    ! but do not have access to the ocean mask mapped to the atm grid.
+    ! the dom mask is a good place to start, on ocean grid, it should be what we want,
+    ! on the atm grid, it's just all 1's so not very useful.
+    ! next look at ofrac+ifrac in fractions.  want to compute on all non-land points.
+    ! using ofrac alone will exclude points that are currently all sea ice but that later
+    ! could be less that 100% covered in ice.
+
+    ! default compute everywhere, then "turn off" gridcells
+    mask = 1
+   
+    ! use domain mask first
     call mct_gGrid_exportRAttr(dom, 'mask', rmask, nloc)
-    !tcx, want to mask properly, but applying this changes answers to roundoff for some reason
-    !    kx = mct_aVect_indexRA(fractions,"ofrac")
-    !    mask = 0
-    !    where (fractions%rAttr(kx,:) > 0.0_r8) mask = nint(rmask)
-    mask = nint(rmask)
+    where (rmask < 0.5_r8) mask = 0   ! like nint
     deallocate(rmask)
+
+    ! then check ofrac + ifrac
+    ko = mct_aVect_indexRA(fractions,"ofrac")
+    ki = mct_aVect_indexRA(fractions,"ifrac")
+    where (fractions%rAttr(ko,:)+fractions%rAttr(ki,:) <= 0.0_r8) mask(:) = 0
+
     emask = mask
 
     fluxsetting = trim(fluxsetting_atmocn)
@@ -633,7 +651,7 @@ contains
     o2x     => component_get_c2x_cx(ocn)  ! o2x_ox 
 
     if (trim(fluxsetting) /= trim(fluxsetting_exchange)) then
-       call shr_sys_abort(trim(subname)//' ERROR with init')
+       call shr_sys_abort(trim(subname)//' ERROR wrong fluxsetting')
     endif
 
     ! Update ocean surface fluxes 
@@ -829,22 +847,19 @@ contains
 
 !===============================================================================
 
-  subroutine seq_flux_atmocn_mct(infodata, comp, c2x, grid, xao)
+  subroutine seq_flux_atmocn_mct(infodata, a2x, o2x, xao)
 
     !-----------------------------------------------------------------------
     !
     ! Arguments
     !
     type(seq_infodata_type) , intent(in)         :: infodata
-    type(component_type)    , intent(in)         :: comp ! ocn or atm
-    type(mct_aVect)         , intent(in), target :: c2x  ! a2x_ox or o2x_ax
-    character(len=3)        , intent(in)         :: grid 
+    type(mct_aVect)         , intent(in)         :: a2x  ! a2x_ax or a2x_ox
+    type(mct_aVect)         , intent(in)         :: o2x  ! o2x_ax or o2x_ox
     type(mct_aVect)         , intent(inout)      :: xao
     !
     ! Local variables
     !
-    type(mct_aVect), pointer :: o2x  
-    type(mct_avect), pointer :: a2x
     logical     :: flux_albav   ! flux avg option
     logical     :: dead_comps   ! .true.  => dead components are used
     integer(in) :: n,i          ! indices
@@ -863,7 +878,7 @@ contains
     real(r8)    :: avsdr        ! albedo: visible      , direct
     real(r8)    :: anidf        ! albedo: near infrared, diffuse
     real(r8)    :: avsdf        ! albedo: visible      , diffuse
-    integer(in) :: nloc         ! number of gridcells
+    integer(in) :: nloc, nloca, nloco  ! number of gridcells
     integer(in) :: ID           ! comm ID
     logical     :: first_call = .true.
     !
@@ -872,16 +887,6 @@ contains
     character(*),parameter :: subName =   '(seq_flux_atmocn_mct) '
     !
     !-----------------------------------------------------------------------
-
-    if (trim(grid) == 'ocn') then  
-       o2x => component_get_c2x_cx(comp)
-       a2x => c2x
-    end if
-
-    if (trim(grid) == 'atm') then  
-       o2x => c2x
-       a2x => component_get_c2x_cx(comp)
-    end if
 
     call seq_infodata_getData(infodata , &
          flux_albav=flux_albav, &
@@ -917,13 +922,19 @@ contains
     end if
        
     if (trim(fluxsetting) /= trim(fluxsetting_atmocn)) then
-       call shr_sys_abort(trim(subname)//' ERROR with init')
+       call shr_sys_abort(trim(subname)//' ERROR wrong fluxsetting')
     endif
 
-    nloc = mct_aVect_lsize(xao)
+    nloc  = mct_aVect_lsize(xao)
+    nloca = mct_aVect_lsize(a2x)
+    nloco = mct_aVect_lsize(o2x)
+
+    if (nloc /= nloca .or. nloc /= nloco) then
+       call shr_sys_abort(trim(subname)//' ERROR nloc sizes do not match')
+    endif
 
     ! Update ocean surface fluxes 
-    ! Must fabricate "reasonable" data (using dead components)
+    ! Must fabricate "reasonable" data (when using dead components)
 
     emask = mask
     if (dead_comps) then
@@ -953,7 +964,7 @@ contains
              tocn(n) = o2x%rAttr(index_o2x_So_t   ,n)   
              uocn(n) = o2x%rAttr(index_o2x_So_u   ,n)
              vocn(n) = o2x%rAttr(index_o2x_So_v   ,n)
-             !--- mask missing atm or ocn data
+             !--- mask missing atm or ocn data if it's found
              if (dens(n) < 1.0e-12 .or. tocn(n) < 1.0) then
                 emask(n) = 0
                 !write(logunit,*) 'aoflux tcx1',n,dens(n),tocn(n)

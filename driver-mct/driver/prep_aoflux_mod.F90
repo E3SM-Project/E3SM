@@ -32,7 +32,6 @@ module prep_aoflux_mod
 
   public :: prep_aoflux_get_xao_ox
   public :: prep_aoflux_get_xao_ax
-  public :: prep_aoflux_get_o2x_ax
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -41,7 +40,6 @@ module prep_aoflux_mod
   ! attribute vectors
   type(mct_aVect), pointer :: xao_ox(:)   ! Atm-ocn fluxes, ocn grid, cpl pes 
   type(mct_aVect), pointer :: xao_ax(:)   ! Atm-ocn fluxes, atm grid, cpl pes 
-  type(mct_aVect), pointer :: o2x_ax(:)   ! only needed if aoflux_grid is 'atm'
 
   ! seq_comm_getData variables
   logical :: iamroot_CPLID                ! .true. => CPLID masterproc
@@ -106,14 +104,6 @@ contains
        call mct_aVect_init(xao_ox(exi), rList=seq_flds_xao_fields, lsize=lsize_o)
        call mct_aVect_zero(xao_ox(exi))
     enddo
-
-    if (aoflux_grid == 'atm') then
-       allocate(o2x_ax(num_inst_ocn))
-       do eoi = 1,num_inst_ocn
-          call mct_aVect_init(o2x_ax(eoi), rList=seq_flds_o2x_fields, lsize=lsize_a)
-          call mct_aVect_zero(o2x_ax(eoi))
-       enddo
-    end if
 
   end subroutine prep_aoflux_init
 
@@ -197,9 +187,9 @@ contains
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do exi = 1,num_inst_xao 
-       if (iamroot_CPLID .and. exi == 1) then 
-          write(logunit,F00) 'Calling map_atm2ocn_mct for mapping xao_ax to xao_ox'
-       end if
+!       if (iamroot_CPLID .and. exi == 1) then 
+!          write(logunit,F00) 'Calling map_atm2ocn_mct for mapping xao_ax to xao_ox'
+!       end if
 
        mapper_Fa2o => prep_ocn_get_mapper_Fa2o()
        call seq_map_map(mapper_Fa2o, xao_ax(exi), xao_ox(exi), norm=.true.)
@@ -219,11 +209,6 @@ contains
     type(mct_aVect), pointer :: prep_aoflux_get_xao_ax(:)
     prep_aoflux_get_xao_ax => xao_ax(:)   
   end function prep_aoflux_get_xao_ax
-
-  function prep_aoflux_get_o2x_ax()
-    type(mct_aVect), pointer :: prep_aoflux_get_o2x_ax(:)
-    prep_aoflux_get_o2x_ax => o2x_ax(:)   
-  end function prep_aoflux_get_o2x_ax
 
 end module prep_aoflux_mod
 

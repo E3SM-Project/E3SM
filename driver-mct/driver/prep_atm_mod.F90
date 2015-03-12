@@ -639,8 +639,8 @@ contains
     ! Create o2x_ax (note that o2x_ax is a local module variable)
     !
     ! Arguments
-    type(mct_aVect) , intent(in) :: fractions_ox(:)
-    character(len=*), intent(in) :: timer
+    type(mct_aVect) , optional, intent(in) :: fractions_ox(:)
+    character(len=*), optional, intent(in) :: timer
     !
     ! Local Variables
     integer :: eoi, efi, emi
@@ -655,9 +655,14 @@ contains
        efi = mod((emi-1),num_inst_frc) + 1
 
        o2x_ox => component_get_c2x_cx(ocn(eoi))
-       call seq_map_map(mapper_So2a, o2x_ox, o2x_ax(emi),&
-            fldlist=seq_flds_o2x_states,norm=.true., &
-            avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+       if (present(fractions_ox)) then
+          call seq_map_map(mapper_So2a, o2x_ox, o2x_ax(emi),&
+               fldlist=seq_flds_o2x_states,norm=.true., &
+               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+       else
+          call seq_map_map(mapper_So2a, o2x_ox, o2x_ax(emi),&
+               fldlist=seq_flds_o2x_states,norm=.true.)
+       endif
        call seq_map_map(mapper_Fo2a, o2x_ox, o2x_ax(emi),&
             fldlist=seq_flds_o2x_fluxes,norm=.true.)
     enddo
