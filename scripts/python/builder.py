@@ -51,7 +51,7 @@ class platformBuilder(object):
         self.EXECCA = ''
         self.TEST_CMD = 'ctest '
         self.MAKE_CMD = 'make all'
-
+        self.envMod = dict(os.environ)
     @classmethod
     def _raise_not_implemented(cls, method_name):
         raise NotImplementedError(cls.__name__ +
@@ -70,7 +70,7 @@ class platformBuilder(object):
 
         self.runModuleCmd()
         # ~# change environment, first get existing env
-        self.envMod = dict(os.environ)
+
         # ~# add to env-        
         self.envMod['FC'] = self.FC
         self.envMod['CC'] = self.CC
@@ -329,21 +329,16 @@ class cetus(platformBuilder):
         self.CXX = '/home/pkcoff/mpich-sandboxes/onesidedromio/install-gpfsbgq-xl/bin/mpixlcxx'
         self.LDFLAGS = '-Wl,--relax -Wl,--allow-multiple-definition -Wl,--whole-archive -L/soft/libraries/hdf5/1.8.14/cnk-xl/V1R2M2-20150213/lib -lhdf5_hl -lhdf5 -L /soft/libraries/alcf/current/xl/ZLIB/lib -lz  -Wl,--no-whole-archive '        
         self.MPIEXEC = (' -D  MPIEXEC:FILEPATH=/usr/bin/runjob')
-        self.OFLAGS += ('-D  MPIEXEC_PREFLAGS:STRING=\"--envs GPFSMPIO_NAGG_PSET=16 ')
-        self.OFLAGS += ('--envs ROMIO_HINTS=/home/pkcoff/public/romio_hints ')
-        self.OFLAGS += ('--envs GPFSMPIO_BALANCECONTIG=1 ')
-        self.OFLAGS += ('--envs GPFSMPIO_AGGMETHOD=2 ')
-        self.OFLAGS += ('--envs PAMID_TYPED_ONESIDED=1 ')
-        self.OFLAGS += ('--envs PAMID_RMA_PENDING=1M ')
-        self.OFLAGS += ('--envs GPFSMPIO_BRIDGERINGAGG=1\" ')
-    
-
+        MPIEXEC_PREFLAGS =('GPFSMPIO_NAGG_PSET=16:ROMIO_HINTS=/home/pkcoff/public/romio_hints:GPFSMPIO_BALANCECONTIG=1:GPFSMPIO_AGGMETHOD=2:PAMID_TYPED_ONESIDED=1:PAMID_RMA_PENDING=1M:GPFSMPIO_BRIDGERINGAGG=1 ')
+#        self.envMod['MPIEXEC_PREFLAGS'] = MPIEXEC_PREFLAGS
+        # We use a sh wrapper script on cetus so we need to escape any quotes in the cmake command line    
+#        self.OFLAGS += ('-D MPIEXEC_PREFLAGS=\$ENV{MPIEXEC_PREFLAGS}')
         self.NUMPE = ''
 
         self.OFLAGS += (' -D PLATFORM:STRING=cetus -DCMAKE_C_COMPILER='+self.CC)
         self.OFLAGS += (' -DCMAKE_Fortran_COMPILER='+self.FC)
         self.OFLAGS += (' -DCMAKE_CXX_COMPILER='+self.CXX)
-        self.TEST_CMD = ('qsub -o pio2build.out  -t 30 -n 1 --mode script '+self.srcroot+'/scripts/cetus_test.sh ')
+        self.TEST_CMD = ('qsub -o pio2build.out  -t 30 -n 1 --mode script --env RUNJOB_ENV ${MPIEXEC_PREFLAGS} '+self.srcroot+'/scripts/cetus_test.sh ')
         self.MAKE_CMD = ("/bin/sh"+" ./cetus_env.sh"+" make all ")
         self.runModuleCmd()
 
@@ -382,7 +377,8 @@ class cetus(platformBuilder):
         for line in self.moduleList: 
             f.write("soft add "+line+"\n")
         f.write("export LDFLAGS=\""+self.LDFLAGS+"\"\n")
-        f.write("$*\n")
+        f.write("echo $@\n")
+        f.write("$@\n")
         f.close()
       				
     def cmakeCmd(self):
