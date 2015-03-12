@@ -325,7 +325,6 @@ contains
   betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2o)   = .true.
   
   
-  
   !comment following lines out when it is hooked to CLM at the moment
   !call CNParamsReadShared(ncid)
   

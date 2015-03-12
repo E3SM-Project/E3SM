@@ -567,6 +567,7 @@ module TracerParamsMod
    use BeTRTracerType     , only : betrtracer_type         
    use WaterStateType     , only : Waterstate_Type
    use TracerCoeffType    , only : tracercoeff_type
+   use clm_varcon         , only : denh2o, denice
    implicit none
    !arguments
    type(bounds_type),      intent(in) :: bounds  ! bounds
@@ -648,11 +649,12 @@ module TracerParamsMod
     else
       !when linear adsorption is used for some adsorptive aqueous tracers, the aqu2bulkcef will be the retardation factor
       !for the moment, it is set to one for all non-volatile tracers
+      !I assume ice have same equilibrium solublity as liquid water for soluable tracers
       do n = lbj, ubj
         do fc = 1, numf
           c = filter(fc)
           if(n>=jtops(c))then
-            aqu2bulkcef_mobile(c, n, j) = h2osoi_liqvol(c,n)
+            aqu2bulkcef_mobile(c, n, j) = h2osoi_liqvol(c,n)+denice/denh2o * h2osoi_icevol(c,n)
           endif
         enddo  
       enddo    
