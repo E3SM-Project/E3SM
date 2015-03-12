@@ -15,16 +15,22 @@ cime/driver_cpl
 
 cime/components/data_comps/datm	        
    https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_150310
+   
 cime/components/data_comps/dice	        
    https://svn-ccsm-models.cgd.ucar.edu/dice7/trunk_tags/dice8_150310
+   
 cime/components/data_comps/dlnd	        
    https://svn-ccsm-models.cgd.ucar.edu/dlnd7/trunk_tags/dlnd8_150310
+   
 cime/components/data_comps/docn       	
    https://svn-ccsm-models.cgd.ucar.edu/docn7/trunk_tags/docn8_150310
+   
 cime/components/data_comps/drof  	
    https://svn-ccsm-models.cgd.ucar.edu/drof/trunk_tags/drof_150310
+   
 cime/components/stub_comps		
    https://svn-ccsm-models.cgd.ucar.edu/stubs/trunk_tags/stubs1_4_08
+   
 cime/components/xcpl_comps	
    https://svn-ccsm-models.cgd.ucar.edu/dead7/trunk_tags/dead7_8_04
 
@@ -36,8 +42,10 @@ cime/scripts
 
 cime/share/csm_share	  	        
    https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_150116
+   
 cime/share/esmf_wrf_timemgr	        
    https://svn-ccsm-models.cgd.ucar.edu/esmf_wrf_timemgr/trunk_tags/esmf_wrf_timemgr_141217
+   
 cime/share/timing                       
    https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_150302
 
