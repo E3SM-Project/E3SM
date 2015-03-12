@@ -1,7 +1,7 @@
 # cime
 Common Infrastructure for Modeling the Environment
 
-cime represents the infrastructure code for the 
+cime (pronounced: seem) represents the infrastructure code for the 
 <a href="http://www2.cesm.ucar.edu">Community Earth System Model </a>
      (CESM) version 1.4
 

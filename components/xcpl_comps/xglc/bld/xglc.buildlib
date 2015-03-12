@@ -22,7 +22,7 @@ chdir "${OBJROOT}/${model}/obj";
 
 open(file,">Filepath") or die "Could not open file Filepath to write";
 print file "${CASEROOT}/SourceMods/src.${comp}\n";
-print file "${CCSMROOT}/cime/components/xcpl_comps/${comp}\n";
+print file "${CCSMROOT}/cime/components/xcpl_comps/xshare\n";
 print file "${CCSMROOT}/cime/components/xcpl_comps/${comp}/cpl\n";
 close(file);
 
