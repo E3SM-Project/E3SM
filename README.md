@@ -51,17 +51,22 @@ cime/share/timing
 
 cime/utils/pythonlib    
    https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_150204/scripts/ccsm_utils/Tools/pythonlib
+   
 cime/utils/perl5lib	                
    https://svn-ccsm-models.cgd.ucar.edu/perl5lib/trunk_tags/perl5lib_150302
 
 cime/tools/load_balancing_tool	
    https://svn-ccsm-models.cgd.ucar.edu/tools/load_balancing_tool/trunk_tags/load_balancing_tool_141008
+   
 cime/tools/unit_testing                 
    https://svn-ccsm-models.cgd.ucar.edu/unit_testing/trunk_tags/unit_testing_0_16
+   
 cime/tools/statistical_ensemble_test  
    https://svn-ccsm-models.cgd.ucar.edu/validation_testing/trunk_tags/validation_20140708/run_CESM/
+   
 cime/tools/mapping                      
    https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106
+   
 cime/tools/cprnc                        
    https://svn-ccsm-models.cgd.ucar.edu/tools/cprnc/trunk_tags/cprnc_150301
 
