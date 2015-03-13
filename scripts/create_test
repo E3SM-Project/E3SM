@@ -1667,7 +1667,7 @@ sub namelistCompare
     }
 
     chdir($testpath) or die "couldn't change directory to $testpath\n";
-    my $cprnml = "$testpath/Tools/compare_namelists.pl";
+    my $cprnml = "$testpath/Tools/compare_namelists";
 
     my $configtemplate = "$scriptsroot/ccsm_utils/Case.template/config_definition.xml";
     &Debug("config template is $configtemplate\n");
