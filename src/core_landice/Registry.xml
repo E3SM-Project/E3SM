@@ -284,7 +284,7 @@
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
-<!-- They do not need to be the input file for the SIA dycore, and will be ignored if they are. -->
+<!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta"/>
 			<var name="dirichletVelocityMask"/>
 			<var name="uReconstructX"/>

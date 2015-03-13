@@ -141,7 +141,7 @@ contains
 #ifdef USE_EXTERNAL_STOKES
           call interface_phg_init(domain, err)
 #else
-          write(0,*) "Error: External Stokes library needed to run stokes dycore."
+          write(0,*) "Error: External Stokes library needed to run Stokes dycore."
           err = 1
           return
 #endif
@@ -490,11 +490,9 @@ contains
           call velocity_solver_solve_FO(lowerSurface, thickness, beta, tracers(index_temperature,:,:), &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY)  ! return values
-!	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)
+!	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
           call mpas_timer_stop("velocity_solver_solve_FO")
           call mpas_timer_start("velocity_solver export")
-!	  call velocity_solver_init_L1L2(layerThicknessFractions)
-!	  call velocity_solver_export_2d_data(lowerSurface, thickness, beta)
           call velocity_solver_export_FO_velocity()
           call mpas_timer_stop("velocity_solver export")
 #else
@@ -519,9 +517,9 @@ contains
       end select
 
 
-   normalVelocity = normalVelocity / (365.0*24.0*3600.0)  ! convert from m/yr to m/s
-   uReconstructX =  uReconstructX / (365.0*24.0*3600.0)  ! convert from m/yr to m/s
-   uReconstructY =  uReconstructY / (365.0*24.0*3600.0)  ! convert from m/yr to m/s
+   normalVelocity = normalVelocity / (365.0*24.0*3600.0)  ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
+   uReconstructX =  uReconstructX / (365.0*24.0*3600.0)   ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
+   uReconstructY =  uReconstructY / (365.0*24.0*3600.0)   ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
 
 
    !--------------------------------------------------------------------

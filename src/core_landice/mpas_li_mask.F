@@ -432,7 +432,7 @@ contains
 !> \details
 !>  External FEM dycores include the first non-ice cells in their mesh.  They
 !>  also use a mask to apply floating lateral boundary conditions on edges.
-!>  Because they include extra cell center location in their meshes, the triangle
+!>  Because they include extra cell center locations in their meshes, the triangle
 !>  edges connecting these extra nodes will not be covered by the standard
 !>  MPAS edge mask.  This routine deals with this problem by 'extrapolating'
 !>  the floating edge mask forward to cover the edges connecting these extra nodes.
