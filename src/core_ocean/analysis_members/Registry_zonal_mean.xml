@@ -79,4 +79,10 @@
 			 description="Zonal mean of tracer"
 			/>
 		</var_array>
+		<var name="meridionalHeatTransportZ" type="real" dimensions="nVertLevels nZonalMeanBins Time" units="petawatts"
+			 description="Northward meridional heat transport, by level, at northern bin boundary."
+		/>
+		<var name="meridionalHeatTransport" type="real" dimensions="nZonalMeanBins Time" units="petawatts"
+			 description="Northward meridional heat transport at northern bin boundary."
+		/>
 	</var_struct>

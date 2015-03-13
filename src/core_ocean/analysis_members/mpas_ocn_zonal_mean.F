@@ -309,15 +309,17 @@ contains
 
       integer :: iTracer, k, iCell, kMax
       integer :: iBin, iField, nZonalMeanVariables
-      integer, pointer :: num_tracers, nCellsSolve, nVertLevels, nZonalMeanBins
+      integer, pointer :: num_tracers, nCellsSolve, nVertLevels, nZonalMeanBins, indexTemperature
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND) :: volume
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryZonalMean
+      real (kind=RKIND), dimension(:), pointer ::  meridionalHeatTransport
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
-      real (kind=RKIND), dimension(:,:), pointer :: volumeZonalSum, velocityZonalZonalMean, velocityMeridionalZonalMean
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional, divergence
+      real (kind=RKIND), dimension(:,:), pointer :: volumeZonalSum, velocityZonalZonalMean, velocityMeridionalZonalMean, meridionalHeatTransportZ
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:), allocatable :: mht_meridional_integral
       real (kind=RKIND), dimension(:,:,:), allocatable :: sumZonalMean, totalSumZonalMean, normZonalMean
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersZonalMean
 
@@ -333,7 +335,7 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
 
       call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
-      nZonalMeanVariables = num_tracers + 3
+      nZonalMeanVariables = num_tracers + 4
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nZonalMeanBins', nZonalMeanBins)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
@@ -342,7 +344,8 @@ contains
 
       allocate(sumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBinsUsed), &
          totalSumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBinsUsed), &
-         normZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins))
+         normZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBinsUsed), &
+         mht_meridional_integral(nVertLevels,nZonalMeanBinsUsed))
 
       sumZonalMean = 0.0
 
@@ -362,6 +365,7 @@ contains
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
 
          call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)        
 
@@ -371,6 +375,7 @@ contains
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness,timeLevel)         
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'divergence',divergence)
          
          ! Bin by latitude on a sphere, by yCell otherwise.
          if (on_a_sphere) then
@@ -402,6 +407,8 @@ contains
                      sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityZonal(k,iCell)*volume
                      iField = iField+1
                      sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityMeridional(k,iCell)*volume
+                     iField = iField+1
+                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + divergence(k,iCell)*tracers(indexTemperature,k,iCell)*volume
 
                   end do
                   exit
@@ -428,9 +435,6 @@ contains
             end if
          end do
       end do
-      do iBin = nZonalMeanBinsUsed + 1, nZonalMeanBins
-         normZonalMean(:,:,iBin) = -1.0e34
-      end do
 
       ! Even though these variables do not include an index that is decomposed amongst 
       ! domain partitions, we assign them within a block loop so that all blocks have the
@@ -449,6 +453,8 @@ contains
          call mpas_pool_get_array(amZonalMeanPool, 'volumeZonalSum', volumeZonalSum)
          call mpas_pool_get_array(amZonalMeanPool, 'velocityZonalZonalMean', velocityZonalZonalMean)
          call mpas_pool_get_array(amZonalMeanPool, 'velocityMeridionalZonalMean', velocityMeridionalZonalMean)
+         call mpas_pool_get_array(amZonalMeanPool, 'meridionalHeatTransport', meridionalHeatTransport)
+         call mpas_pool_get_array(amZonalMeanPool, 'meridionalHeatTransportZ', meridionalHeatTransportZ)
 
          do iBin = 1, nZonalMeanBinsUsed
             do k = 1, nVertLevels
@@ -463,9 +469,22 @@ contains
                velocityZonalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
                iField = iField+1
                velocityMeridionalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
+               iField = iField+1
+               ! MHT = integral ( div(uT) ) rho c_p dz dlon dlat, in PW
+               mht_meridional_integral(k,iBin) = totalSumZonalMean(iField,k,iBin)*rho_sw*cp_sw*1.0e-15_RKIND
 
             end do
          end do
+
+         meridionalHeatTransportZ(:,1) = mht_meridional_integral(:,1)
+         do iBin = 2, nZonalMeanBinsUsed
+            meridionalHeatTransportZ(:,iBin) = meridionalHeatTransportZ(:,iBin-1) + mht_meridional_integral(:,iBin)
+         end do
+
+         do iBin = 1, nZonalMeanBinsUsed
+            meridionalHeatTransport(iBin) = sum(meridionalHeatTransportZ(:,iBin))
+         end do
+
 
          block => block % next
       end do
