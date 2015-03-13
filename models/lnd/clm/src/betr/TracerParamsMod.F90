@@ -1761,6 +1761,7 @@ module TracerParamsMod
   use TemperatureType       , only : temperature_type
   use MathfuncMod           , only : safe_div
   use clm_varctl            , only : use_cn
+  use clm_time_manager      , only : get_step_size, get_nstep
   type(bounds_type)            , intent(in)   :: bounds    
   integer                      , intent(in)   :: num_soilp                 ! number of column soil points in column filter
   integer                      , intent(in)   :: filter_soilp(:)           ! column filter for soil points
@@ -1817,7 +1818,6 @@ module TracerParamsMod
       p = filter_soilp (fp)
       c = pft%column(p)
       g = col%gridcell(c)
-
       ! Calculate aerenchyma diffusion
       if (j > jwt(c) .and. t_soisno(c,j) > tfrz .and. pft%itype(p) /= noveg) then
         ! Attn EK: This calculation of aerenchyma properties is very uncertain. Let's check in once all
@@ -1872,9 +1872,9 @@ module TracerParamsMod
             tracer_diffusivity_air(c,kk) = get_gas_diffusivity(k,t_veg(p), betrtracer_vars)
             aerecond = scal_aere_cond(c, kk)*area_tiller * rootfr(p,j) * tracer_diffusivity_air(c,kk) / (z(c,j)*rob)
             ! Add in boundary layer resistance
-            lbl_rsc = lbl_rsc_h2o(p) * (get_diffusivity_ratio_gas2h2o(k, t_veg(p), betrtracer_vars))**(-2._r8/3._r8)
+            lbl_rsc = safe_div(lbl_rsc_h2o(p),  (get_diffusivity_ratio_gas2h2o(k, t_veg(p), betrtracer_vars))**(2._r8/3._r8))
             !laminar boundary resistance + resistance in the aerenchyma
-            aerecond = 1._r8 / (safe_div(1._r8,aerecond) + safe_div(1._r8,lbl_rsc))
+            aerecond = safe_div(1._r8, (safe_div(1._r8,aerecond) + safe_div(1._r8,lbl_rsc)))
             aere_cond(c,kk) = aere_cond(c,kk) + wtcol(p) * aerecond
           endif  
         enddo

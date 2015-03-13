@@ -173,19 +173,19 @@ contains
      col%dz(bounds%begc:bounds%endc, 1:2), waterstate_vars, &
      waterflux_vars, betrtracer_vars, tracerstate_vars, tracercoeff_vars, tracerflux_vars)
   
-  print*,'do diffusion advection transport'  
+  !print*,'do diffusion advection transport'  
   call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
        col%dz(bounds%begc:bounds%endc,lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
        waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
        (/do_advection,do_diffusion/), dtime2, betrtracer_vars, tracerboundarycond_vars,&
        tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
     
-  print*,'do bgc_reaction'
+  !print*,'do bgc_reaction'
   call bgc_reaction%calc_bgc_reaction(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, tracerboundarycond_vars%jtops_col,&
        dtime, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, cnstate_vars, &
        carbonflux_vars,nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   
-  print*,'do advection diffusion transport ' 
+  !print*,'do advection diffusion transport ' 
   call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
       col%dz(bounds%begc:bounds%endc, lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
       waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
@@ -623,11 +623,11 @@ contains
         if(update_col(c))then
           time_remain(c) = time_remain(c) - dtime_loc(c)
         endif
-        if(c==2195 .and. j==betrtracer_vars%id_trc_no3x)then
-          print*,'xxxxxxxxxxx'
-          print*,get_nstep(),h2osoi_liqvol(c,1)
-          print*,'no3adv',tracer_conc_mobile_col(c,1:10,j)
-        endif
+        !if(c==2195 .and. j==betrtracer_vars%id_trc_no3x)then
+        !  print*,'xxxxxxxxxxx'
+        !  print*,get_nstep(),h2osoi_liqvol(c,1)
+        !  print*,'no3adv',tracer_conc_mobile_col(c,1:10,j)
+        !endif
       enddo
       ! do loop control test
       lexit_loop=exit_loop_by_threshold(bounds%begc, bounds%endc, time_remain, &

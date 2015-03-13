@@ -268,14 +268,14 @@ contains
        call get_clump_bounds(nc, bounds_clump)
 
        if(use_betr)then
-          call t_startf('beg betr bal')
+          !call t_startf('beg betr bal')
 
           call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
                filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
                tracerstate_vars)
           call tracerflux_vars%Reset(bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call t_stopf('end betr bal')
+          !call t_stopf('end betr bal')
        endif
        
        if (use_cn) then

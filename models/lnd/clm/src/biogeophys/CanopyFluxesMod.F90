@@ -100,7 +100,7 @@ contains
     !
     ! !USES:
     use shr_const_mod      , only : SHR_CONST_TKFRZ, SHR_CONST_RGAS
-    use clm_time_manager   , only : get_step_size, get_prev_date
+    use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
     use clm_varcon         , only : sb, cpair, hvap, vkc, grav, denice
     use clm_varcon         , only : denh2o, tfrz, csoilc, tlsai_crit, alpha_aero
     use clm_varcon         , only : isecspday, degpsec
@@ -458,6 +458,7 @@ contains
             cf_bare  = forc_pbot(c)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
             rssun(p) = 1._r8/1.e15_r8 * cf_bare
             rssha(p) = 1._r8/1.e15_r8 * cf_bare
+            lbl_rsc_h2o(p)=0._r8
             do j = 1, nlevgrnd
                rootr(p,j)  = 0._r8
                rresis(p,j) = 0._r8
@@ -1089,7 +1090,7 @@ contains
 
          do f = 1, fn
            p = filterp(f)
-           lbl_rsc_h2o(p) = getlblcef(forc_rho(c),t_veg(p))/uaf(p)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+           lbl_rsc_h2o(p) = getlblcef(forc_rho(c),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
          enddo
             
          ! Test for convergence

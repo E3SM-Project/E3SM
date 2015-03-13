@@ -11,7 +11,7 @@ module CNBalanceCheckMod
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
   use clm_varctl          , only : iulog, use_nitrif_denitrif, use_ed
-  use clm_time_manager    , only : get_step_size
+  use clm_time_manager    , only : get_step_size,get_nstep
   use clm_varpar          , only : crop_prog
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -287,7 +287,11 @@ contains
             err_found = .true.
             err_index = c
          end if
-
+         if(c==15695)then
+           print*,'-----------',get_nstep()
+           print*,'abgn',nitrogenstate_vars%totabgn_col(c)
+           print*,'blgn',nitrogenstate_vars%totblgn_col(c)
+         endif
       end do ! end of columns loop
 
       if (err_found) then

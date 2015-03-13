@@ -692,9 +692,7 @@ module TransportMod
          if(present(leaching_mass))then
            leaching_mass(c)=leaching_mass(c)+mass_new(j)
          endif
-         print*,k,mass_new(j)
          
-         print*,cmass_new(0:length)
          trcin(c,k)=0._r8
        endif
      enddo

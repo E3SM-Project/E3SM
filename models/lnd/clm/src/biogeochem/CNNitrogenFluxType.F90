@@ -2606,6 +2606,10 @@ contains
              this%f_nit_col(c) = &
                this%f_nit_col(c) + &
                this%f_nit_vr_col(c,j) * dzsoi_decomp(j)
+
+             this%f_n2o_nit_col(c) = &
+                  this%f_n2o_nit_col(c) + &
+                  this%f_n2o_nit_vr_col(c,j) * dzsoi_decomp(j)
                
              this%smin_nh4_to_plant_col(c) = &
                this%smin_nh4_to_plant_col(c) + &
