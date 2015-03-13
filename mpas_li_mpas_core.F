@@ -96,7 +96,6 @@ module mpas_core
       type (block_type), pointer :: block
       type (MPAS_Time_Type) :: startTime
       integer :: i, err, err_tmp, globalErr
-
       logical, pointer :: config_do_restart
 
 
@@ -105,6 +104,7 @@ module mpas_core
       globalErr = 0
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+
       !
       ! Initialize config option settings as needed
       !
@@ -125,8 +125,10 @@ module mpas_core
 
       if (config_do_restart) then
          call mpas_stream_mgr_read(stream_manager, streamID='restart', ierr=err_tmp)
+         err = ior(err, err_tmp)
       else
          call mpas_stream_mgr_read(stream_manager, streamID='input', ierr=err_tmp)
+         err = ior(err, err_tmp)
       end if
       call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err_tmp)
       err = ior(err, err_tmp)
@@ -499,16 +501,25 @@ module mpas_core
       type (mpas_pool_type), intent(in) :: configPool
       type (mpas_pool_type), intent(in) :: packagePool
       integer, intent(out) :: ierr
-      ! Locals
+      ! Local variables
       character (len=StrKIND), pointer :: config_velocity_solver
+      logical, pointer :: higherOrderVelocityActive
       logical, pointer :: SIAvelocityActive
+      integer :: err_tmp
 
       ierr = 0
 
       call mpas_pool_get_config(configPool, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
+      call mpas_pool_get_package(packagePool, 'higherOrderVelocityActive', higherOrderVelocityActive)
 
-      if(trim(config_velocity_solver) == 'sia') SIAvelocityActive = .true.
+      if (trim(config_velocity_solver) == 'sia') then
+         SIAvelocityActive = .true.
+         write (stdoutUnit,*) 'The SIAVelocity package and associated variables and streams has been enabled because the SIA velocity solver is selected.'
+      else
+         higherOrderVelocityActive = .true.
+         write (stdoutUnit,*) "The 'higherOrderVelocity' package and associated variables have been enabled because a higher-order velocity solver is selected."
+      end if
 
    end subroutine mpas_core_setup_packages
 
@@ -642,7 +653,10 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       !-----------------------------------------------------------------
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
+      integer, dimension(:), pointer :: vertexMask
       character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: config_velocity_solver
+      logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       type (MPAS_Time_Type) :: currTime
       integer :: err, err_tmp
 
@@ -652,6 +666,17 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       ! Get pool stuff
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
+
+
+      ! Copy data from first time level into all other time levels
+      call mpas_pool_initialize_time_levels(statePool)
+
+      ! Initialize vertexMask on time level 2 to junk, so diagnostic_solve_before_velocity in li_diagnostic_vars says that the vertexMask has changed (needed by external dycore)
+      call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel = 2)
+      vertexMask = -9999
+
 
       ! ===
       ! === Call init routines ===
@@ -676,8 +701,11 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       call mpas_timer_stop("initialize velocity")
 
       ! Init for reconstruction of velocity
-      call mpas_rbf_interp_initialize(meshPool)
-      call mpas_init_reconstruct(meshPool)
+      if ( (trim(config_velocity_solver) == 'sia') .or.    &
+            config_do_velocity_reconstruction_for_external_dycore ) then
+         call mpas_rbf_interp_initialize(meshPool)
+         call mpas_init_reconstruct(meshPool)
+      endif
 
       ! Assign initial time stamp
       call mpas_pool_get_array(statePool, 'xtime', xtime, timeLevel=1)
