@@ -34,6 +34,7 @@ class nightlyBuilder(object):
       #self.buildDir='/scratch/cluster/nightlyPioBuild'
       self.platform = platform
       self.dirName=datetime.datetime.now().strftime("%a%b%d_%H%M%S")
+#      self.dirName='TueMar10_090301'
       self.repoName='pio2_0'
 
       self.url='https://parallelio.googlecode.com/svn/branches/pio2_0'

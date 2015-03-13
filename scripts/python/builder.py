@@ -208,7 +208,7 @@ class goldbach(platformBuilder):
             self.moduleList = ['compiler/intel/14.0.2']
 
         self.BUILD_DIR = "build_goldbach_" + compiler
-#        self.runModuleCmd()
+        self.runModuleCmd()
         
         self.CMAKE_EXE = '/usr/bin/cmake --debug-trycompile '
    
