@@ -140,29 +140,29 @@ implicit none
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo
-    if(c==15695)then
-      atw=natomw
-      print*,'------'
-      print*,'somn',bal_beg*atw,bal_end*atw
-      print*,'netpsomn',bal_flx *atw 
-      bal_beg=bal_beg+beg_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + beg_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x)
-      bal_end=bal_end+end_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + end_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x)
-      bal_flx=bal_flx+tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x)+tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)-&
-            (tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))
-      print*,'totn',bal_beg*atw,bal_end*atw
-      print*,'netloss',bal_flx*atw
-      print*,'------'
-      print*,'begminn',(beg_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + beg_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
-      print*,'endminn',(end_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + end_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
-      print*,'nflxminn',(tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x))*atw
-      print*,'netpro nh4',tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x)*atw
-      print*,'netpro no3',tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)*atw
-      print*,'netpro n2',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2) * atw *2._r8
-      print*,'netpro n2o',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2o) *atw * 2._r8
+    !if(c==15695)then
+    !  atw=natomw
+    !  print*,'------'
+    !  print*,'somn',bal_beg*atw,bal_end*atw
+    !  print*,'netpsomn',bal_flx *atw 
+    !  bal_beg=bal_beg+beg_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + beg_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x)
+    !  bal_end=bal_end+end_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + end_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x)
+    !  bal_flx=bal_flx+tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x)+tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)-&
+    !        (tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))
+    !  print*,'totn',bal_beg*atw,bal_end*atw
+    !  print*,'netloss',bal_flx*atw
+    !  print*,'------'
+    !  print*,'begminn',(beg_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + beg_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
+    !  print*,'endminn',(end_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + end_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
+    !  print*,'nflxminn',(tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x))*atw
+    !  print*,'netpro nh4',tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x)*atw
+    !  print*,'netpro no3',tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)*atw
+    !  print*,'netpro n2',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2) * atw *2._r8
+    !  print*,'netpro n2o',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2o) *atw * 2._r8
 
-      print*,'nflxloss',(tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))*atw
-      print*,'nflxloss no3 nh4',tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x)*atw, tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x)*atw
-    endif
+    !  print*,'nflxloss',(tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))*atw
+    !  print*,'nflxloss no3 nh4',tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x)*atw, tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x)*atw
+    !endif
     
     call tracerflux_vars%Temporal_average(c,dtime)
   enddo

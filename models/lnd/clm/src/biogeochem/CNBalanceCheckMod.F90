@@ -287,11 +287,11 @@ contains
             err_found = .true.
             err_index = c
          end if
-         if(c==15695)then
-           print*,'-----------',get_nstep()
-           print*,'abgn',nitrogenstate_vars%totabgn_col(c)
-           print*,'blgn',nitrogenstate_vars%totblgn_col(c)
-         endif
+         !if(c==15695)then
+         !  print*,'-----------',get_nstep()
+         !  print*,'abgn',nitrogenstate_vars%totabgn_col(c)
+         !  print*,'blgn',nitrogenstate_vars%totblgn_col(c)
+         !endif
       end do ! end of columns loop
 
       if (err_found) then

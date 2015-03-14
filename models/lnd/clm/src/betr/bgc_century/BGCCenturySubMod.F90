@@ -787,18 +787,18 @@ module BGCCenturySubMod
 
   do fc = 1, numf
     c = filter(fc)    
-    err = 0._r8
-    hr = 0._r8
-    delta_nh4_m=0._r8
-    delta_no3_m=0._r8
-    immob = 0._r8
-    fnit = 0._r8
-    delta_nh4 = 0._r8
-    delta_no3 = 0._r8
-    sminn_plant = 0._r8
-    sminn_plant2= 0._r8
-    f_den = 0._r8
-    f_nit_n2o=0._r8
+    !err = 0._r8
+    !hr = 0._r8
+    !delta_nh4_m=0._r8
+    !delta_no3_m=0._r8
+    !immob = 0._r8
+    !fnit = 0._r8
+    !delta_nh4 = 0._r8
+    !delta_no3 = 0._r8
+    !sminn_plant = 0._r8
+    !sminn_plant2= 0._r8
+    !f_den = 0._r8
+    !f_nit_n2o=0._r8
     do j = jtops(c), ubj
       plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))*natomw
       smin_no3_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_plant, c, j) - y0(centurybgc_vars%lid_minn_no3_plant, c, j))*natomw/dtime
@@ -846,33 +846,33 @@ module BGCCenturySubMod
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
         deltac = deltac + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
       enddo
-      if(c==15695)then
-        hr = hr + col%dz(c,j)*hr_vr(c,j)
-        err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
-        delta_no3 = delta_no3+tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )*natomw*col%dz(c,j)
+      !if(c==15695)then
+      !  hr = hr + col%dz(c,j)*hr_vr(c,j)
+      !  err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
+      !  delta_no3 = delta_no3+tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )*natomw*col%dz(c,j)
 
-        delta_no3_m = delta_no3_m +  (actual_immob_no3_vr(c,j)+smin_no3_to_plant_vr(c,j)+f_denit_vr(c,j)-(f_nit_vr(c,j)-f_n2o_nit_vr(c,j)))*dtime*col%dz(c,j)
+      !  delta_no3_m = delta_no3_m +  (actual_immob_no3_vr(c,j)+smin_no3_to_plant_vr(c,j)+f_denit_vr(c,j)-(f_nit_vr(c,j)-f_n2o_nit_vr(c,j)))*dtime*col%dz(c,j)
         
-        sminn_plant = sminn_plant + (smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j))*dtime*col%dz(c,j)
+      !  sminn_plant = sminn_plant + (smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j))*dtime*col%dz(c,j)
 
-        delta_nh4 = delta_nh4+tracer_flx_netpro_vr(c,j, betrtracer_vars%id_trc_nh3x)*natomw*col%dz(c,j)  
+      !  delta_nh4 = delta_nh4+tracer_flx_netpro_vr(c,j, betrtracer_vars%id_trc_nh3x)*natomw*col%dz(c,j)  
 
-        delta_nh4_m=delta_nh4_m +  (actual_immob_nh4_vr(c,j)+smin_nh4_to_plant_vr(c,j)+f_nit_vr(c,j))*dtime*col%dz(c,j)  
-        fnit = fnit+f_nit_vr(c,j)*dtime*col%dz(c,j)
-        immob = immob + (actual_immob_nh4_vr(c,j) + actual_immob_no3_vr(c,j))*dtime*col%dz(c,j)
-        sminn_plant2 = sminn_plant2 + plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j)*col%dz(c,j)
-        f_nit_n2o=f_nit_n2o+f_n2o_nit_vr(c,j)*col%dz(c,j)*dtime
-        f_den = f_den + f_denit_vr(c,j)*col%dz(c,j)*dtime
-      endif
+      !  delta_nh4_m=delta_nh4_m +  (actual_immob_nh4_vr(c,j)+smin_nh4_to_plant_vr(c,j)+f_nit_vr(c,j))*dtime*col%dz(c,j)  
+      !  fnit = fnit+f_nit_vr(c,j)*dtime*col%dz(c,j)
+      !  immob = immob + (actual_immob_nh4_vr(c,j) + actual_immob_no3_vr(c,j))*dtime*col%dz(c,j)
+      !  sminn_plant2 = sminn_plant2 + plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j)*col%dz(c,j)
+      !  f_nit_n2o=f_nit_n2o+f_n2o_nit_vr(c,j)*col%dz(c,j)*dtime
+      !  f_den = f_den + f_denit_vr(c,j)*col%dz(c,j)*dtime
+      !endif
     enddo
-    if(c==15695)then
-      print*,'xxxxxxxx'
-      print*,'err_no3, err_nh4',delta_no3,delta_nh4
-      print*,'no3_m, nh4_m', delta_no3_m,delta_nh4_m
-      print*,'immob fnit',immob,fnit
-      print*,'sminnplt',sminn_plant,sminn_plant2
-      print*,'fden fnit_n2o',f_den,f_nit_n2o
-    endif
+    !if(c==15695)then
+    !  print*,'xxxxxxxx'
+    !  print*,'err_no3, err_nh4',delta_no3,delta_nh4
+    !  print*,'no3_m, nh4_m', delta_no3_m,delta_nh4_m
+    !  print*,'immob fnit',immob,fnit
+    !  print*,'sminnplt',sminn_plant,sminn_plant2
+    !  print*,'fden fnit_n2o',f_den,f_nit_n2o
+    !endif
   enddo
   
   end associate
@@ -1556,9 +1556,9 @@ module BGCCenturySubMod
 
   do fc = 1, num_soilc
     c = filter_soilc(fc)
-    delta_nh4 =0._r8
-    delta_no3 =0._r8
-    delta_somn =0._r8
+    !delta_nh4 =0._r8
+    !delta_no3 =0._r8
+    !delta_somn =0._r8
     do j = lbj, ubj
       do k = 1, ndecomp_pools
         tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
@@ -1566,23 +1566,23 @@ module BGCCenturySubMod
         cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-        delta_somn = delta_somn + bgc_npool_inputs_vr(c,j,k)*col%dz(c,j)
+        !delta_somn = delta_somn + bgc_npool_inputs_vr(c,j,k)*col%dz(c,j)
       enddo
       tracer_conc_mobile(c, j, id_trc_nh3x) = tracer_conc_mobile(c, j, id_trc_nh3x) + sminn_nh4_input_vr(c,j)/natomw
       tracer_conc_mobile(c, j, id_trc_no3x) = tracer_conc_mobile(c, j, id_trc_no3x) + sminn_no3_input_vr(c,j)/natomw
 
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) + sminn_no3_input_vr(c,j)/natomw
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) + sminn_nh4_input_vr(c,j)/natomw
-      if(c==15695)then
-        delta_nh4=delta_nh4+sminn_nh4_input_vr(c,j)*col%dz(c,j)
-        delta_no3=delta_no3+sminn_no3_input_vr(c,j)*col%dz(c,j)
-      endif
+      !if(c==15695)then
+      !  delta_nh4=delta_nh4+sminn_nh4_input_vr(c,j)*col%dz(c,j)
+      !  delta_no3=delta_no3+sminn_no3_input_vr(c,j)*col%dz(c,j)
+      !endif
     enddo
-    if(c==15695)then
-      print*,'-------------------'
-      print*,'somnn input',delta_somn
-      print*,'sminn input',delta_nh4+delta_no3
-    endif
+    !if(c==15695)then
+    !  print*,'-------------------'
+    !  print*,'somnn input',delta_somn
+    !  print*,'sminn input',delta_nh4+delta_no3
+    !endif
   enddo
   
   end associate
