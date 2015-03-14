@@ -307,15 +307,16 @@ contains
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
 
-      integer :: iTracer, k, iCell, kMax
+      integer :: iTracer, k, iCell, kMax, i, iEdge
       integer :: iBin, iField, nZonalMeanVariables
       integer, pointer :: num_tracers, nCellsSolve, nVertLevels, nZonalMeanBins, indexTemperature
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgeSignOnCell, cellsOnEdge, edgesOnCell
 
-      real (kind=RKIND) :: volume
-      real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryZonalMean
+      real (kind=RKIND) :: volume, div_huT
+      real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryZonalMean, dvEdge
       real (kind=RKIND), dimension(:), pointer ::  meridionalHeatTransport
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, normalTransportVelocity
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional, divergence
       real (kind=RKIND), dimension(:,:), pointer :: volumeZonalSum, velocityZonalZonalMean, velocityMeridionalZonalMean, meridionalHeatTransportZ
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
@@ -371,12 +372,19 @@ contains
 
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)        
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)    
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(statePool, 'tracers', tracers,timeLevel)         
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness,timeLevel)         
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
          call mpas_pool_get_array(diagnosticsPool, 'divergence',divergence)
-         
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+
          ! Bin by latitude on a sphere, by yCell otherwise.
          if (on_a_sphere) then
             call mpas_pool_get_array(meshPool, 'latCell', binVariable)
@@ -407,8 +415,16 @@ contains
                      sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityZonal(k,iCell)*volume
                      iField = iField+1
                      sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityMeridional(k,iCell)*volume
+
                      iField = iField+1
-                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + divergence(k,iCell)*tracers(indexTemperature,k,iCell)*volume
+                     div_huT = 0.0_RKIND
+                     do i = 1, nEdgesOnCell(iCell)
+                        iEdge = edgesOnCell(i, iCell)
+                        div_huT = div_huT - layerThicknessEdge(k, iEdge) * normalTransportVelocity(k, iEdge) &
+                             * 0.5_RKIND * (tracers(indexTemperature,k,cellsOnEdge(1,iEdge)) + tracers(indexTemperature,k,cellsOnEdge(2,iEdge))) &
+                             * edgeSignOnCell(i, iCell) * dvEdge(iEdge) 
+                     end do
+                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + div_huT
 
                   end do
                   exit
@@ -469,6 +485,7 @@ contains
                velocityZonalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
                iField = iField+1
                velocityMeridionalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
+
                iField = iField+1
                ! MHT = integral ( div(uT) ) rho c_p dz dlon dlat, in PW
                mht_meridional_integral(k,iBin) = totalSumZonalMean(iField,k,iBin)*rho_sw*cp_sw*1.0e-15_RKIND
