@@ -38,18 +38,22 @@
 	<streams>
 		<stream name="zonalMeanOutput" type="output"
 				filename_template="analysis_members/zonalMeans.$Y-$M-$D_$h.$m.$s.nc"
-				output_interval="0000_12:00:00"
+				output_interval="0001_00:00:00"
 				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
 				clobber_mode="truncate"
 				packages="amZonalMean"
 				runtime_format="single_file">
 
-			<var_array name="tracersZonalMean"/>
 			<var name="xtime"/>
 			<var name="binCenterZonalMean"/>
 			<var name="binBoundaryZonalMean"/>
+			<var name="volumeZonalSum"/>
+			<var_array name="tracersZonalMean"/>
 			<var name="velocityZonalZonalMean"/>
 			<var name="velocityMeridionalZonalMean"/>
+			<var name="meridionalHeatTransportZ"/>
+			<var name="meridionalHeatTransport"/>
 		</stream>
 	</streams>
 	<var_struct name="amZonalMean" time_levs="1" packages="amZonalMean">
@@ -79,10 +83,10 @@
 			 description="Zonal mean of tracer"
 			/>
 		</var_array>
-		<var name="meridionalHeatTransportZ" type="real" dimensions="nVertLevels nZonalMeanBins Time" units="petawatts"
+		<var name="meridionalHeatTransportZ" type="real" dimensions="nVertLevels nZonalMeanBinsP1 Time" units="petawatts"
 			 description="Northward meridional heat transport, by level, at northern bin boundary."
 		/>
-		<var name="meridionalHeatTransport" type="real" dimensions="nZonalMeanBins Time" units="petawatts"
+		<var name="meridionalHeatTransport" type="real" dimensions="nZonalMeanBinsP1 Time" units="petawatts"
 			 description="Northward meridional heat transport at northern bin boundary."
 		/>
 	</var_struct>
