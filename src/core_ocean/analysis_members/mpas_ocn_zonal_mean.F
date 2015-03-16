@@ -416,6 +416,10 @@ contains
                      iField = iField+1
                      sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityMeridional(k,iCell)*volume
 
+                     ! Compute divergence of huT, i.e. layerThickness * normalVelocity * temperature, at an edge
+                     ! for meridional heat transport.  
+                     ! Here we do not divide by the area, as one normally does in a divergence calculation, so that
+                     ! div_huT is weighted by area here.
                      iField = iField+1
                      div_huT = 0.0_RKIND
                      do i = 1, nEdgesOnCell(iCell)
@@ -440,10 +444,10 @@ contains
       ! mpi summation over all processors
       call mpas_dmpar_sum_real_array(dminfo, nVertLevels*nZonalMeanBinsUsed*nZonalMeanVariables, sumZonalMean, totalSumZonalMean)
 
-      ! normalize by area
+      ! normalize by volume
       do iBin = 1, nZonalMeanBinsUsed
          do k = 1, nVertLevels
-            ! Check if there is any area accumulated.  If so, normalize by the area.
+            ! Check if there is any volume accumulated.  If so, normalize by the volume.
             if (totalSumZonalMean(1,k,iBin) > 1.0e-12) then
                normZonalMean(:,k,iBin) = totalSumZonalMean(:,k,iBin) / totalSumZonalMean(1,k,iBin)
             else
@@ -487,17 +491,23 @@ contains
                velocityMeridionalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
 
                iField = iField+1
-               ! MHT = integral ( div(uT) ) rho c_p dz dlon dlat, in PW
+               ! MHT = sum ( div(huT) A ) / volume * rho c_p, in PW
+               ! where the sum is over each latitude bin, and the volume is the volume in each level
+               ! in each bin, which is done above.  Here we simply multiply by (rho c_p) and convert to PW:
                mht_meridional_integral(k,iBin) = totalSumZonalMean(iField,k,iBin)*rho_sw*cp_sw*1.0e-15_RKIND
 
             end do
          end do
 
-         meridionalHeatTransportZ(:,1) = mht_meridional_integral(:,1)
-         do iBin = 2, nZonalMeanBinsUsed
+         ! Compute integral of ( sum ( div(huT) A ) / volume * rho c_p ) from southernmost latitude to bin boundary.
+         ! to get MHT at that bin boundary.
+         meridionalHeatTransportZ(:,1) = 0.0_RKIND
+         do iBin = 2, nZonalMeanBinsUsed+1
             meridionalHeatTransportZ(:,iBin) = meridionalHeatTransportZ(:,iBin-1) + mht_meridional_integral(:,iBin)
          end do
 
+         ! meridionalHeatTransportZ is a function of depth.  Sum in vertical to get
+         ! meridionalHeatTransport, a single value for each latitude bin boundary.
          do iBin = 1, nZonalMeanBinsUsed
             meridionalHeatTransport(iBin) = sum(meridionalHeatTransportZ(:,iBin))
          end do
