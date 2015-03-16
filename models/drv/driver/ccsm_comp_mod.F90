@@ -582,6 +582,8 @@ subroutine ccsm_pre_init1()
    call t_initf(NLFileName, LogPrint=.false., mpicom=mpicom_GLOID, &
                 MasterTask=iamroot_GLOID)
    call t_startf('DRIVER_INIT')
+
+   call t_adj_detailf(+1)
    call t_startf('ccsm_pre_init1')
 
    if (iamin_CPLID) complist = trim(complist)//' cpl'
@@ -733,6 +735,8 @@ subroutine ccsm_pre_init1()
    endif
 
    call t_stopf('ccsm_pre_init1')
+   call t_adj_detailf(-1)
+
    call t_stopf('DRIVER_INIT')
    !
    !  When using io servers (pio_async_interface=.true.) the server tasks do not return from 
@@ -1985,7 +1989,7 @@ end subroutine ccsm_init
    do while ( .not. stop_alarm)
 
       call t_startf('DRIVER_RUN_LOOP')
-      call t_drvstartf ('DRIVER_CLOCK_ADVANCE',cplrun=.true.)
+      call t_startf ('DRIVER_CLOCK_ADVANCE')
 
       !----------------------------------------------------------
       !| Advance Clock
@@ -2074,7 +2078,7 @@ end subroutine ccsm_init
          endif
       endif
 
-      call t_drvstopf  ('DRIVER_CLOCK_ADVANCE',cplrun=.true.)
+      call t_stopf ('DRIVER_CLOCK_ADVANCE')
 
       !----------------------------------------------------------
       !| MAP ATM to OCN
@@ -3569,7 +3573,7 @@ end subroutine ccsm_init
 
       call t_stopf  ('DRIVER_RUN_LOOP')
       ! --- Write out performance data 
-      call t_drvstartf  ('DRIVER_TPROF_WRITE',cplrun=.true.)
+      call t_startf  ('DRIVER_TPROF_WRITE')
       if (tprof_alarm) then
          call t_startf("sync1_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
@@ -3588,7 +3592,7 @@ end subroutine ccsm_init
          call mpi_barrier(mpicom_GLOID,ierr)
          call t_stopf("sync2_tprof")
       endif
-      call t_drvstopf  ('DRIVER_TPROF_WRITE',cplrun=.true.)
+      call t_stopf  ('DRIVER_TPROF_WRITE')
 
    enddo   ! driver run loop
 
