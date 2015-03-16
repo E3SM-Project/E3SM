@@ -36,7 +36,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("new_file", help="Path to file to compare against gold")
 
-    case_default = os.environ["CASEBASEID"] if "CASEBASEID" in os.environ else None
+    case_default = (".".join(os.environ["CASEBASEID"].split(".")[:-2])) if "CASEBASEID" in os.environ else None
     parser.add_argument("-c", "--case", action="store", dest="case", default=case_default,
                         help="The case base id (<TESTCASE>.<GRID>.<COMPSET>). Helps us normalize data.")
 
@@ -90,26 +90,33 @@ def parse_namelists(namelist_lines, filename):
         if (current_namelist is None):
             # Must start a namelist
             expect(current_name is None,
-                   "In file %s, Incomplete multiline variable: '%s'" % (filename, current_name[0] if current_name is not None else ""))
+                   "FAIL: In file %s, Incomplete multiline variable: '%s'" % (filename, current_name[0] if current_name is not None else ""))
+
+            # Unfornately, other tools were using the old compare_namelists.pl script
+            # to compare files that are not namelist files. We need to not die fatally
+            # if that happens.
+            if (rv == {} and namelist_re.match(line) is None):
+                warning("File '%s' does not appear to be a namelist file, skipping" % filename)
+                return rv
             expect(namelist_re.match(line) is not None,
-                   "In file %s, Line '%s' did not begin a namelist as expected" % (filename, line))
+                   "FAIL: In file %s, Line '%s' did not begin a namelist as expected" % (filename, line))
 
             current_namelist = namelist_re.match(line).groups()[0]
             expect(current_namelist not in rv,
-                   "In file %s, Duplicate namelist '%s'" % (filename, current_namelist))
+                   "FAIL: In file %s, Duplicate namelist '%s'" % (filename, current_namelist))
 
             rv[current_namelist] = {}
 
         elif (line == "/"):
             # Ends a namelist
             expect(current_name is None,
-                   "In file %s, Incomplete multiline variable: '%s'" % (filename, current_name[0] if current_name is not None else ""))
+                   "FAIL: In file %s, Incomplete multiline variable: '%s'" % (filename, current_name[0] if current_name is not None else ""))
             current_namelist = None
 
         elif (name_re.match(line)):
             # Defining a variable (AKA name)
             name, value = name_re.match(line).groups()
-            expect(name not in rv[current_namelist], "In file %s, Duplicate name: '%s'" % (filename, name))
+            expect(name not in rv[current_namelist], "FAIL: In file %s, Duplicate name: '%s'" % (filename, name))
 
             if ("->" in value):
                 # dict
@@ -118,7 +125,7 @@ def parse_namelists(namelist_lines, filename):
                 for token in tokens:
                     if (token.strip() != ""):
                         m = dict_re.match(token)
-                        expect(m is not None, "In file %s, Dict entry '%s' does not match expected format" % (filename, token))
+                        expect(m is not None, "FAIL: In file %s, Dict entry '%s' does not match expected format" % (filename, token))
                         k, v = m.groups()
                         rv[current_namelist][name][k] = v
 
@@ -143,18 +150,18 @@ def parse_namelists(namelist_lines, filename):
                 for token in tokens:
                     if (token.strip() != ""):
                         m = dict_re.match(token)
-                        expect(m is not None, "In file %s, Dict entry '%s' does not match expected format" % (filename, token))
+                        expect(m is not None, "FAIL: In file %s, Dict entry '%s' does not match expected format" % (filename, token))
                         k, v = m.groups()
                         current_value[k] = v
             else:
-                expect(False, "In file %s, Continuation should have been for list or dict, instead it was: '%s'" % (filename, type(current_value)))
+                expect(False, "FAIL: In file %s, Continuation should have been for list or dict, instead it was: '%s'" % (filename, type(current_value)))
 
             if (not line.endswith(",")):
                 # Completed
                 current_name = None
 
         else:
-            expect(False, "In file %s, Unrecognized line: '%s'" % (filename, line))
+            expect(False, "FAIL: In file %s, Unrecognized line: '%s'" % (filename, line))
 
     return rv
 
@@ -169,16 +176,16 @@ def normalize_string_value(name, value, case):
 
     # Any occurance of case must be normalized because test-ids might not match
     if (case is not None):
-        case_re = re.compile(r'%s[.]G[.]([^./\s]+)' % case)
-        value = case_re.sub("%s.G.TESTID" % case, value)
+        case_re = re.compile(r'%s[.]([GC])[.]([^./\s]+)' % case)
+        value = case_re.sub("%s.\1.TESTID" % case, value)
 
     if (name in ["runid", "model_version", "username"]):
         # Don't even attempt to diff these, we don't care
         return name.upper()
-    elif (name == "logfile"):
+    elif (".log." in value):
         # Remove the part that's prone to diff
         components = value.split(".")
-        return ".".join(components[0:-1])
+        return os.path.basename(".".join(components[0:-1]))
     elif (":" in value):
         items = value.split(":")
         items = [normalize_string_value(name, item, case) for item in items]
@@ -229,13 +236,14 @@ def compare_values(namelist, name, gold_value, comp_value, case):
                 print "In namelist '%s', dict variable '%s' has extra key %s" % (namelist, name, key)
 
     else:
-        expect(type(gold_value) is str, "Unexpected type found: '%s'" % type(gold_value))
+        expect(type(gold_value) is str, "FAIL: Unexpected type found: '%s'" % type(gold_value))
         norm_gold_value = normalize_string_value(name, gold_value, case)
         norm_comp_value = normalize_string_value(name, comp_value, case)
 
         if (norm_gold_value != norm_comp_value):
             rv = False
             print "In namelist '%s', '%s' has inequivalent values %s != %s" % (namelist, name, gold_value, comp_value)
+            print "  NORMALIZED: %s != %s" % (norm_gold_value, norm_comp_value)
 
     return rv
 
@@ -280,8 +288,8 @@ def compare_namelists(gold_namelists, comp_namelists, case):
 ###############################################################################
 def compare_namelist_files(gold_file, compare_file, case):
 ###############################################################################
-    expect(os.path.exists(gold_file), "File not found: %s" % gold_file)
-    expect(os.path.exists(compare_file), "File not found: %s" % compare_file)
+    expect(os.path.exists(gold_file), "FAIL: File not found: %s" % gold_file)
+    expect(os.path.exists(compare_file), "FAIL: File not found: %s" % compare_file)
 
     gold_namelists = parse_namelists(open(gold_file, "r").readlines(), gold_file)
     comp_namelists = parse_namelists(open(compare_file, "r").readlines(), compare_file)
@@ -300,8 +308,11 @@ def _main_func(description):
 
     if (case is None):
         warning("No case id data available, will not be able to normalize values as effectively")
+    else:
+        verbose_print("Using case: '%s'" % case)
 
-    sys.exit(0 if compare_namelist_files(gold_file, compare_file, case) else 1)
+    expect(compare_namelist_files(gold_file, compare_file, case),
+           "FAIL: Namelist diff between files %s and %s" % (gold_file, compare_file))
 
 ###############################################################################
 

@@ -1713,9 +1713,10 @@ sub namelistCompare
 		warn "WARNING: no baseline file exists for $nml\n";
 	    }else{
 		$ENV{CASEBASEID}=$test;
-		my $compare_command = "$cprnml $buildconfpath/$nml $basecmpdir/$nml";
+		my $compare_command = "$cprnml $buildconfpath/$nml $basecmpdir/$nml 2>&1";
 		my $output = `$compare_command`;
 		$nlcompoutput .= $output;
+                print "$output"
 	    }
 	}
 	#also compare the user_nl_* files
@@ -1730,9 +1731,10 @@ sub namelistCompare
 		warn "WARNING: no baseline file exists for $nml\n";
 	    }else{
 		$ENV{CASEBASEID}=$test;
-		my $compare_command = "$cprnml $testpath/$nml $basecase/$nml";
+		my $compare_command = "$cprnml $testpath/$nml $basecase/$nml 2>&1";
 		my $output = `$compare_command`;
 		$nlcompoutput .= $output;
+                print "$output"
 	    }
 	}
 
