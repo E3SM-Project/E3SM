@@ -48,7 +48,7 @@ module controlMod
   public :: control_setNL ! Set namelist filename
   public :: control_init  ! initial run control information
   public :: control_print ! print run control information
-  public :: get_carbontag ! get the tag for carbon simulations
+
   !
   !
   ! !PRIVATE TYPES:
@@ -800,18 +800,5 @@ contains
   end subroutine control_print
 
   
-  function get_carbontag(carbon_type)result(ctag)
-  implicit none
-  character(len=*) :: carbon_type
-     
-  character(len=3) :: ctag
-  
-  if(carbon_type=='c12')then
-    ctag = 'C'
-  elseif(carbon_type=='c13')then
-    ctag = 'C13'
-  elseif(carbon_type=='c14')then
-    ctag = 'C14'
-  endif   
-  end function get_carbontag   
+
 end module controlMod

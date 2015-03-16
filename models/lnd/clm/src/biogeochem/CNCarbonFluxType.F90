@@ -749,7 +749,7 @@ contains
      use clm_varctl , only : hist_wrtch4diag
      use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
      use tracer_varcon    , only : is_active_betr_bgc
-     use controlMod,  only : get_carbontag
+     use clm_varctl,  only : get_carbontag
     !
      ! !ARGUMENTS:
      class(carbonflux_type) :: this    
