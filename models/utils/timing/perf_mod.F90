@@ -130,6 +130,11 @@ module perf_mod
    logical, private   :: perf_global_stats = def_perf_global_stats
                          ! collect and print out global performance statistics
                          ! (for this component communicator)
+
+   logical, parameter :: def_perf_ovhd_measurement = .false.     ! default
+   logical, private   :: perf_ovhd_measurement = def_perf_ovhd_measurement
+                         ! measure overhead of profiling directly
+
 #ifdef HAVE_NANOTIME
    integer, parameter :: def_perf_timer = GPTLnanotime         ! default
 #else
@@ -227,7 +232,8 @@ contains
                                perf_outpe_stride_out, &
                                perf_single_file_out, &
                                perf_global_stats_out, &
-                               perf_papi_enable_out )
+                               perf_papi_enable_out, &
+                               perf_ovhd_measurement_out )
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 ! Author: P. Worley 
@@ -253,6 +259,8 @@ contains
    logical, intent(out), optional :: perf_global_stats_out
    ! calling PAPI to read HW performance counters option
    logical, intent(out), optional :: perf_papi_enable_out
+   ! measure overhead of profiling directly
+   logical, intent(out), optional :: perf_ovhd_measurement_out
 !-----------------------------------------------------------------------
    if ( present(timing_disable_out) ) then
       timing_disable_out = def_timing_disable
@@ -284,6 +292,9 @@ contains
    if ( present(perf_papi_enable_out) ) then
       perf_papi_enable_out = def_perf_papi_enable
    endif
+   if ( present(perf_ovhd_measurement_out) ) then
+      perf_ovhd_measurement_out = def_perf_ovhd_measurement
+   endif
 !
    return
    end subroutine perf_defaultopts
@@ -301,7 +312,8 @@ contains
                            perf_outpe_stride_in, &
                            perf_single_file_in, &
                            perf_global_stats_in, &
-                           perf_papi_enable_in )
+                           perf_papi_enable_in, &
+                           perf_ovhd_measurement_in )
 !----------------------------------------------------------------------- 
 ! Purpose: Set runtime options
 ! Author: P. Worley 
@@ -332,6 +344,8 @@ contains
    logical, intent(in), optional :: perf_global_stats_in
    ! calling PAPI to read HW performance counters option
    logical, intent(in), optional :: perf_papi_enable_in
+   ! measure overhead of profiling directly
+   logical, intent(in), optional :: perf_ovhd_measurement_in
 !
 !---------------------------Local workspace-----------------------------
 !
@@ -396,6 +410,9 @@ contains
          perf_papi_enable = .false.
 #endif
       endif
+      if ( present(perf_ovhd_measurement_in) ) then
+         perf_ovhd_measurement = perf_ovhd_measurement_in
+      endif
 !
       if (mastertask .and. LogPrint) then
          write(p_logunit,*) '(t_initf) Using profile_disable=', timing_disable, &             
@@ -408,6 +425,7 @@ contains
                             ' profile_single_file=', perf_single_file
          write(p_logunit,*) '(t_initf)  profile_global_stats=', perf_global_stats , &
                             ' profile_papi_enable=', perf_papi_enable 
+         write(p_logunit,*) '(t_initf)  profile_ovhd_measurement=', perf_ovhd_measurement
       endif                                                                               
 !
 #ifdef DEBUG
@@ -1164,12 +1182,13 @@ contains
    integer profile_outpe_stride
    integer profile_timer
    logical profile_papi_enable
+   logical profile_ovhd_measurement
    namelist /prof_inparm/ profile_disable, profile_barrier, &
                           profile_single_file, profile_global_stats, &
                           profile_depth_limit, &
                           profile_detail_limit, profile_outpe_num, &
                           profile_outpe_stride, profile_timer, &
-                          profile_papi_enable
+                          profile_papi_enable, profile_ovhd_measurement
 
    character(len=16) papi_ctr1_str
    character(len=16) papi_ctr2_str
@@ -1222,7 +1241,8 @@ contains
                           perf_outpe_stride_out = profile_outpe_stride, &
                           perf_single_file_out=profile_single_file, &
                           perf_global_stats_out=profile_global_stats, &
-                          perf_papi_enable_out=profile_papi_enable )
+                          perf_papi_enable_out=profile_papi_enable, &
+                          perf_ovhd_measurement_out=profile_ovhd_measurement )
     if ( MasterTask2 ) then
 
        ! Read in the prof_inparm namelist from NLFilename if it exists
@@ -1261,6 +1281,7 @@ contains
        call shr_mpi_bcast( profile_single_file,  MPICom )
        call shr_mpi_bcast( profile_global_stats, MPICom )
        call shr_mpi_bcast( profile_papi_enable,  MPICom )
+       call shr_mpi_bcast( profile_ovhd_measurement, MPICom )
        call shr_mpi_bcast( profile_depth_limit,  MPICom )
        call shr_mpi_bcast( profile_detail_limit, MPICom )
        call shr_mpi_bcast( profile_outpe_num,    MPICom )
@@ -1277,7 +1298,8 @@ contains
                           perf_outpe_stride_in=profile_outpe_stride, &
                           perf_single_file_in=profile_single_file, &
                           perf_global_stats_in=profile_global_stats, &
-                          perf_papi_enable_in=profile_papi_enable )
+                          perf_papi_enable_in=profile_papi_enable, &
+                          perf_ovhd_measurement_in=profile_ovhd_measurement )
 
     ! Set PAPI defaults, then override with user-specified input
     if (perf_papi_enable) then
@@ -1381,6 +1403,13 @@ contains
    !
    if (gptlsetoption (gptldepthlimit, timer_depth_limit) < 0) &
      call shr_sys_abort (subname//':: gptlsetoption')
+   !
+   ! Set profile ovhd measurement (default is false)
+   !
+   if (perf_ovhd_measurement) then
+     if (gptlsetoption (gptlprofile_ovhd, 1) < 0) &
+       call shr_sys_abort (subname//':: gptlsetoption')
+   endif
    !
    ! Next 2 calls only work if PAPI is enabled.  These examples enable counting
    ! of total cycles and floating point ops, respectively
