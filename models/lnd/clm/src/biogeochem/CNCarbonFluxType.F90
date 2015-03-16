@@ -766,6 +766,7 @@ contains
      character(100)    :: longname
      real(r8), pointer :: data1dptr(:)   ! temp. pointer for slicing larger arrays
      real(r8), pointer :: data2dptr(:,:) ! temp. pointer for slicing larger arrays
+     character(len=3)  :: ctag
      !---------------------------------------------------------------------
 
      begp = bounds%begp; endp = bounds%endp

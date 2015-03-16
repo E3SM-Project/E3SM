@@ -880,7 +880,7 @@ contains
        
     if(is_active_betr_bgc)then
       call init_centurybgc_betr(bounds_proc, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
-    else
+    endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
     ! ------------------------------------------------------------------------
