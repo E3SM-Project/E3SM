@@ -1020,6 +1020,7 @@ end function radiation_nextsw_cday
                   call aer_rad_props_sw( icall, state, pbuf, nnite, idxnite, &
                                          aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f)
 
+                  call t_startf ('rad_rrtmg_sw')
                   call rad_rrtmg_sw( &
                        lchnk,        ncol,         num_rrtmg_levs, r_state,                    &
                        state%pmid,   cldfprime,                                                &
@@ -1034,6 +1035,7 @@ end function radiation_nextsw_cday
                        su,           sd,                                                       &
                        E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
                        old_convert = .false.)
+                  call t_stopf ('rad_rrtmg_sw')
 
                   !  Output net fluxes at 200 mb
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcns, fsn200c)
@@ -1129,6 +1131,7 @@ end function radiation_nextsw_cday
 
                   call aer_rad_props_lw(icall, state, pbuf,  aer_lw_abs)
                   
+                  call t_startf ('rad_rrtmg_lw')
                   call rad_rrtmg_lw( &
                        lchnk,        ncol,         num_rrtmg_levs,  r_state,                     &
                        state%pmid,   aer_lw_abs,   cldfprime,       c_cld_lw_abs,                &
@@ -1136,6 +1139,7 @@ end function radiation_nextsw_cday
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
                        flut,         flutc,        fnl,             fcnl,         fldsc, &
                        lu,           ld)
+                  call t_stopf ('rad_rrtmg_lw')
 
                   do i=1,ncol
                      lwcf(i)=flutc(i) - flut(i)
@@ -1201,9 +1205,12 @@ end function radiation_nextsw_cday
           call rad_cnst_get_gas(0,'CO2', state, pbuf, co2)
 
           call calc_col_mean(state, co2, co2_col_mean)
+
+          call t_startf ('hirstrm')
           call hirsrtm( lchnk  ,ncol , &
                         pintmb ,state%t  ,sp_hum ,co2_col_mean, &
                         o3     ,ts       ,oro    ,tb_ir  ,britemp )
+          call t_stopf ('hirstrm')
 
           do i = 1, pnb_hirs
              call outfld(hirsname(i),tb_ir(1,i),pcols,lchnk)
@@ -1242,10 +1249,12 @@ end function radiation_nextsw_cday
            if (cosp_nradsteps .eq. cosp_cnt(lchnk)) then
               !call should be compatible with camrt radiation.F90 interface too, should be with (in),optional
               ! N.B.: For snow optical properties, the GRID-BOX MEAN shortwave and longwave optical depths are passed.
+              call t_startf ('cosp_run')
 	      call cospsimulator_intr_run(state,  pbuf, cam_in, emis, coszrs, &
                    cld_swtau_in=cld_tau(rrtmg_sw_cloudsim_band,:,:),&
                    snow_tau_in=gb_snow_tau,snow_emis_in=gb_snow_lw)
               cosp_cnt(lchnk) = 0  !! reset counter
+              call t_stopf ('cosp_run')
            end if
        end if
 
@@ -1265,9 +1274,11 @@ end function radiation_nextsw_cday
 
     end if   !  if (dosw .or. dolw) then
 
+    call t_startf ('radheat_tend')
     ! Compute net radiative heating tendency
     call radheat_tend(state, pbuf,  ptend, qrl, qrs, fsns, &
                       fsnt, flns, flnt, cam_in%asdir, net_flx)
+    call t_stopf ('radheat_tend')
 
     ! Compute heating rate for dtheta/dt 
     do k=1,pver
