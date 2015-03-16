@@ -748,7 +748,8 @@ contains
      use clm_varpar , only : nlevdecomp, nlevdecomp_full, crop_prog, nlevgrnd
      use clm_varctl , only : hist_wrtch4diag
      use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
-     use tracer_varcon    , only : is_active_betr_bgc 
+     use tracer_varcon    , only : is_active_betr_bgc
+     use controlMod,  only : get_carbontag
     !
      ! !ARGUMENTS:
      class(carbonflux_type) :: this    
@@ -3010,54 +3011,16 @@ contains
 
      end if
 
-    this%bgc_cpool_inputs_vr_col(begc:endc, :, 1) = spval    
-    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,1)
-    fieldname='BGC_CPOOL_INPUT_'//' METAB_'//'vr'
-    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
-        avgflag='A', long_name=longname, &
-        ptr_col=data2dptr, default='inactive')
-
-    this%bgc_cpool_inputs_vr_col(begc:endc, :, 2) = spval    
-    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,2)
-    fieldname='BGC_CPOOL_INPUT_'//'_CEL_'//'vr'
-    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
-        avgflag='A', long_name=longname, &
-        ptr_col=data2dptr, default='inactive')
-
-    this%bgc_cpool_inputs_vr_col(begc:endc, :, 3) = spval    
-    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,3)
-    fieldname='BGC_CPOOL_INPUT_'//'_LIG_'//'vr'
-    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
-        avgflag='A', long_name=longname, &
-        ptr_col=data2dptr, default='inactive')
-
-    this%bgc_cpool_inputs_vr_col(begc:endc, :, 4) = spval    
-    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,4)
-    fieldname='BGC_CPOOL_INPUT_'//'_CWD_'//'vr'
-    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
-        avgflag='A', long_name=longname, &
-        ptr_col=data2dptr, default='inactive')
-
-    this%bgc_cpool_inputs_vr_col(begc:endc, :, 5) = spval
-    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,5)
-    fieldname='BGC_CPOOL_INPUT_'//'_SOM1_'//'vr'
-    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
-        avgflag='A', long_name=longname, &
-        ptr_col=data2dptr, default='inactive')
-
-    this%bgc_cpool_inputs_vr_col(begc:endc, :, 6) = spval
-    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,6)
-    fieldname='BGC_CPOOL_INPUT_'//'_SOM2_'//'vr'
-    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
-        avgflag='A', long_name=longname, &
-        ptr_col=data2dptr, default='inactive')
-
-    this%bgc_cpool_inputs_vr_col(begc:endc, :, 7) = spval
-    data2dptr => this%bgc_cpool_inputs_vr_col(:,:,7)
-    fieldname='BGC_CPOOL_INPUT_'//'_SOM3_'//'vr'
-    call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
-        avgflag='A', long_name=longname, &
-        ptr_col=data2dptr, default='inactive')     
+     ctag=get_carbontag(carbon_type)
+     do k = 1, ndecomp_pools
+       this%bgc_cpool_inputs_vr_col(begc:endc, :, k) = spval    
+       data2dptr => this%bgc_cpool_inputs_vr_col(:,:,k)
+       fieldname='BGC_'//trim(ctag)//'POOL_INPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+       longname=trim(ctag)//' input to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
+       call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3/s',  type2d='levdcmp', &
+         avgflag='A', long_name=longname, &
+         ptr_col=data2dptr, default='inactive')
+     enddo
      !-------------------------------
      ! C13 flux variables - native to column 
      !-------------------------------
@@ -4853,5 +4816,7 @@ contains
          this%rr_patch(bounds%begp:bounds%endp), &
          this%rr_col(bounds%begc:bounds%endc))
          
-  end subroutine summary_rr  
+  end subroutine summary_rr
+  
+  
 end module CNCarbonFluxType

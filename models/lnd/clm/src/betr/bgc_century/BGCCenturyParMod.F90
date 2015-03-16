@@ -135,6 +135,7 @@ implicit none
     ! !USES:
     use ncdio_pio              , only: file_desc_t,ncd_io
     use clm_varcon             , only : secspday
+    use clm_varctl             , only : spinup_state
     use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
     use clm_time_manager       , only : get_days_per_year
     use CNDecompCascadeConType , only : decomp_cascade_con
@@ -430,6 +431,13 @@ implicit none
     CNDecompBgcParamsInst%k_decay_som2=1._r8/(secspday * days_per_year * tau_s2)
     CNDecompBgcParamsInst%k_decay_som3=1._r8/(secspday * days_per_year * tau_s3)
     CNDecompBgcParamsInst%k_decay_cwd =1._r8/(secspday * days_per_year * tau_cwd)
+    
+    
+    if ( spinup_state .eq. 1 ) then
+      CNDecompBgcParamsInst%k_decay_som1 = CNDecompBgcParamsInst%k_decay_som1 * CNDecompBgcParamsInst%spinup_vector(1)
+      CNDecompBgcParamsInst%k_decay_som2 = CNDecompBgcParamsInst%k_decay_som2 * CNDecompBgcParamsInst%spinup_vector(2)
+      CNDecompBgcParamsInst%k_decay_som3 = CNDecompBgcParamsInst%k_decay_som3 * CNDecompBgcParamsInst%spinup_vector(3)      
+    endif
     end associate
   end subroutine readCentDecompBgcParams
 end module BGCCenturyParMod
