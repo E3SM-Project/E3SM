@@ -33,7 +33,7 @@ implicit none
   public :: bgc_reaction_CENTURY_type
   public :: assign_OM_CNpools
   public :: assign_nitrogen_hydroloss
-  public :: init_centurybgc_cold
+  public :: init_centurybgc_betr
   type(centurybgc_type), private :: centurybgc_vars
 
   integer, private :: lpr
@@ -782,7 +782,7 @@ contains
   
   end subroutine one_box_century_bgc
 !---------------------------------------------------------------
-  subroutine init_centurybgc_cold(bounds, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+  subroutine init_centurybgc_betr(bounds, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
 
   use clm_varcon               , only : natomw, catomw  
   use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
@@ -802,7 +802,7 @@ contains
   integer, parameter :: i_soil1 = 5
   integer, parameter :: i_soil2 = 6
   integer, parameter :: i_soil3 = 7
-  character(len=255)   :: subname = 'init_centurybgc_cold' 
+  character(len=255)   :: subname = 'init_centurybgc_betr' 
   integer :: c, j, k, l
 
   associate(                                                     &
@@ -852,7 +852,7 @@ contains
       enddo        
     enddo
   end associate
-  end subroutine init_centurybgc_cold    
+  end subroutine init_centurybgc_betr    
 !-------------------------------------------------------------------------------  
   subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars)
   

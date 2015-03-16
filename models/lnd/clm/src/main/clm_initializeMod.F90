@@ -407,7 +407,7 @@ contains
     use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
     use betr_initializeMod    , only : betr_initialize
     use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
-    use BGCReactionsCenturyType, only : init_centurybgc_cold
+    use BGCReactionsCenturyType, only : init_centurybgc_betr
     use tracer_varcon         , only : is_active_betr_bgc    
     !
     ! !ARGUMENTS    
@@ -806,7 +806,6 @@ contains
 
     if (use_cn) then
        if(is_active_betr_bgc)then
-         call init_centurybgc_cold(bounds_proc, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
          call CNEcosystemDynBetrInit(bounds_proc)         
        else
          call CNEcosystemDynInit(bounds_proc)
@@ -878,7 +877,10 @@ contains
             betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
     end if
-
+       
+    if(is_active_betr_bgc)then
+      call init_centurybgc_betr(bounds_proc, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+    else
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
     ! ------------------------------------------------------------------------
