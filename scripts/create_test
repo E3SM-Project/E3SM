@@ -1668,6 +1668,7 @@ sub namelistCompare
 
     chdir($testpath) or die "couldn't change directory to $testpath\n";
     my $cprnml = "$testpath/Tools/compare_namelists";
+    my $altcpr = "$testpath/Tools/simple_compare";
 
     my $configtemplate = "$scriptsroot/ccsm_utils/Case.template/config_definition.xml";
     &Debug("config template is $configtemplate\n");
@@ -1714,8 +1715,11 @@ sub namelistCompare
 	    }else{
 		my $compare_command = "$cprnml -c $test $basecmpdir/$nml $buildconfpath/$nml 2>&1";
 		my $output = `$compare_command`;
+                if ($output =~ /does not appear to be a namelist file/) {
+                    $compare_command = "$altcpr -c $test $basecmpdir/$nml $buildconfpath/$nml 2>&1";
+                    $output = `$compare_command`;
+                }
 		$nlcompoutput .= $output;
-                print "$output"
 	    }
 	}
 	#also compare the user_nl_* files
@@ -1731,8 +1735,11 @@ sub namelistCompare
 	    }else{
 		my $compare_command = "$cprnml -c $test $basecase/$nml $testpath/$nml 2>&1";
 		my $output = `$compare_command`;
+                if ($output =~ /does not appear to be a namelist file/) {
+                    $compare_command = "$altcpr -c $test $basecmpdir/$nml $testpath/$nml 2>&1";
+                    $output = `$compare_command`;
+                }
 		$nlcompoutput .= $output;
-                print "$output"
 	    }
 	}
 

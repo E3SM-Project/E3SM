@@ -24,7 +24,7 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Compare namelist files\033[0m
-    > %s baseline_dir/test/namelistfile mytestarea/namelistfile
+    > %s baseline_dir/test/namelistfile mytestarea/namelistfile -c <CASE>
 """ % ((os.path.basename(args[0]), ) * 4),
 
 description=description,
@@ -99,13 +99,13 @@ def parse_namelists(namelist_lines, filename):
                    "FAIL: In file %s, Incomplete multiline variable: '%s'" % (filename, current_name[0] if current_name is not None else ""))
 
             # Unfornately, other tools were using the old compare_namelists.pl script
-            # to compare files that are not namelist files. We need to not die fatally
-            # if that happens.
-            if (rv == {} and namelist_re.match(line) is None):
-                warning("File '%s' does not appear to be a namelist file, skipping" % filename)
-                return rv
-            expect(namelist_re.match(line) is not None,
-                   "FAIL: In file %s, Line '%s' did not begin a namelist as expected" % (filename, line))
+            # to compare files that are not namelist files. We need a special error
+            # to signify this event
+            if (namelist_re.match(line) is None):
+                expect(rv != {},
+                       "FAIL: File '%s' does not appear to be a namelist file, skipping" % filename)
+                expect(False,
+                       "FAIL: In file %s, Line '%s' did not begin a namelist as expected" % (filename, line))
 
             current_namelist = namelist_re.match(line).groups()[0]
             expect(current_namelist not in rv,
