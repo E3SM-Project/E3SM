@@ -163,6 +163,7 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   iodesc->ioid=-1;
   iodesc->llen=0;
   iodesc->maxiobuflen=0;
+  iodesc->holegridsize=0;
   iodesc->maxbytes=0;
   iodesc->ndims = ndims;
   iodesc->firstregion = alloc_region(ndims);
@@ -347,7 +348,7 @@ int PIOc_writemap(const char file[], const int ndims, const int gdims[], PIO_Off
   else
     nmaplen = NULL;
 
-  printf("maplen[%d] = %ld\n",myrank,maplen);
+  //  printf("maplen[%d] = %ld\n",myrank,maplen);
 
 
   MPI_Gather(&maplen, 1, PIO_OFFSET, nmaplen, 1, PIO_OFFSET, 0, comm);
