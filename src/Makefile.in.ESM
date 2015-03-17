@@ -16,7 +16,7 @@ else
 endif
 
 RM = rm -f
-CPP = cpp -C -P -traditional
+CPP = cpp -P -traditional
 FC=$(MPIFC)
 CC=$(MPICC)
 NETCDF=$(NETCDF_PATH)
