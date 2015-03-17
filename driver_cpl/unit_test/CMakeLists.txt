@@ -13,7 +13,7 @@ set(CESM_ROOT "${DRV_ROOT}/../..")
 # Build mct
 # TODO: move this code to build mct into a standalone utility somewhere
 # ------------------------------------------------------------------------
-set(MCT_ROOT "${CESM_ROOT}/utils/mct")
+set(MCT_ROOT "${CESM_ROOT}/cime/externals/mct")
 ExternalProject_add(mct_project
   SOURCE_DIR ${MCT_ROOT}
   CONFIGURE_COMMAND ${MCT_ROOT}/configure --enable-mpiserial --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR}
