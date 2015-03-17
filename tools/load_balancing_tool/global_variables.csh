@@ -9,7 +9,6 @@ setenv compset B1850C5
 setenv mach edison_intel
 setenv casedir $SCRATCH/tests/cesm_timing_tests/B1850C5.ne30_g16/
 setenv casestr  _B1850C5_ne30_g16__
-setenv submit "qsub "
 setenv run_len 10
 
 # Select either FV or SE below
