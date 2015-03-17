@@ -36,8 +36,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("new_file", help="Path to file to compare against gold")
 
-    case_default = (".".join(os.environ["CASEBASEID"].split(".")[:-2])) if "CASEBASEID" in os.environ else None
-    parser.add_argument("-c", "--case", action="store", dest="case", default=case_default,
+    parser.add_argument("-c", "--case", action="store", dest="case", default=None,
                         help="The case base id (<TESTCASE>.<GRID>.<COMPSET>). Helps us normalize data.")
 
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
@@ -46,6 +45,13 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     args = parser.parse_args(args[1:])
 
     acme_util.set_verbosity(args.verbose)
+
+    # Normalize case
+    if (args.case is not None):
+        sep_count = args.case.count(".")
+        expect(sep_count in [3, 5], "Case needs to be in form: TEST.GRID.COMPSET.PLATFORM  or  TEST.GRID.COMPSET.PLATFORM.GC.TESTID")
+        if (sep_count == 5):
+            args.case = ".".join(args.case.split(".")[:-2])
 
     return args.gold_file, args.new_file, args.case
 
@@ -173,11 +179,10 @@ def normalize_string_value(name, value, case):
     to diffs, like file paths, etc. This function attempts to normalize that
     data so that it will not cause diffs.
     """
-
     # Any occurance of case must be normalized because test-ids might not match
     if (case is not None):
         case_re = re.compile(r'%s[.]([GC])[.]([^./\s]+)' % case)
-        value = case_re.sub("%s.\1.TESTID" % case, value)
+        value = case_re.sub("%s.ACTION.TESTID" % case, value)
 
     if (name in ["runid", "model_version", "username"]):
         # Don't even attempt to diff these, we don't care
@@ -191,7 +196,7 @@ def normalize_string_value(name, value, case):
         items = [normalize_string_value(name, item, case) for item in items]
         return ":".join(items)
     elif ("/" in value):
-        # File path, just return the basename. Normalize case string too
+        # File path, just return the basename
         return os.path.basename(value)
     else:
         return value
