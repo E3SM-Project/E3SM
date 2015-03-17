@@ -19,7 +19,7 @@ module cam3_ozone_data
 use shr_kind_mod,   only: r8 => shr_kind_r8
 use spmd_utils,     only: masterproc
 use ppgrid,         only: begchunk, endchunk, pcols, pver
-use abortutils,     only: endrun
+use cam_abortutils,     only: endrun
 use cam_logfile,    only: iulog
 use physics_types,  only: physics_state
 use boundarydata,   only: boundarydata_type, boundarydata_init, boundarydata_update, &

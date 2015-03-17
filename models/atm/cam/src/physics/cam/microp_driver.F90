@@ -18,7 +18,7 @@ use micro_mg_cam,  only: micro_mg_cam_readnl, micro_mg_cam_register, &
                          micro_mg_cam_implements_cnst, micro_mg_cam_init_cnst, &
                          micro_mg_cam_init, micro_mg_cam_tend
 use cam_logfile,   only: iulog
-use abortutils,    only: endrun
+use cam_abortutils,    only: endrun
 use perf_mod,      only: t_startf, t_stopf
 
 implicit none

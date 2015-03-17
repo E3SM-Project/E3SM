@@ -9,9 +9,9 @@ into the XML file."""
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
 
-import sys, argparse, os, shutil, tempfile, subprocess
+import sys, argparse, os, shutil, tempfile
 
-from acme_util import expect, warning, verbose_print
+from acme_util import expect, warning
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>
@@ -21,7 +21,6 @@ TEST_SUITES = {
          'ERS.f45_g37.B1850C5',
          'ERS.f45_g37_rx1.DTEST',
          'ERS.ne30_g16_rx1.A',
-         'ERS_D.f45_g37.B1850C5',
          'ERS_IOP.f19_g16_rx1.A',
          'ERS_IOP.f45_g37_rx1.DTEST',
          'ERS_IOP.ne30_g16_rx1.A',
@@ -68,12 +67,13 @@ TEST_SUITES = {
 }
 
 ###############################################################################
-def find_all_machines(xml_file):
+def find_all_platforms(xml_file):
 ###############################################################################
     f = open(xml_file, 'r')
     lines = f.readlines()
     f.close()
-    machine_set = set()
+    platform_set = set()
+
     for line in lines:
         if '<machine' in line:
             i1 = line.index('compiler') + len('compiler="')
@@ -82,8 +82,9 @@ def find_all_machines(xml_file):
             j1 = line.index('>') + 1
             j2 = line.index('<', j1)
             machine = line[j1:j2]
-            machine_set.add((machine, compiler))
-    return [m for m in machine_set]
+            platform_set.add((machine, compiler))
+
+    return list(platform_set)
 
 ###############################################################################
 def replace_testlist_xml(output, xml_file):
@@ -97,22 +98,25 @@ def replace_testlist_xml(output, xml_file):
         shutil.move(new_xml_file, xml_file)
 
 ###############################################################################
-def generate_acme_test_entries(category, machines):
+def generate_acme_test_entries(category, platforms):
 ###############################################################################
     tests = TEST_SUITES[category]
     test_file = tempfile.NamedTemporaryFile(mode='w', delete = False)
     for test in tests:
-        for machine, compiler in machines:
+        for machine, compiler in platforms:
             test_file.write('%s.%s_%s\n'%(test, machine, compiler))
     name = test_file.name
     test_file.close()
     return name
 
 ###############################################################################
-def update_acme_test(xml_file, category):
+def update_acme_test(xml_file, category, platform):
 ###############################################################################
     # Fish all of the existing machine/compiler combos out of the XML file.
-    machines = find_all_machines(xml_file)
+    if (platform is not None):
+        platforms = [tuple(platform.split(","))]
+    else:
+        platforms = find_all_platforms(xml_file)
 
     # Try to find the manage_xml_entries script. Assume sibling of xml_file
     manage_xml_entries = os.path.join(os.path.dirname(xml_file), "manage_xml_entries")
@@ -120,12 +124,16 @@ def update_acme_test(xml_file, category):
            "Couldn't find manage_xml_entries, expect sibling of '%s'" % xml_file)
 
     # Remove any existing acme test category from the file.
-    output = acme_util.run_cmd('%s -removetests -category %s' % (manage_xml_entries, category))
+    if (platform is None):
+        output = acme_util.run_cmd('%s -removetests -category %s' % (manage_xml_entries, category))
+    else:
+        output = acme_util.run_cmd('%s -removetests -category %s -machine %s -compiler %s'
+                                   % (manage_xml_entries, category, platforms[0][0], platforms[0][1]))
     replace_testlist_xml(output, xml_file)
 
     # Generate a list of test entries corresponding to our suite at the top
     # of the file.
-    new_test_file = generate_acme_test_entries(category, machines)
+    new_test_file = generate_acme_test_entries(category, platforms)
     output = acme_util.run_cmd("%s -addlist -file %s -category %s" %
                                (manage_xml_entries, new_test_file, category))
     os.unlink(new_test_file)
@@ -145,12 +153,18 @@ def _main_func(description):
 
     parser.add_argument("test_list_path", help="The path to test lists XML file")
 
+    parser.add_argument("-p", "--platform", action="store", default=None, dest="platform",
+                        help="Only add tests for a specific platform, format=machine,compiler")
+
     args = parser.parse_args()
 
     expect(os.path.isfile(args.test_list_path),
            "'%s' is not a valid file" % args.test_list_path)
 
-    update_acme_test(args.test_list_path, args.category)
+    expect(args.platform is None or len(args.platform.split(",")) == 2,
+           "-p value must be in format: 'machine,compiler'")
+
+    update_acme_test(args.test_list_path, args.category, args.platform)
 
 if __name__ == "__main__":
     _main_func(__doc__)

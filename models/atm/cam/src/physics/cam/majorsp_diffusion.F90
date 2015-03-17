@@ -7,7 +7,7 @@ module majorsp_diffusion
   use shr_kind_mod, only: r8 => shr_kind_r8
   use ppgrid,       only: pver
   use physics_types,only: physics_state, physics_ptend
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
 
   implicit none
 

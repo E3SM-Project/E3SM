@@ -19,7 +19,7 @@ module zm_conv
   use cloud_fraction,  only: cldfrc_fice
   use physconst,       only: cpair, epsilo, gravit, latice, latvap, tmelt, rair, &
                              cpwv, cpliq, rh2o
-  use abortutils,      only: endrun
+  use cam_abortutils,      only: endrun
   use cam_logfile,     only: iulog
 
   implicit none
@@ -992,7 +992,7 @@ subroutine convtran(lchnk   , &
    use shr_kind_mod, only: r8 => shr_kind_r8
    use constituents,    only: cnst_get_type_byind
    use ppgrid
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
 
    implicit none
 !-----------------------------------------------------------------------
@@ -1289,7 +1289,7 @@ subroutine momtran(lchnk, ncol, &
    use shr_kind_mod, only: r8 => shr_kind_r8
    use constituents,    only: cnst_get_type_byind
    use ppgrid
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
 
    implicit none
 !-----------------------------------------------------------------------

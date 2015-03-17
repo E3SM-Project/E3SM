@@ -26,7 +26,7 @@ subroutine cubydr(pf      ,fint    ,wdy     ,jdp     ,jcen    , &
   use shr_kind_mod, only: r8 => shr_kind_r8
   use pmgrid,       only: plon, plev
   use scanslt,      only: platd
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use cam_logfile,  only: iulog
 #if ( ! defined UNICOSMP )
   use srchutil,     only: whenieq

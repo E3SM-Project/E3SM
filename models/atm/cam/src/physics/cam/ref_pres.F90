@@ -57,7 +57,7 @@ contains
 subroutine ref_pres_readnl(nlfile)
 
    use spmd_utils,      only: masterproc
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand

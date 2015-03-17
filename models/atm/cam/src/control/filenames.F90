@@ -9,7 +9,7 @@ module filenames
 
 use time_manager, only: get_curr_date, get_prev_date
 use shr_kind_mod, only: shr_kind_cs, shr_kind_cl
-use abortutils,   only: endrun
+use cam_abortutils,   only: endrun
 use cam_logfile,  only: iulog
 
 implicit none

@@ -26,7 +26,7 @@ use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_g
                             rad_cnst_get_aer_props, rad_cnst_get_mode_props,                &
                             rad_cnst_get_mam_mmr_idx, rad_cnst_get_mode_num_idx
 use cam_history,      only: addfld, add_default, phys_decomp, fieldname_len, outfld
-use abortutils,       only: endrun
+use cam_abortutils,       only: endrun
 use cam_logfile,      only: iulog
 
 implicit none

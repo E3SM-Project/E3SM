@@ -286,6 +286,11 @@
 <VOLC_MMR rad="camrt">atm/cam/physprops/sulfuricacid_cam3_c080918.nc</VOLC_MMR>
 <VOLC_MMR rad="rrtmg">atm/cam/physprops/rrtmg_Bi_sigma1.8_c100521.nc'</VOLC_MMR>
 
+<!-- Sea Salt aerosol emission scale factors -->
+<seasalt_emis_scale>                          1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="trop_mam7">         1.62 </seasalt_emis_scale>
+<seasalt_emis_scale chem="trop_strat_mam7">   1.62 </seasalt_emis_scale>
+
 <!-- Modal optics calculations -->
 <mam3_mode1_file rad="rrtmg">atm/cam/physprops/mam3_mode1_rrtmg_c110318.nc</mam3_mode1_file>
 <mam3_mode2_file rad="rrtmg">atm/cam/physprops/mam3_mode2_rrtmg_c110318.nc</mam3_mode2_file>
@@ -713,6 +718,10 @@
 <micro_mg_sub_version microphys="mg1.5">5</micro_mg_sub_version>
 
 <microp_uniform>.false.</microp_uniform>
+
+<micro_mg_dcs                                     > 400.0D-6 </micro_mg_dcs>
+<micro_mg_dcs     phys="cam5" microphys="mg1"     > 400.0D-6 </micro_mg_dcs>
+<micro_mg_dcs     phys="cam5" microphys="mg1.5"   > 250.0D-6 </micro_mg_dcs>
 
 <!-- Macrophysics scheme -->
 <macrop_scheme                       >none</macrop_scheme>

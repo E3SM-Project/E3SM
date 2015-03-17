@@ -101,7 +101,7 @@ subroutine ubc_setopts(tgcm_ubc_file_in, tgcm_ubc_data_type_in, tgcm_ubc_cycle_y
 ! Purpose: Set runtime options
 !-----------------------------------------------------------------------
 
-   use abortutils, only : endrun
+   use cam_abortutils, only : endrun
 
    real(r8), intent(in), optional         :: t_pert_ubc_in
    real(r8), intent(in), optional         :: no_xfac_ubc_in
@@ -227,7 +227,7 @@ end subroutine ubc_setopts
     use mo_msis_ubc,  only: get_msis_ubc
     use mo_snoe,      only: set_no_ubc, ndx_no
     use mo_tgcm_ubc,  only: set_tgcm_ubc
-    use abortutils,   only: endrun
+    use cam_abortutils,   only: endrun
     use physconst,    only: rairv, mbarv
     use phys_control, only: waccmx_is
     use physconst,    only: avogad

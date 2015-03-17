@@ -344,7 +344,7 @@ contains
   subroutine get_dyn_decomp(iodesc, hdim1, hdim2, nlev, ncnst, dtype, memorder_in, fileorder_in,column_in)
     use dycore, only : dycore_is
     use pio, only : pio_initdecomp, pio_setdebuglevel
-    use abortutils, only : endrun
+    use cam_abortutils, only : endrun
     type(io_desc_t), pointer :: iodesc
     integer, intent(in) :: hdim1, hdim2, nlev, ncnst
     integer, intent(in) :: dtype
@@ -466,7 +466,7 @@ contains
          get_gcol_block_cnt_d, get_block_gcol_cnt_d, get_block_gcol_d, get_block_bounds_d, get_block_ldof_d
     use spmd_utils, only : iam
     use dycore, only : dycore_is
-    use abortutils, only : endrun
+    use cam_abortutils, only : endrun
 
     integer, intent(in) :: hdim1_d, hdim2_d, nlev
     integer(kind=pio_offset), pointer :: ldof(:)
@@ -605,7 +605,7 @@ contains
 
   subroutine cam_pio_openfile(file, fname, mode, is_init)
     use pio, only : pio_openfile, file_desc_t, pio_noerr, pio_noclobber
-    use abortutils, only : endrun
+    use cam_abortutils, only : endrun
     type(file_desc_t), intent(inout), target :: file
     character(len=*), intent(in) :: fname
     integer, intent(in) :: mode
@@ -626,7 +626,7 @@ contains
   subroutine cam_pio_createfile(file, fname, mode)
     use pio, only : pio_createfile, file_desc_t, pio_noerr, pio_clobber, pio_64bit_offset
     use cam_control_mod, only : use_64bit_nc
-    use abortutils, only : endrun
+    use cam_abortutils, only : endrun
     type(file_desc_t), intent(inout) :: file
     character(len=*), intent(in) :: fname
     integer, intent(in) :: mode
@@ -706,7 +706,7 @@ contains
     use ppgrid, only : pcols, begchunk, endchunk
     use dycore, only : dycore_is
     use spmd_utils, only : mpicom, iam
-    use abortutils, only : endrun
+    use cam_abortutils, only : endrun
 
     integer, intent(in) :: hdim1_d, hdim2_d, fdim,mdim,ldim
     character(len=3),optional, intent(in) :: fileorder_in

@@ -21,7 +21,7 @@ module dp_coupling
                             block_buf_nrecs, chunk_buf_nrecs
    use mpishorthand,  only: mpicom
 #endif
-   use abortutils,    only: endrun
+   use cam_abortutils,    only: endrun
    use perf_mod
 
    implicit none

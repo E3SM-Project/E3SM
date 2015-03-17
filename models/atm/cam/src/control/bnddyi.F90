@@ -11,7 +11,7 @@ subroutine bnddyi (ncdate, ncsec, doy)
 ! 
 !-----------------------------------------------------------------------
    use shr_kind_mod, only: r8 => shr_kind_r8
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
    use cam_logfile,  only: iulog
 !-----------------------------------------------------------------------
    implicit none

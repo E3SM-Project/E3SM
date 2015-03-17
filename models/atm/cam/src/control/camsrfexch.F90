@@ -13,7 +13,7 @@ module camsrfexch
   use ppgrid,        only: pcols, begchunk, endchunk
   use phys_grid,     only: get_ncols_p, phys_grid_initialized
   use infnan,        only: posinf, assignment(=)
-  use abortutils,    only: endrun
+  use cam_abortutils,    only: endrun
   use cam_logfile,   only: iulog
 
   implicit none

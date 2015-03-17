@@ -83,6 +83,27 @@
         <MAX_TASKS_PER_NODE>8 </MAX_TASKS_PER_NODE>
 </machine>
 
+<machine MACH="skybridge">
+        <DESC>SNL Redsky cluster, Linux (x86_64)</DESC>                                 <!-- can be anything -->
+        <OS>LINUX</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
+        <COMPILERS>intel</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
+        <MPILIBS>openmpi,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
+        <CESMSCRATCHROOT>/gscratch1/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
+        <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+        <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+        <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
+        <DIN_LOC_ROOT_CLMFORC>/glade/proj2/cgd/tss</DIN_LOC_ROOT_CLMFORC>
+        <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
+        <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
+        <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
+        <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+        <BATCHQUERY>qstat</BATCHQUERY>
+        <BATCHSUBMIT>sbatch &lt;</BATCHSUBMIT>
+        <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+        <GMAKE_J>4</GMAKE_J>
+        <MAX_TASKS_PER_NODE>8 </MAX_TASKS_PER_NODE>
+</machine>
+
 <machine MACH="bluewaters">
          <DESC>ORNL XE6, os is CNL, 32 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>pgi,cray,gnu</COMPILERS>
@@ -462,6 +483,30 @@
     <PES_PER_NODE>2</PES_PER_NODE>
 </machine>
 
+<machine MACH="linux-generic">
+    <DESC>Linux workstation or laptop</DESC>
+    <OS>Linux</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
+    <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/projects/acme/scratch/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/projects/acme/cesm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/acme/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/projects/acme/scratch/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CESMSCRATCHROOT>$ENV{HOME}/projects/acme/scratch</CESMSCRATCHROOT>
+    <CCSM_BASELINE>$ENV{HOME}/projects/acme/baselines</CCSM_BASELINE>
+    <!-- cmake -DCMAKE_Fortran_COMPILER=/opt/local/bin/mpif90-mpich-gcc48 -DHDF5_DIR=/opt/local -DNetcdf_INCLUDE_DIR=/opt/local/include .. -->>
+    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <BATCHQUERY></BATCHQUERY>
+    <BATCHSUBMIT></BATCHSUBMIT>
+    <SUPPORTED_BY>jayesh at mcs dot anl dot gov</SUPPORTED_BY>
+<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <GMAKE_J>4</GMAKE_J>
+    <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>2</PES_PER_NODE>
+</machine>
+
 <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
     <OS>LINUX</OS>
@@ -681,13 +726,13 @@
          <RUNDIR>/p/lscratchd/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/p/lscratchd/$CCSMUSER/$CASE/bld</EXEROOT>
          <CESMSCRATCHROOT>/p/lscratchd/$USER</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>/p/lscratchd/mirin/ccsm3data/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/mirin/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/p/lscratchd/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/p/lscratchd/mirin/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+         <CCSM_CPRNC>/usr/gdata/climdat/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <BATCHQUERY>mshow</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>
@@ -828,7 +873,7 @@
 <machine MACH="mustang">
          <DESC>LANL Linux Cluster, 24 pes/node, batch system Moab</DESC>
          <COMPILERS>intel,gnu</COMPILERS>
-         <MPILIBS>openmpi,mvapich</MPILIBS>
+         <MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
          <OS>LINUX</OS>
          <RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
@@ -837,6 +882,8 @@
          <DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+         <CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+         <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
          <BATCHQUERY>mshow</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>
          <GMAKE_J>4</GMAKE_J>
@@ -847,7 +894,7 @@
 <machine MACH="wolf">
          <DESC>LANL Linux Cluster, 16 pes/node, batch system Moab</DESC>
          <COMPILERS>intel,gnu</COMPILERS>
-         <MPILIBS>openmpi,mvapich</MPILIBS>
+         <MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
          <OS>LINUX</OS>
          <RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
@@ -856,6 +903,8 @@
          <DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+         <CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+         <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
          <BATCHQUERY>mshow</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>
          <GMAKE_J>4</GMAKE_J>

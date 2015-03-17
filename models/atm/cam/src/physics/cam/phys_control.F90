@@ -12,7 +12,7 @@ module phys_control
 
 use spmd_utils,    only: masterproc
 use cam_logfile,   only: iulog
-use abortutils,    only: endrun
+use cam_abortutils,    only: endrun
 use shr_kind_mod,  only: r8 => shr_kind_r8
 
 implicit none

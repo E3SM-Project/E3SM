@@ -17,7 +17,7 @@
    use dynamics_vars, only : T_FVDYCORE_GRID
    use mapz_module,   only : map1_cubic_te, map1_ppm, mapn_ppm_tracer
    use cam_logfile,   only : iulog
-   use abortutils,    only : endrun
+   use cam_abortutils,    only : endrun
 
 #if defined( SPMD )
    use mod_comm,      only : mp_send3d, mp_recv3d

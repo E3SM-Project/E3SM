@@ -179,7 +179,7 @@
       contains
 
         subroutine qqcw_set_ptr(index, iptr)
-          use abortutils, only : endrun
+          use cam_abortutils, only : endrun
           use time_manager, only : is_first_step
           
 
@@ -193,7 +193,7 @@
         end subroutine qqcw_set_ptr
 
         function qqcw_get_field(pbuf, index, lchnk, errorhandle)
-          use abortutils, only : endrun
+          use cam_abortutils, only : endrun
           use physics_buffer, only : physics_buffer_desc, pbuf_get_field
 
           integer, intent(in) :: index, lchnk

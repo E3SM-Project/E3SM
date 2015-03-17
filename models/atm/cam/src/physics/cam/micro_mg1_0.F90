@@ -32,7 +32,6 @@ module micro_mg1_0
 !---------------------------------------------------------------------------------
 ! modification for sub-columns, HM, (orig 8/11/10)
 ! This is done using the logical 'microp_uniform' set to .true. = uniform for subcolumns
-!---------------------------------------------------------------------------------
 
 ! Procedures required:
 ! 1) An implementation of the gamma function (if not intrinsic).
@@ -59,8 +58,8 @@ save
 ! done outside of this module.
 
 public :: &
-     micro_mg_init, &
-     micro_mg_tend
+  micro_mg_init, &
+  micro_mg_tend
 
 integer, parameter :: r8 = selected_real_kind(12)      ! 8 byte real
 
@@ -85,7 +84,7 @@ real(r8) :: f1s,f2s  !ventilation param for snow
 real(r8) :: Eii      !collection efficiency aggregation of ice
 real(r8) :: Ecr      !collection efficiency cloud droplets/rain
 real(r8) :: f1r,f2r  !ventilation param for rain
-real(r8) :: DCS      !autoconversion size threshold
+real(r8) :: dcs      !autoconversion size threshold for cloud ice to snow (m)
 real(r8) :: qsmall   !min mixing ratio 
 real(r8) :: bimm,aimm !immersion freezing
 real(r8) :: rhosu     !typical 850mn air density
@@ -138,7 +137,7 @@ contains
 subroutine micro_mg_init( &
      kind, gravit, rair, rh2o, cpair,  &
      rhoh2o, tmelt_in, latvap, latice, &
-     rhmini_in, errstring)
+     rhmini_in, errstring, dcs_in)
 
 !----------------------------------------------------------------------- 
 ! 
@@ -159,6 +158,7 @@ real(r8),         intent(in)  :: tmelt_in        ! Freezing point of water (K)
 real(r8),         intent(in)  :: latvap
 real(r8),         intent(in)  :: latice
 real(r8),         intent(in)  :: rhmini_in       ! Minimum rh for ice cloud fraction > 0.
+real(r8),         intent(in)  :: dcs_in !autoconversion size threshold for cloud ice to snow (m)
 character(128),   intent(out) :: errstring       ! Output status (non-blank for error return)
 
 integer k
@@ -265,7 +265,7 @@ f2r = 0.32_r8
 
 ! autoconversion size threshold for cloud ice to snow (m)
 
-Dcs = 400.e-6_r8
+dcs = dcs_in
 
 ! smallest mixing ratio considered in microphysics
 
@@ -393,7 +393,6 @@ logical,  intent(in) :: do_cldice             ! Prognosing cldice
 real(r8), intent(in) :: tnd_qsnow(pcols,pver) ! snow mass tendency (kg/kg/s)
 real(r8), intent(in) :: tnd_nsnow(pcols,pver) ! snow number tendency (#/kg/s)
 real(r8), intent(in) :: re_ice(pcols,pver)    ! ice effective radius (m)
-
 ! output arguments
 
 real(r8), intent(out) :: tlat(pcols,pver)    ! latent heating rate       (W/kg)

@@ -1786,14 +1786,13 @@ sub namelistCompare
     if($opts{'generate'}){
 	my $genpath = "$baseroot/".$opts{'generate'}."/$basename";
 	if(-d $genpath){
-	    warn "Baseline directory $genpath already exist - will not overwrite.";
+	    warn "Baseline directory $genpath already exists";
 	}else{
 	    umask 0000;
 	    mkpath $genpath, 1, 0775;
-	    system("cp -r $buildconfpath $genpath"); 
-	    system("cp $buildconfpath/../user_nl* $genpath") ;
-	    warn "Couldnt create Baseline directory $genpath" unless -d "$genpath/CaseDocs"; 
-	}
+        }
+        system("cp -rf $buildconfpath $genpath");
+        system("cp -f $buildconfpath/../user_nl* $genpath") ;
     }
 }
 

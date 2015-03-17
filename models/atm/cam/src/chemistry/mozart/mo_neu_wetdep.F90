@@ -9,7 +9,7 @@ module mo_neu_wetdep
   use cam_logfile,  only : iulog
   use constituents, only : pcnst
   use spmd_utils,   only : masterproc
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use seq_drydep_mod, only : n_species_table, species_name_table, dheff
   use gas_wetdep_opts,only : gas_wetdep_method, gas_wetdep_list, gas_wetdep_cnt
 !

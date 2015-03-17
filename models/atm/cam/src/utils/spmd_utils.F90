@@ -29,7 +29,7 @@ module spmd_utils
 !- use statements ------------------------------------------------------
 !-----------------------------------------------------------------------
    use shr_kind_mod, only: r8 => shr_kind_r8
-   use abortutils,   only: endrun
+   use cam_abortutils,   only: endrun
 #if ( defined SPMD )
    use mpishorthand, only: mpiint, mpii8, mpichar, mpilog, mpipk,      &
                            mpic16, mpir8, mpir4, mpicom, mpimax
@@ -796,7 +796,7 @@ contains
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -933,7 +933,7 @@ contains
 !
    use shr_kind_mod, only: r4 => shr_kind_r4, r8 => shr_kind_r8
    use mpishorthand
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -1070,7 +1070,7 @@ contains
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
@@ -1207,7 +1207,7 @@ contains
 !
    use shr_kind_mod, only: r8 => shr_kind_r8
    use mpishorthand
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use cam_logfile,  only: iulog
 #if defined( WRAP_MPI_TIMING )
    use perf_mod

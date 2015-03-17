@@ -11,7 +11,7 @@ module physics_types
   use dycore,       only: dycore_is
   use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
   use cam_logfile,  only: iulog
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use phys_control, only: waccmx_is
   use shr_const_mod,only: shr_const_rwv
 

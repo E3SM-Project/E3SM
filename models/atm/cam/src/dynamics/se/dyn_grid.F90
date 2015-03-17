@@ -251,7 +251,7 @@ end subroutine dyn_grid_init
   !
   subroutine get_block_levels_d(blockid, bcid, lvlsiz, levels)
     use pmgrid, only: plev
-    use abortutils, only: endrun
+    use cam_abortutils, only: endrun
 
     !-----------------------------------------------------------------------
     !
@@ -304,7 +304,7 @@ end subroutine dyn_grid_init
   subroutine get_gcol_block_d(gcol,cnt,blockid,bcid,localblockid)
     use dimensions_mod, only : nelemd, nelem
     use kinds, only: int_kind
-    use abortutils, only: endrun
+    use cam_abortutils, only: endrun
     !----------------------------------------------------------------------- 
     ! 
     !                          
@@ -443,7 +443,7 @@ end function get_gcol_block_cnt_d
 !========================================================================
 !
 integer function get_block_owner_d(blockid)
- use abortutils, only: endrun
+ use cam_abortutils, only: endrun
  !----------------------------------------------------------------------- 
  ! 
  !                          
@@ -530,7 +530,7 @@ subroutine get_horiz_grid_d(nxy,clat_d_out,clon_d_out,area_d_out, &
  use dimensions_mod, only: nelem, nelemd, nelemdmax, np
  use spmd_utils, only : iam, npes, mpi_integer, mpir8, mpicom
 
- use abortutils, only: endrun
+ use cam_abortutils, only: endrun
  !----------------------------------------------------------------------- 
  ! 
  !                          
@@ -694,7 +694,7 @@ end subroutine get_gcol_lon
 subroutine gblocks_init()
  use dimensions_mod, only : nelem, nelemd, nelemdmax
  use spmd_utils, only : iam, npes, mpi_integer, mpicom
- use abortutils, only: endrun
+ use cam_abortutils, only: endrun
  integer :: ie, p
  integer :: ibuf
  integer :: ierr
@@ -869,7 +869,7 @@ end subroutine dyn_grid_get_pref
 subroutine dyn_grid_find_gcols( lat, lon, nclosest, owners, col, lbk, rlat, rlon, idyn_dists ) 
   use spmd_utils,     only: masterproc, iam
   use dimensions_mod, only: np
-  use abortutils,     only: endrun
+  use cam_abortutils,     only: endrun
   use shr_const_mod,  only: SHR_CONST_PI, SHR_CONST_REARTH
 
   real(r8), intent(in) :: lat

@@ -41,7 +41,7 @@ contains
 
     use spmd_utils,    only : masterproc
     use cam_logfile,   only : iulog
-    use abortutils,    only : endrun
+    use cam_abortutils,    only : endrun
     use mo_params,     only : kj, kw, smallest, largest
     use mo_waveall,    only : r01g1, r01g2, r01g3, r01g4, &
          r04g, r08g, r06g1, r06g2, &

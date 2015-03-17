@@ -4,7 +4,7 @@ module boundarydata
   use spmd_utils,      only: masterproc
   use ppgrid,          only: pcols, pver, begchunk, endchunk
   use physics_types,   only: physics_state
-  use abortutils,      only: endrun
+  use cam_abortutils,      only: endrun
 #if ( defined SPMD )
   use mpishorthand,    only: mpicom, mpir8, mpiint
 #endif

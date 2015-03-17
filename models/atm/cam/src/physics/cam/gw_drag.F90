@@ -24,7 +24,7 @@ module gw_drag
   use spmd_utils,    only: masterproc
   use cam_history,   only: outfld
   use cam_logfile,   only: iulog
-  use abortutils,    only: endrun
+  use cam_abortutils,    only: endrun
 
   use ref_pres,      only: do_molec_diff, ntop_molec, nbot_molec
   use physconst,     only: cpair

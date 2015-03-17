@@ -12,7 +12,7 @@ module chem_surfvals
    use spmd_utils,     only: masterproc
    use time_manager,   only: get_curr_date, get_start_date, is_end_curr_day, &
                              timemgr_datediff, get_curr_calday
-   use abortutils,     only: endrun
+   use cam_abortutils,     only: endrun
    use netcdf
    use error_messages, only: handle_ncerr  
    use cam_logfile,    only: iulog
