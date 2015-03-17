@@ -39,7 +39,7 @@ contains
     integer :: length
     integer :: n
 
-    call t_startf('decompose')
+!TBUG    call t_startf('decompose')
     length = end-start+1
     beg(0)=start
     do n=1,ndomains-1
@@ -54,7 +54,7 @@ contains
     domain%start=beg(ipe)
     domain%end  =beg(ipe+1)-1
 
-    call t_stopf('decompose')
+!TBUG    call t_stopf('decompose')
   end function decompose
 
 

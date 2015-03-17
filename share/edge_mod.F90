@@ -239,8 +239,8 @@ contains
     integer :: dest, source, length, tag, iptr
     integer :: nlen, ithr
 
-    ! call t_adj_detailf(+3)
-    ! call t_startf('initedgebuffer')
+!    call t_adj_detailf(+3)
+!    call t_startf('initedgebuffer')
 
     if(present(NewMethod)) then 
         nbuf=nlyr*4*(1+max_corner_elem)*nelemd
@@ -477,8 +477,8 @@ print *,'nthreadshoriz: ',nthreadshoriz
 !    enddo
 #endif
 
-    !call t_stopf('initedgebuffer')
-    !call t_adj_detailf(-3)
+!    call t_stopf('initedgebuffer')
+!    call t_adj_detailf(-3)
 
   end subroutine initEdgeBuffer
   ! =========================================
@@ -624,7 +624,7 @@ print *,'nthreadshoriz: ',nthreadshoriz
     integer :: nce
 
     call t_adj_detailf(+2)
-    call t_startf('edge_pack')
+    call t_startf('edgeVpack')
 
     is = edge%putmap(south,ielem)
     ie = edge%putmap(east,ielem)
@@ -743,7 +743,7 @@ print *,'nthreadshoriz: ',nthreadshoriz
         end if
     end do
 
-    call t_stopf('edge_pack')
+    call t_stopf('edgeVpack')
     call t_adj_detailf(-2)
 
   end subroutine edgeVpack
@@ -996,7 +996,7 @@ print *,'nthreadshoriz: ',nthreadshoriz
     logical :: done
 
     call t_adj_detailf(+2)
-    call t_startf('edge_unpack')
+    call t_startf('edgeVunpack')
 
     is=edge%getmap(south,ielem)
     ie=edge%getmap(east,ielem)
@@ -1092,7 +1092,7 @@ print *,'nthreadshoriz: ',nthreadshoriz
 !    endif
 ! enddo
 
-    call t_stopf('edge_unpack')
+    call t_stopf('edgeVunpack')
     call t_adj_detailf(-2)
 
   end subroutine edgeVunpack
@@ -1493,6 +1493,7 @@ print *,'nthreadshoriz: ',nthreadshoriz
     integer :: i,k,l,iptr,nce
     integer :: is,ie,in,iw
 
+    call t_startf('edgeSunpack')
     threadsafe=.false.
 
     is=edge%getmap(south,ielem)
@@ -1544,6 +1545,7 @@ print *,'nthreadshoriz: ',nthreadshoriz
             enddo
         endif
     end do
+    call t_stopf('edgeSunpack')
     
   end subroutine edgeSunpackMAX
 
@@ -1563,6 +1565,7 @@ print *,'nthreadshoriz: ',nthreadshoriz
     integer :: i,k,l,iptr,nce
     integer :: is,ie,in,iw
 
+    call t_startf('edgeSunpack')
     threadsafe=.false.
 
     is=edge%getmap(south,ielem)
@@ -1614,6 +1617,7 @@ print *,'nthreadshoriz: ',nthreadshoriz
             enddo
         endif
     end do
+    call t_stopf('edgeSunpack')
     
   end subroutine edgeSunpackMIN
 

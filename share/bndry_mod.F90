@@ -32,6 +32,7 @@ contains
     use edgetype_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel, omp_get_thread_num
+    use perf_mod, only : t_startf, t_stopf
 #ifdef _MPI
     use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
@@ -104,7 +105,7 @@ contains
     call MPI_Waitall(nSendCycles,Srequest,status,ierr)
     call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
     !$OMP END MASTER
-
+    call t_startf('bndry_copy')
     ithr = omp_get_thread_num()+1
 
     ! Copy data that doesn't get messaged from the send buffer to the receive
@@ -123,6 +124,7 @@ contains
     if(length>0) then 
         buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
     endif
+    call t_stopf('bndry_copy')
 
   end subroutine bndry_exchangeV_nonth_recv_newbuf
 
@@ -339,7 +341,7 @@ contains
     type (EdgeBuffer_t)               :: buffer
 
     call t_adj_detailf(+2)
-    call t_startf('bndry_exchange')
+    call t_startf('bndry_exchangeV')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -347,7 +349,7 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('bndry_exchange')
+    call t_stopf('bndry_exchangeV')
     call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeV_thsave_new
@@ -362,7 +364,7 @@ contains
     type (EdgeBuffer_t)               :: buffer
 
     call t_adj_detailf(+2)
-    call t_startf('bndry_exchange')
+    call t_startf('bndry_exchangeS')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -370,7 +372,7 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('bndry_exchange')
+    call t_stopf('bndry_exchangeS')
     call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeS_thsave_new

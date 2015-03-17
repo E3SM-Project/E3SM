@@ -394,6 +394,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
   enddo ! q loop
   if (abort) call abortmp('Bad levels in remap1.  usually CFL violatioin')
   call t_stopf('remap1')
+
 end subroutine remap1
 
 subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
