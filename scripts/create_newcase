@@ -126,10 +126,9 @@ OPTIONS
                            (optional). See sample_pes_file.xml for an example.
   -user_compset <name>     Long name for new user compset to use (optional)
                            This assumes that all of the compset settings in the 
-                           long name have been defined in 
-                           ccsm_utils/Case.template/config_compsets.xml
+                           long name have been defined in Tools/config_compsets.xml
   -user_grid_file <name>   Full pathname of grid file to use (optional)
-                           This should be a "copy" of ccsm_utils/Case.template/config_grid.xml
+                           This should be a "copy" of Tools/config_grid.xml
                            with the new user grid changes added to it
   -help [or -h]            Print usage to STDOUT (optional).
   -list <type>             Only list valid values, type can be [compsets, grids, machines] (optional).
@@ -316,9 +315,9 @@ EOF
 
 # Check for the configuration definition file.
 my $config_def_file = "config_definition.xml";
-(-f "$cfgdir/ccsm_utils/Case.template/$config_def_file")  or  die <<"EOF";
+(-f "$cfgdir/Tools/$config_def_file")  or  die <<"EOF";
 ** Cannot find configuration definition file \"$config_def_file\" in directory 
-    \"$cfgdir/ccsm_utils/Case.template/$config_def_file\" **
+    \"$cfgdir/Tools/$config_def_file\" **
 EOF
 
 # Compset definition file.
@@ -329,7 +328,7 @@ if (defined $opts{'compset_file'}){
     ** Cannot find user specified compset parameters file \"$compset_file\"  **
 EOF
 } else {
-    $compset_file = "$cfgdir/ccsm_utils/Case.template/config_compsets.xml";
+    $compset_file = "$cfgdir/Tools/config_compsets.xml";
     (-f $compset_file)  or  die <<"EOF";
     ** Cannot find default compset parameters file \"$compset_file\"  **
 EOF
@@ -343,7 +342,7 @@ if (defined $opts{'user_grid_file'}){
     ** Cannot find user specified grid definition file \"$grid_file\"  **
 EOF
 } else {
-    $grid_file = "$cfgdir/ccsm_utils/Case.template/config_grid.xml";
+    $grid_file = "$cfgdir/Tools/config_grid.xml";
     (-f $grid_file)  or  die <<"EOF";
     ** Cannot find default grid definition file \"$grid_file\"  **
 EOF
@@ -371,15 +370,15 @@ EOF
 
 # Tests file
 my $tests_file = 'config_tests.xml';
-(-f "$ccsmroot/cime/scripts/ccsm_utils/Testcases/$tests_file")  or  die <<"EOF";
+(-f "$ccsmroot/cime/scripts/Testing/Testcases/$tests_file")  or  die <<"EOF";
 ** Cannot find test parameters file \"$tests_file\" in directory 
-    \"$ccsmroot/cime/scripts/ccsm_utils/Testcases\" **
+    \"$ccsmroot/cime/scripts/Testing/Testcases\" **
 EOF
 
 # The ConfigCase module provides utilities to store and manipulate the configuration.
-(-f "$ccsmroot/cime/scripts/ccsm_utils/Case.template/ConfigCase.pm")  or  die <<"EOF";
+(-f "$ccsmroot/cime/scripts/Tools/ConfigCase.pm")  or  die <<"EOF";
 ** Cannot find perl module \"ConfigCase.pm\" in directory 
-    \"$ccsmroot/cime/scripts/ccsm_utils/Case.template\" **
+    \"$ccsmroot/cime/scripts/Tools\" **
 EOF
 
 if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
@@ -388,8 +387,7 @@ if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
 my @dirs = ("$cfgdir", 
-	    "$ccsmroot/cime/scripts/ccsm_utils/Case.template", 
-	    "$ccsmroot/cime/scripts/ccsm_utils/Tools", 
+	    "$ccsmroot/cime/scripts/Tools", 
 	    "$ccsmroot/cime/utils/perl5lib");
 
 unshift @INC, @dirs;
@@ -404,7 +402,7 @@ require Testing::TestLists;
 #-----------------------------------------------------------------------------------------------
 # If just listing valid values then exit after completion of lists
 if ($opts{'testlist'}) {
-    print_tests("$cfgdir/ccsm_utils/Testcases/config_tests.xml");
+    print_tests("$cfgdir/Testing/Testcases/config_tests.xml");
 }
 if ($opts{'list'}) {
     if ($opts{'list'} eq "compsets") {
@@ -436,7 +434,7 @@ EOF
 
 #-----------------------------------------------------------------------------------------------
 # Create new config object if not just listing valid values
-my $cfg_ref = ConfigCase->new("$cfgdir/ccsm_utils/Case.template/$config_def_file"); 
+my $cfg_ref = ConfigCase->new("$cfgdir/Tools/$config_def_file"); 
 #if ($print>=2) { print "A new config reference object was created$eol";}
 
 #-----------------------------------------------------------------------------------------------
@@ -464,7 +462,7 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 #-----------------------------------------------------------------------------------------------
 # (3) Check if grid is valid for given compset
-check_grid("$cfgdir/ccsm_utils/Case.template/config_compsets.xml", $grid, $compset_longname);
+check_grid("$cfgdir/Tools/config_compsets.xml", $grid, $compset_longname);
 
 if ($print>=2) { print "Grid is valid for input compset. $eol"; }
 
@@ -541,7 +539,7 @@ if ($print>=2) { print "Machine specifier: $mach.$eol"; }
 # (5) Testname parameters
 if (defined $opts{'testname'}) {
     $testname = $opts{'testname'};
-    set_test("$cfgdir/ccsm_utils/Testcases/config_tests.xml", $testname, $cfg_ref);
+    set_test("$cfgdir/Testing/Testcases/config_tests.xml", $testname, $cfg_ref);
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -880,16 +878,16 @@ foreach my $newdir ( @newdirs ) {
 
 # Copy relevant files into $caseroot
 my @files = (
-    "$scriptsroot/ccsm_utils/Tools/cesm_setup", 
-    "$scriptsroot/ccsm_utils/Tools/testcase_setup", 
-    "$scriptsroot/ccsm_utils/Tools/check_input_data", 
-    "$scriptsroot/ccsm_utils/Tools/archive_metadata.sh", 
-    "$scriptsroot/ccsm_utils/Tools/check_case", 
-    "$scriptsroot/ccsm_utils/Tools/create_production_test", 
-    "$scriptsroot/ccsm_utils/Tools/xmlchange",
-    "$scriptsroot/ccsm_utils/Tools/xmlquery",
-    "$scriptsroot/ccsm_utils/Tools/st_archive", 
-    "$scriptsroot/ccsm_utils/Tools/README.post_process", 
+    "$scriptsroot/Tools/cesm_setup", 
+    "$scriptsroot/Tools/testcase_setup", 
+    "$scriptsroot/Tools/check_input_data", 
+    "$scriptsroot/Tools/archive_metadata.sh", 
+    "$scriptsroot/Tools/check_case", 
+    "$scriptsroot/Tools/create_production_test", 
+    "$scriptsroot/Tools/xmlchange",
+    "$scriptsroot/Tools/xmlquery",
+    "$scriptsroot/Tools/st_archive", 
+    "$scriptsroot/Tools/README.post_process", 
     ); 
 foreach my $file (@files) {
     $sysmod = "cp -p $file $caseroot"; 
@@ -907,22 +905,22 @@ if (! -f "$mkbatch") {
 
 # Copy relevant files into $caseroot/Tools/
 @files = (
-    "$scriptsroot/ccsm_utils/Case.template/config_definition.xml",
-    "$scriptsroot/ccsm_utils/Case.template/config_grid.xml",
-    "$scriptsroot/ccsm_utils/Case.template/config_compsets.xml",
-    "$scriptsroot/ccsm_utils/Case.template/config_archive.xml",
-    "$scriptsroot/ccsm_utils/Case.template/config_archive.xsd",
-    "$scriptsroot/ccsm_utils/Case.template/ConfigCase.pm",
-    "$scriptsroot/ccsm_utils/Tools/cesm_buildnml", 
-    "$scriptsroot/ccsm_utils/Tools/cesm_prestage", 
-    "$scriptsroot/ccsm_utils/Tools/cesm_prerun_setup", 
-    "$scriptsroot/ccsm_utils/Tools/cesm_postrun_setup", 
-    "$scriptsroot/ccsm_utils/Tools/check_lockedfiles", 
-    "$scriptsroot/ccsm_utils/Tools/lt_archive.sh", 
-    "$scriptsroot/ccsm_utils/Tools/st_archive", 
-    "$scriptsroot/ccsm_utils/Tools/getTiming", 
-    "$scriptsroot/ccsm_utils/Tools/SetupTools.pm",
-    "$scriptsroot/ccsm_utils/Tools/compare_namelists.pl",
+    "$scriptsroot/Tools/config_definition.xml",
+    "$scriptsroot/Tools/config_grid.xml",
+    "$scriptsroot/Tools/config_compsets.xml",
+    "$scriptsroot/Tools/config_archive.xml",
+    "$scriptsroot/Tools/config_archive.xsd",
+    "$scriptsroot/Tools/ConfigCase.pm",
+    "$scriptsroot/Tools/cesm_buildnml", 
+    "$scriptsroot/Tools/cesm_prestage", 
+    "$scriptsroot/Tools/cesm_prerun_setup", 
+    "$scriptsroot/Tools/cesm_postrun_setup", 
+    "$scriptsroot/Tools/check_lockedfiles", 
+    "$scriptsroot/Tools/lt_archive.sh", 
+    "$scriptsroot/Tools/st_archive", 
+    "$scriptsroot/Tools/getTiming", 
+    "$scriptsroot/Tools/SetupTools.pm",
+    "$scriptsroot/Tools/compare_namelists.pl",
     "$machdir/ccsm_getenv", 
     "$machdir/taskmaker.pl", 
     "$machdir/Makefile",
@@ -943,23 +941,23 @@ foreach my $file (@files) {
 }
 
 # Create $case.build
-$sysmod = "cp $scriptsroot/ccsm_utils/Tools/cesm_build.csh  $caseroot/$case.build";
+$sysmod = "cp $scriptsroot/Tools/cesm_build.csh  $caseroot/$case.build";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "chmod 755 $caseroot/$case.build";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Create $caseroot/Buildconf/cesm_build.pl
-$sysmod = "cp $scriptsroot/ccsm_utils/Tools/cesm_build.pl  $caseroot/Buildconf/cesm_build.pl";
+$sysmod = "cp $scriptsroot/Tools/cesm_build.pl  $caseroot/Buildconf/cesm_build.pl";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "chmod 755 $caseroot/Buildconf/cesm_build.pl";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Create $case.clean_build
-$sysmod = "cp $scriptsroot/ccsm_utils/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
+$sysmod = "cp $scriptsroot/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create $case.submit
-$sysmod = "cp  $scriptsroot/ccsm_utils/Tools/cesm_submit $caseroot/$case.submit"; 
+$sysmod = "cp  $scriptsroot/Tools/cesm_submit $caseroot/$case.submit"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create $case.l_archive
@@ -968,7 +966,7 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create $caseroot preview_namelist file
 my $file = "${caseroot}/preview_namelists"; 
-$sysmod = "cp  $scriptsroot/ccsm_utils/Tools/preview_namelists $file"; 
+$sysmod = "cp  $scriptsroot/Tools/preview_namelists $file"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "chmod 755 $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
@@ -1080,7 +1078,7 @@ if ($print) {print "Created $caseroot/env_build.xml \n";}
 $cfg_ref->write_file("$caseroot/env_run.xml"    , "xml");
 if ($print) {print "Created $caseroot/env_run.xml \n";}
 
-$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/ccsm_utils/Case.template");
+$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/Tools");
 if ($print) {print "Created $caseroot/env_archive.xml \n";}
 
 # Copy env_case.xml in to locked files

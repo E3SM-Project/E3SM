@@ -2,10 +2,10 @@
 
 use strict;
 
-my @dirs = ('../../ccsm_utils/Tools/per5lib', '../../ccsm_utils/Tools/perl5lib/Build');
+my @dirs = ('../utils/per5lib', '../utils/perl5lib/Build');
 unshift @INC, @dirs;
 require Build::NamelistDefinition;
-use lib "../../ccsm_utils/Tools/perl5lib";
+use lib "../utils/perl5lib";
 
 my $image_dir  = "./images";
 

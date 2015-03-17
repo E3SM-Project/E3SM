@@ -51,7 +51,7 @@ set start1 = ${RUN_STARTDATE}
 set sy = `echo $start1 | cut -f 1 -d "-"`
 set sc = `echo $start1 | cut -f 2- -d "-"`
 @ sy = $sy + 2
-set sy2 = `$CCSMROOT/cime/scripts/ccsm_utils/Tools/year_string.sh $sy`
+set sy2 = `$CCSMROOT/cime/scripts/Tools/year_string.sh $sy`
 set start2 = "${sy2}-${sc}"
 
 @ stopn3 = ${stopn2} - ${restn2}

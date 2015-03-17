@@ -77,7 +77,7 @@ Setup
 
   - copy the template directory:
 
-        cp ${CESMROOT}/scripts/ccsm_utils/Machines/userdefined_laptop_template ${HOME}/.cesm
+        cp ${CESMROOT}/machines/userdefined_laptop_template ${HOME}/.cesm
 
     NOTE: it is highly reccommend that you place ~/.cesm under version
     control with your favorite tool.

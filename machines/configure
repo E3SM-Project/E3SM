@@ -161,9 +161,9 @@ if (!$opts{'list'}) {
 }
 # Check for the configuration definition file.
 my $config_def_file = "config_definition.xml";
-(-f "$scriptdir/ccsm_utils/Case.template/$config_def_file")  or  die <<"EOF";
+(-f "$scriptdir/Tools/$config_def_file")  or  die <<"EOF";
 ** Cannot find configuration definition file \"$config_def_file\" in directory 
-    \"$scriptsroot/ccsm_utils/Case.template/$config_def_file\" **
+    \"$scriptsroot/Tools/$config_def_file\" **
 EOF
 
 
@@ -219,7 +219,7 @@ EOF
 if ($print>=2) { print "Setting configuration directory to $scriptdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-my @dirs = (  "$scriptdir/ccsm_utils/Case.template", "$scriptdir/ccsm_utils/Tools" )
+my @dirs = ( "$scriptdir/Tools" )
 
 unshift @INC, @dirs;
 require ConfigCase;
@@ -236,7 +236,7 @@ if ($opts{'list'}) {
 
 #-----------------------------------------------------------------------------------------------
 # Create new config object if not just listing valid values
-my $cfg_ref = ConfigCase->new("$scriptdir/ccsm_utils/Case.template/$config_def_file"); 
+my $cfg_ref = ConfigCase->new("$scriptdir/Tools/$config_def_file"); 
 
 #if ($print>=2) { print "A new config reference object was created$eol";}
 

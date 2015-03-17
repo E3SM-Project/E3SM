@@ -7,7 +7,7 @@ my $pkg_nm = 'ConfigCase';
 #   use ConfigCase;
 # 
 #   # read the configuration definition xml file
-#   my $cfg = ConfigCase->new("$cfgdir/ccsm_utils/Case.template/config_definition.xml");
+#   my $cfg = ConfigCase->new("$cfgdir/Tools/config_definition.xml");
 #
 #   # set some parameters
 #   $cfg->set($id, $value);

@@ -31,7 +31,7 @@ sub new
 	{
 		die("the scripts dir must be provided to use this module!\n");
 	}
-	$self->{'testlistxml'} = $self->{scriptsdir} . "/ccsm_utils/Testlistxml/testlist.xml";
+	$self->{'testlistxml'} = $self->{scriptsdir} . "/Testing/Testlistxml/testlist.xml";
 	stat($self->{'testlistxml'}) or die "cannot find $self->{'testlistxml'}";
 	
 	bless ($self, $class);

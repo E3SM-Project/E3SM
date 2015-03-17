@@ -138,10 +138,10 @@ my %cfg = ();           # build configuration
 # Check for the configuration definition file.
 my $config_def_file = "config_definition.xml";
 my $dir  = "$cfgdir/Tools";
-my $cdir = abs_path( "$cfgdir/../Case.template" );
+my $cdir = abs_path( "$cfgdir" );
 if      ( -f "$dir/$config_def_file" )  {
    $config_def_file = "$dir/$config_def_file";
-} elsif ( -f "$cfgdir/../Case.template/$config_def_file" ) {
+} elsif ( -f "$cfgdir/$config_def_file" ) {
    $dir  = $cdir;
    $config_def_file = "$cdir/$config_def_file";
 } else {

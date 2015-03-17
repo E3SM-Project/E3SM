@@ -71,8 +71,7 @@ OPTIONS
      -help [or -h]        Print usage to STDOUT.
      -case <caseroot>     Specify the new case directory.
      -clone <cloneroot>   Specify the case to be cloned.
-     -mach_dir            Optional location of Machines directory
-                          Default: $cfgdir/ccsm_utils/Machines
+     -mach_dir            Optional location of machines directory
      -project <name>      Specify a project id for the case (optional)
       default: user-specified environment variable PROJECT or ACCOUNT
                or read from ~/.cesm_proj or ~/.ccsm_proj
@@ -177,21 +176,21 @@ EOF
 # The ConfigCase module provides utilities to store and manipulate the configuration.
 (-f "$cloneroot/Tools/ConfigCase.pm")  or  die <<"EOF";
 ** Cannot find perl module \"ConfigCase.pm\" in directory 
-    \"$cloneroot/Tools/Case.template\" **
+    \"$cloneroot/Tools/Tools\" **
 EOF
 
 # Tests file
 my $tests_file = 'config_tests.xml';
-(-f "$cfgdir/ccsm_utils/Testcases/$tests_file")  or  die <<"EOF";
+(-f "$cfgdir/Testing/Testcases/$tests_file")  or  die <<"EOF";
 ** Cannot find test parameters file \"$tests_file\" in directory 
-    \"$cfgdir/ccsm_utils/Testcases\" **
+    \"$cfgdir/Testing/Testcases\" **
 EOF
 
 if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $caseroot Tools to the list of paths that Perl searches for modules
-my @dirs = ("$cloneroot/Tools", "$cfgdir/ccsm_utils/Tools");
+my @dirs = ("$cloneroot/Tools", "$cfgdir/Tools");
 unshift @INC, @dirs;
 require XML::Lite;
 require ConfigCase;
@@ -260,7 +259,7 @@ if (defined $opts{'testname'}) {
 	chop($testname);
 	$cfg_ref->set('DEBUG', "TRUE");
     }
-    set_test("$cfgdir/ccsm_utils/Testcases/config_tests.xml", $testname, $cfg_ref);
+    set_test("$cfgdir/Testing/Testcases/config_tests.xml", $testname, $cfg_ref);
     print "Test specifier $testname will overwrite env variable definitions.$eol"; 
 }
 
@@ -329,22 +328,22 @@ my $mach        = $xmlvars{MACH};
 $project        = $xmlvars{PROJECT};
 
 # --- env_archive.xml doesn't use the id / value pairs do needs to be read from
-# --- config_archive.xml file in the scriptsroot/ccsm_utils/Case.template directory
-$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/ccsm_utils/Case.template");
+# --- config_archive.xml file in the scriptsroot/Tools/ directory
+$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/Tools");
 
 # --- Create $case.build
-$sysmod = "cp $scriptsroot/ccsm_utils/Tools/cesm_build.csh  $caseroot/$case.build";
+$sysmod = "cp $scriptsroot/Tools/cesm_build.csh  $caseroot/$case.build";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 $sysmod = "chmod 755 $caseroot/$case.build";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # --- Create $case.clean_build
-$sysmod = "cp $scriptsroot/ccsm_utils/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
+$sysmod = "cp $scriptsroot/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.submit
-$sysmod = "cp  $scriptsroot/ccsm_utils/Tools/cesm_submit $caseroot/$case.submit"; 
+$sysmod = "cp  $scriptsroot/Tools/cesm_submit $caseroot/$case.submit"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.l_archive
@@ -353,12 +352,12 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create preview_namelist file
 my $file = "${caseroot}/preview_namelists"; 
-$sysmod = "cp  $scriptsroot/ccsm_utils/Tools/preview_namelists $file"; 
+$sysmod = "cp  $scriptsroot/Tools/preview_namelists $file"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "chmod 755 $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
-my $stats = print_stats("$ccsmroot/cime/scripts/Case.template/config_compsets.xml", $compset, $cfg_ref);
+my $stats = print_stats("$ccsmroot/cime/scripts/Tools/config_compsets.xml", $compset, $cfg_ref);
 
 print "Successfully created new case\n   $caseroot\nfrom clone case\n   $cloneroot\n";
 exit;

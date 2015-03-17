@@ -163,9 +163,9 @@
 <entry id="UTILROOT" 
  type="char"
  valid_values="" 
- value="$CCSMROOT/cime/scripts/ccsm_utils" 
+ value="$CCSMROOT/cime/scripts/Tools" 
  group="case_der"
- sdesc="CESM source scripts utils directory location (setup automatically to $CCSMROOT/cime/scripts/ccsm_utils - DO NOT EDIT)"
+ sdesc="CESM source scripts utils directory location (setup automatically to $CCSMROOT/cime/scripts/Tools - DO NOT EDIT)"
 ></entry>
 
 <entry id="OS" 
@@ -2689,7 +2689,7 @@ needs to have enough disk space for the experimental configuration
 requirements. As an example, CESM can produce more than a terabyte of
 data during a 100-year run, so you should set EXEROOT to scratch or
 tmp space and frequently back up the data to a mass storage device
-EXEROOT is set in CCSMROOT/cime/scripts/ccsm_utils/Machines/config_machines.xml
+EXEROOT is set in CCSMROOT/cime/machines/config_machines.xml
 for each supported machine.  Must explicitly set it in env_build.xml for a
 userdefined machine."
 ></entry> 

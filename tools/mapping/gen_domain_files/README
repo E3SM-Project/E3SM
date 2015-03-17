@@ -1,9 +1,3 @@
-==========================================================================
-$Id: README 48887 2013-07-10 17:20:49Z mlevy@ucar.edu $
-$URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_domain_files/README $
-==========================================================================
-
-
 ===============
 ABOUT THIS TOOL
 ===============
@@ -27,7 +21,7 @@ HOW TO BUILD
 Prior to building, you must make sure $CCSMROOT is set.
 
 $ cd src
-$ $CCSMROOT/scripts/ccsm_utils/Machines/configure -mach [machine name]
+$ $CCSMROOT/cime/machines/configure -mach [machine name]
 $ ./build.csh
 
 Note: in the second step, replace [machine name] with the machine you are

@@ -11,7 +11,7 @@ HOW TO BUILD
 Prior to building, you must make sure $CCSMROOT is set.
 
 $ cd src
-$ ../../../scripts/ccsm_utils/Machines/configure -mach [machine name]
+$ ../../../machines/configure -mach [machine name]
 $ gmake
 
 Note: in the second step, replace [machine name] with the machine you are

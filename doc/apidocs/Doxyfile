@@ -747,31 +747,31 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = ./doc_txt/ \
-	                 ../../../tools \
-	                 ../../../scripts \
-                         ../../ccsm_utils/Tools \
-			 ../../validation_testing \
-			 ../../create_clone \
-			 ../../create_newcase \
-			 ../../create_test \
-			 ../../ccsm_utils/Tools/cesm_setup \
-			 ../../ccsm_utils/Tools/check_input_date \
-			 ../../ccsm_utils/Tools/create_production_test \
-			 ../../ccsm_utils/Tools/create_train \
-			 ../../ccsm_utils/Tools/cs.status \
-			 ../../ccsm_utils/Tools/cs.submit \
-			 ../../ccsm_utils/Tools/st_archive \
-			 ../../ccsm_utils/Tools/user_nl_add \
-			 ../../ccsm_utils/Tools/user_nlcreate \	
-			 ../../ccsm_utils/Tools/xml2env \
-			 ../../ccsm_utils/Tools/xmlchange \
-			 ../../ccsm_utils/Tools/xmlquery \
-			 ../../ccsm_utils/Tools/xmltestentry \
-			 ../../ccsm_utils/Machines/buildlib.csm_share \
-			 ../../ccsm_utils/Machines/configure \
-			 ../../ccsm_utils/Machines/mkDepends \
-			 ../../ccsm_utils/Machines/mkSrcFiles \
-			 ../../ccsm_utile/Testlistxml/manage_xml_entries
+	                 ../../tools \
+	                 ../../scripts \
+			 ../../scripts/validation_testing \
+			 ../../scripts/create_clone \
+			 ../../scripts/create_newcase \
+			 ../../scripts/create_test \
+			 ../../scripts/manage_testlists \
+                         ../../scripts/Tools \
+			 ../../scripts/Tools/cesm_setup \
+			 ../../scripts/Tools/check_input_date \
+			 ../../scripts/Tools/create_production_test \
+			 ../../scripts/Tools/create_train \
+			 ../../scripts/Tools/cs.status \
+			 ../../scripts/Tools/cs.submit \
+			 ../../scripts/Tools/st_archive \
+			 ../../scripts/Tools/user_nl_add \
+			 ../../scripts/Tools/user_nlcreate \	
+			 ../../scripts/Tools/xml2env \
+			 ../../scripts/Tools/xmlchange \
+			 ../../scripts/Tools/xmlquery \
+			 ../../scripts/Tools/xmltestentry \
+			 ../../machines/buildlib.csm_share \
+			 ../../machines/configure \
+			 ../../machines/mkDepends \
+			 ../../machines/mkSrcFiles 
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

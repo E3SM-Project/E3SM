@@ -309,25 +309,25 @@ sub writeXML
 
 	my $newfilename; 
 	if ($component eq 'cam') {
-	    $newfilename = "$ccsmroot/components/cam/cesmtest/testlist_cam-$dtformat.xml";
+	    $newfilename = "$ccsmroot/components/cam/cimetest/testlist_cam-$dtformat.xml";
 	} 
 	if ($component eq 'allactive') {
-	    $newfilename = "$scriptdir/ccsm_utils/Testlistxml/testlist_cesm-$dtformat.xml";
+	    $newfilename = "$scriptdir/Testlistxml/testlist_cesm-$dtformat.xml";
 	}
 	if ($component eq 'clm') {
-	    $newfilename = "$ccsmroot/components/clm/cesmtest/testlist_clm-$dtformat.xml";
+	    $newfilename = "$ccsmroot/components/clm/cimetest/testlist_clm-$dtformat.xml";
 	}
 	if ($component eq 'cice') {
-	    $newfilename = "$ccsmroot/components/cice/cesmtest/testlist_cice-$dtformat.xml";
+	    $newfilename = "$ccsmroot/components/cice/cimetest/testlist_cice-$dtformat.xml";
 	}
 	if ($component eq 'drv') {
-	    $newfilename = "$ccsmroot/cime/driver_cpl/cesmtest/testlist_drv-$dtformat.xml";
+	    $newfilename = "$ccsmroot/cime/driver_cpl/cimetest/testlist_drv-$dtformat.xml";
 	}
 	if ($component eq 'cism') {
-	    $newfilename = "$ccsmroot/components/cism/cesmtest/testlist_cism-$dtformat.xml";
+	    $newfilename = "$ccsmroot/components/cism/cimetest/testlist_cism-$dtformat.xml";
 	}
 	if ($component eq 'pop') {
-	    $newfilename = "$ccsmroot/components/pop2/cesmtest/testlist_pop-$dtformat.xml";
+	    $newfilename = "$ccsmroot/components/pop2/cimetest/testlist_pop-$dtformat.xml";
 	}
 	print "\n now writing the new test list to $newfilename\n";
 	print "Please carefully review and/or diff the new file against the\n";
@@ -821,7 +821,7 @@ sub list
 	if($listopt =~ /tests/)
 	{
 	    print "$banner\nAvailable Tests\n$banner\n";
-	    my $testconfig = XML::LibXML->new()->parse_file("./ccsm_utils/Testcases/config_tests.xml");
+	    my $testconfig = XML::LibXML->new()->parse_file("./Testcases/config_tests.xml");
 	    my $testroot = $testconfig->getDocumentElement();
 	    foreach my $elem($testroot->findnodes('//ccsmtest'))
 	    {
@@ -1081,7 +1081,7 @@ sub formattedOutput {
                          "Compset", "TestName", "Grid", "Machine_compiler", "Test Category", "TestMods (optional)", "Comment(Optional)");
 
    my %configcompsets;
-   my $compsetxml = XML::LibXML->new()->parse_file("$scriptdir/ccsm_utils/Case.template/config_compsets.xml");
+   my $compsetxml = XML::LibXML->new()->parse_file("$scriptdir/Tools/config_compsets.xml");
    foreach my $cfgcompset ($compsetxml->findnodes('//COMPSET')) {
       my $alias = $cfgcompset->getAttribute('alias');
       my $sname = $cfgcompset->getAttribute('sname');
@@ -1179,19 +1179,19 @@ sub setTestlist{
     my $list;
 
     if ($comp =~ /^cam/ ) {
-	$list = "$ccsmroot/components/cam/cesmtest/testlist_cam.xml"; 
+	$list = "$ccsmroot/components/cam/cimetest/testlist_cam.xml"; 
     } elsif ($comp =~ /^allactive/) {
-	$list = "$scriptdir/ccsm_utils/Testlistxml/testlist_allactive.xml"; 
+	$list = "$scriptdir/Testlistxml/testlist_allactive.xml"; 
     } elsif ($comp =~ /^clm/) {
-	$list = "$ccsmroot/components/clm/cesmtest/testlist_clm.xml"; 
+	$list = "$ccsmroot/components/clm/cimetest/testlist_clm.xml"; 
     } elsif ($comp =~ /^cice/) {
-	$list = "$ccsmroot/components/cice/cesmtest/testlist_cice.xml"; 
+	$list = "$ccsmroot/components/cice/cimetest/testlist_cice.xml"; 
     } elsif ($comp =~ /^drv/) {
-	$list = "$ccsmroot/cime/driver_cpl/cesmtest/testlist_drv.xml"; 
+	$list = "$ccsmroot/cime/driver_cpl/cimetest/testlist_drv.xml"; 
     } elsif ($comp =~ /^cism/) {
-	$list = "$ccsmroot/components/cism/cesmtest/testlist_cism.xml"; 
+	$list = "$ccsmroot/components/cism/cimetest/testlist_cism.xml"; 
     } elsif ($comp =~ /^pop/) {
-	$list = "$ccsmroot/components/pop2/cesmtest/testlist_pop.xml"; 
+	$list = "$ccsmroot/components/pop2/cimetest/testlist_pop.xml"; 
     } else {
 	die "component $comp does not match supported components \n";
     }

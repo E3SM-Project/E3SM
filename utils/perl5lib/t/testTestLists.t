@@ -1,11 +1,11 @@
 #!/usr/bin/env perl 
+
 use strict;
 use warnings;
 use Data::Dumper;
 use Test::More qw(no_plan);
 use XML::LibXML;
-#scripts/ccsm_utils/Tools/perl5lib/t
-my $scriptsdir = "../../../..";
+my $scriptsdir = "../../../scripts";
 
 my $banner = "===============================================================================";
 print "$banner\nRUNNING UNIT TESTS\n$banner\n";

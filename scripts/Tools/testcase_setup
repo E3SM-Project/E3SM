@@ -248,7 +248,7 @@ END_BEGIN
 
 print $testfh $testcase_begin;
 
-$sysmod = "cat ${ccsmroot}/cime/scripts/ccsm_utils/Testcases/${testcase}" . "_script" . " >> $testfile";
+$sysmod = "cat ${ccsmroot}/cime/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
 
 my $testcase_iop = <<'END_IOP';
@@ -292,7 +292,7 @@ END_IOP
 if ( "${case}" =~ /.+_IOP.+/ ) {
     print $testfh $testcase_iop;
 
-    $sysmod = "cat ${ccsmroot}/cime/scripts/ccsm_utils/Testcases/${testcase}" . "_script" . " >> $testfile";
+    $sysmod = "cat ${ccsmroot}/cime/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
 }
 
