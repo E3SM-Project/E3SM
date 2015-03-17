@@ -41,8 +41,7 @@ all:
 mpas: reg_includes externals frame ops dycore drver
 	ar ru lib$(COMPONENT).a framework/*.o
 	ar ru lib$(COMPONENT).a operators/*.o
-	ar ru lib$(COMPONENT).a registry/*.o
-	ar ru lib$(COMPONENT).a registry/ezxml/*.o
+	ar ru lib$(COMPONENT).a external/ezxml/*.o
 	ar ru lib$(COMPONENT).a `find core_$(CORE)/ -type f -name "*.o"`  # Find command finds objects in any subdirectories
 	ar ru lib$(COMPONENT).a $(DRIVER)/*.o
 
