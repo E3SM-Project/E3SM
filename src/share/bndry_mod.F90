@@ -110,11 +110,11 @@ contains
     !$OMP END MASTER
     call t_startf('bndry_copy')
     call t_startf('bndry_copy')
-!JMD    ithr = omp_get_thread_num()+1
+    !JMD ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
-    iptr   = buffer%moveptr(ithr)
-    length = buffer%moveLength(ithr)
+    iptr   = buffer%moveptr(ithr+1)
+    length = buffer%moveLength(ithr+1)
     if(length>0) then 
         buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
     endif
@@ -199,11 +199,11 @@ contains
     call MPI_Waitall(nSendCycles,Srequest,status,ierr)
     call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
     !$OMP END MASTER
-
+!JMD    ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
-    iptr   = buffer%moveptr(ithr)
-    length = buffer%moveLength(ithr)
+    iptr   = buffer%moveptr(ithr+1)
+    length = buffer%moveLength(ithr+1)
     if(length>0) then 
         buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
     endif
