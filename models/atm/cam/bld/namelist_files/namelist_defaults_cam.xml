@@ -718,10 +718,6 @@
 <micro_mg_dcs     phys="cam5" microphys="mg1"     > 400.0D-6 </micro_mg_dcs>
 <micro_mg_dcs     phys="cam5" microphys="mg1.5"   > 250.0D-6 </micro_mg_dcs>
 
-<micro_mg_dcs                                     > 400.0D-6 </micro_mg_dcs>
-<micro_mg_dcs     phys="cam5" microphys="mg1"     > 400.0D-6 </micro_mg_dcs>
-<micro_mg_dcs     phys="cam5" microphys="mg1.5"   > 250.0D-6 </micro_mg_dcs>
-
 <!-- Macrophysics scheme -->
 <macrop_scheme                       >none</macrop_scheme>
 <macrop_scheme macrophys="rk"        >rk</macrop_scheme>
@@ -791,6 +787,9 @@
 <sol_facti_cloud_borne clubb_sgs="1"   >0.6D0</sol_facti_cloud_borne>
 <!-- BSINGH - wet scavenging tuning option by PNNL -->
 <sscav_tuning>.false.</sscav_tuning>
+
+<!-- BSINGH - ice nucleation option by PNNL -->
+<demott_ice_nuc>.false.</demott_ice_nuc>
 
 
 <!-- sub-column switches for physics packages -->
