@@ -319,6 +319,8 @@ def _main_func(description):
     expect(compare_namelist_files(gold_file, compare_file, case),
            "FAIL: Namelist diff between files %s and %s" % (gold_file, compare_file))
 
+    print "Files %s and %s MATCH" % (gold_file, compare_file)
+
 ###############################################################################
 
 if (__name__ == "__main__"):

@@ -905,6 +905,7 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 	  "$scriptsroot/ccsm_utils/Tools/SetupTools.pm",
 	  "$scriptsroot/acme/acme_util.py",
 	  "$scriptsroot/acme/compare_namelists",
+	  "$scriptsroot/acme/simple_compare",
 	  "$scriptsroot/ccsm_utils/Tools/cesm_tseries_generator.py",
 	  "$machdir/taskmaker.pl", 
 	  "$machdir/Makefile",
