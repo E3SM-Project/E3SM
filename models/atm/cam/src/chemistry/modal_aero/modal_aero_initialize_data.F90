@@ -1,3 +1,4 @@
+
 module modal_aero_initialize_data
   use cam_logfile,           only : iulog
   use cam_abortutils,            only: endrun
@@ -429,11 +430,6 @@ contains
              species_class(i) = spec_class_undefined
           end do
        endif
-
-       do i = 1, pcnst
-          species_class(i) = spec_class_undefined
-       end do
-
 
 
        !   set cnst_name_cw
