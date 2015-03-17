@@ -2495,8 +2495,8 @@ end do
 
     g = gradient_sphere(u,deriv,elem%Dinv)
 
-    v(:,:,1) = elem%Dinv(1,1,:,:)*g(:,:,1) + elem%Dinv(1,2,:,:)*g(:,:,2)
-    v(:,:,2) = elem%Dinv(2,1,:,:)*g(:,:,1) + elem%Dinv(2,2,:,:)*g(:,:,2)
+    v(:,:,1) = elem%Dinv(:,:,1,1)*g(:,:,1) + elem%Dinv(:,:,1,2)*g(:,:,2)
+    v(:,:,2) = elem%Dinv(:,:,2,1)*g(:,:,1) + elem%Dinv(:,:,2,2)*g(:,:,2)
     do j=1,p
     do i=1,p
        div(i,j,1) = -SUM(elem%spheremp(:,j)*v(:,j,1)*deriv%Dvv(i,:))
