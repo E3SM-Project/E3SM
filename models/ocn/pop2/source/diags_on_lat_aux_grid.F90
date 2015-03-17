@@ -376,7 +376,6 @@
 !-----------------------------------------------------------------------
  
    allocate ( TLATD_G(nx_global,ny_global) )
-
    
    call gather_global (TLATD_G, TLATD, ioroot,distrb_clinic)
 
@@ -703,16 +702,17 @@
    call gather_global (REGION_MASK_LAT_AUX(:,:,1),REGION_MASK,  &
                        ioroot,distrb_clinic)
 
-
    if ( my_task == ioroot ) then
-
 
      if (n_transport_reg > 1) then
         REGION_MASK_LAT_AUX(:,:,2) = REGION_MASK_LAT_AUX(:,:,1)
      endif
 
-     REGION_MASK_LAT_AUX(:,:,1) =   &
-                    merge( 1, 0, REGION_MASK_LAT_AUX(:,:,1) > 0 )
+     where(REGION_MASK_LAT_AUX(:,:,1) > 0)
+        REGION_MASK_LAT_AUX(:,:,1) = 1
+     elsewhere
+        REGION_MASK_LAT_AUX(:,:,1) = 0
+     end where
 
     if (n_transport_reg > 1) then
  
@@ -826,6 +826,8 @@
  
      if ( my_task == ioroot ) then
        allocate (TAVG_MOC_G(n_lat_aux_grid+1,km+1,n_moc_comp,n_transport_reg))
+     else
+       allocate (TAVG_MOC_G(1, 1, 1, 1))
      endif
 
    endif
@@ -872,11 +874,15 @@
    if ( n_heat_trans_requested .and. my_task == ioroot ) then
     allocate (  &
      TAVG_N_HEAT_TRANS_G(n_lat_aux_grid+1, n_transport_comp,n_transport_reg))
+   else
+      allocate (TAVG_N_HEAT_TRANS_G(1, 1, 1))
    endif
 
    if ( n_salt_trans_requested .and. my_task == ioroot ) then
     allocate (  &
      TAVG_N_SALT_TRANS_G(n_lat_aux_grid+1,n_transport_comp,n_transport_reg))
+   else
+      allocate (TAVG_N_SALT_TRANS_G(1, 1, 1))
    endif
 
    if ((n_heat_trans_requested .or. n_salt_trans_requested) ) then
@@ -884,6 +890,8 @@
      if (my_task == ioroot ) then
        allocate (  &
          TR_TRANS_G (n_lat_aux_grid+1,n_transport_comp,n_transport_reg))
+     else
+       allocate (TR_TRANS_G(1, 1, 1))
      endif
      call document ('init_moc_ts_transport_arrays','allocate TR_TRANS_G')
    endif
