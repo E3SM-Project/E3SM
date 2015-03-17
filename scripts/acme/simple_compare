@@ -93,7 +93,7 @@ def skip_comments_and_whitespace(lines, idx):
     return idx
 
 ###############################################################################
-def parse_namelists(gold_lines, comp_lines, case):
+def compare_data(gold_lines, comp_lines, case):
 ###############################################################################
     """
     TODO: Unit test
