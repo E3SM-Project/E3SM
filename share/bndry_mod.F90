@@ -15,19 +15,21 @@ module bndry_mod
   public :: sort_neighbor_buffer_mapping
 
   interface bndry_exchangeV
-     module procedure bndry_exchangeV_nonth_recv_newbuf
-     module procedure bndry_exchangeV_thsave_new
+     module procedure bndry_exchangeV_core
+     module procedure bndry_exchangeV_threaded
+     module procedure bndry_exchangeV_nonthreaded
      module procedure long_bndry_exchangeV_nonth
   end interface
 
   interface bndry_exchangeS
-     module procedure bndry_exchangeS_thsave_new 
-     module procedure bndry_exchangeS_nonth_recv_newbuf
+     module procedure bndry_exchangeS_threaded 
+     module procedure bndry_exchangeS_nonthreaded
+     module procedure bndry_exchangeS_core
   end interface
 
 contains 
 
-  subroutine bndry_exchangeV_nonth_recv_newbuf(par,buffer)
+  subroutine bndry_exchangeV_core(par,ithr,buffer)
     use kinds, only : log_kind
     use edgetype_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
@@ -39,7 +41,9 @@ contains
 #else
     use parallel_mod, only : parallel_t, abortmp
 #endif
+    use perf_mod, only : t_startf, t_stopf
     type (parallel_t)              :: par
+    integer                        :: ithr  ! The OpenMP thread ID
     type (EdgeBuffer_t)            :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
@@ -54,7 +58,6 @@ contains
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
     integer        :: i,j
-    integer        :: ithr
 
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr
@@ -106,19 +109,10 @@ contains
     call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
     !$OMP END MASTER
     call t_startf('bndry_copy')
-    ithr = omp_get_thread_num()+1
-
+    call t_startf('bndry_copy')
+!JMD    ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
-!JMD    iptr   = nlyr*(pSchedule%MoveCycle(1)%ptrP - 1) + 1
-!JMD    length = nlyr*pSchedule%MoveCycle(1)%lengthP
-!JMD    !$OMP DO SCHEDULE(dynamic), PRIVATE(i,j)
-!JMD    do i=0,length-1
-!JMD      j=iptr+i
-!JMD      buffer%receive(j) = buffer%buf(j)
-!JMD    enddo
-!JMD    !$OMP END DO
-
     iptr   = buffer%moveptr(ithr)
     length = buffer%moveLength(ithr)
     if(length>0) then 
@@ -126,9 +120,9 @@ contains
     endif
     call t_stopf('bndry_copy')
 
-  end subroutine bndry_exchangeV_nonth_recv_newbuf
+  end subroutine bndry_exchangeV_core
 
-  subroutine bndry_exchangeS_nonth_recv_newbuf(par,buffer)
+  subroutine bndry_exchangeS_core(par,ithr,buffer)
     use kinds, only : log_kind
     use edgetype_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
@@ -140,6 +134,7 @@ contains
     use parallel_mod, only : parallel_t, abortmp
 #endif
     type (parallel_t)              :: par
+    integer                        :: ithr
     type (EdgeBuffer_t)            :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
@@ -154,7 +149,6 @@ contains
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
     integer        :: i,j
-    integer        :: ithr
 
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr
@@ -206,19 +200,8 @@ contains
     call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
     !$OMP END MASTER
 
-    ithr = omp_get_thread_num()+1
-
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
-!JMD    iptr   = nlyr*(pSchedule%MoveCycle(1)%ptrP - 1) + 1
-!JMD    length = nlyr*pSchedule%MoveCycle(1)%lengthP
-!JMD    !$OMP DO SCHEDULE(dynamic), PRIVATE(i,j)
-!JMD    do i=0,length-1
-!JMD      j=iptr+i
-!JMD      buffer%receive(j) = buffer%buf(j)
-!JMD    enddo
-!JMD    !$OMP END DO
-
     iptr   = buffer%moveptr(ithr)
     length = buffer%moveLength(ithr)
     if(length>0) then 
@@ -226,7 +209,7 @@ contains
     endif
 
 
-  end subroutine bndry_exchangeS_nonth_recv_newbuf
+  end subroutine bndry_exchangeS_core
 
   subroutine long_bndry_exchangeV_nonth(par,buffer)
     use kinds, only : log_kind
@@ -331,7 +314,7 @@ contains
   !********************************************************************************
   !
   !********************************************************************************
- subroutine bndry_exchangeV_thsave_new(hybrid,buffer)
+ subroutine bndry_exchangeV_threaded(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
     use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
@@ -345,16 +328,41 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call bndry_exchangeV_nonth_recv_newbuf(hybrid%par,buffer)
+    call bndry_exchangeV_core(hybrid%par,hybrid%ithr,buffer)
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     call t_stopf('bndry_exchangeV')
     call t_adj_detailf(-2)
 
-  end subroutine bndry_exchangeV_thsave_new
+  end subroutine bndry_exchangeV_threaded
 
- subroutine bndry_exchangeS_thsave_new(hybrid,buffer)
+  subroutine bndry_exchangeV_nonthreaded(par,buffer)
+    use parallel_mod, only : parallel_t
+    use edgetype_mod, only : Edgebuffer_t
+    use perf_mod, only: t_startf, t_stopf, t_adj_detailf
+    implicit none
+
+    type (parallel_t)                   :: par
+    type (EdgeBuffer_t)               :: buffer
+    integer :: ithr
+
+    call t_adj_detailf(+2)
+    call t_startf('bndry_exchangeV')
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+    ithr=0
+    call bndry_exchangeV_core(par,ithr,buffer)
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+    call t_stopf('bndry_exchangeV')
+    call t_adj_detailf(-2)
+
+  end subroutine bndry_exchangeV_nonthreaded
+
+ subroutine bndry_exchangeS_threaded(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
     use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
@@ -368,14 +376,39 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call bndry_exchangeS_nonth_recv_newbuf(hybrid%par,buffer)
+    call bndry_exchangeS_core(hybrid%par,hybrid%ithr,buffer)
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     call t_stopf('bndry_exchangeS')
     call t_adj_detailf(-2)
 
-  end subroutine bndry_exchangeS_thsave_new
+  end subroutine bndry_exchangeS_threaded
+
+ subroutine bndry_exchangeS_nonthreaded(par,buffer)
+    use parallel_mod, only : parallel_t
+    use edgetype_mod, only : Edgebuffer_t
+    use perf_mod, only: t_startf, t_stopf, t_adj_detailf
+    implicit none
+
+    type (parallel_t)                 :: par
+    integer                           :: ithr
+    type (EdgeBuffer_t)               :: buffer
+
+    call t_adj_detailf(+2)
+    call t_startf('bndry_exchangeS')
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+    ithr=0
+    call bndry_exchangeS_core(par,ithr,buffer)
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+    call t_stopf('bndry_exchangeS')
+    call t_adj_detailf(-2)
+
+  end subroutine bndry_exchangeS_nonthreaded
 
 
   subroutine ghost_exchangeVfull(par,ithr,buffer)
