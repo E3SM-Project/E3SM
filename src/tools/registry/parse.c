@@ -8,10 +8,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ezxml.h"
 #include "fortprintf.h"
 #include "registry_types.h"
 #include "gen_inc.h"
-#include "ezxml/ezxml.h"
 #include "utility.h"
 
 
@@ -64,10 +64,6 @@ int main(int argc, char ** argv)/*{{{*/
 		fprintf(stderr, "Parsing failed.....\n");
 		return 1;
 	}
-
-	write_default_namelist(registry);
-
-	write_default_streams(registry);
 
 	return 0;
 }/*}}}*/

@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include "ezxml/ezxml.h"
+#include "ezxml.h"
 
 #ifdef _MPI
 #include "mpi.h"
@@ -1006,6 +1006,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		fprintf(stderr, "        %-20s%s\n", "filename interval:", filename_interval_string);
 
 		/* NB: These clobber constants must match those in the mpas_stream_manager module! */
+		iclobber = 0;
 		if (clobber != NULL) {
 			if (strstr(clobber, "never_modify") != NULL) {
 				iclobber = 0;
@@ -1234,6 +1235,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		fprintf(stderr, "        %-20s%s\n", "filename interval:", filename_interval_string);
 
 		/* NB: These clobber constants must match those in the mpas_stream_manager module! */
+		iclobber = 0;
 		if (clobber != NULL) {
 			if (strstr(clobber, "never_modify") != NULL) {
 				iclobber = 0;

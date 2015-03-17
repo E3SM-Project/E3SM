@@ -4831,6 +4831,7 @@
 
       type (mpas_pool_data_type), pointer :: mem
 
+      nullify(dim)
 
       mem => pool_get_member(inPool, key, MPAS_POOL_DIMENSION)
 
@@ -4868,6 +4869,7 @@
 
       type (mpas_pool_data_type), pointer :: mem
 
+      nullify(dims)
 
       mem => pool_get_member(inPool, key, MPAS_POOL_DIMENSION)
 

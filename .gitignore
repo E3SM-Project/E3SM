@@ -18,7 +18,6 @@ src/operators/*.f90
 
 # Executables
 *_model
-src/registry/parse
 
 # NetCDF Files
 *.nc

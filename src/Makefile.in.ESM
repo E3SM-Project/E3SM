@@ -1,0 +1,52 @@
+include $(CASEROOT)/Macros
+
+# Map the ACME component corresponding to each MPAS core
+ifeq "$(CORE)" "ocean"
+COMPONENT=ocn
+else ifeq "$(CORE)" "landice"
+COMPONENT=glc
+else ifeq "$(CORE)" "cice"
+COMPONENT=ice
+endif
+
+ifeq ($(strip $(USE_ESMF_LIB)), TRUE)
+   ESMFDIR = esmf
+else
+   ESMFDIR = noesmf
+endif
+
+RM = rm -f
+CPP = cpp -P -traditional
+FC=$(MPIFC)
+CC=$(MPICC)
+NETCDF=$(NETCDF_PATH)
+PNETCDF=$(PNETCDF_PATH)
+PIO=$(EXEROOT)/pio
+FILE_OFFSET = -DOFFSET64BIT
+CFLAGS += -DMPAS_CESM -DMPAS_NAMELIST_SUFFIX=$(MPAS_NAMELIST_SUFFIX)
+FFLAGS += -DMPAS_CESM -DMPAS_NAMELIST_SUFFIX=$(MPAS_NAMELIST_SUFFIX)
+CPPFLAGS += $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_CESM -D_MPI -DUNDERSCORE -DMPAS_NAMELIST_SUFFIX=$(MPAS_NAMELIST_SUFFIX)
+CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
+
+all:
+	@echo $(CPPINCLUDES)
+	@echo $(FCINCLUDES)
+	( $(MAKE) mpas GEN_F90=true RM="$(RM)" CPP="$(CPP)" NETCDF="$(NETCDF)" PNETCDF="$(PNETCDF)" \
+	  PIO="$(PIO)" FC="$(FC)" CC="$(CC)" SFC="$(SFC)" SCC="$(SCC)" \
+	  CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FCINCLUDES="$(FCINCLUDES)" \
+	  FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" )
+
+mpas: reg_includes externals frame ops dycore drver
+	ar ru lib$(COMPONENT).a framework/*.o
+	ar ru lib$(COMPONENT).a operators/*.o
+	ar ru lib$(COMPONENT).a external/ezxml/*.o
+	ar ru lib$(COMPONENT).a `find core_$(CORE)/ -type f -name "*.o"`  # Find command finds objects in any subdirectories
+	ar ru lib$(COMPONENT).a $(DRIVER)/*.o
+
+externals: 
+
+drver:  reg_includes externals frame ops dycore
+	( cd $(DRIVER); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FREEFLAGS="$(FREEFLAGS)" all ) 
+
