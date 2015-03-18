@@ -453,23 +453,23 @@ sub options
 
 	%xml_testlist_files  = (
 	    allactive	=> abs_path( "$scriptsroot/Testing/Testlistxml/testlist_allactive.xml"),
-	    cam		=> abs_path( "$ccsmroot/components/cam/cesmtest/testlist_cam.xml"), 
-	    cice	=> abs_path( "$ccsmroot/components/cice/cesmtest/testlist_cice.xml"),
-	    cism	=> abs_path( "$ccsmroot/components/cism/cesmtest/testlist_cism.xml"),
-	    clm		=> abs_path( "$ccsmroot/components/clm/cesmtest/testlist_clm.xml"),
-	    pop		=> abs_path( "$ccsmroot/components/pop2/cesmtest/testlist_pop.xml"),
-	    drv		=> abs_path( "$ccsmroot/cime/driver_cpl/cesmtest/testlist_drv.xml"),
+	    cam		=> abs_path( "$ccsmroot/components/cam/cimetest/testlist_cam.xml"), 
+	    cice	=> abs_path( "$ccsmroot/components/cice/cimetest/testlist_cice.xml"),
+	    cism	=> abs_path( "$ccsmroot/components/cism/cimetest/testlist_cism.xml"),
+	    clm		=> abs_path( "$ccsmroot/components/clm/cimetest/testlist_clm.xml"),
+	    pop		=> abs_path( "$ccsmroot/components/pop2/cimetest/testlist_pop.xml"),
+	    drv		=> abs_path( "$ccsmroot/cime/driver_cpl/cimetest/testlist_drv.xml"),
 	    );
 	
 	%xml_testmod_dirs  = (
 	    allactive	=> abs_path( "$scriptsroot/Testing/Testlistxml/testmods_dirs/"),
-	    cam		=> abs_path( "$ccsmroot/components/cam/cesmtest/testmods_dirs/"),
-	    cice	=> abs_path( "$ccsmroot/components/cice/cesmtest/testmods_dirs/"),
-	    cism	=> abs_path( "$ccsmroot/components/cism/cesmtest/testmods_dirs/"),
-	    clm		=> abs_path( "$ccsmroot/components/clm/cesmtest/testmods_dirs/"),
-	    rtm		=> abs_path( "$ccsmroot/components/clm/cesmtest/testmods_dirs/"),
-	    pop		=> abs_path( "$ccsmroot/components/pop2/cesmtest/testmods_dirs/"),
-	    drv		=> abs_path( "$ccsmroot/cime/driver_cpl/cesmtest/testmods_dirs/"),
+	    cam		=> abs_path( "$ccsmroot/components/cam/cimetest/testmods_dirs/"),
+	    cice	=> abs_path( "$ccsmroot/components/cice/cimetest/testmods_dirs/"),
+	    cism	=> abs_path( "$ccsmroot/components/cism/cimetest/testmods_dirs/"),
+	    clm		=> abs_path( "$ccsmroot/components/clm/cimetest/testmods_dirs/"),
+	    rtm		=> abs_path( "$ccsmroot/components/clm/cimetest/testmods_dirs/"),
+	    pop		=> abs_path( "$ccsmroot/components/pop2/cimetest/testmods_dirs/"),
+	    drv		=> abs_path( "$ccsmroot/cime/driver_cpl/cimetest/testmods_dirs/"),
 	    );
 
 	my $component = $opts{'component'};

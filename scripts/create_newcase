@@ -871,7 +871,7 @@ print "Creating $caseroot $eol";
 chdir ("$caseroot");
 
 # Create relevant directories in $caseroot
-my @newdirs = qw(. SourceMods LockedFiles Buildconf Tools Tools/XML/Lite Tools/pythonlib);
+my @newdirs = qw(. SourceMods LockedFiles Buildconf Tools Tools/XML/Lite);
 foreach my $newdir ( @newdirs ) {
     make_path($newdir); 
 }
@@ -930,13 +930,6 @@ if (! -f "$mkbatch") {
 
 foreach my $file (@files) {
     $sysmod = "cp -p $file $caseroot/Tools/. "; 
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-}
-
-# Copy relevant files into $caseroot/Tools/pythonlib
-@files = ("$ccsmroot/cime/utils/pythonlib/cesmEnvLib.py");
-foreach my $file (@files) {
-    $sysmod = "cp -p $file $caseroot/Tools/pythonlib/."; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
@@ -1103,19 +1096,6 @@ if ( defined($user_mods_dir) ) {
    }
    UserModsTools::apply_mods($user_mods_dir, $caseroot, $print, $is_test);
 }
-
-#-----------------------------------------------------------------------------------------------
-# (11) check that the pyreshaper tool is installed in the inputdata location on the machine
-#-----------------------------------------------------------------------------------------------
-
-#my $cmd = "module load python";
-#system($cmd) == 0 or warn "WARNING: unable to execute '$cmd'";
-#$cmd = "module load all-python-libs";
-#system($cmd) == 0 or warn "WARNING: unable to execute '$cmd'";
-#$cmd = "pushd $ccsmroot/tools/pyReshaper";
-#system($cmd) == 0 or warn "WARNING: unable to execute '$cmd'";
-#$cmd = "python setup.py install -- 
-
 
 #-----------------------------------------------------------------------------------------------
 # (12) Create $caseroot run setup scripts (other than batch)
