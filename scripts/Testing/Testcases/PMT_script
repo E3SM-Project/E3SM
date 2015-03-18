@@ -72,10 +72,10 @@ echo "default tput = $tput" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
 
 #======================================================================
 # (2) Do second run with half tasks, twice threads
@@ -123,10 +123,10 @@ echo "modified cpl pes tput = $tput" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix modpes $add_iop" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix modpes $add_iop" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "modpes" $add_iop
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "modpes" $add_iop
 
 #======================================================================
 # Check test status for all relevant component history files
@@ -138,7 +138,7 @@ echo "" >>& $TESTSTATUS_LOG
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
 echo " --- Test Functionality: ---" >>& $TESTSTATUS_OUT
 
-$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "modpes" $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "modpes" $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
 
 
 

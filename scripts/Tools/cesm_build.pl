@@ -94,7 +94,6 @@ sub main {
     $CLM_CONFIG_OPTS    = `./xmlquery  CLM_CONFIG_OPTS   -value`;
     $CAM_CONFIG_OPTS    = `./xmlquery  CAM_CONFIG_OPTS   -value`;
 
-    my $UTILROOT	= `./xmlquery  UTILROOT		-value `;
     my $NINST_VALUE	= `./xmlquery  NINST_VALUE	-value `;
     my $MACH		= `./xmlquery  MACH		-value `;
     my $OS	        = `./xmlquery  OS		-value `;
@@ -106,7 +105,6 @@ sub main {
     $ENV{INCROOT}		= $INCROOT		;
     $ENV{LIBROOT}		= $LIBROOT		;
     $ENV{SHAREDLIBROOT}		= $SHAREDLIBROOT	;
-    $ENV{UTILROOT}		= $UTILROOT		;
     $ENV{CASEROOT}		= $CASEROOT		;
     $ENV{COMPILER}		= $COMPILER		;
     $ENV{COMP_INTERFACE}	= $COMP_INTERFACE	;

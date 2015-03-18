@@ -59,7 +59,7 @@ else
 endif
 
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base" >>& $TESTSTATUS_LOG 
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base" >>& $TESTSTATUS_LOG 
 echo "" >>& $TESTSTATUS_LOG
 
 #======================================================================
@@ -104,10 +104,10 @@ else
 endif
 
 echo "moving relevant history files to suffix with commands " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix seq"	>>& $TESTSTATUS_LOG 
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix seq"	>>& $TESTSTATUS_LOG 
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "seq"
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "seq"
 
 #======================================================================
 # Check test functionality
@@ -120,8 +120,8 @@ echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTST
 echo "--- Test Functionality: ---" >>& $TESTSTATUS_OUT
 
 echo "obtaining test functionality from history files with commands " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 seq -msg compare .base and .seq files" >> >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 seq -msg compare .base and .seq files" >> >>& $TESTSTATUS_LOG
 echo ""	>>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 seq -msg "compare .base and .seq files" >>& $TESTSTATUS_OUT
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 seq -msg "compare .base and .seq files" >>& $TESTSTATUS_OUT
 

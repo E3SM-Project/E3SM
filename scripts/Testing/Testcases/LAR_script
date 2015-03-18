@@ -6,7 +6,6 @@
 cd $CASEROOT
 
 set RUN_STARTDATE      = `./xmlquery RUN_STARTDATE -value`
-set UTILROOT           = `./xmlquery UTILROOT	   -value`
 set DOUT_S_ROOT        = `./xmlquery DOUT_S_ROOT   -value`
 set DOUT_L_MSROOT      = `./xmlquery DOUT_L_MSROOT -value`
 
@@ -88,7 +87,7 @@ echo "running long-term archiver" >>& $TESTSTATUS_LOG
 
 # What should be done here - this is the old code - but I am not sure what we should have to replace it?
 
-set pass = `$UTILROOT/Tools/ccsm_msls ${DOUT_L_MSROOT}/restart.tars | grep 0002-01-01 | wc -l`
+set pass = `$SCRIPTSROOT/Tools/ccsm_msls ${DOUT_L_MSROOT}/restart.tars | grep 0002-01-01 | wc -l`
 if ($pass == 0) then
    echo "ERROR in ${0}:  0002-01-01 restart.tar not long-term archived" >>& $TESTSTATUS_LOG
    set basestatus = "FAIL"
@@ -100,7 +99,7 @@ if ($pass == 1) then
    set basestatus = "FAIL"
 endif
 
-set pass = `$UTILROOT/Tools/ccsm_msls ${DOUT_L_MSROOT}/restart.tars | grep 0002-03-01 | wc -l`
+set pass = `$SCRIPTSROOT/Tools/ccsm_msls ${DOUT_L_MSROOT}/restart.tars | grep 0002-03-01 | wc -l`
 if ($pass == 0) then
    echo "ERROR in ${0}:  0002-03-01 restart.tar not long-term archived" >>& $TESTSTATUS_LOG
    set basestatus = "FAIL"

@@ -70,10 +70,10 @@ echo "multi threaded tput = $tput" >>& $TESTSTATUS_LOG
 
 echo "" >>& $TESTSTATUS_LOG
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" $add_iop
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" $add_iop
 
 #======================================================================
 # (2) Test run: 
@@ -123,10 +123,10 @@ echo "single threaded tput = $tput" >>& $TESTSTATUS_LOG
 
 echo "" >>& $TESTSTATUS_LOG
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix 1thread $add_iop" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix 1thread $add_iop" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix 1thread $add_iop
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix 1thread $add_iop
 
 #======================================================================
 # Test status check:
@@ -142,7 +142,7 @@ endif
 echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 1thread $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 1thread $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
 
 
 

@@ -1181,7 +1181,7 @@ sub setTestlist{
     if ($comp =~ /^cam/ ) {
 	$list = "$ccsmroot/components/cam/cimetest/testlist_cam.xml"; 
     } elsif ($comp =~ /^allactive/) {
-	$list = "$scriptdir/Testlistxml/testlist_allactive.xml"; 
+	$list = "$scriptdir/Testing/Testlistxml/testlist_allactive.xml"; 
     } elsif ($comp =~ /^clm/) {
 	$list = "$ccsmroot/components/clm/cimetest/testlist_clm.xml"; 
     } elsif ($comp =~ /^cice/) {

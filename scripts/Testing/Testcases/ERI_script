@@ -239,10 +239,10 @@ end
 
 echo "" >>& $TESTSTATUS_LOG
 echo "  first moving relevant history files from ref2 to suffix with command " >>& $TESTSTATUS_LOG
-echo "  $UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix hybrid $add_iop" >>& $TESTSTATUS_LOG
+echo "  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix hybrid $add_iop" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "hybrid" $add_iop
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "hybrid" $add_iop
 
 # run branch case (short term archiving is off)
 ./$CASE.run
@@ -269,11 +269,11 @@ endif
 
 echo "" >>& $TESTSTATUS_LOG
 echo "  moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "  $UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
+echo "  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 # the following line creates the component history files used in comparison to baselines
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase "$CASE" -suffix "base" $add_iop
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase "$CASE" -suffix "base" $add_iop
 
 #======================================================================
 # (3b) Test run: 
@@ -317,11 +317,11 @@ endif
 
 echo "" >>& $TESTSTATUS_LOG
 echo "  moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "  $UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix rest $add_iop" >>& $TESTSTATUS_LOG
+echo "  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix rest $add_iop" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 # the following creates the restart file used in the restart test
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest"
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest"
 
 #======================================================================
 # Test status check:
@@ -337,6 +337,6 @@ endif
 echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "hybrid" -msg "hybrid test  .base and .hybrid files" >>& $TESTSTATUS_OUT
-$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "rest"   -msg "restart test .base and .rest   files" >>& $TESTSTATUS_OUT
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "hybrid" -msg "hybrid test  .base and .hybrid files" >>& $TESTSTATUS_OUT
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "rest"   -msg "restart test .base and .rest   files" >>& $TESTSTATUS_OUT
 

@@ -79,10 +79,10 @@ endif
 
 echo ""  >>& $TESTSTATUS_LOG
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix spinup $add_iop" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix spinup $add_iop" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "spinup" $add_iop
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "spinup" $add_iop
 
 #======================================================================
 # (2) Test run: do the final non-spinup run in the cloned ref case
@@ -136,11 +136,11 @@ endif
 
 echo ""  >>& $TESTSTATUS_LOG
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base $add_iop" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 # the following line creates the component history files used in comparison to baselines
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase "$CASE" -suffix "base" $add_iop
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase "$CASE" -suffix "base" $add_iop
 
 #======================================================================
 # Test status check:
@@ -161,7 +161,7 @@ if ( $?IOP_ON ) then
     # this test performs other than running
     # by setting the suffix to none - will not be generating any comparisions 
     # other than the iop comparison for the base case
-    $UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 none $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
+    $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 none $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
 else
    echo "PASS ${CASEBASEID} : successful coupler log " >>& $TESTSTATUS_OUT
 endif

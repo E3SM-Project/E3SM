@@ -79,7 +79,7 @@ my $ccsmroot		=  `./xmlquery CCSMROOT			-value`;
 my $rundir              =  `./xmlquery RUNDIR			-value`;
 my $exeroot             =  `./xmlquery EXEROOT			-value`;
 my $libroot             =  `./xmlquery LIBROOT			-value`;
-my $utilroot            =  `./xmlquery UTILROOT			-value`;
+my $scriptsroot         =  `./xmlquery SCRIPTSROOT		-value`;
 my $dout_s_root         =  `./xmlquery DOUT_S_ROOT		-value`;
 my $caseroot		=  `./xmlquery CASEROOT			-value`;
 my $case		=  `./xmlquery CASE			-value`;
@@ -179,7 +179,7 @@ my $testcase_interp = <<END_INTERP;
     set CASEBASEID		=  $casebaseid
     set TEST_TESTID		=  $test_testid 
     set CCSMROOT		=  $ccsmroot
-    set UTILROOT                =  $utilroot
+    set SCRIPTSROOT             =  $scriptsroot
     set RUNDIR                  =  $rundir
     set EXEROOT                 =  $exeroot
     set LIBROOT                 =  $libroot
@@ -305,7 +305,7 @@ my $testcase_end = <<'END_TEST';
     if ( $?DETECT_MEMORY_LEAK ) then 
 	if ( $?CplLogFile ) then
 	   echo "Comparing memory highwater marks for consecutive days in $CplLogFile" >>& $TESTSTATUS_LOG
-	   ${UTILROOT}/Tools/check_memory.pl -file1 $CplLogFile -m 1.5 >>& $TESTSTATUS_LOG
+	   ${SCRIPTSROOT}/Tools/check_memory.pl -file1 $CplLogFile -m 1.5 >>& $TESTSTATUS_LOG
 	   set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
 	   if ( $pass != 0 ) then
 	      echo "PASS ${CASEBASEID}.memleak" >>& $TESTSTATUS_OUT
@@ -342,7 +342,7 @@ my $testcase_end = <<'END_TEST';
 
        if ("$continue_compare" == 'yes') then
           # compare component history fiels with baseline
-          ${UTILROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASECMP_DIR -test_dir $RUNDIR -compare_tag $BASECMP_NAME -testcase_base $CASEBASEID -msg "baseline: compare .base file with $BASECMP_NAME file">>& $TESTSTATUS_OUT
+          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASECMP_DIR -test_dir $RUNDIR -compare_tag $BASECMP_NAME -testcase_base $CASEBASEID -msg "baseline: compare .base file with $BASECMP_NAME file">>& $TESTSTATUS_OUT
 
 	  if (-e $BASECMP_DIR/${TESTSTATUS_LOG:t}) then
 	     set bbb1 = `grep perf $BASECMP_DIR/${TESTSTATUS_LOG:t} | grep CHECK | grep -v baseline`
@@ -353,7 +353,7 @@ my $testcase_end = <<'END_TEST';
 	     echo ""								      >>& $TESTSTATUS_LOG 
 	     echo "Comparing pes max memory value with baseline pes max memory value" >>& $TESTSTATUS_LOG 
 	     echo "Comparing $CplLogFile and ${BASECMP_DIR}/cpl.log"		      >>& $TESTSTATUS_LOG
-	     ${UTILROOT}/Tools/check_memory.pl -file1 $CplLogFile -file2 ${BASECMP_DIR}/cpl.log -m 1 -mbase 20 >>& $TESTSTATUS_LOG 
+	     ${SCRIPTSROOT}/Tools/check_memory.pl -file1 $CplLogFile -file2 ${BASECMP_DIR}/cpl.log -m 1 -mbase 20 >>& $TESTSTATUS_LOG 
 	     set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
 	     if ( $pass != 0 ) then
 	        echo "PASS ${CASEBASEID}.memcomp.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
@@ -370,7 +370,7 @@ my $testcase_end = <<'END_TEST';
           echo ""										>>& $TESTSTATUS_LOG 
 	  echo "Comparing throughput value with baseline throughput value"		        >>& $TESTSTATUS_LOG
 	  echo "Comparing $CplLogFile and ${BASECMP_DIR}/cpl.log"			        >>& $TESTSTATUS_LOG
-	  ${UTILROOT}/Tools/compare_throughput.pl -file1 $CplLogFile -file2 ${BASECMP_DIR}/cpl.log >>& $TESTSTATUS_LOG 
+	  ${SCRIPTSROOT}/Tools/compare_throughput.pl -file1 $CplLogFile -file2 ${BASECMP_DIR}/cpl.log >>& $TESTSTATUS_LOG 
 	  set pass = `tail -1 $TESTSTATUS_LOG | grep PASS | wc -l`
 	  if ( $pass != 0 ) then
 	      echo "PASS ${CASEBASEID}.tputcomp.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
@@ -415,7 +415,7 @@ my $testcase_end = <<'END_TEST';
        endif
 
        if ("$continue_generate" == 'yes') then
-          ${UTILROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASEGEN_DIR -test_dir $RUNDIR -generate_tag $BASEGEN_NAME -testcase_base $CASEBASEID >>& $TESTSTATUS_OUT
+          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASEGEN_DIR -test_dir $RUNDIR -generate_tag $BASEGEN_NAME -testcase_base $CASEBASEID >>& $TESTSTATUS_OUT
 
 	  # save last coupler log file to baseline directory
 	  cp $CplLogFile $BASEGEN_DIR/cpl.log || echo "WARNING: could not copy $CplLogFile to $BASEGEN_DIR " >>& $TESTSTATUS_LOG
@@ -478,7 +478,7 @@ my $testcase_end = <<'END_TEST';
 
    #
    # summarize failed differences if any
-   ${UTILROOT}/Tools/component_write_comparefail.pl $RUNDIR $TESTSTATUS_LOG
+   ${SCRIPTSROOT}/Tools/component_write_comparefail.pl $RUNDIR $TESTSTATUS_LOG
 
    # determine and output test time
    @ testend_sec = `date -u +%s`

@@ -53,10 +53,10 @@ endif
 
 echo "" >>& $TESTSTATUS_LOG
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" rest $add_iop" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" rest $add_iop" >>& $TESTSTATUS_LOG
 echo ""	>>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" $add_iop
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" $add_iop
 
 #======================================================================
 # Check test status for all relevant component history files
@@ -73,7 +73,7 @@ echo "" >>& $TESTSTATUS_LOG
 if ( $?IOP_ON ) then
     # note that suffix2 is none - since there is no functionality that this test performs other than running
     # by setting the suffix to none - will not be generating any comparisions other than the iop comparison for the base case
-    $UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 none $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
+    $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 none $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
 else
    echo "PASS ${CASEBASEID} : successful coupler log " >>& $TESTSTATUS_OUT
 endif

@@ -67,10 +67,10 @@ else
 endif
 
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base" >>& $TESTSTATUS_LOG 
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base" >>& $TESTSTATUS_LOG 
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" 
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" 
 
 #======================================================================
 # do an initial run test with NINST 2
@@ -114,10 +114,10 @@ else
 endif
 
 echo "moving relevant history files to suffix with commands " >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix multiinst"  >>& $TESTSTATUS_LOG 
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix multiinst"  >>& $TESTSTATUS_LOG 
 echo "" >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "multiinst"
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "multiinst"
 
 #======================================================================
 # Check test status:
@@ -130,8 +130,8 @@ echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTST
 echo " --- Test Functionality: ---" >>& $TESTSTATUS_OUT
 
 echo "obtaining test functionality from history files with commands "									                                   >>& $TESTSTATUS_LOG
-echo "$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 multiinst -msg compare .base with .multiinst" >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 multiinst -msg compare .base with .multiinst" >>& $TESTSTATUS_LOG
 echo ""																   	                                   >>& $TESTSTATUS_LOG
 
-$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "multiinst" -msg "compare .base with .multiinst" >>& $TESTSTATUS_OUT
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "multiinst" -msg "compare .base with .multiinst" >>& $TESTSTATUS_OUT
 

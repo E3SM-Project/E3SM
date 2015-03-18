@@ -99,11 +99,11 @@ endif
 set NINST_ATM   = `./xmlquery NINST_ATM   -value`
 
 if ($NINST_ATM == 1) then
-  $UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
+  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
 endif
 if ($NINST_ATM == 2) then
-  $UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"  -model_inst 0001
-  $UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "inst2" -model_inst 0002
+  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"  -model_inst 0001
+  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "inst2" -model_inst 0002
 endif
 
 #======================================================================
@@ -153,11 +153,11 @@ endif
 set NINST_ATM  = `./xmlquery NINST_ATM   -value`
 
 if ($NINST_ATM == 1) then
-  $UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest_sta"
+  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest_sta"
 endif
 if ($NINST_ATM == 2) then
-  $UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest_sta"       -model_inst 0001
-  $UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest_sta_inst2" -model_inst 0002
+  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest_sta"       -model_inst 0001
+  $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest_sta_inst2" -model_inst 0002
 endif
 
 #======================================================================
@@ -171,9 +171,9 @@ echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTST
 echo " --- Test Functionality: ---" >>& $TESTSTATUS_OUT
 
 if ($NINST_ATM == 1) then
-  $UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest_sta -msg "sta test .base and .rest_sta files" >>& $TESTSTATUS_OUT
+  $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest_sta -msg "sta test .base and .rest_sta files" >>& $TESTSTATUS_OUT
 endif
 if ($NINST_ATM == 2) then
-  $UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest_sta       -msg "sta test .base and .rest_sta       files" >>& $TESTSTATUS_OUT
-  $UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest_sta_inst2 -msg "sta test .base and .rest_sta_inst2 files" >>& $TESTSTATUS_OUT
+  $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest_sta       -msg "sta test .base and .rest_sta       files" >>& $TESTSTATUS_OUT
+  $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest_sta_inst2 -msg "sta test .base and .rest_sta_inst2 files" >>& $TESTSTATUS_OUT
 endif

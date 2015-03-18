@@ -54,7 +54,7 @@ else
     exit -1
 endif
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
 
 #======================================================================
 # do an esmf test
@@ -81,7 +81,7 @@ if ($status != 0) then
     exit -1
 endif
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "esmf"
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "esmf"
 
 set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
 if ( $?CplLogFile ) then
@@ -109,6 +109,6 @@ echo "" >>& $TESTSTATUS_LOG
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
 echo " --- Test Functionality: ---" >>& $TESTSTATUS_OUT
 
-$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "esmf" -msg "esmf test .base and .esmf files" >>& $TESTSTATUS_OUT
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "esmf" -msg "esmf test .base and .esmf files" >>& $TESTSTATUS_OUT
 
 

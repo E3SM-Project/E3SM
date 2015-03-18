@@ -50,7 +50,7 @@ else
     exit -1
 endif
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
 
 set cplprof = `ls -1t $CASEROOT/timing/ccsm_timing.$CASE* | head -1`
 set CPLPROF_GENCMP $cplprof
@@ -90,7 +90,7 @@ else
     exit -1
 endif
 
-$UTILROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "mpiserial"
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "mpiserial"
 
 #======================================================================
 # Check test functionality
@@ -102,7 +102,7 @@ echo '**********************************************' >>& $TESTSTATUS_LOG
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
 echo "--- Test Functionality: ---" >>& $TESTSTATUS_OUT
 
-$UTILROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 mpiserial -msg "compare .base and .mpiserial files" >>& $TESTSTATUS_OUT
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 mpiserial -msg "compare .base and .mpiserial files" >>& $TESTSTATUS_OUT
 
 
 
