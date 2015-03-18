@@ -48,10 +48,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     # Normalize case
     if (args.case is not None):
-        sep_count = args.case.count(".")
-        expect(sep_count in [3, 5], "Case needs to be in form: TEST.GRID.COMPSET.PLATFORM  or  TEST.GRID.COMPSET.PLATFORM.GC.TESTID")
-        if (sep_count == 5):
-            args.case = ".".join(args.case.split(".")[:-2])
+        args.case = acme_util.normalize_case_id(args.case)
 
     return args.gold_file, args.new_file, args.case
 

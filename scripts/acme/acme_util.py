@@ -67,6 +67,17 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None):
 ###############################################################################
 def check_minimum_python_version(major, minor):
 ###############################################################################
-    expect(sys.version_info.major == major and sys.version_info.minor >= minor,
+    expect(sys.version_info[0] == major and sys.version_info[1] >= minor,
            "Python %d.%d+ is required, you have %d.%d" %
-           (major, minor, sys.version_info.major, sys.version_info.minor))
+           (major, minor, sys.version_info[0], sys.version_info[1]))
+
+###############################################################################
+def normalize_case_id(case_id):
+###############################################################################
+    sep_count = case_id.count(".")
+    expect(sep_count in [3, 5],
+           "Case needs to be in form: TEST.GRID.COMPSET.PLATFORM  or  TEST.GRID.COMPSET.PLATFORM.GC.TESTID")
+    if (sep_count == 5):
+        return ".".join(case_id.split(".")[:-2])
+    else:
+        return case_id
