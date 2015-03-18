@@ -1,8 +1,8 @@
 .SUFFIXES: .F .c .o
 
-ifeq "$(ESM)" "true"
+ifneq "$(ESM)" ""
 
-include Makefile.in.ESM
+include Makefile.in.$(ESM)
 
 else
 
