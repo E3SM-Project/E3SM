@@ -559,16 +559,18 @@ module mpas_stream_manager
     !  routine MPAS_stream_mgr_add_pool
     !
     !> \brief Add a pool of fields to the specified stream in an MPAS stream manager.
-    !> \author Doug Jacobsen
+    !> \author Doug Jacobsen, Michael Duda
     !> \date   09/15/2014
     !> \details
     !>  Adds a pool from the allStructs pool to the specified stream in an MPAS
     !>   stream manager. Currently, it adds only explicitly named var's and
     !>   var_array's to the stream, but commented code will allow adding all nested
-    !>   structs as well.
+    !>   structs as well. If the optional 'packages' argument is supplied, the
+    !>   specified packages will be attached to all var and var_array members
+    !>   added to the stream.
     !
     !-----------------------------------------------------------------------
-    recursive subroutine MPAS_stream_mgr_add_pool(manager, streamID, poolName, ierr)!{{{
+    recursive subroutine MPAS_stream_mgr_add_pool(manager, streamID, poolName, packages, ierr)!{{{
 
         implicit none
 
@@ -577,6 +579,7 @@ module mpas_stream_manager
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: poolName
+        character (len=*), intent(in), optional :: packages
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream
@@ -640,49 +643,49 @@ module mpas_stream_manager
         do while (mpas_pool_get_next_member(fieldPool, poolItr))
             if (poolItr % memberType == MPAS_POOL_SUBPOOL) then
                 STREAM_DEBUG_WRITE('-- Try to add subpool...')
-                ! call mpas_stream_mgr_add_pool(manager, streamId, poolItr % memberName, iErr)
+                ! call mpas_stream_mgr_add_pool(manager, streamId, poolItr % memberName, packages=packages, ierr=ierr)
             else if (poolItr % memberType == MPAS_POOL_FIELD) then
                 if (poolItr % dataType == MPAS_POOL_REAL) then
                     if (poolItr % nDims == 0) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real0DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real0DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real1DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real1DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real1DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 2) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real2DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real2DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real2DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 3) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real3DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real3DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real3DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 4) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real4DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real4DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real4DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 5) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real5DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real5DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real5DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 else if (poolItr % dataType == MPAS_POOL_INTEGER) then
                     if (poolItr % nDims == 0) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, int0DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, int0DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, int0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, int1DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, int1DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, int1DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 2) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, int2DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, int2DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, int2DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 3) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, int3DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, int3DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, int3DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 else if (poolItr % dataType == MPAS_POOL_CHARACTER) then
                     if (poolItr % nDims == 0) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, char0DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, char0DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, char0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, char1DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, char1DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, char1DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 end if
             end if
@@ -698,10 +701,12 @@ module mpas_stream_manager
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Adds a field from the allFields pool to a stream.
+    !>  Adds a field from the allFields pool to a stream. If the optional
+    !>  argument 'packages' is present, those packages will be attached to
+    !>  the field as well.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr)!{{{
+    subroutine MPAS_stream_mgr_add_field(manager, streamID, fieldName, packages, ierr)!{{{
 
         implicit none
 
@@ -710,10 +715,12 @@ module mpas_stream_manager
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: fieldName
+        character (len=*), intent(in), optional :: packages
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream
         type (mpas_pool_field_info_type) :: info
+        character (len=StrKIND) :: field_pkg
         integer, pointer :: test_ptr
         integer :: err_level
         integer :: err_local
@@ -767,10 +774,20 @@ module mpas_stream_manager
         end if
 
         !
+        ! MGD TODO: validate packages?
+        !
+
+        !
         ! Add field to field pool in stream if the field is activated
         !
         if (info % isActive) then
             call mpas_pool_add_config(stream % field_pool, fieldName, 1)
+
+            if (present(packages)) then
+               STREAM_DEBUG_WRITE('-- Attaching packages '//trim(packages)//' to field '//trim(fieldName)//' in stream '//trim(streamID))
+               write(field_pkg,'(a)') trim(fieldName)//':packages'
+               call mpas_pool_add_config(stream % field_pool, field_pkg, packages)
+            end if
         else
             write(stderrUnit, *) ' * Requested field '//trim(fieldName)//' is deactivated due to packages, or is a scratch variable.'
         end if
@@ -786,10 +803,12 @@ module mpas_stream_manager
     !> \date   5 November 2014
     !> \details
     !>  Adds all fields from another specified stream into the new specified stream.
-    !>  Both streams need to exist within the same stream manager.
+    !>  Both streams need to exist within the same stream manager. If the
+    !>  optional 'packages' argument is supplied, the specified packages will be
+    !>  attached to all fields added from refStreamID.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, ierr)!{{{
+    subroutine MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, packages, ierr)!{{{
 
         implicit none
 
@@ -798,11 +817,13 @@ module mpas_stream_manager
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: refStreamID
+        character (len=*), intent(in), optional :: packages
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream, refStream
         type (mpas_pool_field_info_type) :: info
         type (mpas_pool_iterator_type) :: itr
+        character (len=StrKIND) :: field_pkg
         integer, pointer :: test_ptr
         integer :: err_level
         integer :: err_local
@@ -840,6 +861,10 @@ module mpas_stream_manager
         end if
 
         !
+        ! MGD TODO: validate packages?
+        !
+
+        !
         ! Loop over all fields in refStream and add them one by one to stream
         !
         err_level = mpas_pool_get_error_level()
@@ -872,6 +897,12 @@ module mpas_stream_manager
 
                     if ( info % isActive ) then
                         call mpas_pool_add_config(stream % field_pool, itr % memberName, 1)
+
+                        if (present(packages)) then
+                           STREAM_DEBUG_WRITE('-- Attaching packages '//trim(packages)//' to field '//trim(itr % memberName)//' in stream '//trim(streamID))
+                           write(field_pkg,'(a)') trim(itr % memberName)//':packages'
+                           call mpas_pool_add_config(stream % field_pool, field_pkg, packages)
+                        end if
                     else
                         write(stderrUnit, *) ' * Requested field '//trim(itr % memberName)//' is deactivated due to packages, or is a scratch variable.'
                     end if
@@ -4930,7 +4961,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 end subroutine stream_mgr_create_stream_c !}}}
 
 
-subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, ierr_c) bind(c)!{{{
+subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, packages_c, ierr_c) bind(c)!{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -4942,18 +4973,24 @@ subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, ierr_c) bind
     type (c_ptr) :: manager_c
     character(kind=c_char) :: streamID_c(*)
     character(kind=c_char) :: poolName_c(*)
+    character(kind=c_char) :: packages_c(*)
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
-    character(len=StrKIND) :: streamID, poolName
+    character(len=StrKIND) :: streamID, poolName, packages
     integer :: ierr
 
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
     call mpas_c_to_f_string(poolName_c, poolName)
+    call mpas_c_to_f_string(packages_c, packages)
 
-    call MPAS_stream_mgr_add_pool(manager, streamID, poolName, ierr)
+    if (len_trim(packages) > 0) then
+       call MPAS_stream_mgr_add_pool(manager, streamID, poolName, packages=packages, ierr=ierr)
+    else
+       call MPAS_stream_mgr_add_pool(manager, streamID, poolName, ierr=ierr)
+    end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
         ierr_c = 0
@@ -4964,7 +5001,7 @@ subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, ierr_c) bind
 end subroutine stream_mgr_add_pool_c!}}}
 
 
-subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bind(c) !{{{
+subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, packages_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -4976,18 +5013,24 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bi
     type (c_ptr) :: manager_c
     character(kind=c_char) :: streamID_c(*)
     character(kind=c_char) :: fieldName_c(*)
+    character(kind=c_char) :: packages_c(*)
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
-    character(len=StrKIND) :: streamID, fieldName
+    character(len=StrKIND) :: streamID, fieldName, packages
     integer :: ierr
 
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
     call mpas_c_to_f_string(fieldName_c, fieldName)
+    call mpas_c_to_f_string(packages_c, packages)
 
-    call MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr)
+    if (len_trim(packages) > 0) then
+       call MPAS_stream_mgr_add_field(manager, streamID, fieldName, packages=packages, ierr=ierr)
+    else
+       call MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr=ierr)
+    end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
         ierr_c = 0
@@ -4998,7 +5041,7 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bi
 end subroutine stream_mgr_add_field_c !}}}
 
 
-subroutine stream_mgr_add_stream_fields_c(manager_c, streamID_c, refStreamID_c, ierr_c) bind(c) !{{{
+subroutine stream_mgr_add_stream_fields_c(manager_c, streamID_c, refStreamID_c, packages_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -5010,18 +5053,24 @@ subroutine stream_mgr_add_stream_fields_c(manager_c, streamID_c, refStreamID_c, 
     type (c_ptr) :: manager_c
     character(kind=c_char) :: streamID_c(*)
     character(kind=c_char) :: refStreamID_c(*)
+    character(kind=c_char) :: packages_c(*)
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
-    character(len=StrKIND) :: streamID, refStreamID
+    character(len=StrKIND) :: streamID, refStreamID, packages
     integer :: ierr
 
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
     call mpas_c_to_f_string(refStreamID_c, refStreamID)
+    call mpas_c_to_f_string(packages_c, packages)
 
-    call MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, ierr)
+    if (len_trim(packages) > 0) then
+       call MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, packages=packages, ierr=ierr)
+    else
+       call MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, ierr=ierr)
+    end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
         ierr_c = 0
