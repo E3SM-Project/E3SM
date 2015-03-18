@@ -49,9 +49,9 @@ echo "test started $sdate" >>& CaseStatus
 #======================================================================
 
 if ( ${CASE} =~ *_IOP*) then
-  set iopbase_argv = "`echo ${TEST_ARGV} |  sed 's/_IOP[A-Z4cp]*//' | sed 's/ -testroot [^ ]* / /'` -testroot $CASEROOT"
+  set iopbase_argv = "`echo ${TEST_ARGV} |  sed 's/_IOP[A-Z4cp]*//' | sed 's/ -testroot [^ ]*//' | sed 's/ -compare [^ ]*//' | sed 's/ -generate [^ ]*//'` -testroot $CASEROOT"
   set iopflags = `echo $CASE | sed 's/^.*_IOP\([A-Z4cp]*\).*/\1/'`
-  set iopbase_case = `echo ${CASE}-ref.IOP${iopflags} |  sed 's/_IOP[A-Z4cp]*//'`
+  set iopbase_case = `echo ${CASE}-ref.IOP${iopflags} |  sed 's/_IOP[A-Z4cp]*//' | sed 's/[.]G[.]/./' | sed 's/[.]C[.]/./'`
   echo "running create_test ${iopbase_argv}  -clean off -testid ${TEST_TESTID}-ref.IOP${iopflags}" >>& $TESTSTATUS_LOG
   echo "iopflags = ${iopflags}" >>& $TESTSTATUS_LOG
 
