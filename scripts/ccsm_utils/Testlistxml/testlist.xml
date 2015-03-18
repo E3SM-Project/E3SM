@@ -61,6 +61,9 @@
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
       </test>
       <test name="ERS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
         <machine compiler="nag" testtype="acme_developer">cascade</machine>
@@ -98,6 +101,9 @@
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -166,6 +172,9 @@
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -232,6 +241,9 @@
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -311,6 +323,9 @@
         <machine compiler="intel" testtype="prerelease">titan</machine>
       </test>
       <test name="NCK">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -439,6 +454,9 @@
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
       </test>
       <test name="PEA_P1_M">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -559,6 +577,9 @@
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
       <test name="SMS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -637,6 +658,9 @@
     </grid>
     <grid name="ne30_g16_rx1">
       <test name="ERS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
         <machine compiler="nag" testtype="acme_developer">cascade</machine>
@@ -679,6 +703,9 @@
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -747,6 +774,9 @@
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -813,6 +843,9 @@
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -1202,6 +1235,9 @@
         <machine compiler="intel" testtype="aux_cice">yellowstone</machine>
       </test>
       <test name="ERS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -2463,6 +2499,9 @@
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
         <machine compiler="nag" testtype="acme_developer">cascade</machine>
@@ -2497,6 +2536,9 @@
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -5523,6 +5565,9 @@
   <compset name="TG">
     <grid name="f09_g16">
       <test name="ERS_Ly21">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
