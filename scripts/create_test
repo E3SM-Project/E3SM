@@ -781,22 +781,8 @@ sub ExpandXmlList
 	  while ( my $test_elem = shift @test_elems ) {
 	      my $test_name = $test_elem->get_name();
 	      my %test_attr = $test_elem->get_attributes();
-	      
-	      my $test_val;
-	      if($opts{'nlcompareonly'}){
-                # Replace the test type with SBN, see error below...
-                $test_val = "SBN";
-                ############ WARNING: The following code causes a panic later on in the system #####
-                #                     See bug 2024. Erik Kluzek perl5.10, Aug/14/2014              #
-                # Replace the test type with SBN, but keep the options with the underscores.       #
-                #my $optidx = index( $test_attr{'name'}, "_" );
-                #if ( $optidx >= 0 ) {
-                   #$test_val .= substr( $test_attr{'name'}, $optidx );
-                #}
-                ############ WARNING: ##############################################################
-	      }else{
-		  $test_val = $test_attr{'name'}; 
-	      }
+
+	      my $test_val = $test_attr{'name'};
 
 	      my @mach_elems = $test_elem->get_children();
 	      while ( my $mach_elem = shift @mach_elems ) {
