@@ -470,7 +470,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   }
 
   iodesc->nrecvs = nrecvs;
-  if(iodesc->sindex == NULL){
+  if(iodesc->sindex == NULL && iodesc->ndof>0){
     iodesc->sindex = (PIO_Offset *) bget(iodesc->ndof * sizeof(PIO_Offset));
     if(iodesc->sindex == NULL){
       piomemerror(ios,iodesc->ndof * sizeof(PIO_Offset), __FILE__,__LINE__);
@@ -1151,8 +1151,10 @@ void get_start_and_count_regions(const int ndims, const int gdims[],const int ma
 
   nmaplen = 0;
   region = firstregion;
-  while(map[nmaplen++]<=0);
-  nmaplen--;
+  if(map != NULL){
+    while(map[nmaplen++]<=0);
+    nmaplen--;
+  }
   region->loffset=nmaplen;
 
   *maxregions = 1;
@@ -1346,7 +1348,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 		 (void *) srcindex, recvlths, rdispls, PIO_OFFSET,  
 		 0, iodesc->subset_comm, maxreq);
 
-  if(ios.ioproc){
+  if(ios.ioproc && iodesc->llen>0){
     map = (mapsort *) bget(iodesc->llen * sizeof(mapsort));    
     if(map == NULL){
       piomemerror(ios,iodesc->llen * sizeof(mapsort), __FILE__,__LINE__);
@@ -1386,7 +1388,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   if(shrtmap != compmap)
     brel(shrtmap);
 
-  if(ios.ioproc){
+  if(ios.ioproc && iodesc->llen>0){
     int pos=0;
     int k=0;
     mapsort *mptr;

@@ -602,6 +602,9 @@ void *bget(requested_size)
     int compactseq = 0;
 #endif
 
+    if(size<=0)
+      print_trace(NULL);
+
     assert(size > 0);
 
     if (size < SizeQ) { 	      /* Need at least room for the */
@@ -845,6 +848,8 @@ void brel(buf)
   void *buf;
 {
     struct bfhead *b, *bn;
+
+    if(buf==NULL) return;       /* allow for null buffer */
 
     b = BFH(((char *) buf) - sizeof(struct bhead));
 #ifdef BufStats

@@ -623,7 +623,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    case PIO_IOTYPE_NETCDF:
    case PIO_IOTYPE_NETCDF4P:
    case PIO_IOTYPE_NETCDF4C:
-     //     printf("%s %d \n",__FILE__,__LINE__);
+     //     printf("%s %d %d %d %d\n",__FILE__,__LINE__,iodesc->holegridsize,vsize,nvars);
      if(iodesc->rearranger == PIO_REARR_SUBSET && iodesc->needsfill &&
 	iodesc->holegridsize>0){
        fillbuf = bget(iodesc->holegridsize*vsize*nvars);
@@ -791,9 +791,11 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	
       flush_buffer(ncid,wmb);
     }
-    wmb->data = bgetr( wmb->data, (1+wmb->validvars)*arraylen*tsize);
-    if(wmb->data == NULL){
-      piomemerror(*ios, (1+wmb->validvars)*arraylen*tsize  , __FILE__,__LINE__);
+    if(arraylen > 0){
+      wmb->data = bgetr( wmb->data, (1+wmb->validvars)*arraylen*tsize);
+      if(wmb->data == NULL){
+	piomemerror(*ios, (1+wmb->validvars)*arraylen*tsize  , __FILE__,__LINE__);
+      }
     }
     wmb->vid = (int *) bgetr( wmb->vid,sizeof(int)*( 1+wmb->validvars));
     if(wmb->vid == NULL){
@@ -837,13 +839,12 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 
    }
  
-
-
-
    wmb->arraylen = arraylen;
    wmb->vid[wmb->validvars]=vid;
    bufptr = (void *)((char *) wmb->data + arraylen*tsize*wmb->validvars);
-   memcpy(bufptr, array, arraylen*tsize);
+   if(arraylen>0){
+     memcpy(bufptr, array, arraylen*tsize);
+   }
    /*
    if(tsize==8){
      double asum=0.0;
@@ -988,7 +989,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	vdesc->record=0;
     }
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
-      //            printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
+                  printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
       tmp_bufsize=1;
       if(region==NULL || iodesc->llen==0){
 	for(i=0;i<fndims;i++){
@@ -1131,8 +1132,10 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
             rrlen++;
 	  }
 	  if(regioncnt==iodesc->maxregions-1){
+	    printf("%s %d\n",__FILE__,__LINE__);
 	    ierr = ncmpi_get_varn_all(file->fh, vid, rrlen, startlist, 
 				      countlist, IOBUF, iodesc->llen, iodesc->basetype);
+	    printf("%s %d\n",__FILE__,__LINE__);
 	    for(i=0;i<rrlen;i++){
 	      free(startlist[i]);
 	      free(countlist[i]);

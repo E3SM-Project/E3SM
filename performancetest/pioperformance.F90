@@ -147,10 +147,10 @@ contains
     call pio_readdof(filename, ndims, gdims, compmap, MPI_COMM_WORLD)
     maplen = size(compmap)
 
-    color = 0
-    if(maplen>0) then
+!    color = 0
+!    if(maplen>0) then
        color = 1
-    endif
+!    endif
 
     call MPI_Comm_split(MPI_COMM_WORLD, color, mype, comm, ierr)
 
@@ -281,7 +281,9 @@ contains
                 do frame=1,nframes                   
                    do nv=1,nvars
                       call PIO_setframe(File, vari(nv), frame)
+print *,__FILE__,__LINE__,frame,nv
                       call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv), ierr)
+print *,__FILE__,__LINE__,frame,nv
                    enddo
                 enddo
                 
