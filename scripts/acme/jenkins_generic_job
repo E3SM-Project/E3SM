@@ -141,6 +141,7 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch
            "Missing machine info for machine '%s'" % acme_machine)
 
     compiler, test_suite, use_batch, project, testroot, proxy = MACHINE_INFO[acme_machine]
+    testroot = testroot.replace("<USER>", getpass.getuser())
     casearea = os.path.join(testroot, "jenkins")
 
     #
