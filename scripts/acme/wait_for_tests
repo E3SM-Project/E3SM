@@ -83,7 +83,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("paths", default=".", nargs="*", help="Paths to test directories or status file. Pwd default.")
 
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
-                        help="Print shell commands as they are executed")
+                        help="Print extra information")
 
     parser.add_argument("-n", "--no-wait", action="store_true", dest="no_wait", default=False,
                         help="Do not wait for tests to finish")
