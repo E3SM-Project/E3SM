@@ -2,9 +2,15 @@
 Common functions used by acme python scripts
 """
 
-import sys
+import sys, socket, re
 
 _VERBOSE = False
+
+MACHINE_NODENAMES = [
+    ("redsky", re.compile(r"redsky-login")),
+    ("skybridge", re.compile(r"skybridge-login")),
+    ("melvin", re.compile(r"melvin"))
+]
 
 ###############################################################################
 def expect(condition, error_msg):
@@ -33,10 +39,18 @@ def set_verbosity(verbose):
     global _VERBOSE
     _VERBOSE = verbose
 
+_hack=object()
 ###############################################################################
-def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None):
+def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
+            arg_stdout=_hack, arg_stderr=_hack):
 ###############################################################################
     import subprocess # Not safe to do globally, module not available in older pythons
+
+    # Real defaults for these value should be subprocess.PIPE
+    if (arg_stdout is _hack):
+        arg_stdout = subprocess.PIPE
+    if (arg_stderr is _hack):
+        arg_stderr = subprocess.PIPE
 
     verbose_print("RUN: %s" % cmd, verbose)
 
@@ -47,8 +61,8 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None):
 
     proc = subprocess.Popen(cmd,
                             shell=True,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
+                            stdout=arg_stdout,
+                            stderr=arg_stderr,
                             stdin=stdin,
                             cwd=from_dir)
     output, errput = proc.communicate()
@@ -81,3 +95,28 @@ def normalize_case_id(case_id):
         return ".".join(case_id.split(".")[:-2])
     else:
         return case_id
+
+###############################################################################
+def probe_machine_name():
+###############################################################################
+    """
+    Use the hostname of your machine to probe for the ACME name for this
+    machine.
+    """
+    hostname = socket.gethostname().split(".")[0]
+
+    for machine_name, machine_re in MACHINE_NODENAMES:
+        if (machine_re.match(hostname) is not None):
+            return machine_name
+
+    return None
+
+###############################################################################
+def get_current_branch(repo=None):
+##########################################################################
+    """
+    Return the name of the current branch for a repository
+    """
+    output = run_cmd("git symbolic-ref HEAD", from_dir=repo)
+    return output.replace("refs/heads/", "").strip()
+>>>>>>> jgfouca/scripts/new_jenkins_script
