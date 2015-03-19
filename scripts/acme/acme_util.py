@@ -119,4 +119,3 @@ def get_current_branch(repo=None):
     """
     output = run_cmd("git symbolic-ref HEAD", from_dir=repo)
     return output.replace("refs/heads/", "").strip()
->>>>>>> jgfouca/scripts/new_jenkins_script
