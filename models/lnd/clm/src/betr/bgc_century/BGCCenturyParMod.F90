@@ -128,7 +128,7 @@ implicit none
   end subroutine readCentNitrifDenitrifParams
   
   !-----------------------------------------------------------------------
-  subroutine readCentDecompBgcParams ( ncid )
+  subroutine readCentDecompBgcParams ( ncid, nelms, betrtracer_vars )
     !
     ! !DESCRIPTION:
     !
@@ -138,10 +138,13 @@ implicit none
     use clm_varctl             , only : spinup_state
     use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
     use clm_time_manager       , only : get_days_per_year
+    use BeTRTracerType         , only : BeTRTracer_Type    
     use CNDecompCascadeConType , only : decomp_cascade_con
     !
     ! !ARGUMENTS:
-    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+    type(file_desc_t)       , intent(inout) :: ncid   ! pio netCDF file id
+    type(BeTRTracer_Type)   , intent(inout) :: betrtracer_vars
+    integer                 , intent(in) :: nelms
     !
     ! !LOCAL VARIABLES:
     character(len=32)  :: subname = 'CNDecompBgcParamsType'
@@ -166,6 +169,7 @@ implicit none
     integer  :: i_soil1
     integer  :: i_soil2
     integer  :: i_soil3
+    integer  :: ii, jj, kk
     !-----------------------------------------------------------------------
     associate(                                                                                 & !
          floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
@@ -432,12 +436,85 @@ implicit none
     CNDecompBgcParamsInst%k_decay_som3=1._r8/(secspday * days_per_year * tau_s3)
     CNDecompBgcParamsInst%k_decay_cwd =1._r8/(secspday * days_per_year * tau_cwd)
     
+    !codes below needs some change
+    ii=i_litr1
+    do jj = 1, nelm
+      kk = (ii-1)*nelm+jj
+      betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
+      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+    enddo
+
+    ii=i_litr2
+    do jj = 1, nelm
+      kk = (ii-1)*nelm+jj
+      betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
+      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+    enddo
+
+    ii=i_litr3
+    do jj = 1, nelm
+      kk = (ii-1)*nelm+jj
+      betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
+      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+    enddo
+
+    !cwd is not moved
+    ii=i_cwd
+    do jj = 1, nelm
+      kk = (ii-1)*nelm+jj
+      betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1.e-30_r8
+      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+    enddo
+    
+
+    ii=i_soil1
+    do jj = 1, nelm
+      kk = (ii-1)*nelm+jj
+      betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
+      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+    enddo
+
+    ii=i_soil2
+    do jj = 1, nelm
+      kk = (ii-1)*nelm+jj
+      betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
+      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+    enddo
+
+    ii=i_soil3
+    do jj = 1, nelm
+      kk = (ii-1)*nelm+jj
+      betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
+      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+    enddo
+
     
     if ( spinup_state .eq. 1 ) then
       CNDecompBgcParamsInst%k_decay_som1 = CNDecompBgcParamsInst%k_decay_som1 * CNDecompBgcParamsInst%spinup_vector(1)
       CNDecompBgcParamsInst%k_decay_som2 = CNDecompBgcParamsInst%k_decay_som2 * CNDecompBgcParamsInst%spinup_vector(2)
-      CNDecompBgcParamsInst%k_decay_som3 = CNDecompBgcParamsInst%k_decay_som3 * CNDecompBgcParamsInst%spinup_vector(3)      
+      CNDecompBgcParamsInst%k_decay_som3 = CNDecompBgcParamsInst%k_decay_som3 * CNDecompBgcParamsInst%spinup_vector(3)
+
+      ii=i_soil1
+      do jj = 1, nelm
+        kk = (ii-1)*nelm+jj
+        betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal(kk) * spinup_factor(ii)
+      enddo     
+
+      ii=i_soil2
+      do jj = 1, nelm
+        kk = (ii-1)*nelm+jj
+        betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal(kk) * spinup_factor(ii)
+      enddo     
+
+      ii=i_soil3
+      do jj = 1, nelm
+        kk = (ii-1)*nelm+jj
+        betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal(kk) * spinup_factor(ii)
+      enddo     
+    
     endif
     end associate
+    
+    
   end subroutine readCentDecompBgcParams
 end module BGCCenturyParMod

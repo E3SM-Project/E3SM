@@ -140,7 +140,7 @@ contains
     use ncdio_pio               , only : ncd_pio_closefile, ncd_pio_openfile, &
                                          file_desc_t, ncd_inqdid, ncd_inqdlen
     use tracer_varcon           , only : is_active_betr_bgc                                         
-    use betr_initializeMod      , only : bgc_reaction
+    use betr_initializeMod      , only : bgc_reaction, betrtracer_vars
     
     !
     ! !ARGUMENTS:
@@ -165,7 +165,7 @@ contains
     call ncd_inqdlen(ncid,dimid,npft)
     
     if(use_betr)then
-      call bgc_reaction%readParams(ncid)   
+      call bgc_reaction%readParams(ncid, betrtracer_vars)   
     endif
     
     if (use_cn) then

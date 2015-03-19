@@ -607,19 +607,20 @@ contains
   end subroutine do_tracer_equilibration
   
   !-----------------------------------------------------------------------
-  subroutine readParams(this, ncid)
-
+  subroutine readParams(this, ncid, betrtracer_vars )
+  use BeTRTracerType           , only : BeTRTracer_Type
   use ncdio_pio               , only : file_desc_t
   use BGCCenturyParMod        , only : readCentDecompBgcParams, readCentNitrifDenitrifParams                                       
   class(bgc_reaction_CENTURY_type) , intent(in)    :: this  
-  
+  type(BeTRTracer_Type)            , intent(inout) :: betrtracer_vars  
   type(file_desc_t)  :: ncid  ! pio netCDF file id
   
   
 
-  call readCentDecompBgcParams ( ncid )
+  call readCentDecompBgcParams ( ncid, centurybgc_vars%nelms, betrtracer_vars )
   
   call readCentNitrifDenitrifParams ( ncid )
+  
   
   end subroutine readParams
   

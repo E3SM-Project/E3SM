@@ -697,6 +697,7 @@ contains
     if(use_cn) then
        call init_decomp_cascade_constants()
     endif
+    !read bgc implementation specific parameters when needed
     call readPrivateParameters()
     
     if (use_cn) then

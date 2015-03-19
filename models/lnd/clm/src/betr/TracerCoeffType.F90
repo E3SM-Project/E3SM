@@ -29,7 +29,7 @@
     real(r8), pointer :: scal_aere_cond_col        (:,:)        !column level scaling factor for arenchyma or parenchyma transport
     real(r8), pointer :: diffgas_topsno_col        (:,:)        !gas diffusivity in top snow layer, this is not used currently
     real(r8), pointer :: diffgas_topsoi_col        (:,:)        !gas diffusivity in top soil layer, this is not used currently
-    real(r8), pointer :: hmconductance_col         (:,:,:)      !geometrically weighted conductances (nlevsno+nlevtrc_soil)
+    real(r8), pointer :: hmconductance_col         (:,:,:)      !geometrically weighted conductances (nlevsno+nlevtrc_soil)    
     real(r8), pointer :: annsum_counter_col        (:)
     contains
       procedure, public  :: Init

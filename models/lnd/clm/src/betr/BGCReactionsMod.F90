@@ -200,15 +200,17 @@ implicit none
   end subroutine InitCold_interface  
   
 !-------------------------------------------------------------------------------  
-  subroutine readParams_interface(this, ncid)
+  subroutine readParams_interface(this, ncid, betrtracer_vars)
 
-  use ncdio_pio               , only : file_desc_t
-                                         
+  use ncdio_pio                , only : file_desc_t
+  use BeTRTracerType           , only : BeTRTracer_Type
+  
   import :: bgc_reaction_type
 
   class(bgc_reaction_type)          , intent(in)    :: this  
   type(file_desc_t)  :: ncid  ! pio netCDF file id
-    
+  type(BeTRTracer_Type)             , intent(inout) :: betrtracer_vars
+  
   end subroutine readParams_interface  
   end interface
 end module BGCReactionsMod

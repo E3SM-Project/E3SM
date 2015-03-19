@@ -356,12 +356,12 @@ implicit none
   end subroutine InitCold
 
   !-----------------------------------------------------------------------
-  subroutine readParams(this, ncid)
+  subroutine readParams(this, ncid, betrtracer_vars)
 
   use ncdio_pio               , only : file_desc_t
-                                         
+  use BeTRTracerType           , only : BeTRTracer_Type      
   class(bgc_reaction_mock_run_type) , intent(in)    :: this   
-  
+  type(BeTRTracer_Type)             , intent(inout) :: betrtracer_vars  
   type(file_desc_t)  :: ncid  ! pio netCDF file id
    
    

@@ -206,8 +206,9 @@ module TracerParamsMod
    !parameters below will be encapsulated into a structure later
    real(r8) :: max_altdepth_cryoturbation = 1._r8  ! (m) maximum active layer thickness for cryoturbation to occur
    real(r8) :: cryoturb_diffusion_k       = 1e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr = 1m^2/1000 yr
-   real(r8) :: som_diffus                 = 1e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr
+   real(r8) :: som_diffus                 = 5e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr
    integer :: j, k, n, fc, c     !indices
+   integer :: nsld
    real(r8) :: diffaqu, diffgas
    character(len=255) :: subname = 'calc_bulk_diffusivity'
    
@@ -224,6 +225,8 @@ module TracerParamsMod
      nco2_tags            => betrtracer_vars%nco2_tags                    , & ! Integer[intent(in)], number of co2 species
      is_volatile          => betrtracer_vars%is_volatile                  , & ! logical[intent(in)], is a volatile tracer?
      is_h2o               => betrtracer_vars%is_h2o                       , & ! logical[intent(in)], is a h2o tracer?
+     tracer_solid_passive_diffus_scal => betrtracer_vars%* tracer_solid_passive_diffus_scal, & !scaling factor for solid phase diffusivity
+     tracer_solid_passive_diffus_shc => betrtracer_vars%* tracer_solid_passive_diffus_shc  , & !threshold for solid phase diffusivity     
      volatileid           => betrtracer_vars%volatileid                   , & ! integer[intent(in)], location in the volatile vector
      air_vol              => waterstate_vars%air_vol_col                  , & ! volume possessed by air
      h2osoi_liqvol        => waterstate_vars%h2osoi_liqvol_col            , & ! soil volume possessed by liquid water
@@ -296,6 +299,7 @@ module TracerParamsMod
    
    !do solid phase passive tracers
    do j = ngwmobile_tracers + 1, ntracers
+     nsld = j - ngwmobile_tracers 
      do fc = 1,numf
        c = filter(fc)
          
@@ -304,24 +308,32 @@ module TracerParamsMod
                ! use mixing profile modified slightly from Koven et al. (2009): constant through active layer, linear decrease from base of active layer to zero at a fixed depth
          do n = 1, ubj
            if ( zisoi(n) < max(altmax(c), altmax_lastyear(c)) ) then
-             bulkdiffus(c,n,j) = cryoturb_diffusion_k 
+             bulkdiffus(c,n,j) = cryoturb_diffusion_k * tracer_solid_passive_diffus_scal(nsld)
+             bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_shc(nsld))
            else
              bulkdiffus(c,n,j) = max(cryoturb_diffusion_k * & 
                           ( 1._r8 - ( zisoi(n) - max(altmax(c), altmax_lastyear(c)) ) / &
                           ( max_depth_cryoturb - max(altmax(c), altmax_lastyear(c)) ) ), 0._r8)  ! go linearly to zero between ALT and max_depth_cryoturb
+             bulkdiffus(c,n,j) = bulkdiffus(c,n,j) * tracer_solid_passive_diffus_scal(nsld)             
+             bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_shc(nsld))             
            endif
+           
          end do
        elseif (  max(altmax(c), altmax_lastyear(c)) > 0._r8 ) then
          ! constant advection, constant diffusion
          do n = 1, ubj
-           bulkdiffus(c,n,j)= som_diffus
+           bulkdiffus(c,n,j) = som_diffus * tracer_solid_passive_diffus_scal(nsld)
+           bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_shc(nsld))
          end do
        else
          ! completely frozen soils--no mixing
          do n = 1, ubj
            bulkdiffus(c,n,j) = 1e-4_r8 / (86400._r8 * 365._r8) * 1.e-36_r8  !set to very small number for numerical purpose
          end do
-       endif            
+       endif
+       do n = 1, nbj
+         
+       enddo
      enddo  
    enddo
    end associate

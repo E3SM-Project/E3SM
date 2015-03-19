@@ -64,7 +64,10 @@ module BeTRTracerType
    integer, pointer :: refisoid(:)                                      !reference tracer for isotope calculation, this is setup only for non-h2o isotope now   
    integer, pointer :: adsorbid(:)                                      !which tracer is adsorbed
    integer, pointer :: volatileid(:)
-   integer, pointer :: h2oid(:)   
+   integer, pointer :: h2oid(:)
+   real(r8),pointer :: tracer_solid_passive_diffus_scal(:)               !reference diffusivity for solid phase tracer, for modeling turbation
+   real(r8),pointer :: tracer_solid_passive_diffus_thc(:)               !threshold diffusivity for solid phase tracer, for modeling turbation
+   
    character(len=36),pointer :: tracernames(:)                          !array with tracer names
    real(r8),pointer :: gram_mole_wt(:)                                  !molecular weight of the master species, [g/mol]
    real(r8),pointer :: vtrans_scal(:)                                   !scaling factor for plant tracer uptake through transpiration, for non-water neutral aqueous tracers
@@ -162,6 +165,8 @@ module BeTRTracerType
   allocate(this%h2oid              (this%nh2o_tracers));         this%h2oid(:)              = nanid
   allocate(this%tracernames        (this%ntracers));             this%tracernames(:)        = ''
   allocate(this%vtrans_scal        (this%ngwmobile_tracers));    this%vtrans_scal(:)        = 0._r8   !no transport through xylem transpiration
+  allocate(this%tracer_solid_passive_diffus_scal(this%nsolid_passive_tracers)); this%tracer_solid_passive_diffus_scal(:) = 0._r8
+  allocate(this%tracer_solid_passive_diffus_thc(this%nsolid_passive_tracers)); this%tracer_solid_passive_diffus_thc(:) = 0._r8
   
   end subroutine InitAllocate
 
