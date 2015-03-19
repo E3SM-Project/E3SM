@@ -1897,8 +1897,8 @@ int generate_field_links(ezxml_t registry){/*{{{*/
 
 
 int generate_immutable_struct_contents(FILE *fd, const char *streamname, ezxml_t varstruct_xml){/*{{{*/
-	ezxml_t var_xml, vararr_xml, substruct_xml;
 
+	ezxml_t var_xml, vararr_xml, substruct_xml;
 	const char *optname, *optstream;
 
 	/* Loop over fields looking for any that belong to the stream */
@@ -1942,7 +1942,7 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 	ezxml_t streams_xml, stream_xml, var_xml, vararr_xml, varstruct_xml;
 	ezxml_t substream_xml, matchstreams_xml, matchstream_xml;
 
-	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optinterval_in, *optinterval_out, *optimmutable;
+	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optinterval_in, *optinterval_out, *optimmutable, *optpackages;
 	const char *optstructname, *optsubstreamname, *optmatchstreamname, *optmatchimmutable;
 	const char *corename;
 	FILE *fd;
@@ -1966,7 +1966,8 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 	fortprintf(fd, "                                   MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property, MPAS_stream_mgr_add_field, &\n");
 	fortprintf(fd, "                                   MPAS_stream_mgr_add_pool, MPAS_stream_mgr_set_property\n\n");
 	fortprintf(fd, "   implicit none\n\n");
-	fortprintf(fd, "   type (MPAS_streamManager_type), pointer :: manager\n\n");
+	fortprintf(fd, "   type (MPAS_streamManager_type), pointer :: manager\n");
+	fortprintf(fd, "   character (len=StrKIND) :: packages\n");
 	fortprintf(fd, "   integer :: ierr\n\n");
 
 	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
@@ -1994,6 +1995,11 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 				/* Loop over streams listed within the stream (only use immutable streams) */
 				for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
 					optsubstreamname = ezxml_attr(substream_xml, "name");
+					optpackages = ezxml_attr(substream_xml, "packages");
+
+					if (optpackages != NULL) {
+						fortprintf(fd, "   write(packages,\'(a)\') \'%s\'\n", optpackages);
+					}
 
 					/* Find stream definition with matching name */
 					for (matchstreams_xml = ezxml_child(registry, "streams"); matchstreams_xml; matchstreams_xml = matchstreams_xml->next){
@@ -2006,19 +2012,29 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 									/* Loop over fields listed within the stream */
 									for (var_xml = ezxml_child(matchstream_xml, "var"); var_xml; var_xml = var_xml->next) {
 										optvarname = ezxml_attr(var_xml, "name");
-										fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+										if (optpackages != NULL)
+											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optvarname);
+										else
+											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+										
 									}
 
 									/* Loop over arrays of fields listed within the stream */
 									for (vararr_xml = ezxml_child(matchstream_xml, "var_array"); vararr_xml; vararr_xml = vararr_xml->next) {
 										optvarname = ezxml_attr(vararr_xml, "name");
-										fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+										if (optpackages != NULL)
+											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optvarname);
+										else
+											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
 									}
 
 									/* Loop over var structs listed within the stream */
 									for (varstruct_xml = ezxml_child(matchstream_xml, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
 										optstructname = ezxml_attr(varstruct_xml, "name");
-										fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+										if (optpackages != NULL)
+											fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optstructname);
+										else
+											fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
 									}
 
 								} else {
@@ -2034,20 +2050,47 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 				/* Loop over var structs listed within the stream */
 				for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
 					optstructname = ezxml_attr(varstruct_xml, "name");
-					fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+					optpackages = ezxml_attr(varstruct_xml, "packages");
+
+					if (optpackages != NULL) {
+						fortprintf(fd, "   write(packages,\'(a)\') \'%s\'\n", optpackages);
+						fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optstructname);
+					}
+					else {
+						fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+					}
+
 				}
 
 
 				/* Loop over arrays of fields listed within the stream */
 				for (vararr_xml = ezxml_child(stream_xml, "var_array"); vararr_xml; vararr_xml = ezxml_next(vararr_xml)) {
 					optvarname = ezxml_attr(vararr_xml, "name");
-					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+					optpackages = ezxml_attr(vararr_xml, "packages");
+
+					if (optpackages != NULL) {
+						fortprintf(fd, "   write(packages,\'(a)\') \'%s\'\n", optpackages);
+						fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optvarname);
+					}
+					else {
+						fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+					}
+
 				}
 
 				/* Loop over fields listed within the stream */
 				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
 					optvarname = ezxml_attr(var_xml, "name");
-					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+					optpackages = ezxml_attr(var_xml, "packages");
+
+					if (optpackages != NULL) {
+						fortprintf(fd, "   write(packages,\'(a)\') \'%s\'\n", optpackages);
+						fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optvarname);
+					}
+					else {
+						fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+					}
+
 				}
 
 				/* Loop over fields looking for any that belong to the stream */

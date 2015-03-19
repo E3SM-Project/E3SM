@@ -904,7 +904,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	int err;
 
 
-        packages_local[0] = '\0';
+	packages_local[0] = '\0';
 
 	fprintf(stderr, "\nParsing run-time I/O configuration from %s ...\n", fname);
 	*status = 0;
@@ -1032,7 +1032,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "overwrite");
 			}
 			else {
-                		iclobber = 0;
+				iclobber = 0;
 				fprintf(stderr, "        *** unrecognized clobber_mode specification; existing files will not be modified\n");
 			}
 		}
@@ -1261,7 +1261,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				fprintf(stderr, "        %-20s%s\n", "clobber mode:", "overwrite");
 			}
 			else {
-                		iclobber = 0;
+				iclobber = 0;
 				fprintf(stderr, "        *** unrecognized clobber_mode specification; existing files will not be modified\n");
 			}
 		}
@@ -1384,6 +1384,13 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		for (varfile_xml = ezxml_child(stream_xml, "file"); varfile_xml; varfile_xml = ezxml_next(varfile_xml)) {
 			varfile = ezxml_attr(varfile_xml, "name");
+			packagelist = ezxml_attr(varfile_xml, "packages");
+
+			if (packagelist != NULL)
+				strncpy(packages_local, packagelist, (size_t)256);
+			else
+				packages_local[0] = '\0';
+
 			/* TODO: We should probably only have one task open and read the file... */
 			/* TODO: This doesn't seem like it supports var_arrays, var_structs, or streams.... */
 			fd = fopen(varfile, "r");
@@ -1407,6 +1414,13 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
 			fieldname_const = ezxml_attr(var_xml, "name");
+			packagelist = ezxml_attr(var_xml, "packages");
+
+			if (packagelist != NULL)
+				strncpy(packages_local, packagelist, (size_t)256);
+			else
+				packages_local[0] = '\0';
+
 			stream_mgr_add_field_c(manager, streamID, fieldname_const, packages_local, &err);
 			if (err != 0) {
 				*status = 1;
@@ -1416,6 +1430,13 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		for (vararray_xml = ezxml_child(stream_xml, "var_array"); vararray_xml; vararray_xml = ezxml_next(vararray_xml)) {
 			fieldname_const = ezxml_attr(vararray_xml, "name");
+			packagelist = ezxml_attr(vararray_xml, "packages");
+
+			if (packagelist != NULL)
+				strncpy(packages_local, packagelist, (size_t)256);
+			else
+				packages_local[0] = '\0';
+
 			stream_mgr_add_field_c(manager, streamID, fieldname_const, packages_local, &err);
 			if (err != 0) {
 				*status = 1;
@@ -1424,6 +1445,13 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		}
 		for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
 			structname_const = ezxml_attr(varstruct_xml, "name");
+			packagelist = ezxml_attr(varstruct_xml, "packages");
+
+			if (packagelist != NULL)
+				strncpy(packages_local, packagelist, (size_t)256);
+			else
+				packages_local[0] = '\0';
+
 			stream_mgr_add_pool_c(manager, streamID, structname_const, packages_local, &err);
 			if (err != 0){
 				*status = 1;
@@ -1433,9 +1461,17 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
 			streamname_const = ezxml_attr(substream_xml, "name");
+			packagelist = ezxml_attr(substream_xml, "packages");
 
-			// Immutable streams are added through the add_stream_fields function.
-			// This is because they aren't defined in the XML file, and are instead defined in Regsitry.xml
+			if (packagelist != NULL)
+				strncpy(packages_local, packagelist, (size_t)256);
+			else
+				packages_local[0] = '\0';
+
+
+			/* Immutable streams are added through the stream_mgr_add_stream_fields_c function, since
+			 * they aren't defined in the XML file, and are instead defined in Registry.xml.
+			 */
 			for(streammatch_xml = ezxml_child(streams, "immutable_stream"); streammatch_xml; streammatch_xml = ezxml_next(streammatch_xml)) {
 				compstreamname_const = ezxml_attr(streammatch_xml, "name");
 
