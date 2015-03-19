@@ -79,6 +79,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-d", "--submit-to-dashboard", action="store_true", dest="submit_to_dashboard", default=False,
                         help="Send results to Cdash")
 
+    parser.add_argument("-n", "--namelists-only", action="store_true", dest="namelists_only", default=False,
+                        help="Only compare/generate namelists. Useful for quickly blessing namelist changes")
+
     parser.add_argument("-b", "--branch", action="store", dest="branch", default=None,
                         help="Force baseline actions (compare/generate) to use baselines for a specific branch instead of the current branch. Also impacts dashboard job name.")
 
@@ -86,7 +89,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     acme_util.set_verbosity(args.verbose)
 
-    return args.generate_baselines, args.submit_to_dashboard, args.branch
+    return args.generate_baselines, args.submit_to_dashboard, args.branch, args.namelists_only
 
 ###############################################################################
 def probe_batch_system():
@@ -132,7 +135,8 @@ def get_my_queued_jobs():
     return set(acme_util.run_cmd(list_cmd).split())
 
 ###############################################################################
-def jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch=None):
+def jenkins_generic_job(generate_baselines, submit_to_dashboard,
+                        baseline_branch=None, namelists_only=False):
 ###############################################################################
     acme_machine = acme_util.probe_machine_name()
     expect(acme_machine is not None,
@@ -189,8 +193,12 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch
     baseline_action = "-generate" if generate_baselines else "-compare"
     create_test_cmd = "./create_test -xml_mach %s -xml_compiler %s -xml_category %s -testroot %s -project %s %s %s" % \
                       (acme_machine, compiler, test_suite, casearea, project, baseline_action, git_branch)
+
+    if (namelists_only):
+        create_test_cmd += " -nlcompareonly"
+
     if (not use_batch):
-        create_test_cmd = "%s %s" % (create_test_cmd, "-autosubmit off -nobatch on")
+        create_test_cmd += " -autosubmit off -nobatch on"
 
     acme_util.run_cmd(create_test_cmd, verbose=True, arg_stdout=None, arg_stderr=None)
 
@@ -226,11 +234,10 @@ def _main_func(description):
         doctest.testmod()
         return
 
-    generate_baselines, submit_to_dashboard, baseline_branch = \
+    generate_baselines, submit_to_dashboard, baseline_branch, namelists_only = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch) else 1)
-
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch, namelists_only) else 1)
 
 ###############################################################################
 
