@@ -2,7 +2,7 @@
 Common functions used by acme python scripts
 """
 
-import sys, socket, re
+import sys, socket, re, os
 
 _VERBOSE = False
 
@@ -113,9 +113,18 @@ def probe_machine_name():
 
 ###############################################################################
 def get_current_branch(repo=None):
-##########################################################################
+###############################################################################
     """
     Return the name of the current branch for a repository
     """
-    output = run_cmd("git symbolic-ref HEAD", from_dir=repo)
-    return output.replace("refs/heads/", "").strip()
+    if ("GIT_BRANCH" in os.environ):
+        # This approach works better for Jenkins jobs because the Jenkins
+        # git plugin does not use local tracking branches, it just checks out
+        # to a commit
+        branch = os.environ["GIT_BRANCH"]
+        if (branch.startswith("origin/")):
+            branch = branch.replace("origin/", "", 1)
+        return branch
+    else:
+        output = run_cmd("git symbolic-ref HEAD", from_dir=repo)
+        return output.replace("refs/heads/", "").strip()
