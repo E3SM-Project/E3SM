@@ -49,13 +49,13 @@ contains
           enddo
        enddo
     enddo
-    
+
     do j = 1, nyg           ! S to N
        jj = nyg - j + 1     ! reverse j index for glint grid (N to S)
        do i = 1, nxg
           g = (j-1)*nxg + i   ! global index (W to E, S to N)
 
-          !testreceiver(i,jj) = x2g(XXXXXXXXX,g)
+          testreceiver(i,jj) = x2g(index_x2g_Slgl_tglc,g)
 
        enddo
     enddo    

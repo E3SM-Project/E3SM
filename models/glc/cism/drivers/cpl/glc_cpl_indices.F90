@@ -92,7 +92,7 @@ contains
        index_x2g_Flgl_qice(num) = mct_avect_indexra(x2g,trim(name))
     end do
     
-    index_x2g_Slgl_tglc=mct_avect_indexra(x2g,'Sg_tglc',perrwith='quiet')
+    index_x2g_Slgl_tglc=mct_avect_indexra(x2g,'So_tglc',perrwith='quiet')
 
     call mct_aVect_clean(x2g)
     call mct_aVect_clean(g2x)
