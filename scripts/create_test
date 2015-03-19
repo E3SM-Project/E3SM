@@ -592,22 +592,9 @@ sub checkOptions
 # Read options from config_machines.xml
     my $machine = (defined $opts{mach}) ? $opts{mach} : $opts{xml_mach};
 
-    # If we're running namelist comparison tests, we want to set the machine to Yellowstone, 
-    # otherwise use the supplied machine value. 
-    if( defined $opts{'nlcompareonly'})
-	{
-        # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
-        #$cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", "yellowstone", 0);
-        ###############################################################################################
-        $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", "yellowstone");
-	}
-	else
-	{
-        # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
-        #$cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine, 0);
-        ###############################################################################################
-        $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine);
-	}
+    # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
+    # $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine, 0);
+    $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine);
 
     if(!defined $opts{'baselineroot'}) {
         $opts{'baselineroot'} = SetupTools::expand_env_var($cfg_ref->get('CCSM_BASELINE'), $cfg_ref);
