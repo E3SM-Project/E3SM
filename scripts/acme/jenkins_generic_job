@@ -86,7 +86,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     acme_util.set_verbosity(args.verbose)
 
-    return args.generate_baselines, args.submit_to_dashboarb, args.branch
+    return args.generate_baselines, args.submit_to_dashboard, args.branch
 
 ###############################################################################
 def probe_batch_system():
