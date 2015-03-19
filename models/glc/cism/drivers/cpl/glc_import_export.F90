@@ -28,10 +28,16 @@ contains
 
     integer(IN) :: j,jj,i,g,nxg,nyg,n,elev_class
     character(*), parameter :: subName = "(glc_import) "
+    
+    real(r8), allocatable :: testreceiver(:,:)
+    
     !-------------------------------------------------------------------
 
     nxg = glc_grid%nx
     nyg = glc_grid%ny
+    
+    allocate(testreceiver(nxg,nyg))   
+    
     do j = 1, nyg           ! S to N
        jj = nyg - j + 1     ! reverse j index for glint grid (N to S)
        do i = 1, nxg
@@ -44,11 +50,23 @@ contains
        enddo
     enddo
     
+    do j = 1, nyg           ! S to N
+       jj = nyg - j + 1     ! reverse j index for glint grid (N to S)
+       do i = 1, nxg
+          g = (j-1)*nxg + i   ! global index (W to E, S to N)
+
+          !testreceiver(i,jj) = x2g(XXXXXXXXX,g)
+
+       enddo
+    enddo    
+    
     !Jer hack fix: 
     !For some land points where CLM sees ocean, and all ocean points, CLM doesn't provide a temperature,
     !and so the incoming temperature is 0.d0.  This gets dropped to -273.15, in the above code.  So,
     !manually reverse this, below, to set to 0C.
     where (tsfc < -250.d0) tsfc=0.d0 
+
+    deallocate(testreceiver)
 
   end subroutine glc_import
 

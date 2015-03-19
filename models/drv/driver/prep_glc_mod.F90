@@ -33,11 +33,18 @@ module prep_glc_mod
   public :: prep_glc_accum_avg
 
   public :: prep_glc_calc_l2x_gx
+  public :: prep_glc_calc_o2x_gx  
 
   public :: prep_glc_get_l2x_gx
   public :: prep_glc_get_l2gacc_lx
   public :: prep_glc_get_l2gacc_lx_cnt
+  
+  public :: prep_glc_get_o2x_gx
+  public :: prep_glc_get_x2gacc_gx
+  public :: prep_glc_get_x2gacc_gx_cnt  
+  
   public :: prep_glc_get_mapper_SFl2g
+  public :: prep_glc_get_mapper_SFo2g 
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -61,8 +68,8 @@ module prep_glc_mod
   type(mct_aVect), pointer :: l2gacc_lx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
   integer        , target :: l2gacc_lx_cnt ! l2gacc_lx: number of time samples accumulated
   
-  type(mct_aVect), pointer :: o2gacc_ox(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
-  integer        , target :: o2gacc_ox_cnt ! l2gacc_lx: number of time samples accumulated  
+  type(mct_aVect), pointer :: x2gacc_gx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
+  integer        , target :: x2gacc_gx_cnt ! x2gacc_gx: number of time samples accumulated  
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
@@ -86,8 +93,7 @@ contains
     ! Local Variables
     integer                          :: eli, egi, eoi
     integer                          :: lsize_l
-    integer                          :: lsize_g
-     integer                         :: lsize_o   
+    integer                          :: lsize_g 
     logical                          :: esmf_map_flag ! .true. => use esmf for mapping
     logical                          :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                          :: glc_present   ! .true. => glc is present
@@ -97,7 +103,9 @@ contains
     character(CL)                    :: ocn_gnam      ! ocn grid    
     type(mct_avect), pointer         :: l2x_lx  
     type(mct_avect), pointer         :: x2g_gx
-    type(mct_avect), pointer         :: o2x_ox      
+    type(mct_avect), pointer         :: o2x_ox
+    type(mct_avect), pointer         :: g2x_gx 
+          
     character(*), parameter          :: subname = '(prep_glc_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -117,61 +125,66 @@ contains
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
+       g2x_gx => component_get_c2x_cx(glc(1))
        x2g_gx => component_get_x2c_cx(glc(1))
-       lsize_g = mct_aVect_lsize(x2g_gx)
+       lsize_g = mct_aVect_lsize(g2x_gx)
 
        !------------Land coupling setup------------!
 
-       l2x_lx => component_get_c2x_cx(lnd(1))
-       lsize_l = mct_aVect_lsize(l2x_lx)
-       
-       allocate(l2x_gx(num_inst_lnd))
-       allocate(l2gacc_lx(num_inst_lnd))
-       do eli = 1,num_inst_lnd
-          call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2x_gx(eli) ,lsize=lsize_g)
-          call mct_aVect_zero(l2x_gx(eli))
-          
-          call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2gacc_lx(eli), lsize=lsize_l)
-          call mct_aVect_zero(l2gacc_lx(eli))
-       enddo
-       l2gacc_lx_cnt = 0
-       
-       if (iamroot_CPLID) then
-          write(logunit,*) ' '
-          write(logunit,F00) 'Initializing mapper_SFl2g'
-       end if
-       call seq_map_init_rearrolap(mapper_SFl2g, lnd(1), glc(1), 'mapper_SFl2g')
-       call shr_sys_flush(logunit)
+		     l2x_lx => component_get_c2x_cx(lnd(1))
+		     lsize_l = mct_aVect_lsize(l2x_lx)
+
+		     allocate(l2x_gx(num_inst_lnd))
+		     allocate(l2gacc_lx(num_inst_lnd))
+		     do eli = 1,num_inst_lnd
+        		call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2x_gx(eli) ,lsize=lsize_g)
+        		call mct_aVect_zero(l2x_gx(eli))
+
+        		call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2gacc_lx(eli), lsize=lsize_l)
+        		call mct_aVect_zero(l2gacc_lx(eli))
+		     enddo
+		     l2gacc_lx_cnt = 0
+
+		     if (iamroot_CPLID) then
+        		write(logunit,*) ' '
+        		write(logunit,F00) 'Initializing mapper_SFl2g'
+		     end if
+		     call seq_map_init_rearrolap(mapper_SFl2g, lnd(1), glc(1), 'mapper_SFl2g')
+		     call shr_sys_flush(logunit)
 
        !------------Ocean coupling setup------------!       
 
-       o2x_ox => component_get_c2x_cx(ocn(1))
-       lsize_o = mct_aVect_lsize(o2x_ox)
-
        allocate(o2x_gx(num_inst_ocn))
-       allocate(o2gacc_ox(num_inst_ocn))
        do eoi = 1,num_inst_ocn    
-          call mct_aVect_initSharedFields(o2x_ox, x2g_gx, o2x_gx(eoi) ,lsize=lsize_g)   !Jer does this overwrite land field call???   
+          call mct_aVect_init(o2x_gx(eoi), rList=seq_flds_o2x_fields, lsize=lsize_g)
           call mct_aVect_zero(o2x_gx(eoi))
-  
-          call mct_aVect_initSharedFields(o2x_ox, x2g_gx, o2gacc_ox(eoi), lsize=lsize_o)
-          call mct_aVect_zero(o2gacc_ox(eoi))
-       enddo	   
-       o2gacc_ox_cnt = 0            
+       enddo
        
-       if (iamroot_CPLID) then
-          write(logunit,*) ' '
-          write(logunit,F00) 'Initializing mapper_SFo2g'
+       allocate(x2gacc_gx(num_inst_glc))
+       do egi = 1,num_inst_glc
+          call mct_avect_init(x2gacc_gx(egi), x2g_gx, lsize_g)
+          call mct_aVect_zero(x2gacc_gx(egi))
+       end do           
+	   
+       x2gacc_gx_cnt = 0            
+       
+       if (ocn_c2_glc) then
+       
+	  if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_SFo2g'
+	  end if
+
+	  samegrid_go = .true.
+	  if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
+
+	  call seq_map_init_rcfile(mapper_SFo2g, ocn(1), glc(1), &
+	  'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
+	  'mapper_SFo2g initialization',esmf_map_flag)
+
+	  call shr_sys_flush(logunit)       
+
        end if
-       
-       samegrid_go = .true.
-       if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
-       
-       call seq_map_init_rcfile(mapper_SFo2g, ocn(1), glc(1), &
-       'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
-       'mapper_SFo2g initialization',esmf_map_flag)
-       
-       call shr_sys_flush(logunit)       
 
     end if
 
@@ -189,21 +202,34 @@ contains
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
-    integer :: eli
+    integer :: eli, egi
     type(mct_avect), pointer :: l2x_lx
+    type(mct_avect), pointer :: x2g_gx
     character(*), parameter :: subname = '(prep_glc_accum)'
     !---------------------------------------------------------------
 
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       l2x_lx => component_get_c2x_cx(lnd(eli))
-       if (l2gacc_lx_cnt == 0) then
-          call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
+		  call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+		  do eli = 1,num_inst_lnd
+		     l2x_lx => component_get_c2x_cx(lnd(eli))
+		     if (l2gacc_lx_cnt == 0) then
+        		call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
+		     else
+        		call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
+		     endif
+		  end do
+		  l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+   
+    do egi = 1,num_inst_glc
+       x2g_gx => component_get_x2c_cx(glc(egi))
+       
+       if (x2gacc_gx_cnt == 0) then
+          call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
        else
-          call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
+          call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
        endif
     end do
-    l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+    x2gacc_gx_cnt = x2gacc_gx_cnt + 1
+    
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_glc_accum
@@ -220,17 +246,32 @@ contains
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
-    integer :: eli
+    integer :: eli, egi
+    type(mct_avect), pointer :: x2g_gx  
+    
     character(*), parameter :: subname = '(prep_glc_accum_avg)'
     !---------------------------------------------------------------
 
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    if (l2gacc_lx_cnt > 1) then
-       do eli = 1,num_inst_lnd
-          call mct_avect_avg(l2gacc_lx(eli), l2gacc_lx_cnt)
-       end do
-    end if
-    l2gacc_lx_cnt = 0
+		  call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+		  if (l2gacc_lx_cnt > 1) then
+		     do eli = 1,num_inst_lnd
+        		call mct_avect_avg(l2gacc_lx(eli), l2gacc_lx_cnt)
+		     end do
+		  end if
+		  l2gacc_lx_cnt = 0
+    
+    do egi = 1,num_inst_glc
+       ! temporary formation of average
+       if (x2gacc_gx_cnt > 1) then
+          call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
+       end if
+
+       ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2g_gx
+       x2g_gx   => component_get_x2c_cx(glc(egi)) 
+       call mct_avect_copy(x2gacc_gx(egi), x2g_gx)
+    enddo
+    x2gacc_gx_cnt = 0
+    
     call t_drvstopf  (trim(timer))
     
   end subroutine prep_glc_accum_avg
@@ -248,7 +289,7 @@ contains
     character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer :: egi, eli
+    integer :: egi, eli, eoi
     type(mct_avect), pointer :: x2g_gx
     character(*), parameter  :: subname = '(prep_glc_mrg)'
     !---------------------------------------------------------------
@@ -257,9 +298,12 @@ contains
     do egi = 1,num_inst_glc
        ! Use fortran mod to address ensembles in merge
        eli = mod((egi-1),num_inst_lnd) + 1
+       eoi = mod((egi-1),num_inst_ocn) + 1
 
-       x2g_gx => component_get_x2c_cx(glc(egi)) 
-       call prep_glc_merge(l2x_gx(eli), x2g_gx)
+       x2g_gx => component_get_x2c_cx(glc(egi))
+       
+       call prep_glc_merge(l2x_gx(eli), o2x_gx(eoi), x2g_gx)
+       
     enddo
     call t_drvstopf  (trim(timer_mrg))
 
@@ -267,36 +311,50 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_merge( s2x_g, x2g_g )
+  subroutine prep_glc_merge( s2x_g, o2x_g, x2g_g )
 
     !----------------------------------------------------------------------- 
     ! Arguments
     type(mct_aVect), intent(inout)  :: s2x_g  ! input
+    type(mct_aVect), intent(inout)  :: o2x_g  ! input
     type(mct_aVect), intent(inout)  :: x2g_g  ! output
+    
     !----------------------------------------------------------------------- 
 
-    integer       :: nflds,i,i1,o1
+    integer       :: ngflds,noflds,i,i1,o1
     logical       :: iamroot
     logical, save :: first_time = .true.
     character(CL),allocatable :: mrgstr(:)   ! temporary string
+    integer, save :: index_o2x_So_tglc
+    integer, save :: index_x2g_So_tglc    
     character(CL) :: field   ! string converted to char
     type(mct_aVect_sharedindices),save :: s2x_sharedindices
+    type(mct_aVect_sharedindices),save :: o2x_sharedindices
+        
     character(*), parameter   :: subname = '(prep_glc_merge) '
 
     !----------------------------------------------------------------------- 
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
-    if (first_time) then
-       nflds = mct_aVect_nRattr(x2g_g)
+    ngflds = mct_aVect_nRattr(x2g_g)
+    noflds = mct_aVect_nRattr(o2x_g)
 
-       allocate(mrgstr(nflds))
-       do i = 1,nflds
+    if (first_time) then
+        
+	index_o2x_So_tglc = mct_aVect_indexRA(x2g_g,'So_tglc')
+	index_x2g_So_tglc = mct_aVect_indexRA(o2x_g,'So_tglc')
+	
+	!Jer: document fields being passed to GLC
+       allocate(mrgstr(ngflds))
+       do i = 1,ngflds
           field = mct_aVect_getRList2c(i, x2g_g)
           mrgstr(i) = subname//'x2g%'//trim(field)//' ='
        enddo
 
+       !Jer: returns s2x_SharedIndices, which I guess are common indices of shared fields...?
        call mct_aVect_setSharedIndices(s2x_g, x2g_g, s2x_SharedIndices)
+       call mct_aVect_setSharedIndices(o2x_g, x2g_g, o2x_SharedIndices)       
 
        !--- document copy operations ---
        do i=1,s2x_SharedIndices%shared_real%num_indices
@@ -305,15 +363,22 @@ contains
           field = mct_aVect_getRList2c(i1, s2x_g)
           mrgstr(o1) = trim(mrgstr(o1))//' = s2x%'//trim(field)
        enddo
+       do i=1,o2x_SharedIndices%shared_real%num_indices
+          i1=o2x_SharedIndices%shared_real%aVindices1(i)
+          o1=o2x_SharedIndices%shared_real%aVindices2(i)
+          field = mct_aVect_getRList2c(i1, o2x_g)
+          mrgstr(o1) = trim(mrgstr(o1))//' = o2x%'//trim(field)
+       enddo       
     endif
 
     ! Create input glc state directly from land snow output state
     call mct_aVect_copy(aVin=s2x_g, aVout=x2g_g, vector=mct_usevector, sharedIndices=s2x_SharedIndices)
+    call mct_aVect_copy(aVin=o2x_g, aVout=x2g_g, vector=mct_usevector, sharedIndices=o2x_SharedIndices)   
 
     if (first_time) then
        if (iamroot) then
           write(logunit,'(A)') subname//' Summary:'
-          do i = 1,nflds
+          do i = 1,ngflds
              write(logunit,'(A)') trim(mrgstr(i))
           enddo
        endif
@@ -323,6 +388,31 @@ contains
     first_time = .false.
 
   end subroutine prep_glc_merge
+
+  !================================================================================================
+
+  subroutine prep_glc_calc_o2x_gx(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Create o2x_gx
+    
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    
+    character(*), parameter :: subname = '(prep_glc_calc_o2x_gx)'
+    ! Local Variables
+    integer eoi
+    type(mct_avect), pointer :: o2x_ox
+    
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)   
+    do eoi = 1,num_inst_ocn
+      o2x_ox => component_get_c2x_cx(ocn(eoi))
+      call seq_map_map(mapper_SFo2g, o2x_ox, o2x_gx(eoi), &
+           fldlist='So_tglc',norm=.true.)
+    enddo
+    
+    call t_drvstopf  (trim(timer))     
+  end subroutine prep_glc_calc_o2x_gx    
 
   !================================================================================================
 
@@ -346,7 +436,7 @@ contains
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_glc_calc_l2x_gx
-
+  
   !================================================================================================
 
   function prep_glc_get_l2x_gx()
@@ -364,9 +454,31 @@ contains
     prep_glc_get_l2gacc_lx_cnt => l2gacc_lx_cnt
   end function prep_glc_get_l2gacc_lx_cnt
 
+  function prep_glc_get_o2x_gx()
+    type(mct_aVect), pointer :: prep_glc_get_o2x_gx(:)
+    prep_glc_get_o2x_gx => o2x_gx(:)   
+  end function prep_glc_get_o2x_gx
+
+  function prep_glc_get_x2gacc_gx()
+    type(mct_aVect), pointer :: prep_glc_get_x2gacc_gx(:)
+    prep_glc_get_x2gacc_gx => x2gacc_gx(:)   
+  end function prep_glc_get_x2gacc_gx    
+
+  function prep_glc_get_x2gacc_gx_cnt()
+    integer, pointer :: prep_glc_get_x2gacc_gx_cnt
+    prep_glc_get_x2gacc_gx_cnt => x2gacc_gx_cnt
+  end function prep_glc_get_x2gacc_gx_cnt        
+
+!Jer TODO: probably need to copy above functions, for use (at least) in seq_restmod
+  
   function prep_glc_get_mapper_SFl2g()
     type(seq_map), pointer :: prep_glc_get_mapper_SFl2g
     prep_glc_get_mapper_SFl2g => mapper_SFl2g  
   end function prep_glc_get_mapper_SFl2g
+  
+  function prep_glc_get_mapper_SFo2g()
+    type(seq_map), pointer :: prep_glc_get_mapper_SFo2g
+    prep_glc_get_mapper_SFo2g=> mapper_SFo2g  
+  end function prep_glc_get_mapper_SFo2g 
 
 end module prep_glc_mod

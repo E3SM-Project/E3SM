@@ -19,6 +19,7 @@ module glc_cpl_indices
   integer, public :: index_x2g_Sl_tsrf(0:glc_nec_max)   = 0
   integer, public :: index_x2g_Sl_topo(0:glc_nec_max)   = 0
   integer, public :: index_x2g_Flgl_qice(0:glc_nec_max) = 0
+  integer, public :: index_x2g_Slgl_tglc = 0
 
   ! glc -> drv
 
@@ -90,6 +91,8 @@ contains
        name = 'Flgl_qice' // cnum
        index_x2g_Flgl_qice(num) = mct_avect_indexra(x2g,trim(name))
     end do
+    
+    index_x2g_Slgl_tglc=mct_avect_indexra(x2g,'Sg_tglc',perrwith='quiet')
 
     call mct_aVect_clean(x2g)
     call mct_aVect_clean(g2x)

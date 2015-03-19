@@ -461,7 +461,6 @@ contains
 !Jer note: this currently exactly replicates the conversion and pack
 !of surface temperature, see below.  I've not explored SBUFF_SUM yet, 
 !because I feel that's redundant given we'll be using MPAS instead.
-   write(stdout,*) 'index_o2x_So_tglc=',index_o2x_So_tglc 
 	   
    n = 0
    do iblock = 1, nblocks_clinic

@@ -460,6 +460,7 @@ print ("\n");
 &prttime(' DRIVER_GLCPREP '         ,$coffset,$adays,$m999);
 &prttime(' driver_glcprep_avg '     ,$coffset,$adays,$m999);
 &prttime(' driver_glcprep_lnd2glc ' ,$coffset,$adays,$m999);
+&prttime(' driver_glcprep_ocn2glc ' ,$coffset,$adays,$m999);
 &prttime(' driver_glcprep_mrgx2g '  ,$coffset,$adays,$m999);
 &prttime(' driver_glcprep_diagav '  ,$coffset,$adays,$m999);
 print ("\n");

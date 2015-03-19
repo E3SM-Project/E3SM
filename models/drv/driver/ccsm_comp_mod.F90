@@ -2720,17 +2720,24 @@ end subroutine ccsm_init
             call t_drvstartf ('DRIVER_GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-            if (lnd_c2_glc) then
-               call prep_glc_accum_avg(timer='driver_glcprep_avg')
+	    !n Jer: get ocn inputs to glc, on glc grid
+	    if (ocn_c2_glc) then
+	       call prep_glc_calc_o2x_gx(timer='driver_glcprep_ocn2glc')
+	    end if
 
+            !Jer: get lnd inputs to glc, on glc grid
+            if (lnd_c2_glc) then
                ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
                call prep_glc_calc_l2x_gx(timer='driver_glcprep_lnd2glc')
+	    end if
+	    
+	    !Jer: average the accumulated fields from both lnd and ocn
+	    call prep_glc_accum_avg(timer='driver_glcprep_avg')
 
-               call prep_glc_mrg(infodata, timer_mrg='driver_glcprep_mrgx2g')
+            call prep_glc_mrg(infodata, timer_mrg='driver_glcprep_mrgx2g')
 
-               call component_diag(infodata, glc, flow='x2c', comment='send glc', &
-                    info_debug=info_debug, timer_diag='driver_glcprep_diagav')
-            endif
+            call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+                 info_debug=info_debug, timer_diag='driver_glcprep_diagav')
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_GLCPREP',cplrun=.true.)
