@@ -1048,7 +1048,7 @@
 			<var_array name="vertNonLocalFlux"/>
 			<var name="surfaceWindStressMagnitude"/>
 			<var name="surfaceWindStress"/>
-			<var name="surfaceMassFlux"/>
+			<var name="surfaceThicknessFlux"/>
 			<var name="seaIceEnergy"/>
 			<var name="penetrativeTemperatureFlux"/>
 			<var name="transmissionCoefficients"/>
@@ -1850,13 +1850,20 @@
 		/>
 	</var_struct>
 	<var_struct name="forcing" time_levs="1">
+		<!-- *********************************************************************
+
+				The fields listed below are built within MPAS-O. If they are
+				read in from an input file, their values will be overwritten by
+				constituent fields, depending on the forcing options selected.
+
+			 ********************************************************************* -->
 		<var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}"
 			 description="Wind stress at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
 		/>
 		<var name="surfaceWindStressMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}"
 			 description="Magnitude of wind stress at the surface of the ocean, at cell centers."
 		/>
-		<var name="surfaceMassFlux" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="surfaceThicknessFlux" type="real" dimensions="nCells Time" units="m s^{-1}"
 			 description="Flux of mass through the ocean surface. Positive into ocean."
 		/>
 		<var_array name="surfaceTracerFlux" type="real" dimensions="nCells Time">
@@ -1871,6 +1878,15 @@
 			/>
 		</var_array>
 
+
+		<!-- *********************************************************************
+
+				The fields listed below are constituent fields for coupling.
+				Their use depends on the forcing options selected (check their
+				packages). Some are used as input for simulations, while others
+				are outputs.
+
+			 ********************************************************************* -->
 		<var name="seaSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="Pressure defined at the sea surface."
 		/>
