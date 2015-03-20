@@ -2543,7 +2543,7 @@ module mpas_stream_manager
                 end if
             end if
 
-            call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+            call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -2630,7 +2630,7 @@ module mpas_stream_manager
                     end if
                 end if
 
-                call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+                call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
                 if (local_ierr /= MPAS_STREAM_NOERR) then
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
@@ -2991,7 +2991,7 @@ module mpas_stream_manager
                 return
             end if
 
-            call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+            call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -3028,7 +3028,7 @@ module mpas_stream_manager
                return
            end if
 
-           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
                ierr = MPAS_STREAM_MGR_ERROR
                return
@@ -3217,7 +3217,7 @@ module mpas_stream_manager
                return
            end if
 
-           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
                ierr = MPAS_STREAM_MGR_ERROR
                return
@@ -3458,13 +3458,14 @@ module mpas_stream_manager
     !>  This routine will take as input a pool representing a stream.
     !>  It will then generate a stream type based on this pool, and return that.
     !-----------------------------------------------------------------------
-    subroutine build_stream(stream, direction, allFields, timeLevelIn, mgLevelIn, ierr) !{{{
+    subroutine build_stream(stream, direction, allFields, allPackages, timeLevelIn, mgLevelIn, ierr) !{{{
 
         implicit none
 
         type (MPAS_stream_list_type), intent(inout) :: stream
         integer, intent(in) :: direction
         type (MPAS_Pool_type), intent(in) :: allFields
+        type (MPAS_Pool_type), intent(in) :: allPackages
         integer, intent(in) :: timeLevelIn
         integer, intent(in) :: mgLevelIn
         integer, intent(out) :: ierr
@@ -3497,6 +3498,10 @@ module mpas_stream_manager
 
         integer, parameter :: idLength = 10
         character (len=idLength) :: file_id
+
+        character (len=StrKIND), pointer :: packages
+        logical :: active_field
+        integer :: err_level
 
 
         if (direction == MPAS_STREAM_OUTPUT) then
@@ -3549,9 +3554,25 @@ module mpas_stream_manager
 
         call mpas_pool_begin_iteration(stream % field_pool)
 
-        do while ( mpas_pool_get_next_member(stream % field_pool, itr) )
+        FIELD_LOOP: do while ( mpas_pool_get_next_member(stream % field_pool, itr) )
 
             if (itr % memberType == MPAS_POOL_CONFIG) then
+
+                err_level = mpas_pool_get_error_level()
+                call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+                nullify(packages)
+                call mpas_pool_get_config(stream % field_pool, trim(itr % memberName)//':packages', packages)
+                if (associated(packages)) then
+                    active_field = parse_package_list(allPackages, trim(packages))
+                else
+                    active_field = .true.
+                end if
+                call mpas_pool_set_error_level(err_level)
+
+                STREAM_DEBUG_WRITE('Is field '''//trim(itr % memberName)//''' active in stream '''//trim(stream % name)//'? ' COMMA active_field)
+
+                if (.not. active_field) cycle FIELD_LOOP
 
                 ! To avoid accidentally matching in case statements below...
                 info % fieldType = -1
@@ -3615,7 +3636,7 @@ module mpas_stream_manager
                 end select
 
             end if
-        end do
+        end do FIELD_LOOP
 
     end subroutine build_stream !}}}
 
