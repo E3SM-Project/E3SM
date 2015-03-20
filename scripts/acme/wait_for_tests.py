@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, doctest, time, threading, Queue, socket, signal
+import os, doctest, time, threading, Queue, socket, signal, distutils.spawn
 
 import xml.etree.ElementTree as xmlet
 
@@ -94,7 +94,7 @@ ScpCommand: %s
 # Dashboard start time
 NightlyStartTime: %s UTC
 """ % (os.getcwd(), os.getcwd(), hostname,
-       cdash_build_name, find_executable("scp"), cdash_timestamp)
+       cdash_build_name, distutils.spawn.find_executable("scp"), cdash_timestamp)
 
     dart_fd = open("DartConfiguration.tcl", "w")
     dart_fd.write(dart_config)
