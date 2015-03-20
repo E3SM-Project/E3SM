@@ -857,6 +857,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	}
 
 	fortprintf(fd, "\n");
+	fortprintf(fd, "write(stderrUnit,\'(a)\') \'Processing decomposed dimensions ...\'\n\n");
 
 	/* Retrieve dimension integers */
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next) {
@@ -867,7 +868,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 			if ( dimdecomp != NULL && strcmp(dimdecomp, "none") != 0 ) {
 				fortprintf(fd, "      call mpas_pool_get_dimension(readDimensions, '%s', %s)\n", dimname, dimname);
 				fortprintf(fd, "      if ( .not. associated(%s)) then\n", dimname);
-				fortprintf(fd, "         call mpas_dmpar_global_abort('ERROR: Dimension %s was not defined, and cannot be decomposed. Exiting...')\n", dimname);
+				fortprintf(fd, "         call mpas_dmpar_global_abort('ERROR: Dimension \'\'%s\'\' was not defined, and cannot be decomposed.')\n", dimname);
 				fortprintf(fd, "      end if\n");
 			}
 		}
@@ -884,7 +885,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 			if ( dimdecomp != NULL && strcmp(dimdecomp, "none") != 0 ) {
 				fortprintf(fd, "      call mpas_decomp_get_method(decompositions, '%s', decompFunc, iErr)\n", dimdecomp);
 				fortprintf(fd, "      if ( iErr /= MPAS_DECOMP_NOERR ) then\n");
-				fortprintf(fd, "         call mpas_dmpar_global_abort('ERROR: Decomposition function %s does not exist.')\n", dimdecomp);
+				fortprintf(fd, "         call mpas_dmpar_global_abort('ERROR: Decomposition method \'\'%s\'\' used by dimension \'\'%s\'\' does not exist.')\n", dimdecomp, dimname);
 				fortprintf(fd, "      end if\n");
 				fortprintf(fd, "      allocate(ownedIndices)\n");
 				fortprintf(fd, "      nullify(ownedIndices %% ioinfo)\n");
@@ -901,10 +902,16 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%sOwnedIndices', ownedIndices)\n", dimname);
 				fortprintf(fd, "      call mpas_pool_get_dimension(block %% dimensions, '%s', %s)\n", dimname, dimname);
 				fortprintf(fd, "      %s = size(ownedIndices %% array, dim=1)\n", dimname);
+				fortprintf(fd, "      write(stderrUnit,\'(a,a20,a,i8,a,i8)\') \'       \', \'%s\', \' =>\', %s, \' indices owned by block\', block %% blockID\n", dimname, dimname);
 				fortprintf(fd, "\n");
 			}
 		}
 	}
+
+	fortprintf(fd, "write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "write(stderrUnit,\'(a)\') \' ----- done processing decomposed dimensions -----\'\n");
+	fortprintf(fd, "write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "write(stderrUnit,*) \' '\n");
 
 	fortprintf(fd, "\n");
 	fortprintf(fd, "   end subroutine mpas_setup%sdecomposed_dimensions\n", core_string);

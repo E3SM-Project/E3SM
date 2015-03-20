@@ -1258,16 +1258,6 @@ module mpas_block_creator
        call mpas_setup_decomposed_dimensions(block_ptr, stream_manager, readableDimensions, block_ptr % dimensions, total_blocks)
        call mpas_setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
 
-       call mpas_pool_begin_iteration(block_ptr % dimensions)
-       do while (mpas_pool_get_next_member(block_ptr % dimensions, itr))
-          if ( itr % memberType == MPAS_POOL_DIMENSION ) then
-             if ( itr % nDims == 0 ) then
-                call mpas_pool_get_dimension(block_ptr % dimensions, trim(itr % memberName), dim0d)
-                write(0, *) ' * Dimension ' // trim(itr % memberName) // ' has value ', dim0d
-             end if
-          end if
-       end do
-
        call mpas_block_creator_allocate_pool_fields(block_ptr % structs, block_ptr % dimensions)
 
        err_level = mpas_pool_get_error_level()

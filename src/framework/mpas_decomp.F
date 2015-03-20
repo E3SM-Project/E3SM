@@ -129,6 +129,8 @@ module mpas_decomp
 !> \date   03/11/2015
 !> \details
 !>  This routine registers a decomposition function in a decomposition list.
+!>  If present, the optional argument iErr is set to MPAS_DECOMP_ERROR if 
+!>  the function is already registered and to MPAS_DECOMP_NOERR otherwise.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_decomp_register_method(decompList, decompName, decompFunc, iErr)!{{{
@@ -150,7 +152,8 @@ module mpas_decomp
       do while (associated(decompCursor))
          if ( nameLen == decompCursor % nameLen ) then
             if ( trim(decompName) == trim(decompCursor % decompName) ) then
-               DECOMP_ERROR_WRITE('Decomposition ' // trim(decompName) // ' is already registered.')
+               DECOMP_DEBUG_WRITE('Decomposition ' // trim(decompName) // ' is already registered.')
+               iErr = MPAS_DECOMP_ERROR
                return
             end if
          end if
@@ -179,6 +182,8 @@ module mpas_decomp
 !> \date   03/11/2015
 !> \details
 !>  This routine querys a decomposition list for a specific decomposition function.
+!>  If present, the optional argument iErr is set to MPAS_DECOMP_ERROR if 
+!>  the requested function is not found and to MPAS_DECOMP_NOERR otherwise.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_decomp_get_method(decompList, decompName, decompFunc, iErr)!{{{
@@ -207,7 +212,7 @@ module mpas_decomp
       end do
 
       iErr = MPAS_DECOMP_ERROR
-      DECOMP_ERROR_WRITE('Decomposition '//trim(decompName)//' not found in decomposition list.')
+      DECOMP_DEBUG_WRITE('Decomposition '//trim(decompName)//' not found in decomposition list.')
 
    end subroutine mpas_decomp_get_method!}}}
 
