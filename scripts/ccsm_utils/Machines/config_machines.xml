@@ -537,7 +537,7 @@
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
-         <MPILIBS>openmpi,mpich</MPILIBS>
+         <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
          <RUNDIR>/lcrc/project/$PROJECT/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/lcrc/project/$PROJECT/$CCSMUSER/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
