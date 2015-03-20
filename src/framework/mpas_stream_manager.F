@@ -722,6 +722,7 @@ module mpas_stream_manager
         type (mpas_pool_field_info_type) :: info
         character (len=StrKIND) :: field_pkg
         integer, pointer :: test_ptr
+        logical :: test_logical
         integer :: err_level
         integer :: err_local
 
@@ -774,8 +775,14 @@ module mpas_stream_manager
         end if
 
         !
-        ! MGD TODO: validate packages?
+        ! Validate packages
         !
+        if (present(packages)) then
+            test_logical = parse_package_list(manager % allPackages, trim(packages), err_local)
+            if (err_local /= 0) then
+                STREAM_WARNING_WRITE('One or more packages in '''//trim(packages)//''' attached to field '''//trim(fieldName)//''' is undefined')
+            end if
+        end if
 
         !
         ! Add field to field pool in stream if the field is activated
@@ -825,6 +832,7 @@ module mpas_stream_manager
         type (mpas_pool_iterator_type) :: itr
         character (len=StrKIND) :: field_pkg
         integer, pointer :: test_ptr
+        logical :: test_logical
         integer :: err_level
         integer :: err_local
 
@@ -861,8 +869,14 @@ module mpas_stream_manager
         end if
 
         !
-        ! MGD TODO: validate packages?
+        ! Validate packages
         !
+        if (present(packages)) then
+            test_logical = parse_package_list(manager % allPackages, trim(packages), err_local)
+            if (err_local /= 0) then
+                STREAM_WARNING_WRITE('One or more packages in '''//trim(packages)//''' attached to fields from stream '''//trim(refStreamID)//''' is undefined')
+            end if
+        end if
 
         !
         ! Loop over all fields in refStream and add them one by one to stream
