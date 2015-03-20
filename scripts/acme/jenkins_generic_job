@@ -216,7 +216,7 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
     # Wait for tests
     #
 
-    cdash_build_name = "_".join(test_suite, git_branch, compiler) if submit_to_dashboard else None
+    cdash_build_name = "_".join([test_suite, git_branch, compiler]) if submit_to_dashboard else None
     tests_passed = wait_for_tests.wait_for_tests(glob.glob("%s/*/TestStatus" % casearea),
                                                  not use_batch, # wait if using queue
                                                  False, # don't check throughput
