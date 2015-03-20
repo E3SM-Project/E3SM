@@ -227,7 +227,7 @@ class goldbach(platformBuilder):
         self.lmod = lmod.ModuleInterface()
         self.lmod.python_init("/usr/share/Modules/init/python.py")
 
-        self.lmod.purge()
+#        self.lmod.purge()
 
         for cmd in self.moduleList:
             self.lmod.load(cmd)
