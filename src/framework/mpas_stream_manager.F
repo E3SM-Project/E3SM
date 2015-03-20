@@ -3772,6 +3772,97 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
+    !  routine parse_package_list
+    !
+    !> \brief Parses a semi-colon-separated list of package names, indicating whether any are active
+    !> \author Michael Duda
+    !> \date   19 March 2015
+    !> \details 
+    !>  This function determines whether any of the named strings in 
+    !>  the semi-colon-separated list provided in the 'packages' argument are
+    !>  active. 
+    !>  If any of the packages does not exist in the package pool, the optional
+    !>  argument ierr is set to a non-zero value; otherwise, if all packages exist, 
+    !>  ierr will be set to zero upon return.
+    !
+    !-----------------------------------------------------------------------
+    logical function parse_package_list(package_pool, packages, ierr) result(active)
+ 
+        implicit none
+ 
+        type (mpas_pool_type), intent(in) :: package_pool
+        character (len=*), intent(in) :: packages
+        integer, intent(out), optional :: ierr
+ 
+        integer :: i, j, slen
+        integer :: err_level
+        logical, pointer :: pkg_val
+ 
+ 
+        if (present(ierr)) ierr = 0
+ 
+        slen = len_trim(packages)
+ 
+
+        !
+        ! No packages
+        !
+        if (slen == 0) then
+            active = .true.
+            return
+        end if
+  
+        active = .false.
+
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+
+        !
+        ! Possible semi-colons in 'packages'
+        !
+        i = 1
+        j = index(packages,';')
+        do while (j >= i)
+            if (j > i) then
+                nullify(pkg_val)
+                call mpas_pool_get_package(package_pool, packages(i:j-1)//'Active', pkg_val)
+                if (associated(pkg_val)) then
+                    if (pkg_val) then
+                        active = .true.
+                        call mpas_pool_set_error_level(err_level)
+                        return
+                    end if
+                else
+                    if (present(ierr)) ierr = 1
+                end if
+            end if
+            i = j+1
+            j = index(packages(i:slen),';') + i - 1
+        end do
+
+
+        !
+        ! No more semi-colons to worry about
+        !
+        if (i < slen) then
+            nullify(pkg_val)
+            call mpas_pool_get_package(package_pool, packages(i:slen)//'Active', pkg_val)
+            if (associated(pkg_val)) then
+                if (pkg_val) then
+                    active = .true.
+                    call mpas_pool_set_error_level(err_level)
+                    return
+                end if
+            else
+                if (present(ierr)) ierr = 1
+            end if
+        end if
+
+    end function parse_package_list
+
+
+    !-----------------------------------------------------------------------
     !  routine exch_all_halos
     !
     !> \brief Exchange halos of all fields in stream
