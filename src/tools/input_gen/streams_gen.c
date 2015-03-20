@@ -71,7 +71,7 @@ int main(int argc, char ** argv)/*{{{*/
 		keys[i] = malloc(sizeof(char)*1024);
 		values[i] = malloc(sizeof(char)*1024);
 
-		string = strdup(argv[4+i]);
+		string = strdup(argv[5+i]);
 		tofree = string;
 
 		token = strsep(&string, "=");
