@@ -766,7 +766,7 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   bool handshake=false;
   bool isend = false;
   int maxreq = MAX_GATHER_BLOCK_SIZE;
-  //  int maxreq = -1;
+  //  int maxreq = 0;
   MPI_Comm mycomm;
 
   int ntasks ;
@@ -784,6 +784,8 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   if(iodesc->rearranger==PIO_REARR_BOX){
     mycomm = ios.union_comm;
     niotasks = ios.num_iotasks;
+    if(niotasks == ios.num_comptasks)
+      maxreq = 0;
   }else{
     mycomm = iodesc->subset_comm;
     niotasks=1;
@@ -863,15 +865,15 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   //
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
-#if DEBUG
+  #if DEBUG
   printf("%s %d \n",__FILE__,__LINE__);
-#endif
+  #endif
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     mycomm, handshake,isend, maxreq);
-#if DEBUG
+  #if DEBUG
   printf("%s %d \n",__FILE__,__LINE__);
-#endif
+  #endif
   brel(sendcounts);
   brel(recvcounts); 
   brel(sdispls);

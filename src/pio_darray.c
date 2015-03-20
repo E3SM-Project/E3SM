@@ -989,7 +989,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	vdesc->record=0;
     }
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
-                  printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
+         //         printf("%s %d %d %ld %d %d\n",__FILE__,__LINE__,regioncnt,region,fndims,ndims);
       tmp_bufsize=1;
       if(region==NULL || iodesc->llen==0){
 	for(i=0;i<fndims;i++){
@@ -1132,10 +1132,8 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
             rrlen++;
 	  }
 	  if(regioncnt==iodesc->maxregions-1){
-	    printf("%s %d\n",__FILE__,__LINE__);
 	    ierr = ncmpi_get_varn_all(file->fh, vid, rrlen, startlist, 
 				      countlist, IOBUF, iodesc->llen, iodesc->basetype);
-	    printf("%s %d\n",__FILE__,__LINE__);
 	    for(i=0;i<rrlen;i++){
 	      free(startlist[i]);
 	      free(countlist[i]);

@@ -261,7 +261,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     for(int i=0;i<nprocs;i++){
       printf("%d sndlths %d %d %d %d\n",i,sndlths[i],sdispls[i],rcvlths[i],rdispls[i]);
     }
-     #endif
+    #endif
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }
@@ -425,11 +425,13 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     }
   }
 #ifndef _MPISERIAL
+  //     printf("%s %d %d \n",__FILE__,__LINE__,nprocs);
   if(steps>0){
     CheckMPIReturn(MPI_Waitall(steps, rcvids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
     if(isend)
       CheckMPIReturn(MPI_Waitall(steps, sndids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
   }
+  //      printf("%s %d %d \n",__FILE__,__LINE__,nprocs);
 #endif
   
   return PIO_NOERR;
