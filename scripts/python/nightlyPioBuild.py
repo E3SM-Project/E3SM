@@ -45,7 +45,7 @@ class nightlyBuilder(object):
          self.subject='Nightly Build: pio 2.0 - '+self.platform
          self.buildDir='/home/jedwards/nightlyPioBuild'
          self.python = '/usr/local/anaconda-2.0.1/bin/python'
-
+         os.environ['MODULESHOME'] = '/usr/share/Modules'
       if self.platform == "yellowstone":
          self.compilers = ['gnu','pgi','intel']
          self.subject='Nightly Build: pio 2.0 - '+self.platform

@@ -210,7 +210,7 @@ class goldbach(platformBuilder):
         self.BUILD_DIR = "build_goldbach_" + compiler
         self.runModuleCmd()
         
-        self.CMAKE_EXE = '/usr/bin/cmake --debug-trycompile '
+        self.CMAKE_EXE = '/usr/bin/cmake  '
    
         self.OFLAGS += ( '-D PLATFORM:STRING=goldbach ')
         if mpilib is not "mpi-serial":
@@ -227,7 +227,7 @@ class goldbach(platformBuilder):
         self.lmod = lmod.ModuleInterface()
         self.lmod.python_init("/usr/share/Modules/init/python.py")
 
-#        self.lmod.purge()
+        self.lmod.purge()
 
         for cmd in self.moduleList:
             self.lmod.load(cmd)
