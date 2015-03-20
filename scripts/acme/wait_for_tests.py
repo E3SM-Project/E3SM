@@ -4,6 +4,7 @@ import os, doctest, time, threading, Queue, socket, signal
 
 import xml.etree.ElementTree as xmlet
 
+import acme_util
 from acme_util import expect, warning, verbose_print
 
 TEST_STATUS_FILENAME     = "TestStatus"
