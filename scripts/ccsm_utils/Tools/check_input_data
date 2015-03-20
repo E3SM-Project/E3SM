@@ -24,6 +24,8 @@ OPTIONS
      -prestage <prestage>   Prestage data from inputdata to prestage
      -datalistdir <dir>     Directory which will be searched for .input_data_list files
                             Default is $CASEBUILD.  Optional.
+     -svnloc <svnloc>       Location of the svn inputdata repository from which to export
+                            missing data. Optional.
      -verbose [or -v]       Print extra information. Optional.
      -help [or -h]          Print usage to STDOUT.  Optional.
 SUMMARY
@@ -45,6 +47,7 @@ my %opts = ( inputdata      => undef,
 	     export         => 0,
 	     prestage       => 0,
 	     datalistdir    => undef,
+	     svnloc         => undef,
 	     verbose        => 0,
 	     help           => 0
 	    );
@@ -55,6 +58,7 @@ GetOptions(
     "export"                    => \$opts{'export'},
     "prestage=s"                => \$opts{'prestage'},
     "datalistdir=s"             => \$opts{'datalistdir'},
+    "svnloc=s"                  => \$opts{'svnloc'},
     "v|verbose"                 => \$opts{'verbose'},
     "h|help"                    => \$opts{'help'},
 )  or usage();
@@ -136,7 +140,13 @@ if ($prestageopt) {
 }    
 
 # Subversion repository location.
-my $svn_loc = 'https://acme-svn2.ornl.gov/acme-repo/acme/inputdata/';
+my $svn_loc = undef;
+if (defined($opts{'svnloc'})) {
+    $svn_loc = "$opts{'svnloc'}/";
+}
+else {
+    $svn_loc = 'https://acme-svn2.ornl.gov/acme-repo/acme/inputdata/';
+}
 my $svn_loc_backup = 'https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/';
 
 # If export option is set, test for svn install, and server
