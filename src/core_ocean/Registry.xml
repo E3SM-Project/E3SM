@@ -910,6 +910,12 @@
 			<var name="xtime"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
+			<var name="boundaryLayerDepth"/>
+			<var_array name="tracersSurfaceValue"/>
+			<var_array name="surfaceVelocity"/>
+			<var_array name="SSHGradient"/>
+			<var_array name="vertNonLocalFlux"/>
+
 		</stream>
 		<stream name="output" 
 				type="output"
