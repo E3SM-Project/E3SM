@@ -438,54 +438,54 @@ implicit none
     
     !codes below needs some change
     ii=i_litr1
-    do jj = 1, nelm
-      kk = (ii-1)*nelm+jj
+    do jj = 1, nelms
+      kk = (ii-1)*nelms+jj
       betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
-      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+      betrtracer_vars%tracer_solid_passive_diffus_thc(kk) = 1.e-30_r8
     enddo
 
     ii=i_litr2
-    do jj = 1, nelm
-      kk = (ii-1)*nelm+jj
+    do jj = 1, nelms
+      kk = (ii-1)*nelms+jj
       betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
-      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+      betrtracer_vars%tracer_solid_passive_diffus_thc(kk) = 1.e-30_r8
     enddo
 
     ii=i_litr3
-    do jj = 1, nelm
-      kk = (ii-1)*nelm+jj
+    do jj = 1, nelms
+      kk = (ii-1)*nelms+jj
       betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
-      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+      betrtracer_vars%tracer_solid_passive_diffus_thc(kk) = 1.e-30_r8
     enddo
 
     !cwd is not moved
     ii=i_cwd
-    do jj = 1, nelm
-      kk = (ii-1)*nelm+jj
+    do jj = 1, nelms
+      kk = (ii-1)*nelms+jj
       betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1.e-30_r8
-      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+      betrtracer_vars%tracer_solid_passive_diffus_thc(kk) = 1.e-30_r8
     enddo
     
 
     ii=i_soil1
-    do jj = 1, nelm
-      kk = (ii-1)*nelm+jj
+    do jj = 1, nelms
+      kk = (ii-1)*nelms+jj
       betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
-      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+      betrtracer_vars%tracer_solid_passive_diffus_thc(kk) = 1.e-30_r8
     enddo
 
     ii=i_soil2
-    do jj = 1, nelm
-      kk = (ii-1)*nelm+jj
+    do jj = 1, nelms
+      kk = (ii-1)*nelms+jj
       betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
-      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+      betrtracer_vars%tracer_solid_passive_diffus_thc(kk) = 1.e-30_r8
     enddo
 
     ii=i_soil3
-    do jj = 1, nelm
-      kk = (ii-1)*nelm+jj
+    do jj = 1, nelms
+      kk = (ii-1)*nelms+jj
       betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = 1._r8
-      betrtracer_vars%tracer_solid_passive_diffus_shc(kk) = 1.e-30_r8
+      betrtracer_vars%tracer_solid_passive_diffus_thc(kk) = 1.e-30_r8
     enddo
 
     
@@ -495,20 +495,20 @@ implicit none
       CNDecompBgcParamsInst%k_decay_som3 = CNDecompBgcParamsInst%k_decay_som3 * CNDecompBgcParamsInst%spinup_vector(3)
 
       ii=i_soil1
-      do jj = 1, nelm
-        kk = (ii-1)*nelm+jj
+      do jj = 1, nelms
+        kk = (ii-1)*nelms+jj
         betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal(kk) * spinup_factor(ii)
       enddo     
 
       ii=i_soil2
-      do jj = 1, nelm
-        kk = (ii-1)*nelm+jj
+      do jj = 1, nelms
+        kk = (ii-1)*nelms+jj
         betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal(kk) * spinup_factor(ii)
       enddo     
 
       ii=i_soil3
-      do jj = 1, nelm
-        kk = (ii-1)*nelm+jj
+      do jj = 1, nelms
+        kk = (ii-1)*nelms+jj
         betrtracer_vars%tracer_solid_passive_diffus_scal(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal(kk) * spinup_factor(ii)
       enddo     
     
