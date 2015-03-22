@@ -549,8 +549,8 @@
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>csh</BATCHSUBMIT>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
 </machine>
@@ -593,8 +593,8 @@
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>csh</BATCHSUBMIT>
          <SUPPORTED_BY>   jayesh -at- mcs.anl.gov</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
