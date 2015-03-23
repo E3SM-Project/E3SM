@@ -55,7 +55,11 @@ cd \$RUNDIR
 echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
 
 setenv OMP_NUM_THREADS ${maxthrds}
-mpiexec -n ${maxtasks} \${EXEROOT}/cesm.exe >&! cesm.log.\$LID
+if ( "\$MPILIB" == "mpi-serial" ) then
+    \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+else
+    mpiexec -n ${maxtasks} \${EXEROOT}/cesm.exe >&! cesm.log.\$LID
+endif
 
 wait
 echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
