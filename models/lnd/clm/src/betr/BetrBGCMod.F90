@@ -485,8 +485,8 @@ contains
   integer  :: ngwmobile_tracers
 
 
-  real(r8), parameter :: err_relative_threshold=1.e-3_r8 !relative error threshold
-  real(r8), parameter :: err_min=1.e-12_r8  
+  real(r8), parameter :: err_relative_threshold=1.e-2_r8 !relative error threshold
+  real(r8), parameter :: err_adv_min=1.e-10_r8  
   real(r8)            :: mass0
   character(len=255) :: subname = 'do_tracer_advection'
   
@@ -600,7 +600,7 @@ contains
           dmass(c) =  dot_sum(tracer_conc_mobile_col(c,jtops(c):ubj,j), dz(c,jtops(c):ubj))- dmass(c)
                     
           err_tracer(c) = dmass(c) - inflx_top(c) * dtime_loc(c) + leaching_mass(c) + transp_mass(c)
-          if(abs(err_tracer(c))<err_min)then
+          if(abs(err_tracer(c))<err_adv_min)then
             !when the absolute value is too small, set relative error to 
             err_relative = err_relative_threshold*0.999_r8   
           else
@@ -610,7 +610,7 @@ contains
             leaching_mass(c) = leaching_mass(c) - err_tracer(c)
           else
             !something is wrong, write error information
-            write(iulog,'(I8,X,A,5(X,A,X,E18.10))')c,tracernames(j),' err=',err_tracer(c),' lech=',leaching_mass(c),' infl=',inflx_top(c),' dmass=',dmass(c), ' mass0=',mass0
+            write(iulog,'(I8,X,A,5(X,A,X,E18.10))')c,tracernames(j),' err=',err_tracer(c),' lech=',leaching_mass(c),' infl=',inflx_top(c),' dmass=',dmass(c), ' mass0=',mass0,'err_rel=',err_relative
             call endrun('mass balance error for tracer '//tracernames(j)//errMsg(__FILE__, __LINE__))            
           endif
           tracer_flx_vtrans(c, j)  = tracer_flx_vtrans(c,j) + transp_mass(c)
@@ -687,8 +687,8 @@ contains
   logical  :: lnegative_tracer                      !when true, negative tracer occurs
   logical  :: lexit_loop
   real(r8) :: err_relative 
-  real(r8), parameter :: err_relative_threshold=1.e-3_r8 !relative error threshold
-  real(r8), parameter :: err_min = 1.e-12_r8  !minimum absolute error
+  real(r8), parameter :: err_relative_threshold=1.e-2_r8 !relative error threshold
+  real(r8), parameter :: err_dif_min = 1.e-12_r8  !minimum absolute error
   
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
   SHR_ASSERT_ALL((ubound(dz) == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
@@ -780,7 +780,7 @@ contains
           enddo
           err_tracer(c) = err_tracer(c)-diff_surf(c)*dtime_loc(c)
           !calculate relative error, defined as the ratio between absolute error with respect to surface flux
-          if(abs(err_tracer(c))<err_min)then
+          if(abs(err_tracer(c))<err_dif_min)then
             !when the absolute value is too small, set relative error to 
             err_relative = err_relative_threshold*0.999_r8   
           else
