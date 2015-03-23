@@ -462,6 +462,15 @@ module atm_time_integration
 
          end do RK3_DYNAMICS
 
+         if (dynamics_substep < dynamics_split) then
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+            call mpas_pool_get_field(state, 'theta_m', theta_m_field, 2)
+
+            call mpas_dmpar_exch_halo_field(theta_m_field)
+            call mpas_dmpar_exch_halo_field(pressure_p_field)
+            call mpas_dmpar_exch_halo_field(rtheta_p_field)
+         end if
+
          !  dynamics-transport split, WCS 18 November 2014
          !  (1) time level 1 needs to be set to time level 2
          !  (2) need to accumulate ruAvg and wwAvg over the dynamics substeps, prepare for use in transport
