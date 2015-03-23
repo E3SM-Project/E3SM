@@ -1596,6 +1596,14 @@ module seq_flds_mod
         end do
      end if
 
+     call seq_flds_add(o2x_states,'So_tglc')
+     call seq_flds_add(x2g_states,'So_tglc')     
+     longname = 'Sea surface temperature for ocean-ice sheet coupling'
+     stdname  = ''
+     units    = 'K'
+     attname  = 'So_tglc'
+     call metadata_set(attname, longname, stdname, units)
+	
      if (flds_co2a) then
 
         call seq_flds_add(a2x_states, "Sa_co2prog")

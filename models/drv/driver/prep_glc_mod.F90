@@ -121,70 +121,67 @@ contains
     allocate(mapper_SFo2g)
     
     if (glc_present) then
-
+    
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
-
+	    
        g2x_gx => component_get_c2x_cx(glc(1))
        x2g_gx => component_get_x2c_cx(glc(1))
        lsize_g = mct_aVect_lsize(g2x_gx)
 
-       !------------Land coupling setup------------!
+       l2x_lx => component_get_c2x_cx(lnd(1))
+       lsize_l = mct_aVect_lsize(l2x_lx)
 
-		     l2x_lx => component_get_c2x_cx(lnd(1))
-		     lsize_l = mct_aVect_lsize(l2x_lx)
+       allocate(l2x_gx(num_inst_lnd))
+       allocate(l2gacc_lx(num_inst_lnd))
+       
+       do eli = 1,num_inst_lnd
+         call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2x_gx(eli) ,lsize=lsize_g)
+         call mct_aVect_zero(l2x_gx(eli))
 
-		     allocate(l2x_gx(num_inst_lnd))
-		     allocate(l2gacc_lx(num_inst_lnd))
-		     do eli = 1,num_inst_lnd
-        		call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2x_gx(eli) ,lsize=lsize_g)
-        		call mct_aVect_zero(l2x_gx(eli))
-
-        		call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2gacc_lx(eli), lsize=lsize_l)
-        		call mct_aVect_zero(l2gacc_lx(eli))
-		     enddo
-		     l2gacc_lx_cnt = 0
-
-		     if (iamroot_CPLID) then
-        		write(logunit,*) ' '
-        		write(logunit,F00) 'Initializing mapper_SFl2g'
-		     end if
-		     call seq_map_init_rearrolap(mapper_SFl2g, lnd(1), glc(1), 'mapper_SFl2g')
-		     call shr_sys_flush(logunit)
-
-       !------------Ocean coupling setup------------!       
+         call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2gacc_lx(eli), lsize=lsize_l)
+         call mct_aVect_zero(l2gacc_lx(eli))
+       enddo
+       l2gacc_lx_cnt = 0
 
        allocate(o2x_gx(num_inst_ocn))
+       allocate(x2gacc_gx(num_inst_glc))
+       
        do eoi = 1,num_inst_ocn    
           call mct_aVect_init(o2x_gx(eoi), rList=seq_flds_o2x_fields, lsize=lsize_g)
           call mct_aVect_zero(o2x_gx(eoi))
        enddo
-       
-       allocate(x2gacc_gx(num_inst_glc))
+
        do egi = 1,num_inst_glc
           call mct_avect_init(x2gacc_gx(egi), x2g_gx, lsize_g)
           call mct_aVect_zero(x2gacc_gx(egi))
        end do           
-	   
+
        x2gacc_gx_cnt = 0            
-       
-       if (ocn_c2_glc) then
-       
-	  if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_SFo2g'
-	  end if
 
-	  samegrid_go = .true.
-	  if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
-
-	  call seq_map_init_rcfile(mapper_SFo2g, ocn(1), glc(1), &
-	  'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
-	  'mapper_SFo2g initialization',esmf_map_flag)
-
-	  call shr_sys_flush(logunit)       
-
+       if (lnd_c2_glc) then
+	 if (iamroot_CPLID) then
+           write(logunit,*) ' '
+           write(logunit,F00) 'Initializing mapper_SFl2g'
+	 end if
+	 call seq_map_init_rearrolap(mapper_SFl2g, lnd(1), glc(1), 'mapper_SFl2g')
+	 call shr_sys_flush(logunit)
        end if
+
+       if (ocn_c2_glc) then	       
+	   if (iamroot_CPLID) then
+              write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_SFo2g'
+	   end if
+           samegrid_go = .true.
+	 if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
+
+	 call seq_map_init_rcfile(mapper_SFo2g, ocn(1), glc(1), &
+	 'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
+	 'mapper_SFo2g initialization',esmf_map_flag)
+       end if
+       
+       call shr_sys_flush(logunit)       
 
     end if
 
@@ -208,20 +205,20 @@ contains
     character(*), parameter :: subname = '(prep_glc_accum)'
     !---------------------------------------------------------------
 
-		  call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-		  do eli = 1,num_inst_lnd
-		     l2x_lx => component_get_c2x_cx(lnd(eli))
-		     if (l2gacc_lx_cnt == 0) then
-        		call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
-		     else
-        		call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
-		     endif
-		  end do
-		  l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    
+    do eli = 1,num_inst_lnd
+       l2x_lx => component_get_c2x_cx(lnd(eli))
+       if (l2gacc_lx_cnt == 0) then
+          call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
+       else
+          call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
+       endif
+    end do
+    l2gacc_lx_cnt = l2gacc_lx_cnt + 1
    
     do egi = 1,num_inst_glc
        x2g_gx => component_get_x2c_cx(glc(egi))
-       
        if (x2gacc_gx_cnt == 0) then
           call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
        else
@@ -252,20 +249,20 @@ contains
     character(*), parameter :: subname = '(prep_glc_accum_avg)'
     !---------------------------------------------------------------
 
-		  call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-		  if (l2gacc_lx_cnt > 1) then
-		     do eli = 1,num_inst_lnd
-        		call mct_avect_avg(l2gacc_lx(eli), l2gacc_lx_cnt)
-		     end do
-		  end if
-		  l2gacc_lx_cnt = 0
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    if (l2gacc_lx_cnt > 1) then
+       do eli = 1,num_inst_lnd
+          call mct_avect_avg(l2gacc_lx(eli), l2gacc_lx_cnt)
+       end do
+    end if
+    l2gacc_lx_cnt = 0
     
     do egi = 1,num_inst_glc
        ! temporary formation of average
        if (x2gacc_gx_cnt > 1) then
           call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
        end if
-
+       
        ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2g_gx
        x2g_gx   => component_get_x2c_cx(glc(egi)) 
        call mct_avect_copy(x2gacc_gx(egi), x2g_gx)
@@ -373,6 +370,8 @@ contains
 
     ! Create input glc state directly from land snow output state
     call mct_aVect_copy(aVin=s2x_g, aVout=x2g_g, vector=mct_usevector, sharedIndices=s2x_SharedIndices)
+    
+    !Create input glc state directly from ocean model output state (once remapped to glc grid)
     call mct_aVect_copy(aVin=o2x_g, aVout=x2g_g, vector=mct_usevector, sharedIndices=o2x_SharedIndices)   
 
     if (first_time) then
