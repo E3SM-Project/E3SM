@@ -1012,6 +1012,7 @@ contains
 
              if (present(timer_comp_run)) then
                 call t_drvstartf (trim(timer_comp_run), barrier=comp(eci)%mpicom_compid)
+                call t_adj_detailf(+1)
              end if
              if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid) 
 
@@ -1028,6 +1029,7 @@ contains
              if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
              if (present(timer_comp_run)) then
+                call t_adj_detailf(-1)
                 call t_drvstopf (trim(timer_comp_run))
              end if
 

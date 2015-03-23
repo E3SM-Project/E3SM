@@ -44,14 +44,17 @@ contains
 
     if (lcplrun) then
        call t_startf   (trim(strcpl))
+       call t_adj_detailf(+1)
     endif
 
     if (lcplcom) then
        call t_startf   (trim(strcom))
+       call t_adj_detailf(+1)
     endif
 
     if (lbudget) then
        call t_startf   (trim(strbud))
+       call t_adj_detailf(+1)
     endif
 
     call t_startf   (trim(string))
@@ -95,14 +98,17 @@ contains
     call t_stopf   (trim(string))
 
     if (lbudget) then
+       call t_adj_detailf(-1)
        call t_stopf   (trim(strbud))
     endif
 
     if (lcplrun) then
+       call t_adj_detailf(-1)
        call t_stopf   (trim(strcpl))
     endif
 
     if (lcplcom) then
+       call t_adj_detailf(-1)
        call t_stopf   (trim(strcom))
     endif
 

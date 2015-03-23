@@ -993,7 +993,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
        call t_barrierf('sync_bc_physics', mpicom)
        call t_startf ('bc_physics')
-       call t_adj_detailf(+1)
+       !call t_adj_detailf(+1)
 
 !$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk)
        do c=begchunk, endchunk
@@ -1012,7 +1012,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
        end do
 
-       call t_adj_detailf(-1)
+       !call t_adj_detailf(-1)
        call t_stopf ('bc_physics')
 
        ! Don't call the rest in CRM mode
@@ -1176,7 +1176,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
     call t_barrierf('sync_ac_physics', mpicom)
     call t_startf ('ac_physics')
-    call t_adj_detailf(+1)
+    !call t_adj_detailf(+1)
 
 !$OMP PARALLEL DO PRIVATE (C, NCOL, phys_buffer_chunk)
 
@@ -1196,7 +1196,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
             fsds(1,c))
     end do                    ! Chunk loop
 
-    call t_adj_detailf(-1)
+    !call t_adj_detailf(-1)
     call t_stopf('ac_physics')
 
 #ifdef TRACER_CHECK

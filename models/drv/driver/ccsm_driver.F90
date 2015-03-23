@@ -52,6 +52,7 @@ program ccsm_driver
 !   call t_stopf('DRIVER_INIT')
 
    call t_startf('DRIVER_INIT')
+   call t_adj_detailf(+1)
    !--------------------------------------------------------------------------
    ! Initialize ESMF.  This is done outside of the ESMF_INTERFACE ifdef
    ! because it is needed for the time manager, even if the ESMF_INTERFACE
@@ -92,6 +93,8 @@ program ccsm_driver
    call ESMF_CplCompInitialize(drvcomp, rc=localrc)
    if (localrc /= 0) call shr_sys_abort('failed to esmf initialize')
    call t_stopf('ccsm_init_esmf')
+
+   call t_adj_detailf(-1)
    call t_stopf('DRIVER_INIT')
 
    call ESMF_CplCompRun(drvcomp, rc=localrc)
@@ -109,6 +112,8 @@ program ccsm_driver
    call t_startf('ccsm_init')
    call ccsm_init()
    call t_stopf('ccsm_init')
+
+   call t_adj_detailf(-1)
    call t_stopf('DRIVER_INIT')
 
    call ccsm_run()
