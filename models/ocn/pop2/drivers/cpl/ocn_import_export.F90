@@ -414,7 +414,7 @@ contains
    type (block) :: this_block ! local block info
 
    integer (int_kind) :: nsend
-   character (char_len) ::  message
+
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -491,7 +491,7 @@ contains
              SBUFF_SUM(i,j,iblock,index_o2x_So_t)/tlast_coupled + T0_Kelvin
       enddo
       enddo
-   enddo   
+   enddo
 
 !-----------------------------------------------------------------------
 !

@@ -56,7 +56,6 @@ module seq_rest_mod
    use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox_cnt
    use prep_rof_mod,    only: prep_rof_get_l2racc_lx 
    use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
-   
    use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
    use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
    use prep_glc_mod,    only: prep_glc_get_x2gacc_gx

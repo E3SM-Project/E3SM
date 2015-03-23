@@ -121,7 +121,7 @@ contains
     allocate(mapper_SFo2g)
     
     if (glc_present) then
-    
+
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 	    
@@ -134,13 +134,12 @@ contains
 
        allocate(l2x_gx(num_inst_lnd))
        allocate(l2gacc_lx(num_inst_lnd))
-       
        do eli = 1,num_inst_lnd
-         call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2x_gx(eli) ,lsize=lsize_g)
-         call mct_aVect_zero(l2x_gx(eli))
-
-         call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2gacc_lx(eli), lsize=lsize_l)
-         call mct_aVect_zero(l2gacc_lx(eli))
+          call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2x_gx(eli) ,lsize=lsize_g)
+          call mct_aVect_zero(l2x_gx(eli))
+          
+          call mct_aVect_initSharedFields(l2x_lx, x2g_gx, l2gacc_lx(eli), lsize=lsize_l)
+          call mct_aVect_zero(l2gacc_lx(eli))
        enddo
        l2gacc_lx_cnt = 0
 
@@ -206,7 +205,6 @@ contains
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    
     do eli = 1,num_inst_lnd
        l2x_lx => component_get_c2x_cx(lnd(eli))
        if (l2gacc_lx_cnt == 0) then
@@ -315,7 +313,6 @@ contains
     type(mct_aVect), intent(inout)  :: s2x_g  ! input
     type(mct_aVect), intent(inout)  :: o2x_g  ! input
     type(mct_aVect), intent(inout)  :: x2g_g  ! output
-    
     !----------------------------------------------------------------------- 
 
     integer       :: ngflds,noflds,i,i1,o1
@@ -349,7 +346,6 @@ contains
           mrgstr(i) = subname//'x2g%'//trim(field)//' ='
        enddo
 
-       !Jer: returns s2x_SharedIndices, which I guess are common indices of shared fields...?
        call mct_aVect_setSharedIndices(s2x_g, x2g_g, s2x_SharedIndices)
        call mct_aVect_setSharedIndices(o2x_g, x2g_g, o2x_SharedIndices)       
 
@@ -435,7 +431,7 @@ contains
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_glc_calc_l2x_gx
-  
+
   !================================================================================================
 
   function prep_glc_get_l2x_gx()
@@ -468,8 +464,6 @@ contains
     prep_glc_get_x2gacc_gx_cnt => x2gacc_gx_cnt
   end function prep_glc_get_x2gacc_gx_cnt        
 
-!Jer TODO: probably need to copy above functions, for use (at least) in seq_restmod
-  
   function prep_glc_get_mapper_SFl2g()
     type(seq_map), pointer :: prep_glc_get_mapper_SFl2g
     prep_glc_get_mapper_SFl2g => mapper_SFl2g  
