@@ -868,41 +868,30 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 			if ( dimdecomp != NULL && strcmp(dimdecomp, "none") != 0 ) {
 				fortprintf(fd, "      call mpas_pool_get_dimension(readDimensions, '%s', %s)\n", dimname, dimname);
 				fortprintf(fd, "      if ( .not. associated(%s)) then\n", dimname);
-				fortprintf(fd, "         call mpas_dmpar_global_abort('ERROR: Dimension \'\'%s\'\' was not defined, and cannot be decomposed.')\n", dimname);
+				fortprintf(fd, "         write(stderrUnit, *) 'WARNING: Dimension \'\'%s\'\' was not defined, and cannot be decomposed.'\n", dimname);
+				fortprintf(fd, "      else\n");
+				fortprintf(fd, "         call mpas_decomp_get_method(decompositions, '%s', decompFunc, iErr)\n", dimdecomp);
+				fortprintf(fd, "         if ( iErr /= MPAS_DECOMP_NOERR ) then\n");
+				fortprintf(fd, "            call mpas_dmpar_global_abort('ERROR: Decomposition method \'\'%s\'\' used by dimension \'\'%s\'\' does not exist.')\n", dimdecomp, dimname);
+				fortprintf(fd, "         end if\n");
+				fortprintf(fd, "\n");
+				fortprintf(fd, "         allocate(ownedIndices)\n");
+				fortprintf(fd, "         nullify(ownedIndices %% ioinfo)\n");
+				fortprintf(fd, "         ownedIndices %% hasTimeDimension = .false.\n");
+				fortprintf(fd, "         ownedIndices %% isActive = .true.\n");
+				fortprintf(fd, "         ownedIndices %% isVarArray = .false.\n");
+				fortprintf(fd, "         ownedIndices %% isDecomposed = .false.\n");
+				fortprintf(fd, "         ownedIndices %% isPersistent = .true.\n");
+				fortprintf(fd, "         ownedIndices %% defaultValue = 0\n");
+				fortprintf(fd, "         ownedIndices %% fieldName = '%sOwnedIndices'\n", dimname);
+				fortprintf(fd, "         ownedIndices %% dimNames(1) = '%s'\n", dimname);
+				fortprintf(fd, "         ownedIndices %% array => decompFunc(block, manager, %s, totalBlocks)\n", dimname);
+				fortprintf(fd, "         ownedIndices %% dimSizes(1) = size(ownedIndices %% array, dim=1)\n");
+				fortprintf(fd, "         call mpas_pool_add_field(block %% allFields, '%sOwnedIndices', ownedIndices)\n", dimname);
+				fortprintf(fd, "         call mpas_pool_get_dimension(block %% dimensions, '%s', %s)\n", dimname, dimname);
+				fortprintf(fd, "         %s = size(ownedIndices %% array, dim=1)\n", dimname);
+				fortprintf(fd, "         write(stderrUnit,\'(a,a20,a,i8,a,i8)\') \'       \', \'%s\', \' =>\', %s, \' indices owned by block\', block %% blockID\n", dimname, dimname);
 				fortprintf(fd, "      end if\n");
-			}
-		}
-	}
-
-	fortprintf(fd, "\n");
-
-	/* Get owned indices for dimensions */
-	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next) {
-		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next) {
-			dimname = ezxml_attr(dim_xml, "name");
-			dimdecomp = ezxml_attr(dim_xml, "decomposition");
-
-			if ( dimdecomp != NULL && strcmp(dimdecomp, "none") != 0 ) {
-				fortprintf(fd, "      call mpas_decomp_get_method(decompositions, '%s', decompFunc, iErr)\n", dimdecomp);
-				fortprintf(fd, "      if ( iErr /= MPAS_DECOMP_NOERR ) then\n");
-				fortprintf(fd, "         call mpas_dmpar_global_abort('ERROR: Decomposition method \'\'%s\'\' used by dimension \'\'%s\'\' does not exist.')\n", dimdecomp, dimname);
-				fortprintf(fd, "      end if\n");
-				fortprintf(fd, "      allocate(ownedIndices)\n");
-				fortprintf(fd, "      nullify(ownedIndices %% ioinfo)\n");
-				fortprintf(fd, "      ownedIndices %% hasTimeDimension = .false.\n");
-				fortprintf(fd, "      ownedIndices %% isActive = .true.\n");
-				fortprintf(fd, "      ownedIndices %% isVarArray = .false.\n");
-				fortprintf(fd, "      ownedIndices %% isDecomposed = .false.\n");
-				fortprintf(fd, "      ownedIndices %% isPersistent = .true.\n");
-				fortprintf(fd, "      ownedIndices %% defaultValue = 0\n");
-				fortprintf(fd, "      ownedIndices %% fieldName = '%sOwnedIndices'\n", dimname);
-				fortprintf(fd, "      ownedIndices %% dimNames(1) = '%s'\n", dimname);
-				fortprintf(fd, "      ownedIndices %% array => decompFunc(block, manager, %s, totalBlocks)\n", dimname);
-				fortprintf(fd, "      ownedIndices %% dimSizes(1) = size(ownedIndices %% array, dim=1)\n");
-				fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%sOwnedIndices', ownedIndices)\n", dimname);
-				fortprintf(fd, "      call mpas_pool_get_dimension(block %% dimensions, '%s', %s)\n", dimname, dimname);
-				fortprintf(fd, "      %s = size(ownedIndices %% array, dim=1)\n", dimname);
-				fortprintf(fd, "      write(stderrUnit,\'(a,a20,a,i8,a,i8)\') \'       \', \'%s\', \' =>\', %s, \' indices owned by block\', block %% blockID\n", dimname, dimname);
 				fortprintf(fd, "\n");
 			}
 		}
