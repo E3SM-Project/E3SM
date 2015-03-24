@@ -2734,11 +2734,10 @@ end subroutine ccsm_init
 	    !Jer: average the accumulated fields from both lnd and ocn
 	    call prep_glc_accum_avg(timer='driver_glcprep_avg')
 
-               call prep_glc_mrg(infodata, timer_mrg='driver_glcprep_mrgx2g')
+            call prep_glc_mrg(infodata, timer_mrg='driver_glcprep_mrgx2g')
 
-               call component_diag(infodata, glc, flow='x2c', comment='send glc', &
-                    info_debug=info_debug, timer_diag='driver_glcprep_diagav')
-            endif
+            call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+                 info_debug=info_debug, timer_diag='driver_glcprep_diagav')
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_GLCPREP',cplrun=.true.)
