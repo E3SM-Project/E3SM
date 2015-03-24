@@ -32,12 +32,12 @@ module column_model_mod
                               accumfreq, statefreq, &
                               TRACERADV_TOTAL_DIVERGENCE, &
                               tracer_advection_formulation
-  use convect43c,      only : convect
   use held_suarez_mod, only : hs_forcing
   use forcing_mod,     only : Apply_Forcing,EXP_EULER,INTERP_BDF2
   use reduction_mod,   only : parallelmax,parallelmin
 
   use aquaplanet,      only : aquaplanet_forcing, isrf_forc
+
   use multicloud_mod,  only : verticalprojectionvector,verticalprojection,verticalprojection1D,&
        projvanddq,lambdaswitch,InitShearDamping,ApplyShearDamping,VerticalIntegral1D
 
@@ -196,11 +196,6 @@ contains
           enddo
        enddo
     enddo
-
-    if(columnpackage == "emanuel")then
-      forcing=1
-      call ApplyColumnModelEmanuel(elem, hybrid,cm%cm_em,dt,cm%hvcoord,cm%tl,cm%nets,cm%nete)
-    endif
     if(test_case(1:12) == "held_suarez0")then
       forcing=1
       call ApplyHeldSuarezForcing(elem, cm%cm_hs,dt, cm%hvcoord,cm%tl,cm%nets,cm%nete)
@@ -1177,70 +1172,6 @@ contains
 
 
   end subroutine ApplyAquaplanetForcing
-
-  subroutine ApplyColumnModelEmanuel(elem, hybrid,cm,dt,hvcoord,tl,nets, nete)
-    type (element_t), intent(inout)      :: elem(:)
-    type (hybrid_t), intent(in)       :: hybrid
-    type (ColumnModelEmanuel_t),intent(inout),target :: cm
-    real (kind=real_kind),intent(in)                 :: dt
-    type (TimeLevel_t)   :: tl
-    type (hvcoord_t)     :: hvcoord
-    integer,target       :: nets,nete
-
-    ! local
-    type (ColumnDataEmanuel_t),pointer :: CD
-    integer                            :: iflag
-    integer                            :: i,j,ie,kk
-
-    if(cm%INIT)then
-       do ie=nets,nete
-          
-          call ConvertStateToColumnEmanuel(cm,elem(ie), tl, hvcoord)
-          
-          do j=1,np
-             do i=1,np
-#ifdef USE_MAXLAT
-               if(abs(elem(ie)%sphereP(i,j)%lat).lt. emanuel_max_lat) then                
-#endif
-                CD => cm%col(i,j)
-                
-                call convect(CD%T,CD%Q,CD%QS,CD%U,CD%V,CD%TRA,CD%P,CD%PH,nlev,nlev-1,1,dt,&
-                     iflag,CD%FT,CD%FQ,CD%FU,CD%FV,CD%FTRA,CD%PRECIP,CD%WD,CD%TPRIME,CD%QPRIME,&
-                     pelem(ie)%state%CBMF(i,j))
-
-
-                     pelem(ie)%surfc%precip(i,j)=cd%precip
-                     pelem(ie)%surfc%wd(    i,j)=cd%wd
-                     pelem(ie)%surfc%tprime(i,j)=cd%tprime
-                     pelem(ie)%surfc%qprime(i,j)=cd%qprime
-                     pelem(ie)%accum%precip(i,j)=pelem(ie)%accum%precip(i,j)+cd%precip
-
-#ifdef USE_MAXLAT
-		 endif
-#endif
-             enddo
-          enddo
-
-          call ConvertColumnToStateEmanuel(cm,elem(ie),tl)
-
-#ifdef EMANUELSTATE
-          if(MODULO(tl%nstep,statefreq) == 0) then
-             call physics_state(hybrid,cm,ie,nets, nete)
-          endif
-#endif
-!          if(MODULO(tl%nstep,moviefreq) == 0) then
-!             call physics_movie(cm,ie)
-!          endif
-!          if(MODULO(tl%nstep,accumfreq) == 0) then
-!             call physics_accum(cm,ie)
-!          endif
-
-       enddo
-
-    endif
-
-  end subroutine ApplyColumnModelEmanuel
-
 
   subroutine physics_state(hybrid,cm,ie, nets, nete)
     type (hybrid_t), intent(in)       :: hybrid
