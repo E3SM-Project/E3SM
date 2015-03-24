@@ -30,6 +30,7 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Merge into cime subdir foo/bar\033[0m
+    > cd <CIME-clone>
     > %s <PATH-TO-YOUR-ACME-CLONE> foo/bar
     > git log acme/cime_foo/bar
     * View commits *
