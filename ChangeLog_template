@@ -1,6 +1,6 @@
 ===============================================================
  
-Tag name: hwangacme/atm/aerosol_surface_depo
+Tag name: hwangacme/atm/aerosol_depo_surface
 Originator(s): Hailong Wang implemented Mark Flanner's code changes made to CESM1.2.0
 Date: January 16, 2015
 One-line Summary: to improve the compatibility between MAM and treatment of aerosols in snow and sea-ice, fix a bug and update the snow optics file
