@@ -235,8 +235,7 @@ contains
     use parallel_mod, only : parallel_t, haltmp, syncmp
     use interpolate_mod, only : get_interp_lat, get_interp_lon, get_interp_gweight
 #if defined(_PRIM) || defined(_PRIMDG)
-	use hybvcoord_mod, only : hvcoord_t
-    use aquaplanet_io_mod, only : aq_movie_init
+    use hybvcoord_mod, only : hvcoord_t
     use physics_io_mod, only : physics_movie_init
 #endif
 
@@ -370,9 +369,6 @@ contains
     call nf_variable_attributes(ncdf, 'C5', 'concentration','kg/kg')
 
 #if defined(_PRIM) || defined(_PRIMDG)
-    if(test_case.eq.'aquaplanet') then
-       call aq_movie_init(ncdf)
-    end if
     if(columnpackage.ne.'none') then
        call physics_movie_init(ncdf)
     end if
@@ -452,7 +448,6 @@ contains
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
     use hybvcoord_mod, only :  hvcoord_t 
-    use aquaplanet_io_mod, only : aq_movie_output
     use physics_io_mod, only : physics_movie_output
 #elif defined _PRIMDG
     use hybvcoord_mod, only :  hvcoord_t
@@ -1194,9 +1189,6 @@ contains
              ! However, these two routines are still conditionally compiled for either PIO or PIO_INTERP
              ! and hence must be protected by an #ifdef:
 #ifdef PIO_INTERP
-             if(test_case.eq.'aquaplanet') then
-                call aq_movie_output(ncdf(ios), elem, interpdata, output_varnames, ncnt, nlev)
-             end if
              if(columnpackage.ne.'none') then
                 call physics_movie_output(ncdf(ios),elem, interpdata, output_varnames, ncnt)
              end if

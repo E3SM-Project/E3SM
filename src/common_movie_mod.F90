@@ -223,8 +223,6 @@ contains
 !
   subroutine setvarnames(nlvarnames)
 #ifdef _PRIM
-    use aquaplanet_io_mod, only : aq_set_varnames
-    ! ---------------------
     use physics_io_mod, only : physics_set_varnames
 #endif
     character*(*), intent(out) :: nlvarnames(:)
@@ -237,9 +235,6 @@ contains
     nlvarnames(1:varcnt) = varnames
     !print *,__FILE__,__LINE__,varcnt, size(nlvarnames),varnames
 #ifdef _PRIM 
-    if(test_case.eq.'aquaplanet') then
-       call aq_set_varnames(lvarcnt,nlvarnames(lvarcnt+1:))
-    end if
     if(columnpackage.ne.'none') then
        call physics_set_varnames(lvarcnt,nlvarnames(lvarcnt+1:))
     end if

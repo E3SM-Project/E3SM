@@ -605,7 +605,6 @@ contains
     use held_suarez_mod, only : hs0_init_state
     use baroclinic_inst_mod, only : binst_init_state, jw_baroclinic
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave, dcmip2_schar
-    use aquaplanet, only : aquaplanet_init_state
 #endif
     use fvm_control_volume_mod, only : n0_fvm, np1_fvm
 #if USE_CUDA_FORTRAN
@@ -842,16 +841,6 @@ contains
           write(iulog,*) 'runtype: RESTART of primitive equations'
        end if
 
-       if (test_case(1:10) == "aquaplanet") then
-          if (hybrid%masterthread) then
-             write(iulog,*)  'Initializing aqua planet with MJO-type forcing'
-          end if
-          if(moisture.eq."dry") then
-             call binst_init_state(elem, hybrid,nets,nete,hvcoord)
-          end if
-          call aquaplanet_init_state(elem, hybrid,hvcoord,nets,nete,integration)
-       end if
-
        call ReadRestart(elem,hybrid%ithr,nets,nete,tl)
 
        ! scale PS to achieve prescribed dry mass
@@ -918,14 +907,6 @@ contains
              write(iulog,*) 'initializing Held-Suarez primitive equations test'
           end if
           call hs0_init_state(elem, hvcoord,nets,nete,300.0_real_kind)
-       else if (test_case(1:10) == "aquaplanet") then
-          if (hybrid%masterthread) then
-             write(iulog,*)  'Initializing aqua planet with MJO-type forcing'
-          end if
-          if(moisture.eq."dry") then
-             call binst_init_state(elem, hybrid,nets,nete,hvcoord)
-          end if
-          call aquaplanet_init_state(elem, hybrid,hvcoord,nets,nete,integration)
        else if (test_case(1:12) == "dcmip2_schar") then
           if (hybrid%masterthread) then
              write(iulog,*) 'initializing DCMIP2 test 2-0'

@@ -63,8 +63,6 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/time_mod.F90 
   ${SRC_SHARE_DIR}/physics_mod.F90 
   ${SRC_SHARE_DIR}/hybvcoord_mod.F90 
-  ${SRC_DIR}/aquaplanet.F90 
-  ${SRC_DIR}/aquaplanet_io_mod.F90 
   ${SRC_DIR}/interp_movie_mod.F90 
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90 
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
@@ -117,11 +115,8 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_DIR}/derived_type_mod.F90 
   ${PHYSICS_DIR}/physics_types_mod.F90
   ${PHYSICS_DIR}/physics_io_mod.F90 
-  ${PHYSICS_DIR}/gravity_wave_drag_mod.F90 
   ${PHYSICS_DIR}/column_model_mod.F90 
   ${PHYSICS_DIR}/column_types_mod.F90 
-  ${PHYSICS_DIR}/multicloud_mod.F90 
-  ${PHYSICS_DIR}/eigenmodes_mod.F90 
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
 )
 

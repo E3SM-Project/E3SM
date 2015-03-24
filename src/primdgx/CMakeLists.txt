@@ -51,13 +51,9 @@ SET(PRIMDGX_SRCS
     ${SRC_SHARE}/fvm_line_integrals_mod.F90 
     ${SRC_SHARE}/fvm_line_integrals_flux_mod.F90 
     ${SRC_SHARE}/fvm_analytic_mod.F90 
-    ${PHYSICS_DIR}/physics_types_mod.F90
     ${SRC_SHARE}/dof_mod.F90
     ${SRC_BASE}/common_io_mod.F90
     ${SRC_BASE}/pio_io_mod.F90
-    ${PHYSICS_DIR}/physics_io_mod.F90
-    ${SRC_BASE}/aquaplanet.F90
-    ${SRC_BASE}/aquaplanet_io_mod.F90
     ${SRC_SHARE}/hybvcoord_mod.F90
     ${SRC_SHARE}/time_mod.F90
     ${SRC_BASE}/interp_movie_mod.F90
@@ -99,6 +95,8 @@ SET(PRIMDGX_SRCS
     ${SRC_BASE}/init_mod.F90
     ${SRC_BASE}/netcdf_io_mod.F90
     ${SRC_SHARE}/mesh_mod.F90 
+    ${PHYSICS_DIR}/physics_types_mod.F90
+    ${PHYSICS_DIR}/physics_io_mod.F90
 )
 
 SET(PRIMDGX_SRCS ${PRIMDGX_SRCS} ${SRC_BASE}/dg3d_main.F90 CACHE INTERNAL "Sources for primdgx")

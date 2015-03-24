@@ -63,8 +63,6 @@ module prim_movie_mod
   ! ---------------------
   use physical_constants, only : g, kappa, p0, dd_pi
   ! ---------------------
-  use aquaplanet_io_mod, only : aq_movie_init, aq_movie_output, aq_set_varnames
-  ! ---------------------
   use physics_io_mod, only : physics_movie_init, physics_movie_output, physics_set_varnames
   ! ---------------------
   use dof_mod, only : UniquePoints, UniqueCoords, UniqueNcolsP, createmetadata
@@ -76,7 +74,7 @@ module prim_movie_mod
     use edgetype_mod, only : EdgeBuffer_t
 
     use common_movie_mod, only: varrequired, vartype, varnames, varcnt, vardims, &
-	dimnames, maxdims
+                                dimnames, maxdims
 
   implicit none
   private
@@ -195,7 +193,7 @@ contains
 ! this is a trivial case for the time variable
     if(iorank==0) then
        compdof(1)=1
-    else		    	
+    else
        compdof(1)=0
     end if
     start=-1
@@ -272,9 +270,6 @@ contains
     call nf_variable_attributes(ncdf, 'hybi','hybrid B coefficiet at layer interfaces' ,'dimensionless') 
 
 
-    if(test_case.eq.'aquaplanet') then
-       call aq_movie_init(ncdf)
-    end if
     if(columnpackage.ne.'none') then
        call physics_movie_init(ncdf)
     end if
@@ -315,7 +310,7 @@ contains
           if (par%masterproc) print *,'writing coordinates ios=',ios
           do ie=1,nelemdmax
             ! if (par%masterproc .and. mod(ie,1).eq.0 ) print *,'ie=',ie
-	    if(ie<=nelemd) then
+            if(ie<=nelemd) then
                en=st+elem(ie)%idxp%NumUniquePts-1
                call UniqueCoords(elem(ie)%idxP, elem(ie)%spherep,latp(st:en), lonp(st:en)) 
                st=en+1
@@ -727,7 +722,7 @@ contains
                 do ie=1,nelemd
                    do k=1,nlev 
                       ke(:,:,k) = (elem(ie)%state%v(:,:,1,k,tl%n0)**2 + &
-        	       elem(ie)%state%v(:,:,2,k,tl%n0)**2 )/2
+                      elem(ie)%state%v(:,:,2,k,tl%n0)**2 )/2
                    enddo
                    en=st+elem(ie)%idxp%NumUniquePts-1
                    call UniquePoints(elem(ie)%idxp,nlev,ke, var3d(st:en,:))
@@ -793,9 +788,6 @@ contains
                    st=en+1
                 end do
                 call nf_put_var(ncdf(ios),var3d,start, count, name='omega')
-             end if
-             if(test_case.eq.'aquaplanet') then
-                call aq_movie_output(ncdf(ios), elem, output_varnames,nxyp, nlev)
              end if
              if(columnpackage.ne.'none') then
                 call physics_movie_output(ncdf(ios),elem, output_varnames, nxyp)
