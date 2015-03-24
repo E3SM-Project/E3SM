@@ -134,6 +134,9 @@ contains
     real(r8), pointer :: flx_dst_dep_wet4(:) ! wet dust (species 4) deposition (col) [kg m-2 s-1]
     real(r8), pointer :: flx_dst_dep(:)      ! total dust deposition (col) [kg m-2 s-1]
     real(r8), pointer :: forc_aer(:,:)       ! aerosol deposition from atmosphere model (grd,aer) [kg m-1 s-1]
+    !mgf++
+    real(r8), pointer :: qflx_snofrz_lyr(:,:)  ! snow freezing rate (col,lyr) [kg m-2 s-1]
+    !mgf--
 !
 !
 ! !OTHER LOCAL VARIABLES:
@@ -165,6 +168,14 @@ contains
     real(r8) :: qin_dst4(lbc:ubc)                 ! flux of dust species 4 into layer [kg]
     real(r8) :: qout_dst4(lbc:ubc)                ! flux of dust species 4 out of layer [kg]
     real(r8) :: mss_liqice                        ! mass of liquid+ice in a layer
+    !mgf++
+    real(r8) :: refrzsnow                   ! re-frozen snow [kg m-2]
+    real(r8) :: subsnow                     ! sublimated snow [kg m-2]
+    real(r8) :: frc_refrz                   ! fraction of layer mass that is re-frozen snow [frc]
+    real(r8) :: frc_sub                     ! fraction of layer mass that has sublimated [frc]
+    real(r8) :: frc_transfer                ! frc_refrz + frc_sub
+    real(r8) :: dm_int                      ! mass transfer [kg]
+    !mgf--
  
 !-----------------------------------------------------------------------
 
@@ -212,6 +223,9 @@ contains
     flx_dst_dep_wet4 => cwf%flx_dst_dep_wet4
     flx_dst_dep_dry4 => cwf%flx_dst_dep_dry4
     forc_aer         => clm_a2l%forc_aer
+    !mgf++
+    qflx_snofrz_lyr    => cwf%qflx_snofrz_lyr
+    !mgf--
 
     ! Determine model time step
 
@@ -426,9 +440,113 @@ contains
        qflx_snow_melt(c) = qflx_snomelt(c)
     end do
     
+#ifdef MODAL_AER
+    !mgf++ 
+    ! 
+    ! Transfer BC and OC from the within-ice state to the external
+    ! state based on snow sublimation and re-freezing of liquid water.
+    ! Re-freezing effect is inactived by default because of
+    ! uncertainty in how this process operates.
+    do j = -nlevsno+1, 0
+       do fc = 1, num_snowc
+          c = filter_snowc(fc)
+          if (j >= snl(c)+1) then
+             !! snow that has re-frozen [kg/m2]
+             !refrzsnow = max(0._r8, (qflx_snofrz_lyr(c,j)*dtime))
+             !
+             !! fraction of layer mass that is re-frozen
+             !if ((h2osoi_liq(c,j) + h2osoi_ice(c,j)) > 0._r8) then
+             !   frc_refrz = refrzsnow / (h2osoi_liq(c,j) + h2osoi_ice(c,j))
+             !else
+             !   frc_refrz = 0._r8
+             !endif
+
+             if (j == snl(c)+1) then
+                ! snow that has sublimated [kg/m2] (top layer only)
+                subsnow = max(0._r8, (qflx_sub_snow(c)*dtime))
+             
+                ! fraction of layer mass that has sublimated:
+                if ((h2osoi_liq(c,j) + h2osoi_ice(c,j)) > 0._r8) then
+                   frc_sub = subsnow / (h2osoi_liq(c,j) + h2osoi_ice(c,j))
+                else
+                   frc_sub = 0._r8
+                endif
+             else
+                ! prohibit sublimation effect to operate on
+                ! sub-surface layers:
+                frc_sub = 0._r8
+             endif
+
+             ! fraction of layer mass transformed (sublimation only)
+             !frc_transfer = frc_refrz + frc_sub
+             frc_transfer = frc_sub
+
+             ! cap the fraction at 1
+             if (frc_transfer > 1._r8) then
+                frc_transfer = 1._r8
+             endif
+
+             ! transfer proportionate mass of BC and OC:
+             dm_int         = mss_bcphi(c,j)*frc_transfer
+             mss_bcphi(c,j) = mss_bcphi(c,j) - dm_int
+             mss_bcpho(c,j) = mss_bcpho(c,j) + dm_int
+
+             dm_int         = mss_ocphi(c,j)*frc_transfer
+             mss_ocphi(c,j) = mss_ocphi(c,j) - dm_int
+             mss_ocpho(c,j) = mss_ocpho(c,j) + dm_int
+
+          end if
+       end do
+    end do
+    !mgf--
+#endif
+
+
     !  set aerosol deposition fluxes from forcing array
     !  The forcing array is either set from an external file 
     !  or from fluxes received from the atmosphere model
+
+!mgf++
+#ifdef MODAL_AER
+    ! Mapping for modal aerosol scheme where within-hydrometeor and
+    ! interstitial aerosol fluxes are differentiated. Here, "phi"
+    ! flavors of BC and OC correspond to within-hydrometeor
+    ! (cloud-borne) aerosol, and "pho" flavors are interstitial
+    ! aerosol. "wet" and "dry" fluxes of BC and OC specified here are
+    ! purely diagnostic
+    do c = lbc,ubc
+       g = cgridcell(c)
+       
+       flx_bc_dep_dry(c)   = forc_aer(g,2)
+       flx_bc_dep_wet(c)   = forc_aer(g,1) + forc_aer(g,3)
+       flx_bc_dep_phi(c)   = forc_aer(g,3)
+       flx_bc_dep_pho(c)   = forc_aer(g,1) + forc_aer(g,2)
+       flx_bc_dep(c)       = forc_aer(g,1) + forc_aer(g,2) + forc_aer(g,3)
+       
+       flx_oc_dep_dry(c)   = forc_aer(g,5)
+       flx_oc_dep_wet(c)   = forc_aer(g,4) + forc_aer(g,6)
+       flx_oc_dep_phi(c)   = forc_aer(g,6)
+       flx_oc_dep_pho(c)   = forc_aer(g,4) + forc_aer(g,5)
+       flx_oc_dep(c)       = forc_aer(g,4) + forc_aer(g,5) + forc_aer(g,6)
+       
+       flx_dst_dep_wet1(c) = forc_aer(g,7)
+       flx_dst_dep_dry1(c) = forc_aer(g,8)
+       flx_dst_dep_wet2(c) = forc_aer(g,9)
+       flx_dst_dep_dry2(c) = forc_aer(g,10)
+       flx_dst_dep_wet3(c) = forc_aer(g,11)
+       flx_dst_dep_dry3(c) = forc_aer(g,12)
+       flx_dst_dep_wet4(c) = forc_aer(g,13)
+       flx_dst_dep_dry4(c) = forc_aer(g,14)
+       flx_dst_dep(c)      = forc_aer(g,7) + forc_aer(g,8) + forc_aer(g,9) + &
+                             forc_aer(g,10) + forc_aer(g,11) + forc_aer(g,12) + &
+                             forc_aer(g,13) + forc_aer(g,14)
+    
+    end do
+
+#else
+    ! Original mapping for bulk aerosol deposition. phi and pho BC/OC
+    ! species are distinguished in model, other fluxes (e.g., dry and
+    ! wet BC/OC) are purely diagnostic.
     do c = lbc,ubc
        g = cgridcell(c)
        
@@ -457,6 +575,8 @@ contains
                              forc_aer(g,13) + forc_aer(g,14)
     
     end do
+#endif
+!mgf--
 
     ! aerosol deposition fluxes into top layer
     ! This is done after the inter-layer fluxes so that some aerosol
@@ -474,6 +594,7 @@ contains
        mss_dst3(c,snl(c)+1) = mss_dst3(c,snl(c)+1) + (flx_dst_dep_dry3(c) + flx_dst_dep_wet3(c))*dtime
        mss_dst4(c,snl(c)+1) = mss_dst4(c,snl(c)+1) + (flx_dst_dep_dry4(c) + flx_dst_dep_wet4(c))*dtime
     end do
+
 
   end subroutine SnowWater
 
@@ -1222,7 +1343,10 @@ contains
              mdst2(c,2) = mdst2(c,2)+zmdst2  ! (combo)
              mdst3(c,2) = mdst3(c,2)+zmdst3  ! (combo)
              mdst4(c,2) = mdst4(c,2)+zmdst4  ! (combo)
-             rds(c,2) = rds(c,1) ! (combo)
+             !mgf++ bugfix
+             !rds(c,2) = rds(c,1) ! (combo)
+             rds(c,2) = (rds(c,2)*(swliq(c,2)+swice(c,2)) + rds(c,1)*(zwliq+zwice))/(swliq(c,2)+swice(c,2)+zwliq+zwice)
+             !mgf--
 
              call Combo (dzsno(c,2), swliq(c,2), swice(c,2), tsno(c,2), drr, &
                   zwliq, zwice, tsno(c,1))
@@ -1305,7 +1429,10 @@ contains
              mdst2(c,3) = mdst2(c,3)+zmdst2  ! (combo)
              mdst3(c,3) = mdst3(c,3)+zmdst3  ! (combo)
              mdst4(c,3) = mdst4(c,3)+zmdst4  ! (combo)
-             rds(c,3) = rds(c,2) ! (combo)
+             !mgf++ bugfix
+             !rds(c,3) = rds(c,2) ! (combo)
+             rds(c,3) = (rds(c,3)*(swliq(c,3)+swice(c,3)) + rds(c,2)*(zwliq+zwice))/(swliq(c,3)+swice(c,3)+zwliq+zwice)
+             !mgf--
 
              call Combo (dzsno(c,3), swliq(c,3), swice(c,3), tsno(c,3), drr, &
                   zwliq, zwice, tsno(c,2))
@@ -1388,8 +1515,11 @@ contains
              mdst2(c,4) = mdst2(c,4)+zmdst2  ! (combo)
              mdst3(c,4) = mdst3(c,4)+zmdst3  ! (combo)
              mdst4(c,4) = mdst4(c,4)+zmdst4  ! (combo)
-             rds(c,4) = rds(c,3) ! (combo)
-
+             !mgf++ bugfix
+             !rds(c,4) = rds(c,3) ! (combo)
+             rds(c,4) = (rds(c,4)*(swliq(c,4)+swice(c,4)) + rds(c,3)*(zwliq+zwice))/(swliq(c,4)+swice(c,4)+zwliq+zwice)
+             !mgf--
+             
              call Combo (dzsno(c,4), swliq(c,4), swice(c,4), tsno(c,4), drr, &
                   zwliq, zwice, tsno(c,3))
 
@@ -1471,7 +1601,10 @@ contains
              mdst2(c,5) = mdst2(c,5)+zmdst2  ! (combo)
              mdst3(c,5) = mdst3(c,5)+zmdst3  ! (combo)
              mdst4(c,5) = mdst4(c,5)+zmdst4  ! (combo)
-             rds(c,5) = rds(c,4) ! (combo)
+             !mgf++ bugfix
+             !rds(c,5) = rds(c,4) ! (combo)
+             rds(c,5) = (rds(c,5)*(swliq(c,5)+swice(c,5)) + rds(c,4)*(zwliq+zwice))/(swliq(c,5)+swice(c,5)+zwliq+zwice)
+             !mgf--
 
              call Combo (dzsno(c,5), swliq(c,5), swice(c,5), tsno(c,5), drr, &
                   zwliq, zwice, tsno(c,4))

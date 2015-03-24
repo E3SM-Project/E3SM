@@ -1,30 +1,11 @@
 ===============================================================
  
-Tag name: 
-Originator(s): 
-Date: 
-One-line Summary:
+Tag name: hwangacme/atm/aerosol_surface_depo
+Originator(s): Hailong Wang implemented Mark Flanner's code changes made to CESM1.2.0
+Date: January 16, 2015
+One-line Summary: to improve the compatibility between MAM and treatment of aerosols in snow and sea-ice, fix a bug and update the snow optics file
 
 List all component tags that were used to create cesm tag:
-
-  scripts  
-  drv
-  share     
-  cam
-  clm     
-  cice     
-  cism        
-  pop     
-  datm       
-  dlnd    
-  dice    
-  docn
-  dead  
-  stubs
-  timing  
-  esmf_wrf_timemgr
-  mct     
-  pio     
 
 
 Describe the changes for each component above that was changed relative 
@@ -32,8 +13,51 @@ to the previous cesm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
 Bugs fixed: 
+	Bug in the calculation of snow grain size following snow layer
+	division in models/lnd/clm/src_clm40/biogeophys/SnowHydrologyMod.F90
+
+New input file:
+	Added a new file called snicar_optics_5bnd_mam_c140303.nc (in ~/snicardata/), which contains new snow optics for CLM and
+	3-band optical properties needed by CICE to work with the newly implemented MODAL_AER treatment.
+
+CAM component:
+	modified ~/models/atm/cam/src/chemistry/utils/modal_aero_deposition.F90
+	to provide BC, OC and dust deposition in MAM7 in addition to MAM3, and
+	apply a new mapping scheme between MAM aerosols and particles in
+	snow/ice.
+
+CLM4.0 component:
+	modified ~/models/lnd/clm/src_clm40/biogeophys/SNICARMod.F90
+	to use snow-grain-size-dependent aerosol optical properties, prescribe
+	BC particle effective radius (100nm), and apply absorption enhancement
+	factor.
+
+	Fixed bugs in  ~/models/lnd/clm/src_clm40/biogeophys/SnowHydrologyMod.F90
+
+CICE component:
+	modified ~/models/ice/cice/src/drivers/cpl/ice_import_export.F90
+	to add modal treatment of BC and dust
+
+	modified ~/models/ice/cice/src/source/ice_init.F90
+	to read in the new optical properties needed by CICE for MODAL_AER
+	treatment
+
+	modified ~/ models/ice/cice/src/source/ice_shortwave.F90
+	specify properties of snow impurities for shortwave radiation calculation
 
 Describe any changes made to scripts/build system:
+	# to replace fsnowoptics for lnd in the build/run script
+		cat <<EOF >! user_nl_clm
+		&clm_inparm
+		fsnowoptics ='~/csmdata/lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc'
+		EOF
+
+	# the snow optics for cice is currently hardwired in ice_init.F90 (need to be changed to a namelist variable)
+
+	# add the following to run sript to enable CCP token 'MODAL_AER' for coupling between MAM and land/sea-ice aerosols
+		./xmlchange -file env_build.xml -id CLM_CONFIG_OPT  -val '-phys clm4_0 -cppdefs -DMODAL_AER'
+		sed 's|$cicedefs|$cicedefs -DMODAL_AER|' -i Buildconf/cice.buildexe.csh
+
 
 Describe any substantial timing or memory changes:
 
@@ -75,7 +99,7 @@ Summarize any change to answers (regressions tests status is FAIL1)
   - what code configurations:
   - what platforms/compilers:
   - nature of change (roundoff; larger than roundoff but same climate; new
-    climate): 
+    climate): larger than roundoff but same climate
 
 If bitwise differences were observed, how did you show they were no worse
 than roundoff?
