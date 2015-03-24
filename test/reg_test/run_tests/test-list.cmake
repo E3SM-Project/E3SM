@@ -10,7 +10,6 @@ SET(HOMME_TESTS
   baro2b.cmake
   baro2c.cmake
   baro2d.cmake
-  swtc1-dg.cmake
   swtc2-dg.cmake
   swtc5-dg.cmake
 )
