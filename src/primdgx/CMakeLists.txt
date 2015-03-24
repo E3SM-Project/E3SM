@@ -6,11 +6,11 @@ SET(SRC_BASE    ${CMAKE_CURRENT_SOURCE_DIR}/..)
 SET(SRC_SHARE   ${SRC_BASE}/share)
 SET(SRC_UTILS   ${SRC_BASE}/../utils/csm_share)
 SET(PHYSICS_DIR ${HOMME_SOURCE_DIR}/physics)
-SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/timing)
+SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (PRIMDGX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
-                        ${TIMING_INCLUDE_DIRS} CACHE INTERNAL "include directories for primdgx")
+                        ${UTILS_TIMING_DIR} CACHE INTERNAL "include directories for primdgx")
 
 SET(PRIMDGX_SRCS
     ${SRC_SHARE}/kinds.F90
@@ -76,8 +76,6 @@ SET(PRIMDGX_SRCS
     ${SRC_SHARE}/mass_matrix_mod.F90
     ${SRC_SHARE}/perfmodel_mod.F90
     ${SRC_SHARE}/metis_mod.F90
-    ${UTILS_TIMING_DIR}/perf_mod.F90
-    ${UTILS_TIMING_DIR}/perf_utils.F90
     ${SRC_BASE}/checksum_mod.F90
     ${SRC_BASE}/dg3d_vertical_mod.F90
     ${SRC_BASE}/ref_state_mod.F90

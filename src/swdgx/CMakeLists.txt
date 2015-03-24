@@ -5,10 +5,12 @@
 SET(SRC_BASE    ${CMAKE_CURRENT_SOURCE_DIR}/..)
 SET(SRC_SHARE   ${SRC_BASE}/share)
 SET(SRC_UTILS   ${SRC_BASE}/../utils/csm_share)
+SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (SWDGX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
-                        ${TIMING_INCLUDE_DIRS} CACHE INTERNAL "include directories for swdgx")
+                        ${UTILS_TIMING_DIR}
+                        CACHE INTERNAL "include directories for swdgx")
 
 SET(SWDGX_SRCS
     ${SRC_BASE}/jrio.c
