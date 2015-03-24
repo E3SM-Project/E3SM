@@ -558,14 +558,14 @@
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
-         <MPILIBS>mvapich2</MPILIBS>
+         <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
          <RUNDIR>/lcrc/project/$PROJECT/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/lcrc/project/$PROJECT/$CCSMUSER/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lcrc/project/$PROJECT/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/home/ccsm-data/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_BASELINE>/lcrc/group/earthscience/acme_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/gpfs/home/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
