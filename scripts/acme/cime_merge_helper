@@ -1,0 +1,138 @@
+#!/usr/bin/env python
+
+"""
+Use to merge an ACME repo into a cime repo
+
+Assumes CIME subdir argument has a DIRMAP file
+
+Assumes run from root of CIME repository
+"""
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+
+import argparse, sys, os, doctest
+
+from acme_util import expect, warning, verbose_print, run_cmd
+
+VERBOSE = False
+METADATA_FILE = "DIRMAP"
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s <PATH-TO-ACME> <CIME-SUBDIR> [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Merge into cime subdir foo/bar\033[0m
+    > %s <PATH-TO-YOUR-ACME-CLONE> foo/bar
+    > git log acme/cime_foo/bar
+    * View commits *
+    > git cherry-pick <commit>
+    * Resolve conflics, commit
+    > git cherry-pick <commit>
+    ...
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("acme_path", help="The path to acme")
+
+    parser.add_argument("cime_subdir", help="The subdir to merge")
+
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                        help="Print shell commands as they are executed")
+
+    args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
+
+    return args.acme_path, args.cime_subdir
+
+###############################################################################
+def rewrite_subdir_onto_branch(branch, subdir_orig, subdir_new, simple):
+###############################################################################
+    """
+    In ACME, create a branch that just has the subdir_orig files, all rewritten
+    as if they were under subdir_new
+    """
+    branches = run_cmd("git branch")
+    if (branch in [line.strip() for line in branches.splitlines()]):
+        run_cmd("git branch -D %s" % branch)
+
+    run_cmd("git subtree split --prefix=%s master -b %s" % (subdir_orig, branch))
+
+    awk_prog = '{print $1 " " $2 " " $3 "\t%s/" $4}' % subdir_new
+    cmd = \
+"""git filter-branch -f --index-filter 'git ls-files -s | awk "%s" |
+GIT_INDEX_FILE=$GIT_INDEX_FILE.new \
+git update-index --index-info &&
+mv "$GIT_INDEX_FILE.new" "$GIT_INDEX_FILE"' %s""" % (awk_prog, branch)
+
+    run_cmd(cmd, "Failed to filter-branch!")
+
+###############################################################################
+def merge_acme_changes(acme_path, subdir):
+###############################################################################
+    print "Merging ACME changes into subdir", subdir, "..."
+
+    # Check remote url
+    stat = run_cmd("git remote add acme %s" % acme_path, ok_to_fail=True)[0]
+    if (stat != 0):
+        # May already exist
+        config_url = run_cmd("git config --get remote.acme.url").strip()
+        if (config_url != acme_path):
+            print >> sys.stderr, "Warning: Changing URL of acme remote"
+            run_cmd("git remote set-url acme %s" % acme_path)
+
+    # Read metadata
+    metadata_path = os.path.join(subdir, METADATA_FILE)
+    expect(os.path.isfile(metadata_path), "No metadata found for subdir %s" % subdir)
+    subdir_orig, simple = open(metadata_path, "r").readlines()[0].strip().split(":")
+    expect(simple in ["yes", "no"], "Bad simple value: '%s'" % simple)
+    simple = simple == "yes"
+
+    # TODO:
+    # When simple is "no" we need to do multiple directory renames in a single
+    # directory tree. Currently unsupported and will need to be done by hand
+
+    # Go to ACME repo and create rewritten branch
+    pwd = os.getcwd()
+    os.chdir(acme_path)
+    branch = "cime_%s" % subdir
+    rewrite_subdir_onto_branch(branch, subdir_orig, subdir, simple)
+    os.chdir(pwd)
+
+    # Get changes
+    run_cmd("git fetch acme %s" % branch)
+
+    # Do merge, this is complicated because it may require user to resovle conflicts
+    #stat = run_cmd("git merge --no-edit acme/%s" % branch)[0]
+    #return stat == 0
+
+    print "Now cherry pick commits from acme/%s" % branch
+    return True
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        doctest.testmod()
+        return
+
+    acme_path, subdir = parse_command_line(sys.argv, description)
+
+    sys.exit(0 if merge_acme_changes(acme_path, subdir) else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
