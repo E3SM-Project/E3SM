@@ -5953,4 +5953,11 @@
       </test>
     </grid>
   </compset>
+  <compset name="I1850CLM45CN">
+    <grid name="f19_f19">
+      <test name="SMS">
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+      </test>
+    </grid>
+  </compset>
 </testlist>
