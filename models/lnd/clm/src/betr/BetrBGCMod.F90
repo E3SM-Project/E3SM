@@ -580,7 +580,8 @@ contains
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       inflx_top(c) = tracer_flx_infl(c,j)
-      !set to 0 to ensure outgoing boundary condition is imposed
+      
+      !set to 0 to ensure outgoing boundary condition is imposed, this may not be correct for water isotopes
       inflx_bot(c) = 0._r8
       !modify the advective velocity
       qflx_adv_local(c,jtops(c)-1) = qflx_adv(c,jtops(c)-1)/aqu2bulkcef_mobile_col(c,jtops(c),j)

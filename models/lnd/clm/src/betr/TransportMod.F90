@@ -651,25 +651,22 @@ module TransportMod
      do k = lbn(c), ubj
        j = k - lbn(c) + 3
        mass_curve(j) = trcin(c,k)*dz(c,k)      
-       mass_curve(j) = mass_curve_correct(mass_curve(j))
      enddo
      
      !right boundary     
      if(inflx_bot(c)==0._r8)then
        j = ubj - lbn(c) + 4
        mass_curve(j) = trcin(c,ubj)*(zghostr(1)-zi(c,ubj))
-       mass_curve(j) = mass_curve_correct(mass_curve(j))
        
        j = ubj - lbn(c) + 5
        mass_curve(j) = trcin(c,ubj)*(zghostr(2)-zghostr(1))
-       mass_curve(j) = mass_curve_correct(mass_curve(j))
      else
        j = ubj - lbn(c) + 4
        mass_curve(j) = inflx_bot(c) * dtime(c)
-       mass_curve(j) = mass_curve_correct(mass_curve(j))
+
        j = ubj - lbn(c) + 5
        mass_curve(j) = inflx_bot(c) * dtime(c)
-       mass_curve(j) = mass_curve_correct(mass_curve(j))
+
      endif
      
      !now compute cumulative mass curve     
@@ -680,7 +677,9 @@ module TransportMod
 
      call pchip_interp((/zghostl,zi(c,lbn(c)-1:ubj),zghostr/), cmass_curve(0:lengthp2), di(0:lengthp2), zold(0:length), cmass_new(0:length))
 
-
+     !ensure mass is increasing monotonically
+     call asc_sort_vec(cmass_new(0:length))
+     
      !diagnose the leaching flux
      if(present(leaching_mass))then
        leaching_mass(c) = cmass_curve(ubj-lbn(c)+3)-cmass_new(length) !add the numerical error to leaching
@@ -692,15 +691,12 @@ module TransportMod
           
      do k = lbn(c), ubj
        j = k - lbn(c) + 1      
-       mass_new(j) = mass_curve_correct(mass_new(j))
        !correct for small negative values
        trcin(c,k)=mass_new(j)/dz(c,k)
        if(trcin(c,k)<0._r8)then
-         if(present(leaching_mass))then
-           leaching_mass(c)=leaching_mass(c)+mass_new(j)
-         endif
-         
-         trcin(c,k)=0._r8
+       
+         call endrun('negative tracer '//errMsg(__FILE__, __LINE__))     
+
        endif
      enddo
 

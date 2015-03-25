@@ -20,6 +20,7 @@ implicit none
    public :: safe_div
    public :: dot_sum
    public :: addone
+   public :: asc_sort_vec
    interface swap
       module procedure swap_i, swap_r, swap_rv
    end interface swap
@@ -202,5 +203,28 @@ contains
   ans = a
   end function
   
-
+!--------------------------------------------------------------------------------
+  subroutine asc_sort_vec(zvec)
+  !
+  ! sort an array into ascending order
+  implicit none
+  real(r8), dimension(:), intent(inout) :: zvec
+  
+  
+  integer :: n, j, k
+  logical :: lswap
+  
+  n = size(zvec)
+  
+  do j = 1, n
+    lswap=.false.
+    do k = 2, n-j+1
+      if(zvec(k)<zvec(k-1))then
+        lswap=.true.
+        call swap_r(zvec(k),zvec(k-1))
+    enddo
+    if(.not. lswap)exit
+  enddo
+  
+  end subroutine asc_sort_vec
 end module MathfuncMod
