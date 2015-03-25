@@ -608,7 +608,7 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(inflx_bot)  == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    
    call Extra_inst%InitAllocate(1,ubj-lbj+6)
-   halfdf_col(:) = .false.
+   halfdt_col(:) = .false.
    do fc = 1, numfl
    
      c = filter(fc)
@@ -633,7 +633,7 @@ module TransportMod
      
      call backward_advection((/zghostl, zi(c, lbn(c)-1:ubj),zghostr/), (/ughostl, us(c, lbn(c)-1:ubj), ughostr/),  dtime(c), zold(0:length))
      
-     if(.not. is_ascending_vec(zcor))then
+     if(.not. is_ascending_vec(zold(0:length)))then
        halfdt_col(c) = .true.
        cycle
      endif

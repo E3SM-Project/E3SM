@@ -671,12 +671,12 @@ contains
       
       do fc = 1, num_soilc
         c = filter_soilc(fc)
-        if(update_col(c))
+        if(update_col(c))then
           if(halfdt_col(c))then
              dtime_loc(c) = max(dtime_loc(c)*0.5_r8,dtime_min)
              dtime_loc(c) = min(dtime_loc(c), time_remain(c))
           else
-          time_remain(c) = time_remain(c) - dtime_loc(c)
+             time_remain(c) = time_remain(c) - dtime_loc(c)
           endif
         endif
         !if(c==2195 .and. j==betrtracer_vars%id_trc_no3x)then
