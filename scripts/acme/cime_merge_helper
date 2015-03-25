@@ -59,7 +59,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     return args.acme_path, args.cime_subdir
 
 ###############################################################################
-def rewrite_subdir_onto_branch(branch, subdir_orig, subdir_new, simple):
+def rewrite_subdir_onto_branch(branch, subdir_orig, subdir_new, ignore_subdirs):
 ###############################################################################
     """
     In ACME, create a branch that just has the subdir_orig files, all rewritten
@@ -71,14 +71,22 @@ def rewrite_subdir_onto_branch(branch, subdir_orig, subdir_new, simple):
 
     run_cmd("git subtree split --prefix=%s master -b %s" % (subdir_orig, branch))
 
-    awk_prog = '{print $1 " " $2 " " $3 "\t%s/" $4}' % subdir_new
+    if (len(ignore_subdirs) > 0):
+        # Need to filter all commits in subdirectories that have already
+        # been merged.
+        ignore_subdirs = [item.replace("%s/" % subdir_orig, "") for item in ignore_subdirs]
+        cmd = "git filter-branch --index-filter 'git rm --cached -r -f --ignore-unmatch %s ' -f --prune-empty %s > /dev/null" % \
+              (" ".join(ignore_subdirs), branch)
+        run_cmd(cmd)
+
+    os.environ["AWK_PROG"] = r'{print $1 " " $2 " " $3 "\t%s/" $4}' % subdir_new
     cmd = \
-"""git filter-branch -f --index-filter 'git ls-files -s | awk "%s" |
+"""git filter-branch -f --index-filter 'git ls-files -s | awk "$AWK_PROG" |
 GIT_INDEX_FILE=$GIT_INDEX_FILE.new \
 git update-index --index-info &&
-mv "$GIT_INDEX_FILE.new" "$GIT_INDEX_FILE"' %s""" % (awk_prog, branch)
+mv "$GIT_INDEX_FILE.new" "$GIT_INDEX_FILE"' %s""" % branch
 
-    run_cmd(cmd, "Failed to filter-branch!")
+    run_cmd(cmd)
 
 ###############################################################################
 def merge_acme_changes(acme_path, subdir):
@@ -97,19 +105,28 @@ def merge_acme_changes(acme_path, subdir):
     # Read metadata
     metadata_path = os.path.join(subdir, METADATA_FILE)
     expect(os.path.isfile(metadata_path), "No metadata found for subdir %s" % subdir)
-    subdir_orig, simple = open(metadata_path, "r").readlines()[0].strip().split(":")
-    expect(simple in ["yes", "no"], "Bad simple value: '%s'" % simple)
-    simple = simple == "yes"
+    subdir_orig = open(metadata_path, "r").readlines()[0].strip().split(":")[0]
 
-    # TODO:
-    # When simple is "no" we need to do multiple directory renames in a single
-    # directory tree. Currently unsupported and will need to be done by hand
+    # We need to probe all for all subdirectories under subdir_orig
+    # that may have also needed to move so that we can skip them.  The
+    # process is to do the subdirectories first, then do the "primary"
+    # directory by ignoring all commits that touched the
+    # subdirectories that were already done.
+    ignore_subdirs = []
+    for line in run_cmd("find . -name %s" % METADATA_FILE).splitlines():
+        line = line.strip()
+        if (line == ""):
+            continue
+        if (line != metadata_path):
+            ignore_subdir = open(line, "r").readlines()[0].strip().split(":")[0]
+            if (ignore_subdir.startswith("%s/" % subdir_orig)):
+                ignore_subdirs.append(ignore_subdir)
 
     # Go to ACME repo and create rewritten branch
     pwd = os.getcwd()
     os.chdir(acme_path)
-    branch = "cime_%s" % subdir
-    rewrite_subdir_onto_branch(branch, subdir_orig, subdir, simple)
+    branch = "cime__%s__cime" % subdir
+    rewrite_subdir_onto_branch(branch, subdir_orig, subdir, ignore_subdirs)
     os.chdir(pwd)
 
     # Get changes
