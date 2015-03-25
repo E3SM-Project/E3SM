@@ -209,6 +209,7 @@ contains
       if(f(n)<0._r8)then
          nJ = nJ  + 1
          pm = -y0(n)/(f(n)*dt)
+         pm = min(pm,1.e30_r8)
          aj(nJ) = -safe_div(1._r8,pm)
          if(nJ==1)then
             pmax= pm

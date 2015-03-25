@@ -396,6 +396,7 @@ contains
          this%tracer_flx_leaching_col(c,:)    = spval
          this%tracer_flx_surfrun_col(c,:)     = spval
          this%tracer_flx_tparchm_col(c,:)     = spval
+         this%tracer_flx_parchm_vr_col(c,:,:) = spval
          this%tracer_flx_vtrans_col(c,:)      = spval
          this%tracer_flx_dew_grnd_col   (c,:) = spval
          this%tracer_flx_dew_snow_col   (c,:) = spval
@@ -420,6 +421,7 @@ contains
          this%tracer_flx_leaching_col(c,:)    = 0._r8
          this%tracer_flx_surfrun_col(c,:)     = 0._r8
          this%tracer_flx_tparchm_col(c,:)     = 0._r8
+         this%tracer_flx_parchm_vr_col(c,:,:) = 0._r8
          this%tracer_flx_vtrans_col(c,:)      = 0._r8
          this%tracer_flx_dew_grnd_col   (c,:) = 0._r8
          this%tracer_flx_dew_snow_col   (c,:) = 0._r8
@@ -492,6 +494,7 @@ contains
       this%tracer_flx_leaching_col   (column,:)   = 0._r8
       this%tracer_flx_surfrun_col    (column,:)   = 0._r8
       this%tracer_flx_tparchm_col    (column,:)   = 0._r8
+      this%tracer_flx_parchm_vr_col  (column,:,:) = 0._r8
       this%tracer_flx_vtrans_col     (column,:)   = 0._r8
       this%tracer_flx_dew_grnd_col   (column,:)   = 0._r8
       this%tracer_flx_dew_snow_col   (column,:)   = 0._r8

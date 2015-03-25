@@ -62,7 +62,7 @@ implicit none
   use tracerstatetype       , only : tracerstate_type
   use abortutils            , only : endrun
   use clm_varctl            , only : iulog
-  use clm_time_manager      , only : get_step_size
+  use clm_time_manager      , only : get_step_size,get_nstep
   use clm_varcon            , only : namec,catomw,natomw
   implicit none
   type(bounds_type),      intent(in)    :: bounds
@@ -119,6 +119,7 @@ implicit none
 
       if(abs(err_rel)>err_min_rel)then       
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), ' err=',errtracer(c,kk), ' col=',c
+        write(iulog,*)get_nstep()
         write(iulog,'(4(A,X,E20.10))')'netpro=',tracer_flx_netpro(c,kk),' netphyloss=',tracer_flx_netphyloss(c,kk),' begm=',beg_tracer_molarmass(c,kk), &
                   ' endm=',end_tracer_molarmass(c,kk)
         call tracerflux_vars%flux_display(c,kk,betrtracer_vars)
@@ -137,6 +138,7 @@ implicit none
       endif
       if(abs(errtracer(c,kk))>err_min)then
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), 'err=',errtracer(c,kk), 'col=',c
+        write(iulog,*)get_nstep()
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo

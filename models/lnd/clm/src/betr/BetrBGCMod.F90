@@ -10,7 +10,8 @@ module BetrBGCMod
   use decompMod          , only : bounds_type
   use BeTRTracerType     , only : betrtracer_type  
   use clm_varctl         , only : iulog
-  use clm_time_manager    , only: get_nstep
+  use clm_time_manager   , only : get_nstep
+  use MathfuncMod        , only : dot_sum
 implicit none
   private
   
@@ -170,20 +171,28 @@ contains
   
   ! do tracer wash with surface runoff
   call calc_tracer_surface_runoff(bounds, lbj, ubj, num_soilc, filter_soilc, soilhydrology_vars%fracice_col(bounds%begc:bounds%endc,1), &
-     col%dz(bounds%begc:bounds%endc, 1:2), waterstate_vars, &
+     col%dz(bounds%begc:bounds%endc, 1:ubj), waterstate_vars, &
      waterflux_vars, betrtracer_vars, tracerstate_vars, tracercoeff_vars, tracerflux_vars)
-  
+
+  !call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
+  !   betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_gw_transp')  
   !print*,'do diffusion advection transport'  
   call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
        col%dz(bounds%begc:bounds%endc,lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
        waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
        (/do_advection,do_diffusion/), dtime2, betrtracer_vars, tracerboundarycond_vars,&
        tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
+
+  !call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
+  !   betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_reaction')
     
   !print*,'do bgc_reaction'
   call bgc_reaction%calc_bgc_reaction(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, tracerboundarycond_vars%jtops_col,&
        dtime, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, cnstate_vars, &
        carbonflux_vars,nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+
+!  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
+!     betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_reaction')
   
   !print*,'do advection diffusion transport ' 
   call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
@@ -192,6 +201,8 @@ contains
       (/do_advection, do_diffusion/), dtime2, betrtracer_vars, tracerboundarycond_vars, &
       tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
 
+!  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
+!     betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_gw_transp')
   !print*,'do solid phase transport'
   !the solid phase tracer only start from the first layer. However, this may be subject to change
   !when snow ice is considered in future. Jinyun Tang, June/24/2014
@@ -412,23 +423,68 @@ contains
      tracercoeff_vars, tracerstate_vars)
   
   !do diffusive and advective transport, assuming aqueous and gaseous phase are in equilbrium  
-  
+
   do kk = 1 , 2
      if(transp_pathway(kk) == do_diffusion)then
+        !call tracer_mass_print(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dz, betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_dif')
         !print*,'do dual phase diffusion, gas + aqueous'
         call do_tracer_gw_diffusion(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, betrtracer_vars, tracerboundarycond_vars, Rfactor, &
          tracercoeff_vars%hmconductance_col(bounds%begc:bounds%endc, lbj:ubj-1, : ),&
          dz, dtime, tracerstate_vars, tracerflux_vars, waterstate_vars)
+        !call tracer_mass_print(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dz, betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_dif')
      elseif(transp_pathway(kk) == do_advection)then
         !print*,'do aqueous advection'
         jtops0(:) = 1
+        
+!        call tracer_mass_print(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dz, betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_adv')
         call do_tracer_advection(bounds, lbj, ubj, jtops0, num_soilc, filter_soilc, betrtracer_vars, dz, zi, dtime, &
           h2osoi_liqvol, waterflux_vars, tracercoeff_vars,&
           tracerstate_vars, tracerflux_vars)
+!        call tracer_mass_print(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dz, betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_adv')
      endif
   enddo  
     
   end subroutine tracer_gw_transport
+
+!-------------------------------------------------------------------------------  
+  subroutine tracer_mass_print(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dz, betrtracer_vars, tracerflux_vars, tracerstate_vars,loc_str)
+
+  use tracerstateType         , only : tracerstate_type
+  use tracerfluxtype          , only : tracerflux_type
+
+  implicit none
+  type(bounds_type),           intent(in) :: bounds
+  integer,                     intent(in) :: lbj, ubj
+  integer,                     intent(in) :: num_soilc                               ! number of columns in column filter_soilc
+  integer,                     intent(in) :: filter_soilc(:)                          ! column filter_soilc  
+  integer,                     intent(in) :: jtops(bounds%begc: )     ! top label of each column  
+  type(betrtracer_type),       intent(in) :: betrtracer_vars
+  real(r8),                    intent(in) :: dz(bounds%begc: ,lbj: )!
+  type(tracerflux_type),       intent(in) :: tracerflux_vars
+  type(tracerstate_type),      intent(in) :: tracerstate_vars
+  character(len=*)           , intent(in) :: loc_str
+
+
+  integer :: fc, c
+
+  SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
+  SHR_ASSERT_ALL((ubound(dz) == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
+
+  do fc = 1, num_soilc
+    c = filter_soilc(fc)
+    if(c==22116) then
+      write(iulog,*)get_nstep()
+      write(iulog,*)loc_str,dot_sum(x=tracerstate_vars%tracer_conc_mobile_col(c,jtops(c):ubj,betrtracer_vars%id_trc_co2x),y=dz(c,jtops(c):ubj))
+      write(iulog,*)'dif=',tracerflux_vars%tracer_flx_dif_col(c,betrtracer_vars%volatileid(betrtracer_vars%id_trc_co2x)),&
+        ' leach=',tracerflux_vars%tracer_flx_leaching_col(c,betrtracer_vars%id_trc_co2x),' infl=',tracerflux_vars%tracer_flx_infl_col(c,betrtracer_vars%id_trc_co2x), &
+        ' vtrans=',tracerflux_vars%tracer_flx_vtrans_col(c,betrtracer_vars%id_trc_co2x),&
+        ' netpro=',dot_sum(x=tracerflux_vars%tracer_flx_netpro_vr_col(c,1:ubj,betrtracer_vars%id_trc_co2x),y=dz(c,1:ubj))
+      write(iulog,*)' tparm=' ,dot_sum(x=tracerflux_vars%tracer_flx_parchm_vr_col(c,1:ubj,betrtracer_vars%volatileid(betrtracer_vars%id_trc_co2x)), y=dz(c,1:ubj))
+      write(iulog,*)
+    endif
+  enddo
+  end subroutine tracer_mass_print
+
 !-------------------------------------------------------------------------------  
 
   subroutine do_tracer_advection(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, betrtracer_vars, dz, zi, dtime, &
@@ -447,7 +503,6 @@ contains
   use TransportMod          , only : semi_lagrange_adv_backward
   use abortutils            , only : endrun
   use WaterfluxType         , only : waterflux_type  
-  use MathfuncMod           , only : dot_sum  
  
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
@@ -483,7 +538,7 @@ contains
   logical  :: lexit_loop
   integer  :: c, fc, j, l
   integer  :: ngwmobile_tracers
-
+  logical  :: lshock
 
   real(r8), parameter :: err_relative_threshold=1.e-2_r8 !relative error threshold
   real(r8), parameter :: err_adv_min=1.e-10_r8  
@@ -540,15 +595,20 @@ contains
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       c_courant=0.0_r8
+      lshock =.false.
       do l = jtops(c), ubj
         if(qflx_adv_local(c,l) * qflx_adv_local(c,l-1) <= 0._r8)then
           c_courant=max(c_courant, max(abs(qflx_adv_local(c,l)),abs(qflx_adv_local(c,l-1)))*dtime/dz(c,l))
+          lshock=.true.
         else
           c_courant=max(c_courant,abs(qflx_adv_local(c,l)-qflx_adv_local(c,l-1))*dtime/dz(c,l))
         endif
       enddo    
       num_loops=max(ceiling(c_courant),1)+1      !make courant number < 1_r8
-      dtime_loc(c)=dtime/num_loops              !local advective time step
+      if(.not. lshock)then 
+        num_loops=min(num_loops,10)
+      endif
+      dtime_loc(c)=dtime/num_loops   !local advective time step
     enddo  
     
     !do the iterating loop
@@ -600,7 +660,11 @@ contains
           dmass(c) =  dot_sum(tracer_conc_mobile_col(c,jtops(c):ubj,j), dz(c,jtops(c):ubj))- dmass(c)
                     
           err_tracer(c) = dmass(c) - inflx_top(c) * dtime_loc(c) + leaching_mass(c) + transp_mass(c)
-          if(abs(err_tracer(c))<err_adv_min)then
+!          if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
+!            write(iulog,*)get_nstep(),dtime_loc(c)
+!            write(iulog,'(I8,X,A,4(X,A,X,E18.10))')c,tracernames(j),' err_adv=',err_tracer(c),' lech=',leaching_mass(c),' infl=',inflx_top(c),' dmass=',dmass(c)
+!          endif
+          if(abs(err_tracer(c))<err_adv_min .or. abs(err_tracer(c))/(mass0+1.e-10_r8) < 1.e-10_r8)then
             !when the absolute value is too small, set relative error to 
             err_relative = err_relative_threshold*0.999_r8   
           else
@@ -779,6 +843,10 @@ contains
             err_tracer(c) = err_tracer(c) + dtracer(c,l) * dz(c,l)
           enddo
           err_tracer(c) = err_tracer(c)-diff_surf(c)*dtime_loc(c)
+          !if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
+          !   write(iulog,*)get_nstep()
+          !   write(iulog,*)'err_dif',err_tracer(c),'dif_endm=',dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,j),y=dz(c,jtops(c):ubj))
+          !endif
           !calculate relative error, defined as the ratio between absolute error with respect to surface flux
           if(abs(err_tracer(c))<err_dif_min)then
             !when the absolute value is too small, set relative error to 
@@ -1179,7 +1247,7 @@ contains
   integer,                  intent(in)    :: num_soilc                                   ! number of columns in column filter_soilc
   integer,                  intent(in)    :: filter_soilc(:)                              ! column filter_soilc
   real(r8),                 intent(in)    :: fracice_top(bounds%begc:bounds%endc)   ! ice fraction of topsoil
-  real(r8),                 intent(in)    :: dz_top2(bounds%begc:bounds%endc, 1:2)  ! node depth of the first 2 soil layers
+  real(r8),                 intent(in)    :: dz_top2(bounds%begc:bounds%endc, 1:ubj)  ! node depth of the first 2 soil layers
   type(Waterstate_Type),    intent(in)    :: waterstate_vars
   type(waterflux_type),     intent(in)    :: waterflux_vars
   type(betrtracer_type),    intent(in)    :: betrtracer_vars                    ! betr configuration information
@@ -1249,10 +1317,15 @@ contains
       !increase of tracer in the surface runoff
       dloss = dloss - trc_srun  
       dtmp = fracc(1)+fracc(2)
+      !if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
+      !  write(iulog,*)'bef srun',dot_sum(x=tracer_conc_mobile(c,1:ubj,j),y=dz_top2(c,1:ubj))
+      !endif
       tracer_conc_mobile(c,1,j) = tracer_conc_mobile(c,1,j) - dloss*safe_div(fracc(1),dtmp)/dz_top2(c,1)
       tracer_conc_mobile(c,2,j) = tracer_conc_mobile(c,2,j) - dloss*safe_div(fracc(2),dtmp)/dz_top2(c,2)
       tracer_conc_surfwater(c,j) = tracer_flx_surfrun(c,j)/h2o_srun       !revise the tracer concentration in runoff
-
+      !if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
+      !  write(iulog,*)'aff srun',dot_sum(x=tracer_conc_mobile(c,1:ubj,j),y=dz_top2(c,1:ubj)),tracer_flx_surfrun(c,j)
+      !endif
     enddo
   enddo
   
