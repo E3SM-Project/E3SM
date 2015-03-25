@@ -76,8 +76,11 @@ echo "mthrds = \${mthrds}"
 
 if ( \${?COBALT_JOBID} == 0 && \$MPILIB != "mpi-serial" ) then
     echo "COBALT_JOBID not set, submitting job"
-    echo "qsub -n \${nodes} -t 0 --mode script \$0 -backend"
-    qsub -n \${nodes} -t 0 --mode script \$0 -backend
+    # FIXME: Currently the weights for the jobs are ignored
+    # and all jobs default to max timelimit = 59m (1hr is
+    # the max timelimit allowed on the default queue)
+    echo "qsub -n \${nodes} -t 59 --mode script \$0 -backend"
+    qsub -n \${nodes} -t 59 --mode script \$0 -backend
     exit 0
 else
     echo "COBALT_JOBID detected, assuming back-end invocation"
