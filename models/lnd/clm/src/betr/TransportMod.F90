@@ -553,7 +553,7 @@ module TransportMod
    
 !-------------------------------------------------------------------------------     
    subroutine semi_lagrange_adv_backward(bounds, lbj, ubj, lbn, numfl, filter, dtime, dz, &
-     zi, us, inflx_top, inflx_bot, update_col, trcin, leaching_mass)
+     zi, us, inflx_top, inflx_bot, update_col, halfdt_col, trcin, leaching_mass)
    !
    ! DESCRIPTION
    ! do semi-lagrangian advection for equation
@@ -576,6 +576,7 @@ module TransportMod
    real(r8),   intent(in)  :: inflx_bot(bounds%begc: )                !incoming tracer flow at bottom boundary   
    logical,    intent(in)  :: update_col(bounds%begc: )               !indicator of active clumns
    real(r8),   intent(in)  :: us(bounds%begc: , lbj-1: )              !convective flux defined at the boundary, positive downwards, [m/s]
+   logical,    intent(out) :: halfdt_col(bounds%begc:bounds%endc) 
    real(r8),        intent(inout)  :: trcin(bounds%begc: , lbj: )     !input tracer concentration
    real(r8), optional, intent(out) :: leaching_mass(bounds%begc:bounds%endc)    !leaching tracer mass
    !local variables
@@ -607,6 +608,7 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(inflx_bot)  == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    
    call Extra_inst%InitAllocate(1,ubj-lbj+6)
+   halfdf_col(:) = .false.
    do fc = 1, numfl
    
      c = filter(fc)
@@ -630,6 +632,11 @@ module TransportMod
      ughostr(2) = us(c,ubj)
      
      call backward_advection((/zghostl, zi(c, lbn(c)-1:ubj),zghostr/), (/ughostl, us(c, lbn(c)-1:ubj), ughostr/),  dtime(c), zold(0:length))
+     
+     if(.not. is_ascending_vec(zcor))then
+       halfdt_col(c) = .true.
+       cycle
+     endif
   
      !create the cumulative mass curve
      !left bounary ghost grids
@@ -701,6 +708,29 @@ module TransportMod
    enddo
    call Extra_inst%DDeallocate()
    end subroutine semi_lagrange_adv_backward
+!-------------------------------------------------------------------------------
+   
+   function is_ascending_vec(zcor)result(ans)
+   !
+   ! check if it is an ascending array
+   
+   implicit none
+   real(r8), dimension(:), intent(in) :: zcor
+   
+   logical :: ans
+   
+   integer :: j, n
+   
+   n = size(zcor)
+   ans = .true.
+   do j = 2 , n
+     if(zcor(j)<zcor(j-1))then
+       ans=.false.
+       exit
+     endif
+   enddo
+   end function is_ascending_vec
+   
 !-------------------------------------------------------------------------------
    function mass_curve_correct(mass_curve)result(ans)
    !

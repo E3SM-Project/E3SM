@@ -532,6 +532,7 @@ contains
   real(r8) :: dmass(bounds%begc:bounds%endc)
   real(r8) :: qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj)
   real(r8) :: qflx_rootsoi_local(bounds%begc:bounds%endc,lbj:ubj)
+  logical  :: halfdt_col(bounds%begc:bounds%endc)
   real(r8) :: err_relative
   real(r8) :: c_courant
   integer  :: num_loops                                !number of loops as determined by the courant number condition  
@@ -594,21 +595,7 @@ contains
     ! note qflx_adv(c,jtops(c)-1) is defined with infiltration
     do fc = 1, num_soilc
       c = filter_soilc(fc)
-      c_courant=0.0_r8
-      lshock =.false.
-      do l = jtops(c), ubj
-        if(qflx_adv_local(c,l) * qflx_adv_local(c,l-1) <= 0._r8)then
-          c_courant=max(c_courant, max(abs(qflx_adv_local(c,l)),abs(qflx_adv_local(c,l-1)))*dtime/dz(c,l))
-          lshock=.true.
-        else
-          c_courant=max(c_courant,abs(qflx_adv_local(c,l)-qflx_adv_local(c,l-1))*dtime/dz(c,l))
-        endif
-      enddo    
-      num_loops=max(ceiling(c_courant),1)+1      !make courant number < 1_r8
-      if(.not. lshock)then 
-        num_loops=min(num_loops,10)
-      endif
-      dtime_loc(c)=dtime/num_loops   !local advective time step
+      dtime_loc(c)=dtime       !local advective time step
     enddo  
     
     !do the iterating loop
@@ -637,13 +624,13 @@ contains
       ! do semi-lagrangian tracer transport
       
       call semi_lagrange_adv_backward(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dtime_loc, dz, zi, &
-        qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj), inflx_top, inflx_bot, update_col, &
+        qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj), inflx_top, inflx_bot, update_col, halfdt_col, &
         tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,j), leaching_mass)
 
       !do soil-root tracer exchange
       if(vtrans_scal(j)>0._r8)then
         call calc_root_uptake_as_perfect_sink(bounds, lbj, ubj, num_soilc, filter_soilc, dtime_loc, dz, qflx_rootsoi_local, update_col, &
-          tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,j), transp_mass)
+          halfdt_col, tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,j), transp_mass)
       else
         transp_mass(:) = 0._r8
       endif
@@ -655,7 +642,7 @@ contains
         !if(c==2300 .and. trim(tracernames(j))=='O18_H2O')then
         !    write(iulog,'(A,5(X,E20.10))')'adaf',tracer_conc_mobile_col(c,1,j),h2osoi_liqvol(c,1), inflx_top(c), qflx_adv_local(c,1), qflx_rootsoi_local(c,1)
         !endif        
-        if(update_col(c))then                    
+        if(update_col(c) .and. (.not. halfdt_col(c)))then                    
           mass0   = dmass(c) 
           dmass(c) =  dot_sum(tracer_conc_mobile_col(c,jtops(c):ubj,j), dz(c,jtops(c):ubj))- dmass(c)
                     
@@ -684,8 +671,13 @@ contains
       
       do fc = 1, num_soilc
         c = filter_soilc(fc)
-        if(update_col(c))then
+        if(update_col(c))
+          if(halfdt_col(c))then
+             dtime_loc(c) = max(dtime_loc(c)*0.5_r8,dtime_min)
+             dtime_loc(c) = min(dtime_loc(c), time_remain(c))
+          else
           time_remain(c) = time_remain(c) - dtime_loc(c)
+          endif
         endif
         !if(c==2195 .and. j==betrtracer_vars%id_trc_no3x)then
         !  print*,'xxxxxxxxxxx'
@@ -1113,7 +1105,7 @@ contains
   
 !-------------------------------------------------------------------------------  
   subroutine calc_root_uptake_as_perfect_sink(bounds, lbj, ubj,  num_soilc, filter_soilc, dtime_loc, dz, qflx_rootsoi, &
-        update_col, tracer_conc, transp_mass)
+        update_col, halfdt_col, tracer_conc, transp_mass)
   !
   ! DESCRIPTION
   ! calculate plant aqueous tracer uptake through transpiration into xylem
@@ -1127,6 +1119,7 @@ contains
   real(r8),               intent(in)    :: dtime_loc(bounds%begc: )
   real(r8),               intent(in)    :: qflx_rootsoi(bounds%begc: , lbj: )
   logical,                intent(in)    :: update_col(bounds%begc:bounds%endc)  ! logical switch for active col update
+  logical,                intent(in)    :: halfdt_col(bounds%begc:bounds%endc)
   real(r8),               intent(inout) :: tracer_conc(bounds%begc: , lbj: )    ! incoming tracer concentration
   real(r8),               intent(out)   :: transp_mass(bounds%begc: )
   
@@ -1144,7 +1137,7 @@ contains
   transp_mass(:) = 0._r8
   do fc = 1, num_soilc
     c = filter_soilc(fc)    
-    if(update_col(c))then
+    if(update_col(c) .and. (.not. halfdt_col(c)))then
       
       do j = 1, ubj
         tracer_conc_new = tracer_conc(c,j) * exp(-max(qflx_rootsoi(c,j),0._r8)*dtime_loc(c))
