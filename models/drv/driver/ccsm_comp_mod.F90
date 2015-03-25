@@ -1476,10 +1476,6 @@ subroutine ccsm_init()
       call shr_sys_abort(subname//' ERROR: samegrid_oi is false')
    endif
 
-   if (.not. samegrid_lg) then
-      call shr_sys_abort(subname//' ERROR: samegrid_lg is false')
-   endif
-
    !----------------------------------------------------------
    !| Check instances of prognostic components
    !----------------------------------------------------------

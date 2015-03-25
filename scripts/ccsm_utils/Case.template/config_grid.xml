@@ -11,9 +11,6 @@ GRID naming convention
 The long grid name has the order atm,lnd,ocn/ice,river,mask,glc 
 The following shortname is used
    a% => atm, l% => lnd, oi% => ocn/ice, r% => river, m% => mask, g% => glc, w% => wav
-Note that the glc grid specifies the ***internal*** grid used by glimmer/cism
-From the point of view of coupling - the glc grid is assumed to be identical
-to the land
 The notation is 
    a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
 Each grid is associated with five names
@@ -411,6 +408,15 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <nx>90</nx>  <ny>50</ny>  
   <desc>WW3 90 x 50 global grid</desc>
 </gridhorz>
+
+<!-- GLC grids -->
+<!-- GLC:MPAS-LI grids -->
+<gridhorz name="mpas-ais">
+  <support_level>Experimental, under development</support_level>
+  <nx>7425</nx>  <ny>1</ny>    
+  <desc>mpas-ais is a MPAS-LI grid that is used for testing.</desc>
+</gridhorz>
+
 
 <!-- ======================================================== -->
 <!-- SECTION GRIDS: ocean/ice grids                           -->
