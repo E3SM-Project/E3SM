@@ -3009,6 +3009,14 @@ RUNDIR allows you to keep the run directory separate from the build directory."
  sdesc="timer output depth"
 ></entry>
 
+<entry id="PROF_OVHD_MEASUREMENT"
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="FALSE"
+ group="run_flags"
+ sdesc="direct measurement of profiling overhead"
+></entry>
+
 <entry id="TPROF_TOTAL" 
  type="integer"
  valid_values=""  
