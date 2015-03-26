@@ -421,7 +421,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_calculate_mask."
+          write (stderrUnit,*) "An error has occurred in li_calculate_mask."
       endif
 
    !--------------------------------------------------------------------

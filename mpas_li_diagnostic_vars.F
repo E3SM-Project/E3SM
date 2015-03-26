@@ -402,7 +402,7 @@ contains
           ! Make sure lowerSurface calculation is reasonable.  This check could be deleted once this has been throroughly tested.
           do iCell = 1, nCells
              if (lowerSurface(iCell) < bedTopography(iCell)) then
-                write (0,*) 'lowerSurface less than bedTopography at cell:', iCell
+                write (stderrUnit,*) 'lowerSurface less than bedTopography at cell:', iCell
                 err = 1
              endif
           end do
@@ -561,7 +561,7 @@ contains
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in diagnostic_solve_before_velocity."
+          write (stderrUnit,*) "An error has occurred in diagnostic_solve_before_velocity."
       endif
 
    !--------------------------------------------------------------------
@@ -657,7 +657,7 @@ contains
             !!!h_edge = (thickness(k) + thickness(k) ) / 2.0  ! 2nd order 
          end do
       else
-          !write(6,*) 'layerThicknessEdge not calculated!'
+          !write(stdoutUnit,*) 'layerThicknessEdge not calculated!'
       endif
 
       ! Note: the outmost layerThicknessEdge may be wrong if its upwind cell is off this block - halo update should be done if this variable will be used.
