@@ -7,7 +7,8 @@ module BGCCenturySubMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use clm_varcon         , only : spval  
-  use ColumnType            , only : col 
+  use ColumnType         , only : col
+  use clm_varctl         , only : spinup_state  
   implicit none
   save
   private
@@ -144,7 +145,8 @@ module BGCCenturySubMod
   ! each reaction is associated with a primary species, the secondary species follows after primary species
   ! for the century model, the primary species are seven om pools and nh4, no3 and plant nitrogen 
   ! 
-  use MathfuncMod,   only : addone
+  use MathfuncMod            , only : addone
+  
   class(centurybgc_type) :: this
   integer :: itemp
   integer :: ireac   !counter of reactions
@@ -191,14 +193,16 @@ module BGCCenturySubMod
   this%lid_minn_nh4_plant = addone(itemp)
   this%lid_minn_no3_plant = addone(itemp)
   this%lid_nh4_nit    = addone(itemp)
-  !aerechyma transport
-  this%lid_ar_paere   = addone(itemp)   !
-  this%lid_n2_paere   = addone(itemp)   !
-  this%lid_o2_paere   = addone(itemp)   !
-  this%lid_co2_paere  = addone(itemp)   !
-  this%lid_ch4_paere  = addone(itemp)   !
-  this%lid_n2o_paere  = addone(itemp)   !
   
+  !aerechyma transport
+  this%lid_o2_paere   = addone(itemp)   !
+  if ( spinup_state /= 1 ) then
+    this%lid_ar_paere   = addone(itemp)   !
+    this%lid_n2_paere   = addone(itemp)   !
+    this%lid_co2_paere  = addone(itemp)   !
+    this%lid_ch4_paere  = addone(itemp)   !
+    this%lid_n2o_paere  = addone(itemp)   !
+  endif
   this%nstvars          = itemp          !totally 14+32 state variables
 
 
@@ -649,6 +653,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_n2  ,reac) = 0.5_r8 * n2_n2o_ratio_denit/(1._r8+n2_n2o_ratio_denit)
   cascade_matrix(lid_no3_den,reac) = 1._r8
   primvarid(reac)=lid_no3
+  
   !----------------------------------------------------------------------  
   !below are zero order reactions
   !----------------------------------------------------------------------  
@@ -661,35 +666,38 @@ module BGCCenturySubMod
   cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
   reac = lid_at_rt_reac
+  
   !ar + o2 -> co2
   cascade_matrix(lid_co2, reac) =  1._r8
   cascade_matrix(lid_o2,  reac) = -1._r8
-  
+  !--------------------------------------------------------------------
   !arenchyma transport
-  reac = lid_ch4_aere_reac
-  cascade_matrix(lid_ch4, reac) = -1._r8
-  cascade_matrix(lid_ch4_paere, reac) = 1._r8
-  
-  reac = lid_ar_aere_reac         
-  cascade_matrix(lid_ar, reac)       = -1._r8
-  cascade_matrix(lid_ar_paere, reac) = 1._r8
-  
   !second primary variables
   reac = lid_o2_aere_reac
   cascade_matrix(lid_o2, reac) = -1._r8
   cascade_matrix(lid_o2_paere, reac) = 1._r8
   
-  reac = lid_co2_aere_reac       
-  cascade_matrix(lid_co2, reac) = -1._r8
-  cascade_matrix(lid_co2_paere, reac) = 1._r8
+  if ( spinup_state /= 1 ) then  
+    reac = lid_ch4_aere_reac
+    cascade_matrix(lid_ch4, reac) = -1._r8
+    cascade_matrix(lid_ch4_paere, reac) = 1._r8
   
-  reac = lid_n2o_aere_reac       
-  cascade_matrix(lid_n2o, reac) = -1._r8
-  cascade_matrix(lid_n2o_paere, reac) = 1._r8
+    reac = lid_ar_aere_reac         
+    cascade_matrix(lid_ar, reac)       = -1._r8
+    cascade_matrix(lid_ar_paere, reac) = 1._r8
+    
+    reac = lid_co2_aere_reac       
+    cascade_matrix(lid_co2, reac) = -1._r8
+    cascade_matrix(lid_co2_paere, reac) = 1._r8
   
-  reac = lid_n2_aere_reac          
-  cascade_matrix(lid_n2, reac) = -1._r8
-  cascade_matrix(lid_n2_paere, reac) = 1._r8
+    reac = lid_n2o_aere_reac       
+    cascade_matrix(lid_n2o, reac) = -1._r8
+    cascade_matrix(lid_n2o_paere, reac) = 1._r8
+  
+    reac = lid_n2_aere_reac          
+    cascade_matrix(lid_n2, reac) = -1._r8
+    cascade_matrix(lid_n2_paere, reac) = 1._r8
+  endif
   
   end associate
   end subroutine calc_cascade_matrix
@@ -814,15 +822,22 @@ module BGCCenturySubMod
       
       !the temporal averaging for fluxes below will be done later
       
-      tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2)  ) = yf(centurybgc_vars%lid_n2_paere  ,c, j)  - y0(centurybgc_vars%lid_n2_paere , c, j)
-      tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2)  ) = yf(centurybgc_vars%lid_o2_paere  ,c, j)  - y0(centurybgc_vars%lid_o2_paere , c, j)      
-      tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ar)  ) = yf(centurybgc_vars%lid_ar_paere  ,c, j)  - y0(centurybgc_vars%lid_ar_paere , c, j)      
-      tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_co2x)) = yf(centurybgc_vars%lid_co2_paere ,c, j)  - y0(centurybgc_vars%lid_co2_paere, c, j)      
-      tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ch4) ) = yf(centurybgc_vars%lid_ch4_paere ,c, j)  - y0(centurybgc_vars%lid_ch4_paere, c, j)      
-      tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2o) ) = yf(centurybgc_vars%lid_n2o_paere ,c, j)  - y0(centurybgc_vars%lid_n2o_paere, c, j)      
-
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) + yf(centurybgc_vars%lid_nh4       ,c, j)  - y0(centurybgc_vars%lid_nh4      , c, j)
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) + yf(centurybgc_vars%lid_no3       ,c, j)  - y0(centurybgc_vars%lid_no3      , c, j)
+      tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2)  ) = yf(centurybgc_vars%lid_o2_paere  ,c, j)  - y0(centurybgc_vars%lid_o2_paere , c, j)
+      
+      if ( spinup_state /= 1 ) then  
+        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2)  ) = yf(centurybgc_vars%lid_n2_paere  ,c, j)  - y0(centurybgc_vars%lid_n2_paere , c, j)
+        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ar)  ) = yf(centurybgc_vars%lid_ar_paere  ,c, j)  - y0(centurybgc_vars%lid_ar_paere , c, j)      
+        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_co2x)) = yf(centurybgc_vars%lid_co2_paere ,c, j)  - y0(centurybgc_vars%lid_co2_paere, c, j)      
+        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ch4) ) = yf(centurybgc_vars%lid_ch4_paere ,c, j)  - y0(centurybgc_vars%lid_ch4_paere, c, j)      
+        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2o) ) = yf(centurybgc_vars%lid_n2o_paere ,c, j)  - y0(centurybgc_vars%lid_n2o_paere, c, j)      
+      endif
+      
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   )                          + &
+                                                                 yf(centurybgc_vars%lid_nh4       ,c, j)  - y0(centurybgc_vars%lid_nh4      , c, j)
+                                                                 
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )                          + &
+                                                                 yf(centurybgc_vars%lid_no3       ,c, j)  - y0(centurybgc_vars%lid_no3      , c, j)
+                                                                 
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2))
 
@@ -831,20 +846,21 @@ module BGCCenturySubMod
 
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2o    ) = yf(centurybgc_vars%lid_n2o        ,c, j)  - y0(centurybgc_vars%lid_n2o     , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2o))
+                                                              
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_o2     ) = yf(centurybgc_vars%lid_o2        ,c, j)  - y0(centurybgc_vars%lid_o2       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2))
 
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ch4    ) = yf(centurybgc_vars%lid_ch4       ,c, j) - y0(centurybgc_vars%lid_ch4       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ch4))
 
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ar     ) = yf(centurybgc_vars%lid_ar       ,c, j) - y0(centurybgc_vars%lid_ar       , c, j)  &
+      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ar     ) = yf(centurybgc_vars%lid_ar       ,c, j) - y0(centurybgc_vars%lid_ar       , c, j)    &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ar))
       !get net production for om pools
       deltac=0._r8
       do k = 1, nom_pools
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
-        deltac = deltac + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
+        !deltac = deltac + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
       enddo
       !if(c==15695)then
       !  hr = hr + col%dz(c,j)*hr_vr(c,j)

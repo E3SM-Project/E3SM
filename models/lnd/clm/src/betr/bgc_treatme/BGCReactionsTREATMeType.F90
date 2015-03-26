@@ -1,4 +1,4 @@
-module BGCReactionsCenturyType
+module BGCReactionsTREATMeType
 
 #include "shr_assert.h"
 
@@ -20,7 +20,7 @@ module BGCReactionsCenturyType
   use BGCReactionsMod       , only : bgc_reaction_type
   use clm_varcon            , only : spval
   use tracer_varcon         , only : bndcond_as_conc, bndcond_as_flux
-  use BGCCenturySubMod     
+  use BGCTREATMeSubMod     
   use LandunitType          , only : lun
   use ColumnType            , only : col 
   use landunit_varcon       , only : istsoil, istcrop    
@@ -30,15 +30,15 @@ implicit none
   private
   !
   ! !PUBLIC TYPES:
-  public :: bgc_reaction_CENTURY_type
+  public :: bgc_reaction_TREATMe_type
   public :: assign_OM_CNpools
   public :: assign_nitrogen_hydroloss
-  public :: init_centurybgc_betr
-  type(centurybgc_type), private :: centurybgc_vars
+  public :: init_TREATMebgc_betr
+  type(TREATMebgc_type), private :: TREATMebgc_vars
 
   integer, private :: lpr
   type, extends(bgc_reaction_type) :: &
-  bgc_reaction_CENTURY_type
+  bgc_reaction_TREATME_type
   private
   contains
    procedure :: Init_betrbgc                  ! initialize betr bgc
@@ -48,7 +48,7 @@ implicit none
    procedure :: do_tracer_equilibration       ! do equilibrium tracer chemistry
    procedure :: initCold
    procedure :: readParams
-  end type bgc_reaction_CENTURY_type
+  end type bgc_reaction_TREATME_type
 
   
    type, private :: Extra_type
@@ -71,10 +71,10 @@ implicit none
    type(Extra_type), private :: Extra_inst   
   
   
-  interface bgc_reaction_CENTURY_type
+  interface bgc_reaction_TREATME_type
     module procedure constructor
 
-  end interface bgc_reaction_CENTURY_type
+  end interface bgc_reaction_TREATME_type
 
 
 contains
@@ -148,43 +148,43 @@ contains
 
    do j = 1, betrtracer_vars%ngwmobile_tracers
      if(j == betrtracer_vars%id_trc_o2)then     
-       this%scal_f(centurybgc_vars%lid_o2)   = aere_cond(betrtracer_vars%volatileid(j))
-       this%conc_f(centurybgc_vars%lid_o2)   = tracer_conc_atm(betrtracer_vars%volatileid(j))
-       this%conv_f(centurybgc_vars%lid_o2)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       this%scal_f(TREATMebgc_vars%lid_o2)   = aere_cond(betrtracer_vars%volatileid(j))
+       this%conc_f(TREATMebgc_vars%lid_o2)   = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(TREATMebgc_vars%lid_o2)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
        
      elseif(j == betrtracer_vars%id_trc_n2)then
-       this%scal_f(centurybgc_vars%lid_n2) = aere_cond(betrtracer_vars%volatileid(j))
-       this%conc_f(centurybgc_vars%lid_n2) = tracer_conc_atm(betrtracer_vars%volatileid(j))
-       this%conv_f(centurybgc_vars%lid_n2)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       this%scal_f(TREATMebgc_vars%lid_n2) = aere_cond(betrtracer_vars%volatileid(j))
+       this%conc_f(TREATMebgc_vars%lid_n2) = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(TREATMebgc_vars%lid_n2)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
        
      elseif(j == betrtracer_vars%id_trc_ar)then
-       this%scal_f(centurybgc_vars%lid_ar) = aere_cond(betrtracer_vars%volatileid(j))
-       this%conc_f(centurybgc_vars%lid_ar) = tracer_conc_atm(betrtracer_vars%volatileid(j))
-       this%conv_f(centurybgc_vars%lid_ar)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       this%scal_f(TREATMebgc_vars%lid_ar) = aere_cond(betrtracer_vars%volatileid(j))
+       this%conc_f(TREATMebgc_vars%lid_ar) = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(TREATMebgc_vars%lid_ar)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
        
      elseif(j==betrtracer_vars%id_trc_co2x)then
-       this%scal_f(centurybgc_vars%lid_co2)  = aere_cond(betrtracer_vars%volatileid(j)) 
-       this%conc_f(centurybgc_vars%lid_co2) = tracer_conc_atm(betrtracer_vars%volatileid(j))     
-       this%conv_f(centurybgc_vars%lid_co2)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       this%scal_f(TREATMebgc_vars%lid_co2)  = aere_cond(betrtracer_vars%volatileid(j)) 
+       this%conc_f(TREATMebgc_vars%lid_co2) = tracer_conc_atm(betrtracer_vars%volatileid(j))     
+       this%conv_f(TREATMebgc_vars%lid_co2)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
        
      elseif(j==betrtracer_vars%id_trc_ch4) then
-       this%scal_f(centurybgc_vars%lid_ch4) = aere_cond(betrtracer_vars%volatileid(j)) 
-       this%conc_f(centurybgc_vars%lid_ch4) = tracer_conc_atm(betrtracer_vars%volatileid(j))
-       this%conv_f(centurybgc_vars%lid_ch4)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       this%scal_f(TREATMebgc_vars%lid_ch4) = aere_cond(betrtracer_vars%volatileid(j)) 
+       this%conc_f(TREATMebgc_vars%lid_ch4) = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(TREATMebgc_vars%lid_ch4)   = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
        
      elseif(j==betrtracer_vars%id_trc_n2o) then
-       this%scal_f(centurybgc_vars%lid_n2o) = aere_cond(betrtracer_vars%volatileid(j))
-       this%conc_f(centurybgc_vars%lid_n2o) = tracer_conc_atm(betrtracer_vars%volatileid(j))
-       this%conv_f(centurybgc_vars%lid_n2o) = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
+       this%scal_f(TREATMebgc_vars%lid_n2o) = aere_cond(betrtracer_vars%volatileid(j))
+       this%conc_f(TREATMebgc_vars%lid_n2o) = tracer_conc_atm(betrtracer_vars%volatileid(j))
+       this%conv_f(TREATMebgc_vars%lid_n2o) = 1._r8/gas2bulkcef(betrtracer_vars%volatileid(j))
      endif
    enddo  
    end subroutine AAssign
    
 !-------------------------------------------------------------------------------
-  type(bgc_reaction_CENTURY_type) function constructor()
+  type(bgc_reaction_TREATME_type) function constructor()
   !
   ! ! DESCRIPTION
-  ! create an object of type bgc_reaction_CENTURY_type.
+  ! create an object of type bgc_reaction_TREATME_type.
   ! Right now it is purposely left empty
 
   end function constructor
@@ -200,7 +200,7 @@ contains
   use BeTRTracerType              , only : betrtracer_type
   
   
-  class(bgc_reaction_CENTURY_type), intent(in) :: this
+  class(bgc_reaction_TREATME_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds  
   type(BeTRtracer_type )          ,  intent(in) :: betrtracer_vars
   type(tracerboundarycond_type)   ,  intent(in) :: tracerboundarycond_vars
@@ -227,7 +227,7 @@ contains
   use BeTRTracerType        , only : betrtracer_type
   use MathfuncMod           , only : addone
   
-  class(bgc_reaction_CENTURY_type), intent(in) :: this
+  class(bgc_reaction_TREATME_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
   type(BeTRtracer_type )          , intent(inout) :: betrtracer_vars
@@ -243,11 +243,11 @@ contains
   
   !ncid%fh=10
 
-  call centurybgc_vars%Init(bounds, lbj, ubj)
+  call TREATMebgc_vars%Init(bounds, lbj, ubj)
 
-  nelm =centurybgc_vars%nelms
-  c_loc=centurybgc_vars%c_loc
-  n_loc=centurybgc_vars%n_loc
+  nelm =TREATMebgc_vars%nelms
+  c_loc=TREATMebgc_vars%c_loc
+  n_loc=TREATMebgc_vars%n_loc
 
   itemp = 0
   betrtracer_vars%id_trc_n2   = addone(itemp)
@@ -261,7 +261,7 @@ contains
   
   betrtracer_vars%ngwmobile_tracers=itemp                                  ! n2, o2, ar, co2, ch4, n2o, nh3x and no3x
   betrtracer_vars%nvolatile_tracers=itemp-2                                ! n2, o2, ar, co2, ch4 and n2o
-  betrtracer_vars%nsolid_passive_tracers=centurybgc_vars%nom_pools*nelm    !
+  betrtracer_vars%nsolid_passive_tracers=TREATMebgc_vars%nom_pools*nelm    !
   betrtracer_vars%ntracers=betrtracer_vars%ngwmobile_tracers+betrtracer_vars%nsolid_passive_tracers
   call betrtracer_vars%Init()
 
@@ -276,20 +276,20 @@ contains
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2o)  = 'N2O'
   
   
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit1-1)*nelm+c_loc)  = 'LIT1C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit2-1)*nelm+c_loc)  = 'LIT2C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit3-1)*nelm+c_loc)  = 'LIT3C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som1-1)*nelm+c_loc)  = 'SOM1C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som2-1)*nelm+c_loc)  = 'SOM2C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som3-1)*nelm+c_loc)  = 'SOM3C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+c_loc)  = 'CWDC'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit1-1)*nelm+n_loc)  = 'LIT1N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit2-1)*nelm+n_loc)  = 'LIT2N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit3-1)*nelm+n_loc)  = 'LIT3N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som1-1)*nelm+n_loc)  = 'SOM1N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som2-1)*nelm+n_loc)  = 'SOM2N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som3-1)*nelm+n_loc)  = 'SOM3N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+n_loc)  = 'CWDN'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%lit1-1)*nelm+c_loc)  = 'LIT1C'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%lit2-1)*nelm+c_loc)  = 'LIT2C'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%lit3-1)*nelm+c_loc)  = 'LIT3C'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%som1-1)*nelm+c_loc)  = 'SOM1C'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%som2-1)*nelm+c_loc)  = 'SOM2C'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%som3-1)*nelm+c_loc)  = 'SOM3C'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%cwd-1 )*nelm+c_loc)  = 'CWDC'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%lit1-1)*nelm+n_loc)  = 'LIT1N'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%lit2-1)*nelm+n_loc)  = 'LIT2N'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%lit3-1)*nelm+n_loc)  = 'LIT3N'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%som1-1)*nelm+n_loc)  = 'SOM1N'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%som2-1)*nelm+n_loc)  = 'SOM2N'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%som3-1)*nelm+n_loc)  = 'SOM3N'
+  betrtracer_vars%tracernames(jj+(TREATMebgc_vars%cwd-1 )*nelm+n_loc)  = 'CWDN'
   
     
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_n2)  =.true.
@@ -348,7 +348,7 @@ contains
   use WaterfluxType         , only : waterflux_type  
 
   
-  class(bgc_reaction_CENTURY_type), intent(in) :: this
+  class(bgc_reaction_TREATME_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: num_soilc                 ! number of columns in column filter
   integer                         , intent(in) :: filter_soilc(:)            ! column filter
@@ -416,7 +416,7 @@ contains
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type  
   !ARGUMENTS
-  class(bgc_reaction_CENTURY_type)   , intent(in) :: this
+  class(bgc_reaction_TREATME_type)   , intent(in) :: this
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
@@ -442,13 +442,13 @@ contains
 
   integer :: fc, c, j
 
-  real(r8) :: y0(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)
-  real(r8) :: yf(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)  
-  real(r8) :: cn_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
-  real(r8) :: cp_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8) :: y0(TREATMebgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8) :: yf(TREATMebgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)  
+  real(r8) :: cn_ratios(TREATMebgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8) :: cp_ratios(TREATMebgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: time
-  real(r8) :: k_decay(centurybgc_vars%nreactions, bounds%begc:bounds%endc, lbj:ubj)
-  real(r8) :: pot_decay_rates(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)   ![mol C/m3/s] potential decay rates for different om pools without nutrient limitation
+  real(r8) :: k_decay(TREATMebgc_vars%nreactions, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8) :: pot_decay_rates(TREATMebgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)   ![mol C/m3/s] potential decay rates for different om pools without nutrient limitation
   real(r8) :: pot_co2_hr(bounds%begc:bounds%endc, lbj:ubj)                   ![mol C/m3/s], potential co2 respiration rate
   real(r8) :: anaerobic_frac(bounds%begc:bounds%endc,lbj:ubj)
   real(r8) :: n2_n2o_ratio_denit(bounds%begc:bounds%endc, lbj:ubj)
@@ -458,9 +458,9 @@ contains
   
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
   
-  call Extra_inst%Init_Allocate(centurybgc_vars%nom_pools, centurybgc_vars%nreactions, centurybgc_vars%nprimvars)
+  call Extra_inst%Init_Allocate(TREATMebgc_vars%nom_pools, TREATMebgc_vars%nreactions, TREATMebgc_vars%nprimvars)
   
-  call set_reaction_order( centurybgc_vars%nreactions, centurybgc_vars, Extra_inst%is_zero_order)
+  call set_reaction_order( TREATMebgc_vars%nreactions, TREATMebgc_vars, Extra_inst%is_zero_order)
   
   !initialize local variables
   y0(:, :, :) = spval
@@ -468,12 +468,12 @@ contains
   cn_ratios(:,:,:) = nan
   cp_ratios(:,:,:) = nan
   !calculate elemental stoichiometry for different om pools and add mineral nutrient input from other than decaying process
-  !ideally, this should be done within the ode operator. However, since it is not possible to do it consistently for centurybgc (it requires
+  !ideally, this should be done within the ode operator. However, since it is not possible to do it consistently for TREATMebgc (it requires
   ! an reformulation of the nitrogen fixation cycle)
   !I did this in a quick and dirty way. 
   
   call calc_extneral_bgc_input(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
-    centurybgc_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars, cn_ratios, cp_ratios)
+    TREATMebgc_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars, cn_ratios, cp_ratios)
   
   !calculate nitrogen uptake profile
   call calc_nuptake_prof(bounds, ubj, num_soilc, filter_soilc, &
@@ -483,7 +483,7 @@ contains
      nuptake_prof(bounds%begc:bounds%endc,1:ubj))
            
   !initialize the state vector
-  call init_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)
+  call init_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, TREATMebgc_vars%nstvars, tracerstate_vars, betrtracer_vars, TREATMebgc_vars, y0)
 
   !calculate multiplicative scalars for decay parameters
   call calc_decompK_multiply_scalar(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, &
@@ -491,19 +491,19 @@ contains
     temperature_vars%t_soisno_col(bounds%begc:bounds%endc, lbj:ubj), &
     tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_o2), &
     tracercoeff_vars%aqu2bulkcef_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_o2), &
-     soilstate_vars, centurybgc_vars)
+     soilstate_vars, TREATMebgc_vars)
   
   !calculate decay coefficients
-  call calc_som_deacyK(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, tracercoeff_vars, tracerstate_vars, &
-    betrtracer_vars, centurybgc_vars, k_decay(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj))
+  call calc_som_deacyK(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, TREATMebgc_vars%nom_pools, tracercoeff_vars, tracerstate_vars, &
+    betrtracer_vars, TREATMebgc_vars, k_decay(1:TREATMebgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj))
   
   !calculate potential decay rates, without nutrient constraint
-  call calc_sompool_decay(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, &
-     k_decay(1:centurybgc_vars%nom_pools,  bounds%begc:bounds%endc, lbj:ubj), y0(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj),&
+  call calc_sompool_decay(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, TREATMebgc_vars%nom_pools, &
+     k_decay(1:TREATMebgc_vars%nom_pools,  bounds%begc:bounds%endc, lbj:ubj), y0(1:TREATMebgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj),&
      pot_decay_rates)
       
   !calculate potential respiration rates by summarizing all om decomposition pathways
-  call calc_potential_aerobic_hr(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, pot_decay_rates, &
+  call calc_potential_aerobic_hr(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, TREATMebgc_vars%nom_pools, pot_decay_rates, &
     soilstate_vars%cellsand_col(bounds%begc:bounds%endc,lbj:ubj), pot_co2_hr)      
       
   !calculate fraction of anerobic environment
@@ -518,9 +518,9 @@ contains
      chemstate_vars%soil_pH(bounds%begc:bounds%endc, lbj:ubj),  pot_co2_hr, anaerobic_frac, &
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x), &     
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_no3x), &
-     soilstate_vars, waterstate_vars, centurybgc_vars, n2_n2o_ratio_denit, nh4_no3_ratio, &
-     k_decay(centurybgc_vars%lid_nh4_nit_reac, bounds%begc:bounds%endc, lbj:ubj), &
-     k_decay(centurybgc_vars%lid_no3_den_reac, bounds%begc:bounds%endc, lbj:ubj))
+     soilstate_vars, waterstate_vars, TREATMebgc_vars, n2_n2o_ratio_denit, nh4_no3_ratio, &
+     k_decay(TREATMebgc_vars%lid_nh4_nit_reac, bounds%begc:bounds%endc, lbj:ubj), &
+     k_decay(TREATMebgc_vars%lid_no3_den_reac, bounds%begc:bounds%endc, lbj:ubj))
      
   !now there is no plant nitrogen uptake, I tend to create a new structure to indicate plant nutrient demand when it is hooked
   !back with CLM
@@ -528,12 +528,12 @@ contains
   call calc_plant_nitrogen_uptake_prof(bounds, ubj, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc, lbj:ubj), &
      plantsoilnutrientflux_vars%plant_totn_demand_flx_col(bounds%begc:bounds%endc), &
      nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
-     k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj))
+     k_decay(TREATMebgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj))
   
   !apply root distribution here
   call apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
     carbonflux_vars%rr_col(bounds%begc:bounds%endc), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj),            &
-    k_decay(centurybgc_vars%lid_at_rt_reac, bounds%begc:bounds%endc, 1:ubj))
+    k_decay(TREATMebgc_vars%lid_at_rt_reac, bounds%begc:bounds%endc, 1:ubj))
   
   
   !do ode integration and update state variables for each layer
@@ -550,18 +550,18 @@ contains
       !update state variables
       time = 0._r8 
       lpr = .false.
-      call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
+      call ode_adapt_mbbks1(one_box_TREATMe_bgc, y0(:,c,j), TREATMebgc_vars%nprimvars,TREATMebgc_vars%nstvars, time, dtime, yf(:,c,j))
     enddo
   enddo  
 
   
   !retrieve the flux variable
-  call retrieve_flux_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, dtime, yf, y0, &
-     centurybgc_vars, betrtracer_vars, tracerflux_vars, carbonflux_vars, nitrogenflux_vars, plantsoilnutrientflux_vars)
+  call retrieve_flux_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, TREATMebgc_vars%nstvars, dtime, yf, y0, &
+     TREATMebgc_vars, betrtracer_vars, tracerflux_vars, carbonflux_vars, nitrogenflux_vars, plantsoilnutrientflux_vars)
 
   
   !retrieve the state variable    
-  call retrieve_state_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      
+  call retrieve_state_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, TREATMebgc_vars%nstvars,  yf, TREATMebgc_vars, betrtracer_vars, tracerstate_vars)      
   
   
   call Extra_inst%DDeallocate()
@@ -584,7 +584,7 @@ contains
   use tracercoeffType       , only : tracercoeff_type
   use BeTRTracerType        , only : betrtracer_type
   
-  class(bgc_reaction_CENTURY_type),    intent(in) :: this
+  class(bgc_reaction_TREATME_type),    intent(in) :: this
 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
@@ -611,14 +611,14 @@ contains
   subroutine readParams(this, ncid, betrtracer_vars )
   use BeTRTracerType           , only : BeTRTracer_Type
   use ncdio_pio               , only : file_desc_t
-  use BGCCenturyParMod        , only : readCentDecompBgcParams, readCentNitrifDenitrifParams                                       
-  class(bgc_reaction_CENTURY_type) , intent(in)    :: this  
+  use BGCTREATMeParMod        , only : readCentDecompBgcParams, readCentNitrifDenitrifParams                                       
+  class(bgc_reaction_TREATME_type) , intent(in)    :: this  
   type(BeTRTracer_Type)            , intent(inout) :: betrtracer_vars  
   type(file_desc_t)  :: ncid  ! pio netCDF file id
   
   
 
-  call readCentDecompBgcParams ( ncid, centurybgc_vars%nelms, betrtracer_vars )
+  call readTREATMeDecompBgcParams ( ncid, TREATMebgc_vars%nelms, betrtracer_vars )
   
   call readCentNitrifDenitrifParams ( ncid )
   
@@ -639,7 +639,7 @@ contains
     use clm_varcon               , only : spval, ispval
     
     ! !ARGUMENTS:
-    class(bgc_reaction_CENTURY_type) , intent(in)    :: this    
+    class(bgc_reaction_TREATME_type) , intent(in)    :: this    
     type(bounds_type)                 , intent(in)    :: bounds
     type(BeTRTracer_Type)             , intent(in)    :: betrtracer_vars
     type(waterstate_type)             , intent(in)    :: waterstate_vars    
@@ -711,7 +711,7 @@ contains
 !-------------------------------------------------------------------------------
 
 
-  subroutine one_box_century_bgc(ystate, dtime, time, nprimvars, nstvars, dydt)
+  subroutine one_box_TREATMe_bgc(ystate, dtime, time, nprimvars, nstvars, dydt)
   !
   ! DESCRIPTIONS
   !do single box bgc
@@ -722,7 +722,7 @@ contains
   !
   ! the input only contains litter input and mineral nutrient, som is assumed to be of fixed stoichiometry
   use SOMStateVarUpdateMod  , only : calc_dtrend_som_bgc
-  use BGCCenturySubMod      , only : calc_cascade_matrix
+  use BGCTREATMeSubMod      , only : calc_cascade_matrix
   implicit none
   integer,  intent(in)  :: nstvars
   integer,  intent(in)  :: nprimvars
@@ -739,7 +739,7 @@ contains
   
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
-      Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_no3_ratio, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
+      Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_no3_ratio, Extra_inst%cellsand, TREATMebgc_vars, cascade_matrix)
   if(lpr)then
     print*,'reac'
     print*,reaction_rates
@@ -747,57 +747,44 @@ contains
  !do pool degradation
   do lk = 1, Extra_inst%nr
     if(Extra_inst%is_zero_order(lk))then
-
-      if ( spinup_state .eq. 1 ) then
-        !spinup stage
-        if(lk == centurybgc_vars%lid_o2_aere_reac)then
-          jj = centurybgc_vars%lid_o2
-          reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj)) 
-        else
-          reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
-        endif    
+      if(lk == TREATMebgc_vars%lid_ch4_aere_reac)then
+        jj = TREATMebgc_vars%lid_ch4
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+        
+      elseif(lk == TREATMebgc_vars%lid_ar_aere_reac)then
+        jj = TREATMebgc_vars%lid_ar
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+      
+      elseif(lk == TREATMebgc_vars%lid_o2_aere_reac)then
+        jj = TREATMebgc_vars%lid_o2
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+      
+      elseif(lk == TREATMebgc_vars%lid_n2_aere_reac)then
+        jj = TREATMebgc_vars%lid_n2
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+      
+      elseif(lk == TREATMebgc_vars%lid_co2_aere_reac)then
+        jj = TREATMebgc_vars%lid_co2
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+      
+      elseif(lk == TREATMebgc_vars%lid_n2o_aere_reac)then
+        jj = TREATMebgc_vars%lid_n2o
+        reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+        
       else
-        ! normal run stage
-        if(lk == centurybgc_vars%lid_o2_aere_reac)then
-          jj = centurybgc_vars%lid_o2
-          reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-        elseif(lk == centurybgc_vars%lid_ch4_aere_reac)then
-          jj = centurybgc_vars%lid_ch4
-          reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-        
-        elseif(lk == centurybgc_vars%lid_ar_aere_reac)then
-          jj = centurybgc_vars%lid_ar
-          reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))      
-      
-        elseif(lk == centurybgc_vars%lid_n2_aere_reac)then
-          jj = centurybgc_vars%lid_n2
-          reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-      
-        elseif(lk == centurybgc_vars%lid_co2_aere_reac)then
-          jj = centurybgc_vars%lid_co2
-          reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-      
-        elseif(lk == centurybgc_vars%lid_n2o_aere_reac)then
-          jj = centurybgc_vars%lid_n2o
-          reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-        
-        else
-          reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
-        endif              
+        reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
       endif
-      
     else
-    
-      reaction_rates(lk)=ystate(centurybgc_vars%primvarid(lk))*Extra_inst%k_decay(lk)
+      reaction_rates(lk)=ystate(TREATMebgc_vars%primvarid(lk))*Extra_inst%k_decay(lk)
     endif
   enddo
 
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
   
-  end subroutine one_box_century_bgc
+  end subroutine one_box_TREATMe_bgc
 !---------------------------------------------------------------
-  subroutine init_centurybgc_betr(bounds, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+  subroutine init_TREATMebgc_betr(bounds, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
 
   use clm_varcon               , only : natomw, catomw  
   use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
@@ -817,7 +804,7 @@ contains
   integer, parameter :: i_soil1 = 5
   integer, parameter :: i_soil2 = 6
   integer, parameter :: i_soil3 = 7
-  character(len=255)   :: subname = 'init_centurybgc_betr' 
+  character(len=255)   :: subname = 'init_TREATMebgc_betr' 
   integer :: c, j, k, l
 
   associate(                                                     &
@@ -829,19 +816,19 @@ contains
   smin_nh4_vr_col    => nitrogenstate_vars%smin_nh4_vr_col     , &
   tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col, &
   tracer_conc_solid_passive => tracerstate_vars%tracer_conc_solid_passive_col, &
-  c_loc              => centurybgc_vars%c_loc                  , &
-  n_loc              => centurybgc_vars%n_loc                  , &
-  lit1               => centurybgc_vars%lit1                   , &
-  lit2               => centurybgc_vars%lit2                   , &  
-  lit3               => centurybgc_vars%lit3                   , &  
-  som1               => centurybgc_vars%som1                   , &  
-  som2               => centurybgc_vars%som2                   , &    
-  som3               => centurybgc_vars%som3                   , &      
-  cwd                => centurybgc_vars%cwd                    , &
-  nelms              => centurybgc_vars%nelms                    &
+  c_loc              => TREATMebgc_vars%c_loc                  , &
+  n_loc              => TREATMebgc_vars%n_loc                  , &
+  lit1               => TREATMebgc_vars%lit1                   , &
+  lit2               => TREATMebgc_vars%lit2                   , &  
+  lit3               => TREATMebgc_vars%lit3                   , &  
+  som1               => TREATMebgc_vars%som1                   , &  
+  som2               => TREATMebgc_vars%som2                   , &    
+  som3               => TREATMebgc_vars%som3                   , &      
+  cwd                => TREATMebgc_vars%cwd                    , &
+  nelms              => TREATMebgc_vars%nelms                    &
   )
     !initialize tracer based on carbon/nitrogen pools
-    !eventually, this will replace the century bgc
+    !eventually, this will replace the TREATMe bgc
     do j = 1, nlevtrc_soil
       do c = bounds%begc, bounds%endc
         l = col%landunit(c)
@@ -867,7 +854,7 @@ contains
       enddo        
     enddo
   end associate
-  end subroutine init_centurybgc_betr    
+  end subroutine init_TREATMebgc_betr    
 !-------------------------------------------------------------------------------  
   subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars)
   
@@ -902,16 +889,16 @@ contains
   sminn_vr_col       => nitrogenstate_vars%sminn_vr_col        , &
   tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col, &
   tracer_conc_solid_passive => tracerstate_vars%tracer_conc_solid_passive_col, &
-  c_loc              => centurybgc_vars%c_loc                  , &
-  n_loc              => centurybgc_vars%n_loc                  , &
-  lit1               => centurybgc_vars%lit1                   , &
-  lit2               => centurybgc_vars%lit2                   , &  
-  lit3               => centurybgc_vars%lit3                   , &  
-  som1               => centurybgc_vars%som1                   , &  
-  som2               => centurybgc_vars%som2                   , &    
-  som3               => centurybgc_vars%som3                   , &      
-  cwd                => centurybgc_vars%cwd                    , &
-  nelms              => centurybgc_vars%nelms                    &
+  c_loc              => TREATMebgc_vars%c_loc                  , &
+  n_loc              => TREATMebgc_vars%n_loc                  , &
+  lit1               => TREATMebgc_vars%lit1                   , &
+  lit2               => TREATMebgc_vars%lit2                   , &  
+  lit3               => TREATMebgc_vars%lit3                   , &  
+  som1               => TREATMebgc_vars%som1                   , &  
+  som2               => TREATMebgc_vars%som2                   , &    
+  som3               => TREATMebgc_vars%som3                   , &      
+  cwd                => TREATMebgc_vars%cwd                    , &
+  nelms              => TREATMebgc_vars%nelms                    &
   )
   
   
@@ -977,4 +964,5 @@ contains
   
   end associate
   end subroutine assign_nitrogen_hydroloss
-end module BGCReactionsCenturyType
+end module BGCReactionsTREATMeType
+
