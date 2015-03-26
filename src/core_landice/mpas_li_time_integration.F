@@ -109,16 +109,16 @@ module li_time_integration
 
       call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
 
-      !write(*,*) 'Using ', trim(config_time_integration), ' time integration.'
+      !write(stdoutUnit,*) 'Using ', trim(config_time_integration), ' time integration.'
       select case (config_time_integration)
       case ('forward_euler')
          call li_time_integrator_forwardeuler(domain, dt, err_tmp)
       case ('rk4')
-         write(0,*) trim(config_time_integration), ' is not currently supported.'
+         write(stderrUnit,*) trim(config_time_integration), ' is not currently supported.'
          call mpas_dmpar_abort(domain % dminfo)
          err_tmp = 1
       case default
-         write(0,*) trim(config_time_integration), ' is not a valid land ice time integration option.'
+         write(stderrUnit,*) trim(config_time_integration), ' is not a valid land ice time integration option.'
          err_tmp = 1
       end select
       err = ior(err,err_tmp)
@@ -132,7 +132,7 @@ module li_time_integration
 
 !         ! Abort the simulation if NaNs occur in the velocity field
 !         if (isNaN(sum(block % state % time_levs(2) % state % u % array))) then
-!            write(0,*) 'Abort: NaN detected'
+!            write(stderrUnit,*) 'Abort: NaN detected'
 !            call mpas_dmpar_abort(dminfo)
 !         endif
 
@@ -141,7 +141,7 @@ module li_time_integration
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_timestep."
+          write (stderrUnit,*) "An error has occurred in li_timestep."
       endif
 
    !--------------------------------------------------------------------

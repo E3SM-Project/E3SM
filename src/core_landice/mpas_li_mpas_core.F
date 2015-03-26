@@ -255,8 +255,8 @@ module mpas_core
       err = ior(err, err_tmp)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
       err = ior(err, err_tmp)         
-      write(0,*) 'Initial timestep ', trim(timeStamp)
-      write(6,*) 'Initial timestep ', trim(timeStamp)
+      write(stderrUnit,*) 'Initial timestep ', trim(timeStamp)
+      write(stdoutUnit,*) 'Initial timestep ', trim(timeStamp)
 
 
       ! ===
@@ -331,10 +331,10 @@ module mpas_core
          currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
          err = ior(err, err_tmp)
-         write(0,*) 'Doing timestep ', trim(timeStamp)
-         write(6,*) 'Doing timestep ', trim(timeStamp)
+         write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
+         write(stdoutUnit,*) 'Doing timestep ', trim(timeStamp)
 
-         !write(6,*) '  dt (s) = ', dtSeconds
+         !write(stdoutUnit,*) '  dt (s) = ', dtSeconds
 
          ! ===
          ! === Perform Timestep
@@ -720,7 +720,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in init_block."
+          write (stderrUnit,*) "An error has occurred in init_block."
       endif
 
    !--------------------------------------------------------------------
@@ -786,7 +786,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
    
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in mpas_timestep."
+          write (stderrUnit,*) "An error has occurred in mpas_timestep."
       endif
    
    end subroutine landice_timestep
@@ -883,7 +883,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
             ierr = ior(ierr,err_tmp)
             if(startTime + runduration /= stopTime) then
-               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsistent: using config_run_duration.'
+               write(stderrUnit,*) 'Warning: config_run_duration and config_stop_time are inconsistent: using config_run_duration.'
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
@@ -892,14 +892,14 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
       else
-          write(0,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
+          write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
           ierr = 1
       end if
 
 
       ! === error check
       if (ierr > 0) then
-          write (0,*) "An error has occurred in simulation_clock_init."
+          write (stderrUnit,*) "An error has occurred in simulation_clock_init."
       endif
 
    !--------------------------------------------------------------------

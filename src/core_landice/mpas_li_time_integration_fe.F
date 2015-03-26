@@ -136,7 +136,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err == 1) then
-          write (0,*) "An error has occurred in li_time_integrator_forwardeuler."
+          write (stderrUnit,*) "An error has occurred in li_time_integrator_forwardeuler."
       endif
 
    !--------------------------------------------------------------------
@@ -251,11 +251,11 @@ module li_time_integration_fe
           err = ior(err,err_tmp)
           call mpas_get_timeInterval(allowableDtMinStringInterval, timeString=allowableDtMinString, ierr=err_tmp)
           err = ior(err,err_tmp)
-          write(6,*) '  Maximum allowable time step (yr) for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString) //  '  Time step is limited by processor number ', allowableDtMinProcNumber
+          write(stdoutUnit,*) '  Maximum allowable time step (yr) for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString) //  '  Time step is limited by processor number ', allowableDtMinProcNumber
       endif
 
       if (err .gt. 0) then
-           write(0,*) 'Error in calculating thickness tendency (possibly CFL violation)'
+           write(stderrUnit,*) 'Error in calculating thickness tendency (possibly CFL violation)'
       endif
 
 
@@ -298,7 +298,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in calculate_tendencies."
+          write (stderrUnit,*) "An error has occurred in calculate_tendencies."
       endif
 
    !--------------------------------------------------------------------
@@ -416,7 +416,7 @@ module li_time_integration_fe
 
          if (config_print_thickness_advection_info) then
             if (sum(masktmp) > 0) then
-               write(6,*) '  Cells with negative thickness (set to 0):',sum(masktmp)
+               write(stdoutUnit,*) '  Cells with negative thickness (set to 0):',sum(masktmp)
             endif
 
             ! Note how many cells have ice.
@@ -424,7 +424,7 @@ module li_time_integration_fe
             where (thicknessNew > 0.0_RKIND)
                masktmp = 1
             end where
-            write(6,*) '  Cells with nonzero thickness:', sum(masktmp)
+            write(stdoutUnit,*) '  Cells with nonzero thickness:', sum(masktmp)
          endif
          deallocate(masktmp)
 
@@ -453,7 +453,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in update_prognostics."
+          write (stderrUnit,*) "An error has occurred in update_prognostics."
       endif
 
 

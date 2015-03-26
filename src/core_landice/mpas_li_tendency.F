@@ -191,7 +191,7 @@ module li_tendency
       case ('none')  !===================================================
         ! Do nothing
       case default  !===================================================
-        write(0,*) trim(config_thickness_advection), ' is not a valid thickness advection option.'
+        write(stderrUnit,*) trim(config_thickness_advection), ' is not a valid thickness advection option.'
         err_tmp = 1
       end select  !===================================================
       err = ior(err,err_tmp)
@@ -236,7 +236,7 @@ module li_tendency
 
       ! === error check
       if (err > 0) then
-         write (0,*) "An error has occurred in li_tendency_thickness."
+         write (stderrUnit,*) "An error has occurred in li_tendency_thickness."
       endif
 
    !--------------------------------------------------------------------
@@ -384,7 +384,7 @@ module li_tendency
 !!!     case ('None')  !===================================================
 !!!        ! Do nothing
 !!!     case default  !===================================================
-!!!        write(0,*) trim(config_tracer_advection), ' is not a valid tracer advection option.'
+!!!        write(stderrUnit,*) trim(config_tracer_advection), ' is not a valid tracer advection option.'
 !!!        call mpas_dmpar_abort(dminfo)
 !!!     end select  !===================================================
 
@@ -483,7 +483,7 @@ module li_tendency
 !!!               ! Convert to physical thickness - only needed if CFBC is on but this is always defined.
 !!!               physicalThickness = thickness(iCell) * areaCell(iCell) / iceArea(iCell)  ! iceArea should always be > 0 since we are only checking on ice cells.
 !!!               if (iceArea(iCell) == 0.0) then
-!!!                  write(0,*) 'iceArea is 0 on a cell with ice!'
+!!!                  write(stderrUnit,*) 'iceArea is 0 on a cell with ice!'
 !!!                  err = 1
 !!!               endif
 !!!               if (physicalThickness <= config_calving_critical_thickness) then
@@ -655,7 +655,7 @@ module li_tendency
                maxAllowableDt = 1.0e36_RKIND
             endif
             if ( maxAllowableDt < dt ) then
-                 !write(0,*) 'CFL violation at level, edge', k, iEdge                      
+                 !write(stderrUnit,*) 'CFL violation at level, edge', k, iEdge                      
                  err = err + 1
             endif
             MinOfMaxAllowableDt = min(MinOfMaxAllowableDt, maxAllowableDt)
@@ -674,12 +674,12 @@ module li_tendency
       err = ior(err,err_tmp)
 
       if (err > 0) then
-         write(0,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step (seconds) for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString)
+         write(stderrUnit,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step (seconds) for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString)
          err = 1
       endif
 
       if (config_print_thickness_advection_info) then
-         write(6,*) '  Maximum allowable time step (s) on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtMinString)
+         write(stdoutUnit,*) '  Maximum allowable time step (s) on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtMinString)
       endif
 
       ! Optional check for mass conservation
@@ -691,7 +691,7 @@ module li_tendency
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in tend_layerThickness_fo_upwind."
+          write (stderrUnit,*) "An error has occurred in tend_layerThickness_fo_upwind."
       endif
 
    !--------------------------------------------------------------------
@@ -917,7 +917,7 @@ module li_tendency
 !                 ubar = flux / thickness(cellUpwind)
 !                 if ( (abs(ubar) * dt/SecondsInYear) .gt. (0.5 * dcEdge(iEdge))) then
 !                      !maxAllowableDt = min(maxAllowableDt, (0.5 * dcEdge)/ubar )
-!                      write(0,*) 'CFL violation at edge', iEdge
+!                      write(stderrUnit,*) 'CFL violation at edge', iEdge
 !                      err = err + 1
 !                 endif
 !                 thickness_tend(cellUpwind) = thickness_tend(cellUpwind) - flux * dvEdge(iEdge) / areaCell(cellUpwind)
@@ -926,7 +926,7 @@ module li_tendency
 !      end do
 
 !      if (err .gt. 0) then
-!         write(6,*) 'CFL violation at ', err, ' edges!  Maximum time step should be ', maxAllowableDt
+!         write(stdoutUnit,*) 'CFL violation at ', err, ' edges!  Maximum time step should be ', maxAllowableDt
 !         err = 1
 !      endif
 !   !--------------------------------------------------------------------
