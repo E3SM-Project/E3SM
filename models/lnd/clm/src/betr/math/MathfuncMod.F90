@@ -222,6 +222,7 @@ contains
       if(zvec(k)<zvec(k-1))then
         lswap=.true.
         call swap_r(zvec(k),zvec(k-1))
+      endif
     enddo
     if(.not. lswap)exit
   enddo
