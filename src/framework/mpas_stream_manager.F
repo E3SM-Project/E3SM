@@ -4930,8 +4930,8 @@ module mpas_stream_manager
     !>  have been called to initialize iteration for the specified streamID in
     !>  the stream manager.
     !>
-    !>  This function returns .TRUE. if the stream contains another field, in
-    !>  which case the output argument fieldName provides the name of this
+    !>  This function returns .TRUE. if the stream contains another active field, 
+    !>  in which case the output argument fieldName provides the name of this
     !>  field, and .FALSE. otherwise.
     !
     !-----------------------------------------------------------------------
@@ -4945,6 +4945,9 @@ module mpas_stream_manager
 
         type (MPAS_stream_list_type), pointer :: stream
         type (mpas_pool_iterator_type) :: poolItr
+        character (len=StrKIND), pointer :: packages
+        logical :: active_field
+        integer :: err_level
         integer :: err_local
 
 
@@ -4958,10 +4961,29 @@ module mpas_stream_manager
             return
         end if
 
-        if (mpas_pool_get_next_member(stream % field_pool, poolItr)) then
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+        do
+           validField = mpas_pool_get_next_member(stream % field_pool, poolItr)
+           if (validField) then
+               nullify(packages)
+               call mpas_pool_get_config(stream % field_pkg_pool, trim(poolItr % memberName)//':packages', packages)
+               if (associated(packages)) then
+                   active_field = parse_package_list(manager % allPackages, trim(packages))
+               else
+                   active_field = .true.
+               end if
+           end if
+
+           if (.not. validField .or. active_field) exit
+        end do
+
+        if (validField) then
            fieldName = poolItr % memberName
-           validField = .true.
         end if
+
+        call mpas_pool_set_error_level(err_level)
 
     end function MPAS_stream_mgr_get_next_field !}}}
  
