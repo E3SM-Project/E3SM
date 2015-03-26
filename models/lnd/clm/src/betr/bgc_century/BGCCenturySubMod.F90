@@ -172,15 +172,18 @@ module BGCCenturySubMod
   this%lid_at_rt      = addone(itemp); this%lid_at_rt_reac = addone(ireac)  !this is used to indicate plant autotrophic root respiration
   
   !non-reactive primary variables  
-  this%lid_ch4        = addone(itemp); this%lid_ch4_aere_reac = addone(ireac)
-  this%lid_ar         = addone(itemp); this%lid_ar_aere_reac  = addone(ireac)
+  this%lid_ch4        = addone(itemp); 
+  this%lid_ar         = addone(itemp);
   
   
   !second primary variables
-  this%lid_o2         = addone(itemp); this%lid_o2_aere_reac  = addone(ireac)
-  this%lid_co2        = addone(itemp); this%lid_co2_aere_reac = addone(ireac)
-  this%lid_n2o        = addone(itemp); this%lid_n2o_aere_reac = addone(ireac)
-  this%lid_n2         = addone(itemp); this%lid_n2_aere_reac  = addone(ireac)
+  this%lid_o2         = addone(itemp); 
+  this%lid_co2        = addone(itemp); 
+  this%lid_n2o        = addone(itemp); 
+  this%lid_n2         = addone(itemp); 
+  
+  this%lid_o2_aere_reac  = addone(ireac)
+
   
   this%nprimvars      = itemp     !primary state variables 14 + 6
   
@@ -197,11 +200,11 @@ module BGCCenturySubMod
   !aerechyma transport
   this%lid_o2_paere   = addone(itemp)   !
   if ( spinup_state /= 1 ) then
-    this%lid_ar_paere   = addone(itemp)   !
-    this%lid_n2_paere   = addone(itemp)   !
-    this%lid_co2_paere  = addone(itemp)   !
-    this%lid_ch4_paere  = addone(itemp)   !
-    this%lid_n2o_paere  = addone(itemp)   !
+    this%lid_ar_paere   = addone(itemp);  this%lid_ar_aere_reac  = addone(ireac)   !
+    this%lid_n2_paere   = addone(itemp);  this%lid_n2_aere_reac  = addone(ireac)   !
+    this%lid_co2_paere  = addone(itemp);  this%lid_co2_aere_reac = addone(ireac)   !
+    this%lid_ch4_paere  = addone(itemp);  this%lid_ch4_aere_reac = addone(ireac)   !
+    this%lid_n2o_paere  = addone(itemp);  this%lid_n2o_aere_reac = addone(ireac)   !                        
   endif
   this%nstvars          = itemp          !totally 14+32 state variables
 
@@ -1636,13 +1639,17 @@ module BGCCenturySubMod
   
   
   is_zero_order(:) = .false.
-  is_zero_order(centurybgc_vars%lid_n2o_aere_reac) = .true.
-  is_zero_order(centurybgc_vars%lid_ar_aere_reac)  = .true.
-  is_zero_order(centurybgc_vars%lid_ch4_aere_reac) = .true.
   is_zero_order(centurybgc_vars%lid_o2_aere_reac)  = .true.
-  is_zero_order(centurybgc_vars%lid_o2_aere_reac)  = .true.
-  is_zero_order(centurybgc_vars%lid_co2_aere_reac) = .true.
-  is_zero_order(centurybgc_vars%lid_n2_aere_reac)  = .true.
+  if(spinupstate /= 1)then
+    is_zero_order(centurybgc_vars%lid_n2o_aere_reac) = .true.
+    is_zero_order(centurybgc_vars%lid_ar_aere_reac)  = .true.
+    is_zero_order(centurybgc_vars%lid_ch4_aere_reac) = .true.
+    is_zero_order(centurybgc_vars%lid_o2_aere_reac)  = .true.
+
+    is_zero_order(centurybgc_vars%lid_co2_aere_reac) = .true.
+    is_zero_order(centurybgc_vars%lid_n2_aere_reac)  = .true.
+  endif
+  
   is_zero_order(centurybgc_vars%lid_plant_minn_up_reac) = .true.
   is_zero_order(centurybgc_vars%lid_at_rt_reac)    = .true.
   
