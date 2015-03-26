@@ -408,6 +408,7 @@ module mpas_stream_manager
         call mpas_pool_create_pool(new_stream % att_pool)
         call mpas_pool_clone_pool(manager % defaultAtts, new_stream % att_pool)
         call mpas_pool_create_pool(new_stream % field_pool)
+        call mpas_pool_create_pool(new_stream % field_pkg_pool)
         call mpas_pool_create_pool(new_stream % pkg_pool)
         nullify(new_stream % next)
 
@@ -505,6 +506,7 @@ module mpas_stream_manager
         call MPAS_stream_list_destroy(stream % alarmList_out, ierr=err_local)
         call mpas_pool_destroy_pool(stream % att_pool)
         call mpas_pool_destroy_pool(stream % field_pool)
+        call mpas_pool_destroy_pool(stream % field_pkg_pool)
         call mpas_pool_destroy_pool(stream % pkg_pool)
         if (associated(stream % referenceTime)) then
             deallocate(stream % referenceTime)
@@ -793,7 +795,7 @@ module mpas_stream_manager
             if (present(packages)) then
                STREAM_DEBUG_WRITE('-- Attaching packages '//trim(packages)//' to field '//trim(fieldName)//' in stream '//trim(streamID))
                write(field_pkg,'(a)') trim(fieldName)//':packages'
-               call mpas_pool_add_config(stream % field_pool, field_pkg, packages)
+               call mpas_pool_add_config(stream % field_pkg_pool, field_pkg, packages)
             end if
         else
             write(stderrUnit, *) ' * Requested field '//trim(fieldName)//' is deactivated due to packages, or is a scratch variable.'
@@ -915,7 +917,7 @@ module mpas_stream_manager
                         if (present(packages)) then
                            STREAM_DEBUG_WRITE('-- Attaching packages '//trim(packages)//' to field '//trim(itr % memberName)//' in stream '//trim(streamID))
                            write(field_pkg,'(a)') trim(itr % memberName)//':packages'
-                           call mpas_pool_add_config(stream % field_pool, field_pkg, packages)
+                           call mpas_pool_add_config(stream % field_pkg_pool, field_pkg, packages)
                         end if
                     else
                         write(stderrUnit, *) ' * Requested field '//trim(itr % memberName)//' is deactivated due to packages, or is a scratch variable.'
@@ -3562,7 +3564,7 @@ module mpas_stream_manager
                 call mpas_pool_set_error_level(MPAS_POOL_SILENT)
 
                 nullify(packages)
-                call mpas_pool_get_config(stream % field_pool, trim(itr % memberName)//':packages', packages)
+                call mpas_pool_get_config(stream % field_pkg_pool, trim(itr % memberName)//':packages', packages)
                 if (associated(packages)) then
                     active_field = parse_package_list(allPackages, trim(packages))
                 else

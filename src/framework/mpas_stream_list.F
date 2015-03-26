@@ -42,6 +42,7 @@ module mpas_stream_list
         type (MPAS_stream_list_type), pointer :: alarmList_out => null()
         type (mpas_pool_type), pointer :: att_pool => null()
         type (mpas_pool_type), pointer :: field_pool => null()
+        type (mpas_pool_type), pointer :: field_pkg_pool => null()
         type (mpas_pool_type), pointer :: pkg_pool => null()
         type (MPAS_Time_type), pointer :: referenceTime => null()
 
