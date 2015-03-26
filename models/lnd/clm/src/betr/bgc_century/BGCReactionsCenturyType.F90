@@ -308,21 +308,22 @@ contains
   betrtracer_vars%volatileid(betrtracer_vars%id_trc_ch4)  = addone(itemp)
   betrtracer_vars%volatileid(betrtracer_vars%id_trc_n2o)  = addone(itemp)
   
+  ! I have purposely turned off the movement of some tracers below
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2)    = .true.
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_o2)    = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ar)    = .true.
+  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ar)    = .false.
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_co2x)  = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ch4)   = .true.
+  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ch4)   = .false.
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_no3x)  = .true.
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2o)   = .true.
   
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2)    = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_o2)    = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ar)    = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_co2x)  = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ch4)   = .true.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2)    = .false.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_o2)    = .false.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ar)    = .false.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_co2x)  = .false.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ch4)   = .false.
   betrtracer_vars%is_advective(betrtracer_vars%id_trc_no3x)  = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2o)   = .true.
+  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2o)   = .false.
   
   
   !comment following lines out when it is hooked to CLM at the moment

@@ -769,16 +769,18 @@ contains
   update_col(:) = .true.
   time_remain(:) = 0._r8
   dtime_loc(:) = 0._r8
+  
   do j = 1, betrtracer_vars%ngwmobile_tracers
     if(.not. is_mobile(j))cycle
+    
     !initialize the time keeper    
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       time_remain(c) = dtime
       dtime_loc(c) = dtime
-      update_col(c) = .true.
-          
+      update_col(c) = .true.          
     enddo
+    
     !Do adpative time stepping to avoid negative tracer
     do      
       call DiffusTransp(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, tracer_conc_mobile_col( : , : ,j), &
@@ -795,9 +797,10 @@ contains
           do l = jtops(c), ubj                                  !loop over the layers
 
             if(dtime_loc(c)<1.e-3_r8)then
-              write(iulog,*)'time step <', dtime_loc(c), 'col ',c
+              write(iulog,*)'time step < 1.e-3_r8', dtime_loc(c), 'col ',c
                call endrun('stopped in '//trim(subname))
-            endif  
+            endif
+            
             if(tracer_conc_mobile_col(c,l,j)<-dtracer(c,l))then
               !if the tracer update is very tinty, then set it to zero
               if(abs(dtracer(c,l))<tiny_val)dtracer(c,l) = 0._r8

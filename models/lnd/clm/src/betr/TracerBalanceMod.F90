@@ -131,11 +131,11 @@ implicit none
     bal_flx=0._r8
     do kk = ngwmobile_tracers+1, ntracers
       errtracer(c,kk) = beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk) + tracer_flx_netpro(c,kk)
-      if(mod(kk,2)==0)then
-        bal_beg = bal_beg + beg_tracer_molarmass(c,kk)
-        bal_end = bal_end + end_tracer_molarmass(c,kk)
-        bal_flx = bal_flx + tracer_flx_netpro(c,kk)
-      endif
+      !if(mod(kk,2)==0)then
+      !  bal_beg = bal_beg + beg_tracer_molarmass(c,kk)
+      !  bal_end = bal_end + end_tracer_molarmass(c,kk)
+      !  bal_flx = bal_flx + tracer_flx_netpro(c,kk)
+      !endif
       if(abs(errtracer(c,kk))>err_min)then
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), 'err=',errtracer(c,kk), 'col=',c
         write(iulog,*)get_nstep()
