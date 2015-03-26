@@ -561,7 +561,7 @@ module TransportMod
 
    use shr_kind_mod,     only : r8 => shr_kind_r8
    use decompMod,        only : bounds_type   
-   use MathfuncMod,      only : cumsum, cumdif, safe_div, dot_sum
+   use MathfuncMod,      only : cumsum, cumdif, safe_div, dot_sum, asc_sort_vec
    use InterpolationMod, only : pchip_polycc, pchip_interp
    implicit none
    type(bounds_type),  intent(in) :: bounds !bounds
@@ -677,9 +677,13 @@ module TransportMod
 
      call pchip_interp((/zghostl,zi(c,lbn(c)-1:ubj),zghostr/), cmass_curve(0:lengthp2), di(0:lengthp2), zold(0:length), cmass_new(0:length))
 
-     !ensure mass is increasing monotonically
+ 
+    !ensure mass is increasing monotonically
      call asc_sort_vec(cmass_new(0:length))
-     
+    
+     !ensure no negative leaching
+     call cmass_mono_smoother(cmass_new(0:length),cmass_curve(ubj-lbn(c)+3))
+
      !diagnose the leaching flux
      if(present(leaching_mass))then
        leaching_mass(c) = cmass_curve(ubj-lbn(c)+3)-cmass_new(length) !add the numerical error to leaching
@@ -692,12 +696,15 @@ module TransportMod
      do k = lbn(c), ubj
        j = k - lbn(c) + 1      
        !correct for small negative values
-       trcin(c,k)=mass_new(j)/dz(c,k)
-       if(trcin(c,k)<0._r8)then
-       
-         call endrun('negative tracer '//errMsg(__FILE__, __LINE__))     
-
+       if(mass_new(j)<0._r8)then
+         write(iulog,*)j,mass_new(j),cmass_new(j),cmass_new(j-1)
+         call endrun('negative tracer '//errMsg(__FILE__, __LINE__))
+         if(present(leaching_mass))then
+           leaching_mass(c) = leaching_mass(c)+mass_new(j) !add the numerical error to leaching
+         endif
+         mass_new(j)=mass_curve_correct(mass_new(j))
        endif
+       trcin(c,k)=mass_new(j)/dz(c,k)
      enddo
 
 
@@ -705,7 +712,25 @@ module TransportMod
    call Extra_inst%DDeallocate()
    end subroutine semi_lagrange_adv_backward
 !-------------------------------------------------------------------------------
+   subroutine cmass_mono_smoother(cmass,mass_thc)
+   !
+   ! assuming cmass is sorted as ascending vector, make sure no mass is greater than mass_thc
+   !
+   implicit none
+   real(r8), dimension(:), intent(inout) :: cmass
+   real(r8), intent(in) :: mass_thc
    
+   integer :: n , j
+
+   n = size(cmass)
+   do j = n, 1
+     if(cmass(j)>=mass_thc)then
+       cmass(j) = mass_thc
+     else
+       exit
+     endif
+   enddo
+   end subroutine cmass_mono_smoother 
    function is_ascending_vec(zcor)result(ans)
    !
    ! check if it is an ascending array

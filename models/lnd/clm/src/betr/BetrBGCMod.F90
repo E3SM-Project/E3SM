@@ -138,7 +138,9 @@ contains
   call calc_aerecond(bounds, num_soilp, filter_soilp, jwt(bounds%begc:bounds%endc), &
      soilstate_vars%rootfr_patch(bounds%begp:bounds%endp, 1:ubj), temperature_vars, &
      betrtracer_vars,canopystate_vars, carbonstate_vars, carbonflux_vars, tracercoeff_vars)
-  
+
+  chemstate_vars%soil_pH(bounds%begc:bounds%endc,1:ubj)=7._r8 
+
   !print*,'setup phase change parameters'
   call set_phase_convert_coeff(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc  , &
      col%dz(bounds%begc:bounds%endc, lbj:ubj), soilstate_vars=soilstate_vars, waterstate_vars=waterstate_vars, &
@@ -556,6 +558,7 @@ contains
     qflx_adv                 => waterflux_vars%qflx_adv_col                    , & !real(r8) (:,:)[intent(in)], advective velocity defined at layer interfatemperature_vars
     qflx_rootsoi             => waterflux_vars%qflx_rootsoi_col                , & !real(r8) (:,:)[intent(in)], water flux between plant and soil at different layers
     is_advective             => betrtracer_vars%is_advective                   , & !logical(:) [intent(in)], indicator whether the tracer undergoes advection
+    is_mobile                => betrtracer_vars%is_mobile                      , & !
     is_h2o                   => betrtracer_vars%is_h2o                         , & !logical(:) [intent(in)], indicator whether the tracer is h2o
     vtrans_scal              => betrtracer_vars%vtrans_scal                    , & !real(r8) (:) [intent(in)], transport scalar for tracer exchaning between root and soil
     ngwmobile_tracers        => betrtracer_vars%ngwmobile_tracers              , & !integer [intent(in)], number of mobile tracers undergoing dual phase transport
@@ -574,6 +577,7 @@ contains
 
   !loop over the tracers     
   do j = 1, ngwmobile_tracers
+    if(.not. is_mobile(j))cycle
     if(.not. is_advective(j))cycle
 
     !convert bulk mobile phase into aqueous phase
@@ -1021,6 +1025,7 @@ contains
    volatileid               => betrtracer_vars%volatileid             , &
    ngwmobile_tracers        => betrtracer_vars%ngwmobile_tracers      , &
    nvolatile_tracers        => betrtracer_vars%nvolatile_tracers      , &
+   is_mobile                => betrtracer_vars%is_mobile              , & 
    is_volatile              => betrtracer_vars%is_volatile            , &
    is_h2o                   => betrtracer_vars%is_h2o                 , &
    id_trc_n2                => betrtracer_vars%id_trc_n2              , &
@@ -1029,7 +1034,7 @@ contains
    id_trc_ch4               => betrtracer_vars%id_trc_ch4             , &
    id_trc_co2x              => betrtracer_vars%id_trc_co2x              &
   )
-  
+  if(.not. all(is_mobile((/id_trc_n2,id_trc_o2,id_trc_ar,id_trc_ch4,id_trc_co2x/))))return 
   do fc = 1, num_soilc
     c = filter_soilc(fc)
     !initialize bubble flux to zero
