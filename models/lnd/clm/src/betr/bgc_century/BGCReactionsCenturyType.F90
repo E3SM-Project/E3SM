@@ -19,6 +19,7 @@ module BGCReactionsCenturyType
   use decompMod             , only : bounds_type
   use BGCReactionsMod       , only : bgc_reaction_type
   use clm_varcon            , only : spval
+  use clm_varctl            , only : spinup_state  
   use tracer_varcon         , only : bndcond_as_conc, bndcond_as_flux
   use BGCCenturySubMod     
   use LandunitType          , only : lun
