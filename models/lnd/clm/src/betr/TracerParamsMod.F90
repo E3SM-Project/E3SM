@@ -328,6 +328,7 @@ module TracerParamsMod
          ! completely frozen soils--no mixing
            bulkdiffus(c,n,j) = 1e-4_r8 / (86400._r8 * 365._r8) * 1.e-36_r8  !set to very small number for numerical purpose
          endif         
+       enddo
      enddo  
    enddo
    end associate
