@@ -846,25 +846,26 @@ module BGCCenturySubMod
                                                                  yf(centurybgc_vars%lid_nh4       ,c, j)  - y0(centurybgc_vars%lid_nh4      , c, j)
                                                                  
         tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )                          + &
-                                                                 yf(centurybgc_vars%lid_no3       ,c, j)  - y0(centurybgc_vars%lid_no3      , c, j)
+                                                                 yf(centurybgc_vars%lid_no3       ,c, j)    - y0(centurybgc_vars%lid_no3      , c, j)
                                                                  
-        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)  &
-                                                              + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2))
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)  
+        !                                                      + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2))
 
-        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_co2x   ) = yf(centurybgc_vars%lid_co2        ,c, j)  - y0(centurybgc_vars%lid_co2     , c, j)  &
-                                                              + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_co2x))
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_co2x   ) = yf(centurybgc_vars%lid_co2        ,c, j)  - y0(centurybgc_vars%lid_co2     , c, j)  
+        !                                                      + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_co2x))
 
-        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2o    ) = yf(centurybgc_vars%lid_n2o        ,c, j)  - y0(centurybgc_vars%lid_n2o     , c, j)  &
-                                                              + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2o))
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2o    ) = yf(centurybgc_vars%lid_n2o        ,c, j)  - y0(centurybgc_vars%lid_n2o     , c, j)  
+        !                                                      + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2o))
                                                               
-        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_o2     ) = yf(centurybgc_vars%lid_o2        ,c, j)  - y0(centurybgc_vars%lid_o2       , c, j)  &
-                                                              + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2))
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_o2     ) = yf(centurybgc_vars%lid_o2        ,c, j)  - y0(centurybgc_vars%lid_o2       , c, j)  
+        !                                                      + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2))
 
-        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ch4    ) = yf(centurybgc_vars%lid_ch4       ,c, j) - y0(centurybgc_vars%lid_ch4       , c, j)  &
-                                                              + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ch4))
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ch4    ) = yf(centurybgc_vars%lid_ch4       ,c, j) - y0(centurybgc_vars%lid_ch4       , c, j)  
+        !                                                      + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ch4))
 
-        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ar     ) = yf(centurybgc_vars%lid_ar       ,c, j) - y0(centurybgc_vars%lid_ar       , c, j)    &
-                                                              + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ar))
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ar     ) = yf(centurybgc_vars%lid_ar       ,c, j) - y0(centurybgc_vars%lid_ar       , c, j)    
+        !                                                      + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ar))
+        
         !get net production for om pools
         deltac=0._r8
         do k = 1, nom_pools

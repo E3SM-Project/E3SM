@@ -156,7 +156,7 @@ module TransportMod
    end subroutine calc_interface_conductance
 !-------------------------------------------------------------------------------
    subroutine DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, trcin_mobile, &
-       Rfactor, hmconductance, dtime, dz, trc_concflx_air,condc_toplay, topbc_type,&
+       Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,condc_toplay, topbc_type,&
        bot_concflx, update_col, source_only, rt, at,bt,ct, botbc_type, condc_botlay)
    !
    ! Description
@@ -178,6 +178,7 @@ module TransportMod
    real(r8), intent(in) :: Rfactor(bounds%begc: , lbj: )        ! conversion parameter from the given tracer phase to bulk mobile phase
    real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: )  ! weighted bulk tracer conductances
    real(r8), intent(in) :: dz(bounds%begc: , lbj: )             ! node thickness
+   real(r8), intent(in) :: source(bounds%begc: , lbj: )         !chemical sources [mol/m3]     
    real(r8), intent(in) :: dtime(bounds%begc: )                 ! time step   
    real(r8), intent(in) :: bot_concflx(bounds%begc: , 1: )      ! flux or concentration at the bottom boundary
    real(r8), intent(in) :: trc_concflx_air(bounds%begc:, 1: )   ! atmospheric tracer concentration (topbc_type=1) or flux (topbc_type=2)
@@ -203,6 +204,7 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(Rfactor)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(hmconductance)   == (/bounds%endc, ubj-1/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)              == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(source)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))      
    SHR_ASSERT_ALL((ubound(dtime)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(bot_concflx)     == (/bounds%endc, 2/)),     errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(trc_concflx_air) == (/bounds%endc, 2/)),     errMsg(__FILE__,__LINE__))
@@ -255,7 +257,7 @@ module TransportMod
                Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j)/rfactor(c,j)-trcin_mobile(c,j-1)/rfactor(c,j-1))
                Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1)/rfactor(c,j+1)-trcin_mobile(c,j)/rfactor(c,j))
             endif      
-            rt(c,j) = Fl-Fr
+            rt(c,j) = Fl-Fr + source(c,j)*dz(c,j)/dtime
             if(j==jtop(c) .and. topbc_type == bndcond_as_conc)then
               rt(c,j) = rt(c,j)+cntheta*condc_toplay(c)*(trc_concflx_air(c, 2)-trc_concflx_air(c, 1))
             endif
@@ -299,7 +301,7 @@ module TransportMod
    end subroutine DiffusTransp_gw_tridiag
 !-------------------------------------------------------------------------------
    subroutine DiffusTransp_gw(bounds, lbj, ubj, jtop, numfl, filter, trcin_mobile, &
-       Rfactor, hmconductance, dtime, dz, trc_concflx_air,condc_toplay, topbc_type,&
+       Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,condc_toplay, topbc_type,&
        bot_flux, update_col, dtracer, botbc_type, condc_botlay)
    !
    ! DESCRIPTION
@@ -319,8 +321,9 @@ module TransportMod
    integer,  intent(in) :: numfl                                ! length of the filter
    integer,  intent(in) :: filter(:)                            ! the actual filter
    real(r8), intent(in) :: trcin_mobile(bounds%begc: , lbj: )   ! incoming mobile tracer concentration
-   real(r8), intent(in) :: Rfactor(bounds%begc: , lbj: )        !conversion parameter from the given tracer phase to bulk mobile phase
+   real(r8), intent(in) :: Rfactor(bounds%begc: , lbj: )        !conversion parameter from the given tracer phase to bulk mobile phase   
    real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: )  !weighted bulk tracer conductances
+   real(r8), intent(in) :: source(bounds%begc: , lbj: )         !chemical sources [mol/m3]   
    real(r8), intent(in) :: dz(bounds%begc: , lbj: )             !node thickness
    real(r8), intent(in) :: dtime(bounds%begc: )                 !time step   
    real(r8), intent(in) :: bot_flux(bounds%begc: , 1: )         !flux at the bottom boundary
@@ -345,6 +348,7 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(Rfactor)           == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(hmconductance)     == (/bounds%endc, ubj-1/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)                == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(source)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))   
    SHR_ASSERT_ALL((ubound(dtime)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(bot_flux)          == (/bounds%endc, 2/)),     errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(trc_concflx_air)   == (/bounds%endc, 2/)),     errMsg(__FILE__,__LINE__))
@@ -357,12 +361,12 @@ module TransportMod
      SHR_ASSERT_ALL((ubound(condc_botlay)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
      
      call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, trcin_mobile, &
-        Rfactor, hmconductance, dtime, dz, trc_concflx_air,&
+        Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,&
         condc_toplay, topbc_type, bot_flux, update_col, source_only=.false.,&
         rt=rt, at=at,bt=bt,ct=ct, botbc_type=botbc_type, condc_botlay=condc_botlay)
    else
      call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, trcin_mobile, &
-        Rfactor, hmconductance, dtime, dz, trc_concflx_air,&
+        Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,&
         condc_toplay, topbc_type, bot_flux, update_col, source_only=.false.,&
         rt=rt, at=at,bt=bt,ct=ct)
    endif     
@@ -398,7 +402,7 @@ module TransportMod
    real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: )  !weighted conductance
    real(r8), intent(in) :: dtime               !model time step
    real(r8), intent(in) :: dz(bounds%begc: , lbj: )             !layer thickness
-   real(r8), intent(in) :: source(bounds%begc: , lbj: )         !chemical sources [mol/m3/s]
+   real(r8), intent(in) :: source(bounds%begc: , lbj: )         !chemical sources [mol/m3]
    logical,  intent(in) :: update_col(bounds%begc: )            !logical switch indicating if the column is for active update   
    real(r8), intent(out):: at(bounds%begc: , lbj: )             !returning tridiagonal a matrix
    real(r8), intent(out):: bt(bounds%begc: , lbj: )             !returning tridiagonal b matrix
@@ -443,7 +447,7 @@ module TransportMod
                Fl=-hmconductance(c,j-1)*(trcin(c,j)-trcin(c,j-1))
                Fr=-hmconductance(c,j)*(trcin(c,j+1)-trcin(c,j))
             endif      
-            rt(c,j) = Fl-Fr + source(c,j)*dz(c,j)      
+            rt(c,j) = Fl-Fr + source(c,j)*dz(c,j)/dtime      
          enddo
   
          do j = lbn(c), ubj

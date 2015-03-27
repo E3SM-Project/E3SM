@@ -179,11 +179,11 @@ contains
 !  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
 !     betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_gw_transp')  
   !print*,'do diffusion advection transport'  
-  call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
-       col%dz(bounds%begc:bounds%endc,lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
-       waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
-       (/do_advection,do_diffusion/), dtime2, betrtracer_vars, tracerboundarycond_vars,&
-       tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
+!  call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
+!       col%dz(bounds%begc:bounds%endc,lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
+!       waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
+!       (/do_advection,do_diffusion/), dtime2, betrtracer_vars, tracerboundarycond_vars,&
+!       tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
 
 !  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
 !     betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_reaction')
@@ -200,7 +200,7 @@ contains
   call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
       col%dz(bounds%begc:bounds%endc, lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
       waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
-      (/do_advection, do_diffusion/), dtime2, betrtracer_vars, tracerboundarycond_vars, &
+      (/do_advection, do_diffusion/), dtime, betrtracer_vars, tracerboundarycond_vars, &
       tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
 
 !  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
@@ -265,7 +265,7 @@ contains
   real(r8) :: time_remain(bounds%begc:bounds%endc)
   real(r8) :: dtracer(bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: err_tracer(bounds%begc:bounds%endc)
-  real(r8) :: zero_source(bounds%begc:bounds%endc,lbj:ubj)
+  real(r8) :: local_source(bounds%begc:bounds%endc,lbj:ubj)
   integer  :: jtops(bounds%begc:bounds%endc)
 
   logical  :: update_col(bounds%begc:bounds%endc)
@@ -286,7 +286,7 @@ contains
   SHR_ASSERT_ALL((ubound(dz) == (/bounds%endc, ubj/)),errMsg(__FILE__,__LINE__))
   
   
-  zero_source(:,:)=0._r8
+  !tracer_source(:,:)=0._r8
   jtops(:)=1
   
   do j = betrtracer_vars%ngwmobile_tracers+1, betrtracer_vars%ntracers
@@ -299,10 +299,19 @@ contains
       time_remain(c) =dtime
       update_col(c) = .true.
     enddo
+    
+    do l = lbj, ubj
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        if(l<jtops(c))cycle
+        local_source(c,l)=tracer_flx_netpro_vr(c,l,j)/dtime
+      enddo
+    enddo  
+    
     do
       !do diffusive transport
       call DiffusTransp(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, tracer_conc_solid_passive_col(:,:,kk),&
-        hmconductance_col(:,:,j),  dtime, dz, source=zero_source, update_col=update_col, dtracer=dtracer)
+        hmconductance_col(:,:,j),  dtime, dz, source=local_source, update_col=update_col, dtracer=dtracer)
       
       !do tracer update
       do fc = 1, num_soilc
@@ -350,7 +359,7 @@ contains
           !daxpy(N,DA,DX,INCX,DY,INCY)
           call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),1)
           
-          err_tracer(c) = dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj))
+          err_tracer(c) = dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj))-dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c)
           
           if(abs(err_tracer(c))>=err_min_solid)then
             !something is wrong, write error information
@@ -757,7 +766,8 @@ contains
   real(r8) :: dtracer(bounds%begc:bounds%endc,lbj:ubj) 
   logical  :: lnegative_tracer                      !when true, negative tracer occurs
   logical  :: lexit_loop
-  real(r8) :: err_relative 
+  real(r8) :: err_relative
+  real(r8) :: local_source(bounds%begc:bounds%endc,lbj:ubj)
   real(r8) :: mass0
   real(r8), parameter :: err_relative_threshold=1.e-2_r8 !relative error threshold
   real(r8), parameter :: err_dif_min = 1.e-12_r8  !minimum absolute error
@@ -793,14 +803,23 @@ contains
       c = filter_soilc(fc)
       time_remain(c) = dtime
       dtime_loc(c) = dtime
-      update_col(c) = .true.          
+      update_col(c) = .true.
+      
+
     enddo
-    
+    do l = lbj, ubj
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        if(l<jtops(c))cycle
+        local_source(c,l) = tracer_flx_netpro_vr(c,l,j)/dtime
+      enddo  
+    enddo  
+      
     !Do adpative time stepping to avoid negative tracer
     do      
       call DiffusTransp(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, tracer_conc_mobile_col( : , : ,j), &
-        Rfactor( : , : ,j), hmconductance_col( : , : ,j), dtime_loc, dz, tracer_gwdif_concflux_top( : , : ,j),&
-        condc_toplay( : ,j), topbc_type(j), bot_concflux( : , : ,j), update_col, dtracer)
+        Rfactor( : , : ,j), hmconductance_col( : , : ,j), dtime_loc, dz,  local_source(:,:)                , &
+        tracer_gwdif_concflux_top( : , : ,j), condc_toplay( : ,j), topbc_type(j), bot_concflux( : , : ,j), update_col, dtracer)
       
       !do tracer update
       do fc = 1, num_soilc
@@ -857,7 +876,7 @@ contains
           
           err_tracer(c) = dot_sum(x=dtracer(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))
           
-          err_tracer(c) = err_tracer(c)-diff_surf(c)*dtime_loc(c)
+          err_tracer(c) = err_tracer(c)-(diff_surf(c) + dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))) *dtime_loc(c) 
           !if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
           !   write(iulog,*)get_nstep()
           !   write(iulog,*)'err_dif',err_tracer(c),'dif_endm=',dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,j),y=dz(c,jtops(c):ubj))
