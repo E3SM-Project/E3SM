@@ -14,7 +14,9 @@ module BGCReactionsCenturyType
 ! !USES
 
   use shr_log_mod           , only : errMsg => shr_log_errMsg
+  use clm_varctl            , only : iulog
   use shr_kind_mod          , only : r8 => shr_kind_r8
+  use clm_time_manager      , only : get_nstep
   use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
   use decompMod             , only : bounds_type
   use BGCReactionsMod       , only : bgc_reaction_type
@@ -341,7 +343,6 @@ contains
   ! set up boundary conditions for tracer movement
   !
 
-  use clm_varctl            , only : iulog
   use TracerBoundaryCondType, only : tracerboundarycond_type
   use abortutils            , only : endrun
   use shr_log_mod           , only : errMsg => shr_log_errMsg
@@ -441,7 +442,7 @@ contains
   
   character(len=*), parameter :: subname ='calc_bgc_reaction'
 
-  integer :: fc, c, j
+  integer :: fc, c, j, k
 
   real(r8) :: y0(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: yf(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)  
@@ -552,6 +553,10 @@ contains
       time = 0._r8 
       lpr = .false.
       call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
+      !if(c==21192 .and. get_nstep()==43939 .and. j==9)then
+      !  write(iulog,*)'y0',(k,y0(k,c,j),k=1,centurybgc_vars%nstvars)
+      !  write(iulog,*)'yf',(k,yf(k,c,j),k=1,centurybgc_vars%nstvars)
+      !endif
     enddo
   enddo  
 

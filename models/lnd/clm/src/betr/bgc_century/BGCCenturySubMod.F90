@@ -262,21 +262,21 @@ module BGCCenturySubMod
       !set up nonzero variables
       y0(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, c, j)    = tracerstate_vars%tracer_conc_solid_passive_col(c, j, :)
 
-      y0(centurybgc_vars%lid_n2,  c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2)
+      y0(centurybgc_vars%lid_n2,  c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2)  ,0._r8)
       
-      y0(centurybgc_vars%lid_o2,  c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2) 
+      y0(centurybgc_vars%lid_o2,  c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2)  ,0._r8) 
 
-      y0(centurybgc_vars%lid_ar,  c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar) 
+      y0(centurybgc_vars%lid_ar,  c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar)  ,0._r8) 
             
-      y0(centurybgc_vars%lid_co2, c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x)
+      y0(centurybgc_vars%lid_co2, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x),0._r8)
 
-      y0(centurybgc_vars%lid_ch4, c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4)
+      y0(centurybgc_vars%lid_ch4, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4) ,0._r8)
   
-      y0(centurybgc_vars%lid_nh4, c, j)         = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x)
+      y0(centurybgc_vars%lid_nh4, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x),0._r8)
       
-      y0(centurybgc_vars%lid_no3, c, j)         = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x)
+      y0(centurybgc_vars%lid_no3, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x),0._r8)
       
-      y0(centurybgc_vars%lid_n2o, c, j)        = tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o)
+      y0(centurybgc_vars%lid_n2o, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o), 0._r8)
       
     enddo
   enddo
@@ -1640,7 +1640,7 @@ module BGCCenturySubMod
   
   is_zero_order(:) = .false.
   is_zero_order(centurybgc_vars%lid_o2_aere_reac)  = .true.
-  if(spinupstate /= 1)then
+  if(spinup_state /= 1)then
     is_zero_order(centurybgc_vars%lid_n2o_aere_reac) = .true.
     is_zero_order(centurybgc_vars%lid_ar_aere_reac)  = .true.
     is_zero_order(centurybgc_vars%lid_ch4_aere_reac) = .true.

@@ -1497,6 +1497,7 @@ module TracerParamsMod
        qflx_drain_vr(c,j) = h2osoi_liq_copy(c,j)-h2osoi_liq(c,j)
 
        qflx_drain_vr(c,j) = min(qflx_drain_vr(c,j),h2osoi_liq_copy(c,j))/denh2o
+      
      enddo
    enddo
   
