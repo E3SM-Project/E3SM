@@ -411,7 +411,7 @@ contains
   use TemperatureType          , only : temperature_type
   use ChemStateType            , only : chemstate_type
   use SoilStatetype            , only : soilstate_type
-  use ODEMod                   , only : ode_adapt_mbbks1
+  use ODEMod                   , only : ode_mbbks1
   use CNStateType              , only : cnstate_type  
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   use CNVerticalProfileMod     , only : decomp_vertprofiles
@@ -552,7 +552,7 @@ contains
       !update state variables
       time = 0._r8 
       lpr = .false.
-      call ode_adapt_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
+      call ode_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
       !if(c==21192 .and. get_nstep()==43939 .and. j==9)then
       !  write(iulog,*)'y0',(k,y0(k,c,j),k=1,centurybgc_vars%nstvars)
       !  write(iulog,*)'yf',(k,yf(k,c,j),k=1,centurybgc_vars%nstvars)

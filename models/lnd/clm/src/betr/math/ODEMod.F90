@@ -95,15 +95,17 @@ contains
    real(r8), intent(in)  :: t
    real(r8), intent(in)  :: dt
    real(r8), intent(out) :: y(neq)
-   real(r8), intent(out) :: pscal
+   real(r8), optional, intent(out) :: pscal
    
    external :: odefun
    real(r8) :: f(neq)
+   real(r8) :: pscal1
    
    call odefun(y0, dt, t, nprimeq, neq, f)
 
-   call mbbks(y0, f, nprimeq, neq, dt, y, pscal)
+   call mbbks(y0, f, nprimeq, neq, dt, y, pscal1)
    
+   if(present(pscal))pscal=pscal1
    end subroutine ode_mbbks1
 !-------------------------------------------------------------------------------
    subroutine get_tscal(rerr,dt_scal,acc)
