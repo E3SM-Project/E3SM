@@ -348,7 +348,7 @@ contains
           !it's possible that using daxpy won't improve the performance, but I'd like to take a bet here, Jinyun Tang, Mar 27, 2015
           !dy=da*dx+dy
           !daxpy(N,DA,DX,INCX,DY,INCY)
-          call axpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),1)
+          call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),1)
           
           err_tracer(c) = dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj))
           
@@ -853,9 +853,9 @@ contains
             
           !  err_tracer(c) = err_tracer(c) + dtracer(c,l) * dz(c,l)
           !enddo
-          call axpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_mobile_col(c,jtops(c):ubj,j),1)
+          call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_mobile_col(c,jtops(c):ubj,j),1)
           
-          err_tracer(c) = dot_sum(x=dtracer(c,jtops(c):ubj),y=dz(c,utops(c):ubj))
+          err_tracer(c) = dot_sum(x=dtracer(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))
           
           err_tracer(c) = err_tracer(c)-diff_surf(c)*dtime_loc(c)
           !if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then

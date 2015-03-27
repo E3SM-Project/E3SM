@@ -188,7 +188,7 @@ contains
   ! use subroutine from blas
   !DOUBLE PRECISION FUNCTION ddot(N,DX,INCX,DY,INCY)
   !
-  ans=ddot(n,x,1,y,1)
+  ans=dot_product(x,y)
   !ans = 0._r8
   !do j = 1, n
   !  ans = ans + x(j)*y(j)
