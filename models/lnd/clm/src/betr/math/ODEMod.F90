@@ -224,7 +224,8 @@ contains
          endif   
       endif
    enddo
-      
+   y=y0      
+   
    if(nJ>0)then
       pmax=min(1._r8,pmax**(nJ))
 
@@ -240,18 +241,21 @@ contains
       endif
       !reduce the chance of negative y(n) from roundoff error
       pscal=pscal*0.9999_r8
-      do n = 1, neq
-         y(n) = y0(n) + f(n) * dt * pscal
+
+
+      !do n = 1, neq
+      !   y(n) = y0(n) + f(n) * dt * pscal
 !         if(y(n)<0._r8 .and. n<nprimeq)then
 !           write(iulog,*)'n=',n,' y=',y(n),'y0=',y0(n),'f=',f(n),'ps=',pscal,'dt=',dt, 'pmax=',pmax,' nJ=',nJ
 !         endif
-      enddo
+      !enddo
    else
       pscal=1._r8
-      do n = 1, neq
-         y(n) = y0(n) + f(n) * dt
-      enddo
+!      do n = 1, neq
+!         y(n) = y0(n) + f(n) * dt
+!      enddo
    endif
+   call axpy(f,y,a=pscal*dt)
    deallocate(mbkks_data%aj)
    
    
