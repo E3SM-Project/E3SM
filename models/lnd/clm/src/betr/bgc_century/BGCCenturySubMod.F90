@@ -253,31 +253,32 @@ module BGCCenturySubMod
 
   integer :: fc, c, j
   ! all organic matter pools are distributed into solid passive tracers
-  do fc = 1, numf
-    c = filter(fc)
-    do j = jtops(c), ubj
-      !zero out everything
-      y0(:, c, j ) = 0._r8
+  do j = lbj, ubj
+    do fc = 1, numf
+      c = filter(fc)
+      if(j>=jtops(c))then
+        !zero out everything
+        y0(:, c, j ) = 0._r8
       
-      !set up nonzero variables
-      y0(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, c, j)    = tracerstate_vars%tracer_conc_solid_passive_col(c, j, :)
+        !set up nonzero variables
+        y0(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, c, j)    = tracerstate_vars%tracer_conc_solid_passive_col(c, j, :)
 
-      y0(centurybgc_vars%lid_n2,  c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2)  ,0._r8)
+        y0(centurybgc_vars%lid_n2,  c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2)  ,0._r8)
       
-      y0(centurybgc_vars%lid_o2,  c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2)  ,0._r8) 
+        y0(centurybgc_vars%lid_o2,  c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2)  ,0._r8) 
 
-      y0(centurybgc_vars%lid_ar,  c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar)  ,0._r8) 
+        y0(centurybgc_vars%lid_ar,  c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar)  ,0._r8) 
             
-      y0(centurybgc_vars%lid_co2, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x),0._r8)
+        y0(centurybgc_vars%lid_co2, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x),0._r8)
 
-      y0(centurybgc_vars%lid_ch4, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4) ,0._r8)
+        y0(centurybgc_vars%lid_ch4, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4) ,0._r8)
   
-      y0(centurybgc_vars%lid_nh4, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x),0._r8)
+        y0(centurybgc_vars%lid_nh4, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x),0._r8)
+        
+        y0(centurybgc_vars%lid_no3, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x),0._r8)
       
-      y0(centurybgc_vars%lid_no3, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x),0._r8)
-      
-      y0(centurybgc_vars%lid_n2o, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o), 0._r8)
-      
+        y0(centurybgc_vars%lid_n2o, c, j)        = max(tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o), 0._r8)
+      endif
     enddo
   enddo
   end subroutine init_state_vector
@@ -333,16 +334,18 @@ module BGCCenturySubMod
   ) 
   
   k_decay(:, :, :) = spval
-  do fc = 1, numf
-    c = filter(fc)
-    do j = jtops(c), ubj
-      k_decay(lit1, c, j) = k_decay_lit1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(lit2, c, j) = k_decay_lit2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(lit3, c, j) = k_decay_lit3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(som1, c, j) = k_decay_som1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(som2, c, j) = k_decay_som2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(som3, c, j) = k_decay_som3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-      k_decay(cwd,  c, j) = k_decay_cwd  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+  do j = lbj, ubj
+    do fc = 1, numf
+      c = filter(fc)
+      if(j>=jtops(c))then
+        k_decay(lit1, c, j) = k_decay_lit1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+        k_decay(lit2, c, j) = k_decay_lit2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+        k_decay(lit3, c, j) = k_decay_lit3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+        k_decay(som1, c, j) = k_decay_som1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+        k_decay(som2, c, j) = k_decay_som2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+        k_decay(som3, c, j) = k_decay_som3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+        k_decay(cwd,  c, j) = k_decay_cwd  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+      endif
     enddo  
   enddo
   end associate
@@ -723,13 +726,15 @@ module BGCCenturySubMod
   
   integer :: jj, fc, c, j
   
-  do fc = 1, numf
-    c = filter(fc)
-    do j = jtops(c), ubj
-      !for om pools
-      do jj = 1, nom_pools
-        decay_rates(jj, c, j) = om_pools(jj, c, j) * k_decay(jj, c, j)
-      enddo
+  do j = lbj, ubj
+    do fc = 1, numf
+      c = filter(fc)
+      if(j>=jtops(c))then
+        !for om pools
+        do jj = 1, nom_pools
+          decay_rates(jj, c, j) = om_pools(jj, c, j) * k_decay(jj, c, j)
+        enddo
+      endif
     enddo
   enddo
   
@@ -796,8 +801,10 @@ module BGCCenturySubMod
    tracer_flx_parchm_vr  => tracerflux_vars%tracer_flx_parchm_vr_col  & !
   )
 
-  do fc = 1, numf
-    c = filter(fc)    
+
+  do j = lbj, ubj
+    do fc = 1, numf
+      c = filter(fc)    
     !err = 0._r8
     !hr = 0._r8
     !delta_nh4_m=0._r8
@@ -810,61 +817,61 @@ module BGCCenturySubMod
     !sminn_plant2= 0._r8
     !f_den = 0._r8
     !f_nit_n2o=0._r8
-    do j = jtops(c), ubj
-      plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))*natomw
-      smin_no3_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_plant, c, j) - y0(centurybgc_vars%lid_minn_no3_plant, c, j))*natomw/dtime
-      smin_nh4_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_plant, c, j) - y0(centurybgc_vars%lid_minn_nh4_plant, c, j))*natomw/dtime
+      if(j>=jtops(c))then
+        plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))*natomw
+        smin_no3_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_plant, c, j) - y0(centurybgc_vars%lid_minn_no3_plant, c, j))*natomw/dtime
+        smin_nh4_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_plant, c, j) - y0(centurybgc_vars%lid_minn_nh4_plant, c, j))*natomw/dtime
       
-      hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))*catomw/dtime
-      f_nit_vr    (c,j)  = (yf(centurybgc_vars%lid_nh4_nit,c, j) - y0(centurybgc_vars%lid_nh4_nit,c, j))*natomw/dtime
-      f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))*natomw/dtime
-      f_denit_vr  (c,j)  = (yf(centurybgc_vars%lid_no3_den,c, j) - y0(centurybgc_vars%lid_no3_den,c, j))*natomw/dtime
+        hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))*catomw/dtime
+        f_nit_vr    (c,j)  = (yf(centurybgc_vars%lid_nh4_nit,c, j) - y0(centurybgc_vars%lid_nh4_nit,c, j))*natomw/dtime
+        f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))*natomw/dtime
+        f_denit_vr  (c,j)  = (yf(centurybgc_vars%lid_no3_den,c, j) - y0(centurybgc_vars%lid_no3_den,c, j))*natomw/dtime
       
-      actual_immob_no3_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_immob,c, j) - y0(centurybgc_vars%lid_minn_no3_immob,c, j))*natomw/dtime
-      actual_immob_nh4_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_immob,c, j) - y0(centurybgc_vars%lid_minn_nh4_immob,c, j))*natomw/dtime
+        actual_immob_no3_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_immob,c, j) - y0(centurybgc_vars%lid_minn_no3_immob,c, j))*natomw/dtime
+        actual_immob_nh4_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_immob,c, j) - y0(centurybgc_vars%lid_minn_nh4_immob,c, j))*natomw/dtime
       
-      !the temporal averaging for fluxes below will be done later
+        !the temporal averaging for fluxes below will be done later
       
-      tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2)  ) = yf(centurybgc_vars%lid_o2_paere  ,c, j)  - y0(centurybgc_vars%lid_o2_paere , c, j)
+        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2)  ) = yf(centurybgc_vars%lid_o2_paere  ,c, j)  - y0(centurybgc_vars%lid_o2_paere , c, j)
       
-      if ( spinup_state /= 1 ) then  
-        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2)  ) = yf(centurybgc_vars%lid_n2_paere  ,c, j)  - y0(centurybgc_vars%lid_n2_paere , c, j)
-        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ar)  ) = yf(centurybgc_vars%lid_ar_paere  ,c, j)  - y0(centurybgc_vars%lid_ar_paere , c, j)      
-        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_co2x)) = yf(centurybgc_vars%lid_co2_paere ,c, j)  - y0(centurybgc_vars%lid_co2_paere, c, j)      
-        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ch4) ) = yf(centurybgc_vars%lid_ch4_paere ,c, j)  - y0(centurybgc_vars%lid_ch4_paere, c, j)      
-        tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2o) ) = yf(centurybgc_vars%lid_n2o_paere ,c, j)  - y0(centurybgc_vars%lid_n2o_paere, c, j)      
-      endif
+        if ( spinup_state /= 1 ) then  
+          tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2)  ) = yf(centurybgc_vars%lid_n2_paere  ,c, j)  - y0(centurybgc_vars%lid_n2_paere , c, j)
+          tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ar)  ) = yf(centurybgc_vars%lid_ar_paere  ,c, j)  - y0(centurybgc_vars%lid_ar_paere , c, j)      
+          tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_co2x)) = yf(centurybgc_vars%lid_co2_paere ,c, j)  - y0(centurybgc_vars%lid_co2_paere, c, j)      
+          tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ch4) ) = yf(centurybgc_vars%lid_ch4_paere ,c, j)  - y0(centurybgc_vars%lid_ch4_paere, c, j)      
+          tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2o) ) = yf(centurybgc_vars%lid_n2o_paere ,c, j)  - y0(centurybgc_vars%lid_n2o_paere, c, j)      
+        endif
       
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   )                          + &
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   )                          + &
                                                                  yf(centurybgc_vars%lid_nh4       ,c, j)  - y0(centurybgc_vars%lid_nh4      , c, j)
                                                                  
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )                          + &
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )                          + &
                                                                  yf(centurybgc_vars%lid_no3       ,c, j)  - y0(centurybgc_vars%lid_no3      , c, j)
                                                                  
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)  &
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2))
 
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_co2x   ) = yf(centurybgc_vars%lid_co2        ,c, j)  - y0(centurybgc_vars%lid_co2     , c, j)  &
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_co2x   ) = yf(centurybgc_vars%lid_co2        ,c, j)  - y0(centurybgc_vars%lid_co2     , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_co2x))
 
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2o    ) = yf(centurybgc_vars%lid_n2o        ,c, j)  - y0(centurybgc_vars%lid_n2o     , c, j)  &
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2o    ) = yf(centurybgc_vars%lid_n2o        ,c, j)  - y0(centurybgc_vars%lid_n2o     , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_n2o))
                                                               
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_o2     ) = yf(centurybgc_vars%lid_o2        ,c, j)  - y0(centurybgc_vars%lid_o2       , c, j)  &
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_o2     ) = yf(centurybgc_vars%lid_o2        ,c, j)  - y0(centurybgc_vars%lid_o2       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_o2))
 
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ch4    ) = yf(centurybgc_vars%lid_ch4       ,c, j) - y0(centurybgc_vars%lid_ch4       , c, j)  &
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ch4    ) = yf(centurybgc_vars%lid_ch4       ,c, j) - y0(centurybgc_vars%lid_ch4       , c, j)  &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ch4))
 
-      tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ar     ) = yf(centurybgc_vars%lid_ar       ,c, j) - y0(centurybgc_vars%lid_ar       , c, j)    &
+        tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_ar     ) = yf(centurybgc_vars%lid_ar       ,c, j) - y0(centurybgc_vars%lid_ar       , c, j)    &
                                                               + tracer_flx_parchm_vr(c,j,volatileid(betrtracer_vars%id_trc_ar))
-      !get net production for om pools
-      deltac=0._r8
-      do k = 1, nom_pools
-        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
-        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
+        !get net production for om pools
+        deltac=0._r8
+        do k = 1, nom_pools
+          tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
+          tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)        
         !deltac = deltac + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
-      enddo
+        enddo
       !if(c==15695)then
       !  hr = hr + col%dz(c,j)*hr_vr(c,j)
       !  err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
@@ -883,6 +890,7 @@ module BGCCenturySubMod
       !  f_nit_n2o=f_nit_n2o+f_n2o_nit_vr(c,j)*col%dz(c,j)*dtime
       !  f_den = f_den + f_denit_vr(c,j)*col%dz(c,j)*dtime
       !endif
+      endif
     enddo
     !if(c==15695)then
     !  print*,'xxxxxxxx'
@@ -920,28 +928,30 @@ module BGCCenturySubMod
   
   integer :: fc, c, j
   ! all organic matter pools are distributed into solid passive tracers
+
+  do j = lbj, ubj   !currently, om is added only to soil layers       
   
-  do fc = 1, numf
-    c = filter(fc)
-    do j = jtops(c), ubj   !currently, om is added only to soil layers       
-  
-      tracerstate_vars%tracer_conc_solid_passive_col(c, j, :) = yf(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, c, j)
+    do fc = 1, numf
+      c = filter(fc)
+      if(j>=jtops(c))then
+        tracerstate_vars%tracer_conc_solid_passive_col(c, j, :) = yf(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, c, j)
 
-      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2) = yf(centurybgc_vars%lid_o2, c, j)
+        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2) = yf(centurybgc_vars%lid_o2, c, j)
 
-      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x) = yf(centurybgc_vars%lid_co2, c, j)
+        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x) = yf(centurybgc_vars%lid_co2, c, j)
       
-      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x) = yf(centurybgc_vars%lid_nh4, c, j)
+        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x) = yf(centurybgc_vars%lid_nh4, c, j)
       
-      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x) = yf(centurybgc_vars%lid_no3, c, j)
+        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x) = yf(centurybgc_vars%lid_no3, c, j)
       
-      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2) = yf(centurybgc_vars%lid_n2, c, j)
+        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2) = yf(centurybgc_vars%lid_n2, c, j)
 
-      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar) = yf(centurybgc_vars%lid_ar, c, j)
+        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar) = yf(centurybgc_vars%lid_ar, c, j)
 
-      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4) = yf(centurybgc_vars%lid_ch4, c, j)
+        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4) = yf(centurybgc_vars%lid_ch4, c, j)
 
-      tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o) = yf(centurybgc_vars%lid_n2o, c, j)
+        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o) = yf(centurybgc_vars%lid_n2o, c, j)
+      endif
     enddo
   enddo
   
@@ -1384,10 +1394,11 @@ module BGCCenturySubMod
 
   ! Set "decomp_depth_efolding" parameter
   decomp_depth_efolding = CNParamsShareInst%decomp_depth_efolding
-      
-  do fc = 1, numf
-    c = filter(fc)
-    do j = jtops(c), ubj
+
+  do j = lbj, ubj      
+    do fc = 1, numf
+      c = filter(fc)
+      if(j<jtops(c))cycle
       !temperature scalar
       t_scalar(c,j)     = 1._r8
       !use Charlie's Q10 based temperature scalar
@@ -1573,13 +1584,15 @@ module BGCCenturySubMod
   )
   
 
-  do fc = 1, num_soilc
-    c = filter_soilc(fc)
+
     !delta_nh4 =0._r8
     !delta_no3 =0._r8
     !delta_somn =0._r8
-    do j = lbj, ubj
-      do k = 1, ndecomp_pools
+
+  do k = 1, ndecomp_pools
+    do j = 1, ubj
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
         tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
         tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
         cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
@@ -1587,6 +1600,12 @@ module BGCCenturySubMod
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
         !delta_somn = delta_somn + bgc_npool_inputs_vr(c,j,k)*col%dz(c,j)
       enddo
+    enddo
+  enddo
+  
+  do j = 1, ubj
+    do fc = 1, num_soilc
+      c = filter_soilc(fc)    
       tracer_conc_mobile(c, j, id_trc_nh3x) = tracer_conc_mobile(c, j, id_trc_nh3x) + sminn_nh4_input_vr(c,j)/natomw
       tracer_conc_mobile(c, j, id_trc_no3x) = tracer_conc_mobile(c, j, id_trc_no3x) + sminn_no3_input_vr(c,j)/natomw
 

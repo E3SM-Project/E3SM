@@ -271,12 +271,14 @@ module TracerParamsMod
        enddo
        !for taggged co2 simulations, the diffusivity is assumed same for all co2 species
        if(nco2_tags>0 .and. j==betrtracer_vars%id_trc_co2x)then
-         do fc = 1, numf
-           c = filter(fc)
-           do n = jtops(c), ubj
-             bulkdiffus(c,n,betrtracer_vars%id_trc_air_co2x)=bulkdiffus(c,n,betrtracer_vars%id_trc_co2x)
-             bulkdiffus(c,n,betrtracer_vars%id_trc_arrt_co2x)=bulkdiffus(c,n,betrtracer_vars%id_trc_co2x)
-             bulkdiffus(c,n,betrtracer_vars%id_trc_hrsoi_co2x)=bulkdiffus(c,n,betrtracer_vars%id_trc_co2x)                  
+         do n = lbj, ubj
+           do fc = 1, numf
+             c = filter(fc)
+             if(n >= jtops(c))then
+               bulkdiffus(c,n,betrtracer_vars%id_trc_air_co2x)=bulkdiffus(c,n,betrtracer_vars%id_trc_co2x)
+               bulkdiffus(c,n,betrtracer_vars%id_trc_arrt_co2x)=bulkdiffus(c,n,betrtracer_vars%id_trc_co2x)
+               bulkdiffus(c,n,betrtracer_vars%id_trc_hrsoi_co2x)=bulkdiffus(c,n,betrtracer_vars%id_trc_co2x)                  
+             endif
            enddo
          enddo
        endif
@@ -299,14 +301,15 @@ module TracerParamsMod
    
    !do solid phase passive tracers
    do j = ngwmobile_tracers + 1, ntracers
-     nsld = j - ngwmobile_tracers 
-     do fc = 1,numf
-       c = filter(fc)
+     nsld = j - ngwmobile_tracers
+     do n = 1, ubj
+       do fc = 1,numf
+         c = filter(fc)
          
-       if  ( ( max(altmax(c), altmax_lastyear(c)) <= max_altdepth_cryoturbation ) .and. &
+         if  ( ( max(altmax(c), altmax_lastyear(c)) <= max_altdepth_cryoturbation ) .and. &
             ( max(altmax(c), altmax_lastyear(c)) > 0._r8) ) then
                ! use mixing profile modified slightly from Koven et al. (2009): constant through active layer, linear decrease from base of active layer to zero at a fixed depth
-         do n = 1, ubj
+        
            if ( zisoi(n) < max(altmax(c), altmax_lastyear(c)) ) then
              bulkdiffus(c,n,j) = cryoturb_diffusion_k * tracer_solid_passive_diffus_scal(nsld)
              bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc(nsld))
@@ -316,22 +319,15 @@ module TracerParamsMod
                           ( max_depth_cryoturb - max(altmax(c), altmax_lastyear(c)) ) ), 0._r8)  ! go linearly to zero between ALT and max_depth_cryoturb
              bulkdiffus(c,n,j) = bulkdiffus(c,n,j) * tracer_solid_passive_diffus_scal(nsld)             
              bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc(nsld))             
-           endif
-           
-         end do
-       elseif (  max(altmax(c), altmax_lastyear(c)) > 0._r8 ) then
+           endif                    
+         elseif (  max(altmax(c), altmax_lastyear(c)) > 0._r8 ) then
          ! constant advection, constant diffusion
-         do n = 1, ubj
            bulkdiffus(c,n,j) = som_diffus * tracer_solid_passive_diffus_scal(nsld)
            bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc(nsld))
-         end do
-       else
+         else
          ! completely frozen soils--no mixing
-         do n = 1, ubj
            bulkdiffus(c,n,j) = 1e-4_r8 / (86400._r8 * 365._r8) * 1.e-36_r8  !set to very small number for numerical purpose
-         end do
-       endif
-         
+         endif         
      enddo  
    enddo
    end associate
@@ -642,17 +638,19 @@ module TracerParamsMod
         enddo
       enddo
       if(nco2_tags>0 .and. j==betrtracer_vars%id_trc_co2x)then
-        do fc = 1, numf
-          c = filter(fc)
-          do n = jtops(c), ubj             
-            aqu2bulkcef_mobile(c,n,betrtracer_vars%id_trc_air_co2x)=aqu2bulkcef_mobile(c,n,j)
-            aqu2bulkcef_mobile(c,n,betrtracer_vars%id_trc_arrt_co2x)=aqu2bulkcef_mobile(c,n,j)
+        do n = lbj, ubj  
+          do fc = 1, numf
+            c = filter(fc)
+            if(n >= jtops(c))then             
+              aqu2bulkcef_mobile(c,n,betrtracer_vars%id_trc_air_co2x)=aqu2bulkcef_mobile(c,n,j)
+              aqu2bulkcef_mobile(c,n,betrtracer_vars%id_trc_arrt_co2x)=aqu2bulkcef_mobile(c,n,j)
             
-            aqu2bulkcef_mobile(c,n,betrtracer_vars%id_trc_hrsoi_co2x)=aqu2bulkcef_mobile(c,n,j)
-            gas2bulkcef_mobile(c,n, volatileid(betrtracer_vars%id_trc_air_co2x)) =gas2bulkcef_mobile(c,n, k) 
+              aqu2bulkcef_mobile(c,n,betrtracer_vars%id_trc_hrsoi_co2x)=aqu2bulkcef_mobile(c,n,j)
+              gas2bulkcef_mobile(c,n, volatileid(betrtracer_vars%id_trc_air_co2x)) =gas2bulkcef_mobile(c,n, k) 
              
-            gas2bulkcef_mobile(c,n, volatileid(betrtracer_vars%id_trc_arrt_co2x)) =gas2bulkcef_mobile(c,n, k)
-            gas2bulkcef_mobile(c,n, volatileid(betrtracer_vars%id_trc_hrsoi_co2x)) =gas2bulkcef_mobile(c,n, k)                   
+              gas2bulkcef_mobile(c,n, volatileid(betrtracer_vars%id_trc_arrt_co2x)) =gas2bulkcef_mobile(c,n, k)
+              gas2bulkcef_mobile(c,n, volatileid(betrtracer_vars%id_trc_hrsoi_co2x)) =gas2bulkcef_mobile(c,n, k)                   
+            endif
           enddo
         enddo
       endif
@@ -1130,17 +1128,21 @@ module TracerParamsMod
      if(is_volatile(jj))then     
        kk = volatileid(jj)   
        if(do_forward)then
-         do fc = 1, numf
-           c = filter(fc)
-           do j = jtops(c), ubj
-             tracer_conc_mobile(c,j,jj) = tracer_conc_mobile(c,j,jj) / gas2bulkcef_mobile_col(c,j,kk)
+         do j = lbj, ubj
+           do fc = 1, numf
+             c = filter(fc)
+             if(j>=jtops(c))then
+               tracer_conc_mobile(c,j,jj) = tracer_conc_mobile(c,j,jj) / gas2bulkcef_mobile_col(c,j,kk)
+             endif
            enddo
          enddo
        else
-         do fc = 1, numf
-           c = filter(fc)
-           do j = jtops(c), ubj
-             tracer_conc_mobile(c,j,jj) = tracer_conc_mobile(c,j,jj) * gas2bulkcef_mobile_col(c,j,kk)
+         do j = lbj, ubj
+           do fc = 1, numf
+             c = filter(fc)
+             if(j>=jtops(c))then
+               tracer_conc_mobile(c,j,jj) = tracer_conc_mobile(c,j,jj) * gas2bulkcef_mobile_col(c,j,kk)
+             endif
            enddo
          enddo      
        endif
@@ -1308,16 +1310,21 @@ module TracerParamsMod
    SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(bunsencef_topsoi) == (/bounds%endc, betrtracer_vars%nvolatile_tracers/)), errMsg(__FILE__,__LINE__))  
    SHR_ASSERT_ALL((ubound(tracer_flx_infl) == (/bounds%endc, betrtracer_vars%ngwmobile_tracers/)), errMsg(__FILE__,__LINE__))
-    
-   do fc = 1, numf
-     c = filter(fc)  
+
+   do j = 1, betrtracer_vars%ngwmobile_tracers    
      
      !for a real mechanistic modeling, tracer_flx_infl should be derived from water flux coming from snow melt, surface ponding water,
      !and precipitation. I here just comparomise for a quick shot.
-     do j = 1, betrtracer_vars%ngwmobile_tracers
-       if(j==betrtracer_vars%id_trc_o18_h2o)then         
+
+     if(j==betrtracer_vars%id_trc_o18_h2o)then         
+       do fc = 1, numf
+         c = filter(fc)  
          tracer_flx_infl(c,j) = qflx_gross_infl_soil(c)/denh2o    !kg m-2 s-1/ kg m-3 = m/s 
-       else
+       enddo
+     else
+       do fc = 1, numf
+         c = filter(fc)  
+       
          if(betrtracer_vars%is_volatile(j) .and. betrtracer_vars%is_advective(j))then
            !for volatile non water tracer, infiltration is calculated based dissolution of the gas in the water, this may need
            !improvement when tracers are allowed to transport inside snow, such that the tracer infiltration is derived from mass balance in snow
@@ -1325,8 +1332,8 @@ module TracerParamsMod
          else
            tracer_flx_infl(c,j) = 0._r8
          endif
-       endif
-     enddo
+       enddo  
+     endif     
    enddo  
    end associate
    end subroutine calc_tracer_infiltration
@@ -1614,8 +1621,10 @@ module TracerParamsMod
         do j = lbj, ubj
           do fc = 1, numf
             c = filter(fc)
-            alpha_sl = get_equi_sl_h2oiso_fractionation(betrtracer_vars%id_trc_o18_h2o, t_soisno(c,j), betrtracer_vars)
-            aqu2equilscef_col(c,j, betrtracer_vars%id_trc_o18_h2o_ice) = alpha_sl * h2osoi_ice(c,j) / (denh2o * dz(c,j))
+            if(j>=jtops(c))then
+              alpha_sl = get_equi_sl_h2oiso_fractionation(betrtracer_vars%id_trc_o18_h2o, t_soisno(c,j), betrtracer_vars)
+              aqu2equilscef_col(c,j, betrtracer_vars%id_trc_o18_h2o_ice) = alpha_sl * h2osoi_ice(c,j) / (denh2o * dz(c,j))
+            endif
           enddo
         enddo
      endif
