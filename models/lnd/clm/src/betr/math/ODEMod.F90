@@ -202,6 +202,7 @@ contains
    real(r8), pointer :: aj(:)
    real(r8) :: pmax
    real(r8) :: pm
+   real(r8) :: a
    integer  :: n, nJ
    
    allocate(mbkks_data%aj(neq))
@@ -224,8 +225,6 @@ contains
          endif   
       endif
    enddo
-   y=y0      
-   
    if(nJ>0)then
       pmax=min(1._r8,pmax**(nJ))
 
@@ -255,7 +254,10 @@ contains
 !         y(n) = y0(n) + f(n) * dt
 !      enddo
    endif
-   call axpy(f,y,a=pscal*dt)
+   y(:)=y0(:)      
+   a=pscal*dt
+   !daxpy(N,DA,DX,INCX,DY,INCY)
+   call daxpy(neq, a, f, 1, y, 1)
    deallocate(mbkks_data%aj)
    
    
