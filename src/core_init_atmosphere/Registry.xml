@@ -90,6 +90,10 @@
         <packages>
                 <package name="initial_conds" description="Used by test cases that produce initial conditions."/>
                 <package name="sfc_update" description="Used by test cases that produce surface updates."/>
+                <package name="vertical_stage_in" description="Active only if a vertical grid is being generated"/>
+                <package name="vertical_stage_out" description="Active only if a vertical grid is being generated"/>
+                <package name="met_stage_in" description="Active only if meteorological fields are being interpolated"/>
+                <package name="met_stage_out" description="Active only if meteorological fields are being interpolated"/>
         </packages>
 
 
@@ -104,122 +108,90 @@
                         input_interval="initial_only" 
                         immutable="true">
 
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="edgeNormalVectors"/>
-			<var name="localVerticalUnitVectors"/>
-			<var name="cellTangentPlane"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="fEdge"/>
-			<var name="fVertex"/>
-			<var name="meshDensity"/>
-			<var name="cf1"/>
-			<var name="cf2"/>
-			<var name="cf3"/>
-			<var name="ter"/>
-			<var name="landmask"/>
-			<var name="ivgtyp"/>
-			<var name="mminlu"/>
-			<var name="isltyp"/>
-			<var name="soilcat_bot"/>
-			<var name="snoalb"/>
-			<var name="soiltemp"/>
-			<var name="greenfrac"/>
-			<var name="shdmin"/>
-			<var name="shdmax"/>
-			<var name="albedo12m"/>
-			<var name="varsso"/>
-			<var name="var2d"/>
-			<var name="con"/>
-			<var name="oa1"/>
-			<var name="oa2"/>
-			<var name="oa3"/>
-			<var name="oa4"/>
-			<var name="ol1"/>
-			<var name="ol2"/>
-			<var name="ol3"/>
-			<var name="ol4"/>
-			<var name="hx"/>
-			<var name="zgrid"/>
-			<var name="rdzw"/>
-			<var name="dzu"/>
-			<var name="rdzu"/>
-			<var name="fzm"/>
-			<var name="fzp"/>
-			<var name="zx"/>
-			<var name="zz"/>
-			<var name="zb"/>
-			<var name="zb3"/>
-			<var name="dss"/>
-			<var name="u_init"/>
-			<var name="t_init"/>
-			<var name="qv_init"/>
-			<var name="deriv_two"/>
-			<var name="advCells"/>
-			<var name="defc_a"/>
-			<var name="defc_b"/>
-			<var name="coeffs_reconstruct"/>
-			<var name="soilz_fg"/>
-			<var name="dz_fg"/>
-			<var name="dzs_fg"/>
-			<var name="zs_fg"/>
-			<var name="st_fg"/>
-			<var name="sm_fg"/>
-			<var name="dz"/>
-			<var name="dzs"/>
-			<var name="zs"/>
-			<var name="sh2o"/>
-			<var name="smois"/>
-			<var name="tslb"/>
-			<var name="smcrel"/>
-			<var name="tmn"/>
-			<var name="skintemp"/>
-			<var name="sst"/>
-			<var name="snow"/>
-			<var name="snowc"/>
-			<var name="snowh"/>
-			<var name="xice"/>
-			<var name="seaice"/>
-			<var name="vegfra"/>
-			<var name="sfc_albbck"/>
-			<var name="xland"/>
-			<var name="exner_base"/>
-			<var name="pressure_base"/>
-			<var name="rho_base"/>
-			<var name="theta_base"/>
-			<var name="surface_pressure"/>
+                        <var name="latCell"/>
+                        <var name="lonCell"/>
+                        <var name="xCell"/>
+                        <var name="yCell"/>
+                        <var name="zCell"/>
+                        <var name="indexToCellID"/>
+                        <var name="latEdge"/>
+                        <var name="lonEdge"/>
+                        <var name="xEdge"/>
+                        <var name="yEdge"/>
+                        <var name="zEdge"/>
+                        <var name="indexToEdgeID"/>
+                        <var name="latVertex"/>
+                        <var name="lonVertex"/>
+                        <var name="xVertex"/>
+                        <var name="yVertex"/>
+                        <var name="zVertex"/>
+                        <var name="indexToVertexID"/>
+                        <var name="cellsOnEdge"/>
+                        <var name="nEdgesOnCell"/>
+                        <var name="nEdgesOnEdge"/>
+                        <var name="edgesOnCell"/>
+                        <var name="edgesOnEdge"/>
+                        <var name="weightsOnEdge"/>
+                        <var name="dvEdge"/>
+                        <var name="dcEdge"/>
+                        <var name="angleEdge"/>
+                        <var name="areaCell"/>
+                        <var name="areaTriangle"/>
+                        <var name="cellsOnCell"/>
+                        <var name="verticesOnCell"/>
+                        <var name="verticesOnEdge"/>
+                        <var name="edgesOnVertex"/>
+                        <var name="cellsOnVertex"/>
+                        <var name="kiteAreasOnVertex"/>
+                        <var name="meshDensity"/>
+                        <var name="edgeNormalVectors" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="localVerticalUnitVectors" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="cellTangentPlane" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="fEdge" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="fVertex" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ter" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="landmask" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ivgtyp" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="mminlu" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="isltyp" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="soilcat_bot" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="snoalb" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="soiltemp" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="greenfrac" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="shdmin" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="shdmax" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="albedo12m" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="varsso" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="var2d" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="con" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="oa1" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="oa2" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="oa3" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="oa4" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ol1" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ol2" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ol3" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="ol4" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="deriv_two" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="advCells" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="defc_a" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="defc_b" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="coeffs_reconstruct" packages="vertical_stage_in;met_stage_in"/>
+                        <var name="cf1" packages="met_stage_in"/>
+                        <var name="cf2" packages="met_stage_in"/>
+                        <var name="cf3" packages="met_stage_in"/>
+                        <var name="hx" packages="met_stage_in"/>
+                        <var name="zgrid" packages="met_stage_in"/>
+                        <var name="rdzw" packages="met_stage_in"/>
+                        <var name="dzu" packages="met_stage_in"/>
+                        <var name="rdzu" packages="met_stage_in"/>
+                        <var name="fzm" packages="met_stage_in"/>
+                        <var name="fzp" packages="met_stage_in"/>
+                        <var name="zx" packages="met_stage_in"/>
+                        <var name="zz" packages="met_stage_in"/>
+                        <var name="zb" packages="met_stage_in"/>
+                        <var name="zb3" packages="met_stage_in"/>
+                        <var name="dss" packages="met_stage_in"/>
 		</stream>
 
 		<stream name="output" 
@@ -227,144 +199,144 @@
                         filename_template="x1.40962.init.nc"
                         output_interval="initial_only"
                         packages="initial_conds"
-                        runtime_format="separate_file">
+                        immutable="true">
 
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="edgeNormalVectors"/>
-			<var name="localVerticalUnitVectors"/>
-			<var name="cellTangentPlane"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="fEdge"/>
-			<var name="fVertex"/>
-			<var name="meshDensity"/>
-			<var name="cf1"/>
-			<var name="cf2"/>
-			<var name="cf3"/>
-			<var name="ter"/>
-			<var name="landmask"/>
-			<var name="ivgtyp"/>
-			<var name="mminlu"/>
-			<var name="isltyp"/>
-			<var name="soilcat_bot"/>
-			<var name="snoalb"/>
-			<var name="soiltemp"/>
-			<var name="greenfrac"/>
-			<var name="shdmin"/>
-			<var name="shdmax"/>
-			<var name="albedo12m"/>
-			<var name="varsso"/>
-			<var name="var2d"/>
-			<var name="con"/>
-			<var name="oa1"/>
-			<var name="oa2"/>
-			<var name="oa3"/>
-			<var name="oa4"/>
-			<var name="ol1"/>
-			<var name="ol2"/>
-			<var name="ol3"/>
-			<var name="ol4"/>
-			<var name="hx"/>
-			<var name="zgrid"/>
-			<var name="rdzw"/>
-			<var name="dzu"/>
-			<var name="rdzu"/>
-			<var name="fzm"/>
-			<var name="fzp"/>
-			<var name="zx"/>
-			<var name="zz"/>
-			<var name="zb"/>
-			<var name="zb3"/>
-			<var name="dss"/>
-			<var name="u_init"/>
-			<var name="t_init"/>
-			<var name="qv_init"/>
-			<var name="deriv_two"/>
-			<var name="advCells"/>
-			<var name="defc_a"/>
-			<var name="defc_b"/>
-			<var name="coeffs_reconstruct"/>
-			<var_array name="scalars"/>
-			<var name="xtime"/>
-			<var name="u"/>
-			<var name="w"/>
-			<var name="rho_zz"/>
-			<var name="theta_m"/>
-			<var name="t_fg"/>
-			<var name="p_fg"/>
-			<var name="z_fg"/>
-			<var name="rh_fg"/>
-			<var name="soilz_fg"/>
-			<var name="dz_fg"/>
-			<var name="dzs_fg"/>
-			<var name="zs_fg"/>
-			<var name="st_fg"/>
-			<var name="sm_fg"/>
-			<var name="dz"/>
-			<var name="dzs"/>
-			<var name="zs"/>
-			<var name="sh2o"/>
-			<var name="smois"/>
-			<var name="tslb"/>
-			<var name="smcrel"/>
-			<var name="tmn"/>
-			<var name="skintemp"/>
-			<var name="sst"/>
-			<var name="snow"/>
-			<var name="snowc"/>
-			<var name="snowh"/>
-			<var name="xice"/>
-			<var name="seaice"/>
-			<var name="vegfra"/>
-			<var name="sfc_albbck"/>
-			<var name="xland"/>
-			<var name="rho"/>
-			<var name="theta"/>
-			<var name="v"/>
-			<var name="rh"/>
-			<var name="uReconstructX"/>
-			<var name="uReconstructY"/>
-			<var name="uReconstructZ"/>
-			<var name="uReconstructZonal"/>
-			<var name="uReconstructMeridional"/>
-			<var name="exner_base"/>
-			<var name="pressure_base"/>
-			<var name="rho_base"/>
-			<var name="theta_base"/>
-			<var name="surface_pressure"/>
-			<var name="precipw"/>
+                        <var name="xtime"/>
+                        <var name="latCell"/>
+                        <var name="lonCell"/>
+                        <var name="xCell"/>
+                        <var name="yCell"/>
+                        <var name="zCell"/>
+                        <var name="indexToCellID"/>
+                        <var name="latEdge"/>
+                        <var name="lonEdge"/>
+                        <var name="xEdge"/>
+                        <var name="yEdge"/>
+                        <var name="zEdge"/>
+                        <var name="indexToEdgeID"/>
+                        <var name="latVertex"/>
+                        <var name="lonVertex"/>
+                        <var name="xVertex"/>
+                        <var name="yVertex"/>
+                        <var name="zVertex"/>
+                        <var name="indexToVertexID"/>
+                        <var name="cellsOnEdge"/>
+                        <var name="nEdgesOnCell"/>
+                        <var name="nEdgesOnEdge"/>
+                        <var name="edgesOnCell"/>
+                        <var name="edgesOnEdge"/>
+                        <var name="weightsOnEdge"/>
+                        <var name="dvEdge"/>
+                        <var name="dcEdge"/>
+                        <var name="angleEdge"/>
+                        <var name="areaCell"/>
+                        <var name="areaTriangle"/>
+                        <var name="cellsOnCell"/>
+                        <var name="verticesOnCell"/>
+                        <var name="verticesOnEdge"/>
+                        <var name="edgesOnVertex"/>
+                        <var name="cellsOnVertex"/>
+                        <var name="kiteAreasOnVertex"/>
+                        <var name="meshDensity"/>
+                        <var name="edgeNormalVectors"/>
+                        <var name="localVerticalUnitVectors"/>
+                        <var name="cellTangentPlane"/>
+                        <var name="fEdge"/>
+                        <var name="fVertex"/>
+                        <var name="ter"/>
+                        <var name="landmask"/>
+                        <var name="ivgtyp"/>
+                        <var name="mminlu"/>
+                        <var name="isltyp"/>
+                        <var name="soilcat_bot"/>
+                        <var name="snoalb"/>
+                        <var name="soiltemp"/>
+                        <var name="greenfrac"/>
+                        <var name="shdmin"/>
+                        <var name="shdmax"/>
+                        <var name="albedo12m"/>
+                        <var name="varsso"/>
+                        <var name="var2d"/>
+                        <var name="con"/>
+                        <var name="oa1"/>
+                        <var name="oa2"/>
+                        <var name="oa3"/>
+                        <var name="oa4"/>
+                        <var name="ol1"/>
+                        <var name="ol2"/>
+                        <var name="ol3"/>
+                        <var name="ol4"/>
+                        <var name="deriv_two"/>
+                        <var name="advCells"/>
+                        <var name="defc_a"/>
+                        <var name="defc_b"/>
+                        <var name="coeffs_reconstruct"/>
+                        <var name="cf1" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="cf2" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="cf3" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="hx" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="zgrid" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="rdzw" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="dzu" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="rdzu" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="fzm" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="fzp" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="zx" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="zz" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="zb" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="zb3" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="dss" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="u_init" packages="met_stage_out"/>
+                        <var name="t_init" packages="met_stage_out"/>
+                        <var name="qv_init" packages="met_stage_out"/>
+                        <var_array name="scalars" packages="met_stage_out"/>
+                        <var name="u" packages="met_stage_out"/>
+                        <var name="w" packages="met_stage_out"/>
+                        <var name="rho_zz" packages="met_stage_out"/>
+                        <var name="theta_m" packages="met_stage_out"/>
+                        <var name="t_fg" packages="met_stage_out"/>
+                        <var name="p_fg" packages="met_stage_out"/>
+                        <var name="z_fg" packages="met_stage_out"/>
+                        <var name="rh_fg" packages="met_stage_out"/>
+                        <var name="soilz_fg" packages="met_stage_out"/>
+                        <var name="dz_fg" packages="met_stage_out"/>
+                        <var name="dzs_fg" packages="met_stage_out"/>
+                        <var name="zs_fg" packages="met_stage_out"/>
+                        <var name="st_fg" packages="met_stage_out"/>
+                        <var name="sm_fg" packages="met_stage_out"/>
+                        <var name="dz" packages="met_stage_out"/>
+                        <var name="dzs" packages="met_stage_out"/>
+                        <var name="zs" packages="met_stage_out"/>
+                        <var name="sh2o" packages="met_stage_out"/>
+                        <var name="smois" packages="met_stage_out"/>
+                        <var name="tslb" packages="met_stage_out"/>
+                        <var name="smcrel" packages="met_stage_out"/>
+                        <var name="tmn" packages="met_stage_out"/>
+                        <var name="skintemp" packages="met_stage_out"/>
+                        <var name="sst" packages="met_stage_out"/>
+                        <var name="snow" packages="met_stage_out"/>
+                        <var name="snowc" packages="met_stage_out"/>
+                        <var name="snowh" packages="met_stage_out"/>
+                        <var name="xice" packages="met_stage_out"/>
+                        <var name="seaice" packages="met_stage_out"/>
+                        <var name="vegfra" packages="met_stage_out"/>
+                        <var name="sfc_albbck" packages="met_stage_out"/>
+                        <var name="xland" packages="met_stage_out"/>
+                        <var name="rho" packages="met_stage_out"/>
+                        <var name="theta" packages="met_stage_out"/>
+                        <var name="v" packages="met_stage_out"/>
+                        <var name="rh" packages="met_stage_out"/>
+                        <var name="uReconstructX" packages="met_stage_out"/>
+                        <var name="uReconstructY" packages="met_stage_out"/>
+                        <var name="uReconstructZ" packages="met_stage_out"/>
+                        <var name="uReconstructZonal" packages="met_stage_out"/>
+                        <var name="uReconstructMeridional" packages="met_stage_out"/>
+                        <var name="exner_base" packages="met_stage_out"/>
+                        <var name="pressure_base" packages="met_stage_out"/>
+                        <var name="rho_base" packages="met_stage_out"/>
+                        <var name="theta_base" packages="met_stage_out"/>
+                        <var name="surface_pressure" packages="met_stage_out"/>
+                        <var name="precipw" packages="met_stage_out"/>
 		</stream>
 
 		<stream name="surface" 

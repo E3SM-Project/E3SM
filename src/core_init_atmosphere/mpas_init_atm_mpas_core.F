@@ -116,13 +116,16 @@ module mpas_core
       type (mpas_pool_type), intent(inout) :: packages
       integer, intent(out) :: ierr
 
-      logical, pointer :: initial_conds, sfc_update
+      logical, pointer :: initial_conds, sfc_update, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out
+      logical, pointer :: config_static_interp, config_vertical_grid, config_met_interp
       integer, pointer :: config_init_case
 
       ierr = 0
 
-      nullify(config_init_case)
       call mpas_pool_get_config(configs, 'config_init_case', config_init_case)
+      call mpas_pool_get_config(configs, 'config_static_interp', config_static_interp)
+      call mpas_pool_get_config(configs, 'config_vertical_grid', config_vertical_grid)
+      call mpas_pool_get_config(configs, 'config_met_interp', config_met_interp)
 
       nullify(initial_conds)
       call mpas_pool_get_package(packages, 'initial_condsActive', initial_conds)
@@ -130,9 +133,24 @@ module mpas_core
       nullify(sfc_update)
       call mpas_pool_get_package(packages, 'sfc_updateActive', sfc_update)
 
-      if (.not. associated(config_init_case) .or. &
-          .not. associated(initial_conds) .or. &
-          .not. associated(sfc_update)) then
+      nullify(vertical_stage_in)
+      call mpas_pool_get_package(packages, 'vertical_stage_inActive', vertical_stage_in)
+
+      nullify(vertical_stage_out)
+      call mpas_pool_get_package(packages, 'vertical_stage_outActive', vertical_stage_out)
+
+      nullify(met_stage_in)
+      call mpas_pool_get_package(packages, 'met_stage_inActive', met_stage_in)
+
+      nullify(met_stage_out)
+      call mpas_pool_get_package(packages, 'met_stage_outActive', met_stage_out)
+
+      if (.not. associated(initial_conds) .or. &
+          .not. associated(sfc_update) .or. &
+          .not. associated(vertical_stage_in) .or. &
+          .not. associated(vertical_stage_out) .or. &
+          .not. associated(met_stage_in) .or. &
+          .not. associated(met_stage_out)) then
          write(stderrUnit,*) '********************************************************************************'
          write(stderrUnit,*) '* Error while setting up packages for init_atmosphere core.'
          write(stderrUnit,*) '********************************************************************************'
@@ -148,6 +166,18 @@ module mpas_core
          sfc_update = .false.
       end if
 
+      if (config_init_case == 7) then
+         vertical_stage_in = (config_vertical_grid .and. .not.  config_static_interp)
+         vertical_stage_out = (config_vertical_grid .and. .not.  config_met_interp)
+         met_stage_in = (config_met_interp .and. .not. config_vertical_grid)
+         met_stage_out = config_met_interp
+      else
+         vertical_stage_in = .false.
+         vertical_stage_out = .false.
+         met_stage_in = .false.
+         met_stage_out = .true.
+      end if
+
    end subroutine mpas_core_setup_packages
 
 
@@ -156,7 +186,7 @@ module mpas_core
    !
    !  routine mpas_core_setup_clock
    !
-   !> \brief   Pacakge setup routine
+   !> \brief   Sets up the simulation clock before the start of a run
    !> \author  Michael Duda
    !> \date    6 August 2014
    !> \details 
