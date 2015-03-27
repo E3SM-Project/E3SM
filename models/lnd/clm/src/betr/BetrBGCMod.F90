@@ -288,6 +288,7 @@ contains
   
   zero_source(:,:)=0._r8
   jtops(:)=1
+  
   do j = betrtracer_vars%ngwmobile_tracers+1, betrtracer_vars%ntracers
     if(.not. is_mobile(j))cycle
     !the adaptive time stepping for solid phase transport
@@ -339,12 +340,17 @@ contains
           
           !do error budget for the calculation
           err_tracer(c) = 0._r8
-          do l = jtops(c), ubj
-            tracer_conc_solid_passive_col(c,l,kk) = tracer_conc_solid_passive_col(c,l,kk)+dtracer(c,l)
-            
-            err_tracer(c) = err_tracer(c) + dtracer(c,l) * dz(c,l)
-          enddo
           
+          !do l = jtops(c), ubj
+          !  tracer_conc_solid_passive_col(c,l,kk) = tracer_conc_solid_passive_col(c,l,kk)+dtracer(c,l)
+          !  
+          !enddo
+          !it's possible that using daxpy won't improve the performance, but I'd like to take a bet here, Jinyun Tang, Mar 27, 2015
+          !dy=da*dx+dy
+          !daxpy(N,DA,DX,INCX,DY,INCY)
+          call axpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),1)
+          
+          err_tracer(c) = dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj))
           
           if(abs(err_tracer(c))>=err_min_solid)then
             !something is wrong, write error information
@@ -841,12 +847,16 @@ contains
           endif
           
           !do error budget for the calculation
-          err_tracer(c) = 0._r8
-          do l = jtops(c), ubj
-            tracer_conc_mobile_col(c,l,j) = tracer_conc_mobile_col(c,l,j)+dtracer(c,l)
+          !err_tracer(c) = 0._r8
+          !do l = jtops(c), ubj
+          !  tracer_conc_mobile_col(c,l,j) = tracer_conc_mobile_col(c,l,j)+dtracer(c,l)
             
-            err_tracer(c) = err_tracer(c) + dtracer(c,l) * dz(c,l)
-          enddo
+          !  err_tracer(c) = err_tracer(c) + dtracer(c,l) * dz(c,l)
+          !enddo
+          call axpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_mobile_col(c,jtops(c):ubj,j),1)
+          
+          err_tracer(c) = dot_sum(x=dtracer(c,jtops(c):ubj),y=dz(c,utops(c):ubj))
+          
           err_tracer(c) = err_tracer(c)-diff_surf(c)*dtime_loc(c)
           !if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
           !   write(iulog,*)get_nstep()

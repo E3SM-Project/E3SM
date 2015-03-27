@@ -185,10 +185,14 @@ contains
   SHR_ASSERT_ALL((size(x)           == size(y)), errMsg(__FILE__,__LINE__)) 
 
   n = size(x)
-  ans = 0._r8
-  do j = 1, n
-    ans = ans + x(j)*y(j)
-  enddo 
+  ! use subroutine from blas
+  !DOUBLE PRECISION FUNCTION ddot(N,DX,INCX,DY,INCY)
+  !
+  ans=ddot(n,x,1,y,1)
+  !ans = 0._r8
+  !do j = 1, n
+  !  ans = ans + x(j)*y(j)
+  !enddo 
   end function dot_sum
 !--------------------------------------------------------------------------------  
   function addone(a)result(ans)
