@@ -473,13 +473,18 @@ contains
   yf(:, :, :) = spval
   cn_ratios(:,:,:) = nan
   cp_ratios(:,:,:) = nan
+
+  !initialize the state vector
+  call init_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)
+
+  !update the initial vector from external input
   !calculate elemental stoichiometry for different om pools and add mineral nutrient input from other than decaying process
   !ideally, this should be done within the ode operator. However, since it is not possible to do it consistently for centurybgc (it requires
   ! an reformulation of the nitrogen fixation cycle)
   !I did this in a quick and dirty way. 
   
   call calc_extneral_bgc_input(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
-    centurybgc_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars, cn_ratios, cp_ratios)
+    centurybgc_vars, betrtracer_vars, tracerflux_vars, y0, cn_ratios, cp_ratios)
   
   !calculate nitrogen uptake profile
   call calc_nuptake_prof(bounds, ubj, num_soilc, filter_soilc, &
@@ -488,8 +493,6 @@ contains
      col%dz(bounds%begc:bounds%endc,1:ubj), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj), &
      nuptake_prof(bounds%begc:bounds%endc,1:ubj))
            
-  !initialize the state vector
-  call init_state_vector(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)
 
   !calculate multiplicative scalars for decay parameters
   call calc_decompK_multiply_scalar(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, &

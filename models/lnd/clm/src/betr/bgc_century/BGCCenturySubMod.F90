@@ -1626,7 +1626,7 @@ module BGCCenturySubMod
     centurybgc_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars, cn_ratios, cp_ratios)
 
 
-  use MathfuncMod         , only :  safe_div
+  use MathfuncMod              , only :  safe_div
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type    
   use BetrTracerType           , only : betrtracer_type 
@@ -1642,7 +1642,7 @@ module BGCCenturySubMod
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information
   type(centurybgc_type)              , intent(in) :: centurybgc_vars 
   type(tracerflux_type)              , intent(inout) :: tracerflux_vars 
-  type(tracerstate_type)             , intent(inout) :: tracerstate_vars
+  real(r8)                           , intent(inout) :: y0(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)  
   real(r8)                           , intent(inout) :: cn_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   real(r8)                           , intent(inout) :: cp_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   
@@ -1658,6 +1658,8 @@ module BGCCenturySubMod
     som2           => centurybgc_vars%som2                                         , & !
     som3           => centurybgc_vars%som3                                         , & !
     cwd            => centurybgc_vars%cwd                                          , & !
+    lid_nh4        => centurybgc_vars%lid_nh4                                      , & !
+    lid_no3        => centurybgc_vars%lid_no3                                      , & !
     nelm           => centurybgc_vars%nelms                                        , & !
     c_loc          => centurybgc_vars%c_loc                                        , & !
     n_loc          => centurybgc_vars%n_loc                                        , & !
@@ -1683,9 +1685,10 @@ module BGCCenturySubMod
     do j = 1, ubj
       do fc = 1, num_soilc
         c = filter_soilc(fc)
-        tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
-        tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) = tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-        cn_ratios(k, c,j) = safe_div(tracer_conc_solid_passive(c,j,(k-1)*nelm+c_loc), tracer_conc_solid_passive(c,j,(k-1)*nelm+n_loc))
+        y0((k-1)*nelm+c_loc,c,j) = y0((k-1)*nelm+c_loc,c,j) + bgc_cpool_inputs_vr(c,j,k)/catomw
+        y0((k-1)*nelm+n_loc,c,j) = y0((k-1)*nelm+n_loc,c,j) + bgc_npool_inputs_vr(c,j,k)/natomw
+        cn_ratios(k, c,j) = safe_div(y0((k-1)*nelm+c_loc,c,j), y0((k-1)*nelm+n_loc,c,j))
+        
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
         !delta_somn = delta_somn + bgc_npool_inputs_vr(c,j,k)*col%dz(c,j)
@@ -1696,8 +1699,8 @@ module BGCCenturySubMod
   do j = 1, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)    
-      tracer_conc_mobile(c, j, id_trc_nh3x) = tracer_conc_mobile(c, j, id_trc_nh3x) + sminn_nh4_input_vr(c,j)/natomw
-      tracer_conc_mobile(c, j, id_trc_no3x) = tracer_conc_mobile(c, j, id_trc_no3x) + sminn_no3_input_vr(c,j)/natomw
+      y0(c, j, lid_nh4) = y0(c, j, lid_nh4) + sminn_nh4_input_vr(c,j)/natomw
+      y0(c, j, lid_no3) = y0(c, j, lid_no3) + sminn_no3_input_vr(c,j)/natomw
 
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) + sminn_no3_input_vr(c,j)/natomw
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) + sminn_nh4_input_vr(c,j)/natomw
