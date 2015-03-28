@@ -1436,7 +1436,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 						}
 					}
 
-					for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+					for (varstruct_xml = ezxml_child(streammatch_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
 						structname_const = ezxml_attr(varstruct_xml, "name");
 						stream_mgr_add_pool_c(manager, streamID, structname_const, &err);
 						if (err != 0){
