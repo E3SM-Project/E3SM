@@ -140,7 +140,7 @@ implicit none
       if(abs(errtracer(c,kk))>err_min)then
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), 'err=',errtracer(c,kk), 'col=',c
         write(iulog,*)get_nstep(),is_mobile(kk)
-        write(iulog,*)'dmass=',end_tracer_molarmass(c,kk)-beg_tracer_molarmass(c,kk),' netpro=',tracer_flx_netpro(c,kk)
+        write(iulog,*)'begmss=', beg_tracer_molarmass(c,kk), 'endmass=',end_tracer_molarmass(c,kk),' netpro=',tracer_flx_netpro(c,kk)
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo
