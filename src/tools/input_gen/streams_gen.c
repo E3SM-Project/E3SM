@@ -104,6 +104,7 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int o
 	ezxml_t member_xml;
 
 	const char *name, *type, *immutable, *filename_template, *filename_interval, *packages, *record_interval;
+	const char *varpackages;
 	const char *reference_time, *clobber_mode, *precision, *input_interval, *output_interval;
 
 	const char *runtime, *subname;
@@ -204,8 +205,13 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int o
 						}
 
 						subname = ezxml_attr(member_xml, "name");
+						varpackages = ezxml_attr(member_xml, "packages");
 
-						fprintf(fd, "\t<stream name=\"%s\"/>\n", subname);
+						if (varpackages == NULL) {
+							fprintf(fd, "\t<stream name=\"%s\"/>\n", subname);
+						} else {
+							fprintf(fd, "\t<stream name=\"%s\" packages=\"%s\"/>\n", subname, varpackages);
+						}
 					}
 				}
 
@@ -224,8 +230,13 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int o
 						}
 
 						subname = ezxml_attr(member_xml, "name");
+						varpackages = ezxml_attr(member_xml, "packages");
 
-						fprintf(fd, "\t<var_struct name=\"%s\"/>\n", subname);
+						if (varpackages == NULL) {
+							fprintf(fd, "\t<var_struct name=\"%s\"/>\n", subname);
+						} else {
+							fprintf(fd, "\t<var_struct name=\"%s\" packages=\"%s\"/>\n", subname, varpackages);
+						}
 					}
 				}
 
@@ -244,9 +255,14 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int o
 						}
 
 						subname = ezxml_attr(member_xml, "name");
+						varpackages = ezxml_attr(member_xml, "packages");
 
 						if ( filetype == SINGLE ) {
-							fprintf(fd, "\t<var_array name=\"%s\"/>\n", subname);
+							if (varpackages == NULL) {
+								fprintf(fd, "\t<var_array name=\"%s\"/>\n", subname);
+							} else {
+								fprintf(fd, "\t<var_array name=\"%s\" packages=\"%s\"/>\n", subname, varpackages);
+							}
 						} else if ( filetype == SEPARATE ) {
 							fprintf(fd2, "%s\n", subname);
 						}
@@ -267,9 +283,14 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int o
 							}
 						}
 						subname = ezxml_attr(member_xml, "name");
+						varpackages = ezxml_attr(member_xml, "packages");
 
 						if ( filetype == SINGLE ) {
-							fprintf(fd, "\t<var name=\"%s\"/>\n", subname);
+							if (varpackages == NULL) {
+								fprintf(fd, "\t<var name=\"%s\"/>\n", subname);
+							} else {
+								fprintf(fd, "\t<var name=\"%s\" packages=\"%s\"/>\n", subname, varpackages);
+							}
 						} else if ( filetype == SEPARATE ) {
 							fprintf(fd2, "%s\n", subname);
 						}
