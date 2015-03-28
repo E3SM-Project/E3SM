@@ -210,8 +210,8 @@ contains
   !when snow ice is considered in future. Jinyun Tang, June/24/2014
   call tracer_solid_transport(bounds, 1, ubj, num_soilc, filter_soilc, dtime,&
     tracercoeff_vars%hmconductance_col(bounds%begc:bounds%endc, 1:ubj-1, : ),&
-    col%dz(bounds%begc:bounds%endc, 1:ubj),&
-    betrtracer_vars, tracerboundarycond_vars, tracerflux_vars, tracerstate_vars)
+    col%dz(bounds%begc:bounds%endc, 1:ubj), betrtracer_vars                 ,&
+    tracerboundarycond_vars, tracerflux_vars, tracerstate_vars)
 
   !print*,'do ebullition of gas fluxes'
   
@@ -298,7 +298,7 @@ contains
     kk = j - betrtracer_vars%ngwmobile_tracers
     do fc = 1, num_soilc
       c = filter_soilc(fc)
-      dtime_loc(c) = dtime
+      dtime_loc(c)   = dtime
       time_remain(c) =dtime
       update_col(c) = .true.
     enddo
@@ -351,7 +351,7 @@ contains
 
           
           !do error budget for the calculation
-          err_tracer(c) = 0._r8
+          !err_tracer(c) = 0._r8
           
           !do l = jtops(c), ubj
           !  tracer_conc_solid_passive_col(c,l,kk) = tracer_conc_solid_passive_col(c,l,kk)+dtracer(c,l)
@@ -363,7 +363,10 @@ contains
           call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),1)
           
           err_tracer(c) = dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj))-dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c)
-          
+          if(c==25082)then
+            write(iulog,*)'solid '//tracernames(j)
+            write(iulog,*)'err=',err_tracer(c),' dt=',dtime_loc(c)
+          endif
           if(abs(err_tracer(c))>=err_min_solid)then
             !something is wrong, write error information
             call endrun('mass balance error for tracer '//tracernames(j)//' in '//trim(subname))

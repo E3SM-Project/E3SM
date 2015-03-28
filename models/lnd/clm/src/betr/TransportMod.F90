@@ -38,8 +38,6 @@ module TransportMod
    
    !default configuration parameters
    real(r8), private :: cntheta          !using C-N for diffusion by default, if equals 1 then implict shceme is used
-   real(r8), private :: adv_amp_scal     !scaling parameter for tracer advection
-   logical,  private :: l2ndadvsolver    !by default use 1st order solver for advection, 2nd order can be used for high spatial resolution simulation
    
 
    
@@ -95,25 +93,21 @@ module TransportMod
    return
    end function get_cntheta
    
-   subroutine init_transportmod(lcntheta, ll2ndadvsolver)
+   subroutine init_transportmod(lcntheta)
    !
    ! DESCRIPTION
    ! initialize transportmod
    !
    implicit none
    real(r8), optional, intent(in) :: lcntheta
-   logical,  optional, intent(in) :: ll2ndadvsolver
+   
    if(present(lcntheta))then
      cntheta = lcntheta
    else
+     !set as implicit solver by default
      cntheta = 1._r8
    endif
-   adv_amp_scal=1.e3_r8    
-   if(present(ll2ndadvsolver))then
-     l2ndadvsolver=ll2ndadvsolver
-   else
-     l2ndadvsolver = .false. 
-   endif
+
    end subroutine init_transportmod   
 !-------------------------------------------------------------------------------
 
