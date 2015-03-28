@@ -106,7 +106,7 @@ module TransportMod
    if(present(lcntheta))then
      cntheta = lcntheta
    else
-     cntheta = 0.5_r8
+     cntheta = 1._r8
    endif
    adv_amp_scal=1.e3_r8    
    if(present(ll2ndadvsolver))then
@@ -257,7 +257,7 @@ module TransportMod
                Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j)/rfactor(c,j)-trcin_mobile(c,j-1)/rfactor(c,j-1))
                Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1)/rfactor(c,j+1)-trcin_mobile(c,j)/rfactor(c,j))
             endif      
-            rt(c,j) = Fl-Fr + source(c,j)*dz(c,j)/dtime
+            rt(c,j) = Fl-Fr + source(c,j)*dz(c,j)
             if(j==jtop(c) .and. topbc_type == bndcond_as_conc)then
               rt(c,j) = rt(c,j)+cntheta*condc_toplay(c)*(trc_concflx_air(c, 2)-trc_concflx_air(c, 1))
             endif
@@ -336,7 +336,7 @@ module TransportMod
    real(r8), optional,intent(in)   :: condc_botlay(bounds%begc: )
    
    !local variables
-   real(r8) :: rt(bounds%begc:bounds%endc,lbj:ubj)              !tridiagonal matrix element r   
+   real(r8) :: rt(bounds%begc:bounds%endc, lbj:ubj)              !tridiagonal matrix element r   
    real(r8) :: at(bounds%begc:bounds%endc, lbj:ubj)  !tridiagonal matrix element a
    real(r8) :: bt(bounds%begc:bounds%endc, lbj:ubj)  !tridiagonal matrix element b
    real(r8) :: ct(bounds%begc:bounds%endc, lbj:ubj)  !tridiagonal matrix element c  
@@ -383,7 +383,7 @@ module TransportMod
 
 !-------------------------------------------------------------------------------
    subroutine Diffustransp_solid_tridiag(bounds, lbj, ubj, lbn, numfl, filter, trcin,&
-      hmconductance,  dtime, dz, source, update_col, at,bt,ct, rt)
+      hmconductance,  dtime_col, dz, source, update_col, at,bt,ct, rt)
    !
    ! !DESCRIPTIONS
    !
@@ -400,7 +400,7 @@ module TransportMod
    integer,  intent(in) :: filter(:)           !filter
    real(r8), intent(in) :: trcin(bounds%begc: , lbj: )          !tracer concentration [mol/m3]
    real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: )  !weighted conductance
-   real(r8), intent(in) :: dtime               !model time step
+   real(r8), intent(in) :: dtime_col(bounds%begc: )               !model time step
    real(r8), intent(in) :: dz(bounds%begc: , lbj: )             !layer thickness
    real(r8), intent(in) :: source(bounds%begc: , lbj: )         !chemical sources [mol/m3]
    logical,  intent(in) :: update_col(bounds%begc: )            !logical switch indicating if the column is for active update   
@@ -413,7 +413,8 @@ module TransportMod
    !local variables
    real(r8) :: bot
    integer :: j, fc, c
-   real(r8) ::Fl, Fr
+   real(r8) :: Fl, Fr
+   real(r8) :: dtime
    character(len=255) :: subname='DiffusTransp_solid_tridiag'
    
    SHR_ASSERT_ALL((ubound(lbn)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
@@ -421,6 +422,7 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(hmconductance) == (/bounds%endc, ubj-1/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(source)        == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dtime_col)     == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(update_col)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(at)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(bt)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
@@ -435,6 +437,7 @@ module TransportMod
    do fc = 1, numfl
       c = filter(fc)
       if(update_col(c))then
+         dtime=dtime_col(c)
          do j = lbn(c), ubj
             if(j==lbn(c))then
                Fr=-hmconductance(c,j)*(trcin(c,j+1)-trcin(c,j))
@@ -447,7 +450,7 @@ module TransportMod
                Fl=-hmconductance(c,j-1)*(trcin(c,j)-trcin(c,j-1))
                Fr=-hmconductance(c,j)*(trcin(c,j+1)-trcin(c,j))
             endif      
-            rt(c,j) = Fl-Fr + source(c,j)*dz(c,j)/dtime      
+            rt(c,j) = Fl-Fr + source(c,j)*dz(c,j)
          enddo
   
          do j = lbn(c), ubj
@@ -472,7 +475,7 @@ module TransportMod
 !-------------------------------------------------------------------------------  
 
    subroutine DiffusTransp_solid(bounds, lbj, ubj, lbn, numfl, filter, trcin,&
-      hmconductance,  dtime, dz, source, update_col, dtracer)
+      hmconductance,  dtime_col, dz, source, update_col, dtracer)
    !
    ! DESCRIPTIONS
    !
@@ -489,7 +492,7 @@ module TransportMod
    integer,  intent(in) :: filter(:)                           ! filter
    real(r8), intent(in) :: trcin(bounds%begc: , lbj: )         ! tracer concentration [mol/m3]
    real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: ) ! weighted conductance
-   real(r8), intent(in) :: dtime                               ! model time step
+   real(r8), intent(in) :: dtime_col(bounds%begc: )                               ! model time step
    real(r8), intent(in) :: dz(bounds%begc: , lbj: )            ! layer thickness
    real(r8), intent(in) :: source(bounds%begc: , lbj: )        ! chemical sources [mol/m3/s]
    logical,  intent(in) :: update_col(bounds%begc: )           ! logical switch indicating if the column is for active update   
@@ -508,12 +511,13 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(dz)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(source)        == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(update_col)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dtime_col)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dtracer)       == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
 
 
    !assemble the tridiagonal matrix   
    call Diffustransp_solid_tridiag(bounds, lbj, ubj, lbn, numfl, filter, trcin,&
-      hmconductance,  dtime, dz, source, update_col, at,bt,ct, rt)
+      hmconductance,  dtime_col, dz, source, update_col, at,bt,ct, rt)
 
    !calculate the change to tracer      
    call Tridiagonal (bounds, lbj, ubj, lbn, numfl, filter, at, bt, ct, rt, dtracer, update_col)

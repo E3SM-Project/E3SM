@@ -211,7 +211,7 @@ contains
   call tracer_solid_transport(bounds, 1, ubj, num_soilc, filter_soilc, dtime,&
     tracercoeff_vars%hmconductance_col(bounds%begc:bounds%endc, 1:ubj-1, : ),&
     col%dz(bounds%begc:bounds%endc, 1:ubj),&
-    betrtracer_vars, tracerboundarycond_vars, tracerstate_vars)
+    betrtracer_vars, tracerboundarycond_vars, tracerflux_vars, tracerstate_vars)
 
   !print*,'do ebullition of gas fluxes'
   
@@ -233,7 +233,7 @@ contains
     
 !-------------------------------------------------------------------------------
   subroutine tracer_solid_transport(bounds, lbj, ubj, num_soilc, filter_soilc, dtime, hmconductance_col, dz, &
-    betrtracer_vars, tracerboundarycond_vars, tracerstate_vars)
+    betrtracer_vars, tracerboundarycond_vars, tracerflux_vars, tracerstate_vars)
   !
   ! DESCRIPTIONS
   ! 
@@ -243,6 +243,7 @@ contains
   
   ! the surface flux of solid tracer is zero
   use tracerstateType       , only : tracerstate_type
+  use tracerfluxType           , only : tracerflux_type
   use tracerboundarycondtype, only : tracerboundarycond_type
   use TransportMod          , only : DiffusTransp
   use abortutils            , only : endrun
@@ -257,6 +258,7 @@ contains
   real(r8),                    intent(in) :: hmconductance_col(bounds%begc: , lbj: ,1: ) !weighted bulk conductance
   real(r8),                    intent(in) :: dz(bounds%begc: , lbj: )
   type(tracerboundarycond_type), intent(in) :: tracerboundarycond_vars  
+  type(tracerflux_type)        , intent(in) :: tracerflux_vars   
   type(tracerstate_type), intent(inout) :: tracerstate_vars
 
   !local variables
@@ -279,6 +281,7 @@ contains
   associate(&
     tracernames                 =>   betrtracer_vars%tracernames                       , &
     is_mobile                   =>  betrtracer_vars%is_mobile                          , &    
+    tracer_flx_netpro_vr        => tracerflux_vars%tracer_flx_netpro_vr_col            , & !   
     tracer_conc_solid_passive_col   =>   tracerstate_vars%tracer_conc_solid_passive_col  &
   )
   
@@ -311,7 +314,7 @@ contains
     do
       !do diffusive transport
       call DiffusTransp(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, tracer_conc_solid_passive_col(:,:,kk),&
-        hmconductance_col(:,:,j),  dtime, dz, source=local_source, update_col=update_col, dtracer=dtracer)
+        hmconductance_col(:,:,j),  dtime_loc, dz, source=local_source, update_col=update_col, dtracer=dtracer)
       
       !do tracer update
       do fc = 1, num_soilc
@@ -767,6 +770,7 @@ contains
   logical  :: lnegative_tracer                      !when true, negative tracer occurs
   logical  :: lexit_loop
   real(r8) :: err_relative
+  real(r8) :: dmass(bounds%begc:bounds%endc)
   real(r8) :: local_source(bounds%begc:bounds%endc,lbj:ubj)
   real(r8) :: mass0
   real(r8), parameter :: err_relative_threshold=1.e-2_r8 !relative error threshold
@@ -783,6 +787,7 @@ contains
     volatileid         =>  betrtracer_vars%volatileid,                             & 
     tracernames        =>  betrtracer_vars%tracernames,                            &
     tracer_flx_dif     =>  tracerflux_vars%tracer_flx_dif_col,                     &
+    tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col            , & !
     tracer_gwdif_concflux_top=>  ttracerboundarycond_vars%tracer_gwdif_concflux_top_col,       &
     condc_toplay       =>  ttracerboundarycond_vars%condc_toplay_col,              &
     topbc_type         =>  ttracerboundarycond_vars%topbc_type,                    &
@@ -797,7 +802,6 @@ contains
   
   do j = 1, betrtracer_vars%ngwmobile_tracers
     if(.not. is_mobile(j))cycle
-    
     !initialize the time keeper    
     do fc = 1, num_soilc
       c = filter_soilc(fc)
@@ -828,13 +832,17 @@ contains
           
           !do negative tracer screening
           lnegative_tracer = .false.
-          do l = jtops(c), ubj                                  !loop over the layers
 
-            if(dtime_loc(c)<1.e-3_r8)then
-              write(iulog,*)'time step < 1.e-3_r8', dtime_loc(c), 'col ',c
-               call endrun('stopped in '//trim(subname))
-            endif
+          if(dtime_loc(c)<1.e-3_r8)then
+            write(iulog,*)'time step < 1.e-3_r8', dtime_loc(c), 'col ',c
+            write(iulog,*)'tracer '//tracernames(j),get_cntheta()
+            write(iulog,*)(l,tracer_conc_mobile_col(c,l,j),l=jtops(c),ubj)
+            write(iulog,*)'dtracer'
+            write(iulog,*)(l,dtracer(c,l),l=jtops(c),ubj)
+            call endrun('stopped in '//trim(subname))
+          endif
             
+          do l = jtops(c), ubj                                  !loop over the layers
             if(tracer_conc_mobile_col(c,l,j)<-dtracer(c,l))then
               !if the tracer update is very tinty, then set it to zero
               if(abs(dtracer(c,l))<tiny_val)dtracer(c,l) = 0._r8
@@ -874,14 +882,16 @@ contains
           !enddo
           call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_mobile_col(c,jtops(c):ubj,j),1)
           
-          err_tracer(c) = dot_sum(x=dtracer(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))
+          dmass(c) = dot_sum(x=dtracer(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))
           
-          err_tracer(c) = err_tracer(c)-(diff_surf(c) + dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))) *dtime_loc(c) 
+          err_tracer(c) = dmass(c)-(diff_surf(c) + dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))) *dtime_loc(c) 
+
           !if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
           !   write(iulog,*)get_nstep()
           !   write(iulog,*)'err_dif',err_tracer(c),'dif_endm=',dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,j),y=dz(c,jtops(c):ubj))
           !endif
           mass0=dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,j),y=dz(c,jtops(c):ubj))
+
           !calculate relative error, defined as the ratio between absolute error with respect to surface flux
           if(abs(err_tracer(c))<err_dif_min .or.  abs(err_tracer(c))/(mass0+1.e-10_r8) < 1.e-10_r8)then
             !when the absolute value is too small, set relative error to 
@@ -899,7 +909,8 @@ contains
             endif
           else
             !something is wrong, write error information
-            print*,'mass bal error dif '//tracernames(j),err_tracer(c)
+            write(iulog,*),'mass bal error dif '//tracernames(j)
+            write(iulog,*)'err=',err_tracer(c),dmass(c), ' dif=',diff_surf(c)*dtime_loc(c), ' prod=',dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c)
             call endrun('mass balance error for tracer '//tracernames(j)//' in '//trim(subname))
           endif
            

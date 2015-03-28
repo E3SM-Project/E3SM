@@ -85,6 +85,7 @@ implicit none
     tracer_flx_infl           => tracerflux_vars%tracer_flx_infl_col               , &
     tracer_flx_netpro         => tracerflux_vars%tracer_flx_netpro_col             , &
     tracer_flx_netphyloss     => tracerflux_vars%tracer_flx_netphyloss_col         , &
+    is_mobile                 => betrtracer_vars%is_mobile                         , & 
     errtracer                 => tracerstate_vars%errtracer_col                    , &
     ngwmobile_tracers         => betrtracer_vars%ngwmobile_tracers                 , &
     tracernames               => betrtracer_vars%tracernames                       , &
@@ -138,7 +139,8 @@ implicit none
       !endif
       if(abs(errtracer(c,kk))>err_min)then
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), 'err=',errtracer(c,kk), 'col=',c
-        write(iulog,*)get_nstep()
+        write(iulog,*)get_nstep(),is_mobile(kk)
+        write(iulog,*)'dmass=',end_tracer_molarmass(c,kk)-beg_tracer_molarmass(c,kk),' netpro=',tracer_flx_netpro(c,kk)
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo

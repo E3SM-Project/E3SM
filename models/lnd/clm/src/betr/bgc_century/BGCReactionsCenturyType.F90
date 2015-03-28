@@ -268,6 +268,8 @@ contains
   betrtracer_vars%ntracers=betrtracer_vars%ngwmobile_tracers+betrtracer_vars%nsolid_passive_tracers
   call betrtracer_vars%Init()
 
+  betrtracer_vars%is_mobile(:) = .true.
+
   jj = itemp
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2)   = 'N2'
   betrtracer_vars%tracernames(betrtracer_vars%id_trc_o2)   = 'O2'
@@ -285,14 +287,14 @@ contains
   betrtracer_vars%tracernames(jj+(centurybgc_vars%som1-1)*nelm+c_loc)  = 'SOM1C'
   betrtracer_vars%tracernames(jj+(centurybgc_vars%som2-1)*nelm+c_loc)  = 'SOM2C'
   betrtracer_vars%tracernames(jj+(centurybgc_vars%som3-1)*nelm+c_loc)  = 'SOM3C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+c_loc)  = 'CWDC'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+c_loc)  = 'CWDC'; betrtracer_vars%is_mobile(jj+(centurybgc_vars%cwd-1 )*nelm+c_loc) = .false.
   betrtracer_vars%tracernames(jj+(centurybgc_vars%lit1-1)*nelm+n_loc)  = 'LIT1N'
   betrtracer_vars%tracernames(jj+(centurybgc_vars%lit2-1)*nelm+n_loc)  = 'LIT2N'
   betrtracer_vars%tracernames(jj+(centurybgc_vars%lit3-1)*nelm+n_loc)  = 'LIT3N'
   betrtracer_vars%tracernames(jj+(centurybgc_vars%som1-1)*nelm+n_loc)  = 'SOM1N'
   betrtracer_vars%tracernames(jj+(centurybgc_vars%som2-1)*nelm+n_loc)  = 'SOM2N'
   betrtracer_vars%tracernames(jj+(centurybgc_vars%som3-1)*nelm+n_loc)  = 'SOM3N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+n_loc)  = 'CWDN'
+  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+n_loc)  = 'CWDN'; betrtracer_vars%is_mobile(jj+(centurybgc_vars%cwd-1 )*nelm+n_loc) = .false.
   
     
   betrtracer_vars%is_volatile(betrtracer_vars%id_trc_n2)  =.true.
@@ -310,7 +312,8 @@ contains
   betrtracer_vars%volatileid(betrtracer_vars%id_trc_co2x) = addone(itemp)
   betrtracer_vars%volatileid(betrtracer_vars%id_trc_ch4)  = addone(itemp)
   betrtracer_vars%volatileid(betrtracer_vars%id_trc_n2o)  = addone(itemp)
-  
+ 
+   
   ! I have purposely turned off the movement of some tracers below
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2)    = .true.
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_o2)    = .true.
@@ -319,6 +322,7 @@ contains
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ch4)   = .false.
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_no3x)  = .true.
   betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2o)   = .true.
+  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_nh3x)   = .false.
   
   betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2)    = .false.
   betrtracer_vars%is_advective(betrtracer_vars%id_trc_o2)    = .false.
@@ -567,7 +571,7 @@ contains
 
   
   !retrieve the state variable, state variable will be updated later    
-  !call retrieve_state_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      
+  call retrieve_state_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars,  yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)      
   
   
   call Extra_inst%DDeallocate()

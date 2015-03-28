@@ -591,10 +591,12 @@ contains
   
   do jj = 1, ntracers
     this%tracer_flx_netpro_col(c,jj) = dot_sum(x=this%tracer_flx_netpro_vr_col(c,1:nlevtrc_soil,jj),y=col%dz(c,1:nlevtrc_soil))
-    if(is_volatile(jj))then
-      kk = volatileid(jj)
-      this%tracer_flx_netpro_col(c,jj) = this%tracer_flx_netpro_col(c,jj) + this%tracer_flx_tparchm_col(c,kk)
-    endif  
+    if(jj<=ngwmobile_tracers)then
+      if(is_volatile(jj))then
+        kk = volatileid(jj)
+        this%tracer_flx_netpro_col(c,jj) = this%tracer_flx_netpro_col(c,jj) + this%tracer_flx_tparchm_col(c,kk)
+      endif  
+    endif
   enddo 
   end associate
   end subroutine Flux_summary

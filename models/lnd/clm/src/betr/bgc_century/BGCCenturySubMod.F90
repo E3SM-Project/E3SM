@@ -7,6 +7,7 @@ module BGCCenturySubMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use clm_varcon         , only : spval  
+  use clm_varpar         , only : ndecomp_pools
   use ColumnType         , only : col
   use clm_varctl         , only : spinup_state  
   implicit none
@@ -927,35 +928,124 @@ module BGCCenturySubMod
   type(tracerstate_type)  , intent(inout) :: tracerstate_vars
   
   
-  integer :: fc, c, j
+  integer :: fc, c, j, k, ll, l
   ! all organic matter pools are distributed into solid passive tracers
+  associate(   &
+    is_mobile => betrtracer_vars%is_mobile   &
+  )
 
-  do j = lbj, ubj   !currently, om is added only to soil layers       
+  !only retrieve non-mobile tracers
   
-    do fc = 1, numf
-      c = filter(fc)
-      if(j>=jtops(c))then
-        tracerstate_vars%tracer_conc_solid_passive_col(c, j, :) = yf(1:centurybgc_vars%nom_pools*centurybgc_vars%nelms, c, j)
+  k=centurybgc_vars%cwd
 
-        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_o2) = yf(centurybgc_vars%lid_o2, c, j)
-
-        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_co2x) = yf(centurybgc_vars%lid_co2, c, j)
-      
-        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_nh3x) = yf(centurybgc_vars%lid_nh4, c, j)
-      
-        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_no3x) = yf(centurybgc_vars%lid_no3, c, j)
-      
-        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2) = yf(centurybgc_vars%lid_n2, c, j)
-
-        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ar) = yf(centurybgc_vars%lid_ar, c, j)
-
-        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_ch4) = yf(centurybgc_vars%lid_ch4, c, j)
-
-        tracerstate_vars%tracer_conc_mobile_col(c, j, betrtracer_vars%id_trc_n2o) = yf(centurybgc_vars%lid_n2o, c, j)
-      endif
+  do l = 1, centurybgc_vars%nelms
+    ll = (k-1)*centurybgc_vars%nelms + l
+    do j = lbj, ubj   !currently, om is added only to soil layers       
+      do fc = 1, numf
+        c = filter(fc)
+        if(j>=jtops(c))then
+           tracerstate_vars%tracer_conc_solid_passive_col(c, j, ll) = yf(ll, c, j)
+        endif
+      enddo
     enddo
   enddo
-  
+
+  k = betrtracer_vars%id_trc_o2
+  if(.not. is_mobile(k))then
+    do j = lbj, ubj   !currently, om is added only to soil layers       
+      do fc = 1, numf
+        c = filter(fc)
+        if(j>=jtops(c))then
+          tracerstate_vars%tracer_conc_mobile_col(c, j, k) = yf(centurybgc_vars%lid_o2, c, j)
+        endif
+      enddo
+    enddo
+  endif
+
+  k =  betrtracer_vars%id_trc_co2x
+  if(.not. is_mobile(k))then
+    do j = lbj, ubj   !currently, om is added only to soil layers       
+      do fc = 1, numf
+        c = filter(fc)
+        if(j>=jtops(c))then
+          tracerstate_vars%tracer_conc_mobile_col(c, j, k) = yf(centurybgc_vars%lid_co2, c, j)
+        endif
+      enddo
+    enddo
+  endif
+
+  k = betrtracer_vars%id_trc_nh3x
+  if(.not. is_mobile(k))then
+    do j = lbj, ubj   !currently, om is added only to soil layers       
+      do fc = 1, numf
+        c = filter(fc)
+        if(j>=jtops(c))then
+          tracerstate_vars%tracer_conc_mobile_col(c, j, k) = yf(centurybgc_vars%lid_nh4, c, j)
+        endif
+      enddo
+    enddo
+  endif
+
+  k= betrtracer_vars%id_trc_no3x
+  if(.not. is_mobile(k))then
+    do j = lbj, ubj   !currently, om is added only to soil layers       
+      do fc = 1, numf
+        c = filter(fc)
+        if(j>=jtops(c))then
+          tracerstate_vars%tracer_conc_mobile_col(c, j, k) = yf(centurybgc_vars%lid_no3, c, j)
+        endif
+      enddo
+    enddo
+  endif
+
+  k= betrtracer_vars%id_trc_n2
+  if(.not. is_mobile(k))then
+    do j = lbj, ubj   !currently, om is added only to soil layers       
+      do fc = 1, numf
+        c = filter(fc)
+        if(j>=jtops(c))then
+          tracerstate_vars%tracer_conc_mobile_col(c, j, k) = yf(centurybgc_vars%lid_n2, c, j)
+        endif
+      enddo
+    enddo
+  endif
+
+  k = betrtracer_vars%id_trc_ar
+  if(.not. is_mobile(k))then
+    do j = lbj, ubj   !currently, om is added only to soil layers       
+      do fc = 1, numf
+        c = filter(fc)
+        if(j>=jtops(c))then
+          tracerstate_vars%tracer_conc_mobile_col(c, j, k) = yf(centurybgc_vars%lid_ar, c, j)
+        endif
+      enddo
+    enddo
+  endif
+
+        k = betrtracer_vars%id_trc_ch4
+  if(.not. is_mobile(k))then
+    do j = lbj, ubj   !currently, om is added only to soil layers       
+      do fc = 1, numf
+        c = filter(fc)
+        if(j>=jtops(c))then
+          tracerstate_vars%tracer_conc_mobile_col(c, j, k) = yf(centurybgc_vars%lid_ch4, c, j)
+        endif
+      enddo
+    enddo
+  endif
+
+  k =  betrtracer_vars%id_trc_n2o
+  if(.not. is_mobile(k))then
+    do j = lbj, ubj   !currently, om is added only to soil layers       
+      do fc = 1, numf
+        c = filter(fc)
+        if(j>=jtops(c))then
+          tracerstate_vars%tracer_conc_mobile_col(c, j, k) = yf(centurybgc_vars%lid_n2o, c, j)
+        endif
+      enddo
+    enddo
+  endif
+  end associate
   end subroutine retrieve_state_vars
   
 !-------------------------------------------------------------------------------  
@@ -1541,7 +1631,6 @@ module BGCCenturySubMod
   use CNNitrogenFluxType       , only : nitrogenflux_type    
   use BetrTracerType           , only : betrtracer_type 
   use tracerstatetype          , only : tracerstate_type 
-  use clm_varpar,     only : ndecomp_pools
   use clm_varcon               , only : catomw, natomw
   use tracerfluxType           , only : tracerflux_type
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
