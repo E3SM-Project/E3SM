@@ -179,15 +179,22 @@ contains
 !  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
 !     betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_gw_transp')  
   !print*,'do diffusion advection transport'  
-!  call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
-!       col%dz(bounds%begc:bounds%endc,lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
-!       waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
-!       (/do_advection,do_diffusion/), dtime2, betrtracer_vars, tracerboundarycond_vars,&
-!       tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
+  !call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
+  !     col%dz(bounds%begc:bounds%endc,lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
+  !     waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
+  !     (/do_advection,do_diffusion/), dtime2, betrtracer_vars, tracerboundarycond_vars,&
+  !     tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
 
 !  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
 !     betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_reaction')
-    
+
+  !Remark: Jinyun Tang, Mar 28, 2015
+  !After some very careful thoughts and testing, I finally decided to run the model in the order of reaction, dual phase transport and solid phase transport
+  !The original thought was to predict the rates from the reactions and feed those rates into the transport equation. But this strategy leads to negative
+  !solution during tracer transport, which could only be fixed in a very sophiscated way. I also caution the brutal fixing by reseting negative values to zero, as
+  !that would violate the stoichiometry balance that is embedded in the bgc formulation, even though one will not detect that if the problem is not checked carefully.
+  !
+  
   !print*,'do bgc_reaction'
   call bgc_reaction%calc_bgc_reaction(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, tracerboundarycond_vars%jtops_col,&
        dtime, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, cnstate_vars, &
@@ -291,6 +298,7 @@ contains
   
   !tracer_source(:,:)=0._r8
   jtops(:)=1
+  local_source(:,:) = 0._r8
   
   do j = betrtracer_vars%ngwmobile_tracers+1, betrtracer_vars%ntracers
     if(.not. is_mobile(j))cycle
@@ -303,13 +311,13 @@ contains
       update_col(c) = .true.
     enddo
     
-    do l = lbj, ubj
-      do fc = 1, num_soilc
-        c = filter_soilc(fc)
-        if(l<jtops(c))cycle
-        local_source(c,l)=tracer_flx_netpro_vr(c,l,j)/dtime
-      enddo
-    enddo  
+    !do l = lbj, ubj
+    !  do fc = 1, num_soilc
+    !    c = filter_soilc(fc)
+    !    if(l<jtops(c))cycle
+    !    local_source(c,l)=tracer_flx_netpro_vr(c,l,j)/dtime
+    !  enddo
+    !enddo  
     
     do
       !do diffusive transport
@@ -366,7 +374,8 @@ contains
           !daxpy(N,DA,DX,INCX,DY,INCY)
           call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),1)
           
-          err_tracer(c) = dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj))-dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c)
+          err_tracer(c) = dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj))
+          !err_tracer(c) = err_tracer(c)-dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c)
           !if(c==25082)then
           !  write(iulog,*)'err=',err_tracer(c),' dt=',dtime_loc(c),' dm=',dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj)), &
           !     ' npro=',dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c), &
@@ -807,6 +816,7 @@ contains
   update_col(:) = .true.
   time_remain(:) = 0._r8
   dtime_loc(:) = 0._r8
+  local_source(:,:) = 0._r8
   
   do j = 1, betrtracer_vars%ngwmobile_tracers
     if(.not. is_mobile(j))cycle
@@ -819,13 +829,14 @@ contains
       
 
     enddo
-    do l = lbj, ubj
-      do fc = 1, num_soilc
-        c = filter_soilc(fc)
-        if(l<jtops(c))cycle
-        local_source(c,l) = tracer_flx_netpro_vr(c,l,j)/dtime
-      enddo  
-    enddo  
+    
+    !do l = lbj, ubj
+    !  do fc = 1, num_soilc
+    !    c = filter_soilc(fc)
+    !    if(l<jtops(c))cycle
+    !    local_source(c,l) = tracer_flx_netpro_vr(c,l,j)/dtime
+    !  enddo  
+    !enddo  
       
     !Do adpative time stepping to avoid negative tracer
     do      
@@ -892,8 +903,8 @@ contains
           
           dmass(c) = dot_sum(x=dtracer(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))
           
-          err_tracer(c) = dmass(c)-(diff_surf(c) + dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))) *dtime_loc(c) 
-
+          err_tracer(c) = dmass(c)-diff_surf(c) *dtime_loc(c) 
+          !err_tracer(c) = err_tracer(c) - dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj)) * dtime_loc(c)
           !if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
           !   write(iulog,*)get_nstep()
           !   write(iulog,*)'err_dif',err_tracer(c),'dif_endm=',dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,j),y=dz(c,jtops(c):ubj))
