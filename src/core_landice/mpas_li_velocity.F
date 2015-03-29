@@ -108,7 +108,7 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
-      write(*,*) 'Using ', trim(config_velocity_solver), ' dynamical core.'
+      write(stdoutUnit,*) 'Using ', trim(config_velocity_solver), ' dynamical core.'
       select case (config_velocity_solver)
       case ('none')
          ! Do nothing
@@ -117,13 +117,13 @@ contains
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_init(domain, err)
       case default
-          write(0,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          write(stderrUnit,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
       end select
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_velocity_init."
+          write (stderrUnit,*) "An error has occurred in li_velocity_init."
       endif
 
    !--------------------------------------------------------------------
@@ -186,14 +186,14 @@ contains
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_block_init(block, err)
       case default
-          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          write(stdoutUnit,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
           return
       end select
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_velocity_block_init."
+          write (stderrUnit,*) "An error has occurred in li_velocity_block_init."
       endif
 
    !--------------------------------------------------------------------
@@ -275,7 +275,7 @@ contains
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_solve(meshPool, statePool, timeLevel, err)
       case default
-          write(0,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          write(stderrUnit,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
           return
       end select
@@ -291,13 +291,13 @@ contains
          endif
       enddo
       if (err == 1) then
-         write(0,*) 'Error: Velocity has been calculated on non-dynamic edges.  There is a problem with the velocity solver.' !!!  Velocity on those edges have been set to 0, but this should be a fatal error.'
+         write(stderrUnit,*) 'Error: Velocity has been calculated on non-dynamic edges.  There is a problem with the velocity solver.' !!!  Velocity on those edges have been set to 0, but this should be a fatal error.'
          err = 1  ! a hack to let the code continue until this can be fixed in the velocity solver
       end if
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_velocity_solve."
+          write (stderrUnit,*) "An error has occurred in li_velocity_solve."
       endif
 
    !--------------------------------------------------------------------
@@ -360,14 +360,14 @@ contains
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_finalize(err)
       case default
-          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          write(stdoutUnit,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
           return
       end select
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in li_velocity_finalize."
+          write (stderrUnit,*) "An error has occurred in li_velocity_finalize."
       endif
 
    !--------------------------------------------------------------------
