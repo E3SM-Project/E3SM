@@ -357,21 +357,21 @@ contains
           !  tracer_conc_solid_passive_col(c,l,kk) = tracer_conc_solid_passive_col(c,l,kk)+dtracer(c,l)
           !  
           !enddo
-          if(c==25082)then
-            write(iulog,*)'solid '//tracernames(j),get_nstep()
-            write(iulog,*)'bgms=',dot_sum(tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),dz(c,jtops(c):ubj))
-          endif
+          !if(c==25082)then
+          !  write(iulog,*)'solid '//tracernames(j),get_nstep()
+          !  write(iulog,*)'bgms=',dot_sum(tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),dz(c,jtops(c):ubj))
+          !endif
           !it's possible that using daxpy won't improve the performance, but I'd like to take a bet here, Jinyun Tang, Mar 27, 2015
           !dy=da*dx+dy
           !daxpy(N,DA,DX,INCX,DY,INCY)
           call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),1)
           
           err_tracer(c) = dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj))-dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c)
-          if(c==25082)then
-            write(iulog,*)'err=',err_tracer(c),' dt=',dtime_loc(c),' dm=',dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj)), &
-               ' npro=',dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c), &
-               ' em=',dot_sum(tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),dz(c,jtops(c):ubj))
-          endif
+          !if(c==25082)then
+          !  write(iulog,*)'err=',err_tracer(c),' dt=',dtime_loc(c),' dm=',dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj)), &
+          !     ' npro=',dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c), &
+          !     ' em=',dot_sum(tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),dz(c,jtops(c):ubj))
+          !endif
           if(abs(err_tracer(c))>=err_min_solid)then
             !something is wrong, write error information
             call endrun('mass balance error for tracer '//tracernames(j)//' in '//trim(subname))

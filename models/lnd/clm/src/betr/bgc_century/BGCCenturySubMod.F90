@@ -1623,7 +1623,7 @@ module BGCCenturySubMod
   !-----------------------------------------------------------------------  
 
   subroutine calc_extneral_bgc_input(bounds, lbj, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
-    centurybgc_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars, cn_ratios, cp_ratios)
+    centurybgc_vars, betrtracer_vars, tracerflux_vars, y0, cn_ratios, cp_ratios)
 
 
   use MathfuncMod              , only :  safe_div
@@ -1667,8 +1667,6 @@ module BGCCenturySubMod
     id_trc_no3x    => betrtracer_vars%id_trc_no3x                                  , & !   
     ngwmobile_tracers => betrtracer_vars%ngwmobile_tracers                         , & !
     tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col              , & !
-    tracer_conc_solid_passive => tracerstate_vars%tracer_conc_solid_passive_col    , & !
-    tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col                  , & !
     bgc_cpool_inputs_vr => carbonflux_vars%bgc_cpool_inputs_vr_col                 , & !
     bgc_npool_inputs_vr => nitrogenflux_vars%bgc_npool_inputs_vr_col               , & !
     sminn_nh4_input_vr  => nitrogenflux_vars%sminn_nh4_input_vr_col                , & !
@@ -1699,8 +1697,8 @@ module BGCCenturySubMod
   do j = 1, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)    
-      y0(c, j, lid_nh4) = y0(c, j, lid_nh4) + sminn_nh4_input_vr(c,j)/natomw
-      y0(c, j, lid_no3) = y0(c, j, lid_no3) + sminn_no3_input_vr(c,j)/natomw
+      y0(lid_nh4, c, j) = y0(lid_nh4, c, j) + sminn_nh4_input_vr(c,j)/natomw
+      y0(lid_no3, c, j) = y0(lid_no3, c, j) + sminn_no3_input_vr(c,j)/natomw
 
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) + sminn_no3_input_vr(c,j)/natomw
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) + sminn_nh4_input_vr(c,j)/natomw
