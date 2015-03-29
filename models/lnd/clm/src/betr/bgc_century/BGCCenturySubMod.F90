@@ -925,7 +925,8 @@ module BGCCenturySubMod
   integer :: fc, c, j, k1, k2, k, ll, l
   ! all organic matter pools are distributed into solid passive tracers
   associate(   &
-    is_mobile => betrtracer_vars%is_mobile   &
+    ngwtracers             => betrtracer_vars%ngwmobile_tracers       , & !
+    tracer_conc_mobile_col => tracerstate_vars%tracer_conc_mobile_col   &
   )
 
   !only retrieve non-mobile tracers
@@ -943,40 +944,39 @@ module BGCCenturySubMod
       enddo
     enddo  
   enddo
-  itemp = 0
-  k1 = betrtracer_vars%id_trc_o2   ; k2 = centurybgc_vars%lid_o2  ; call assign_A2B(bounds, lbj, ubj, numf, filter, k1, k2, yf, tracer_conc_mobile_col)
-  k1 = betrtracer_vars%id_trc_co2x ; k2 = centurybgc_vars%lid_co2 ; call assign_A2B(bounds, lbj, ubj, numf, filter, k1, k2, yf, tracer_conc_mobile_col)
-  k1 = betrtracer_vars%id_trc_nh3x ; k2 = centurybgc_vars%lid_nh4 ; call assign_A2B(bounds, lbj, ubj, numf, filter, k1, k2, yf, tracer_conc_mobile_col)
-  k1 = betrtracer_vars%id_trc_no3x ; k2 = centurybgc_vars%lid_no3 ; call assign_A2B(bounds, lbj, ubj, numf, filter, k1, k2, yf, tracer_conc_mobile_col)
-  k1 = betrtracer_vars%id_trc_n2   ; k2 = centurybgc_vars%lid_n2  ; call assign_A2B(bounds, lbj, ubj, numf, filter, k1, k2, yf, tracer_conc_mobile_col)
-  k1 = betrtracer_vars%id_trc_ar   ; k2 = centurybgc_vars%lid_ar  ; call assign_A2B(bounds, lbj, ubj, numf, filter, k1, k2, yf, tracer_conc_mobile_col)
-  k1 = betrtracer_vars%id_trc_ch4  ; k2 = centurybgc_vars%lid_ch4 ; call assign_A2B(bounds, lbj, ubj, numf, filter, k1, k2, yf, tracer_conc_mobile_col)
-  k1 =  betrtracer_vars%id_trc_n2o ; k2 = centurybgc_vars%lid_n2o ; call assign_A2B(bounds, lbj, ubj, numf, filter, k1, k2, yf, tracer_conc_mobile_col)
+  k1 = betrtracer_vars%id_trc_o2   ; k2 = centurybgc_vars%lid_o2  ; 
+  call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
+  k1 = betrtracer_vars%id_trc_co2x ; k2 = centurybgc_vars%lid_co2 ; 
+  call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
+  k1 = betrtracer_vars%id_trc_nh3x ; k2 = centurybgc_vars%lid_nh4 ; 
+  call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
+  k1 = betrtracer_vars%id_trc_no3x ; k2 = centurybgc_vars%lid_no3 ; 
+  call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
+  k1 = betrtracer_vars%id_trc_n2   ; k2 = centurybgc_vars%lid_n2  ; 
+  call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
+  k1 = betrtracer_vars%id_trc_ar   ; k2 = centurybgc_vars%lid_ar  ; 
+  call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
+  k1 = betrtracer_vars%id_trc_ch4  ; k2 = centurybgc_vars%lid_ch4 ; 
+  call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
+  k1 =  betrtracer_vars%id_trc_n2o ; k2 = centurybgc_vars%lid_n2o ; 
+  call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
   
-  
-  
-  !if(.not. is_mobile(k))then
-
-  !endif
-
-
-
   end associate
   end subroutine retrieve_state_vars
 !-------------------------------------------------------------------------------  
 
-  subroutine assign_A2B(bounds, lbj, ubj, numf, filter, jtops, k1, k2, yf, tracer_conc_mobile_col)
+  subroutine assign_A2B(bounds, lbj, ubj, neq, ngwtracers,  numf, filter, jtops, k1, k2, yf, tracer_conc_mobile_col)
   
   
-  implicit
+  implicit none
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
   integer,                intent(in) :: numf
   integer,                intent(in) :: filter(:)
-  integer,                intent(in) :: k1, k2
-  real(r8), dimension(:,:,:), intent(in)    :: yf
-  real(r8), dimension(:,:,:), intent(inout) :: tracer_conc_mobile_col
+  integer,                intent(in) :: k1, k2, neq, ngwtracers
+  real(r8),               intent(in)    :: yf(neq, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8),               intent(inout) :: tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,ngwtracers)
   
   
   
