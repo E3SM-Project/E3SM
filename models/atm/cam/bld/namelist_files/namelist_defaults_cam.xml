@@ -706,6 +706,11 @@
 <soil_erod_file  hgrid="48x96"   >atm/cam/dst/dst_48x96_c090203.nc</soil_erod_file>
 <soil_erod_file  hgrid="64x128"  >atm/cam/dst/dst_64x128_c090203.nc</soil_erod_file>
 <soil_erod_file  hgrid="128x256" >atm/cam/dst/dst_128x256_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod_file>
+<soil_erod_file  hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/dst/dst_1.9x2.5_c090203.nc</soil_erod_file>
+
 
 <!-- Turbulent Mountain Stress -->
 <do_tms                                                     > .false. </do_tms>
@@ -807,6 +812,11 @@
 
 <dust_emis_fact dyn="se"                   phys="cam5"                  >0.55D0</dust_emis_fact>
 <dust_emis_fact dyn="fv"                   phys="cam5" clubb_sgs="1"    >0.13D0</dust_emis_fact>
+<dust_emis_fact dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"  		>1.05D0</dust_emis_fact>
+<dust_emis_fact dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  		>1.05D0</dust_emis_fact>
+<dust_emis_fact dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  		>1.05D0</dust_emis_fact>
+<dust_emis_fact dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  	>1.05D0</dust_emis_fact>
+
 
 <!-- in-cloud scav for cloud-borne aerosol tuning factor -->
 <sol_facti_cloud_borne                 >1.0D0</sol_facti_cloud_borne>
@@ -871,6 +881,11 @@
 <cldfrc_rhminl hgrid="128x256"   phys="cam4"                          > 0.905D0 </cldfrc_rhminl>
 <cldfrc_rhminl hgrid="48x96"     phys="cam4"                          > 0.880D0 </cldfrc_rhminl>
 <cldfrc_rhminl dyn="se"       phys="cam4"                             > 0.910D0 </cldfrc_rhminl>
+<cldfrc_rhminl hgrid="ne0np4_arm_x8v3_lowcon" phys="cam5" 	      > 0.910D0 </cldfrc_rhminl>
+<cldfrc_rhminl hgrid="ne0np4_conus_x4v1_lowcon"  phys="cam5" 	      > 0.910D0 </cldfrc_rhminl>
+<cldfrc_rhminl hgrid="ne0np4_svalbard_x8v1_lowcon"  phys="cam5"       > 0.910D0 </cldfrc_rhminl>
+<cldfrc_rhminl hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  phys="cam5"  > 0.910D0 </cldfrc_rhminl>
+
 
 <cldfrc_rhminl_adj_land                                               > 0.100D0 </cldfrc_rhminl_adj_land>
 <cldfrc_rhminl_adj_land                      carma="cirrus"           > 0.000D0 </cldfrc_rhminl_adj_land>
@@ -902,6 +917,10 @@
 <cldfrc_dp1             phys="cam5"                                   > 0.10D0 </cldfrc_dp1>
 <cldfrc_dp1 dyn="fv"    phys="cam4"                                   > 0.10D0 </cldfrc_dp1>
 <cldfrc_dp1 dyn="se" phys="cam4"                                      > 0.10D0 </cldfrc_dp1>
+<cldfrc_dp1 hgrid="ne0np4_arm_x8v3_lowcon" phys="cam5" 	              > 0.0250D0</cldfrc_dp1>
+<cldfrc_dp1 hgrid="ne0np4_conus_x4v1_lowcon"  phys="cam5" 	      > 0.0250D0</cldfrc_dp1>
+<cldfrc_dp1 hgrid="ne0np4_svalbard_x8v1_lowcon"  phys="cam5"          > 0.0250D0</cldfrc_dp1>
+<cldfrc_dp1 hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  phys="cam5"     > 0.0250D0</cldfrc_dp1>
 
 <cldfrc_dp2                                                           > 500.0D0 </cldfrc_dp2>
 <cldfrc_dp2          phys="cam5"                                      > 500.0D0 </cldfrc_dp2>
@@ -999,6 +1018,10 @@
 <zmconv_c0_lnd                   hgrid="128x256"  phys="cam4"         > 0.0040D0 </zmconv_c0_lnd>
 <zmconv_c0_lnd                   hgrid="256x512"  phys="cam4"         > 0.0040D0 </zmconv_c0_lnd>
 <zmconv_c0_lnd                   hgrid="512x1024" phys="cam4"         > 0.0040D0 </zmconv_c0_lnd>
+<zmconv_c0_lnd			 hgrid="ne0np4_arm_x8v3_lowcon" phys="cam5" 	      > 0.00350D0</zmconv_c0_lnd>
+<zmconv_c0_lnd			 hgrid="ne0np4_conus_x4v1_lowcon"  phys="cam5" 	      > 0.00350D0</zmconv_c0_lnd>
+<zmconv_c0_lnd			 hgrid="ne0np4_svalbard_x8v1_lowcon"  phys="cam5"     > 0.00350D0</zmconv_c0_lnd>
+<zmconv_c0_lnd			 hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  phys="cam5"> 0.00350D0</zmconv_c0_lnd>
 
 <zmconv_c0_ocn                                                        > 0.0030D0 </zmconv_c0_ocn>
 <zmconv_c0_ocn                                    phys="cam5"         > 0.0450D0 </zmconv_c0_ocn>
@@ -1009,6 +1032,16 @@
 <zmconv_c0_ocn                   hgrid="128x256"  phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
 <zmconv_c0_ocn                   hgrid="256x512"  phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
 <zmconv_c0_ocn                   hgrid="512x1024" phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
+<zmconv_c0_ocn			 hgrid="ne0np4_arm_x8v3_lowcon" phys="cam5" 	      > 0.00350D0</zmconv_c0_ocn>
+<zmconv_c0_ocn			 hgrid="ne0np4_conus_x4v1_lowcon"  phys="cam5" 	      > 0.00350D0</zmconv_c0_ocn>
+<zmconv_c0_ocn			 hgrid="ne0np4_svalbard_x8v1_lowcon"  phys="cam5"     > 0.00350D0</zmconv_c0_ocn>
+<zmconv_c0_ocn			 hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  phys="cam5"> 0.00350D0</zmconv_c0_ocn>
+
+<zmconv_tau			 hgrid="ne0np4_arm_x8v3_lowcon" phys="cam5" 	      > 3000</zmconv_tau>
+<zmconv_tau			 hgrid="ne0np4_conus_x4v1_lowcon"  phys="cam5" 	      > 3000</zmconv_tau>
+<zmconv_tau			 hgrid="ne0np4_svalbard_x8v1_lowcon"  phys="cam5"     > 3000</zmconv_tau>
+<zmconv_tau			 hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  phys="cam5"> 3000</zmconv_tau>
+
 
 <zmconv_ke                                                            > 3.0E-6 </zmconv_ke>
 <zmconv_ke      dyn="fv"                                              > 1.0E-6 </zmconv_ke>
