@@ -416,7 +416,7 @@
 </machine>
 
 <machine MACH="lawrencium-lr2">
-         <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (pgi), batch system is SLURM</DESC>
+         <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
          <OS>LINUX</OS>
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>openmpi</MPILIBS>
@@ -438,9 +438,9 @@
 </machine>
 
 <machine MACH="lawrencium-lr3">
-         <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (pgi), batch system is SLURM</DESC>
+         <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
          <OS>LINUX</OS>
-         <COMPILERS>pgi</COMPILERS>
+         <COMPILERS>intel</COMPILERS>
          <MPILIBS>openmpi</MPILIBS>
          <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
