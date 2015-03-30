@@ -109,7 +109,6 @@ contains
     call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
     !$OMP END MASTER
     call t_startf('bndry_copy')
-    call t_startf('bndry_copy')
     !JMD ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
