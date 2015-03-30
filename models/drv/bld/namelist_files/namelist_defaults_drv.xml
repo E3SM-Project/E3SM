@@ -164,6 +164,8 @@
 <glc2ice_rmapname>$GLC2ICE_RMAPNAME</glc2ice_rmapname>
 <atm2wav_smapname>$ATM2WAV_SMAPNAME</atm2wav_smapname>
 <ocn2wav_smapname>$OCN2WAV_SMAPNAME</ocn2wav_smapname>
+<ocn2glc_smapname>$OCN2GLC_SMAPNAME</ocn2glc_smapname>
+<ocn2glc_fmapname>$OCN2GLC_FMAPNAME</ocn2glc_fmapname>
 <ice2wav_smapname>$ICE2WAV_SMAPNAME</ice2wav_smapname>
 <wav2ocn_smapname>$WAV2OCN_SMAPNAME</wav2ocn_smapname>
 
@@ -184,6 +186,8 @@
 <glc2ice_rmaptype>X</glc2ice_rmaptype>
 <atm2wav_smaptype>Y</atm2wav_smaptype>
 <ocn2wav_smaptype>Y</ocn2wav_smaptype>
+<ocn2glc_smaptype>Y</ocn2glc_smaptype>
+<ocn2glc_fmaptype>Y</ocn2glc_fmaptype>
 <ice2wav_smaptype>Y</ice2wav_smaptype>
 <wav2ocn_smaptype>X</wav2ocn_smaptype>
 
@@ -204,6 +208,8 @@
 <glc2ice_rmaptype BFBFLAG="TRUE">X</glc2ice_rmaptype>
 <atm2wav_smaptype BFBFLAG="TRUE">X</atm2wav_smaptype>
 <ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
+<ocn2glc_smaptype BFBFLAG="TRUE">X</ocn2glc_smaptype>
+<ocn2glc_fmaptype BFBFLAG="TRUE">X</ocn2glc_fmaptype>
 <ice2wav_smaptype BFBFLAG="TRUE">X</ice2wav_smaptype>
 <ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
 

@@ -443,6 +443,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 
 <ATM2WAV_SMAPNAME>idmap</ATM2WAV_SMAPNAME>
 <OCN2WAV_SMAPNAME>idmap</OCN2WAV_SMAPNAME>
+<OCN2GLC_SMAPNAME>idmap</OCN2GLC_SMAPNAME>
+<OCN2GLC_FMAPNAME>idmap</OCN2GLC_FMAPNAME>
 <ICE2WAV_SMAPNAME>idmap</ICE2WAV_SMAPNAME>
 <WAV2OCN_SMAPNAME>idmap</WAV2OCN_SMAPNAME>
 
@@ -470,6 +472,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 
 <ATM2WAV_SMAPTYPE>Y</ATM2WAV_SMAPTYPE>
 <OCN2WAV_SMAPTYPE>Y</OCN2WAV_SMAPTYPE>
+<GLC2WAV_SMAPTYPE>Y</GLC2WAV_SMAPTYPE>
 <ICE2WAV_SMAPTYPE>Y</ICE2WAV_SMAPTYPE>
 <WAV2OCN_SMAPTYPE>X</WAV2OCN_SMAPTYPE>
 
@@ -493,6 +496,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 
 <ATM2WAV_SMAPTYPE BFBFLAG="TRUE">X</ATM2WAV_SMAPTYPE>
 <OCN2WAV_SMAPTYPE BFBFLAG="TRUE">X</OCN2WAV_SMAPTYPE>
+<OCN2GLC_SMAPTYPE BFBFLAG="TRUE">X</OCN2GLC_SMAPTYPE>
+<OCN2GLC_FMAPTYPE BFBFLAG="TRUE">X</OCN2GLC_FMAPTYPE>
 <ICE2WAV_SMAPTYPE BFBFLAG="TRUE">X</ICE2WAV_SMAPTYPE>
 <WAV2OCN_SMAPTYPE BFBFLAG="TRUE">X</WAV2OCN_SMAPTYPE>
 =============================================== --->
@@ -1246,5 +1251,14 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <gridmap rof_grid="r01" ocn_grid="gx1v6" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r01_to_gx1v6_120711.nc</ROF2OCN_RMAPNAME>
 </gridmap>
+
+<!-- ======================================================== -->
+<!-- GRIDS: ocean to glc mapping                            -->
+<!-- ======================================================== -->
+
+<!-- <gridmap ocn_grid="gx1v6" lnd_grid="0.9x1.25">  -->
+<!--   <OCN2GLC_FMAPNAME>cpl/cpl6/map_r01_to_gx1v6_120711.nc</OCN2GLC_FMAPNAME>   -->
+<!--   <OCN2GLC_SMAPNAME>cpl/cpl6/map_r01_to_gx1v6_120711.nc</OCN2GLC_SMAPNAME>  -->
+<!-- </gridmap> -->
 
 </config_compset >
