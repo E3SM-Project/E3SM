@@ -3000,7 +3000,8 @@ if ($cfg->get('dyn') =~ /se/) {
                   statefreq se_partmethod se_topology se_ftype
                   integration nu nu_div nu_p nu_q nu_top  se_phys_tscale
                   interpolate_analysis interp_nlat interp_nlon vert_remap_q_alg
-                  interp_type interp_gridtype se_limiter_option qsplit rsplit tstep_type);
+                  interp_type interp_gridtype se_limiter_option qsplit rsplit tstep_type
+                  hypervis_scaling );
 
     foreach my $var (@vars) {
 	add_default($nl, $var);

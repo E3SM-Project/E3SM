@@ -248,7 +248,7 @@ contains
        
        if(par%masterproc)       write(iulog,*)"...done."
     end if
-
+    if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
 
     !debug  call PrintGridVertex(GridVertex)
 
@@ -934,22 +934,20 @@ contains
           elem(ie)%derived%omega_p(:,:,:) = 0D0
        end do
 
-       call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, j, i, t, q, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
-             do t=1,3
-                do q=1,qsize       
-                   do i=1,np
-                      do j=1,np          
-                         dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,t)
-                         
-                         elem(ie)%state%Qdp(i,j,k,q,n0_qdp)=elem(ie)%state%Q(i,j,k,q)*dp  
-                         
-                      enddo
+             do q=1,qsize       
+                do i=1,np
+                   do j=1,np          
+                      dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
+                      
+                      elem(ie)%state%Qdp(i,j,k,q,1)=elem(ie)%state%Q(i,j,k,q)*dp  
+                      elem(ie)%state%Qdp(i,j,k,q,2)=elem(ie)%state%Q(i,j,k,q)*dp  
+                      
                    enddo
                 enddo
              enddo
