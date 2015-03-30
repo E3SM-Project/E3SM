@@ -528,6 +528,9 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <EPS_AGRID atm_grid=".+"   >1.0e-12</EPS_AGRID>
 
 <EPS_AAREA atm_grid=".+"   >9.0e-07</EPS_AAREA>
+<EPS_AAREA atm_grid="ne0np4_conus_x4v1_lowcon">9.0e-06</EPS_AAREA>
+<EPS_AAREA atm_grid="ne0np4_svalbard_x8v1_lowcon">9.0e-06</EPS_AAREA>
+<EPS_AAREA atm_grid="ne0np4_sooberingoa_x4x8v1_lowcon">9.0e-06</EPS_AAREA>
 
 <EPS_OMASK ocn_grid=".+">1.0e-06</EPS_OMASK>
 <EPS_OGRID ocn_grid=".+">1.0e-02</EPS_OGRID>
