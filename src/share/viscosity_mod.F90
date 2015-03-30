@@ -388,7 +388,7 @@ integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: qtens
 type (EdgeBuffer_t)  , intent(inout) :: edgeq
 type (derivative_t)  , intent(in) :: deriv
-real (kind=real_kind), intent(out), dimension(nlev,qsize,nets:nete) :: emin,emax
+real (kind=real_kind), intent(inout), dimension(nlev,qsize,nets:nete) :: emin,emax
 
 ! local
 integer :: k,kptr,i,j,ie,ic,q
