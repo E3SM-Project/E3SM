@@ -91,7 +91,6 @@
         <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
       </test>
       <test name="PET_PT">
-        <machine compiler="nag" testtype="prebeta" testmods="allactive/default">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">titan</machine>
         <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
         <machine compiler="gnu" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
