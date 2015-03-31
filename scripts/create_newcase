@@ -17,7 +17,7 @@ use IO::File;
 use IO::Handle;
 use Data::Dumper;
 use File::Basename;
-use File::Path qw(make_path);
+use File::Path qw(mkpath);
 
 # Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.  
 # If not found, print a warning message then exit. 
@@ -223,7 +223,7 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
 	die "Case directory $case already exists \n";
     }
 
-    make_path($case); 
+    mkpath($case); 
     $caseroot = abs_path("$case");
 
     my @dirs = split "/", $caseroot, -1;  # The -1 prevents split from stripping trailing nulls
@@ -873,7 +873,7 @@ chdir ("$caseroot");
 # Create relevant directories in $caseroot
 my @newdirs = qw(. SourceMods LockedFiles Buildconf Tools Tools/XML/Lite);
 foreach my $newdir ( @newdirs ) {
-    make_path($newdir); 
+    mkpath($newdir); 
 }
 
 # Copy relevant files into $caseroot
@@ -1025,9 +1025,9 @@ foreach my $lib ("gptl", "mct", "csm_share", "pio") {
 # Create the relevant $caseroot/Sourcemods directories
 my $moddir = "$caseroot/SourceMods";
 foreach my $comp (@comps)  {
-    make_path("$moddir/src.$comp"); 
+    mkpath("$moddir/src.$comp"); 
     if ($comp eq 'cism') {
-	make_path("$moddir/src.$comp/glimmer-cism");
+	mkpath("$moddir/src.$comp/glimmer-cism");
 	open(README, ">", "$moddir/src.$comp/README") or
 	    die "cannot open > $moddir/src.$comp/README: $!";
 	print README
@@ -1037,8 +1037,8 @@ foreach my $comp (@comps)  {
 	close(README);
     }
 }
-make_path("$caseroot/SourceMods/src.share"); 
-make_path("$caseroot/SourceMods/src.drv"); 
+mkpath("$caseroot/SourceMods/src.share"); 
+mkpath("$caseroot/SourceMods/src.drv"); 
 
 # Create machine specific environment file (env_mach_specific)
 if(-e "$machdir/env_mach_specific.$mach" ) {
