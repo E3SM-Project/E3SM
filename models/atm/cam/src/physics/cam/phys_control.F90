@@ -74,6 +74,7 @@ logical           :: convproc_do_gas      = .false.    ! to apply unified convec
 integer           :: convproc_method_activate = 2      ! unified convective transport method               
 logical           :: liqcf_fix            = .false.    ! liq cld fraction fix calc.                     
 logical           :: regen_fix            = .false.    ! aerosol regeneration bug fix for ndrop.F90 
+logical           :: demott_ice_nuc       = .false.    ! use DeMott ice nucleation treatment in microphysics 
 !BSINGH -ENDS
 
 integer           :: history_budget_histfile_num = 1   ! output history file number for budget fields
@@ -119,7 +120,7 @@ subroutine phys_ctl_readnl(nlfile)
       conv_water_in_rad, do_clubb_sgs, do_tms, state_debug_checks, &
       use_gw_oro, use_gw_front, use_gw_convect, fix_g1_err_ndrop, &
       ssalt_tuning, resus_fix, convproc_do_aer, convproc_do_gas, convproc_method_activate, & !BSINGH(09/16/2014):Added ssalt_tuning,resus_fix,convproc_do_aer,convproc_do_gas
-      liqcf_fix, regen_fix                                                                   !BSINGH(09/16/2014):liqcf_fix,regen_fix  
+      liqcf_fix, regen_fix, demott_ice_nuc                                                   !BSINGH(09/16/2014):liqcf_fix,regen_fix,demott_ice_nuc
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -172,7 +173,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(convproc_do_gas,                 1 , mpilog,  0, mpicom)!BSINGH - to apply unified convective transport for gasses
    call mpibcast(convproc_method_activate,        1 , mpilog,  0, mpicom)!BSINGH - unified convective transport method  
    call mpibcast(liqcf_fix,                       1 , mpilog,  0, mpicom)!BSINGH - liq cld fraction fix calc.
-   call mpibcast(regen_fix,                       1 , mpilog,  0, mpicom)!BSINGH -  aerosol regeneration bug fix for ndrop.F90   
+   call mpibcast(regen_fix,                       1 , mpilog,  0, mpicom)!BSINGH - aerosol regeneration bug fix for ndrop.F90   
+   call mpibcast(demott_ice_nuc,                  1 , mpilog,  0, mpicom)!BSINGH - use DeMott ice nucleation treatment in microphysics  
 #endif
 
    ! Error checking:
@@ -286,7 +288,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, fix_g1_err_ndrop_out,     & !BSINGH - bugfix for ndrop.F90
                         ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  & !BSINGH added ssalt_tuning,resus_fix,convproc_do_aer
                         convproc_do_gas_out, convproc_method_activate_out,   & !BSINGH added convproc_do_gas,convproc_method_activate_out
-                        liqcf_fix_out, regen_fix_out                         ) !BSINGH added cliqcf_fix,regen_fix
+                        liqcf_fix_out, regen_fix_out,demott_ice_nuc_out      ) !BSINGH added cliqcf_fix,regen_fix,demott_ice_nuc
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
 !          deep_scheme_out   : deep convection scheme
@@ -325,7 +327,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: convproc_do_gas_out !BSINGH - to apply unified convective transport for gasses
    integer,           intent(out), optional :: convproc_method_activate_out !BSINGH - unified convective transport method  
    logical,           intent(out), optional :: liqcf_fix_out       !BSINGH - liq cld fraction fix calc.
-   logical,           intent(out), optional :: regen_fix_out       !BSINGH -  aerosol regeneration bug fix for ndrop.F90 
+   logical,           intent(out), optional :: regen_fix_out       !BSINGH - aerosol regeneration bug fix for ndrop.F90 
+   logical,           intent(out), optional :: demott_ice_nuc_out  !BSINGH - use DeMott ice nucleation treatment in microphysics   
 
 
    if ( present(deep_scheme_out         ) ) deep_scheme_out          = deep_scheme
@@ -357,9 +360,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(convproc_do_aer_out     ) ) convproc_do_aer_out      = convproc_do_aer!BSINGH - to apply unified convective transport for aerosols
    if ( present(convproc_do_gas_out     ) ) convproc_do_gas_out      = convproc_do_gas!BSINGH - to apply unified convective transport for gasses
    if ( present(convproc_method_activate_out))convproc_method_activate_out= convproc_method_activate  !BSINGH - unified convective transport method  
-   if ( present(liqcf_fix_out           ) ) liqcf_fix_out           = liqcf_fix       !BSINGH - liq cld fraction fix calc.
-   if ( present(regen_fix_out           ) ) regen_fix_out            =regen_fix       !BSINGH -  aerosol regeneration bug fix for ndrop.F90 
-
+   if ( present(liqcf_fix_out           ) ) liqcf_fix_out            = liqcf_fix      !BSINGH - liq cld fraction fix calc.
+   if ( present(regen_fix_out           ) ) regen_fix_out            = regen_fix      !BSINGH -  aerosol regeneration bug fix for ndrop.F90 
+   if ( present(demott_ice_nuc_out      ) ) demott_ice_nuc_out       = demott_ice_nuc !BSINGH - use DeMott ice nucleation treatment in microphysics  
 end subroutine phys_getopts
 
 !===============================================================================
