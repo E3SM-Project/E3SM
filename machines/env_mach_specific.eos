@@ -9,6 +9,9 @@
 # eos - this incomplete list of unloads seems to avoid the problem: JPE
 #
 
+set COMPILER = `./xmlquery COMPILER -value`
+set MPILIB = `./xmlquery MPILIB -value`
+set DEBUG = `./xmlquery DEBUG -value`
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
 #  module rm PrgEnv-cray 

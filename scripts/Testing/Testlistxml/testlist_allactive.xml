@@ -209,13 +209,6 @@
       </test>
     </grid>
   </compset>
-  <compset name="BGC5HISTL45BGC">
-    <grid name="f09_g16">
-      <test name="SMS_Ld7">
-        <machine compiler="ibm" testtype="prebeta" testmods="allactive/cism/test_coupling">mira</machine>
-      </test>
-    </grid>
-  </compset>
   <compset name="BGC5L45BGC">
     <grid name="T31_g37">
       <test name="SMS_D_Ld5">

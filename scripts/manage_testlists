@@ -312,7 +312,7 @@ sub writeXML
 	    $newfilename = "$ccsmroot/components/cam/cimetest/testlist_cam-$dtformat.xml";
 	} 
 	if ($component eq 'allactive') {
-	    $newfilename = "$scriptdir/Testlistxml/testlist_cesm-$dtformat.xml";
+	    $newfilename = "$scriptdir/Testing/Testlistxml/testlist_allactive-$dtformat.xml";
 	}
 	if ($component eq 'clm') {
 	    $newfilename = "$ccsmroot/components/clm/cimetest/testlist_clm-$dtformat.xml";

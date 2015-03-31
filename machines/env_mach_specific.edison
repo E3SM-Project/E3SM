@@ -8,11 +8,13 @@ set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
 if($status == 0) then
   set COMPILER = `./xmlquery COMPILER -value`
   set MPILIB   = `./xmlquery MPILIB   -value`
+  set DEBUG   = `./xmlquery DEBUG   -value`
 else
   echo $0 using settings from environment:
 endif
 echo "COMPILER=$COMPILER"
 echo "MPILIB=$MPILIB"
+echo "DEBUG=$DEBUG"
 
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
@@ -73,6 +75,7 @@ else
   module load cray-parallel-netcdf/1.5.0
 endif
 
+module load perl/5.20.0
 module load cmake/2.8.11.2
 
 
@@ -82,6 +85,7 @@ module load cmake/2.8.11.2
 
 setenv MPICH_ENV_DISPLAY 1
 setenv MPICH_VERSION_DISPLAY 1
+setenv PERL5LIB /global/project/projectdirs/ccsm1/perl5lib/lib/perl5/5.10.0
 
 limit coredumpsize unlimited
 limit stacksize unlimited
