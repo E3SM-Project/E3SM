@@ -416,7 +416,7 @@
 </machine>
 
 <machine MACH="lawrencium-lr2">
-         <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (pgi), batch system is SLURM</DESC>
+         <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
          <OS>LINUX</OS>
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>openmpi</MPILIBS>
@@ -438,9 +438,9 @@
 </machine>
 
 <machine MACH="lawrencium-lr3">
-         <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (pgi), batch system is SLURM</DESC>
+         <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
          <OS>LINUX</OS>
-         <COMPILERS>pgi</COMPILERS>
+         <COMPILERS>intel</COMPILERS>
          <MPILIBS>openmpi</MPILIBS>
          <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
@@ -531,6 +531,29 @@
     <PES_PER_NODE>2</PES_PER_NODE>
 </machine>
 
+<machine MACH="penn">
+    <DESC>Linux workstation: Andy's at SNL</DESC>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi,mpi-serial</MPILIBS>
+    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
+    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/acme/ptclmdata</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+
+    <CCSM_BASELINE>/home/agsalin/acme/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <BATCHQUERY></BATCHQUERY>
+    <BATCHSUBMIT></BATCHSUBMIT>
+    <SUPPORTED_BY>agsalin at sandia dot gov</SUPPORTED_BY>
+    <GMAKE_J>20</GMAKE_J>
+    <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>2</PES_PER_NODE>
+</machine>
+
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
          <COMPILERS>ibm</COMPILERS>
@@ -549,8 +572,8 @@
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>csh</BATCHSUBMIT>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
 </machine>
@@ -558,14 +581,14 @@
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
-         <MPILIBS>mvapich2</MPILIBS>
+         <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
          <RUNDIR>/lcrc/project/$PROJECT/$CCSMUSER/$CASE/run</RUNDIR>
          <EXEROOT>/lcrc/project/$PROJECT/$CCSMUSER/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lcrc/project/$PROJECT/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/home/ccsm-data/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_BASELINE>/lcrc/group/earthscience/acme_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/gpfs/home/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
@@ -593,8 +616,8 @@
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>csh</BATCHSUBMIT>
          <SUPPORTED_BY>   jayesh -at- mcs.anl.gov</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 

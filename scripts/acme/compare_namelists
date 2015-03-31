@@ -1,0 +1,324 @@
+#!/usr/bin/env python
+
+"""
+Compare namelists. Should be called by an ACME test. Designed
+to not be sensitive to order or whitespace.
+"""
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+
+import argparse, sys, os, doctest, re
+
+from acme_util import expect, warning, verbose_print
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s <Path to gold namelist file> <Path to new namelist file> [-c <CASEBASEID>] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Compare namelist files\033[0m
+    > %s baseline_dir/test/namelistfile mytestarea/namelistfile -c <CASE>
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("gold_file", help="Path to gold file")
+
+    parser.add_argument("new_file", help="Path to file to compare against gold")
+
+    parser.add_argument("-c", "--case", action="store", dest="case", default=None,
+                        help="The case base id (<TESTCASE>.<GRID>.<COMPSET>). Helps us normalize data.")
+
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                        help="Print extra information")
+
+    args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
+
+    # Normalize case
+    if (args.case is not None):
+        args.case = acme_util.normalize_case_id(args.case)
+
+    return args.gold_file, args.new_file, args.case
+
+###############################################################################
+def parse_namelists(namelist_lines, filename):
+###############################################################################
+    """
+    Return data in form: {namelist -> {key -> value} }.
+      value can be an int, string, list, or dict
+
+    >>> teststr = '''&nml
+    ...   val = 'foo'
+    ...   aval = 'one','two', 'three'
+    ...   maval = 'one', 'two',
+    ...       'three', 'four'
+    ...   dval = 'one->two', 'three -> four'
+    ...   mdval = 'one   -> two',
+    ...           'three -> four',
+    ...           'five -> six'
+    ...   nval = 1850
+    ... /'''
+    >>> parse_namelists(teststr.splitlines(), 'foo')
+    {'nml': {'dval': {'three': 'four', 'one': 'two'}, 'val': "'foo'", 'maval': ["'one'", "'two'", "'three'", "'four'"], 'aval': ["'one'", "'two'", "'three'"], 'nval': '1850', 'mdval': {'five': 'six', 'three': 'four', 'one': 'two'}}}
+    """
+
+    comment_re = re.compile(r'^[#!]')
+    namelist_re = re.compile(r'^&(\S+)$')
+    name_re = re.compile(r'^([^\s=]+)\s*=\s*(.+)$')
+    dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)'")
+    comma_re = re.compile(r'\s*,\s*')
+
+    rv = {}
+    current_namelist = None
+    current_name = None
+    for line in namelist_lines:
+
+        line = line.strip()
+
+        if (line == "" or comment_re.match(line)):
+            continue
+
+        if (current_namelist is None):
+            # Must start a namelist
+            expect(current_name is None,
+                   "FAIL: In file %s, Incomplete multiline variable: '%s'" % (filename, current_name[0] if current_name is not None else ""))
+
+            # Unfornately, other tools were using the old compare_namelists.pl script
+            # to compare files that are not namelist files. We need a special error
+            # to signify this event
+            if (namelist_re.match(line) is None):
+                expect(rv != {},
+                       "FAIL: File '%s' does not appear to be a namelist file, skipping" % filename)
+                expect(False,
+                       "FAIL: In file %s, Line '%s' did not begin a namelist as expected" % (filename, line))
+
+            current_namelist = namelist_re.match(line).groups()[0]
+            expect(current_namelist not in rv,
+                   "FAIL: In file %s, Duplicate namelist '%s'" % (filename, current_namelist))
+
+            rv[current_namelist] = {}
+
+        elif (line == "/"):
+            # Ends a namelist
+            expect(current_name is None,
+                   "FAIL: In file %s, Incomplete multiline variable: '%s'" % (filename, current_name[0] if current_name is not None else ""))
+            current_namelist = None
+
+        elif (name_re.match(line)):
+            # Defining a variable (AKA name)
+            name, value = name_re.match(line).groups()
+            expect(name not in rv[current_namelist], "FAIL: In file %s, Duplicate name: '%s'" % (filename, name))
+
+            if ("->" in value):
+                # dict
+                tokens = comma_re.split(value)
+                rv[current_namelist][name] = {}
+                for token in tokens:
+                    if (token.strip() != ""):
+                        m = dict_re.match(token)
+                        expect(m is not None, "FAIL: In file %s, Dict entry '%s' does not match expected format" % (filename, token))
+                        k, v = m.groups()
+                        rv[current_namelist][name][k] = v
+
+            elif ("," in value):
+                # list
+                rv[current_namelist][name] = [item for item in comma_re.split(value) if item.strip() != ""]
+
+            else:
+                rv[current_namelist][name] = value
+
+            if (line.endswith(",")):
+                # Value will continue on in subsequent lines
+                current_name = (name, rv[current_namelist][name])
+
+        elif (current_name is not None):
+            # Continuation of list or dict variable
+            current_value = current_name[1]
+            tokens = comma_re.split(line)
+            if (type(current_value) is list):
+                current_value.extend([item for item in tokens if item.strip() != ""])
+            elif (type(current_value) is dict):
+                for token in tokens:
+                    if (token.strip() != ""):
+                        m = dict_re.match(token)
+                        expect(m is not None, "FAIL: In file %s, Dict entry '%s' does not match expected format" % (filename, token))
+                        k, v = m.groups()
+                        current_value[k] = v
+            else:
+                expect(False, "FAIL: In file %s, Continuation should have been for list or dict, instead it was: '%s'" % (filename, type(current_value)))
+
+            if (not line.endswith(",")):
+                # Completed
+                current_name = None
+
+        else:
+            expect(False, "FAIL: In file %s, Unrecognized line: '%s'" % (filename, line))
+
+    return rv
+
+###############################################################################
+def normalize_string_value(name, value, case):
+###############################################################################
+    """
+    Some of the string in namelists will contain data that's inherently prone
+    to diffs, like file paths, etc. This function attempts to normalize that
+    data so that it will not cause diffs.
+    """
+    # Any occurance of case must be normalized because test-ids might not match
+    if (case is not None):
+        case_re = re.compile(r'%s[.]([GC])[.]([^./\s]+)' % case)
+        value = case_re.sub("%s.ACTION.TESTID" % case, value)
+
+    if (name in ["runid", "model_version", "username"]):
+        # Don't even attempt to diff these, we don't care
+        return name.upper()
+    elif (".log." in value):
+        # Remove the part that's prone to diff
+        components = value.split(".")
+        return os.path.basename(".".join(components[0:-1]))
+    elif (":" in value):
+        items = value.split(":")
+        items = [normalize_string_value(name, item, case) for item in items]
+        return ":".join(items)
+    elif ("/" in value):
+        # File path, just return the basename
+        return os.path.basename(value)
+    else:
+        return value
+
+###############################################################################
+def compare_values(namelist, name, gold_value, comp_value, case):
+###############################################################################
+    """
+    TODO - Unit test
+    """
+    if (type(gold_value) != type(comp_value)):
+        print "In namelist '%s', variable '%s' did not have expected type '%s', instead is type '%s'" % \
+            (namelist, name, type(gold_value), type(comp_value))
+        return False
+
+    rv = True
+    if (type(gold_value) is list):
+        # Note, list values remain order sensitive
+        for idx, gold_value_list_item in enumerate(gold_value):
+            if (idx < len(comp_value)):
+                rv &= compare_values(namelist, "%s list item %d" % (name, idx), gold_value_list_item, comp_value[idx], case)
+            else:
+                rv = False
+                print "In namelist '%s', list variable '%s' missing value %s" % (namelist, name, gold_value_list_item)
+
+        if (len(comp_value) > len(gold_value)):
+            for comp_value_list_item in comp_value[len(gold_value):]:
+                rv = False
+                print "In namelist '%s', list variable '%s' has extra value %s" % (namelist, name, comp_value_list_item)
+
+    elif (type(gold_value) is dict):
+        for key, gold_value_dict_item in gold_value.iteritems():
+            if (key in comp_value):
+                rv &= compare_values(namelist, "%s dict item %s" % (name, key), gold_value_dict_item, comp_value[key], case)
+            else:
+                rv = False
+                print "In namelist '%s', dict variable '%s' missing key %s" % (namelist, name, key)
+
+        for key in comp_value:
+            if (key not in gold_value):
+                rv = False
+                print "In namelist '%s', dict variable '%s' has extra key %s" % (namelist, name, key)
+
+    else:
+        expect(type(gold_value) is str, "FAIL: Unexpected type found: '%s'" % type(gold_value))
+        norm_gold_value = normalize_string_value(name, gold_value, case)
+        norm_comp_value = normalize_string_value(name, comp_value, case)
+
+        if (norm_gold_value != norm_comp_value):
+            rv = False
+            print "In namelist '%s', '%s' has inequivalent values %s != %s" % (namelist, name, gold_value, comp_value)
+            print "  NORMALIZED: %s != %s" % (norm_gold_value, norm_comp_value)
+
+    return rv
+
+###############################################################################
+def compare_namelists(gold_namelists, comp_namelists, case):
+###############################################################################
+    """
+    Compare two namelists. Print diff information if any. Return true if
+    equivalent.
+
+    Expect args in form: {namelist -> {key -> value} }.
+      value can be an int, string, list, or dict
+    """
+    rv = True
+
+    for namelist, gold_names in gold_namelists.iteritems():
+        if (namelist not in comp_namelists):
+            rv = False
+            print "Missing namelist:", namelist
+        else:
+            comp_names = comp_namelists[namelist]
+            for name, gold_value in gold_names.iteritems():
+                if (name not in comp_names):
+                    print "In namelist '%s', missing variable: '%s'" % (namelist, name)
+                    rv = False
+                else:
+                    comp_value = comp_names[name]
+                    rv &= compare_values(namelist, name, gold_value, comp_value, case)
+
+            for name in comp_names:
+                if (name not in gold_names):
+                    rv = False
+                    print "In namelist '%s', found extra variable: '%s'" % (name)
+
+    for namelist in comp_namelists:
+        if (namelist not in gold_namelists):
+            rv = False
+            print "Found extra namelist:", namelist
+
+    return rv
+
+###############################################################################
+def compare_namelist_files(gold_file, compare_file, case):
+###############################################################################
+    expect(os.path.exists(gold_file), "FAIL: File not found: %s" % gold_file)
+    expect(os.path.exists(compare_file), "FAIL: File not found: %s" % compare_file)
+
+    gold_namelists = parse_namelists(open(gold_file, "r").readlines(), gold_file)
+    comp_namelists = parse_namelists(open(compare_file, "r").readlines(), compare_file)
+
+    return compare_namelists(gold_namelists, comp_namelists, case)
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        doctest.testmod()
+        return
+
+    gold_file, compare_file, case = \
+        parse_command_line(sys.argv, description)
+
+    if (case is None):
+        warning("No case id data available, will not be able to normalize values as effectively")
+    else:
+        verbose_print("Using case: '%s'" % case)
+
+    expect(compare_namelist_files(gold_file, compare_file, case),
+           "FAIL: Namelist diff between files %s and %s" % (gold_file, compare_file))
+
+    print "Files %s and %s MATCH" % (gold_file, compare_file)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

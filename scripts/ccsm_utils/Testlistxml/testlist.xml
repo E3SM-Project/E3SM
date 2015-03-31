@@ -61,11 +61,13 @@
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
       </test>
       <test name="ERS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
         <machine compiler="nag" testtype="acme_developer">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel " testtype="acme_developer">edison</machine>
@@ -89,7 +91,9 @@
         <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="null" testtype="acme_developer">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="gnu" testtype="acme_developer">wolf</machine>
@@ -103,6 +107,9 @@
         <machine compiler="intel" testtype="aux_drv">yellowstone</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -111,8 +118,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -156,9 +161,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -177,6 +185,9 @@
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -185,8 +196,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -230,9 +239,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -249,6 +261,9 @@
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -257,8 +272,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -302,9 +315,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -334,6 +350,9 @@
         <machine compiler="intel" testtype="prerelease">titan</machine>
       </test>
       <test name="NCK">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -342,8 +361,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -392,9 +409,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -468,6 +488,9 @@
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
       </test>
       <test name="PEA_P1_M">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -476,8 +499,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -521,9 +542,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -546,7 +570,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -572,6 +595,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -595,6 +619,9 @@
         <machine compiler="pgi" testtype="prerelease">titan</machine>
       </test>
       <test name="SMS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -603,8 +630,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -652,9 +677,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -679,11 +707,13 @@
     </grid>
     <grid name="ne30_g16_rx1">
       <test name="ERS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
         <machine compiler="nag" testtype="acme_developer">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel " testtype="acme_developer">edison</machine>
@@ -710,7 +740,9 @@
         <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="null" testtype="acme_developer">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="gnu" testtype="acme_developer">wolf</machine>
@@ -726,6 +758,9 @@
         <machine compiler="ibm" testtype="prebeta">mira</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -734,8 +769,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -779,9 +812,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -800,6 +836,9 @@
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -808,8 +847,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -853,9 +890,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -872,6 +912,9 @@
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -880,8 +923,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -925,9 +966,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -1041,7 +1085,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1063,6 +1106,7 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="aux_cam">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
@@ -1078,7 +1122,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1100,6 +1143,7 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="aux_cam">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
@@ -1117,7 +1161,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1139,6 +1182,7 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="aux_cam">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
@@ -1153,7 +1197,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1175,6 +1218,7 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="aux_cam">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
@@ -1208,7 +1252,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1230,6 +1273,7 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -1242,7 +1286,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1264,6 +1307,7 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -1273,6 +1317,9 @@
         <machine compiler="intel" testtype="aux_cice">yellowstone</machine>
       </test>
       <test name="ERS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -1281,8 +1328,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -1326,8 +1371,11 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -1348,7 +1396,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1370,6 +1417,7 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -1386,7 +1434,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1408,6 +1455,7 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -1873,7 +1921,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -1901,6 +1948,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -2543,11 +2591,13 @@
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
         <machine compiler="nag" testtype="acme_developer">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel " testtype="acme_developer">edison</machine>
@@ -2571,7 +2621,9 @@
         <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="null" testtype="acme_developer">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="gnu" testtype="acme_developer">wolf</machine>
@@ -2582,6 +2634,9 @@
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -2590,8 +2645,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -2636,9 +2689,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -2964,7 +3020,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -2987,6 +3042,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta" testmods="cam/cosp">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -3000,7 +3056,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3024,6 +3079,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -3194,7 +3250,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3220,6 +3275,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -3236,7 +3292,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3263,6 +3318,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -3287,7 +3343,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3314,6 +3369,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -3332,7 +3388,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
         <machine compiler="ibm" testtype="prebeta">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3358,6 +3413,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="prebeta">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
@@ -3403,7 +3459,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -3426,6 +3481,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -5621,6 +5677,9 @@
   <compset name="TG">
     <grid name="f09_g16">
       <test name="ERS_Ly21">
+        <machine compiler="gnu" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="pgi" testtype="acme_developer">blues</machine>
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
@@ -5629,8 +5688,6 @@
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
@@ -5674,9 +5731,12 @@
         <machine compiler="null" testtype="acme_integration">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_developer">penn</machine>
         <machine compiler="intel" testtype="acme_developer">redsky</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="intel" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
@@ -5848,7 +5908,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -5876,6 +5935,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
@@ -5893,7 +5953,6 @@
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
         <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
-        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel " testtype="acme_integration">edison</machine>
@@ -5919,6 +5978,7 @@
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="intel" testtype="acme_integration">redsky</machine>
         <machine compiler="intel" testtype="prebeta">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>

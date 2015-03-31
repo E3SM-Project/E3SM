@@ -656,13 +656,19 @@ if ( $timer_detail <= 0) {
     add_default($nl, 'profile_detail_limit', 'TIMER_DETAIL'=>"pos");
 }
 
+my $prof_ovhd_measurement = $xmlvars{'PROF_OVHD_MEASUREMENT'};
+if ( $prof_ovhd_measurement eq 'TRUE') {
+  add_default($nl, 'profile_ovhd_measurement',  'val'=>".true.");
+} else {
+  add_default($nl, 'profile_ovhd_measurement',  'val'=>".false.");
+}
+
 add_default($nl, 'profile_timer', 'MPILIB'=>"$xmlvars{'MPILIB'}", 'OS'=>"$xmlvars{'OS'}");
 add_default($nl, 'profile_global_stats');
 add_default($nl, 'profile_single_file');
 add_default($nl, 'profile_detail_limit');
-add_default($nl, 'profile_outpe_stride',  'val'=>"16");
+# add_default($nl, 'profile_outpe_stride',  'val'=>"16");
 add_default($nl, 'profile_barrier');
-
 
 #############################################
 # namelist group: pio_default_inparm        #

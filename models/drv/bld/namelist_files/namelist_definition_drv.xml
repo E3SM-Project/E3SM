@@ -1679,6 +1679,12 @@ category="performance"
 group="prof_inparm">
 </entry>
 
+<entry 
+id="profile_ovhd_measurement"
+type="logical"
+category="performance" 
+group="prof_inparm">
+</entry>
 
 <!-- =========================== -->
 <!-- group pio_default_inparm    -->

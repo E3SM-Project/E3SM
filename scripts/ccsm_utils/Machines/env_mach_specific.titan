@@ -58,7 +58,10 @@ if (-e /opt/modules/default/init/csh) then
 
   if ( $COMPILER == "intel" ) then
     module load PrgEnv-intel
-    module swap cray-mpich cray-mpich/7.0.4
+    module switch intel intel/14.0.2.144
+    module switch cray-libsci cray-libsci/13.0.1
+    module switch cray-mpich cray-mpich/7.0.4
+    module switch atp atp/1.7.5
   endif
 
   if ( $COMPILER == "cray" ) then

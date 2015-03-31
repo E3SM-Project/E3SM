@@ -127,6 +127,8 @@
 <profile_detail_limit TIMER_DETAIL="neg">0</profile_detail_limit>
 <profile_detail_limit TIMER_DETAIL="pos">$TIMER_DETAIL</profile_detail_limit>
 
+<profile_ovhd_measurement>.false.</profile_ovhd_measurement>
+
 <!-- =========================================  -->
 <!--- pio_default_inparm                        -->
 <!-- =========================================  -->

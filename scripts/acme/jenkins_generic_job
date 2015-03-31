@@ -1,0 +1,245 @@
+#!/usr/bin/env python
+
+"""
+Jenkins runs this script to perform a test of an acme
+test suite.
+"""
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+import wait_for_tests
+
+import argparse, sys, os, distutils.spawn, getpass, socket, shutil, glob, doctest
+
+from acme_util import expect, warning, verbose_print
+
+# batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
+BATCH_INFO = \
+{
+    "slurm" : (
+        "squeue -o '%i' -h -u",
+        "scancel"
+    ),
+    "pbs" : (
+        "qselect -u",
+        "qdel"
+    ),
+}
+
+# machine -> defaults (compiler, test_suite, use_batch, project, testroot, proxy)
+MACHINE_INFO = {
+    "redsky"    : (
+        "intel",
+        "acme_integration",
+        True,
+        "fy150001",
+        "/gscratch1/<USER>/acme_scratch",
+        "wwwproxy.sandia.gov:80"
+    ),
+    "skybridge" : (
+        "intel",
+        "acme_integration",
+        True,
+        "fy150001",
+        "/gscratch1/<USER>/acme_scratch/skybridge",
+        "wwwproxy.sandia.gov:80"
+    ),
+    "melvin"    : (
+        "gnu",
+        "acme_developer",
+        False,
+        "ignore",
+        "/home/<USER>/acme/scratch",
+        "sonproxy.sandia.gov:80"
+    )
+}
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s [-g] [-d] [--verbose]
+OR
+%s --help
+OR
+%s --test
+""" % ((os.path.basename(args[0]), ) * 3),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                        help="Print extra information")
+
+    parser.add_argument("-g", "--generate-baselines", action="store_true", dest="generate_baselines", default=False,
+                        help="Generate baselines")
+
+    parser.add_argument("-d", "--submit-to-dashboard", action="store_true", dest="submit_to_dashboard", default=False,
+                        help="Send results to Cdash")
+
+    parser.add_argument("-n", "--namelists-only", action="store_true", dest="namelists_only", default=False,
+                        help="Only compare/generate namelists. Useful for quickly blessing namelist changes")
+
+    parser.add_argument("-b", "--branch", action="store", dest="branch", default=None,
+                        help="Force baseline actions (compare/generate) to use baselines for a specific branch instead of the current branch. Also impacts dashboard job name.")
+
+    args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
+
+    return args.generate_baselines, args.submit_to_dashboard, args.branch, args.namelists_only
+
+###############################################################################
+def probe_batch_system():
+###############################################################################
+    for batch_system, cmds in BATCH_INFO.iteritems():
+        exe = cmds[0].split()[0]
+        exe_path = distutils.spawn.find_executable(exe)
+        if (exe_path is not None):
+            return batch_system
+
+    warning("No batch system found, skipping job cleanup")
+    return None
+
+###############################################################################
+def cleanup_queue(set_of_jobs_we_created):
+###############################################################################
+    """
+    Delete all jobs left in the queue
+    """
+    batch_system = probe_batch_system()
+    expect(batch_system is not None, "Failed to probe batch system")
+
+    current_jobs = get_my_queued_jobs()
+    jobs_to_delete = set_of_jobs_we_created & current_jobs
+
+    for job_to_delete in jobs_to_delete:
+        warning("Found leftover job: %s" % job_to_delete)
+        del_cmd = "%s %s" % (BATCH_INFO[batch_system][1], job_to_delete)
+        stat = acme_util.run_cmd(del_cmd, verbose=True, ok_to_fail=True)[0]
+        if (stat != 0):
+            warning("FAILED to clean up leftover job: %s" % job_to_delete)
+
+###############################################################################
+def get_my_queued_jobs():
+###############################################################################
+    """
+    Return a list of job ids for the current user
+    """
+    batch_system = probe_batch_system()
+    expect(batch_system is not None, "Failed to probe batch system")
+
+    list_cmd = "%s %s" % (BATCH_INFO[batch_system][0], getpass.getuser())
+    return set(acme_util.run_cmd(list_cmd).split())
+
+###############################################################################
+def jenkins_generic_job(generate_baselines, submit_to_dashboard,
+                        baseline_branch=None, namelists_only=False):
+###############################################################################
+    acme_machine = acme_util.probe_machine_name()
+    expect(acme_machine is not None,
+           "Did not recognize current machine '%s'" % socket.gethostname())
+    expect(acme_machine in MACHINE_INFO,
+           "Missing machine info for machine '%s'" % acme_machine)
+
+    compiler, test_suite, use_batch, project, testroot, proxy = MACHINE_INFO[acme_machine]
+    testroot = testroot.replace("<USER>", getpass.getuser())
+    casearea = os.path.join(testroot, "jenkins")
+
+    #
+    # Env changes
+    #
+
+    if (submit_to_dashboard):
+        os.environ["http_proxy"] = proxy
+
+    expect(os.path.isdir("ACME_Climate"),
+           "Missing ACME clone, expected pwd/ACME_Climate")
+    acme_scripts_path = os.path.join(os.getcwd(), "ACME_Climate", "scripts", "acme")
+    if ("PATH" in os.environ):
+        os.environ["PATH"] = "%s:%s" % (acme_scripts_path, os.environ["PATH"])
+    else:
+        os.environ["PATH"] = acme_scripts_path
+
+    #
+    # Cleanup previous test leftovers
+    #
+
+    if (os.path.isdir("Testing")):
+        shutil.rmtree("Testing")
+
+    for old_dir in glob.glob("%s/*%s*" % (testroot, acme_machine)):
+        shutil.rmtree(old_dir)
+
+    if (os.path.isdir(casearea)):
+        shutil.rmtree(casearea)
+
+    #
+    # Make note of things already in the queue so we know not to delete
+    # them if we timeout
+    #
+
+    if (use_batch):
+        preexisting_queued_jobs = get_my_queued_jobs()
+
+    #
+    # Set up create_test command and run it
+    #
+
+    os.chdir("ACME_Climate/scripts")
+    git_branch = acme_util.get_current_branch() if baseline_branch is None else baseline_branch
+    baseline_action = "-generate" if generate_baselines else "-compare"
+    create_test_cmd = "./create_test -xml_mach %s -xml_compiler %s -xml_category %s -testroot %s -project %s %s %s" % \
+                      (acme_machine, compiler, test_suite, casearea, project, baseline_action, git_branch)
+
+    if (namelists_only):
+        create_test_cmd += " -nlcompareonly"
+
+    if (not use_batch):
+        create_test_cmd += " -autosubmit off -nobatch on"
+
+    acme_util.run_cmd(create_test_cmd, verbose=True, arg_stdout=None, arg_stderr=None)
+
+    if (use_batch):
+        # This is not fullproof. Any jobs that happened to be
+        # submitted by this user while create_test was running will be
+        # potentially deleted. This is still a big improvement over the
+        # previous implement which just assumed all queued jobs for this
+        # user came from create_test.
+        our_jobs = get_my_queued_jobs() - preexisting_queued_jobs
+
+    os.chdir("../..")
+
+    #
+    # Wait for tests
+    #
+
+    cdash_build_name = "_".join([test_suite, git_branch, compiler]) if submit_to_dashboard else None
+    tests_passed = wait_for_tests.wait_for_tests(glob.glob("%s/*/TestStatus" % casearea),
+                                                 not use_batch, # wait if using queue
+                                                 False, # don't check throughput
+                                                 cdash_build_name)
+    if (not tests_passed and use_batch):
+        # Cleanup
+        cleanup_queue(our_jobs)
+
+    return tests_passed
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        doctest.testmod()
+        return
+
+    generate_baselines, submit_to_dashboard, baseline_branch, namelists_only = \
+        parse_command_line(sys.argv, description)
+
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch, namelists_only) else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

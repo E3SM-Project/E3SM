@@ -13,6 +13,7 @@ module modal_aero_initialize_data
   public :: modal_aero_initialize
   public :: modal_aero_initialize_q
 
+  logical :: convproc_do_gas, convproc_do_aer !BSINGH(09/16/2014): Added for unified convective transport
 contains
 
   subroutine modal_aero_register
@@ -31,6 +32,11 @@ contains
          'num_a4  ', 'num_a5  ', 'num_a6  ', 'num_a7  ' /)
     character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', 'num_c3  ', &
          'num_c4  ', 'num_c5  ', 'num_c6  ', 'num_c7  ' /)
+#elif ( defined MODAL_AERO_4MODE ) 
+    character(len=*), parameter ::     xname_numptr(ntot_amode)   = (/ 'num_a1  ', 'num_a2  ', &
+         'num_a3  ', 'num_a4  ' /)
+    character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', &
+         'num_c3  ', 'num_c4  ' /)
 #elif ( defined MODAL_AERO_3MODE )
     character(len=*), parameter ::     xname_numptr(ntot_amode)   = (/ 'num_a1  ', 'num_a2  ', &
          'num_a3  ' /)
@@ -57,7 +63,7 @@ contains
             'pom_c1  ', 'soa_c1  ', 'bc_c1   ', 'ncl_c1  ' /)
        xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', 'ammonium  ', &
             'p-organic ', 's-organic ', 'black-c   ', 'seasalt   ' /)
-#elif ( defined MODAL_AERO_3MODE )
+#elif ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE )
        xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
             'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
             'dst_a1  ', 'ncl_a1  ' /)
@@ -77,7 +83,7 @@ contains
             'soa_c2  ', 'ncl_c2  ' /)
        xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', 'ammonium  ', &
             's-organic ', 'seasalt   ' /)
-#elif ( defined MODAL_AERO_3MODE )
+#elif ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE )
        xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
             'soa_a2  ', 'ncl_a2  ' /)
        xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
@@ -91,11 +97,18 @@ contains
        xname_massptr(:nspec_amode(3),3)   = (/ 'pom_a3  ', 'bc_a3   ' /)
        xname_massptrcw(:nspec_amode(3),3) = (/ 'pom_c3  ', 'bc_c3   ' /)
        xname_spectype(:nspec_amode(3),3)  = (/ 'p-organic ', 'black-c   ' /)
-#elif ( defined MODAL_AERO_3MODE )
+#elif ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE )
        ! mode 3 (coarse dust & seasalt) species
        xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
        xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
        xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
+#endif
+
+#if ( defined MODAL_AERO_4MODE )
+       ! mode 4 (primary carbon) species
+       xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ' /)
+       xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ' /)
+       xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ' /)
 #endif
 
 
@@ -120,6 +133,11 @@ contains
        xname_massptrcw(:nspec_amode(7),7) = (/ 'dst_c7  ', 'so4_c7  ', 'nh4_c7  ' /)
        xname_spectype(:nspec_amode(7),7)  = (/ 'dust      ', 'sulfate   ', 'ammonium  ' /)
 #endif
+
+    !BSINGH (09/17/2014): Added for unified convective transport
+    if(convproc_do_aer .or. convproc_do_gas) then !BSINGH - added for unified convective transport
+       species_class(:pcnst) = spec_class_undefined  !RCE
+    endif
 
     do m = 1, ntot_amode
 
@@ -245,7 +263,7 @@ contains
 
 
   !==============================================================
-  subroutine modal_aero_initialize(pbuf2d)
+  subroutine modal_aero_initialize(pbuf2d, imozart) !BSINGH (09/17/2014): Added 'imozart' for unified convective transport
 
        use constituents,          only: pcnst
        use physconst,             only: rhoh2o, mwh2o
@@ -255,12 +273,18 @@ contains
        use modal_aero_gasaerexch, only: modal_aero_gasaerexch_init
        use modal_aero_newnuc,     only: modal_aero_newnuc_init
        use modal_aero_rename,     only: modal_aero_rename_init
+       !RCE !BSINGH (09/17/2014): Added for unified convective transport
+       use modal_aero_convproc,   only: ma_convproc_init  
+       use chem_mods,             only: gas_pcnst  
+       use phys_control,          only: phys_getopts
+       !BSINGH -ENDS
        use rad_constituents,      only: rad_cnst_get_info, rad_cnst_get_aer_props, &
                                         rad_cnst_get_mode_props
        use aerodep_flx,           only: aerodep_flx_prescribed
        use physics_buffer,        only: physics_buffer_desc, pbuf_get_chunk
 
        type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+       integer, intent(in) :: imozart  !RCE !BSINGH (09/17/2014): Added 'imozart' for unified convective transport
 
        !--------------------------------------------------------------
        ! ... local variables
@@ -281,13 +305,9 @@ contains
        !-----------------------------------------------------------------------
 
        pi = 4._r8*atan(1._r8)    
-
-       ! safety check on modal_aero, and modal_aero_3mode, modal_aero_7mode
-#if ( defined MODAL_AERO_3MODE ) && ( defined MODAL_AERO_7MODE )
-       call endrun( 'Error - when modal_aero defined, just 1 of modal_aero_3/7mode must be defined'
-#elif ( ! ( defined MODAL_AERO_3MODE ) ) && ( ! ( defined MODAL_AERO_7MODE ) )
-       call endrun( 'Error - when modal_aero defined, at least 1 of modal_aero_3/7mode must be defined'
-#endif
+       call phys_getopts(convproc_do_gas_out = convproc_do_gas, &
+            convproc_do_aer_out = convproc_do_aer) !BSINGH (09/17/2014): Added for unified convective transport
+       
 
        ! Mode specific properties.
        do m = 1, ntot_amode
@@ -385,12 +405,30 @@ contains
 
 
 
-
-
-       do i = 1, pcnst
-          species_class(i) = spec_class_undefined
-       end do
-
+       !BSINGH(09/17/2014): The do-loop in the 'else' of the following if condition is wrong
+       if (convproc_do_aer .or. convproc_do_gas) then !BSINGH - added for unified convective transport
+          ! At this point, species_class is either undefined or aerosol.
+          ! For the "chemistry species" (imozart <= i <= imozart+gas_pcnst-1),
+          ! set the undefined ones to gas, and leave the aerosol ones as is
+          if (imozart <= 0) then
+             call endrun( '*** modal_aero_initialize_data -- bad imozart' )
+          else if (imozart+gas_pcnst-1 > pcnst) then
+             call endrun( '*** modal_aero_initialize_data -- bad imozart+gas_pcnst-1' )
+          end if
+          do i = imozart, imozart+gas_pcnst-1
+             if (species_class(i) == spec_class_undefined) then
+                species_class(i) = spec_class_gas
+             end if
+          end do
+       else
+          
+          ! The following is incorrect because it overwrites values set in modal_aero_register, 
+          ! which is called before modal_aero_init
+          ! BSINGH: It is not commented out as of now to maintain original code b4b status
+          do i = 1, pcnst
+             species_class(i) = spec_class_undefined
+          end do
+       endif
 
 
        !   set cnst_name_cw
@@ -470,6 +508,10 @@ contains
              end do
           end do
        end if
+
+       if(convproc_do_aer .or. convproc_do_gas) then!BSINGH(09/17/2014): Added for unified convective transport
+          call ma_convproc_init
+       endif
 
        return
      end subroutine modal_aero_initialize
@@ -888,6 +930,7 @@ contains
           if (name == 'so4_a1' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'so4_a2' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'pom_a3' ) write( *, '(2a)' ) '    doing ', name
+          if (name == 'pom_a4' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'ncl_a4' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'dst_a5' ) write( *, '(2a)' ) '    doing ', name
           if (name == 'ncl_a6' ) write( *, '(2a)' ) '    doing ', name
@@ -910,6 +953,7 @@ contains
           if (name == 'so4_a1' ) q(:,k,:) = duma*1.0_r8
           if (name == 'so4_a2' ) q(:,k,:) = duma*0.002_r8
           if (name == 'pom_a3' ) q(:,k,:) = duma*0.3_r8
+          if (name == 'pom_a4' ) q(:,k,:) = duma*0.3_r8
           if (name == 'ncl_a4' ) q(:,k,:) = duma*0.4_r8
           if (name == 'dst_a5' ) q(:,k,:) = duma*0.5_r8
           if (name == 'ncl_a6' ) q(:,k,:) = duma*0.6_r8
