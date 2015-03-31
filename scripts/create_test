@@ -1232,19 +1232,40 @@ sub runCreateNewcase
   }
 
   my $createnewcase = "$opts{'cesmroot'}/cime/scripts/create_newcase $cn_args";
+  my @rc;
   if($opts{'dryrun'}){
       print "$createnewcase\n";
       return;
   }else{
       my $rc = open(F,"$createnewcase |");
-      my @rc = <F>;
+      @rc = <F>;
       close(F);
       print @rc;
   }
   my $exitcode = $?;
+  # JAS: If create_newcase fails, we don't want the whole suite generation
+  # process to stop. 
+  # So, if the test directory doesn't exist, creat it.  
+  # Then, create the CaseStatus and the TestStatus files, 
+  # so test reporting  
   if($exitcode != 0)
   {
-      die "invocation of create_newcase failed\n";
+      warn "invocation of create_newcase failed:\n";
+	  # create the testroot if needed. 
+	  mkdir $caseroot if(! -d $caseroot);
+	  my $failteststatus = "$caseroot/TestStatus";
+      my $failcasestatus = "$caseroot/CaseStatus";
+      
+	  open my $TS, ">", $failteststatus or print "cannot open $failteststatus, $?";
+	  print $TS "SFAIL $test{'case'}\n";
+      close $TS;
+	
+	  open my $CS, ">", $failcasestatus or print "cannot open $failcasestatus, $?";
+      print $CS "create_newcase failure \n";
+      close $CS;
+
+	  # Skip to the next test..
+      next;
   }
 
   my $readmetmp = new IO::File;

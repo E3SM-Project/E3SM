@@ -90,7 +90,7 @@
         <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
       </test>
-      <test name="PET_PT_Ld5">
+      <test name="PET_PT">
         <machine compiler="nag" testtype="prebeta" testmods="allactive/default">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">titan</machine>
         <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
@@ -137,13 +137,6 @@
       <test name="NOC">
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="B1850CNCHM">
-    <grid name="f09_g16">
-      <test name="ERS_Ld7">
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">hopper</machine>
       </test>
     </grid>
   </compset>
@@ -226,14 +219,6 @@
     <grid name="f09_g16">
       <test name="ERS_Ld11">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/default">eos</machine>
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">hopper</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="BHISTC5">
-    <grid name="f19_g16">
-      <test name="ERS_D_Ld7">
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">goldbach</machine>
       </test>
     </grid>
   </compset>
@@ -281,7 +266,6 @@
       <test name="ERS_IOP_Ld7">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>
         <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
       </test>
       <test name="ERS_N2_Ld7">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/default">goldbach</machine>
@@ -299,12 +283,6 @@
     <grid name="f19_g16">
       <test name="ERS_Ld7">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="BRCP26WCN">
-    <grid name="f19_g16">
-      <test name="ERS_Ld7">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
       </test>
     </grid>
@@ -321,20 +299,7 @@
     <grid name="f19_g16">
       <test name="ERS_Ld7">
         <machine compiler="pgi" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="BRCP45WCN">
-    <grid name="f19_g16">
-      <test name="ERS_Ld7">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="BRCP60CN">
-    <grid name="f09_g16">
-      <test name="ERS_E_Ld7">
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">hopper</machine>
       </test>
     </grid>
   </compset>
@@ -352,7 +317,6 @@
       </test>
       <test name="ERS_PT_Ld7">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/default">edison</machine>
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">hopper</machine>
       </test>
     </grid>
   </compset>
@@ -360,12 +324,6 @@
     <grid name="f19_g16">
       <test name="ERS_Ld7">
         <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="BRCP85WCN">
-    <grid name="f19_g16">
-      <test name="ERS_Ld7">
         <machine compiler="gnu" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
       </test>
     </grid>
