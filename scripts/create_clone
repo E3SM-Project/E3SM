@@ -229,6 +229,7 @@ $cfg_ref->set('CCSMUSER'    , "$ENV{'LOGNAME'}");
 $cfg_ref->set('CASEROOT'    , "$caseroot");
 $cfg_ref->set('CASE'        , "$case");
 $cfg_ref->set('CIMEROOT'    , "$cimeroot");
+$cfg_ref->set('SRCROOT'     , "$cimeroot/../");
 $cfg_ref->set('CCSMROOT'    , "$cimeroot/../");
 $cfg_ref->set('CONTINUE_RUN', "FALSE");
 $cfg_ref->set('RESUBMIT'    , 0);

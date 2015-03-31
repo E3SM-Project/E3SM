@@ -114,7 +114,7 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_CFLAGS>
   <ADD_LDFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_LDFLAGS>
-  <ADD_FFLAGS DEBUG="TRUE" MODEL="pop2"> -C </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE" MODEL="pop"> -C </ADD_FFLAGS>
 
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 
@@ -368,7 +368,7 @@ for mct, etc.
 <compiler COMPILER="cray">
   <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
-  <ADD_CPPDEFS MODEL="pop2"> -DDIR=NOOP </ADD_CPPDEFS>
+  <ADD_CPPDEFS MODEL="pop"> -DDIR=NOOP </ADD_CPPDEFS>
   <ADD_CFLAGS compile_threaded="false"> -h noomp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> -h noomp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="false"> -h noomp </ADD_LDFLAGS>
@@ -477,7 +477,7 @@ for mct, etc.
 
 
 <compiler>
-  <ADD_CPPDEFS MODEL="pop2"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
+  <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
 
 

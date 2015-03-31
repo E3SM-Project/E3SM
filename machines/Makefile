@@ -301,7 +301,7 @@ else
   endif
 endif
 
-ifeq ($(COMP_OCN), pop2)
+ifeq ($(COMP_OCN), pop)
   INCLDIR += -I$(EXEROOT)/ocn/cvmix
 endif
 
@@ -609,7 +609,7 @@ ifeq ($(ULIBDEP),$(null))
 
 
      ULIBDEP += $(LIBROOT)/libocn.a
-     ifeq ($(COMP_OCN), pop2)
+     ifeq ($(COMP_OCN), pop)
        ULIBDEP += $(LIBROOT)/libcvmix.a
      endif
      ULIBDEP += $(LIBROOT)/librof.a
@@ -673,7 +673,7 @@ $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
 
 $(LIBROOT)/libcvmix.a:
-	$(MAKE) -f $(CIMEROOT)/../components/pop2/source/cvmix/Makefile SRC_DIR=$(CIMEROOT)/../components/pop2/source/cvmix FC=$(SFC) FCFLAGS="$(FFLAGS) $(FREEFLAGS)" LIB_DIR=$(LIBROOT)
+	$(MAKE) -f $(CIMEROOT)/../components/pop/source/cvmix/Makefile SRC_DIR=$(CIMEROOT)/../components/pop/source/cvmix FC=$(SFC) FCFLAGS="$(FFLAGS) $(FREEFLAGS)" LIB_DIR=$(LIBROOT)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<

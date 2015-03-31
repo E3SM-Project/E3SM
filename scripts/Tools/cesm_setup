@@ -268,7 +268,7 @@ if (! $clean ) {
 	print "Creating user_nl_xxx files for components and cpl$eol";
     }
     my @models = qw( ATM LND ICE OCN GLC ROF WAV );
-    my @multi_support = qw(cam datm clm dlnd cice dice pop2 docn rtm drof cism ww3);
+    my @multi_support = qw(cam datm clm dlnd cice dice pop docn rtm drof cism ww3);
     # loop over target models
     foreach my $model (@models) {
 	# what is component for target model

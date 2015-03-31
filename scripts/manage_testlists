@@ -321,7 +321,7 @@ sub writeXML
 	    $newfilename = "$cimeroot/../components/cism/cimetest/testlist_cism-$dtformat.xml";
 	}
 	if ($component eq 'pop') {
-	    $newfilename = "$cimeroot/../components/pop2/cimetest/testlist_pop-$dtformat.xml";
+	    $newfilename = "$cimeroot/../components/pop/cimetest/testlist_pop-$dtformat.xml";
 	}
 	if ($component eq 'allactive') {
 	    $newfilename = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive-$dtformat.xml";
@@ -1191,7 +1191,7 @@ sub setTestlist{
     } elsif ($comp =~ /^cism/) {
 	$list = "$cimeroot/../components/cism/cimetest/testlist_cism.xml"; 
     } elsif ($comp =~ /^pop/) {
-	$list = "$cimeroot/../components/pop2/cimetest/testlist_pop.xml"; 
+	$list = "$cimeroot/../components/pop/cimetest/testlist_pop.xml"; 
     } else {
 	die "component $comp does not match supported components \n";
     }

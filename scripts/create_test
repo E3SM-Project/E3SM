@@ -347,7 +347,6 @@ sub initialize()
   my @dirs = ("$cfgdir", "$cimeroot/scripts/Tools", "$cimeroot/utils/perl5lib");
 
   unshift @INC, @dirs;
-  require XML::Lite;
   require ConfigCase;
   require SetupTools;
   $commandline = "create_test @ARGV";  
@@ -463,9 +462,6 @@ sub options
 	    $d->close();
 	    foreach my $comp ( @dirs ) {
 		my $dir = "$cimeroot/../components/$comp/cimetest";
-		if ($comp eq 'pop2') {
-		    $comp =~ s/pop2/pop/
-		}
 		if ( -d "$dir" ) {
 		    if ( -f "$dir/testlist_$comp.xml" ) {
 			$xml_testlist_files{$comp} = "$dir/testlist_$comp.xml";
@@ -809,85 +805,68 @@ sub ExpandXmlList
 
   my @actualtests;
 
-  my $xml_comp = XML::Lite->new( $testlistfile );
-  my $root = $xml_comp->root_element();
-  my $name = $root->get_name();
-  $name eq "testlist" or die
-      "file $testlistfile is not an xml testlist file\n";
+  my $parser = XML::LibXML->new( no_blanks => 1);
+  my $file = $testlistfile;
+  my $xml = $parser->parse_file($file);
 
+  my @compset_elems = $xml->findnodes(".//compset");
+  foreach my $compset_elem (@compset_elems) {
+      my $compset_val = $compset_elem->getAttribute('name');
 
-  my @compset_elems = $xml_comp->elements_by_name( "compset" );
-  while ( my $compset_elem = shift @compset_elems ) {
-      my $compset_name = $compset_elem->get_name();
-      my %compset_attr = $compset_elem->get_attributes();
-      my $compset_val  = $compset_attr{'name'};
+      my @grid_elems = $compset_elem->childNodes();
+      foreach my $grid_elem (@grid_elems) {
+	  my $grid_val  = $grid_elem->getAttribute('name');
 
-      my @grid_elems = $compset_elem->get_children();
-      while ( my $grid_elem = shift @grid_elems ) {
-	      my $grid_name = $grid_elem->get_name();
-	      my %grid_attr = $grid_elem->get_attributes();
-	      my $grid_val  = $grid_attr{'name'};
-
-	  my @test_elems = $grid_elem->get_children();
-	  while ( my $test_elem = shift @test_elems ) {
-	      my $test_name = $test_elem->get_name();
-	      my %test_attr = $test_elem->get_attributes();
-	      
-	      my $test_val;
-	      if($opts{'nlcompareonly'}){
-                # Replace the test type with SBN
-                $test_val = "SBN";
-                my $optidx = index( $test_attr{'name'}, "_" );
-                if ( $optidx >= 0 ) {
-                   $test_val .= substr( $test_attr{'name'}, $optidx );
-                }
-	      }else{
-		  $test_val = $test_attr{'name'}; 
+	  my @test_elems = $grid_elem->childNodes();
+	  foreach my $test_elem (@test_elems) {
+	      my $test_val  = $test_elem->getAttribute('name');
+	      if ($opts{'nlcompareonly'}) {
+		  # Replace the test type with SBN
+		  $test_val = "SBN";
+		  my $optidx = index( $test_val, "_" );
+		  if ( $optidx >= 0 ) {
+		      $test_val .= substr( $test_val, $optidx );
+		  }
 	      }
 
-	      my @mach_elems = $test_elem->get_children();
-	      while ( my $mach_elem = shift @mach_elems ) {
-		  my $mach_name = $mach_elem->get_name();
-		  if ($mach_name eq 'machine') 
-		  {
-		      my %mach_attr = $mach_elem->get_attributes();
-		      my $testtype_val = $mach_attr{'testtype'};
-		      my $compiler_val = $mach_attr{'compiler'};
-		      my $testmods_val = $mach_attr{'testmods'};
-		      $testmods_val =~ s/\//-/g if(defined $testmods_val);
+	      my @mach_elems = $test_elem->childNodes();
+	      foreach my $mach_elem (@mach_elems) {
+		  my $machine_val  = $mach_elem->textContent();
+		  my $testtype_val = $mach_elem->getAttribute('testtype');
+		  my $compiler_val = $mach_elem->getAttribute('compiler');
+		  my $testmods_val = $mach_elem->getAttribute('testmods');
+		  $testmods_val =~ s/\//-/g if(defined $testmods_val);
+		  my $testname = "$test_val" . ".$grid_val" . ".$compset_val." ;
 
-		      my $machine_val  = $mach_elem->get_text();
-		      my $testname = "$test_val" . ".$grid_val" . ".$compset_val." ;
-		      if ($testcategory eq "all" or $testtype_val =~ /^${testcategory}$/) 
+		  if ($testcategory eq "all" or $testtype_val =~ /^${testcategory}$/) 
+		  {
+		      if ($testmach eq "all" or $machine_val eq $testmach )
 		      {
-			  if ($testmach eq "all" or $machine_val eq $testmach )
-			  {
-			      if($testmach eq "all"){
-				  if($opts{'mach'}){
-				      $testname .= $opts{'mach'};
-				  }else{
-				      $testname .="yellowstone";
-				  }
+			  if($testmach eq "all"){
+			      if ($opts{'mach'}){
+				  $testname .= $opts{'mach'};
 			      }else{
-				  $testname .= $machine_val;
+				  $testname .= "yellowstone";
 			      }
-			      if($testcompiler eq "all" or $compiler_val =~ /^${testcompiler}$/)
-			      {
-				  if($testcompiler eq "all"){
-				      if($opts{'compiler'}){
-					  $testname .="_".$opts{'compiler'};
-				      }else{
-					  $testname .="_intel";
-				      }
+			  }else{
+			      $testname .= $machine_val;
+			  }
+			  if ($testcompiler eq "all" or $compiler_val =~ /^${testcompiler}$/)
+			  {
+			      if($testcompiler eq "all"){
+				  if ($opts{'compiler'}){
+				      $testname .="_".$opts{'compiler'};
 				  }else{
-				      $testname .= "_".$compiler_val;
+				      $testname .="_intel";
 				  }
-				  if ($testmods_val) {
-				      $testname = "$testname" . ".$testmods_val";
-				  }
-				  push (@actualtests, $testname);
-				  &Debug("testname is $testname \n");
+			      } else{
+				  $testname .= "_".$compiler_val;
 			      }
+			      if ($testmods_val) {
+				  $testname = "$testname" . ".$testmods_val";
+			      }
+			      push (@actualtests, $testname);
+			      &Debug("testname is $testname \n");
 			  }
 		      }
 		  }
@@ -895,7 +874,6 @@ sub ExpandXmlList
 	  }
       }
   }
-  
     
 
   # check for duplicates in the test list...
@@ -1221,7 +1199,8 @@ sub runCreateNewcase
 	    $testmods = "$xml_testmod_dir/".$testmods;
 	    $cn_args .= " -user_mods_dir $testmods";
          } else {
-            warn "WARNING: Can NOT find testmod directory for $comp - not using any testmods \n";
+            print "Can NOT find testmod directory for $comp\n";
+	    die;
          }
      }
   }

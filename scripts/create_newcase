@@ -839,6 +839,7 @@ $cfg_ref->set('CCSMUSER', "$ccsmuser");
 $cfg_ref->set('CASEROOT', "$caseroot");
 $cfg_ref->set('CASE'    , "$case");
 $cfg_ref->set('CIMEROOT', "$cimeroot");
+$cfg_ref->set('SRCROOT' , "$cimeroot/../");
 $cfg_ref->set('CCSMROOT', "$cimeroot/../");
 $cfg_ref->set('XMLMODE' , "$xmlmode");
 
@@ -1006,8 +1007,8 @@ foreach my $comp (@comps)  {
 	$sysmod = "cp $cimeroot/../components/cice/bld/generate_cice_decomp.pl $buildconf/."; 
 	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
     }
-    if ($comp eq 'pop2') {
-	$sysmod = "cp $cimeroot/../components/pop2/bld/generate_pop_decomp.pl $buildconf/."; 
+    if ($comp eq 'pop') {
+	$sysmod = "cp $cimeroot/../components/pop/bld/generate_pop_decomp.pl $buildconf/."; 
 	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
     } 
 }

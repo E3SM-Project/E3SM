@@ -213,7 +213,7 @@ if [ $? -ne 0 ]; then
     archive_list="${archive_list} user_nl_cice"
     archive_list="${archive_list} user_nl_clm"
     archive_list="${archive_list} user_nl_cpl"
-    archive_list="${archive_list} user_nl_pop2"
+    archive_list="${archive_list} user_nl_pop"
     archive_list="${archive_list} user_nl_rtm"
 
     for item in ${archive_list}; do

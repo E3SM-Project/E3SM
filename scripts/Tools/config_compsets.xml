@@ -17,7 +17,7 @@ Where
    ATM  = [CAM4, CAM5, DATM, SATM, XATM]
    LND  = [CLM40, CLM45, CLM50, DLND, SLND, XLND]
    ICE  = [CICE, DICE, SICE, SICE]
-   OCN  = [POP2, DOCN, SOCN, XOCN,AQUAP,MPAS]
+   OCN  = [POP, DOCN, SOCN, XOCN,AQUAP,MPAS]
    ROF  = [RTM, DROF, SROF, XROF]
    GLC  = [CISM1, CISM2, SGLC, XGLC]
    WAV  = [WW3, DWAV, SWAV, XWAV]
@@ -449,7 +449,7 @@ value of RUN_STARTDATE will be date2.
 <COMP_ICE compset="_SICE">sice</COMP_ICE> 
 <COMP_ICE compset="_XICE">xice</COMP_ICE> 
 
-<COMP_OCN compset="_POP" >pop2</COMP_OCN> 
+<COMP_OCN compset="_POP" >pop</COMP_OCN> 
 <COMP_OCN compset="_DOCN">docn</COMP_OCN>
 <COMP_OCN compset="_SOCN">socn</COMP_OCN>
 <COMP_OCN compset="_XOCN">xocn</COMP_OCN>
