@@ -549,6 +549,11 @@ module mpas_core
       type (MPAS_Clock_type), intent(inout) :: core_clock
       type (mpas_pool_type), intent(inout) :: configs
       integer, intent(out) :: ierr
+      integer, pointer :: config_year_digits
+
+      ! Adjust number of digits representing the year
+      call mpas_pool_get_config(configs, 'config_year_digits', config_year_digits)
+      call mpas_timekeeping_set_year_width(config_year_digits)
 
       call simulation_clock_init(core_clock, configs, ierr)
 
