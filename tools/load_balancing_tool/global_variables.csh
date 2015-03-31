@@ -3,7 +3,7 @@
 ####################################################
 # Set case variables
 ####################################################
-setenv ccsmsrc /global/u1/m/mickelso/cesm1_3_alpha04b/
+setenv cesmsrc /global/u1/m/mickelso/cesm1_3_alpha04b/
 setenv res ne30_g16
 setenv compset B1850C5
 setenv mach edison_intel
@@ -26,14 +26,14 @@ setenv results_dir /global/u1/m/mickelso/neos-version-example/results/
 setenv NTHRDS_VAL 1
 
 # Set the Task Counts
-setenv TASK_ATM  "128,256,512,1024"
-setenv TASK_LND  "128,256,512,1024"
-setenv TASK_ROF  "128,256,512,1024"
-setenv TASK_ICE  "128,256,512,1024"
-setenv TASK_OCN  "128,256,512,1024"
-setenv TASK_CPL  "128,256,512,1024"
-setenv TASK_WAV  "128,256,512,1024"
-setenv TASK_GLC  "1,1,1,1"
+setenv TASK_ATM  "128,256,512,1024,2048"
+setenv TASK_LND  "128,256,512,1024,2048"
+setenv TASK_ROF  "128,256,512,1024,2048"
+setenv TASK_ICE  "128,256,512,1024,2048"
+setenv TASK_OCN  "128,256,512,1024,2048"
+setenv TASK_CPL  "128,256,512,1024,2048"
+setenv TASK_WAV  "128,256,512,1024,2048"
+setenv TASK_GLC  "1,1,1,1,1"
 
 # Set Root Locations
 setenv ROOT_ATM  "0,0,0,0,0"

@@ -33,7 +33,7 @@ chomp(my @test_list = <$list_handle>);
 foreach my $f (@test_list){
   my $file_string = $f."/timing/";
   if (-e $file_string){
-    system("cp $f/timing/ccsm_timing.* $rdir \n");
+    system("cp $f/timing/cesm_timing.* $rdir \n");
   }
 }
 

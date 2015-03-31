@@ -15,7 +15,7 @@ plot 'cost.dat' using 1:2 with linespoints lc rgb "red" lw 2
 set ylabel "runtime (seconds)"
 set output 'atm.gif'
 set title "CAM" 
-plot 'ATM.dat' using 1:2
+plot 'ATM.dat' using 1:2 with linespoints lc rgb "red" lw 2
 
 set title "POP2" 
 set output 'ocn.gif'
