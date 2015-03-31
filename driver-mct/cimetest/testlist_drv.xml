@@ -19,7 +19,6 @@
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prealpha">eos</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
-        <machine compiler="pgi" testtype="prebeta">hopper</machine>
       </test>
       <test name="ERS_Ld3">
         <machine compiler="pgi" testtype="prealpha">titan</machine>
@@ -44,7 +43,6 @@
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
-        <machine compiler="pgi" testtype="prebeta">hopper</machine>
       </test>
       <test name="NCK_Ld3">
         <machine compiler="intel" testtype="prebeta">goldbach</machine>
@@ -66,7 +64,6 @@
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prealpha">goldbach</machine>
         <machine compiler="pgi" testtype="prealpha">goldbach</machine>
-        <machine compiler="pgi" testtype="prebeta">hopper</machine>
         <machine compiler="intel" testtype="prealpha">stampede</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
@@ -80,7 +77,6 @@
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
-        <machine compiler="pgi" testtype="prebeta">hopper</machine>
       </test>
       <test name="PEA_P1_M_Ld3">
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
@@ -120,8 +116,6 @@
       </test>
       <test name="ERS_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
-        <machine compiler="pgi" testtype="prealpha">hopper</machine>
-        <machine compiler="pgi" testtype="prebeta">hopper</machine>
       </test>
     </grid>
   </compset>
@@ -141,12 +135,8 @@
       </test>
     </grid>
     <grid name="f09_g16">
-      <test name="CME_Ld3">
-        <machine compiler="pgi" testtype="prebeta">hopper</machine>
-      </test>
       <test name="SEQ_PFC_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
-        <machine compiler="pgi" testtype="prebeta">hopper</machine>
       </test>
     </grid>
     <grid name="f19_g16">
