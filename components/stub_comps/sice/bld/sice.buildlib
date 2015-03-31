@@ -11,7 +11,7 @@ my $model = "ice";
 my $comp  = "sice";
 
 my $CASETOOLS = `./xmlquery CASETOOLS -value`;
-my $CCSMROOT  = `./xmlquery CCSMROOT  -value`;
+my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
 my $MACH      = `./xmlquery MACH      -value`;
 my $OBJROOT   = `./xmlquery OBJROOT   -value`;
 my $LIBROOT   = `./xmlquery LIBROOT   -value`;
@@ -22,8 +22,8 @@ chdir "${OBJROOT}/${model}/obj";
 
 open(file,">Filepath") or die "Could not open file Filepath to write";
 print file "${CASEROOT}/SourceMods/src.${comp}\n";
-print file "${CCSMROOT}/cime/components/stub_comps/${comp}\n";
-print file "${CCSMROOT}/cime/components/stub_comps/${comp}/cpl\n";
+print file "${CIMEROOT}/components/stub_comps/${comp}\n";
+print file "${CIMEROOT}/components/stub_comps/${comp}/cpl\n";
 close(file);
 
 my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=${model} COMPLIB=${LIBROOT}/lib${model}.a -f ${CASETOOLS}/Makefile MACFILE=${CASEROOT}/Macros.${MACH}";
