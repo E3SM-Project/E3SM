@@ -63,7 +63,7 @@
       sh_flxsnw_idx, &
       sh_cldliq_idx, &
       sh_cldice_idx
-
+   logical :: convproc_do_aer, convproc_do_gas !BSINGH(09/22/2014): Added for unified convective transport
    contains
 
   !=============================================================================== !
@@ -80,7 +80,8 @@
   
   implicit none
 
-  call phys_getopts( shallow_scheme_out = shallow_scheme, microp_scheme_out = microp_scheme)
+  call phys_getopts( shallow_scheme_out = shallow_scheme, microp_scheme_out = microp_scheme, &
+       convproc_do_aer_out = convproc_do_aer, convproc_do_gas_out=convproc_do_gas) !BSINGH(09/22/2014): Added for unified convective transport
                      
 
   call pbuf_add_field('ICWMRSH',    'physpkg' ,dtype_r8,(/pcols,pver/),       icwmrsh_idx )
@@ -350,7 +351,7 @@
 
   subroutine convect_shallow_tend( ztodt  , cmfmc   , cmfmc2   , &
                                    qc     , qc2     , rliq     , rliq2    , & 
-                                   state  , ptend_all, pbuf)
+                                   state  , ptend_all, pbuf    , sh_e_ed_ratio) !BSINGH(09/22/2014): Added sh_e_ed_ratio for unified convective transport
    use physics_buffer,  only : physics_buffer_desc, pbuf_get_field, pbuf_set_field, pbuf_old_tim_idx
    use cam_history,     only : outfld
    use physics_types,   only : physics_state, physics_ptend
@@ -380,7 +381,7 @@
    real(r8),            intent(out)   :: cmfmc2(pcols,pverp)             ! Updraft mass flux by shallow convection [ kg/s/m2 ]
    real(r8),            intent(out)   :: rliq2(pcols)                    ! Vertically-integrated reserved cloud condensate [ m/s ]
    real(r8),            intent(out)   :: qc2(pcols,pver)                 ! Same as qc but only from shallow convection scheme
-
+   real(r8),            intent(out)   :: sh_e_ed_ratio(pcols,pver)       ! fer/(fer+fdr) from uwschu  !RCE !BSINGH(09/22/2014): Added for unified convective transport
    
 
    real(r8),            intent(inout) :: cmfmc(pcols,pverp)              ! Moist deep + shallow convection cloud mass flux [ kg/s/m2 ]
@@ -438,6 +439,7 @@
    real(r8) :: ptend_tracer(pcols,pver,pcnst)                            ! Tendencies of tracers
    real(r8) :: sum1, sum2, sum3, pdelx 
 
+   real(r8) :: fer_out(pcols,pver), fdr_out(pcols,pver)                  ! fractional entrainment/detrainment rates rom uwschu  !RCE !BSINGH(09/22/2014): Added for unified convective transport
    real(r8), dimension(pcols,pver) :: sl, qt, slv
    real(r8), dimension(pcols,pver) :: sl_preCu, qt_preCu, slv_preCu
 
@@ -512,6 +514,7 @@
    !  This field probably should reference the pbuf tpert field but it doesnt
    tpert(:ncol)         = 0._r8
 
+   sh_e_ed_ratio(:ncol,:pver) = -1.0_r8  !RCE !BSINGH(09/22/2014): Added for unified convective transport
 
    select case (shallow_scheme)
 
@@ -583,7 +586,20 @@
                                rprdsh              , cmfdqs         , precc         , snow          ,                   &
                                evapcsh             , shfrc          , iccmr_UW      , icwmr_UW      ,                   &
                                icimr_UW            , cbmf           , qc2           , rliq2         ,                   &
-                               cnt2                , cnb2           , lchnk         , state%pdeldry )
+                               cnt2                , cnb2           , lchnk         , state%pdeldry ,                   &
+                               fer_out             , fdr_out                                                            )!BSINGH(09/22/2014): Added fer_out and fdr_out for unified convective transport
+
+      if(convproc_do_aer .or. convproc_do_gas) then
+         !RCE mods for modal_aero_convproc
+         do k = 1, pver
+            do i = 1, ncol
+               if ( max(fer_out(i,k),fdr_out(i,k)) > 1.0e-10_r8) then
+                  sh_e_ed_ratio(i,k) = max(fer_out(i,k),0.0_r8) &
+                       / (max(fer_out(i,k),0.0_r8) + max(fdr_out(i,k),0.0_r8))
+               end if
+            end do
+         end do
+      endif
 
       ! --------------------------------------------------------------------- !
       ! Here, 'rprdsh = qrten', 'cmfdqs = qsten' both in unit of [ kg/kg/s ]  !

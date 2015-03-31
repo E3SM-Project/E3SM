@@ -30,26 +30,31 @@ module zm_conv_intr
       zm_conv_tend_2               ! return tendencies
 
    ! Private module data
-
-   real(r8), allocatable, dimension(:,:,:) :: mu  !(pcols,pver,begchunk:endchunk)
-   real(r8), allocatable, dimension(:,:,:) :: eu  !(pcols,pver,begchunk:endchunk)
-   real(r8), allocatable, dimension(:,:,:) :: du  !(pcols,pver,begchunk:endchunk)
-   real(r8), allocatable, dimension(:,:,:) :: md  !(pcols,pver,begchunk:endchunk)
-   real(r8), allocatable, dimension(:,:,:) :: ed  !(pcols,pver,begchunk:endchunk)
-   real(r8), allocatable, dimension(:,:,:) :: dp  !(pcols,pver,begchunk:endchunk) 
+   ! BSINGH(09/18/2014) -  Following is commented out as these data are now declared in tphysbc subroutine
+   ! in physpkg.F90. These data are moved from this module as  Lahey didn't like this 
+   ! (blows up while compiling physpkg.F90 due to insufficient memory when we make these data 
+   ! public for unified convective transport mods). Please note that these data are being used in aerosol_wet_intr 
+   ! subroutine also and therefore they were made public for unified convective transport mods which was causing 
+   ! problems with Lahey compiler
+   !real(r8), allocatable, dimension(:,:,:) :: mu  !(pcols,pver,begchunk:endchunk)
+   !real(r8), allocatable, dimension(:,:,:) :: eu  !(pcols,pver,begchunk:endchunk)
+   !real(r8), allocatable, dimension(:,:,:) :: du  !(pcols,pver,begchunk:endchunk)
+   !real(r8), allocatable, dimension(:,:,:) :: md  !(pcols,pver,begchunk:endchunk)
+   !real(r8), allocatable, dimension(:,:,:) :: ed  !(pcols,pver,begchunk:endchunk)
+   !real(r8), allocatable, dimension(:,:,:) :: dp  !(pcols,pver,begchunk:endchunk) 
 	! wg layer thickness in mbs (between upper/lower interface).
-   real(r8), allocatable, dimension(:,:)   :: dsubcld  !(pcols,begchunk:endchunk)
+   !real(r8), allocatable, dimension(:,:)   :: dsubcld  !(pcols,begchunk:endchunk)
 	! wg layer thickness in mbs between lcl and maxi.
 
-   integer, allocatable, dimension(:,:) :: jt   !(pcols,begchunk:endchunk)
+   !integer, allocatable, dimension(:,:) :: jt   !(pcols,begchunk:endchunk)
         ! wg top  level index of deep cumulus convection.
-   integer, allocatable, dimension(:,:) :: maxg !(pcols,begchunk:endchunk)
+   !integer, allocatable, dimension(:,:) :: maxg !(pcols,begchunk:endchunk)
         ! wg gathered values of maxi.
-   integer, allocatable, dimension(:,:) :: ideep !(pcols,begchunk:endchunk)               
+   !integer, allocatable, dimension(:,:) :: ideep !(pcols,begchunk:endchunk)               
 	! w holds position of gathered points vs longitude index
 
-   integer, allocatable, dimension(:) :: lengath !(begchunk:endchunk)
-
+   !integer, allocatable, dimension(:) :: lengath !(begchunk:endchunk)
+   !BSINGH - ENDS
    integer ::& ! indices for fields in the physics buffer
       dp_flxprc_idx, &
       dp_flxsnw_idx, &
@@ -64,6 +69,10 @@ module zm_conv_intr
    integer  ::    rprddp_idx       = 0    
    integer  ::    fracis_idx       = 0   
    integer  ::    nevapr_dpcu_idx  = 0    
+   !BSINGH(09/18/2014): For unified convective  transport
+   logical  ::    convproc_do_aer 
+   logical  ::    convproc_do_gas 
+   !BSINGH-Ends
 
 !=========================================================================================
 contains
@@ -128,39 +137,42 @@ subroutine zm_conv_init(pref_edge)
 !
 ! Allocate space for arrays private to this module
 !
-     allocate( mu(pcols,pver,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'mu', &
-                      pcols*pver*((endchunk-begchunk)+1) )
-     allocate( eu(pcols,pver,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'eu', &
-                      pcols*pver*((endchunk-begchunk)+1) )
-     allocate( du(pcols,pver,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'du', &
-                      pcols*pver*((endchunk-begchunk)+1) )
-     allocate( md(pcols,pver,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'md', &
-                      pcols*pver*((endchunk-begchunk)+1) )
-     allocate( ed(pcols,pver,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'ed', &
-                      pcols*pver*((endchunk-begchunk)+1) )
-     allocate( dp(pcols,pver,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'dp', &
-                      pcols*pver*((endchunk-begchunk)+1) )
-     allocate( dsubcld(pcols,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'dsubcld', &
-                      pcols*((endchunk-begchunk)+1) )
-     allocate( jt(pcols,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'jt', &
-                      pcols*((endchunk-begchunk)+1) )
-     allocate( maxg(pcols,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'maxg', &
-                      pcols*((endchunk-begchunk)+1) )
-     allocate( ideep(pcols,begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'ideep', &
-                      pcols*((endchunk-begchunk)+1) )
-     allocate( lengath(begchunk:endchunk), stat=istat )
-      call alloc_err( istat, 'zm_conv_tend', 'lengath', &
-                      ((endchunk-begchunk)+1) )
+  !BSINGH(09/18/2014) -  Following allocation is not necessary now as these data are moved to tphysbc (physpkg.F90)
+  ! Please see comment above regaring unified convective transport mods
+
+  !allocate( mu(pcols,pver,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'mu', &
+  !                    pcols*pver*((endchunk-begchunk)+1) )
+  !   allocate( eu(pcols,pver,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'eu', &
+  !                    pcols*pver*((endchunk-begchunk)+1) )
+  !   allocate( du(pcols,pver,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'du', &
+  !                    pcols*pver*((endchunk-begchunk)+1) )
+  !   allocate( md(pcols,pver,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'md', &
+  !                    pcols*pver*((endchunk-begchunk)+1) )
+  !   allocate( ed(pcols,pver,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'ed', &
+  !                    pcols*pver*((endchunk-begchunk)+1) )
+  !   allocate( dp(pcols,pver,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'dp', &
+  !                    pcols*pver*((endchunk-begchunk)+1) )
+  !   allocate( dsubcld(pcols,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'dsubcld', &
+  !                    pcols*((endchunk-begchunk)+1) )
+  !   allocate( jt(pcols,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'jt', &
+  !                    pcols*((endchunk-begchunk)+1) )
+  !   allocate( maxg(pcols,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'maxg', &
+  !                    pcols*((endchunk-begchunk)+1) )
+  !   allocate( ideep(pcols,begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'ideep', &
+  !                    pcols*((endchunk-begchunk)+1) )
+  !   allocate( lengath(begchunk:endchunk), stat=istat )
+  !    call alloc_err( istat, 'zm_conv_tend', 'lengath', &
+  !                    ((endchunk-begchunk)+1) )
 
 
 ! 
@@ -211,7 +223,10 @@ subroutine zm_conv_init(pref_edge)
     call addfld ('ZMICVD', 'm/s',     pver, 'A', 'ZM in-cloud V downdrafts',    phys_decomp)
     
     call phys_getopts( history_budget_out = history_budget, &
-                       history_budget_histfile_num_out = history_budget_histfile_num)
+                       history_budget_histfile_num_out = history_budget_histfile_num, &
+                       convproc_do_aer_out = convproc_do_aer, & !BSINGH(09/18/2014)
+                       convproc_do_gas_out = convproc_do_gas)   !BSINGH(09/18/2014)
+
 
     if ( history_budget ) then
        call add_default('EVAPTZM  ', history_budget_histfile_num, ' ')
@@ -268,8 +283,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
      rliq    , &
      ztodt   , &
      jctop   ,jcbot , &
-     state   ,ptend_all   ,landfrac,  pbuf)
-  
+     state   ,ptend_all   ,landfrac,  pbuf, mu, eu, &
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath) !BSINGH - Added 11 new args ('mu' to 'lengath') for unified convective transport mods  
 
    use cam_history,   only: outfld
    use physics_types, only: physics_state, physics_ptend
@@ -303,6 +318,31 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8), intent(out) :: zdu(pcols,pver)    ! detraining mass flux
 
    real(r8), intent(out) :: rliq(pcols) ! reserved liquid (not yet in cldliq) for energy integrals
+
+   !BSINGH(09/18/2014) - For unified convective transport mods
+   !BSINGH - The following variables are intent-out for this subroutine
+   real(r8), intent(out):: mu(pcols,pver) 
+   real(r8), intent(out):: eu(pcols,pver) 
+   real(r8), intent(out):: du(pcols,pver) 
+   real(r8), intent(out):: md(pcols,pver) 
+   real(r8), intent(out):: ed(pcols,pver) 
+   real(r8), intent(out):: dp(pcols,pver) 
+   
+   ! wg layer thickness in mbs (between upper/lower interface).
+   real(r8), intent(out):: dsubcld(pcols) 
+   
+   ! wg layer thickness in mbs between lcl and maxi.    
+   integer, intent(out) :: jt(pcols)   
+   
+   ! wg top  level index of deep cumulus convection.
+   integer, intent(out) :: maxg(pcols) 
+   
+   ! wg gathered values of maxi.
+   integer, intent(out) :: ideep(pcols)
+   
+   ! w holds position of gathered points vs longitude index   
+   integer, intent(out)  :: lengath
+   !BSINGH - ENDS
 
 
    ! Local variables
@@ -405,17 +445,17 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     ptend_loc%s    ,state%pmid     ,state%pint    ,state%pdel     , &
                     .5_r8*ztodt    ,mcon    ,cme     , cape,      &
                     tpert   ,dlf     ,pflx    ,zdu     ,rprd    , &
-                    mu(:,:,lchnk),md(:,:,lchnk),du(:,:,lchnk),eu(:,:,lchnk),ed(:,:,lchnk)      , &
-                    dp(:,:,lchnk) ,dsubcld(:,lchnk) ,jt(:,lchnk),maxg(:,lchnk),ideep(:,lchnk)   , &
-                    lengath(lchnk) ,ql      ,rliq  ,landfrac   )
+                    mu,md,du,eu,ed      , &
+                    dp ,dsubcld ,jt,maxg,ideep   , &
+                    lengath ,ql      ,rliq  ,landfrac   )
 
    call outfld('CAPE', cape, pcols, lchnk)        ! RBN - CAPE output
 !
 ! Output fractional occurance of ZM convection
 !
    freqzm(:) = 0._r8
-   do i = 1,lengath(lchnk)
-      freqzm(ideep(i,lchnk)) = 1.0_r8
+   do i = 1,lengath
+      freqzm(ideep(i)) = 1.0_r8
    end do
    call outfld('FREQZM  ',freqzm          ,pcols   ,lchnk   )
 !
@@ -425,16 +465,21 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    ! Store upward and downward mass fluxes in un-gathered arrays
    ! + convert from mb/s to kg/m^2/s
-   do i=1,lengath(lchnk) 
+   do i=1,lengath
       do k=1,pver
-         ii = ideep(i,lchnk)
-         mu_out(ii,k) = mu(i,k,lchnk) * 100._r8/gravit
-         md_out(ii,k) = md(i,k,lchnk) * 100._r8/gravit
+         ii = ideep(i)
+         mu_out(ii,k) = mu(i,k) * 100._r8/gravit
+         md_out(ii,k) = md(i,k) * 100._r8/gravit
       end do
    end do
 
-   call outfld('ZMMU', mu_out(1,1), pcols, lchnk)
-   call outfld('ZMMD', md_out(1,1), pcols, lchnk)
+   if(convproc_do_aer .or. convproc_do_gas) then !BSINGH - Added for unified convective transport  mods
+      call outfld('ZMMU', mu_out,      pcols, lchnk)
+      call outfld('ZMMD', md_out,      pcols, lchnk)
+   else
+      call outfld('ZMMU', mu_out(1,1), pcols, lchnk)
+      call outfld('ZMMD', md_out(1,1), pcols, lchnk)
+   endif
 
    ftem(:ncol,:pver) = ptend_loc%s(:ncol,:pver)/cpair
    call outfld('ZMDT    ',ftem           ,pcols   ,lchnk   )
@@ -445,10 +490,10 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !    do i = 1,nco
    pcont(:ncol) = state%ps(:ncol)
    pconb(:ncol) = state%ps(:ncol)
-   do i = 1,lengath(lchnk)
-       if (maxg(i,lchnk).gt.jt(i,lchnk)) then
-          pcont(ideep(i,lchnk)) = state%pmid(ideep(i,lchnk),jt(i,lchnk))  ! gathered array (or jctop ungathered)
-          pconb(ideep(i,lchnk)) = state%pmid(ideep(i,lchnk),maxg(i,lchnk))! gathered array
+   do i = 1,lengath
+       if (maxg(i).gt.jt(i)) then
+          pcont(ideep(i)) = state%pmid(ideep(i),jt(i))  ! gathered array (or jctop ungathered)
+          pconb(ideep(i)) = state%pmid(ideep(i),maxg(i))! gathered array
        endif
        !     write(iulog,*) ' pcont, pconb ', pcont(i), pconb(i), cnt(i), cnb(i)
     end do
@@ -534,9 +579,9 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
      call t_startf ('momtran')
      call momtran (lchnk, ncol,                                        &
-                   l_windt,winds, 2,  mu(1,1,lchnk), md(1,1,lchnk),   &
-                   du(1,1,lchnk), eu(1,1,lchnk), ed(1,1,lchnk), dp(1,1,lchnk), dsubcld(1,lchnk),  &
-                   jt(1,lchnk),maxg(1,lchnk), ideep(1,lchnk), 1, lengath(lchnk),  &
+                   l_windt,winds, 2,  mu(1,1), md(1,1),   &
+                   du(1,1), eu(1,1), ed(1,1), dp(1,1), dsubcld(1),  &
+                   jt(1),maxg(1), ideep(1), 1, lengath,  &
                    nstep,  wind_tends, pguall, pgdall, icwu, icwd, ztodt, seten )  
      call t_stopf ('momtran')
 
@@ -583,9 +628,9 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    call t_startf ('convtran1')
    call convtran (lchnk,                                        &
-                  ptend_loc%lq,state1%q, pcnst,  mu(:,:,lchnk), md(:,:,lchnk),   &
-                  du(:,:,lchnk), eu(:,:,lchnk), ed(:,:,lchnk), dp(:,:,lchnk), dsubcld(:,lchnk),  &
-                  jt(:,lchnk),maxg(:,lchnk), ideep(:,lchnk), 1, lengath(lchnk),  &
+                  ptend_loc%lq,state1%q, pcnst,  mu, md,   &
+                  du, eu, ed, dp, dsubcld,  &
+                  jt,maxg, ideep, 1, lengath,  &
                   nstep,   fracis,  ptend_loc%q, fake_dpdry)
    call t_stopf ('convtran1')
 
@@ -602,13 +647,20 @@ end subroutine zm_conv_tend
 !=========================================================================================
 
 
-subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf)
+subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath) !BSINGH - Added 11 new args ('mu' to 'lengath') for unified convective transport mods
 
    use physics_types, only: physics_state, physics_ptend, physics_ptend_init
    use time_manager,  only: get_nstep
    use physics_buffer, only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
    use constituents,  only: pcnst, cnst_get_ind, cnst_is_convtran1
-   use error_messages, only: alloc_err	
+   use error_messages, only: alloc_err
+   !BSINGH -  Added for unified convective transport mods
+#ifdef MODAL_AERO
+   use modal_aero_data, only : species_class, spec_class_aerosol, spec_class_gas
+#endif
+   !BSINGH -  Added for unified convective transport mods-ENDS	
+ 
  
 ! Arguments
    type(physics_state), intent(in )   :: state          ! Physics state variables
@@ -618,8 +670,35 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf)
 
    real(r8), intent(in) :: ztodt                          ! 2 delta t (model time increment)
 
+   !BSINGH - For unified convective transport mods
+   !BSINGH - The following variables are intent-in for this subroutine
+   real(r8), intent(in):: mu(pcols,pver) 
+   real(r8), intent(in):: eu(pcols,pver) 
+   real(r8), intent(in):: du(pcols,pver) 
+   real(r8), intent(in):: md(pcols,pver) 
+   real(r8), intent(in):: ed(pcols,pver) 
+   real(r8), intent(in):: dp(pcols,pver) 
+   
+   ! wg layer thickness in mbs (between upper/lower interface).
+   real(r8), intent(in):: dsubcld(pcols) 
+   
+   ! wg layer thickness in mbs between lcl and maxi.    
+   integer, intent(in) :: jt(pcols)   
+   
+   ! wg top  level index of deep cumulus convection.
+   integer, intent(in) :: maxg(pcols) 
+   
+   ! wg gathered values of maxi.
+   integer, intent(in) :: ideep(pcols)
+   
+   ! w holds position of gathered points vs longitude index 
+   integer, intent(in)  :: lengath
+   !BSINGH - ENDS
+
+
+
 ! Local variables
-   integer :: i, lchnk, istat
+   integer :: i, lchnk, istat, m !BSINGH- 'm' added for unified convective transport mods
    integer :: nstep
    real(r8), dimension(pcols,pver) :: dpdry
 
@@ -648,23 +727,46 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf)
   lchnk = state%lchnk
 
    nstep = get_nstep()
+   !BSINGH - Added for unified convective transport mods
+#ifdef MODAL_AERO
+   if(convproc_do_aer .or. convproc_do_gas) then
+      do m = 1, pcnst
+         if ( (species_class(m) == spec_class_aerosol .and. convproc_do_aer) .or. &
+              (species_class(m) == spec_class_gas     .and. convproc_do_gas) ) then
+            ptend%lq(m) = .false.
+         end if
+      enddo
+   endif
+#endif 
 
    if (any(ptend%lq(:))) then
       ! initialize dpdry for call to convtran
       ! it is used for tracers of dry mixing ratio type
       dpdry = 0._r8
-      do i = 1,lengath(lchnk)
-         dpdry(i,:) = state%pdeldry(ideep(i,lchnk),:)/100._r8
+      do i = 1,lengath
+         dpdry(i,:) = state%pdeldry(ideep(i),:)/100._r8
       end do
 
       call t_startf ('convtran2')
       call convtran (lchnk,                                        &
-                     ptend%lq,state%q, pcnst,  mu(:,:,lchnk), md(:,:,lchnk),   &
-                     du(:,:,lchnk), eu(:,:,lchnk), ed(:,:,lchnk), dp(:,:,lchnk), dsubcld(:,lchnk),  &
-                     jt(:,lchnk),maxg(:,lchnk),ideep(:,lchnk), 1, lengath(lchnk),  &
+                     ptend%lq,state%q, pcnst,  mu, md,   &
+                     du, eu, ed, dp, dsubcld,  &
+                     jt,maxg,ideep, 1, lengath,  &
                      nstep,   fracis,  ptend%q, dpdry)
       call t_stopf ('convtran2')
    end if
+   !BSINGH - For unified convective transport mods
+#ifdef MODAL_AERO
+   if(convproc_do_aer .or. convproc_do_gas) then
+      do m = 1, pcnst
+         if ( (species_class(m) == spec_class_aerosol .and. convproc_do_aer) .or. &
+              (species_class(m) == spec_class_gas     .and. convproc_do_gas) ) then
+            ptend%lq(m) = .false.
+            ptend%q(:,:,m) = 0.0_r8
+         end if
+      enddo
+   endif
+#endif
 
 end subroutine zm_conv_tend_2
 
