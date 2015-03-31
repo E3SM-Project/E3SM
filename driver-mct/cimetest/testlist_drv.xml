@@ -148,7 +148,6 @@
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
       </test>
       <test name="PET_PT_Ld3">
-        <machine compiler="intel" testtype="prebeta">goldbach</machine>
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
         <machine compiler="intel" testtype="prebeta">janus</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
