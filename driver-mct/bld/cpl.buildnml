@@ -17,7 +17,7 @@ my $ATM_GRID		= `./xmlquery  ATM_GRID		-value`;
 my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
 my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
 my $CAM_CONFIG_OPTS	= `./xmlquery  CAM_CONFIG_OPTS	-value`;
-my $CCSMROOT		= `./xmlquery  CCSMROOT		-value`;
+my $CIMEROOT		= `./xmlquery  CIMEROOT		-value`;
 my $GRID		= `./xmlquery  GRID		-value`;
 my $LND_GRID		= `./xmlquery  LND_GRID		-value`;
 my $OCN_GRID		= `./xmlquery  OCN_GRID		-value`;
@@ -58,10 +58,10 @@ SetupTools::create_namelist_infile("$CASEROOT",
 # call build-namelist
 # -----------------------------------------------------
 
-$sysmod = "$CCSMROOT/cime/driver_cpl/bld/build-namelist";
+$sysmod = "$CIMEROOT/driver_cpl/bld/build-namelist";
 $sysmod = "$sysmod -infile $CASEBUILD/cplconf/cesm_namelist";
 $sysmod = "$sysmod -caseroot $CASEROOT";
-$sysmod = "$sysmod -scriptsroot $CCSMROOT/cime/scripts";
+$sysmod = "$sysmod -scriptsroot $CIMEROOT/scripts";
 $sysmod = "$sysmod -grid $GRID -rof_grid $ROF_GRID -atm_grid $ATM_GRID ";
 $sysmod = "$sysmod -lnd_grid $LND_GRID -ocn_grid $OCN_GRID -wav_grid $WAV_GRID";
 system($sysmod) == 0 or die "ERROR cpl.buildnml: $sysmod failed: $?\n";

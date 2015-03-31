@@ -9,7 +9,7 @@ my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
 my $CASETOOLS = `./xmlquery CASETOOLS -value`;
-my $CCSMROOT  = `./xmlquery CCSMROOT  -value`;
+my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
 my $OBJROOT   = `./xmlquery OBJROOT   -value`;
 my $EXEROOT   = `./xmlquery EXEROOT   -value`;
 my $MACH      = `./xmlquery MACH      -value`;
@@ -19,7 +19,7 @@ chdir "${OBJROOT}/cesm/obj";
 
 open(file,">Filepath") or die "Could not open file Filepath to write";
 print file "${CASEROOT}/SourceMods/src.drv\n";
-print file "${CCSMROOT}/cime/driver_cpl/driver\n";
+print file "${CIMEROOT}/driver_cpl/driver\n";
 close(file);
 
 my $sysmod = "gmake exec_se -j ${GMAKE_J} EXEC_SE=${EXEROOT}/cesm.exe MODEL=driver  -f ${CASETOOLS}/Makefile ";
