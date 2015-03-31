@@ -13,7 +13,7 @@ my ($sharedlibroot, $CASEROOT) = @ARGV;
 
 chdir "${CASEROOT}";
 
-my $CCSMROOT		= `./xmlquery CCSMROOT		-value`;
+my $CIMEROOT		= `./xmlquery CIMEROOT		-value`;
 my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE	-value`;
 my $USE_ESMF_LIB	= `./xmlquery USE_ESMF_LIB	-value`;
 my $GMAKE_J		= `./xmlquery GMAKE_J		-value`;
@@ -43,15 +43,15 @@ mkpath($libdir) unless -d $libdir;
 chdir($libdir) or die "Could not cd to $libdir: $!\n";
 
 my @filepath = ( "$CASEROOT/SourceMods/src.share",
-		 "$CCSMROOT/cime/driver_cpl/shr",
-		 "$CCSMROOT/cime/components/xcpl_models/xshare",
-		 "$CCSMROOT/cime/share/csm_share/shr",
+		 "$CIMEROOT/driver_cpl/shr",
+		 "$CIMEROOT/components/xcpl_models/xshare",
+		 "$CIMEROOT/share/csm_share/shr",
 		 );
 
 if($useesmf eq "noesmf"){
-    push(@filepath,"$CCSMROOT/cime/share/esmf_wrf_timemgr");
+    push(@filepath,"$CIMEROOT/share/esmf_wrf_timemgr");
 }else{
-    push(@filepath,"$CCSMROOT/cime/driver_cpl/shr_esmf");
+    push(@filepath,"$CIMEROOT/driver_cpl/shr_esmf");
 } 
 
 my @fp;    

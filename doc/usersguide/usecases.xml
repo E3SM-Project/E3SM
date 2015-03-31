@@ -6,7 +6,7 @@
 <title>BASICS: A basic example</title>
 
 <para> This specifies all the steps necessary to create, set up, build,
-and run a case. The following assumes that $CCSMROOT is /user/ccsmroot.
+and run a case. The following assumes that $CIMEROOT is /user/cimeroot.
 </para>
 
 <orderedlist>
@@ -15,7 +15,7 @@ and run a case. The following assumes that $CCSMROOT is /user/ccsmroot.
 <para> Create a new case  named EXAMPLE_CASE in the ~/cesm directory. Use
 an 1850 control compset at 1-degree resolution on yellowstone. </para>
 <screen>
-> cd /user/ccsmroot/scripts
+> cd /user/cimeroot/scripts
 > ./create_newcase -case ~/cesm/EXAMPLE_CASE \
                  -compset B_1850_CN \
                  -res 0.9x1.25_gx1v6 \
@@ -96,14 +96,14 @@ a resubmit will automatically change the run to be a continuation run).
 The section <link linkend="run_start_stop">setting the case
 initialization</link> discussed starting a new case as a branch run or
 hybrid run by using data from a previous run. First you need to create
-a new case. Assume that $&CCSMROOT; is set to /user/ccsmroot and that
+a new case. Assume that $&CIMEROOT; is set to /user/cimeroot and that
 $&EXEROOT; is <filename>/glade/scratch/$user/EXAMPLE_CASEp</filename>. Finally,
 assume that the branch or hybrid run is being carried out on NCAR's
 IBM system, yellowstone.
 </para>
 
 <screen>
-> cd /user/ccsmroot/scripts
+> cd /user/cimeroot/scripts
 > create_newcase -case ~/cesm/EXAMPLE_CASEp \
                  -compset B_2000 \ 
                  -res 0.9x1.25_gx1v6 \
@@ -456,7 +456,7 @@ The following outlines the steps involved to do this.
 Create the executable that all runs will use. Call this case RefExe.
 The following would be a sample <command>create_newcase</command> command:
 <screen>
-> cd $CCSMROOT/scripts
+> cd $CIMEROOT/scripts
 > create_newcase -case RefExe -compset B1850CN -res ne30_g16 -mach hopper
 > cd RefExe
 > ./cesm_setup
@@ -473,7 +473,7 @@ must have identical arguments for -compset, -res and -mach.
 Lets say that you want to run 2 separate cases, RefExe_Case1 and RefExe_Case2 
 that both use the executable RefExe. You would then do the following:
 <screen>
-> cd $CCSMROOT/scripts
+> cd $CIMEROOT/scripts
 > create_newcase -case RefExe_Case1 -compset B1850CN -res ne30_g16 -mach hopper
 > cd RefExe_Case1
 > ./cesm_setup
@@ -482,7 +482,7 @@ that both use the executable RefExe. You would then do the following:
 > qsub RefExe_Case1.run
 </screen>
 <screen>
-> cd $CCSMROOT/scripts
+> cd $CIMEROOT/scripts
 > create_newcase -case RefExe_Case2 -compset B1850CN -res ne30_g16 -mach hopper
 > cd RefExe_Case1
 > ./cesm_setup
@@ -672,10 +672,10 @@ These files should not be edited and exist only to help document the case setup 
 <listitem><para>
 contains directories for each component where case specific source
 code modifications can be included.  The source files in these directories
-will always be used in preference to the source code in $CCSMROOT.  
+will always be used in preference to the source code in $CIMEROOT.  
 This feature allows users to modify CESM source code on a case
 by case basis if that is preferable to making modifications in the
-$CCSMROOT sandbox.
+$CIMEROOT sandbox.
 </para></listitem>
 </varlistentry>
 
@@ -1368,7 +1368,7 @@ Save monthly averaged 'aice' information from cice code (this is the default).
 
 <listitem><para> 
 Save monthly averaged SST information from pop2. To do this, copy
-$CCSMROOT/models/ocn/pop2/input_templates/gx1v6_tavg_contents, to
+$CIMEROOT/../components/pop2/input_templates/gx1v6_tavg_contents, to
 $CASEROOT/SourceMods/src.pop2 and change the 2 in front of SST to
 1 for monthly frequency.
 </para></listitem>
@@ -1546,8 +1546,8 @@ built or run is run.  The scripts that generate the decompositions are
 CASEROOT/Buildconf/generate_pop_decomp.pl and
 $CASEROOT/Buildconf/generate_cice_decomp.pl.  Those tools leverage
 decompositions stored in xml files,
-$CCSMROOT/models/ocn/pop2/bld/pop_decomp.xml and
-$CCSMROOT/models/ice/cice/bld/cice_decomp.xml, respectively.  These
+$CIMEROOT/../components/pop2/bld/pop_decomp.xml and
+$CIMEROOT/../components/cice/bld/cice_decomp.xml, respectively.  These
 utilities set the decomposition for a given resolution and total
 processor count.  The decomposition used can have a significant effect
 on the model performance, and the decompositions specified by the
@@ -1836,7 +1836,7 @@ component set name.
 
 <para>
 In CESM1.2, the component set definition file,
-<filename>$CCSMROOT/scripts/ccsm_utils/Case.template/config_compsets.xml</filename>
+<filename>$CIMEROOT/scripts/ccsm_utils/Case.template/config_compsets.xml</filename>
 has been redefined to be hierarchical. The following documents the
 rules involved for generating a compset from the hierarchy. The compononent set longname
 is given by the following notation:
@@ -2009,7 +2009,7 @@ As an example, the following will create a compset that is not currently support
 If you want to create a component set that has new physics
 definitions, then the process is a bit more complicated. You will need
 to first edit
-<filename>$CCSMROOT/scripts/ccsm_utils/Case.template/config_compset.xml</filename>
+<filename>$CIMEROOT/scripts/ccsm_utils/Case.template/config_compset.xml</filename>
 and fill in the appropriate sections specified by the string
 "USER_DEFINED section" as necessary.  At that point, you can then call
 ./create_newcase as above with the -user_compset argument that is now
@@ -2052,7 +2052,7 @@ Note: This will be generalized in CESM1.2. TO DO
 
 <para>CESM provides completely <emphasis>new support</emphasis> for you to
 add your own specific component grid combinations. To achieve this, CESM
-has a new top level directory <filename>$CCSMROOT/mapping/</filename>. A brief
+has a new top level directory <filename>$CIMEROOT/tools/mapping/</filename>. A brief
 list of the steps needed to add a new component grid to the model system
 follows. Again, this process can be simplified if the atmosphere and land are
 running on the same grid.
@@ -2087,7 +2087,7 @@ this utility.
 </para>
 <para>
 To build this tool, follow the instructions in
-<filename>$CCSMROOT/mapping/check_maps/INSTALL</filename>. As with many of the
+<filename>$CIMEROOT/tools/mapping/check_maps/INSTALL</filename>. As with many of the
 steps in this document, you will need to have the 
 <ulink url="http://www.earthsystemmodeling.org">ESMF</ulink> toolkit installed.
 It is installed by default on most NCAR computers.
@@ -2103,7 +2103,7 @@ ocn-&gt;lnd mapping files.</command>
 Using the SCRIP grid files from step one, you must generate a set of
 conservative (area-averaged) and non-conservative (patch and bilinear) mapping
 files. You can do this by calling <command>gen_cesm_maps.sh</command> in
-<filename>$CCSMROOT/tools/mapping/gen_mapping_files/</filename>. This shell script
+<filename>$CIMEROOT/tools/mapping/gen_mapping_files/</filename>. This shell script
 generates all the mapping files needed by CESM (except rtm-&gt;ocn, which is
 discussed below). This script uses the
 <ulink url="http://www.earthsystemmodeling.org">ESMF offline weight generation
@@ -2117,7 +2117,7 @@ The <filename>README</filename> file in the <filename>gen_mapping_files/
 </para>
 <para>
 <screen>
-$ cd $CCSMROOT/mapping/gen_mapping_files
+$ cd $CIMEROOT/tools/mapping/gen_mapping_files
 $ ./gen_cesm_maps.sh \
     --fileocn  &lt;input SCRIP ocn_grid full pathname&gt;  \
     --fileatm  &lt;input SCRIP atm grid full pathname&gt;  \
@@ -2168,7 +2168,7 @@ ESMF_RegridWeightGen runs in parallel, and the <filename>gen_cesm_maps.sh
 </filename> script has been written to run on 
 yellowstone. To run on any other machine, you may need to add some environment
 variables to
-<filename>$CCSMROOT/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh</filename>
+<filename>$CIMEROOT/tools/mapping/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh</filename>
 -- search for <emphasis>hostname</emphasis> to see where to edit the file.
 </para>
 </listitem>
@@ -2212,7 +2212,7 @@ Using the conservative ocean to land and ocean to atmosphere mapping files
 created in the previous step, you can create domain files for the atmosphere, 
 land, and ocean; these are basically grid files with consistent masks and
 fractions. You make these files by calling <command>gen_domain</command> in
-<filename>$CCSMROOT/mapping/gen_domain_files</filename>.
+<filename>$CIMEROOT/tools/mapping/gen_domain_files</filename>.
 </para>
 <para>
 The <filename>INSTALL</filename> file in the <filename>gen_domain_files/
@@ -2301,7 +2301,7 @@ dataset.</command> (Otherwise you can skip this step.)
 Generate mapping files for CLM surface dataset (since this is a non-standard
 grid).
 <screen>
-$ cd $CCSMROOT/models/lnd/clm/tools/mkmapdata
+$ cd $CIMEROOT/../components/clm/tools/mkmapdata
 $ ./mkmapdata.sh --gridfile &lt;lnd SCRIP grid file&gt; \
                  --res &lt;atm resolution name&gt; \
                  --gridtype global
@@ -2313,7 +2313,7 @@ $ ./mkmapdata.sh --gridfile &lt;lnd SCRIP grid file&gt; \
 Generate CLM surface dataset. Below is an example for a current day surface
 dataset (model year 2000).
 <screen>   
-$ cd  $CCSMROOT/models/lnd/clm/tools/mksurfdata_map
+$ cd  $CIMEROOT/../components/clm/tools/mksurfdata_map
 $ ./mksurfdata.pl -res usrspec -usr_gname &lt;atm resolution name&gt; \
                   -usr_gdate yymmdd -y 2000
 </screen>

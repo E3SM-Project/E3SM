@@ -993,7 +993,7 @@ the <link linkend="ccsm_overview">introduction</link> first</para>
 <para> $&MACH; refers to the target machine. </para>
 </listitem>
 <listitem>
-<para>$&CCSMROOT; refers to the CESM root directory. </para>
+<para>$&CIMEROOT; refers to the CIME root directory. </para>
 </listitem>
 <listitem>
 <para>$&CASE; refers to the case name.</para>
@@ -1027,7 +1027,7 @@ CESM</link>).</para>
 <para>Select a machine, a component set, and a resolution from the list
 displayed after invoking this command: </para>
 <screen>
-> cd $CCSMROOT/scripts
+> cd $CIMEROOT/scripts
 > create_newcase -list
 </screen>
 

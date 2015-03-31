@@ -17,7 +17,7 @@ use POSIX qw(strftime);
 my $CASEROOT; 
 my $CASEBUILD;
 my $CASETOOLS;
-my $CCSMROOT;
+my $CIMEROOT;
 my $LIBROOT;
 my $INCROOT; 
 my $SHAREDLIBROOT;
@@ -72,7 +72,7 @@ sub main {
     $CASEBUILD	        = `./xmlquery  CASEBUILD	-value `;
     $CASETOOLS          = `./xmlquery  CASETOOLS	-value `;
     $EXEROOT	        = `./xmlquery  EXEROOT		-value `;
-    $CCSMROOT		= `./xmlquery  CCSMROOT		-value `;
+    $CIMEROOT		= `./xmlquery  CIMEROOT		-value `;
     $INCROOT		= `./xmlquery  INCROOT		-value `;
     $LIBROOT		= `./xmlquery  LIBROOT		-value `;
     $SHAREDLIBROOT	= `./xmlquery  SHAREDLIBROOT	-value `;
@@ -99,7 +99,7 @@ sub main {
     my $OS	        = `./xmlquery  OS		-value `;
     my $COMP_CPL	= `./xmlquery  COMP_CPL		-value `;
 
-    $ENV{CCSMROOT}		= $CCSMROOT		;
+    $ENV{CIMEROOT}		= $CIMEROOT		;
     $ENV{CASETOOLS}		= $CASETOOLS		;
     $ENV{EXEROOT}		= $EXEROOT		;
     $ENV{INCROOT}		= $INCROOT		;
@@ -402,7 +402,7 @@ sub buildLibraries()
     chdir $EXEROOT;
 
     if ($MPILIB eq 'mpi-serial') {
-	my $sysmod = "cp -p -f $CCSMROOT/cime/externals/mct/mpi-serial/\*.h  $LIBROOT/include/.";
+	my $sysmod = "cp -p -f $CIMEROOT/externals/mct/mpi-serial/\*.h  $LIBROOT/include/.";
 	system($sysmod) == 0 or die "$sysmod failed: $?\n";
     }
     

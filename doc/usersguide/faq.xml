@@ -30,10 +30,10 @@ These files should not be edited and exist only to help document the case setup 
 <listitem><para>
 contains directories for each component where case specific source
 code modifications can be included.  The source files in these directories
-will always be used in preference to the source code in $CCSMROOT.  
+will always be used in preference to the source code in $CIMEROOT.  
 This feature allows users to modify CESM source code on a case
 by case basis if that preferable over making modifications in the
-$CCSMROOT sandbox.
+$CIMEROOT sandbox.
 </para></listitem>
 </varlistentry>
 
@@ -573,7 +573,7 @@ To create a customized compset,
 </para>
 
 <screen>
-> cd $CCSMROOT/scripts
+> cd $CIMEROOT/scripts
 </screen> 
 
 <para>Now copy sample_compset_file.xml to another file, e.g. my_compset.xml.</para> 
@@ -739,8 +739,8 @@ built or run is run.  The scripts that generate the decompositions are
 CASEROOT/Buildconf/generate_pop_decomp.pl and
 $CASEROOT/Buildconf/generate_cice_decomp.pl.  Those tools leverage
 decompositions stored in xml files,
-$CCSMROOT/models/ocn/pop2/bld/pop_decomp.xml and
-$CCSMROOT/models/ice/cice/bld/cice_decomp.xml, respectively.  These
+$CIMEROOT/../components/pop2/bld/pop_decomp.xml and
+$CIMEROOT/../components/cice/bld/cice_decomp.xml, respectively.  These
 utilities set the decomposition for a given resolution and total
 processor count.  The decomposition used can have a significant effect
 on the model performance, and the decompositions specified by the

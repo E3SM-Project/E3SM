@@ -16,7 +16,7 @@ my $pkg_nm = 'ConfigCase';
 #   my $value = $cfg->get($id);
 #
 #   # Write an xml file out
-#   $cfg->write_file("$caseroot/env_run.xml", "xml","$ccsmroot");
+#   $cfg->write_file("$caseroot/env_run.xml", "xml","$caseroot");
 #
 #   # Write out documentation in a readme file
 #   $cfg->write_doc("$caseroot/README/readme_env");
@@ -306,7 +306,7 @@ sub write_file
     my $self = shift;
     my $filename = shift;   # filepath for output namelist
     my $format = shift;
-    my $ccsmroot = shift;   # used to read the config_archive.xml file
+    my $caseroot = shift;   # used to read the config_archive.xml file
 
     # determine what file to write
     my @groups;
@@ -517,7 +517,7 @@ EOD
 		if ($group =~ m/mach_pes_/ || $xmode =~ "expert") {
 		    $self->_write_xml2($fh, $group);
 		} else {
-		    $self->_write_xml($fh, $group, $ccsmroot);
+		    $self->_write_xml($fh, $group, $caseroot);
 		    if ($group =~ 'build_component') {
 			# do nothing
 		    } else {
@@ -796,7 +796,7 @@ sub _write_xml
     my $self = shift;
     my $fh = shift;   # filepath for output namelist
     my $group = shift;
-    my $ccsmroot = shift; # used to read config_archive
+    my $caseroot = shift; # used to read config_archive
 
     # separate the groups with spaces
     print $fh <<"EOD";
@@ -815,7 +815,7 @@ EOD
 
     # check if the group is set to case_archive 
     if( $group eq 'case_archive') {
-	my $archive_file = qq($ccsmroot/config_archive.xml);
+	my $archive_file = qq($caseroot/config_archive.xml);
 	open CONFIG_ARCHIVE, $archive_file or die $!;
 	while (<CONFIG_ARCHIVE>) {
 	    chomp;

@@ -13,7 +13,7 @@ use strict;
 #==========================================================================
 my %opts;
 my $scriptdir = dirname(abs_path(__FILE__));
-my $ccsmroot  = abs_path("$scriptdir/../../");
+my $cimeroot  = abs_path("$scriptdir/../");
 my $testlist;
 my $component;
 
@@ -309,25 +309,25 @@ sub writeXML
 
 	my $newfilename; 
 	if ($component eq 'cam') {
-	    $newfilename = "$ccsmroot/components/cam/cimetest/testlist_cam-$dtformat.xml";
+	    $newfilename = "$cimeroot/../components/cam/cimetest/testlist_cam-$dtformat.xml";
 	} 
-	if ($component eq 'allactive') {
-	    $newfilename = "$scriptdir/Testing/Testlistxml/testlist_allactive-$dtformat.xml";
-	}
 	if ($component eq 'clm') {
-	    $newfilename = "$ccsmroot/components/clm/cimetest/testlist_clm-$dtformat.xml";
+	    $newfilename = "$cimeroot/../components/clm/cimetest/testlist_clm-$dtformat.xml";
 	}
 	if ($component eq 'cice') {
-	    $newfilename = "$ccsmroot/components/cice/cimetest/testlist_cice-$dtformat.xml";
-	}
-	if ($component eq 'drv') {
-	    $newfilename = "$ccsmroot/cime/driver_cpl/cimetest/testlist_drv-$dtformat.xml";
+	    $newfilename = "$cimeroot/../components/cice/cimetest/testlist_cice-$dtformat.xml";
 	}
 	if ($component eq 'cism') {
-	    $newfilename = "$ccsmroot/components/cism/cimetest/testlist_cism-$dtformat.xml";
+	    $newfilename = "$cimeroot/../components/cism/cimetest/testlist_cism-$dtformat.xml";
 	}
 	if ($component eq 'pop') {
-	    $newfilename = "$ccsmroot/components/pop2/cimetest/testlist_pop-$dtformat.xml";
+	    $newfilename = "$cimeroot/../components/pop2/cimetest/testlist_pop-$dtformat.xml";
+	}
+	if ($component eq 'allactive') {
+	    $newfilename = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive-$dtformat.xml";
+	}
+	if ($component eq 'drv') {
+	    $newfilename = "$cimeroot/driver_cpl/cimetest/testlist_drv-$dtformat.xml";
 	}
 	print "\n now writing the new test list to $newfilename\n";
 	print "Please carefully review and/or diff the new file against the\n";
@@ -1179,24 +1179,29 @@ sub setTestlist{
     my $list;
 
     if ($comp =~ /^cam/ ) {
-	$list = "$ccsmroot/components/cam/cimetest/testlist_cam.xml"; 
+	$list = "$cimeroot/../components/cam/cimetest/testlist_cam.xml"; 
     } elsif ($comp =~ /^allactive/) {
-	$list = "$scriptdir/Testing/Testlistxml/testlist_allactive.xml"; 
+	$list = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive.xml"; 
     } elsif ($comp =~ /^clm/) {
-	$list = "$ccsmroot/components/clm/cimetest/testlist_clm.xml"; 
+	$list = "$cimeroot/../components/clm/cimetest/testlist_clm.xml"; 
     } elsif ($comp =~ /^cice/) {
-	$list = "$ccsmroot/components/cice/cimetest/testlist_cice.xml"; 
+	$list = "$cimeroot/../components/cice/cimetest/testlist_cice.xml"; 
     } elsif ($comp =~ /^drv/) {
-	$list = "$ccsmroot/cime/driver_cpl/cimetest/testlist_drv.xml"; 
+	$list = "$cimeroot/driver_cpl/cimetest/testlist_drv.xml"; 
     } elsif ($comp =~ /^cism/) {
-	$list = "$ccsmroot/components/cism/cimetest/testlist_cism.xml"; 
+	$list = "$cimeroot/../components/cism/cimetest/testlist_cism.xml"; 
     } elsif ($comp =~ /^pop/) {
-	$list = "$ccsmroot/components/pop2/cimetest/testlist_pop.xml"; 
+	$list = "$cimeroot/../components/pop2/cimetest/testlist_pop.xml"; 
     } else {
 	die "component $comp does not match supported components \n";
     }
-    print "# testlist is $list \n";
-    return $list;
+    if (-f $list) {
+	print "# testlist is $list \n";
+	return $list;
+    } else {
+	print "testlist $list for target component is not present \n";
+	exit(1);
+    }
 }    
 
 #==========================================================================

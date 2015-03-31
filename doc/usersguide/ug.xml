@@ -62,7 +62,7 @@
   <!ENTITY MACH              "<envar>MACH</envar>">
   <!ENTITY CASEROOT          "<envar>CASEROOT</envar>">
   <!ENTITY CASE              "<envar>CASE</envar>">
-  <!ENTITY CCSMROOT          "<envar>CCSMROOT</envar>">
+  <!ENTITY CIMEROOT          "<envar>CIMEMROOT</envar>">
   <!ENTITY CLONEROOT         "<envar>CLONEROOT</envar>">
   <!ENTITY SCRATCHROOT       "<envar>SCRATCHROOT</envar>">
   <!ENTITY EXEROOT           "<envar>EXEROOT</envar>">

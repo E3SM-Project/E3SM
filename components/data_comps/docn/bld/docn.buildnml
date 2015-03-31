@@ -14,7 +14,7 @@ require SetupTools;
 my $sysmod; 
 
 my $CASEBUILD	= `./xmlquery  CASEBUILD   -value`;
-my $CCSMROOT	= `./xmlquery  CCSMROOT	   -value`;
+my $CIMEROOT	= `./xmlquery  CIMEROOT	   -value`;
 my $NINST_OCN	= `./xmlquery  NINST_OCN   -value`;
 my $RUNDIR	= `./xmlquery  RUNDIR      -value`;
 my $SCRIPTSROOT	= `./xmlquery  SCRIPTSROOT -value`;
@@ -57,7 +57,7 @@ while ($inst_counter <= $NINST_OCN) {
     # call build-namelist
     # -----------------------------------------------------
 
-    $sysmod = "$CCSMROOT/cime/components/data_comps/docn/bld/build-namelist";
+    $sysmod = "$CIMEROOT/components/data_comps/docn/bld/build-namelist";
     $sysmod = "$sysmod -infile $CASEBUILD/docnconf/cesm_namelist";
     $sysmod = "$sysmod -caseroot $CASEROOT";
     $sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";

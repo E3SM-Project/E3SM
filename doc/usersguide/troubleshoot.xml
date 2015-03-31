@@ -61,7 +61,7 @@ $CASE.$MACH.run script.
 <para>
 The batch and run aspects of the $CASE.$MACH.run script is created by 
 the setup script and uses a machine specific mkbatch.$MACH
-script in the $CCSMROOT/scripts/ccsm_utils/Machines directory.  If the
+script in the $CIMEROOT/machines directory.  If the
 run script is not producing correct batch scripts or job launching
 commands, the mkbatch.$MACH script probably needs to be updated.
 </para>
@@ -74,7 +74,7 @@ commands, the mkbatch.$MACH script probably needs to be updated.
 
 <para>
 To check that a run completed successfully, check the last several lines of the cpl.log file
-for the string " SUCCESSFUL TERMINATION OF CPL7-CCSM ".  A successful job also
+for the string " SUCCESSFUL TERMINATION ".  A successful job also
 usually copies the log files to the directory $CASEROOT/logs.  
 </para>
 

@@ -67,11 +67,11 @@ sets</ulink>.
 </glossentry>
 
 <glossentry>
-<glossterm>$CCSMROOT</glossterm>
+<glossterm>$CIMEROOT</glossterm>
 <glossdef>
 <para>
-The full pathname of the root directory of the CESM source code.
-$CCSMROOT is defined when you execute the &create_newcase; command.
+The full pathname of the root directory of the CIME source code.
+$CIMEROOT is defined when you execute the &create_newcase; command.
 </para>
 </glossdef>
 </glossentry>

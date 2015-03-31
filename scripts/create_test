@@ -10,6 +10,7 @@ use Cwd qw( getcwd abs_path chdir);
 use English;
 use Getopt::Long;
 use IO::File;
+use IO::Dir;
 use IO::Handle;
 use File::Basename;
 use File::Copy;
@@ -43,6 +44,7 @@ my $ProgDir = $1;
 my $cwd = getcwd;
 my $cfgdir;
 my $scriptsroot;
+my $cimeroot;
 my $testlistsubdirxml;
 my $testlid; 
 my $suitemode = 0;
@@ -72,7 +74,7 @@ SYNOPSIS
     Options:
       [-autosubmit        on|off]
       [-baselineroot      path to baslineroot]
-      [-cesmroot          alternate_cesmroot]
+      [-cimeroot          alternate_cimeroot]
       [-clean             on|off]
       [-compiler          compiler]
       [-compset_file      specified_compset_file]
@@ -149,7 +151,7 @@ OPTIONS:
                             testing.  If this argument is not supplied, the 
                             default baselineroot will be used from scripts. 
 
-      -cesmroot <dir>       manually specify the root directory of your CESM 
+      -cimeroot <dir>       manually specify the root directory of your CESM 
                             sandbox. 
       
       -clean [on|off]       If tests should be cleaned or not after tests are 
@@ -341,10 +343,8 @@ sub initialize()
   $testlid = `date +%y%m%d-%H%M%S`;
   chomp $testlid;
 
-  my $ccsmroot = abs_path("$cfgdir/../../");
-  my @dirs = ("$cfgdir", 
-	      "$ccsmroot/cime/scripts/Tools", 
-	      "$ccsmroot/cime/utils/perl5lib");
+  $cimeroot = abs_path("$cfgdir/../");
+  my @dirs = ("$cfgdir", "$cimeroot/scripts/Tools", "$cimeroot/utils/perl5lib");
 
   unshift @INC, @dirs;
   require XML::Lite;
@@ -364,7 +364,7 @@ sub initialize()
   %opts = (
            autosubmit           => 'on',
            baselineroot         => undef,
-           cesmroot             => "$ccsmroot",
+           cimeroot             => "$cimeroot",
            clean                => "off",
            compiler             => undef,
            compset_file         => undef,
@@ -377,7 +377,7 @@ sub initialize()
            xml_mach             => undef,
            xml_compiler         => undef,
            xml_category         => undef,
-           mach_dir             => "$ccsmroot/cime/machines",
+           mach_dir             => "$cimeroot/machines",
            mach                 => undef,
            mpilib               => undef,
            nlcompareonly        => undef,
@@ -402,7 +402,7 @@ sub options
                "autosubmit=s"        => \$opts{'autosubmit'},
                "baselineroot=s"      => \$opts{'baselineroot'},
                "clean=s"             => \$opts{'clean'},
-               "cesmroot=s"          => \$opts{'cesmroot'},
+               "cimeroot=s"          => \$opts{'cimeroot'},
                "compare=s"           => \$opts{'compare'},
                "component=s"         => \$opts{'component'},
                "compiler=s"          => \$opts{'compiler'},
@@ -449,40 +449,51 @@ sub options
 
     } else {
 
-	my $ccsmroot = abs_path("$cfgdir/../../");
-
 	%xml_testlist_files  = (
-	    allactive	=> abs_path( "$scriptsroot/Testing/Testlistxml/testlist_allactive.xml"),
-	    cam		=> abs_path( "$ccsmroot/components/cam/cimetest/testlist_cam.xml"), 
-	    cice	=> abs_path( "$ccsmroot/components/cice/cimetest/testlist_cice.xml"),
-	    cism	=> abs_path( "$ccsmroot/components/cism/cimetest/testlist_cism.xml"),
-	    clm		=> abs_path( "$ccsmroot/components/clm/cimetest/testlist_clm.xml"),
-	    pop		=> abs_path( "$ccsmroot/components/pop2/cimetest/testlist_pop.xml"),
-	    drv		=> abs_path( "$ccsmroot/cime/driver_cpl/cimetest/testlist_drv.xml"),
+	    drv		=> "$cimeroot/driver_cpl/cimetest/testlist_drv.xml",
 	    );
 	
 	%xml_testmod_dirs  = (
-	    allactive	=> abs_path( "$scriptsroot/Testing/Testlistxml/testmods_dirs/"),
-	    cam		=> abs_path( "$ccsmroot/components/cam/cimetest/testmods_dirs/"),
-	    cice	=> abs_path( "$ccsmroot/components/cice/cimetest/testmods_dirs/"),
-	    cism	=> abs_path( "$ccsmroot/components/cism/cimetest/testmods_dirs/"),
-	    clm		=> abs_path( "$ccsmroot/components/clm/cimetest/testmods_dirs/"),
-	    rtm		=> abs_path( "$ccsmroot/components/clm/cimetest/testmods_dirs/"),
-	    pop		=> abs_path( "$ccsmroot/components/pop2/cimetest/testmods_dirs/"),
-	    drv		=> abs_path( "$ccsmroot/cime/driver_cpl/cimetest/testmods_dirs/"),
+	    drv		=> "$cimeroot/driver_cpl/cimetest/testmods_dirs/",
 	    );
+
+	if (-d "$cimeroot/../components") {
+	    my $d = IO::Dir->new("$cimeroot/../components");
+	    my @dirs = $d->read();
+	    $d->close();
+	    foreach my $comp ( @dirs ) {
+		my $dir = "$cimeroot/../components/$comp/cimetest";
+		if ($comp eq 'pop2') {
+		    $comp =~ s/pop2/pop/
+		}
+		if ( -d "$dir" ) {
+		    if ( -f "$dir/testlist_$comp.xml" ) {
+			$xml_testlist_files{$comp} = "$dir/testlist_$comp.xml";
+		    }
+		    if ( -d "$dir/testmods_dirs" ) {
+			$xml_testmod_dirs{$comp}   = "$dir/testmods_dirs";
+		    }
+		}
+	    }
+	}
+
+        # Always include the allactive testlist, which may not be able to be run.
+        my $comp = "allactive";
+        my $dir = "$scriptsroot/Testing/Testlistxml";
+        $xml_testlist_files{$comp} = "$dir/testlist_$comp.xml";
+        $xml_testmod_dirs{$comp}   = "$dir/testmods_dirs/";
 
 	my $component = $opts{'component'};
 	if ($component) {
-	    if (($component ne 'allactive') &&
-		($component ne 'cam') &&
-		($component ne 'cice') &&
-		($component ne 'cism') &&		
-		($component ne 'clm') &&		
-		($component ne 'rtm') &&		
-		($component ne 'drv') &&		
-		($component ne 'pop')) {
-		die "ERROR: component argument must match one of [allactive | cam | cice | cism | clm | drv | rtm | pop ]\n";   
+            my $found = 0;
+            my @comps = sort( keys(%xml_testlist_files) );
+            foreach my $comp ( @comps ) {
+               if ( $component eq $comp ) {
+                  $found = 1;
+               }
+            }
+	    if ( ! $found ) {
+		die "ERROR: component argument must match one of [@comps]\n";   
 	    }
 	    # now reset the xml_testlist_files and xml_testmod_dirs hash 
 	    my $tempfile = $xml_testlist_files{$component};
@@ -495,9 +506,11 @@ sub options
     # check if target xml file(s) exist
     foreach my $key (keys %xml_testlist_files) {
 	my $file = $xml_testlist_files{$key};
-	if( ! -e $file ) {
-	  warn "The specified xml test file $file  was not found";
-	}
+	if( ! -e "$file" ) {
+	  warn "The specified xml test file $file was not found\n";
+	} else {
+          $xml_testlist_files{$key} = abs_path( $file );
+        }
     }
 
 }
@@ -705,7 +718,7 @@ sub checkOptions
   }
 
   # verify that required directories exist. 
-  foreach my $dir ( qw / cesmroot baselineroot / )
+  foreach my $dir ( qw / cimeroot baselineroot / )
   {
     if( defined($opts{$dir}))
     {
@@ -1201,71 +1214,32 @@ sub runCreateNewcase
      my $testmods = $test{'testmods'};
      $testmods =~ s/-/\//g;
      my $xml_testmod_dir;
-     if ($testmods =~ /^cam\//) {
-	 $xml_testmod_dir = $xml_testmod_dirs{'cam'};
-     }
-     if ($testmods =~ /^allactive\//) {
-	 $xml_testmod_dir = $xml_testmod_dirs{'allactive'};
-     }
-     if ($testmods =~ /^cice\//) {
-	 $xml_testmod_dir = $xml_testmod_dirs{'cice'};
-     }
-     if ($testmods =~ /^clm\//) {
-	 $xml_testmod_dir = $xml_testmod_dirs{'clm'};
-     }
-     if ($testmods =~ /^rtm\//) {
-	 $xml_testmod_dir = $xml_testmod_dirs{'rtm'};
-     }
-     if ($testmods =~ /^drv\//) {
-	 $xml_testmod_dir = $xml_testmod_dirs{'drv'};
-     }
-     if ($testmods =~ /^cism\//) {
-	 $xml_testmod_dir = $xml_testmod_dirs{'cism'};
-     }
-     if ($testmods =~ /^pop\//) {
-	 $xml_testmod_dir = $xml_testmod_dirs{'pop'};
-     }
-     if (defined $xml_testmod_dir) {
-	 $testmods = "$xml_testmod_dir/".$testmods;
-	 $cn_args .= " -user_mods_dir $testmods";
+     if ($testmods =~ /^([^\/]+)\//) {
+         my $comp = $1;
+         if ( exists($xml_testmod_dirs{$comp}) ) {
+	    $xml_testmod_dir = $xml_testmod_dirs{$comp};
+	    $testmods = "$xml_testmod_dir/".$testmods;
+	    $cn_args .= " -user_mods_dir $testmods";
+         } else {
+            warn "WARNING: Can NOT find testmod directory for $comp - not using any testmods \n";
+         }
      }
   }
 
-  my $createnewcase = "$opts{'cesmroot'}/cime/scripts/create_newcase $cn_args";
-  my @rc;
+  my $createnewcase = "$opts{'cimeroot'}/scripts/create_newcase $cn_args";
   if($opts{'dryrun'}){
       print "$createnewcase\n";
       return;
   }else{
       my $rc = open(F,"$createnewcase |");
-      @rc = <F>;
+      my @rc = <F>;
       close(F);
       print @rc;
   }
   my $exitcode = $?;
-  # JAS: If create_newcase fails, we don't want the whole suite generation
-  # process to stop. 
-  # So, if the test directory doesn't exist, creat it.  
-  # Then, create the CaseStatus and the TestStatus files, 
-  # so test reporting  
   if($exitcode != 0)
   {
-      warn "invocation of create_newcase failed:\n";
-	  # create the testroot if needed. 
-	  mkdir $caseroot if(! -d $caseroot);
-	  my $failteststatus = "$caseroot/TestStatus";
-      my $failcasestatus = "$caseroot/CaseStatus";
-      
-	  open my $TS, ">", $failteststatus or print "cannot open $failteststatus, $?";
-	  print $TS "SFAIL $test{'case'}\n";
-      close $TS;
-	
-	  open my $CS, ">", $failcasestatus or print "cannot open $failcasestatus, $?";
-      print $CS "create_newcase failure \n";
-      close $CS;
-
-	  # Skip to the next test..
-      next;
+      die "invocation of create_newcase failed\n";
   }
 
   my $readmetmp = new IO::File;
@@ -1369,7 +1343,7 @@ sub writeEnvTestXML
   {
     $cfg_ref->set('COMPARE_BASELINE', "FALSE");
   }
-  $cfg_ref->write_file("$caseroot/env_test.xml", "xml", $opts{'cesmroot'} );
+  $cfg_ref->write_file("$caseroot/env_test.xml", "xml", $opts{'cimeroot'} );
   
 }
 
@@ -1398,16 +1372,16 @@ sub testcaseSetup
 
   print "Setting up tools for test case..\n";
 
-  my $ccsmroot = $xmlvars{'CCSMROOT'};
+  my $cimeroot = $xmlvars{'CIMEROOT'};
   my $testcase = $xmlvars{'TESTCASE'};
   my $case     = $xmlvars{'CASE'};
 
-  if (-e "${ccsmroot}/cime/scripts/Testing/Testcases/${testcase}_build.csh") {
-      $sysmod = "cp -f ${ccsmroot}/cime/scripts/Testing/Testcases/${testcase}_build.csh ./${case}.test_build";
+  if (-e "$cimeroot/scripts/Testing/Testcases/${testcase}_build.csh") {
+      $sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ./${case}.test_build";
       &Debug("sysmod is $sysmod");
       system($sysmod) == 0 or die "$sysmod failed: $?\n";
   } else {
-      $sysmod = "cp -f ${ccsmroot}/cime/scripts/Testing/Testcases/tests_build.csh ./${case}.test_build";
+      $sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ./${case}.test_build";
       &Debug("sysmod is $sysmod");
       system($sysmod) == 0 or die "$sysmod failed: $?\n";
   }
@@ -1555,7 +1529,7 @@ sub writeTestListXML
 <testlist>
   <testroot>$opts{'testroot'}</testroot>
   <scriptsroot>$scriptsroot</scriptsroot>
-  <ccsmroot>$opts{'cesmroot'}</ccsmroot>
+  <cimeroot>$opts{'cimeroot'}</cimeroot>
   <baselinetag>$baselinetag</baselinetag>
   <compiler>$compiler</compiler>
   <nobatch>$opts{'nobatch'}</nobatch>
@@ -1855,7 +1829,7 @@ sub main
     options();
 
     my $config_def_file = "config_definition.xml";
-    my $cfg_ref = ConfigCase->new("$opts{cesmroot}/cime/scripts/Tools/$config_def_file");
+    my $cfg_ref = ConfigCase->new("$opts{cimeroot}/scripts/Tools/$config_def_file");
 
     checkOptions($cfg_ref);
 

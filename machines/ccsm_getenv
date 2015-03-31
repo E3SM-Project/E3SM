@@ -5,6 +5,7 @@ setenv CASEROOT			`./xmlquery  CASEROOT		-value `
 setenv CASE			`./xmlquery  CASE		-value `
 setenv CASETOOLS		`./xmlquery  CASETOOLS		-value `
 setenv CCSMROOT			`./xmlquery  CCSMROOT		-value `
+setenv CIMEROOT			`./xmlquery  CIMEROOT		-value `
 setenv LIBROOT			`./xmlquery  LIBROOT		-value `
 setenv EXEROOT			`./xmlquery  EXEROOT		-value `
 setenv OBJROOT			`./xmlquery  OBJROOT		-value `

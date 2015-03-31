@@ -6,7 +6,7 @@
 
 cd $CASEROOT
 
-set CCSMROOT	= `./xmlquery  CCSMROOT	 -value `
+set CIMEROOT	= `./xmlquery  CIMEROOT	 -value `
 set CASETOOLS	= `./xmlquery  CASETOOLS -value `
 set GMAKE	= `./xmlquery  GMAKE	 -value ` 
 set GMAKE_J	= `./xmlquery  GMAKE_J	 -value ` 
@@ -15,13 +15,13 @@ set MPILIB	= `./xmlquery  MPILIB	 -value `
 set OS		= `./xmlquery  OS	 -value ` 
 
 setenv LIBDIR     $1
-setenv MCT_DIR    $CCSMROOT/cime/externals/mct   # mct directory
+setenv MCT_DIR    $CIMEROOT/externals/mct   # mct directory
 setenv MCT_LIBDIR $LIBDIR/mct
 
 echo "MCT_LIBDIR   $MCT_LIBDIR"
 
   cd $MCT_LIBDIR
-  echo "Copying source to CCSM EXEROOT..."
+  echo "Copying source to EXEROOT..."
 #  cp -r -p $MCT_DIR/* .
   cp $MCT_DIR/Makefile .
   mkdir mct

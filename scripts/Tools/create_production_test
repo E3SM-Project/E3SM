@@ -96,17 +96,17 @@ require ConfigCase;
 # Read $caseroot xml files and 
 #-----------------------------------------------------------------------------------------------
 
-my $ccsmroot = `./xmlquery CCSMROOT -value`;
+my $cimeroot = `./xmlquery CIMEROOT -value`;
 my $casename = `./xmlquery CASE     -value`;
 my $testroot = "$caseroot/..";
 my $testname = "${casename}_${test}";
 
 print "\nCreating test ${testroot}/${testname}\n";
 
-system("$ccsmroot/cime/scripts/create_clone -case $testroot/$testname -clone $caseroot -testname $test");
+system("$cimeroot/scripts/create_clone -case $testroot/$testname -clone $caseroot -testname $test");
 
 # Write env_test.xml, needed by the test environment setup 
-my $testenv = ConfigCase->new("${ccsmroot}/cime/scripts/Tools/config_definition.xml");
+my $testenv = ConfigCase->new("${cimeroot}/scripts/Tools/config_definition.xml");
 $testenv->set('TESTCASE', $test);
 my $testid = `date +%y%m%d-%H%M%S`;
 chomp $testid;
@@ -128,4 +128,4 @@ chdir("$testroot/$testname");
 
 my $caseroot_test = `./xmlquery CASEROOT -value`;
 
-system("$ccsmroot/cime/scripts/Tools/testcase_setup -caseroot $caseroot_test");
+system("$cimeroot/scripts/Tools/testcase_setup -caseroot $caseroot_test");

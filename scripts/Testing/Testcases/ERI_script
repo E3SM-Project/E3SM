@@ -20,7 +20,7 @@ if ($?COMPARE_BASELINE ) then
 endif
 
 #--- clone the main case to create ref1 and ref2 cases
-cd $CCSMROOT/cime/scripts
+cd $CIMEROOT/scripts
 rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0} 
 rm -r -f ${CASERR2}; ./create_clone -case ${CASERR2} -clone ${CASER0} 
 
@@ -51,7 +51,7 @@ set start1 = ${RUN_STARTDATE}
 set sy = `echo $start1 | cut -f 1 -d "-"`
 set sc = `echo $start1 | cut -f 2- -d "-"`
 @ sy = $sy + 2
-set sy2 = `$CCSMROOT/cime/scripts/Tools/year_string.sh $sy`
+set sy2 = `$CIMEROOT/scripts/Tools/year_string.sh $sy`
 set start2 = "${sy2}-${sc}"
 
 @ stopn3 = ${stopn2} - ${restn2}

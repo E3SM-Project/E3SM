@@ -155,8 +155,8 @@ EOF
 # The root directory for the input data files must be specified.
 
 #The root directory to cesm utils Tools
-my $cesmroot   = abs_path( "${SCRIPTSROOT}/../../" );
-my $perl5lib   = "$cesmroot/cime/utils/perl5lib";
+my $cimeroot   = abs_path( "${SCRIPTSROOT}/../" );
+my $perl5lib   = "$cimeroot/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
 (-f "$perl5lib/XML/Lite.pm")  or  die <<"EOF";

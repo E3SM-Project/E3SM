@@ -179,15 +179,15 @@ create_newcase \
 If you want to use your own pes setup file, specify the full
 pathname of that file for the optional -pes_file argument. The
 required pes_file format is provided at
-<filename>$CCSMROOT/scripts/sample_pes_file.xml</filename>. 
+<filename>$CIMEROOT/scripts/sample_pes_file.xml</filename>. 
 </para>
 
 <para> 
 Following is a simple example of using &create_newcase;: In what
-follows, $&CCSMROOT; is the full pathname of the root directory of the
+follows, $&CIMEROOT; is the full pathname of the root directory of the
 CESM distribution. 
 <screen> 
-> cd $&CCSMROOT;/scripts 
+> cd $&CIMEROOT;/scripts 
 > create_newcase -case ~/cesm/example1 \ 
   -compset B_1850_CAM5_CN \ 
   -res ne30np4_gx1v6 \
@@ -977,7 +977,7 @@ a new user, skip this section.</para>
 <para> If you have access to the run you want to clone, the
 &create_clone; command will create a new case while also preserving
 local modifications to the case that you want to clone. You can run the
-utility &create_clone; either from $&CCSMROOT; or from the directory
+utility &create_clone; either from $&CIMEROOT; or from the directory
 where you want the new case to be created. It has the following
 arguments:</para>
 
@@ -1028,7 +1028,7 @@ Here is the simplest example of using &create_clone;:
 </para>
 
 <screen>
-> cd $&CCSMROOT;/scripts
+> cd $&CIMEROOT;/scripts
 > create_clone -case $&CASEROOT; -clone $&CLONEROOT; 
 </screen>
 

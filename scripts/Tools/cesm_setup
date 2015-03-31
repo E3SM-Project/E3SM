@@ -79,8 +79,8 @@ if ($opts{'testmode'}) {
 }
 
 chdir "$caseroot";
-my $ccsmroot  = `./xmlquery CCSMROOT  -value`;
-my @dirs = ("$caseroot/Tools", "$ccsmroot/cime/utils/perl5lib");
+my $cimeroot  = `./xmlquery CIMEROOT  -value`;
+my @dirs = ("$caseroot/Tools", "$cimeroot/utils/perl5lib");
 
 unshift @INC, @dirs;
 require SetupTools;
@@ -389,11 +389,11 @@ sub build_usernl_files {
 
     my $model = uc($model);
     my $sysmod;
-    my $CCSMROOT  = `./xmlquery CCSMROOT  -value`;
+    my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
     
     if ($comp eq 'cpl') {
 	if ( ! -f "$CASEROOT/user_nl_${comp}" ) {
-	    my $sysmod = "cp $CCSMROOT/cime/driver_cpl/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
+	    my $sysmod = "cp $CIMEROOT/driver_cpl/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
 	    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 	}
     } else {
@@ -405,15 +405,15 @@ sub build_usernl_files {
 		$inst_string = `printf _%04d $inst_counter`;
 		if ( ! -f "$CASEROOT/user_nl_${comp}${inst_string}" ) {
 		    if ($comp =~ /^d[ailor]/) {
-			my $sysmod = "cp $CCSMROOT/cime/components/data_comps/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}${inst_string}";
+			my $sysmod = "cp $CIMEROOT/components/data_comps/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}${inst_string}";
 			system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 		    } elsif ($comp =~ /^s[aiglor]/) {
 			# do nothing
 		    } elsif ($comp =~ /^x[aiglor]/) {
 			# do nothing
 		    } else {
-			if (-f "$CCSMROOT/components/${comp}/bld/user_nl_${comp}") {
-			    my $sysmod = "cp $CCSMROOT/components/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}${inst_string}";
+			if (-f "$CIMEROOT/../components/${comp}/bld/user_nl_${comp}") {
+			    my $sysmod = "cp $CIMEROOT/../components/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}${inst_string}";
 			    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 			}
 		    }
@@ -423,15 +423,15 @@ sub build_usernl_files {
 	} else {
 	    if ( ! -f "$CASEROOT/user_nl_${comp}" ) {
 		if ($comp =~ /^d[ailor]/) {
-		    my $sysmod = "cp $CCSMROOT/cime/components/data_comps/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
+		    my $sysmod = "cp $CIMEROOT/components/data_comps/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
 		    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 		} elsif ($comp =~ /^s[aiglor]/) {
 		    # do nothing
 		} elsif ($comp =~ /^x[aiglor]/) {
 		    # do nothing
 		} else {
-		    if (-f "$CCSMROOT/components/${comp}/bld/user_nl_${comp}") {
-			my $sysmod = "cp $CCSMROOT/components/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
+		    if (-f "$CIMEROOT/../components/${comp}/bld/user_nl_${comp}") {
+			my $sysmod = "cp $CIMEROOT/../components/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
 			system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 		    }
 		}		    

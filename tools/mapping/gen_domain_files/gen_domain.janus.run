@@ -12,5 +12,5 @@ MAP_FILE=$CESM_DIR/inputdata/cpl/gridmaps/gx3v7/map_gx3v7_TO_ne16np4_aave.120406
 OCN_NAME=gx3v7
 LND_NAME=ne16np4
 
-cd $CCSMROOT/mapping/gen_domain
+cd $CIMEROOT/tools/mapping/gen_domain_files
 ./gen_domain -m $MAP_FILE -o $OCN_NAME -l $LND_NAME

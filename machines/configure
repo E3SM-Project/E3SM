@@ -35,18 +35,18 @@ my $ProgDir = $1;                      # name of directory containing this scrip
                                        # relative or absolute path, or null if the script is in
                                        # the user's PATH
 
-my $ccsmroot = absolute_path($ENV{CCSMROOT});
+my $cimeroot = absolute_path($ENV{cimeroot});
 
-(-d "$ccsmroot")  or  die <<"EOF";
-** Cannot find ccsmroot directory \"$ccsmroot\"  Set using environment variable CCSMROOT **
+(-d "$cimeroot")  or  die <<"EOF";
+** Cannot find cimeroot directory \"$cimeroot\"  Set using environment variable CIMEROOT **
 EOF
 
 #-----------------------------------------------------------------------------------------------
 if ($#ARGV == -1) {
     usage();
 }
-my $scriptdir = "$ccsmroot/cime/scripts";
-my $machdir   = "$ccsmroot/cime/machines";
+my $scriptdir = "$cimeroot/scripts";
+my $machdir   = "$cimeroot/machines";
 
 #-----------------------------------------------------------------------------------------------
 
@@ -313,15 +313,13 @@ if ($mpilib) {
 if ($print>=2) { print "Machine specifier: $mach.$eol"; }
 
 my $repotag;
-if (-f "$ccsmroot/ChangeLog") { 
-    $repotag =`cat $ccsmroot/ChangeLog | grep 'Tag name:' | head -1`;
-} else {
-    $repotag =`cat $ccsmroot/components/atm/cam/doc/ChangeLog | grep 'Tag name:' | head -1`;
+if (-f "$cimeroot/ChangeLog") { 
+    $repotag =`cat $imemroot/ChangeLog | grep 'Tag name:' | head -1`;
 }
 my @repotag = split(/ /,$repotag); 
 $repotag = $repotag[2]; 
 chomp($repotag);
-$cfg_ref->set('CCSM_REPOTAG', $repotag);
+$cfg_ref->set('CIME_REPOTAG', $repotag);
 
 SetupTools::set_compiler($cfg_ref->get('OS'),"$machdir/$compiler_file",$compiler, $mach, $mpilib, $print, "$output_dir/Macros");
 my $sysmod;

@@ -40,7 +40,7 @@
   <!ENTITY din_loc_root      "<envar>DIN_LOC_ROOT</envar>">
   <!ENTITY CASEROOT          "<envar>CASEROOT</envar>">
   <!ENTITY CASE              "<envar>CASE</envar>">
-  <!ENTITY CCSMROOT          "<envar>CCSMROOT</envar>">
+  <!ENTITY CIMEROOT          "<envar>CIMEROOT</envar>">
   <!ENTITY CLONEROOT         "<envar>CLONEROOT</envar>">
   <!ENTITY MACH              "<envar>MACH</envar>">
 

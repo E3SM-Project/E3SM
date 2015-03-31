@@ -10,7 +10,7 @@ will describe the process of going about that.  In short, you should
 first call <command>create_newcase</command> using a "userdefined"
 machine name and get that case running. Second, you should take the
 results of the previous step and introduce your machine in the
-<filename>$CCSMROOT/scripts/ccsm_utils/Machines/</filename> directory
+<filename>$CIMEROOT/machines/</filename> directory
 so that your local machine is supported out-of-the-box.  This greatly
 eases setting up cases and benefits groups of users by requiring the
 port be done only once.  Third you should validate the model on your
@@ -93,7 +93,7 @@ Run &create_newcase; wtih a  "userdefined" machine name. Then run <command>cesm_
 in the new case directory.
 </para>
 <screen>
-> cd $CCSMROOT/scripts
+> cd $CIMEROOT/scripts
 > create_newcase -case test1 \
                  -res f45_g37 \
                  -compset X \
@@ -226,7 +226,7 @@ be set up using your local machine name rather than "userdefined". In
 addition, new cases should be able to run out-of-the-box without going
 through step 1 above.  Basically, you will need to add files and
 modify files in the directory
-<filename>$CCSMROOT/scripts/ccsm_utils/Machines</filename> to support
+<filename>$CIMEROOT/machines</filename> to support
 your machine out-of-the-box.  This section describes how to add
 support for your machine to the CESM scripts in order to support your
 machine out-of-the box. </para>
@@ -276,8 +276,8 @@ translate the additions you made to the Macros file to support
 copy of the env_mach_specific file from the test1 case directory in
 Step1 above.
 <screen>
-> cd $CCSMROOT/scripts/test1
-> cp env_mach_specific  $CCSMROOT/scripts/ccsm_utils/Machines/env_mach_specific.wilycoyote
+> cd $CIMEROOT/scripts/test1
+> cp env_mach_specific  $CIMEROOT/machines/env_mach_specific.wilycoyote
 </screen>
 </para></listitem>
 
@@ -296,7 +296,7 @@ for the string "CSM EXECUTION".  </para></listitem>
 Test the new machine setup.  Create a new case based on test1 using the
 wilycoyote machine setup
 <screen>
-> cd $CCSMROOT/scripts
+> cd $CIMEROOT/scripts
 > create_newcase -case test1_wilycoyote \
                  -res f45_g37 \
                  -compset X \

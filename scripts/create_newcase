@@ -62,9 +62,9 @@ if ($ProgDir) {
     $cfgdir = $cwd;
 }
 
-my $ccsmroot = abs_path("$cfgdir/../../");
-(-d "$ccsmroot")  or  die <<"EOF";
-** Cannot find ccsmroot directory \"$ccsmroot\" **
+my $cimeroot = abs_path("$cfgdir/../");
+(-d "$cimeroot")  or  die <<"EOF";
+** Cannot find cimeroot directory \"$cimeroot\" **
 EOF
     
 
@@ -72,7 +72,7 @@ EOF
 if ($#ARGV == -1) {
     usage();
 }
-my $machdir="$ccsmroot/cime/machines";
+my $machdir="$cimeroot/machines";
 
 #-----------------------------------------------------------------------------------------------
 
@@ -363,22 +363,22 @@ EOF
 EOF
 
 # The XML::Lite module is required to parse the XML configuration files.
-(-f "$ccsmroot/cime/utils/perl5lib/XML/Lite.pm")  or  die <<"EOF";
+(-f "$cimeroot/utils/perl5lib/XML/Lite.pm")  or  die <<"EOF";
 ** Cannot find perl module \"XML/Lite.pm\" in directory 
-    \"$ccsmroot/cime/utils/perl5lib\" **
+    \"$cimeroot/utils/perl5lib\" **
 EOF
 
 # Tests file
 my $tests_file = 'config_tests.xml';
-(-f "$ccsmroot/cime/scripts/Testing/Testcases/$tests_file")  or  die <<"EOF";
+(-f "$cimeroot/scripts/Testing/Testcases/$tests_file")  or  die <<"EOF";
 ** Cannot find test parameters file \"$tests_file\" in directory 
-    \"$ccsmroot/cime/scripts/Testing/Testcases\" **
+    \"$cimeroot/scripts/Testing/Testcases\" **
 EOF
 
 # The ConfigCase module provides utilities to store and manipulate the configuration.
-(-f "$ccsmroot/cime/scripts/Tools/ConfigCase.pm")  or  die <<"EOF";
+(-f "$cimeroot/scripts/Tools/ConfigCase.pm")  or  die <<"EOF";
 ** Cannot find perl module \"ConfigCase.pm\" in directory 
-    \"$ccsmroot/cime/scripts/Tools\" **
+    \"$cimeroot/scripts/Tools\" **
 EOF
 
 if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
@@ -387,8 +387,8 @@ if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
 my @dirs = ("$cfgdir", 
-	    "$ccsmroot/cime/scripts/Tools", 
-	    "$ccsmroot/cime/utils/perl5lib");
+	    "$cimeroot/scripts/Tools", 
+	    "$cimeroot/utils/perl5lib");
 
 unshift @INC, @dirs;
 require XML::Lite;
@@ -838,14 +838,13 @@ my $ccsmuser = "$ENV{'LOGNAME'}";
 $cfg_ref->set('CCSMUSER', "$ccsmuser");
 $cfg_ref->set('CASEROOT', "$caseroot");
 $cfg_ref->set('CASE'    , "$case");
-$cfg_ref->set('CCSMROOT', "$ccsmroot");
+$cfg_ref->set('CIMEROOT', "$cimeroot");
+$cfg_ref->set('CCSMROOT', "$cimeroot/../");
 $cfg_ref->set('XMLMODE' , "$xmlmode");
 
 my $repotag;
-if (-f "$ccsmroot/ChangeLog") { 
-    $repotag =`cat $ccsmroot/ChangeLog | grep 'Tag name:' | head -1`;
-} else {
-    $repotag =`cat $ccsmroot/components/cam/doc/ChangeLog | grep 'Tag name:' | head -1`;
+if (-f "$cimeroot/ChangeLog") { 
+    $repotag =`cat $cimeroot/ChangeLog | grep 'Tag name:' | head -1`;
 }
 my @repotag = split(/ /,$repotag); 
 $repotag = $repotag[2]; 
@@ -865,7 +864,7 @@ if(defined $opts{'sharedlibroot'})
 #-----------------------------------------------------------------------------------------------
 
 my $sysmod;
-my $scriptsroot = "$ccsmroot/cime/scripts";
+my $scriptsroot = "$cimeroot/scripts";
 
 print "Creating $caseroot $eol";
 chdir ("$caseroot");
@@ -965,9 +964,9 @@ $sysmod = "chmod 755 $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Copy relevant files into $caseroot/Tools/XML directory
-$sysmod = "cp -p $ccsmroot/cime/utils/perl5lib/XML/Lite.pm    $caseroot/Tools/XML"; 
+$sysmod = "cp -p $cimeroot/utils/perl5lib/XML/Lite.pm    $caseroot/Tools/XML"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "cp -p $ccsmroot/cime/utils/perl5lib/XML/Lite/Element.pm  $caseroot/Tools/XML/Lite"; 
+$sysmod = "cp -p $cimeroot/utils/perl5lib/XML/Lite/Element.pm  $caseroot/Tools/XML/Lite"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create relevant files in the $caseroot/Buildconf
@@ -985,13 +984,13 @@ foreach my $comp (@comps)  {
     $comp =~ s/\'//g;
     my $compdir;
     if ($comp =~ /^d[ailor]/) {
-	$compdir = "$ccsmroot/cime/components/data_comps/$comp/bld";
+	$compdir = "$cimeroot/components/data_comps/$comp/bld";
     } elsif ($comp =~ /^s[aiglorw]/) {
-	$compdir = "$ccsmroot/cime/components/stub_comps/$comp/bld";
+	$compdir = "$cimeroot/components/stub_comps/$comp/bld";
     } elsif ($comp =~ /^x[aiglorw]/) {
-	$compdir = "$ccsmroot/cime/components/xcpl_comps/$comp/bld";
+	$compdir = "$cimeroot/components/xcpl_comps/$comp/bld";
     } else {
-	$compdir = "$ccsmroot/components/$comp/bld";
+	$compdir = "$cimeroot/../components/$comp/bld";
     }
     $sysmod = "cp -p $compdir/$comp.buildlib $buildconf/.";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -1004,17 +1003,17 @@ foreach my $comp (@comps)  {
 	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
     }
     if ($comp eq 'cice') {
-	$sysmod = "cp $ccsmroot/components/cice/bld/generate_cice_decomp.pl $buildconf/."; 
+	$sysmod = "cp $cimeroot/../components/cice/bld/generate_cice_decomp.pl $buildconf/."; 
 	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
     }
     if ($comp eq 'pop2') {
-	$sysmod = "cp $ccsmroot/components/pop2/bld/generate_pop_decomp.pl $buildconf/."; 
+	$sysmod = "cp $cimeroot/../components/pop2/bld/generate_pop_decomp.pl $buildconf/."; 
 	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
     } 
 }
-$sysmod = "cp -p $ccsmroot/cime/driver_cpl/bld/cpl.buildnml $buildconf/.";
+$sysmod = "cp -p $cimeroot/driver_cpl/bld/cpl.buildnml $buildconf/.";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "cp -p $ccsmroot/cime/driver_cpl/bld/model.buildexe $buildconf/.";
+$sysmod = "cp -p $cimeroot/driver_cpl/bld/model.buildexe $buildconf/.";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 foreach my $lib ("gptl", "mct", "csm_share", "pio") {
@@ -1032,7 +1031,7 @@ foreach my $comp (@comps)  {
 	    die "cannot open > $moddir/src.$comp/README: $!";
 	print README
 	    "Put source mods for the glimmer-cism library in the glimmer-cism subdirectory.\n",
-	    "This includes any files that are in the glimmer-cism subdirectory of $ccsmroot/components/cism.\n\n",
+	    "This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism.\n\n",
 	    "Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/.\n";
 	close(README);
     }

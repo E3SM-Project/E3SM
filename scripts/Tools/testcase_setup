@@ -75,7 +75,7 @@ if (! -e "$caseroot/xmlquery" ) {
 
 my $mach		=  `./xmlquery MACH			-value`;
 my $ccsm_machdir	=  `./xmlquery CCSM_MACHDIR		-value`;
-my $ccsmroot		=  `./xmlquery CCSMROOT			-value`;
+my $cimeroot		=  `./xmlquery CIMEROOT			-value`;
 my $rundir              =  `./xmlquery RUNDIR			-value`;
 my $exeroot             =  `./xmlquery EXEROOT			-value`;
 my $libroot             =  `./xmlquery LIBROOT			-value`;
@@ -178,7 +178,7 @@ my $testcase_interp = <<END_INTERP;
     set CASE			=  $case
     set CASEBASEID		=  $casebaseid
     set TEST_TESTID		=  $test_testid 
-    set CCSMROOT		=  $ccsmroot
+    set CIMEROOT		=  $cimeroot
     set SCRIPTSROOT             =  $scriptsroot
     set RUNDIR                  =  $rundir
     set EXEROOT                 =  $exeroot
@@ -248,7 +248,7 @@ END_BEGIN
 
 print $testfh $testcase_begin;
 
-$sysmod = "cat ${ccsmroot}/cime/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
+$sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
 
 my $testcase_iop = <<'END_IOP';
@@ -292,7 +292,7 @@ END_IOP
 if ( "${case}" =~ /.+_IOP.+/ ) {
     print $testfh $testcase_iop;
 
-    $sysmod = "cat ${ccsmroot}/cime/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
+    $sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
 }
 

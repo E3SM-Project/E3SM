@@ -2189,7 +2189,7 @@ Valid Values: none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag </pre>
 The root directory of CESM input data for the selected machine.
 This is usually a shared disk area.
 Default values for the target machine are in the
-$CCSMROOT/scripts/ccsm_utils/Machines/config_machines.xml</pre>
+$CIMEROOT/scripts/ccsm_utils/Machines/config_machines.xml</pre>
         </div>
     </td>
     <td>env_run.xml</td>
@@ -2211,7 +2211,7 @@ for datm forcing data that is NOT checked into the svn repository
 (datasets other than the Qian or single-point forcing).
 This is usually a shared disk area.
 Default values for the target machine are in the
-$CCSMROOT/scripts/ccsm_utils/Machines/config_machines.xml</pre>
+$CIMEROOT/scripts/ccsm_utils/Machines/config_machines.xml</pre>
         </div>
     </td>
     <td>env_run.xml</td>
@@ -2586,7 +2586,7 @@ Provides the use_case option for the CAM build-namelist utility
 The CAM build-namelist leverages groups of namelist options
 (use cases) that are often paired with the CAM configure options.
 These use cases are xml files located in
-$CCSMROOT/models/atm/cam/bld/namelist_files/use_cases.
+$CIMEROOT/../components/cam/bld/namelist_files/use_cases.
 In general, this variable should not be modified for supported
 component sets (compsets). 
 Recommendation: If you want to modify this value for your experiment, 

@@ -18,10 +18,10 @@ conservative ocean -> atmosphere mapping file).
 HOW TO BUILD
 ============
 
-Prior to building, you must make sure $CCSMROOT is set.
+Prior to building, you must make sure $CIMEROOT is set.
 
 $ cd src
-$ $CCSMROOT/cime/machines/configure -mach [machine name]
+$ $CIMEROOT/machines/configure -mach [machine name]
 $ ./build.csh
 
 Note: in the second step, replace [machine name] with the machine you are

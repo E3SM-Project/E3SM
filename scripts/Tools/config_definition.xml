@@ -40,6 +40,14 @@
  sdesc="full pathname of CESM source root directory"
 ></entry> 
 
+<entry id="CIMEROOT" 
+ type="char"
+ valid_values=""  
+ value="UNSET" 
+ group="case_def"
+ sdesc="full pathname of CIME source root directory"
+></entry> 
+
 <entry id="MACH" 
  type="char"
  valid_values="" 
@@ -155,17 +163,17 @@
 <entry id="SCRIPTSROOT" 
  type="char"
  valid_values="" 
- value="$CCSMROOT/cime/scripts" 
+ value="$CIMEROOT/scripts" 
  group="case_der"
- sdesc="CESM source scripts directory location (setup automatically to $CCSMROOT/cime/scripts- DO NOT EDIT)"
+ sdesc="CESM source scripts directory location (setup automatically to $CIMEROOT/scripts- DO NOT EDIT)"
 ></entry>
 
 <entry id="UTILROOT" 
  type="char"
  valid_values="" 
- value="$CCSMROOT/cime/scripts/Tools" 
+ value="$CIMEROOT/scripts/Tools" 
  group="case_der"
- sdesc="CESM source scripts utils directory location (setup automatically to $CCSMROOT/cime/scripts/Tools - DO NOT EDIT)"
+ sdesc="CESM source scripts utils directory location (setup automatically to $CIMEROOT/scripts/Tools - DO NOT EDIT)"
 ></entry>
 
 <entry id="OS" 
@@ -1227,7 +1235,7 @@ Provides the use_case option for the CAM build-namelist utility
 The CAM build-namelist leverages groups of namelist options
 (use cases) that are often paired with the CAM configure options.
 These use cases are xml files located in
-$CCSMROOT/components/atm/cam/bld/namelist_files/use_cases.
+$CIMEROOT/../components/atm/cam/bld/namelist_files/use_cases.
 In general, this variable should not be modified for supported
 component sets (compsets). 
 Recommendation: If you want to modify this value for your experiment, 
@@ -2689,7 +2697,7 @@ needs to have enough disk space for the experimental configuration
 requirements. As an example, CESM can produce more than a terabyte of
 data during a 100-year run, so you should set EXEROOT to scratch or
 tmp space and frequently back up the data to a mass storage device
-EXEROOT is set in CCSMROOT/cime/machines/config_machines.xml
+EXEROOT is set in $CIMEROOT/machines/config_machines.xml
 for each supported machine.  Must explicitly set it in env_build.xml for a
 userdefined machine."
 ></entry> 
@@ -2710,7 +2718,7 @@ userdefined machine."
  group="build_macros"
  sdesc="machine compiler (must match one the supported compilers) - ignored once Macros has been created"
  ldesc="
-Set in $CCSMROOT/cime/machines/config_machines.xml for each machine."
+Set in $CIMEROOT/machines/config_machines.xml for each machine."
 ></entry> 
 
 <entry id="COMPILER" 
@@ -2720,7 +2728,7 @@ Set in $CCSMROOT/cime/machines/config_machines.xml for each machine."
  group="build_macros"
  sdesc="Machine compiler (must match one the supported compilers)"
  ldesc="
-Set in $CCSMROOT/cime/machines/config_machines.xml for each supported machine.
+Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
 Must be explicitly set in env_build.xml for userdefined machine."
 ></entry> 
 
@@ -2731,7 +2739,7 @@ Must be explicitly set in env_build.xml for userdefined machine."
  group="build_macros"
  sdesc="supported mpi libraries for target machine - set in config_machines.xml - (DO NOT EDIT)"
  ldesc="
-Set in $CCSMROOT/cime/machines/config_machines.xml for each supported machine.
+Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
 Must be explicitly set in env_build.xml for userdefined machine."
 ></entry> 
 
@@ -2750,7 +2758,7 @@ Must be explicitly set in env_build.xml for userdefined machine."
  group="build_macros"
  sdesc="mpi library (must match one of the supported libraries) - ignored once Macros has been created"
  ldesc="
-Set in $CCSMROOT/cime/machines/config_machines.xml for each supported machine.
+Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
 Must be explicitly set in env_build.xml for userdefined machine."
 ></entry> 
 
@@ -3155,7 +3163,7 @@ Extra copies of the component log files will be saved here."
 The root directory of CESM input data for the selected machine.
 This is usually a shared disk area.
 Default values for the target machine are in the
-$CCSMROOT/cime/machines/config_machines.xml'
+$CIMEROOT/machines/config_machines.xml'
 ></entry> 
 
 <entry id="DIN_LOC_ROOT_CLMFORC" 
@@ -3171,7 +3179,7 @@ for datm forcing data that is NOT checked into the svn repository
 (datasets other than the Qian or single-point forcing).
 This is usually a shared disk area.
 Default values for the target machine are in the
-$CCSMROOT/cime/machines/config_machines.xml'
+$CIMEROOT/machines/config_machines.xml'
 ></entry> 
 
 <entry id="DOUT_S" 

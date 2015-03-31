@@ -10,10 +10,10 @@ maps that field to an output file.
 HOW TO BUILD
 ============
 
-Prior to building, you must make sure $CCSMROOT is set.
+Prior to building, you must make sure $CIMEROOT is set.
 
 $ cd src
-$ $CCSMROOT/machines/configure -mach [machine name]
+$ $CIMEROOT/machines/configure -mach [machine name]
 $ ./build.csh
 
 Note: in the second step, replace [machine name] with the machine you are
@@ -76,8 +76,8 @@ EXAMPLE
 To build:
 
 > cd src
-> setenv CCSMROOT ~/cesm1_1_0
-> $CCSMROOT/machines/configure -mach yellowstone
+> setenv CIMEROOT ~/cime1_1_0
+> $CIMEROOT/machines/configure -mach yellowstone
 > gmake
 > cd ../
 

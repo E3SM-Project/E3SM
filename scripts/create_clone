@@ -40,9 +40,9 @@ if ($ProgDir) {
     $cfgdir = $cwd;
 }
 
-my $ccsmroot = abs_path("$cfgdir/../../");
-(-d "$ccsmroot")  or  die <<"EOF";
-** Cannot find ccsmroot directory \"$ccsmroot\" **
+my $cimeroot = abs_path("$cfgdir/../");
+(-d "$cimeroot")  or  die <<"EOF";
+** Cannot find cimeroot directory \"$cimeroot\" **
 EOF
 
 #-----------------------------------------------------------------------------------------------
@@ -228,7 +228,8 @@ ProjectTools::set_project($project, $cfg_ref);
 $cfg_ref->set('CCSMUSER'    , "$ENV{'LOGNAME'}");
 $cfg_ref->set('CASEROOT'    , "$caseroot");
 $cfg_ref->set('CASE'        , "$case");
-$cfg_ref->set('CCSMROOT'    , "$ccsmroot");
+$cfg_ref->set('CIMEROOT'    , "$cimeroot");
+$cfg_ref->set('CCSMROOT'    , "$cimeroot/../");
 $cfg_ref->set('CONTINUE_RUN', "FALSE");
 $cfg_ref->set('RESUBMIT'    , 0);
 if ($opts{'mach_dir'}) {
@@ -236,10 +237,8 @@ if ($opts{'mach_dir'}) {
 }
 # Set env_build variables
 my $repotag="tag unknown";
-if (-f "$ccsmroot/ChangeLog") { 
-    $repotag =`grep 'Tag name:' $ccsmroot/ChangeLog | head -1`;
-} elsif (-f  "$ccsmroot/cime/components/cam/doc/ChangeLog"){
-    $repotag =`grep 'Tag name:'  $ccsmroot/models_prognostic/atm/cam/doc/ChangeLog | head -1`;
+if (-f "$cimeroot/ChangeLog") { 
+    $repotag =`grep 'Tag name:' $cimeroot/ChangeLog | head -1`;
 }
 my @repotag = split(/ /,$repotag); 
 $repotag = @repotag[2]; 
@@ -320,7 +319,7 @@ foreach my $attr (keys %xmlvars) {
 }	
 
 my $compset     = $xmlvars{CCSM_COMPSET};
-my $ccsmroot    = $xmlvars{CCSMROOT};
+my $cimeroot    = $xmlvars{CIMEROOT};
 my $scriptsroot = $xmlvars{SCRIPTSROOT};
 my $machdir     = $xmlvars{CCSM_MACHDIR};
 my $ccsmuser    = $xmlvars{CCSMUSER};
@@ -357,7 +356,7 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "chmod 755 $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
-my $stats = print_stats("$ccsmroot/cime/scripts/Tools/config_compsets.xml", $compset, $cfg_ref);
+my $stats = print_stats("$scriptsroot/Tools/config_compsets.xml", $compset, $cfg_ref);
 
 print "Successfully created new case\n   $caseroot\nfrom clone case\n   $cloneroot\n";
 exit;

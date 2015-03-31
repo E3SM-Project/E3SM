@@ -16,7 +16,7 @@
       <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
       <CESMSCRATCHROOT>$ENV{HOME}/projects/scratch</CESMSCRATCHROOT>
       <CCSM_BASELINE>$ENV{HOME}/projects/baselines</CCSM_BASELINE>
-      <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+      <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
       <BATCHQUERY></BATCHQUERY>
       <BATCHSUBMIT></BATCHSUBMIT>
       <SUPPORTED_BY>__YOUR_NAME_HERE__</SUPPORTED_BY>

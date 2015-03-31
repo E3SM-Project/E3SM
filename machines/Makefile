@@ -324,8 +324,8 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR +=	-I$(SHAREDPATH)/include -I$(CCSMROOT)/cime/share/csm_share/shr \
-		-I$(CCSMROOT)/cime/share/csm_share/include
+INCLDIR +=	-I$(SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
+		-I$(CIMEROOT)/share/csm_share/include
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one 
 #
@@ -442,7 +442,7 @@ endif
 
 $(MCT_LIBDIR)/Makefile.conf: 
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CCSMROOT)/cime/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CCSMROOT)/cime/externals/mct
+	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
 
 $(MCT_LIBDIR)/mpeu/libmpeu.a: $(MCT_LIBDIR)/Makefile.conf
 	$(MAKE) -C $(MCT_LIBDIR)/mpeu
@@ -476,7 +476,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
               -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
-              -D USER_CMAKE_MODULE_DIR:STRING=$(CCSMROOT)/cime/externals/CMake
+              -D USER_CMAKE_MODULE_DIR:STRING=$(CIMEROOT)/externals/CMake
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)" 
@@ -508,11 +508,11 @@ CMAKE_ENV_VARS += CC=$(CC) \
 .PHONY: $(GLC_DIR)/Makefile 
 $(GLC_DIR)/Makefile:
 	cd $(GLC_DIR); \
-	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CCSMROOT)/components/cism/glimmer-cism
+	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/../components/cism/glimmer-cism
 
 $(PIO_LIBDIR)/Makefile:
 	cd $(PIO_LIBDIR); \
-	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CCSMROOT)/cime/externals/pio
+	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/externals/pio
 
 #-------------------------------------------------------------------------------
 # Build & include dependency files
@@ -673,7 +673,7 @@ $(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
 
 $(LIBROOT)/libcvmix.a:
-	$(MAKE) -f $(CCSMROOT)/components/pop2/source/cvmix/Makefile SRC_DIR=$(CCSMROOT)/components/pop2/source/cvmix FC=$(SFC) FCFLAGS="$(FFLAGS) $(FREEFLAGS)" LIB_DIR=$(LIBROOT)
+	$(MAKE) -f $(CIMEROOT)/../components/pop2/source/cvmix/Makefile SRC_DIR=$(CIMEROOT)/../components/pop2/source/cvmix FC=$(SFC) FCFLAGS="$(FFLAGS) $(FREEFLAGS)" LIB_DIR=$(LIBROOT)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
@@ -689,7 +689,7 @@ $(LIBROOT)/libcvmix.a:
 	$(CXX) -c $(INCLDIR) $(INCS) $(CXXFLAGS)  $<
 
 %.F90: %.F90.in
-	$(CCSMROOT)/cime/externals/genf90/genf90.pl $< > $@
+	$(CIMEROOT)/externals/genf90/genf90.pl $< > $@
 
 
 mostlyclean:

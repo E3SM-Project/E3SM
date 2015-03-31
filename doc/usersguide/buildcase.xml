@@ -133,7 +133,7 @@ component namelists, component logs, output datasets, and restart
 files are placed in $&RUNDIR;. It is important to note that in CESM
 $&RUNDIR; and $&EXEROOT; are independent variables which are set in
 the file <filename>config_machines.xml</filename> in the directory
-$<filename>CCSMROOT/scripts/ccsm_utils/Machines/</filename>.
+$<filename>CIMEROOT/machines/</filename>.
 </para>
 
 </sect1>
@@ -187,7 +187,7 @@ url="../modelnl/env_run.html#run_din">input data variables</ulink>.
 If you want to use new user-created dataset(s) and give these
 dataset(s) names that are different than the names in $&DIN_LOC_ROOT;,
 we recommend using the script &link_dirtree; in the directory
-<filename>$CCSMROOT/scripts</filename>.  &link_dirtree; creates a
+<filename>$CIMEROOT/scripts</filename>.  &link_dirtree; creates a
 virtual copy of the input data directory by linking one directory tree
 to another.  The full directory structure of the original directory is
 duplicated and the files are linked. To use this script, use the -h optiion
@@ -195,7 +195,7 @@ for usage.
 </para>
 
 <screen>
-> cd $CCSMROOT/scripts 
+> cd $CIMEROOT/scripts 
 > ./link_dirtree -h
 </screen>
 

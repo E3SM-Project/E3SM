@@ -222,7 +222,7 @@ url="../modelnl/env_case.html">env_case.xml</ulink>, <ulink
 url="../modelnl/env_mach_pes.html">env_mach_pes.xml</ulink> and <ulink
 url="../modelnl/env_run.html">env_run.xml</ulink>, and those that are
 set by the driver build-namelist utility
-(<filename>$CCSMROOT/models/drv/bld/build-namelist</filename>) for the
+(<filename>$CIMEROOT/driver_cpl/bld/build-namelist</filename>) for the
 target compset and resolution.  Except for the following driver
 namelist variables (see below), driver namelist variables that are in
 <filename>env_run.xml</filename> can be changed either by changing the

@@ -67,7 +67,7 @@ set EXEROOT0 = ${EXEROOT}
 echo "doing an autopromotion case" >>& $TESTSTATUS_LOG 
 
 #--- clone the main case to create apt case
-cd $CCSMROOT/cime/scripts
+cd $CIMEROOT/scripts
 ./create_clone -case ${CASERR} -clone ${CASER0} 
 
 #======================================================================

@@ -13,12 +13,12 @@ use IO::File;
 
 my $cwd;
 my $testroot;
-my $ccsmroot;
+my $cimeroot;
 my %opts;
 my $testspec;
 my $banner = '-' x 120;
 
-# Open the testspec.xml,  get the ccsmroot, 
+# Open the testspec.xml,  get the cimeroot, 
 sub init
 {
   $cwd = getcwd;
@@ -30,8 +30,8 @@ sub init
 
   my $parser = XML::LibXML->new( no_blanks => 1);
   my $xml = $parser->parse_file($testspec);
-  my @node = $xml->findnodes("//ccsmroot");
-  $ccsmroot = $node[0]->textContent(); 
+  my @node = $xml->findnodes("//cimeroot");
+  $cimeroot = $node[0]->textContent(); 
 
   chdir $cwd;
   return $testspec;
@@ -71,15 +71,18 @@ sub getTestStatus
 {
     my $testspec = shift;
     my $testdir = shift;
-
+    
     my %xfails;
-    my $expectedfails = abs_path($opts{'expectedfails'});
-    my $testlist = $expectedfails;
-    my $parser = XML::LibXML->new( no_blanks => 1);
-    my $testxml = $parser->parse_file($testlist);
-    my @xfailnodes = $testxml->findnodes("//entry");
-    foreach my $xfailnode (@xfailnodes) {
-	my @xfailchild_nodes = $xfailnode->childNodes();
+    my @xfailnodes;
+    if (defined $opts{'expectedfails'}) {
+	my $expectedfails = abs_path($opts{'expectedfails'});
+	my $testlist = $expectedfails;
+	my $parser = XML::LibXML->new( no_blanks => 1);
+	my $testxml = $parser->parse_file($testlist);
+	@xfailnodes = $testxml->findnodes("//entry");
+	foreach my $xfailnode (@xfailnodes) {
+	    my @xfailchild_nodes = $xfailnode->childNodes();
+	}
     }
 
     my @tests;
@@ -87,14 +90,14 @@ sub getTestStatus
     foreach my $testcase(@casedirs)
     {
 	# each of these blocks is a target TestStatus file
-
+	
 	my $teststatusfile = "$testdir/$testcase/TestStatus";
 	next if (! -e $teststatusfile);
-
+	
 	chdir "$testdir/$testcase";
 	my $testbase = `./xmlquery CASEBASEID -value`;
 	chdir $cwd;
-
+	
 	open my $STATUS, "<", $teststatusfile or die $!;
 	my @lines = <$STATUS>;
 	close $STATUS;
@@ -108,64 +111,65 @@ sub getTestStatus
 	my $teststatus = "$teststatus_line[0]";
 	
 	if ($teststatus ne 'GEN' && $teststatus ne 'PEND') {
-
-	    # is there an expected fail that matches this testbasename?
-	    my $xfailbugz = "";
-	    my $xfailnode;
-
-	    for my $n (0 .. $#lines) {
-		my $status_line = $lines[$n];
-		$status_line =~ m/(\w+\s)(.+$)/;
-		my $status_info = $2;
-		chomp($status_info);
-		chomp($status_line);
-
-		foreach $xfailnode (@xfailnodes) {
-		    my $xfail_entry  = $xfailnode->textContent(); 
-		    chomp($xfail_entry);
-		    my $bugz = $xfailnode->getAttribute("bugz");
-		    $xfail_entry =~ m/(\w+\s)(.+$)/;
-		    my $xfail_info = $2;
-		    chomp($xfail_info);
-
-		    if (($status_line =~ m/(^$xfail_entry)(\..*$)/) || 
-			($xfail_info  eq $status_info) ||
-			($status_line =~ m/$xfail_entry/)) {
-
-                        # unexpected passes
-			if ($status_line =~ m/DONE/) {
-			    $status_line = 'U' . $status_line;
+		
+	    if (defined $opts{'expectedfails'}) {
+		# is there an expected fail that matches this testbasename?
+		my $xfailbugz = "";
+		my $xfailnode;
+		
+		for my $n (0 .. $#lines) {
+		    my $status_line = $lines[$n];
+		    $status_line =~ m/(\w+\s)(.+$)/;
+		    my $status_info = $2;
+		    chomp($status_info);
+		    chomp($status_line);
+		    
+		    foreach $xfailnode (@xfailnodes) {
+			my $xfail_entry  = $xfailnode->textContent(); 
+			chomp($xfail_entry);
+			my $bugz = $xfailnode->getAttribute("bugz");
+			$xfail_entry =~ m/(\w+\s)(.+$)/;
+			my $xfail_info = $2;
+			chomp($xfail_info);
+			
+			if (($status_line =~ m/(^$xfail_entry)(\..*$)/) || 
+			    ($xfail_info  eq $status_info) ||
+			    ($status_line =~ m/$xfail_entry/)) {
+			    
+			    # unexpected passes
+			    if ($status_line =~ m/DONE/) {
+				$status_line = 'U' . $status_line;
+			    }
+			    if ($status_line =~ m/PASS/) {
+				$status_line = 'U' . $status_line;
+			    }
+			    
+			    # expected fails
+			    if ($status_line =~ m/FAIL/) {
+				if ($bugz) {
+				    $status_line = 'KTF ' . $status_line . "(bugzilla $bugz) \n";
+				} else {
+				    $status_line = 'KTF ' . $status_line ;
+				}				
+			    }			    
+			    if ($status_line =~ m/RUN/) {
+				if ($bugz) {
+				    $status_line = 'KTF ' . $status_line . "(bugzilla $bugz) \n";
+				} else {
+				    $status_line = 'KTF ' . $status_line;
+				}				
+			    }			    
+			    $lines[$n] = $status_line; 
+			    last;
 			}
-			if ($status_line =~ m/PASS/) {
-			    $status_line = 'U' . $status_line;
-			}
-
-			# expected fails
-			if ($status_line =~ m/FAIL/) {
-			    if ($bugz) {
-				$status_line = 'KTF ' . $status_line . "(bugzilla $bugz) \n";
-			    } else {
-				$status_line = 'KTF ' . $status_line ;
-			    }				
-			}			    
-			if ($status_line =~ m/RUN/) {
-			    if ($bugz) {
-				$status_line = 'KTF ' . $status_line . "(bugzilla $bugz) \n";
-			    } else {
-				$status_line = 'KTF ' . $status_line;
-			    }				
-			}			    
-			$lines[$n] = $status_line; 
-			last;
-		    }
-		}		    
+		    }		    
+		}
 	    }
+	    $testhash{'status'} = $lines[0];
+	    shift @lines;
+	    @{$testhash{'rawstatus'}} = @lines;
+	    push(@tests, \%testhash);
 	}
-
-	$testhash{'status'} = $lines[0];
-	shift @lines;
-	@{$testhash{'rawstatus'}} = @lines;
-	push(@tests, \%testhash);
     }
     chdir $cwd;
     return @tests;
@@ -325,7 +329,7 @@ sub getOpts
 	);
 
 	if (! defined $opts{'expectedfails'}) {
-	    die "must specify expected fails file which is currently assumed to exist in \$ccsmroot \n";
+	    warn "*** WARNING: no expected fails specified - expected fails will not be checked *** \n\n";
 	} 
 }
 

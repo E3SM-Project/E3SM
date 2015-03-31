@@ -19,7 +19,7 @@ bit-for-bit fashion in a separate directory.
 </para>
 <para>
 New perl-based $&create_test; and $&query_tests; utilities are
-executed from $&CCSMROOT;/scripts and allow you to quickly determine
+executed from $&IMEMROOT;/scripts and allow you to quickly determine
 what tests are available as well as set up and run one of numerous
 supported tests or create any one of numerous test suites that are
 used by the CESM developers for testing the model.
@@ -63,7 +63,7 @@ test debugging guidance.
 <para>
 In CESM1.2, automated regression and system tests are now found in a
 single xml-based file in
-$&CCSMROOT&/scripts/ccsm_utils/Testlistxml/testlist.xml.  The new
+$&CIMEROOT&/scripts/Testing/Testlistxml/testlist_allactive.xml.  The new
 utility &query_tests; allows you to quickly and easily query the
 different CESM test categories that are supported as well as what
 tests are available for different grids, compsets, machines and
@@ -159,7 +159,7 @@ by create_test to run the aux_clm tests using the -xml_list option.
 
 <para>
 The new $&create_test; tool is located in the
-<filename>$CCSMROOT/scripts/</filename> directory and can be used to
+<filename>$CIMEROOT/scripts/</filename> directory and can be used to
 set up entire CESM test suites, as well as single standalone test cases. 
 To see the list of test cases, and to view the available script options,
 execute create_test -help or create_test without any arguments.
@@ -167,7 +167,7 @@ Creating a single test looks like:
 </para>
 
 <screen>
-> cd $CCSMROOT/scripts
+> cd $CIMEROOT/scripts
 > ./create_test -testname ERS.f19_g16.X.yellowstone_intel -testid t01
 > cd ERS.f19_g16.X.yellowstone_intel.t01
 > ERS.f19_g16.X.yellowstone_intel.t01.test_build
@@ -189,7 +189,7 @@ the 'prebeta' test category, do the following:
 </para>
 
 <screen>
-> cd $CCSMROOT/scripts
+> cd $CIMEROOT/scripts
 > ./create_test \
      -xml_mach yellowstone \
      -xml_compiler intel \
