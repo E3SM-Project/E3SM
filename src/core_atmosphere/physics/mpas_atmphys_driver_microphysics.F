@@ -494,17 +494,21 @@
  type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
- real(kind=RKIND),dimension(:),pointer:: refl10cm_max
+ real(kind=RKIND),dimension(:),pointer:: refl10cm_max, refl10cm_1km, refl10cm_1km_max
 
 !local variables and arrays:
- integer:: i,j,k
- real(kind=RKIND),dimension(:),allocatable:: qv1d,qr1d,qs1d,qg1d,t1d,p1d,dBZ1d
-
+ integer:: i,j,k,kp
+ real(kind=RKIND),dimension(:),allocatable:: qv1d,qr1d,qs1d,qg1d,t1d,p1d,dBZ1d,zp
+ real(kind=RKIND) :: w1,w2
+!-----------
+!  Added interp of relectivity to 1 km AGL, save this and save time-running maximum, WCS 201503
 !--------------------------------------------------------------------------------------------------
 !write(0,*)
-!write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
+write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
 
  call mpas_pool_get_array(diag_physics,'refl10cm_max',refl10cm_max)
+ call mpas_pool_get_array(diag_physics,'refl10cm_1km',refl10cm_1km)
+ call mpas_pool_get_array(diag_physics,'refl10cm_1km_max',refl10cm_1km_max)
 
  microp_select: select case(microp_scheme)
 
@@ -521,6 +525,7 @@
        if(.not.allocated(qs1d) ) allocate(qs1d(kts:kte) )
        if(.not.allocated(qg1d) ) allocate(qg1d(kts:kte) )
        if(.not.allocated(dBz1d)) allocate(dBZ1d(kts:kte))
+       if(.not.allocated(zp))    allocate(zp(kts:kte))
 
        do j = jts,jte
        do i = its,ite
@@ -532,16 +537,21 @@
              qs1d(k)  = qs_p(i,k,j)
              qg1d(k)  = qg_p(i,k,j)
              dBZ1d(k) = -35._RKIND
+             zp(k) = z_p(i,k,j) - z_p(i,1,j)+0.5*dz_p(i,1,j) ! height AGL
           enddo
 
           call refl10cm_wsm6(qv1d,qr1d,qs1d,qg1d,t1d,p1d,dBZ1d,kts,kte,i,j)
 
+          kp = 1
           do k = kts,kte
              dBZ1d(k) = max(-35._RKIND,dBZ1d(k))
-!            write(0,201) i,k,dBZ1d(k)
+             if(zp(k) .lt. 1000.) kp = k
           enddo
           refl10cm_max(i) = maxval(dBZ1d(:))
-!         if(refl10cm_max(i) .gt. 0.) write(0,201) j,i,refl10cm_max(i)
+          w1 = (zp(kp+1)-1000.)/(zp(kp+1)-zp(kp))
+          w2 = 1.0 - w1
+          refl10cm_1km(i) = w1*dBZ1d(kp) + w2*dBZ1d(kp+1)
+          refl10cm_1km_max(i) = max(refl10cm_1km_max(i),refl10cm_1km(i))
        enddo
        enddo
 
@@ -552,11 +562,12 @@
        if(allocated(qs1d) ) deallocate(qs1d )
        if(allocated(qg1d) ) deallocate(qg1d )
        if(allocated(dBz1d)) deallocate(dBZ1d)
+       if(allocated(dBz1d)) deallocate(zp)
 
     case default
 
  end select microp_select
-!write(0,*) '--- end subroutine COMPUTE_RADAR_REFLECTIVITY'
+write(0,*) '--- end subroutine COMPUTE_RADAR_REFLECTIVITY'
 
  201 format(2i6,e15.8)
 
