@@ -174,6 +174,7 @@ contains
       !-----------------------------------------------------------------
       character (len=StrKIND), pointer :: config_velocity_solver
 
+
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
@@ -186,9 +187,8 @@ contains
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_block_init(block, err)
       case default
-          write(stdoutUnit,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+          write(stderrUnit,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
-          return
       end select
 
       ! === error check

@@ -725,7 +725,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in init_block."
+          write (stderrUnit,*) "An error has occurred in landice_init_block."
       endif
 
    !--------------------------------------------------------------------
