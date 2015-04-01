@@ -62,9 +62,6 @@ module control_mod
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
 
-! compute_mean_flux:  obsolete, not used
-  integer, public :: compute_mean_flux=-1
-
 ! vert_remap_q_alg:    0  default value, Zerroukat monotonic splines
 !                      1  PPM vertical remap with mirroring at the boundaries
 !                         (solid wall bc's, high-order throughout)

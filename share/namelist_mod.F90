@@ -36,7 +36,6 @@ module namelist_mod
        use_semi_lagrange_transport_local_conservation , &   ! local conservation vs. global 
        tstep_type, &
        cubed_sphere_map, &
-       compute_mean_flux, &
        qsplit, &
        rsplit, &
        physics, &
@@ -269,7 +268,6 @@ module namelist_mod
                      use_semi_lagrange_transport_local_conservation , &
                      tstep_type, &
                      npdg, &
-                     compute_mean_flux, &
                      cubed_sphere_map, &
                      qsplit, &
                      rsplit, &
@@ -847,7 +845,6 @@ module namelist_mod
     call MPI_bcast(use_semi_lagrange_transport_local_conservation ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(npdg,1,MPIinteger_t ,par%root,par%comm,ierr)
-    call MPI_bcast(compute_mean_flux,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
