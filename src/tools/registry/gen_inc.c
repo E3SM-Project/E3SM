@@ -833,7 +833,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "      use mpas_grid_types\n");
 	fortprintf(fd, "      use mpas_decomp\n");
 	fortprintf(fd, "\n");
-	fortprintf(fd, "      type (block_type), intent(in) :: block !< Input: Pointer to block\n");
+	fortprintf(fd, "      type (block_type), intent(inout) :: block !< Input: Pointer to block\n");
 	fortprintf(fd, "      type (mpas_streamManager_type), intent(inout) :: manager !< Input: Stream manager\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: readDimensions !< Input: Pool to pull read dimensions from\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: dimensionPool !< Input/Output: Pool to add dimensions into\n");
@@ -885,7 +885,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd, "         ownedIndices %% defaultValue = 0\n");
 				fortprintf(fd, "         ownedIndices %% fieldName = '%sOwnedIndices'\n", dimname);
 				fortprintf(fd, "         ownedIndices %% dimNames(1) = '%s'\n", dimname);
-				fortprintf(fd, "         ownedIndices %% array => decompFunc(block, manager, %s, totalBlocks)\n", dimname);
+				fortprintf(fd, "         iErr = decompFunc(block, manager, %s, totalBlocks, ownedIndices %% array)\n", dimname);
 				fortprintf(fd, "         ownedIndices %% dimSizes(1) = size(ownedIndices %% array, dim=1)\n");
 				fortprintf(fd, "         call mpas_pool_add_field(block %% allFields, '%sOwnedIndices', ownedIndices)\n", dimname);
 				fortprintf(fd, "         call mpas_pool_get_dimension(block %% dimensions, '%s', %s)\n", dimname, dimname);

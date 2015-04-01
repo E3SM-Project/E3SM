@@ -35,7 +35,7 @@ module mpas_decomp
                          MPAS_DECOMP_ERROR = 1001
 
    abstract interface
-      function mpas_decomp_function(block, manager, globalDimSize, numBlocks) result(ownedIndices)
+      function mpas_decomp_function(block, manager, globalDimSize, numBlocks, ownedIndices) result(iErr)
          use mpas_grid_types
          use mpas_stream_manager
 
@@ -44,6 +44,7 @@ module mpas_decomp
          integer, intent(in) :: globalDimSize
          integer, intent(in) :: numBlocks
          integer, dimension(:), pointer :: ownedIndices
+         integer :: iErr
       end function
    end interface
 
@@ -272,13 +273,15 @@ module mpas_decomp
 !>  This function provides the owned indices for a uniform decomposition method.
 !
 !-----------------------------------------------------------------------
-   function mpas_uniform_decomp(block, manager, globalDimSize, numBlocks) result(ownedIndices)!{{{
+   function mpas_uniform_decomp(block, manager, globalDimSize, numBlocks, ownedIndices) result(iErr)!{{{
       type (block_type), intent(in) :: block
       type (mpas_streamManager_type), intent(inout) :: manager
       integer, intent(in) :: globalDimSize
       integer, intent(in) :: numBlocks
 
       integer, dimension(:), pointer :: ownedIndices
+
+      integer :: iErr
 
       integer :: blockDimSize, blockStart, i
 
