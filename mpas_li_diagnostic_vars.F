@@ -383,7 +383,6 @@ contains
 
           call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-          call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=timeLevel)
@@ -492,6 +491,7 @@ contains
           ! This information is only needed by external dycores.
           if (config_velocity_solver /= 'sia') then
              ! The interface expects an array where 1's are floating edges and 0's are non-floating edges.
+             call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=timeLevel)
              floatingEdges = li_mask_is_floating_ice_int(edgeMask)
              call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel=timeLevel)
              call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
