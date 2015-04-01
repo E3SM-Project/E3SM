@@ -192,6 +192,10 @@ contains
          call mpas_deallocate_scratch_field(vertexIndicesField, .true.)
       endif
 
+      ! === error check
+      if (err > 0) then
+          write (stderrUnit,*) "An error has occurred in li_sia_block_init."
+      endif
 
    !--------------------------------------------------------------------
    end subroutine li_sia_block_init
@@ -254,7 +258,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, flowParamA
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:), pointer :: edgeMask, cellMask
-      integer, pointer :: nVertInterfaces, nEdges
+      integer, pointer :: nVertInterfaces, nEdgesSolve
       integer :: iLevel, iEdge
       integer :: cell1, cell2
       real (kind=RKIND) :: thicknessEdge, flwaLevelEdge
@@ -268,7 +272,7 @@ contains
 
       ! Set needed variables and pointers
       call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
@@ -289,7 +293,7 @@ contains
       positionIndependentFactor = -0.5_RKIND * (rhoi * gravity)**n  ! could be calculated once on init
 
       ! Loop over edges
-      do iEdge = 1, nEdges
+      do iEdge = 1, nEdgesSolve
 
          ! Only calculate velocity for edges that are part of the dynamic ice sheet.(thick ice)
          ! Also, the velocity calculation should be valid for non-ice edges (i.e. returns 0).
