@@ -372,6 +372,7 @@ module mpas_io
          !    appropriate error code
          if (exists .and. (.not. local_clobber)) then
             if (present(ierr)) ierr = MPAS_IO_ERR_WOULD_CLOBBER
+            return
          end if
  
          if (exists .and. (.not. local_truncate)) then
