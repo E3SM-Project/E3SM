@@ -278,7 +278,7 @@ def compare_namelists(gold_namelists, comp_namelists, case):
             for name in comp_names:
                 if (name not in gold_names):
                     rv = False
-                    print "In namelist '%s', found extra variable: '%s'" % (name)
+                    print "In namelist '%s', found extra variable: '%s'" % (namelist, name)
 
     for namelist in comp_namelists:
         if (namelist not in gold_namelists):
