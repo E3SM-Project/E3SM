@@ -313,9 +313,6 @@ subroutine fvm_readnl(par)
        remap_type,    &       ! selected remapping option
 #endif
        statefreq,     &       ! number of steps per printstate call
-       accumfreq,     &       ! frequency in steps of accumulation
-       accumstart,    &       ! model day to start accumulating state variables
-       accumstop,     &       ! model day to stop  accumulating state variables
        restartfreq,   &       
        restartfile,   &       ! name of the restart file for INPUT
        restartdir,    &       ! name of the restart directory for OUTPUT

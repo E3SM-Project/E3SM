@@ -52,7 +52,7 @@ subroutine primeq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete, my_hvcoord)
     use restart_io_mod, only : readrestart, writerestart
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level, test_case, &
-         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, accumfreq, topology
+         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, topology
     !----------------- 
     use dg3d_prim_mod, only :  dg3d_advance
     !----------------- 

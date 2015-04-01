@@ -23,9 +23,6 @@ module namelist_mod
        remapfreq,     &       ! number of steps per remapping call
        remap_type,    &       ! selected remapping option
        statefreq,     &       ! number of steps per printstate call
-       accumfreq,     &       ! frequency in steps of accumulation
-       accumstart,    &       ! model day to start accumulating state variables
-       accumstop,     &       ! model day to stop  accumulating state variables
        restartfreq,   &
        restartfile,   &       ! name of the restart file for INPUT
        restartdir,    &       ! name of the restart directory for OUTPUT
@@ -259,9 +256,6 @@ module namelist_mod
                      remapfreq,     &       ! number of steps per remapping call
                      remap_type,    &       ! selected remapping option
                      statefreq,     &       ! number of steps per printstate call
-                     accumfreq,     &       ! frequency in steps of accumulation
-                     accumstart,    &       ! model day to start accumulating state variables
-                     accumstop,     &       ! model day to stop  accumulating state variables
                      integration,   &       ! integration method
                      tracer_advection_formulation, &
                      use_semi_lagrange_transport , &
@@ -778,9 +772,6 @@ module namelist_mod
     call MPI_bcast(remapfreq ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
     call MPI_bcast(statefreq ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(accumfreq ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(accumstart,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(accumstop ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(multilevel ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(useframes ,1,MPIinteger_t,par%root,par%comm,ierr)
@@ -1127,8 +1118,6 @@ module namelist_mod
 
     if (par%masterproc) then
        write(iulog,*)"done reading namelist..."
-
-       write(iulog,*)"readnl: accum         = ",accumfreq,accumstart,accumstop
 
        write(iulog,*)"readnl: topology      = ",TRIM( TOPOLOGY )
 #ifndef CAM

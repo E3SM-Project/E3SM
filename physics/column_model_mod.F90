@@ -18,7 +18,7 @@ module column_model_mod
   use physics_mod,     only : elem_physics_t, Specific_Humidity, Saturation_Specific_Humidity, getsurfpress, Temp2PotTemp
   use dimensions_mod,  only : nlev, nlevp, np, qsize, nelemd
   use control_mod,     only : integration, columnpackage, test_case,  physics, &
-                              accumfreq, statefreq, &
+                              statefreq, &
                               TRACERADV_TOTAL_DIVERGENCE, &
                               tracer_advection_formulation
   use held_suarez_mod, only : hs_forcing

@@ -6,9 +6,6 @@ test_case     = "aquaplanet"
 ne            =  9
 ndays         = 10
 statefreq     = 300
-accumfreq     = 200
-accumstart    = 200 
-accumstop     = 1200 
 restartfreq   = 25 
 ! restartdir is the directory location for restart file output. 
 ! restartdir = "./restart/"

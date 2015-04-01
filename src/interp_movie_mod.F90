@@ -29,8 +29,8 @@ module interp_movie_mod
        nf_init_decomp, &
        get_varindex
 
-  use control_mod, only : test_case, runtype, accumstart, &
-       accumstop, accumfreq, restartfreq, &
+  use control_mod, only : test_case, runtype, &
+       restartfreq, &
        integration, columnpackage, kmass, nu
   use common_io_mod, only:  &
        output_start_time,   & 	

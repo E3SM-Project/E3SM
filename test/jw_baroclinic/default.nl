@@ -7,9 +7,6 @@ ne            = 30
 qsize = 2 tracer_advection_formulation=1 
 ndays          = 30
 statefreq     = 120
-accumfreq     = -1
-accumstart    = 200
-accumstop     = 1200
 restartfreq   = 43200
 restartfile   = "./R0001"
 runtype       = 0

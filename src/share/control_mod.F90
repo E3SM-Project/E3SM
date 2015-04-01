@@ -98,9 +98,6 @@ module control_mod
   integer              , public :: remapfreq      ! remap frequency of synopsis of system state (steps)
   character(len=MAX_STRING_LEN) :: remap_type     ! selected remapping option
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
-  integer              , public :: accumfreq      ! frequency in steps of field accumulation
-  integer              , public :: accumstart     ! model day to start accumulation
-  integer              , public :: accumstop      ! model day to stop  accumulation
   integer              , public :: restartfreq
   integer              , public :: runtype 
   integer              , public :: timerdetail 

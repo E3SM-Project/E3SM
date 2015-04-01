@@ -26,10 +26,8 @@ module prim_movie_mod
   ! ---------------------
   use cube_mod, only : cube_assemble
   ! ---------------------
-!  use prim_state_mod, only : naccum
-  ! ---------------------
-  use control_mod, only : test_case, runtype, accumstart, &
-       accumstop, accumfreq, restartfreq, &
+  use control_mod, only : test_case, runtype, &
+       restartfreq, &
        integration, columnpackage, hypervis_power
   ! ---------------------
   use common_io_mod, only : &
