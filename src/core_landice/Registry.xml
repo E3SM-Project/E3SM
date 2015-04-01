@@ -453,7 +453,7 @@
 		<var name="slopeEdge"            type="real"     dimensions="nEdges Time"
 		     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
 		/>
-		<var name="anyVertexMaskChanged"              type="integer"  dimensions="Time"
+		<var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
 		     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
 			packages="higherOrderVelocity"
 		/>
