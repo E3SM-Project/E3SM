@@ -288,7 +288,7 @@ module BGCCenturySubMod
 
 !-------------------------------------------------------------------------------
   subroutine calc_som_deacyK(bounds, lbj, ubj, numf, filter, jtops, nom_pools, tracercoeff_vars, tracerstate_vars, &
-    betrtracer_vars, centurybgc_vars,  k_decay)
+    betrtracer_vars, centurybgc_vars, carbonflux_vars, k_decay)
   !
   ! DESCRIPTION
   ! calculate decay coefficients for different pools
@@ -297,26 +297,27 @@ module BGCCenturySubMod
   use tracerstatetype       , only : tracerstate_type
   use BeTRTracerType        , only : betrtracer_type
   use BGCCenturyParMod      , only : CNDecompBgcParamsInst 
-
-  integer,                     intent(in) :: nom_pools
-  type(bounds_type),           intent(in) :: bounds
-  integer,                     intent(in) :: lbj, ubj
-  integer,                     intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
-  integer,                     intent(in) :: numf
-  integer,                     intent(in) :: filter(:)
-  type(betrtracer_type),       intent(in) :: betrtracer_vars                    ! betr configuration information
-  type(centurybgc_type),       intent(in) :: centurybgc_vars    
-  type(tracercoeff_type),      intent(in) :: tracercoeff_vars
-  type(tracerstate_type),   intent(inout) :: tracerstate_vars
-  real(r8),                   intent(out) :: k_decay(nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  use CNCarbonFluxType      , only : carbonflux_type
+  integer                   ,  intent(in) :: nom_pools
+  type(bounds_type)         ,  intent(in) :: bounds
+  integer                   ,  intent(in) :: lbj, ubj
+  integer                   ,  intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
+  integer                   ,  intent(in) :: numf
+  integer                   ,  intent(in) :: filter(:)
+  type(betrtracer_type)     ,  intent(in) :: betrtracer_vars                    ! betr configuration information
+  type(centurybgc_type)     ,  intent(in) :: centurybgc_vars
+    type(carbonflux_type)   ,  intent(in) :: carbonflux_vars  
+  type(tracercoeff_type)    ,  intent(in) :: tracercoeff_vars
+  type(tracerstate_type)    ,  intent(inout) :: tracerstate_vars
+  real(r8)                  , intent(out) :: k_decay(nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   
   !local variables
   integer :: fc, c, j
 
   associate(                                              & 
-    t_scalar       => centurybgc_vars%t_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
-    w_scalar       => centurybgc_vars%w_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp                           
-    o_scalar       => centurybgc_vars%o_scalar_col      , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia   
+    t_scalar       => carbonflux_vars%t_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
+    w_scalar       => carbonflux_vars%w_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp                           
+    o_scalar       => carbonflux_vars%o_scalar_col      , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia   
     depth_scalar   => centurybgc_vars%depth_scalar_col  , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)
     lit1           => centurybgc_vars%lit1              , & !
     lit2           => centurybgc_vars%lit2              , & !
@@ -1365,7 +1366,7 @@ module BGCCenturySubMod
 !----------------------------------------------------------------------------------------------------  
 
   subroutine calc_decompK_multiply_scalar(bounds, lbj, ubj, numf, filter, jtops, finundated, zsoi, &
-    t_soisno, o2_bulk, o2_aqu2bulkcef, soilstate_vars, centurybgc_vars)
+    t_soisno, o2_bulk, o2_aqu2bulkcef, soilstate_vars, centurybgc_vars, carbonflux_vars)
   !
   ! DESCRIPTION
   ! compute scalar multipliers for aerobic om decomposition
@@ -1377,7 +1378,7 @@ module BGCCenturySubMod
   use CNSharedParamsMod   , only : CNParamsShareInst
   use shr_const_mod       , only : SHR_CONST_TKFRZ, SHR_CONST_PI
   use SoilStatetype       , only : soilstate_type
-
+  use CNCarbonFluxType    , only : carbonflux_type
   type(bounds_type),         intent(in) :: bounds
   integer,                   intent(in) :: lbj, ubj
   integer,                   intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -1389,7 +1390,8 @@ module BGCCenturySubMod
   real(r8),                  intent(in) :: finundated(bounds%begc:bounds%endc)  
   real(r8),                  intent(in) :: o2_aqu2bulkcef(bounds%begc:bounds%endc, lbj:ubj)
   type(soilstate_type),      intent(in) :: soilstate_vars
-  type(centurybgc_type),  intent(inout) :: centurybgc_vars  
+  type(centurybgc_type)  , intent(inout) :: centurybgc_vars
+  type(carbonflux_type)  , intent(inout) :: carbonflux_vars
   
   integer :: fc, c, j  !indices
   real(r8), parameter :: normalization_tref = 15._r8        ! reference temperature for normalizaion (degrees C)
@@ -1413,9 +1415,9 @@ module BGCCenturySubMod
   associate(                                              &
     sucsat         => soilstate_vars%sucsat_col         , & ! Input:  [real(r8) (:,:)] minimum soil suction [mm]
     soilpsi        => soilstate_vars%soilpsi_col        , & ! Input:  [real(r8) (:,:)] soilwater pontential in each soil layer [MPa]
-    t_scalar       => centurybgc_vars%t_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
-    w_scalar       => centurybgc_vars%w_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp                           
-    o_scalar       => centurybgc_vars%o_scalar_col      , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia   
+    t_scalar       => carbonflux_vars%t_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
+    w_scalar       => carbonflux_vars%w_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp                           
+    o_scalar       => carbonflux_vars%o_scalar_col      , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia   
     depth_scalar   => centurybgc_vars%depth_scalar_col    & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)             
   )
   catanf_30 = catanf(30._r8)
