@@ -366,7 +366,10 @@ module mpas_io
 
       if (mode == MPAS_IO_WRITE) then
 !write(stderrUnit,*) 'MGD PIO_createfile'
-         inquire(file=trim(filename), exist=exists)
+         if (local_dminfo % my_proc_id == 0) then
+            inquire(file=trim(filename), exist=exists)
+         end if
+         call mpas_dmpar_bcast_logical(local_dminfo, exists)
 
          ! If the file exists and we are not allowed to clobber it, return an
          !    appropriate error code
