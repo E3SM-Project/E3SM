@@ -265,6 +265,9 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int o
 							}
 						} else if ( filetype == SEPARATE ) {
 							fprintf(fd2, "%s\n", subname);
+							if (varpackages != NULL) {
+								fprintf(stderr, "Warning: Unable to add packages \"%s\" to var_array \"%s\" in stream \"%s\" because \"runtime_format=separate_file\".\n", varpackages, subname, name);
+							}
 						}
 					}
 				}
@@ -293,6 +296,9 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int o
 							}
 						} else if ( filetype == SEPARATE ) {
 							fprintf(fd2, "%s\n", subname);
+							if (varpackages != NULL) {
+								fprintf(stderr, "Warning: Unable to add packages \"%s\" to var \"%s\" in stream \"%s\" because \"runtime_format=separate_file\".\n", varpackages, subname, name);
+							}
 						}
 					}
 				}
