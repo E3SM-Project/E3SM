@@ -309,7 +309,7 @@ contains
 
        call phys_getopts(convproc_do_gas_out = convproc_do_gas, &
             convproc_do_aer_out = convproc_do_aer) !BSINGH (09/17/2014): Added for unified convective transport
-       
+
        ! Mode specific properties.
        do m = 1, ntot_amode
           call rad_cnst_get_mode_props(0, m, &
