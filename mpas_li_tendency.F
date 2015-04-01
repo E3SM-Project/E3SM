@@ -618,8 +618,9 @@ module li_tendency
       logical, pointer :: config_print_thickness_advection_info
       real (kind=RKIND) :: invAreaCell, flux, maxAllowableDt, layerNormalVelocity
       integer :: iEdge, iCell, i, k
-      type (MPAS_TimeInterval_type) :: allowableDtMinStringInterval
+      type (MPAS_TimeInterval_type) :: allowableDtMinInterval
       character (len=StrKIND) :: allowableDtMinString
+      real (kind=RKIND) :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
       integer :: err_tmp
 
       ! Only needed for optional check for mass conservation
@@ -637,7 +638,7 @@ module li_tendency
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
-      MinOfMaxAllowableDt = 1.0e36_RKIND
+      MinOfMaxAllowableDt = bigNumber
 
       do iCell = 1, nCells
         invAreaCell = 1.0 / areaCell(iCell)
@@ -652,7 +653,7 @@ module li_tendency
             if (abs(layerNormalVelocity) > 0.0_RKIND) then
                maxAllowableDt = (0.5_RKIND * dcEdge(iEdge)) / abs(layerNormalVelocity)
             else
-               maxAllowableDt = 1.0e36_RKIND
+               maxAllowableDt = bigNumber
             endif
             if ( maxAllowableDt < dt ) then
                  !write(stderrUnit,*) 'CFL violation at level, edge', k, iEdge                      
@@ -668,18 +669,18 @@ module li_tendency
 
       ! Build a time string of the maximum allowable dt calculated 
       ! (We only need this if a CFL violation occurred or config_print_thickness_advection_info is true)
-      call mpas_set_timeInterval(allowableDtMinStringInterval, dt=MinOfMaxAllowableDt, ierr=err_tmp)
+      call mpas_set_timeInterval(allowableDtMinInterval, dt=MinOfMaxAllowableDt, ierr=err_tmp)
       err = ior(err,err_tmp)
-      call mpas_get_timeInterval(allowableDtMinStringInterval, timeString=allowableDtMinString, ierr=err_tmp)
+      call mpas_get_timeInterval(allowableDtMinInterval, timeString=allowableDtMinString, ierr=err_tmp)
       err = ior(err,err_tmp)
 
       if (err > 0) then
-         write(stderrUnit,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step (seconds) for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString)
+         write(stderrUnit,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString)
          err = 1
       endif
 
       if (config_print_thickness_advection_info) then
-         write(stdoutUnit,*) '  Maximum allowable time step (s) on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtMinString)
+         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtMinString)
       endif
 
       ! Optional check for mass conservation
