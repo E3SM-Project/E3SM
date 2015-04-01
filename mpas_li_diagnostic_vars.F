@@ -311,7 +311,7 @@ contains
       integer, pointer :: index_temperature
       type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField, floatingEdgesField
       integer, pointer :: nCells, nVertices, nEdges
-      integer, pointer :: anyVertexMaskChanged
+      integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
       integer, dimension(:,:), pointer :: dirichletVelocityMaskOld, dirichletVelocityMaskNew
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
@@ -319,7 +319,7 @@ contains
       ! truly local variables
       real (kind=RKIND) :: thisThk
       integer :: iCell, iLevel, iEdge, cell1, cell2
-      integer :: blockVertexMaskChanged, procVertexMaskChanged
+      integer :: blockDynamicVertexMaskChanged, procDynamicVertexMaskChanged
       integer :: blockDirichletMaskChanged, procDirichletMaskChanged
 
       integer :: err_tmp
@@ -512,7 +512,7 @@ contains
 
       ! This information is only needed for some external dycores.
       if (config_velocity_solver /= 'sia') then
-         procVertexMaskChanged = 0
+         procDynamicVertexMaskChanged = 0
 
          ! Note: External dycores don't support multiple blocks per proc., but checking across
          !  blocks anyway, in case some day they do.
@@ -524,14 +524,14 @@ contains
             ! TODO: if we ever have more than one time level, then this logic should be revisited.
             call mpas_pool_get_array(statePool, 'vertexMask', vertexMaskOld, timeLevel=1)
             call mpas_pool_get_array(statePool, 'vertexMask', vertexMaskNew, timeLevel=2)
-            if ( sum(vertexMaskNew - vertexMaskOld) /= 0 ) then
-                blockVertexMaskChanged = 1
+            if ( sum(li_mask_is_dynamic_ice_int(vertexMaskNew) - li_mask_is_dynamic_ice_int(vertexMaskOld)) /= 0 ) then
+                blockDynamicVertexMaskChanged = 1
             else
-                blockVertexMaskChanged = 0
+                blockDynamicVertexMaskChanged = 0
             endif
             !print *, 'blockVertexMaskChanged ', blockVertexMaskChanged
             ! Determine if any blocks on this processor had a change to the vertex mask
-            procVertexMaskChanged = max(procVertexMaskChanged, blockVertexMaskChanged)
+            procDynamicVertexMaskChanged = max(procDynamicVertexMaskChanged, blockDynamicVertexMaskChanged)
             !print *,'procVertexMaskChanged', procVertexMaskChanged
 
             ! Also check to see if the Dirichlet b.c. mask has changed
@@ -549,9 +549,9 @@ contains
          end do
 
          ! Determine if the vertex mask has changed on any processor and store the value for later use (need to exit the block loop to do so)
-         call mpas_pool_get_array(statePool, 'anyVertexMaskChanged', anyVertexMaskChanged, timeLevel=timeLevel)
-         call mpas_dmpar_max_int(domain % dminfo, procVertexMaskChanged, anyVertexMaskChanged)
-         !print *,'anyVertexMaskChanged', anyVertexMaskChanged
+         call mpas_pool_get_array(statePool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged, timeLevel=timeLevel)
+         call mpas_dmpar_max_int(domain % dminfo, procDynamicVertexMaskChanged, anyDynamicVertexMaskChanged)
+         !print *,'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged
          ! Do the same for the Dirichlet b.c. mask
          call mpas_pool_get_array(statePool, 'dirichletMaskChanged', dirichletMaskChanged, timeLevel=timeLevel)
          call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)

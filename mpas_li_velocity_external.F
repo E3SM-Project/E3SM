@@ -367,7 +367,7 @@ contains
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_always_compute_fem_grid
-      integer, pointer :: anyVertexMaskChanged
+      integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
 
       err = 0
@@ -392,7 +392,7 @@ contains
       call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
       call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'anyVertexMaskChanged', anyVertexMaskChanged, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'dirichletMaskChanged', dirichletMaskChanged, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=timeLevel)
@@ -403,8 +403,8 @@ contains
       ! ==================================================================
 
       ! Note these functions will always be called on the first solve because we
-      ! initialize vertexMask to garbage which sets anyVertexMaskChanged to 1.
-      if ((anyVertexMaskChanged == 1) .or. (config_always_compute_fem_grid) .or. &
+      ! initialize vertexMask to garbage which sets anyDynamicVertexMaskChanged to 1.
+      if ((anyDynamicVertexMaskChanged == 1) .or. (config_always_compute_fem_grid) .or. &
           (dirichletMaskChanged == 1) ) then
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
           call mpas_timer_start("velocity_solver_compute_2d_grid")
