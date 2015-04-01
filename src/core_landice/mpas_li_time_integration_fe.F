@@ -234,9 +234,9 @@ module li_time_integration_fe
       call mpas_dmpar_exch_halo_field(layerThickness_tend_field)
       call mpas_timer_stop("halo updates")
 
-      ! If we are printing advection debug information, 
-      ! then find out what the CFL limit is.  Don't do this otherwise because it
-      ! is requires 2 unnecessary MPI communications.
+      ! If we are printing advection debug information,
+      ! then find out what the global CFL limit is.  Don't do this otherwise because
+      ! it requires 2 unnecessary MPI communications.
       if (config_print_thickness_advection_info) then
           ! Determine CFL limit on all procs
           call mpas_dmpar_min_real(dminfo, allowableDt, allowableDtMin)
@@ -251,11 +251,11 @@ module li_time_integration_fe
           err = ior(err,err_tmp)
           call mpas_get_timeInterval(allowableDtMinStringInterval, timeString=allowableDtMinString, ierr=err_tmp)
           err = ior(err,err_tmp)
-          write(stdoutUnit,*) '  Maximum allowable time step (yr) for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString) //  '  Time step is limited by processor number ', allowableDtMinProcNumber
+          write(stdoutUnit,*) '  Maximum allowable time step for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString) //  '  Time step is limited by processor number ', allowableDtMinProcNumber
       endif
 
-      if (err .gt. 0) then
-           write(stderrUnit,*) 'Error in calculating thickness tendency (possibly CFL violation)'
+      if (err > 0) then
+           write(stderrUnit,*) 'Error in calculating thickness tendency  (possibly CFL violation)'
       endif
 
 
