@@ -1357,7 +1357,8 @@ module mpas_timekeeping
       end if
 
       if (present(dt)) then
-         dt = (days * 24 * 60 * 60) + seconds + (sn / sd)
+         dt = (real(days, RKIND) * 24.0_RKIND * 60.0_RKIND * 60.0_RKIND) + &
+              real(seconds, RKIND) + (real(sn, RKIND) / real(sd, RKIND))
       end if
 
       if (present(DD)) then
