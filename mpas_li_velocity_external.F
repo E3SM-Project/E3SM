@@ -366,6 +366,7 @@ contains
       integer, dimension(:), pointer :: vertexMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       character (len=StrKIND), pointer :: config_velocity_solver
+      real (kind=RKIND), pointer :: config_dynamic_thickness
       logical, pointer :: config_always_compute_fem_grid
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
@@ -375,6 +376,7 @@ contains
       ! configs
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(liConfigs, 'config_always_compute_fem_grid', config_always_compute_fem_grid)
+      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
 
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
@@ -396,6 +398,14 @@ contains
       call mpas_pool_get_array(statePool, 'dirichletMaskChanged', dirichletMaskChanged, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=timeLevel)
+
+      if (maxval(thickness) < config_dynamic_thickness) then
+         ! External dycores may not be able to handle case when there is no ice
+         normalVelocity = 0.0_RKIND
+         uReconstructX = 0.0_RKIND
+         uReconstructY = 0.0_RKIND
+         uReconstructZ = 0.0_RKIND
+      else
 
 
       ! ==================================================================
@@ -521,6 +531,8 @@ contains
    uReconstructX =  uReconstructX / (365.0*24.0*3600.0)   ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
    uReconstructY =  uReconstructY / (365.0*24.0*3600.0)   ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
 
+
+   endif ! if ice
 
    !--------------------------------------------------------------------
    end subroutine li_velocity_external_solve
