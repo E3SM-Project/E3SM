@@ -623,7 +623,7 @@ implicit none
       else
         plant_nbuffer(c) = plant_nbuffer(c)-plant_totn_demand_flx(c)*dtime
       endif
-      plant_totn_demand_flx(c) = plant_totn_demand_flx(c)* (1._r8-fpg(c))
+      !plant_totn_demand_flx(c) = plant_totn_demand_flx(c)* (1._r8-fpg(c))
     else
       fpg(c) = 1.0_r8
     end if
