@@ -35,7 +35,6 @@ set smooth = 0
 set tadv = 1
 set RK2 = 5
 set qsplit = 1
-set mean_flux=1
 set limiter = 4
 set rsplit = 5
 set ne = 8    # setup for 8,15,30,60,120?
@@ -97,7 +96,7 @@ rm -f $wdir/explicit.nl
 sed s/NE/$ne/ explicit26.nl.sed |\
 sed s/TSTEP/"$tstep rsplit=$rsplit qsplit=$qsplit psurf_vis=$psurf  "/ |\
 sed s/SFREQ/$sfreq/ |\
-sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv  tstep_type = $RK2  compute_mean_flux=$mean_flux  "/ |\
+sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv  tstep_type = $RK2  "/ |\
 sed s/NU1/$nu/ | sed s/NU2/$nu_q/                    |\
 sed s/nu_div.\*/"nu_div = $nu_div  npdg=$npdg"/      |\
 sed s/nu_p.\*/"nu_p = $nu_p"/                        |\

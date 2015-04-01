@@ -8,7 +8,6 @@ ne                           = 15
 qsize                        = 4
 tracer_advection_formulation = 1
 tstep_type                   = 0
-compute_mean_flux            = 0  
 ndays                        = 9
 statefreq                    = 480
 accumfreq                    = -1

@@ -323,7 +323,6 @@ subroutine fvm_readnl(par)
        integration,   &       ! integration method
        tracer_advection_formulation, &   ! conservation or non-conservation formulaton
        cubed_sphere_map, &
-       compute_mean_flux, &
        qsplit, &
        rk_stage_user, &
        LFTfreq,       &

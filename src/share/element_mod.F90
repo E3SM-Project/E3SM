@@ -45,7 +45,6 @@ module element_mod
     ! diagnostic variables for preqx solver
 
     ! storage for subcycling tracers/dynamics
-    ! if (compute_mean_flux==1) vn0=time_avg(U*dp) else vn0=U at tracer-time t
 
     real (kind=real_kind) :: vn0  (np,np,2,nlev)                      ! velocity for SE tracer advection
     real (kind=real_kind) :: vstar(np,np,2,nlev)                      ! velocity on Lagrangian surfaces

@@ -10,7 +10,6 @@ ntrac                        = 4
 test_cfldep                  = .TRUE.
 tracer_advection_formulation = 1
 tstep_type                   = 1 
-compute_mean_flux            = 1  
 ndays                        = 15
 statefreq                    = 6
 accumfreq                    = -1
