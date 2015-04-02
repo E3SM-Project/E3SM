@@ -127,7 +127,7 @@ RTM_OUT_ON=0
 LENS=0
 
 # SCRIPTS_ROOT is only used for generating ensemble!
-SCRIPTS_ROOT=$(cd `dirname $0`; cd ..; pwd )
+SCRIPTS_ROOT=$(cd `dirname $0`; cd ../../scripts; pwd )
 echo "CESM command: create_newcase $NewCaseFlags"
 echo "(Running from: $SCRIPTS_ROOT)"
 # Process input arguments

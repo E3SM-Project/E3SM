@@ -1564,6 +1564,7 @@ DOCN%COPY => docn copy mode
 <ATM_NCPL compset="_CAM%IDEAL"         > 48</ATM_NCPL>  
 <ATM_NCPL compset="_MPAS"              >  1</ATM_NCPL>  
 
+<ATM_NCPL compset="_CICE" grid="oi%tx0.1v2">48</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%0.23x0.31">96</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne60np4"  >96</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="a%ne120np4" >96</ATM_NCPL>
