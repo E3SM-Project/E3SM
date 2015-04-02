@@ -51,7 +51,15 @@ MACHINE_INFO = {
         "ignore",
         "/home/<USER>/acme/scratch",
         "sonproxy.sandia.gov:80"
-    )
+    ),
+    "edison"    : (
+        "intel",
+        "acme_integration",
+        True,
+        "acme",
+        "/scratch1/scratchdirs/<USER>/acme_scratch",
+        None
+    ),
 }
 
 ###############################################################################
@@ -152,7 +160,7 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
     # Env changes
     #
 
-    if (submit_to_dashboard):
+    if (submit_to_dashboard and proxy is not None):
         os.environ["http_proxy"] = proxy
 
     expect(os.path.isdir("ACME_Climate"),

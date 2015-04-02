@@ -9,7 +9,8 @@ _VERBOSE = False
 MACHINE_NODENAMES = [
     ("redsky", re.compile(r"redsky-login")),
     ("skybridge", re.compile(r"skybridge-login")),
-    ("melvin", re.compile(r"melvin"))
+    ("melvin", re.compile(r"melvin")),
+    ("edison", re.compile(r"edison")),
 ]
 
 ###############################################################################
