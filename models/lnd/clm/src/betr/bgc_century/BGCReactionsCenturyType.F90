@@ -493,7 +493,11 @@ contains
      col%dz(bounds%begc:bounds%endc,1:ubj), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj), &
      nuptake_prof(bounds%begc:bounds%endc,1:ubj))
            
-
+  !update plant nitrogen uptake potential
+  
+  call plantsoilnutrientflux_vars%calc_nutrient_uptake_potential(bounds, num_soilc, filter_soilc, num_soilp, &
+     filter_soilp, carbonstate_vars%frootc_patch))
+     
   !calculate multiplicative scalars for decay parameters
   call calc_decompK_multiply_scalar(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, &
     waterstate_vars%finundated_col(bounds%begc:bounds%endc), col%z(bounds%begc:bounds%endc, lbj:ubj),&
@@ -535,7 +539,7 @@ contains
   !back with CLM
   
   call calc_plant_nitrogen_uptake_prof(bounds, ubj, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc, lbj:ubj), &
-     plantsoilnutrientflux_vars%plant_totn_demand_flx_col(bounds%begc:bounds%endc), &
+     plantsoilnutrientflux_vars%plant_minn_uptake_potential_col(bounds%begc:bounds%endc), &
      nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
      k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj))
   

@@ -548,11 +548,11 @@ contains
   !
 
   ! !USES:
-  use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf
-  use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
-  use clm_varcon       , only: secspday
+  use pftvarcon           , only : npcropmin, declfact, bfact, aleaff, arootf, astemf
+  use pftvarcon           , only : arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
+  use clm_varcon          , only : secspday
   use clm_varctl          , only : use_c13, use_c14 
-  use clm_time_manager , only: get_step_size
+  use clm_time_manager    , only : get_step_size
   use subgridAveMod       , only : p2c    
   implicit none
  
@@ -973,6 +973,11 @@ contains
   call p2c(bounds, num_soilc, filter_soilc, &
            plant_ndemand(bounds%begp:bounds%endp), &
            plant_totn_demand_flx_col(bounds%begc:bounds%endc))
+           
+  ! obtain the nutrient uptake potential based on fine root profile
+  
+
+           
   end associate 
  end subroutine calc_plant_nitrogen_demand
    

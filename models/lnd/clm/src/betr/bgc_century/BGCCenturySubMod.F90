@@ -1553,7 +1553,8 @@ module BGCCenturySubMod
   real(r8)                 , intent(inout) :: plant_demand_vr(1,bounds%begc:bounds%endc, 1:nlevdecomp)      !mol N/m3/s
   
   integer :: fc, c, j
-  
+
+           
   do j = 1, nlevdecomp
     do fc = 1, num_soilc  
       c = filter_soilc(fc)

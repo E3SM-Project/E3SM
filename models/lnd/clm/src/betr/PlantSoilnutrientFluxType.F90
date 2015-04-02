@@ -1,5 +1,5 @@
 module PlantSoilnutrientFluxType
-
+#include "shr_assert.h"
   !DESCRIPTIONS
   !
   ! data structure for above/below ground nutrient coupling.
@@ -25,15 +25,20 @@ module PlantSoilnutrientFluxType
     real(r8), pointer :: plant_minn_active_yield_flx_patch           (:)    !patch level mineral nitrogen yeild from soil bgc calculation
     real(r8), pointer :: plant_minn_passive_yield_flx_patch          (:)    !patch level mineral nitrogen yeild from soil bgc calculation    
     real(r8), pointer :: plant_minn_active_yield_flx_vr_col          (:, :) !layer specific active mineral nitrogen yield
+    real(r8), pointer :: plant_minn_uptake_potential_patch           (:)
+    real(r8), pointer :: plant_minn_uptake_potential_col             (:)    
+    real(r8), pointer :: plant_minn_uptake_potential_vr_patch        (:,:)  !plant mineral nitrogen uptake potential for each layer
+    real(r8), pointer :: plant_minn_uptake_potential_vr_col          (:,:)  !plant mineral nitrogen uptake potential for each layer
     real(r8), pointer :: plant_totn_demand_flx_col                   (:)    !column level total nitrogen demand, g N/m2/s
    contains
 
      procedure , public  :: Init   
      procedure , public  :: SetValues
      procedure , public  :: summary
+     procedure , public  :: calc_nutrient_uptake_potential        
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
-     procedure , private :: InitCold    
+     procedure , private :: InitCold
   end type plantsoilnutrientflux_type
 
  contains
@@ -73,6 +78,10 @@ module PlantSoilnutrientFluxType
 
     allocate(this%plant_minn_active_yield_flx_patch                   (begp:endp)) ; this%plant_minn_active_yield_flx_patch               (:)   = nan
     allocate(this%plant_minn_passive_yield_flx_patch                  (begp:endp)) ; this%plant_minn_passive_yield_flx_patch              (:)   = nan
+    allocate(this%plant_minn_uptake_potential_patch                   (begp:endp)) ; this%plant_minn_uptake_potential_patch               (:)   = nan
+    allocate(this%plant_minn_uptake_potential_col                     (begc:endc)) ; this%plant_minn_uptake_potential_col                 (:)   = nan
+    
+
     
     allocate(this%plant_minn_active_yield_flx_col                     (begc:endc)) ; this%plant_minn_active_yield_flx_col                 (:)   = nan
     allocate(this%plant_minn_passive_yield_flx_col                    (begc:endc)) ; this%plant_minn_passive_yield_flx_col                (:)   = nan
@@ -80,6 +89,7 @@ module PlantSoilnutrientFluxType
     allocate(this%plant_minn_active_yield_flx_vr_col         (begc:endc, lbj:ubj)) ; this%plant_minn_active_yield_flx_vr_col              (:,:) = nan
     
     allocate(this%plant_totn_demand_flx_col                           (begc:endc)) ; this%plant_totn_demand_flx_col                       (:)   = nan
+    
   end subroutine InitAllocate    
 
 
@@ -269,5 +279,48 @@ module PlantSoilnutrientFluxType
   enddo
   
   end subroutine summary
+
+!--------------------------------------------------------------------------------
+
+  subroutine calc_nutrient_uptake_potential(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, frootc_patch)
   
+  use subgridAveMod       , only : p2c
+  
+  class(plantsoilnutrientflux_type) :: this
+  type(bounds_type), intent(in) :: bounds        
+  integer,  intent(in) :: num_soilc  
+  integer,  intent(in) :: filter_soilc(:)
+  integer,  intent(in) :: num_soilp
+  integer,  intent(in) :: filter_soilp(:)
+  real(r8), intent(in) :: frootc_patch(bounds%begp:bounds%endp)
+  
+  
+  real(r8) :: Vmax_minn = 1.e-8_r8  ! gN/gC/s
+  integer  :: fp, p, fc, c
+  
+  SHR_ASSERT_ALL((ubound(frootc_patch) == (/bounds%endp/)), errMsg(__FILE__,__LINE__))
+  !calculate root nitrogen uptake potential
+  
+  !default approach
+  !
+  !do fc = 1, num_soilc
+  !  c = fitler_soilc(fc)
+  !  
+  !  this%plant_minn_uptake_potential_col(c) = this%plant_totn_demand_flx_col(c)
+  !enddo
+  
+  !new approach
+  do fp = 1, num_soilp
+    p = filter_soilp(fp)    
+    this%plant_minn_uptake_potential_patch(p) = max(Vmax_minn * frootc_patch(p),Vmax_min*0.1_r8)    
+  enddo
+
+  
+  ! now use the p2c routine to get the column-averaged plant_ndemand
+  call p2c(bounds, num_soilc, filter_soilc, &
+           this%plant_minn_uptake_potential_patch(bounds%begp:bounds%endp), &
+           this%plant_minn_uptake_potential_col(bounds%begc:bounds%endc))
+           
+           
+  end subroutine calc_nutrient_uptake_potential           
 end module PlantSoilnutrientFluxType

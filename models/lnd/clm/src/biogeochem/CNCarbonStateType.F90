@@ -65,6 +65,7 @@ module CNCarbonStateType
      real(r8), pointer :: ctrunc_vr_col           (:,:)    ! col (gC/m3) vertically-resolved column-level sink for C truncation
 
      ! pools for dynamic landcover
+     real(r8), pointer :: frootc_col               (:)     ! col (gC/m2) column-level C pool for fine root
      real(r8), pointer :: seedc_col                (:)     ! col (gC/m2) column-level pool for seeding new Patches
      real(r8), pointer :: prod10c_col              (:)     ! col (gC/m2) wood product C pool, 10-year lifespan
      real(r8), pointer :: prod100c_col             (:)     ! col (gC/m2) wood product C pool, 100-year lifespan
