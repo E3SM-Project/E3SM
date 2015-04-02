@@ -60,6 +60,14 @@ MACHINE_INFO = {
         "/scratch1/scratchdirs/<USER>/acme_scratch",
         None
     ),
+    "blues"    : (
+        "pgi",
+        "acme_developer",
+        True,
+        "ACME",
+        "/lcrc/project/$PROJECT/$CCSMUSER/acme_scratch",
+        None
+    ),
 }
 
 ###############################################################################

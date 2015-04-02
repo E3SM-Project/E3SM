@@ -11,6 +11,7 @@ MACHINE_NODENAMES = [
     ("skybridge", re.compile(r"skybridge-login")),
     ("melvin", re.compile(r"melvin")),
     ("edison", re.compile(r"edison")),
+    ("blues", re.compile(r"blogin")),
 ]
 
 ###############################################################################
