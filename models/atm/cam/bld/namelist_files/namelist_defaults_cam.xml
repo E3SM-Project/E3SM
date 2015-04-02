@@ -1037,11 +1037,11 @@
 <zmconv_c0_ocn			 hgrid="ne0np4_svalbard_x8v1_lowcon"  phys="cam5"     > 0.00350D0</zmconv_c0_ocn>
 <zmconv_c0_ocn			 hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  phys="cam5"> 0.00350D0</zmconv_c0_ocn>
 
-<zmconv_tau			                                                      > 3000</zmconv_tau>
-<zmconv_tau			 hgrid="ne0np4_arm_x8v3_lowcon" phys="cam5" 	      > 3000</zmconv_tau>
-<zmconv_tau			 hgrid="ne0np4_conus_x4v1_lowcon"  phys="cam5" 	      > 3000</zmconv_tau>
-<zmconv_tau			 hgrid="ne0np4_svalbard_x8v1_lowcon"  phys="cam5"     > 3000</zmconv_tau>
-<zmconv_tau			 hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  phys="cam5"> 3000</zmconv_tau>
+<zmconv_tau			                                                      > 3600</zmconv_tau>
+<zmconv_tau			 hgrid="ne0np4_arm_x8v3_lowcon" phys="cam5" 	      > 3600</zmconv_tau>
+<zmconv_tau			 hgrid="ne0np4_conus_x4v1_lowcon"  phys="cam5" 	      > 3600</zmconv_tau>
+<zmconv_tau			 hgrid="ne0np4_svalbard_x8v1_lowcon"  phys="cam5"     > 3600</zmconv_tau>
+<zmconv_tau			 hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  phys="cam5"> 3600</zmconv_tau>
 
 
 <zmconv_ke                                                            > 3.0E-6 </zmconv_ke>
