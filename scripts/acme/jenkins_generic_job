@@ -202,6 +202,10 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
 
     acme_util.run_cmd(create_test_cmd, verbose=True, arg_stdout=None, arg_stderr=None)
 
+    # TODO: the testing scripts should produce all PASS when only generating namelists
+    if (namelists_only and generate_baselines):
+        return True
+
     if (use_batch):
         # This is not fullproof. Any jobs that happened to be
         # submitted by this user while create_test was running will be
