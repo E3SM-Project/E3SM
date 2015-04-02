@@ -440,7 +440,7 @@ my $testcase_end = <<'END_TEST';
 
          echo "CplLogFile is $CplLogFile" >>& $TESTSTATUS_LOG
 	 if( "$CplLogFile" =~ *gz ) then
-	    zcat $CplLogFile | tail -10	>>& $TESTSTATUS_LOG
+	    gunzip -c $CplLogFile | tail -10	>>& $TESTSTATUS_LOG
 	 else
   	    tail -10 $CplLogFile >>& $TESTSTATUS_LOG
 	 endif
