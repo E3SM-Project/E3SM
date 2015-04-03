@@ -2,8 +2,8 @@
 #include <pio_internal.h>
 
 #define PIO_WRITE_BUFFERING 1
-PIO_Offset PIO_BUFFER_SIZE_LIMIT= 10485760; // 10MB default limit
-bufsize PIO_CNBUFFER_LIMIT=10485760; // 10MB default limit
+PIO_Offset PIO_BUFFER_SIZE_LIMIT=10485760; // 10MB default limit
+bufsize PIO_CNBUFFER_LIMIT=33554432; // default limit
 static void *CN_bpool=NULL; 
 static PIO_Offset maxusage=0;
 
@@ -19,6 +19,8 @@ static PIO_Offset maxusage=0;
 
 void compute_buffer_init(iosystem_desc_t ios)
 {
+#ifndef PIO_USE_MALLOC
+
   if(CN_bpool == NULL){
     CN_bpool = malloc( PIO_CNBUFFER_LIMIT );
     if(CN_bpool==NULL){
@@ -32,7 +34,9 @@ void compute_buffer_init(iosystem_desc_t ios)
       sprintf(errmsg,"Unable to allocate a buffer pool of size %d on task %d: try reducing PIO_CNBUFFER_LIMIT\n",PIO_CNBUFFER_LIMIT,ios.comp_rank);
       piodie(errmsg,__FILE__,__LINE__);
     }
+    bectl(NULL, malloc, free, PIO_CNBUFFER_LIMIT);
   }
+#endif
 }
 
 
@@ -1288,13 +1292,14 @@ void cn_buffer_report(iosystem_desc_t ios, bool collective)
 
 void free_cn_buffer_pool(iosystem_desc_t ios)
 {
+#ifndef PIO_USE_MALLOC
   if(CN_bpool != NULL){
     cn_buffer_report(ios, true);
     bpoolrelease(CN_bpool);
-    free(CN_bpool);
+    //    free(CN_bpool);
     CN_bpool=NULL;
   }
-
+#endif
 }
 
 void flush_buffer(int ncid, wmulti_buffer *wmb)

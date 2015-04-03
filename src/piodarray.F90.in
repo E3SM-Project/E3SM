@@ -138,13 +138,17 @@ contains
     type(C_PTR) :: cptr
     carraylen = int(arraylen,C_SIZE_T)
     cptr = C_LOC(array)
-
+#ifdef TIMING
+    call t_startf("PIO:write_darray")    
+#endif
     if(present(fillval)) then
        iostat = PIOc_write_darray(file%fh, varDesc%varid-1, iodesc%ioid, carraylen,cptr, C_LOC(fillval))
     else
        iostat = PIOc_write_darray(file%fh, varDesc%varid-1, iodesc%ioid, carraylen, cptr, C_NULL_PTR)
     endif
-
+#ifdef TIMING
+    call t_stopf("PIO:write_darray")    
+#endif
   end subroutine write_darray_1d_cinterface_{TYPE}
 
 ! TYPE real,int,double

@@ -397,6 +397,9 @@
     BGET CONFIGURATION
     ==================
 */
+#ifdef PIO_USE_MALLOC
+#include <stdlib.h>
+#endif
 
 #define TestProg    20000	      /* Generate built-in test program
 					 if defined.  The value specifies
@@ -434,7 +437,9 @@
 					 miscreants who attempt to use
 					 pointers into released buffers. */
 
-#define BestFit     1		      /* Use a best fit algorithm when
+//#define BestFit     1
+#undef BestFit		
+                                       /* Use a best fit algorithm when
 					 searching for space for an
 					 allocation request.  This uses
 					 memory more efficiently, but
@@ -553,6 +558,8 @@ static bufsize pool_len = 0;	      /* 0: no bpool calls have been made
 
 #define ESent	((bufsize) (-(((1L << (sizeof(bufsize) * 8 - 2)) - 1) * 2) - 2))
 
+static int maxsize=0;
+
 /* added for PIO so that a bpool can be freed and another allocated */
 void bpoolrelease()
 {
@@ -601,6 +608,15 @@ void *bget(requested_size)
 #ifdef BECtl
     int compactseq = 0;
 #endif
+
+#ifdef PIO_USE_MALLOC
+    if(requested_size>maxsize){
+      maxsize=requested_size;
+      printf("%s %d %d\n",__FILE__,__LINE__,maxsize);
+    }
+    return(malloc(requested_size));
+#endif 
+
 
     if(size<=0)
       print_trace(NULL);
@@ -750,6 +766,11 @@ void *bget(requested_size)
 		numdget++;	      /* Direct bget() call count */
 #endif
 		buf =  (void *) (bdh + 1);
+
+	    /*only let this happen once */
+		printf("%s %d memory request exceeds block size %d %d %x\n",__FILE__,__LINE__,size,exp_incr,buf);
+	    exp_incr = size+sizeof(struct bhead);
+	    
 		return buf;
 	    }
 
@@ -763,6 +784,7 @@ void *bget(requested_size)
 		bpool(newpool, exp_incr);
                 buf =  bget(requested_size);  /* This can't, I say, can't
 						 get into a loop. */
+		printf("%s %d new memory block of size %d\n",__FILE__,__LINE__,exp_incr);
 		return buf;
 	    }
 	}
@@ -817,6 +839,9 @@ void *bgetr(buf, size)
     bufsize osize;		      /* Old size of buffer */
     struct bhead *b;
 
+#ifdef PIO_USE_MALLOC
+    return(realloc(buf, size));
+#endif
     if ((nbuf = bget(size)) == NULL) { /* Acquire new buffer */
 	return NULL;
     }
@@ -848,6 +873,12 @@ void brel(buf)
   void *buf;
 {
     struct bfhead *b, *bn;
+
+#ifdef PIO_USE_MALLOC
+    free(buf);
+    return;
+#endif    
+
 
     if(buf==NULL) return;       /* allow for null buffer */
 
@@ -980,8 +1011,9 @@ void brel(buf)
 	/*  Unlink the buffer from the free list  */
 	b->ql.blink->ql.flink = b->ql.flink;
 	b->ql.flink->ql.blink = b->ql.blink;
-
+	printf("%s %d calling direct release for %x\n",__FILE__,__LINE__,b);
 	(*relfcn)(b);
+	printf("%s %d completed direct release \n",__FILE__,__LINE__);
 #ifdef BufStats
 	numprel++;		      /* Nr of expansion block releases */
 	numpblk--;		      /* Total number of blocks */

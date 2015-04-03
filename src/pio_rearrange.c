@@ -909,7 +909,7 @@ void determine_fill(iosystem_desc_t ios, io_desc_t *iodesc, const int gsize[], c
 
   
   if(totalllen < totalgridsize){
-    if(ios.iomaster) printf("%s %d %ld %ld\n",__FILE__,__LINE__,totalllen,totalgridsize);
+    //if(ios.iomaster) printf("%s %d %ld %ld\n",__FILE__,__LINE__,totalllen,totalgridsize);
     iodesc->needsfill = true;
   }else{
     iodesc->needsfill = false;
