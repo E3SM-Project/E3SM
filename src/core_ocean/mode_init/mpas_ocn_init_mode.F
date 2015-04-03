@@ -40,6 +40,7 @@ module ocn_init_mode
    !use ocn_init_TEMPLATE
    use ocn_init_baroclinic_channel
    use ocn_init_lock_exchange
+   use ocn_init_internal_waves
 
    implicit none
    private
@@ -241,6 +242,7 @@ module ocn_init_mode
 
       call ocn_init_setup_baroclinic_channel(domain, ierr)
       call ocn_init_setup_lock_exchange(domain, ierr)
+      call ocn_init_setup_internal_waves(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       call mpas_timer_start('io_write', .false.)
@@ -315,6 +317,8 @@ module ocn_init_mode
       call ocn_init_validate_baroclinic_channel(configPool, packagePool, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_lock_exchange(configPool, packagePool, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_internal_waves(configPool, packagePool, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       ! call ocn_config_TEMPLATE_validate(configPool, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)
