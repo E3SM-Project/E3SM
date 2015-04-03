@@ -1,2 +1,3 @@
 #include "Registry_baroclinic_channel.xml"
+#include "Registry_lock_exchange.xml"
 // #include "Registry_TEMPLATE.xml"
