@@ -128,7 +128,7 @@ int generate_namelist(ezxml_t registry, FILE* fd, int pairs, char **keys, char *
 		}
 	}
 
-
+	return 0;
 }/*}}}*/
 
 char* get_option_value(ezxml_t nml_option, int pairs, char **values){/*{{{*/
