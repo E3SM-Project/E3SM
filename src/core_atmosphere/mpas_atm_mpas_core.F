@@ -7,7 +7,9 @@
 !
 module mpas_core
 
-   use mpas_framework
+   use mpas_derived_types
+   use mpas_pool_routines
+   use mpas_dmpar
 
    type (MPAS_Clock_type), pointer :: clock
 
@@ -15,16 +17,15 @@ module mpas_core
    contains
 
 
-   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)
+   subroutine mpas_core_init(domain, startTimeStamp)
 
+      use mpas_timekeeping
       use mpas_kind_types
       use mpas_stream_manager
-      use mpas_grid_types
 
       implicit none
 
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
 
       real (kind=RKIND), pointer :: dt
@@ -61,9 +62,9 @@ module mpas_core
       ! input streams.
       !
       if (config_do_restart) then
-         call MPAS_stream_mgr_read(stream_manager, streamID='restart', ierr=ierr)
+         call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', ierr=ierr)
       else
-         call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=ierr)
+         call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=ierr)
       end if
       if (ierr /= MPAS_STREAM_MGR_NOERR) then
          write(0,*) ' '
@@ -71,16 +72,16 @@ module mpas_core
          write(0,*) 'Error reading initial conditions'
          call mpas_dmpar_global_abort('********************************************************************************')
       end if
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_INPUT, ierr=ierr)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_INPUT, ierr=ierr)
 
       !
       ! Read all other inputs
       ! For now we don't do this here to match results with previous code; to match requires 
       ! that we read in SST and seaice fields after the call to atm_mpas_init_block()
       !
-!      call MPAS_stream_mgr_read(stream_manager, ierr=ierr)
-!      call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr) 
+!      call MPAS_stream_mgr_read(domain % streamManager, ierr=ierr)
+!      call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr) 
 
       if (.not. config_do_restart) then
          block => domain % blocklist
@@ -108,7 +109,7 @@ module mpas_core
          call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
          call mpas_pool_get_subpool(block % structs, 'state', state)
 
-         call atm_mpas_init_block(domain % dminfo, stream_manager, block, mesh, dt)
+         call atm_mpas_init_block(domain % dminfo, domain % streamManager, block, mesh, dt)
 
          call mpas_pool_get_array(state, 'xtime', xtime, 1)
          xtime = startTimeStamp
@@ -130,6 +131,8 @@ module mpas_core
 
 
    subroutine atm_simulation_clock_init(core_clock, configs, ierr)
+
+      use mpas_timekeeping
 
       implicit none
 
@@ -193,7 +196,6 @@ module mpas_core
 
    subroutine atm_mpas_init_block(dminfo, stream_manager, block, mesh, dt)
    
-      use mpas_grid_types
       use atm_time_integration
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
@@ -310,9 +312,9 @@ module mpas_core
    end subroutine atm_mpas_init_block
    
    
-   subroutine mpas_core_run(domain, stream_manager)
+   subroutine mpas_core_run(domain)
    
-      use mpas_grid_types
+      use mpas_timekeeping
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_io_streams, only : MPAS_STREAM_LATEST_BEFORE
@@ -321,7 +323,6 @@ module mpas_core
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
    
       real (kind=RKIND), pointer :: dt
       logical, pointer :: config_do_restart
@@ -346,14 +347,14 @@ module mpas_core
       call mpas_pool_get_config(domain % blocklist % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       ! Avoid writing a restart file at the initial time
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       ! Also, for restart runs, avoid writing the initial history fields to avoid overwriting those from the preceding run
       if (config_do_restart) then
-         call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='output', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+         call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='output', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
       end if
 
-      if (MPAS_stream_mgr_ringing_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+      if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
@@ -365,7 +366,7 @@ module mpas_core
             block_ptr => block_ptr % next
          end do
       end if
-      call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+      call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
           ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
@@ -374,7 +375,7 @@ module mpas_core
          write(0,*) 'Error writing one or more output streams'
          call mpas_dmpar_global_abort('********************************************************************************')
       end if
-      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
 
       ! During integration, time level 1 stores the model state at the beginning of the
@@ -391,14 +392,14 @@ module mpas_core
          !
          ! Read external field updates
          !
-         call MPAS_stream_mgr_read(stream_manager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=ierr)
+         call MPAS_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=ierr)
          if (ierr /= MPAS_STREAM_MGR_NOERR) then
             write(0,*) ' '
             write(0,*) '********************************************************************************'
             write(0,*) 'Error reading one or more input streams'
             call mpas_dmpar_global_abort('********************************************************************************')
          end if
-         call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+         call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
          call mpas_timer_start("time integration")
          call atm_do_timestep(domain, dt, itimestep)
@@ -417,7 +418,7 @@ module mpas_core
          ! Write any output streams that have alarms ringing, after computing diagnostics fields
          !
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
-         if (MPAS_stream_mgr_ringing_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
 
@@ -430,7 +431,7 @@ module mpas_core
                block_ptr => block_ptr % next
             end do
          end if
-         if (MPAS_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
 
@@ -444,7 +445,7 @@ module mpas_core
             end do
          end if
 
-         call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
          if (ierr /= MPAS_STREAM_MGR_NOERR .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_FILE .and. &
              ierr /= MPAS_STREAM_MGR_ERR_CLOBBER_REC) then
@@ -456,13 +457,13 @@ module mpas_core
 
          ! Only after we've successfully written the restart file should we we
          !    write the restart_timestamp file
-         if (MPAS_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             open(22,file=trim(config_restart_timestamp_name),form='formatted',status='replace')
             write(22,*) trim(timeStamp)
             close(22)
          end if
 
-         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
       end do
    
@@ -479,7 +480,6 @@ module mpas_core
    ! Output: state - upon returning, diagnostic fields will have be computed
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
-      use mpas_grid_types
       use mpas_constants
       use mpas_atm_interp_diagnostics
    
@@ -536,7 +536,6 @@ module mpas_core
    ! Output: state - upon returning, diagnostic fields will have be computed
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
-      use mpas_grid_types
       use mpas_constants
    
       implicit none
@@ -576,7 +575,7 @@ module mpas_core
 
    subroutine atm_do_timestep(domain, dt, itimestep)
    
-      use mpas_grid_types
+      use mpas_timekeeping
       use mpas_kind_types
       use atm_time_integration
 #ifdef DO_PHYSICS
@@ -622,27 +621,23 @@ module mpas_core
    end subroutine atm_do_timestep
    
    
-   subroutine mpas_core_finalize(domain, stream_manager)
+   subroutine mpas_core_finalize(domain)
    
-      use mpas_grid_types
       use mpas_decomp
-      use mpas_stream_manager
+      use mpas_timekeeping
    
       implicit none
    
       type (domain_type), intent(inout) :: domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       integer :: ierr
 
       call mpas_destroy_clock(clock, ierr)
-      call mpas_decomp_destroy_decomp_list(decompositions)
+      call mpas_decomp_destroy_decomp_list(domain % decompositions)
    
    end subroutine mpas_core_finalize
 
 
    subroutine atm_compute_mesh_scaling(mesh, configs)
-
-      use mpas_grid_types
 
       implicit none
 
@@ -683,7 +678,6 @@ module mpas_core
 
    subroutine atm_compute_damping_coefs(mesh, configs)
 
-      use mpas_grid_types
 !      use mpas_configure
 
       implicit none
@@ -725,7 +719,6 @@ module mpas_core
 
    subroutine atm_compute_pgf_coefs(mesh, configs)
 
-      use mpas_grid_types
 !      use mpas_configure
 
       implicit none
@@ -1007,8 +1000,6 @@ module mpas_core
    !-----------------------------------------------------------------------
    subroutine mpas_core_setup_packages(configs, packages, ierr)!{{{
 
-      use mpas_packages
-
       implicit none
 
       type (mpas_pool_type), intent(inout) :: configs
@@ -1101,22 +1092,23 @@ module mpas_core
    !>  domain type, and register any decompositons the core wants within it.
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_decompositions(ierr)
+   subroutine mpas_core_setup_decompositions(domain, ierr)
 
       use mpas_decomp
 
       implicit none
 
+      type (domain_type), intent(in) :: domain
       integer, intent(out) :: ierr
       procedure (mpas_decomp_function), pointer :: decompFunc
 
       ierr = 0
 
-      call mpas_decomp_create_decomp_list(decompositions)
+      call mpas_decomp_create_decomp_list(domain % decompositions)
 
       decompFunc => mpas_uniform_decomp
 
-      call mpas_decomp_register_method(decompositions, 'uniform', decompFunc, iErr)
+      call mpas_decomp_register_method(domain % decompositions, 'uniform', decompFunc, iErr)
 
    end subroutine mpas_core_setup_decompositions
 

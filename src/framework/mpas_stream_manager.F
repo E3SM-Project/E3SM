@@ -6,43 +6,16 @@ module mpas_stream_manager
 #define STREAM_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
 
     use mpas_kind_types
-    use mpas_grid_types
+    use mpas_derived_types
+    use mpas_field_routines
+    use mpas_pool_routines
     use mpas_timekeeping
     use mpas_io_units
     use mpas_io_streams
     use mpas_stream_list
 
 
-    integer, public, parameter :: MPAS_STREAM_ERR_FATAL  = 1000, &
-                                  MPAS_STREAM_ERR_WARN   = 1001, &
-                                  MPAS_STREAM_ERR_SILENT = 1002
-
-    integer, public, parameter :: MPAS_STREAM_MGR_NOERR            =  0, &
-                                  MPAS_STREAM_MGR_ERR_CLOBBER_FILE = -1, &
-                                  MPAS_STREAM_MGR_ERR_CLOBBER_REC  = -2, &
-                                  MPAS_STREAM_MGR_ERROR            = -3
-
-    integer, public, parameter :: MPAS_STREAM_INPUT        = 1, &
-                                  MPAS_STREAM_OUTPUT       = 2, &
-                                  MPAS_STREAM_INPUT_OUTPUT = 3, &
-                                  MPAS_STREAM_NONE         = 4
-
-    integer, public, parameter :: MPAS_STREAM_PROPERTY_ACTIVE        =  5, &
-                                  MPAS_STREAM_PROPERTY_IMMUTABLE     =  6, &
-                                  MPAS_STREAM_PROPERTY_FILENAME      =  7, &
-                                  MPAS_STREAM_PROPERTY_REF_TIME      =  8, &
-                                  MPAS_STREAM_PROPERTY_RECORD_INTV   =  9, &
-                                  MPAS_STREAM_PROPERTY_PRECISION     = 10, &
-                                  MPAS_STREAM_PROPERTY_FILENAME_INTV = 11, &
-                                  MPAS_STREAM_PROPERTY_CLOBBER       = 12
-
-    integer, public, parameter :: MPAS_STREAM_CLOBBER_NEVER     = 100, &
-                                  MPAS_STREAM_CLOBBER_APPEND    = 101, &
-                                  MPAS_STREAM_CLOBBER_TRUNCATE  = 102, &
-                                  MPAS_STREAM_CLOBBER_OVERWRITE = 103
-
-    public :: MPAS_streamManager_type, &
-              MPAS_stream_mgr_init, &
+    public :: MPAS_stream_mgr_init, &
               MPAS_stream_mgr_finalize, &
               MPAS_stream_mgr_create_stream, &
               MPAS_stream_mgr_destroy_stream, &
@@ -69,25 +42,6 @@ module mpas_stream_manager
               MPAS_build_stream_filename
 
     private
-
-    type MPAS_streamManager_type
-
-        integer :: numStreams = 0
-        integer :: errorLevel
-
-        type (MPAS_Clock_type), pointer :: streamClock
-        type (MPAS_Pool_type), pointer :: allFields
-        type (MPAS_Pool_type), pointer :: allPackages
-        type (MPAS_Pool_type), pointer :: allStructs
-        type (MPAS_Pool_type), pointer :: defaultAtts
-
-        type (MPAS_stream_list_type), pointer :: currentStream => NULL()
-        type (MPAS_stream_list_type), pointer :: streams
-        type (MPAS_stream_list_type), pointer :: alarms_in
-        type (MPAS_stream_list_type), pointer :: alarms_out
-
-    end type MPAS_streamManager_type
-
 
     interface MPAS_stream_mgr_set_property
         module procedure MPAS_stream_mgr_set_property_int
@@ -4822,13 +4776,13 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
-                                    MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
-                                    MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
-                                    MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
-                                    MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE, MPAS_stream_mgr_create_stream, &
-                                    MPAS_stream_mgr_set_property
-
+    use mpas_derived_types, only : MPAS_streamManager_type, &
+                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
+                                        MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
+                                        MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
+                                        MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
+                                        MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE
+    use mpas_stream_manager, only : MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
     use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION
     use mpas_io_units, only : stderrUnit
@@ -4934,7 +4888,8 @@ subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, ierr_c) bind
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_pool
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR
+    use mpas_stream_manager, only : MPAS_stream_mgr_add_pool
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -4968,7 +4923,8 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bi
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_field
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR
+    use mpas_stream_manager, only : MPAS_stream_mgr_add_field
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -5002,7 +4958,8 @@ subroutine stream_mgr_add_stream_fields_c(manager_c, streamID_c, refStreamID_c, 
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_stream_fields
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR
+    use mpas_stream_manager, only : MPAS_stream_mgr_add_stream_fields
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -5036,11 +4993,11 @@ subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, &
-                                    MPAS_stream_mgr_get_clock, MPAS_stream_mgr_add_alarm
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_Clock_type, MPAS_Time_type, MPAS_TimeInterval_type, &
+                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_START_TIME
+    use mpas_stream_manager, only : MPAS_stream_mgr_get_clock, MPAS_stream_mgr_add_alarm
     use mpas_kind_types, only : StrKIND
-    use mpas_timekeeping, only : MPAS_Clock_type, MPAS_START_TIME, MPAS_Time_type, MPAS_TimeInterval_type, mpas_add_clock_alarm, &
-                                 mpas_set_time, mpas_set_timeInterval, mpas_get_clock_time
+    use mpas_timekeeping, only : mpas_add_clock_alarm, mpas_set_time, mpas_set_timeInterval, mpas_get_clock_time
 
     implicit none
 
@@ -5110,7 +5067,8 @@ subroutine stream_mgr_add_pkg_c(manager_c, streamID_c, package_c, ierr_c) bind(c
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_pkg
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR
+    use mpas_stream_manager, only : MPAS_stream_mgr_add_pkg
     use mpas_kind_types, only : StrKIND
 
     implicit none

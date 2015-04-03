@@ -8,7 +8,8 @@
 module sw_time_integration
 
    use mpas_vector_reconstruction
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_configure
    use mpas_constants
    use mpas_dmpar

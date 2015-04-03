@@ -20,7 +20,8 @@
 
 module ocn_equation_of_state_linear
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use ocn_constants
 
    implicit none

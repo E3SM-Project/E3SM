@@ -482,7 +482,7 @@ mpas_main:
 ifeq "$(AUTOCLEAN)" "true"
 	$(RM) .mpas_core_*
 endif
-	cd src; $(MAKE) -j1 FC="$(FC)" \
+	cd src; $(MAKE) FC="$(FC)" \
                  CC="$(CC)" \
                  CXX="$(CXX)" \
                  SFC="$(SFC)" \

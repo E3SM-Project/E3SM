@@ -7,7 +7,9 @@
 !
 module mpas_bootstrapping
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_field_routines
+   use mpas_pool_routines
    use mpas_dmpar
    use mpas_block_decomp
    use mpas_block_creator
@@ -345,14 +347,13 @@ module mpas_bootstrapping
    !>  and allocating all fields and structs.
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_bootstrap_framework_phase2(stream_manager, domain) !{{{
+   subroutine mpas_bootstrap_framework_phase2(domain) !{{{
 
       use mpas_stream_manager
       use mpas_stream_list
 
       implicit none
 
-      type (mpas_streamManager_type), pointer :: stream_manager
       type (domain_type), pointer :: domain
 
       type (mpas_pool_type), pointer :: readableDimensions
@@ -383,18 +384,18 @@ module mpas_bootstrapping
 
       ! Reading dimensions from streams
       write(stderrUnit,'(a)') 'Reading dimensions from input streams ...'
-      call mpas_stream_mgr_begin_iteration(stream_manager)
-      do while ( mpas_stream_mgr_get_next_stream(stream_manager, streamID = streamName, directionProperty = streamDirection, &
+      call mpas_stream_mgr_begin_iteration(domain % streamManager)
+      do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID = streamName, directionProperty = streamDirection, &
                                                  activeProperty = streamActive) )
 
          if ( streamActive .and. ( streamDirection == MPAS_STREAM_INPUT .or. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) ) then
 
-            call mpas_stream_mgr_begin_iteration(stream_manager, streamID=streamName)
+            call mpas_stream_mgr_begin_iteration(domain % streamManager, streamID=streamName)
 
             ! Build stream dimension pool from the list of fields
             call mpas_pool_create_pool(streamDimensions)
 
-            do while ( mpas_stream_mgr_get_next_field(stream_manager, streamName, fieldName) )
+            do while ( mpas_stream_mgr_get_next_field(domain % streamManager, streamName, fieldName) )
 
                call get_dimlist_for_field(domain % blocklist % allFields, fieldName, dimNames)
 
@@ -409,7 +410,7 @@ module mpas_bootstrapping
             end do
 
             ! Determine stream filename
-            call mpas_get_stream_filename(stream_manager, streamID = streamName, filename = streamFilename, ierr = err_local)
+            call mpas_get_stream_filename(domain % streamManager, streamID = streamName, filename = streamFilename, ierr = err_local)
 
             ! Try to open file
             inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr = err_local)
@@ -480,7 +481,7 @@ module mpas_bootstrapping
       call mpas_pool_set_error_level(err_level)
 
       ! Allocate blocks, and copy indexTo arrays into blocks
-      call mpas_block_creator_finalize_block_phase2(stream_manager, domain % blocklist, readableDimensions)
+      call mpas_block_creator_finalize_block_phase2(domain % streamManager, domain % blocklist, readableDimensions)
       call mpas_link_fields(domain)
 
       call mpas_pool_destroy_pool(readableDimensions)
@@ -785,7 +786,7 @@ module mpas_bootstrapping
    !>  zero size.
    !
    !-----------------------------------------------------------------------
-   subroutine get_dimlist_for_field(allFields, fieldName, dimNames)
+   subroutine get_dimlist_for_field(allFields, fieldName, dimNames)!{{{
 
       implicit none
 
@@ -923,7 +924,7 @@ module mpas_bootstrapping
 
       end if
 
-   end subroutine get_dimlist_for_field
+   end subroutine get_dimlist_for_field!}}}
 
 #include "setup_immutable_streams.inc"
 

@@ -19,7 +19,7 @@
 !-----------------------------------------------------------------------
 module mpas_rbf_interpolation
    use mpas_dmpar
-   use mpas_grid_types
+   use mpas_derived_types
    use mpas_vector_operations
 
    implicit none

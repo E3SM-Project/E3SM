@@ -681,7 +681,8 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	fortprintf(fd, "   subroutine mpas_setup%sderived_dimensions(readDimensions, dimensionPool, configPool)\n", core_string);
 	fortprintf(fd, "\n");
-	fortprintf(fd, "      use mpas_grid_types\n");
+	fortprintf(fd, "      use mpas_derived_types\n");
+	fortprintf(fd, "      use mpas_pool_routines\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: readDimensions !< Input: Pool to pull read dimensions from\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool !< Input: Pool containing namelist options with configs\n");
@@ -830,7 +831,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	fortprintf(fd, "   subroutine mpas_setup%sdecomposed_dimensions(block, manager, readDimensions, dimensionPool, totalBlocks)\n", core_string);
 	fortprintf(fd, "\n");
-	fortprintf(fd, "      use mpas_grid_types\n");
+	fortprintf(fd, "      use mpas_derived_types\n");
 	fortprintf(fd, "      use mpas_decomp\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      type (block_type), intent(inout) :: block !< Input: Pointer to block\n");
@@ -870,7 +871,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd, "      if ( .not. associated(%s)) then\n", dimname);
 				fortprintf(fd, "         write(stderrUnit, *) 'WARNING: Dimension \'\'%s\'\' was not defined, and cannot be decomposed.'\n", dimname);
 				fortprintf(fd, "      else\n");
-				fortprintf(fd, "         call mpas_decomp_get_method(decompositions, '%s', decompFunc, iErr)\n", dimdecomp);
+				fortprintf(fd, "         call mpas_decomp_get_method(block %% domain %% decompositions, '%s', decompFunc, iErr)\n", dimdecomp);
 				fortprintf(fd, "         if ( iErr /= MPAS_DECOMP_NOERR ) then\n");
 				fortprintf(fd, "            call mpas_dmpar_global_abort('ERROR: Decomposition method \'\'%s\'\' used by dimension \'\'%s\'\' does not exist.')\n", dimdecomp, dimname);
 				fortprintf(fd, "         end if\n");
@@ -1961,10 +1962,11 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 	fprintf(stderr, "---- GENERATING IMMUTABLE STREAMS ----\n");
 
 	fortprintf(fd, "subroutine mpas%ssetup_immutable_streams(manager)\n\n", core_string);
-	fortprintf(fd, "   use MPAS_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT_OUTPUT, MPAS_STREAM_INPUT, &\n");
-	fortprintf(fd, "                                   MPAS_STREAM_OUTPUT, MPAS_STREAM_NONE, MPAS_STREAM_PROPERTY_IMMUTABLE, &\n");
-	fortprintf(fd, "                                   MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property, MPAS_stream_mgr_add_field, &\n");
-	fortprintf(fd, "                                   MPAS_stream_mgr_add_pool, MPAS_stream_mgr_set_property\n\n");
+	fortprintf(fd, "   use MPAS_derived_types, only : MPAS_streamManager_type, &\n");
+	fortprintf(fd, "                                  MPAS_STREAM_INPUT_OUTPUT, MPAS_STREAM_INPUT, &\n");
+	fortprintf(fd, "                                  MPAS_STREAM_OUTPUT, MPAS_STREAM_NONE, MPAS_STREAM_PROPERTY_IMMUTABLE\n");
+	fortprintf(fd, "   use MPAS_stream_manager, only : MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property, &\n");
+	fortprintf(fd, "                                   MPAS_stream_mgr_add_field, MPAS_stream_mgr_add_pool\n\n");
 	fortprintf(fd, "   implicit none\n\n");
 	fortprintf(fd, "   type (MPAS_streamManager_type), pointer :: manager\n\n");
 	fortprintf(fd, "   integer :: ierr\n\n");

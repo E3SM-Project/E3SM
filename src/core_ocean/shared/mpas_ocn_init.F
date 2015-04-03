@@ -67,7 +67,8 @@ contains
 subroutine ocn_compute_max_level(domain)!{{{
 ! Initialize maxLevel and boundary mesh variables.
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_constants
 
    implicit none
@@ -293,7 +294,8 @@ end subroutine ocn_compute_max_level!}}}
 !-----------------------------------------------------------------------
    subroutine ocn_compute_mesh_scaling(meshPool, scaleHmixWithMesh, maxMeshDensity)!{{{
 
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
 
       implicit none
 
@@ -347,7 +349,8 @@ end subroutine ocn_compute_max_level!}}}
    ! Initialize zlevel-type variables and adjust initial conditions for
    ! partial bottom cells.
 
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_configure
 
       implicit none
