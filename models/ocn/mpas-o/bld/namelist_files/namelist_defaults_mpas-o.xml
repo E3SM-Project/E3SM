@@ -1,0 +1,303 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<!-- &run_modes -->
+<config_ocean_run_mode>'forward'</config_ocean_run_mode>
+
+<!-- &time_management -->
+<config_do_restart>.false.</config_do_restart>
+<config_restart_timestamp_name>'rpointer.ocn'</config_restart_timestamp_name>
+<config_calendar_type CALENDAR="NO_LEAP">'gregorian_noleap'</config_calendar_type>
+<config_calendar_type>'gregorian'</config_calendar_type>
+
+<!-- &io -->
+<config_stats_interval>'0001_00:00:00'</config_stats_interval>
+<config_write_stats_on_startup>.true.</config_write_stats_on_startup>
+<config_write_output_on_startup>.true.</config_write_output_on_startup>
+<config_pio_num_iotasks>0</config_pio_num_iotasks>
+<config_pio_stride>0</config_pio_stride>
+
+<!-- &time_integration -->
+<config_dt ocn_grid="mpas120" >'00:30:00'</config_dt>
+<config_dt ocn_grid="oEC60to30" >'00:20:00'</config_dt>
+
+<config_time_integrator>'split_explicit'</config_time_integrator>
+
+<!-- &ALE_vertical_grid -->
+<config_vert_coord_movement>'uniform_stretching'</config_vert_coord_movement>
+<config_use_min_max_thickness>.false.</config_use_min_max_thickness>
+<config_min_thickness>1.0</config_min_thickness>
+<config_max_thickness_factor>6.0</config_max_thickness_factor>
+<!-- THIS CHANGES FOR RESTARTS -->
+<config_set_restingThickness_to_IC>.true.</config_set_restingThickness_to_IC>
+<config_dzdk_positive>.false.</config_dzdk_positive>
+
+<!-- &ALE_frequency_filtered_thickness -->
+<config_use_freq_filtered_thickness>.false.</config_use_freq_filtered_thickness>
+<config_thickness_filter_timescale>5.0</config_thickness_filter_timescale>
+<config_use_highFreqThick_restore>.false.</config_use_highFreqThick_restore>
+<config_highFreqThick_restore_time>30.0</config_highFreqThick_restore_time>
+<config_use_highFreqThick_del2>.false.</config_use_highFreqThick_del2>
+<config_highFreqThick_del2>100.0</config_highFreqThick_del2>
+
+<!-- &partial_bottom_cells -->
+
+<!-- THIS CHANGES FOR RESTARTS -->
+<config_alter_ICs_for_pbcs>.true.</config_alter_ICs_for_pbcs>
+
+<config_pbc_alteration_type>'partial_cell'</config_pbc_alteration_type>
+<config_min_pbc_fraction>0.10</config_min_pbc_fraction>
+<config_check_ssh_consistency>.true.</config_check_ssh_consistency>
+
+<!-- &decomposition -->
+<config_num_halos>3</config_num_halos>
+<config_block_decomp_file_prefix>'mpas-o.graph.info.part.'</config_block_decomp_file_prefix>
+<config_number_of_blocks>0</config_number_of_blocks>
+<config_explicit_proc_decomp>.false.</config_explicit_proc_decomp>
+<config_proc_decomp_file_prefix>'none'</config_proc_decomp_file_prefix>
+
+<!-- &hmix -->
+<config_hmix_scaleWithMesh ocn_grid="mpas120">.false.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
+<config_maxMeshDensity>-1.0</config_maxMeshDensity>
+<config_apvm_scale_factor>0.0</config_apvm_scale_factor>
+
+<!-- &hmix_del2 -->
+<config_use_mom_del2>.false.</config_use_mom_del2>
+<config_use_tracer_del2>.false.</config_use_tracer_del2>
+<config_mom_del2>10.0</config_mom_del2>
+<config_tracer_del2>0.0</config_tracer_del2>
+
+<!-- &hmix_del4 -->
+<config_use_mom_del4>.true.</config_use_mom_del4>
+<config_use_tracer_del4>.false.</config_use_tracer_del4>
+<config_mom_del4 ocn_grid="mpas120">5.0e12</config_mom_del4>
+<config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
+<config_tracer_del4>0.0</config_tracer_del4>
+
+<!-- &hmix_Leith -->
+<config_use_Leith_del2>.false.</config_use_Leith_del2>
+<config_Leith_parameter>1.0</config_Leith_parameter>
+<config_Leith_dx>15000.0</config_Leith_dx>
+<config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
+
+<!-- &mesoscale_eddy_parameterization -->
+<config_use_standardGM>.true.</config_use_standardGM>
+<config_standardGM_tracer_kappa>600.0</config_standardGM_tracer_kappa>
+<config_Redi_kappa>0.0</config_Redi_kappa>
+<config_gravWaveSpeed_trunc>0.3</config_gravWaveSpeed_trunc>
+<config_max_relative_slope>0.01</config_max_relative_slope>
+
+<!-- &hmix_del2_tensor -->
+<config_use_mom_del2_tensor>.false.</config_use_mom_del2_tensor>
+<config_mom_del2_tensor>0.0</config_mom_del2_tensor>
+
+<!-- &hmix_del4_tensor -->
+<config_use_mom_del4_tensor>.false.</config_use_mom_del4_tensor>
+<config_mom_del4_tensor>0.0</config_mom_del4_tensor>
+
+<!-- &Rayleigh_damping -->
+<config_Rayleigh_friction>.false.</config_Rayleigh_friction>
+<config_Rayleigh_damping_coeff>0.0</config_Rayleigh_damping_coeff>
+
+<!-- &vmix -->
+<config_convective_visc>0.0</config_convective_visc>
+<config_convective_diff>0.0</config_convective_diff>
+
+<!-- &vmix_const -->
+<config_use_const_visc>.false.</config_use_const_visc>
+<config_use_const_diff>.false.</config_use_const_diff>
+<config_vert_visc>0.0</config_vert_visc>
+<config_vert_diff>0.0</config_vert_diff>
+
+<!-- &vmix_rich -->
+<config_use_rich_visc>.false.</config_use_rich_visc>
+<config_use_rich_diff>.false.</config_use_rich_diff>
+<config_bkrd_vert_visc>0.0</config_bkrd_vert_visc>
+<config_bkrd_vert_diff>0.0</config_bkrd_vert_diff>
+<config_rich_mix>0.005</config_rich_mix>
+
+<!-- &vmix_tanh -->
+<config_use_tanh_visc>.false.</config_use_tanh_visc>
+<config_use_tanh_diff>.false.</config_use_tanh_diff>
+<config_max_visc_tanh>0.0</config_max_visc_tanh>
+<config_min_visc_tanh>0.0</config_min_visc_tanh>
+<config_max_diff_tanh>0.0</config_max_diff_tanh>
+<config_min_diff_tanh>0.0</config_min_diff_tanh>
+<config_zMid_tanh>-100</config_zMid_tanh>
+<config_zWidth_tanh>100</config_zWidth_tanh>
+
+<!-- &cvmix -->
+<config_use_cvmix>.true.</config_use_cvmix>
+<config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>
+<config_use_cvmix_background>.true.</config_use_cvmix_background>
+<config_cvmix_background_diffusion>1.0e-5</config_cvmix_background_diffusion>
+<config_cvmix_background_viscosity>1.0e-4</config_cvmix_background_viscosity>
+<config_use_cvmix_convection>.true.</config_use_cvmix_convection>
+<config_cvmix_convective_diffusion>1.0</config_cvmix_convective_diffusion>
+<config_cvmix_convective_viscosity>1.0</config_cvmix_convective_viscosity>
+<config_cvmix_convective_basedOnBVF>.true.</config_cvmix_convective_basedOnBVF>
+<config_cvmix_convective_triggerBVF>0.0</config_cvmix_convective_triggerBVF>
+<config_use_cvmix_shear>.true.</config_use_cvmix_shear>
+<config_cvmix_shear_mixing_scheme>'KPP'</config_cvmix_shear_mixing_scheme>
+<config_cvmix_shear_PP_nu_zero>0.005</config_cvmix_shear_PP_nu_zero>
+<config_cvmix_shear_PP_alpha>5.0</config_cvmix_shear_PP_alpha>
+<config_cvmix_shear_PP_exp>2.0</config_cvmix_shear_PP_exp>
+<config_cvmix_shear_KPP_nu_zero>0.005</config_cvmix_shear_KPP_nu_zero>
+<config_cvmix_shear_KPP_Ri_zero>0.7</config_cvmix_shear_KPP_Ri_zero>
+<config_cvmix_shear_KPP_exp>3</config_cvmix_shear_KPP_exp>
+<config_use_cvmix_tidal_mixing>.false.</config_use_cvmix_tidal_mixing>
+<config_use_cvmix_double_diffusion>.false.</config_use_cvmix_double_diffusion>
+<config_use_cvmix_kpp>.true.</config_use_cvmix_kpp>
+<config_use_cvmix_fixed_boundary_layer>.false.</config_use_cvmix_fixed_boundary_layer>
+<config_cvmix_kpp_boundary_layer_depth>30.0</config_cvmix_kpp_boundary_layer_depth>
+<config_cvmix_kpp_criticalBulkRichardsonNumber>0.25</config_cvmix_kpp_criticalBulkRichardsonNumber>
+<config_cvmix_kpp_matching>'SimpleShapes'</config_cvmix_kpp_matching>
+<config_cvmix_kpp_EkmanOBL>.false.</config_cvmix_kpp_EkmanOBL>
+<config_cvmix_kpp_MonObOBL>.false.</config_cvmix_kpp_MonObOBL>
+<config_cvmix_kpp_interpolationOMLType>'quadratic'</config_cvmix_kpp_interpolationOMLType>
+<config_cvmix_kpp_surface_layer_extent>0.1</config_cvmix_kpp_surface_layer_extent>
+<config_cvmix_kpp_surface_layer_averaging>5.0</config_cvmix_kpp_surface_layer_averaging>
+<config_cvmix_kpp_stop_OBL_search>100.0</config_cvmix_kpp_stop_OBL_search>
+
+<!-- &forcing -->
+<config_forcing_type>'bulk'</config_forcing_type>
+<config_restoreT_timescale>0.0</config_restoreT_timescale>
+<config_restoreS_timescale>0.0</config_restoreS_timescale>
+<config_restoreT_lengthscale>0.0</config_restoreT_lengthscale>
+<config_restoreS_lengthscale>0.0</config_restoreS_lengthscale>
+<config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
+<config_frazil_ice_formation>.false.</config_frazil_ice_formation>
+<config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
+<config_jerlov_water_type>3</config_jerlov_water_type>
+<config_fixed_jerlov_weights>.true.</config_fixed_jerlov_weights>
+
+<!-- &advection -->
+<config_vert_tracer_adv>'stencil'</config_vert_tracer_adv>
+<config_vert_tracer_adv_order>3</config_vert_tracer_adv_order>
+<config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
+<config_coef_3rd_order>0.25</config_coef_3rd_order>
+<config_monotonic>.true.</config_monotonic>
+
+<!-- &bottom_drag -->
+<config_bottom_drag_coeff>1.0e-3</config_bottom_drag_coeff>
+
+<!-- &pressure_gradient -->
+<config_pressure_gradient_type>'pressure_and_zmid'</config_pressure_gradient_type>
+<config_density0>1014.65</config_density0>
+<config_common_level_weight>0.5</config_common_level_weight>
+
+<!-- &eos -->
+<config_eos_type>'jm'</config_eos_type>
+
+<!-- &eos_linear -->
+<config_eos_linear_alpha>0.2</config_eos_linear_alpha>
+<config_eos_linear_beta>0.8</config_eos_linear_beta>
+<config_eos_linear_Tref>5.0</config_eos_linear_Tref>
+<config_eos_linear_Sref>35.0</config_eos_linear_Sref>
+<config_eos_linear_densityref>1000.0</config_eos_linear_densityref>
+
+<!-- &split_explicit_ts -->
+<config_n_ts_iter>2</config_n_ts_iter>
+<config_n_bcl_iter_beg>1</config_n_bcl_iter_beg>
+<config_n_bcl_iter_mid>2</config_n_bcl_iter_mid>
+<config_n_bcl_iter_end>2</config_n_bcl_iter_end>
+<config_n_btr_subcycles>20</config_n_btr_subcycles>
+<config_n_btr_cor_iter>2</config_n_btr_cor_iter>
+<config_vel_correction>.true.</config_vel_correction>
+<config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
+<config_btr_gam1_velWt1>0.5</config_btr_gam1_velWt1>
+<config_btr_gam2_SSHWt1>1.0</config_btr_gam2_SSHWt1>
+<config_btr_gam3_velWt2>1.0</config_btr_gam3_velWt2>
+<config_btr_solve_SSH2>.false.</config_btr_solve_SSH2>
+
+<!-- &testing -->
+<config_conduct_tests>.false.</config_conduct_tests>
+<config_test_tensors>.false.</config_test_tensors>
+<config_tensor_test_function>'sph_uCosCos'</config_tensor_test_function>
+
+<!-- Need &debug &global_stats and &zonal_mean -->
+
+<!-- &debug -->
+<config_disable_redi_k33>.false.</config_disable_redi_k33>
+<config_disable_redi_horizontal_term1>.false.</config_disable_redi_horizontal_term1>
+<config_disable_redi_horizontal_term2>.false.</config_disable_redi_horizontal_term2>
+<config_disable_redi_horizontal_term3>.false.</config_disable_redi_horizontal_term3>
+<config_check_zlevel_consistency>.false.</config_check_zlevel_consistency>
+<config_filter_btr_mode>.false.</config_filter_btr_mode>
+<config_prescribe_velocity>.false.</config_prescribe_velocity>
+<config_prescribe_thickness>.false.</config_prescribe_thickness>
+<config_include_KE_vertex>.false.</config_include_KE_vertex>
+<config_check_tracer_monotonicity>.false.</config_check_tracer_monotonicity>
+<config_disable_thick_all_tend>.false.</config_disable_thick_all_tend>
+<config_disable_thick_hadv>.false.</config_disable_thick_hadv>
+<config_disable_thick_vadv>.false.</config_disable_thick_vadv>
+<config_disable_thick_sflux>.false.</config_disable_thick_sflux>
+<config_disable_vel_all_tend>.false.</config_disable_vel_all_tend>
+<config_disable_vel_coriolis>.false.</config_disable_vel_coriolis>
+<config_disable_vel_pgrad>.false.</config_disable_vel_pgrad>
+<config_disable_vel_hmix>.false.</config_disable_vel_hmix>
+<config_disable_vel_windstress>.false.</config_disable_vel_windstress>
+<config_disable_vel_vmix>.false.</config_disable_vel_vmix>
+<config_disable_vel_vadv>.false.</config_disable_vel_vadv>
+<config_disable_tr_all_tend>.false.</config_disable_tr_all_tend>
+<config_disable_tr_adv>.false.</config_disable_tr_adv>
+<config_disable_tr_hmix>.false.</config_disable_tr_hmix>
+<config_disable_tr_vmix>.false.</config_disable_tr_vmix>
+<config_disable_tr_sflux>.false.</config_disable_tr_sflux>
+<config_disable_tr_nonlocalflux>.false.</config_disable_tr_nonlocalflux>
+
+<!-- &global_stats -->
+<config_use_global_stats>.true.</config_use_global_stats>
+<config_global_stats_compute_interval>'same_as_output'</config_global_stats_compute_interval>
+<config_global_stats_compute_startup>.true.</config_global_stats_compute_startup>
+
+<!-- &sfc_area_weighted_avg -->
+<config_use_AM_sfc_area_weighted_avg>.false.</config_use_AM_sfc_area_weighted_avg>
+<config_AM_sfc_area_weighted_avg_compute_interval>'same_as_output'</config_AM_sfc_area_weighted_avg_compute_interval>
+<config_AM_sfc_area_weighted_avg_compute_startup>.true.</config_AM_sfc_area_weighted_avg_compute_startup>
+
+<!-- &AM_water_mass_census -->
+<config_use_AM_water_mass_census>.false.</config_use_AM_water_mass_census>
+<config_AM_water_mass_census_compute_interval>'same_as_output'</config_AM_water_mass_census_compute_interval>
+<config_AM_water_mass_census_compute_startup>.false.</config_AM_water_mass_census_compute_startup>
+<config_AM_water_mass_census_minTemperature>-2.0</config_AM_water_mass_census_minTemperature>
+<config_AM_water_mass_census_maxTemperature>30.0</config_AM_water_mass_census_maxTemperature>
+<config_AM_water_mass_census_minSalinity>32.0</config_AM_water_mass_census_minSalinity>
+<config_AM_water_mass_census_maxSalinity>37.0</config_AM_water_mass_census_maxSalinity>
+
+<!-- &AM_layer_volume_weighted_avg -->
+
+<config_use_AM_layer_volume_weighted_avg>.false.</config_use_AM_layer_volume_weighted_avg>
+<config_AM_layer_volume_weighted_avg_compute_interval>'same_as_output'</config_AM_layer_volume_weighted_avg_compute_interval>
+<config_AM_layer_volume_weighted_avg_compute_startup>.false.</config_AM_layer_volume_weighted_avg_compute_startup>
+
+<!-- &zonal_mean -->
+<config_use_zonal_mean>.false.</config_use_zonal_mean>
+<config_zonal_mean_compute_interval>'same_as_output'</config_zonal_mean_compute_interval>
+<config_zonal_mean_compute_startup>.true.</config_zonal_mean_compute_startup>
+<config_number_zonal_mean_bins>180</config_number_zonal_mean_bins>
+<config_min_zonal_mean_bin>-1.0e34</config_min_zonal_mean_bin>
+<config_max_zonal_mean_bin>-1.0e34</config_max_zonal_mean_bin>
+
+<!-- &okubo_weiss -->
+<config_use_okubo_weiss>.false.</config_use_okubo_weiss>
+<config_okubo_weiss_compute_startup>.true.</config_okubo_weiss_compute_startup>
+<config_okubo_weiss_directory>'analysis_members'</config_okubo_weiss_directory>
+<config_okubo_weiss_threshold_value>-0.2</config_okubo_weiss_threshold_value>
+<config_okubo_weiss_normalization>1e-10</config_okubo_weiss_normalization>
+<config_okubo_weiss_lambda2_normalization>1e-10</config_okubo_weiss_lambda2_normalization>
+<config_okubo_weiss_use_lat_lon_coords>.true.</config_okubo_weiss_use_lat_lon_coords>
+<config_okubo_weiss_compute_eddy_census>.true.</config_okubo_weiss_compute_eddy_census>
+<config_okubo_weiss_eddy_min_cells>20</config_okubo_weiss_eddy_min_cells>
+
+<!-- &AM_meridional_heat_transport -->
+<config_use_meridional_heat_transport>.false.</config_use_meridional_heat_transport>
+<config_meridional_heat_transport_compute_interval>'same_as_output'</config_meridional_heat_transport_compute_interval>
+<config_meridional_heat_transport_compute_startup>.true.</config_meridional_heat_transport_compute_startup>
+<config_number_meridional_heat_transport_bins>180</config_number_meridional_heat_transport_bins>
+<config_min_meridional_heat_transport_bin>-1.0e34</config_min_meridional_heat_transport_bin>
+<config_max_meridional_heat_transport_bin>-1.0e34</config_max_meridional_heat_transport_bin>
+
+</namelist_defaults>

@@ -1,0 +1,1901 @@
+<?xml version="1.0"?>
+
+<namelist_definition>
+
+<!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other aspects of the variable's definition are expressed as
+     attributes of the <entry> element.  Note that it is an XML requirement
+     that the attribute values are enclosed in quotes.  The attributes are:
+
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+
+     type
+          An abbreviation of the fortran declaration for the variable.
+	  Valid declarations are:
+
+		  char*n  
+		  integer
+		  logical
+		  real
+
+	  Any of these types may be followed by a comma separated list of
+	  integers enclosed in parenthesis to indicate an array.
+
+	  The current namelist validation code only distinquishes between
+	  string and non-string types.
+
+     input_pathname
+          Only include this attribute to indicate that the variable
+          contains the pathname of an input dataset that resides in the
+          CESM inputdata directory tree.  
+
+	  The recognized values are "abs" to indicate that an absolute
+          pathname is required, or "rel:var_name" to indicate that the
+          pathname is relative and that the namelist variable "var_name"
+          contains the absolute root directory.
+
+     category
+          A category assigned for organizing the documentation.
+
+     group
+          The namelist group that the variable is declared in.
+
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+                                                                        -->
+
+<!-- &run_modes -->
+
+<entry id="config_ocean_run_mode" type="char*512"
+	category="run_modes" group="run_modes" >
+Determines the run mode for the ocean model.
+
+Default: 'forward'
+</entry>
+
+<!-- &time_management -->
+
+<entry id="config_do_restart" type="logical"
+	category="time_management" group="time_management" >
+Determines if the initial conditions should be read from a restart file, or an input file.
+
+Default: Set internally in the ocn_comp_mct.F driver.
+</entry>
+
+<entry id="config_restart_timestamp_name" type="char*512"
+	category="time_management" group="time_management" >
+Path to the filename for restart timestamps to be read and written from.
+
+Default: rpointer.ocn
+</entry>
+
+<entry id="config_start_time" type="char*512"
+	category="time_management" group="time_management" >
+Timestamp describing the initial time of the simulation. If it is set to 'file', the initial time is read from restart_timestamp.
+
+Default: Set internally in the ocn_comp_mct.F driver to be consistent with the coupler.
+</entry>
+
+<entry id="config_stop_time" type="char*512"
+	category="time_management" group="time_management" >
+Timestamp descriping the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration.
+
+Default: Set internally in the ocn_comp_mct.F driver to be consistent with the coupler.
+</entry>
+
+<entry id="config_run_duration" type="char*512"
+	category="time_management" group="time_management" >
+Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time.
+
+Default: Set internally in the ocn_comp_mct.F driver to be consistent with the coupler.
+</entry>
+
+<entry id="config_calendar_type" type="char*256"
+	category="time_management" group="time_management" valid_values="gregorian,gregorian_noleap" >
+Selection of the type of calendar that should be used in the simulation.
+
+Valid Values: 'gregorian', 'gregorian_noleap'
+Default: gregorian_noleap
+</entry>
+
+<!-- &io -->
+
+<entry id="config_stats_interval" type="char*256"
+	category="io" group="io">
+Timestamp determining how often a global statistics files should be written.
+
+Valid values: 'DDDD_HH:MM:SS'
+Default: '0001_00:00:00'
+</entry>
+
+<entry id="config_write_stats_on_startup" type="logical"
+	category="io" group="io" >
+Logical flag determining if statistics files should be written prior to the first time step.
+
+Valid values: .true. or .false.
+Default: .true.
+</entry>
+
+<entry id="config_write_output_on_startup" type="logical"
+	category="io" group="io" >
+Logical flag determining if an output file should be written prior to the first time step.
+
+Valid values: .true. or .false.
+Default: .true.
+</entry>
+
+<entry id="config_pio_num_iotasks" type="integer"
+	category="io" group="io" >
+Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are requried to write contiguous blocks of data to a file.
+
+Valid values: Any positive integer value greater than or equal to 0.
+Default: 0
+</entry>
+
+<entry id="config_pio_stride" type="integer"
+	category="io" group="io" >
+Integer specifying the stride of each IO task.
+
+Valid values: Any positive integer value greater than 0.
+Default: 1
+</entry>
+
+<!-- &time_integration -->
+
+<entry id="config_dt" type="char*512"
+	category="time_integration" group="time_integration" >
+Length of model time-step.
+
+Valid values: Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused.
+Default: Set by CESM scripts based on ocean grid.
+</entry>
+
+<entry id="config_time_integrator" type="char*512"
+	category="time_integration" group="time_integration" 
+	valid_values="split_explicit,RK4,unsplit_explicit" >
+Time integration method.
+
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit'
+Default: 'split_explicit'
+</entry>
+
+<!-- &ALE_vertical_grid -->
+
+<entry id="config_vert_coord_movement" type="char*512"
+	category="ALE_vertical_grid" group="ALE_vertical_grid" 
+	valid_values="uniform_stretching,fixed,user_specified,impermeable_interfaces" >
+Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal).
+
+Valid values: 'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'
+Default: 'uniform_stretching'
+</entry>
+
+<entry id="config_use_min_max_thickness" type="logical"
+	category="ALE_vertical_grid" group="ALE_vertical_grid" >
+If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_min_thickness" type="real"
+	category="ALE_vertical_grid" group="ALE_vertical_grid" >
+Minimum thickness allowed.
+
+Valid values: any positive real value, but typically 0.1 to 1 m.
+Default: 1.0
+</entry>
+
+<entry id="config_max_thickness_factor" type="real"
+	category="ALE_vertical_grid" group="ALE_vertical_grid" >
+Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$.
+
+Valid values: any positive real value, but typically 2-4.
+Default: 6.0
+</entry>
+
+<entry id="config_set_restingThickness_to_IC" type="logical"
+	category="ALE_vertical_grid" group="ALE_vertical_grid" >
+If true, set restingThickness to be the same as layerThickness upon start-up. This only occurs when config_do_restart is false, i.e. on an initial run.
+
+Valid values: .true. or .false.
+Default: Set internally within the ocn_comp_mct.F driver
+</entry>
+
+<entry id="config_dzdk_positive" type="logical"
+	category="ALE_vertical_grid" group="ALE_vertical_grid" >
+Determines if the positive Z axis is aligned with the positive K index direction.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<!-- &ALE_vertical_grid -->
+
+<entry id="config_vert_coord_movement" type="char*512"
+	category="ale_vertical_grid" group="ale_vertical_grid" 
+	valid_values="uniform_stretching,fixed,user_specified,impermeable_interfaces" >
+Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal).
+
+Valid values: 'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'
+Default: 'uniform_stretching'
+</entry>
+
+<entry id="config_use_min_max_thickness" type="logical"
+	category="ale_vertical_grid" group="ale_vertical_grid" >
+If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_min_thickness" type="real"
+	category="ale_vertical_grid" group="ale_vertical_grid" >
+Minimum thickness allowed.
+
+Valid values: any positive real value, but typically 0.1 to 1 m.
+Default: 1.0
+</entry>
+
+<entry id="config_max_thickness_factor" type="real"
+	category="ale_vertical_grid" group="ale_vertical_grid" >
+Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$.
+
+Valid values: any positive real value, but typically 2-4.
+Default: 6.0
+</entry>
+
+<entry id="config_set_restingThickness_to_IC" type="logical"
+	category="ale_vertical_grid" group="ale_vertical_grid" >
+If true, set restingThickness to be the same as layerThickness upon start-up. This only occurs when config_do_restart is false, i.e. on an initial run.
+
+Valid values: .true. or .false.
+Default: Set internally within the ocn_comp_mct.F driver
+</entry>
+
+<entry id="config_dzdk_positive" type="logical"
+	category="ale_vertical_grid" group="ale_vertical_grid" >
+Determines if the positive Z axis is aligned with the positive K index direction.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+
+<!-- &ALE_frequency_filtered_thickness -->
+
+<entry id="config_use_freq_filtered_thickness" type="logical"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness" >
+If true, $h^{hf}$ is included in the desired ALE thickness, and the prognostic equations for $D^{lf}$ and $h^{hf}$ are integrated in the code.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_thickness_filter_timescale" type="real"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness" >
+Filter time scale for the low-frequency baroclinic divergence, $\tau_{Dlf}$.
+
+Valid values: any positive real value, but typically 5 days.
+Default: 5.0
+</entry>
+
+<entry id="config_use_highFreqThick_restore" type="logical"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness" >
+If true, the high frequency thickness prognostic equation ($h^{hf}$) includes term 2 on the RHS, the restoring term.  The high frequency thickness is restored to zero with time scale $\tau_{hhf}$.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_highFreqThick_restore_time" type="real"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness" >
+Restoring time scale for high-frequency thickness, $\tau_{hhf}$.
+
+Valid values: any positive real value, but typically 5-30 days.
+Default: 30.0
+</entry>
+
+<entry id="config_use_highFreqThick_del2" type="logical"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness" >
+If true, high frequency thickness prognostic equation ($h^{hf}$) includes term 3 on the RHS, the diffusion term.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_highFreqThick_del2" type="real"
+	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness" >
+Horizonal high frequency thickness diffusion, $\kappa_{hhf}$.
+
+Valid values: any positive real
+Default: 100.0
+</entry>
+
+<!-- &partial_bottom_cells -->
+
+<entry id="config_alter_ICs_for_pbcs" type="logical"
+	category="partial_bottom_cells" group="partial_bottom_cells" >
+If true, initial conditions are altered according to the config_pbc_alteration_type flag. The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run.
+
+Valid values: .true. or .false.
+Default: Set internally within the ocn_comp_mct.F driver.
+</entry>
+
+<entry id="config_pbc_alteration_type" type="char*512"
+	category="partial_bottom_cells" group="partial_bottom_cells" 
+	valid_values="full_cell,partial_cell" >
+Determines the method of initial condition alteration for partial bottom cells. 'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction. 'full_cell' alters bottomDepth to have full cells everywhere, based on the refBottomDepth variable.
+
+Valid values: 'full_cell' or 'partial_cell'
+Default: 'partial_cell'
+</entry>
+
+<entry id="config_min_pbc_fraction" type="real"
+	category="partial_bottom_cells" group="partial_bottom_cells" >
+Determines the minimum fraction of a cell altering the initial conditions can create. The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run.
+
+Valid values: Any real between 0 and 1.
+Default: 0.10
+</entry>
+
+<entry id="config_check_ssh_consistency" type="logical"
+	category="partial_bottom_cells" group="partial_bottom_cells" >
+Enables a check to determine if the SSH is within 2m of the surface.  See equation for $\zeta_i$.
+
+Valid values: .true. or .false.
+Default: .true.
+</entry>
+
+<!-- &decomposition -->
+
+<entry id="config_num_halos" type="integer"
+	category="decomposition" group="decomposition" >
+Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection.
+
+Valid values: Any positive integer value.
+Default: 3
+</entry>
+
+<entry id="config_block_decomp_file_prefix" type="char*512"
+	category="decomposition" group="decomposition" >
+Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time.
+
+Valid values: Any path/prefix to a block decomposition file.
+Default: 'block.graph.info.part.'
+</entry>
+
+<entry id="config_number_of_blocks" type="integer"
+	category="decomposition" group="decomposition" >
+Determines the number of blocks a simulation should be run with. If it is set to 0, the number of blocks is the same as the number of MPI tasks at run-time.
+
+Valid values: Any integer greater than or equal to 0.
+Default: 0
+</entry>
+
+<entry id="config_explicit_proc_decomp" type="logical"
+	category="decomposition" group="decomposition" >
+Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_proc_decomp_file_prefix" type="char*512"
+	category="decomposition" group="decomposition" >
+Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time.
+
+Valid values: Any path/prefix to a processor decomposition file.
+Default: 'proc.graph.info.part'
+</entry>
+
+<!-- &hmix -->
+
+<entry id="config_hmix_scaleWithMesh" type="logical"
+	category="hmix" group="hmix" >
+If false, del2 and del4 coefficients are constant throughout the mesh (equivalent to setting $\rho_m=1$ throughout the mesh).  If true, these coefficients scale as mesh density to the -3/4 power.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_maxMeshDensity" type="real"
+	category="hmix" group="hmix" >
+Global maximum of the mesh density
+
+Valid values: Any positive real number. If set any negative real number, config_maxMeshDensity is computed during the initialization of each simulation.
+Default: -1
+</entry>
+
+<entry id="config_apvm_scale_factor" type="real"
+	category="hmix" group="hmix" >
+Anticipated potential vorticity (APV) method scale factor, $c_{apv}$. When zero, APV is off.
+
+Valid values: Any non-negative number, typically between zero and one.
+Default: 0.0
+</entry>
+
+<!-- &hmix_del2 -->
+
+<entry id="config_use_mom_del2" type="logical"
+	category="hmix_del2" group="hmix_del2" >
+If true, Laplacian horizontal mixing is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_use_tracer_del2" type="logical"
+	category="hmix_del2" group="hmix_del2" >
+If true, Laplacian horizontal mixing is used on the tracer equation.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_mom_del2" type="real"
+	category="hmix_del2" group="hmix_del2" >
+Horizonal viscosity, nu_h.
+
+Valid values: any positive real
+Default: Set by the coupler scripts based on ocean grid
+</entry>
+
+<entry id="config_tracer_del2" type="real"
+	category="hmix_del2" group="hmix_del2" >
+Horizonal diffusion, kappa_h.
+
+Valid values: any positive real
+Default: Set by the coupler scripts based on ocean grid
+</entry>
+
+<!-- &hmix_del4 -->
+
+<entry id="config_use_mom_del4" type="logical"
+	category="hmix_del4" group="hmix_del4" >
+If true, biharmonic horizontal mixing is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: .true.
+</entry>
+
+<entry id="config_use_tracer_del4" type="logical"
+	category="hmix_del4" group="hmix_del4" >
+If true, biharmonic horizontal mixing is used on the tracer equation.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_mom_del4" type="real"
+	category="hmix_del4" group="hmix_del4" >
+Coefficient for horizontal biharmonic operator on momentum.
+
+Valid values: any positive real
+Default: Set by the coupler scripts based on ocean grid
+</entry>
+
+<entry id="config_tracer_del4" type="real"
+	category="hmix_del4" group="hmix_del4" >
+Coefficient for horizontal biharmonic operator on tracers.
+
+Valid values: any positive real
+Default: Set by the coupler scripts based on ocean grid
+</entry>
+
+<!-- &hmix_Leith -->
+
+<entry id="config_use_Leith_del2" type="logical"
+	category="hmix_Leith" group="hmix_Leith" >
+If true, the Leith enstrophy-cascade closure is turned on
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_Leith_parameter" type="real"
+	category="hmix_Leith" group="hmix_Leith" >
+Non-dimensional Leith closure parameter
+
+Valid values: any positive real
+Default: 1.0
+</entry>
+
+<entry id="config_Leith_dx" type="real"
+	category="hmix_Leith" group="hmix_Leith" >
+Characteristic length scale, usually the smallest dx in the mesh
+
+Valid values: any positive real
+Default: 15000.0
+</entry>
+
+<entry id="config_Leith_visc2_max" type="real"
+	category="hmix_Leith" group="hmix_Leith" >
+Upper bound on the allowable value of Leith-computed viscosity
+
+Valid values: any positive real
+Default: 2.5e3
+</entry>
+
+<!-- &mesoscale_eddy_parameterization -->
+
+<entry id="config_use_standardGM" type="logical"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization" >
+If true, the standard GM for the tracer advection and mixing is turned on.
+
+Valid values: .true. or .false.
+Default: Set by coupler scripts based on ocean grid
+</entry>
+
+<entry id="config_standardGM_tracer_kappa" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization" >
+Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$
+
+Valid values: Any positive real value.
+Default: Set by coupler scripts based on ocean grid
+</entry>
+
+<entry id="config_Redi_kappa" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization" >
+The Redi diffusion coefficient
+
+Valid values: Positive real numbers
+Default: Set by coupler scripts based on ocean grid
+</entry>
+
+<entry id="config_gravWaveSpeed_trunc" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization" >
+Gravity wave speed truncation threshold for the vertical stream function boundary value problem, $c$
+
+Valid values: Positive real numbers that represents the gravity wave speed of the first, second, etc., baroclinic modes
+Default: 0.3
+</entry>
+
+<entry id="config_max_relative_slope" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization" >
+Tapering parameter for Redi diffusion coeffient.  Tapering occurs when relativeSlopeTopOfEdge is greater than config_max_relative_slope
+
+Valid values: Positive real numbers
+Default: 0.01
+</entry>
+
+<!-- &hmix_del2_tensor -->
+
+<entry id="config_use_mom_del2_tensor" type="logical"
+	category="hmix_del2_tensor" group="hmix_del2_tensor" >
+If true, tensor-based Laplacian horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del2 mixing is not fully vetted and not recommended for production simulations.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_mom_del2_tensor" type="real"
+	category="hmix_del2_tensor" group="hmix_del2_tensor" >
+Horizonal viscosity, $\nu_h$.
+
+Valid values: any positive real
+Default: .false.
+</entry>
+
+<!-- &hmix_del4_tensor -->
+
+<entry id="config_use_mom_del4_tensor" type="logical"
+	category="hmix_del4_tensor" group="hmix_del4_tensor" >
+If true, tensor-based biharmonic horizontal mixing is used on the momentum equation. The tensor-based mixing operations are provided to show the functionality of the tensor subroutines. Tensor-based del4 mixing is not fully vetted and not recommended for production simulations.
+
+Valid values: .true. or .false.
+Default: 0.0
+</entry>
+
+<entry id="config_mom_del4_tensor" type="real"
+	category="hmix_del4_tensor" group="hmix_del4_tensor" >
+Coefficient for horizontal biharmonic operator on momentum.
+
+Valid values: any positive real
+Default: 0.0
+</entry>
+
+<!-- &Rayleigh_damping -->
+
+<entry id="config_Rayleigh_friction" type="logical"
+	category="Rayleigh_damping" group="Rayleigh_damping" >
+If true, Rayleigh friction is included in the momentum equation.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_Rayleigh_damping_coeff" type="real"
+	category="Rayleigh_damping" group="Rayleigh_damping" >
+Inverse-time coefficient for the Rayleigh damping term, $c_R$.
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<!-- &vmix -->
+
+<entry id="config_convective_visc" type="real"
+	category="vmix" group="vmix" >
+Value of vertical viscosity to be used in unstable conditions (i.e. Richardson number less than zero)
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<entry id="config_convective_diff" type="real"
+	category="vmix" group="vmix" >
+Value of vertical diffusion to be used in unstable conditions (i.e. Richardson number less than zero)
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<!-- &vmix_const -->
+
+<entry id="config_use_const_visc" type="logical"
+	category="vmix_const" group="vmix_const" >
+If true, constant vertical viscosity is included in the momentum equation
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_use_const_diff" type="logical"
+	category="vmix_const" group="vmix_const" >
+If true, constant vertical diffusion is included in the tracer equation
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_vert_visc" type="real"
+	category="vmix_const" group="vmix_const" >
+Vertical viscosity, applied uniformly throughout domain
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<entry id="config_vert_diff" type="real"
+	category="vmix_const" group="vmix_const" >
+Vertical diffusion, applied uniformly throughout domain
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<!-- &vmix_rich -->
+
+<entry id="config_use_rich_visc" type="logical"
+	category="vmix_rich" group="vmix_rich" >
+If true, Richardson-number based vertical viscosity is included in the momentum equation
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_use_rich_diff" type="logical"
+	category="vmix_rich" group="vmix_rich" >
+If true, Richardson-number based vertical diffusion is included in the tracer equation
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_bkrd_vert_visc" type="real"
+	category="vmix_rich" group="vmix_rich" >
+Background vertical viscosity for Richardson-number based vertical mixing, $\nu_{bkrd}$
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<entry id="config_bkrd_vert_diff" type="real"
+	category="vmix_rich" group="vmix_rich" >
+Background vertical diffusion for Richardson-number based vertical mixing, $\kappa_{bkrd}$
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<entry id="config_rich_mix" type="real"
+	category="vmix_rich" group="vmix_rich" >
+Coefficient for Richardon-number vertical mixing function, $c_{Ri}$
+
+Valid values: Any positive real value.
+Default: 0.005
+</entry>
+
+<!-- &vmix_tanh -->
+
+<entry id="config_use_tanh_visc" type="logical"
+	category="vmix_tanh" group="vmix_tanh" >
+If true, tanh-based vertical viscosity is included in the momentum equation
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_use_tanh_diff" type="logical"
+	category="vmix_tanh" group="vmix_tanh" >
+If true, tanh-based vertical diffusion is included in the tracer equation
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_max_visc_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh" >
+maximum viscosity value for tanh-fit function
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<entry id="config_min_visc_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh" >
+minimum viscosity value for tanh-fit function
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<entry id="config_max_diff_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh" >
+maximum diffusion value for tanh-fit function
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<entry id="config_min_diff_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh" >
+minimum diffusion value for tanh-fit function
+
+Valid values: Any positive real value.
+Default: 0.0
+</entry>
+
+<entry id="config_zMid_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh" >
+z-coodinate location of center of tanh function
+
+Valid values: Any real value, typically negative.
+Default: -100
+</entry>
+
+<entry id="config_zWidth_tanh" type="real"
+	category="vmix_tanh" group="vmix_tanh" >
+vertical width parameter for tanh function
+
+Valid values: Any positive real value.
+Default: 100
+</entry>
+
+<!-- &cvmix -->
+
+<entry id="config_use_cvmix" type="logical"
+	category="cvmix" group="cvmix" >
+If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity
+
+Valid values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_cvmix_prandtl_number" type="real"
+	category="cvmix" group="cvmix" >
+Prandtl number to be used within the CVMix parameterization suite
+
+Valid values: Any non-negative real value.
+Default: 1.0
+</entry>
+
+<entry id="config_use_cvmix_background" type="logical"
+	category="cvmix" group="cvmix" >
+If true, background diffusivity and viscosity is computed using CVMix
+
+Valid values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_cvmix_background_diffusion" type="real"
+	category="cvmix" group="cvmix" >
+Background vertical diffusion applied to tracer quantities
+
+Valid values: Any positive real value.
+Default: 1.0e-5
+</entry>
+
+<entry id="config_cvmix_background_viscosity" type="real"
+	category="cvmix" group="cvmix" >
+Background vertical viscosity applied to horizontal velocity
+
+Valid values: Any positive real value.
+Default: 1.0e-4
+</entry>
+
+<entry id="config_use_cvmix_convection" type="logical"
+	category="cvmix" group="cvmix" >
+If true, convective diffusivity and viscosity is computed using CVMix
+
+Valid values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_cvmix_convective_diffusion" type="real"
+	category="cvmix" group="cvmix" >
+Convective vertical diffusion applied to tracer quantities
+
+Valid values: Any positive real value.
+Default: 1.0
+</entry>
+
+<entry id="config_cvmix_convective_viscosity" type="real"
+	category="cvmix" group="cvmix" >
+Convective vertical viscosity applied to horizontal velocity components
+
+Valid values: Any positive real value.
+Default: 1.0
+</entry>
+
+<entry id="config_cvmix_convective_basedOnBVF" type="logical"
+	category="cvmix" group="cvmix" >
+If true, convection is triggered based on value of config_cvmix_convective_triggerBVF
+
+Valid values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_cvmix_convective_triggerBVF" type="real"
+	category="cvmix" group="cvmix" >
+Value of Brunt Viasala frequency squared below which convective mixing is triggered
+
+Valid values: Any real value
+Default: 0.0
+</entry>
+
+<entry id="config_use_cvmix_shear" type="logical"
+	category="cvmix" group="cvmix" >
+If true, shear-based mixing is computed using CVMix
+
+Valid values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_cvmix_shear_mixing_scheme" type="char*512"
+	category="cvmix" group="cvmix" 
+	valid_values="PP,KPP">
+Choose between Pacanowski/Philander or Large et al. shear mixing
+
+Valid values: 'PP', 'KPP'
+Default: 'KPP'
+</entry>
+
+<entry id="config_cvmix_shear_PP_nu_zero" type="real"
+	category="cvmix" group="cvmix" >
+Numerator of Pacanowski and Philander (1981) Eq (1)
+
+Valid values: Any positive real value
+Default: 0.005
+</entry>
+
+<entry id="config_cvmix_shear_PP_alpha" type="real"
+	category="cvmix" group="cvmix" >
+Alpha values used in Pacanowski and Philander (1981) Eqs (1) and (2)
+
+Valid values: Any positive real value
+Default: 5.0
+</entry>
+
+<entry id="config_cvmix_shear_PP_exp" type="real"
+	category="cvmix" group="cvmix" >
+Exponent used in denominator of Pacanowski and Philander (1981) Eqs (1)
+
+Valid values: Any positive real value
+Default: 2.0
+</entry>
+
+<entry id="config_cvmix_shear_KPP_nu_zero" type="real"
+	category="cvmix" group="cvmix" >
+Maximum diffusivity produced by shear-generated mixing
+
+Valid values: Any positive real value
+Default: 0.005
+</entry>
+
+<entry id="config_cvmix_shear_KPP_Ri_zero" type="real"
+	category="cvmix" group="cvmix" >
+Theshold gradient Richardson number to produced enhanced diffusivities, See Large et al. (1994) Eq (28a,b,c)
+
+Valid values: Any positive real value
+Default: 0.7
+</entry>
+
+<entry id="config_cvmix_shear_KPP_exp" type="real"
+	category="cvmix" group="cvmix" >
+Exponent relating diffusivities to $Ri_g$. Referred to as $p_1$ in Large et al. (1994) Eq (28b)
+
+Valid values: Any positive real value
+Default: 3
+</entry>
+
+<entry id="config_use_cvmix_tidal_mixing" type="logical"
+	category="cvmix" group="cvmix" >
+If true, diffusivity and viscosity is computed using CVMix tidal mixing
+
+Valid values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_use_cvmix_double_diffusion" type="logical"
+	category="cvmix" group="cvmix" >
+If true, diffusivity and viscosity is computed using CVMix double diffusion
+
+Valid values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_use_cvmix_kpp" type="logical"
+	category="cvmix" group="cvmix" >
+If true, diffusivity and viscosity is computed using CVMix KPP
+
+Valid values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_use_cvmix_fixed_boundary_layer" type="logical"
+	category="cvmix" group="cvmix">
+If true, boundary layer depth is specified as config_cvmix_kpp_boundary_layer_depth.
+
+Valid values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_cvmix_kpp_boundary_layer_depth" type="real"
+	category="cvmix" group="cvmix">
+If config_use_cvmix_fixed_boundary_layer, then KPP OBL calculation is overwritten with this value.
+
+Valid values: Any positive real value.
+Default: 30.0
+</entry>
+
+<entry id="config_cvmix_kpp_criticalBulkRichardsonNumber" type="real"
+	category="cvmix" group="cvmix" >
+Critical bulk Richardson number used to determine bottom of ocean mixed layer
+
+Valid values: Any positive real value.
+Default: 0.25
+</entry>
+
+<entry id="config_cvmix_kpp_matching" type="char*512"
+	category="cvmix" group="cvmix" 
+	valid_values="MatchBoth,MatchGradient,SimpleShapes" >
+Determines how the KPP diffusivities are matched to values at base of boundary layer
+
+Valid values: 'MatchBoth', 'MatchGradient', 'SimpleShapes'
+Default: 'SimpleShapes'
+</entry>
+
+<entry id="config_cvmix_kpp_EkmanOBL" type="logical"
+	category="cvmix" group="cvmix" >
+If true, boundary layer depth is limited by Ekman layer depth
+
+Valid values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_cvmix_kpp_MonObOBL" type="logical"
+	category="cvmix" group="cvmix" >
+If true, boundary layer depth is limited by Monin-Obukhov layer depth
+
+Valid values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_cvmix_kpp_interpolationOMLType" type="char*512"
+	category="cvmix" group="cvmix" 
+	valid_values="linear,quadratic,cubic" >
+Determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation
+
+Valid values: 'linear', 'quadratic', 'cubic'
+Default: 'quadratic'
+</entry>
+
+<entry id="config_cvmix_kpp_surface_layer_extent" type="real"
+	category="cvmix" group="cvmix" >
+The non-dimensional extent of the surface layer, measured as fraction of boundary layer depth
+
+Valid values: Any value between 0 and 1
+Default: 0.1
+</entry>
+
+<entry id="config_cvmix_kpp_surface_layer_averaging" type="real"
+	category="cvmix" group="cvmix" >
+The thickness over which to average when computing surface-averaged velocity and buoyancy
+
+Valid values: Any positive real value, but typically should be between 1 and 20 meters
+Default: 5.0
+</entry>
+
+<entry id="config_cvmix_kpp_stop_OBL_search" type="real"
+	category="cvmix" group="cvmix" >
+The search for boundary layer depth is terminated when bulk Richardson number is greater than config_cvmix_kpp_stop_OBL_search*config_cvmix_kpp_criticalBulkRichardsonNumber
+
+Valid values: Any positive value
+Default: 100.0
+</entry>
+
+<!-- &forcing -->
+
+<entry id="config_forcing_type" type="char*512"
+	category="forcing" group="forcing" 
+	valid_values="restoring,bulk,off">
+Defines the forcing type for the simulation.
+
+Valid values: 'restoring', 'bulk', 'off'
+Default: 'bulk'
+</entry>
+
+<entry id="config_restoreT_timescale" type="real"
+	category="forcing" group="forcing" >
+Restoring time scale for temperature, $\tau_r.$
+
+Valid values: any positive real value, but typically between 30 and 90 days.
+Default: 0.0
+</entry>
+
+<entry id="config_restoreS_timescale" type="real"
+	category="forcing" group="forcing" >
+Restoring time scale for salinity, $\tau_r$.
+
+Valid values: any positive real value, but typically between 30 and 90 days.
+Default: 0.0
+</entry>
+
+<entry id="config_restoreT_lengthscale" type="real"
+	category="forcing" group="forcing" >
+Restoring length scale for temperature.
+
+Valid values: any positive real value, but typically about 50 meters.
+Default: 0.0
+</entry>
+
+<entry id="config_restoreS_lengthscale" type="real"
+	category="forcing" group="forcing" >
+Restoring length scale for salinity.
+
+Valid values: any positive real value, but typically about 50 meters.
+Default: 0.0
+</entry>
+
+<entry id="config_flux_attenuation_coefficient" type="real"
+	category="forcing" group="forcing" >
+Coefficient used to determine transmission of surface fluxes. Fluxes are defined with $e^{z/\gamma}$ where this coefficient is $\gamma$.
+
+Valid values: Any real number $\gamma>0.0$ and $\gamma \le 1.0$.
+Default: 0.001
+</entry>
+
+<entry id="config_frazil_ice_formation" type="logical"
+	category="forcing" group="forcing" >
+Logical flag that determines if the formation of frazil ice is allowed.
+
+Valid values: .true. or .false.
+Default: .true.
+</entry>
+
+<entry id="config_sw_absorption_type" type="char*512"
+	category="forcing" group="forcing" 
+	valid_values="jerlov">
+Name of shortwave absorption type used in simulation.
+
+Valid values: 'jerlov'
+Default: 'jerlov'
+</entry>
+
+<entry id="config_jerlov_water_type" type="integer"
+	category="forcing" group="forcing" >
+Integer value defining the water type used in Jerlov short wave absorption.
+
+Valid values: Integer values between 1 and 5
+Default: 3
+</entry>
+
+<entry id="config_fixed_jerlov_weights" type="logical"
+	category="forcing" group="forcing" >
+Logical value determining if the weights for Jerlov absorption are based off of reference depths (.true.), or the layerThickness variable (.false.).
+
+Valid values: .true. or .false.
+Default: .true.
+</entry>
+
+<!-- &advection -->
+
+<entry id="config_vert_tracer_adv" type="char*512"
+	category="advection" group="advection" 
+	valid_values="spline,stencil">
+Method for interpolating tracer values from layer centers to layer edges
+
+Valid values: 'spline', 'stencil'
+Default: 'stencil'
+</entry>
+
+<entry id="config_vert_tracer_adv_order" type="integer"
+	category="advection" group="advection" >
+Order of polynomial used for tracer reconstruction at layer edges
+
+Valid values: 2, 3 and 4
+Default: 3
+</entry>
+
+<entry id="config_horiz_tracer_adv_order" type="integer"
+	category="advection" group="advection" >
+Order of polynomial used for tracer reconstruction at cell edges
+
+Valid values: 2, 3 and 4
+Default: 3
+</entry>
+
+<entry id="config_coef_3rd_order" type="real"
+	category="advection" group="advection" >
+Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction
+
+Valid values: any real between 0 and 1
+Default: 0.25
+</entry>
+
+<entry id="config_monotonic" type="logical"
+	category="advection" group="advection" >
+If .true. then fluxes are limited to produce a monotonic advection scheme
+
+Valid values: .true. and .false.
+Default: .true.
+</entry>
+
+<!-- &bottom_drag -->
+
+<entry id="config_bottom_drag_coeff" type="real"
+	category="bottom_drag" group="bottom_drag" >
+Dimensionless bottom drag coefficient, c_drag.
+
+Valid values: any positive real, typically 1.0e-3
+Default: 1.0e-3
+</entry>
+
+<!-- &pressure_gradient -->
+
+<entry id="config_pressure_gradient_type" type="char*512"
+	category="pressure_gradient" group="pressure_gradient" 
+	valid_values="pressure_and_zmid,Jacobian_from_density,Jacobian_from_TS,MontgomeryPotential" >
+Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.
+
+Valid values: 'pressure_and_zmid', 'Jacobian_from_density', 'Jacobian_from_TS', 'MontgomeryPotential'
+Default: 'pressure_and_zmid'
+</entry>
+
+<entry id="config_density0" type="real"
+	category="pressure_gradient" group="pressure_gradient" >
+Density used as a coefficient of the pressure gradient terms, rho_0. This is a constant due to the Boussinesq approximation.
+
+Valid values: any positive real, but typically 1000-1035
+Default: 1014.65
+</entry>
+
+<entry id="config_common_level_weight" type="real"
+	category="pressure_gradient" group="pressure_gradient" >
+The weight between standard Jacobian and weighted Jacobian, gamma.
+
+Valid values: any real between 0 and 1
+Default: 0.5
+</entry>
+
+<!-- &eos -->
+
+<entry id="config_eos_type" type="char*512"
+	category="eos" group="eos" 
+	valid_values="jm,linear" >
+Character string to choose EOS formulation
+
+Valid values: Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'
+Default: 'jm'
+</entry>
+
+<!-- &eos_linear -->
+
+<entry id="config_eos_linear_alpha" type="real"
+	category="eos_linear" group="eos_linear" >
+Linear thermal expansion coefficient
+
+Valid values: any positive real
+Default: 0.2
+</entry>
+
+<entry id="config_eos_linear_beta" type="real"
+	category="eos_linear" group="eos_linear" >
+Linear haline contraction coefficient
+
+Valid values: any positive real
+Default: 0.8
+</entry>
+
+<entry id="config_eos_linear_Tref" type="real"
+	category="eos_linear" group="eos_linear" >
+Reference temperature
+
+Valid values: any real
+Default: 5.0
+</entry>
+
+<entry id="config_eos_linear_Sref" type="real"
+	category="eos_linear" group="eos_linear" >
+Reference salinity
+
+Valid values: any real
+Default: 35.0
+</entry>
+
+<entry id="config_eos_linear_densityref" type="real"
+	category="eos_linear" group="eos_linear" >
+Reference density, i.e. density when T=Tref and S=Sref
+
+Valid values: any positive real
+Default: 1000.0
+</entry>
+
+<!-- &split_explicit_ts -->
+
+<entry id="config_n_ts_iter" type="integer"
+	category="split_explicit_ts" group="split_explicit_ts" >
+number of large iterations over stages 1-3
+
+Valid values: any positive integer, but typically 1, 2, or 3
+Default: 2
+</entry>
+
+<entry id="config_n_bcl_iter_beg" type="integer"
+	category="split_explicit_ts" group="split_explicit_ts" >
+number of iterations of stage 1 (baroclinic solve) on the first split-explicit iteration
+
+Valid values: any positive integer, but typically 1, 2, or 3
+Default: 1
+</entry>
+
+<entry id="config_n_bcl_iter_mid" type="integer"
+	category="split_explicit_ts" group="split_explicit_ts" >
+number of iterations of stage 1 (baroclinic solve) on any split-explicit iterations between first and last
+
+Valid values: any positive integer, but typically 1, 2, or 3
+Default: 2
+</entry>
+
+<entry id="config_n_bcl_iter_end" type="integer"
+	category="split_explicit_ts" group="split_explicit_ts" >
+number of iterations of stage 1 (baroclinic solve) on the last split-explicit iteration
+
+Valid values: any positive integer, but typically 1, 2, or 3
+Default: 2
+</entry>
+
+<entry id="config_n_btr_subcycles" type="integer"
+	category="split_explicit_ts" group="split_explicit_ts" >
+number of barotropic subcycles in stage 2
+
+Valid values: any positive integer, typically between 10 and 100
+Default: 20
+</entry>
+
+<entry id="config_n_btr_cor_iter" type="integer"
+	category="split_explicit_ts" group="split_explicit_ts" >
+number of iterations of the velocity corrector step in stage 2
+
+Valid values: any positive integer, but typically 1, 2, or 3
+Default: 2
+</entry>
+
+<entry id="config_vel_correction" type="logical"
+	category="split_explicit_ts" group="split_explicit_ts" >
+If true, the velocity correction term is included in the horizontal advection of thickness and tracers
+
+Valid values: .true. or .false.
+Default: .true.
+</entry>
+
+<entry id="config_btr_subcycle_loop_factor" type="integer"
+	category="split_explicit_ts" group="split_explicit_ts" >
+Barotropic subcycles proceed from $t$ to $t+n\Delta t$, where $n$ is this configuration option.
+
+Valid values: Any positive integer, but typically 1 or 2
+Default: 2
+</entry>
+
+<entry id="config_btr_gam1_velWt1" type="real"
+	category="split_explicit_ts" group="split_explicit_ts" >
+Weighting of velocity in the SSH predictor step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used.
+
+Valid values: between 0 and 1
+Default: 0.5
+</entry>
+
+<entry id="config_btr_gam2_SSHWt1" type="real"
+	category="split_explicit_ts" group="split_explicit_ts" >
+Weighting of SSH in the velocity corrector step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used.
+
+Valid values: between 0 and 1
+Default: 1.0
+</entry>
+
+<entry id="config_btr_gam3_velWt2" type="real"
+	category="split_explicit_ts" group="split_explicit_ts" >
+Weighting of velocity in the SSH corrector step in stage 2. When zero, previous subcycle time is used; when one, new subcycle time is used.
+
+Valid values: between 0 and 1
+Default: 1.0
+</entry>
+
+<entry id="config_btr_solve_SSH2" type="logical"
+	category="split_explicit_ts" group="split_explicit_ts" >
+If true, execute the SSH corrector step in stage 2
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<!-- &testing -->
+
+<entry id="config_conduct_tests" type="logical"
+	category="testing" group="testing" >
+If true, run testing suite. This is the overarching control on the test suite. Individual flags must be set to true below to conduct each test.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_test_tensors" type="logical"
+	category="testing" group="testing" >
+If true, tensor operations are tested upon start-up.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_tensor_test_function" type="char*512"
+	category="testing" group="testing" 
+	valid_values="linear_x,linear_y,linear_arb_rot,power_x,power_y,power_arb_rot,sin_arb_rot,sph_sold_body,sph_Williamson,sph_uCosCos,sph_vCosCos,sph_ELonLon_CosCos,sph_ELatLat_CosCos,sph_ELonLatCosCos" >
+Character string to choose tensor test fuction
+
+Valid values: 'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'
+Default: 'sph_uCosCos'
+</entry>
+
+<!-- &debug -->
+
+<entry id="config_disable_redi_k33" type="logical"
+	category="debug" group="debug" >
+If true, disables k33 portion of Redi neutral surface mixing.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_redi_horizontal_term1" type="logical"
+	category="debug" group="debug" >
+If true, disables first term in horizonal mixing of Redi neutral surface mixing.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_redi_horizontal_term2" type="logical"
+	category="debug" group="debug" >
+If true, disables first term in horizonal mixing of Redi neutral surface mixing.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_redi_horizontal_term3" type="logical"
+	category="debug" group="debug" >
+If true, disables first term in horizonal mixing of Redi neutral surface mixing.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_check_zlevel_consistency" type="logical"
+	category="debug" group="debug" >
+Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_filter_btr_mode" type="logical"
+	category="debug" group="debug" >
+Enables filtering of the barotropic mode.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_prescribe_velocity" type="logical"
+	category="debug" group="debug" >
+Enables a prescribed velocity field. This velocity field is read on input, and remains constant through a simulation.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_prescribe_thickness" type="logical"
+	category="debug" group="debug" >
+Enables a prescribed thickness field. This thickness field is read on input, and remains constant through a simulation.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_include_KE_vertex" type="logical"
+	category="debug" group="debug" >
+If true, the kinetic energy in each cell is computed by blending cell-based and vertex-based values of kinetic energy.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_check_tracer_monotonicity" type="logical"
+	category="debug" group="debug" >
+Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_monotonic is set to .true.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_thick_all_tend" type="logical"
+	category="debug" group="debug" >
+Disables all tendencies on the thickness field.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_thick_hadv" type="logical"
+	category="debug" group="debug" >
+Disable tendencies on the thickness field from horizontal advection.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_thick_vadv" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on the thickness field from vertical advection.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_thick_sflux" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on the thickness field from surface fluxes.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_vel_all_tend" type="logical"
+	category="debug" group="debug" >
+Disables all tendencies on the velocity field.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_vel_coriolis" type="logical"
+	category="debug" group="debug" >
+Diables tendencies on the velocity field from the Coriolis force.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_vel_pgrad" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on the velocity field from the horizontal pressure gradient.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_vel_hmix" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on the velocity field from horizontal mixing.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_vel_windstress" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on the velocity field from horizontal wind stress.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_vel_vmix" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on the velocity field from vertical mixing.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_vel_vadv" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on the velocity field from vertical advection.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_tr_all_tend" type="logical"
+	category="debug" group="debug" >
+Disables all tendencies on tracer fields.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_tr_adv" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on tracer fields from advection, both horizontal and vertical.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_tr_hmix" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on tracer fields from horizontal mixing.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_tr_vmix" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on tracer fields from vertical mixing.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_tr_sflux" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on tracer fields from surface fluxes.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<entry id="config_disable_tr_nonlocalflux" type="logical"
+	category="debug" group="debug" >
+Disables tendencies on the tracer fields from CVMix/KPP nonlocal fluxes.
+
+Valid values: .true. or .false.
+Default: .false.
+</entry>
+
+<!-- &global_stats -->
+
+<entry id="config_use_global_stats" type="logical"
+	category="global_stats" group="global_stats" >
+If true, ocean analysis member global_stats is called.
+
+Valid values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_global_stats_compute_interval" type="char*512"
+	category="global_stats" group="global_stats" >
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: 'YYYY-MM-DD_hh:mm:ss', 'dt'
+Default: 'dt'
+</entry>
+
+<entry id="config_global_stats_compute_startup" type="logical"
+	category="global_stats" group="global_stats" >
+Logical flag determining if an analysis member computation occurs on start-up
+
+Valid values: .true., .false.
+Default: .true.
+</entry>
+
+<!-- &sfc_area_weighted_avg -->
+<entry id="config_use_AM_sfc_area_weighted_avg" type="logical"
+	category="sfc_area_weighted_avg" group="sfc_area_weighted_avg" >
+If true, ocean analysis member surface_area_weighted_average is called.
+
+Valid Values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_AM_sfc_area_weighted_avg_compute_interval" type="char*512"
+	category="sfc_area_weighted_avg" group="sfc_area_weighted_avg" >
+Timestamp determining how often analysis member computation should be performed.
+
+Valid Values: 'DDDD_HH:MM:SS', or 'dt'
+Default: 'dt'
+</entry>
+
+<entry id="config_AM_sfc_area_weighted_avg_compute_startup" type="logical"
+	category="sfc_area_weighted_avg" group="sfc_area_weighted_avg" >
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid Values: .true., .false.
+Default: .true.
+</entry>
+
+<!-- &AM_water_mass_census -->
+<entry id="config_use_AM_water_mass_census" type="logical"
+	category="AM_water_mass_census" group="AM_water_mass_census" >
+If true, ocean analysis member water mass census is called.
+
+Valid Values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_AM_water_mass_census_compute_interval" type="char*512"
+	category="AM_water_mass_census" group="AM_water_mass_census" >
+Timestamp determining how often analysis member computation should be performed.
+
+Valid Values: 'DDDD_HH:MM:SS', or 'dt'
+Default: 'dt'
+</entry>
+
+<entry id="config_AM_water_mass_census_compute_startup" type="logical"
+	category="AM_water_mass_census" group="AM_water_mass_census" >
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid Values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_AM_water_mass_census_minTemperature" type="real"
+	category="AM_water_mass_census" group="AM_water_mass_census" >
+Minimum temperature used in water mass census
+
+Valid Values: Any real number smaller than config_AM_water_mass_census_maxTemperature
+Default: -2.0
+</entry>
+
+<entry id="config_AM_water_mass_census_maxTemperature" type="real"
+	category="AM_water_mass_census" group="AM_water_mass_census" >
+Maximum temperature used in water mass census
+
+Valid Values: Any real number greater than config_AM_water_mass_census_minTemperature
+Default: 30
+</entry>
+
+<entry id="config_AM_water_mass_census_minSalinity" type="real"
+	category="AM_water_mass_census" group="AM_water_mass_census" >
+Minimum salinity used in water mass census
+
+Valid Values: Any real number smaller than config_AM_water_mass_census_maxSalinity
+Default: 32.0
+</entry>
+
+<entry id="config_AM_water_mass_census_maxSalinity" type="real"
+	category="AM_water_mass_census" group="AM_water_mass_census" >
+Maximum salinity used in water mass census
+
+Valid Values: Any real number greater than config_AM_water_mass_census_minSalinity
+Default: 37.0
+</entry>
+
+<!-- &AM_layer_volume_weighted_avg -->
+
+<entry id="config_use_AM_layer_volume_weighted_avg" type="logical"
+	category="AM_layer_volume_weighted_avg" group="AM_layer_volume_weighted_avg" >
+If true, ocean analysis member layer-volume weighted is called.
+
+Valid Values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_AM_layer_volume_weighted_avg_compute_interval" type="char*512"
+	category="AM_layer_volume_weighted_avg" group="AM_layer_volume_weighted_avg" >
+Timestamp determining how often analysis member computation should be performed.
+
+Valid Values: 'DDDD_HH:MM:SS', or 'dt'
+Default: 'dt'
+</entry>
+
+<entry id="config_AM_layer_volume_weighted_avg_compute_startup" type="logical"
+	category="AM_layer_volume_weighted_avg" group="AM_layer_volume_weighted_avg" >
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid Values: .true., .false.
+Default: .false.
+</entry>
+
+<!-- &zonal_mean -->
+<entry id="config_use_zonal_mean" type="logical"
+	category="zonal_mean" group="zonal_mean" >
+If true, ocean analysis member zonal_mean is called.
+	
+Valid values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_zonal_mean_compute_interval" type="char*512"
+	category="zonal_mean" group="zonal_mean" >
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: 'YYYY-MM-DD_hh:mm:ss', 'dt'
+Default: 'dt'
+</entry>
+
+<entry id="config_zonal_mean_compute_startup" type="logical"
+	category="zonal_mean" group="zonal_mean" >
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_number_zonal_mean_bins" type="integer"
+	category="zonal_mean" group="zonal_mean" >
+Number of bins used for zonal mean.  Must be less than or equal to the dimension nZonalMeanBins (set in Registry).
+
+Valid values: Any positive integer greater than 0.
+Default: 180
+</entry>
+
+<entry id="config_min_zonal_mean_bin" type="real"
+	category="zonal_mean" group="zonal_mean" >
+minimum bin boundary value.  If set to -1.0e34, the minimum value in the domain is found.
+
+Valid values: Any real number
+Default: -1.0e34
+</entry>
+
+<entry id="config_max_zonal_mean_bin" type="real"
+	category="zonal_mean" group="zonal_mean" >
+maximum bin boundary value.  If set to -1.0e34, the maximum value in the domain is found.
+
+Valid values: Any real number.
+Default: -1.0e34
+</entry>
+
+<!-- &okubo_weiss -->
+<entry id="config_use_okubo_weiss" type="logical"
+	category="okubo_weiss" group="okubo_weiss" >
+If true, ocean analysis member okubo_weiss is called.
+
+Valid Values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_okubo_weiss_compute_startup" type="logical"
+	category="okubo_weiss" group="okubo_weiss" >
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid Values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_okubo_weiss_directory" type="char*512"
+	category="okubo_weiss" group="okubo_weiss" >
+Subdirectory to write eddy census text files
+
+Valid Values: Any valid directory name
+Default: 'analysis_members'
+</entry>
+
+<entry id="config_okubo_weiss_threshold_value" type="real"
+	category="okubo_weiss" group="okubo_weiss" >
+Threshold below which normalized OW values are counted as eddies, typically -0.2
+
+Valid Values: Any negative real value
+Default: -0.2
+</entry>
+
+<entry id="config_okubo_weiss_normalization" type="real"
+	category="okubo_weiss" group="okubo_weiss" >
+Parameter by which the OW values are normalized, typically the standard deviation of OW
+
+Valid Values: Any positive real value
+Default: 1e-10
+</entry>
+
+<entry id="config_okubo_weiss_lambda2_normalization" type="real"
+	category="okubo_weiss" group="okubo_weiss" >
+Parameter by which the lambda_2 values are normalized, typically the standard deviation of lambda_2
+
+Valid Values: Any positive real value
+Default: 1e-10
+</entry>
+
+<entry id="config_okubo_weiss_use_lat_lon_coords" type="logical"
+	category="okubo_weiss" group="okubo_weiss" >
+If true, latitude/longitude coordinates are output for eddy census. Otherwise x/y/z coordinates are used. Ignored if not on a sphere.
+
+Valid Values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_okubo_weiss_compute_eddy_census" type="logical"
+	category="okubo_weiss" group="okubo_weiss" >
+If true, connected components of thresholded OW values are computed, and used to compute an eddy census.
+
+Valid Values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_okubo_weiss_eddy_min_cells" type="integer"
+	category="okubo_weiss" group="okubo_weiss" >
+Minimum number of cells that a connected component must contain to be considered an eddy. This needs to be scaled based on expected eddy size given a grid resolution.
+
+Valid Values: Any positive integer value
+Default: 20
+</entry>
+
+<!-- &AM_meridional_heat_transport -->
+
+<entry id="config_use_meridional_heat_transport" type="logical"
+	category="AM_meridional_heat_transport" group="AM_meridional_heat_transport" >
+If true, ocean analysis member meridional_heat_transport is called.
+
+Valid Values: .true., .false.
+Default: .false.
+</entry>
+
+<entry id="config_meridional_heat_transport_compute_interval" type="char*512"
+	category="AM_meridional_heat_transport" group="AM_meridional_heat_transport" >
+Timestamp determining how often analysis member computation should be performed.
+
+Valid Values: 'DDDD_HH:MM:SS', or 'dt'
+Default: 'dt'
+</entry>
+
+<entry id="config_meridional_heat_transport_compute_startup" type="logical"
+	category="AM_meridional_heat_transport" group="AM_meridional_heat_transport" >
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid Values: .true., .false.
+Default: .true.
+</entry>
+
+<entry id="config_number_meridional_heat_transport_bins" type="integer"
+	category="AM_meridional_heat_transport" group="AM_meridional_heat_transport" >
+Number of bins used for meridional heat transport.  Must be less than or equal to the dimension nMerHeatTransBins (set in Registry).
+
+Valid Values: Any positive integer value less than or equal to nMerHeatTransBins.
+Default: 180
+</entry>
+
+<entry id="config_min_meridional_heat_transport_bin" type="real"
+	category="AM_meridional_heat_transport" group="AM_meridional_heat_transport" >
+Minimum bin boundary value.  If set to -1.0e34, the minimum value in the domain is found.
+
+Valid Values: Any real number
+Default: -1.0e34
+</entry>
+
+<entry id="config_max_meridional_heat_transport_bin" type="real"
+	category="AM_meridional_heat_transport" group="AM_meridional_heat_transport" >
+Maximum bin boundary value.  If set to -1.0e34, the maximum value in the domain is found.
+
+Valid Values: Any real number
+Default: -1.0e34
+</entry>
+
+
+</namelist_definition>
