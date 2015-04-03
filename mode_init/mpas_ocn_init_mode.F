@@ -38,6 +38,7 @@ module ocn_init_mode
    use ocn_init_spherical_utils
 
    !use ocn_init_TEMPLATE
+   use ocn_init_baroclinic_channel
 
    implicit none
    private
@@ -205,7 +206,7 @@ module ocn_init_mode
 !-----------------------------------------------------------------------
 
    function ocn_init_mode_run(domain) result(iErr)!{{{
-   
+
       type (domain_type), intent(inout) :: domain
       integer :: iErr
    
@@ -237,6 +238,7 @@ module ocn_init_mode
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       write(stderrUnit, *) ' Generating configuration: ' // trim(config_init_configuration)
 
+      call ocn_init_setup_baroclinic_channel(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       call mpas_timer_start('io_write', .false.)
@@ -308,6 +310,8 @@ module ocn_init_mode
          cullCellsActive = .true.
       end if
 
+      call ocn_init_validate_baroclinic_channel(configPool, packagePool, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
       ! call ocn_config_TEMPLATE_validate(configPool, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)
    end subroutine ocn_init_mode_validate_configuration!}}}
