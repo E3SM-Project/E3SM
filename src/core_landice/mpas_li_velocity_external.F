@@ -20,6 +20,7 @@ module li_velocity_external
    use mpas_grid_types
    use mpas_configure
    use mpas_dmpar
+   use mpas_timer
    use li_setup
    !use, intrinsic :: iso_c_binding
 
@@ -178,8 +179,6 @@ contains
 
    subroutine li_velocity_external_block_init(block, err)
 
-       use mpas_timer
-
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -215,6 +214,13 @@ contains
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex, areaTriangle
       real (kind=RKIND), pointer :: radius
       type (field1DInteger), pointer :: indexToCellIDField, indexToEdgeIDField, indexToVertexIDField
+      ! Variables needed to set FEM mask
+      type (mpas_pool_type), pointer :: statePool
+      character (len=StrKIND), pointer :: config_velocity_solver
+      real (kind=RKIND), dimension(:), pointer :: &
+         thickness, lowerSurface, layerThicknessFractions
+      integer, dimension(:), pointer :: vertexMask, floatingEdges
+      integer, dimension(:,:), pointer :: dirichletVelocityMask
 
       ! halo exchange arrays
       integer, dimension(:), pointer :: sendCellsArray, &
@@ -294,6 +300,23 @@ contains
                  sendEdgesArray, &
                  recvEdgesArray)
 
+      ! Now build the FEM mesh for the first solve
+      ! (This needs to be additionally called here so that HO restarts work correctly.
+      !  However, it won't be called again in solve unless the grid has changed.
+      !  One exception is on a restart where the dynamic ice extent does not change between the
+      !  initial time and the first time step - in the case this will be called twice
+      !  unnecessarily.  That seemed preferable to complicating the logic.)
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_subpool(block % structs, 'state', statePool)
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=1)
+      call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=1)
+      call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel=1)
+      call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=1)
+      call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=1)
+      call generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, &
+              floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
+
       ! === error check
       if (err > 0) then
           write (stderrUnit,*) "An error has occurred in li_velocity_external_block_init."
@@ -319,7 +342,6 @@ contains
 
    subroutine li_velocity_external_solve(meshPool, statePool, timeLevel, err)
 
-       use mpas_timer
        use li_mask
 
       !-----------------------------------------------------------------
@@ -416,57 +438,8 @@ contains
       ! initialize vertexMask to garbage which sets anyDynamicVertexMaskChanged to 1.
       if ((anyDynamicVertexMaskChanged == 1) .or. (config_always_compute_fem_grid) .or. &
           (dirichletMaskChanged == 1) ) then
-#if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
-          call mpas_timer_start("velocity_solver_compute_2d_grid")
-          call velocity_solver_compute_2d_grid(vertexMask, dirichletVelocityMask, floatingEdges)
-          call mpas_timer_stop("velocity_solver_compute_2d_grid")
-#else
-          write(stderrUnit,*) "Error: To run with an external velocity solver you must compile MPAS with one."
-          err = 1
-          return
-#endif
-
-          select case (config_velocity_solver)
-          case ('L1L2')  ! ===============================================
-#ifdef USE_EXTERNAL_L1L2
-              call mpas_timer_start("velocity_solver_init_L1L2")
-              !call velocity_solver_extrude_3d_grid(layerThicknessFractions, lowerSurface, thickness)
-              call velocity_solver_init_L1L2(layerThicknessFractions)
-              call mpas_timer_stop("velocity_solver_init_L1L2")
-#else
-              write(stderrUnit,*) "Error: External LifeV library needed to run L1L2 dycore."
-              err = 1
-              return
-#endif
-
-          case ('FO') ! ===============================================
-#ifdef USE_EXTERNAL_FIRSTORDER
-              call mpas_timer_start("velocity_solver_extrude_3d_grid")
-              call velocity_solver_extrude_3d_grid(layerThicknessFractions, lowerSurface, thickness)
-              call mpas_timer_stop("velocity_solver_extrude_3d_grid")
-              call mpas_timer_start("velocity_solver_init_FO")
-              call velocity_solver_init_FO(layerThicknessFractions)
-              call mpas_timer_stop("velocity_solver_init_FO")
-#else
-              write(stderrUnit,*) "Error: External library needed to run FO dycore."
-              err = 1
-              return
-#endif
-
-          case ('Stokes') ! ===============================================
-#ifdef USE_EXTERNAL_STOKES
-              call mpas_timer_start("velocity_solver_extrude_3d_grid")
-              call velocity_solver_extrude_3d_grid(layerThicknessFractions, lowerSurface, thickness)
-              call mpas_timer_stop("velocity_solver_extrude_3d_grid")
-              call mpas_timer_start("velocity_solver_init_stokes")
-              call velocity_solver_init_stokes(layerThicknessFractions)
-              call mpas_timer_stop("velocity_solver_init_stokes")
-#else
-              write(stderrUnit,*) "Error: External Stokes library needed to run stokes dycore."
-              err = 1
-              return
-#endif
-          end select
+         call generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, &
+              floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
       endif
 
 
@@ -658,6 +631,103 @@ contains
 
    !--------------------------------------------------------------------
    end subroutine interface_stokes_init
+
+
+
+!***********************************************************************
+!
+!  routine generate_fem_grid
+!
+!> \brief   Calls to interface to set FEM grid
+!> \author Matt Hoffman
+!> \date   2 April 2015
+!> \details
+!>  This routine calls functions in the C interface that generate the FEM grid.
+!
+!-----------------------------------------------------------------------
+
+   subroutine generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, floatingEdges, &
+              layerThicknessFractions, lowerSurface, thickness, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      character (len=StrKIND), pointer :: config_velocity_solver
+      integer, pointer, dimension(:), intent(in) :: vertexMask, floatingEdges
+      integer, pointer, dimension(:,:), intent(in) :: dirichletVelocityMask
+      real(kind=RKIND), pointer, dimension(:), intent(in) :: layerThicknessFractions, &
+             lowerSurface, thickness
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      err = 0
+
+#if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
+          call mpas_timer_start("velocity_solver_compute_2d_grid")
+          call velocity_solver_compute_2d_grid(vertexMask, dirichletVelocityMask, floatingEdges)
+          call mpas_timer_stop("velocity_solver_compute_2d_grid")
+#else
+          write(stderrUnit,*) "Error: To run with an external velocity solver you must compile MPAS with one."
+          err = 1
+          return
+#endif
+
+          select case (config_velocity_solver)
+          case ('L1L2')  ! ===============================================
+#ifdef USE_EXTERNAL_L1L2
+              call mpas_timer_start("velocity_solver_init_L1L2")
+              !call velocity_solver_extrude_3d_grid(layerThicknessFractions, lowerSurface, thickness)
+              call velocity_solver_init_L1L2(layerThicknessFractions)
+              call mpas_timer_stop("velocity_solver_init_L1L2")
+#else
+              write(stderrUnit,*) "Error: External LifeV library needed to run L1L2 dycore."
+              err = 1
+              return
+#endif
+
+          case ('FO') ! ===============================================
+#ifdef USE_EXTERNAL_FIRSTORDER
+              call mpas_timer_start("velocity_solver_extrude_3d_grid")
+              call velocity_solver_extrude_3d_grid(layerThicknessFractions, lowerSurface, thickness)
+              call mpas_timer_stop("velocity_solver_extrude_3d_grid")
+              call mpas_timer_start("velocity_solver_init_FO")
+              call velocity_solver_init_FO(layerThicknessFractions)
+              call mpas_timer_stop("velocity_solver_init_FO")
+#else
+              write(stderrUnit,*) "Error: External library needed to run FO dycore."
+              err = 1
+              return
+#endif
+
+          case ('Stokes') ! ===============================================
+#ifdef USE_EXTERNAL_STOKES
+              call mpas_timer_start("velocity_solver_extrude_3d_grid")
+              call velocity_solver_extrude_3d_grid(layerThicknessFractions, lowerSurface, thickness)
+              call mpas_timer_stop("velocity_solver_extrude_3d_grid")
+              call mpas_timer_start("velocity_solver_init_stokes")
+              call velocity_solver_init_stokes(layerThicknessFractions)
+              call mpas_timer_stop("velocity_solver_init_stokes")
+#else
+              write(stderrUnit,*) "Error: External Stokes library needed to run stokes dycore."
+              err = 1
+              return
+#endif
+          end select
+
+   !--------------------------------------------------------------------
+   end subroutine generate_fem_grid
 
 
 

@@ -713,10 +713,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       ! Copy data from first time level into all other time levels
       call mpas_pool_initialize_time_levels(statePool)
 
-      ! Initialize vertexMask on time level 2 to junk, so diagnostic_solve_before_velocity in li_diagnostic_vars says that the vertexMask has changed (needed by external dycore)
-      call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel = 2)
-      vertexMask = -9999
-
 
       ! ===
       ! === Call init routines ===
