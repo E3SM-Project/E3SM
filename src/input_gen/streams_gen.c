@@ -256,6 +256,8 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int p
 		}
 	}
 	fprintf(fd, "</streams>\n");
+
+	return 0;
 }/*}}}*/
 
 void write_stream_header(ezxml_t stream_xml, FILE *fd){/*{{{*/
