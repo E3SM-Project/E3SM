@@ -23,6 +23,7 @@ core_input_gen:
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.forward mode=forward )
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.analysis mode=analysis )
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init mode=init )
+	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.baroclinic_channel mode=init configuration=baroclinic_channel)
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean stream_list.ocean. mutable )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis )
