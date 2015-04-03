@@ -1,0 +1,35 @@
+.SUFFIXES: .F .o
+
+OBJS = mpas_ocn_init_mode.o
+
+UTILS = mpas_ocn_init_spherical_utils.o \
+	    mpas_ocn_init_vertical_grids.o \
+        mpas_ocn_init_cell_markers.o
+
+TEST_CASES =  #mpas_ocn_init_TEMPLATE.o
+
+all: init_mode
+
+init_mode: $(UTILS) $(TEST_CASES) $(OBJS)
+
+mpas_ocn_init_mode.o: $(UTILS) $(TEST_CASES)
+
+mpas_ocn_init_cell_markers.o:
+
+mpas_ocn_init_spherical_utils.o:
+
+mpas_ocn_init_vertical_grids.o:
+
+#mpas_ocn_init_TEMPLATE.o: $(UTILS)
+
+clean:
+	$(RM) *.o *.mod *.f90
+
+.F.o:
+	$(RM) $@ $*.mod
+ifeq "$(GEN_F90)" "true"
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES)
+else
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES)
+endif
