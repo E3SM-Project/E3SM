@@ -232,6 +232,7 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
     tests_passed = wait_for_tests.wait_for_tests(glob.glob("%s/*/TestStatus" % casearea),
                                                  not use_batch, # wait if using queue
                                                  False, # don't check throughput
+                                                 False, # don't ignore namelist diffs
                                                  cdash_build_name)
     if (not tests_passed and use_batch):
         # Cleanup

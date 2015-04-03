@@ -133,8 +133,8 @@ def compare_data(gold_lines, comp_lines, case):
 ###############################################################################
 def compare_files(gold_file, compare_file, case):
 ###############################################################################
-    expect(os.path.exists(gold_file), "FAIL: File not found: %s" % gold_file)
-    expect(os.path.exists(compare_file), "FAIL: File not found: %s" % compare_file)
+    expect(os.path.exists(gold_file), "File not found: %s" % gold_file)
+    expect(os.path.exists(compare_file), "File not found: %s" % compare_file)
 
     return compare_data(open(gold_file, "r").readlines(),
                         open(compare_file, "r").readlines(),
@@ -156,7 +156,7 @@ def _main_func(description):
         verbose_print("Using case: '%s'" % case)
 
     expect(compare_files(gold_file, compare_file, case),
-           "FAIL: Diff between files %s and %s" % (gold_file, compare_file))
+           "Diff between files %s and %s" % (gold_file, compare_file))
 
     print "Files %s and %s MATCH" % (gold_file, compare_file)
 
