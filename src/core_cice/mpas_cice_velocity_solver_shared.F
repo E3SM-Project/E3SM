@@ -37,10 +37,6 @@ module cice_velocity_solver_shared
   real(kind=RKIND), parameter, public :: &
        ciceAreaMinimum = 0.001_RKIND, &
        ciceMassMinimum = 0.01_RKIND
-
-  real(kind=RKIND), public :: &
-       ciceDynamicsTimeStep, &
-       ciceElasticTimeStep
   
   ! local 
   real(kind=RKIND), parameter, private :: &
@@ -69,26 +65,45 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_evp(dt, configs)
+  subroutine cice_init_evp(domain)
 
-    real(kind=RKIND), intent(in) :: &
-         dt !< Input:
+    type(domain_type) :: domain
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input:
+    type(block_type), pointer :: block
 
     integer, pointer :: &
          config_elastic_subcycle_number
 
-    call MPAS_pool_get_config(configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
+    real(kind=RKIND), pointer :: &
+         config_dt
 
-    ciceDynamicsTimeStep = dt
+    type(MPAS_pool_type), pointer :: &
+         velocitySolver
 
-    ciceElasticTimeStep = ciceDynamicsTimeStep / real(config_elastic_subcycle_number,RKIND)
+    real(kind=RKIND), pointer :: &
+         dynamicsTimeStep, &
+         elasticTimeStep
 
-    dampingTimescale = dampingTimescaleParameter * ciceDynamicsTimeStep
+    call MPAS_pool_get_config(domain % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
+    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
-    evpDampingCriterion = (1230.0_RKIND * dampingTimescale) / ciceElasticTimeStep**2 
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
+       call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
+       call MPAS_pool_get_array(velocitySolver, "elasticTimeStep", elasticTimeStep)
+
+       dynamicsTimeStep = config_dt
+       
+       elasticTimeStep = dynamicsTimeStep / real(config_elastic_subcycle_number,RKIND)
+       
+       dampingTimescale = dampingTimescaleParameter * dynamicsTimeStep
+       
+       evpDampingCriterion = (1230.0_RKIND * dampingTimescale) / elasticTimeStep**2 
+
+       block => block % next
+    enddo
 
   end subroutine cice_init_evp
 

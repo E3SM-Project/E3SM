@@ -65,6 +65,14 @@ contains
          cice_prepare_output_variables, &
          cice_test_case_output
 
+    use cice_column, only: &
+         cice_column_predynamics_time_integration, &
+         cice_column_dynamics_time_integration, &
+         cice_column_postdynamics_time_integration
+
+    use cice_history, only: &
+         cice_init_history_thermodynamics
+
     type(domain_type), intent(inout) :: &
          domain !< Input/Output: 
 
@@ -89,7 +97,13 @@ contains
          config_use_advection, &
          config_use_vertical_thermodynamics
 
+    write(stderrUnit,*) "cice_timestep"
+
     call store_timestep_counter(domain, itimestep)
+
+    ! init history variables
+    call cice_init_history_thermodynamics(domain)
+
 
     configs => domain % configs
 
@@ -99,9 +113,12 @@ contains
     call MPAS_pool_get_config(configs, "config_perform_unit_test", config_perform_unit_test)
 
     if (config_perform_unit_test) then
-       call cice_perform_unit_test(domain, configs)
+       call cice_perform_unit_test(domain)
        return
     endif
+
+    ! pre dynamics column physics
+    call cice_column_predynamics_time_integration(domain, clock)
 
     ! zero layer thermodynamics
     call mpas_timer_start("thermodynamics")
@@ -125,16 +142,15 @@ contains
 
     ! advection
     call mpas_timer_start("advection")
-    if (config_use_advection) then
-
-       !block => domain % blocklist
-       !do while (associated(block))
-          call cice_run_advection(domain, clock, dt)
-       !   block => block % next
-       !end do
-
-    endif
+    if (config_use_advection) &
+       call cice_run_advection(domain, clock, dt)
     call mpas_timer_stop("advection")
+
+    ! ridging
+    call cice_column_dynamics_time_integration(domain, clock)
+
+    ! shortwave
+    call cice_column_postdynamics_time_integration(domain, clock)
 
     ! prepare output variables
     call mpas_timer_start("prepare out")

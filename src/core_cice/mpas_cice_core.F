@@ -37,7 +37,6 @@ module cice_core
    
       use mpas_derived_types
       use mpas_stream_manager
-      use cice_forcing, only: cice_forcing_init
    
       implicit none
    
@@ -89,9 +88,6 @@ module cice_core
       call MPAS_stream_mgr_read(domain % streamManager, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
-      ! initialize forcing
-      call cice_forcing_init(domain, domain % streamManager)
-
       !
       ! Initialize core
       !
@@ -100,7 +96,7 @@ module cice_core
       block => domain % blocklist
       do while (associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
+         call MPAS_pool_get_subpool(block % structs, "global_diagnostics", diagnosticsPool)
          call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
          xtime = startTimeStamp
 

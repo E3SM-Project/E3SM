@@ -79,7 +79,7 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          mesh, &
-         diagnostics, &
+         global_diagnostics, &
          tracers
 
     real(kind=RKIND), dimension(:), pointer :: &
@@ -118,22 +118,22 @@ contains
          snowThickness
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
+    call MPAS_pool_get_subpool(block % structs, "global_diagnostics", global_diagnostics)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
-    call MPAS_pool_get_array(diagnostics, "iceAreaCategoryMin", iceAreaCategoryMin)
-    call MPAS_pool_get_array(diagnostics, "iceAreaCategoryMax", iceAreaCategoryMax)
-    call MPAS_pool_get_array(diagnostics, "iceVolumeCategoryMin", iceVolumeCategoryMin)
-    call MPAS_pool_get_array(diagnostics, "iceVolumeCategoryMax", iceVolumeCategoryMax)
-    call MPAS_pool_get_array(diagnostics, "snowVolumeCategoryMin", snowVolumeCategoryMin)
-    call MPAS_pool_get_array(diagnostics, "snowVolumeCategoryMax", snowVolumeCategoryMax)
-    call MPAS_pool_get_array(diagnostics, "surfaceTemperatureMin", surfaceTemperatureMin)
-    call MPAS_pool_get_array(diagnostics, "surfaceTemperatureMax", surfaceTemperatureMax)
-    call MPAS_pool_get_array(diagnostics, "iceThicknessCategoryMin", iceThicknessCategoryMin)
-    call MPAS_pool_get_array(diagnostics, "iceThicknessCategoryMax", iceThicknessCategoryMax)
-    call MPAS_pool_get_array(diagnostics, "snowThicknessCategoryMin", snowThicknessCategoryMin)
-    call MPAS_pool_get_array(diagnostics, "snowThicknessCategoryMax", snowThicknessCategoryMax)
-    call MPAS_pool_get_array(diagnostics, "snowThicknessCategoryLocMax", snowThicknessCategoryLocMax)
+    call MPAS_pool_get_array(global_diagnostics, "iceAreaCategoryMin", iceAreaCategoryMin)
+    call MPAS_pool_get_array(global_diagnostics, "iceAreaCategoryMax", iceAreaCategoryMax)
+    call MPAS_pool_get_array(global_diagnostics, "iceVolumeCategoryMin", iceVolumeCategoryMin)
+    call MPAS_pool_get_array(global_diagnostics, "iceVolumeCategoryMax", iceVolumeCategoryMax)
+    call MPAS_pool_get_array(global_diagnostics, "snowVolumeCategoryMin", snowVolumeCategoryMin)
+    call MPAS_pool_get_array(global_diagnostics, "snowVolumeCategoryMax", snowVolumeCategoryMax)
+    call MPAS_pool_get_array(global_diagnostics, "surfaceTemperatureMin", surfaceTemperatureMin)
+    call MPAS_pool_get_array(global_diagnostics, "surfaceTemperatureMax", surfaceTemperatureMax)
+    call MPAS_pool_get_array(global_diagnostics, "iceThicknessCategoryMin", iceThicknessCategoryMin)
+    call MPAS_pool_get_array(global_diagnostics, "iceThicknessCategoryMax", iceThicknessCategoryMax)
+    call MPAS_pool_get_array(global_diagnostics, "snowThicknessCategoryMin", snowThicknessCategoryMin)
+    call MPAS_pool_get_array(global_diagnostics, "snowThicknessCategoryMax", snowThicknessCategoryMax)
+    call MPAS_pool_get_array(global_diagnostics, "snowThicknessCategoryLocMax", snowThicknessCategoryLocMax)
 
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
@@ -218,7 +218,7 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          mesh, &
-         diagnostics, &
+         global_diagnostics, &
          tracers
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
@@ -256,15 +256,15 @@ contains
          iceExtentThreshold = 0.15_RKIND
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
+    call MPAS_pool_get_subpool(block % structs, "global_diagnostics", global_diagnostics)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
-    call MPAS_pool_get_array(diagnostics, "globalIceArea", globalIceArea)
-    call MPAS_pool_get_array(diagnostics, "globalIceExtent", globalIceExtent)
-    call MPAS_pool_get_array(diagnostics, "globalIceVolume", globalIceVolume)
-    call MPAS_pool_get_array(diagnostics, "globalIceThickness", globalIceThickness)
-    call MPAS_pool_get_array(diagnostics, "globalSnowVolume", globalSnowVolume)
-    call MPAS_pool_get_array(diagnostics, "globalSnowThickness", globalSnowThickness)
+    call MPAS_pool_get_array(global_diagnostics, "globalIceArea", globalIceArea)
+    call MPAS_pool_get_array(global_diagnostics, "globalIceExtent", globalIceExtent)
+    call MPAS_pool_get_array(global_diagnostics, "globalIceVolume", globalIceVolume)
+    call MPAS_pool_get_array(global_diagnostics, "globalIceThickness", globalIceThickness)
+    call MPAS_pool_get_array(global_diagnostics, "globalSnowVolume", globalSnowVolume)
+    call MPAS_pool_get_array(global_diagnostics, "globalSnowThickness", globalSnowThickness)
 
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)

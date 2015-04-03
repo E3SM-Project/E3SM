@@ -19,7 +19,7 @@
 		<dim name="nHemispheres"       definition="3"/>
 		<dim name="nIceLayersP1"       definition="nIceLayers+1"/>
 		<dim name="nCategoriesP1"      definition="nCategories+1"/>
-		<dim name="nAerosols"          definition="0"/>
+		<dim name="nAerosols"          definition="1"/>
 		<dim name="nSpectralIntervals" definition="3"/>
 		<dim name="nZBGCTracers"       definition="0"/>
 		<dim name="nVertLevels"/>
@@ -75,6 +75,7 @@
 		<nml_option name="config_forcing_restart_file"        type="character"     default_value="restart_forcing_timestamps"/>
 		<nml_option name="config_forcing_precipitation_units" type="character"     default_value="mm_per_sec"/>
 		<nml_option name="config_forcing_sst_type"            type="character"     default_value="ncar"/>
+		<nml_option name="config_update_ocean_fluxes"         type="logical"       default_value="false"/>
 	</nml_record>
 	<nml_record name="unit_test" in_defaults="true">
 		<nml_option name="config_perform_unit_test"           type="logical"       default_value="false"/>
@@ -82,6 +83,7 @@
 		<nml_option name="config_unit_test_subtype"           type="character"     default_value=""/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
+		<nml_option name="config_dynamics_subcycle_number"    type="integer"       default_value="1"          possible_values="any positive integer"/> 
 		<nml_option name="config_rotate_cartesian_grid"       type="logical"       default_value="true"       possible_values="true or false"/>	
 		<nml_option name="config_include_metric_terms"        type="logical"       default_value="true"       possible_values="true or false"/>	
 		<nml_option name="config_elastic_subcycle_number"     type="integer"       default_value="120"        possible_values="any positive integer"/> 
@@ -599,6 +601,9 @@
 		<!-- other column packages -->
      		<package name="pkgColumnFormDrag" description=""/>
 
+		<!-- stand in arrays needed -->
+		<package name="pkgColumnTracerArrayStandIn" description=""/>
+
 	</packages>
 
 	<!-- ice state -->
@@ -640,16 +645,32 @@
 		<var name="iceSalinityEdgeFlux"               type="real"     dimensions="nIceLayers nCategories nEdges"   name_in_code="iceSalinity"/>
 		<var name="snowEnthalpyEdgeFlux"              type="real"     dimensions="nSnowLayers nCategories nEdges"  name_in_code="snowEnthalpy"/>
 	</var_struct>
+	<var_struct name="tracers_aggregate" time_levs="1">
+		<var name="iceAreaCell"                       type="real"     dimensions="nCells Time"          name_in_code="iceAreaCell"/>
+		<var name="iceVolumeCell"                     type="real"     dimensions="nCells Time"          name_in_code="iceVolumeCell"/>
+		<var name="snowVolumeCell"                    type="real"     dimensions="nCells Time"          name_in_code="snowVolumeCell"/>
+		<var name="surfaceTemperatureCell"            type="real"     dimensions="nCells Time"          name_in_code="surfaceTemperatureCell"/>
+		<var name="iceEnthalpyCell"                   type="real"     dimensions="nIceLayers nCells Time"   name_in_code="iceEnthalpyCell"/>
+		<var name="iceSalinityCell"                   type="real"     dimensions="nIceLayers nCells Time"   name_in_code="iceSalinityCell"/>
+		<var name="snowEnthalpyCell"                  type="real"     dimensions="nSnowLayers nCells Time"  name_in_code="snowEnthalpyCell"/>
+		<var name="iceAgeCell"                        type="real"     dimensions="nCells Time"          name_in_code="iceAgeCell"                packages="pkgColumnTracerIceAge"/>
+		<var name="firstYearIceAreaCell"              type="real"     dimensions="nCells Time"          name_in_code="firstYearIceAreaCell"      packages="pkgColumnTracerFirstYearIce"/>
+		<var name="levelIceAreaCell"                  type="real"     dimensions="nCells Time"          name_in_code="levelIceAreaCell"          packages="pkgColumnTracerLevelIce"/>
+		<var name="levelIceVolumeCell"                type="real"     dimensions="nCells Time"          name_in_code="levelIceVolumeCell"        packages="pkgColumnTracerLevelIce"/>
+		<var name="pondAreaCell"                      type="real"     dimensions="nCells Time"          name_in_code="pondAreaCell"              packages="pkgColumnTracerPonds"/>
+		<var name="pondDepthCell"                     type="real"     dimensions="nCells Time"          name_in_code="pondDepthCell"             packages="pkgColumnTracerPonds"/>
+		<var name="pondLidThicknessCell"              type="real"     dimensions="nCells Time"          name_in_code="pondLidThicknessCell"      packages="pkgColumnTracerLidThickness"/>
+		<var name="snowScatteringAerosolCell"         type="real"     dimensions="nAerosols nCells Time"    name_in_code="snowScatteringAerosolCell" packages="pkgColumnTracerAerosols"/>
+		<var name="snowBodyAerosolCell"               type="real"     dimensions="nAerosols nCells Time"    name_in_code="snowBodyAerosolCell"       packages="pkgColumnTracerAerosols"/>
+		<var name="iceScatteringAerosolCell"          type="real"     dimensions="nAerosols nCells Time"    name_in_code="iceScatteringAerosolCell"  packages="pkgColumnTracerAerosols"/>
+		<var name="iceBodyAerosolCell"                type="real"     dimensions="nAerosols nCells Time"    name_in_code="iceBodyAerosolCell"        packages="pkgColumnTracerAerosols"/>
+	</var_struct>
 	<var_struct name="icestate" time_levs="1">
-		<var name="iceAreaCell"                       type="real"     dimensions="nCells Time"              name_in_code="iceAreaCell"/>
 		<var name="iceAreaCellInitial"                type="real"     dimensions="nCells Time"              name_in_code="iceAreaCellInitial"/>
-		<var name="iceVolumeCell"                     type="real"     dimensions="nCells Time"              name_in_code="iceVolumeCell"/>
-		<var name="snowVolumeCell"                    type="real"     dimensions="nCells Time"              name_in_code="snowVolumeCell"/>
 		<var name="iceAreaCategoryInitial"            type="real"     dimensions="nCategories nCells Time"  name_in_code="iceAreaCategoryInitial"/>
 		<var name="iceVolumeCategoryInitial"          type="real"     dimensions="nCategories nCells Time"  name_in_code="iceVolumeCategoryInitial"/>
 		<var name="snowVolumeCategoryInitial"         type="real"     dimensions="nCategories nCells Time"  name_in_code="snowVolumeCategoryInitial"/>
 		<var name="openWaterArea"                     type="real"     dimensions="nCells Time"              name_in_code="openWaterArea"/>
-		<var name="surfaceTemperatureCell"            type="real"     dimensions="nCells Time"              name_in_code="surfaceTemperatureCell"/>
 		<var name="iceAreaVertex"                     type="real"     dimensions="nVertices Time"           name_in_code="iceAreaVertex"/>
 		<var name="totalMassCell"                     type="real"     dimensions="nCells Time"              name_in_code="totalMassCell"/>
 		<var name="totalMassVertex"                   type="real"     dimensions="nVertices Time"           name_in_code="totalMassVertex"/>
@@ -680,6 +701,9 @@
 	        <var name="snowfallRate"                      type="real"     dimensions="nCells"                   name_in_code="snowfallRate"/>
 	        <var name="uAirVelocity"                      type="real"     dimensions="nCells Time"              name_in_code="uAirVelocity"/>
 	        <var name="vAirVelocity"                      type="real"     dimensions="nCells Time"              name_in_code="vAirVelocity"/>
+	        <var name="atmosReferenceSpeed10m"            type="real"     dimensions="nCells"                   name_in_code="atmosReferenceSpeed10m"/>
+	        <var name="atmosReferenceTemperature2m"       type="real"     dimensions="nCells"                   name_in_code="atmosReferenceTemperature2m"/>
+	        <var name="atmosReferenceHumidity2m"          type="real"     dimensions="nCells"                   name_in_code="atmosReferenceHumidity2m"/>
 	</var_struct>
 
 	<!--atmos forcing -->
@@ -695,6 +719,18 @@
 		<var name="latentTransferCoefficient"         type="real"     dimensions="nCells"                   name_in_code="latentTransferCoefficient"/>
 		<var name="uPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="uPOPAlongGridVector"/>
 		<var name="vPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="vPOPAlongGridVector"/>
+		<var name="airReferenceTemperature2m"         type="real"     dimensions="nCells"                   name_in_code="airReferenceTemperature2m"/>
+		<var name="airReferenceHumidity2m"            type="real"     dimensions="nCells"                   name_in_code="airReferenceHumidity2m"/>
+		<var name="airReferenceSpeed10m"              type="real"     dimensions="nCells"                   name_in_code="airReferenceSpeed10m"/>
+	</var_struct>
+
+	<!--alternative atmos forcing -->
+	<var_struct name="alternative_atmos_forcing" time_levs="1">
+		<var name="latentHeatFluxCouple"              type="real"     dimensions="nCategories nCells"       name_in_code="latentHeatFluxCouple"/>
+		<var name="surfaceHeatFluxCouple"             type="real"     dimensions="nCategories nCells"       name_in_code="surfaceHeatFluxCouple"/>
+		<var name="surfaceConductiveFluxCouple"       type="real"     dimensions="nCategories nCells"       name_in_code="surfaceConductiveFluxCouple"/>
+		<var name="airStressForcingU"                 type="real"     dimensions="nCells"                   name_in_code="airStressForcingU"/>
+		<var name="airStressForcingV"                 type="real"     dimensions="nCells"                   name_in_code="airStressForcingV"/>
 	</var_struct>
 
 	<!--ocean coupling -->	
@@ -721,6 +757,8 @@
 
 	<!-- velocity solver -->
 	<var_struct name="velocity_solver" time_levs="1">
+		<var name="dynamicsTimeStep"                  type="real"     dimensions=""                              name_in_code="dynamicsTimeStep"/>
+		<var name="elasticTimeStep"                   type="real"     dimensions=""                              name_in_code="elasticTimeStep"/>
 		<var name="uVelocity"                         type="real"     dimensions="nVertices Time"                name_in_code="uVelocity"/>
 		<var name="vVelocity"                         type="real"     dimensions="nVertices Time"                name_in_code="vVelocity"/>
 		<var name="edgeVelocity"                      type="real"     dimensions="nEdges"                   name_in_code="edgeVelocity"/>
@@ -741,7 +779,7 @@
 		<var name="oceanStressCoeff"                  type="real"     dimensions="nVertices Time"                name_in_code="oceanStressCoeff"/>
 		<var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices"                name_in_code="surfaceTiltForceU"/>
 		<var name="surfaceTiltForceV"                 type="real"     dimensions="nVertices"                name_in_code="surfaceTiltForceV"/>
-		<var name="totalMassVertexfVertex"            type="real"     dimensions="nVertices"           name_in_code="totalMassVertexfVertex"/>
+		<var name="totalMassVertexfVertex"            type="real"     dimensions="nVertices"                name_in_code="totalMassVertexfVertex"/>
 		<var name="principalStress1"                  type="real"     dimensions="nCells"                   name_in_code="principalStress1"/>
 		<var name="principalStress2"                  type="real"     dimensions="nCells"                   name_in_code="principalStress2"/>
 		<var name="replacementPressure"               type="real"     dimensions="nCells"                   name_in_code="replacementPressure"/>
@@ -781,7 +819,7 @@
 	<!-- column physics -->
 
 	<!-- ridging -->
-	<var_struct name="ridgeing" time_levs="1" packages="pkgColumnRidging">
+	<var_struct name="ridging" time_levs="1" packages="pkgColumnRidging">
 		<var name="ridgeConvergence"                  type="real"     dimensions="nCells"              name_in_code="ridgeConvergence"/>
 		<var name="ridgeShear"                        type="real"     dimensions="nCells"              name_in_code="ridgeShear"/>
 		<var name="areaLossRidge"                     type="real"     dimensions="nCells"              name_in_code="areaLossRidge"/>
@@ -813,7 +851,8 @@
 		<var name="congelationCategory"               type="real"     dimensions="nCategories nCells"  name_in_code="congelationCategory"/>
 		<var name="snowiceFormation"                  type="real"     dimensions="nCells"              name_in_code="snowiceFormation"/>
 		<var name="snowiceFormationCategory"          type="real"     dimensions="nCategories nCells"  name_in_code="snowiceFormationCategory"/>
-		<var name="snowThicknessChange"               type="real"     dimensions="nCategories nCells"  name_in_code="snowThicknessChange"/>
+		<var name="snowThicknessChange"               type="real"     dimensions="nCells"              name_in_code="snowThicknessChange"/>
+                <var name="snowThicknessChangeCategory"       type="real"     dimensions="nCategories nCells"  name_in_code="snowThicknessChangeCategory"/>		
 		<var name="frazilFormation"                   type="real"     dimensions="nCells"              name_in_code="frazilFormation" packages="pkgColumnVerticalThermodynamics;pkgColumnITDThermodynamics"/>
 	</var_struct>
 
@@ -824,7 +863,7 @@
 		<var name="surfaceConductiveFlux"             type="real"     dimensions="nCells"              name_in_code="surfaceConductiveFlux"/>
 		<var name="surfaceConductiveFluxCategory"     type="real"     dimensions="nCategories nCells"  name_in_code="surfaceConductiveFluxCategory"/>
 		<var name="longwaveUp"                        type="real"     dimensions="nCells"              name_in_code="longwaveUp"/>
-		<var name="sensibleHeatFlux"                  type="real"     dimensions="nCategories nCells"  name_in_code="sensibleHeatFlux"/>
+		<var name="sensibleHeatFlux"                  type="real"     dimensions="nCells"              name_in_code="sensibleHeatFlux"/>
 		<var name="latentHeatFlux"                    type="real"     dimensions="nCells"              name_in_code="latentHeatFlux"/>
 		<var name="latentHeatFluxCategory"            type="real"     dimensions="nCategories nCells"  name_in_code="latentHeatFluxCategory"/>
 		<var name="evaporativeHeatFlux"               type="real"     dimensions="nCells"              name_in_code="evaporativeHeatFlux"/>
@@ -861,32 +900,36 @@
 		<var name="absorbedShortwaveFlux"             type="real"     dimensions="nCells"                           name_in_code="absorbedShortwaveFlux" packages="pkgColumnShortwave;pkgColumnVerticalThermodynamics"/>
 		<var name="absorbedShortwaveSnowLayer"        type="real"     dimensions="nSnowLayers nCategories nCells"   name_in_code="absorbedShortwaveSnowLayer" packages="pkgColumnShortwave;pkgColumnVerticalThermodynamics"/>
 		<var name="absorbedShortwaveIceLayer"         type="real"     dimensions="nIceLayers nCategories nCells"    name_in_code="absorbedShortwaveIceLayer" packages="pkgColumnShortwave;pkgColumnVerticalThermodynamics"/>
-		<var name="bareIceAlbedo"                     type="real"     dimensions="nCategories nCells"               name_in_code="bareIceAlbedo"/>
-		<var name="snowAlbedo"                        type="real"     dimensions="nCategories nCells"               name_in_code="snowAlbedo"/>
-		<var name="pondAlbedo"                        type="real"     dimensions="nCategories nCells"               name_in_code="pondAlbedo"/>
-		<var name="effectivePondAreaShortwave"        type="real"     dimensions="nCategories nCells"               name_in_code="effectivePondAreaShortwave"/>
+		<var name="bareIceAlbedoCategory"             type="real"     dimensions="nCategories nCells"               name_in_code="bareIceAlbedoCategory"/>
+		<var name="snowAlbedoCategory"                type="real"     dimensions="nCategories nCells"               name_in_code="snowAlbedoCategory"/>
+		<var name="pondAlbedoCategory"                type="real"     dimensions="nCategories nCells"               name_in_code="pondAlbedoCategory"/>
+		<var name="bareIceAlbedoCell"                 type="real"     dimensions="nCells"                           name_in_code="bareIceAlbedoCell"/>
+		<var name="snowAlbedoCell"                    type="real"     dimensions="nCells"                           name_in_code="snowAlbedoCell"/>
+		<var name="pondAlbedoCell"                    type="real"     dimensions="nCells"                           name_in_code="pondAlbedoCell"/>
+		<var name="effectivePondAreaCategory"         type="real"     dimensions="nCategories nCells"               name_in_code="effectivePondAreaCategory"/>
+		<var name="effectivePondAreaCell"             type="real"     dimensions="nCells"                           name_in_code="effectivePondAreaCell"/>
 	</var_struct>
 
 	<!-- form drag formulation -->
-	<var_struct name="drag" time_levs="1" packages="pkgColumnFormDrag">
-		<var name="airOceanDragCoefficientRatio"      type="real"     dimensions="nCells"              name_in_code="airOceanDragCoefficientRatio"/>
-		<var name="oceanDragCoefficient"              type="real"     dimensions="nCells"              name_in_code="oceanDragCoefficient"/>
-		<var name="oceanDragCoefficientSkin"          type="real"     dimensions="nCells"              name_in_code="oceanDragCoefficientSkin"/>
-		<var name="oceanDragCoefficientFloe"          type="real"     dimensions="nCells"              name_in_code="oceanDragCoefficientFloe"/>
-		<var name="oceanDragCoefficientKeel"          type="real"     dimensions="nCells"              name_in_code="oceanDragCoefficientKeel"/>
-		<var name="airDragCoefficient"                type="real"     dimensions="nCells"              name_in_code="airDragCoefficient"/>
-		<var name="airDragCoefficientSkin"            type="real"     dimensions="nCells"              name_in_code="airDragCoefficientSkin"/>
-		<var name="airDragCoefficientFloe"            type="real"     dimensions="nCells"              name_in_code="airDragCoefficientFloe"/>
-		<var name="airDragCoefficientPond"            type="real"     dimensions="nCells"              name_in_code="airDragCoefficientPond"/>
-		<var name="airDragCoefficientRidge"           type="real"     dimensions="nCells"              name_in_code="airDragCoefficientRidge"/>
-		<var name="dragFreeboard"                     type="real"     dimensions="nCells"              name_in_code="dragFreeboard"/>
-		<var name="dragIceSnowDraft"                  type="real"     dimensions="nCells"              name_in_code="dragIceSnowDraft"/>
-		<var name="dragRidgeHeight"                   type="real"     dimensions="nCells"              name_in_code="dragRidgeHeight"/>
-		<var name="dragRidgeSeparation"               type="real"     dimensions="nCells"              name_in_code="dragRidgeSeparation"/>
-		<var name="dragKeelDepth"                     type="real"     dimensions="nCells"              name_in_code="dragKeelDepth"/>
-		<var name="dragKeelSeparation"                type="real"     dimensions="nCells"              name_in_code="dragKeelSeparation"/>
-		<var name="dragFloeLength"                    type="real"     dimensions="nCells"              name_in_code="dragFloeLength"/>
-		<var name="dragFloeSeparation"                type="real"     dimensions="nCells"              name_in_code="dragFloeSeparation"/>
+	<var_struct name="drag" time_levs="1">
+		<var name="airOceanDragCoefficientRatio"      type="real"     dimensions="nCells"              name_in_code="airOceanDragCoefficientRatio" packages="pkgColumnFormDrag"/>
+		<var name="oceanDragCoefficient"              type="real"     dimensions="nCells"              name_in_code="oceanDragCoefficient" packages="pkgColumnFormDrag"/>
+		<var name="oceanDragCoefficientSkin"          type="real"     dimensions="nCells"              name_in_code="oceanDragCoefficientSkin" packages="pkgColumnFormDrag"/>
+		<var name="oceanDragCoefficientFloe"          type="real"     dimensions="nCells"              name_in_code="oceanDragCoefficientFloe" packages="pkgColumnFormDrag"/>
+		<var name="oceanDragCoefficientKeel"          type="real"     dimensions="nCells"              name_in_code="oceanDragCoefficientKeel" packages="pkgColumnFormDrag"/>
+		<var name="airDragCoefficient"                type="real"     dimensions="nCells"              name_in_code="airDragCoefficient" packages="pkgColumnFormDrag"/>
+		<var name="airDragCoefficientSkin"            type="real"     dimensions="nCells"              name_in_code="airDragCoefficientSkin" packages="pkgColumnFormDrag"/>
+		<var name="airDragCoefficientFloe"            type="real"     dimensions="nCells"              name_in_code="airDragCoefficientFloe" packages="pkgColumnFormDrag"/>
+		<var name="airDragCoefficientPond"            type="real"     dimensions="nCells"              name_in_code="airDragCoefficientPond" packages="pkgColumnFormDrag"/>
+		<var name="airDragCoefficientRidge"           type="real"     dimensions="nCells"              name_in_code="airDragCoefficientRidge" packages="pkgColumnFormDrag"/>
+		<var name="dragFreeboard"                     type="real"     dimensions="nCells"              name_in_code="dragFreeboard" packages="pkgColumnFormDrag"/>
+		<var name="dragIceSnowDraft"                  type="real"     dimensions="nCells"              name_in_code="dragIceSnowDraft" packages="pkgColumnFormDrag"/>
+		<var name="dragRidgeHeight"                   type="real"     dimensions="nCells"              name_in_code="dragRidgeHeight" packages="pkgColumnFormDrag"/>
+		<var name="dragRidgeSeparation"               type="real"     dimensions="nCells"              name_in_code="dragRidgeSeparation" packages="pkgColumnFormDrag"/>
+		<var name="dragKeelDepth"                     type="real"     dimensions="nCells"              name_in_code="dragKeelDepth" packages="pkgColumnFormDrag"/>
+		<var name="dragKeelSeparation"                type="real"     dimensions="nCells"              name_in_code="dragKeelSeparation" packages="pkgColumnFormDrag"/>
+		<var name="dragFloeLength"                    type="real"     dimensions="nCells"              name_in_code="dragFloeLength" packages="pkgColumnFormDrag"/>
+		<var name="dragFloeSeparation"                type="real"     dimensions="nCells"              name_in_code="dragFloeSeparation" packages="pkgColumnFormDrag"/>
 	</var_struct>
 
 	<!-- meltponds -->
@@ -931,6 +974,15 @@
 
 	<!-- Diagnostics -->
 	<var_struct name="diagnostics" time_levs="1">
+	        <var name="meltOnset"                         type="real"     dimensions="nCells"              name_in_code="meltOnset"/>
+	        <var name="freezeOnset"                       type="real"     dimensions="nCells"              name_in_code="freezeOnset"/>
+	        <var name="iceAreaTendencyTransport"          type="real"     dimensions="nCells"              name_in_code="iceAreaTendencyTransport"/>
+	        <var name="iceVolumeTendencyTransport"        type="real"     dimensions="nCells"              name_in_code="iceVolumeTendencyTransport"/>
+	        <var name="iceAgeTendencyTransport"           type="real"     dimensions="nCells"              name_in_code="iceAgeTendencyTransport"/>
+	</var_struct>
+
+	<!-- Global diagnostics -->
+	<var_struct name="global_diagnostics" time_levs="1">
 	        <var name="xtime"                             type="text"     dimensions="Time"/>
 		<var name="iceAreaCategoryMin"                type="real"     dimensions="nCategories Time"  name_in_code="iceAreaCategoryMin"/>
 		<var name="iceAreaCategoryMax"                type="real"     dimensions="nCategories Time"  name_in_code="iceAreaCategoryMax"/>

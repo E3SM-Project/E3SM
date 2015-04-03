@@ -74,8 +74,8 @@ ice_mechred.o: ice_kinds_mod.o ice_constants_colpkg.o ice_itd.o ice_tracers.o
 
 .F90.o:
 	$(RM) $@ $*.mod
-	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.i90
-	$(FC) $(FFLAGS) -c $*.i90 $(FCINCLUDES)
+	$(FC) $(FFLAGS) -c $*.F90 $(FCINCLUDES)
+	#$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.i90
 
 clean:
 	$(RM) *.o *.mod *.i90
