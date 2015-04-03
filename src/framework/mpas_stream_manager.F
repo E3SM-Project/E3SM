@@ -4007,7 +4007,6 @@ module mpas_stream_manager
             call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'vertexDegree', vertexDegree)
 
             if (associated(cellsOnCell)) then
-                nullify(cellsOnCell_ptr % ioinfo)
                 cellsOnCell_ptr % array => cellsOnCell % array
                 allocate(cellsOnCell % array(maxEdges, nCells+1))
 
@@ -4028,7 +4027,6 @@ module mpas_stream_manager
             end if
 
             if (associated(edgesOnCell)) then
-                nullify(edgesOnCell_ptr % ioinfo)
                 edgesOnCell_ptr % array => edgesOnCell % array
                 allocate(edgesOnCell % array(maxEdges, nCells+1))
 
@@ -4049,7 +4047,6 @@ module mpas_stream_manager
             end if
 
             if (associated(verticesOnCell)) then
-                nullify(verticesOnCell_ptr % ioinfo)
                 verticesOnCell_ptr % array => verticesOnCell % array
                 allocate(verticesOnCell % array(maxEdges, nCells+1))
 
@@ -4070,7 +4067,6 @@ module mpas_stream_manager
             end if
 
             if (associated(cellsOnEdge)) then
-                nullify(cellsOnEdge_ptr % ioinfo)
                 cellsOnEdge_ptr % array => cellsOnEdge % array
                 allocate(cellsOnEdge % array(2, nEdges+1))
 
@@ -4088,7 +4084,6 @@ module mpas_stream_manager
             end if
 
             if (associated(verticesOnEdge)) then
-                nullify(verticesOnEdge_ptr % ioinfo)
                 verticesOnEdge_ptr % array => verticesOnEdge % array
                 allocate(verticesOnEdge % array(2, nEdges+1))
 
@@ -4106,7 +4101,6 @@ module mpas_stream_manager
             end if
 
             if (associated(edgesOnEdge)) then
-                nullify(edgesOnEdge_ptr % ioinfo)
                 edgesOnEdge_ptr % array => edgesOnEdge % array
                 allocate(edgesOnEdge % array(maxEdges2, nEdges+1))
 
@@ -4127,7 +4121,6 @@ module mpas_stream_manager
             end if
 
             if (associated(cellsOnVertex)) then
-                nullify(cellsOnVertex_ptr % ioinfo)
                 cellsOnVertex_ptr % array => cellsOnVertex % array
                 allocate(cellsOnVertex % array(vertexDegree, nVertices+1))
 
@@ -4146,7 +4139,6 @@ module mpas_stream_manager
             end if
 
             if (associated(edgesOnVertex)) then
-                nullify(edgesOnVertex_ptr % ioinfo)
                 edgesOnVertex_ptr % array => edgesOnVertex % array
                 allocate(edgesOnVertex % array(vertexDegree, nVertices+1))
 

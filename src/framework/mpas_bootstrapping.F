@@ -519,10 +519,6 @@ module mpas_bootstrapping
 
      ! Global cell indices
      allocate(indexToCellID)
-     allocate(indexToCellID % ioinfo)
-     indexToCellID % ioinfo % fieldName = 'indexToCellID'
-     indexToCellID % ioinfo % start(1) = readCellStart
-     indexToCellID % ioinfo % count(1) = nReadCells
      allocate(indexToCellID % array(nReadCells))
      allocate(readIndices(nReadCells))
      do i=1,nReadCells
@@ -541,10 +537,6 @@ module mpas_bootstrapping
 
      ! Number of cell/edges/vertices adjacent to each cell
      allocate(nEdgesOnCell)
-     allocate(nEdgesOnCell % ioinfo)
-     nEdgesOnCell % ioinfo % fieldName = 'nEdgesOnCell'
-     nEdgesOnCell % ioinfo % start(1) = readCellStart
-     nEdgesOnCell % ioinfo % count(1) = nReadCells
      allocate(nEdgesOnCell % array(nReadCells))
      call MPAS_io_inq_var(inputHandle, 'nEdgesOnCell', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'nEdgesOnCell', readIndices, ierr=ierr)
@@ -558,12 +550,6 @@ module mpas_bootstrapping
 
      ! Global indices of cells adjacent to each cell
      allocate(cellsOnCell)
-     allocate(cellsOnCell % ioinfo)
-     cellsOnCell % ioinfo % fieldName = 'cellsOnCell'
-     cellsOnCell % ioinfo % start(1) = 1
-     cellsOnCell % ioinfo % start(2) = readCellStart
-     cellsOnCell % ioinfo % count(1) = maxEdges
-     cellsOnCell % ioinfo % count(2) = nReadCells
      allocate(cellsOnCell % array(maxEdges,nReadCells))
      call MPAS_io_inq_var(inputHandle, 'cellsOnCell', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'cellsOnCell', readIndices, ierr=ierr)
@@ -578,12 +564,6 @@ module mpas_bootstrapping
 
      ! Global indices of edges adjacent to each cell
      allocate(edgesOnCell)
-     allocate(edgesOnCell % ioinfo)
-     edgesOnCell % ioinfo % fieldName = 'edgesOnCell'
-     edgesOnCell % ioinfo % start(1) = 1
-     edgesOnCell % ioinfo % start(2) = readCellStart
-     edgesOnCell % ioinfo % count(1) = maxEdges
-     edgesOnCell % ioinfo % count(2) = nReadCells
      allocate(edgesOnCell % array(maxEdges,nReadCells))
      call MPAS_io_inq_var(inputHandle, 'edgesOnCell', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'edgesOnCell', readIndices, ierr=ierr)
@@ -598,12 +578,6 @@ module mpas_bootstrapping
 
      ! Global indices of vertices adjacent to each cell
      allocate(verticesOnCell)
-     allocate(verticesOnCell % ioinfo)
-     verticesOnCell % ioinfo % fieldName = 'verticesOnCell'
-     verticesOnCell % ioinfo % start(1) = 1
-     verticesOnCell % ioinfo % start(2) = readCellStart
-     verticesOnCell % ioinfo % count(1) = maxEdges
-     verticesOnCell % ioinfo % count(2) = nReadCells
      allocate(verticesOnCell % array(maxEdges,nReadCells))
      call MPAS_io_inq_var(inputHandle, 'verticesOnCell', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'verticesOnCell', readIndices, ierr=ierr)
@@ -649,10 +623,6 @@ module mpas_bootstrapping
 
      ! Global edge indices
      allocate(indexToEdgeID)
-     allocate(indexToEdgeID % ioinfo)
-     indexToEdgeID % ioinfo % fieldName = 'indexToEdgeID'
-     indexToEdgeID % ioinfo % start(1) = readEdgeStart
-     indexToEdgeID % ioinfo % count(1) = nReadEdges
      allocate(indexToEdgeID % array(nReadEdges))
      allocate(indexToEdgeID % array(nReadEdges))
      do i=1,nReadEdges
@@ -673,12 +643,6 @@ module mpas_bootstrapping
      !    used for determining which edges are owned by a block, where
      !    iEdge is owned iff cellsOnEdge(1,iEdge) is an owned cell
      allocate(cellsOnEdge)
-     allocate(cellsOnEdge % ioinfo)
-     cellsOnEdge % ioinfo % fieldName = 'cellsOnEdge'
-     cellsOnEdge % ioinfo % start(1) = 1
-     cellsOnEdge % ioinfo % start(2) = readEdgeStart
-     cellsOnEdge % ioinfo % count(1) = 2
-     cellsOnEdge % ioinfo % count(2) = nReadEdges
      allocate(cellsOnEdge % array(2,nReadEdges))
      call MPAS_io_inq_var(inputHandle, 'cellsOnEdge', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'cellsOnEdge', readIndices, ierr=ierr)
@@ -718,10 +682,6 @@ module mpas_bootstrapping
 
      ! Global vertex indices
      allocate(indexToVertexID)
-     allocate(indexToVertexID % ioinfo)
-     indexToVertexID % ioinfo % fieldName = 'indexToVertexID'
-     indexToVertexID % ioinfo % start(1) = readVertexStart
-     indexToVertexID % ioinfo % count(1) = nReadVertices
      allocate(indexToVertexID % array(nReadVertices))
      allocate(readIndices(nReadVertices))
      do i=1,nReadVertices
@@ -742,12 +702,6 @@ module mpas_bootstrapping
      !    used for determining which vertices are owned by a block, where
      !    iVtx is owned iff cellsOnVertex(1,iVtx) is an owned cell
      allocate(cellsOnVertex)
-     allocate(cellsOnVertex % ioinfo)
-     cellsOnVertex % ioinfo % fieldName = 'cellsOnVertex'
-     cellsOnVertex % ioinfo % start(1) = 1
-     cellsOnVertex % ioinfo % start(2) = readVertexStart
-     cellsOnVertex % ioinfo % count(1) = vertexDegree
-     cellsOnVertex % ioinfo % count(2) = nReadVertices
      allocate(cellsOnVertex % array(vertexDegree,nReadVertices))
      call MPAS_io_inq_var(inputHandle, 'cellsOnVertex', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'cellsOnVertex', readIndices, ierr=ierr)

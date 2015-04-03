@@ -6,19 +6,6 @@
                          MPAS_DECOMP_EDGES     = 1015, &
                          MPAS_DECOMP_VERTICES  = 1016
 
-   ! Derived type describing info for doing I/O specific to a field
-   type io_info
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND) :: units
-      character (len=StrKIND) :: description
-      integer, dimension(4) :: start
-      integer, dimension(4) :: count
-      logical :: input
-      logical :: sfc
-      logical :: restart
-      logical :: output
-   end type io_info
-
    ! Derived type for storing fields
    type field5DReal
   
@@ -29,7 +16,6 @@
       real (kind=RKIND), dimension(:,:,:,:,:), pointer :: array
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(5) :: dimNames
@@ -62,7 +48,6 @@
       real (kind=RKIND), dimension(:,:,:,:), pointer :: array
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(4) :: dimNames
@@ -96,7 +81,6 @@
       real (kind=RKIND), dimension(:,:,:), pointer :: array
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
@@ -129,7 +113,6 @@
       real (kind=RKIND), dimension(:,:), pointer :: array
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
@@ -162,7 +145,6 @@
       real (kind=RKIND), dimension(:), pointer :: array
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
@@ -195,7 +177,6 @@
       real (kind=RKIND) :: scalar
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       real (kind=RKIND) :: defaultValue
@@ -225,7 +206,6 @@
       integer, dimension(:,:,:), pointer :: array
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
@@ -258,7 +238,6 @@
       integer, dimension(:,:), pointer :: array
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
@@ -291,7 +270,6 @@
       integer, dimension(:), pointer :: array
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
@@ -324,7 +302,6 @@
       integer :: scalar
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       integer :: defaultValue
@@ -354,7 +331,6 @@
       character (len=StrKIND), dimension(:), pointer :: array
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
@@ -387,7 +363,6 @@
       character (len=StrKIND) :: scalar
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND) :: defaultValue
@@ -417,7 +392,6 @@
       logical :: scalar
 
       ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       logical :: defaultValue

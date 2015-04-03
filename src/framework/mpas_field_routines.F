@@ -932,10 +932,6 @@ module mpas_field_routines
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          deallocate(f_cursor)
          f_cursor => f
        end do
@@ -967,10 +963,6 @@ module mpas_field_routines
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          deallocate(f_cursor)
          f_cursor => f
        end do
@@ -999,10 +991,6 @@ module mpas_field_routines
            f => f % next
          else
            nullify(f)
-         end if
-
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
          end if
 
          if(associated(f_cursor % array)) then
@@ -1040,10 +1028,6 @@ module mpas_field_routines
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -1077,10 +1061,6 @@ module mpas_field_routines
            f => f % next
          else
            nullify(f)
-         end if
-
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
          end if
 
          if(associated(f_cursor % array)) then
@@ -1119,10 +1099,6 @@ module mpas_field_routines
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          deallocate(f_cursor)
 
          f_cursor => f
@@ -1152,10 +1128,6 @@ module mpas_field_routines
            f => f % next
          else
            nullify(f)
-         end if
-
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
          end if
 
          if(associated(f_cursor % array)) then
@@ -1193,10 +1165,6 @@ module mpas_field_routines
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -1230,10 +1198,6 @@ module mpas_field_routines
            f => f % next
          else
            nullify(f)
-         end if
-
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
          end if
 
          if(associated(f_cursor % array)) then
@@ -1271,10 +1235,6 @@ module mpas_field_routines
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -1308,10 +1268,6 @@ module mpas_field_routines
            f => f % next
          else
            nullify(f)
-         end if
-
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
          end if
 
          if(associated(f_cursor % array)) then
@@ -1350,10 +1306,6 @@ module mpas_field_routines
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          deallocate(f_cursor)
          f_cursor => f
        end do
@@ -1382,10 +1334,6 @@ module mpas_field_routines
            f => f % next
          else
            nullify(f)
-         end if
-
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
          end if
 
          if(associated(f_cursor % array)) then
