@@ -2,4 +2,5 @@
 #include "Registry_lock_exchange.xml"
 #include "Registry_internal_waves.xml"
 #include "Registry_overflow.xml"
+#include "Registry_cvmix_convection_unit_test.xml"
 // #include "Registry_TEMPLATE.xml"
