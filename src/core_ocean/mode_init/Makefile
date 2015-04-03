@@ -10,6 +10,7 @@ TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_lock_exchange.o \
              mpas_ocn_init_internal_waves.o \
              mpas_ocn_init_overflow.o \
+             mpas_ocn_init_cvmix_convection_unit_test.o \
              #mpas_ocn_init_TEMPLATE.o
 
 all: init_mode
@@ -31,6 +32,8 @@ mpas_ocn_init_lock_exchange.o: $(UTILS)
 mpas_ocn_init_internal_waves.o: $(UTILS)
 
 mpas_ocn_init_overflow.o: $(UTILS)
+
+mpas_ocn_init_cvmix_convection_unit_test.o: $(UTILS)
 
 #mpas_ocn_init_TEMPLATE.o: $(UTILS)
 

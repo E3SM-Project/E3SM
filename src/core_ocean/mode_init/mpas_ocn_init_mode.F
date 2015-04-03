@@ -42,6 +42,7 @@ module ocn_init_mode
    use ocn_init_lock_exchange
    use ocn_init_internal_waves
    use ocn_init_overflow
+   use ocn_init_cvmix_convection_unit_test
 
    implicit none
    private
@@ -245,6 +246,7 @@ module ocn_init_mode
       call ocn_init_setup_lock_exchange(domain, ierr)
       call ocn_init_setup_internal_waves(domain, ierr)
       call ocn_init_setup_overflow(domain, ierr)
+      call ocn_init_setup_cvmix_convection_unit_test(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       call mpas_timer_start('io_write', .false.)
@@ -323,6 +325,8 @@ module ocn_init_mode
       call ocn_init_validate_internal_waves(configPool, packagePool, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_overflow(configPool, packagePool, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_cvmix_convection_unit_test(configPool, packagePool, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       ! call ocn_config_TEMPLATE_validate(configPool, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)
