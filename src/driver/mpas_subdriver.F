@@ -35,10 +35,12 @@ module mpas_subdriver
       use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : MPAS_Time_type, mpas_get_clock_time, mpas_get_time
-      use mpas_bootstrapping, only : mpas_bootstrap_framework, mpas_setup_immutable_streams
+      use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2, mpas_setup_immutable_streams
  
       implicit none
 
+      integer :: iArg, nArgs
+      character(len=StrKIND) :: argument, namelistFile, streamsFile
       character(len=StrKIND) :: timeStamp
       integer :: ierr
 
@@ -59,6 +61,7 @@ module mpas_subdriver
       type (MPAS_Time_type) :: ref_time
       type (MPAS_TimeInterval_type) :: filename_interval
       character(len=StrKIND) :: start_timestamp
+      logical :: streamsExists
 
 
       interface
@@ -82,15 +85,60 @@ module mpas_subdriver
          end subroutine xml_stream_get_attributes
       end interface
 
+      namelistFile = domain % namelist_filename
+      streamsFile = domain % streams_filename
+
+      nArgs = command_argument_count()
+      iArg = 1
+      do while (iArg < nArgs)
+         call get_command_argument(iArg, argument)
+         if (len_trim(argument) == 0) exit
+
+         if ( trim(argument) == '-n' ) then
+            iArg = iArg + 1
+            call get_command_argument(iArg, namelistFile)
+            if ( len_trim(namelistFile) == 0 ) then
+                write(0,*) 'ERROR: The -n argument requires a namelist file argument.'
+                stop
+            else if ( trim(namelistFile) == '-s' ) then
+                write(0,*) 'ERROR: The -n argument requires a namelist file argument.'
+                stop
+            end if
+         else if ( trim(argument) == '-s' ) then
+            iArg = iArg + 1
+            call get_command_argument(iArg, streamsFile)
+            if ( len_trim(streamsFile) == 0 ) then
+                write(0,*) 'ERROR: The -s argument requires a streams file argument.'
+                stop
+            else if ( trim(streamsFile) == '-n' ) then
+                write(0,*) 'ERROR: The -s argument requires a streams file argument.'
+                stop
+            end if
+         end if
+
+         iArg = iArg + 1
+      end do
 
       domain_ptr => domain
+
+      domain % namelist_filename = namelistFile
+      domain % streams_filename = streamsFile
 
       !
       ! Initialize infrastructure
       !
       call mpas_framework_init(dminfo, domain_ptr)
+
       call mpas_core_setup_packages(domain_ptr % configs, domain_ptr % packages, ierr)
+      call mpas_core_setup_decompositions(ierr)
       call mpas_core_setup_clock(domain_ptr % clock, domain_ptr % configs, ierr)
+
+      write(stderrUnit,*) 'Reading streams configuration from file '//trim(domain % streams_filename)
+      inquire(file=trim(domain % streams_filename), exist=streamsExists)
+
+      if ( .not. streamsExists ) then
+         call mpas_dmpar_global_abort('ERROR: Streams file '//trim(domain % streams_filename)//' does not exist.')
+      end if
 
       call mpas_timer_start('total time')
       call mpas_timer_start('initialize')
@@ -129,7 +177,7 @@ module mpas_subdriver
           call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
       end if
       write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
-      call mpas_bootstrap_framework(domain_ptr, mesh_filename)
+      call mpas_bootstrap_framework_phase1(domain_ptr, mesh_filename)
 
       !
       ! Set up run-time streams
@@ -146,6 +194,10 @@ module mpas_subdriver
          call mpas_dmpar_abort(dminfo)
       end if
 
+      !
+      ! Finalize the setup of blocks and fields
+      !
+      call mpas_bootstrap_framework_phase2(stream_manager, domain_ptr)
 
       !
       ! Initialize core

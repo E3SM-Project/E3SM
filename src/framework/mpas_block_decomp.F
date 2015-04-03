@@ -118,6 +118,10 @@ module mpas_block_decomp
               write(filename,'(a,i4)') trim(blockFilePrefix), total_blocks
            else if (total_blocks < 100000) then
               write(filename,'(a,i5)') trim(blockFilePrefix), total_blocks
+           else if (total_blocks < 1000000) then
+              write(filename,'(a,i6)') trim(blockFilePrefix), total_blocks
+           else if (total_blocks < 10000000) then
+              write(filename,'(a,i7)') trim(blockFilePrefix), total_blocks
            end if
          
            open(unit=iunit, file=trim(filename), form='formatted', status='old', iostat=istatus)
@@ -591,8 +595,8 @@ module mpas_block_decomp
          blocks_per_proc_min = total_blocks / dminfo % nProcs
          remaining_blocks = total_blocks - (blocks_per_proc_min * dminfo % nProcs)
          even_blocks = total_blocks - remaining_blocks
-  
-         if(global_block_number > even_blocks) then
+
+         if((global_block_number+1) > even_blocks) then
              owning_proc = global_block_number - even_blocks
          else
              owning_proc = global_block_number / blocks_per_proc_min
@@ -650,6 +654,10 @@ module mpas_block_decomp
             write(filename,'(a,i4)') trim(procFilePrefix), dminfo % nProcs
          else if (dminfo % nProcs < 100000) then
             write(filename,'(a,i5)') trim(procFilePrefix), dminfo % nProcs
+         else if (dminfo % nProcs < 1000000) then
+            write(filename,'(a,i6)') trim(procFilePrefix), dminfo % nProcs
+         else if (dminfo % nProcs < 10000000) then
+            write(filename,'(a,i7)') trim(procFilePrefix), dminfo % nProcs
          end if        
 
          open(unit=iounit, file=trim(filename), form='formatted', status='old', iostat=istatus)

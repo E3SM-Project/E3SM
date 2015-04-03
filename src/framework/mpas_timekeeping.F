@@ -125,28 +125,24 @@ module mpas_timekeeping
 
       character (len=*), intent(in) :: calendar 
 
-#ifndef MPAS_CESM
       if (trim(calendar) == 'gregorian') then
          TheCalendar = MPAS_GREGORIAN
+#ifndef MPAS_NO_ESMF_INIT
          call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_GREGORIAN)
+#endif
       else if (trim(calendar) == 'gregorian_noleap') then
          TheCalendar = MPAS_GREGORIAN_NOLEAP
+#ifndef MPAS_NO_ESMF_INIT
          call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_NOLEAP)
+#endif
 !     else if (trim(calendar) == '360day') then
 !        TheCalendar = MPAS_360DAY
+!#ifndef MPAS_NO_ESMF_INIT
 !        call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_360DAY)
+!#endif
       else
          write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
       end if
-#else
-      if (trim(calendar) == 'gregorian') then
-         TheCalendar = MPAS_GREGORIAN
-      else if (trim(calendar) == 'gregorian_noleap') then
-         TheCalendar = MPAS_GREGORIAN_NOLEAP
-      else
-         write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
-      end if
-#endif
 
       yearWidth = 4
 
@@ -157,7 +153,7 @@ module mpas_timekeeping
 
       implicit none
 
-#ifndef MPAS_CESM      
+#ifndef MPAS_NO_ESMF_INIT
       call ESMF_Finalize()
 #endif
 
@@ -1361,7 +1357,8 @@ module mpas_timekeeping
       end if
 
       if (present(dt)) then
-         dt = (days * 24 * 60 * 60) + seconds + (sn / sd)
+         dt = (real(days, RKIND) * 24.0_RKIND * 60.0_RKIND * 60.0_RKIND) + &
+              real(seconds, RKIND) + (real(sn, RKIND) / real(sd, RKIND))
       end if
 
       if (present(DD)) then
@@ -1370,14 +1367,14 @@ module mpas_timekeeping
       end if
 
       if (present(H)) then
-         H = (seconds - mod(seconds,3600)) / 3600
+         H = (seconds - mod(seconds,3600_I8KIND)) / 3600
          seconds = seconds - H*3600
          H = H + days * 24
          days = 0
       end if
 
       if (present(M)) then
-         M = (seconds - mod(seconds,60)) / 60
+         M = (seconds - mod(seconds,60_I8KIND)) / 60
          seconds = seconds - M*60
          M = M + days * 1440
          days = 0

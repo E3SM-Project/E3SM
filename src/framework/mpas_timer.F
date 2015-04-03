@@ -35,7 +35,7 @@
           character (len=StrKIND) :: timer_name
           logical :: running, printable
           integer :: levels, calls, nlen
-          real (kind=RKIND) :: start_time, end_time, total_time
+          real (kind=R8KIND) :: start_time, end_time, total_time
           real (kind=RKIND) :: max_time, min_time, avg_time
           real (kind=RKIND) :: efficiency
           type (timer_node), pointer :: next
@@ -177,7 +177,7 @@
 #else
             call system_clock (count=clock)
             call system_clock (count_rate=hz)
-            current%start_time = real(clock,kind=RKIND)/real(hz,kind=RKIND)
+            current%start_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
 #endif
           endif
 
@@ -223,7 +223,7 @@
 
           type (timer_node), pointer :: current
           
-          real (kind=RKIND) :: time_temp
+          real (kind=R8KIND) :: time_temp
           logical :: timer_found, string_equal, check_flag
           integer :: clock, hz, usecs, nlen
           trimed_name = trim(timer_name)
@@ -272,21 +272,20 @@
 #else
             call system_clock(count=clock)
             call system_clock(count_rate=hz)
-            current%end_time = real(clock,kind=RKIND)/real(hz,kind=RKIND)
+            current%end_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
 #endif
             
             time_temp = current%end_time - current%start_time
             current%total_time = current%total_time + time_temp
 
-            if(time_temp > current%max_time) then
-              current%max_time = time_temp
+            if(real(time_temp,RKIND) > current%max_time) then
+              current%max_time = real(time_temp,RKIND)
             endif
 
-            if(time_temp < current%min_time) then
-              current%min_time = time_temp
+            if(real(time_temp,RKIND) < current%min_time) then
+              current%min_time = real(time_temp,RKIND)
             endif
 
-            current%avg_time = current%avg_time + time_temp
             current%calls = current%calls + 1
           endif
 
@@ -332,14 +331,14 @@
               tname = tname//' '
             end do
 
-            if(timer_ptr%total_time == 0.0d0) then
-              timer_ptr%min_time = 0.0d0
-              timer_ptr%max_time = 0.0d0
-              timer_ptr%avg_time = 0.0d0
-              percent = 0.0d0
+            if(timer_ptr%total_time == 0.0_R8KIND) then
+              timer_ptr%min_time = 0.0_RKIND
+              timer_ptr%max_time = 0.0_RKIND
+              timer_ptr%avg_time = 0.0_RKIND
+              percent = 0.0_RKIND
             else
-              timer_ptr%avg_time = timer_ptr%total_time/timer_ptr%calls
-              percent = timer_ptr%total_time/total_ptr%total_time
+              timer_ptr%avg_time = timer_ptr%total_time / real(timer_ptr%calls, kind=R8KIND)
+              percent = timer_ptr%total_time / total_ptr%total_time
             endif
 
             write(stdoutUnit,'(i2, 1x, a35, f15.5, i10, 3f15.5, 2f8.2)') timer_ptr%levels, tname(1:timer_ptr%levels)// &
@@ -417,6 +416,12 @@
 !> \details 
 !> This routine synchronizes timers across all processors in order to better represent
 !> the entire run domain with the timer output.
+!>
+!> Note: To avoid the need for additional implementations of
+!> mpas_dmpar_max_real() and mpas_dmpar_sum_real(), the total_time is
+!> cast from R8KIND to RKIND in the process of computing all_total_time
+!> and all_ave_time. This is not expected to have a practical impact on
+!> the reported times.
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_sync()!{{{
@@ -433,15 +438,15 @@
             all_max_time = 0.0
             all_min_time = 0.0
 
-            call mpas_dmpar_max_real(domain_info, current % total_time, all_total_time)
-            call mpas_dmpar_sum_real(domain_info, current % total_time, all_ave_time)
+            call mpas_dmpar_max_real(domain_info, real(current % total_time, kind=RKIND), all_total_time)
+            call mpas_dmpar_sum_real(domain_info, real(current % total_time, kind=RKIND), all_ave_time)
             
             all_ave_time = all_ave_time / domain_info % nprocs
 
             current % total_time = all_total_time
 
 #ifdef _MPI
-            if ( all_total_time > 0.0d0 ) then
+            if ( all_total_time > 0.0_RKIND ) then
                current % efficiency = all_ave_time / all_total_time
             else
                current % efficiency = 1.0
@@ -451,7 +456,7 @@
 #endif
 
             if ( current % calls > 0 ) then
-               current % avg_time = current % total_time / current % calls
+               current % avg_time = current % total_time / real(current % calls, kind=R8KIND)
             else
                current % avg_time = current % total_time
             end if

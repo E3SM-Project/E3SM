@@ -8,10 +8,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ezxml.h"
 #include "fortprintf.h"
 #include "registry_types.h"
 #include "gen_inc.h"
-#include "ezxml/ezxml.h"
 #include "utility.h"
 
 
@@ -65,10 +65,6 @@ int main(int argc, char ** argv)/*{{{*/
 		return 1;
 	}
 
-	write_default_namelist(registry);
-
-	write_default_streams(registry);
-
 	return 0;
 }/*}}}*/
 
@@ -81,7 +77,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	ezxml_t streams_xml, stream_xml, substream_xml;
 	ezxml_t streams_xml2, stream_xml2;
 
-	const char *dimname, *dimunits, *dimdesc, *dimdef;
+	const char *dimname, *dimunits, *dimdesc, *dimdef, *dimdecomp;
 	const char *nmlrecname, *nmlrecindef;
 	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
 	const char *structname, *structpackages, *structstreams;
@@ -89,10 +85,10 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
 	const char *varname_in_code, *varname_in_stream;
 	const char *const_model, *const_core, *const_version;
-	const char *streamname, *streamtype, *streamfilename, *streaminterval_in, *streaminterval_out, *streampackages;
+	const char *streamname, *streamtype, *streamfilename, *streamrecords, *streaminterval_in, *streaminterval_out, *streampackages;
 	const char *streamimmutable, *streamformat;
-	const char *streamname2, *streamfilename2;
 	const char *substreamname, *streamimmutable2;
+	const char *streamname2, *streamtype2, *streamfilename2;
 	const char *time_levs;
 
 	char *string, *err_string;
@@ -160,6 +156,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			dimdef = ezxml_attr(dim_xml, "definition");	
 			dimunits = ezxml_attr(dim_xml, "units");
 			dimdesc = ezxml_attr(dim_xml, "description");
+			dimdecomp = ezxml_attr(dim_xml, "decomposition");
 
 			if (dimname == NULL){
 				fprintf(stderr,"ERROR: Name missing for dimension.\n");
@@ -167,29 +164,19 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			}
 
 			if (dimdef != NULL){
+				if ( dimdecomp != NULL ) {
+					fprintf(stderr, "ERROR: Dimension %s cannot have a decomposition and a definition attribute.\n", dimname);
+					return 1;
+				}
 				if (strncmp(dimdef, "namelist:", 9) == 0){
 					found = 0;
 					snprintf(name_holder, 1024, "%s",dimdef);
 					snprintf(name_holder, 1024, "%s",(name_holder)+9);
 					for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
-						nmlrecindef = ezxml_attr(nmlrecs_xml, "in_defaults");
 
-						if(nmlrecindef != NULL){
-							if(strncmp(nmlrecindef, "true", 1024) != 0 && strncmp(nmlrecindef, "false", 1024) != 0){
-								fprintf(stderr, "ERROR: Namelist record %s has an invalid value for in_defaults attribute. Valide values are true or false.\n", nmlrecname);
-							}
-						}
 						for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
 							nmloptname = ezxml_attr(nmlopt_xml, "name");
 							nmlopttype = ezxml_attr(nmlopt_xml, "type");
-							nmloptindef = ezxml_attr(nmlopt_xml, "in_defaults");
-
-
-							if(nmloptindef != NULL){
-								if(strncmp(nmloptindef, "true", 1024) != 0 && strncmp(nmloptindef, "false", 1024) != 0){
-									fprintf(stderr, "ERROR: Namelist option %s in record %s has an invalid value for in_defaults attribute. Valide values are true or false.\n", nmloptname, nmlrecname);
-								}
-							}
 
 							if (strncmp(name_holder, nmloptname, 1024) == 0){
 								if (strcasecmp("integer", nmlopttype) != 0){
@@ -633,17 +620,21 @@ done_searching:
 		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
 			streamname = ezxml_attr(stream_xml, "name");
 			streamfilename = ezxml_attr(stream_xml, "filename_template");
+			streamtype = ezxml_attr(stream_xml, "type");
 			
 			/* Check that this stream's filename template is unique among all streams */
 			for (streams_xml2 = ezxml_child(registry, "streams"); streams_xml2; streams_xml2 = streams_xml2->next) {
 				for (stream_xml2 = ezxml_child(streams_xml2, "stream"); stream_xml2; stream_xml2 = stream_xml2->next) {
 					streamname2 = ezxml_attr(stream_xml2, "name");
 					streamfilename2 = ezxml_attr(stream_xml2, "filename_template");
+					streamtype2 = ezxml_attr(stream_xml, "type");
 
 					if (stream_xml != stream_xml2) {
 						if (strcmp(streamfilename, streamfilename2) == 0) {
-							fprintf(stderr, "ERROR: Streams %s and %s have a conflicting filename template of %s.\n", streamname, streamname2, streamfilename);
-							return 1;
+							if ( strstr(streamtype, "output") != NULL || strstr(streamtype2, "output") != NULL ) {
+								fprintf(stderr, "ERROR: Streams %s and %s have a conflicting filename template of %s and one or more has a type that contains output.\n", streamname, streamname2, streamfilename);
+								return 1;
+							}
 						}
 					}
 				}

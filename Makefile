@@ -8,13 +8,17 @@ xlf:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpxlf90" \
 	"CC_PARALLEL = mpcc" \
+	"CXX_PARALLEL = mpixlcxx" \
 	"FC_SERIAL = xlf90" \
 	"CC_SERIAL = xlc" \
+	"CXX_SERIAL = xlcxx" \
 	"FFLAGS_OPT = -O3 -qrealsize=8" \
 	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -O0 -g -C -qrealsize=8" \
 	"CFLAGS_DEBUG = -O0 -g" \
+	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -25,10 +29,13 @@ ftn:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
 	"CC_PARALLEL = cc" \
+	"CXX_PARALLEL = CC" \
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
+	"CXX_SERIAL = CC" \
 	"FFLAGS_OPT = -i4 -r8 -gopt -O2 -Mvect=nosse -Kieee -convert big_endian" \
 	"CFLAGS_OPT = -fast" \
+	"CXXFLAGS_OPT = -fast" \
 	"LDFLAGS_OPT = " \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -53,13 +60,17 @@ pgi:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
 	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpicxx" \
 	"FC_SERIAL = pgf90" \
 	"CC_SERIAL = pgcc" \
+	"CXX_SERIAL = pgc++" \
 	"FFLAGS_OPT = -r8 -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -r8 -O0 -g -Mbounds -Mchkptr -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
 	"CFLAGS_DEBUG = -O0 -g -traceback" \
+	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
 	"LDFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -Ktrap=divz,fp,inv,ovf -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -70,10 +81,13 @@ pgi-nersc:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
 	"CC_PARALLEL = cc" \
+	"CXX_PARALLEL = CC" \
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
+	"CXX_SERIAL = CC" \
 	"FFLAGS_OPT = -r8 -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -84,10 +98,13 @@ pgi-llnl:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpipgf90" \
 	"CC_PARALLEL = pgcc" \
+	"CXX_PARALLEL = mpipgcxx" \
 	"FC_SERIAL = pgf90" \
 	"CC_SERIAL = pgcc" \
+	"CXX_SERIAL = pgc++" \
 	"FFLAGS_OPT = -i4 -r8 -g -O2 -byteswapio" \
 	"CFLAGS_OPT = -fast" \
+	"CXXFLAGS_OPT = -fast" \
 	"LDFLAGS_OPT = " \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -98,13 +115,17 @@ ifort:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
 	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpicxx" \
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
+	"CXX_SERIAL = icpc" \
 	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
 	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
 	"CFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"CXXFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -115,13 +136,17 @@ ifort-gcc:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
 	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpicxx" \
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = gcc" \
+	"CXX_SERIAL = g++" \
 	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
 	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
 	"CFLAGS_DEBUG = -g" \
+	"CXXFLAGS_DEBUG = -g" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -132,30 +157,17 @@ gfortran:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
 	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpicxx" \
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = gcc" \
+	"CXX_SERIAL = g++" \
 	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form" \
 	"CFLAGS_OPT = -O3 -m64" \
+	"CXXFLAGS_OPT = -O3 -m64" \
 	"LDFLAGS_OPT = -O3 -m64" \
 	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
 	"CFLAGS_DEBUG = -g -m64" \
-	"LDFLAGS_DEBUG = -g -m64" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
-
-gfortran-openmpi:
-	( $(MAKE) all \
-	"FC_PARALLEL = openmpif90" \
-	"CC_PARALLEL = openmpicc" \
-	"FC_SERIAL = gfortran" \
-	"CC_SERIAL = gcc" \
-	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form" \
-	"CFLAGS_OPT = -O3 -m64" \
-	"LDFLAGS_OPT = -O3 -m64" \
-	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
-	"CFLAGS_DEBUG = -g -m64" \
+	"CXXFLAGS_DEBUG = -O3 -m64" \
 	"LDFLAGS_DEBUG = -g -m64" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -166,10 +178,13 @@ g95:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
 	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpicxx" \
 	"FC_SERIAL = g95" \
 	"CC_SERIAL = gcc" \
+	"CXX_SERIAL = g++" \
 	"FFLAGS_OPT = -O3 -ffree-line-length-huge -r8 -fendian=big" \
 	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -180,10 +195,13 @@ pathscale-nersc:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
 	"CC_PARALLEL = cc" \
+	"CXX_PARALLEL = CC" \
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
+	"CXX_SERIAL = CC" \
 	"FFLAGS_OPT = -r8 -O3 -freeform -extend-source" \
 	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -194,24 +212,52 @@ cray-nersc:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
 	"CC_PARALLEL = cc" \
+	"CXX_PARALLEL = CC" \
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
+	"CXX_SERIAL = CC" \
 	"FFLAGS_OPT = -default64 -O3 -f free" \
 	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
+gnu-nersc:
+	( $(MAKE) all \
+	"FC_PARALLEL = ftn" \
+	"CC_PARALLEL = cc" \
+	"CXX_PARALLEL = CC" \
+	"FC_SERIAL = ftn" \
+	"CC_SERIAL = cc" \
+	"CXX_SERIAL = CC" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form" \
+	"CFLAGS_OPT = -O3 -m64" \
+	"CXXFLAGS_OPT = -O3 -m64" \
+	"LDFLAGS_OPT = -O3 -m64" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form" \
+	"CFLAGS_DEBUG = -g -m64" \
+	"CXXFLAGS_DEBUG = -g -m64" \
+	"LDFLAGS_DEBUG = -g -m64" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"SERIAL = $(SERIAL)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
+
 intel-nersc:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
 	"CC_PARALLEL = cc" \
+	"CXX_PARALLEL = CC" \
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
+	"CXX_SERIAL = CC" \
 	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
 	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -222,13 +268,17 @@ bluegene:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpixlf95_r" \
 	"CC_PARALLEL = mpixlc_r" \
+	"CXX_PARALLEL = mpixlcxx_r" \
 	"FC_SERIAL = bgxlf95_r" \
 	"CC_SERIAL = bgxlc_r" \
+	"CXX_SERIAL = bgxlc++_r" \
 	"FFLAGS_OPT = -O2 -g -qrealsize=8" \
 	"CFLAGS_OPT = -O2 -g" \
+	"CXXFLAGS_OPT = -O2 -g" \
 	"LDFLAGS_OPT = -O2 -g" \
 	"FFLAGS_DEBUG = -O0 -g -C -qinitalloc -qinitauto -qrealsize=8" \
 	"CFLAGS_DEBUG = -O0 -g" \
+	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -295,11 +345,13 @@ ifeq "$(DEBUG)" "true"
 ifndef FFLAGS_DEBUG
 	FFLAGS=$(FFLAGS_OPT)
 	CFLAGS=$(CFLAGS_OPT)
+	CXXFLAGS=$(CXXFLAGS_OPT)
 	LDFLAGS=$(LDFLAGS_OPT)
 	DEBUG_MESSAGE="Debug flags are not defined for this compile group. Defaulting to Optimized flags"
 else # FFLAGS_DEBUG IF
 	FFLAGS=$(FFLAGS_DEBUG)
 	CFLAGS=$(CFLAGS_DEBUG)
+	CXXFLAGS=$(CXXFLAGS_DEBUG)
 	LDFLAGS=$(LDFLAGS_DEBUG)
 	override CPPFLAGS += -DMPAS_DEBUG
 	DEBUG_MESSAGE="Debugging is on."
@@ -308,12 +360,14 @@ endif # FFLAGS_DEBUG IF
 else # DEBUG IF
 	FFLAGS=$(FFLAGS_OPT)
 	CFLAGS=$(CFLAGS_OPT)
+	CXXFLAGS=$(CXXFLAGS_OPT)
 	LDFLAGS=$(LDFLAGS_OPT)
 	DEBUG_MESSAGE="Debugging is off."
 endif # DEBUG IF
 
 FC=$(FC_PARALLEL)
 CC=$(CC_PARALLEL)
+CXX=$(CXX_PARALLEL)
 SFC=$(FC_SERIAL)
 SCC=$(CC_SERIAL)
 PARALLEL_MESSAGE="Parallel version is on."
@@ -430,10 +484,12 @@ ifeq "$(AUTOCLEAN)" "true"
 endif
 	cd src; $(MAKE) -j1 FC="$(FC)" \
                  CC="$(CC)" \
+                 CXX="$(CXX)" \
                  SFC="$(SFC)" \
                  SCC="$(SCC)" \
                  LINKER="$(LINKER)" \
                  CFLAGS="$(CFLAGS)" \
+                 CXXFLAGS="$(CXXFLAGS)" \
                  FFLAGS="$(FFLAGS)" \
                  LDFLAGS="$(LDFLAGS)" \
                  RM="$(RM)" \
@@ -450,11 +506,7 @@ endif
 
 	@echo "$(EXE_NAME)" > .mpas_core_$(CORE)
 	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
-	if [ -e src/inc/namelist.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/namelist.$(NAMELIST_SUFFIX).defaults .; fi
-	if [ ! -e namelist.$(NAMELIST_SUFFIX) ]; then cp namelist.$(NAMELIST_SUFFIX).defaults namelist.$(NAMELIST_SUFFIX); fi
-	if [ -e src/inc/streams.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/streams.$(NAMELIST_SUFFIX).defaults .; fi
-	if [ ! -e streams.$(NAMELIST_SUFFIX) ]; then cp streams.$(NAMELIST_SUFFIX).defaults streams.$(NAMELIST_SUFFIX); fi
-	for f in `find src/inc -name "stream_list.*"`; do mv $$f .; done
+	( cd src/core_$(CORE); $(MAKE) ROOT_DIR="$(PWD)" post_build )
 	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
@@ -464,8 +516,6 @@ ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
 endif
 	@echo $(GEN_F90_MESSAGE)
-	@echo $(NAMELIST_MESSAGE)
-	@echo $(STREAM_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"

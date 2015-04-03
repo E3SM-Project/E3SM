@@ -71,7 +71,8 @@ module mpas_io
                          MPAS_IO_ERR_NO_UNLIMITED_DIM   = -17, &
                          MPAS_IO_ERR_UNIMPLEMENTED      = -18, &
                          MPAS_IO_ERR_WOULD_CLOBBER      = -19, &
-                         MPAS_IO_ERR_NOEXIST_READ       = -20
+                         MPAS_IO_ERR_NOEXIST_READ       = -20, &
+                         MPAS_IO_ERR_MISSING_DIM        = -21
 
 
    type MPAS_IO_Handle_type
@@ -367,12 +368,16 @@ module mpas_io
 
       if (mode == MPAS_IO_WRITE) then
 !write(stderrUnit,*) 'MGD PIO_createfile'
-         inquire(file=trim(filename), exist=exists)
+         if (local_dminfo % my_proc_id == 0) then
+            inquire(file=trim(filename), exist=exists)
+         end if
+         call mpas_dmpar_bcast_logical(local_dminfo, exists)
 
          ! If the file exists and we are not allowed to clobber it, return an
          !    appropriate error code
          if (exists .and. (.not. local_clobber)) then
             if (present(ierr)) ierr = MPAS_IO_ERR_WOULD_CLOBBER
+            return
          end if
  
          if (exists .and. (.not. local_truncate)) then
@@ -502,10 +507,9 @@ module mpas_io
 
       pio_ierr = PIO_inq_dimid(handle % pio_file, trim(dimname), new_dimlist_node % dimhandle % dimid)
       if (pio_ierr /= PIO_noerr) then
-         if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+         if (present(ierr)) ierr = MPAS_IO_ERR_MISSING_DIM
          deallocate(new_dimlist_node % dimhandle)
          deallocate(new_dimlist_node)
-         write(stderrUnit,*) 'WARNING: Dimension ', trim(dimname), ' not in input file.'
          dimsize = -1
          return
       end if
@@ -1156,6 +1160,7 @@ module mpas_io
       integer :: ndims
       integer (kind=PIO_OFFSET) :: pd, indx
       integer :: i 
+      integer :: early_return, early_return_global
       integer (kind=PIO_OFFSET) :: i1, i2, i3, i4, i5
       integer, dimension(:), pointer :: dimlist
       integer (kind=PIO_OFFSET), dimension(:), pointer :: compdof
@@ -1203,6 +1208,7 @@ module mpas_io
       !
       decomp_cursor => decomp_list
 !if (.not. associated(decomp_cursor)) write(stderrUnit,*) 'No existing decompositions to check...'
+      early_return = 0
       DECOMP_LOOP: do while (associated(decomp_cursor))
          if (decomp_cursor % decomphandle % field_type == field_cursor % fieldhandle % field_type) then
          if (size(decomp_cursor % decomphandle % dims) == field_cursor % fieldhandle % ndims) then
@@ -1232,7 +1238,8 @@ module mpas_io
             ! OK, we have a match... just use this decomposition for the field and return
             field_cursor % fieldhandle % decomp => decomp_cursor % decomphandle 
 !write(stderrUnit,*) 'Found a matching decomposition that we can use'
-            return
+            early_return = 1
+            exit DECOMP_LOOP
          else if ((size(decomp_cursor % decomphandle % dims) == field_cursor % fieldhandle % ndims - 1)  &
                   .and. field_cursor % fieldhandle % has_unlimited_dim  &
                  ) then
@@ -1264,11 +1271,21 @@ module mpas_io
             ! OK, we have a match... just use this decomposition for the field and return
             field_cursor % fieldhandle % decomp => decomp_cursor % decomphandle 
 !write(stderrUnit,*) 'Found a matching decomposition that we can use (aside from record dimension)'
-            return
+            early_return = 1
+            exit DECOMP_LOOP
          end if
          end if
          decomp_cursor => decomp_cursor % next
       end do DECOMP_LOOP
+
+      ! 
+      ! If all tasks have set early_return to 1, then we have a usable decomposition and can return
+      ! 
+      call mpas_dmpar_min_int(local_dminfo, early_return, early_return_global)
+      if (early_return_global == 1) then
+         return
+      end if
+
 
 !write(stderrUnit,*) 'Creating a new decomposition'
 

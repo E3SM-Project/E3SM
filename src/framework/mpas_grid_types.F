@@ -27,6 +27,7 @@ module mpas_grid_types
    use mpas_timekeeping, only : MPAS_Clock_type
 
    integer, parameter :: nTimeLevs = 2
+   integer, parameter :: MPAS_MISSING_DIM = -999
 
    ! Derived type describing info for doing I/O specific to a field
    type io_info
@@ -56,6 +57,8 @@ module mpas_grid_types
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(5) :: dimNames
       integer, dimension(5) :: dimSizes
+      real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -87,6 +90,8 @@ module mpas_grid_types
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(4) :: dimNames
       integer, dimension(4) :: dimSizes
+      real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -119,6 +124,8 @@ module mpas_grid_types
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
       integer, dimension(3) :: dimSizes
+      real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -150,6 +157,8 @@ module mpas_grid_types
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
       integer, dimension(2) :: dimSizes
+      real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -181,6 +190,8 @@ module mpas_grid_types
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
+      real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -210,6 +221,8 @@ module mpas_grid_types
       type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      real (kind=RKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -239,7 +252,9 @@ module mpas_grid_types
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
+      integer :: defaultValue
       integer, dimension(3) :: dimSizes
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -270,7 +285,9 @@ module mpas_grid_types
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
+      integer :: defaultValue
       integer, dimension(2) :: dimSizes
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -301,7 +318,9 @@ module mpas_grid_types
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
+      integer :: defaultValue
       integer, dimension(1) :: dimSizes
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -331,6 +350,8 @@ module mpas_grid_types
       type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      integer :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -361,6 +382,8 @@ module mpas_grid_types
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
+      character (len=StrKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -390,6 +413,8 @@ module mpas_grid_types
       type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -418,6 +443,8 @@ module mpas_grid_types
       type (io_info), pointer :: ioinfo       ! to be removed later
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      logical :: defaultValue
+      logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
@@ -800,9 +827,7 @@ module mpas_grid_types
 !> that are members of the block type.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_block(nHaloLayers, b, dom, blockID, &!{{{
-#include "dim_dummy_args.inc"
-                            )
+   subroutine mpas_allocate_block(nHaloLayers, b, dom, blockID) !{{{
 
       implicit none
 
@@ -810,7 +835,6 @@ module mpas_grid_types
       type (block_type), pointer :: b !< Input/Output: Block structure
       type (domain_type), pointer :: dom !< Input: Domain structure
       integer, intent(in) :: blockID !< Input: Global ID of block
-#include "dim_dummy_defines_input.inc"
 
       integer :: i
 
@@ -3205,16 +3229,42 @@ module mpas_grid_types
 
    end subroutine mpas_link_fields!}}}
 
+!***********************************************************************
+!
+!  funtion mpas_dimension_num_garbage_elements
+!
+!> \brief   MPAS Number of garbage elements for dimension
+!> \author  Doug Jacobsen
+!> \date    02/28/2015
+!> \details 
+!> This routine takes as input the name of a dimension and a dimension pool.
+!> Using this information, it returns the number of garbage elements that should
+!> be padded on each array allocated with this dimension size.
+!
+!-----------------------------------------------------------------------
+   integer function mpas_dimension_num_garbage_elements(dimName, iErr) result(numElements)!{{{
+      character (len=*), intent(in) :: dimName
+      integer, intent(in) :: iErr
 
+      numElements = 0
+
+      if ( trim(dimName) == "nCells" ) then
+         numElements = 1
+      else if ( trim(dimName) == "nVertices" ) then
+         numElements = 1
+      else if ( trim(dimName) == "nEdges" ) then
+         numElements = 1
+      end if
+
+   end function mpas_dimension_num_garbage_elements!}}}
 
 
 
 #include "pool_subroutines.inc"
 
 
-#include "define_dimensions.inc"
 #include "define_packages.inc"
-!#include "link_fields.inc"
+
 #include "structs_and_variables.inc"
 
 
