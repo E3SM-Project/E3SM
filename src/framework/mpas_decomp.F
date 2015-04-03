@@ -285,6 +285,8 @@ module mpas_decomp
 
       integer :: blockDimSize, blockStart, i
 
+      iErr = 0
+
       DECOMP_DEBUG_WRITE('* Providing a uniform decomposition')
 
       blockDimSize = globalDimSize / numBlocks
