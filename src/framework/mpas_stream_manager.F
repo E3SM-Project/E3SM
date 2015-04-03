@@ -3896,6 +3896,8 @@ module mpas_stream_manager
             end if
         end if
 
+        call mpas_pool_set_error_level(err_level)
+
     end function parse_package_list
 
 
