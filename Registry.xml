@@ -38,7 +38,7 @@
 		<dim name="vertexDegree" units="unitless"
 			 description="The number of cells or edges touching each vertex."
 		/>
-		<dim name="nVertLevels" units="unitless"
+		<dim name="nVertLevels" units="unitless" definition="namelist:config_vert_levels"
 			 description="The number of levels in the vertical direction. All vertical levels share the same horizontal locations."
 		/>
 		<dim name="nVertLevelsP1" definition="nVertLevels+1" units="unitless"
@@ -49,10 +49,10 @@
 	<!--*************************************-->
 	<!-- General namelists for all run modes -->
 	<!--*************************************-->
-	<nml_record name="run_modes" mode="forward;analysis">
+	<nml_record name="run_modes" mode="forward;analysis;init">
 		<nml_option name="config_ocean_run_mode" type="character" default_value="forward" units="unitless"
 					description="Determines which run mode will be used for the ocean model."
-					mode="forward;analysis" forward_value="forward" analysis_value="analysis"
+					mode="forward;analysis;init" forward_value="forward" analysis_value="analysis" init_value="init"
 					possible_values="'forward' and 'analysis'"
 		/>
 	</nml_record>
@@ -98,15 +98,15 @@
 		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
 					description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are requried to write contiguous blocks of data to a file."
 					possible_values="Any positive integer value greater than or equal to 0."
-					mode="forward;analysis"
+					mode="forward;analysis;init"
 		/>
 		<nml_option name="config_pio_stride" type="integer" default_value="1" units="unitless"
 					description="Integer specifying the stride of each IO task."
 					possible_values="Any positive integer value greater than 0."
-					mode="forward;analysis"
+					mode="forward;analysis;init"
 		/>
 	</nml_record>
-	<nml_record name="decomposition" mode="forward;analysis">
+	<nml_record name="decomposition" mode="forward;analysis;init">
 		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
 					description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
 					possible_values="Any positive integer value."
@@ -126,6 +126,32 @@
 		<nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
 					description="Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time."
 					possible_values="Any path/prefix to a processor decomposition file."
+		/>
+	</nml_record>
+
+	<!--**********************************-->
+	<!-- Namelists for init run mode only -->
+	<!--**********************************-->
+	<nml_record name="init_setup" mode="init">
+		<nml_option name="config_vert_levels" type="integer" default_value="-1" units="unitless"
+					description="Number of vertical levels to create within the configuration."
+					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition."
+		/>
+		<nml_option name="config_init_configuration" type="character" default_value="none" units="unitless"
+					description="Name of configuration to create."
+					possible_values="Any configuration name"
+		/>
+		<nml_option name="config_expand_sphere" type="logical" default_value="false" units="unitless"
+					description="Logical flag that controls if a spherical mesh is expanded to an earth sized sphere or not."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_write_cull_cell_mask" type="logical" default_value="false" units="unitless"
+					description="Logicial flag that controls if the cullCell field is written to output."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_vertical_grid" type="character" default_value="uniform" units="unitless"
+					description="Name of vertical grid to use in configuration generation"
+					possible_values="'uniform', ..."
 		/>
 	</nml_record>
 
@@ -837,9 +863,123 @@
 		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 		<package name="forwardMode" description="This package controls variables that are intended to be used within the forward run mode of the ocean model."/>
 		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
+		<package name="initMode" description="This package controls variables that are intended to be used within the init run mode of the ocean model."/>
+		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 	</packages>
 
 	<streams>
+		<stream name="input_init"
+				type="input"
+				filename_template="mesh.nc"
+				immutable="true"
+				input_interval="initial_only"
+				mode="init">
+				
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="meshDensity"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="fEdge"/>
+			<var name="fVertex"/>
+			<var name="fCell"/>
+		</stream>
+		<stream name="output_init"
+				type="output"
+				filename_template="ocean.nc"
+				output_interval="0000-00-00_00:00:01"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="init">
+
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="meshDensity"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="fEdge"/>
+			<var name="fVertex"/>
+			<var name="fCell"/>
+			<var name="refZMid"/>
+			<var_array name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="temperatureRestore"/>
+			<var name="salinityRestore"/>
+			<var name="restingThickness"/>
+			<var name="surfaceWindStress"/>
+			<var name="seaSurfacePressure"/>
+			<var name="boundaryLayerDepth"/>
+			<var name="refBottomDepth"/>
+			<var name="bottomDepth"/>
+			<var name="maxLevelCell"/>
+			<var name="seaSurfacePressure"/>
+			<var name="vertCoordMovementWeights"/>
+			<var name="edgeMask"/>
+			<var name="cullCell"/>
+		</stream>
 		<stream name="mesh" 
 				type="none"
 				filename_template="mesh_variables.nc"
@@ -1432,11 +1572,11 @@
 		/>
 		<var name="temperatureRestore" type="real" dimensions="nCells" units="^\circ C"
 			 description="Temperature restoring field, for restoring temperature at the surface."
-			 packages="surfaceRestoring"
+			 packages="surfaceRestoring;initMode"
 		/>
 		<var name="salinityRestore" type="real" dimensions="nCells" units="PSU"
 			 description="Salinity restoring field, for restoring salinity at the surface."
-			 packages="surfaceRestoring"
+			 packages="surfaceRestoring;initMode"
 		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 			 description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
@@ -1446,6 +1586,10 @@
 		/>
 		<var name="kiteIndexOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 			 description="Index of kite in dual grid, based on verticesOnCell."
+		/>
+		<var name="cullCell" type="integer" dimensions="nCells" units="unitless"
+			 description="Array to hold integers that represent logicals determining if a cell should be culled or not by the MpasCellCuller tool."
+			 packages="cullCells"
 		/>
 	</var_struct>
 	<var_struct name="verticalMesh" time_levs="1">
@@ -2407,6 +2551,9 @@
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction, for analytic solution"
 		/>
 	</var_struct>
+
+<!-- Include init mode's registry file -->
+#include "mode_init/Registry.xml"
 
 #include "analysis_members/Registry_analysis_members.xml"
 </registry>
