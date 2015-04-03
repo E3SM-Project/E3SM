@@ -20,7 +20,7 @@
 
 module ocn_vel_forcing
 
-   use mpas_grid_types
+   use mpas_derived_types
 
    use ocn_constants
    use ocn_forcing
