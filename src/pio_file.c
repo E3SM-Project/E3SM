@@ -379,52 +379,53 @@ int PIOc_sync (int ncid)
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
-  //  cn_buffer_report( *ios, true);
 
-  wmb = &(file->buffer); 
-  while(wmb != NULL){
-    //    printf("%s %d %d %d\n",__FILE__,__LINE__,wmb->ioid, wmb->validvars);
-    if(wmb->validvars>0){
-      flush_buffer(ncid, wmb);
+  if((file->mode & PIO_WRITE)){
+    //  cn_buffer_report( *ios, true);
+    wmb = &(file->buffer); 
+    while(wmb != NULL){
+      //    printf("%s %d %d %d\n",__FILE__,__LINE__,wmb->ioid, wmb->validvars);
+      if(wmb->validvars>0){
+	flush_buffer(ncid, wmb);
+      }
+      twmb = wmb;
+      wmb = wmb->next;
+      if(twmb == &(file->buffer)){
+	twmb->ioid=-1;
+	twmb->next=NULL;
+      }else{
+	brel(twmb);
+      }
     }
-    twmb = wmb;
-    wmb = wmb->next;
-    if(twmb == &(file->buffer)){
-      twmb->ioid=-1;
-      twmb->next=NULL;
-    }else{
-      brel(twmb);
-    }
-  }
 
-  if(ios->ioproc){
-    switch(file->iotype){
+    if(ios->ioproc){
+      switch(file->iotype){
 #ifdef _NETCDF
 #ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_sync(file->fh);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      case PIO_IOTYPE_NETCDF4P:
 	ierr = nc_sync(file->fh);;
-      }
-      break;
+	break;
+      case PIO_IOTYPE_NETCDF4C:
+#endif
+      case PIO_IOTYPE_NETCDF:
+	if(ios->io_rank==0){
+	  ierr = nc_sync(file->fh);;
+	}
+	break;
 #endif
 #ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      flush_output_buffer(file, true, 0);
-      ierr = ncmpi_sync(file->fh);;
-      break;
+      case PIO_IOTYPE_PNETCDF:
+	flush_output_buffer(file, true, 0);
+	ierr = ncmpi_sync(file->fh);;
+	break;
 #endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+      default:
+	ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+      }
     }
+
+    ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
   return ierr;
 }
 
