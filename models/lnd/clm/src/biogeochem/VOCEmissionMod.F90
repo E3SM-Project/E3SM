@@ -196,7 +196,6 @@ contains
           call hist_addfld1d ( fname='MEG_'//trim(meg_cmp%name), units='kg/m2/sec',  &
                avgflag='A', long_name='MEGAN flux', &
                ptr_patch=meg_out(imeg)%flux_out, set_lake=0._r8, set_urb=0._r8 )
-          meg_out(imeg)%flux_out(begp:endp) = 0._r8
 
           meg_cmp => meg_cmp%next_megcomp
        enddo
