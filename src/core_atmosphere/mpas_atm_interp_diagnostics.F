@@ -589,12 +589,13 @@
     dudz(nVertLevels) = dudz(nVertLevels-1)
     dvdz(nVertLevels) = dvdz(nVertLevels-1)
 
-    do k=2,nVertLevels-1
+    do k=2,nVertLevels
       srh(k) = - (0.5*(uzonal(k,iCell)      + uzonal(k-1,iCell)      )-u_storm)*dvdz(k) &
                + (0.5*(umeridional(k,iCell) + umeridional(k-1,iCell) )-v_storm)*dudz(k)
     end do
-    srh(1) = (uzonal(1,iCell)     - u_storm)*dvdz(1) - &
-             (umeridional(1,iCell)- v_storm)*dudz(1)
+    srh(1) = - (uzonal(1,iCell)     - u_storm)*dvdz(1) &
+             + (umeridional(1,iCell)- v_storm)*dudz(1)
+    srh(nVertLevelsP1) = srh(nVertLevels)
 
     do k=1, nVertLevels+1
       srh(k) = max(0.,srh(k))  ! discounting negative SRH
@@ -925,7 +926,7 @@
       implicit none
       integer n
       real :: column_values(n), z(n), zbot, ztop
-      real :: zb, zt
+      real :: zb, zt, dz, zr_midpoint, midpoint_value
 
       integer :: k
 
@@ -933,10 +934,13 @@
 !  z increases monotonically
 
       integral_zpoint = 0.
-      do k=1,n-3  ! do not integrate to very top...
+      do k=1,n-1
         zb = max(z(k), zbot)
         zt = min(z(k+1), ztop)
-        integral_zpoint = integral_zpoint + 0.5*(column_values(k)*max(0.,z(k+1)-zb) + column_values(k+1)*max(0.,zt-z(k)))
+        dz = max(0.,zt-zb)
+        zr_midpoint = (0.5*(zt+zb) - z(k))/(z(k+1)-z(k))
+        midpoint_value = column_values(k) + (column_values(k+1)-column_values(k))*zr_midpoint
+        integral_zpoint = integral_zpoint + dz*midpoint_value
       end do
       end function integral_zpoint
 
