@@ -515,10 +515,10 @@ contains
     ! !ARGUMENTS:
     class(temperature_type)        :: this
     type(bounds_type) , intent(in) :: bounds  
-    real(r8)          , intent(in) :: em_roof_lun(bounds%begl:)
-    real(r8)          , intent(in) :: em_wall_lun(bounds%begl:)
-    real(r8)          , intent(in) :: em_improad_lun(bounds%begl:)
-    real(r8)          , intent(in) :: em_perroad_lun(bounds%begl:)
+    real(r8)          , intent(in) :: em_roof_lun(bounds%begl:bounds%endl)
+    real(r8)          , intent(in) :: em_wall_lun(bounds%begl:bounds%endl)
+    real(r8)          , intent(in) :: em_improad_lun(bounds%begl:bounds%endl)
+    real(r8)          , intent(in) :: em_perroad_lun(bounds%begl:bounds%endl)
     !
     ! !LOCAL VARIABLES:
     integer  :: j,l,c,p ! indices
