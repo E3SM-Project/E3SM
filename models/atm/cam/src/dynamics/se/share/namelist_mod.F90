@@ -955,7 +955,7 @@ module namelist_mod
       write (*,*) "namelist_mod: mesh_file:",mesh_file, &
                   " and ne:",ne," are both sepcified in the input file."
       write (*,*) "Specify one or the other, but not both."
-      ! Don't abort if structured (i.e., ne /= 0).
+      ! Don't abort if not refined (i.e., ne /= 0).
       ! mesh_file is set to /dev/null in namelist_defaults_cam.xml
       !call abortmp("Do not specify ne if using a mesh file input.")
     end if 
