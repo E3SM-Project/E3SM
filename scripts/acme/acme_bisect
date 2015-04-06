@@ -99,7 +99,7 @@ def acme_bisect(testname, testroot, project, compare, check_namelists, check_thr
         return False
 
     # Wait for test
-    return wait_for_tests.wait_for_tests(os.path.join(testarea, "TestStatus"),
+    return wait_for_tests.wait_for_tests([os.path.join(testarea, "TestStatus")],
                                          no_submit, # wait if using batch
                                          check_throughput,
                                          not check_namelists, # inverse due to opposite defaults
@@ -120,7 +120,7 @@ def _main_func(description):
         rv = acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, no_submit)
     except:
         print >> sys.stderr, "Exception in script, aborting bisect entirely:"
-        e = sys.exc_info()[0]
+        e = sys.exc_info()[1]
         print >> sys.stderr, e
         sys.exit(-1)
     else:
