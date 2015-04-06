@@ -37,8 +37,8 @@ class nightlyBuilder(object):
 #      self.dirName='TueMar10_090301'
       self.repoName='pio2_0'
 
-      self.url='https://parallelio.googlecode.com/svn/branches/pio2_0'
-      self.machurl = 'https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/'
+      self.url='https://github.com/PARALLELIO/ParallelIO/trunk'
+      self.machurl = 'https://github.com/CESM-Development/cime.git/trunk/machines'
 
       if self.platform == "goldbach":
          self.compilers = ['intel','nag']
@@ -70,7 +70,7 @@ class nightlyBuilder(object):
       """
       #~# check out the pio 2.0 repo
       #~# don't use pysvn since it's not standard
-      self.cmd = ['svn','co',self.url]
+      self.cmd = ['svn','co',self.url,self.repoName]
       proc = subprocess.Popen(self.cmd,
             stdout=subprocess.PIPE,stderr=subprocess.PIPE, universal_newlines=True)
       out, err = proc.communicate()
