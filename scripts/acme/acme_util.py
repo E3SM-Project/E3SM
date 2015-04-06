@@ -21,7 +21,7 @@ def expect(condition, error_msg):
     checking user error, not programming error.
     """
     if (not condition):
-        raise SystemExit(error_msg)
+        raise SystemExit("FAIL: %s" % error_msg)
 
 ###############################################################################
 def warning(msg):
@@ -129,3 +129,12 @@ def get_current_branch(repo=None):
     else:
         output = run_cmd("git symbolic-ref HEAD", from_dir=repo)
         return output.replace("refs/heads/", "").strip()
+
+###############################################################################
+def get_current_commit(short=False, repo=None):
+###############################################################################
+    """
+    Return the sha1 of the current HEAD commit
+    """
+    output = run_cmd("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
+    return output.strip()

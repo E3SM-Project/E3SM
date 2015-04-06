@@ -12,6 +12,7 @@ TEST_NOT_FINISHED_STATUS = ["GEN", "BUILD", "RUN", "PEND"]
 TEST_PASSED_STATUS       = "PASS"
 SLEEP_INTERVAL_SEC       = 1
 THROUGHPUT_TEST_STR      = ".tputcomp."
+NAMELIST_TEST_STR        = ".nlcomp"
 SIGNAL_RECEIVED          = False
 
 ###############################################################################
@@ -206,7 +207,7 @@ NightlyStartTime: %s UTC
     acme_util.run_cmd("ctest -D NightlySubmit", verbose=True)
 
 ###############################################################################
-def parse_test_status_file(file_contents, status_file_path, check_throughput):
+def parse_test_status_file(file_contents, status_file_path, check_throughput, ignore_namelists):
 ###############################################################################
     r"""
     >>> parse_test_status_file('PASS testname', '', False)
@@ -232,7 +233,8 @@ def parse_test_status_file(file_contents, status_file_path, check_throughput):
             # A non-pass is OK if the failure is due to throughput and we
             # aren't checking throughput
             if (status != TEST_PASSED_STATUS and not
-                (not check_throughput and THROUGHPUT_TEST_STR in test_name)):
+                (not check_throughput and THROUGHPUT_TEST_STR in test_name or
+                 ignore_namelists and NAMELIST_TEST_STR in test_name)):
                 return real_test_name, status
         else:
             warning("In '%s', line '%s' not in expected format" % (status_file_path, line))
@@ -243,7 +245,7 @@ def parse_test_status_file(file_contents, status_file_path, check_throughput):
     return real_test_name, TEST_PASSED_STATUS
 
 ###############################################################################
-def wait_for_test(test_path, results, wait, check_throughput):
+def wait_for_test(test_path, results, wait, check_throughput, ignore_namelists):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
@@ -255,7 +257,7 @@ def wait_for_test(test_path, results, wait, check_throughput):
         if (os.path.exists(test_status_filepath)):
             test_status_fd = open(test_status_filepath, "r")
             test_status_contents = test_status_fd.read()
-            test_name, test_status = parse_test_status_file(test_status_contents, test_status_filepath, check_throughput)
+            test_name, test_status = parse_test_status_file(test_status_contents, test_status_filepath, check_throughput, ignore_namelists)
 
             if (test_status in TEST_NOT_FINISHED_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
@@ -274,7 +276,7 @@ def wait_for_test(test_path, results, wait, check_throughput):
                 break
 
 ###############################################################################
-def wait_for_tests(test_paths, no_wait, check_throughput, cdash_build_name):
+def wait_for_tests(test_paths, no_wait, check_throughput, ignore_namelists, cdash_build_name):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
@@ -287,7 +289,7 @@ def wait_for_tests(test_paths, no_wait, check_throughput, cdash_build_name):
     results = Queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, ignore_namelists))
         t.daemon = True
         t.start()
 
