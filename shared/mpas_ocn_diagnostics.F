@@ -622,14 +622,12 @@ contains
           tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer)*tracers(:,k,iCell)*layerThickness(k,iCell)
           tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / surfaceLayerDepth
         enddo
-      endif
 
-      !
-      ! average normal velocity values over the ocean surface layer
-      ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
-      !
-      if (config_use_cvmix_kpp) then
-        normalVelocitySurfaceLayer(:) = 0.0
+        !
+        ! average normal velocity values over the ocean surface layer
+        ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
+        !
+        normalVelocitySurfaceLayer(:) = 0.0_RKIND
         do iEdge=1,nEdges
           cell1=cellsOnEdge(1,iEdge)
           cell2=cellsOnEdge(2,iEdge)
@@ -653,11 +651,9 @@ contains
             normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) / surfaceLayerDepth
           end if
         enddo
-      endif ! if config_use_cvmix_kpp
 
-      !
-      !  compute fields used as intent(in) to CVMix/KPP
-      if (config_use_cvmix_kpp) then
+        !
+        !  compute fields used as intent(in) to CVMix/KPP
         call computeKPPInputFields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
       endif
 
