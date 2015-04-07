@@ -10,6 +10,8 @@ from acme_util import expect, warning, verbose_print
 TEST_STATUS_FILENAME     = "TestStatus"
 TEST_NOT_FINISHED_STATUS = ["GEN", "BUILD", "RUN", "PEND"]
 TEST_PASSED_STATUS       = "PASS"
+NAMELIST_FAIL_STATUS     = "NLFAIL"
+BUILD_FAIL_STATUS        = "CFAIL"
 SLEEP_INTERVAL_SEC       = 1
 THROUGHPUT_TEST_STR      = ".tputcomp."
 NAMELIST_TEST_STR        = ".nlcomp"
@@ -160,7 +162,12 @@ NightlyStartTime: %s UTC
         test_norm_path = test_path if os.path.isdir(test_path) else os.path.dirname(test_path)
 
         full_test_elem = xmlet.SubElement(testing_elem, "Test")
-        full_test_elem.attrib["Status"] = "passed" if test_passed else "failed"
+        if (test_passed):
+            full_test_elem.attrib["Status"] = "passed"
+        elif (test_status == NAMELIST_FAIL_STATUS):
+            full_test_elem.attrib["Status"] = "notrun"
+        else:
+            full_test_elem.attrib["Status"] = "failed"
 
         name_elem = xmlet.SubElement(full_test_elem, "Name")
         name_elem.text = test_name
@@ -207,21 +214,49 @@ NightlyStartTime: %s UTC
     acme_util.run_cmd("ctest -D NightlySubmit", verbose=True)
 
 ###############################################################################
-def parse_test_status_file(file_contents, status_file_path, check_throughput, ignore_namelists):
+def reduce_stati(stati):
+###############################################################################
+    """
+    Given a collection of stati for a test, produce a single result. Preference
+    is given to unfinished stati since we don't want to stop waiting for a test
+    that hasn't finished. Namelist diffs are given the lowest precedence.
+    """
+    rv = TEST_PASSED_STATUS
+    for status in stati:
+        if (status in TEST_NOT_FINISHED_STATUS):
+            return status
+        elif (status != TEST_PASSED_STATUS):
+            if (status == NAMELIST_FAIL_STATUS):
+                if (rv == TEST_PASSED_STATUS):
+                    rv = NAMELIST_FAIL_STATUS
+            else:
+                rv = status
+
+    return rv
+
+###############################################################################
+def parse_test_status_file(file_contents, status_file_path, check_throughput=False, ignore_namelists=False):
 ###############################################################################
     r"""
-    >>> parse_test_status_file('PASS testname', '', False)
+    >>> parse_test_status_file('PASS testname', '')
     ('testname', 'PASS')
-    >>> parse_test_status_file('PASS testname \nGEN testname2', '', False)
+    >>> parse_test_status_file('PASS testname \nGEN testname2', '')
     ('testname', 'GEN')
-    >>> parse_test_status_file('PASS testname\nPASS testname2', '', False)
+    >>> parse_test_status_file('FAIL testname \nGEN testname2', '')
+    ('testname', 'GEN')
+    >>> parse_test_status_file('PASS testname\nPASS testname2', '')
     ('testname', 'PASS')
-    >>> parse_test_status_file('PASS testname\nFAIL testname2.tputcomp.foo', '', False)
+    >>> parse_test_status_file('PASS testname\nFAIL testname2.tputcomp.foo', '')
     ('testname', 'PASS')
     >>> parse_test_status_file('PASS testname\nFAIL testname2.tputcomp.foo', '', True)
     ('testname', 'FAIL')
+    >>> parse_test_status_file('PASS testname\nFAIL testname2.nlcomp', '')
+    ('testname', 'NLFAIL')
+    >>> parse_test_status_file('PASS testname\nFAIL testname2.nlcomp', '', ignore_namelists=True)
+    ('testname', 'PASS')
     """
     real_test_name = None
+    stati = []
     for line in file_contents.splitlines():
         if (len(line.split()) == 2):
             status, test_name = line.split()
@@ -235,14 +270,19 @@ def parse_test_status_file(file_contents, status_file_path, check_throughput, ig
             if (status != TEST_PASSED_STATUS and not
                 (not check_throughput and THROUGHPUT_TEST_STR in test_name or
                  ignore_namelists and NAMELIST_TEST_STR in test_name)):
-                return real_test_name, status
+                if (NAMELIST_TEST_STR in test_name):
+                    stati.append(NAMELIST_FAIL_STATUS)
+                else:
+                    stati.append(status)
+            else:
+                stati.append(TEST_PASSED_STATUS)
         else:
             warning("In '%s', line '%s' not in expected format" % (status_file_path, line))
 
     if (real_test_name is None):
         warning("Empty status file: %s" % status_file_path)
 
-    return real_test_name, TEST_PASSED_STATUS
+    return real_test_name, reduce_stati(stati)
 
 ###############################################################################
 def wait_for_test(test_path, results, wait, check_throughput, ignore_namelists):
@@ -326,8 +366,3 @@ def wait_for_tests(test_paths, no_wait, check_throughput, ignore_namelists, cdas
         create_cdash_xml(start_time, tests_with_results, cdash_build_name)
 
     return all_pass
-
-###############################################################################
-def run_unit_tests():
-###############################################################################
-    doctest.testmod()

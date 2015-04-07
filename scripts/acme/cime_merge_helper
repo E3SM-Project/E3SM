@@ -143,7 +143,7 @@ def merge_acme_changes(acme_path, subdir):
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        doctest.testmod()
+        doctest.testmod(verbose=True)
         return
 
     acme_path, subdir = parse_command_line(sys.argv, description)

@@ -244,7 +244,7 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        doctest.testmod()
+        doctest.testmod(verbose=True)
         return
 
     generate_baselines, submit_to_dashboard, baseline_branch, namelists_only = \
