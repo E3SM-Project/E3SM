@@ -698,6 +698,7 @@
 <soil_erod_file  hgrid="64x128"  >atm/cam/dst/dst_64x128_c090203.nc</soil_erod_file>
 <soil_erod_file  hgrid="128x256" >atm/cam/dst/dst_128x256_c090203.nc</soil_erod_file>
 
+
 <!-- Turbulent Mountain Stress -->
 <do_tms                                                     > .false. </do_tms>
 <do_tms    hgrid="48x96"                                    > .true.  </do_tms>
@@ -887,6 +888,7 @@
 <cldfrc_rhminl hgrid="48x96"     phys="cam4"                          > 0.880D0 </cldfrc_rhminl>
 <cldfrc_rhminl dyn="se"       phys="cam4"                             > 0.910D0 </cldfrc_rhminl>
 
+
 <cldfrc_rhminl_adj_land                                               > 0.100D0 </cldfrc_rhminl_adj_land>
 <cldfrc_rhminl_adj_land                      carma="cirrus"           > 0.000D0 </cldfrc_rhminl_adj_land>
 
@@ -917,7 +919,6 @@
 <cldfrc_dp1             phys="cam5"                                   > 0.10D0 </cldfrc_dp1>
 <cldfrc_dp1 dyn="fv"    phys="cam4"                                   > 0.10D0 </cldfrc_dp1>
 <cldfrc_dp1 dyn="se" phys="cam4"                                      > 0.10D0 </cldfrc_dp1>
-
 <cldfrc_dp2                                                           > 500.0D0 </cldfrc_dp2>
 <cldfrc_dp2          phys="cam5"                                      > 500.0D0 </cldfrc_dp2>
 
@@ -1025,6 +1026,8 @@
 <zmconv_c0_ocn                   hgrid="256x512"  phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
 <zmconv_c0_ocn                   hgrid="512x1024" phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
 
+<zmconv_tau			                                                      > 3600</zmconv_tau>
+
 <zmconv_ke                                                            > 3.0E-6 </zmconv_ke>
 <zmconv_ke      dyn="fv"                                              > 1.0E-6 </zmconv_ke>
 <zmconv_ke      dyn="se"                                           > 1.0E-6 </zmconv_ke>
@@ -1102,6 +1105,7 @@
 <statefreq> 480 </statefreq>
 <integration> "explicit" </integration>
 
+<mesh_file>/dev/null</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/inic/homme/svalbardx8v1.g</mesh_file>
