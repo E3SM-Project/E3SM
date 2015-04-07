@@ -319,7 +319,7 @@ contains
          RiSmoothed(nVertLevels+1) = RiSmoothed(nVertLevels)
          do k=2,maxLevelCell(iCell)
             ! For input to cvmix, Richardson number should be positive.
-             RiSmoothed(k)=max(0.0, RiSmoothed(k))
+             RiSmoothed(k)=max(0.0_RKIND, RiSmoothed(k))
          enddo
          cvmix_variables%ShearRichardson_iface => RiSmoothed
 

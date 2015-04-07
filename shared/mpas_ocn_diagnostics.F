@@ -1132,7 +1132,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
       ! set the parameter turbulentVelocitySquared
-      turbulentVelocitySquared = 0.001
+      turbulentVelocitySquared = 0.001_RKIND
 
       ! set scalar values
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -1229,14 +1229,14 @@ contains
 
        ! zero the bulk Richardson number within the ocean surface layer
        ! this prevent CVMix/KPP from mis-diagnosing the OBL to be within the surface layer
-        bulkRichardsonNumberBuoy (:,iCell) = 1.0e8
-        bulkRichardsonNumberShear(:,iCell) = 1.0
+        bulkRichardsonNumberBuoy (:,iCell) = 1.0e8_RKIND
+        bulkRichardsonNumberShear(:,iCell) = 1.0_RKIND
 
        ! loop over vertical to compute bulk Richardson number
         do k=1,maxLevelCell(iCell)
 
         ! find deltaVelocitySquared defined at cell centers based on velocity at levels 1 and k
-         deltaVelocitySquared = 0.0
+         deltaVelocitySquared = 0.0_RKIND
          do i = 1, nEdgesOnCell(iCell)
            iEdge = edgesOnCell(i, iCell)
            factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
@@ -1245,7 +1245,7 @@ contains
          enddo
 
          buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / config_density0
-         shearContribution = max(deltaVelocitySquared,1.0e-15)
+         shearContribution = max(deltaVelocitySquared,1.0e-15_RKIND)
 
          ! store the buoyancy and resolved shear contributions to bulk Richardson number
          bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
@@ -1257,7 +1257,7 @@ contains
        ! incorrectly diagnosing OBL to be within surface layer
        ! require boundary layer to be below the top layer
        k=max(int(indexSurfaceLayerDepth(iCell)),1)
-       bulkRichardsonNumberBuoy(1:k,iCell) = 0.0
+       bulkRichardsonNumberBuoy(1:k,iCell) = 0.0_RKIND
 
       enddo
 
