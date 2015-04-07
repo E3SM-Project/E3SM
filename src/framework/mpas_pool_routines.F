@@ -236,132 +236,71 @@ module mpas_pool_routines
 
                ! Do this through brute force...
                if (associated(dptr % r0)) then
-                  if (associated(dptr % r0 % ioinfo)) then
-                     deallocate(dptr % r0 % ioinfo)
-                  end if
-
                   deallocate(dptr % r0)
                else if (associated(dptr % r1)) then
-                  if (associated(dptr % r1 % ioinfo)) then
-                     deallocate(dptr % r1 % ioinfo)
-                  end if
-
                   if (associated(dptr % r1 % array)) then
                      deallocate(dptr % r1 % array)
                   end if
 
                   deallocate(dptr % r1)
                else if (associated(dptr % r2)) then
-                  if (associated(dptr % r2 % ioinfo)) then
-                     deallocate(dptr % r2 % ioinfo)
-                  end if
-
                   if (associated(dptr % r2 % array)) then
                      deallocate(dptr % r2 % array)
                   end if
 
                   deallocate(dptr % r2)
                else if (associated(dptr % r3)) then
-                  if (associated(dptr % r3 % ioinfo)) then
-                     deallocate(dptr % r3 % ioinfo)
-                  end if
-
                   if (associated(dptr % r3 % array)) then
                      deallocate(dptr % r3 % array)
                   end if
 
                   deallocate(dptr % r3)
                else if (associated(dptr % r4)) then
-                  if (associated(dptr % r4 % ioinfo)) then
-                     deallocate(dptr % r4 % ioinfo)
-                  end if
-
                   if (associated(dptr % r4 % array)) then
                      deallocate(dptr % r4 % array)
                   end if
 
                   deallocate(dptr % r4)
                else if (associated(dptr % r5)) then
-                  if (associated(dptr % r5 % ioinfo)) then
-                     deallocate(dptr % r5 % ioinfo)
-                  end if
-
                   if (associated(dptr % r5 % array)) then
                      deallocate(dptr % r5 % array)
                   end if
 
                   deallocate(dptr % r5)
                else if (associated(dptr % i0)) then
-                  if (associated(dptr % i0 % ioinfo)) then
-                     deallocate(dptr % i0 % ioinfo)
-                  end if
-
                   deallocate(dptr % i0)
                else if (associated(dptr % i1)) then
-                  if (associated(dptr % i1 % ioinfo)) then
-                     deallocate(dptr % i1 % ioinfo)
-                  end if
-
                   if (associated(dptr % i1 % array)) then
                      deallocate(dptr % i1 % array)
                   end if
 
                   deallocate(dptr % i1)
                else if (associated(dptr % i2)) then
-                  if (associated(dptr % i2 % ioinfo)) then
-                     deallocate(dptr % i2 % ioinfo)
-                  end if
-
                   if (associated(dptr % i2 % array)) then
                      deallocate(dptr % i2 % array)
                   end if
 
                   deallocate(dptr % i2)
                else if (associated(dptr % i3)) then
-                  if (associated(dptr % i3 % ioinfo)) then
-                     deallocate(dptr % i3 % ioinfo)
-                  end if
-
                   if (associated(dptr % i3 % array)) then
                      deallocate(dptr % i3 % array)
                   end if
 
                   deallocate(dptr % i3)
                else if (associated(dptr % c0)) then
-                  if (associated(dptr % c0 % ioinfo)) then
-                     deallocate(dptr % c0 % ioinfo)
-                  end if
-
                   deallocate(dptr % c0)
                else if (associated(dptr % c1)) then
-                  if (associated(dptr % c1 % ioinfo)) then
-                     deallocate(dptr % c1 % ioinfo)
-                  end if
-
                   if (associated(dptr % c1 % array)) then
                      deallocate(dptr % c1 % array)
                   end if
 
                   deallocate(dptr % c1)
                else if (associated(dptr % l0)) then
-                  if (associated(dptr % l0 % ioinfo)) then
-                     deallocate(dptr % l0 % ioinfo)
-                  end if
-
                   deallocate(dptr % l0)
                else if (associated(dptr % r0a)) then
-                  do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r0a(j) % ioinfo)) then
-                        deallocate(dptr % r0a(j) % ioinfo)
-                     end if
-                  end do
                   deallocate(dptr % r0a)
                else if (associated(dptr % r1a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r1a(j) % ioinfo)) then
-                        deallocate(dptr % r1a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r1a(j) % array)) then
                         deallocate(dptr % r1a(j) % array)
                      end if
@@ -369,10 +308,6 @@ module mpas_pool_routines
                   deallocate(dptr % r1a)
                else if (associated(dptr % r2a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r2a(j) % ioinfo)) then
-                        deallocate(dptr % r2a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r2a(j) % array)) then
                         deallocate(dptr % r2a(j) % array)
                      end if
@@ -380,10 +315,6 @@ module mpas_pool_routines
                   deallocate(dptr % r2a)
                else if (associated(dptr % r3a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r3a(j) % ioinfo)) then
-                        deallocate(dptr % r3a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r3a(j) % array)) then
                         deallocate(dptr % r3a(j) % array)
                      end if
@@ -391,10 +322,6 @@ module mpas_pool_routines
                   deallocate(dptr % r3a)
                else if (associated(dptr % r4a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r4a(j) % ioinfo)) then
-                        deallocate(dptr % r4a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r4a(j) % array)) then
                         deallocate(dptr % r4a(j) % array)
                      end if
@@ -402,28 +329,15 @@ module mpas_pool_routines
                   deallocate(dptr % r4a)
                else if (associated(dptr % r5a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r5a(j) % ioinfo)) then
-                        deallocate(dptr % r5a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r5a(j) % array)) then
                         deallocate(dptr % r5a(j) % array)
                      end if
                   end do
                   deallocate(dptr % r5a)
                else if (associated(dptr % i0a)) then
-                  do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % i0a(j) % ioinfo)) then
-                        deallocate(dptr % i0a(j) % ioinfo)
-                     end if
-                  end do
                   deallocate(dptr % i0a)
                else if (associated(dptr % i1a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % i1a(j) % ioinfo)) then
-                        deallocate(dptr % i1a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % i1a(j) % array)) then
                         deallocate(dptr % i1a(j) % array)
                      end if
@@ -431,10 +345,6 @@ module mpas_pool_routines
                   deallocate(dptr % i1a)
                else if (associated(dptr % i2a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % i2a(j) % ioinfo)) then
-                        deallocate(dptr % i2a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % i2a(j) % array)) then
                         deallocate(dptr % i2a(j) % array)
                      end if
@@ -442,39 +352,21 @@ module mpas_pool_routines
                   deallocate(dptr % i2a)
                else if (associated(dptr % i3a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % i3a(j) % ioinfo)) then
-                        deallocate(dptr % i3a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % i3a(j) % array)) then
                         deallocate(dptr % i3a(j) % array)
                      end if
                   end do
                   deallocate(dptr % i3a)
                else if (associated(dptr % c0a)) then
-                  do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % c0a(j) % ioinfo)) then
-                        deallocate(dptr % c0a(j) % ioinfo)
-                     end if
-                  end do
                   deallocate(dptr % c0a)
                else if (associated(dptr % c1a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % c1a(j) % ioinfo)) then
-                        deallocate(dptr % c1a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % c1a(j) % array)) then
                         deallocate(dptr % c1a(j) % array)
                      end if
                   end do
                   deallocate(dptr % c1a)
                else if (associated(dptr % l0a)) then
-                  do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % l0a(j) % ioinfo)) then
-                        deallocate(dptr % l0a(j) % ioinfo)
-                     end if
-                  end do
                   deallocate(dptr % l0a)
                else
                   call pool_mesg('While destroying pool, member '//trim(ptr % key)//' has no valid field pointers.')

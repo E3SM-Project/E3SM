@@ -877,7 +877,6 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd, "         end if\n");
 				fortprintf(fd, "\n");
 				fortprintf(fd, "         allocate(ownedIndices)\n");
-				fortprintf(fd, "         nullify(ownedIndices %% ioinfo)\n");
 				fortprintf(fd, "         ownedIndices %% hasTimeDimension = .false.\n");
 				fortprintf(fd, "         ownedIndices %% isActive = .true.\n");
 				fortprintf(fd, "         ownedIndices %% isVarArray = .false.\n");
@@ -1168,7 +1167,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "! Defining time level %d\n", time_lev);
 		fortprintf(fd, "      allocate( %s(%d) %% constituentNames(numConstituents) )\n", pointer_name, time_lev);
-		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n", pointer_name, time_lev);
 		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, vararrname);
 		if (decomp != -1) {
 			fortprintf(fd, "      %s(%d) %% isDecomposed = .true.\n", pointer_name, time_lev);
@@ -1365,7 +1363,6 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "\n");
 		fortprintf(fd, "! Setting up time level %d\n", time_lev);
-		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n", pointer_name, time_lev);
 		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, varname);
 		fortprintf(fd, "      %s(%d) %% isVarArray = .false.\n", pointer_name, time_lev);
 		if (decomp != -1) {
