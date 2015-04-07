@@ -363,6 +363,7 @@ module mpas_bootstrapping
       character (len=StrKIND) :: fieldName
       integer :: streamDirection
       logical :: streamActive
+      logical :: fieldActive
 
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -395,17 +396,19 @@ module mpas_bootstrapping
             ! Build stream dimension pool from the list of fields
             call mpas_pool_create_pool(streamDimensions)
 
-            do while ( mpas_stream_mgr_get_next_field(domain % streamManager, streamName, fieldName) )
+            do while ( mpas_stream_mgr_get_next_field(domain % streamManager, streamName, fieldName, isActive=fieldActive) )
 
-               call get_dimlist_for_field(domain % blocklist % allFields, fieldName, dimNames)
+               if (fieldActive) then
+                  call get_dimlist_for_field(domain % blocklist % allFields, fieldName, dimNames)
 
-               do i=1,size(dimNames)
-                  call mpas_pool_get_dimension(streamDimensions, dimNames(i), dimValue)
-                  if ( .not. associated(dimValue) ) then
-                     call mpas_pool_add_dimension(streamDimensions, dimNames(i), MPAS_MISSING_DIM)
-                  end if
-               end do
-               deallocate(dimNames)
+                  do i=1,size(dimNames)
+                     call mpas_pool_get_dimension(streamDimensions, dimNames(i), dimValue)
+                     if ( .not. associated(dimValue) ) then
+                        call mpas_pool_add_dimension(streamDimensions, dimNames(i), MPAS_MISSING_DIM)
+                     end if
+                  end do
+                  deallocate(dimNames)
+               end if
 
             end do
 

@@ -85,7 +85,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
 	const char *varname_in_code, *varname_in_stream;
 	const char *const_model, *const_core, *const_version;
-	const char *streamname, *streamtype, *streamfilename, *streamrecords, *streaminterval_in, *streaminterval_out, *streampackages;
+	const char *streamname, *streamtype, *streamfilename, *streamrecords, *streaminterval_in, *streaminterval_out, *streampackages, *streamvarpackages;
 	const char *streamimmutable, *streamformat;
 	const char *substreamname, *streamimmutable2;
 	const char *streamname2, *streamtype2, *streamfilename2;
@@ -228,7 +228,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			free(string);
 
 			if (err_string != NULL){
-				fprintf(stderr, "ERROR: Package %s used on var_struct %s is not defined.\n", err_string, structname);
+				fprintf(stderr, "ERROR: Package %s attached to var_struct %s is not defined.\n", err_string, structname);
 				return 1;
 			}
 		}
@@ -313,7 +313,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				free(string);
 
 				if (err_string != NULL){
-					fprintf(stderr, "ERROR: Package %s used on var_array %s in var_struct %s is not defined.\n", err_string, vararrname, structname);
+					fprintf(stderr, "ERROR: Package %s attached to var_array %s in var_struct %s is not defined.\n", err_string, vararrname, structname);
 					return 1;
 				}
 			}
@@ -374,7 +374,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 					free(string);
 
 					if (err_string != NULL){
-						fprintf(stderr, "ERROR: Package %s used on constituent variable %s in var_array %s var_struct %s is not defined.\n", err_string, varname, vararrname, structname);
+						fprintf(stderr, "ERROR: Package %s attached to constituent variable %s in var_array %s var_struct %s is not defined.\n", err_string, varname, vararrname, structname);
 						return 1;
 					}
 				}
@@ -460,7 +460,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				free(string);
 
 				if (err_string != NULL){
-					fprintf(stderr, "ERROR: Package %s used on variable %s in var_struct %s is not defined.\n", err_string, varname, structname);
+					fprintf(stderr, "ERROR: Package %s attached to variable %s in var_struct %s is not defined.\n", err_string, varname, structname);
 					return 1;
 				}
 			} else if ( persistence == SCRATCH && varpackages != NULL ) {
@@ -555,6 +555,8 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				}
 				for (stream_var_xml = ezxml_child(stream_xml, "var"); stream_var_xml; stream_var_xml = stream_var_xml->next) {
 					varname_in_stream = ezxml_attr(stream_var_xml, "name");
+					streamvarpackages = ezxml_attr(stream_var_xml, "packages");
+
 					if (varname_in_stream == NULL) {
 						fprintf(stderr, "ERROR: Variable field in stream \"%s\" specification missing \"name\" attribute.\n", streamname);
 						return 1;
@@ -595,7 +597,82 @@ done_searching:
 						return 1;
 					}	
 
+					if (streamvarpackages != NULL) {
+						string = strdup(streamvarpackages);
+						err_string = check_packages(registry, string);
+						free(string);
 
+						if (err_string != NULL) {
+							fprintf(stderr, "ERROR: Package \"%s\" attached to var \"%s\" in stream \"%s\" is not defined.\n", err_string, varname_in_stream, streamname);
+							return 1;
+						}
+					}
+				}
+				
+				/* Validate packages for var_struct members of the stream */
+				for (stream_var_xml = ezxml_child(stream_xml, "var_struct"); stream_var_xml; stream_var_xml = stream_var_xml->next) {
+					varname_in_stream = ezxml_attr(stream_var_xml, "name");
+					streamvarpackages = ezxml_attr(stream_var_xml, "packages");
+
+					if (varname_in_stream == NULL) {
+						fprintf(stderr, "ERROR: Variable structure in stream \"%s\" specification missing \"name\" attribute.\n", streamname);
+						return 1;
+					}
+
+					if (streamvarpackages != NULL) {
+						string = strdup(streamvarpackages);
+						err_string = check_packages(registry, string);
+						free(string);
+
+						if (err_string != NULL) {
+							fprintf(stderr, "ERROR: Package \"%s\" attached to var_struct \"%s\" in stream \"%s\" is not defined.\n", err_string, varname_in_stream, streamname);
+							return 1;
+						}
+					}
+				}
+				
+				/* Validate packages for var_array members of the stream */
+				for (stream_var_xml = ezxml_child(stream_xml, "var_array"); stream_var_xml; stream_var_xml = stream_var_xml->next) {
+					varname_in_stream = ezxml_attr(stream_var_xml, "name");
+					streamvarpackages = ezxml_attr(stream_var_xml, "packages");
+
+					if (varname_in_stream == NULL) {
+						fprintf(stderr, "ERROR: Variable array in stream \"%s\" specification missing \"name\" attribute.\n", streamname);
+						return 1;
+					}
+
+					if (streamvarpackages != NULL) {
+						string = strdup(streamvarpackages);
+						err_string = check_packages(registry, string);
+						free(string);
+
+						if (err_string != NULL) {
+							fprintf(stderr, "ERROR: Package \"%s\" attached to var_array \"%s\" in stream \"%s\" is not defined.\n", err_string, varname_in_stream, streamname);
+							return 1;
+						}
+					}
+				}
+				
+				/* Validate packages for stream members of the stream */
+				for (stream_var_xml = ezxml_child(stream_xml, "stream"); stream_var_xml; stream_var_xml = stream_var_xml->next) {
+					varname_in_stream = ezxml_attr(stream_var_xml, "name");
+					streamvarpackages = ezxml_attr(stream_var_xml, "packages");
+
+					if (varname_in_stream == NULL) {
+						fprintf(stderr, "ERROR: Variable array in stream \"%s\" specification missing \"name\" attribute.\n", streamname);
+						return 1;
+					}
+
+					if (streamvarpackages != NULL) {
+						string = strdup(streamvarpackages);
+						err_string = check_packages(registry, string);
+						free(string);
+
+						if (err_string != NULL) {
+							fprintf(stderr, "ERROR: Package \"%s\" attached to stream \"%s\" in stream \"%s\" is not defined.\n", err_string, varname_in_stream, streamname);
+							return 1;
+						}
+					}
 				}
 			}
 
@@ -609,7 +686,7 @@ done_searching:
 				free(string);
 
 				if (err_string != NULL){
-					fprintf(stderr, "ERROR: Package %s used on stream %s is not defined.\n", err_string, streamname);
+					fprintf(stderr, "ERROR: Package \"%s\" attached to stream \"%s\" is not defined.\n", err_string, streamname);
 					return 1;
 				}
 			}
