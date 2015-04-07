@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<registry model="mpas" core="test" version="3.3">
+	<dims>
+		<dim name="nCells"/>
+		<dim name="nEdges"/>
+		<dim name="nVertices"/>
+		<dim name="maxEdges"/>
+		<dim name="maxEdges2"/>
+		<dim name="vertexDegree"/>
+		<dim name="TWO" definition="2"/>
+	</dims>
+	<nml_record name="time_management" in_defaults="true">
+		<nml_option name="config_calendar_type"              type="character"     default_value="gregorian_noleap"/>
+		<nml_option name="config_start_time"                 type="character"     default_value="0000-01-01_00:00:00"/>
+		<nml_option name="config_stop_time"                  type="character"     default_value="none"/>
+		<nml_option name="config_run_duration"               type="character"     default_value="none"/>
+	</nml_record>
+	<nml_record name="io" in_defaults="true">
+		<nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
+		<nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
+	</nml_record>
+	<nml_record name="decomposition" in_defaults="true">
+		<nml_option name="config_num_halos"                  type="integer"       default_value="3"/>
+		<nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="graph.info.part."/>
+		<nml_option name="config_number_of_blocks"           type="integer"       default_value="0"/>
+		<nml_option name="config_explicit_proc_decomp"       type="logical"       default_value=".false."/>
+		<nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graph.info.part."/>
+	</nml_record>
+	<streams>
+		<stream name="input" 
+				type="input"
+				filename_template="grid.nc"
+				filename_interval="none"
+				input_interval="initial_only"
+				immutable="true">
+
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="meshDensity"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+		</stream>
+	</streams>
+	<var_struct name="model" time_levs="1">
+		<var name="xtime"                             type="text"     dimensions="Time"/>
+	</var_struct>
+	<var_struct name="mesh" time_levs="1">
+		<var name="latCell"                           type="real"     dimensions="nCells"/>
+		<var name="lonCell"                           type="real"     dimensions="nCells"/>
+		<var name="xCell"                             type="real"     dimensions="nCells"/>
+		<var name="yCell"                             type="real"     dimensions="nCells"/>
+		<var name="zCell"                             type="real"     dimensions="nCells"/>
+		<var name="indexToCellID"                     type="integer"  dimensions="nCells"/>
+		<var name="latEdge"                           type="real"     dimensions="nEdges"/>
+		<var name="lonEdge"                           type="real"     dimensions="nEdges"/>
+		<var name="xEdge"                             type="real"     dimensions="nEdges"/>
+		<var name="yEdge"                             type="real"     dimensions="nEdges"/>
+		<var name="zEdge"                             type="real"     dimensions="nEdges"/>
+		<var name="indexToEdgeID"                     type="integer"  dimensions="nEdges"/>
+		<var name="latVertex"                         type="real"     dimensions="nVertices"/>
+		<var name="lonVertex"                         type="real"     dimensions="nVertices"/>
+		<var name="xVertex"                           type="real"     dimensions="nVertices"/>
+		<var name="yVertex"                           type="real"     dimensions="nVertices"/>
+		<var name="zVertex"                           type="real"     dimensions="nVertices"/>
+		<var name="indexToVertexID"                   type="integer"  dimensions="nVertices"/>
+		<var name="meshDensity"                       type="real"     dimensions="nCells"/>
+		<var name="meshScalingDel2"                   type="real"     dimensions="nEdges"/>
+		<var name="meshScalingDel4"                   type="real"     dimensions="nEdges"/>
+		<var name="cellsOnEdge"                       type="integer"  dimensions="TWO nEdges"/>
+		<var name="nEdgesOnCell"                      type="integer"  dimensions="nCells"/>
+		<var name="nEdgesOnEdge"                      type="integer"  dimensions="nEdges"/>
+		<var name="edgesOnCell"                       type="integer"  dimensions="maxEdges nCells"/>
+		<var name="edgesOnEdge"                       type="integer"  dimensions="maxEdges2 nEdges"/>
+		<var name="weightsOnEdge"                     type="real"     dimensions="maxEdges2 nEdges"/>
+		<var name="dvEdge"                            type="real"     dimensions="nEdges"/>
+		<var name="dcEdge"                            type="real"     dimensions="nEdges"/>
+		<var name="angleEdge"                         type="real"     dimensions="nEdges"/>
+		<var name="areaCell"                          type="real"     dimensions="nCells"/>
+		<var name="areaTriangle"                      type="real"     dimensions="nVertices"/>
+		<var name="cellsOnCell"                       type="integer"  dimensions="maxEdges nCells"/>
+		<var name="verticesOnCell"                    type="integer"  dimensions="maxEdges nCells"/>
+		<var name="verticesOnEdge"                    type="integer"  dimensions="TWO nEdges"/>
+		<var name="edgesOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
+		<var name="cellsOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
+		<var name="kiteAreasOnVertex"                 type="real"     dimensions="vertexDegree nVertices"/>
+	</var_struct>
+</registry>

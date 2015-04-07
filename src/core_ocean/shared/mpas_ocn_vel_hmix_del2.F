@@ -20,7 +20,8 @@
 
 module ocn_vel_hmix_del2
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_vector_operations
    use mpas_matrix_operations
    use mpas_tensor_operations

@@ -21,7 +21,8 @@
 
 module li_sia
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_configure
    use mpas_dmpar
    use li_mask

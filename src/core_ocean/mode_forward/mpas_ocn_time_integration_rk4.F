@@ -19,7 +19,8 @@
 
 module ocn_time_integration_rk4
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
    use mpas_vector_reconstruction

@@ -7,7 +7,8 @@
 !
 module ocn_time_average
 
-    use mpas_grid_types
+    use mpas_derived_types
+   use mpas_pool_routines
 
     implicit none
     save
