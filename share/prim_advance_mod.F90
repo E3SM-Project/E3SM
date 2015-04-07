@@ -3413,7 +3413,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
       cflux(2,2,2) = cflux(2,2,2) + (corners(np  ,np+1) - corners(np+1,np)) / 2.0d0
     else
       cflux(2,2,1) =                (corners(np+1,np  ) - corners(np,np  ))     
-      cflux(2,2,1) =                (corners(np  ,np+1) - corners(np,np  ))     
+      cflux(2,2,2) =                (corners(np  ,np+1) - corners(np,np  ))     
     endif
   end subroutine
 
