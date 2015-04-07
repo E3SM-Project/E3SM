@@ -9,7 +9,7 @@
 #
 #  Erik Kluzek
 #  Aug/28/2009
-#  $Id: getregional_datasets.pl 55541 2013-11-22 08:41:13Z erik $
+#  $Id: getregional_datasets.pl 65547 2014-11-18 20:34:35Z erik $
 #  $HeadURL;
 #
 #=======================================================================
@@ -33,7 +33,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
 my $cmdline = "@ARGV";                 # Command line arguments to script
 my $cwd = getcwd();                    # current working directory
 my $scrdir;                            # absolute pathname of directory that contains this script
-my $nm = "ProgName::";                 # name to use if script dies
+my $nm = "$ProgName::";                # name to use if script dies
 if ($ProgDir) { 
     $scrdir = absolute_path($ProgDir);
 } else {
@@ -165,16 +165,17 @@ if ( $opts{'verbose'} ) {
 my %infiles  = parse_filelist( $opts{'infilelist'}  );
 my %outfiles = parse_filelist( $opts{'outfilelist'} );
 
-(my $GRIDFILE, my $INFILES, my $OUTFILES) = get_filelists( \%infiles, \%outfiles );
+(my $GRIDFILE, my $NFILES, my $INFILES, my $OUTFILES) = get_filelists( \%infiles, \%outfiles );
 
 write_usermods( \%outfiles );
 
 my $cmd = "env S_LAT=$S_lat W_LON=$W_lon N_LAT=$N_lat E_LON=$E_lon " . 
-          "GRIDFILE=$GRIDFILE OUTFILELIST=$OUTFILES INFILELIST=$INFILES " .
+          "GRIDFILE=$GRIDFILE NFILES=$NFILES OUTFILELIST=$OUTFILES INFILELIST=$INFILES " .
           "$debug $print ncl $scrdir/getregional_datasets.ncl";
 
 print "Execute: $cmd\n";
 system( $cmd );
+system( "/bin/rm $INFILES $OUTFILES" );
 
 #-------------------------------------------------------------------------------
 
@@ -217,6 +218,7 @@ sub parse_filelist {
 sub get_filelists {
 #
 # Make sure file hashes compare correctly, and if so return in and out lists
+# on files
 #
   my $infiles_ref  = shift;
   my $outfiles_ref = shift;
@@ -230,29 +232,27 @@ sub get_filelists {
   if ( "@infiles" ne "@outfiles" ) {
      die "$nm: list of infiles is different from outfiles list\n";
   }
-  my $infilelist  = "";
-  my $outfilelist = "";
+  my $infilelist  = "infilelist_getregional_datasets___tmp.lst";
+  my $outfilelist = "outfilelist_getregional_datasets___tmp.lst";
+  my $fhin  = IO::File->new($infilelist, '>') or die "$nm: can't open file: $infilelist\n";
+  my $fhout = IO::File->new($outfilelist, '>') or die "$nm: can't open file: $outfilelist\n";
 
+  my $nfiles = 0;
   foreach my $file ( @infiles ) {
      my $infile  = $$infiles_ref{$file};
      if ( ! -f "$infile" ) {
         die "$nm: infile ($file) $infile does NOT exist!\n";
      }
-     if ( $infilelist eq "" ) {
-        $infilelist  = $infile;
-     } else {
-        $infilelist  .= ",$infile";
-     }
+     print $fhin "$infile\n";
      my $outfile = $$outfiles_ref{$file};
-     if ( $outfilelist eq "" ) {
-        $outfilelist  = $outfile;
-     } else {
-        $outfilelist  .= ",$outfile";
-     }
      if ( -f "$outfile" ) {
         die "$nm: outfile ($file) $outfile already exists, delete it if you want to overwrite!\n";
      }
+     print $fhout "$outfile\n";
+     $nfiles++;
   }
+  $fhin->close();
+  $fhout->close();
   my $var = $gridfilename;
   my $gridfile = "";
   if ( exists($$infiles_ref{$var}) ) {
@@ -261,7 +261,7 @@ sub get_filelists {
       die "$nm: the grid file ($var) is required to be on the lists!\n";
   }
 
-  return( $gridfile, $infilelist, $outfilelist );
+  return( $gridfile, $nfiles, $infilelist, $outfilelist );
 }
 
 #-------------------------------------------------------------------------------

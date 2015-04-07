@@ -1,0 +1,4 @@
+This testmods directory tests the use of the trilinos solver.
+
+It assumes that the given test is already being built with
+CISM_USE_TRILINOS=TRUE.

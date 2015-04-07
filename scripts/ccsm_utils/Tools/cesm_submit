@@ -1,8 +1,18 @@
 #! /bin/csh -f
 
 source ./Tools/ccsm_getenv || exit -2
-
-./check_case || echo "check_case failed" && exit -2
+set NEEDS_CHECKCASE=1
+if( $?TESTCASE ) then
+  if( $TESTCASE == "SBN" ) then
+    set BATCHSUBMIT=' '
+    echo "emptying BATCHSUBMIT for SBN test"
+	set NEEDS_CHECKCASE=0
+  endif
+endif
+if($NEEDS_CHECKCASE == 1) then
+	echo "checking case.."
+    ./check_case || echo "check_case failed" && exit -2
+endif
 set sdate = `date +"%Y-%m-%d %H:%M:%S"`
 
 if (-e ${CASE}.test) then

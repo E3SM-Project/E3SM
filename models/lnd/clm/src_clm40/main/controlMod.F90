@@ -25,7 +25,7 @@ module controlMod
                             co2_type, wrtdia, co2_ppmv, nsegspc,          &
                             username, fsnowaging, fsnowoptics, fglcmask, &
                             create_glacier_mec_landunit, glc_dyntopo, glc_smb, &
-                            glc_grid, use_c13, use_c14, use_cn, use_cndv, use_crop 
+                            use_c13, use_c14, use_cn, use_cndv, use_crop 
   use spmdMod      , only : masterproc
   use decompMod    , only : clump_pproc
   use histFileMod  , only : max_tapes, max_namlen, &
@@ -190,7 +190,7 @@ contains
 
     ! Glacier_mec info
     namelist /clm_inparm / &    
-         maxpatch_glcmec, glc_smb, glc_dyntopo, glc_grid, fglcmask 
+         maxpatch_glcmec, glc_smb, glc_dyntopo, fglcmask 
 
     ! Other options
 
@@ -398,7 +398,6 @@ contains
     call mpi_bcast (maxpatch_glcmec             ,1, MPI_INTEGER  , 0, mpicom, ier)
     call mpi_bcast (glc_smb,                     1, MPI_LOGICAL  , 0, mpicom, ier)
     call mpi_bcast (glc_dyntopo,                 1, MPI_LOGICAL  , 0, mpicom, ier)
-    call mpi_bcast (glc_grid,        len(glc_grid), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fglcmask,        len(fglcmask), MPI_CHARACTER, 0, mpicom, ier)
 
     ! history file variables
@@ -513,7 +512,6 @@ contains
 
     if (create_glacier_mec_landunit) then
        write(iulog,*) '   glc number of elevation classes =', maxpatch_glcmec
-       write(iulog,*) '   glc grid for glacier mask file = ',trim(glc_grid)
        write(iulog,*) '   glc glacier mask file = ',trim(fglcmask)
        if (glc_dyntopo) then
           write(iulog,*) '   glc CLM glacier topography will evolve dynamically'

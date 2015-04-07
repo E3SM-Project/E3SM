@@ -1,5 +1,5 @@
 #! /bin/tcsh -f
-#BSUB -n 4
+#BSUB -n 32
 #BSUB -R "span[ptile=15]"
 #BSUB -q regular
 #BSUB -N
@@ -21,7 +21,7 @@ module load perlmods
 # WITH MONTHLY HISTORY SLICE INPUT DATA.
 # This script is for debugging only.
 # ---------------------------------------- 
-cd /glade/u/home/aliceb/sandboxes/runs/b.e13.B1850CN.f19_g16.001
+##cd /glade/u/home/aliceb/sandboxes/runs/b.e13.B1850CN.f19_g16.001
 
 ./Tools/ccsm_check_lockedfiles || exit -1
 source ./Tools/ccsm_getenv     || exit -2
@@ -98,9 +98,7 @@ if ($DOUT_S == 'TRUE' && $DOUT_S_GENERATE_TSERIES == 'TRUE') then
 	    echo "are generated. Please manually remove history files in order to"
 	    echo "conserve disk space."
 	 endif
-	 cd $CASEROOT/Tools
-	 mpirun.lsf ./cesm_tseries_generator.py >>& $CASEROOT/tseriesStatus
-	 cd $CASEROOT
+	 mpirun.lsf ./Tools/cesm_tseries_generator.py >>& ./tseriesStatus
          echo "Completed generating variable time series files to $DOUT_S_ROOT"
      else
 	 echo "Variable time series file generation depends on $DOUT_S and $DOUT_S_SAVE_ALL_ON_DISK set to TRUE"

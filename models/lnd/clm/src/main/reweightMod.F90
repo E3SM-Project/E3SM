@@ -32,7 +32,7 @@ contains
     ! Do additional modifications and error-checks that should be done after modifying subgrid
     ! weights
     !
-    ! This should be called whenever any weights change (e.g., pft weights on the column,
+    ! This should be called whenever any weights change (e.g., patch weights on the column,
     ! landunit weights on the grid cell, etc.).
     !
     ! !USES:

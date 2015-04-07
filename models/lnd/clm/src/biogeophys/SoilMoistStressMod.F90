@@ -217,7 +217,7 @@ contains
 
   !--------------------------------------------------------------------------------
   subroutine normalize_unfrozen_rootfr(bounds, ubj, fn, filterp, &
-       canopystate_vars, soilstate_vars, temperature_vars, rootfr_unf)
+       canopystate_inst, soilstate_inst, temperature_inst, rootfr_unf)
     !
     ! !DESCRIPTIONS
     ! normalize root fraction for total unfrozen depth 
@@ -233,7 +233,7 @@ contains
     use SoilStateType   , only : soilstate_type
     use WaterSTateType  , only : waterstate_type
     use SimpleMathMod   , only : array_normalization
-    use PatchType       , only : pft
+    use PatchType       , only : patch
     !
     ! !ARGUMENTS:
     implicit none
@@ -241,9 +241,9 @@ contains
     integer                , intent(in)    :: ubj                                        !ubinning level indices
     integer                , intent(in)    :: fn                                         !filter dimension
     integer                , intent(in)    :: filterp(:)                                 !filter
-    type(canopystate_type) , intent(in)    :: canopystate_vars
-    type(soilstate_type)   , intent(in)    :: soilstate_vars
-    type(temperature_type) , intent(in)    :: temperature_vars
+    type(canopystate_type) , intent(in)    :: canopystate_inst
+    type(soilstate_type)   , intent(in)    :: soilstate_inst
+    type(temperature_type) , intent(in)    :: temperature_inst
     real(r8)               , intent(inout) :: rootfr_unf(bounds%begp:bounds%endp, 1:ubj) !normalized root fraction in unfrozen layers
     !
     ! !LOCAL VARIABLES:
@@ -252,12 +252,12 @@ contains
     !------------------------------------------------------------------------------
 
     associate(                                                               &
-         rootfr               => soilstate_vars%rootfr_patch               , & ! Input:  [real(r8)  (:,:) ]  fraction of roots in each soil layer
+         rootfr               => soilstate_inst%rootfr_patch               , & ! Input:  [real(r8)  (:,:) ]  fraction of roots in each soil layer
 
-         t_soisno             => temperature_vars%t_soisno_col             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
+         t_soisno             => temperature_inst%t_soisno_col             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
 
-         altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth of thaw                               
-         altmax_indx          => canopystate_vars%altmax_indx_col            & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw                                          
+         altmax_lastyear_indx => canopystate_inst%altmax_lastyear_indx_col , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth of thaw                               
+         altmax_indx          => canopystate_inst%altmax_indx_col            & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw                                          
          )
 
       ! main calculation loop  
@@ -274,7 +274,7 @@ contains
             do j = 1, ubj
                do f = 1, fn
                   p = filterp(f)
-                  c = pft%column(p)
+                  c = patch%column(p)
 
                   if ( j <= max(altmax_lastyear_indx(c), altmax_indx(c), 1) )then
                      rootfr_unf(p,j) = rootfr(p,j)
@@ -288,7 +288,7 @@ contains
             do j = 1, ubj
                do f = 1, fn
                   p = filterp(f)
-                  c = pft%column(p)
+                  c = patch%column(p)
 
                   if (t_soisno(c,j) >= tfrz) then
                      rootfr_unf(p,j) = rootfr(p,j)
@@ -312,7 +312,7 @@ contains
   !--------------------------------------------------------------------------------
   subroutine calc_root_moist_stress_clm45default(bounds, &
        nlevgrnd, fn, filterp, rootfr_unf, &
-       temperature_vars, soilstate_vars, energyflux_vars, waterstate_vars, &
+       temperature_inst, soilstate_inst, energyflux_inst, waterstate_inst, &
        soil_water_retention_curve) 
     !
     ! DESCRIPTIONS
@@ -323,13 +323,13 @@ contains
     use shr_log_mod          , only : errMsg => shr_log_errMsg
     use decompMod            , only : bounds_type
     use clm_varcon           , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
-    use EcophysConType       , only : ecophyscon
+    use pftconMod            , only : pftcon
     use TemperatureType      , only : temperature_type
     use SoilStateType        , only : soilstate_type
     use EnergyFluxType       , only : energyflux_type
     use WaterSTateType       , only : waterstate_type
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-    use PatchType            , only : pft
+    use PatchType            , only : patch
     !
     ! !ARGUMENTS:
     implicit none
@@ -338,10 +338,10 @@ contains
     integer                , intent(in)    :: fn                             !number of filters
     integer                , intent(in)    :: filterp(:)                     !filter array          
     real(r8)               , intent(in)    :: rootfr_unf(bounds%begp: , 1: ) 
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
-    type(soilstate_type)   , intent(inout) :: soilstate_vars
-    type(temperature_type) , intent(in)    :: temperature_vars
-    type(waterstate_type)  , intent(inout) :: waterstate_vars
+    type(energyflux_type)  , intent(inout) :: energyflux_inst
+    type(soilstate_type)   , intent(inout) :: soilstate_inst
+    type(temperature_type) , intent(in)    :: temperature_inst
+    type(waterstate_type)  , intent(inout) :: waterstate_inst
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     !
     ! !LOCAL VARIABLES:
@@ -355,31 +355,31 @@ contains
     SHR_ASSERT_ALL((ubound(rootfr_unf) == (/bounds%endp, nlevgrnd/)), errMsg(__FILE__, __LINE__))  
 
     associate(                                                &
-         smpso         => ecophyscon%smpso                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal opening (mm)                    
-         smpsc         => ecophyscon%smpsc                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal closure (mm)                    
+         smpso         => pftcon%smpso                      , & ! Input:  soil water potential at full stomatal opening (mm)                    
+         smpsc         => pftcon%smpsc                      , & ! Input:  soil water potential at full stomatal closure (mm)                    
 
-         t_soisno      => temperature_vars%t_soisno_col     , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
+         t_soisno      => temperature_inst%t_soisno_col     , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
 
-         watsat        => soilstate_vars%watsat_col         , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)   (constant)                     
-         sucsat        => soilstate_vars%sucsat_col         , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                        (constant)                                        
-         bsw           => soilstate_vars%bsw_col            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                         (constant)                                        
-         eff_porosity  => soilstate_vars%eff_porosity_col   , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
-         rootfr        => soilstate_vars%rootfr_patch       , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer
-         rootr         => soilstate_vars%rootr_patch        , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer                      
+         watsat        => soilstate_inst%watsat_col         , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)   (constant)                     
+         sucsat        => soilstate_inst%sucsat_col         , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                        (constant)                                        
+         bsw           => soilstate_inst%bsw_col            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                         (constant)                                        
+         eff_porosity  => soilstate_inst%eff_porosity_col   , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
+         rootfr        => soilstate_inst%rootfr_patch       , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer
+         rootr         => soilstate_inst%rootr_patch        , & ! Output: [real(r8) (:,:) ]  effective fraction of roots in each soil layer                      
 
-         btran         => energyflux_vars%btran_patch       , & ! Output: [real(r8) (:)   ]  transpiration wetness factor (0 to 1) (integrated soil water stress)
-         btran2        => energyflux_vars%btran2_patch      , & ! Output: [real(r8) (:)   ]  integrated soil water stress square
-         rresis        => energyflux_vars%rresis_patch      , & ! Output: [real(r8) (:,:) ]  root soil water stress (resistance) by layer (0-1)  (nlevgrnd)                          
+         btran         => energyflux_inst%btran_patch       , & ! Output: [real(r8) (:)   ]  transpiration wetness factor (0 to 1) (integrated soil water stress)
+         btran2        => energyflux_inst%btran2_patch      , & ! Output: [real(r8) (:)   ]  integrated soil water stress square
+         rresis        => energyflux_inst%rresis_patch      , & ! Output: [real(r8) (:,:) ]  root soil water stress (resistance) by layer (0-1)  (nlevgrnd)                          
 
-         h2osoi_vol    => waterstate_vars%h2osoi_vol_col    , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         h2osoi_liqvol => waterstate_vars%h2osoi_liqvol_col   & ! Output: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
+         h2osoi_vol    => waterstate_inst%h2osoi_vol_col    , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_liqvol => waterstate_inst%h2osoi_liqvol_col   & ! Output: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
          ) 
 
       do j = 1,nlevgrnd
          do f = 1, fn
             p = filterp(f)
-            c = pft%column(p)
-            l = pft%landunit(p)
+            c = patch%column(p)
+            l = patch%landunit(p)
 
             ! Root resistance factors
             ! rootr effectively defines the active root fraction in each layer      
@@ -388,12 +388,12 @@ contains
             else
                s_node = max(h2osoi_liqvol(c,j)/eff_porosity(c,j),0.01_r8)
 
-               !smp_node = max(smpsc(pft%itype(p)), -sucsat(c,j)*s_node**(-bsw(c,j)))
+               !smp_node = max(smpsc(patch%itype(p)), -sucsat(c,j)*s_node**(-bsw(c,j)))
                call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node)
-               smp_node = max(smpsc(pft%itype(p)), smp_node)
+               smp_node = max(smpsc(patch%itype(p)), smp_node)
 
                rresis(p,j) = min( (eff_porosity(c,j)/watsat(c,j))* &
-                    (smp_node - smpsc(pft%itype(p))) / (smpso(pft%itype(p)) - smpsc(pft%itype(p))), 1._r8)
+                    (smp_node - smpsc(patch%itype(p))) / (smpso(patch%itype(p)) - smpsc(patch%itype(p))), 1._r8)
 
 
                if (.not. (perchroot .or. perchroot_alt) ) then
@@ -405,15 +405,15 @@ contains
                !it is possible to further separate out a btran function, but I will leave it for the moment, jyt
                btran(p)    = btran(p) + max(rootr(p,j),0._r8)
 
-               !smp_node_lf = max(smpsc(pft%itype(p)), -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j)))
+               !smp_node_lf = max(smpsc(patch%itype(p)), -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j)))
                s_node = h2osoi_vol(c,j)/watsat(c,j)
 
                call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node_lf)
 
                !smp_node_lf =  -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j))
-               smp_node_lf = max(smpsc(pft%itype(p)), smp_node_lf) 
-               btran2(p)   = btran2(p) +rootfr(p,j)*min((smp_node_lf - smpsc(pft%itype(p))) / &
-                    (smpso(pft%itype(p)) - smpsc(pft%itype(p))), 1._r8)
+               smp_node_lf = max(smpsc(patch%itype(p)), smp_node_lf) 
+               btran2(p)   = btran2(p) +rootfr(p,j)*min((smp_node_lf - smpsc(patch%itype(p))) / &
+                    (smpso(patch%itype(p)) - smpsc(patch%itype(p))), 1._r8)
             endif
          end do
       end do
@@ -435,8 +435,8 @@ contains
 
   !--------------------------------------------------------------------------------
   subroutine calc_root_moist_stress(bounds, nlevgrnd, fn, filterp, &
-       canopystate_vars, energyflux_vars,  soilstate_vars, temperature_vars, &
-       waterstate_vars, soil_water_retention_curve)
+       canopystate_inst, energyflux_inst,  soilstate_inst, temperature_inst, &
+       waterstate_inst, soil_water_retention_curve)
     !
     ! DESCRIPTIONS
     ! compute the root water stress using different approaches
@@ -460,11 +460,11 @@ contains
     integer                , intent(in)    :: nlevgrnd
     integer                , intent(in)    :: fn
     integer                , intent(in)    :: filterp(:)
-    type(canopystate_type) , intent(in)    :: canopystate_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
-    type(soilstate_type)   , intent(inout) :: soilstate_vars
-    type(temperature_type) , intent(in)    :: temperature_vars
-    type(waterstate_type)  , intent(inout) :: waterstate_vars
+    type(canopystate_type) , intent(in)    :: canopystate_inst
+    type(energyflux_type)  , intent(inout) :: energyflux_inst
+    type(soilstate_type)   , intent(inout) :: soilstate_inst
+    type(temperature_type) , intent(in)    :: temperature_inst
+    type(waterstate_type)  , intent(inout) :: waterstate_inst
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     !
     ! !LOCAL VARIABLES:
@@ -482,9 +482,9 @@ contains
          ubj = nlevgrnd,                    &
          fn = fn,                           &
          filterp = filterp,                 &
-         canopystate_vars=canopystate_vars, &
-         soilstate_vars=soilstate_vars,     &
-         temperature_vars=temperature_vars, & 
+         canopystate_inst=canopystate_inst, &
+         soilstate_inst=soilstate_inst,     &
+         temperature_inst=temperature_inst, & 
          rootfr_unf=rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd))
 
     !suppose h2osoi_liq, eff_porosity are already computed somewhere else
@@ -497,10 +497,10 @@ contains
             nlevgrnd = nlevgrnd,                        &
             fn = fn,                                    &
             filterp = filterp,                          &
-            energyflux_vars=energyflux_vars,            &
-            temperature_vars=temperature_vars,          &
-            soilstate_vars=soilstate_vars,              &
-            waterstate_vars=waterstate_vars,            &
+            energyflux_inst=energyflux_inst,            &
+            temperature_inst=temperature_inst,          &
+            soilstate_inst=soilstate_inst,              &
+            waterstate_inst=waterstate_inst,            &
             rootfr_unf=rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd), &
             soil_water_retention_curve=soil_water_retention_curve)
 

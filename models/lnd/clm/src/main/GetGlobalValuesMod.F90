@@ -76,7 +76,7 @@ contains
     use GridcellType , only : grc                
     use LandunitType , only : lun                
     use ColumnType   , only : col                
-    use PatchType    , only : pft                
+    use PatchType    , only : patch                
     !
     ! Arguments:
     integer          , intent(in) :: decomp_index
@@ -122,17 +122,17 @@ contains
     else if (trim(clmlevel) == namep) then
 
        ipft = decomp_index
-       icol = pft%column(ipft)
-       ilun = pft%landunit(ipft)
-       igrc = pft%gridcell(ipft)
-       write(iulog,*)'local  pft      index = ',ipft
-       write(iulog,*)'global pft      index = ',GetGlobalIndex(decomp_index=ipft, clmlevel=namep)
+       icol = patch%column(ipft)
+       ilun = patch%landunit(ipft)
+       igrc = patch%gridcell(ipft)
+       write(iulog,*)'local  patch      index = ',ipft
+       write(iulog,*)'global patch      index = ',GetGlobalIndex(decomp_index=ipft, clmlevel=namep)
        write(iulog,*)'global column   index = ',GetGlobalIndex(decomp_index=icol, clmlevel=namec)
        write(iulog,*)'global landunit index = ',GetGlobalIndex(decomp_index=ilun, clmlevel=namel)
        write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
        write(iulog,*)'gridcell longitude    = ',grc%londeg(igrc)
        write(iulog,*)'gridcell latitude     = ',grc%latdeg(igrc)
-       write(iulog,*)'pft      type         = ',pft%itype(ipft)
+       write(iulog,*)'pft      type         = ',patch%itype(ipft)
        write(iulog,*)'column   type         = ',col%itype(icol)
        write(iulog,*)'landunit type         = ',lun%itype(ilun)
 

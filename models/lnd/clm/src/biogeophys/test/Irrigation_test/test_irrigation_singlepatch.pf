@@ -1,0 +1,305 @@
+module test_irrigation_singlepatch
+
+  ! Tests of IrrigationMod that just involve a single patch
+
+  use pfunit_mod
+  use unittestSubgridMod
+  use IrrigationWrapperMod
+  use IrrigationMod, only : irrigation_type
+  use shr_kind_mod, only : r8 => shr_kind_r8
+  use clm_varpar, only : nlevgrnd
+
+  implicit none
+  save
+
+  real(r8), parameter :: tol = 1.e-13_r8
+
+  @TestCase
+  type, extends(TestCase) :: TestIrrigation
+     integer :: numf
+     integer, allocatable :: filter(:)
+     type(irrigation_type) :: irrigation
+     type(irrigation_inputs_type) :: irrigation_inputs
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+  end type TestIrrigation
+
+contains
+
+  subroutine setUp(this)
+    ! Set up subgrid structure for a single patch; also set up the filter for this single
+    ! patch.
+
+    use unittestSimpleSubgridSetupsMod, only : setup_single_veg_patch
+    use unittestFilterBuilderMod, only : filter_from_range
+    class(TestIrrigation), intent(inout) :: this
+
+    ! Need nlevgrnd at least 3 for some tests to be meaningful
+    nlevgrnd = 3
+
+    call setup_single_veg_patch(pft_type=1)
+    call filter_from_range(start=bounds%begp, end=bounds%endp, numf=this%numf, filter=this%filter)
+
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestIrrigation), intent(inout) :: this
+
+    call teardownIrrigation(this%irrigation_inputs, this%irrigation)
+    call unittest_subgrid_teardown()
+  end subroutine tearDown
+
+  @Test
+  subroutine irrigation_flux_is_correct(this)
+    class(TestIrrigation), intent(inout) :: this
+    real(r8), allocatable :: deficits(:,:)
+    real(r8) :: expected
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    call this%irrigation_inputs%computeDeficits(this%irrigation, deficits)
+    expected = sum(deficits(bounds%begp,:)) / this%irrigation_inputs%irrigation_params%irrig_length
+    @assertEqual(expected, this%irrigation%qflx_irrig_patch(bounds%begp), tolerance=tol)
+
+  end subroutine irrigation_flux_is_correct
+
+  @Test
+  subroutine no_irrigation_for_unirrigated_pfts(this)
+    use pftconMod, only : pftcon
+    use PatchType, only : patch
+    class(TestIrrigation), intent(inout) :: this
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=2)
+    patch%itype(bounds%begp) = 2
+    pftcon%irrigated(1:2) = [1.0, 0.0]
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%begp))
+
+  end subroutine no_irrigation_for_unirrigated_pfts
+
+  @Test
+  subroutine no_irrigation_for_lai0(this)
+    class(TestIrrigation), intent(inout) :: this
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    this%irrigation_inputs%elai(bounds%begp) = 0._r8
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%begp))
+
+  end subroutine no_irrigation_for_lai0
+
+  @Test
+  subroutine no_irrigation_for_btran1(this)
+    class(TestIrrigation), intent(inout) :: this
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    this%irrigation_inputs%btran(bounds%begp) = 1._r8
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%begp))
+
+  end subroutine no_irrigation_for_btran1
+
+  @Test
+  subroutine no_irrigation_at_wrong_time(this)
+    class(TestIrrigation), intent(inout) :: this
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    ! Set previous time to be one time step before the time when we would start irrigating
+    this%irrigation_inputs%time_prev = this%irrigation_inputs%time_prev - dtime
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%begp))
+
+  end subroutine no_irrigation_at_wrong_time
+
+  @Test
+  subroutine irrigation_should_happen_for_big_longitude(this)
+    use GridcellType, only : grc
+    class(TestIrrigation), intent(inout) :: this
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    ! Use a big longitude and a time_prev that should lead to irrigation at that longitude
+    ! The main point of this is to test the modulo in the local_time calculation
+    grc%londeg(:) = 359.9_r8
+    this%irrigation_inputs%time_prev = this%irrigation_inputs%irrigation_params%irrig_start_time + dtime
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    @assertTrue(this%irrigation%qflx_irrig_patch(bounds%begp) > 0._r8)
+
+  end subroutine irrigation_should_happen_for_big_longitude
+
+  @Test
+  subroutine irrigation_continues_at_same_rate_for_multiple_time_steps(this)
+    class(TestIrrigation), intent(inout) :: this
+    real(r8), allocatable :: deficits(:,:)
+    real(r8) :: expected
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+
+    ! Call irrigation routines
+    ! First call the routines to get irrigation started. Then increment time, and also
+    ! adjust the soil water amount. Irrigation should continue at the original rate.
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+    call this%irrigation_inputs%computeDeficits(this%irrigation, deficits)
+    expected = sum(deficits(bounds%begp,:)) / this%irrigation_inputs%irrigation_params%irrig_length
+    this%irrigation_inputs%time_prev = this%irrigation_inputs%time_prev + dtime
+    this%irrigation_inputs%h2osoi_liq = 100._r8
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    @assertEqual(expected, this%irrigation%qflx_irrig_patch(bounds%begp), tolerance=tol)
+
+  end subroutine irrigation_continues_at_same_rate_for_multiple_time_steps
+
+  @Test
+  subroutine irrigation_continues_for_correct_number_of_time_steps(this)
+    class(TestIrrigation), intent(inout) :: this
+    integer :: time
+    integer :: expected_num_time_steps
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    ! The following assumes that dtime divides evenly into to irrigation length;
+    ! if not, it will be off by one
+    expected_num_time_steps = this%irrigation_inputs%irrigation_params%irrig_length / dtime
+    
+    ! Ensure that irrigation flux is still non-zero after the expected number of time
+    ! steps
+    do time = 1, expected_num_time_steps
+       call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+       this%irrigation_inputs%time_prev = this%irrigation_inputs%time_prev + dtime
+    end do
+    @assertTrue(this%irrigation%qflx_irrig_patch(bounds%begp) > 0._r8)
+
+    ! Ensure that irrigation flux goes to 0 in the following time step
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%begp))
+
+  end subroutine irrigation_continues_for_correct_number_of_time_steps
+  
+  @Test
+  subroutine irrigation_flux_is_correct_on_second_day(this)
+    ! Loops through to a point where irrigation gets to 0, then resets time to the irrig
+    ! start time and does another set of calls to the irrigation routines. Ensures that
+    ! we're back to the intended flux.
+
+    class(TestIrrigation), intent(inout) :: this
+    real(r8), allocatable :: deficits(:,:)
+    real(r8) :: expected
+    integer :: time_prev_orig
+    integer :: time
+    integer :: expected_num_time_steps
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    time_prev_orig = this%irrigation_inputs%time_prev
+
+    ! Call irrigation routines for long enough that irrigation should go to 0
+    expected_num_time_steps = this%irrigation_inputs%irrigation_params%irrig_length / dtime
+    do time = 1, expected_num_time_steps + 1
+       call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+       this%irrigation_inputs%time_prev = this%irrigation_inputs%time_prev + dtime
+    end do
+    ! The following assertion is mainly here to make sure the test is working as intended
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%begp))
+
+    ! Now reset time, change soil moisture, and make sure that irrigation happens as expected
+    this%irrigation_inputs%time_prev = time_prev_orig
+    this%irrigation_inputs%h2osoi_liq(:,:) = 100._r8
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+    call this%irrigation_inputs%computeDeficits(this%irrigation, deficits)
+    expected = sum(deficits(bounds%begp,:)) / this%irrigation_inputs%irrigation_params%irrig_length
+    @assertEqual(expected, this%irrigation%qflx_irrig_patch(bounds%begp), tolerance=tol)
+
+  end subroutine irrigation_flux_is_correct_on_second_day
+    
+  @Test
+  subroutine irrigation_flux_excludes_layers_without_roots(this)
+    class(TestIrrigation), intent(inout) :: this
+    real(r8), allocatable :: deficits(:,:)
+    real(r8) :: expected
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    this%irrigation_inputs%rootfr(bounds%begp, 2) = 0._r8
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    call this%irrigation_inputs%computeDeficits(this%irrigation, deficits)
+    ! Subtract the deficit from layer 2, since we don't have roots there:
+    expected = (sum(deficits(bounds%begp,:)) - deficits(bounds%begp, 2)) &
+         / this%irrigation_inputs%irrigation_params%irrig_length
+    @assertEqual(expected, this%irrigation%qflx_irrig_patch(bounds%begp), tolerance=tol)
+
+  end subroutine irrigation_flux_excludes_layers_without_roots
+
+  @Test
+  subroutine no_irrigation_for_frozen_soil(this)
+    class(TestIrrigation), intent(inout) :: this
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    this%irrigation_inputs%t_soisno(bounds%begc, :) = 272._r8
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%begp))
+
+  end subroutine no_irrigation_for_frozen_soil
+
+  @Test
+  subroutine no_irrigation_below_frozen_soil_layer(this)
+    class(TestIrrigation), intent(inout) :: this
+    real(r8), allocatable :: deficits(:,:)
+    real(r8) :: expected
+
+    ! Setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    this%irrigation_inputs%t_soisno(bounds%begc, 2) = 272._r8
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    call this%irrigation_inputs%computeDeficits(this%irrigation, deficits)
+    ! Only include deficit from top layer, since 2nd layer is frozen
+    expected = deficits(bounds%begp, 1) / this%irrigation_inputs%irrigation_params%irrig_length
+    @assertEqual(expected, this%irrigation%qflx_irrig_patch(bounds%begp))
+
+  end subroutine no_irrigation_below_frozen_soil_layer
+
+end module test_irrigation_singlepatch

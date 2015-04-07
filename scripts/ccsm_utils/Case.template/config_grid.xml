@@ -92,6 +92,8 @@ Each grid is associated with five names
 
 <!--- cism grids --> 
 
+<GRID sname="0.9x1.25_gx1v6_gland4"    alias="f09_g16_gl4" compset="_CISM">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</GRID>
+
 <GRID sname="1.9x2.5_1.9x2.5_gland10"   alias="f19_f19_gl10" compset="DOCN.*_CISM">a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null</GRID>
 <GRID sname="T31_gx3v7_gland10"         alias="T31_g37_gl10" compset="_CISM">a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null</GRID>
 <GRID sname="0.9x1.25_gx1v6_gland10"    alias="f09_g16_gl10" compset="_CISM">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland10_w%null</GRID>

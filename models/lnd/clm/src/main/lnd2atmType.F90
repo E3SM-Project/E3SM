@@ -8,17 +8,16 @@ module lnd2atmType
   use shr_kind_mod  , only : r8 => shr_kind_r8
   use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod   , only : errMsg => shr_log_errMsg
-  use shr_megan_mod , only : shr_megan_mechcomps_n
-  use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
-  use clm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4
-  use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
+  use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+  use clm_varcon    , only : spval
+  use clm_varctl    , only : use_lch4
+  use shr_megan_mod , only : shr_megan_mechcomps_n
+  use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   !
   ! !PUBLIC TYPES:
   implicit none
   private
-  save
 
   ! ----------------------------------------------------
   ! land -> atmosphere variables structure
@@ -120,7 +119,7 @@ contains
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival
     endif
     if ( n_drydep > 0 .and. drydep_method == DD_XLND )then
-       allocate(this%ddvel_grc(begg:endg,1:n_drydep));   this%ddvel_grc(:,:)=ival
+       allocate(this%ddvel_grc(begg:endg,1:n_drydep)); this%ddvel_grc(:,:)=ival
     end if
 
   end subroutine InitAllocate

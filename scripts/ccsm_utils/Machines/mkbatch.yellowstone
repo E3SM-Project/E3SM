@@ -54,18 +54,6 @@ endif
 
 ./xmlchange -file env_mach_pes.xml -id COST_PES -val ${costpes}
 
-if ($?ACCOUNT) then
-  set account_name = $ACCOUNT
-else
-  if (-e ~/.cesm_proj) then
-     set account_name = `head -1 ~/.cesm_proj`
-  else
-     echo "WARNING: invalid account number P00000000 used by default"
-     echo "WARNING: please use the ACCOUNT environment variable or ~/.cesm_proj to set this in the future"
-     set account_name = P00000000
-  endif
-endif
-
 set time_limit = "2:00"
 set queue_x = "-x"
 if ($?QUEUE) then
@@ -107,7 +95,7 @@ cat >! $file << EOF1
 #BSUB -e cesm.stderr.%J
 #BSUB -J $CASE
 #BSUB -W ${time_limit}
-#BSUB -P ${account_name}
+#BSUB -P ${PROJECT}
 set maxthrds = $maxthrds
 source /glade/apps/opt/lmod/lmod/init/csh
 module load perlmods
@@ -170,16 +158,6 @@ endif
 touch ${CASEROOT}/${CASE}.l_archive
 chmod 775 ${CASEROOT}/${CASE}.l_archive
 
-if ($?ACCOUNT) then
-  set account_name = $ACCOUNT
-else
-  if (-e ~/.cesm_proj) then
-     set account_name = `head -1 ~/.cesm_proj`
-  else
-     set account_name = P00000000
-  endif
-endif
-
 cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #! /bin/csh -f
 #BSUB -n 1
@@ -187,7 +165,7 @@ cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #BSUB -e poe.harerr.%J
 #BSUB -W 3:00
 #BSUB -q caldera
-#BSUB -P ${account_name}
+#BSUB -P ${PROJECT}
 #BSUB -J $CASE.l_archive
 
 #-----------------------------------------------------------------------

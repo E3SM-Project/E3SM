@@ -5,53 +5,25 @@ module restFileMod
   ! Reads from or writes to/ the CLM restart file.
   !
   ! !USES:
-  use shr_kind_mod         , only : r8 => shr_kind_r8
-  use decompMod            , only : bounds_type
-  use spmdMod              , only : masterproc, mpicom
-  use abortutils           , only : endrun
-  use shr_log_mod          , only : errMsg => shr_log_errMsg
-  use clm_time_manager     , only : timemgr_restart_io, get_nstep
-  use subgridRestMod       , only : SubgridRest
-  use accumulMod           , only : accumulRest
-  use histFileMod          , only : hist_restart_ncd
-  use clm_varpar           , only : crop_prog
-  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_ed
-  use clm_varctl           , only : create_glacier_mec_landunit, iulog 
-  use clm_varcon           , only : c13ratio, c14ratio
-  use clm_varcon           , only : nameg, namel, namec, namep, nameCohort
-  use ch4Mod               , only : ch4_type
-  use EDRestVectorMod      , only : EDRest
-  use EDBioType            , only : EDbio_type
-  use CNCarbonFluxType     , only : carbonflux_type
-  use CNCarbonStateType    , only : carbonstate_type
-  use CNDVType             , only : dgvs_type
-  use CNStateType          , only : cnstate_type
-  use CNNitrogenFluxType   , only : nitrogenflux_type
-  use CNNitrogenStateType  , only : nitrogenstate_type
-  use AerosolType          , only : aerosol_type
-  use CanopyStateType      , only : canopystate_type
-  use EnergyFluxType       , only : energyflux_type
-  use FrictionVelocityType , only : frictionvel_type
-  use LakeStateType        , only : lakestate_type
-  use PhotosynthesisType   , only : photosyns_type
-  use SoilHydrologyType    , only : soilhydrology_type  
-  use SoilStateType        , only : soilstate_type
-  use SolarAbsorbedType    , only : solarabs_type
-  use SurfaceAlbedoType    , only : surfalb_type
-  use TemperatureType      , only : temperature_type
-  use WaterfluxType        , only : waterflux_type
-  use WaterstateType       , only : waterstate_type
-  use atm2lndType          , only : atm2lnd_type
-  use lnd2atmType          , only : lnd2atm_type
-  use glc2lndMod           , only : glc2lnd_type
-  use lnd2glcMod           , only : lnd2glc_type 
-  use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
-  use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
-  use ncdio_pio            , only : check_att, ncd_getatt
+  use shr_kind_mod     , only : r8 => shr_kind_r8
+  use decompMod        , only : bounds_type
+  use spmdMod          , only : masterproc, mpicom
+  use abortutils       , only : endrun
+  use shr_log_mod      , only : errMsg => shr_log_errMsg
+  use clm_time_manager , only : timemgr_restart_io, get_nstep
+  use subgridRestMod   , only : SubgridRest, subgridRest_read_cleanup
+  use accumulMod       , only : accumulRest
+  use clm_instMod      , only : clm_instRest
+  use histFileMod      , only : hist_restart_ncd
+  use clm_varctl       , only : create_glacier_mec_landunit, iulog, use_ed 
+  use clm_varcon       , only : nameg, namel, namec, namep, nameCohort
+  use ncdio_pio        , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
+  use ncdio_pio        , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
+  use ncdio_pio        , only : check_att, ncd_getatt
   !
   ! !PUBLIC TYPES:
   implicit none
-  save
+  private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: restFile_read
@@ -68,7 +40,7 @@ module restFileMod
   private :: restFile_dimset
   private :: restFile_add_ilun_metadata ! Add global metadata defining landunit types
   private :: restFile_add_icol_metadata ! Add global metadata defining column types
-  private :: restFile_add_ipft_metadata ! Add global metadata defining pft types
+  private :: restFile_add_ipft_metadata ! Add global metadata defining patch types
   private :: restFile_dimcheck
   private :: restFile_enddef
   private :: restFile_check_consistency   ! Perform consistency checks on the restart file
@@ -77,52 +49,21 @@ module restFileMod
   private :: restFile_check_year          ! Check consistency of year on the restart file
   !
   ! !PRIVATE TYPES: None
-  private
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine restFile_write( bounds, file,                                            &
-       atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-       ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-       nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-       soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-       waterflux_vars, waterstate_vars, EDbio_vars, rdate, noptr)
+  subroutine restFile_write( bounds, file, rdate, noptr)
     !
     ! !DESCRIPTION:
     ! Define/write CLM restart file.
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds          
-    character(len=*)         , intent(in)    :: file             ! output netcdf restart file
-    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    type(aerosol_type)       , intent(in)    :: aerosol_vars
-    type(canopystate_type)   , intent(inout) :: canopystate_vars ! due to EDrest call
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonstate_type)   , intent(in)    :: c13_carbonstate_vars
-    type(carbonstate_type)   , intent(in)    :: c14_carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(ch4_type)           , intent(in)    :: ch4_vars
-    type(dgvs_type)          , intent(in)    :: dgvs_vars
-    type(energyflux_type)    , intent(in)    :: energyflux_vars
-    type(frictionvel_type)   , intent(in)    :: frictionvel_vars
-    type(lakestate_type)     , intent(in)    :: lakestate_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
-    type(photosyns_type)     , intent(in)    :: photosyns_vars
-    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
-    type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(solarabs_type)      , intent(in)    :: solarabs_vars
-    type(surfalb_type)       , intent(in)    :: surfalb_vars
-    type(temperature_type)   , intent(in)    :: temperature_vars
-    type(waterstate_type)    , intent(inout) :: waterstate_vars  ! due to EDrest call
-    type(waterflux_type)     , intent(in)    :: waterflux_vars
-    type(EDbio_type)         , intent(inout) :: EDbio_vars       ! due to EDrest call
-    character(len=*)         , intent(in), optional :: rdate     ! restart file time stamp for name
-    logical                  , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
+    type(bounds_type) , intent(in)           :: bounds          
+    character(len=*)  , intent(in)           :: file  ! output netcdf restart file
+    character(len=*)  , intent(in), optional :: rdate ! restart file time stamp for name
+    logical           , intent(in), optional :: noptr ! if should NOT write to the restart pointer file
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id
@@ -136,19 +77,13 @@ contains
        ptrfile = .true.
     end if
 
-    ! --------------------------------------------
-    ! Open restart file
-    ! --------------------------------------------
+    ! Open file
 
     call restFile_open( flag='write', file=file, ncid=ncid )
 
-    ! --------------------------------------------
     ! Define dimensions and variables
-    ! --------------------------------------------
 
     call restFile_dimset ( ncid )
-
-    ! Define restart file variables
 
     call timemgr_restart_io(ncid, flag='define')
 
@@ -156,74 +91,7 @@ contains
 
     call accumulRest( ncid, flag='define' )
 
-    call atm2lnd_vars%restart (bounds, ncid, flag='define')
-
-    call canopystate_vars%restart (bounds, ncid, flag='define')
-
-    call energyflux_vars%restart (bounds, ncid, flag='define')
-
-    call frictionvel_vars% restart (bounds, ncid, flag='define')
-
-    call lakestate_vars%restart (bounds, ncid, flag='define')
-
-    call photosyns_vars%restart (bounds, ncid, flag='define')
-
-    call soilhydrology_vars%restart (bounds, ncid, flag='define')
-
-    call solarabs_vars%restart (bounds, ncid, flag='define')
-
-    call temperature_vars%restart (bounds, ncid, flag='define')
-
-    call waterflux_vars%restart (bounds, ncid, flag='define')
-
-    call waterstate_vars%restart (bounds, ncid, flag='define', &
-         watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:)) 
-
-    call aerosol_vars%restart (bounds, ncid,  flag='define', &
-         h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:))
-
-    call surfalb_vars%restart (bounds, ncid, flag='define', &
-         tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
-         tsai_patch=canopystate_vars%tsai_patch(bounds%begp:bounds%endp))
-
-    if (use_lch4) then
-       call ch4_vars%restart(bounds, ncid, flag='define')
-    end if
-
-    if (use_cn) then
-
-       call carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c12')
-       if (use_c13) then
-          call c13_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c13', &
-               c12_carbonstate_vars=carbonstate_vars)
-       end if
-       if (use_c14) then
-          call c14_carbonstate_vars%restart(bounds, ncid, flag='define', carbon_type='c14', &
-               c12_carbonstate_vars=carbonstate_vars)
-       end if
-
-       call carbonflux_vars%restart(bounds, ncid, flag='define')
-       call nitrogenflux_vars%Restart(bounds, ncid, flag='define')
-       call nitrogenstate_vars%Restart(bounds, ncid, flag='define')
-
-       call cnstate_vars%Restart(bounds, ncid, flag='define')
-
-    end if
-
-    if (use_cndv) then
-       call dgvs_vars%Restart(bounds, ncid, flag='define')
-    end if
-
-    if (use_ed) then
-       call EDRest(bounds,  ncid, flag='define', &
-            waterstate_vars=waterstate_vars, &
-            canopystate_vars=canopystate_vars, &
-            EDbio_vars=EDbio_vars, &
-            carbonstate_vars=carbonstate_vars, &
-            nitrogenstate_vars=nitrogenstate_vars, &
-            carbonflux_vars=carbonflux_vars) 
-    end if
+    call clm_instRest(bounds, ncid, flag='define')
 
     if (present(rdate)) then 
        call hist_restart_ncd (bounds, ncid, flag='define', rdate=rdate )
@@ -231,9 +99,7 @@ contains
 
     call restFile_enddef( ncid )
 
-    ! --------------------------------------------
-    ! Write restart file variables
-    ! --------------------------------------------
+    ! Write variables
     
     call timemgr_restart_io( ncid, flag='write' )
 
@@ -241,81 +107,11 @@ contains
 
     call accumulRest( ncid, flag='write' )
 
-    call atm2lnd_vars%restart (bounds, ncid, flag='write')
-
-    call canopystate_vars%restart (bounds, ncid, flag='write')
-
-    call energyflux_vars%restart (bounds, ncid, flag='write')
-
-    call frictionvel_vars% restart (bounds, ncid, flag='write')
-
-    call lakestate_vars%restart (bounds, ncid, flag='write')
-
-    call photosyns_vars%restart (bounds, ncid, flag='write')
-
-    call soilhydrology_vars%restart (bounds, ncid, flag='write')
-
-    call solarabs_vars%restart (bounds, ncid, flag='write')
-
-    call temperature_vars%restart (bounds, ncid, flag='write')
-
-    call waterflux_vars%restart (bounds, ncid, flag='write')
-
-    call waterstate_vars%restart (bounds, ncid, flag='write',  &
-         watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
-
-    call aerosol_vars%restart (bounds, ncid,  flag='write', &
-         h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:) )
-
-    call surfalb_vars%restart (bounds, ncid, flag='write',  &
-         tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
-         tsai_patch=canopystate_vars%tsai_patch(bounds%begp:bounds%endp))
-
-    if (use_lch4) then
-       call ch4_vars%restart(  bounds, ncid, flag='write' )
-    end if
-
-    if (use_cn) then
-       call carbonstate_vars%restart(bounds, ncid, flag='write', &
-            carbon_type='c12')
-       if (use_c13) then
-          call c13_carbonstate_vars%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13' )
-       end if
-       if (use_c14) then
-          call c14_carbonstate_vars%restart(bounds, ncid, flag='write', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14' )
-       end if
-
-       call carbonflux_vars%restart(bounds, ncid, flag='write')
-
-       call nitrogenflux_vars%Restart(bounds, ncid, flag='write')
-       call nitrogenstate_vars%Restart(bounds, ncid, flag='write')
-
-       call cnstate_vars%Restart(bounds, ncid, flag='write')
-
-    end if
-
-    if (use_cndv) then
-       call dgvs_vars%Restart(bounds, ncid, flag='write')
-    end if
-
-    if (use_ed) then
-       call EDRest( bounds, ncid, flag='write', & 
-            waterstate_vars=waterstate_vars, &
-            canopystate_vars=canopystate_vars, &
-            EDbio_vars=EDbio_vars, & 
-            carbonstate_vars=carbonstate_vars, &
-            nitrogenstate_vars=nitrogenstate_vars, &
-            carbonflux_vars=carbonflux_vars) 
-    end if
+    call clm_instRest(bounds, ncid, flag='write')
 
     call hist_restart_ncd (bounds, ncid, flag='write' )
 
-    ! --------------------------------------------
-    ! Close restart file and write restart pointer file
-    ! --------------------------------------------
+    ! Close file 
     
     call restFile_close( ncid )
     call restFile_closeRestart( file )
@@ -334,49 +130,14 @@ contains
   end subroutine restFile_write
 
   !-----------------------------------------------------------------------
-  subroutine restFile_read( bounds, file,                                             &
-       atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-       ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-       nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-       soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-       waterflux_vars, waterstate_vars, EDbio_vars)
+  subroutine restFile_read( bounds, file )
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
     !
-    ! !USES:
-    use subgridRestMod   , only : SubgridRest, subgridRest_read_cleanup
-    use accumulMod       , only : accumulRest
-    use histFileMod      , only : hist_restart_ncd
-    !
     ! !ARGUMENTS:
-    character(len=*)         , intent(in)    :: file  ! output netcdf restart file
-    type(bounds_type)        , intent(in)    :: bounds  
-    type(atm2lnd_type)       , intent(inout) :: atm2lnd_vars
-    type(aerosol_type)       , intent(inout) :: aerosol_vars
-    type(canopystate_type)   , intent(inout) :: canopystate_vars
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(ch4_type)           , intent(inout) :: ch4_vars
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
-    type(energyflux_type)    , intent(inout) :: energyflux_vars
-    type(frictionvel_type)   , intent(inout) :: frictionvel_vars
-    type(lakestate_type)     , intent(inout) :: lakestate_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(photosyns_type)     , intent(inout) :: photosyns_vars
-    type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
-    type(soilstate_type)     , intent(inout) :: soilstate_vars
-    type(solarabs_type)      , intent(inout) :: solarabs_vars
-    type(temperature_type)   , intent(inout) :: temperature_vars
-    type(surfalb_type)       , intent(inout) :: surfalb_vars
-    type(waterstate_type)    , intent(inout) :: waterstate_vars
-    type(waterflux_type)     , intent(inout) :: waterflux_vars
-    type(EDbio_type)         , intent(inout) :: EDbio_vars
+    type(bounds_type) , intent(in) :: bounds          
+    character(len=*)  , intent(in) :: file             ! output netcdf restart file
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id
@@ -395,85 +156,9 @@ contains
 
     call accumulRest( ncid, flag='read' )
 
-    call atm2lnd_vars%restart (bounds, ncid, flag='read')
+    call clm_instRest( bounds, ncid, flag='read' )
 
-    call canopystate_vars%restart (bounds, ncid, flag='read')
-
-    call energyflux_vars%restart (bounds, ncid, flag='read')
-
-    call frictionvel_vars% restart (bounds, ncid, flag='read')
-
-    call lakestate_vars%restart (bounds, ncid, flag='read')
-
-    call photosyns_vars%restart (bounds, ncid, flag='read')
-
-    call soilhydrology_vars%restart (bounds, ncid, flag='read')
-
-    call solarabs_vars%restart (bounds, ncid, flag='read')
-
-    call temperature_vars%restart (bounds, ncid, flag='read')
-
-    call waterflux_vars%restart (bounds, ncid, flag='read')
-
-    call waterstate_vars%restart (bounds, ncid,  flag='read', &
-         watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:) )
-
-    ! The following write statement is needed for some tests to pass with pgi 13.9 on
-    ! yellowstone, presumably due to a compiler bug. Without this, the following two
-    ! tests were failing:
-    ! ERS_D_Mmpi-serial.1x1_brazil.ICLM45CNED.yellowstone_pgi.clm-edTest
-    ! ERS_Lm3.1x1_smallvilleIA.ICLM45BGCCROP.yellowstone_pgi
-    write(iulog,*) 'about to call aerosol_vars%restart: ', ubound(waterstate_vars%h2osoi_ice_col)
-
-    call aerosol_vars%restart (bounds, ncid, flag='read', &
-         h2osoi_ice_col=waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc,:) ) 
-
-    call surfalb_vars%restart (bounds, ncid,  flag='read', &
-         tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
-         tsai_patch=canopystate_vars%tsai_patch(bounds%begp:bounds%endp))
-
-    if (use_lch4) then
-       call ch4_vars%restart(  bounds, ncid, flag='read' )
-    end if
-
-    if (use_cn) then
-
-       call carbonstate_vars%restart(bounds, ncid, flag='read', &
-            carbon_type='c12')
-       if (use_c13) then
-          call c13_carbonstate_vars%restart(bounds, ncid, flag='read', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c13')
-       end if
-       if (use_c14) then
-          call c14_carbonstate_vars%restart(bounds, ncid, flag='read', &
-               c12_carbonstate_vars=carbonstate_vars, carbon_type='c14')
-       end if
-
-       call carbonflux_vars%restart(bounds, ncid, flag='read')
-
-       call nitrogenflux_vars%Restart(bounds, ncid, flag='read')
-       call nitrogenstate_vars%Restart(bounds, ncid, flag='read')
-
-       call cnstate_vars%Restart(bounds, ncid, flag='read')
-
-    end if
-
-    if (use_cndv) then
-       call dgvs_vars%Restart(bounds, ncid, flag='read')
-    end if
-
-    if (use_ed) then
-       call EDRest( bounds, ncid, flag='read', & 
-            waterstate_vars=waterstate_vars, &
-            canopystate_vars=canopystate_vars, &
-            EDbio_vars=EDbio_vars, & 
-            carbonstate_vars=carbonstate_vars, &
-            nitrogenstate_vars=nitrogenstate_vars, &
-            carbonflux_vars=carbonflux_vars) 
-    end if
-
-    call hist_restart_ncd (bounds, ncid, flag='read')
+    call hist_restart_ncd (bounds, ncid, flag='read' )
 
     ! Do error checking on file
     
@@ -875,17 +560,17 @@ contains
   subroutine restFile_add_ipft_metadata(ncid)
     !
     ! !DESCRIPTION:
-    ! Add global metadata defining pft types
+    ! Add global metadata defining patch types
     !
     ! !USES:
     use clm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
-    use pftvarcon , only : pftname_len, pftname
+    use pftconMod , only : pftname_len, pftname
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid ! local file id
     !
     ! !LOCAL VARIABLES:
-    integer :: ptype  ! pft type
+    integer :: ptype  ! patch type
     character(len=*), parameter :: att_prefix = 'ipft_'   ! prefix for attributes
     character(len=len(att_prefix)+pftname_len) :: attname ! attribute name
 
@@ -1210,8 +895,6 @@ contains
     end if  ! fpftdyn /= ' '
 
   end subroutine restFile_check_year
-
-
 
 end module restFileMod
 

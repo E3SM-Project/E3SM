@@ -58,15 +58,14 @@ Module DryDepVelocity
   use clm_varcon           , only : namep
   use atm2lndType          , only : atm2lnd_type
   use CanopyStateType      , only : canopystate_type
-  use FrictionVelocityType , only : frictionvel_type
-  use PhotosynthesisType   , only : photosyns_type
+  use FrictionVelocityMod  , only : frictionvel_type
+  use PhotosynthesisMod    , only : photosyns_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc                
   use LandunitType         , only : lun                
-  use PatchType            , only : pft                
+  use PatchType            , only : patch                
   !
   implicit none 
-  save 
   private
   !
   public :: depvel_compute
@@ -121,8 +120,8 @@ CONTAINS
 
   !----------------------------------------------------------------------- 
   subroutine depvel_compute( bounds, &
-       atm2lnd_vars, canopystate_vars, waterstate_vars, frictionvel_vars, &
-       photosyns_vars, drydepvel_vars)
+       atm2lnd_inst, canopystate_inst, waterstate_inst, frictionvel_inst, &
+       photosyns_inst, drydepvel_inst)
     !
     ! !DESCRIPTION:
     ! computes the dry deposition velocity of tracers
@@ -133,23 +132,23 @@ CONTAINS
     use seq_drydep_mod , only : rcls, h2_a, h2_b, h2_c, ri, rac, rclo, rlu, rgss, rgso
     use landunit_varcon, only : istsoil, istice, istice_mec, istdlak, istwet
     use clm_varctl     , only : iulog
-    use pftvarcon      , only : noveg, ndllf_evr_tmp_tree, ndllf_evr_brl_tree
-    use pftvarcon      , only : ndllf_dcd_brl_tree, nbrdlf_evr_trp_tree
-    use pftvarcon      , only : nbrdlf_evr_tmp_tree, nbrdlf_dcd_trp_tree
-    use pftvarcon      , only : nbrdlf_dcd_tmp_tree, nbrdlf_dcd_brl_tree
-    use pftvarcon      , only : nbrdlf_evr_shrub, nbrdlf_dcd_tmp_shrub
-    use pftvarcon      , only : nbrdlf_dcd_brl_shrub,nc3_arctic_grass
-    use pftvarcon      , only : nc3_nonarctic_grass, nc4_grass, nc3crop
-    use pftvarcon      , only : nc3irrig, npcropmin, npcropmax
+    use pftconMod      , only : noveg, ndllf_evr_tmp_tree, ndllf_evr_brl_tree
+    use pftconMod      , only : ndllf_dcd_brl_tree, nbrdlf_evr_trp_tree
+    use pftconMod      , only : nbrdlf_evr_tmp_tree, nbrdlf_dcd_trp_tree
+    use pftconMod      , only : nbrdlf_dcd_tmp_tree, nbrdlf_dcd_brl_tree
+    use pftconMod      , only : nbrdlf_evr_shrub, nbrdlf_dcd_tmp_shrub
+    use pftconMod      , only : nbrdlf_dcd_brl_shrub,nc3_arctic_grass
+    use pftconMod      , only : nc3_nonarctic_grass, nc4_grass, nc3crop
+    use pftconMod      , only : nc3irrig, npcropmin, npcropmax
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds  
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
-    type(canopystate_type) , intent(in)    :: canopystate_vars
-    type(waterstate_type)  , intent(in)    :: waterstate_vars
-    type(frictionvel_type) , intent(in)    :: frictionvel_vars
-    type(photosyns_type)   , intent(in)    :: photosyns_vars
-    type(drydepvel_type)   , intent(inout) :: drydepvel_vars
+    type(atm2lnd_type)     , intent(in)    :: atm2lnd_inst
+    type(canopystate_type) , intent(in)    :: canopystate_inst
+    type(waterstate_type)  , intent(in)    :: waterstate_inst
+    type(frictionvel_type) , intent(in)    :: frictionvel_inst
+    type(photosyns_type)   , intent(in)    :: photosyns_inst
+    type(drydepvel_type)   , intent(inout) :: drydepvel_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: c
@@ -214,41 +213,41 @@ CONTAINS
     if ( n_drydep == 0 .or. drydep_method /= DD_XLND ) return
 
     associate(                                                    & 
-         forc_solai =>    atm2lnd_vars%forc_solai_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
-         forc_solad =>    atm2lnd_vars%forc_solad_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
-         forc_t     =>    atm2lnd_vars%forc_t_downscaled_col    , & ! Input:  [real(r8) (:)   ] downscaled atmospheric temperature (Kelvin)                   
-         forc_q     =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] downscaled atmospheric specific humidity (kg/kg)              
-         forc_psrf  =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled surface pressure (Pa)                              
-         forc_rain  =>    atm2lnd_vars%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled rain rate [mm/s]                                   
+         forc_solai =>    atm2lnd_inst%forc_solai_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
+         forc_solad =>    atm2lnd_inst%forc_solad_grc           , & ! Input:  [real(r8) (:,:) ] direct beam radiation (visible only)             
+         forc_t     =>    atm2lnd_inst%forc_t_downscaled_col    , & ! Input:  [real(r8) (:)   ] downscaled atmospheric temperature (Kelvin)                   
+         forc_q     =>    atm2lnd_inst%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] downscaled atmospheric specific humidity (kg/kg)              
+         forc_psrf  =>    atm2lnd_inst%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled surface pressure (Pa)                              
+         forc_rain  =>    atm2lnd_inst%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ] downscaled rain rate [mm/s]                                   
 
-         h2osoi_vol =>    waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ] volumetric soil water (0<=h2osoi_vol<=watsat)   
-         snow_depth =>    waterstate_vars%snow_depth_col        , & ! Input:  [real(r8) (:)   ] snow height (m)                                   
+         h2osoi_vol =>    waterstate_inst%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ] volumetric soil water (0<=h2osoi_vol<=watsat)   
+         snow_depth =>    waterstate_inst%snow_depth_col        , & ! Input:  [real(r8) (:)   ] snow height (m)                                   
 
-         ram1       =>    frictionvel_vars%ram1_patch           , & ! Input:  [real(r8) (:)   ] aerodynamical resistance                           
-         rb1        =>    frictionvel_vars%rb1_patch            , & ! Input:  [real(r8) (:)   ] leaf boundary layer resistance [s/m]               
-         vds        =>    frictionvel_vars%vds_patch            , & ! Input:  [real(r8) (:)   ] aerodynamical resistance                           
+         ram1       =>    frictionvel_inst%ram1_patch           , & ! Input:  [real(r8) (:)   ] aerodynamical resistance                           
+         rb1        =>    frictionvel_inst%rb1_patch            , & ! Input:  [real(r8) (:)   ] leaf boundary layer resistance [s/m]               
+         vds        =>    frictionvel_inst%vds_patch            , & ! Input:  [real(r8) (:)   ] aerodynamical resistance                           
 
-         rssun      =>    photosyns_vars%rssun_patch            , & ! Input:  [real(r8) (:)   ] stomatal resistance                                
-         rssha      =>    photosyns_vars%rssha_patch            , & ! Input:  [real(r8) (:)   ] shaded stomatal resistance (s/m)                   
+         rssun      =>    photosyns_inst%rssun_patch            , & ! Input:  [real(r8) (:)   ] stomatal resistance                                
+         rssha      =>    photosyns_inst%rssha_patch            , & ! Input:  [real(r8) (:)   ] shaded stomatal resistance (s/m)                   
 
-         fsun       =>    canopystate_vars%fsun_patch           , & ! Input:  [real(r8) (:)   ] sunlit fraction of canopy                          
-         elai       =>    canopystate_vars%elai_patch           , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow     
-         mlaidiff   =>    canopystate_vars%mlaidiff_patch       , & ! Input:  [real(r8) (:)   ] difference in lai between month one and month two  
-         annlai     =>    canopystate_vars%annlai_patch         , & ! Input:  [real(r8) (:,:) ] 12 months of monthly lai from input data set     
+         fsun       =>    canopystate_inst%fsun_patch           , & ! Input:  [real(r8) (:)   ] sunlit fraction of canopy                          
+         elai       =>    canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow     
+         mlaidiff   =>    canopystate_inst%mlaidiff_patch       , & ! Input:  [real(r8) (:)   ] difference in lai between month one and month two  
+         annlai     =>    canopystate_inst%annlai_patch         , & ! Input:  [real(r8) (:,:) ] 12 months of monthly lai from input data set     
          
-         velocity   =>    drydepvel_vars%velocity_patch           & ! Output: [real(r8) (:,:) ] cm/sec
+         velocity   =>    drydepvel_inst%velocity_patch           & ! Output: [real(r8) (:,:) ] cm/sec
          )
 
       !_________________________________________________________________ 
       ! Begin loop through patches
 
       pft_loop: do pi = bounds%begp,bounds%endp
-         l = pft%landunit(pi)
+         l = patch%landunit(pi)
 
-         active: if (pft%active(pi)) then
+         active: if (patch%active(pi)) then
 
-            c = pft%column(pi)
-            g = pft%gridcell(pi)
+            c = patch%column(pi)
+            g = patch%gridcell(pi)
             !solar_flux = forc_lwrad  !rename CLM variables to fit with Dry Dep variables 
 
             pg         = forc_psrf(c)  
@@ -258,7 +257,7 @@ CONTAINS
             solar_flux = forc_solad(g,1) 
             lat        = grc%latdeg(g) 
             lon        = grc%londeg(g) 
-            clmveg     = pft%itype(pi) 
+            clmveg     = patch%itype(pi) 
             soilw      = h2osoi_vol(c,1)
 
             !map CLM veg type into Wesely veg type  
@@ -446,6 +445,7 @@ CONTAINS
                ! no deposition on snow, ice, desert, and water
                !-------------------------------------------------------------------------------------
                if( wesveg == 1 .or. wesveg == 7 .or. wesveg == 8 .or. index_season == 4 ) then 
+                  rs=0.0_r8
                   rclx(ispec)=1.e36_r8
                   rsmx(ispec)=1.e36_r8
                   rlux(ispec)=1.e36_r8

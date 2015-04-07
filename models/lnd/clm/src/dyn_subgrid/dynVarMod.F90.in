@@ -34,9 +34,7 @@ module dynVarMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
   implicit none
-  save
   private
-
   !
   ! !PUBLIC TYPES:
 

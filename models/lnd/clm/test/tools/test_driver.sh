@@ -26,7 +26,7 @@ hostname=`hostname`
 case $hostname in
 
     ##yellowstone
-    ys* )
+     ys* | caldera* | geyser*)
     submit_script="test_driver_yellowstone${cur_time}.sh"
 
 ##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv writing to batch script vvvvvvvvvvvvvvvvvvv

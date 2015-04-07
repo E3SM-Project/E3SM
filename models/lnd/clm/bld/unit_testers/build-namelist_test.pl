@@ -123,7 +123,7 @@ my $testType="namelistTest";
 #
 # Figure out number of tests that will run
 #
-my $ntests = 349;
+my $ntests = 348;
 if ( defined($opts{'compare'}) ) {
    $ntests += 193;
 }
@@ -216,7 +216,7 @@ print "Run simple tests with additional options \n";
 print "==================================================\n";
 
 # Exercise a bunch of options
-my $options = "-co2_ppmv 250 -glc_nec 10 -glc_grid gland5 -glc_smb .false.";
+my $options = "-co2_ppmv 250 -glc_nec 10 -glc_present -glc_smb .false.";
    $options .= " -res 0.9x1.25 -rcp 2.6 -envxml_dir .";
 
    &make_env_run();
@@ -482,22 +482,17 @@ my %failtest = (
                                      GLC_TWO_WAY_COUPLING=>"FALSE",
                                      conopts=>"",
                                    },
-     "glc_grid inconsistent"     =>{ options=>"-glc_nec 10 -glc_grid gland10 -envxml_dir .",
-                                     namelst=>"glc_grid='gland5'",
-                                     GLC_TWO_WAY_COUPLING=>"FALSE",
-                                     conopts=>"",
-                                   },
      "UpdateGlcNoGLCMec"         =>{ options=>"-envxml_dir .",
                                      namelst=>"",
                                      GLC_TWO_WAY_COUPLING=>"TRUE",
                                      conopts=>"-phys clm4_5",
                                    },
-     "UpdateGlcContradict"       =>{ options=>"-glc_nec 10 -glc_grid gland10 -envxml_dir .",
+     "UpdateGlcContradict"       =>{ options=>"-glc_nec 10 -glc_present -envxml_dir .",
                                      namelst=>"glc_do_dynglacier=.false.",
                                      GLC_TWO_WAY_COUPLING=>"TRUE",
                                      conopts=>"-phys clm4_5",
                                    },
-     "clm40andUpdateGlc"         =>{ options=>"-glc_nec 10 -glc_grid gland10 -envxml_dir .",
+     "clm40andUpdateGlc"         =>{ options=>"-glc_nec 10 -glc_present -envxml_dir .",
                                      namelst=>"",
                                      GLC_TWO_WAY_COUPLING=>"TRUE",
                                      conopts=>"-phys clm4_0",

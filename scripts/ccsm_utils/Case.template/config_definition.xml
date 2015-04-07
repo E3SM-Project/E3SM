@@ -254,10 +254,10 @@
 
 <entry id="CISM_GRID" 
  type="char"
- valid_values="gland20,gland10,gland5,gland5UM,null"  
+ valid_values="gland20,gland10,gland5,gland5UM,gland4,null"  
  value="gland5UM" 
  group="run_component_cism"
- sdesc="Glacier model grid - used only for glacier land mask in clm"
+ sdesc="Glacier model grid"
  ldesc="
 The glimmer-cism grid for coupling is assumed to be identical to the land grid. 
 CISM_GRID determines the specific local internal grid that CISM will use for 
@@ -1176,6 +1176,19 @@ This set the namelist values of CO2 ppmv for CAM and CLM. This variables is
 introduced to coordinate this value among multiple components. "
 ></entry> 
 
+<entry id="PROFILE_PAPI_ENABLE"
+  type="logical"
+  valid_values="TRUE,FALSE"
+  value="FALSE" 
+  group="run_cesm"
+  sdesc="enable papi hardware counters"
+  ldesc="
+Enables the papi hardware counters in gptl
+The papi library must be included in the build step for 
+this to work."
+></entry>
+
+
 <!-- ======================================================================= -->
 <!-- CAM                                                                     -->
 <!-- ======================================================================= -->
@@ -1739,13 +1752,18 @@ Users should NOT EDIT this setting."
  valid_values="TRUE,FALSE"
  value="FALSE"
  group="build_component_cism"
- sdesc="TRUE implies CISM is built with parallel support, using the trilinos library"
+ sdesc="TRUE implies CISM is built with support for the trilinos library"
  ldesc="
-For parallel support, CISM requires linking to the trilinos library.
-Setting this to TRUE turns on this parallel support via trilinos. Note
-that it's theoretically possible for the CESM build to link to trilinos,
-but for CISM to be built without this parallel support (i.e.,
-USE_TRILINOS=TRUE, CISM_USE_TRILINOS=FALSE)."
+When using the higher-order dynamical cores in CISM, one option is to
+use the trilinos solver library for sparse matrix solves. In order to
+exercise that option, you need to build CISM with trilinos support, and
+link to the trilinos libraries when building the CESM executable. Setting
+this variable to TRUE accomplishes these things. Note that you can set
+this to TRUE and still choose not to use the trilinos solvers for the
+sparse matrix solves. Also, note that trilinos is only available on a
+limited set of machines; you must set this to FALSE to run CISM on a
+machine that does not have trilinos, or for which the CESM scripts are
+not aware of the existence of trilinos."
 ></entry>
 
 <entry id="CISM_PHYS"
@@ -3171,7 +3189,7 @@ visible to compute nodes."
 If TRUE, perform short term archiving on all interim restart files,
 not just those at the end of the run. By default, this value is FALSE.
 The restart files are saved under the specific component directory
-($CASE/$COMPONENT/rest rather than the top-level $CASE/rest directory).
+($DOUT_S_ROOT/$CASE/$COMPONENT/rest rather than the top-level $DOUT_S_ROOT/$CASE/rest directory).
 Interim restart files are created using the REST_N and REST_OPTION variables.
 This is for expert users ONLY and requires expert knowledge. We will
 not document this further in this guide."
@@ -3182,9 +3200,9 @@ not document this further in this guide."
  valid_values=""  
  value="0" 
  group="run_dout"
- sdesc="Save every Nth set of restart files and delete all others."
+ sdesc="Save every Nth set of restart files and delete all others"
  ldesc="
-If value is greater than 0, then only save the nth restart set in the DOUT_S_ROOT/rest location. 
+If value is greater than 0, then only save the nth restart set in the $DOUT_S_ROOT/$CASE/rest location. 
 Always preserve the most recent restart set regardless."
 ></entry> 
 
@@ -3195,8 +3213,8 @@ Always preserve the most recent restart set regardless."
  group="run_dout"
  sdesc="logical to save contents of the short term archive on disk"
  ldesc="
-If TRUE, create hardlinks from the short term archive DOUT_S_ROOT.locked
-directory to the DOUT_S_ROOT directory."
+If TRUE, create hardlinks from the short term archive $DOUT_S_ROOT.locked/$CASE
+directory to the $DOUT_S_ROOT/$CASE directory."
 ></entry> 
 
 <entry id="DOUT_S_GENERATE_TSERIES" 
@@ -3214,11 +3232,11 @@ Rules for how the tseries files are created are specified in the env_archive.xml
 <entry id="DOUT_S_SAVE_HISTORY_FILES" 
  type="logical"
  valid_values="TRUE,FALSE"  
- value="TRUE" 
+ value="FALSE" 
  group="run_dout"
  sdesc="logical to save history time slice files after the variable time series have been generated"
  ldesc="
-If TRUE, none of the history time slice files will be deleted from the DOUT_S_ROOT location after the
+If TRUE, none of the history time slice files will be deleted from the $DOUT_S_ROOT/$CASE location after the
 variable time series files are successfully generated. *WARNING* setting this option to TRUE can
 more than double the disk space used by the output data for a given job."
 ></entry> 
@@ -3268,12 +3286,71 @@ Default is FALSE. Not currently implemented."
  value="TRUE" 
  group="run_dout"
  sdesc="logical to save contents of the short term archive on disk after
-the long term archiver has successfully completed."
+the long term archiver has successfully completed"
  ldesc="
 If TRUE, this keeps the output data 
 in DOUT_S_ROOT on disk after the long term (lt_archive.sh) archiver is run."
 ></entry> 
 
+<!-- ======================================================================= -->
+<!-- diagnostics package toggles to include as part of CESM in-line job run  -->
+<!-- ======================================================================= -->
+
+<entry id="OMWG_POSTPROC_DIAGS" 
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="FALSE" 
+ group="run_dout"
+ sdesc="logical to call the OMWG diagnostics plotting packages as part
+of the CESM run script after the successful completion of the short term 
+archiver"
+ ldesc="
+If TRUE, this calls the OMWG diagnostics package parallel python wrapper
+script to generate climatological plots associated with the run job output.
+See the OMWG diagnostics documentation for more details."
+></entry> 
+
+<entry id="AMWG_POSTPROC_DIAGS" 
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="FALSE" 
+ group="run_dout"
+ sdesc="logical to call the AMWG diagnostics plotting packages as part
+of the CESM run script after the successful completion of the short term 
+archiver"
+ ldesc="
+If TRUE, this calls the AMWG diagnostics package parallel python wrapper
+script to generate climatological plots associated with the run job output.
+See the AMWG diagnostics documentation for more details."
+></entry> 
+
+<entry id="LMWG_POSTPROC_DIAGS" 
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="FALSE" 
+ group="run_dout"
+ sdesc="logical to call the LMWG diagnostics plotting packages as part
+of the CESM run script after the successful completion of the short term 
+archiver"
+ ldesc="
+If TRUE, this calls the LMWG diagnostics package parallel python wrapper
+script to generate climatological plots associated with the run job output.
+See the LMWG diagnostics documentation for more details."
+></entry> 
+
+<entry id="PCWG_POSTPROC_DIAGS" 
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="FALSE" 
+ group="run_dout"
+ sdesc="logical to call the PCWG diagnostics plotting packages as part
+of the CESM run script after the successful completion of the short term 
+archiver"
+ ldesc="
+If TRUE, this calls the PCWG diagnostics package parallel python wrapper
+script to generate climatological plots associated with the run job output.
+See the PCWG diagnostics documentation for more details."
+></entry> 
 
 <entry id="CPL_DECOMP" 
  type="integer"

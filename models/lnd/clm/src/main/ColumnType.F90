@@ -34,9 +34,9 @@ module ColumnType
      real(r8), pointer :: wtlunit              (:)   ! weight (relative to landunit)
      integer , pointer :: gridcell             (:)   ! index into gridcell level quantities
      real(r8), pointer :: wtgcell              (:)   ! weight (relative to gridcell)
-     integer , pointer :: pfti                 (:)   ! beginning pft index for each column
-     integer , pointer :: pftf                 (:)   ! ending pft index for each column
-     integer , pointer :: npfts                (:)   ! number of patches for each column
+     integer , pointer :: patchi               (:)   ! beginning patch index for each column
+     integer , pointer :: patchf               (:)   ! ending patch index for each column
+     integer , pointer :: npatches             (:)   ! number of patches for each column
 
      ! topological mapping functionality
      integer , pointer :: itype                (:)   ! column type
@@ -84,9 +84,9 @@ contains
     allocate(this%wtgcell     (begc:endc))                     ; this%wtgcell     (:)   = nan
     allocate(this%landunit    (begc:endc))                     ; this%landunit    (:)   = ispval
     allocate(this%wtlunit     (begc:endc))                     ; this%wtlunit     (:)   = nan
-    allocate(this%pfti        (begc:endc))                     ; this%pfti        (:)   = ispval
-    allocate(this%pftf        (begc:endc))                     ; this%pftf        (:)   = ispval
-    allocate(this%npfts       (begc:endc))                     ; this%npfts       (:)   = ispval
+    allocate(this%patchi      (begc:endc))                     ; this%patchi      (:)   = ispval
+    allocate(this%patchf      (begc:endc))                     ; this%patchf      (:)   = ispval
+    allocate(this%npatches     (begc:endc))                     ; this%npatches     (:)   = ispval
     allocate(this%itype       (begc:endc))                     ; this%itype       (:)   = ispval
     allocate(this%active      (begc:endc))                     ; this%active      (:)   = .false.
 
@@ -119,9 +119,9 @@ contains
     deallocate(this%wtgcell    )
     deallocate(this%landunit   )
     deallocate(this%wtlunit    )
-    deallocate(this%pfti       )
-    deallocate(this%pftf       )
-    deallocate(this%npfts      )
+    deallocate(this%patchi     )
+    deallocate(this%patchf     )
+    deallocate(this%npatches    )
     deallocate(this%itype      )
     deallocate(this%active     )
     deallocate(this%snl        )

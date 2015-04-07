@@ -17,7 +17,7 @@ module lnd_comp_esmf
   use domainMod         , only : ldomain
   use decompMod         , only : ldecomp, bounds_type, get_proc_bounds
   use clm_varctl        , only : iulog
-  use clm_initializeMod , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+  use clm_initializeMod , only : lnd2atm_inst, atm2lnd_inst, lnd2glc_inst, glc2lnd_inst
   use clm_cpl_indices
   use lnd_import_export
   !
@@ -77,7 +77,7 @@ contains
     use shr_file_mod     , only : shr_file_getLogUnit, shr_file_getLogLevel
     use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use clm_initializeMod, only : initialize1, initialize2, lnd2atm_vars, lnd2glc_vars
+    use clm_initializeMod, only : initialize1, initialize2, lnd2atm_inst, lnd2glc_inst
     use clm_varctl       , only : finidat,single_column, clm_varctl_set, noland
     use clm_varctl       , only : inst_index, inst_suffix, inst_name
     use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
@@ -385,7 +385,7 @@ contains
     call ESMF_ArrayGet(l2x, localDe=0, farrayPtr=fptr, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, fptr)
+    call lnd_export(bounds, lnd2atm_inst, lnd2glc_inst, fptr)
 
     ! Set land modes
 
@@ -456,7 +456,7 @@ contains
     use shr_file_mod      , only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod      , only : shr_file_getLogUnit, shr_file_getLogLevel
     use shr_orb_mod       , only : shr_orb_decl
-    use clm_initializeMod , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use clm_initializeMod , only : lnd2atm_inst, atm2lnd_inst, lnd2glc_inst, glc2lnd_inst
     use clm_driver        , only : clm_drv
     use clm_varorb        , only : eccen, obliqr, lambm0, mvelpp
     use clm_time_manager  , only : get_curr_date, get_nstep, get_curr_calday, get_step_size
@@ -556,7 +556,7 @@ contains
     call ESMF_ArrayGet(x2l, localDe=0, farrayPtr=fptr, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call lnd_import( bounds, fptr, atm2lnd_vars, glc2lnd_vars )
+    call lnd_import( bounds, fptr, atm2lnd_inst, glc2lnd_inst )
 
     call t_stopf ('lc_lnd_import')
 
@@ -631,7 +631,7 @@ contains
        call ESMF_ArrayGet(l2x, localDe=0, farrayPtr=fptr, rc=rc)
        if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, fptr)
+       call lnd_export(bounds, lnd2atm_inst, lnd2glc_inst, fptr)
        call t_stopf ('lc_lnd_export')
 
        ! Advance clm time step

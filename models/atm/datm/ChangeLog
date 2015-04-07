@@ -1,9 +1,50 @@
 ================================================================================
- SVN $Id: ChangeLog 59519 2014-04-24 17:05:19Z tcraig $
- SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_140424/ChangeLog $
+ SVN $Id: ChangeLog 65399 2014-11-13 18:03:32Z erik $
+ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/datm7/trunk_tags/datm8_141113/ChangeLog $
 ================================================================================
 This file describes what tags were created and why
 ================================================================================
+
+================================================================================
+Originator: erik
+Date: Nov 13 2014
+Model: datm7
+Version: datm8_141113
+One-line summary:  Correct CRUNCEP_V5 forcing filenames
+
+Filenames have a "c2014" in them instead of "c2013".
+
+bld/namelist_files/namelist_defaults_datm.xml
+
+================================================================================
+Originator: erik
+Date: Oct 30 2014
+Model: datm7
+Version: datm8_141030
+One-line summary:  Update CRUNCEP_V5 forcing to c140715 version
+
+See bug 2081. We updated the DATM_MODE=CRUNCEP_V5 forcing data to
+point to the newer c140715 version that is actually being used for
+science rather than the old c130613 version. This is currently only
+available on yellowstone and goldbach, and we deleted the c130613 versions.
+
+M   bld/namelist_files/namelist_defaults_datm.xml
+
+================================================================================
+Originator: muszala
+Date: July 23 2014
+Model: datm7
+Version: datm8_140723
+One-line summary:  support for lai streams and anomaly forcing
+
+Clean up code in datm_comp_mod.F90 for anomaly forcing and streams.  Add a
+datm option for V5 CRUNCEP files (CLMCRUNCEP_V5 is a new datm_mode option).
+Add streams for lai in namelist_files/namelist_defaults_datm.xml.
+
+M       datm_comp_mod.F90
+M       bld/unit_testers/build-namelist_test.pl
+M       bld/namelist_files/namelist_defaults_datm.xml
+M       bld/namelist_files/namelist_definition_datm.xml
 
 ================================================================================
 Originator: tcraig

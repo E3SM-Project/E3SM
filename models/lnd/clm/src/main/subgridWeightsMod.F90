@@ -16,24 +16,24 @@ module subgridWeightsMod
   ! 
   ! (1) For all columns, landunits and grid cells, the sum of all subgrid weights of its
   !     children (or grandchildren, etc.) is equal to 1. For example:
-  !     - For all columns, the sum of all pft weights on the column equals 1
+  !     - For all columns, the sum of all patch weights on the column equals 1
   !     - For all landunits, the sum of all col weights on the landunit equals 1
-  !     - For all grid cells, the sum of all pft weights on the grid cell equals 1
+  !     - For all grid cells, the sum of all patch weights on the grid cell equals 1
   !     - etc.
   ! 
   ! (2) For all ACTIVE columns, landunits and grid cells, the sum of all subgrid weights of
   !     its ACTIVE children (or grandchildren, etc.) is equal to 1. For example:
-  !     - For all active columns, the sum of all pft weights on the column equals 1 when
+  !     - For all active columns, the sum of all patch weights on the column equals 1 when
   !       just considering active pfts
   !     - For all active landunits, the sum of all col weights on the landunit equals 1 when
   !       just considering active cols
-  !     - For ALL grid cells, the sum of all pft weights on the grid cell equals 1 when
+  !     - For ALL grid cells, the sum of all patch weights on the grid cell equals 1 when
   !       just considering active pfts -- note that all grid cells are considered active!
   !     - etc.
   !
   ! (3) For all INACTIVE columns, landunits and grid cells, the sum of all subgrid weights of
   !     its ACTIVE children, grandchildren, etc. are equal to either 0 or 1. For example:
-  !     - For all inactive columns, the sum of all pft weights on the column equals either 0
+  !     - For all inactive columns, the sum of all patch weights on the column equals either 0
   !       or 1 when just considering active pfts
   !     - For all inactive landunits, the sum of all col weights on the landunit equals
   !       either 0 or 1 when just considering active cols
@@ -45,18 +45,18 @@ module subgridWeightsMod
   !
   ! Note that, together, conditions (1) and (2) imply that any pft, col or landunit whose
   ! weight on the grid cell is non-zero must be active. In addition, these conditions imply
-  ! that any pft whose weight on the column is non-zero must be active if the column is
-  ! active (and similarly for any pft on an active landunit, and any col on an active
+  ! that any patch whose weight on the column is non-zero must be active if the column is
+  ! active (and similarly for any patch on an active landunit, and any col on an active
   ! landunit).
   !
   !
   ! ----- Implications of these requirements for computing subgrid averages -----
   !
-  ! The preferred way to average from, say, pft to col is:
+  ! The preferred way to average from, say, patch to col is:
   !    colval(c) = 0
   !    do p = pfti(c), pftf(c)
   !       if (active(p)) colval(c) = colval(c) + pftval(p) * wtcol(p)
-  ! (where wtcol(p) is the weight of the pft on the column)
+  ! (where wtcol(p) is the weight of the patch on the column)
   ! If column c is active, then the above conditions guarantee that the pwtcol values
   ! included in the above sum will sum to 1. If column c is inactive, then the above
   ! conditions guarantee that the pwtcol values included in the above sum will sum to
@@ -64,7 +64,7 @@ module subgridWeightsMod
   !
   ! Another acceptable method is the following; this method accommodates some unknown
   ! fraction of pftval's being set to spval, and leaves colval set at spval if there are no
-  ! valid pft values:
+  ! valid patch values:
   !    colval(c) = spval
   !    sumwt(c) = 0
   !    do p = pfti(c), pftf(c)
@@ -92,13 +92,13 @@ module subgridWeightsMod
   use shr_kind_mod , only : r8 => shr_kind_r8
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use abortutils   , only : endrun
-  use clm_varctl   , only : iulog, all_active
+  use clm_varctl   , only : iulog, all_active, use_ed
   use clm_varcon   , only : nameg, namel, namec, namep
   use decompMod    , only : bounds_type
   use GridcellType , only : grc                
   use LandunitType , only : lun                
   use ColumnType   , only : col                
-  use PatchType    , only : pft                
+  use PatchType    , only : patch                
   !
   ! PUBLIC TYPES:
   implicit none
@@ -134,7 +134,7 @@ module subgridWeightsMod
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: is_active_l                  ! determine whether the given landunit is active
   private :: is_active_c                  ! determine whether the given column is active
-  private :: is_active_p                  ! determine whether the given pft is active
+  private :: is_active_p                  ! determine whether the given patch is active
   private :: weights_okay                 ! determine if sum of weights satisfies requirements laid out above
   private :: set_pct_landunit_diagnostics ! set pct_landunit diagnostic field
   private :: set_pct_glc_mec_diagnostics  ! set pct_glc_mec diagnostic field
@@ -214,8 +214,8 @@ contains
   subroutine compute_higher_order_weights(bounds)
     !
     ! !DESCRIPTION:
-    ! Assuming pft%wtcol, col%wtlunit and lun%wtgcell have already been computed, compute
-    ! the "higher-order" weights: pft%wtlunit, pft%wtgcell and col%wtgcell, for all p and c
+    ! Assuming patch%wtcol, col%wtlunit and lun%wtgcell have already been computed, compute
+    ! the "higher-order" weights: patch%wtlunit, patch%wtgcell and col%wtgcell, for all p and c
     !
     ! !USES:
     !
@@ -233,9 +233,9 @@ contains
     end do
 
     do p = bounds%begp, bounds%endp
-       c = pft%column(p)
-       pft%wtlunit(p) = pft%wtcol(p) * col%wtlunit(c)
-       pft%wtgcell(p) = pft%wtcol(p) * col%wtgcell(c)
+       c = patch%column(p)
+       patch%wtlunit(p) = patch%wtcol(p) * col%wtlunit(c)
+       patch%wtgcell(p) = patch%wtcol(p) * col%wtgcell(c)
     end do
   end subroutine compute_higher_order_weights
 
@@ -246,10 +246,10 @@ contains
     ! Set 'active' flags at the pft, column and landunit level
     ! (note that grid cells are always active)
     !
-    ! This should be called whenever any weights change (e.g., pft weights on the column,
+    ! This should be called whenever any weights change (e.g., patch weights on the column,
     ! landunit weights on the grid cell, etc.).
     !
-    ! Ensures that we don't have any active pft on an inactive column, or an active column on an
+    ! Ensures that we don't have any active patch on an inactive column, or an active column on an
     ! inactive landunit (since these conditions could lead to garbage data)
     !
     ! !USES:
@@ -279,10 +279,10 @@ contains
     end do
 
     do p = bounds%begp,bounds%endp
-       c = pft%column(p)
-       pft%active(p) = is_active_p(p)
-       if (pft%active(p) .and. .not. col%active(c)) then
-          write(iulog,*) trim(subname),' ERROR: active pft found on inactive column', &
+       c = patch%column(p)
+       patch%active(p) = is_active_p(p)
+       if (patch%active(p) .and. .not. col%active(c)) then
+          write(iulog,*) trim(subname),' ERROR: active patch found on inactive column', &
                          'at p = ', p, ', c = ', c
           call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
        end if
@@ -422,13 +422,13 @@ contains
   logical function is_active_p(p)
     !
     ! !DESCRIPTION:
-    ! Determine whether the given pft is active
+    ! Determine whether the given patch is active
     !
     ! !USES:
     !
     ! !ARGUMENTS:
     implicit none
-    integer, intent(in) :: p   ! pft index
+    integer, intent(in) :: p   ! patch index
     !
     ! !LOCAL VARIABLES:
     integer :: c  ! column index
@@ -438,7 +438,7 @@ contains
        is_active_p = .true.
 
     else
-       c =pft%column(p)
+       c =patch%column(p)
     
        is_active_p = .false.
 
@@ -446,7 +446,7 @@ contains
        ! General conditions under which is_active_p NEEDS to be true in order to satisfy
        ! the requirements laid out at the top of this module:
        ! ------------------------------------------------------------------------
-       if (col%active(c) .and. pft%wtcol(p) > 0._r8) is_active_p = .true.
+       if (col%active(c) .and. patch%wtcol(p) > 0._r8) is_active_p = .true.
 
     end if
 
@@ -577,20 +577,20 @@ contains
 
     error_found = .false.
 
-    ! Check PFT-level weights
+    ! Check patch-level weights
     sumwtcol(bounds%begc : bounds%endc) = 0._r8
     sumwtlunit(bounds%begl : bounds%endl) = 0._r8
     sumwtgcell(bounds%begg : bounds%endg) = 0._r8
 
     do p = bounds%begp,bounds%endp
-       c = pft%column(p)
-       l = pft%landunit(p)
-       g = pft%gridcell(p)
+       c = patch%column(p)
+       l = patch%landunit(p)
+       g = patch%gridcell(p)
 
-       if ((active_only .and. pft%active(p)) .or. .not. active_only) then 
-          sumwtcol(c) = sumwtcol(c) + pft%wtcol(p)
-          sumwtlunit(l) = sumwtlunit(l) + pft%wtlunit(p)
-          sumwtgcell(g) = sumwtgcell(g) + pft%wtgcell(p)
+       if ((active_only .and. patch%active(p)) .or. .not. active_only) then 
+          sumwtcol(c) = sumwtcol(c) + patch%wtcol(p)
+          sumwtlunit(l) = sumwtlunit(l) + patch%wtlunit(p)
+          sumwtgcell(g) = sumwtgcell(g) + patch%wtgcell(p)
        end if
     end do
 
@@ -733,7 +733,14 @@ contains
     !-----------------------------------------------------------------------
     
     call set_pct_landunit_diagnostics(bounds)
-    call set_pct_pft_diagnostics(bounds)
+
+    ! Note: (MV, 10-17-14): The following has an use_ed if-block around it since
+    ! the pct_pft_diagnostics referens to patch%itype(p) which is not used by ED
+
+    if (.not. use_ed) then
+       call set_pct_pft_diagnostics(bounds)
+    end if
+
     call set_pct_glc_mec_diagnostics(bounds)
 
   end subroutine set_subgrid_diagnostic_fields
@@ -824,8 +831,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: p,l,g           ! indices
-    integer :: ptype           ! pft itype
-    integer :: ptype_1indexing ! pft itype, translated into 1-indexing for the given landunit type
+    integer :: ptype           ! patch itype
+    integer :: ptype_1indexing ! patch itype, translated into 1-indexing for the given landunit type
     
     character(len=*), parameter :: subname = 'set_pct_pft_diagnostics'
     !-----------------------------------------------------------------------
@@ -839,15 +846,15 @@ contains
     subgrid_weights_diagnostics%pct_cft(bounds%begg:bounds%endg, :) = 0._r8
     
     do p = bounds%begp,bounds%endp
-       g = pft%gridcell(p)
-       l = pft%landunit(p)
-       ptype = pft%itype(p)
+       g = patch%gridcell(p)
+       l = patch%landunit(p)
+       ptype = patch%itype(p)
        if (lun%itype(l) == istsoil) then
           ptype_1indexing = ptype + (1 - natpft_lb)
-          subgrid_weights_diagnostics%pct_nat_pft(g, ptype_1indexing) = pft%wtlunit(p) * 100._r8
+          subgrid_weights_diagnostics%pct_nat_pft(g, ptype_1indexing) = patch%wtlunit(p) * 100._r8
        else if (lun%itype(l) == istcrop) then
           ptype_1indexing = ptype + (1 - cft_lb)
-          subgrid_weights_diagnostics%pct_cft(g, ptype_1indexing) = pft%wtlunit(p) * 100._r8
+          subgrid_weights_diagnostics%pct_cft(g, ptype_1indexing) = patch%wtlunit(p) * 100._r8
        end if
     end do
 

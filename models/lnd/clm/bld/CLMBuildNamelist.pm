@@ -160,10 +160,9 @@ OPTIONS
                               This turns on the namelist variable: use_cndv
      -ed_mode                 Turn ED (Ecosystem Demography) : [on | off] (default is off)
                               Sets the namelist variable use_ed and use_spit_fire.
-     -glc_grid "grid"         Glacier model grid and resolution when glacier model,
-                              Only used if glc_nec > 0 for determining fglcmask
-                              Default:  gland5UM
-                              (i.e. gland20, gland10 etcetera)
+     -glc_present             Set to true if the glc model is present (not sglc).
+                              This is used for error-checking, to make sure other options are
+                              set appropriately.
      -glc_nec <name>          Glacier number of elevation classes [0 | 3 | 5 | 10 | 36]
                               (default is 0) (standard option with land-ice model is 10)
      -glc_smb <value>         Only used if glc_nec > 0
@@ -253,7 +252,7 @@ sub process_commandline {
                clm_demand            => "null",
                help                  => 0,
                glc_nec               => "default",
-               glc_grid              => "default",
+               glc_present           => 0,
                glc_smb               => "default",
                l_ncpl                => undef,
                lnd_frac              => undef,
@@ -292,7 +291,7 @@ sub process_commandline {
              "note!"                     => \$opts{'note'},
              "megan!"                    => \$opts{'megan'},
              "glc_nec=i"                 => \$opts{'glc_nec'},
-             "glc_grid=s"                => \$opts{'glc_grid'},
+             "glc_present!"              => \$opts{'glc_present'},
              "glc_smb=s"                 => \$opts{'glc_smb'},
              "irrig=s"                   => \$opts{'irrig'},
              "d:s"                       => \$opts{'dir'},
@@ -1413,14 +1412,27 @@ sub process_namelist_inline_logic {
   setup_logic_glacier($opts, $nl_flags, $definition, $defaults, $nl,  $envxml_ref, $physv);
   setup_logic_params_file($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_create_crop_landunit($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
-  setup_logic_urban($opts->{'test'}, $nl_flags, $definition, $defaults, $nl);
-  setup_logic_more_vertlayers($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_soilstate($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_demand($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_surface_dataset($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_initial_conditions($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_bgc_spinup($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_supplemental_nitrogen($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+
+  #########################################
+  # namelist group: clm_humanindex_inparm #
+  #########################################
+  setup_logic_humanindex($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+
+  #######################################################################
+  # namelist groups: clm_hydrology1_inparm and clm_soilhydrology_inparm #
+  #######################################################################
   setup_logic_hydrology_switches($nl);
+
+  ###############################
+  # namelist group: clmu_inparm #
+  ###############################
+  setup_logic_urban($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
 
   ###############################
   # namelist group: ch4par_in   #
@@ -1680,7 +1692,11 @@ sub setup_logic_glacier {
     fatal_error("$var set to $val does NOT agree with -glc_nec argument of $nl_flags->{'glc_nec'} (set with GLC_NEC env variable)\n");
   }
   if ( $nl_flags->{'glc_nec'} > 0 ) {
-    foreach my $var ( "glc_grid", "glc_smb" ) {
+    if (! $opts->{'glc_present'}) {
+      fatal_error("glc_nec is non-zero, but glc_present is not set (probably due to trying to use a stub glc model)");
+    }
+
+    foreach my $var ( "glc_smb" ) {
       if ( $opts->{$var} ne "default" ) {
         add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, 'val'=>$opts->{$var} );
         $val = $nl->get_value($var);
@@ -1699,10 +1715,8 @@ sub setup_logic_glacier {
         fatal_error("$var is NOT set, but glc_nec is positive");
       }
     }
-    my $glc_grid = $nl->get_value('glc_grid');
-    $glc_grid =~ s/['"]//g;
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'flndtopo'  , 'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'} );
-    add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fglcmask'  , 'hgrid'=>$nl_flags->{'res'}, 'glc_grid'=>$glc_grid );
+    add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fglcmask'  , 'hgrid'=>$nl_flags->{'res'});
 
     if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'glcmec_downscale_rain_snow_convert');
@@ -1711,13 +1725,10 @@ sub setup_logic_glacier {
     }
 
   } else {
-    if (defined($nl->get_value('glc_grid'))) {
-      my $glc_grid = $nl->get_value('glc_grid');
-      $glc_grid =~ s/['"]//g;
-      if ( defined($glc_grid) ) {
-        fatal_error("glc_grid is set, but glc_nec is zero");
-      }
+    if ($opts->{'glc_present'}) {
+      fatal_error("glc_present is set (e.g., due to use of CISM), but glc_nec is zero");
     }
+
     # Error checking for glacier multiple elevation class options when glc_mec off
     # Make sure various glc_mec-specific logicals are not true, and fglcmask is not set
     my $create_glcmec = $nl->get_value('create_glacier_mec_landunit');
@@ -1787,21 +1798,39 @@ sub setup_logic_create_crop_landunit {
 
 #-------------------------------------------------------------------------------
 
-sub setup_logic_urban {
-  my ($test_files, $nl_flags, $definition, $defaults, $nl) = @_;
+sub setup_logic_humanindex {
+  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
+  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'calc_human_stress_indices');
+  } else {
+     if ( defined($nl->get_value('calc_human_stress_indices')) ) {
+        fatal_error( "calc_human_stress_indices can NOT be set, for physics versions less than clm4_5" );
+     }
+  }
+}
+
+#-------------------------------------------------------------------------------
+
+sub setup_logic_urban {
+  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'building_temp_method');
+  }
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'urban_hac');
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'urban_traffic');
 }
 
 #-------------------------------------------------------------------------------
 
-sub setup_logic_more_vertlayers {
+sub setup_logic_soilstate {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'more_vertlayers', 'hgrid'=>$nl_flags->{'res'} );
     $nl_flags->{'more_vert'} = $nl->get_value('more_vertlayers');
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'organic_frac_squared' );
   }
 }
 
@@ -2430,7 +2459,8 @@ sub write_output_files {
     #}
   } else {
     @groups = qw(clm_inparm ndepdyn_nml popd_streams light_streams lai_streams clm_canopyhydrology_inparm 
-                 clm_soilhydrology_inparm finidat_consistency_checks dynpft_consistency_checks);
+                 clm_soilhydrology_inparm finidat_consistency_checks dynpft_consistency_checks 
+                 clmu_inparm clm_soilstate_inparm );
     #@groups = qw(clm_inparm clm_canopyhydrology_inparm clm_soilhydrology_inparm 
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on
@@ -2439,6 +2469,9 @@ sub write_output_files {
     #}
     if ( $nl_flags->{'use_lch4'}  eq ".true." ) {
       push @groups, "ch4par_in";
+    }
+    if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+      push @groups, "clm_humanindex_inparm";
     }
   }
 

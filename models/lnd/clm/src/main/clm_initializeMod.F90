@@ -3,114 +3,28 @@ module clm_initializeMod
   !-----------------------------------------------------------------------
   ! Performs land model initialization
   !
-  use shr_kind_mod     , only : r8 => shr_kind_r8
-  use spmdMod          , only : masterproc
-  use shr_sys_mod      , only : shr_sys_flush
-  use shr_log_mod      , only : errMsg => shr_log_errMsg
-  use decompMod        , only : bounds_type, get_proc_bounds 
-  use abortutils       , only : endrun
-  use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
-  use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed
-  use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
-  use perf_mod         , only : t_startf, t_stopf
-  use readParamsMod    , only : readParameters
+  use shr_kind_mod    , only : r8 => shr_kind_r8
+  use shr_sys_mod     , only : shr_sys_flush
+  use shr_log_mod     , only : errMsg => shr_log_errMsg
+  use spmdMod         , only : masterproc
+  use decompMod       , only : bounds_type, get_proc_bounds 
+  use abortutils      , only : endrun
+  use clm_varctl      , only : nsrest, nsrStartup, nsrContinue, nsrBranch
+  use clm_varctl      , only : create_glacier_mec_landunit, iulog
+  use clm_varctl      , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed
+  use clm_instur      , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
+  use perf_mod        , only : t_startf, t_stopf
+  use readParamsMod   , only : readParameters
   use ncdio_pio       , only : file_desc_t
+  use GridcellType    , only : grc           ! instance     
+  use LandunitType    , only : lun           ! instance          
+  use ColumnType      , only : col           ! instance          
+  use PatchType       , only : patch         ! instance            
+  use EDVecCohortType , only : ed_vec_cohort ! instance, used for domain decomp
+  use clm_instMod   
   ! 
-  !-----------------------------------------
-  ! Definition of component types
-  !-----------------------------------------
-  use AerosolType            , only : aerosol_type
-  use CanopyStateType        , only : canopystate_type
-  use ch4Mod                 , only : ch4_type
-  use CNCarbonFluxType       , only : carbonflux_type
-  use CNCarbonStateType      , only : carbonstate_type
-  use CNDVType               , only : dgvs_type
-  use CNStateType            , only : cnstate_type
-  use CNNitrogenFluxType     , only : nitrogenflux_type
-  use CNNitrogenStateType    , only : nitrogenstate_type
-  use CropType               , only : crop_type
-  use DryDepVelocity         , only : drydepvel_type
-  use DUSTMod                , only : dust_type
-  use EnergyFluxType         , only : energyflux_type
-  use FrictionVelocityType   , only : frictionvel_type
-  use LakeStateType          , only : lakestate_type
-  use PhotosynthesisType     , only : photosyns_type
-  use SoilHydrologyType      , only : soilhydrology_type  
-  use SoilStateType          , only : soilstate_type
-  use SolarAbsorbedType      , only : solarabs_type
-  use SurfaceRadiationMod    , only : surfrad_type
-  use SurfaceAlbedoMod       , only : SurfaceAlbedoInitTimeConst !TODO - can this be merged into the type?
-  use SurfaceAlbedoType      , only : surfalb_type
-  use TemperatureType        , only : temperature_type
-  use WaterfluxType          , only : waterflux_type
-  use WaterstateType         , only : waterstate_type
-  use UrbanParamsType        , only : urbanparams_type
-  use VOCEmissionMod         , only : vocemis_type
-  use atm2lndType            , only : atm2lnd_type
-  use lnd2atmType            , only : lnd2atm_type
-  use lnd2glcMod             , only : lnd2glc_type 
-  use glc2lndMod             , only : glc2lnd_type
-  use glcDiagnosticsMod      , only : glc_diagnostics_type
-  use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-  use UrbanParamsType        , only : urbanparams_type   ! Constants 
-  use CNDecompCascadeConType , only : decomp_cascade_con ! Constants 
-  use CNDVType               , only : dgv_ecophyscon     ! Constants 
-  use EcophysConType         , only : ecophyscon         ! Constants 
-  use GridcellType           , only : grc                
-  use LandunitType           , only : lun                
-  use ColumnType             , only : col                
-  use PatchType              , only : pft                
-  use EDEcophysConType       , only : EDecophyscon       ! ED Constants
-  use EDBioType              , only : EDbio_type         ! ED type used to interact with CLM variables
-  use EDVecPatchType         , only : EDpft                   
-  use EDVecCohortType        , only : coh                ! unique to ED, used for domain decomp
-  !
   implicit none
-  save
   public   ! By default everything is public 
-  !
-  !-----------------------------------------
-  ! Instances of component types
-  !-----------------------------------------
-  !
-  type(ch4_type)              :: ch4_vars
-  type(carbonstate_type)      :: carbonstate_vars
-  type(carbonstate_type)      :: c13_carbonstate_vars
-  type(carbonstate_type)      :: c14_carbonstate_vars
-  type(carbonflux_type)       :: carbonflux_vars
-  type(carbonflux_type)       :: c13_carbonflux_vars
-  type(carbonflux_type)       :: c14_carbonflux_vars
-  type(nitrogenstate_type)    :: nitrogenstate_vars
-  type(nitrogenflux_type)     :: nitrogenflux_vars
-  type(dgvs_type)             :: dgvs_vars
-  type(crop_type)             :: crop_vars
-  type(cnstate_type)          :: cnstate_vars
-  type(dust_type)             :: dust_vars
-  type(vocemis_type)          :: vocemis_vars
-  type(drydepvel_type)        :: drydepvel_vars
-  type(aerosol_type)          :: aerosol_vars
-  type(canopystate_type)      :: canopystate_vars
-  type(energyflux_type)       :: energyflux_vars
-  type(frictionvel_type)      :: frictionvel_vars
-  type(lakestate_type)        :: lakestate_vars
-  type(photosyns_type)        :: photosyns_vars
-  type(soilstate_type)        :: soilstate_vars
-  type(soilhydrology_type)    :: soilhydrology_vars
-  type(solarabs_type)         :: solarabs_vars
-  type(surfalb_type)          :: surfalb_vars
-  type(surfrad_type)          :: surfrad_vars
-  type(temperature_type)      :: temperature_vars
-  type(urbanparams_type)      :: urbanparams_vars
-  type(waterflux_type)        :: waterflux_vars
-  type(waterstate_type)       :: waterstate_vars
-  type(atm2lnd_type)          :: atm2lnd_vars
-  type(glc2lnd_type)          :: glc2lnd_vars
-  type(lnd2atm_type)          :: lnd2atm_vars
-  type(lnd2glc_type)          :: lnd2glc_vars
-  type(glc_diagnostics_type)  :: glc_diagnostics_vars
-  class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
-  type(EDbio_type)            :: EDbio_vars
   !
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
@@ -130,7 +44,7 @@ contains
     use landunit_varcon  , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon    , only: col_itype_to_icemec_class
     use clm_varctl       , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
-    use pftvarcon        , only: pftconrd
+    use pftconMod        , only: pftcon       
     use decompInitMod    , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
     use domainMod        , only: domain_check, ldomain, domain_init
     use surfrdMod        , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data 
@@ -138,7 +52,7 @@ contains
     use ncdio_pio        , only: ncd_pio_init
     use initGridCellsMod , only: initGridCells
     use ch4varcon        , only: ch4conrd
-    use UrbanParamsType  , only: UrbanInput
+    use UrbanParamsType  , only: UrbanInput, IsSimpleBuildTemp
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -168,7 +82,7 @@ contains
 
     call control_init()
     call clm_varpar_init()
-    call clm_varcon_init()
+    call clm_varcon_init( IsSimpleBuildTemp() )
     call landunit_varcon_init()
     call ncd_pio_init()
 
@@ -258,7 +172,7 @@ contains
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
 
-    call pftconrd()
+    call pftcon%Init()
 
     ! Read surface dataset and set up subgrid weight arrays
     
@@ -283,13 +197,12 @@ contains
     ! Note that the assumption is made that none of the subgrid initialization
     ! can depend on other elements of the subgrid in the calls below
 
-    call grc%Init (bounds_proc%begg, bounds_proc%endg)
-    call lun%Init (bounds_proc%begl, bounds_proc%endl)
-    call col%Init (bounds_proc%begc, bounds_proc%endc)
-    call pft%Init (bounds_proc%begp, bounds_proc%endp)
+    call grc%Init  (bounds_proc%begg, bounds_proc%endg)
+    call lun%Init  (bounds_proc%begl, bounds_proc%endl)
+    call col%Init  (bounds_proc%begc, bounds_proc%endc)
+    call patch%Init(bounds_proc%begp, bounds_proc%endp)
     if ( use_ed ) then
-       call EDpft%Init(bounds_proc)
-       call coh%Init(bounds_proc)
+       call ed_vec_cohort%Init(bounds_proc%begCohort,bounds_proc%endCohort)
     end if
 
     ! Build hierarchy and topological info for derived types
@@ -357,50 +270,38 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog
-    use clm_varcon            , only : h2osno_max, bdsno, c13ratio, c14ratio, spval
-    use landunit_varcon       , only : istice, istice_mec, istsoil
+    use accumulMod            , only : print_accum_fields 
+    use clm_varpar            , only : nlevsno, crop_prog
+    use clm_varcon            , only : spval
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
     use clm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_ed
     use clm_varorb            , only : eccen, mvelpp, lambm0, obliqr
     use clm_time_manager      , only : get_step_size, get_curr_calday
     use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep 
     use clm_time_manager      , only : timemgr_init, timemgr_restart_io, timemgr_restart
-    use controlMod            , only : nlfilename
-    use decompMod             , only : get_proc_clumps, get_proc_bounds, get_clump_bounds, bounds_type
-    use domainMod             , only : ldomain
-    use initInterpMod         , only : initInterp
+    use C14BombSpikeMod       , only : C14_init_BombSpike, use_c14_bombspike 
     use DaylengthMod          , only : InitDaylength, daylength
+    use decompMod             , only : get_proc_clumps, get_proc_bounds, get_clump_bounds, bounds_type
+    use dynSubgridDriverMod   , only : dynSubgrid_init
     use fileutils             , only : getfil
     use filterMod             , only : allocFilters, filter
-    use dynSubgridDriverMod   , only : dynSubgrid_init
+    use initInterpMod         , only : initInterp
     use reweightMod           , only : reweight_wrapup
     use subgridWeightsMod     , only : init_subgrid_weights_mod
     use histFileMod           , only : hist_htapes_build, htapes_fieldlist, hist_printflds
     use histFileMod           , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     use restFileMod           , only : restFile_getfile, restFile_open, restFile_close
     use restFileMod           , only : restFile_read, restFile_write 
-    use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
-    use CNEcosystemDynMod     , only : CNEcosystemDynInit 
-    use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
-    use CNDecompCascadeCNMod  , only : init_decompcascade_cn
-    use CNDecompCascadeContype, only : init_decomp_cascade_constants
+    use CNDriverMod           , only : CNDriverInit 
     use EDInitMod             , only : ed_init  
-    use EcophysConType        , only : ecophysconInit 
-    use EDEcophysConType      , only : EDecophysconInit 
-    use EDPftVarcon           , only : EDpftvarcon_inst
     use LakeCon               , only : LakeConInit 
     use SatellitePhenologyMod , only : SatellitePhenologyInit, readAnnualVegetation, interpMonthlyVeg
     use SnowSnicarMod         , only : SnowAge_init, SnowOptics_init
-    use initVerticalMod       , only : initVertical
     use lnd2atmMod            , only : lnd2atm_minimal
-    use glc2lndMod            , only : glc2lnd_type
-    use lnd2glcMod            , only : lnd2glc_type 
-    use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
+    use NutrientCompetitionFactoryMod, only : create_nutrient_competition_method
     !
     ! !ARGUMENTS    
-    implicit none
     !
     ! !LOCAL VARIABLES:
     integer               :: c,i,g,j,k,l,p! indices
@@ -426,8 +327,6 @@ contains
     logical               :: lexist
     integer               :: closelatidx,closelonidx
     real(r8)              :: closelat,closelon
-    real(r8), allocatable :: h2osno_col(:)
-    real(r8), allocatable :: snow_depth_col(:)
     real(r8)              :: max_decl      ! temporary, for calculation of max_dayl
     integer               :: begp, endp
     integer               :: begc, endc
@@ -449,7 +348,12 @@ contains
     ! Read in parameters files
     ! ------------------------------------------------------------------------
 
-    call readParameters()
+    allocate(nutrient_competition_method, &
+         source=create_nutrient_competition_method())
+
+    if (use_cn .or. use_ed) then
+       call readParameters(nutrient_competition_method)
+    end if
 
     ! ------------------------------------------------------------------------
     ! Initialize time manager
@@ -525,76 +429,6 @@ contains
          avgflag='A', long_name='convective boundary height', &
          ptr_col=col%zii, default='inactive')
 
-    ! Note: h2osno_col and snow_depth_col are initialized as local variable 
-    ! since they are needed to initialize vertical data structures  
-
-    begp = bounds_proc%begp; endp = bounds_proc%endp 
-    begc = bounds_proc%begc; endc = bounds_proc%endc 
-    begl = bounds_proc%begl; endl = bounds_proc%endl 
-
-    allocate (h2osno_col(begc:endc))
-    allocate (snow_depth_col(begc:endc))
-
-    ! snow water
-    ! Note: Glacier_mec columns are initialized with half the maximum snow cover.
-    ! This gives more realistic values of qflx_glcice sooner in the simulation
-    ! for columns with net ablation, at the cost of delaying ice formation
-    ! in columns with net accumulation.
-    do c = begc,endc
-       l = col%landunit(c)
-       g = col%gridcell(c)
-
-       if (lun%itype(l)==istice) then
-          h2osno_col(c) = h2osno_max
-       elseif (lun%itype(l)==istice_mec .or. &
-              (lun%itype(l)==istsoil .and. ldomain%glcmask(g) > 0._r8)) then 
-          ! Initialize a non-zero snow thickness where the ice sheet can/potentially operate.
-          ! Using glcmask to capture all potential vegetated points around GrIS (ideally
-          ! we would use icemask from CISM, but that isn't available until after initialization.)
-          h2osno_col(c) = 0.5_r8 * h2osno_max   ! 50 cm if h2osno_max = 1 m
-       else
-          h2osno_col(c) = 0._r8
-       endif
-       snow_depth_col(c)  = h2osno_col(c) / bdsno
-    end do
-
-    ! Initialize urban constants
-
-    call urbanparams_vars%Init(bounds_proc)
-
-    ! Initialize ecophys constants
-
-    call ecophysconInit()
-    if (use_ed) then
-       call EDecophysconInit( EDpftvarcon_Inst, numpft)
-    end if
-
-    ! Initialize lake constants
-
-    call LakeConInit()
-
-    ! Initialize surface albedo constants
-
-    call SurfaceAlbedoInitTimeConst(bounds_proc)
-
-    ! Initialize vertical data components 
-
-    call initVertical(bounds_proc,               &
-         snow_depth_col(begc:endc),              &
-         urbanparams_vars%thick_wall(begl:endl), &
-         urbanparams_vars%thick_roof(begl:endl))
-
-    ! Initialize clm->drv and drv->clm data structures
-
-    call atm2lnd_vars%Init( bounds_proc )
-    call lnd2atm_vars%Init( bounds_proc )
-
-    ! Initialize glc2lnd and lnd2glc even if running without create_glacier_mec_landunit,
-    ! because at least some variables (such as the icemask) are referred to in code that
-    ! is executed even when running without glc_mec.
-    call glc2lnd_vars%Init( bounds_proc )
-    call lnd2glc_vars%Init( bounds_proc )
-
     ! If single-column determine closest latitude and longitude
 
     if (single_column) then
@@ -603,161 +437,16 @@ contains
             closelat, closelon, closelatidx, closelonidx)
     end if
 
-    ! Initialization of public data types
+    ! Initialize instances of all derived types as well as time constant variables
 
-    call temperature_vars%init(bounds_proc,      &
-         urbanparams_vars%em_roof(begl:endl),    &
-         urbanparams_vars%em_wall(begl:endl),    &
-         urbanparams_vars%em_improad(begl:endl), &
-         urbanparams_vars%em_perroad(begl:endl))
+    call clm_instInit(bounds_proc)
 
-    call canopystate_vars%init(bounds_proc)
-
-    call soilstate_vars%init(bounds_proc)
-
-    call waterstate_vars%init(bounds_proc,         &
-         h2osno_col(begc:endc),                    &
-         snow_depth_col(begc:endc),                &
-         soilstate_vars%watsat_col(begc:endc, 1:), &
-         temperature_vars%t_soisno_col(begc:endc, -nlevsno+1:) )
-
-    call waterflux_vars%init(bounds_proc)
-
-    ! WJS (6-24-14): Without the following write statement, the assertion in
-    ! energyflux_vars%init fails with pgi 13.9 on yellowstone. So for now, I'm leaving
-    ! this write statement in place as a workaround for this problem.
-    call energyflux_vars%init(bounds_proc, temperature_vars%t_grnd_col(begc:endc))
-
-    call aerosol_vars%Init(bounds_proc)
-
-    call frictionvel_vars%Init(bounds_proc)
-
-    call lakestate_vars%Init(bounds_proc)
-
-    call photosyns_vars%Init(bounds_proc)
-
-    call soilhydrology_vars%Init(bounds_proc, nlfilename)
-
-    call solarabs_vars%Init(bounds_proc)
-
-    call surfalb_vars%Init(bounds_proc)
-
-    call surfrad_vars%Init(bounds_proc)
-
-    call dust_vars%Init(bounds_proc)
-
-    call glc_diagnostics_vars%Init(bounds_proc)
-
-    ! Once namelist options are added to control the soil water retention curve method,
-    ! we'll need to either pass the namelist file as an argument to this routine, or pass
-    ! the namelist value itself (if the namelist is read elsewhere).
-    allocate(soil_water_retention_curve, &
-         source=create_soil_water_retention_curve())
+    ! Initialize SNICAR optical and aging parameters
 
     call SnowOptics_init( ) ! SNICAR optical parameters:
-
     call SnowAge_init( )    ! SNICAR aging   parameters:
 
-    ! Note - always initialize the memory for ch4_vars
-    call ch4_vars%Init(bounds_proc, soilstate_vars%cellorg_col(begc:endc, 1:))
-
-    ! Note - always initialize the memory for cnstate_vars (used in biogeophys/)
-    call cnstate_vars%Init(bounds_proc)
-
-    if (use_voc ) then
-       call vocemis_vars%Init(bounds_proc)
-    end if
-
-    if (use_cn) then
-
-       call init_decomp_cascade_constants()
-       if (use_century_decomp) then
-          ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
-          call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
-       else 
-          ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
-          call init_decompcascade_cn(bounds_proc, cnstate_vars)
-       end if
-
-       ! Note - always initialize the memory for the c13_carbonstate_vars and
-       ! c14_carbonstate_vars data structure so that they can be used in 
-       ! associate statements (nag compiler complains otherwise)
-
-       call carbonstate_vars%Init(bounds_proc, carbon_type='c12', ratio=1._r8) 
-       if (use_c13) then
-          call c13_carbonstate_vars%Init(bounds_proc, carbon_type='c13', ratio=c13ratio, &
-               c12_carbonstate_vars=carbonstate_vars)
-       end if
-       if (use_c14) then
-          call c14_carbonstate_vars%Init(bounds_proc, carbon_type='c14', ratio=c14ratio, &
-               c12_carbonstate_vars=carbonstate_vars)
-       end if
-
-       ! Note - always initialize the memory for the c13_carbonflux_vars and
-       ! c14_carbonflux_vars data structure so that they can be used in 
-       ! associate statements (nag compiler complains otherwise)
-
-       call carbonflux_vars%Init(bounds_proc, carbon_type='c12') 
-       if (use_c13) then
-          call c13_carbonflux_vars%Init(bounds_proc, carbon_type='c13')
-       end if
-       if (use_c14) then
-          call c14_carbonflux_vars%Init(bounds_proc, carbon_type='c14')
-       end if
-
-       call nitrogenstate_vars%Init(bounds_proc,                      &
-            carbonstate_vars%leafc_patch(begp:endp),                  &
-            carbonstate_vars%leafc_storage_patch(begp:endp),          &
-            carbonstate_vars%deadstemc_patch(begp:endp),              &
-            carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
-            carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &
-            carbonstate_vars%decomp_cpools_1m_col(begc:endc, 1:))
-
-       call nitrogenflux_vars%Init(bounds_proc) 
-
-       ! Note - always initialize the memory for the dgvs_vars data structure so
-       ! that it can be used in associate statements (nag compiler complains otherwise)
-       call dgvs_vars%Init(bounds_proc)
-
-       call crop_vars%Init(bounds_proc)
-       
-    end if
-
-    if ( use_ed ) then
-       call EDbio_vars%Init(bounds_proc)
-    end if
-
     call hist_printflds()
-
-    deallocate (h2osno_col)
-    deallocate (snow_depth_col)
-
-    ! ------------------------------------------------------------------------
-    ! Initialize accumulated fields
-    ! ------------------------------------------------------------------------
-
-    ! The time manager needs to be initialized before thes called is made, since
-    ! the step size is needed. 
-
-    call t_startf('init_accflds')
-
-    call atm2lnd_vars%initAccBuffer(bounds_proc)
-
-    call temperature_vars%initAccBuffer(bounds_proc)
-
-    call canopystate_vars%initAccBuffer(bounds_proc)
-
-    if (use_cndv) then
-       call dgvs_vars%initAccBuffer(bounds_proc)
-    end if
-
-    if (crop_prog) then
-       call crop_vars%initAccBuffer(bounds_proc)
-    end if
-
-    call print_accum_fields()
-
-    call t_stopf('init_accflds')
 
     ! ------------------------------------------------------------------------
     ! Initializate dynamic subgrid weights (for prescribed transient Patches, CNDV
@@ -767,7 +456,7 @@ contains
 
     call t_startf('init_dyn_subgrid')
     call init_subgrid_weights_mod(bounds_proc)
-    call dynSubgrid_init(bounds_proc, dgvs_vars)
+    call dynSubgrid_init(bounds_proc, dgvs_inst)
     call t_stopf('init_dyn_subgrid')
 
     ! ------------------------------------------------------------------------
@@ -775,14 +464,18 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       call CNEcosystemDynInit(bounds_proc)
-    else
-       call SatellitePhenologyInit(bounds_proc)
-    end if
+       call CNDriverInit(bounds_proc)
 
-    if (use_cn .and. n_drydep > 0 .and. drydep_method == DD_XLND) then
-       ! Must do this also when drydeposition is used so that estimates of monthly 
-       ! differences in LAI can be computed
+       if (n_drydep > 0 .and. drydep_method == DD_XLND) then
+          ! Must do this also when drydeposition is used so that estimates of monthly 
+          ! differences in LAI can be computed
+          call SatellitePhenologyInit(bounds_proc)
+       end if
+
+       if ( use_c14 .and. use_c14_bombspike ) then
+          call C14_init_BombSpike()
+       end if
+    else
        call SatellitePhenologyInit(bounds_proc)
     end if
 
@@ -819,26 +512,15 @@ contains
              write(iulog,*)'Reading initial conditions from ',trim(finidat)
           end if
           call getfil( finidat, fnamer, 0 )
-          call restFile_read(bounds_proc, fnamer,                                             &
-               atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-               ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-               nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-               waterflux_vars, waterstate_vars, EDbio_vars )
+          call restFile_read(bounds_proc, fnamer)
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
+
        if (masterproc) then
           write(iulog,*)'Reading restart file ',trim(fnamer)
        end if
-       call restFile_read(bounds_proc, fnamer,                                             &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+       call restFile_read(bounds_proc, fnamer)
 
     end if
 
@@ -866,31 +548,19 @@ contains
        do nc = 1, nclumps
           call get_clump_bounds(nc, bounds_clump)
           call reweight_wrapup(bounds_clump, &
-               glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+               glc2lnd_inst%icemask_grc(bounds_clump%begg:bounds_clump%endg))
        end do
        !$OMP END PARALLEL DO
 
        ! Create new template file using cold start
-       call restFile_write(bounds_proc, finidat_interp_dest,                               &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+       call restFile_write(bounds_proc, finidat_interp_dest)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
        call initInterp(filei=fnamer, fileo=finidat_interp_dest, bounds=bounds_proc)
 
        ! Read new interpolated conditions file back in
-       call restFile_read(bounds_proc, finidat_interp_dest,                                &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+       call restFile_read(bounds_proc, finidat_interp_dest)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)
@@ -902,7 +572,7 @@ contains
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
        call reweight_wrapup(bounds_clump, &
-            glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+            glc2lnd_inst%icemask_grc(bounds_clump%begg:bounds_clump%endg))
     end do
     !$OMP END PARALLEL DO
 
@@ -913,7 +583,7 @@ contains
     if (use_cn) then
        call t_startf('init_ndep')
        call ndep_init(bounds_proc)
-       call ndep_interp(bounds_proc, atm2lnd_vars)
+       call ndep_interp(bounds_proc, atm2lnd_inst)
        call t_stopf('init_ndep')
     end if
 
@@ -937,14 +607,17 @@ contains
     ! The following is called for both initial and restart runs and must
     ! must be called after the restart file is read 
 
-    call atm2lnd_vars%initAccVars(bounds_proc)
-    call temperature_vars%initAccVars(bounds_proc)
-    call canopystate_vars%initAccVars(bounds_proc)
+    call atm2lnd_inst%initAccVars(bounds_proc)
+    call temperature_inst%initAccVars(bounds_proc)
+    if (use_ed) then
+       call ed_phenology_inst%initAccVars(bounds_proc)
+    endif
+    call canopystate_inst%initAccVars(bounds_proc)
     if (use_cndv) then
-       call dgvs_vars%initAccVars(bounds_proc)
+       call dgvs_inst%initAccVars(bounds_proc)
     end if
     if (crop_prog) then
-       call crop_vars%initAccVars(bounds_proc)
+       call crop_inst%initAccVars(bounds_proc)
     end if
 
     !------------------------------------------------------------       
@@ -955,11 +628,11 @@ contains
     ! to get estimates of monthly LAI
 
     if ( n_drydep > 0 .and. drydep_method == DD_XLND )then
-       call readAnnualVegetation(bounds_proc, canopystate_vars)
+       call readAnnualVegetation(bounds_proc, canopystate_inst)
        if (nsrest == nsrStartup .and. finidat /= ' ') then
           ! Call interpMonthlyVeg for dry-deposition so that mlaidiff will be calculated
           ! This needs to be done even if CN or CNDV is on!
-          call interpMonthlyVeg(bounds_proc, canopystate_vars)
+          call interpMonthlyVeg(bounds_proc, canopystate_inst)
        end if
     end if
 
@@ -970,7 +643,7 @@ contains
     if (nsrest == nsrStartup) then
        call t_startf('init_map2gc')
        call lnd2atm_minimal(bounds_proc, &
-            waterstate_vars, surfalb_vars, energyflux_vars, lnd2atm_vars)
+            waterstate_inst, surfalb_inst, energyflux_inst, lnd2atm_inst)
        call t_stopf('init_map2gc')
     end if
 
@@ -984,10 +657,9 @@ contains
           call get_clump_bounds(nc, bounds_clump)
 
           call t_startf('init_lnd2glc')
-          call lnd2glc_vars%update_lnd2glc(bounds_clump,       &
+          call lnd2glc_inst%update_lnd2glc(bounds_clump,       &
                filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,   &
-               temperature_vars, waterflux_vars,               &
-               init=.true.)
+               temperature_inst, waterflux_inst, init=.true.)
           call t_stopf('init_lnd2glc')
        end do
        !$OMP END PARALLEL DO
@@ -1010,9 +682,10 @@ contains
        !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
        do nc = 1, nclumps
           call get_clump_bounds(nc, bounds_clump)
-          call ed_init( bounds_clump, waterstate_vars, canopystate_vars, EDbio_vars, &
-               carbonstate_vars, nitrogenstate_vars, carbonflux_vars) 
+          call ed_init( bounds_clump, ed_allsites_inst(bounds_clump%begg:bounds_clump%endg), ed_clm_inst, &
+               ed_phenology_inst, waterstate_inst, canopystate_inst)
        end do
+
     endif ! use_ed
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through

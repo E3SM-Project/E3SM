@@ -27,7 +27,7 @@ def readCesmXML():
   returns a dictionary output["id"]="value"
   '''
   output = os.environ.copy()
-  env_file_list = ["../env_case.xml","../env_run.xml","../env_build.xml","../env_mach_pes.xml"]
+  env_file_list = ["./env_case.xml","./env_run.xml","./env_build.xml","./env_mach_pes.xml"]
   for env_file in env_file_list:
     if os.path.isfile(env_file):
       xml_tree = ET.ElementTree()

@@ -13,10 +13,10 @@ module SurfaceAlbedoMod
   use landunit_varcon   , only : istsoil, istcrop
   use clm_varcon        , only : grlnd, namep
   use clm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
-  use clm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_ed  
-  use EcophysConType    , only : ecophyscon
+  use clm_varctl        , only : fsurdat, iulog, use_snicar_frc
+  use pftconMod         , only : pftcon
   use SnowSnicarMod     , only : sno_nbr_aer, SNICAR_RT, DO_SNO_AER, DO_SNO_OC
-  use AerosolType       , only : aerosol_type
+  use AerosolMod        , only : aerosol_type
   use CanopyStateType   , only : canopystate_type
   use LakeStateType     , only : lakestate_type
   use SurfaceAlbedoType , only : surfalb_type
@@ -25,11 +25,10 @@ module SurfaceAlbedoMod
   use GridcellType      , only : grc                
   use LandunitType      , only : lun                
   use ColumnType        , only : col                
-  use PatchType         , only : pft                
+  use PatchType         , only : patch                
   use EDSurfaceAlbedoMod, only : ED_Norman_Radiation
   !
   implicit none
-  save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SurfaceAlbedoInitTimeConst
@@ -169,8 +168,8 @@ contains
         num_urbanc   , filter_urbanc,  &
         num_urbanp   , filter_urbanp,  &
         nextsw_cday  , declinp1,       &
-        aerosol_vars, canopystate_vars, waterstate_vars, &
-        lakestate_vars, temperature_vars, surfalb_vars)
+        ed_allsites_inst, aerosol_inst, canopystate_inst, waterstate_inst, &
+        lakestate_inst, temperature_inst, surfalb_inst)
     !
     ! !DESCRIPTION:
     ! Surface albedo and two-stream fluxes
@@ -196,150 +195,149 @@ contains
     use shr_orb_mod
     use clm_time_manager   , only : get_nstep
     use abortutils         , only : endrun
-    use clm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_ed
+    use clm_varctl         , only : subgridflag, use_snicar_frc, use_ed
+    use EDTypesMod         , only : ed_site_type
     use EDSurfaceAlbedoMod
-    use EDtypesMod         , only : patch, gridCellEdState
-    use EDVecPatchtype     , only : EDpft
     !
     ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds    ! bounds
-    type (patch) , pointer :: currentPatch
-    integer , intent(in) :: num_nourbanc       ! number of columns in non-urban filter
-    integer , intent(in) :: filter_nourbanc(:) ! column filter for non-urban points
-     integer                , intent(in)    :: num_nourbanp       ! number of patches in non-urban filter
-     integer                , intent(in)    :: filter_nourbanp(:) ! patch filter for non-urban points
-     integer                , intent(in)    :: num_urbanc         ! number of columns in urban filter
-     integer                , intent(in)    :: filter_urbanc(:)   ! column filter for urban points
-     integer                , intent(in)    :: num_urbanp         ! number of patches in urban filter
-     integer                , intent(in)    :: filter_urbanp(:)   ! patch filter for rban points
-    real(r8), intent(in) :: nextsw_cday        ! calendar day at Greenwich (1.00, ..., days/year)
-    real(r8), intent(in) :: declinp1           ! declination angle (radians) for next time step
-     type(aerosol_type)     , intent(in)    :: aerosol_vars
-     type(canopystate_type) , intent(in)    :: canopystate_vars
-     type(waterstate_type)  , intent(in)    :: waterstate_vars
-     type(lakestate_type)   , intent(in)    :: lakestate_vars
-     type(temperature_type) , intent(in)    :: temperature_vars
-     type(surfalb_type)     , intent(inout) :: surfalb_vars
+    type(bounds_type)      , intent(in)            :: bounds             ! bounds
+    integer                , intent(in)            :: num_nourbanc       ! number of columns in non-urban filter
+    integer                , intent(in)            :: filter_nourbanc(:) ! column filter for non-urban points
+    integer                , intent(in)            :: num_nourbanp       ! number of patches in non-urban filter
+    integer                , intent(in)            :: filter_nourbanp(:) ! patch filter for non-urban points
+    integer                , intent(in)            :: num_urbanc         ! number of columns in urban filter
+    integer                , intent(in)            :: filter_urbanc(:)   ! column filter for urban points
+    integer                , intent(in)            :: num_urbanp         ! number of patches in urban filter
+    integer                , intent(in)            :: filter_urbanp(:)   ! patch filter for rban points
+    real(r8)               , intent(in)            :: nextsw_cday        ! calendar day at Greenwich (1.00, ..., days/year)
+    real(r8)               , intent(in)            :: declinp1           ! declination angle (radians) for next time step
+    type(ed_site_type)     , intent(inout), target :: ed_allsites_inst( bounds%begg: )
+    type(aerosol_type)     , intent(in)            :: aerosol_inst
+    type(canopystate_type) , intent(in)            :: canopystate_inst
+    type(waterstate_type)  , intent(in)            :: waterstate_inst
+    type(lakestate_type)   , intent(in)            :: lakestate_inst
+    type(temperature_type) , intent(in)            :: temperature_inst
+    type(surfalb_type)     , intent(inout)         :: surfalb_inst
     !
     ! !LOCAL VARIABLES:
-     integer  :: i                                                                         ! index for layers [idx]
-     integer  :: aer                                                                       ! index for sno_nbr_aer
-    real(r8) :: extkn                      ! nitrogen allocation coefficient
-    integer  :: fp,fc,g,c,p,iv             ! indices
-    integer  :: ib                         ! band index
-    integer  :: ic                         ! 0=unit incoming direct; 1=unit incoming diffuse
-    real(r8) :: dinc                       ! lai+sai increment for canopy layer
-    real(r8) :: dincmax                    ! maximum lai+sai increment for canopy layer
-    real(r8) :: dincmax_sum                ! cumulative sum of maximum lai+sai increment for canopy layer
-    real(r8) :: laisum                     ! sum of canopy layer lai for error check
-    real(r8) :: saisum                     ! sum of canopy layer sai for error check
-     integer  :: flg_slr                                                                   ! flag for SNICAR (=1 if direct, =2 if diffuse)
-     integer  :: flg_snw_ice                                                               ! flag for SNICAR (=1 when called from CLM, =2 when called from sea-ice)
-     integer  :: num_vegsol                                                                ! number of vegetated patches where coszen>0
-     integer  :: num_novegsol                                                              ! number of vegetated patches where coszen>0
-     integer  :: filter_vegsol   (bounds%endp-bounds%begp+1)                               ! patch filter where vegetated and coszen>0
-     integer  :: filter_novegsol (bounds%endp-bounds%begp+1)                               ! patch filter where vegetated and coszen>0
-     real(r8) :: wl              (bounds%begp:bounds%endp)                                 ! fraction of LAI+SAI that is LAI
-     real(r8) :: ws              (bounds%begp:bounds%endp)                                 ! fraction of LAI+SAI that is SAI
-    real(r8) :: blai(bounds%begp:bounds%endp)              ! lai buried by snow: tlai - elai
-    real(r8) :: bsai(bounds%begp:bounds%endp)              ! sai buried by snow: tsai - esai
-     real(r8) :: coszen_gcell    (bounds%begg:bounds%endg)                                 ! cosine solar zenith angle for next time step (grc)
-     real(r8) :: coszen_patch    (bounds%begp:bounds%endp)                                 ! cosine solar zenith angle for next time step (pft)
-    real(r8) :: rho(bounds%begp:bounds%endp,numrad)        ! leaf/stem refl weighted by fraction LAI and SAI
-    real(r8) :: tau(bounds%begp:bounds%endp,numrad)        ! leaf/stem tran weighted by fraction LAI and SAI
-     real(r8) :: albsfc          (bounds%begc:bounds%endc,numrad)                          ! albedo of surface underneath snow (col,bnd) 
-    real(r8) :: albsnd(bounds%begc:bounds%endc,numrad)     ! snow albedo (direct)
-    real(r8) :: albsni(bounds%begc:bounds%endc,numrad)     ! snow albedo (diffuse)
-     real(r8) :: albsnd_pur      (bounds%begc:bounds%endc,numrad)                          ! direct pure snow albedo (radiative forcing)
-     real(r8) :: albsni_pur      (bounds%begc:bounds%endc,numrad)                          ! diffuse pure snow albedo (radiative forcing)
-     real(r8) :: albsnd_bc       (bounds%begc:bounds%endc,numrad)                          ! direct snow albedo without BC (radiative forcing)
-     real(r8) :: albsni_bc       (bounds%begc:bounds%endc,numrad)                          ! diffuse snow albedo without BC (radiative forcing)
-     real(r8) :: albsnd_oc       (bounds%begc:bounds%endc,numrad)                          ! direct snow albedo without OC (radiative forcing)
-     real(r8) :: albsni_oc       (bounds%begc:bounds%endc,numrad)                          ! diffuse snow albedo without OC (radiative forcing)
-     real(r8) :: albsnd_dst      (bounds%begc:bounds%endc,numrad)                          ! direct snow albedo without dust (radiative forcing)
-     real(r8) :: albsni_dst      (bounds%begc:bounds%endc,numrad)                          ! diffuse snow albedo without dust (radiative forcing)
-     real(r8) :: flx_absd_snw    (bounds%begc:bounds%endc,-nlevsno+1:1,numrad)             ! flux absorption factor for just snow (direct) [frc]
-     real(r8) :: flx_absi_snw    (bounds%begc:bounds%endc,-nlevsno+1:1,numrad)             ! flux absorption factor for just snow (diffuse) [frc]
-     real(r8) :: foo_snw         (bounds%begc:bounds%endc,-nlevsno+1:1,numrad)             ! dummy array for forcing calls
-     real(r8) :: h2osno_liq      (bounds%begc:bounds%endc,-nlevsno+1:0)                    ! liquid snow content (col,lyr) [kg m-2]
-     real(r8) :: h2osno_ice      (bounds%begc:bounds%endc,-nlevsno+1:0)                    ! ice content in snow (col,lyr) [kg m-2]
-     integer  :: snw_rds_in      (bounds%begc:bounds%endc,-nlevsno+1:0)                    ! snow grain size sent to SNICAR (col,lyr) [microns]
-     real(r8) :: mss_cnc_aer_in_frc_pur (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for forcing calculation (zero) (col,lyr,aer) [kg kg-1]
-     real(r8) :: mss_cnc_aer_in_frc_bc  (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for BC forcing (col,lyr,aer) [kg kg-1]
-     real(r8) :: mss_cnc_aer_in_frc_oc  (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for OC forcing (col,lyr,aer) [kg kg-1]
-     real(r8) :: mss_cnc_aer_in_frc_dst (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for dust forcing (col,lyr,aer) [kg kg-1]
-     real(r8) :: mss_cnc_aer_in_fdb     (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of all aerosol species for feedback calculation (col,lyr,aer) [kg kg-1]
-     real(r8), parameter :: mpe = 1.e-06_r8                                                ! prevents overflow for division by zero
-     integer , parameter :: nband =numrad                                                  ! number of solar radiation waveband classes
-  !-----------------------------------------------------------------------
+    integer  :: i                                                                         ! index for layers [idx]
+    integer  :: aer                                                                       ! index for sno_nbr_aer
+    real(r8) :: extkn                                                                     ! nitrogen allocation coefficient
+    integer  :: fp,fc,g,c,p,iv                                                            ! indices
+    integer  :: ib                                                                        ! band index
+    integer  :: ic                                                                        ! 0=unit incoming direct; 1=unit incoming diffuse
+    real(r8) :: dinc                                                                      ! lai+sai increment for canopy layer
+    real(r8) :: dincmax                                                                   ! maximum lai+sai increment for canopy layer
+    real(r8) :: dincmax_sum                                                               ! cumulative sum of maximum lai+sai increment for canopy layer
+    real(r8) :: laisum                                                                    ! sum of canopy layer lai for error check
+    real(r8) :: saisum                                                                    ! sum of canopy layer sai for error check
+    integer  :: flg_slr                                                                   ! flag for SNICAR (=1 if direct, =2 if diffuse)
+    integer  :: flg_snw_ice                                                               ! flag for SNICAR (=1 when called from CLM, =2 when called from sea-ice)
+    integer  :: num_vegsol                                                                ! number of vegetated patches where coszen>0
+    integer  :: num_novegsol                                                              ! number of vegetated patches where coszen>0
+    integer  :: filter_vegsol   (bounds%endp-bounds%begp+1)                               ! patch filter where vegetated and coszen>0
+    integer  :: filter_novegsol (bounds%endp-bounds%begp+1)                               ! patch filter where vegetated and coszen>0
+    real(r8) :: wl              (bounds%begp:bounds%endp)                                 ! fraction of LAI+SAI that is LAI
+    real(r8) :: ws              (bounds%begp:bounds%endp)                                 ! fraction of LAI+SAI that is SAI
+    real(r8) :: blai(bounds%begp:bounds%endp)                                             ! lai buried by snow: tlai - elai
+    real(r8) :: bsai(bounds%begp:bounds%endp)                                             ! sai buried by snow: tsai - esai
+    real(r8) :: coszen_gcell    (bounds%begg:bounds%endg)                                 ! cosine solar zenith angle for next time step (grc)
+    real(r8) :: coszen_patch    (bounds%begp:bounds%endp)                                 ! cosine solar zenith angle for next time step (patch)
+    real(r8) :: rho(bounds%begp:bounds%endp,numrad)                                       ! leaf/stem refl weighted by fraction LAI and SAI
+    real(r8) :: tau(bounds%begp:bounds%endp,numrad)                                       ! leaf/stem tran weighted by fraction LAI and SAI
+    real(r8) :: albsfc          (bounds%begc:bounds%endc,numrad)                          ! albedo of surface underneath snow (col,bnd) 
+    real(r8) :: albsnd(bounds%begc:bounds%endc,numrad)                                    ! snow albedo (direct)
+    real(r8) :: albsni(bounds%begc:bounds%endc,numrad)                                    ! snow albedo (diffuse)
+    real(r8) :: albsnd_pur      (bounds%begc:bounds%endc,numrad)                          ! direct pure snow albedo (radiative forcing)
+    real(r8) :: albsni_pur      (bounds%begc:bounds%endc,numrad)                          ! diffuse pure snow albedo (radiative forcing)
+    real(r8) :: albsnd_bc       (bounds%begc:bounds%endc,numrad)                          ! direct snow albedo without BC (radiative forcing)
+    real(r8) :: albsni_bc       (bounds%begc:bounds%endc,numrad)                          ! diffuse snow albedo without BC (radiative forcing)
+    real(r8) :: albsnd_oc       (bounds%begc:bounds%endc,numrad)                          ! direct snow albedo without OC (radiative forcing)
+    real(r8) :: albsni_oc       (bounds%begc:bounds%endc,numrad)                          ! diffuse snow albedo without OC (radiative forcing)
+    real(r8) :: albsnd_dst      (bounds%begc:bounds%endc,numrad)                          ! direct snow albedo without dust (radiative forcing)
+    real(r8) :: albsni_dst      (bounds%begc:bounds%endc,numrad)                          ! diffuse snow albedo without dust (radiative forcing)
+    real(r8) :: flx_absd_snw    (bounds%begc:bounds%endc,-nlevsno+1:1,numrad)             ! flux absorption factor for just snow (direct) [frc]
+    real(r8) :: flx_absi_snw    (bounds%begc:bounds%endc,-nlevsno+1:1,numrad)             ! flux absorption factor for just snow (diffuse) [frc]
+    real(r8) :: foo_snw         (bounds%begc:bounds%endc,-nlevsno+1:1,numrad)             ! dummy array for forcing calls
+    real(r8) :: h2osno_liq      (bounds%begc:bounds%endc,-nlevsno+1:0)                    ! liquid snow content (col,lyr) [kg m-2]
+    real(r8) :: h2osno_ice      (bounds%begc:bounds%endc,-nlevsno+1:0)                    ! ice content in snow (col,lyr) [kg m-2]
+    integer  :: snw_rds_in      (bounds%begc:bounds%endc,-nlevsno+1:0)                    ! snow grain size sent to SNICAR (col,lyr) [microns]
+    real(r8) :: mss_cnc_aer_in_frc_pur (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for forcing calculation (zero) (col,lyr,aer) [kg kg-1]
+    real(r8) :: mss_cnc_aer_in_frc_bc  (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for BC forcing (col,lyr,aer) [kg kg-1]
+    real(r8) :: mss_cnc_aer_in_frc_oc  (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for OC forcing (col,lyr,aer) [kg kg-1]
+    real(r8) :: mss_cnc_aer_in_frc_dst (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for dust forcing (col,lyr,aer) [kg kg-1]
+    real(r8) :: mss_cnc_aer_in_fdb     (bounds%begc:bounds%endc,-nlevsno+1:0,sno_nbr_aer) ! mass concentration of all aerosol species for feedback calculation (col,lyr,aer) [kg kg-1]
+    real(r8), parameter :: mpe = 1.e-06_r8                                                ! prevents overflow for division by zero
+    integer , parameter :: nband =numrad                                                  ! number of solar radiation waveband classes
+    !-----------------------------------------------------------------------
 
    associate(&
-          rhol          =>    ecophyscon%rhol                     , & ! Input:  [real(r8)  (:,:) ]  leaf reflectance: 1=vis, 2=nir        
-          rhos          =>    ecophyscon%rhos                     , & ! Input:  [real(r8)  (:,:) ]  stem reflectance: 1=vis, 2=nir        
-          taul          =>    ecophyscon%taul                     , & ! Input:  [real(r8)  (:,:) ]  leaf transmittance: 1=vis, 2=nir      
-          taus          =>    ecophyscon%taus                     , & ! Input:  [real(r8)  (:,:) ]  stem transmittance: 1=vis, 2=nir      
+          rhol          =>    pftcon%rhol                         , & ! Input:  leaf reflectance: 1=vis, 2=nir        
+          rhos          =>    pftcon%rhos                         , & ! Input:  stem reflectance: 1=vis, 2=nir        
+          taul          =>    pftcon%taul                         , & ! Input:  leaf transmittance: 1=vis, 2=nir      
+          taus          =>    pftcon%taus                         , & ! Input:  stem transmittance: 1=vis, 2=nir      
 
-          tlai          =>    canopystate_vars%tlai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided leaf area index, no burying by snow 
-          tsai          =>    canopystate_vars%tsai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided stem area index, no burying by snow
-          elai          =>    canopystate_vars%elai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided leaf area index with burying by snow
-          esai          =>    canopystate_vars%esai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided stem area index with burying by snow
+          tlai          =>    canopystate_inst%tlai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided leaf area index, no burying by snow 
+          tsai          =>    canopystate_inst%tsai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided stem area index, no burying by snow
+          elai          =>    canopystate_inst%elai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided leaf area index with burying by snow
+          esai          =>    canopystate_inst%esai_patch         , & ! Input:  [real(r8)  (:)   ]  one-sided stem area index with burying by snow
 
-          frac_sno      =>    waterstate_vars%frac_sno_col        , & ! Input:  [real(r8)  (:)   ]  fraction of ground covered by snow (0 to 1)
-          h2osno        =>    waterstate_vars%h2osno_col          , & ! Input:  [real(r8)  (:)   ]  snow water (mm H2O)                     
-          h2osoi_liq    =>    waterstate_vars%h2osoi_liq_col      , & ! Input:  [real(r8)  (:,:) ]  liquid water content (col,lyr) [kg/m2]
-          h2osoi_ice    =>    waterstate_vars%h2osoi_ice_col      , & ! Input:  [real(r8)  (:,:) ]  ice lens content (col,lyr) [kg/m2]    
-          snw_rds       =>    waterstate_vars%snw_rds_col         , & ! Input:  [real(r8)  (:,:) ]  snow grain radius (col,lyr) [microns] 
+          frac_sno      =>    waterstate_inst%frac_sno_col        , & ! Input:  [real(r8)  (:)   ]  fraction of ground covered by snow (0 to 1)
+          h2osno        =>    waterstate_inst%h2osno_col          , & ! Input:  [real(r8)  (:)   ]  snow water (mm H2O)                     
+          h2osoi_liq    =>    waterstate_inst%h2osoi_liq_col      , & ! Input:  [real(r8)  (:,:) ]  liquid water content (col,lyr) [kg/m2]
+          h2osoi_ice    =>    waterstate_inst%h2osoi_ice_col      , & ! Input:  [real(r8)  (:,:) ]  ice lens content (col,lyr) [kg/m2]    
+          snw_rds       =>    waterstate_inst%snw_rds_col         , & ! Input:  [real(r8)  (:,:) ]  snow grain radius (col,lyr) [microns] 
 
-          mss_cnc_bcphi =>    aerosol_vars%mss_cnc_bcphi_col      , & ! Input:  [real(r8)  (:,:) ]  mass concentration of hydrophilic BC (col,lyr) [kg/kg]
-          mss_cnc_bcpho =>    aerosol_vars%mss_cnc_bcpho_col      , & ! Input:  [real(r8)  (:,:) ]  mass concentration of hydrophobic BC (col,lyr) [kg/kg]
-          mss_cnc_ocphi =>    aerosol_vars%mss_cnc_ocphi_col      , & ! Input:  [real(r8)  (:,:) ]  mass concentration of hydrophilic OC (col,lyr) [kg/kg]
-          mss_cnc_ocpho =>    aerosol_vars%mss_cnc_ocpho_col      , & ! Input:  [real(r8)  (:,:) ]  mass concentration of hydrophobic OC (col,lyr) [kg/kg]
-          mss_cnc_dst1  =>    aerosol_vars%mss_cnc_dst1_col       , & ! Input:  [real(r8)  (:,:) ]  mass concentration of dust aerosol species 1 (col,lyr) [kg/kg]
-          mss_cnc_dst2  =>    aerosol_vars%mss_cnc_dst2_col       , & ! Input:  [real(r8)  (:,:) ]  mass concentration of dust aerosol species 2 (col,lyr) [kg/kg]
-          mss_cnc_dst3  =>    aerosol_vars%mss_cnc_dst3_col       , & ! Input:  [real(r8)  (:,:) ]  mass concentration of dust aerosol species 3 (col,lyr) [kg/kg]
-          mss_cnc_dst4  =>    aerosol_vars%mss_cnc_dst4_col       , & ! Input:  [real(r8)  (:,:) ]  mass concentration of dust aerosol species 4 (col,lyr) [kg/kg]
+          mss_cnc_bcphi =>    aerosol_inst%mss_cnc_bcphi_col      , & ! Input:  [real(r8)  (:,:) ]  mass concentration of hydrophilic BC (col,lyr) [kg/kg]
+          mss_cnc_bcpho =>    aerosol_inst%mss_cnc_bcpho_col      , & ! Input:  [real(r8)  (:,:) ]  mass concentration of hydrophobic BC (col,lyr) [kg/kg]
+          mss_cnc_ocphi =>    aerosol_inst%mss_cnc_ocphi_col      , & ! Input:  [real(r8)  (:,:) ]  mass concentration of hydrophilic OC (col,lyr) [kg/kg]
+          mss_cnc_ocpho =>    aerosol_inst%mss_cnc_ocpho_col      , & ! Input:  [real(r8)  (:,:) ]  mass concentration of hydrophobic OC (col,lyr) [kg/kg]
+          mss_cnc_dst1  =>    aerosol_inst%mss_cnc_dst1_col       , & ! Input:  [real(r8)  (:,:) ]  mass concentration of dust aerosol species 1 (col,lyr) [kg/kg]
+          mss_cnc_dst2  =>    aerosol_inst%mss_cnc_dst2_col       , & ! Input:  [real(r8)  (:,:) ]  mass concentration of dust aerosol species 2 (col,lyr) [kg/kg]
+          mss_cnc_dst3  =>    aerosol_inst%mss_cnc_dst3_col       , & ! Input:  [real(r8)  (:,:) ]  mass concentration of dust aerosol species 3 (col,lyr) [kg/kg]
+          mss_cnc_dst4  =>    aerosol_inst%mss_cnc_dst4_col       , & ! Input:  [real(r8)  (:,:) ]  mass concentration of dust aerosol species 4 (col,lyr) [kg/kg]
 
-          fsun_z        =>    surfalb_vars%fsun_z_patch           , & ! Output:  [real(r8) (:,:) ]  sunlit fraction of canopy layer       
-          tlai_z        =>    surfalb_vars%tlai_z_patch           , & ! Output:  [real(r8) (:,:) ]  tlai increment for canopy layer       
-          tsai_z        =>    surfalb_vars%tsai_z_patch           , & ! Output:  [real(r8) (:,:) ]  tsai increment for canopy layer       
-          vcmaxcintsun  =>    surfalb_vars%vcmaxcintsun_patch     , & ! Output:  [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
-          vcmaxcintsha  =>    surfalb_vars%vcmaxcintsha_patch     , & ! Output:  [real(r8) (:)   ]  leaf to canopy scaling coefficient, shaded leaf vcmax
-          ncan          =>    surfalb_vars%ncan_patch             , & ! Output:  [integer  (:)   ]  number of canopy layers                  
-          nrad          =>    surfalb_vars%nrad_patch             , & ! Output:  [integer  (:)   ]  number of canopy layers, above snow for radiative transfer
-          coszen_col    =>    surfalb_vars%coszen_col             , & ! Output:  [real(r8) (:)   ]  cosine of solar zenith angle            
-          albgrd        =>    surfalb_vars%albgrd_col             , & ! Output:  [real(r8) (:,:) ]  ground albedo (direct)                
-          albgri        =>    surfalb_vars%albgri_col             , & ! Output:  [real(r8) (:,:) ]  ground albedo (diffuse)               
-          albsod        =>    surfalb_vars%albsod_col             , & ! Output:  [real(r8) (:,:) ]  direct-beam soil albedo (col,bnd) [frc]
-          albsoi        =>    surfalb_vars%albsoi_col             , & ! Output:  [real(r8) (:,:) ]  diffuse soil albedo (col,bnd) [frc]   
-          albgrd_pur    =>    surfalb_vars%albgrd_pur_col         , & ! Output:  [real(r8) (:,:) ]  pure snow ground albedo (direct)      
-          albgri_pur    =>    surfalb_vars%albgri_pur_col         , & ! Output:  [real(r8) (:,:) ]  pure snow ground albedo (diffuse)     
-          albgrd_bc     =>    surfalb_vars%albgrd_bc_col          , & ! Output:  [real(r8) (:,:) ]  ground albedo without BC (direct)     
-          albgri_bc     =>    surfalb_vars%albgri_bc_col          , & ! Output:  [real(r8) (:,:) ]  ground albedo without BC (diffuse)    
-          albgrd_oc     =>    surfalb_vars%albgrd_oc_col          , & ! Output:  [real(r8) (:,:) ]  ground albedo without OC (direct)     
-          albgri_oc     =>    surfalb_vars%albgri_oc_col          , & ! Output:  [real(r8) (:,:) ]  ground albedo without OC (diffuse)    
-          albgrd_dst    =>    surfalb_vars%albgrd_dst_col         , & ! Output:  [real(r8) (:,:) ]  ground albedo without dust (direct)   
-          albgri_dst    =>    surfalb_vars%albgri_dst_col         , & ! Output:  [real(r8) (:,:) ]  ground albedo without dust (diffuse)  
-          albsnd_hst    =>    surfalb_vars%albsnd_hst_col         , & ! Output:  [real(r8) (:,:) ]  snow albedo, direct, for history files (col,bnd) [frc]
-          albsni_hst    =>    surfalb_vars%albsni_hst_col         , & ! Output:  [real(r8) (:,:) ]  snow ground albedo, diffuse, for history files (col,bnd) [frc]
-          albd          =>    surfalb_vars%albd_patch             , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
-          albi          =>    surfalb_vars%albi_patch             , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
-          fabd          =>    surfalb_vars%fabd_patch             , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-          fabd_sun      =>    surfalb_vars%fabd_sun_patch         , & ! Output:  [real(r8) (:,:) ]  flux absorbed by sunlit canopy per unit direct flux
-          fabd_sha      =>    surfalb_vars%fabd_sha_patch         , & ! Output:  [real(r8) (:,:) ]  flux absorbed by shaded canopy per unit direct flux
-          fabi          =>    surfalb_vars%fabi_patch             , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
-          fabi_sun      =>    surfalb_vars%fabi_sun_patch         , & ! Output:  [real(r8) (:,:) ]  flux absorbed by sunlit canopy per unit diffuse flux
-          fabi_sha      =>    surfalb_vars%fabi_sha_patch         , & ! Output:  [real(r8) (:,:) ]  flux absorbed by shaded canopy per unit diffuse flux
-          ftdd          =>    surfalb_vars%ftdd_patch             , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
-          ftid          =>    surfalb_vars%ftid_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
-          ftii          =>    surfalb_vars%ftii_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
-          flx_absdv     =>    surfalb_vars%flx_absdv_col          , & ! Output:  [real(r8) (:,:) ]  direct flux absorption factor (col,lyr): VIS [frc]
-          flx_absdn     =>    surfalb_vars%flx_absdn_col          , & ! Output:  [real(r8) (:,:) ]  direct flux absorption factor (col,lyr): NIR [frc]
-          flx_absiv     =>    surfalb_vars%flx_absiv_col          , & ! Output:  [real(r8) (:,:) ]  diffuse flux absorption factor (col,lyr): VIS [frc]
-          flx_absin     =>    surfalb_vars%flx_absin_col          , & ! Output:  [real(r8) (:,:) ]  diffuse flux absorption factor (col,lyr): NIR [frc]
-          fabd_sun_z    =>    surfalb_vars%fabd_sun_z_patch       , & ! Output:  [real(r8) (:,:) ]  absorbed sunlit leaf direct  PAR (per unit lai+sai) for each canopy layer
-          fabd_sha_z    =>    surfalb_vars%fabd_sha_z_patch       , & ! Output:  [real(r8) (:,:) ]  absorbed shaded leaf direct  PAR (per unit lai+sai) for each canopy layer
-          fabi_sun_z    =>    surfalb_vars%fabi_sun_z_patch       , & ! Output:  [real(r8) (:,:) ]  absorbed sunlit leaf diffuse PAR (per unit lai+sai) for each canopy layer
-          fabi_sha_z    =>    surfalb_vars%fabi_sha_z_patch         & ! Output:  [real(r8) (:,:) ]  absorbed shaded leaf diffuse PAR (per unit lai+sai) for each canopy layer
+          fsun_z        =>    surfalb_inst%fsun_z_patch           , & ! Output:  [real(r8) (:,:) ]  sunlit fraction of canopy layer       
+          tlai_z        =>    surfalb_inst%tlai_z_patch           , & ! Output:  [real(r8) (:,:) ]  tlai increment for canopy layer       
+          tsai_z        =>    surfalb_inst%tsai_z_patch           , & ! Output:  [real(r8) (:,:) ]  tsai increment for canopy layer       
+          vcmaxcintsun  =>    surfalb_inst%vcmaxcintsun_patch     , & ! Output:  [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
+          vcmaxcintsha  =>    surfalb_inst%vcmaxcintsha_patch     , & ! Output:  [real(r8) (:)   ]  leaf to canopy scaling coefficient, shaded leaf vcmax
+          ncan          =>    surfalb_inst%ncan_patch             , & ! Output:  [integer  (:)   ]  number of canopy layers                  
+          nrad          =>    surfalb_inst%nrad_patch             , & ! Output:  [integer  (:)   ]  number of canopy layers, above snow for radiative transfer
+          coszen_col    =>    surfalb_inst%coszen_col             , & ! Output:  [real(r8) (:)   ]  cosine of solar zenith angle            
+          albgrd        =>    surfalb_inst%albgrd_col             , & ! Output:  [real(r8) (:,:) ]  ground albedo (direct)                
+          albgri        =>    surfalb_inst%albgri_col             , & ! Output:  [real(r8) (:,:) ]  ground albedo (diffuse)               
+          albsod        =>    surfalb_inst%albsod_col             , & ! Output:  [real(r8) (:,:) ]  direct-beam soil albedo (col,bnd) [frc]
+          albsoi        =>    surfalb_inst%albsoi_col             , & ! Output:  [real(r8) (:,:) ]  diffuse soil albedo (col,bnd) [frc]   
+          albgrd_pur    =>    surfalb_inst%albgrd_pur_col         , & ! Output:  [real(r8) (:,:) ]  pure snow ground albedo (direct)      
+          albgri_pur    =>    surfalb_inst%albgri_pur_col         , & ! Output:  [real(r8) (:,:) ]  pure snow ground albedo (diffuse)     
+          albgrd_bc     =>    surfalb_inst%albgrd_bc_col          , & ! Output:  [real(r8) (:,:) ]  ground albedo without BC (direct)     
+          albgri_bc     =>    surfalb_inst%albgri_bc_col          , & ! Output:  [real(r8) (:,:) ]  ground albedo without BC (diffuse)    
+          albgrd_oc     =>    surfalb_inst%albgrd_oc_col          , & ! Output:  [real(r8) (:,:) ]  ground albedo without OC (direct)     
+          albgri_oc     =>    surfalb_inst%albgri_oc_col          , & ! Output:  [real(r8) (:,:) ]  ground albedo without OC (diffuse)    
+          albgrd_dst    =>    surfalb_inst%albgrd_dst_col         , & ! Output:  [real(r8) (:,:) ]  ground albedo without dust (direct)   
+          albgri_dst    =>    surfalb_inst%albgri_dst_col         , & ! Output:  [real(r8) (:,:) ]  ground albedo without dust (diffuse)  
+          albsnd_hst    =>    surfalb_inst%albsnd_hst_col         , & ! Output:  [real(r8) (:,:) ]  snow albedo, direct, for history files (col,bnd) [frc]
+          albsni_hst    =>    surfalb_inst%albsni_hst_col         , & ! Output:  [real(r8) (:,:) ]  snow ground albedo, diffuse, for history files (col,bnd) [frc]
+          albd          =>    surfalb_inst%albd_patch             , & ! Output:  [real(r8) (:,:) ]  surface albedo (direct)               
+          albi          =>    surfalb_inst%albi_patch             , & ! Output:  [real(r8) (:,:) ]  surface albedo (diffuse)              
+          fabd          =>    surfalb_inst%fabd_patch             , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
+          fabd_sun      =>    surfalb_inst%fabd_sun_patch         , & ! Output:  [real(r8) (:,:) ]  flux absorbed by sunlit canopy per unit direct flux
+          fabd_sha      =>    surfalb_inst%fabd_sha_patch         , & ! Output:  [real(r8) (:,:) ]  flux absorbed by shaded canopy per unit direct flux
+          fabi          =>    surfalb_inst%fabi_patch             , & ! Output:  [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
+          fabi_sun      =>    surfalb_inst%fabi_sun_patch         , & ! Output:  [real(r8) (:,:) ]  flux absorbed by sunlit canopy per unit diffuse flux
+          fabi_sha      =>    surfalb_inst%fabi_sha_patch         , & ! Output:  [real(r8) (:,:) ]  flux absorbed by shaded canopy per unit diffuse flux
+          ftdd          =>    surfalb_inst%ftdd_patch             , & ! Output:  [real(r8) (:,:) ]  down direct flux below canopy per unit direct flux
+          ftid          =>    surfalb_inst%ftid_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flux
+          ftii          =>    surfalb_inst%ftii_patch             , & ! Output:  [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flux
+          flx_absdv     =>    surfalb_inst%flx_absdv_col          , & ! Output:  [real(r8) (:,:) ]  direct flux absorption factor (col,lyr): VIS [frc]
+          flx_absdn     =>    surfalb_inst%flx_absdn_col          , & ! Output:  [real(r8) (:,:) ]  direct flux absorption factor (col,lyr): NIR [frc]
+          flx_absiv     =>    surfalb_inst%flx_absiv_col          , & ! Output:  [real(r8) (:,:) ]  diffuse flux absorption factor (col,lyr): VIS [frc]
+          flx_absin     =>    surfalb_inst%flx_absin_col          , & ! Output:  [real(r8) (:,:) ]  diffuse flux absorption factor (col,lyr): NIR [frc]
+          fabd_sun_z    =>    surfalb_inst%fabd_sun_z_patch       , & ! Output:  [real(r8) (:,:) ]  absorbed sunlit leaf direct  PAR (per unit lai+sai) for each canopy layer
+          fabd_sha_z    =>    surfalb_inst%fabd_sha_z_patch       , & ! Output:  [real(r8) (:,:) ]  absorbed shaded leaf direct  PAR (per unit lai+sai) for each canopy layer
+          fabi_sun_z    =>    surfalb_inst%fabi_sun_z_patch       , & ! Output:  [real(r8) (:,:) ]  absorbed sunlit leaf diffuse PAR (per unit lai+sai) for each canopy layer
+          fabi_sha_z    =>    surfalb_inst%fabi_sha_z_patch         & ! Output:  [real(r8) (:,:) ]  absorbed shaded leaf diffuse PAR (per unit lai+sai) for each canopy layer
           )
 
     ! Cosine solar zenith angle for next time step
@@ -353,7 +351,7 @@ contains
     end do
     do fp = 1,num_nourbanp
        p = filter_nourbanp(fp)
-       g = pft%gridcell(p)
+       g = patch%gridcell(p)
           coszen_patch(p) = coszen_gcell(g)
     end do
 
@@ -395,30 +393,9 @@ contains
           ftdd(p,ib) = 0._r8
           ftid(p,ib) = 0._r8
           ftii(p,ib) = 0._r8
-          
-          ! the ED_patch check has to be in a use_ed block.  Otherwise in non-ed 
-          ! compsets, some compilers correctly flag it as a non assigned pointer
-          ! at runtime.  SPM
-          if ( use_ed ) then
-             if( EDpft%ED_patch(p) == 1 )then ! We have vegetation...
-                g = pft%gridcell(p)
-                currentPatch => gridCellEdState(g)%spnt%oldest_patch
-                do while(p /= currentPatch%clm_pno)
-                   currentPatch => currentPatch%younger
-                enddo
-                currentPatch%f_sun(:,:,:) = 0._r8
-                currentPatch%fabd_sun_z(:,:,:) = 0._r8
-                currentPatch%fabd_sha_z(:,:,:) = 0._r8
-                currentPatch%fabi_sun_z(:,:,:) = 0._r8
-                currentPatch%fabi_sha_z(:,:,:) = 0._r8
-                currentPatch%fabd(:) = 0._r8
-                currentPatch%fabi(:) = 0._r8
-             end if
-          end if
- 
        end do
 
-       end do  ! end of numrad loop
+    end do  ! end of numrad loop
 
     ! SoilAlbedo called before SNICAR_RT
     ! so that reflectance of soil beneath snow column is known
@@ -432,12 +409,12 @@ contains
     ! Note that ground albedo routine will only compute nonzero snow albedos
     ! where coszen > 0
 
-       call SoilAlbedo(bounds, &
-            num_nourbanc, filter_nourbanc, &
+    call SoilAlbedo(bounds, &
+         num_nourbanc, filter_nourbanc, &
          coszen_col(bounds%begc:bounds%endc), &
          albsnd(bounds%begc:bounds%endc, :), &
-            albsni(bounds%begc:bounds%endc, :), &  
-            lakestate_vars, temperature_vars, waterstate_vars, surfalb_vars)
+         albsni(bounds%begc:bounds%endc, :), &  
+         lakestate_inst, temperature_inst, waterstate_inst, surfalb_inst)
 
     ! set variables to pass to SNICAR.
 
@@ -510,7 +487,7 @@ contains
                       albsfc(bounds%begc:bounds%endc, :), &
                       albsnd_bc(bounds%begc:bounds%endc, :), &
                foo_snw(bounds%begc:bounds%endc, :, :), &
-               waterstate_vars)
+               waterstate_inst)
 
           flg_slr = 2; ! diffuse
        call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
@@ -523,7 +500,7 @@ contains
                       albsfc(bounds%begc:bounds%endc, :), &
                       albsni_bc(bounds%begc:bounds%endc, :), &
                foo_snw(bounds%begc:bounds%endc, :, :), &
-               waterstate_vars)
+               waterstate_inst)
 
        ! 2. OC input array:
        !  set BC and dust concentrations, so OC_FRC=[(BC+OC+dust)-(BC+dust)]
@@ -547,7 +524,7 @@ contains
                          albsfc(bounds%begc:bounds%endc, :), &
                          albsnd_oc(bounds%begc:bounds%endc, :), &
                   foo_snw(bounds%begc:bounds%endc, :, :), &
-                  waterstate_vars)
+                  waterstate_inst)
 
              flg_slr = 2; ! diffuse
           call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
@@ -560,7 +537,7 @@ contains
                          albsfc(bounds%begc:bounds%endc, :), &
                          albsni_oc(bounds%begc:bounds%endc, :), &
                   foo_snw(bounds%begc:bounds%endc, :, :), &
-                  waterstate_vars)
+                  waterstate_inst)
        endif
 
        ! 3. DUST input array:
@@ -584,7 +561,7 @@ contains
                       albsfc(bounds%begc:bounds%endc, :), &
                       albsnd_dst(bounds%begc:bounds%endc, :), &
                foo_snw(bounds%begc:bounds%endc, :, :), &
-               waterstate_vars)
+               waterstate_inst)
 
           flg_slr = 2; ! diffuse
        call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
@@ -597,7 +574,7 @@ contains
                       albsfc(bounds%begc:bounds%endc, :), &
                       albsni_dst(bounds%begc:bounds%endc, :), &
                foo_snw(bounds%begc:bounds%endc, :, :), &
-               waterstate_vars)
+               waterstate_inst)
 
        ! 4. ALL AEROSOL FORCING CALCULATION
        ! (pure snow albedo)
@@ -612,7 +589,7 @@ contains
                       albsfc(bounds%begc:bounds%endc, :), &
                       albsnd_pur(bounds%begc:bounds%endc, :), &
                foo_snw(bounds%begc:bounds%endc, :, :), &
-               waterstate_vars)
+               waterstate_inst)
 
           flg_slr = 2; ! diffuse
        call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
@@ -625,7 +602,7 @@ contains
                       albsfc(bounds%begc:bounds%endc, :), &
                       albsni_pur(bounds%begc:bounds%endc, :), &
                foo_snw(bounds%begc:bounds%endc, :, :), &
-               waterstate_vars)
+               waterstate_inst)
     end if
 
     ! CLIMATE FEEDBACK CALCULATIONS, ALL AEROSOLS:
@@ -640,7 +617,7 @@ contains
                    albsfc(bounds%begc:bounds%endc, :), &
                    albsnd(bounds%begc:bounds%endc, :), &
             flx_absd_snw(bounds%begc:bounds%endc, :, :), &
-            waterstate_vars)
+            waterstate_inst)
 
        flg_slr = 2; ! diffuse
     call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
@@ -653,7 +630,7 @@ contains
                    albsfc(bounds%begc:bounds%endc, :), &
                    albsni(bounds%begc:bounds%endc, :), &
             flx_absi_snw(bounds%begc:bounds%endc, :, :), &
-            waterstate_vars)
+            waterstate_inst)
 
     ! ground albedos and snow-fraction weighting of snow absorption factors
     do ib = 1, nband
@@ -740,8 +717,8 @@ contains
     do fp = 1,num_nourbanp
        p = filter_nourbanp(fp)
           if (coszen_patch(p) > 0._r8) then
-             if ((lun%itype(pft%landunit(p)) == istsoil .or.  &
-                  lun%itype(pft%landunit(p)) == istcrop     ) &
+             if ((lun%itype(patch%landunit(p)) == istsoil .or.  &
+                  lun%itype(patch%landunit(p)) == istcrop     ) &
                  .and. (elai(p) + esai(p)) > 0._r8) then
                     num_vegsol = num_vegsol + 1
                     filter_vegsol(num_vegsol) = p
@@ -764,8 +741,8 @@ contains
     do ib = 1, numrad
        do fp = 1,num_vegsol
           p = filter_vegsol(fp)
-          rho(p,ib) = max( rhol(pft%itype(p),ib)*wl(p) + rhos(pft%itype(p),ib)*ws(p), mpe )
-          tau(p,ib) = max( taul(pft%itype(p),ib)*wl(p) + taus(pft%itype(p),ib)*ws(p), mpe )
+          rho(p,ib) = max( rhol(patch%itype(p),ib)*wl(p) + rhos(patch%itype(p),ib)*ws(p), mpe )
+          tau(p,ib) = max( taul(patch%itype(p),ib)*wl(p) + taus(patch%itype(p),ib)*ws(p), mpe )
        end do
     end do
 
@@ -929,43 +906,42 @@ contains
     end do
 
     ! Calculate surface albedos and fluxes
-       ! Only perform on vegetated patches where coszen > 0
-
-    ! Calculate surface albedos and fluxes
     ! Only perform on vegetated pfts where coszen > 0
 
-    if(use_ed)then
+    if (use_ed) then
           
-          call ED_Norman_Radiation (bounds, filter_vegsol, num_vegsol,&
-               coszen_patch(bounds%begp:bounds%endp), surfalb_vars)      
+       call ED_Norman_Radiation (bounds, &
+            filter_vegsol, num_vegsol, filter_nourbanp, num_nourbanp, &
+            coszen_patch(bounds%begp:bounds%endp), ed_allsites_inst(bounds%begg:bounds%endg), &
+            surfalb_inst)
 
     else
 
-      call TwoStream (bounds, filter_vegsol, num_vegsol, &
-               coszen_patch(bounds%begp:bounds%endp), &
-         rho(bounds%begp:bounds%endp, :), &
-               tau(bounds%begp:bounds%endp, :), &
-               canopystate_vars, temperature_vars, waterstate_vars, surfalb_vars)
+       call TwoStream (bounds, filter_vegsol, num_vegsol, &
+            coszen_patch(bounds%begp:bounds%endp), &
+            rho(bounds%begp:bounds%endp, :), &
+            tau(bounds%begp:bounds%endp, :), &
+            canopystate_inst, temperature_inst, waterstate_inst, surfalb_inst)
 
-    endif	 
+    endif
 
-       ! Determine values for non-vegetated patches where coszen > 0
+    ! Determine values for non-vegetated patches where coszen > 0
 
     do ib = 1,numrad
        do fp = 1,num_novegsol
           p = filter_novegsol(fp)
-          c = pft%column(p)
-          fabd(p,ib) = 0._r8
+          c = patch%column(p)
+          fabd(p,ib)     = 0._r8
           fabd_sun(p,ib) = 0._r8
           fabd_sha(p,ib) = 0._r8
-          fabi(p,ib) = 0._r8
+          fabi(p,ib)     = 0._r8
           fabi_sun(p,ib) = 0._r8
           fabi_sha(p,ib) = 0._r8
-          ftdd(p,ib) = 1._r8
-          ftid(p,ib) = 0._r8
-          ftii(p,ib) = 1._r8
-          albd(p,ib) = albgrd(c,ib)
-          albi(p,ib) = albgri(c,ib)
+          ftdd(p,ib)     = 1._r8
+          ftid(p,ib)     = 0._r8
+          ftii(p,ib)     = 1._r8
+          albd(p,ib)     = albgrd(c,ib)
+          albi(p,ib)     = albgri(c,ib)
        end do
     end do
 
@@ -977,16 +953,16 @@ contains
    subroutine SoilAlbedo (bounds, &
         num_nourbanc, filter_nourbanc, &
         coszen, albsnd, albsni, &
-        lakestate_vars, temperature_vars, waterstate_vars, surfalb_vars)
+        lakestate_inst, temperature_inst, waterstate_inst, surfalb_inst)
      !
      ! !DESCRIPTION:
      ! Determine ground surface albedo, accounting for snow
      !
      ! !USES:
-    use clm_varpar, only : numrad
-     use clm_varcon      , only : tfrz
-    use landunit_varcon, only : istice, istice_mec, istdlak
-     use LakeCon         , only : lakepuddling
+    use clm_varpar      , only : numrad
+    use clm_varcon      , only : tfrz
+    use landunit_varcon , only : istice, istice_mec, istdlak
+    use LakeCon         , only : lakepuddling
     !
     ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds             
@@ -995,10 +971,10 @@ contains
      real(r8), intent(in) :: coszen( bounds%begc: )      ! cos solar zenith angle next time step [col]
      real(r8), intent(in) :: albsnd( bounds%begc: , 1: ) ! snow albedo (direct) [col, numrad]
      real(r8), intent(in) :: albsni( bounds%begc: , 1: ) ! snow albedo (diffuse) [col, numrad]
-     type(temperature_type) , intent(in)    :: temperature_vars
-     type(waterstate_type)  , intent(in)    :: waterstate_vars
-     type(lakestate_type)   , intent(in)    :: lakestate_vars
-     type(surfalb_type)     , intent(inout) :: surfalb_vars
+     type(temperature_type) , intent(in)    :: temperature_inst
+     type(waterstate_type)  , intent(in)    :: waterstate_inst
+     type(lakestate_type)   , intent(in)    :: lakestate_inst
+     type(surfalb_type)     , intent(inout) :: surfalb_inst
      !
      ! !LOCAL VARIABLES:
      !
@@ -1019,16 +995,16 @@ contains
    associate(&
           snl          => col%snl                         , & ! Input:  [integer  (:)   ]  number of snow layers                    
 
-          t_grnd       => temperature_vars%t_grnd_col     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
+          t_grnd       => temperature_inst%t_grnd_col     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
 
-          h2osoi_vol   => waterstate_vars%h2osoi_vol_col  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
+          h2osoi_vol   => waterstate_inst%h2osoi_vol_col  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
 
-          lake_icefrac => lakestate_vars%lake_icefrac_col , & ! Input:  [real(r8) (:,:) ]  mass fraction of lake layer that is frozen
+          lake_icefrac => lakestate_inst%lake_icefrac_col , & ! Input:  [real(r8) (:,:) ]  mass fraction of lake layer that is frozen
           
-          albgrd       => surfalb_vars%albgrd_col         , & ! Output: [real(r8) (:,:) ]  ground albedo (direct)                
-          albgri       => surfalb_vars%albgri_col         , & ! Output: [real(r8) (:,:) ]  ground albedo (diffuse)               
-          albsod       => surfalb_vars%albsod_col         , & ! Output: [real(r8) (:,:) ]  soil albedo (direct)                  
-          albsoi       => surfalb_vars%albsoi_col           & ! Output: [real(r8) (:,:) ]  soil albedo (diffuse)                 
+          albgrd       => surfalb_inst%albgrd_col         , & ! Output: [real(r8) (:,:) ]  ground albedo (direct)                
+          albgri       => surfalb_inst%albgri_col         , & ! Output: [real(r8) (:,:) ]  ground albedo (diffuse)               
+          albsod       => surfalb_inst%albsod_col         , & ! Output: [real(r8) (:,:) ]  soil albedo (direct)                  
+          albsoi       => surfalb_inst%albsoi_col           & ! Output: [real(r8) (:,:) ]  soil albedo (diffuse)                 
    )
 
     ! Compute soil albedos
@@ -1108,7 +1084,7 @@ contains
    subroutine TwoStream (bounds, &
         filter_vegsol, num_vegsol, &
         coszen, rho, tau, &
-        canopystate_vars, temperature_vars, waterstate_vars, surfalb_vars)
+        canopystate_inst, temperature_inst, waterstate_inst, surfalb_inst)
      !
      ! !DESCRIPTION:
      ! Two-stream fluxes for canopy radiative transfer
@@ -1133,10 +1109,10 @@ contains
      real(r8), intent(in)  :: coszen( bounds%begp: )   ! cosine solar zenith angle for next time step [pft]
      real(r8), intent(in)  :: rho( bounds%begp: , 1: ) ! leaf/stem refl weighted by fraction LAI and SAI [pft, numrad]
      real(r8), intent(in)  :: tau( bounds%begp: , 1: ) ! leaf/stem tran weighted by fraction LAI and SAI [pft, numrad]
-     type(canopystate_type) , intent(in)    :: canopystate_vars
-     type(temperature_type) , intent(in)    :: temperature_vars
-     type(waterstate_type)  , intent(in)    :: waterstate_vars
-     type(surfalb_type)     , intent(inout) :: surfalb_vars
+     type(canopystate_type) , intent(in)    :: canopystate_inst
+     type(temperature_type) , intent(in)    :: temperature_inst
+     type(waterstate_type)  , intent(in)    :: waterstate_inst
+     type(surfalb_type)     , intent(inout) :: surfalb_inst
      !
      ! !LOCAL VARIABLES:
      integer  :: fp,p,c,iv        ! array indices
@@ -1180,39 +1156,38 @@ contains
      SHR_ASSERT_ALL((ubound(tau)    == (/bounds%endp, numrad/)), errMsg(__FILE__, __LINE__))
 
    associate(&
-          xl           =>    ecophyscon%xl                       , & ! Input:  [real(r8) (:)   ]  ecophys const - leaf/stem orientation index
+          xl           =>    pftcon%xl                           , & ! Input:  ecophys const - leaf/stem orientation index
 
-          t_veg        =>    temperature_vars%t_veg_patch        , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)         
+          t_veg        =>    temperature_inst%t_veg_patch        , & ! Input:  [real(r8) (:)   ]  vegetation temperature (Kelvin)         
 
-          fwet         =>    waterstate_vars%fwet_patch          , & ! Input:  [real(r8) (:)   ]  fraction of canopy that is wet (0 to 1) 
+          fwet         =>    waterstate_inst%fwet_patch          , & ! Input:  [real(r8) (:)   ]  fraction of canopy that is wet (0 to 1) 
 
-          elai         =>    canopystate_vars%elai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
-          esai         =>    canopystate_vars%esai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow
+          elai         =>    canopystate_inst%elai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+          esai         =>    canopystate_inst%esai_patch         , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow
 
-          tlai_z       =>    surfalb_vars%tlai_z_patch           , & ! Input:  [real(r8) (:,:) ]  tlai increment for canopy layer       
-          tsai_z       =>    surfalb_vars%tsai_z_patch           , & ! Input:  [real(r8) (:,:) ]  tsai increment for canopy layer       
-          nrad         =>    surfalb_vars%nrad_patch             , & ! Input:  [integer  (:)   ]  number of canopy layers, above snow for radiative transfer
-          albgrd       =>    surfalb_vars%albgrd_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (direct) (column-level) 
-          albgri       =>    surfalb_vars%albgri_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (diffuse)(column-level) 
-          
-          fsun_z       =>    surfalb_vars%fsun_z_patch           , & ! Output: [real(r8) (:,:) ]  sunlit fraction of canopy layer       
-          vcmaxcintsun =>    surfalb_vars%vcmaxcintsun_patch     , & ! Output: [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
-          vcmaxcintsha =>    surfalb_vars%vcmaxcintsha_patch     , & ! Output: [real(r8) (:)   ]  leaf to canopy scaling coefficient, shaded leaf vcmax
-          fabd_sun_z   =>    surfalb_vars%fabd_sun_z_patch       , & ! Output: [real(r8) (:,:) ]  absorbed sunlit leaf direct  PAR (per unit lai+sai) for each canopy layer
-          fabd_sha_z   =>    surfalb_vars%fabd_sha_z_patch       , & ! Output: [real(r8) (:,:) ]  absorbed shaded leaf direct  PAR (per unit lai+sai) for each canopy layer
-          fabi_sun_z   =>    surfalb_vars%fabi_sun_z_patch       , & ! Output: [real(r8) (:,:) ]  absorbed sunlit leaf diffuse PAR (per unit lai+sai) for each canopy layer
-          fabi_sha_z   =>    surfalb_vars%fabi_sha_z_patch       , & ! Output: [real(r8) (:,:) ]  absorbed shaded leaf diffuse PAR (per unit lai+sai) for each canopy layer
-          albd         =>    surfalb_vars%albd_patch             , & ! Output: [real(r8) (:,:) ]  surface albedo (direct)               
-          albi         =>    surfalb_vars%albi_patch             , & ! Output: [real(r8) (:,:) ]  surface albedo (diffuse)              
-          fabd         =>    surfalb_vars%fabd_patch             , & ! Output: [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
-          fabd_sun     =>    surfalb_vars%fabd_sun_patch         , & ! Output: [real(r8) (:,:) ]  flux absorbed by sunlit canopy per unit direct flux
-          fabd_sha     =>    surfalb_vars%fabd_sha_patch         , & ! Output: [real(r8) (:,:) ]  flux absorbed by shaded canopy per unit direct flux
-          fabi         =>    surfalb_vars%fabi_patch             , & ! Output: [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
-          fabi_sun     =>    surfalb_vars%fabi_sun_patch         , & ! Output: [real(r8) (:,:) ]  flux absorbed by sunlit canopy per unit diffuse flux
-          fabi_sha     =>    surfalb_vars%fabi_sha_patch         , & ! Output: [real(r8) (:,:) ]  flux absorbed by shaded canopy per unit diffuse flux
-          ftdd         =>    surfalb_vars%ftdd_patch             , & ! Output: [real(r8) (:,:) ]  down direct flux below canopy per unit direct flx
-          ftid         =>    surfalb_vars%ftid_patch             , & ! Output: [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flx
-          ftii         =>    surfalb_vars%ftii_patch               & ! Output: [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flx
+          tlai_z       =>    surfalb_inst%tlai_z_patch           , & ! Input:  [real(r8) (:,:) ]  tlai increment for canopy layer       
+          tsai_z       =>    surfalb_inst%tsai_z_patch           , & ! Input:  [real(r8) (:,:) ]  tsai increment for canopy layer       
+          nrad         =>    surfalb_inst%nrad_patch             , & ! Input:  [integer  (:)   ]  number of canopy layers, above snow for radiative transfer
+          albgrd       =>    surfalb_inst%albgrd_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (direct) (column-level) 
+          albgri       =>    surfalb_inst%albgri_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (diffuse)(column-level) 
+          fsun_z       =>    surfalb_inst%fsun_z_patch           , & ! Output: [real(r8) (:,:) ]  sunlit fraction of canopy layer       
+          vcmaxcintsun =>    surfalb_inst%vcmaxcintsun_patch     , & ! Output: [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
+          vcmaxcintsha =>    surfalb_inst%vcmaxcintsha_patch     , & ! Output: [real(r8) (:)   ]  leaf to canopy scaling coefficient, shaded leaf vcmax
+          fabd_sun_z   =>    surfalb_inst%fabd_sun_z_patch       , & ! Output: [real(r8) (:,:) ]  absorbed sunlit leaf direct  PAR (per unit lai+sai) for each canopy layer
+          fabd_sha_z   =>    surfalb_inst%fabd_sha_z_patch       , & ! Output: [real(r8) (:,:) ]  absorbed shaded leaf direct  PAR (per unit lai+sai) for each canopy layer
+          fabi_sun_z   =>    surfalb_inst%fabi_sun_z_patch       , & ! Output: [real(r8) (:,:) ]  absorbed sunlit leaf diffuse PAR (per unit lai+sai) for each canopy layer
+          fabi_sha_z   =>    surfalb_inst%fabi_sha_z_patch       , & ! Output: [real(r8) (:,:) ]  absorbed shaded leaf diffuse PAR (per unit lai+sai) for each canopy layer
+          albd         =>    surfalb_inst%albd_patch             , & ! Output: [real(r8) (:,:) ]  surface albedo (direct)               
+          albi         =>    surfalb_inst%albi_patch             , & ! Output: [real(r8) (:,:) ]  surface albedo (diffuse)              
+          fabd         =>    surfalb_inst%fabd_patch             , & ! Output: [real(r8) (:,:) ]  flux absorbed by canopy per unit direct flux
+          fabd_sun     =>    surfalb_inst%fabd_sun_patch         , & ! Output: [real(r8) (:,:) ]  flux absorbed by sunlit canopy per unit direct flux
+          fabd_sha     =>    surfalb_inst%fabd_sha_patch         , & ! Output: [real(r8) (:,:) ]  flux absorbed by shaded canopy per unit direct flux
+          fabi         =>    surfalb_inst%fabi_patch             , & ! Output: [real(r8) (:,:) ]  flux absorbed by canopy per unit diffuse flux
+          fabi_sun     =>    surfalb_inst%fabi_sun_patch         , & ! Output: [real(r8) (:,:) ]  flux absorbed by sunlit canopy per unit diffuse flux
+          fabi_sha     =>    surfalb_inst%fabi_sha_patch         , & ! Output: [real(r8) (:,:) ]  flux absorbed by shaded canopy per unit diffuse flux
+          ftdd         =>    surfalb_inst%ftdd_patch             , & ! Output: [real(r8) (:,:) ]  down direct flux below canopy per unit direct flx
+          ftid         =>    surfalb_inst%ftid_patch             , & ! Output: [real(r8) (:,:) ]  down diffuse flux below canopy per unit direct flx
+          ftii         =>    surfalb_inst%ftii_patch               & ! Output: [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flx
    )
 
     ! Calculate two-stream parameters that are independent of waveband:
@@ -1226,7 +1201,7 @@ contains
        ! out in filter_vegsol
        cosz = max(0.001_r8, coszen(p))
 
-       chil(p) = min( max(xl(pft%itype(p)), -0.4_r8), 0.6_r8 )
+       chil(p) = min( max(xl(patch%itype(p)), -0.4_r8), 0.6_r8 )
        if (abs(chil(p)) <= 0.01_r8) chil(p) = 0.01_r8
        phi1 = 0.5_r8 - 0.633_r8*chil(p) - 0.330_r8*chil(p)*chil(p)
        phi2 = 0.877_r8 * (1._r8-2._r8*phi1)
@@ -1269,7 +1244,7 @@ contains
     do ib = 1, numrad
        do fp = 1,num_vegsol
           p = filter_vegsol(fp)
-          c = pft%column(p)
+          c = patch%column(p)
 
           ! Calculate two-stream parameters omega, betad, and betai.
           ! Omega, betad, betai are adjusted for snow. Values for omega*betad

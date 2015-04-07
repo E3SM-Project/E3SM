@@ -60,9 +60,7 @@ if ($DOUT_S == 'TRUE') then
 	    echo "conserve disk space."
 	 endif
          echo "Starting generating variable time series files to $DOUT_S_ROOT"
-	 cd $CASEROOT/Tools
-	 mpirun.lsf ./cesm_tseries_generator.py >>& $CASEROOT/tseriesStatus
-	 cd $CASEROOT
+	 ./Tools/tseries_generate.submit >>& $CASEROOT/tseriesStatus
          echo "Completed generating variable time series files to $DOUT_S_ROOT"
      else
 	 echo "Variable time series file generation depends on $DOUT_S and $DOUT_S_SAVE_ALL_ON_DISK set to TRUE"

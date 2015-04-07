@@ -25,7 +25,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine alt_calc(num_soilc, filter_soilc, &
-       temperature_vars, canopystate_vars) 
+       temperature_inst, canopystate_inst) 
     !
     ! !DESCRIPTION:
     !  define active layer thickness similarly to frost_table, except set as deepest thawed layer and define on nlevgrnd
@@ -51,8 +51,8 @@ contains
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(temperature_type) , intent(in)    :: temperature_vars
-    type(canopystate_type) , intent(inout) :: canopystate_vars
+    type(temperature_type) , intent(in)    :: temperature_inst
+    type(canopystate_type) , intent(inout) :: canopystate_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: c, j, fc, g                     ! counters
@@ -68,14 +68,14 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                & 
-         t_soisno             =>    temperature_vars%t_soisno_col        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
+         t_soisno             =>    temperature_inst%t_soisno_col        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
          
-         alt                  =>    canopystate_vars%alt_col             ,    & ! Output:  [real(r8) (:)   ]  current depth of thaw                                                 
-         altmax               =>    canopystate_vars%altmax_col          ,    & ! Output:  [real(r8) (:)   ]  maximum annual depth of thaw                                          
-         altmax_lastyear      =>    canopystate_vars%altmax_lastyear_col ,    & ! Output:  [real(r8) (:)   ]  prior year maximum annual depth of thaw                               
-         alt_indx             =>    canopystate_vars%alt_indx_col        ,    & ! Output:  [integer  (:)   ]  current depth of thaw                                                  
-         altmax_indx          =>    canopystate_vars%altmax_indx_col     ,    & ! Output:  [integer  (:)   ]  maximum annual depth of thaw                                           
-         altmax_lastyear_indx =>    canopystate_vars%altmax_lastyear_indx_col & ! Output:  [integer  (:)   ]  prior year maximum annual depth of thaw                                
+         alt                  =>    canopystate_inst%alt_col             ,    & ! Output:  [real(r8) (:)   ]  current depth of thaw                                                 
+         altmax               =>    canopystate_inst%altmax_col          ,    & ! Output:  [real(r8) (:)   ]  maximum annual depth of thaw                                          
+         altmax_lastyear      =>    canopystate_inst%altmax_lastyear_col ,    & ! Output:  [real(r8) (:)   ]  prior year maximum annual depth of thaw                               
+         alt_indx             =>    canopystate_inst%alt_indx_col        ,    & ! Output:  [integer  (:)   ]  current depth of thaw                                                  
+         altmax_indx          =>    canopystate_inst%altmax_indx_col     ,    & ! Output:  [integer  (:)   ]  maximum annual depth of thaw                                           
+         altmax_lastyear_indx =>    canopystate_inst%altmax_lastyear_indx_col & ! Output:  [integer  (:)   ]  prior year maximum annual depth of thaw                                
          )
 
       ! on a set annual timestep, update annual maxima

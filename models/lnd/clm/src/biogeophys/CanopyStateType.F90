@@ -3,17 +3,17 @@ module CanopyStateType
   !------------------------------------------------------------------------------
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  use shr_infnan_mod  , only : shr_infnan_isnan
+  use shr_infnan_mod  , only : nan => shr_infnan_nan, shr_infnan_isnan, assignment(=)
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use abortutils      , only : endrun
   use decompMod       , only : bounds_type
   use landunit_varcon , only : istsoil, istcrop
-  use clm_varcon      , only : spval  
   use clm_varpar      , only : nlevcan
-  use clm_varctl      , only : iulog, use_cn
+  use clm_varcon      , only : spval  
+  use clm_varctl      , only : iulog, use_cn, use_ed
   use LandunitType    , only : lun                
   use ColumnType      , only : col                
-  use PatchType       , only : pft                
+  use PatchType       , only : patch                
   !
   implicit none
   save
@@ -53,6 +53,7 @@ module CanopyStateType
      real(r8) , pointer :: dewmx_patch              (:)   ! patch maximum allowed dew [mm] 
 
      real(r8) , pointer :: rscanopy_patch           (:)   ! patch canopy stomatal resistance (s/m) (ED specific)
+     real(r8) , pointer :: gccanopy_patch           (:)   ! patch (ED specific)
 
    contains
 
@@ -86,9 +87,6 @@ contains
   subroutine InitAllocate(this, bounds)
     !
     ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevcan, nlevsno, nlevgrnd
-    use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
     !
     ! !ARGUMENTS:
     class(canopystate_type) :: this
@@ -134,6 +132,7 @@ contains
     allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = nan
 
     allocate(this%rscanopy_patch           (begp:endp))           ; this%rscanopy_patch           (:)   = nan
+    allocate(this%gccanopy_patch           (begp:endp))           ; this%gccanopy_patch           (:)   = 0.0_r8    
 
   end subroutine InitAllocate
 
@@ -141,9 +140,6 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use clm_varctl    , only: use_cn
-    use clm_varpar    , only: nlevgrnd
     use histFileMod   , only: hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:
@@ -179,13 +175,6 @@ contains
          avgflag='A', long_name='total projected stem area index', &
          ptr_patch=this%tsai_patch)
 
-    if (use_cn) then
-       this%fsun_patch(begp:endp) = spval
-       call hist_addfld1d (fname='FSUN', units='proportion', &
-            avgflag='A', long_name='sunlit fraction of canopy', &
-            ptr_patch=this%fsun_patch, default='inactive')
-    end if
-
     this%laisun_patch(begp:endp) = spval
     call hist_addfld1d (fname='LAISUN', units='none', &
          avgflag='A', long_name='sunlit projected leaf area index', &
@@ -196,28 +185,27 @@ contains
          avgflag='A', long_name='shaded projected leaf area index', &
          ptr_patch=this%laisha_patch, set_urb=0._r8)
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
+       this%fsun_patch(begp:endp) = spval
+       call hist_addfld1d (fname='FSUN', units='proportion', &
+            avgflag='A', long_name='sunlit fraction of canopy', &
+            ptr_patch=this%fsun_patch, default='inactive')
+
        this%dewmx_patch(begp:endp) = spval
        call hist_addfld1d (fname='DEWMX', units='mm', &
             avgflag='A', long_name='Maximum allowed dew', &
             ptr_patch=this%dewmx_patch, default='inactive')
-    end if
 
-    if (use_cn) then
        this%htop_patch(begp:endp) = spval
        call hist_addfld1d (fname='HTOP', units='m', &
             avgflag='A', long_name='canopy top', &
             ptr_patch=this%htop_patch)
-    end if
 
-    if (use_cn) then
        this%hbot_patch(begp:endp) = spval
        call hist_addfld1d (fname='HBOT', units='m', &
             avgflag='A', long_name='canopy bottom', &
             ptr_patch=this%hbot_patch, default='inactive')
-    end if
 
-    if (use_cn) then
        this%displa_patch(begp:endp) = spval
        call hist_addfld1d (fname='DISPLA', units='m', &
             avgflag='A', long_name='displacement height', &
@@ -276,6 +264,10 @@ contains
     call hist_addfld1d (fname='RSCANOPY', units=' s m-1',  &
          avgflag='A', long_name='canopy resistance', &
          ptr_patch=this%rscanopy_patch, set_lake=0._r8, set_urb=0._r8)
+
+    call hist_addfld1d (fname='GCCANOPY', units='none',  &
+         avgflag='A', long_name='Canopy Conductance: mmol m-2 s-1', &
+         ptr_patch=this%GCcanopy_patch, set_lake=0._r8, set_urb=0._r8)  
 
   end subroutine InitHistory
 
@@ -338,7 +330,7 @@ contains
 
     begp = bounds%begp; endp = bounds%endp
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level patch field
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
        write(iulog,*)' in '
@@ -383,14 +375,14 @@ contains
     integer :: nstep                     ! timestep number
     integer :: ier                       ! error status
     integer :: begp, endp
-    real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
+    real(r8), pointer :: rbufslp(:)      ! temporary single level - patch level
     !---------------------------------------------------------------------
 
     begp = bounds%begp; endp = bounds%endp
 
     nstep = get_nstep()
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level patch field
 
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
@@ -430,7 +422,7 @@ contains
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
-       l = pft%landunit(p)
+       l = patch%landunit(p)
 
        this%frac_veg_nosno_patch(p) = 0._r8
        this%tlai_patch(p)       = 0._r8

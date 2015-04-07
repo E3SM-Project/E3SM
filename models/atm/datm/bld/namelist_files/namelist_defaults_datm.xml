@@ -39,7 +39,8 @@ The presaero stream, is associated with all modes
 Currently the following streams are supported (term definitions precede the streams)
 
     CLM_QIAN        = Run with the CLM Qian dataset valid from 1948 to 2004 (force CLM)
-    CLMCRUNCEP      = Run with the CLM CRU NCEP forcing valid from 1900 to 2010 (force CLM)
+    CLMCRUNCEP      = Run with the CLM CRU NCEP V4 ( default ) forcing valid from 1900 to 2010 (force CLM)
+    CLMCRUNCEP_V5   = Run with the CLM CRU NCEP V5 forcing valid from 1900 to 2010 (force CLM)
     CLM1PT          = Run with supplied single point data (force CLM)
     CORE2_NYF       = CORE2 normal year forcing (for forcing POP and CICE)
     CORE2_IAF       = CORE2 intra-annual year forcing (for forcing POP and CICE)
@@ -86,6 +87,10 @@ Currently the following streams are supported (term definitions precede the stre
     CLMCRUNCEP.Solar
     CLMCRUNCEP.Precip
     CLMCRUNCEP.TPQW
+
+    CLMCRUNCEP_V5.Solar
+    CLMCRUNCEP_V5.Precip
+    CLMCRUNCEP_V5.TPQW
 
     co2tseries.20tr
     co2tseries.rcp2.6
@@ -143,6 +148,7 @@ Currently the following streams are supported (term definitions precede the stre
 <datamode datm_mode="CLM_QIAN"      >CLMNCEP</datamode>
 <datamode datm_mode="CLM1PT"        >CLMNCEP</datamode>
 <datamode datm_mode="CLMCRUNCEP"    >CLMNCEP</datamode>
+<datamode datm_mode="CLMCRUNCEP_V5" >CLMNCEP</datamode>
 <datamode datm_mode="CPLHIST3HrWx"  >CPLHIST</datamode>
 <datamode datm_mode="CORE2_NYF"     >CORE2_NYF</datamode>
 <datamode datm_mode="CORE2_IAF"     >CORE2_IAF</datamode>
@@ -154,7 +160,8 @@ Currently the following streams are supported (term definitions precede the stre
 
 <streamslist datm_mode="CLM_QIAN"  >CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW</streamslist>
 <streamslist datm_mode="CLM1PT"    >CLM1PT.$ATM_GRID</streamslist>
-<streamslist datm_mode="CLMCRUNCEP">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</streamslist>
+<streamslist datm_mode="CLMCRUNCEP"   >CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</streamslist>
+<streamslist datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</streamslist>
 <streamslist datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</streamslist>
 <streamslist datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</streamslist>
 <streamslist datm_mode="CPLHIST3HrWx">CPLHIST3HrWx.Solar,CPLHIST3HrWx.Precip,CPLHIST3HrWx.nonSolarNonPrecip</streamslist>
@@ -167,6 +174,7 @@ Currently the following streams are supported (term definitions precede the stre
 <vectors                           >null</vectors>
 <vectors datm_mode="CLM_QIAN"      >null</vectors>
 <vectors datm_mode="CLMCRUNCEP"    >null</vectors>
+<vectors datm_mode="CLMCRUNCEP_V5" >null</vectors>
 <vectors datm_mode="CLM1PT"        >null</vectors>
 <vectors datm_mode="CPLHIST3HrWx"  >null</vectors>
 <vectors datm_mode="CORE2_NYF"     >u:v</vectors>
@@ -540,6 +548,82 @@ Currently the following streams are supported (term definitions precede the stre
   mask    mask
 </strm_domvar>
 <strm_datvar     stream="CLMCRUNCEP.TPQW">
+  TBOT     tbot
+  WIND     wind
+  QBOT     shum
+  PSRF     pbot
+</strm_datvar>
+
+<!-- =============== -->
+<!-- == CLMCRUNCEP_V5 = -->
+<!-- =============== -->
+
+<!-- == Solar    === -->
+<strm_year_start stream="CLMCRUNCEP_V5.Solar">$DATM_CLMNCEP_YR_START</strm_year_start>
+<strm_year_end   stream="CLMCRUNCEP_V5.Solar">$DATM_CLMNCEP_YR_END  </strm_year_end>
+<strm_year_align stream="CLMCRUNCEP_V5.Solar">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
+<strm_domdir     stream="CLMCRUNCEP_V5.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</strm_domdir>
+<strm_domfil     stream="CLMCRUNCEP_V5.Solar">domain.cruncep.V5.c2013.0.5d.nc</strm_domfil>
+<strm_datdir     stream="CLMCRUNCEP_V5.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Solar6Hrly</strm_datdir>
+<strm_datfil     stream="CLMCRUNCEP_V5.Solar">clmforc.cruncep.V5.c2014.0.5d.Solr.%ym.nc</strm_datfil>
+<strm_offset     stream="CLMCRUNCEP_V5.Solar">0</strm_offset>
+<strm_tintalgo   stream="CLMCRUNCEP_V5.Solar">coszen</strm_tintalgo>
+<strm_mapalgo    stream="CLMCRUNCEP_V5.Solar"                   >bilinear</strm_mapalgo>
+<strm_mapalgo    stream="CLMCRUNCEP_V5.Solar" ATM_GRID="hcru">copy</strm_mapalgo>
+<strm_domvar     stream="CLMCRUNCEP_V5.Solar">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLMCRUNCEP_V5.Solar">
+  FSDS swdn
+</strm_datvar>
+
+<!-- == Precip    === -->
+<strm_year_start stream="CLMCRUNCEP_V5.Precip">$DATM_CLMNCEP_YR_START</strm_year_start>
+<strm_year_end   stream="CLMCRUNCEP_V5.Precip">$DATM_CLMNCEP_YR_END  </strm_year_end>
+<strm_year_align stream="CLMCRUNCEP_V5.Precip">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
+<strm_domdir     stream="CLMCRUNCEP_V5.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</strm_domdir>
+<strm_domfil     stream="CLMCRUNCEP_V5.Precip">domain.cruncep.V5.c2013.0.5d.nc</strm_domfil>
+<strm_datdir     stream="CLMCRUNCEP_V5.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Precip6Hrly</strm_datdir>
+<strm_datfil     stream="CLMCRUNCEP_V5.Precip">clmforc.cruncep.V5.c2014.0.5d.Prec.%ym.nc</strm_datfil>
+<strm_offset     stream="CLMCRUNCEP_V5.Precip">0</strm_offset>
+<strm_tintalgo   stream="CLMCRUNCEP_V5.Precip">nearest</strm_tintalgo>
+<strm_mapalgo    stream="CLMCRUNCEP_V5.Precip"                   >bilinear</strm_mapalgo>
+<strm_mapalgo    stream="CLMCRUNCEP_V5.Precip" ATM_GRID="hcru">copy</strm_mapalgo>
+<strm_domvar     stream="CLMCRUNCEP_V5.Precip">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLMCRUNCEP_V5.Precip">
+  PRECTmms precn
+</strm_datvar>
+
+<!-- == TPQW    === -->
+<strm_year_start stream="CLMCRUNCEP_V5.TPQW">$DATM_CLMNCEP_YR_START</strm_year_start>
+<strm_year_end   stream="CLMCRUNCEP_V5.TPQW">$DATM_CLMNCEP_YR_END  </strm_year_end>
+<strm_year_align stream="CLMCRUNCEP_V5.TPQW">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
+<strm_domdir     stream="CLMCRUNCEP_V5.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</strm_domdir>
+<strm_domfil     stream="CLMCRUNCEP_V5.TPQW">domain.cruncep.V5.c2013.0.5d.nc</strm_domfil>
+<strm_datdir     stream="CLMCRUNCEP_V5.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/TPHWL6Hrly</strm_datdir>
+<strm_datfil     stream="CLMCRUNCEP_V5.TPQW">clmforc.cruncep.V5.c2014.0.5d.TPQWL.%ym.nc</strm_datfil>
+<strm_offset     stream="CLMCRUNCEP_V5.TPQW">0</strm_offset>
+<strm_tintalgo   stream="CLMCRUNCEP_V5.TPQW">linear</strm_tintalgo>
+<strm_mapalgo    stream="CLMCRUNCEP_V5.TPQW"                   >bilinear</strm_mapalgo>
+<strm_mapalgo    stream="CLMCRUNCEP_V5.TPQW" ATM_GRID="hcru">copy</strm_mapalgo>
+<strm_domvar     stream="CLMCRUNCEP_V5.TPQW">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CLMCRUNCEP_V5.TPQW">
   TBOT     tbot
   WIND     wind
   QBOT     shum

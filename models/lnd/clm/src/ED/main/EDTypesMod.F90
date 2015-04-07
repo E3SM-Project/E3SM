@@ -1,42 +1,42 @@
-  module EDtypesMod
+module EDTypesMod
 
-     use shr_kind_mod , only : r8 => shr_kind_r8;
-     use clm_varpar   , only : nlevcan_ed, nclmax, numrad, nlevgrnd
-     use domainMod    , only : domain_type
+  use shr_kind_mod , only : r8 => shr_kind_r8;
+  use decompMod    , only : bounds_type 
+  use clm_varpar   , only : nlevcan_ed, nclmax, numrad, nlevgrnd
+  use domainMod    , only : domain_type
+  use shr_sys_mod  , only : shr_sys_flush
 
-     implicit none
-     save
+  implicit none
+  save
 
-                                                           !SWITCHES THAT ARE READ IN
+  !SWITCHES THAT ARE READ IN
   integer         RESTART                                  ! restart flag, 1= read initial system state 0 = bare ground
 
-                                                           ! MODEL PARAMETERS
+  ! MODEL PARAMETERS
   real(r8)            :: timestep_secs                     ! subdaily timestep in seconds (e.g. 1800 or 3600) 
   integer             :: n_sub                             ! num of substeps in year 
   real(r8), parameter :: AREA                 = 10000.0_r8 ! Notional area of simulated forest m2
   integer  doy
 
   integer, parameter  :: invalidValue         = -9999      ! invalid value for gcells,
-                                                           ! cohorts, and patches
+  ! cohorts, and patches
 
-                                                           ! for setting number of patches per gridcell and number of cohorts per patch
-                                                           ! for I/O and converting to a vector
+  ! for setting number of patches per gridcell and number of cohorts per patch
+  ! for I/O and converting to a vector
   integer, parameter :: numPatchesPerGridCell = 4          !
   integer, parameter :: numCohortsPerPatch    = 20         !
-  integer, parameter :: cohorts_per_gcell     = 80         ! should be numPatchesPerGridCell*numCohortsPerPatch
-                                                           ! portions of the pft 
-  integer, parameter :: numWaterMem           = 10         ! watermemory saved as site
-                                                           ! level var
+  integer, parameter :: cohorts_per_gcell     = 80         ! should be numPatchesPerGridCell*numCohortsPerPatch 
+  integer, parameter :: numWaterMem           = 10         ! watermemory saved as site level var
 
-                                                           ! BIOLOGY/BIOGEOCHEMISTRY        
+  ! BIOLOGY/BIOGEOCHEMISTRY        
   integer , parameter :: INTERNAL_RECRUITMENT = 1          ! internal recruitment fla  1=yes  
   integer , parameter :: EXTERNAL_RECRUITMENT = 0          ! external recruitment flag 1=yes  
   integer , parameter :: SENES                = 10         ! Window of time over which we track temp for cold sensecence (days)
   real(r8), parameter :: DINC_ED              = 1.0_r8     ! size of LAI bins. 
   integer , parameter :: N_DIST_TYPES         = 2          ! number of disturbance types (mortality, fire)
   integer , parameter :: numpft_ed            = 2          ! number of PFTs used in ED. 
-  
-                                                           ! SPITFIRE     
+
+  ! SPITFIRE     
   integer , parameter :: NLSC                 = 5          ! number carbon compartments in above ground litter array 
   integer , parameter :: NFSC                 = 6          ! number fuel size classes  
   integer , parameter :: N_EF                 = 7          ! number of emission factors. One per trace gas or aerosol species.
@@ -46,11 +46,11 @@
   integer,  parameter :: tr_sf                = 5          ! array index of dead trunk pool for spitfire
   integer,  parameter :: lb_sf                = 4          ! array index of lrge branch pool for spitfire 
   real(r8), parameter :: fire_threshold       = 35.0_r8    ! threshold for fires that spread or go out. KWm-2
- 
-                                                           ! COHORT FUSION          
+
+  ! COHORT FUSION          
   real(r8), parameter :: FUSETOL              = 0.6_r8     ! min fractional difference in dbh between cohorts
 
-                                                           ! PATCH FUSION 
+  ! PATCH FUSION 
   real(r8), parameter :: NTOL                 = 0.05_r8    ! min plant density for hgt bin to be used in height profile comparisons 
   real(r8), parameter :: HITEMAX              = 30.0_r8    ! max dbh value used in hgt profile comparison 
   real(r8), parameter :: DBHMAX               = 150.0_r8   ! max dbh value used in hgt profile comparison 
@@ -59,16 +59,16 @@
 
   character*4 yearchar                     
 
-                                                         !************************************
-                                                         !** COHORT type structure          **
-                                                         !************************************
-  type cohort
+  !************************************
+  !** COHORT type structure          **
+  !************************************
+  type ed_cohort_type
 
      ! POINTERS
-     type (cohort) , pointer :: taller   => null()       ! pointer to next tallest cohort     
-     type (cohort) , pointer :: shorter  => null()       ! pointer to next shorter cohort     
-     type (patch)  , pointer :: patchptr => null()       ! pointer to patch that cohort is in
-     type (site)   , pointer :: siteptr  => null()       ! pointer to site that cohort is in
+     type (ed_cohort_type) , pointer :: taller   => null()       ! pointer to next tallest cohort     
+     type (ed_cohort_type) , pointer :: shorter  => null()       ! pointer to next shorter cohort     
+     type (ed_patch_type)  , pointer :: patchptr => null()       ! pointer to patch that cohort is in
+     type (ed_site_type)   , pointer :: siteptr  => null()       ! pointer to site that cohort is in
 
      ! VEGETATION STRUCTURE
      integer  ::  pft                                    ! pft number
@@ -119,7 +119,7 @@
      real(r8) ::  livestem_mr                            ! Live stem        maintenance respiration: kgC/indiv/s
      real(r8) ::  livecroot_mr                           ! Live coarse root maintenance respiration: kgC/indiv/s
      real(r8) ::  froot_mr                               ! Live fine root   maintenance respiration: kgC/indiv/s
- 
+
      ! ALLOCATION
      real(r8) ::  md                                     ! plant maintenance demand: kgC/indiv/year
      real(r8) ::  leaf_md                                ! leaf  maintenance demand: kgC/indiv/year
@@ -152,19 +152,20 @@
      real(r8) ::  crownfire_mort                         ! probability of tree post-fire mortality due to crown scorch:-
      real(r8) ::  fire_mort                              ! post-fire mortality from cambial and crown damage assuming two are independent:-
 
-  end type cohort
+  end type ed_cohort_type
 
   !************************************
   !** Patch type structure           **
   !************************************
-  type patch
+
+  type ed_patch_type
 
      ! POINTERS
-     type (cohort), pointer :: tallest => null()                   ! pointer to patch's tallest cohort    
-     type (cohort), pointer :: shortest => null()                  ! pointer to patch's shortest cohort
-     type (patch),  pointer :: older => null()                     ! pointer to next older patch   
-     type (patch),  pointer :: younger => null()                   ! pointer to next younger patch      
-     type (site),   pointer :: siteptr => null()                   ! pointer to the site that the patch is in
+     type (ed_cohort_type), pointer :: tallest => null()           ! pointer to patch's tallest cohort    
+     type (ed_cohort_type), pointer :: shortest => null()          ! pointer to patch's shortest cohort
+     type (ed_patch_type),  pointer :: older => null()             ! pointer to next older patch   
+     type (ed_patch_type),  pointer :: younger => null()           ! pointer to next younger patch      
+     type (ed_site_type),   pointer :: siteptr => null()           ! pointer to the site that the patch is in
 
      !INDICES
      integer  :: patchno                                           ! unique number given to each new patch created for tracking
@@ -192,34 +193,34 @@
      real(r8) ::  esai_profile(nclmax,numpft_ed,nlevcan_ed)        ! exposed stem area in each canopy layer, pft, and leaf layer. m2/m2
 
      real(r8) ::  canopy_area_profile(nclmax,numpft_ed,nlevcan_ed) ! fraction of canopy in each canopy 
-                                                                   ! layer, pft, and leaf layer:-
+     ! layer, pft, and leaf layer:-
      integer  ::  present(nclmax,numpft_ed)                        ! is there any of this pft in this canopy layer?      
      integer  ::  nrad(nclmax,numpft_ed)                           ! number of exposed leaf layers for each canopy layer and pft
      integer  ::  ncan(nclmax,numpft_ed)                           ! number of total   leaf layers for each canopy layer and pft
 
      !RADIATION FLUXES      
      real(r8) ::  fabd_sun_z(nclmax,numpft_ed,nlevcan_ed)          ! sun fraction of direct light absorbed by each canopy 
-                                                                   ! layer, pft, and leaf layer:-
+     ! layer, pft, and leaf layer:-
      real(r8) ::  fabd_sha_z(nclmax,numpft_ed,nlevcan_ed)          ! shade fraction of direct light absorbed by each canopy 
-                                                                   ! layer, pft, and leaf layer:-
+     ! layer, pft, and leaf layer:-
      real(r8) ::  fabi_sun_z(nclmax,numpft_ed,nlevcan_ed)          ! sun fraction of indirect light absorbed by each canopy 
-                                                                   ! layer, pft, and leaf layer:-
+     ! layer, pft, and leaf layer:-
      real(r8) ::  fabi_sha_z(nclmax,numpft_ed,nlevcan_ed)          ! shade fraction of indirect light absorbed by each canopy 
-                                                                   ! layer, pft, and leaf layer:-
+     ! layer, pft, and leaf layer:-
 
      real(r8) ::  ed_laisun_z(nclmax,numpft_ed,nlevcan_ed)         ! amount of LAI in the sun   in each canopy layer, 
-                                                                   ! pft, and leaf layer. m2/m2
+     ! pft, and leaf layer. m2/m2
      real(r8) ::  ed_laisha_z(nclmax,numpft_ed,nlevcan_ed)         ! amount of LAI in the shade in each canopy layer,
      real(r8) ::  ed_parsun_z(nclmax,numpft_ed,nlevcan_ed)         ! PAR absorbed  in the sun   in each canopy layer,
      real(r8) ::  ed_parsha_z(nclmax,numpft_ed,nlevcan_ed)         ! PAR absorbed  in the shade in each canopy layer,
      real(r8) ::  f_sun(nclmax,numpft_ed,nlevcan_ed)               ! fraction of leaves in the sun in each canopy layer, pft, 
-                                                                   ! and leaf layer. m2/m2
+     ! and leaf layer. m2/m2
      real(r8) ::  tr_soil_dir(numrad)                              ! fraction of incoming direct  radiation that 
-                                                                   ! is transmitted to the soil as direct
+     ! is transmitted to the soil as direct
      real(r8) ::  tr_soil_dif(numrad)                              ! fraction of incoming diffuse radiation that 
-                                                                   ! is transmitted to the soil as diffuse
+     ! is transmitted to the soil as diffuse
      real(r8) ::  tr_soil_dir_dif(numrad)                          ! fraction of incoming direct  radiation that 
-                                                                   ! is transmitted to the soil as diffuse
+     ! is transmitted to the soil as diffuse
      real(r8) ::  fab(numrad)                                      ! fraction of incoming total   radiation that is absorbed by the canopy
      real(r8) ::  fabd(numrad)                                     ! fraction of incoming direct  radiation that is absorbed by the canopy
      real(r8) ::  fabi(numrad)                                     ! fraction of incoming diffuse radiation that is absorbed by the canopy
@@ -249,14 +250,14 @@
      real(r8) ::  disturbance_rate                                 ! larger effective disturbance rate: fraction/day
 
      ! LITTER AND COARSE WOODY DEBRIS 
-                                                                   ! Pools of litter (non respiring) 
+     ! Pools of litter (non respiring) 
      real(r8) ::  cwd_ag(ncwd)                                     ! above ground coarse wood debris litter that does not respire. KgC/m2
      real(r8) ::  cwd_bg(ncwd)                                     ! below ground coarse wood debris litter that does not respire. KgC/m2
      real(r8) ::  leaf_litter(numpft_ed)                           ! above ground leaf litter that does not respire. KgC/m2
      real(r8) ::  root_litter(numpft_ed)                           ! below ground fine root litter that does not respire. KgC/m2
 
      ! Fluxes of litter (non respiring) 
-     real(r8) :: fragmentation_scaler    ! Scale rate of litter fragmentation. 0 to 1.
+     real(r8) :: fragmentation_scaler                              ! Scale rate of litter fragmentation. 0 to 1.
      real(r8) :: cwd_ag_in(ncwd)                                   ! Flux into CWD_AG from turnover and mortality KgC/m2/y
      real(r8) :: cwd_bg_in(ncwd)                                   ! Flux into cwd_bg from root turnover and mortality KgC/m2/y
      real(r8) :: cwd_ag_out(ncwd)                                  ! Flux out of AG CWD into AG litter KgC/m2/y
@@ -285,13 +286,13 @@
      real(r8) ::  fuel_frac(ncwd+2)                                ! fraction of each litter class in the ros_fuel:-.  
      real(r8) ::  livegrass                                        ! total aboveground grass biomass in patch.  KgC/m2
      real(r8) ::  fuel_bulkd                                       ! average fuel bulk density of the ground fuel 
-                                                                   ! (incl. live grasses. omits 1000hr fuels). KgC/m3
+     ! (incl. live grasses. omits 1000hr fuels). KgC/m3
      real(r8) ::  fuel_sav                                         ! average surface area to volume ratio of the ground fuel 
-                                                                   ! (incl. live grasses. omits 1000hr fuels).
+     ! (incl. live grasses. omits 1000hr fuels).
      real(r8) ::  fuel_mef                                         ! average moisture of extinction factor 
-                                                                   ! of the ground fuel (incl. live grasses. omits 1000hr fuels).
+     ! of the ground fuel (incl. live grasses. omits 1000hr fuels).
      real(r8) ::  fuel_eff_moist                                   ! effective avearage fuel moisture content of the ground fuel 
-                                                                   ! (incl. live grasses. omits 1000hr fuels)
+     ! (incl. live grasses. omits 1000hr fuels)
      real(r8) ::  litter_moisture(ncwd+2)
 
      ! FIRE SPREAD
@@ -311,95 +312,146 @@
      real(r8) ::  tfc_ros                                          ! total fuel consumed - no trunks.  KgC/m2/day
      real(r8) ::  burnt_frac_litter(nfsc)                          ! fraction of each litter pool burned:-
 
-  end type patch
+   contains
+
+     procedure, public :: set_root_fraction
+
+  end type ed_patch_type
 
   !************************************
   !** Site type structure           **
   !************************************
-  type site
+
+  type ed_site_type
+
      ! POINTERS  
-     type (patch), pointer :: oldest_patch => null()        ! pointer to oldest patch at the site  
-     type (patch), pointer :: youngest_patch => null()      ! pointer to yngest patch at the site
+     type (ed_patch_type), pointer :: oldest_patch => null()   ! pointer to oldest patch at the site  
+     type (ed_patch_type), pointer :: youngest_patch => null() ! pointer to yngest patch at the site
 
      ! INDICES 
-     real(r8) ::  lat                 ! latitude:  degrees 
-     real(r8) ::  lon                 ! longitude: degrees 
-     integer  ::  clmgcell            ! gridcell index
-     integer  ::  clmcolumn           ! column index (assuming there is only one soil column in each gcell.
-     integer  ::  istheresoil         ! are there any soil columns, or is this all ice/rocks/lakes?
+     real(r8) ::  lat                                          ! latitude:  degrees 
+     real(r8) ::  lon                                          ! longitude: degrees 
+     integer  ::  clmgcell                                     ! gridcell index
+     integer  ::  clmcolumn                                    ! column index (assuming there is only one soil column in each gcell.
+     logical  ::  istheresoil                                  ! are there any soil columns, or is this all ice/rocks/lakes?
 
      ! CARBON BALANCE       
-     real(r8) ::  flux_in             ! for carbon balance purpose. C coming into biomass pool:  KgC/site
-     real(r8) ::  flux_out            ! for carbon balance purpose. C leaving ED pools  KgC/site
-     real(r8) ::  old_stock           ! for accounting purposes, remember biomass stock from last time:  KgC/site
- 
+     real(r8) ::  flux_in                                      ! for carbon balance purpose. C coming into biomass pool:  KgC/site
+     real(r8) ::  flux_out                                     ! for carbon balance purpose. C leaving ED pools  KgC/site
+     real(r8) ::  old_stock                                    ! for accounting purposes, remember biomass stock from last time:  KgC/site
+
      ! DISTURBANCE
-     real(r8) ::  disturbance_mortality     ! site level disturbance rates from mortality.
-     real(r8) ::  disturbance_fire          ! site level disturbance rates from fire.  
-     integer  ::  dist_type                 ! disturbance dist_type id.
-     real(r8) ::  disturbance_rate          ! site total dist rate
+     real(r8) ::  disturbance_mortality                        ! site level disturbance rates from mortality.
+     real(r8) ::  disturbance_fire                             ! site level disturbance rates from fire.  
+     integer  ::  dist_type                                    ! disturbance dist_type id.
+     real(r8) ::  disturbance_rate                             ! site total dist rate
 
      ! PHENOLOGY 
-     integer  ::  status              ! are leaves in this pixel on or off for cold decid
-     integer  ::  dstatus             ! are leaves in this pixel on or off for drought decid
-     real(r8) ::  gdd                 ! growing degree days: deg C. 
-     real(r8) ::  ncd                 ! no chilling days:-
-     real(r8) ::  last_n_days(senes)  ! record of last 10 days temperature for senescence model. deg C
-     integer  ::  leafondate                ! doy of leaf on:-
-     integer  ::  leafoffdate               ! doy of leaf off:-
-     integer  ::  dleafondate               ! doy of leaf on drought:-
-     integer  ::  dleafoffdate              ! doy of leaf on drought:-
-     real(r8) ::  water_memory(10)          ! last 10 days of soil moisture memory...
+     integer  ::  status                                       ! are leaves in this pixel on or off for cold decid
+     integer  ::  dstatus                                      ! are leaves in this pixel on or off for drought decid
+     real(r8) ::  gdd                                          ! growing degree days: deg C. 
+     real(r8) ::  ncd                                          ! no chilling days:-
+     real(r8) ::  last_n_days(senes)                           ! record of last 10 days temperature for senescence model. deg C
+     integer  ::  leafondate                                   ! doy of leaf on:-
+     integer  ::  leafoffdate                                  ! doy of leaf off:-
+     integer  ::  dleafondate                                  ! doy of leaf on drought:-
+     integer  ::  dleafoffdate                                 ! doy of leaf on drought:-
+     real(r8) ::  water_memory(10)                             ! last 10 days of soil moisture memory...
      real(r8) ::  cwd_ag_burned(ncwd)
      real(r8) :: leaf_litter_burned(numpft_ed)
-     
+
      ! FIRE 
-     real(r8) ::  acc_ni              ! daily nesterov index accumulating over time.
-     real(r8) ::  ab                  ! daily burnt area: m2
-     real(r8) ::  frac_burnt          ! fraction of soil burnt in this day.
- 
-  end type site
+     real(r8) ::  acc_ni                                       ! daily nesterov index accumulating over time.
+     real(r8) ::  ab                                           ! daily burnt area: m2
+     real(r8) ::  frac_burnt                                   ! fraction of soil burnt in this day.
+
+  end type ed_site_type
 
   !************************************
   !** Userdata type structure       **
   !************************************
 
   type userdata
-     ! POINTERS 
-     type (site)  , pointer :: firstsite_pnt => null()         ! pointer to the first site in the system
-     type (cohort), pointer :: storesmallcohort => null()      ! storage of the smallest cohort for insertion routine
-     type (cohort), pointer :: storebigcohort => null()        ! storage of the largest cohort for insertion routine 
-
-     ! TIMING PARAMETERS
-     integer  ::   time_period              ! Within year timestep (1:N_SUB) day of year
+     integer  ::   cohort_number            ! Counts up the number of cohorts which have been made. 
      real(r8) ::   deltat                   ! fraction of year used for each timestep (1/N_SUB)
-     integer  ::   currentindex             ! Counts up the number of cohorts which have been made. 
+     integer  ::   time_period              ! Within year timestep (1:N_SUB) day of year
      integer  ::   restart_year             ! Which year of simulation are we starting in? 
-
   end type userdata
 
-  !****************************************
-  !** Pointer arrays for linking to CLM  **
-  !****************************************               
-  type gridcell_edstate_type
-     type(site),pointer :: spnt  
-  end type gridcell_edstate_type
+  type(userdata), public, target :: udata
+  !-------------------------------------------------------------------------------------!
 
-  !
-  ! cohortype.  mimics the types in clmtype.  For now this holds ED data that is
-  ! necessary in the rest of CLM
-  !
+contains
 
-  type cohort_type
-     integer , pointer :: gridcell(:) !index into gridcell level quantities
-  end type cohort_type
+  !-------------------------------------------------------------------------------------!
+  function map_clmpatch_to_edpatch(site, clmpatch_number) result(edpatch_pointer)
+    !
+    ! !ARGUMENTS    
+    type(ed_site_type), intent(in), target :: site
+    integer, intent(in) :: clmpatch_number 
+    !
+    ! !LOCAL VARIABLES:
+    type(ed_patch_type), pointer :: edpatch_pointer
+    !----------------------------------------------------------------------
+    
+    ! There is a one-to-one mapping between edpatches and clmpatches. To obtain
+    ! this mapping - the following is computed elsewhere in the code base
+    ! (1) what is the weight respective to the column of clmpatch? 
+    !     dynEDMod determines this via the following logic
+    !        if (clm_patch%is_veg(p) .or. clm_patch%is_bareground(p)) then
+    !           clm_patch%wtcol(p) = clm_patch%wt_ed(p)
+    !        else
+    !           clm_patch%wtcol(p)  = 0.0_r8 
+    !        end if
+    ! (2) is the clmpatch active? 
+    !     subgridWeightsMod uses the following logic (in routine is_active_p) to determine if
+    !     clmpatch_number is active ( this is a shortened version of the logic to capture
+    !     only the essential parts relevent here)
+    !         if (clmpatch%wtcol(p) > 0._r8) is_active_p = .true.
 
-  type(cohort_type)     , public :: coh
+    edpatch_pointer => site%oldest_patch    
+    do while ( clmpatch_number /= edpatch_pointer%clm_pno )
+       edpatch_pointer => edpatch_pointer%younger
+    end do
 
-  !----------------------------------------------------
-  ! Declare single instance of arrays
-  !----------------------------------------------------
-  type(userdata)             , public, target         :: udata
-  type(gridcell_edstate_type),            allocatable :: gridCellEdState(:) !patch ED structure
+  end function map_clmpatch_to_edpatch
 
-end module EDtypesMod
+  !-------------------------------------------------------------------------------------!
+  subroutine set_root_fraction( this )
+    !
+    ! !DESCRIPTION:
+    !  Calculates the fractions of the root biomass in each layer for each pft. 
+    !
+    ! !USES:
+    use PatchType   , only : clmpatch => patch
+    use ColumnType  , only : col
+    use clm_varpar  , only : nlevsoi
+    use pftconMod   , only : pftcon
+    !
+    ! !ARGUMENTS    
+    class(ed_patch_type) :: this
+    !
+    ! !LOCAL VARIABLES:
+    integer :: lev,p,c,ft
+    !----------------------------------------------------------------------
+
+    p = this%clm_pno
+    c = clmpatch%column(p) 
+
+    do ft = 1,numpft_ed 
+       do lev = 1, nlevgrnd
+          this%rootfr_ft(ft,lev) = 0._r8
+       enddo
+
+       do lev = 1, nlevsoi-1
+          this%rootfr_ft(ft,lev) = .5_r8*( &
+                 exp(-pftcon%roota_par(ft) * col%zi(c,lev-1))  &
+               + exp(-pftcon%rootb_par(ft) * col%zi(c,lev-1))  &
+               - exp(-pftcon%roota_par(ft) * col%zi(c,lev))    &
+               - exp(-pftcon%rootb_par(ft) * col%zi(c,lev)))
+       end do
+    end do
+
+  end subroutine set_root_fraction
+
+end module EDTypesMod

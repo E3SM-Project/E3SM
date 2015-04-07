@@ -17,7 +17,6 @@
 ! Set fatmlndfrc         with LND_DOMAIN_PATH/LND_DOMAIN_FILE    options
 ! Set finidat            with RUN_REFCASE/RUN_REFDATE/RUN_REFTOD options for hybrid or branch cases
 !                        (includes $inst_string for multi-ensemble cases)
-! Set glc_grid           with CISM_GRID                          option
 ! Set glc_smb            with GLC_SMB                            option
 ! Set maxpatch_glcmec    with GLC_NEC                            option
 ! Set glc_do_dynglacier  with GLC_TWO_WAY_COUPLING               env variable

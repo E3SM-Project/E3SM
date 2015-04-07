@@ -2,31 +2,30 @@ module CNBalanceCheckMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Module for carbon mass balance checking.
+  ! Module for carbon/nitrogen mass balance checking.
   !
   ! !USES:
-  use shr_kind_mod        , only : r8 => shr_kind_r8
-  use shr_infnan_mod      , only : nan => shr_infnan_nan, assignment(=)
-  use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use decompMod           , only : bounds_type
-  use abortutils          , only : endrun
-  use clm_varctl          , only : iulog, use_nitrif_denitrif, use_ed
-  use clm_time_manager    , only : get_step_size
-  use clm_varpar          , only : crop_prog
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNCarbonStateType   , only : carbonstate_type
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
-  use ColumnType          , only : col                
-  use GridcellType        , only : grc
+  use shr_kind_mod                    , only : r8 => shr_kind_r8
+  use shr_infnan_mod                  , only : nan => shr_infnan_nan, assignment(=)
+  use shr_log_mod                     , only : errMsg => shr_log_errMsg
+  use decompMod                       , only : bounds_type
+  use abortutils                      , only : endrun
+  use clm_varctl                      , only : iulog, use_nitrif_denitrif
+  use clm_time_manager                , only : get_step_size
+  use CNVegNitrogenFluxType           , only : cnveg_nitrogenflux_type
+  use CNVegNitrogenStateType          , only : cnveg_nitrogenstate_type
+  use CNVegCarbonFluxType             , only : cnveg_carbonflux_type
+  use CNVegCarbonStateType            , only : cnveg_carbonstate_type
+  use SoilBiogeochemNitrogenfluxType  , only : soilbiogeochem_nitrogenflux_type
+  use SoilBiogeochemCarbonfluxType    , only : soilbiogeochem_carbonflux_type
+  use ColumnType                      , only : col                
+  use GridcellType                    , only : grc
   !
   implicit none
-  save
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: BeginCBalance
-  public :: BeginNBalance
+  public :: BeginCNBalance
   public :: CBalanceCheck
   public :: NBalanceCheck
   !-----------------------------------------------------------------------
@@ -34,87 +33,54 @@ module CNBalanceCheckMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine BeginCBalance(bounds, num_soilc, filter_soilc, &
-       carbonstate_vars)
+  subroutine BeginCNBalance(bounds, num_soilc, filter_soilc, &
+       cnveg_carbonstate_inst, cnveg_nitrogenstate_inst)
     !
     ! !DESCRIPTION:
-    ! On the radiation time step, calculate the beginning carbon balance for mass
-    ! conservation checks.
+    ! Calculate beginning column-level carbon/nitrogen balance, for mass conservation check
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds          
-    integer                , intent(in)    :: num_soilc       ! number of soil columns filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    type(bounds_type)              , intent(in)    :: bounds          
+    integer                        , intent(in)    :: num_soilc       ! number of soil columns filter
+    integer                        , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(cnveg_carbonstate_type)   , intent(inout) :: cnveg_carbonstate_inst
+    type(cnveg_nitrogenstate_type) , intent(inout) :: cnveg_nitrogenstate_inst
     !
     ! !LOCAL VARIABLES:
-    integer :: c     ! indices
-    integer :: fc   ! lake filter indices
+    integer :: fc,c
     !-----------------------------------------------------------------------
 
-    associate(                                        & 
-         totcolc   =>  carbonstate_vars%totcolc_col , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
-         col_begcb =>  carbonstate_vars%begcb_col     & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+    associate(                                            & 
+         totcolc   => cnveg_carbonstate_inst%totc_col   , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
+         totcoln   => cnveg_nitrogenstate_inst%totn_col , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg 
+         col_begcb => cnveg_carbonstate_inst%begcb_col  , & ! Output: [real(r8) (:)]  (gC/m2) carbon mass, beginning of time step
+         col_begnb => cnveg_nitrogenstate_inst%begnb_col  & ! Output: [real(r8) (:)]  (gN/m2) nitrogen mass, beginning of time step 
          )
 
-      ! calculate beginning column-level carbon balance, for mass conservation check
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begcb(c) = totcolc(c)
-      end do
-
-    end associate
-
-  end subroutine BeginCBalance
- 
-  !-----------------------------------------------------------------------
-  subroutine BeginNBalance(bounds, num_soilc, filter_soilc, &
-       nitrogenstate_vars)
-    !
-    ! !DESCRIPTION:
-    ! On the radiation time step, calculate the beginning nitrogen balance for mass
-    ! conservation checks.
-    !
-    ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds          
-    integer                  , intent(in)    :: num_soilc       ! number of soil columns filter
-    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    !
-    ! !LOCAL VARIABLES:
-    integer :: c     ! indices
-    integer :: fc   ! lake filter indices
-    !-----------------------------------------------------------------------
-
-    associate(                                         & 
-         totcoln   => nitrogenstate_vars%totcoln_col , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg 
-         col_begnb => nitrogenstate_vars%begnb_col     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
-         )
-
-      ! calculate beginning column-level nitrogen balance, for mass conservation check
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
          col_begnb(c) = totcoln(c)
       end do
 
     end associate
 
-  end subroutine BeginNBalance
-
+  end subroutine BeginCNBalance
+ 
   !-----------------------------------------------------------------------
-  subroutine CBalanceCheck(bounds, &
-       num_soilc, filter_soilc, &
-       carbonstate_vars, carbonflux_vars)
+  subroutine CBalanceCheck(bounds, num_soilc, filter_soilc, &
+       soilbiogeochem_carbonflux_inst, cnveg_carbonflux_inst, cnveg_carbonstate_inst)
     !
     ! !DESCRIPTION:
-    ! On the radiation time step, perform carbon mass conservation check for column and pft
+    ! Perform carbon mass conservation check for column and patch
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds          
-    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    type(bounds_type)                    , intent(in)    :: bounds          
+    integer                              , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                              , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(soilbiogeochem_carbonflux_type) , intent(in)    :: soilbiogeochem_carbonflux_inst
+    type(cnveg_carbonflux_type)          , intent(in)    :: cnveg_carbonflux_inst
+    type(cnveg_carbonstate_type)         , intent(inout) :: cnveg_carbonstate_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: c,err_index    ! indices
@@ -123,29 +89,28 @@ contains
     real(r8) :: dt             ! radiation time step (seconds)
     real(r8) :: col_cinputs
     real(r8) :: col_coutputs
+    real(r8) :: col_errcb(bounds%begc:bounds%endc) 
     !-----------------------------------------------------------------------
 
-    associate(                                                                   & 
-         totcolc                 =>    carbonstate_vars%totcolc_col            , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
-         
-         gpp                     =>    carbonflux_vars%gpp_col                 , & ! Input:  [real(r8) (:) ]  (gC/m2/s) gross primary production      
-         er                      =>    carbonflux_vars%er_col                  , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
-         col_fire_closs          =>    carbonflux_vars%fire_closs_col      , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
-         col_hrv_xsmrpool_to_atm =>    carbonflux_vars%hrv_xsmrpool_to_atm_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality 
-         dwt_closs               =>    carbonflux_vars%dwt_closs_col           , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total carbon loss from product pools and conversion
-         product_closs           =>    carbonflux_vars%product_closs_col       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total wood product carbon loss
-         som_c_leached           =>    carbonflux_vars%som_c_leached_col       , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport 
-         
-         col_begcb               =>    carbonstate_vars%begcb_col              , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         col_endcb               =>    carbonstate_vars%endcb_col              , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2) 
-         col_errcb               =>    carbonstate_vars%errcb_col                & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
+    associate(                                                                            & 
+         dwt_closs               =>    cnveg_carbonflux_inst%dwt_closs_col              , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total carbon loss from product pools and conversion
+         product_closs           =>    cnveg_carbonflux_inst%product_closs_col          , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total wood product carbon loss
+         gpp                     =>    cnveg_carbonflux_inst%gpp_col                    , & ! Input:  [real(r8) (:) ]  (gC/m2/s) gross primary production      
+         er                      =>    cnveg_carbonflux_inst%er_col                     , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
+         col_fire_closs          =>    cnveg_carbonflux_inst%fire_closs_col             , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
+         col_hrv_xsmrpool_to_atm =>    cnveg_carbonflux_inst%hrv_xsmrpool_to_atm_col    , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality 
+
+         som_c_leached           =>    soilbiogeochem_carbonflux_inst%som_c_leached_col , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total SOM C loss from vertical transport 
+
+         totcolc                 =>    cnveg_carbonstate_inst%totc_col                  , & ! Input:  [real(r8) (:) ]  (gC/m2) total column carbon, incl veg and cpool
+         col_begcb               =>    cnveg_carbonstate_inst%begcb_col                 , & ! Input:  [real(r8) (:) ]  (gC/m2) carbon mass, beginning of time step 
+         col_endcb               =>    cnveg_carbonstate_inst%endcb_col                   & ! Output: [real(r8) (:) ]  (gC/m2) carbon mass, end of time step 
          )
 
       ! set time steps
       dt = real( get_step_size(), r8 )
 
       err_found = .false.
-      ! column loop
       do fc = 1,num_soilc
          c = filter_soilc(fc)
 
@@ -156,7 +121,7 @@ contains
          col_cinputs = gpp(c)
 
          ! calculate total column-level outputs
-         ! er = ar + hr, col_fire_closs includes pft-level fire losses
+         ! er = ar + hr, col_fire_closs includes patch-level fire losses
          col_coutputs = er(c) + col_fire_closs(c) + dwt_closs(c) + product_closs(c) + col_hrv_xsmrpool_to_atm(c)
 
          ! subtract leaching flux
@@ -173,74 +138,74 @@ contains
 
       end do ! end of columns loop
 
-      if (.not. use_ed) then
-         if (err_found) then
-            c = err_index
-            write(iulog,*)'column cbalance error = ', col_errcb(c), c
-            write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
-            write(iulog,*)'begcb       = ',col_begcb(c)
-            write(iulog,*)'endcb       = ',col_endcb(c)
-            write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
-            call endrun(msg=errMsg(__FILE__, __LINE__))
-         end if
-      end if !use_ed
+      if (err_found) then
+         c = err_index
+         write(iulog,*)'column cbalance error = ', col_errcb(c), c
+         write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+         write(iulog,*)'begcb       = ',col_begcb(c)
+         write(iulog,*)'endcb       = ',col_endcb(c)
+         write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      end if
 
     end associate
 
   end subroutine CBalanceCheck
 
   !-----------------------------------------------------------------------
-  subroutine NBalanceCheck(bounds, &
-       num_soilc, filter_soilc, &
-       nitrogenstate_vars, nitrogenflux_vars)
+  subroutine NBalanceCheck(bounds, num_soilc, filter_soilc, &
+       soilbiogeochem_nitrogenflux_inst, cnveg_nitrogenflux_inst, cnveg_nitrogenstate_inst)
     !
     ! !DESCRIPTION:
-    ! On the radiation time step, perform nitrogen mass conservation check
-    ! for column and pft
+    ! Perform nitrogen mass conservation check
+    !
+    ! !USES:
+    use clm_varpar, only : crop_prog
     !
     ! !ARGUMENTS:
-    type(bounds_type)         , intent(in)    :: bounds          
-    integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                   , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    type(bounds_type)                       , intent(in)    :: bounds          
+    integer                                 , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                                 , intent(in)    :: filter_soilc                                      (:) ! filter for soil columns
+    type(soilbiogeochem_nitrogenflux_type)  , intent(in)    :: soilbiogeochem_nitrogenflux_inst
+    type(cnveg_nitrogenflux_type)           , intent(in)    :: cnveg_nitrogenflux_inst
+    type(cnveg_nitrogenstate_type)          , intent(inout) :: cnveg_nitrogenstate_inst
     !
     ! !LOCAL VARIABLES:
     integer :: c,err_index,j  ! indices
     integer :: fc             ! lake filter indices
     logical :: err_found      ! error flag
     real(r8):: dt             ! radiation time step (seconds)
+    real(r8):: col_ninputs(bounds%begc:bounds%endc) 
+    real(r8):: col_noutputs(bounds%begc:bounds%endc) 
+    real(r8):: col_errnb(bounds%begc:bounds%endc) 
     !-----------------------------------------------------------------------
 
-    associate(                                                             & 
-         totcoln             =>    nitrogenstate_vars%totcoln_col            , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg 
-         ndep_to_sminn       =>    nitrogenflux_vars%ndep_to_sminn_col       , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
-         nfix_to_sminn       =>    nitrogenflux_vars%nfix_to_sminn_col       , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
-         fert_to_sminn       =>    nitrogenflux_vars%fert_to_sminn_col       , & ! Input:  [real(r8) (:)]                                          
-         soyfixn_to_sminn    =>    nitrogenflux_vars%soyfixn_to_sminn_col    , & ! Input:  [real(r8) (:)]                                          
-         supplement_to_sminn =>    nitrogenflux_vars%supplement_to_sminn_col , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)         
-         denit               =>    nitrogenflux_vars%denit_col               , & ! Input:  [real(r8) (:)]  total rate of denitrification (gN/m2/s) 
-         sminn_leached       =>    nitrogenflux_vars%sminn_leached_col       , & ! Input:  [real(r8) (:)]  soil mineral N pool loss to leaching (gN/m2/s)
-         smin_no3_leached    =>    nitrogenflux_vars%smin_no3_leached_col    , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
-         smin_no3_runoff     =>    nitrogenflux_vars%smin_no3_runoff_col     , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
-         f_n2o_nit           =>    nitrogenflux_vars%f_n2o_nit_col           , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
-         col_fire_nloss      =>    nitrogenflux_vars%fire_nloss_col      , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
-         dwt_nloss           =>    nitrogenflux_vars%dwt_nloss_col           , & ! Input:  [real(r8) (:)]  (gN/m2/s) total nitrogen loss from product pools and conversion
-         product_nloss       =>    nitrogenflux_vars%product_nloss_col       , & ! Input:  [real(r8) (:)]  (gN/m2/s) total wood product nitrogen loss
-         som_n_leached       =>    nitrogenflux_vars%som_n_leached_col       , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
-         
-         col_ninputs         =>    nitrogenflux_vars%ninputs_col         , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)         
-         col_noutputs        =>    nitrogenflux_vars%noutputs_col        , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)        
-         col_begnb           =>    nitrogenstate_vars%begnb_col              , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
-         col_endnb           =>    nitrogenstate_vars%endnb_col              , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
-         col_errnb           =>    nitrogenstate_vars%errnb_col                & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
+    associate(                                                                             & 
+         ndep_to_sminn       => soilbiogeochem_nitrogenflux_inst%ndep_to_sminn_col       , & ! Input:  [real(r8) (:) ]  (gN/m2/s) atmospheric N deposition to soil mineral N        
+         nfix_to_sminn       => soilbiogeochem_nitrogenflux_inst%nfix_to_sminn_col       , & ! Input:  [real(r8) (:) ]  (gN/m2/s) symbiotic/asymbiotic N fixation to soil mineral N 
+         fert_to_sminn       => soilbiogeochem_nitrogenflux_inst%fert_to_sminn_col       , & ! Input:  [real(r8) (:) ]  (gN/m2/s)                                         
+         soyfixn_to_sminn    => soilbiogeochem_nitrogenflux_inst%soyfixn_to_sminn_col    , & ! Input:  [real(r8) (:) ]  (gN/m2/s)                                         
+         supplement_to_sminn => soilbiogeochem_nitrogenflux_inst%supplement_to_sminn_col , & ! Input:  [real(r8) (:) ]  (gN/m2/s) supplemental N supply                           
+         denit               => soilbiogeochem_nitrogenflux_inst%denit_col               , & ! Input:  [real(r8) (:) ]  (gN/m2/s) total rate of denitrification           
+         sminn_leached       => soilbiogeochem_nitrogenflux_inst%sminn_leached_col       , & ! Input:  [real(r8) (:) ]  (gN/m2/s) soil mineral N pool loss to leaching   
+         smin_no3_leached    => soilbiogeochem_nitrogenflux_inst%smin_no3_leached_col    , & ! Input:  [real(r8) (:) ]  (gN/m2/s) soil mineral NO3 pool loss to leaching 
+         smin_no3_runoff     => soilbiogeochem_nitrogenflux_inst%smin_no3_runoff_col     , & ! Input:  [real(r8) (:) ]  (gN/m2/s) soil mineral NO3 pool loss to runoff   
+         f_n2o_nit           => soilbiogeochem_nitrogenflux_inst%f_n2o_nit_col           , & ! Input:  [real(r8) (:) ]  (gN/m2/s) flux of N2o from nitrification 
+         som_n_leached       => soilbiogeochem_nitrogenflux_inst%som_n_leached_col       , & ! Input:  [real(r8) (:) ]  (gN/m2/s) total SOM N loss from vertical transport
+
+         col_fire_nloss      => cnveg_nitrogenflux_inst%fire_nloss_col                   , & ! Input:  [real(r8) (:) ]  (gN/m2/s) total column-level fire N loss 
+         dwt_nloss           => cnveg_nitrogenflux_inst%dwt_nloss_col                    , & ! Input:  [real(r8) (:) ]  (gN/m2/s) total nitrogen loss from product pools and conversion
+         product_nloss       => cnveg_nitrogenflux_inst%product_nloss_col                , & ! Input:  [real(r8) (:) ]  (gN/m2/s) total wood product nitrogen loss
+
+         totcoln             => cnveg_nitrogenstate_inst%totn_col                        , & ! Input:  [real(r8) (:) ]  (gN/m2) total column nitrogen, incl veg 
+         col_begnb           => cnveg_nitrogenstate_inst%begnb_col                       , & ! Input:  [real(r8) (:) ]  (gN/m2) nitrogen mass, beginning of time step   
+         col_endnb           => cnveg_nitrogenstate_inst%endnb_col                         & ! Output: [real(r8) (:) ]  (gN/m2) nitrogen mass, end of time step         
          )
 
       ! set time steps
       dt = real( get_step_size(), r8 )
 
       err_found = .false.
-      ! column loop
       do fc = 1,num_soilc
          c=filter_soilc(fc)
 
@@ -249,8 +214,9 @@ contains
 
          ! calculate total column-level inputs
          col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
-         if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
-              fert_to_sminn(c) + soyfixn_to_sminn(c)
+         if (crop_prog) then
+            col_ninputs(c) = col_ninputs(c) + fert_to_sminn(c) + soyfixn_to_sminn(c)
+         end if
 
          ! calculate total column-level outputs
          col_noutputs(c) = denit(c) + col_fire_nloss(c) + dwt_nloss(c) + product_nloss(c)
@@ -266,8 +232,7 @@ contains
          col_noutputs(c) = col_noutputs(c) - som_n_leached(c)
 
          ! calculate the total column-level nitrogen balance error for this time step
-         col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
-              (col_endnb(c) - col_begnb(c))
+         col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - (col_endnb(c) - col_begnb(c))
 
          if (abs(col_errnb(c)) > 1e-8_r8) then
             err_found = .true.
@@ -278,14 +243,14 @@ contains
 
       if (err_found) then
          c = err_index
-         write(iulog,*)'column nbalance error = ', col_errnb(c), c
-         write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
-         write(iulog,*)'begnb       = ',col_begnb(c)
-         write(iulog,*)'endnb       = ',col_endnb(c)
-         write(iulog,*)'delta store = ',col_endnb(c)-col_begnb(c)
-         write(iulog,*)'input mass  = ',col_ninputs(c)*dt
-         write(iulog,*)'output mass = ',col_noutputs(c)*dt
-         write(iulog,*)'net flux    = ',(col_ninputs(c)-col_noutputs(c))*dt
+         write(iulog,*)'column nbalance error = ',col_errnb(c), c
+         write(iulog,*)'Latdeg,Londeg         = ',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+         write(iulog,*)'begnb                 = ',col_begnb(c)
+         write(iulog,*)'endnb                 = ',col_endnb(c)
+         write(iulog,*)'delta store           = ',col_endnb(c)-col_begnb(c)
+         write(iulog,*)'input mass            = ',col_ninputs(c)*dt
+         write(iulog,*)'output mass           = ',col_noutputs(c)*dt
+         write(iulog,*)'net flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 

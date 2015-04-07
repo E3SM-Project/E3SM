@@ -20,7 +20,7 @@ if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
   @ mppsize = $mppnodes * ${MAX_TASKS_PER_NODE}
 endif
 
-set maxthrds = 0
+set maxthrds = 1
 set minthrds = $MAX_TASKS_PER_NODE
 @ n = 0
 foreach model ($MODELS)
@@ -47,14 +47,18 @@ if ($CCSM_ESTCOST > 3 || $DEBUG == "TRUE") set walltime = "05:00:00"
 
 if ($?TESTMODE) then
  set file = $CASEROOT/${CASE}.test 
+ set walltime = "00:30:00"
+ set queue = "debug"
 else
  set file = $CASEROOT/${CASE}.run 
+ set queue = "normal"
 endif
+#@ ppn = $MAX_TASKS_PER_NODE / $maxthrds 
 
 cat >! $file << EOF1
 #!/bin/csh -f
 #PBS -N ${jobname}
-#PBS -q normal
+#PBS -q $queue
 #PBS -l nodes=${mppnodes}:ppn=32:xe
 #PBS -l walltime=${walltime}
 #PBS -j oe

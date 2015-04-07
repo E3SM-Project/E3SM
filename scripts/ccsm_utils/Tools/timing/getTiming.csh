@@ -71,9 +71,9 @@ endif
 #  endif
 #end
 
-set bin  = ${RUNDIR}/timing/ccsm_timing_stats
-set fin  = ${caseroot}/timing/ccsm_timing_stats.${lid}
-set fout = ${caseroot}/timing/ccsm_timing.$CASE.${lid}
+set bin  = ${RUNDIR}/timing.summary
+set fin  = ${caseroot}/timing/cesm_timing_stats.${lid}
+set fout = ${caseroot}/timing/cesm_timing.$CASE.${lid}
 
 if !(-e ${bin}) then
   echo "${bin} not found, exit"

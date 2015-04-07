@@ -1,5 +1,17 @@
 Tag                   Who      Date  Summary
 ============================================================================================================================
+   clm4_5_2_r097 mvertens 11/24/2014 major refactorization to introduce new soilbiogeochem data types and routines that are independent of either ED or CN datatypes
+   clm4_5_1_r096     erik 11/19/2014 Several answer changing bug-fixes: snow grain size, lake hydrology, default settings, organic soil
+   clm4_5_1_r095    andre 11/10/2014 N comp refactoring by Jinyun Tang (LBL) and transpiration sink isolation by Gautam Bisht (LBL)
+   clm4_5_1_r094    sacks 11/07/2014 misc. glacier-related updates
+   clm4_5_1_r093    sacks 11/07/2014 change cold-start snow initialization, update cism external
+   clm4_5_1_r092  muszala 11/04/2014  bug fixes from santos that address valgrind problems.  update rtm external 
+   clm4_5_1_r091  muszala 10/27/2014 update externals.  fix bug so CLM runs with Intel 14x. 
+   clm4_5_1_r090    sacks 10/16/2014 modularize irrigation; do some unit test rework
+   clm4_5_1_r089     erik 10/13/2014 Bring new urban building temperature to trunk as a clm5.0 feature as well as human-stress index calculations
+   clm4_5_1_r088  muszala 10/01/2014 pull out ED deps. in TemperatureTypeMod, can now compile with pgi 14.7
+   clm4_5_1_r087     erik 09/30/2014 Fix two balance check errors, and turn abort for balance check back on to appropriate levels
+   clm4_5_1_r086  muszala 09/25/2014 critical ED modifications from r fisher, fix bug 2043
    clm4_5_1_r085    sacks 09/19/2014 replace conditionals with polymorphism for soil water retention curve
    clm4_5_1_r084    sacks 09/18/2014 make glc_dyn_runoff_routing spatially-varying, based on input from glc
    clm4_5_1_r083  muszala 09/17/2014 only update scripts and run new baselines.  this due to an error in yellowstone pgi test naming (clm_aux45 changed to aux_clm45)

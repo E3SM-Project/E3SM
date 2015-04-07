@@ -1,0 +1,68 @@
+--- Some design notes ---
+
+There are a couple of important points about IrrigationMod that motivated how I
+set up these tests:
+
+(1) There are two main routines in the public interface: CalcIrrigationNeeded
+    and ApplyIrrigation. CalcIrrigationNeeded does not have any effects that are
+    directly visible; instead, it sets some variables that are later used by
+    ApplyIrrigation.  (These two routines are separated because they need to be
+    called at different points in the driver.)
+
+(2) Within CalcIrrigationNeeded, there is a filter loop inside a loop over
+    levels.  (The looping was done in this order for the sake of vectorization,
+    despite the fact that the code - and possibly the testing - would haven
+    simpler if the loop nesting were reversed. But this seems typical of
+    multi-level code throughout CLM.)  Furthermore, there is some interaction
+    between levels (in that a frozen layer j prevents any irrigation demand from
+    being counted below level j).
+
+Because of these considerations, it was not straightforward to pull out routines
+that could operate on a single point, and just do the testing on these
+single-point routines. So instead, I am just testing the public, multi-point
+routines. However, for simplicity, most of my tests just use a single point in
+the arrays - and then I have just enough multi-point tests to ensure that the
+routines truly do work with multiple points.
+
+Furthermore, I have been influenced lately by advice to "test behavior, not
+methods", and to test through the public interface. And in this case, it
+actually feels easier to convince myself that the code is doing the right thing
+if I set up my tests to operate similarly to how CLM itself will interact with
+IrrigationMod - that is, calling CalcIrrigationNeeded followed by
+ApplyIrrigation, then examining the resulting qflx_irrig. Thus, that is what I
+do in my tests - as opposed to, say, testing CalcIrrigationNeeded by itself and
+viewing resulting variables that aren't usually available through the public
+interface; or as opposed to breaking the current routines down into smaller
+methods just for the sake of testability. Testing through the public interface
+also feels like it will make the tests more robust (with fewer changes needed)
+if the private implementation changes.
+
+However, in cases where it's easier to pull out a single-point implementation of
+an algorithm, with a relatively trivial wrapper to handle the looping over
+multiple points, I'd probably still come down in favor of just testing the
+single-point implementation - since doing so is significantly simpler, even if
+it means you're testing something that should be private.
+
+
+--- Motivation for use of a testCase ---
+
+The main purpose of using a TestCase here is so that the tearDown is done
+automatically, rather than having to call this teardown manually from each
+test. This is important because, if an assertion fails, a test immediately
+exits. That means that manual teardown is skipped, whereas this automatic
+teardown still happens. This, in turn, is important so that the remaining tests
+can still run properly.
+
+--- Notes about separation into multiple files ---
+
+I have separated tests based on what needs to be done for the setup and teardown
+of each test. Tests that need identical setup and teardown (or lack thereof) are
+grouped together.
+
+IrrigationWrapperMod contains routines that are used by both the singlepatch and
+multipatch tests. In terms of setup and teardown: I have put setup stuff in here
+that is in common for both the singlepatch and multipatch tests. I then do the
+symmetrical teardown here, as well (e.g., if a variable foo is allocated in
+IrrigationWrapperMod, I also deallocate it in the teardown routine in
+IrrigationWrapperMod). The setup done in the .pf files themselves is stuff that
+differs between singlepatch and multipatch (or between individual tests).

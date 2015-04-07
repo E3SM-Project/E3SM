@@ -1,0 +1,4 @@
+ wrtdia         = .true.
+ hist_ndens     = 1
+ hist_nhtfrq    =-24
+ hist_mfilt     = 1

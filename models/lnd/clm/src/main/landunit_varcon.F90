@@ -9,7 +9,6 @@ module landunit_varcon
   !
   ! !PUBLIC TYPES:
   implicit none
-  save
   private
   
   !------------------------------------------------------------------

@@ -45,7 +45,7 @@ contains
    
    !------------------------------------------------------------------------------   
    subroutine calc_soilevap_stress(bounds, num_nolakec, filter_nolakec, &
-        soilstate_vars, waterstate_vars)
+        soilstate_inst, waterstate_inst)
      !
      ! DESCRIPTIONS
      ! compute the stress factor for soil evaporation calculation
@@ -62,12 +62,12 @@ contains
      type(bounds_type)     , intent(in)    :: bounds    ! bounds   
      integer               , intent(in)    :: num_nolakec
      integer               , intent(in)    :: filter_nolakec(:)
-     type(soilstate_type)  , intent(inout) :: soilstate_vars
-     type(waterstate_type) , intent(in)    :: waterstate_vars
+     type(soilstate_type)  , intent(inout) :: soilstate_inst
+     type(waterstate_type) , intent(in)    :: waterstate_inst
 
      character(len=32) :: subname = 'calc_soilevap_stress'  ! subroutine name
      associate(                &
-          soilbeta =>  soilstate_vars%soilbeta_col  & ! Output: [real(r8) (:)] factor that reduces ground evaporation
+          soilbeta =>  soilstate_inst%soilbeta_col  & ! Output: [real(r8) (:)] factor that reduces ground evaporation
           )
    
        !select the right method and do the calculation
@@ -75,7 +75,7 @@ contains
 
        case (leepielke_1992)
           call calc_beta_leepielke1992(bounds, num_nolakec, filter_nolakec, &
-               soilstate_vars, waterstate_vars, soilbeta(bounds%begc:bounds%endc))
+               soilstate_inst, waterstate_inst, soilbeta(bounds%begc:bounds%endc))
 
        case default
           call endrun(subname // ':: a soilevap stress function must be specified!')     
@@ -87,7 +87,7 @@ contains
    
    !------------------------------------------------------------------------------   
    subroutine calc_beta_leepielke1992(bounds, num_nolakec, filter_nolakec, &
-        soilstate_vars, waterstate_vars, soilbeta)
+        soilstate_inst, waterstate_inst, soilbeta)
      !
      ! DESCRIPTION
      ! compute the lee-pielke beta factor to scal actual soil evaporation from potential evaporation
@@ -109,8 +109,8 @@ contains
      type(bounds_type)     , intent(in)    :: bounds    ! bounds   
      integer               , intent(in)    :: num_nolakec
      integer               , intent(in)    :: filter_nolakec(:)
-     type(soilstate_type)  , intent(in)    :: soilstate_vars
-     type(waterstate_type) , intent(in)    :: waterstate_vars
+     type(soilstate_type)  , intent(in)    :: soilstate_inst
+     type(waterstate_type) , intent(in)    :: waterstate_inst
      real(r8)              , intent(inout) :: soilbeta(bounds%begc:bounds%endc)
 
      !local variables
@@ -120,13 +120,13 @@ contains
      SHR_ASSERT_ALL((ubound(soilbeta)    == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
      associate(                                              &
-          watsat      =>    soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)] volumetric soil water at saturation (porosity)
-          watfc       =>    soilstate_vars%watfc_col       , & ! Input:  [real(r8) (:,:)] volumetric soil water at field capacity
+          watsat      =>    soilstate_inst%watsat_col      , & ! Input:  [real(r8) (:,:)] volumetric soil water at saturation (porosity)
+          watfc       =>    soilstate_inst%watfc_col       , & ! Input:  [real(r8) (:,:)] volumetric soil water at field capacity
           
-          h2osoi_ice  =>    waterstate_vars%h2osoi_ice_col , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)                       
-          h2osoi_liq  =>    waterstate_vars%h2osoi_liq_col , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)                   
-          frac_sno    =>    waterstate_vars%frac_sno_col   , & ! Input:  [real(r8) (:)] fraction of ground covered by snow (0 to 1)
-          frac_h2osfc =>    waterstate_vars%frac_h2osfc_col  & ! Input:  [real(r8) (:)]  fraction of ground covered by surface water (0 to 1)
+          h2osoi_ice  =>    waterstate_inst%h2osoi_ice_col , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)                       
+          h2osoi_liq  =>    waterstate_inst%h2osoi_liq_col , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)                   
+          frac_sno    =>    waterstate_inst%frac_sno_col   , & ! Input:  [real(r8) (:)] fraction of ground covered by snow (0 to 1)
+          frac_h2osfc =>    waterstate_inst%frac_h2osfc_col  & ! Input:  [real(r8) (:)]  fraction of ground covered by surface water (0 to 1)
           )
 
        do fc = 1,num_nolakec

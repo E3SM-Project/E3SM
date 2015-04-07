@@ -24,8 +24,8 @@ module decompMod
   ! !PUBLIC MEMBER FUNCTIONS:
 
   public get_proc_clumps    ! number of clumps for this processor
-  public get_proc_total     ! total no. of gridcells, landunits, columns and pfts for any processor
-  public get_proc_global    ! total gridcells, landunits, columns, pfts across all processors
+  public get_proc_total     ! total no. of gridcells, landunits, columns and patchs for any processor
+  public get_proc_global    ! total gridcells, landunits, columns, patchs across all processors
   public get_clmlevel_gsize ! get global size associated with clmlevel
   public get_clmlevel_gsmap ! get gsmap associated with clmlevel
 
@@ -33,13 +33,13 @@ module decompMod
      module procedure get_clump_bounds_old
      module procedure get_clump_bounds_new
   end interface
-  public get_clump_bounds   ! clump beg and end gridcell,landunit,column,pft
+  public get_clump_bounds   ! clump beg and end gridcell,landunit,column,patch
 
   interface get_proc_bounds
      module procedure get_proc_bounds_old
      module procedure get_proc_bounds_new
   end interface
-  public get_proc_bounds    ! this processor beg and end gridcell,landunit,column,pft
+  public get_proc_bounds    ! this processor beg and end gridcell,landunit,column,patch
 
   ! !PRIVATE MEMBER FUNCTIONS:
   !
@@ -50,14 +50,14 @@ module decompMod
   integer,public :: numg        ! total number of gridcells on all procs
   integer,public :: numl        ! total number of landunits on all procs
   integer,public :: numc        ! total number of columns on all procs
-  integer,public :: nump        ! total number of pfts on all procs
+  integer,public :: nump        ! total number of patchs on all procs
   integer,public :: numCohort   ! total number of ED cohorts on all procs
 
   type bounds_type
      integer :: begg, endg       ! beginning and ending gridcell index
      integer :: begl, endl       ! beginning and ending landunit index
      integer :: begc, endc       ! beginning and ending column index
-     integer :: begp, endp       ! beginning and ending pft index
+     integer :: begp, endp       ! beginning and ending patch index
      integer :: begCohort, endCohort ! beginning and ending cohort indices
 
      integer :: level            ! whether defined on the proc or clump level
@@ -72,12 +72,12 @@ module decompMod
      integer :: ncells           ! number of gridcells in proc
      integer :: nlunits          ! number of landunits in proc
      integer :: ncols            ! number of columns in proc
-     integer :: npfts            ! number of pfts in proc
-     integer :: nCohorts          ! number of cohorts in proc
+     integer :: npatches          ! number of patchs in proc
+     integer :: nCohorts         ! number of cohorts in proc
      integer :: begg, endg       ! beginning and ending gridcell index
      integer :: begl, endl       ! beginning and ending landunit index
      integer :: begc, endc       ! beginning and ending column index
-     integer :: begp, endp       ! beginning and ending pft index
+     integer :: begp, endp       ! beginning and ending patch index
      integer :: begCohort, endCohort ! beginning and ending cohort indices
   end type processor_type
   public processor_type
@@ -89,12 +89,12 @@ module decompMod
      integer :: ncells           ! number of gridcells in clump
      integer :: nlunits          ! number of landunits in clump
      integer :: ncols            ! number of columns in clump
-     integer :: npfts            ! number of pfts in clump
-     integer :: nCohorts          ! number of cohorts in proc
+     integer :: npatches          ! number of patchs in clump
+     integer :: nCohorts         ! number of cohorts in proc
      integer :: begg, endg       ! beginning and ending gridcell index
      integer :: begl, endl       ! beginning and ending landunit index
      integer :: begc, endc       ! beginning and ending column index
-     integer :: begp, endp       ! beginning and ending pft index
+     integer :: begp, endp       ! beginning and ending patch index
      integer :: begCohort, endCohort ! beginning and ending cohort indices
   end type clump_type
   public clump_type
@@ -170,7 +170,7 @@ contains
    subroutine get_clump_bounds_old (n, begg, endg, begl, endl, begc, endc, begp, endp, &
         begCohort, endCohort)
      integer, intent(in)  :: n           ! proc clump index
-     integer, intent(out) :: begp, endp  ! clump beg and end pft indices
+     integer, intent(out) :: begp, endp  ! clump beg and end patch indices
      integer, intent(out) :: begc, endc  ! clump beg and end column indices
      integer, intent(out) :: begl, endl  ! clump beg and end landunit indices
      integer, intent(out) :: begg, endg  ! clump beg and end gridcell indices
@@ -239,7 +239,7 @@ contains
    subroutine get_proc_bounds_old (begg, endg, begl, endl, begc, endc, begp, endp, &
         begCohort, endCohort)
 
-     integer, optional, intent(out) :: begp, endp  ! proc beg and end pft indices
+     integer, optional, intent(out) :: begp, endp  ! proc beg and end patch indices
      integer, optional, intent(out) :: begc, endc  ! proc beg and end column indices
      integer, optional, intent(out) :: begl, endl  ! proc beg and end landunit indices
      integer, optional, intent(out) :: begg, endg  ! proc beg and end gridcell indices
@@ -259,34 +259,34 @@ contains
    end subroutine get_proc_bounds_old
 
    !------------------------------------------------------------------------------
-   subroutine get_proc_total(pid, ncells, nlunits, ncols, npfts, nCohorts)
+   subroutine get_proc_total(pid, ncells, nlunits, ncols, npatches, nCohorts)
      !
      ! !DESCRIPTION:
-     ! Count up gridcells, landunits, columns, and pfts on process.
+     ! Count up gridcells, landunits, columns, and patchs on process.
      !
      ! !ARGUMENTS:
      integer, intent(in)  :: pid     ! proc id
      integer, intent(out) :: ncells  ! total number of gridcells on the processor
      integer, intent(out) :: nlunits ! total number of landunits on the processor
      integer, intent(out) :: ncols   ! total number of columns on the processor
-     integer, intent(out) :: npfts   ! total number of pfts on the processor
-     integer, intent(out) :: nCohorts ! total number of cohorts on the processor
+     integer, intent(out) :: npatches ! total number of patchs on the processor
+     integer, intent(out) :: nCohorts! total number of cohorts on the processor
      !
      ! !LOCAL VARIABLES:
      integer :: cid       ! clump index
      !------------------------------------------------------------------------------
 
-     npfts   = 0
-     nlunits = 0
-     ncols   = 0
-     ncells  = 0
+     npatches  = 0
+     nlunits  = 0
+     ncols    = 0
+     ncells   = 0
      nCohorts = 0
      do cid = 1,nclumps
         if (clumps(cid)%owner == pid) then
-           ncells  = ncells  + clumps(cid)%ncells
-           nlunits = nlunits + clumps(cid)%nlunits
-           ncols   = ncols   + clumps(cid)%ncols
-           npfts   = npfts   + clumps(cid)%npfts
+           ncells  = ncells    + clumps(cid)%ncells
+           nlunits = nlunits   + clumps(cid)%nlunits
+           ncols   = ncols     + clumps(cid)%ncols
+           npatches = npatches   + clumps(cid)%npatches
            nCohorts = nCohorts + clumps(cid)%nCohorts
         end if
      end do
@@ -296,13 +296,13 @@ contains
    subroutine get_proc_global(ng, nl, nc, np, nCohorts)
      !
      ! !DESCRIPTION:
-     ! Return number of gridcells, landunits, columns, and pfts across all processes.
+     ! Return number of gridcells, landunits, columns, and patchs across all processes.
      !
      ! !ARGUMENTS:
      integer, optional, intent(out) :: ng        ! total number of gridcells across all processors
      integer, optional, intent(out) :: nl        ! total number of landunits across all processors
      integer, optional, intent(out) :: nc        ! total number of columns across all processors
-     integer, optional, intent(out) :: np        ! total number of pfts across all processors
+     integer, optional, intent(out) :: np        ! total number of patchs across all processors
      integer, optional, intent(out) :: nCohorts  ! total number ED cohorts
      !------------------------------------------------------------------------------
 

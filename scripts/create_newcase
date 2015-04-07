@@ -15,6 +15,7 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 use Data::Dumper;
+use File::Basename;
 
 # Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.  
 # If not found, print a warning message then exit. 
@@ -98,7 +99,8 @@ sub usage {
   redundant with _M confopts setting
   -mach_dir <path>     Specify the locations of the Machines directory (optional).
  default: $machdir
- -user_mods_dir <path>Path to directory with user_nl_* files and xmlchange_cmnds to use (optional).
+ -user_mods_dir <path>Path to directory with user_nl_* files and xmlchange_commands to use (optional).
+                For non-test cases, this can also include SourceMods
  -confopts <value>    Specify some addition configuration options (optional)
  _AOA = aoflux on atm grid
  _AOE = aoflux on exch grid
@@ -866,8 +868,6 @@ my @files = (
     "$scriptsroot/ccsm_utils/Tools/xmlchange",
     "$scriptsroot/ccsm_utils/Tools/xmlquery",
     "$scriptsroot/ccsm_utils/Tools/st_archive", 
-    "$scriptsroot/ccsm_utils/Tools/tseries_generate.submit", 
-    "$scriptsroot/ccsm_utils/Tools/tseries_generate.run", 
     "$scriptsroot/ccsm_utils/Tools/README.post_process", 
     ); 
 foreach my $file (@files) {
@@ -902,6 +902,8 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 	  "$scriptsroot/ccsm_utils/Tools/SetupTools.pm",
 	  "$scriptsroot/ccsm_utils/Tools/compare_namelists.pl",
 	  "$scriptsroot/ccsm_utils/Tools/cesm_tseries_generator.py",
+	  "$scriptsroot/ccsm_utils/Tools/tseries_generate.submit", 
+	  "$scriptsroot/ccsm_utils/Tools/tseries_generate.run", 
 	  "$machdir/taskmaker.pl", 
 	  "$machdir/Makefile",
 	  "$machdir/mkSrcfiles", 
@@ -1093,12 +1095,16 @@ printf ($fh "case created %04u-%02u-%02u %02u:%02u:%02u\n",$year,$mon,$mday,$hou
 # Copy the user_mods_dir files in and apply them
 if ( defined($user_mods_dir) ) {
     my @user_nl_files = glob("$user_mods_dir/user_nl*");
-    my @xmlchange_cmnds_file = "$user_mods_dir/xmlchange_cmnds";
+
+    # allow xmlchange_cmnds as well as xmlchange_commands; the latter is
+    # preferred, but the former is supported for backwards compatibility
+    my @xmlchange_commands_files = ("$user_mods_dir/xmlchange_cmnds", "$user_mods_dir/xmlchange_commands");
+
     my @source_mods_dir = glob("$user_mods_dir/SourceMods/*");
 
-    if(! @user_nl_files && ! @xmlchange_cmnds_file && ! @source_mods_dir)
+    if(! @user_nl_files && ! @xmlchange_commands_files && ! @source_mods_dir)
     {
-	die "ERROR: There are no user_nl files, xmlchange_cmds file, or SourceMods directories";
+	die "ERROR: There are no user_nl files, xmlchange_commands file, or SourceMods directories";
     }
     else
     {
@@ -1111,38 +1117,61 @@ if ( defined($user_mods_dir) ) {
 		system($copy) == 0 or die "ERROR: $copy failed: $?\n";
 	    }
 	}
-	# Copy the xmlchange_cmnds file over and execute it
-	foreach my $file(@xmlchange_cmnds_file)
+
+	# Copy the xmlchange_commands file over and execute it
+        my $num_xmlchange_files_found = 0;
+	foreach my $file(@xmlchange_commands_files)
 	{
 	    if (-f "$file") {
+                $num_xmlchange_files_found += 1;
+                # In principle, you could have both xmlchange_cmnds and xmlchange_commands,
+                # but that could lead to unexpected results, so don't allow that
+                if ($num_xmlchange_files_found > 1) {
+                   die "ERROR: Multiple xmlchange_commands/xmlchange_cmnds files found in the user_mods_dir; please use only one";
+                }
+
 		if ($print>=2) { print "Copy $file over.$eol"; }
 		my $copy = "cp $file $caseroot";
 		system($copy) == 0 or die "ERROR: $copy failed: $?\n";
-		chmod 0777, "$caseroot/xmlchange_cmnds";
+                my $filename = basename($file);
+		chmod 0777, "$caseroot/$filename";
 		my $cwd = getcwd(); # current working directory
 		chdir "$caseroot";
 		if ($print>=2) { print "Execute $file.$eol"; }
-		system ("./xmlchange_cmnds");
+		system ("./$filename");
 		chdir "$cwd";
 	    }
 	}
+        
+
 	# Copy any files in SourceMods over provided the same directory exists in the case
-	foreach my $dir(@source_mods_dir)
-	{
-	    if ($print>=2) { print "Copy $dir over.$eol"; }
-	    if ( $dir =~ m/(SourceMods\/.+)/ ) {
-		my $mydir = "$caseroot/$1";
-		if (-d "$dir" && -d "$mydir" ) {
-		    foreach my $file( glob("$dir/*") )
-		    {
-			if ($print>=2) { print "Copy $file over.$eol"; }
-			my $copy = "cp $file $mydir";
-			system($copy) == 0 or die "ERROR: $copy failed: $?\n";
-		    }
-		}
-	    }
-	}
-    }
+        my $num_sourcemods_found = 0;
+        foreach my $dir (@source_mods_dir) {
+           if ($print>=2) {
+              print "Copy $dir over.$eol";
+           }
+           if ( $dir =~ m/(SourceMods\/.+)/ ) {
+              my $mydir = "$caseroot/$1";
+              if (-d "$dir" && -d "$mydir" ) {
+                 foreach my $file ( glob("$dir/*") ) {
+                    if ($print>=2) {
+                       print "Copy $file over.$eol";
+                    }
+                    my $copy = "cp $file $mydir";
+                    system($copy) == 0 or die "ERROR: $copy failed: $?\n";
+                    $num_sourcemods_found += 1;
+                 }
+              }
+           }
+        }
+
+        if ($num_sourcemods_found > 0 && $testname) {
+           # Don't allow SourceMods in testmods, because (1) you shouldn't be
+           # using SourceMods for automated tests, and (2) this likely won't
+           # work correctly if multiple tests are sharing a single build.
+           die "SourceMods are not allowed in the testmods directory for automated tests";
+        }
+     }
 }
 
 #-----------------------------------------------------------------------------------------------

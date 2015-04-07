@@ -10,13 +10,12 @@ module SFMainMod
   use clm_varctl            , only : iulog
   use atm2lndType           , only : atm2lnd_type
   use TemperatureType       , only : temperature_type
-  use EcophysconType        , only : ecophyscon
+  use pftconMod             , only : pftcon
   use EDEcophysconType      , only : EDecophyscon
-  use EDtypesMod            , only : site, patch, cohort, AREA, DG_SF, FIRE_THRESHOLD
+  use EDtypesMod            , only : ed_site_type, ed_patch_type, ed_cohort_type, AREA, DG_SF, FIRE_THRESHOLD
   use EDtypesMod            , only : LB_SF, LG_SF, NCWD, TR_SF
 
   implicit none
-  save
   private
 
   public :: fire_model
@@ -43,21 +42,20 @@ contains
   ! ============================================================================
   !        Area of site burned by fire           
   ! ============================================================================
-  subroutine fire_model( site_in, atm2lnd_vars, temperature_vars)
+  subroutine fire_model( currentSite, atm2lnd_inst, temperature_inst)
 
     use clm_varctl,   only : use_ed_spit_fire
 
-    implicit none
+    type(ed_site_type)     , intent(inout), target :: currentSite
+    type(atm2lnd_type)     , intent(in)    :: atm2lnd_inst
+    type(temperature_type) , intent(in)    :: temperature_inst
 
-    type (site)             , intent(inout), pointer :: site_in
-    type(atm2lnd_type)      , intent(in)             :: atm2lnd_vars
-    type(temperature_type)  , intent(in)             :: temperature_vars
-
-    type (patch), pointer :: currentPatch
+    type (ed_patch_type), pointer :: currentPatch
 
     integer temporary_SF_switch
+
     !zero fire things
-    currentPatch => site_in%youngest_patch
+    currentPatch => currentSite%youngest_patch
     temporary_SF_switch = 0
     do while(associated(currentPatch))
        currentPatch%frac_burnt = 0.0_r8
@@ -71,23 +69,23 @@ contains
     endif
 
     if(use_ed_spit_fire.and.temporary_SF_switch==1)then
-       call fire_danger_index(site_in, temperature_vars, atm2lnd_vars)
-       call wind_effect(site_in, atm2lnd_vars)
-       call charecteristics_of_fuel(site_in)
-       call rate_of_spread(site_in)
-       call ground_fuel_consumption(site_in)
-       call fire_intensity(site_in)
-       call area_burnt(site_in)
-       call crown_scorching(site_in)
-       call crown_damage(site_in)
-       call cambial_damage_kill(site_in)
-       call post_fire_mortality(site_in)
+       call fire_danger_index(currentSite, temperature_inst, atm2lnd_inst)
+       call wind_effect(currentSite, atm2lnd_inst)
+       call charecteristics_of_fuel(currentSite)
+       call rate_of_spread(currentSite)
+       call ground_fuel_consumption(currentSite)
+       call fire_intensity(currentSite)
+       call area_burnt(currentSite)
+       call crown_scorching(currentSite)
+       call crown_damage(currentSite)
+       call cambial_damage_kill(currentSite)
+       call post_fire_mortality(currentSite)
     end if
 
   end subroutine fire_model
 
     !*****************************************************************
-    subroutine  fire_danger_index ( currentSite, temperature_vars, atm2lnd_vars)
+    subroutine  fire_danger_index ( currentSite, temperature_inst, atm2lnd_inst)
 
     !*****************************************************************
    ! currentSite%acc_NI is the accumulated Nesterov fire danger index
@@ -95,12 +93,10 @@ contains
     use clm_varcon       , only : tfrz
 
     use SFParamsMod, only  : SF_val_fdi_a, SF_val_fdi_b
-
-    implicit none
-
-    type(site)              , intent(inout), pointer :: currentSite
-    type(temperature_type)  , intent(in)             :: temperature_vars
-    type(atm2lnd_type)      , intent(in)             :: atm2lnd_vars
+    
+    type(ed_site_type)     , intent(inout), target :: currentSite
+    type(temperature_type) , intent(in)    :: temperature_inst
+    type(atm2lnd_type)     , intent(in)    :: atm2lnd_inst
     
     real(r8) :: temp_in_C ! daily averaged temperature in celcius
     real(r8) :: rainfall  ! daily precip
@@ -111,10 +107,10 @@ contains
     real d_NI;     !daily change in Nesterov Index. C^2 
   
     associate(                                                &
-         t_veg24          => temperature_vars%t_veg24_patch , & ! Input:  [real(r8) (:)]  avg pft vegetation temperature for last 24 hrs    
+         t_veg24          => temperature_inst%t_veg24_patch , & ! Input:  [real(r8) (:)]  avg pft vegetation temperature for last 24 hrs    
 
-         prec24           => atm2lnd_vars%prec24_patch      , & ! Input:  [real(r8) (:)]  avg pft rainfall for last 24 hrs    
-         rh24             => atm2lnd_vars%rh24_patch          & ! Input:  [real(r8) (:)]  avg pft relative humidity for last 24 hrs    
+         prec24           => atm2lnd_inst%prec24_patch      , & ! Input:  [real(r8) (:)]  avg pft rainfall for last 24 hrs    
+         rh24             => atm2lnd_inst%rh24_patch          & ! Input:  [real(r8) (:)]  avg pft relative humidity for last 24 hrs    
          )
 
       ! NOTE: t_veg24(:), prec24(:) and rh24(:) are p level temperatures, precipitation and RH, 
@@ -148,12 +144,10 @@ contains
 
     use SFParamsMod, only  : SF_val_alpha_FMC, SF_val_SAV, SF_val_FBD
 
-    implicit none
+    type(ed_site_type), intent(in), target :: currentSite
 
-    type(site), intent(in),   pointer :: currentSite
-
-    type(patch),  pointer :: currentPatch
-    type(cohort), pointer :: currentCohort
+    type(ed_patch_type),  pointer :: currentPatch
+    type(ed_cohort_type), pointer :: currentCohort
 
     real(r8) timeav_swc 
     real(r8) fuel_moisture(ncwd+2) ! Scaled moisture content of small litter fuels. 
@@ -167,7 +161,7 @@ contains
        currentPatch%livegrass = 0.0_r8 
        currentCohort => currentPatch%tallest
        do while(associated(currentCohort))
-          if(ecophyscon%woody(currentCohort%pft) == 0)then 
+          if(pftcon%woody(currentCohort%pft) == 0)then 
              currentPatch%livegrass = currentPatch%livegrass + currentCohort%bl*currentCohort%n/currentPatch%area
           endif
           currentCohort => currentCohort%shorter
@@ -297,19 +291,17 @@ contains
 
 
   !*****************************************************************
-  subroutine  wind_effect ( currentSite, atm2lnd_vars)
+  subroutine  wind_effect ( currentSite, atm2lnd_inst)
   !*****************************************************************.
 
     ! Routine called daily from within ED within a site loop.
     ! Calculates the effective windspeed based on vegetation charecteristics. 
 
-    implicit none
+    type(ed_site_type) , intent(inout), target :: currentSite
+    type(atm2lnd_type) , intent(in)    :: atm2lnd_inst
 
-    type(site)         , intent(inout), pointer :: currentSite
-    type(atm2lnd_type) , intent(in)             :: atm2lnd_vars
-
-    type(patch) , pointer :: currentPatch
-    type(cohort), pointer :: currentCohort
+    type(ed_patch_type) , pointer :: currentPatch
+    type(ed_cohort_type), pointer :: currentCohort
 
     ! note - this is a p level temperature, which probably won't have much inpact, 
     ! unless we decide to ever calculated the NI for each patch.  
@@ -321,7 +313,7 @@ contains
     real(r8) :: grass_fraction !  site level. no units
     real(r8) :: bare_fraction  ! site level. no units 
 
-    wind24  => atm2lnd_vars%wind24_patch  ! Input:  [real(r8) (:)]  avg pft windspeed (m/s)
+    wind24  => atm2lnd_inst%wind24_patch  ! Input:  [real(r8) (:)]  avg pft windspeed (m/s)
 
     wind = wind24(currentSite%oldest_patch%clm_pno) * 60_r8             ! Convert to m/min for SPITFIRE units.
     if(write_SF == 1)then
@@ -340,7 +332,7 @@ contains
  
        do while(associated(currentCohort))
           write(iulog,*) 'SF currentCohort%c_area ',currentCohort%c_area
-          if(ecophyscon%woody(currentCohort%pft) == 1)then
+          if(pftcon%woody(currentCohort%pft) == 1)then
              currentPatch%total_tree_area = currentPatch%total_tree_area + currentCohort%c_area
           else
              total_grass_area = total_grass_area + currentCohort%c_area
@@ -387,11 +379,9 @@ contains
     use SFParamsMod, only  : SF_val_miner_total, SF_val_part_dens, &
          SF_val_miner_damp, SF_val_fuel_energy
 
-    implicit none
+    type(ed_site_type), intent(in), target :: currentSite
 
-    type(site), intent(in), pointer :: currentSite
-
-    type(patch), pointer :: currentPatch
+    type(ed_patch_type), pointer :: currentPatch
 
     real(r8) dummy
 
@@ -501,7 +491,7 @@ contains
   end subroutine  rate_of_spread
 
   !*****************************************************************
-  subroutine  ground_fuel_consumption ( cs_pnt ) 
+  subroutine  ground_fuel_consumption ( currentSite ) 
   !*****************************************************************
     !returns the  the hypothetic fuel consumed by the fire
 
@@ -509,11 +499,9 @@ contains
          SF_val_mid_moisture, SF_val_low_moisture_C, SF_val_low_moisture_S, &
          SF_val_mid_moisture_C, SF_val_mid_moisture_S
 
-    implicit none
+    type(ed_site_type) , intent(in), target :: currentSite
 
-    type(site), intent(in) :: cs_pnt
-
-    type(patch), pointer      :: currentPatch
+    type(ed_patch_type), pointer    :: currentPatch
 
     real(r8) :: moist             !effective fuel moisture
     real(r8) :: tau_b(ncwd+2)     !lethal heating rates for each fuel class (min) 
@@ -521,7 +509,7 @@ contains
 
     integer  :: c
 
-    currentPatch => cs_pnt%oldest_patch;  
+    currentPatch => currentSite%oldest_patch;  
 
     do while(associated(currentPatch))
        currentPatch%burnt_frac_litter = 1.0_r8       
@@ -598,11 +586,9 @@ contains
     use SFParamsMod,  only : SF_val_fdi_alpha,SF_val_fuel_energy, &
          SF_val_max_durat, SF_val_durat_slope
 
-    implicit none
+    type(ed_site_type), intent(in), target :: currentSite
 
-    type(site), intent(in), pointer :: currentSite
-
-    type(patch), pointer :: currentPatch
+    type(ed_patch_type), pointer :: currentPatch
 
     real(r8) ROS !m/s
     real(r8) W !  kgBiomass/m2
@@ -654,10 +640,10 @@ contains
 
     use domainMod,     only : ldomain
     use EDParamsMod,   only : ED_val_nfires
-    implicit none
 
-    type(site), intent(inout), pointer :: currentSite
-    type(patch), pointer :: currentPatch
+    type(ed_site_type), intent(inout), target :: currentSite
+
+    type(ed_patch_type), pointer :: currentPatch
 
     real lb !length to breadth ratio of fire ellipse
     real df  !distance fire has travelled forward
@@ -743,12 +729,10 @@ contains
     use SFParamsMod,  only : SF_val_alpha_SH
     use EDParamsMod,  only : ED_val_ag_biomass
 
-    implicit none
+    type(ed_site_type), intent(in), target :: currentSite
 
-    type(site), intent(in), pointer :: currentSite
-
-    type(patch), pointer :: currentPatch
-    type(cohort), pointer :: currentCohort
+    type(ed_patch_type), pointer :: currentPatch
+    type(ed_cohort_type), pointer :: currentCohort
 
     real f_ag_bmass      !fraction of a tree cohort's above-ground biomass as a proportion of total patch ag tree biomass.
     real tree_ag_biomass !total amount of above-ground tree biomass in patch. kgC/m2
@@ -761,7 +745,7 @@ contains
        if (currentPatch%fire == 1) then
           currentCohort => currentPatch%tallest;
           do while(associated(currentCohort))  
-             if (ecophyscon%woody(currentCohort%pft) == 1) then !trees only
+             if (pftcon%woody(currentCohort%pft) == 1) then !trees only
                 tree_ag_biomass = tree_ag_biomass+(currentCohort%bl+ED_val_ag_biomass* &
                      (currentCohort%bsw + currentCohort%bdead))*currentCohort%n
              endif !trees only
@@ -774,7 +758,7 @@ contains
           currentPatch%SH = 0.0_r8
           currentCohort => currentPatch%tallest;
           do while(associated(currentCohort))
-             if (ecophyscon%woody(currentCohort%pft) == 1.and.(tree_ag_biomass > 0.0_r8)) then !trees only
+             if (pftcon%woody(currentCohort%pft) == 1.and.(tree_ag_biomass > 0.0_r8)) then !trees only
                 f_ag_bmass = ((currentCohort%bl+ED_val_ag_biomass*(currentCohort%bsw + &
                      currentCohort%bdead))*currentCohort%n)/tree_ag_biomass
                 !equation 16 in Thonicke et al. 2010
@@ -794,20 +778,18 @@ contains
   end subroutine crown_scorching
 
   !*****************************************************************
-  subroutine  crown_damage ( site_in )
+  subroutine  crown_damage ( currentSite )
     !*****************************************************************
 
     !returns the updated currentCohort%cfa value for each tree cohort within each patch.
     !currentCohort%cfa  proportion of crown affected by fire
 
-    implicit none
+    type(ed_site_type), intent(in), target :: currentSite
 
-    type(site), intent(in) :: site_in
+    type(ed_patch_type) , pointer :: currentPatch
+    type(ed_cohort_type), pointer :: currentCohort
 
-    type(patch) , pointer :: currentPatch
-    type(cohort), pointer :: currentCohort
-
-    currentPatch => site_in%oldest_patch
+    currentPatch => currentSite%oldest_patch
 
     do while(associated(currentPatch)) 
        if (currentPatch%fire == 1) then
@@ -816,7 +798,7 @@ contains
 
           do while(associated(currentCohort))  
              currentCohort%cfa = 0.0_r8
-             if (ecophyscon%woody(currentCohort%pft) == 1) then !trees only
+             if (pftcon%woody(currentCohort%pft) == 1) then !trees only
                 ! Flames lower than bottom of canopy. 
                 ! c%hite is height of cohort
                 if (currentPatch%SH < (currentCohort%hite-currentCohort%hite*EDecophyscon%crown(currentCohort%pft))) then 
@@ -862,12 +844,10 @@ contains
     ! returns the probability that trees dies due to cambial char
     ! currentPatch%tau_l = duration of lethal stem heating (min). Calculated at patch level.
 
-    implicit none
+    type(ed_site_type), intent(in), target :: currentSite
 
-    type(site), intent(in), pointer   :: currentSite
-
-    type(patch), pointer  :: currentPatch
-    type(cohort), pointer :: currentCohort
+    type(ed_patch_type) , pointer :: currentPatch
+    type(ed_cohort_type), pointer :: currentCohort
 
     real(r8) :: tau_c !critical time taken to kill cambium (minutes) 
     real(r8) :: bt    !bark thickness in cm.
@@ -879,7 +859,7 @@ contains
        if (currentPatch%fire == 1) then
           currentCohort => currentPatch%tallest;
           do while(associated(currentCohort))  
-             if (ecophyscon%woody(currentCohort%pft) == 1) then !trees only
+             if (pftcon%woody(currentCohort%pft) == 1) then !trees only
                 ! Equation 21 in Thonicke et al 2010
                 bt = EDecophyscon%bark_scaler(currentCohort%pft)*currentCohort%dbh ! bark thickness. 
                 ! Equation 20 in Thonicke et al. 2010. 
@@ -908,7 +888,7 @@ contains
   end subroutine cambial_damage_kill
 
   !*****************************************************************
-  subroutine  post_fire_mortality ( site_in )
+  subroutine  post_fire_mortality ( currentSite )
   !*****************************************************************
 
     !  returns the updated currentCohort%fire_mort value for each tree cohort within each patch.
@@ -917,14 +897,12 @@ contains
     !  currentCohort%cambial_mort  probability of tree post-fire mortality due to cambial char
     !  currentCohort%fire_mort  post-fire mortality from cambial and crown damage assuming two are independent.
 
-    implicit none
+    type(ed_site_type), intent(in), target :: currentSite
 
-    type(site), intent(in) :: site_in
+    type(ed_patch_type),  pointer :: currentPatch
+    type(ed_cohort_type), pointer :: currentCohort
 
-    type(patch),  pointer :: currentPatch
-    type(cohort), pointer :: currentCohort
-
-    currentPatch => site_in%oldest_patch
+    currentPatch => currentSite%oldest_patch
 
     do while(associated(currentPatch)) 
 
@@ -933,7 +911,7 @@ contains
           do while(associated(currentCohort))  
              currentCohort%fire_mort = 0.0_r8
              currentCohort%crownfire_mort = 0.0_r8
-             if (ecophyscon%woody(currentCohort%pft) == 1) then
+             if (pftcon%woody(currentCohort%pft) == 1) then
                 ! Equation 22 in Thonicke et al. 2010. 
                 currentCohort%crownfire_mort = EDecophyscon%crown_kill(currentCohort%pft)*currentCohort%cfa**3.0_r8
                 ! Equation 18 in Thonicke et al. 2010. 

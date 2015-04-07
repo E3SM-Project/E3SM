@@ -1,4 +1,4 @@
-module clm_varsur
+module clm_instur
 
   !-----------------------------------------------------------------------
   ! Module containing 2-d surface boundary data information
@@ -19,7 +19,7 @@ module clm_varsur
   ! whether we have valid urban data in each grid cell
   logical , pointer :: urban_valid(:)
 
-  ! for natural veg landunit, weight of each pft on the landunit (adds to 1.0 on the
+  ! for natural veg landunit, weight of each patch on the landunit (adds to 1.0 on the
   ! landunit for all all grid cells, even! those without any natural pft)
   ! (second dimension goes natpft_lb:natpft_ub)
   real(r8), pointer :: wt_nat_patch(:,:)   
@@ -37,4 +37,4 @@ module clm_varsur
   real(r8), pointer :: topo_glc_mec(:,:) 
   !-----------------------------------------------------------------------
 
-end module clm_varsur
+end module clm_instur

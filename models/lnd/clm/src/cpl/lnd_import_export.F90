@@ -15,7 +15,7 @@ module lnd_import_export
 contains
 
   !===============================================================================
-  subroutine lnd_import( bounds, x2l, atm2lnd_vars, glc2lnd_vars)
+  subroutine lnd_import( bounds, x2l, atm2lnd_inst, glc2lnd_inst)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -30,8 +30,8 @@ contains
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds   ! bounds
     real(r8)           , intent(in)    :: x2l(:,:) ! driver import state to land model
-    type(atm2lnd_type) , intent(inout) :: atm2lnd_vars      ! clm internal input data type
-    type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! clm internal input data type
+    type(atm2lnd_type) , intent(inout) :: atm2lnd_inst      ! clm internal input data type
+    type(glc2lnd_type) , intent(inout) :: glc2lnd_inst      ! clm internal input data type
     !
     ! !LOCAL VARIABLES:
     integer  :: g,i,nstep,ier        ! indices, number of steps, and error code
@@ -100,25 +100,25 @@ contains
        ! hierarchy is atm/glc/lnd/rof/ice/ocn.  so water sent from rof to land is negative,
        ! change the sign to indicate addition of water to system.
 
-       atm2lnd_vars%forc_flood_grc(g)   = -x2l(index_x2l_Flrr_flood,i)  
+       atm2lnd_inst%forc_flood_grc(g)   = -x2l(index_x2l_Flrr_flood,i)  
 
-       atm2lnd_vars%volr_grc(g)   = x2l(index_x2l_Flrr_volr,i) * (ldomain%area(g) * 1.e6_r8)
+       atm2lnd_inst%volr_grc(g)   = x2l(index_x2l_Flrr_volr,i) * (ldomain%area(g) * 1.e6_r8)
 
        ! Determine required receive fields
 
-       atm2lnd_vars%forc_hgt_grc(g)                  = x2l(index_x2l_Sa_z,i)         ! zgcmxy  Atm state m
-       atm2lnd_vars%forc_u_grc(g)                    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
-       atm2lnd_vars%forc_v_grc(g)                    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
-       atm2lnd_vars%forc_solad_grc(g,2)              = x2l(index_x2l_Faxa_swndr,i)   ! forc_sollxy  Atm flux  W/m^2
-       atm2lnd_vars%forc_solad_grc(g,1)              = x2l(index_x2l_Faxa_swvdr,i)   ! forc_solsxy  Atm flux  W/m^2
-       atm2lnd_vars%forc_solai_grc(g,2)              = x2l(index_x2l_Faxa_swndf,i)   ! forc_solldxy Atm flux  W/m^2
-       atm2lnd_vars%forc_solai_grc(g,1)              = x2l(index_x2l_Faxa_swvdf,i)   ! forc_solsdxy Atm flux  W/m^2
+       atm2lnd_inst%forc_hgt_grc(g)                  = x2l(index_x2l_Sa_z,i)         ! zgcmxy  Atm state m
+       atm2lnd_inst%forc_u_grc(g)                    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
+       atm2lnd_inst%forc_v_grc(g)                    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
+       atm2lnd_inst%forc_solad_grc(g,2)              = x2l(index_x2l_Faxa_swndr,i)   ! forc_sollxy  Atm flux  W/m^2
+       atm2lnd_inst%forc_solad_grc(g,1)              = x2l(index_x2l_Faxa_swvdr,i)   ! forc_solsxy  Atm flux  W/m^2
+       atm2lnd_inst%forc_solai_grc(g,2)              = x2l(index_x2l_Faxa_swndf,i)   ! forc_solldxy Atm flux  W/m^2
+       atm2lnd_inst%forc_solai_grc(g,1)              = x2l(index_x2l_Faxa_swvdf,i)   ! forc_solsdxy Atm flux  W/m^2
 
-       atm2lnd_vars%forc_th_not_downscaled_grc(g)    = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
-       atm2lnd_vars%forc_q_not_downscaled_grc(g)     = x2l(index_x2l_Sa_shum,i)      ! forc_qxy  Atm state kg/kg
-       atm2lnd_vars%forc_pbot_not_downscaled_grc(g)  = x2l(index_x2l_Sa_pbot,i)      ! ptcmxy  Atm state Pa
-       atm2lnd_vars%forc_t_not_downscaled_grc(g)     = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
-       atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = x2l(index_x2l_Faxa_lwdn,i)    ! flwdsxy Atm flux  W/m^2
+       atm2lnd_inst%forc_th_not_downscaled_grc(g)    = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
+       atm2lnd_inst%forc_q_not_downscaled_grc(g)     = x2l(index_x2l_Sa_shum,i)      ! forc_qxy  Atm state kg/kg
+       atm2lnd_inst%forc_pbot_not_downscaled_grc(g)  = x2l(index_x2l_Sa_pbot,i)      ! ptcmxy  Atm state Pa
+       atm2lnd_inst%forc_t_not_downscaled_grc(g)     = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
+       atm2lnd_inst%forc_lwrad_not_downscaled_grc(g) = x2l(index_x2l_Faxa_lwdn,i)    ! flwdsxy Atm flux  W/m^2
 
        forc_rainc                                    = x2l(index_x2l_Faxa_rainc,i)   ! mm/s
        forc_rainl                                    = x2l(index_x2l_Faxa_rainl,i)   ! mm/s
@@ -126,20 +126,20 @@ contains
        forc_snowl                                    = x2l(index_x2l_Faxa_snowl,i)   ! mm/s
 
        ! atmosphere coupling, for prognostic/prescribed aerosols
-       atm2lnd_vars%forc_aer_grc(g,1)                = x2l(index_x2l_Faxa_bcphidry,i)
-       atm2lnd_vars%forc_aer_grc(g,2)                = x2l(index_x2l_Faxa_bcphodry,i)
-       atm2lnd_vars%forc_aer_grc(g,3)                = x2l(index_x2l_Faxa_bcphiwet,i)
-       atm2lnd_vars%forc_aer_grc(g,4)                = x2l(index_x2l_Faxa_ocphidry,i)
-       atm2lnd_vars%forc_aer_grc(g,5)                = x2l(index_x2l_Faxa_ocphodry,i)
-       atm2lnd_vars%forc_aer_grc(g,6)                = x2l(index_x2l_Faxa_ocphiwet,i)
-       atm2lnd_vars%forc_aer_grc(g,7)                = x2l(index_x2l_Faxa_dstwet1,i)
-       atm2lnd_vars%forc_aer_grc(g,8)                = x2l(index_x2l_Faxa_dstdry1,i)
-       atm2lnd_vars%forc_aer_grc(g,9)                = x2l(index_x2l_Faxa_dstwet2,i)
-       atm2lnd_vars%forc_aer_grc(g,10)               = x2l(index_x2l_Faxa_dstdry2,i)
-       atm2lnd_vars%forc_aer_grc(g,11)               = x2l(index_x2l_Faxa_dstwet3,i)
-       atm2lnd_vars%forc_aer_grc(g,12)               = x2l(index_x2l_Faxa_dstdry3,i)
-       atm2lnd_vars%forc_aer_grc(g,13)               = x2l(index_x2l_Faxa_dstwet4,i)
-       atm2lnd_vars%forc_aer_grc(g,14)               = x2l(index_x2l_Faxa_dstdry4,i)
+       atm2lnd_inst%forc_aer_grc(g,1)                = x2l(index_x2l_Faxa_bcphidry,i)
+       atm2lnd_inst%forc_aer_grc(g,2)                = x2l(index_x2l_Faxa_bcphodry,i)
+       atm2lnd_inst%forc_aer_grc(g,3)                = x2l(index_x2l_Faxa_bcphiwet,i)
+       atm2lnd_inst%forc_aer_grc(g,4)                = x2l(index_x2l_Faxa_ocphidry,i)
+       atm2lnd_inst%forc_aer_grc(g,5)                = x2l(index_x2l_Faxa_ocphodry,i)
+       atm2lnd_inst%forc_aer_grc(g,6)                = x2l(index_x2l_Faxa_ocphiwet,i)
+       atm2lnd_inst%forc_aer_grc(g,7)                = x2l(index_x2l_Faxa_dstwet1,i)
+       atm2lnd_inst%forc_aer_grc(g,8)                = x2l(index_x2l_Faxa_dstdry1,i)
+       atm2lnd_inst%forc_aer_grc(g,9)                = x2l(index_x2l_Faxa_dstwet2,i)
+       atm2lnd_inst%forc_aer_grc(g,10)               = x2l(index_x2l_Faxa_dstdry2,i)
+       atm2lnd_inst%forc_aer_grc(g,11)               = x2l(index_x2l_Faxa_dstwet3,i)
+       atm2lnd_inst%forc_aer_grc(g,12)               = x2l(index_x2l_Faxa_dstdry3,i)
+       atm2lnd_inst%forc_aer_grc(g,13)               = x2l(index_x2l_Faxa_dstwet4,i)
+       atm2lnd_inst%forc_aer_grc(g,14)               = x2l(index_x2l_Faxa_dstdry4,i)
 
        ! Determine optional receive fields
 
@@ -156,28 +156,28 @@ contains
        end if
 
        if (index_x2l_Sa_methane /= 0) then
-          atm2lnd_vars%forc_pch4_grc(g) = x2l(index_x2l_Sa_methane,i)
+          atm2lnd_inst%forc_pch4_grc(g) = x2l(index_x2l_Sa_methane,i)
        endif
 
        ! Determine derived quantities for required fields
 
-       forc_t = atm2lnd_vars%forc_t_not_downscaled_grc(g)
-       forc_q = atm2lnd_vars%forc_q_not_downscaled_grc(g)
-       forc_pbot = atm2lnd_vars%forc_pbot_not_downscaled_grc(g)
+       forc_t = atm2lnd_inst%forc_t_not_downscaled_grc(g)
+       forc_q = atm2lnd_inst%forc_q_not_downscaled_grc(g)
+       forc_pbot = atm2lnd_inst%forc_pbot_not_downscaled_grc(g)
        
-       atm2lnd_vars%forc_hgt_u_grc(g) = atm2lnd_vars%forc_hgt_grc(g)    !observational height of wind [m]
-       atm2lnd_vars%forc_hgt_t_grc(g) = atm2lnd_vars%forc_hgt_grc(g)    !observational height of temperature [m]
-       atm2lnd_vars%forc_hgt_q_grc(g) = atm2lnd_vars%forc_hgt_grc(g)    !observational height of humidity [m]
-       atm2lnd_vars%forc_vp_grc(g)    = forc_q * forc_pbot  / (0.622_r8 + 0.378_r8 * forc_q)
-       atm2lnd_vars%forc_rho_not_downscaled_grc(g) = &
-            (forc_pbot - 0.378_r8 * atm2lnd_vars%forc_vp_grc(g)) / (rair * forc_t)
-       atm2lnd_vars%forc_po2_grc(g)   = o2_molar_const * forc_pbot
-       atm2lnd_vars%forc_wind_grc(g)  = sqrt(atm2lnd_vars%forc_u_grc(g)**2 + atm2lnd_vars%forc_v_grc(g)**2)
-       atm2lnd_vars%forc_solar_grc(g) = atm2lnd_vars%forc_solad_grc(g,1) + atm2lnd_vars%forc_solai_grc(g,1) + &
-                                        atm2lnd_vars%forc_solad_grc(g,2) + atm2lnd_vars%forc_solai_grc(g,2)
+       atm2lnd_inst%forc_hgt_u_grc(g) = atm2lnd_inst%forc_hgt_grc(g)    !observational height of wind [m]
+       atm2lnd_inst%forc_hgt_t_grc(g) = atm2lnd_inst%forc_hgt_grc(g)    !observational height of temperature [m]
+       atm2lnd_inst%forc_hgt_q_grc(g) = atm2lnd_inst%forc_hgt_grc(g)    !observational height of humidity [m]
+       atm2lnd_inst%forc_vp_grc(g)    = forc_q * forc_pbot  / (0.622_r8 + 0.378_r8 * forc_q)
+       atm2lnd_inst%forc_rho_not_downscaled_grc(g) = &
+            (forc_pbot - 0.378_r8 * atm2lnd_inst%forc_vp_grc(g)) / (rair * forc_t)
+       atm2lnd_inst%forc_po2_grc(g)   = o2_molar_const * forc_pbot
+       atm2lnd_inst%forc_wind_grc(g)  = sqrt(atm2lnd_inst%forc_u_grc(g)**2 + atm2lnd_inst%forc_v_grc(g)**2)
+       atm2lnd_inst%forc_solar_grc(g) = atm2lnd_inst%forc_solad_grc(g,1) + atm2lnd_inst%forc_solai_grc(g,1) + &
+                                        atm2lnd_inst%forc_solad_grc(g,2) + atm2lnd_inst%forc_solai_grc(g,2)
 
-       atm2lnd_vars%forc_rain_not_downscaled_grc(g)  = forc_rainc + forc_rainl
-       atm2lnd_vars%forc_snow_not_downscaled_grc(g)  = forc_snowc + forc_snowl
+       atm2lnd_inst%forc_rain_not_downscaled_grc(g)  = forc_rainc + forc_rainl
+       atm2lnd_inst%forc_snow_not_downscaled_grc(g)  = forc_snowc + forc_snowl
 
        if (forc_t > SHR_CONST_TKFRZ) then
           e = esatw(tdc(forc_t))
@@ -185,10 +185,10 @@ contains
           e = esati(tdc(forc_t))
        end if
        qsat           = 0.622_r8*e / (forc_pbot - 0.378_r8*e)
-       atm2lnd_vars%forc_rh_grc(g) = 100.0_r8*(forc_q / qsat)
+       atm2lnd_inst%forc_rh_grc(g) = 100.0_r8*(forc_q / qsat)
        ! Make sure relative humidity is properly bounded
-       ! atm2lnd_vars%forc_rh_grc(g) = min( 100.0_r8, atm2lnd_vars%forc_rh_grc(g) )
-       ! atm2lnd_vars%forc_rh_grc(g) = max(   0.0_r8, atm2lnd_vars%forc_rh_grc(g) )
+       ! atm2lnd_inst%forc_rh_grc(g) = min( 100.0_r8, atm2lnd_inst%forc_rh_grc(g) )
+       ! atm2lnd_inst%forc_rh_grc(g) = max(   0.0_r8, atm2lnd_inst%forc_rh_grc(g) )
 
        ! Determine derived quantities for optional fields
        ! Note that the following does unit conversions from ppmv to partial pressures (Pa)
@@ -201,21 +201,21 @@ contains
        else
           co2_ppmv_val = co2_ppmv
        end if
-       atm2lnd_vars%forc_pco2_grc(g)   = co2_ppmv_val * 1.e-6_r8 * forc_pbot 
+       atm2lnd_inst%forc_pco2_grc(g)   = co2_ppmv_val * 1.e-6_r8 * forc_pbot 
        if (use_c13) then
-          atm2lnd_vars%forc_pc13o2_grc(g) = co2_ppmv_val * c13ratio * 1.e-6_r8 * forc_pbot
+          atm2lnd_inst%forc_pc13o2_grc(g) = co2_ppmv_val * c13ratio * 1.e-6_r8 * forc_pbot
        end if
 
        ! glc coupling 
 
        if (create_glacier_mec_landunit) then
           do num = 0,glc_nec
-             glc2lnd_vars%frac_grc(g,num)  = x2l(index_x2l_Sg_frac(num),i)
-             glc2lnd_vars%topo_grc(g,num)  = x2l(index_x2l_Sg_topo(num),i)
-             glc2lnd_vars%hflx_grc(g,num)  = x2l(index_x2l_Flgg_hflx(num),i)
+             glc2lnd_inst%frac_grc(g,num)  = x2l(index_x2l_Sg_frac(num),i)
+             glc2lnd_inst%topo_grc(g,num)  = x2l(index_x2l_Sg_topo(num),i)
+             glc2lnd_inst%hflx_grc(g,num)  = x2l(index_x2l_Flgg_hflx(num),i)
           end do
-          glc2lnd_vars%icemask_grc(g)  = x2l(index_x2l_Sg_icemask,i)
-          glc2lnd_vars%icemask_coupled_fluxes_grc(g)  = x2l(index_x2l_Sg_icemask_coupled_fluxes,i)
+          glc2lnd_inst%icemask_grc(g)  = x2l(index_x2l_Sg_icemask,i)
+          glc2lnd_inst%icemask_coupled_fluxes_grc(g)  = x2l(index_x2l_Sg_icemask_coupled_fluxes,i)
        end if
 
     end do
@@ -224,7 +224,7 @@ contains
 
   !===============================================================================
 
-  subroutine lnd_export( bounds, lnd2atm_vars, lnd2glc_vars, l2x)
+  subroutine lnd_export( bounds, lnd2atm_inst, lnd2glc_inst, l2x)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -240,8 +240,8 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type) , intent(in)    :: bounds  ! bounds
-    type(lnd2atm_type), intent(inout) :: lnd2atm_vars ! clm land to atmosphere exchange data type
-    type(lnd2glc_type), intent(inout) :: lnd2glc_vars ! clm land to atmosphere exchange data type
+    type(lnd2atm_type), intent(inout) :: lnd2atm_inst ! clm land to atmosphere exchange data type
+    type(lnd2glc_type), intent(inout) :: lnd2glc_inst ! clm land to atmosphere exchange data type
     real(r8)          , intent(out)   :: l2x(:,:)! land to coupler export state on land grid
     !
     ! !LOCAL VARIABLES:
@@ -258,66 +258,66 @@ contains
 
     do g = bounds%begg,bounds%endg
        i = 1 + (g-bounds%begg)
-       l2x(index_l2x_Sl_t,i)        =  lnd2atm_vars%t_rad_grc(g)
-       l2x(index_l2x_Sl_snowh,i)    =  lnd2atm_vars%h2osno_grc(g)
-       l2x(index_l2x_Sl_avsdr,i)    =  lnd2atm_vars%albd_grc(g,1)
-       l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_vars%albd_grc(g,2)
-       l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%albi_grc(g,1)
-       l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%albi_grc(g,2)
-       l2x(index_l2x_Sl_tref,i)     =  lnd2atm_vars%t_ref2m_grc(g)
-       l2x(index_l2x_Sl_qref,i)     =  lnd2atm_vars%q_ref2m_grc(g)
-       l2x(index_l2x_Sl_u10,i)      =  lnd2atm_vars%u_ref10m_grc(g)
-       l2x(index_l2x_Fall_taux,i)   = -lnd2atm_vars%taux_grc(g)
-       l2x(index_l2x_Fall_tauy,i)   = -lnd2atm_vars%tauy_grc(g)
-       l2x(index_l2x_Fall_lat,i)    = -lnd2atm_vars%eflx_lh_tot_grc(g)
-       l2x(index_l2x_Fall_sen,i)    = -lnd2atm_vars%eflx_sh_tot_grc(g)
-       l2x(index_l2x_Fall_lwup,i)   = -lnd2atm_vars%eflx_lwrad_out_grc(g)
-       l2x(index_l2x_Fall_evap,i)   = -lnd2atm_vars%qflx_evap_tot_grc(g)
-       l2x(index_l2x_Fall_swnet,i)  =  lnd2atm_vars%fsa_grc(g)
+       l2x(index_l2x_Sl_t,i)        =  lnd2atm_inst%t_rad_grc(g)
+       l2x(index_l2x_Sl_snowh,i)    =  lnd2atm_inst%h2osno_grc(g)
+       l2x(index_l2x_Sl_avsdr,i)    =  lnd2atm_inst%albd_grc(g,1)
+       l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_inst%albd_grc(g,2)
+       l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_inst%albi_grc(g,1)
+       l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_inst%albi_grc(g,2)
+       l2x(index_l2x_Sl_tref,i)     =  lnd2atm_inst%t_ref2m_grc(g)
+       l2x(index_l2x_Sl_qref,i)     =  lnd2atm_inst%q_ref2m_grc(g)
+       l2x(index_l2x_Sl_u10,i)      =  lnd2atm_inst%u_ref10m_grc(g)
+       l2x(index_l2x_Fall_taux,i)   = -lnd2atm_inst%taux_grc(g)
+       l2x(index_l2x_Fall_tauy,i)   = -lnd2atm_inst%tauy_grc(g)
+       l2x(index_l2x_Fall_lat,i)    = -lnd2atm_inst%eflx_lh_tot_grc(g)
+       l2x(index_l2x_Fall_sen,i)    = -lnd2atm_inst%eflx_sh_tot_grc(g)
+       l2x(index_l2x_Fall_lwup,i)   = -lnd2atm_inst%eflx_lwrad_out_grc(g)
+       l2x(index_l2x_Fall_evap,i)   = -lnd2atm_inst%qflx_evap_tot_grc(g)
+       l2x(index_l2x_Fall_swnet,i)  =  lnd2atm_inst%fsa_grc(g)
        if (index_l2x_Fall_fco2_lnd /= 0) then
-          l2x(index_l2x_Fall_fco2_lnd,i) = -lnd2atm_vars%nee_grc(g)  
+          l2x(index_l2x_Fall_fco2_lnd,i) = -lnd2atm_inst%nee_grc(g)  
        end if
 
        ! Additional fields for DUST, PROGSSLT, dry-deposition and VOC
        ! These are now standard fields, but the check on the index makes sure the driver handles them
-       if (index_l2x_Sl_ram1      /= 0 )  l2x(index_l2x_Sl_ram1,i)     =  lnd2atm_vars%ram1_grc(g)
-       if (index_l2x_Sl_fv        /= 0 )  l2x(index_l2x_Sl_fv,i)       =  lnd2atm_vars%fv_grc(g)
-       if (index_l2x_Sl_soilw     /= 0 )  l2x(index_l2x_Sl_soilw,i)    =  lnd2atm_vars%h2osoi_vol_grc(g,1)
-       if (index_l2x_Fall_flxdst1 /= 0 )  l2x(index_l2x_Fall_flxdst1,i)= -lnd2atm_vars%flxdst_grc(g,1)
-       if (index_l2x_Fall_flxdst2 /= 0 )  l2x(index_l2x_Fall_flxdst2,i)= -lnd2atm_vars%flxdst_grc(g,2)
-       if (index_l2x_Fall_flxdst3 /= 0 )  l2x(index_l2x_Fall_flxdst3,i)= -lnd2atm_vars%flxdst_grc(g,3)
-       if (index_l2x_Fall_flxdst4 /= 0 )  l2x(index_l2x_Fall_flxdst4,i)= -lnd2atm_vars%flxdst_grc(g,4)
+       if (index_l2x_Sl_ram1      /= 0 )  l2x(index_l2x_Sl_ram1,i)     =  lnd2atm_inst%ram1_grc(g)
+       if (index_l2x_Sl_fv        /= 0 )  l2x(index_l2x_Sl_fv,i)       =  lnd2atm_inst%fv_grc(g)
+       if (index_l2x_Sl_soilw     /= 0 )  l2x(index_l2x_Sl_soilw,i)    =  lnd2atm_inst%h2osoi_vol_grc(g,1)
+       if (index_l2x_Fall_flxdst1 /= 0 )  l2x(index_l2x_Fall_flxdst1,i)= -lnd2atm_inst%flxdst_grc(g,1)
+       if (index_l2x_Fall_flxdst2 /= 0 )  l2x(index_l2x_Fall_flxdst2,i)= -lnd2atm_inst%flxdst_grc(g,2)
+       if (index_l2x_Fall_flxdst3 /= 0 )  l2x(index_l2x_Fall_flxdst3,i)= -lnd2atm_inst%flxdst_grc(g,3)
+       if (index_l2x_Fall_flxdst4 /= 0 )  l2x(index_l2x_Fall_flxdst4,i)= -lnd2atm_inst%flxdst_grc(g,4)
 
 
        ! for dry dep velocities
        if (index_l2x_Sl_ddvel     /= 0 )  then
           l2x(index_l2x_Sl_ddvel:index_l2x_Sl_ddvel+n_drydep-1,i) = &
-               lnd2atm_vars%ddvel_grc(g,:n_drydep)
+               lnd2atm_inst%ddvel_grc(g,:n_drydep)
        end if
 
        ! for MEGAN VOC emis fluxes
        if (index_l2x_Fall_flxvoc  /= 0 ) then
           l2x(index_l2x_Fall_flxvoc:index_l2x_Fall_flxvoc+shr_megan_mechcomps_n-1,i) = &
-               -lnd2atm_vars%flxvoc_grc(g,:shr_megan_mechcomps_n)
+               -lnd2atm_inst%flxvoc_grc(g,:shr_megan_mechcomps_n)
        end if
 
        if (index_l2x_Fall_methane /= 0) then
-          l2x(index_l2x_Fall_methane,i) = -lnd2atm_vars%flux_ch4_grc(g) 
+          l2x(index_l2x_Fall_methane,i) = -lnd2atm_inst%flux_ch4_grc(g) 
        endif
 
        ! sign convention is positive downward with 
        ! hierarchy of atm/glc/lnd/rof/ice/ocn.  so water sent from land to rof is positive
 
-       l2x(index_l2x_Flrl_rofl,i) = lnd2atm_vars%qflx_rofliq_grc(g)
-       l2x(index_l2x_Flrl_rofi,i) = lnd2atm_vars%qflx_rofice_grc(g)
+       l2x(index_l2x_Flrl_rofl,i) = lnd2atm_inst%qflx_rofliq_grc(g)
+       l2x(index_l2x_Flrl_rofi,i) = lnd2atm_inst%qflx_rofice_grc(g)
 
        ! glc coupling
 
        if (create_glacier_mec_landunit) then
           do num = 0,glc_nec
-             l2x(index_l2x_Sl_tsrf(num),i)   = lnd2glc_vars%tsrf_grc(g,num)
-             l2x(index_l2x_Sl_topo(num),i)   = lnd2glc_vars%topo_grc(g,num)
-             l2x(index_l2x_Flgl_qice(num),i) = lnd2glc_vars%qice_grc(g,num)
+             l2x(index_l2x_Sl_tsrf(num),i)   = lnd2glc_inst%tsrf_grc(g,num)
+             l2x(index_l2x_Sl_topo(num),i)   = lnd2glc_inst%topo_grc(g,num)
+             l2x(index_l2x_Flgl_qice(num),i) = lnd2glc_inst%qice_grc(g,num)
           end do
        end if
 

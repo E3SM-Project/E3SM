@@ -1,0 +1,15 @@
+!
+! Sample input file of regional datasets that will be created. You need to have
+! the same list of files as in the input filelist as well. See the sample_inlist
+! for the list of files that can be operated on.
+!
+! format: list of filenames similar to namelist format with a single line
+!         per file with the format of:
+!
+! variable = "filepath"
+!
+! Lines (such as these) with "!" are ignored.
+! 
+ fatmlndfrc = 'domain.lnd.13x12pt_f19_alaskaUSA_gx1v6_c141117.nc'
+
+ stream_fldfilename_ndep = 'fndep_clm_hist_simyr1849-2006_13x12pt_f19_alaskaUSA_c141117.nc'

@@ -11,13 +11,10 @@ I.  General directory structure:
                            (has optimized and OMP options)
     clm4_5
 	mksurfdata_map --- Create surface datasets.
-	interpinic ------- Interpolate initial datasets to a different resolution. 
-                           (has optimized and OMP options)
+        (NOTE: interpinic now longer included as now an online capability in CLM)
 
     shared
-        mkmapgrids ------- Create SCRIP grid files needed by mkmapdata 
-                           [input is CLM grid files]
-                           (deprecated)
+        mkmapgrids ------- Create regular lat/lon SCRIP grid files needed by mkmapdata 
         mkmapdata -------- Create SCRIP mapping data from SCRIP grid files (uses ESMF)
         gen_domain ------- Create data model domain datasets from SCRIP mapping datasets.
                            (also in the top level mapping directory [../../../../mapping])
@@ -26,9 +23,8 @@ I.  General directory structure:
         ncl_scripts ------ NCL post or pre processing scripts.
 
 
-    Note that there are different versions of mksurfdata_map and interpinic for
-    CLM4.0 vs. CLM4.5. Other tools are shared between the two model
-    versions. 
+    Note that there are different versions of mksurfdata_map CLM4.0 vs. CLM4.5. 
+    Other tools are shared between the two model versions. 
 
     However, note that mkmapdata makes mapping files for CLM4.5 by default; to
     make mapping files for CLM4.0, run the tool with the option: 
@@ -127,12 +123,7 @@ use CLM4.0, you will need to do the following:
            cd shared/mkmapdata
            ./mknoocnmap.pl -p 40,255 -n 1x1_boulderCO
 
-       c.) To convert from CLM or CAM grid files
-
-        To convert CLM grid files or CAM grid files to SCRIP grid files use
-        the deprecated mkgriddata program if you have to.
-
-       d.) General case
+       c.) General case
 
         You'll need to convert or create SCRIP grid files on your own (using scripts
         or other tools) for the general case where you have an unstructured grid, or 

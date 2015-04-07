@@ -17,16 +17,16 @@ module subgridAveMod
   use decompMod     , only : bounds_type
   use LandunitType  , only : lun                
   use ColumnType    , only : col                
-  use PatchType     , only : pft                
+  use PatchType     , only : patch                
   !
   ! !PUBLIC TYPES:
   implicit none
   save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: p2c   ! Perform an average pfts to columns
-  public :: p2l   ! Perform an average pfts to landunits
-  public :: p2g   ! Perform an average pfts to gridcells
+  public :: p2c   ! Perform an average patches to columns
+  public :: p2l   ! Perform an average patches to landunits
+  public :: p2g   ! Perform an average patches to gridcells
   public :: c2l   ! Perform an average columns to landunits
   public :: c2g   ! Perform an average columns to gridcells
   public :: l2g   ! Perform an average landunits to gridcells
@@ -84,7 +84,7 @@ contains
   subroutine p2c_1d (bounds, parr, carr, p2c_scale_type)
     !
     ! !DESCRIPTION:
-    ! Perfrom subgrid-average from pfts to columns.
+    ! Perfrom subgrid-average from patches to columns.
     ! Averaging is only done for points that are not equal to "spval".
     !
     ! !ARGUMENTS:
@@ -116,12 +116,12 @@ contains
     carr(bounds%begc:bounds%endc) = spval
     sumwt(bounds%begc:bounds%endc) = 0._r8
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .and. pft%wtcol(p) /= 0._r8) then
+       if (patch%active(p) .and. patch%wtcol(p) /= 0._r8) then
           if (parr(p) /= spval) then
-             c = pft%column(p)
+             c = patch%column(p)
              if (sumwt(c) == 0._r8) carr(c) = 0._r8
-             carr(c) = carr(c) + parr(p) * scale_p2c(p) * pft%wtcol(p)
-             sumwt(c) = sumwt(c) + pft%wtcol(p)
+             carr(c) = carr(c) + parr(p) * scale_p2c(p) * patch%wtcol(p)
+             sumwt(c) = sumwt(c) + patch%wtcol(p)
           end if
        end if
     end do
@@ -179,12 +179,12 @@ contains
     do j = 1,num2d
        sumwt(bounds%begc : bounds%endc) = 0._r8
        do p = bounds%begp,bounds%endp
-          if (pft%active(p) .and. pft%wtcol(p) /= 0._r8) then
+          if (patch%active(p) .and. patch%wtcol(p) /= 0._r8) then
              if (parr(p,j) /= spval) then
-                c = pft%column(p)
+                c = patch%column(p)
                 if (sumwt(c) == 0._r8) carr(c,j) = 0._r8
-                carr(c,j) = carr(c,j) + parr(p,j) * scale_p2c(p) * pft%wtcol(p)
-                sumwt(c) = sumwt(c) + pft%wtcol(p)
+                carr(c,j) = carr(c,j) + parr(p,j) * scale_p2c(p) * patch%wtcol(p)
+                sumwt(c) = sumwt(c) + patch%wtcol(p)
              end if
           end if
        end do
@@ -205,16 +205,16 @@ contains
   end subroutine p2c_2d
 
   !-----------------------------------------------------------------------
-  subroutine p2c_1d_filter (bounds, numfc, filterc,  pftarr, colarr)
+  subroutine p2c_1d_filter (bounds, numfc, filterc,  patcharr, colarr)
     !
     ! !DESCRIPTION:
-    ! perform pft to column averaging for single level pft arrays
+    ! perform patch to column averaging for single level patch arrays
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  
     integer , intent(in)  :: numfc
     integer , intent(in)  :: filterc(numfc)
-    real(r8), intent(in)  :: pftarr( bounds%begp: )
+    real(r8), intent(in)  :: patcharr( bounds%begp: )
     real(r8), intent(out) :: colarr( bounds%begc: )
     !
     ! !LOCAL VARIABLES:
@@ -222,30 +222,30 @@ contains
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(pftarr) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(patcharr) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(colarr) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     do fc = 1,numfc
        c = filterc(fc)
        colarr(c) = 0._r8
-       do p = col%pfti(c), col%pftf(c)
-          if (pft%active(p)) colarr(c) = colarr(c) + pftarr(p) * pft%wtcol(p)
+       do p = col%patchi(c), col%patchf(c)
+          if (patch%active(p)) colarr(c) = colarr(c) + patcharr(p) * patch%wtcol(p)
        end do
     end do
 
   end subroutine p2c_1d_filter
 
   !-----------------------------------------------------------------------
-  subroutine p2c_2d_filter (lev, numfc, filterc, pftarr, colarr)
+  subroutine p2c_2d_filter (lev, numfc, filterc, patcharr, colarr)
     !
     ! !DESCRIPTION:
-    ! perform pft to column averaging for multi level pft arrays
+    ! perform patch to column averaging for multi level patch arrays
     !
     ! !ARGUMENTS:
     integer , intent(in)  :: lev
     integer , intent(in)  :: numfc
     integer , intent(in)  :: filterc(numfc)
-    real(r8), pointer     :: pftarr(:,:)
+    real(r8), pointer     :: patcharr(:,:)
     real(r8), pointer     :: colarr(:,:)
     !
     ! !LOCAL VARIABLES:
@@ -256,8 +256,8 @@ contains
        do fc = 1,numfc
           c = filterc(fc)
           colarr(c,j) = 0._r8
-          do p = col%pfti(c), col%pftf(c)
-             if (pft%active(p)) colarr(c,j) = colarr(c,j) + pftarr(p,j) * pft%wtcol(p)
+          do p = col%patchi(c), col%patchf(c)
+             if (patch%active(p)) colarr(c,j) = colarr(c,j) + patcharr(p,j) * patch%wtcol(p)
           end do
        end do
     end do
@@ -268,7 +268,7 @@ contains
   subroutine p2l_1d (bounds, parr, larr, p2c_scale_type, c2l_scale_type)
     !
     ! !DESCRIPTION:
-    ! Perfrom subgrid-average from pfts to landunits
+    ! Perfrom subgrid-average from patches to landunits
     ! Averaging is only done for points that are not equal to "spval".
     !
     ! !ARGUMENTS:
@@ -282,7 +282,7 @@ contains
     integer  :: p,c,l,index                     ! indices
     logical  :: found                              ! temporary for error check
     real(r8) :: sumwt(bounds%begl:bounds%endl)     ! sum of weights
-    real(r8) :: scale_p2c(bounds%begc:bounds%endc) ! scale factor for pft->column mapping
+    real(r8) :: scale_p2c(bounds%begc:bounds%endc) ! scale factor for patch->column mapping
     real(r8) :: scale_c2l(bounds%begc:bounds%endc) ! scale factor for column->landunit mapping
     !------------------------------------------------------------------------
 
@@ -345,13 +345,13 @@ contains
     larr(bounds%begl : bounds%endl) = spval
     sumwt(bounds%begl : bounds%endl) = 0._r8
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .and. pft%wtlunit(p) /= 0._r8) then
-          c = pft%column(p)
+       if (patch%active(p) .and. patch%wtlunit(p) /= 0._r8) then
+          c = patch%column(p)
           if (parr(p) /= spval .and. scale_c2l(c) /= spval) then
-             l = pft%landunit(p)
+             l = patch%landunit(p)
              if (sumwt(l) == 0._r8) larr(l) = 0._r8
-             larr(l) = larr(l) + parr(p) * scale_p2c(p) * scale_c2l(c) * pft%wtlunit(p)
-             sumwt(l) = sumwt(l) + pft%wtlunit(p)
+             larr(l) = larr(l) + parr(p) * scale_p2c(p) * scale_c2l(c) * patch%wtlunit(p)
+             sumwt(l) = sumwt(l) + patch%wtlunit(p)
           end if
        end if
     end do
@@ -375,13 +375,13 @@ contains
   subroutine p2l_2d(bounds, num2d, parr, larr, p2c_scale_type, c2l_scale_type)
     !
     ! !DESCRIPTION:
-    ! Perfrom subgrid-average from pfts to landunits
+    ! Perfrom subgrid-average from patches to landunits
     ! Averaging is only done for points that are not equal to "spval".
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds        
     integer , intent(in)  :: num2d                 ! size of second dimension
-    real(r8), intent(in)  :: parr( bounds%begp: , 1: )  ! input pft array
+    real(r8), intent(in)  :: parr( bounds%begp: , 1: )  ! input patch array
     real(r8), intent(out) :: larr( bounds%begl: , 1: )  ! output gridcell array
     character(len=*), intent(in) :: p2c_scale_type ! scale factor type for averaging
     character(len=*), intent(in) :: c2l_scale_type ! scale factor type for averaging
@@ -390,7 +390,7 @@ contains
     integer  :: j,p,c,l,index       ! indices
     logical  :: found                  ! temporary for error check
     real(r8) :: sumwt(bounds%begl:bounds%endl)         ! sum of weights
-    real(r8) :: scale_p2c(bounds%begc:bounds%endc)     ! scale factor for pft->column mapping
+    real(r8) :: scale_p2c(bounds%begc:bounds%endc)     ! scale factor for patch->column mapping
     real(r8) :: scale_c2l(bounds%begc:bounds%endc)     ! scale factor for column->landunit mapping
     !------------------------------------------------------------------------
 
@@ -454,13 +454,13 @@ contains
     do j = 1,num2d
        sumwt(bounds%begl : bounds%endl) = 0._r8
        do p = bounds%begp,bounds%endp
-          if (pft%active(p) .and. pft%wtlunit(p) /= 0._r8) then
-             c = pft%column(p)
+          if (patch%active(p) .and. patch%wtlunit(p) /= 0._r8) then
+             c = patch%column(p)
              if (parr(p,j) /= spval .and. scale_c2l(c) /= spval) then
-                l = pft%landunit(p)
+                l = patch%landunit(p)
                 if (sumwt(l) == 0._r8) larr(l,j) = 0._r8
-                larr(l,j) = larr(l,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * pft%wtlunit(p)
-                sumwt(l) = sumwt(l) + pft%wtlunit(p)
+                larr(l,j) = larr(l,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * patch%wtlunit(p)
+                sumwt(l) = sumwt(l) + patch%wtlunit(p)
              end if
           end if
        end do
@@ -485,12 +485,12 @@ contains
   subroutine p2g_1d(bounds, parr, garr, p2c_scale_type, c2l_scale_type, l2g_scale_type)
     !
     ! !DESCRIPTION:
-    ! Perfrom subgrid-average from pfts to gridcells.
+    ! Perfrom subgrid-average from patches to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds        
-    real(r8), intent(in)  :: parr( bounds%begp: )  ! input pft array
+    real(r8), intent(in)  :: parr( bounds%begp: )  ! input patch array
     real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
     character(len=*), intent(in) :: p2c_scale_type ! scale factor type for averaging
     character(len=*), intent(in) :: c2l_scale_type ! scale factor type for averaging
@@ -567,14 +567,14 @@ contains
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do p = bounds%begp,bounds%endp
-       if (pft%active(p) .and. pft%wtgcell(p) /= 0._r8) then
-          c = pft%column(p)
-          l = pft%landunit(p)
+       if (patch%active(p) .and. patch%wtgcell(p) /= 0._r8) then
+          c = patch%column(p)
+          l = patch%landunit(p)
           if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
-             g = pft%gridcell(p)
+             g = patch%gridcell(p)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * pft%wtgcell(p)
-             sumwt(g) = sumwt(g) + pft%wtgcell(p)
+             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * patch%wtgcell(p)
+             sumwt(g) = sumwt(g) + patch%wtgcell(p)
           end if
        end if
     end do
@@ -598,7 +598,7 @@ contains
   subroutine p2g_2d(bounds, num2d, parr, garr, p2c_scale_type, c2l_scale_type, l2g_scale_type)
     !
     ! !DESCRIPTION:
-    ! Perfrom subgrid-average from pfts to gridcells.
+    ! Perfrom subgrid-average from patches to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
     !
     ! !USES:
@@ -606,7 +606,7 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds            
     integer , intent(in)  :: num2d                     ! size of second dimension
-    real(r8), intent(in)  :: parr( bounds%begp: , 1: ) ! input pft array
+    real(r8), intent(in)  :: parr( bounds%begp: , 1: ) ! input patch array
     real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
     character(len=*), intent(in) :: p2c_scale_type     ! scale factor type for averaging
     character(len=*), intent(in) :: c2l_scale_type     ! scale factor type for averaging
@@ -684,14 +684,14 @@ contains
     do j = 1,num2d
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do p = bounds%begp,bounds%endp 
-          if (pft%active(p) .and. pft%wtgcell(p) /= 0._r8) then
-             c = pft%column(p)
-             l = pft%landunit(p)
+          if (patch%active(p) .and. patch%wtgcell(p) /= 0._r8) then
+             c = patch%column(p)
+             l = patch%landunit(p)
              if (parr(p,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
-                g = pft%gridcell(p)
+                g = patch%gridcell(p)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * pft%wtgcell(p)
-                sumwt(g) = sumwt(g) + pft%wtgcell(p)
+                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * patch%wtgcell(p)
+                sumwt(g) = sumwt(g) + patch%wtgcell(p)
              end if
           end if
        end do
@@ -782,12 +782,12 @@ contains
     larr(bounds%begl : bounds%endl) = spval
     sumwt(bounds%begl : bounds%endl) = 0._r8
     do c = bounds%begc,bounds%endc
-       if (col%active(c) .and. pft%wtlunit(c) /= 0._r8) then
+       if (col%active(c) .and. col%wtlunit(c) /= 0._r8) then
           if (carr(c) /= spval .and. scale_c2l(c) /= spval) then
              l = col%landunit(c)
              if (sumwt(l) == 0._r8) larr(l) = 0._r8
-             larr(l) = larr(l) + carr(c) * scale_c2l(c) * pft%wtlunit(c)
-             sumwt(l) = sumwt(l) + pft%wtlunit(c)
+             larr(l) = larr(l) + carr(c) * scale_c2l(c) * col%wtlunit(c)
+             sumwt(l) = sumwt(l) + col%wtlunit(c)
           end if
        end if
     end do
@@ -879,12 +879,12 @@ contains
     do j = 1,num2d
        sumwt(bounds%begl : bounds%endl) = 0._r8
        do c = bounds%begc,bounds%endc
-          if (col%active(c) .and. pft%wtlunit(c) /= 0._r8) then
+          if (col%active(c) .and. col%wtlunit(c) /= 0._r8) then
              if (carr(c,j) /= spval .and. scale_c2l(c) /= spval) then
                 l = col%landunit(c)
                 if (sumwt(l) == 0._r8) larr(l,j) = 0._r8
-                larr(l,j) = larr(l,j) + carr(c,j) * scale_c2l(c) * pft%wtlunit(c)
-                sumwt(l) = sumwt(l) + pft%wtlunit(c)
+                larr(l,j) = larr(l,j) + carr(c,j) * scale_c2l(c) * col%wtlunit(c)
+                sumwt(l) = sumwt(l) + col%wtlunit(c)
              end if
           end if
        end do

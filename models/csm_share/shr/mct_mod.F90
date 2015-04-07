@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: mct_mod.F90 56641 2014-01-15 23:10:15Z tcraig $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/mct_mod.F90 $
+! SVN $Id: mct_mod.F90 61510 2014-06-26 21:58:56Z tcraig $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_141022/shr/mct_mod.F90 $
 !===============================================================================
 !BOP ===========================================================================
 !
@@ -984,7 +984,7 @@ end subroutine mct_aVect_mult
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine mct_avect_vecmult(av,vec,avlist)
+subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 
 ! !USES:
 
@@ -993,6 +993,7 @@ subroutine mct_avect_vecmult(av,vec,avlist)
    type(mct_aVect)      ,intent(inout) :: av       ! attribute vector output
    real(R8)             ,intent(in)    :: vec(:)
    character(*),optional,intent(in)    :: avlist   ! sublist of field in av
+   logical, optional    ,intent(in)    :: mask_spval
 
 !EOP
 
@@ -1003,6 +1004,7 @@ subroutine mct_avect_vecmult(av,vec,avlist)
    integer(IN) :: nfldi          ! number of fields (local) in an aVect field
    integer(IN) :: nptsx          ! number of points (local) in an aVect field
    integer(IN) :: nptsi          ! number of points (local) in an aVect field
+   logical     :: lmspval        ! local mask spval
    integer(IN),dimension(:),allocatable :: kfldin   ! field numbers of avlist in av
    type(mct_list)   :: blist     ! avlist as a List
    type(mct_string) :: tattr     ! an attribute
@@ -1013,6 +1015,11 @@ subroutine mct_avect_vecmult(av,vec,avlist)
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
+
+   lmspval = .false.
+   if (present(mask_spval)) then
+      lmspval = mask_spval
+   endif
 
    nptsx = size(vec,1)
    npts  = mct_aVect_lsize(av)
@@ -1033,39 +1040,81 @@ subroutine mct_avect_vecmult(av,vec,avlist)
      enddo
      call mct_list_clean(blist)
 
+     if (lmspval) then
+
 #ifdef CPP_VECTOR
-     do m=1,nfld
+        do m=1,nfld
 !CDIR SELECT(VECTOR)
 !DIR$ CONCURRENT
-     do n=1,npts
+        do n=1,npts
 #else
-     do n=1,npts
-     do m=1,nfld
+        do n=1,npts
+        do m=1,nfld
 #endif
-        av%rAttr(kfldin(m),n) = av%rAttr(kfldin(m),n)*vec(n)
-     enddo
-     enddo
+           if (.not. shr_const_isspval(av%rAttr(kfldin(m),n))) then
+              av%rAttr(kfldin(m),n) = av%rAttr(kfldin(m),n)*vec(n)
+           endif
+        enddo
+        enddo
+
+     else  ! lmspval
+
+#ifdef CPP_VECTOR
+        do m=1,nfld
+!CDIR SELECT(VECTOR)
+!DIR$ CONCURRENT
+        do n=1,npts
+#else
+        do n=1,npts
+        do m=1,nfld
+#endif
+           av%rAttr(kfldin(m),n) = av%rAttr(kfldin(m),n)*vec(n)
+        enddo
+        enddo
+
+     endif  ! lmspval
 
      deallocate(kfldin)
 
-   else
+   else  ! avlist
 
      nfld  = mct_aVect_nRAttr(av)
 
+     if (lmspval) then
+
 #ifdef CPP_VECTOR
-     do m=1,nfld
+        do m=1,nfld
 !CDIR SELECT(VECTOR)
 !DIR$ CONCURRENT
-     do n=1,npts
+        do n=1,npts
 #else
-     do n=1,npts
-     do m=1,nfld
+        do n=1,npts
+        do m=1,nfld
 #endif
-        av%rAttr(m,n) = av%rAttr(m,n)*vec(n)
-     enddo
-     enddo
+           if (.not. shr_const_isspval(av%rAttr(m,n))) then
+              av%rAttr(m,n) = av%rAttr(m,n)*vec(n)
+           endif
+        enddo
+        enddo
 
-   endif
+     else  ! lmspval
+
+#ifdef CPP_VECTOR
+        do m=1,nfld
+!CDIR SELECT(VECTOR)
+!DIR$ CONCURRENT
+        do n=1,npts
+#else
+        do n=1,npts
+        do m=1,nfld
+#endif
+           av%rAttr(m,n) = av%rAttr(m,n)*vec(n)
+        enddo
+        enddo
+
+     endif   ! lmspval
+
+   endif   ! avlist
 
 end subroutine mct_aVect_vecmult
 

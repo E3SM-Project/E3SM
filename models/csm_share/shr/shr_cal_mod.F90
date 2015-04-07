@@ -48,7 +48,28 @@ module shr_cal_mod
 
 ! !PUBLIC TYPES: 
  
-   ! none
+   type, public :: calParamType
+      ! parameters to replace use of numbers for dates in code
+
+      ! We'd like to have these be parameters, but then they
+      ! can't be part of a derived type
+      integer :: january     = 1
+      integer :: february    = 2
+      integer :: march       = 3
+      integer :: april       = 4
+      integer :: may         = 5
+      integer :: june        = 6
+      integer :: july        = 7
+      integer :: august      = 8
+      integer :: september   = 9
+      integer :: october     = 10
+      integer :: november    = 11
+      integer :: december    = 12
+      integer :: firstDayOfMonth = 1
+   end type calParamType
+
+   ! Instance of calender parameters as a protected type so can't change outside this module
+   type(calParamType), public, protected :: calParams
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
@@ -79,11 +100,6 @@ module shr_cal_mod
    character(len=*),parameter,public :: &
       shr_cal_noleap    = 'NO_LEAP', &
       shr_cal_gregorian = 'GREGORIAN'
-
-   !--- this is the noleap calendar ---
-   integer(SHR_KIND_IN),parameter :: dpy = 365
-   integer(SHR_KIND_IN),parameter :: dpm(12) = &     ! Days Per Month
-   &                    (/31,28,31, 30, 31, 30,  31, 31, 30,  31, 30, 31/)
 
    !--- trigger internal debug output ---
    integer(SHR_KIND_IN) :: debug = 0

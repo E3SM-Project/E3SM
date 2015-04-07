@@ -107,6 +107,12 @@ Interpolate the soil layers on the surface dataset to the soil layers specified 
 (EXPERIMENTAL)
 </entry>
 
+<entry id="organic_frac_squared" type="logical" category="clm_physics"
+       group="clm_soilstate_inparm" valid_values="" >
+If TRUE, square the organic fraction when it's used (as was done in CLM4.5)
+Otherwise use the fraction straight up              (the default for CLM5.0)
+</entry>
+
 <entry id="irrigate" type="logical" category="clm_physics"
        group="clm_inparm"  >
 If TRUE, irrigation will be active.
@@ -116,15 +122,6 @@ If TRUE, irrigation will be active.
        group="clm_inparm" valid_values="0,1,3,5,10,36" >
 Number of  multiple elevation classes over glacier points.
 Normally this is ONLY used when running CESM with the active glacier model.
-</entry>
-
-<entry id="glc_grid" type="char*10" category="clm_physics"
-        group="clm_inparm" valid_values="gland20,gland10,gland5,gland5UM" >
-Glacier model grid
-    gland20  = Greenland at 20km resolution
-    gland10  = Greenland at 10km resolution
-    gland5   = Greenland at  5km resolution
-    gland5UM = Greenland at  5km resolution, using new UMontana ice sheet data for present day Greenland
 </entry>
 
 <entry id="glc_smb" type="logical" category="clm_physics"
@@ -358,7 +355,7 @@ If FALSE, don't write any restart files.
 </entry>
 
 <entry id="urban_hac" type="char*16" category="clm_physics"
-       group="clm_inparm" valid_values="OFF,ON,ON_WASTEHEAT" >
+       group="clmu_inparm" valid_values="OFF,ON,ON_WASTEHEAT" >
 Turn urban air conditioning/heating ON or OFF and add wasteheat:
     OFF          = Air conditioning/heating is OFF in buildings, internal temperature allowed to float freely
     ON           = Air conditioning/heating is ON in buildings, internal temperature constrained
@@ -366,8 +363,19 @@ Turn urban air conditioning/heating ON or OFF and add wasteheat:
 </entry>
 
 <entry id="urban_traffic" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+       group="clmu_inparm" valid_values="" >
 If TRUE, urban traffic flux will be activated (Currently NOT implemented).
+</entry>
+
+<entry id="building_temp_method" type="integer" category="clm_physics"
+       group="clmu_inparm" valid_values="0,1" >
+0 = simpler method (clm4_5)
+1 = prognostic calculation of interior building temp (clm5_0)
+</entry>
+
+<entry id="calc_human_stress_indices" type="logical" category="clm_physics"
+       group="clm_humanindex_inparm" valid_values="" >
+If TRUE, human stress indices will be calculated
 </entry>
 
 <entry id="wrtdia" type="logical" category="history"

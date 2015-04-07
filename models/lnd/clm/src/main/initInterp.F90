@@ -53,8 +53,8 @@ module initInterpMod
   
   type, public :: subgrid_type
      character(len=16) :: name               ! pft, column, landunit
-     integer , pointer :: ptype(:) => null() ! used for pft type 
-     integer , pointer :: ctype(:) => null() ! used for pft or col type
+     integer , pointer :: ptype(:) => null() ! used for patch type 
+     integer , pointer :: ctype(:) => null() ! used for patch or col type
      integer , pointer :: ltype(:) => null() ! used for pft, col or lun type
      real(r8), pointer :: topoglc(:) => null()
      real(r8), pointer :: lat(:)
@@ -84,8 +84,8 @@ contains
     integer            :: i,j,k,l,m,n     ! loop indices    
     integer            :: begi, endi      ! beginning/ending indices 
     integer            :: bego, endo      ! beginning/ending indices 
-    integer            :: begp_i, endp_i  ! input file pft bounds
-    integer            :: begp_o, endp_o  ! output file pft bounds
+    integer            :: begp_i, endp_i  ! input file patch bounds
+    integer            :: begp_o, endp_o  ! output file patch bounds
     integer            :: begc_i, endc_i  ! input file column bounds
     integer            :: begc_o, endc_o  ! output file column bounds
     integer            :: begl_i, endl_i  ! input file landunit bounds
@@ -502,7 +502,7 @@ contains
 
     ! --------------------------------------------------------------------
     !
-    ! Find the PFT distances based on the column distances already calculated
+    ! Find the PATCH distances based on the column distances already calculated
     !
     ! arguments
     character(len=*)  , intent(inout) :: dimname
@@ -955,7 +955,7 @@ contains
              rbufslo(no) = spval
           end if
        else
-          if ( shr_infnan_isnan(rbufsli(no)) ) then
+          if ( shr_infnan_isnan(rbufslo(no)) ) then
              rbufslo(no) = spval
           end if
        end if

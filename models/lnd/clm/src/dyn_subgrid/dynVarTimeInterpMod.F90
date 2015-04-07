@@ -25,8 +25,7 @@ module dynVarTimeInterpMod
 
   implicit none
   private
-  save
-
+  !
   ! !PUBLIC TYPES:
   public :: dyn_var_time_interp_type
 

@@ -8,13 +8,11 @@ module EDGrowthFunctionsMod
 
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use clm_varctl       , only : iulog 
-
-  use EcophysConType   , only : ecophyscon
+  use pftconMod        , only : pftcon
   use EDEcophysContype , only : EDecophyscon
-  use EDtypesMod       , only : cohort, nlevcan_ed, dinc_ed
+  use EDTypesMod       , only : ed_cohort_type, nlevcan_ed, dinc_ed
 
   implicit none
-  save
   private
 
   public ::  bleaf
@@ -41,14 +39,10 @@ contains
 
     ! ============================================================================
     !  Creates diameter in cm as a function of height in m
-    !  Height(m) diameter(cm) relationships. O'Brien et al  - for 56 pft at BCI                                    
+    !  Height(m) diameter(cm) relationships. O'Brien et al  - for 56 patch at BCI                                    
     ! ============================================================================
 
-    use shr_kind_mod, only: r8 => shr_kind_r8
-
-    implicit none
-
-    type(cohort), intent(in) :: cohort_in
+    type(ed_cohort_type), intent(in) :: cohort_in
 
     !FIX(SPM,040214) - move to param file
     real(r8) :: m !parameter of allometric equation (needs to not be hardwired...
@@ -72,12 +66,7 @@ contains
     !  Height(m) diameter(cm) relationships. O'Brien et al  - for 56 pft at BCI                                    
     ! ============================================================================
 
-    use shr_kind_mod, only : r8 => shr_kind_r8;
-    use clm_varctl  , only : iulog
-
-    implicit none
-
-    type(cohort), intent(inout) :: cohort_in
+    type(ed_cohort_type), intent(inout) :: cohort_in
 
     real(r8) :: m
     real(r8) :: c
@@ -113,13 +102,7 @@ contains
     !  Creates leaf biomass (kGC) as a function of tree diameter.  
     ! ============================================================================
 
-
-    use shr_kind_mod, only : r8 => shr_kind_r8;
-    use clm_varctl  , only : iulog
-
-    implicit none
-
-    type(cohort), intent(in) :: cohort_in       
+    type(ed_cohort_type), intent(in) :: cohort_in       
 
     if(cohort_in%dbh < 0._r8.or.cohort_in%pft == 0.or.cohort_in%dbh > 1000_r8)then
        write(iulog,*) 'problems in bleaf',cohort_in%dbh,cohort_in%pft
@@ -146,12 +129,7 @@ contains
     !  LAI of individual trees is a function of the total leaf area and the total canopy area.   
     ! ============================================================================
 
-    use shr_kind_mod, only : r8 => shr_kind_r8;
-    use clm_varctl  , only : iulog
-
-    implicit none
-
-    type(cohort), intent(inout) :: cohort_in       
+    type(ed_cohort_type), intent(inout) :: cohort_in       
 
     real(r8) :: leafc_per_unitarea ! KgC of leaf per m2 area of ground.
     real(r8) :: slat               ! the sla of the top leaf layer. m2/kgC
@@ -161,7 +139,7 @@ contains
     endif
 
     if( cohort_in%status_coh  ==  2 ) then ! are the leaves on? 
-       slat = 1000.0_r8 * ecophyscon%slatop(cohort_in%pft) ! m2/g to m2/kg
+       slat = 1000.0_r8 * pftcon%slatop(cohort_in%pft) ! m2/g to m2/kg
        cohort_in%c_area = c_area(cohort_in) ! call the tree area 
        leafc_per_unitarea = cohort_in%bl/(cohort_in%c_area/cohort_in%n) !KgC/m2
        if(leafc_per_unitarea > 0.0_r8)then
@@ -193,12 +171,7 @@ contains
     !  SAI of individual trees is a function of the total dead biomass per unit canopy area.   
     ! ============================================================================
 
-    use shr_kind_mod, only : r8 => shr_kind_r8;
-    use clm_varctl  , only : iulog
-
-    implicit none
-
-    type(cohort), intent(inout) :: cohort_in       
+    type(ed_cohort_type), intent(inout) :: cohort_in       
 
     real(r8) :: bdead_per_unitarea ! KgC of leaf per m2 area of ground.
     real(r8) :: sai_scaler     ! This is hardwired, but should be made a parameter  - 
@@ -237,21 +210,16 @@ contains
     ! Function of DBH (cm) canopy spread (m/cm) and number of individuals. 
     ! ============================================================================
 
-
-    use shr_kind_mod             , only : r8 => shr_kind_r8;
-    use clm_varctl               , only : iulog
     use EDParamsMod              , only : ED_val_grass_spread
 
-    implicit none
-
-    type(cohort), intent(in) :: cohort_in       
+    type(ed_cohort_type), intent(in) :: cohort_in       
 
     real(r8) :: dbh ! Tree diameter at breat height. cm. 
 
     if (DEBUG_growth) then
        write(iulog,*) 'z_area 1',cohort_in%dbh,cohort_in%pft
        write(iulog,*) 'z_area 2',EDecophyscon%max_dbh
-       write(iulog,*) 'z_area 3',ecophyscon%woody
+       write(iulog,*) 'z_area 3',pftcon%woody
        write(iulog,*) 'z_area 4',cohort_in%n
        write(iulog,*) 'z_area 5',cohort_in%patchptr%spread
        write(iulog,*) 'z_area 6',cohort_in%canopy_layer
@@ -259,7 +227,7 @@ contains
     end if
 
     dbh = min(cohort_in%dbh,EDecophyscon%max_dbh(cohort_in%pft))
-    if(ecophyscon%woody(cohort_in%pft) == 1)then 
+    if(pftcon%woody(cohort_in%pft) == 1)then 
        c_area = 3.142_r8 * cohort_in%n * &
             (cohort_in%patchptr%spread(cohort_in%canopy_layer)*dbh)**1.56_r8
     else
@@ -278,11 +246,7 @@ contains
     ! Journal of Ecology vol 76 p938-958                                       
     ! ============================================================================
 
-    use shr_kind_mod, only: r8 => shr_kind_r8;
-
-    implicit none     
-
-    type(cohort), intent(in) :: cohort_in       
+    type(ed_cohort_type), intent(in) :: cohort_in       
 
     bdead = 0.06896_r8*(cohort_in%hite**0.572_r8)*(cohort_in%dbh**1.94_r8)* &
          (EDecophyscon%wood_density(cohort_in%pft)**0.931_r8)
@@ -298,11 +262,7 @@ contains
     ! consistent with Bstem and h-dbh allometries                               
     ! ============================================================================
 
-    use shr_kind_mod, only: r8 => shr_kind_r8;
-
-    implicit none
-
-    type(cohort), intent(in)  :: cohort_in
+    type(ed_cohort_type), intent(in)  :: cohort_in
 
     real(r8) :: dbddh ! rate of change of dead biomass (KgC) per unit change of height (m) 
 
@@ -322,11 +282,7 @@ contains
     ! consistent with Bstem and h-dbh allometries                               
     ! ============================================================================
 
-    use shr_kind_mod, only : r8 => shr_kind_r8;
-
-    implicit none
-
-    type(cohort), intent(in) :: cohort_in
+    type(ed_cohort_type), intent(in) :: cohort_in
 
     real(r8) :: dBD_dDBH !Rate of change of dead biomass (KgC) with change in DBH (cm) 
     real(r8) :: dH_dDBH  !Rate of change of height (m) with change in DBH (cm) 
@@ -353,11 +309,7 @@ contains
     ! convert changes in leaf biomass (KgC) to changes in DBH (cm)                                
     ! ============================================================================
 
-    use shr_kind_mod, only: r8 => shr_kind_r8;
-
-    implicit none
-
-    type(cohort), intent(in) :: cohort_in
+    type(ed_cohort_type), intent(in) :: cohort_in
 
     real(r8) :: dblddbh ! Rate of change of leaf biomass with change in DBH
 
@@ -378,12 +330,9 @@ contains
     !  Calculate mortality rates as a function of carbon storage       
     ! ============================================================================
 
-    use shr_kind_mod, only : r8 => shr_kind_r8
     use EDParamsMod,  only : ED_val_stress_mort
 
-    implicit none    
-
-    type (cohort), intent(in) :: cohort_in
+    type (ed_cohort_type), intent(in) :: cohort_in
 
     real(r8) :: frac  ! relativised stored carbohydrate
     real(r8) :: smort ! stress mortality     : Fraction per year

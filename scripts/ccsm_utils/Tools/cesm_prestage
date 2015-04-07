@@ -79,6 +79,7 @@ if (($GET_REFCASE == 'TRUE') && ($RUN_TYPE != 'startup') && ($CONTINUE_RUN == 'F
 
   chmod u+w $RUNDIR/* >& /dev/null
 endif
+cd $CASEROOT
 
 echo " CESM PRESTAGE SCRIPT HAS FINISHED SUCCESSFULLY"
 echo "-------------------------------------------------------------------------"

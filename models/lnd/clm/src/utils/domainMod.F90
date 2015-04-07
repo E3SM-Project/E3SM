@@ -35,7 +35,8 @@ module domainMod
      integer ,pointer :: pftm(:)    ! pft mask: 1=real, 0=fake, -1=notset
      integer ,pointer :: glcmask(:) ! glc mask: 1=sfc mass balance required by GLC component
                                     ! 0=SMB not required (default)
-                                    ! (glcmask is just a guess at the appropriate mask, known at initialization - in contrast to icemask, which is the true mask obtained from glc)
+                                    ! (glcmask is just a guess at the appropriate mask, known at initialization - 
+                                    ! in contrast to icemask, which is the true mask obtained from glc)
      character*16     :: set        ! flag to check if domain is set
      logical          :: decomped   ! decomposed locally or global copy
   end type domain_type

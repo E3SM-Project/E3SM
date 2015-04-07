@@ -5,17 +5,18 @@ module clm_varcon
   ! Module containing various model constants.
   !
   ! !USES:
-  use shr_kind_mod  , only: r8 => shr_kind_r8
-  use shr_const_mod , only: SHR_CONST_G,SHR_CONST_STEBOL,SHR_CONST_KARMAN
-  use shr_const_mod , only: SHR_CONST_RWV,SHR_CONST_RDAIR,SHR_CONST_CPFW
-  use shr_const_mod , only: SHR_CONST_CPICE,SHR_CONST_CPDAIR,SHR_CONST_LATVAP
-  use shr_const_mod , only: SHR_CONST_LATSUB,SHR_CONST_LATICE,SHR_CONST_RHOFW
-  use shr_const_mod , only: SHR_CONST_RHOICE,SHR_CONST_TKFRZ,SHR_CONST_REARTH
-  use shr_const_mod , only: SHR_CONST_PDB, SHR_CONST_PI, SHR_CONST_CDAY
-  use shr_const_mod , only: SHR_CONST_RGAS
-  use clm_varpar    , only: numrad, nlevgrnd, nlevlak, nlevdecomp_full
-  use clm_varpar    , only: ngases
-  use clm_varpar    , only: nlayer
+  use shr_kind_mod , only: r8 => shr_kind_r8
+  use shr_const_mod, only: SHR_CONST_G,SHR_CONST_STEBOL,SHR_CONST_KARMAN,     &
+                           SHR_CONST_RWV,SHR_CONST_RDAIR,SHR_CONST_CPFW,      &
+                           SHR_CONST_CPICE,SHR_CONST_CPDAIR,SHR_CONST_LATVAP, &
+                           SHR_CONST_LATSUB,SHR_CONST_LATICE,SHR_CONST_RHOFW, &
+                           SHR_CONST_RHOICE,SHR_CONST_TKFRZ,SHR_CONST_REARTH, &
+                           SHR_CONST_PDB, SHR_CONST_PI, SHR_CONST_CDAY,       &
+                           SHR_CONST_RGAS, SHR_CONST_PSTD
+  use clm_varpar   , only: numrad, nlevgrnd, nlevlak, nlevdecomp_full
+  use clm_varpar   , only: ngases
+  use clm_varpar   , only: nlayer
+  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -59,13 +60,13 @@ module clm_varcon
   real(r8) :: denh2o = SHR_CONST_RHOFW                      ! density of liquid water [kg/m3]
   real(r8) :: denice = SHR_CONST_RHOICE                     ! density of ice [kg/m3]
   real(r8) :: rgas   = SHR_CONST_RGAS                       ! universal gas constant [J/K/kmole]
+  real(r8) :: pstd   = SHR_CONST_PSTD                       ! standard pressure [Pa]
   real(r8) :: tkair  = 0.023_r8                             ! thermal conductivity of air   [W/m/K]
   real(r8) :: tkice  = 2.290_r8                             ! thermal conductivity of ice   [W/m/K]
   real(r8) :: tkwat  = 0.57_r8                              ! thermal conductivity of water [W/m/K]
   real(r8) :: tfrz   = SHR_CONST_TKFRZ                      ! freezing temperature [K]
   real(r8), parameter :: tcrit  = 2.5_r8                    ! critical temperature to determine rain or snow
   real(r8) :: o2_molar_const = 0.209_r8                     ! constant atmospheric O2 molar ratio (mol/mol)
-
   real(r8) :: bdsno = 250._r8                               ! bulk density snow (kg/m**3)
   real(r8) :: alpha_aero = 1.0_r8                           ! constant for aerodynamic parameter weighting
   real(r8) :: tlsai_crit = 2.0_r8                           ! critical value of elai+esai for which aerodynamic parameters are maximum
@@ -104,11 +105,30 @@ module clm_varcon
   real(r8) :: c14ratio = 1.e-12_r8
   ! real(r8) :: c14ratio = 1._r8  ! debug lets set to 1 to try to avoid numerical errors
 
-  ! Note that the wasteheat factors are currently set to zero until a better parameterization can be developed
-  ! The prior parameterization appeared to be significantly overestimating wasteheat
-  real(r8) :: ht_wasteheat_factor = 0.0_r8  !wasteheat factor for urban heating (-)
-  real(r8) :: ac_wasteheat_factor = 0.0_r8  !wasteheat factor for urban air conditioning (-)
-  real(r8) :: wasteheat_limit = 100._r8  !limit on wasteheat (W/m2)
+  !------------------------------------------------------------------
+  ! Urban building temperature constants
+  !------------------------------------------------------------------
+  real(r8) :: ht_wasteheat_factor = 0.2_r8   ! wasteheat factor for urban heating (-)
+  real(r8) :: ac_wasteheat_factor = 0.6_r8   ! wasteheat factor for urban air conditioning (-)
+  real(r8) :: em_roof_int  = 0.9_r8          ! emissivity of interior surface of roof (Bueno et al. 2012, GMD)
+  real(r8) :: em_sunw_int  = 0.9_r8          ! emissivity of interior surface of sunwall (Bueno et al. 2012, GMD)
+  real(r8) :: em_shdw_int  = 0.9_r8          ! emissivity of interior surface of shadewall Bueno et al. 2012, GMD)
+  real(r8) :: em_floor_int = 0.9_r8          ! emissivity of interior surface of floor (Bueno et al. 2012, GMD)
+  real(r8) :: hcv_roof = 0.948_r8            ! interior convective heat transfer coefficient for roof (Bueno et al. 2012, GMD) (W m-2 K-1)
+  real(r8) :: hcv_roof_enhanced  = 4.040_r8  ! enhanced (t_roof_int <= t_room) interior convective heat transfer coefficient for roof (Bueno et al. 2012, GMD) !(W m-2 K-1)
+  real(r8) :: hcv_floor = 0.948_r8           ! interior convective heat transfer coefficient for floor (Bueno et al. 2012, GMD) (W m-2 K-1)
+  real(r8) :: hcv_floor_enhanced  = 4.040_r8 ! enhanced (t_floor_int >= t_room) interior convective heat transfer coefficient for floor (Bueno et al.  !2012, GMD) (W m-2 K-1)
+  real(r8) :: hcv_sunw  = 3.076_r8           ! interior convective heat transfer coefficient for sunwall (Bueno et al. 2012, GMD) (W m-2 K-1)
+  real(r8) :: hcv_shdw  = 3.076_r8           ! interior convective heat transfer coefficient for shadewall (Bueno et al. 2012, GMD) (W m-2 K-1)
+  real(r8) :: dz_floor = 0.1_r8                 ! floor thickness - concrete (Salmanca et al. 2010, TAC) (m)
+  real(r8), parameter :: dens_floor = 2.35e3_r8 ! density of floor - concrete (Salmanca et al. 2010, TAC) (kg m-3)
+  real(r8), parameter :: sh_floor = 880._r8     ! specific heat of floor - concrete (Salmanca et al. 2010, TAC) (J kg-1 K-1)
+  real(r8) :: cp_floor = dens_floor*sh_floor    ! volumetric heat capacity of floor - concrete (Salmanca et al. 2010, TAC) (J m-3 K-1)
+  real(r8) :: vent_ach = 0.3                    ! ventilation rate (air exchanges per hour)
+
+  real(r8) :: wasteheat_limit = 100._r8         ! limit on wasteheat (W/m2)
+
+  !------------------------------------------------------------------
 
   real(r8), parameter :: h2osno_max = 1000._r8    ! max allowed snow thickness (mm H2O)
   real(r8), parameter :: lapse_glcmec = 0.006_r8  ! surface temperature lapse rate (deg m-1)
@@ -196,15 +216,22 @@ module clm_varcon
 contains
 
   !------------------------------------------------------------------------------
-  subroutine clm_varcon_init()
+  subroutine clm_varcon_init( is_simple_buildtemp )
     !
     ! !DESCRIPTION:
     ! This subroutine initializes constant arrays in clm_varcon. 
     ! MUST be called  after clm_varpar_init.
     !
-    ! USES
+    ! !USES:
     use clm_varpar, only: nlevgrnd, nlevlak, nlevdecomp_full, nlevsoifl, nlayer
-    !------------------------------------------------------------------------------
+    !
+    ! !ARGUMENTS:
+    implicit none
+    logical, intent(in) :: is_simple_buildtemp   ! If simple building temp method is being used
+    !
+    ! !REVISION HISTORY:
+    !   Created by E. Kluzek
+!------------------------------------------------------------------------------
 
     allocate( zlak(1:nlevlak                 ))
     allocate( dzlak(1:nlevlak                ))
@@ -217,6 +244,12 @@ contains
     allocate( zsoifl(1:nlevsoifl             ))
     allocate( zisoifl(0:nlevsoifl            ))
     allocate( dzsoifl(1:nlevsoifl            ))
+
+    ! Zero out wastheat factors for simpler building temperature method (introduced in CLM4.5)
+    if ( is_simple_buildtemp )then
+        ht_wasteheat_factor = 0.0_r8
+        ac_wasteheat_factor = 0.0_r8
+    end if
 
   end subroutine clm_varcon_init
 

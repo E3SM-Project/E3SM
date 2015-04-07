@@ -33,10 +33,7 @@ end
 
 #--- Job name is first fifteen characters of case name ---
 set jobname = `echo ${CASE} | cut -c1-15`
-set account_name = ` `
-if (-e ~/.ccsm_proj) then
-   set account_name = `head -1 ~/.ccsm_proj`
-endif
+
 set walltime = "01:15:00"
 if ($CCSM_ESTCOST > 1) set walltime = "01:50:00"
 if ($CCSM_ESTCOST > 3) set walltime = "05:00:00"
@@ -56,9 +53,16 @@ else
   @ mppwidth = 1
 endif
 
+# allow project to be determined implicitly
+if (${PROJECT} == "PROJECT_UNSET") then
+    set account_line = "###PBS -A "
+else
+    set account_line = "#PBS -A ${PROJECT}"
+endif
+
 cat >! $file << EOF1
 #!/bin/csh -f
-###PBS -A ${account_name}
+${account_line}
 #PBS -N ${jobname}
 #PBS -q regular
 #PBS -l mppwidth=${mppwidth}
@@ -97,14 +101,16 @@ EOF1
 else if ($PHASE == set_larch) then
 #################################################################################
 
-set account_name = ` `
-if (-e ~/.ccsm_proj) then
-   set account_name = `head -1 ~/.ccsm_proj`
+# allow project to be determined implicitly
+if (${PROJECT} == "PROJECT_UNSET") then
+    set account_line = "###PBS -A "
+else
+    set account_line = "#PBS -A ${PROJECT}"
 endif
 
 cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #! /bin/csh -f
-###PBS -A ${account_name}
+${account_line}
 #PBS -N ${CASE}.l_archive
 #PBS -q xfer
 #PBS -l walltime=02:00:00

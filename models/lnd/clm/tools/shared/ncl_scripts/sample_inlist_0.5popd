@@ -1,0 +1,22 @@
+!
+! Sample input file of global datasets to extract a region from. Only works
+! on standard 2D CLM files such as: fatmlndfrc, fsurdat, flanduse_timeseries, 
+! stream_fldfilename_ndep, stream_fldfilename_lightng, and/or 
+! stream_fldfilename_popdens.
+!
+! format: list of filenames similar to namelist format with a single line
+!         per file with the format of:
+!
+! variable = "filepath"
+!
+! Lines (such as these) with "!" are ignored.
+! 
+  
+! fatmlndfrc is REQUIRED! MUST BE ON THE SAME GRID AS ALL OF THE DATAFILES BELOW!!!!
+
+ fatmlndfrc = '/glade/p/cesmdata/cseg/inputdata/lnd/clm2/firedata/clmforc.Li_2012_hdm_0.5x0.5_AVHRR_simyr1850-2010_c130401.nc'
+!
+! The following files are interpolated by default so technically do NOT need
+! to be extracted, but it will help performance.
+!
+ stream_fldfilename_popdens = '/glade/p/cesmdata/cseg/inputdata/lnd/clm2/firedata/clmforc.Li_2012_hdm_0.5x0.5_AVHRR_simyr1850-2010_c130401.nc'

@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: shr_orb_mod.F90 25434 2010-11-04 22:46:24Z tcraig $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_orb_mod.F90 $
+! SVN $Id: shr_orb_mod.F90 60325 2014-05-16 20:33:31Z santos@ucar.edu $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_141022/shr/shr_orb_mod.F90 $
 !===============================================================================
 
 MODULE shr_orb_mod
@@ -298,11 +298,6 @@ SUBROUTINE shr_orb_params( iyear_AD , eccen  , obliq , mvelp     ,     &
    real   (SHR_KIND_R8) :: eccen3  ! eccentricity cubed
 
    !-------------------------- Formats -----------------------------------------
-   character(*),parameter :: svnID  = "SVN " // &
-   "$Id: shr_orb_mod.F90 25434 2010-11-04 22:46:24Z tcraig $"
-   character(*),parameter :: svnURL = "SVN <unknown URL>" 
-!  character(*),parameter :: svnURL = "SVN " // &
-!  "$URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_orb_mod.F90 $"
    character(len=*),parameter :: F00 = "('(shr_orb_params) ',4a)"
    character(len=*),parameter :: F01 = "('(shr_orb_params) ',a,i9)"
    character(len=*),parameter :: F02 = "('(shr_orb_params) ',a,f6.3)"
@@ -313,8 +308,6 @@ SUBROUTINE shr_orb_params( iyear_AD , eccen  , obliq , mvelp     ,     &
  
    if ( log_print .and. s_loglev > 0 ) then
      write(s_logunit,F00) 'Calculate characteristics of the orbit:'
-     write(s_logunit,F00) svnID
-!    write(s_logunit,F00) svnURL
    end if
  
    ! Check for flag to use input orbit parameters

@@ -91,8 +91,7 @@ module clm_varctl
                                                             ! if false, pass positive-degree-day info to GLC
   logical , public :: glc_dyntopo = .false.                 ! true => CLM glacier topography changes dynamically
   real(r8), public, allocatable :: glc_topomax(:)           ! upper limit of each class (m)  (set in surfrd)
-  character(len=256), public :: glc_grid = ' '              ! glc_grid used to determine fglcmask  
-  character(len=256), public :: fglcmask = ' '              ! glacier mask file name (based on glc_grid)
+  character(len=256), public :: fglcmask = ' '              ! glacier mask file name
 !
 ! single column control variables
 !

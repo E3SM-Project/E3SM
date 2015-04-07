@@ -12,10 +12,9 @@ module dynPriorWeightsMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type, BOUNDS_LEVEL_PROC
   use ColumnType     , only : col
-  use PatchType      , only : pft                
+  use PatchType      , only : patch                
   !
   implicit none
-  save
   private
   !
   ! !PUBLIC TYPES:
@@ -80,7 +79,7 @@ contains
     ! ----------------------------------------------------------------------
     
     do p = bounds%begp, bounds%endp
-       this%pwtcol(p) = pft%wtcol(p)
+       this%pwtcol(p) = patch%wtcol(p)
     end do
 
     do c = bounds%begc, bounds%endc

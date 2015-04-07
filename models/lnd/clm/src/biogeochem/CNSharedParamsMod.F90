@@ -5,28 +5,26 @@ module CNSharedParamsMod
   ! !USES:
   use shr_kind_mod , only: r8 => shr_kind_r8
   implicit none
-  save
 
   ! CNParamsShareInst.  PGI wants the type decl. public but the instance
   ! is indeed protected.  A generic private statement at the start of the module
   ! overrides the protected functionality with PGI
 
   type, public  :: CNParamsShareType
-      real(r8) :: Q10         ! temperature dependence
-      real(r8) :: minpsi      ! minimum soil water potential for heterotrophic resp	  
-      real(r8) :: cwd_fcel    ! cellulose fraction of coarse woody debris
-      real(r8) :: cwd_flig    ! lignin fraction of coarse woody debris
-      real(r8) :: froz_q10    ! separate q10 for frozen soil respiration rates
+      real(r8) :: Q10                   ! temperature dependence
+      real(r8) :: minpsi                ! minimum soil water potential for heterotrophic resp	  
+      real(r8) :: cwd_fcel              ! cellulose fraction of coarse woody debris
+      real(r8) :: cwd_flig              ! lignin fraction of coarse woody debris
+      real(r8) :: froz_q10              ! separate q10 for frozen soil respiration rates
       real(r8) :: decomp_depth_efolding ! e-folding depth for reduction in decomposition (m) 
-      real(r8) :: mino2lim    ! minimum anaerobic decomposition rate as a fraction of potential aerobic rate
-      real(r8) :: organic_max ! organic matter content (kg/m3) where soil is assumed to act like peat
+      real(r8) :: mino2lim              ! minimum anaerobic decomposition rate as a fraction of potential aerobic rate
+      real(r8) :: organic_max           ! organic matter content (kg/m3) where soil is assumed to act like peat
   end type CNParamsShareType
 
-  type(CNParamsShareType),protected :: CNParamsShareInst
+  type(CNParamsShareType), protected :: CNParamsShareInst
 
   logical, public :: anoxia_wtsat = .false.
   integer, public :: nlev_soildecomp_standard = 5
-
   !-----------------------------------------------------------------------
   
 contains
@@ -92,5 +90,5 @@ contains
     CNParamsShareInst%organic_max=tempr
 
   end subroutine CNParamsReadShared
-
+  
 end module CNSharedParamsMod

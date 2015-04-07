@@ -26,7 +26,6 @@
        <li>Maximum number of Plant Function Types (maxpft)</li>
        <li>Number of glacier multiple elevation classes (glc_nec)</li>
        <li>Site specific point name (sitespf_pt)</li>
-       <li>Glacier model grid size (glc_grid)</li>
        <li>Crop model (crop)</li>
        <li>Irrigation model (irrig) (clm4_0 only)</li>
        <li>Data model forcing source (forcing)</li>
@@ -128,9 +127,6 @@
         </xsl:if>
         <xsl:if test="string-length(@sitespf_pt)>0">
         sitespf_pt=<xsl:value-of select="@sitespf_pt"/>
-        </xsl:if>
-        <xsl:if test="string-length(@glc_grid)>0">
-        glc_grid=<xsl:value-of select="@glc_grid"/>
         </xsl:if>
         <xsl:if test="string-length(@datm_presaero)>0">
         datm_presaero=<xsl:value-of select="@datm_presaero"/>

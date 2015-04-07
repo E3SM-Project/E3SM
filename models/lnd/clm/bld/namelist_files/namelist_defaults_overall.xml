@@ -87,10 +87,8 @@ determine default values for namelists.
 <mask hgrid="1x1_smallvilleIA"    >test</mask>
 <mask                             >gx1v6</mask>
 
-<!-- Default glacier model grid/resolution -->
+<!-- Default glacier model options -->
 
-<glc_grid glc_nec="0">none</glc_grid>
-<glc_grid            >gland5UM</glc_grid>
 <glc_dyntopo         >.false.</glc_dyntopo>
 <glc_smb             >.true.</glc_smb>
 <glc_nec glc_nec="0" >0</glc_nec>

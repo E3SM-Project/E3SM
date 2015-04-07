@@ -1,4 +1,4 @@
----------------- PTCLMmkdata version PTCLM2.0_scripts_trunk-----------------------------
+---------------- PTCLMmkdata version PTCLM2.0_PTCLM2_140521-----------------------------
 
    ../PTCLMmkdata --list --cesm_root ../../../../../../.. -s test -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 
 
@@ -6,13 +6,13 @@
 
 Site name:						list
 
-Root CLM directory:					/glade/p/work/erik/clm_trunk
+Root CLM directory:					/glade/p/work/erik/clm_beta12ext
 ** Surface data file will be built using site-level data when available unless otherwise specified ** 
 
 	Extract PFT data from gridded files:		False
 	Extract soil data from gridded files:		False
 
-Open Site data file: /glade/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata/PTCLMDATA_sitedata.txt
+Open Site data file: /glade/p/work/erik/clm_beta12ext/models/lnd/clm/tools/shared/PTCLM/PTCLM_sitedata/PTCLMDATA_sitedata.txt
 
  site = site_code name: name                                                    Region:        state Campaign: campaign
  site =    US-Blo name: Blodgett Forest                                         Region:           CA Campaign: AmeriFlux

@@ -1,0 +1,172 @@
+module test_irrigation_multipatch
+
+  ! Tests of IrrigationMod that involve multiple patches
+
+  use pfunit_mod
+  use unittestSubgridMod
+  use IrrigationWrapperMod
+  use IrrigationMod, only : irrigation_type
+  use shr_kind_mod, only : r8 => shr_kind_r8
+  use clm_varpar, only : nlevgrnd
+  use landunit_varcon, only : istsoil
+
+  implicit none
+  save
+
+  real(r8), parameter :: tol = 1.e-13_r8
+
+  @TestCase
+  type, extends(TestCase) :: TestIrrigationMultiPatch
+     ! numf and filter don't really need to be in the TestCase class (they could be
+     ! declared in each test routine), but I include them here for symmetry with the
+     ! singlepatch tests
+     integer :: numf
+     integer, allocatable :: filter(:)
+     type(irrigation_type) :: irrigation
+     type(irrigation_inputs_type) :: irrigation_inputs
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+  end type TestIrrigationMultiPatch
+
+contains
+  
+  subroutine setUp(this)
+    class(TestIrrigationMultiPatch), intent(inout) :: this
+
+    ! Set up in this module is test-specific, so nothing is done in this shared setup
+    ! routine.
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestIrrigationMultiPatch), intent(inout) :: this
+
+    call teardownIrrigation(this%irrigation_inputs, this%irrigation)
+    call unittest_subgrid_teardown()
+  end subroutine tearDown
+
+  @Test
+  subroutine irrigation_flux_is_correct_for_multiple_patches(this)
+    use unittestFilterBuilderMod, only : filter_from_range
+    class(TestIrrigationMultiPatch), intent(inout) :: this
+    real(r8), allocatable :: deficits(:,:)
+    real(r8) :: expected1, expected2, expected_col
+    real(r8), parameter :: wt1 = 0.75_r8
+    real(r8), parameter :: wt2 = 0.25_r8
+
+
+    ! Setup grid
+    nlevgrnd = 3
+    call unittest_subgrid_setup_start()
+    call unittest_add_gridcell()
+    call unittest_add_landunit(my_gi=gi, ltype=istsoil, wtgcell=1.0_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    call unittest_add_patch(my_ci=ci, ptype=1, wtcol=wt1)
+    call unittest_add_patch(my_ci=ci, ptype=1, wtcol=wt2)
+    call unittest_subgrid_setup_end()
+    call filter_from_range(start=bounds%begp, end=bounds%endp, numf=this%numf, filter=this%filter)
+
+    ! Other setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    call this%irrigation_inputs%computeDeficits(this%irrigation, deficits)
+    expected1 = sum(deficits(bounds%begp,:)) / this%irrigation_inputs%irrigation_params%irrig_length
+    @assertEqual(expected1, this%irrigation%qflx_irrig_patch(bounds%begp), tolerance=tol)
+    expected2 = sum(deficits(bounds%endp,:)) / this%irrigation_inputs%irrigation_params%irrig_length
+    @assertEqual(expected2, this%irrigation%qflx_irrig_patch(bounds%endp), tolerance=tol)
+    ! Make sure this test had some power, by ensuring that the two points differ:
+    @assertTrue(expected1 /= expected2)
+    ! Check column-level flux, too
+    expected_col = expected1*wt1 + expected2*wt2
+    @assertEqual(expected_col, this%irrigation%qflx_irrig_col(bounds%begc), tolerance=tol)
+
+  end subroutine irrigation_flux_is_correct_for_multiple_patches
+
+  @Test
+  subroutine irrigation_only_happens_within_filter(this)
+    class(TestIrrigationMultiPatch), intent(inout) :: this
+
+    ! Setup grid: 3 columns, each with one patch
+    nlevgrnd = 3
+    call unittest_subgrid_setup_start()
+    call unittest_add_gridcell()
+    call unittest_add_landunit(my_gi=gi, ltype=istsoil, wtgcell=1.0_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    call unittest_add_patch(my_ci=ci, ptype=1, wtcol=1.0_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    call unittest_add_patch(my_ci=ci, ptype=1, wtcol=1.0_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    call unittest_add_patch(my_ci=ci, ptype=1, wtcol=1.0_r8)
+    call unittest_subgrid_setup_end()
+    this%numf = 1
+    allocate(this%filter(1))
+    this%filter = [bounds%begp + 1]
+
+    ! Other setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    ! Irrigation happens within filter
+    @assertTrue(this%irrigation%qflx_irrig_patch(bounds%begp + 1) > 0._r8)
+    ! Irrigation does NOT happen outside filter
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%begp))
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%endp))
+    
+  end subroutine irrigation_only_happens_within_filter
+
+  @Test
+  subroutine test_multiple_patches_with_different_frozen_soil(this)
+    ! The point of this test is to exercise the somewhat complex logic for determining
+    ! frozen soil across multiple patches, due to the nesting of the p loop inside the
+    ! nlevgrnd loop (rather than the other way around).
+
+    use unittestFilterBuilderMod, only : filter_from_range
+    class(TestIrrigationMultiPatch), intent(inout) :: this
+    real(r8), allocatable :: deficits(:,:)
+    real(r8) :: expected
+
+    ! Setup grid: 3 columns, each with one patch
+    nlevgrnd = 3
+    call unittest_subgrid_setup_start()
+    call unittest_add_gridcell()
+    call unittest_add_landunit(my_gi=gi, ltype=istsoil, wtgcell=1.0_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    call unittest_add_patch(my_ci=ci, ptype=1, wtcol=1.0_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    call unittest_add_patch(my_ci=ci, ptype=1, wtcol=1.0_r8)
+    call unittest_add_column(my_li=li, ctype=1, wtlunit=1.0_r8)
+    call unittest_add_patch(my_ci=ci, ptype=1, wtcol=1.0_r8)
+    call unittest_subgrid_setup_end()
+    call filter_from_range(start=bounds%begp, end=bounds%endp, numf=this%numf, filter=this%filter)
+
+    ! Other setup
+    call setupIrrigation(this%irrigation_inputs, this%irrigation, maxpft=1)
+    ! first column has frozen soil
+    this%irrigation_inputs%t_soisno(bounds%begc, :) = 272._r8
+    ! second column has layer 2 frozen
+    this%irrigation_inputs%t_soisno(bounds%begc+1, 2) = 272._r8
+
+    ! Call irrigation routines
+    call this%irrigation_inputs%calculateAndApplyIrrigation(this%irrigation, this%numf, this%filter)
+
+    ! Check result
+    call this%irrigation_inputs%computeDeficits(this%irrigation, deficits)
+    ! First patch should have no irrigation, because soil is all frozen
+    @assertEqual(0._r8, this%irrigation%qflx_irrig_patch(bounds%begp))
+    ! Second patch should have irrigation just based on top layer, because 2nd layer is frozen
+    expected = deficits(bounds%begp+1, 1) / this%irrigation_inputs%irrigation_params%irrig_length
+    @assertEqual(expected, this%irrigation%qflx_irrig_patch(bounds%begp+1), tolerance=tol)
+    ! Third patch should have irrigation from all layers
+    expected = sum(deficits(bounds%endp,:)) / this%irrigation_inputs%irrigation_params%irrig_length
+    @assertEqual(expected, this%irrigation%qflx_irrig_patch(bounds%endp), tolerance=tol)
+
+  end subroutine test_multiple_patches_with_different_frozen_soil
+
+end module test_irrigation_multipatch

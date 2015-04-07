@@ -135,15 +135,17 @@ ifeq ($(USE_CXX), true)
 endif
 
 # Not clear how to escape commas for libraries with their own configure
-# script, and they don't need this defined anyway.
-ifneq ($(MODEL),mct)
-ifneq ($(MODEL),pio)
-  ifeq ($(HAS_F2008_CONTIGUOUS),TRUE)
-    CPPDEFS += -DUSE_CONTIGUOUS=contiguous,
-  else
-    CPPDEFS += -DUSE_CONTIGUOUS=
-  endif
+# script, and they don't need this defined anyway, so leave this out of
+# FPPDEFS.
+ifeq ($(HAS_F2008_CONTIGUOUS),TRUE)
+  CONTIGUOUS_FLAG := -DUSE_CONTIGUOUS=contiguous,
+else
+  CONTIGUOUS_FLAG := -DUSE_CONTIGUOUS=
 endif
+
+ifdef CPRE
+  CONTIGUOUS_FLAG := $(subst $(comma),\\$(comma),$(CONTIGUOUS_FLAG))
+  CONTIGUOUS_FLAG := $(patsubst -D%,$(CPRE)%,$(CONTIGUOUS_FLAG))
 endif
 
 ifndef AR
@@ -319,7 +321,8 @@ ifndef CISM_LIBDIR
   CISM_LIBDIR=$(GLC_DIR)/lib
 endif
 
-INCLDIR += -I$(SHAREDPATH)/include -I$(CODEROOT)/csm_share/shr
+INCLDIR +=	-I$(SHAREDPATH)/include -I$(CODEROOT)/csm_share/shr \
+		-I$(CODEROOT)/csm_share/include
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one 
 #
@@ -654,7 +657,7 @@ $(LIBROOT)/libcvmix.a:
 .f90.o:
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  $<
 .F90.o:
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(CONTIGUOUS_FLAG) $<
 .cpp.o:
 	$(CXX) -c $(INCLDIR) $(INCS) $(CXXFLAGS)  $<
 

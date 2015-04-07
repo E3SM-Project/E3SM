@@ -34,16 +34,6 @@ end
 set jobname = `echo ${CASE} | cut -c1-15`
 
 
-if (! $?PROJECT && -e ~/.ccsm_proj) then
-   setenv PROJECT = `head -1 ~/.ccsm_proj`
-else
-  if (! $?PROJECT) then
-    echo "You must set the env variable \$PROJECT"
-  endif
-endif
-
-
-
 set walltime = "01:15:00"
 if ($CCSM_ESTCOST > 1) set walltime = "01:50:00"
 if ($CCSM_ESTCOST > 3) set walltime = "05:00:00"
@@ -109,14 +99,6 @@ EOF1
 #################################################################################
 else if ($PHASE == set_larch) then
 #################################################################################
-
-if (! $?PROJECT && -e ~/.ccsm_proj) then
-   setenv PROJECT = `head -1 ~/.ccsm_proj`
-else
-  if (! $?PROJECT) then
-    echo "You must set the env variable \$PROJECT"
-  endif
-endif
 
 cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #! /bin/csh -f

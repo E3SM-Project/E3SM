@@ -1,6 +1,6 @@
 !===============================================================================
-! SVN $Id: shr_vmath_mod.F90 6752 2007-10-04 21:02:15Z jwolfe $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_vmath_mod.F90 $
+! SVN $Id: shr_vmath_mod.F90 64102 2014-10-06 20:36:39Z jedwards $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_141022/shr/shr_vmath_mod.F90 $
 !===============================================================================
 ! PURPOSE: 
 !   provides a uniform, platform-independent API for vector math functions
@@ -39,27 +39,29 @@ subroutine shr_vmath_sqrt(X, Y, n)
 !-------------------------------------------------------------------------------
 ! PURPOSE: sqrt for vector arguments, optimized on different platforms
 !-------------------------------------------------------------------------------
-
-#if (defined NO_SHR_VMATH)
-   Y = sqrt(X)
-#else
+#ifndef NO_SHR_VMATH
+#if (defined CPRINTEL)
+   call vdsqrt(n, X, Y)
+   return
+#endif
 
 #if (defined AIX)
    call vsqrt(Y, X, n)
+   return
 #endif
 
 #if (defined IRIX64)
    call shr_vmath_fwrap_vsqrt(X, Y, n)
+   return
 #endif
 
 #if (defined OSF1)
    call vsqrt(X, 1, Y, 1, n)
+   return
 #endif
-
-#if (!defined AIX && !defined IRIX64 && !defined OSF1)
+#endif
    Y = sqrt(X)
-#endif
-#endif
+   return
 
 end subroutine shr_vmath_sqrt
 
@@ -73,21 +75,23 @@ subroutine shr_vmath_rsqrt(X, Y, n)
    real   (SHR_KIND_R8),intent(out) :: Y(n) ! output vector argument
 
 !-------------------------------------------------------------------------------
-! PURPOSE: sqrt for vector arguments, optimized on different platforms
+! PURPOSE: reciprical sqrt for vector arguments, optimized on different platforms
 !-------------------------------------------------------------------------------
 
-#if (defined NO_SHR_VMATH)
-   Y = 1.0_SHR_KIND_R8/sqrt(X)
-#else
-
+#ifndef NO_SHR_VMATH
 #if (defined AIX)
    call vrsqrt(Y, X, n)
+   return
 #endif
-
-#if (!defined AIX)
+#ifdef CPRINTEL
+   real   (SHR_KIND_R8)  :: RX(n) !
+   call vdsqrt(n, X, RX)
+   call vddiv(n, 1.0D0,RX, Y)
+   return
+#endif
+#endif
    Y = 1.0_SHR_KIND_R8/sqrt(X)
-#endif
-#endif
+   
 
 end subroutine shr_vmath_rsqrt
 
@@ -104,26 +108,27 @@ subroutine shr_vmath_exp(X, Y, n)
 ! PURPOSE: exp for vector arguments, optimized on different platforms
 !-------------------------------------------------------------------------------
 
-#if (defined NO_SHR_VMATH)
-   Y = exp(X)
-#else
-
+#ifndef NO_SHR_VMATH
+#if (defined CPRINTEL)
+   call vdexp(n, X, Y)
+   return
+#endif
 #if (defined AIX)
    call vexp(Y, X, n)
+   return
 #endif
-
 #if (defined IRIX64)
    call shr_vmath_fwrap_vexp(X, Y, n)
+   return
 #endif
-
 #if (defined OSF1)
    call vexp(X, 1, Y, 1, n)
+   return
+#endif
 #endif
 
-#if (!defined AIX && !defined IRIX64 && !defined OSF1)
    Y = exp(X)
-#endif
-#endif
+   return
 
 end subroutine shr_vmath_exp
 
@@ -135,22 +140,22 @@ subroutine shr_vmath_div(X, Y, Z, n)
    real   (SHR_KIND_R8),intent(in)  :: X(n) ! input vector argument
    real   (SHR_KIND_R8),intent(in)  :: Y(n) ! input vector argument
    real   (SHR_KIND_R8),intent(out) :: Z(n) ! output vector argument
-
-#if (defined NO_SHR_VMATH)
    integer :: i
-   do i=1,n
-      Z(i) = X(i)/Y(i)
-   enddo
-#else
+#ifndef NO_SHR_VMATH
+#if (defined CPRINTEL)
+   call vddiv(n, X, Y, Z)
+   return
+#endif
+
 #if (defined AIX)
    call vdiv(Z,X,Y,n)
-#else
-   integer :: i
+   return
+#endif
+#endif
+
    do i=1,n
       Z(i) = X(i)/Y(i)
    enddo
-#endif
-#endif
    return
  end subroutine shr_vmath_div
 
@@ -166,27 +171,29 @@ subroutine shr_vmath_log(X, Y, n)
 !-------------------------------------------------------------------------------
 ! PURPOSE: log for vector arguments, optimized on different platforms
 !-------------------------------------------------------------------------------
-
-#if (defined NO_SHR_VMATH)
-   Y = log(X)
-#else
-
+#ifndef NO_SHR_VMATH
 #if (defined AIX)
    call vlog(Y, X, n)
+   return
+#endif
+#if (defined CPRINTEL)
+   call vdlog10(n, X, Y)
+   return
 #endif
 
 #if (defined IRIX64)
    call shr_vmath_fwrap_vlog(X, Y, n)
+   return
 #endif
 
 #if (defined OSF1)
    call vlog(X, 1, Y, 1, n)
+   return
 #endif
-
-#if (!defined AIX && !defined IRIX64 && !defined OSF1)
+#endif
    Y = log(X)
-#endif
-#endif
+   return
+
 
 end subroutine shr_vmath_log
 
@@ -203,26 +210,29 @@ subroutine shr_vmath_sin(X, Y, n)
 ! PURPOSE: sin for vector arguments, optimized on different platforms
 !-------------------------------------------------------------------------------
 
-#if (defined NO_SHR_VMATH)
-   Y = sin(X)
-#else
-
+#ifndef NO_SHR_VMATH
 #if (defined AIX)
    call vsin(Y, X, n)
+   return
+#endif
+
+#if (defined CPRINTEL)
+   call vdsin(n, X, Y)
+   return
 #endif
 
 #if (defined IRIX64)
    call shr_vmath_fwrap_vsin(X, Y, n)
+   return
 #endif
 
 #if (defined OSF1)
    call vsin(X, 1, Y, 1, n)
+   return
 #endif
-
-#if (!defined AIX && !defined IRIX64 && !defined OSF1)
+#endif
    Y = sin(X)
-#endif
-#endif
+   return
 
 end subroutine shr_vmath_sin
 
@@ -239,26 +249,26 @@ subroutine shr_vmath_cos(X, Y, n)
 ! PURPOSE: cos for vector arguments, optimized on different platforms
 !-------------------------------------------------------------------------------
 
-#if (defined NO_SHR_VMATH)
-   Y = cos(X)
-#else
-
+#ifndef NO_SHR_VMATH
 #if (defined AIX)
    call vcos(Y, X, n)
+   return
 #endif
-
+#if (defined CPRINTEL)
+   call vdcos(n, X, Y)
+   return
+#endif
 #if (defined IRIX64)
    call shr_vmath_fwrap_vcos(X, Y, n)
+   return
 #endif
-
 #if (defined OSF1)
    call vcos(X, 1, Y, 1, n)
+   return
 #endif
-
-#if (!defined AIX && !defined IRIX64 && !defined OSF1)
+#endif
    Y = cos(X)
-#endif
-#endif
+   return
 
 end subroutine shr_vmath_cos
 

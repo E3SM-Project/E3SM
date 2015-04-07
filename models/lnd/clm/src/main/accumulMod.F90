@@ -96,7 +96,7 @@ contains
     character(len=*), intent(in)           :: desc         !field description
     character(len=*), intent(in)           :: accum_type   !field type: tavg, runm, runa, ins
     integer , intent(in)                   :: accum_period !field accumulation period
-    character(len=*), intent(in)           :: subgrid_type !["gridcell","landunit","column" or "pft"]
+    character(len=*), intent(in)           :: subgrid_type !["gridcell","landunit","column" or "patch"]
     integer , intent(in)                   :: numlev       !number of vertical levels
     real(r8), intent(in)                   :: init_value   !field initial or reset value
     character(len=*), intent(in), optional :: type2d       !level type (optional) - needed if numlev > 1
@@ -105,7 +105,7 @@ contains
     integer :: nf           ! field index
     integer :: beg1d,end1d  ! beggining and end subgrid indices
     integer :: num1d        ! total number subgrid indices
-    integer :: begp, endp   ! per-proc beginning and ending pft indices
+    integer :: begp, endp   ! per-proc beginning and ending patch indices
     integer :: begc, endc   ! per-proc beginning and ending column indices
     integer :: begl, endl   ! per-proc beginning and ending landunit indices
     integer :: begg, endg   ! per-proc gridcell ending gridcell indices
@@ -113,7 +113,7 @@ contains
     integer :: numg         ! total number of gridcells across all processors
     integer :: numl         ! total number of landunits across all processors
     integer :: numc         ! total number of columns across all processors
-    integer :: nump         ! total number of pfts across all processors
+    integer :: nump         ! total number of patches across all processors
     integer :: numCohort    ! total number of cohorts across all processors
     !------------------------------------------------------------------------
 

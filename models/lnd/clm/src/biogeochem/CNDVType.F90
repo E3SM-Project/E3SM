@@ -1,4 +1,7 @@
 module CNDVType
+
+#include "shr_assert.h"
+
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module containing routines to drive the annual dynamic vegetation
@@ -6,22 +9,20 @@ module CNDVType
   ! and initialize/reset time invariant variables
   !
   ! !USES:
-  use shr_kind_mod        , only : r8 => shr_kind_r8
-  use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use abortutils          , only : endrun
-  use decompMod           , only : bounds_type
-  use clm_varctl          , only : use_cndv, iulog
+  use shr_kind_mod , only : r8 => shr_kind_r8
+  use shr_log_mod  , only : errMsg => shr_log_errMsg
+  use abortutils   , only : endrun
+  use decompMod    , only : bounds_type
+  use clm_varctl   , only : use_cndv, iulog
   !
   ! !PUBLIC TYPES:
   implicit none
   private
-  save
   !
   ! !PUBLIC DATA TYPES:
   !
   ! DGVM-specific ecophysiological constants structure (patch-level)
   type, public :: dgv_ecophyscon_type
-
      real(r8), pointer :: crownarea_max(:)   ! patch tree maximum crown area [m2]
      real(r8), pointer :: tcmin(:)           ! patch minimum coldest monthly mean temperature [units?]
      real(r8), pointer :: tcmax(:)           ! patch maximum coldest monthly mean temperature [units?]
@@ -31,18 +32,16 @@ module CNDVType
      real(r8), pointer :: allom1(:)          ! patch parameter in allometric
      real(r8), pointer :: allom2(:)          ! patch parameter in allometric
      real(r8), pointer :: allom3(:)          ! patch parameter in allometric
-
   end type dgv_ecophyscon_type
   type(dgv_ecophyscon_type), public :: dgv_ecophyscon
   !
   ! DGVM state variables structure
   type, public :: dgvs_type
-
      real(r8), pointer, public :: agdd_patch        (:) ! patch accumulated growing degree days above 5
      real(r8), pointer, public :: agddtw_patch      (:) ! patch accumulated growing degree days above twmax
      real(r8), pointer, public :: agdd20_patch      (:) ! patch 20-yr running mean of agdd
      real(r8), pointer, public :: tmomin20_patch    (:) ! patch 20-yr running mean of tmomin
-     logical , pointer, public :: present_patch     (:) ! patch whether PFT present in patch
+     logical , pointer, public :: present_patch     (:) ! patch whether PATCH present in patch
      logical , pointer, public :: pftmayexist_patch (:) ! patch if .false. then exclude seasonal decid patches from tropics
      real(r8), pointer, public :: nind_patch        (:) ! patch number of individuals (#/m**2)
      real(r8), pointer, public :: lm_ind_patch      (:) ! patch individual leaf mass
@@ -60,11 +59,10 @@ module CNDVType
      procedure , public  :: Restart
      procedure , public  :: InitAccBuffer
      procedure , public  :: InitAccVars
-     procedure , public  :: UpdateCNDVAccVars
+     procedure , public  :: UpdateAccVars
      procedure , private :: InitAllocate 
      procedure , private :: InitCold     
      procedure , private :: InitHistory
-     
   end type dgvs_type
   !-----------------------------------------------------------------------
 
@@ -95,9 +93,9 @@ contains
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use clm_varpar     , only : numpft
-    use pftvarcon      , only : allom1s, allom2s, allom1, allom2, allom3, reinickerp
-    use pftvarcon      , only : ntree, nbrdlf_dcd_brl_shrub
-    use pftvarcon      , only : pftpar20, pftpar28, pftpar29, pftpar30, pftpar31
+    use pftconMod      , only : allom1s, allom2s, allom1, allom2, allom3, reinickerp
+    use pftconMod      , only : ntree, nbrdlf_dcd_brl_shrub
+    use pftconMod      , only : pftcon
     !
     ! !ARGUMENTS:
     class(dgvs_type) :: this
@@ -137,11 +135,11 @@ contains
     allocate(dgv_ecophyscon%allom3        (0:numpft))        
 
     do m = 0,numpft
-       dgv_ecophyscon%crownarea_max(m) = pftpar20(m)
-       dgv_ecophyscon%tcmin(m)         = pftpar28(m)
-       dgv_ecophyscon%tcmax(m)         = pftpar29(m)
-       dgv_ecophyscon%gddmin(m)        = pftpar30(m)
-       dgv_ecophyscon%twmax(m)         = pftpar31(m)
+       dgv_ecophyscon%crownarea_max(m) = pftcon%pftpar20(m)
+       dgv_ecophyscon%tcmin(m)         = pftcon%pftpar28(m)
+       dgv_ecophyscon%tcmax(m)         = pftcon%pftpar29(m)
+       dgv_ecophyscon%gddmin(m)        = pftcon%pftpar30(m)
+       dgv_ecophyscon%twmax(m)         = pftcon%pftpar31(m)
        dgv_ecophyscon%reinickerp(m)    = reinickerp
        dgv_ecophyscon%allom1(m)        = allom1
        dgv_ecophyscon%allom2(m)        = allom2
@@ -407,7 +405,7 @@ contains
 
     begp = bounds%begp; endp = bounds%endp
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level patch field
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
        write(iulog,*)' in '
@@ -428,7 +426,7 @@ contains
   end subroutine InitAccVars
 
   !-----------------------------------------------------------------------
-  subroutine UpdateCNDVAccVars(this, bounds, temperature_vars)
+  subroutine UpdateAccVars(this, bounds, t_a10_patch, t_ref2m_patch)
     !
     ! !DESCRIPTION:
     ! Update accumulated variables. Should be called every time step.
@@ -438,37 +436,39 @@ contains
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     use clm_time_manager , only : get_step_size, get_nstep, get_curr_date
-    use pftvarcon        , only : ndllf_dcd_brl_tree
-    use TemperatureType  , only : temperature_type
+    use pftconMod        , only : ndllf_dcd_brl_tree
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
     !
     ! !ARGUMENTS:
-    class(dgvs_type)       , intent(inout) :: this
-    type(bounds_type)      , intent(in)    :: bounds
-    type(temperature_type) , intent(in)    :: temperature_vars
+    class(dgvs_type)  , intent(inout) :: this
+    type(bounds_type) , intent(in)    :: bounds
+    real(r8)          , intent(in)    :: t_a10_patch( bounds%begp:)      ! 10-day running mean of the 2 m temperature (K)
+    real(r8)          , intent(in)    :: t_ref2m_patch( bounds%begp:)    ! 2 m height surface air temperature (K)
     !
     ! !LOCAL VARIABLES:
-    integer           :: p     ! index
-    integer           :: ier   ! error status
-    integer           :: dtime ! timestep size [seconds]
-    integer           :: nstep ! timestep number
-    integer           :: year  ! year (0, ...) for nstep
-    integer           :: month ! month (1, ..., 12) for nstep
-    integer           :: day   ! day of month (1, ..., 31) for nstep
-    integer           :: secs  ! seconds into current date for nstep
+    integer           :: p          ! index
+    integer           :: ier        ! error status
+    integer           :: dtime      ! timestep size [seconds]
+    integer           :: nstep      ! timestep number
+    integer           :: year       ! year (0, ...) for nstep
+    integer           :: month      ! month (1, ..., 12) for nstep
+    integer           :: day        ! day of month (1, ..., 31) for nstep
+    integer           :: secs       ! seconds into current date for nstep
     integer           :: begp, endp
-    real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
-
-    character(len=*), parameter :: subname = 'UpdateCNDVAccVars'
+    real(r8), pointer :: rbufslp(:) ! temporary single level - patch level
     !-----------------------------------------------------------------------
     
     begp = bounds%begp; endp = bounds%endp
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(t_a10_patch)   == (/endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(t_ref2m_patch) == (/endp/)), errMsg(__FILE__, __LINE__))
 
     dtime = get_step_size()
     nstep = get_nstep()
     call get_curr_date (year, month, day, secs)
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level patch field
 
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
@@ -484,7 +484,7 @@ contains
     
     do p = begp,endp
        rbufslp(p) = max(0._r8, &
-            (temperature_vars%t_a10_patch(p) - SHR_CONST_TKFRZ - dgv_ecophyscon%twmax(ndllf_dcd_brl_tree)) &
+            (t_a10_patch(p) - SHR_CONST_TKFRZ - dgv_ecophyscon%twmax(ndllf_dcd_brl_tree)) &
             * dtime/SHR_CONST_CDAY)
        if (month==1 .and. day==1 .and. secs==int(dtime)) rbufslp(p) = accumResetVal
     end do
@@ -495,7 +495,7 @@ contains
 
     do p = begp,endp
        rbufslp(p) = max(0.0_r8, &
-            (temperature_vars%t_ref2m_patch(p) - (SHR_CONST_TKFRZ + 5.0_r8)) * dtime/SHR_CONST_CDAY)
+            (t_ref2m_patch(p) - (SHR_CONST_TKFRZ + 5.0_r8)) * dtime/SHR_CONST_CDAY)
        !
        ! Fix (for bug 1858) from Sam Levis to reset the annual AGDD variable
        ! 
@@ -506,7 +506,6 @@ contains
 
     deallocate(rbufslp)
 
-  end subroutine UpdateCNDVAccVars
-
+  end subroutine UpdateAccVars
 
 end module CNDVType

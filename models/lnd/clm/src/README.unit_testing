@@ -1,3 +1,4 @@
-To run all unit tests on yellowstone, run the following command:
+To run all unit tests on yellowstone, run the following commands:
 
+module load cmake
 CTEST_OUTPUT_ON_FAILURE=1 ../../../../tools/unit_testing/run_tests.py --build-dir=/glade/scratch/$USER/unit_tests --test-spec-dir=. --compiler=intel  --build-type=CESM_DEBUG --clean

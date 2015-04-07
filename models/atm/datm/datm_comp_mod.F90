@@ -101,9 +101,10 @@ module datm_comp_mod
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
   integer(IN) :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
-! anomaly forcing
-  integer(IN) :: kprecsf,sprecsf
-  integer(IN) :: kprec_af,ku_af,kv_af,ktbot_af,kshum_af,kpbot_af,klwdn_af,kswdn_af
+  !
+  ! anomaly forcing
+  !
+  integer(IN) :: sprecsf
   integer(IN) :: sprec_af,su_af,sv_af,stbot_af,sshum_af,spbot_af,slwdn_af,sswdn_af
 
   type(shr_strdata_type) :: SDATM
@@ -115,75 +116,84 @@ module datm_comp_mod
   real(R8), pointer :: winddFactor(:)
   real(R8), pointer :: qsatFactor(:)
   
-! for anomaly forcing
-  integer(IN),parameter :: ktrans = 65
+  !
+  ! for anomaly forcing
+  !
+  integer(IN),parameter :: ktrans  = 65
 
   character(16),parameter  :: avofld(1:ktrans) = &
-     (/"Sa_z            ","Sa_u            ","Sa_v            ","Sa_tbot         ", &
-       "Sa_ptem         ","Sa_shum         ","Sa_dens         ","Sa_pbot         ", &
-       "Sa_pslv         ","Faxa_lwdn       ","Faxa_rainc      ","Faxa_rainl      ", &
-       "Faxa_snowc      ","Faxa_snowl      ","Faxa_swndr      ","Faxa_swvdr      ", &
-       "Faxa_swndf      ","Faxa_swvdf      ","Faxa_swnet      ","Sa_co2prog      ", &
-       "Sa_co2diag      ","Faxa_bcphidry   ","Faxa_bcphodry   ","Faxa_bcphiwet   ", &
-       "Faxa_ocphidry   ","Faxa_ocphodry   ","Faxa_ocphiwet   ","Faxa_dstwet1    ", &
-       "Faxa_dstwet2    ","Faxa_dstwet3    ","Faxa_dstwet4    ","Faxa_dstdry1    ", &
-       "Faxa_dstdry2    ","Faxa_dstdry3    ","Faxa_dstdry4    ",                    &
-       "Sx_tref         ","Sx_qref         ","Sx_avsdr        ","Sx_anidr        ", &
-       "Sx_avsdf        ","Sx_anidf        ","Sx_t            ","So_t            ", &
-       "Sl_snowh        ","Sf_lfrac        ","Sf_ifrac        ","Sf_ofrac        ", &
-       "Faxx_taux       ","Faxx_tauy       ","Faxx_lat        ","Faxx_sen        ", &
-       "Faxx_lwup       ","Faxx_evap       ","Fall_fco2_lnd   ","Faoo_fco2_ocn   ", &
-! anomaly forcing add Sa_precsf for precip scale factor
-       "Faoo_fdms_ocn   ","Sa_precsf       ", &
-! add values for anomaly forcing
-       "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
-       "Sa_pbot_af      ","Sa_shum_af      ","Sa_swdn_af      ","Sa_lwdn_af      " &
+       (/"Sa_z            ","Sa_u            ","Sa_v            ","Sa_tbot         ", &
+         "Sa_ptem         ","Sa_shum         ","Sa_dens         ","Sa_pbot         ", &
+         "Sa_pslv         ","Faxa_lwdn       ","Faxa_rainc      ","Faxa_rainl      ", &
+         "Faxa_snowc      ","Faxa_snowl      ","Faxa_swndr      ","Faxa_swvdr      ", &
+         "Faxa_swndf      ","Faxa_swvdf      ","Faxa_swnet      ","Sa_co2prog      ", &
+         "Sa_co2diag      ","Faxa_bcphidry   ","Faxa_bcphodry   ","Faxa_bcphiwet   ", &
+         "Faxa_ocphidry   ","Faxa_ocphodry   ","Faxa_ocphiwet   ","Faxa_dstwet1    ", &
+         "Faxa_dstwet2    ","Faxa_dstwet3    ","Faxa_dstwet4    ","Faxa_dstdry1    ", &
+         "Faxa_dstdry2    ","Faxa_dstdry3    ","Faxa_dstdry4    ",                    &
+         "Sx_tref         ","Sx_qref         ","Sx_avsdr        ","Sx_anidr        ", &
+         "Sx_avsdf        ","Sx_anidf        ","Sx_t            ","So_t            ", &
+         "Sl_snowh        ","Sf_lfrac        ","Sf_ifrac        ","Sf_ofrac        ", &
+         "Faxx_taux       ","Faxx_tauy       ","Faxx_lat        ","Faxx_sen        ", &
+         "Faxx_lwup       ","Faxx_evap       ","Fall_fco2_lnd   ","Faoo_fco2_ocn   ", &
+         "Faoo_fdms_ocn   ",  &
+         !
+         ! add values for bias correction / anomaly forcing
+         !
+         "Sa_precsf       ", &
+         "Sa_prec_af      ","Sa_u_af         ","Sa_v_af         ","Sa_tbot_af      ",&
+         "Sa_pbot_af      ","Sa_shum_af      ","Sa_swdn_af      ","Sa_lwdn_af      " &
        /)
-  character(16),parameter  :: avifld(1:ktrans) = &
-     (/"z               ","u               ","v               ","tbot            ", &
-       "ptem            ","shum            ","dens            ","pbot            ", &
-       "pslv            ","lwdn            ","rainc           ","rainl           ", &
-       "snowc           ","snowl           ","swndr           ","swvdr           ", &
-       "swndf           ","swvdf           ","swnet           ","co2prog         ", &
-       "co2diag         ","bcphidry        ","bcphodry        ","bcphiwet        ", &
-       "ocphidry        ","ocphodry        ","ocphiwet        ","dstwet1         ", &
-       "dstwet2         ","dstwet3         ","dstwet4         ","dstdry1         ", &
-       "dstdry2         ","dstdry3         ","dstdry4         ",                    &
-       "tref            ","qref            ","avsdr           ","anidr           ", &
-       "avsdf           ","anidf           ","ts              ","to              ", &
-       "snowhl          ","lfrac           ","ifrac           ","ofrac           ", &
-       "taux            ","tauy            ","lat             ","sen             ", &
-       "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
-! add precsf
-       "dms             ","precsf          ", &                                       
-! add Sa_precsf for precip scale factor
-       "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
-       "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         "  /)
 
-! add stream for anomaly forcing
+  character(16),parameter  :: avifld(1:ktrans) = &
+       (/"z               ","u               ","v               ","tbot            ", &
+         "ptem            ","shum            ","dens            ","pbot            ", &
+         "pslv            ","lwdn            ","rainc           ","rainl           ", &
+         "snowc           ","snowl           ","swndr           ","swvdr           ", &
+         "swndf           ","swvdf           ","swnet           ","co2prog         ", &
+         "co2diag         ","bcphidry        ","bcphodry        ","bcphiwet        ", &
+         "ocphidry        ","ocphodry        ","ocphiwet        ","dstwet1         ", &
+         "dstwet2         ","dstwet3         ","dstwet4         ","dstdry1         ", &
+         "dstdry2         ","dstdry3         ","dstdry4         ",                    &
+         "tref            ","qref            ","avsdr           ","anidr           ", &
+         "avsdf           ","anidf           ","ts              ","to              ", &
+         "snowhl          ","lfrac           ","ifrac           ","ofrac           ", &
+         "taux            ","tauy            ","lat             ","sen             ", &
+         "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
+         ! add precsf
+         "dms             ","precsf          ", &                                       
+         ! add Sa_precsf for precip scale factor
+         "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
+         "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         "  &
+       /)
+
+  ! add stream for anomaly forcing
   integer(IN),parameter :: ktranss = 28
 
   character(16),parameter  :: stofld(1:ktranss) = &
-     (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
-       "strm_shum       ","strm_tdew       ","strm_rh         ","strm_lwdn       ", &
-       "strm_swdn       ","strm_swdndf     ","strm_swdndr     ","strm_precc      ", &
-       "strm_precl      ","strm_precn      ","strm_co2prog    ","strm_co2diag    ", &
-!       "strm_swup       ","strm_prec       ","strm_tarcf      " /)
-! add strm_precsf
-       "strm_swup       ","strm_prec       ","strm_tarcf      ","strm_precsf     ", &
-! add anomaly forcing streams
-       "strm_prec_af    ","strm_u_af       ","strm_v_af       ","strm_tbot_af    ", &
-       "strm_pbot_af    ","strm_shum_af    ","strm_swdn_af    ","strm_lwdn_af    "  /)
+       (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
+         "strm_shum       ","strm_tdew       ","strm_rh         ","strm_lwdn       ", &
+         "strm_swdn       ","strm_swdndf     ","strm_swdndr     ","strm_precc      ", &
+         "strm_precl      ","strm_precn      ","strm_co2prog    ","strm_co2diag    ", &
+         "strm_swup       ","strm_prec       ","strm_tarcf      ", &
+         ! add bias correction / anomaly forcing streams
+         "strm_precsf     ", &
+         "strm_prec_af    ","strm_u_af       ","strm_v_af       ","strm_tbot_af    ", &
+         "strm_pbot_af    ","strm_shum_af    ","strm_swdn_af    ","strm_lwdn_af    "  &
+       /)
+
   character(16),parameter  :: stifld(1:ktranss) = &
-     (/"tbot            ","wind            ","z               ","pbot            ", &
-       "shum            ","tdew            ","rh              ","lwdn            ", &
-       "swdn            ","swdndf          ","swdndr          ","precc           ", &
-       "precl           ","precn           ","co2prog         ","co2diag         ", &
-! add strm_precsf
-       "swup            ","prec            ","tarcf           ","precsf          ", &
-! add anomaly forcing streams
-       "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
-       "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         "  /)
+       (/"tbot            ","wind            ","z               ","pbot            ", &
+         "shum            ","tdew            ","rh              ","lwdn            ", &
+         "swdn            ","swdndf          ","swdndr          ","precc           ", &
+         "precl           ","precn           ","co2prog         ","co2diag         ", &
+         ! add precsf
+         "swup            ","prec            ","tarcf           ","precsf          ", &
+         ! add anomaly forcing streams
+         "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
+         "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         "  &
+       /)
+
   character(CL), pointer :: ilist_av(:)     ! input list for translation
   character(CL), pointer :: olist_av(:)     ! output list for translation
   character(CL), pointer :: ilist_st(:)     ! input list for translation
@@ -214,14 +224,14 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
   use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
     implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+    ! !INPUT/OUTPUT PARAMETERS:
 
     type(ESMF_Clock)            , intent(in)    :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
     type(mct_aVect)             , intent(inout) :: x2a, a2x
     character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
 
-!EOP
+   !EOP
 
     !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
@@ -564,17 +574,6 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     kdw2  = mct_aVect_indexRA(a2x,'Faxa_dstwet2')
     kdw3  = mct_aVect_indexRA(a2x,'Faxa_dstwet3')
     kdw4  = mct_aVect_indexRA(a2x,'Faxa_dstwet4')
-    kprecsf = mct_aVect_indexRA(a2x,'Sa_precsf',perrWith='quiet')
-
-    ! anomaly forcing
-    kprec_af = mct_aVect_indexRA(a2x,'Sa_prec_af',perrWith='quiet')
-    ku_af = mct_aVect_indexRA(a2x,'Sa_u_af',perrWith='quiet')
-    kv_af = mct_aVect_indexRA(a2x,'Sa_v_af',perrWith='quiet')
-    ktbot_af = mct_aVect_indexRA(a2x,'Sa_tbot_af',perrWith='quiet')
-    kpbot_af = mct_aVect_indexRA(a2x,'Sa_pbot_af',perrWith='quiet')
-    kshum_af = mct_aVect_indexRA(a2x,'Sa_shum_af',perrWith='quiet')
-    kswdn_af = mct_aVect_indexRA(a2x,'Sa_swdn_af',perrWith='quiet')
-    klwdn_af = mct_aVect_indexRA(a2x,'Sa_lwdn_af',perrWith='quiet')
 
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
     call mct_aVect_zero(x2a)
@@ -584,7 +583,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     kavsdr = mct_aVect_indexRA(x2a,'Sx_avsdr')
     kavsdf = mct_aVect_indexRA(x2a,'Sx_avsdf')
 
-    !--- figure out what's on the streams ---
+    !--- figure out what's on the standard streams ---
     cnt = 0
     flds_strm = ''
     do n = 1,SDATM%nstreams
@@ -600,6 +599,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
          endif
       enddo
     enddo
+
     if (my_task == master_task) write(logunit,F00) ' flds_strm = ',trim(flds_strm)
     call shr_sys_flush(logunit)
 
@@ -682,9 +682,9 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
              inquire(file=trim(rest_file_strm),exist=exists)
           endif
        endif
+
        call shr_mpi_bcast(exists,mpicom,'exists')
-!       if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-!       call shr_pcdf_readwrite('read',trim(rest_file),mpicom,gsmap,rf1=somtp,rf1n='somtp')
+
        if (exists) then
           if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
           call shr_strdata_restRead(trim(rest_file_strm),SDATM,mpicom)
@@ -753,14 +753,12 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
 
    implicit none
 
-! !INPUT/OUTPUT PARAMETERS:
+   ! !INPUT/OUTPUT PARAMETERS:
 
    type(ESMF_Clock)            ,intent(in)    :: EClock
    type(seq_cdata)             ,intent(inout) :: cdata
    type(mct_aVect)             ,intent(inout) :: x2a        ! driver -> dead
    type(mct_aVect)             ,intent(inout) :: a2x        ! dead   -> driver
-
-!EOP
 
    !--- local ---
    type(mct_gsMap)        , pointer :: gsMap
@@ -873,7 +871,7 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
       do n = 1,SDATM%nstreams
          if (firstcall) then
             call shr_dmodel_translate_list(SDATM%avs(n),a2x,&
-                 avifld,avofld,ilist_av(n),olist_av(n),count_av(n))
+                 avifld(1:ktrans),avofld,ilist_av(n),olist_av(n),count_av(n))
          end if
          if (count_av(n) > 0) then
             call shr_dmodel_translateAV_list(SDATM%avs(n),a2x,&
@@ -883,7 +881,7 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
       do n = 1,SDATM%nstreams
          if (firstcall) then
             call shr_dmodel_translate_list(SDATM%avs(n),avstrm,&
-                 stifld,stofld,ilist_st(n),olist_st(n),count_st(n))
+                 stifld(1:ktranss),stofld,ilist_st(n),olist_st(n),count_st(n))
          end if
          if (count_st(n) > 0) then 
             call shr_dmodel_translateAV_list(SDATM%avs(n),avstrm,&
@@ -895,6 +893,97 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
    else
       call mct_aVect_zero(a2x)
    endif
+
+   !
+   ! anomaly forcing ( start block )
+   ! bias correct atmospheric input fields if streams exist
+   !
+   lsize = mct_avect_lsize(avstrm)
+
+   if (sprecsf > 0) then
+      do n = 1,lsize
+         avstrm%rAttr(sprec,n) = avstrm%rAttr(sprec,n)   &
+              *min(1.e2_r8,avstrm%rAttr(sprecsf,n))
+         avstrm%rAttr(sprecc,n) = avstrm%rAttr(sprecc,n) &
+              *min(1.e2_r8,avstrm%rAttr(sprecsf,n))
+         avstrm%rAttr(sprecl,n) = avstrm%rAttr(sprecl,n) &
+              *min(1.e2_r8,avstrm%rAttr(sprecsf,n))
+         avstrm%rAttr(sprecn,n) = avstrm%rAttr(sprecn,n) &
+              *min(1.e2_r8,avstrm%rAttr(sprecsf,n))
+      end do
+   endif
+   
+   ! adjust atmospheric input fields if anomaly forcing streams exist
+   if (su_af > 0 .and. sv_af > 0) then
+      do n = 1,lsize
+         avstrm%rAttr(swind,n) =  &
+              sqrt((avstrm%rAttr(swind,n)/sqrt(2._r8) &
+              + avstrm%rAttr(su_af,n))**2  &
+              +(avstrm%rAttr(swind,n)/sqrt(2._r8)     &
+              + avstrm%rAttr(sv_af,n))**2)
+      end do
+   endif
+
+   if (sshum_af > 0) then
+      do n = 1,lsize
+         avstrm%rAttr(sshum,n) = avstrm%rAttr(sshum,n) &
+              + avstrm%rAttr(sshum_af,n)
+
+         ! avoid possible negative q values
+         if(avstrm%rAttr(sshum,n) < 0._r8) then 
+            avstrm%rAttr(sshum,n) = 1.e-6_r8
+         endif
+
+      end do
+   endif
+      
+   if (spbot_af > 0) then
+      do n = 1,lsize
+         avstrm%rAttr(spbot,n) = avstrm%rAttr(spbot,n) &
+              + avstrm%rAttr(spbot_af,n)
+      end do
+   endif
+      
+   if (stbot_af > 0) then
+      do n = 1,lsize
+         avstrm%rAttr(stbot,n) = avstrm%rAttr(stbot,n) &
+              + avstrm%rAttr(stbot_af,n)
+      end do
+   endif
+      
+   if (slwdn_af > 0) then
+      do n = 1,lsize
+         avstrm%rAttr(slwdn,n) = avstrm%rAttr(slwdn,n) &
+              * avstrm%rAttr(slwdn_af,n)
+      end do
+   endif
+      
+   if (sprec_af > 0) then
+      do n = 1,lsize
+         avstrm%rAttr(sprec,n) = avstrm%rAttr(sprec,n)   &
+              * avstrm%rAttr(sprec_af,n)
+         avstrm%rAttr(sprecc,n) = avstrm%rAttr(sprecc,n) &
+              * avstrm%rAttr(sprec_af,n)
+         avstrm%rAttr(sprecl,n) = avstrm%rAttr(sprecl,n) &
+              * avstrm%rAttr(sprec_af,n)
+         avstrm%rAttr(sprecn,n) = avstrm%rAttr(sprecn,n) &
+              * avstrm%rAttr(sprec_af,n)
+      enddo
+   endif
+      
+   if (sswdn_af > 0) then
+      do n = 1,lsize
+         avstrm%rAttr(sswdn,n) = avstrm%rAttr(sswdn,n)     &
+              * avstrm%rAttr(sswdn_af,n)
+         avstrm%rAttr(sswdndf,n) = avstrm%rAttr(sswdndf,n) &
+              * avstrm%rAttr(sswdn_af,n)
+         avstrm%rAttr(sswdndr,n) = avstrm%rAttr(sswdndr,n) &
+              * avstrm%rAttr(sswdn_af,n)
+      enddo
+   endif
+   !
+   ! anomaly forcing ( end block )
+   !
 
    call t_startf('datm_mode')
 
@@ -923,18 +1012,8 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
          a2x%rAttr(kpslv,n) = a2x%rAttr(kpslv,n)*100._R8
          a2x%rAttr(kpbot,n) = a2x%rAttr(kpbot,n)*100._R8
 
-!         !--- fix dens problem in dataset, should be about "1"
-!         if (a2x%rAttr(kdens,n) < 0.01) &
-!            a2x%rAttr(kdens,n) = a2x%rAttr(kdens,n)*10000._R8
-
-!         !--- set z to at least 10m
-!         a2x%rAttr(kz,n) = max(10.0_R8,a2x%rAttr(kz,n))
          !--- tcraig, file has terrain height on it, set to 10m
          a2x%rAttr(kz,n) = 10.0_R8
-
-!         !--- compute theta from tbot and pbot as in WRF
-!         !--- tcraig now from WRF input data
-!         a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n) / ((a2x%rAttr(kpbot)/1.0e6)**0.2854)
 
          !--- convert to degK from degC
          a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + tKFrz
@@ -956,8 +1035,6 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
          call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
               mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
       endif
-      !      call shr_cal_date2eday(currentYMD,eday,calendar)
-      !      rday = mod(eday,365) + real(currentTOD)/SHR_CONST_CDAY
       call shr_cal_date2julian(currentYMD,currentTOD,rday,calendar)
       rday = mod((rday - 1.0_R8),365.0_R8)
       cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
@@ -975,9 +1052,6 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
                            vprime*cos(winddFactor(n)*degtorad)
 
          !--- density, tbot, & pslv taken directly from input stream, set pbot ---
-         !  a2x%rAttr(kdens,n) = <copied from input streams bundle>
-         !  a2x%rAttr(ktbot,n) = <copied from input streams bundle>
-         !  a2x%rAttr(kpslv,n) = <copied from input streams bundle>
          a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
 
          !--- correction to NCEP Arctic & Antarctic air T & potential T ---
@@ -1210,13 +1284,12 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
          close(nu)
          call shr_file_freeUnit(nu)
       endif
-!      if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),currentYMD,currentTOD
-!      call shr_pcdf_readwrite('write',trim(rest_file),mpicom,gsmap,clobber=.true., &
-!         rf1=somtp,rf1n='somtp')
+
       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),currentYMD,currentTOD
       call shr_strdata_restWrite(trim(rest_file_strm),SDATM,mpicom,trim(case_name),'SDATM strdata')
       call shr_sys_flush(logunit)
       call t_stopf('datm_restart')
+
    endif
 
    call t_stopf('datm')

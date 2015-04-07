@@ -1,6 +1,6 @@
 !===============================================================================
 ! SVN $Id: shr_mpi_mod.F90 59033 2014-04-11 01:55:15Z santos@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_mpi_mod.F90 $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_141022/shr/shr_mpi_mod.F90 $
 !===============================================================================
 
 Module shr_mpi_mod

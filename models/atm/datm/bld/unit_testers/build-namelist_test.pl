@@ -315,7 +315,7 @@ my $stat = `fgrep \$ $confdir/datm_atm_in`;
 isnt( $?, 0, "check for unresolved env variables" );
 system( "/bin/rm -rf $confdir"         );
 # Run different DATM_MODE
-foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP" ) {
+foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCRUNCEP_V5" ) {
    $xmlenv{'DATM_MODE'} = $mode;
    print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
    &writeEnv( %xmlenv );

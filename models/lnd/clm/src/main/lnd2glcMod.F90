@@ -144,7 +144,7 @@ contains
 
   !------------------------------------------------------------------------------
   subroutine update_lnd2glc(this, bounds, num_do_smb_c, filter_do_smb_c, &
-       temperature_vars, waterflux_vars, init)
+       temperature_inst, waterflux_inst, init)
     !
     ! !DESCRIPTION:
     ! Assign values to lnd2glc+
@@ -154,8 +154,8 @@ contains
     type(bounds_type)      , intent(in)    :: bounds  
     integer                , intent(in)    :: num_do_smb_c       ! number of columns in filter_do_smb_c
     integer                , intent(in)    :: filter_do_smb_c(:) ! column filter: columns where smb calculations are performed
-    type(temperature_type) , intent(in)    :: temperature_vars
-    type(waterflux_type)   , intent(in)    :: waterflux_vars
+    type(temperature_type) , intent(in)    :: temperature_inst
+    type(waterflux_type)   , intent(in)    :: waterflux_inst
     logical                , intent(in)    :: init               ! if true=>only set a subset of fields
     !
     ! !LOCAL VARIABLES:
@@ -215,10 +215,10 @@ contains
       ! until the run loop; thus, in initialization, we will use the default value
       ! for qice, as set above.
       fields_assigned(g,n) = .true.
-      this%tsrf_grc(g,n) = temperature_vars%t_soisno_col(c,1)
+      this%tsrf_grc(g,n) = temperature_inst%t_soisno_col(c,1)
       this%topo_grc(g,n) = col%glc_topo(c)
       if (.not. init) then
-         this%qice_grc(g,n) = waterflux_vars%qflx_glcice_col(c) * flux_normalization
+         this%qice_grc(g,n) = waterflux_inst%qflx_glcice_col(c) * flux_normalization
 
          ! Check for bad values of qice
          if ( abs(this%qice_grc(g,n)) > 1.0_r8) then

@@ -11,7 +11,6 @@ module dynFileMod
   use ncdio_pio      , only : file_desc_t, ncd_pio_openfile, ncd_inqdid, ncd_inqdlen, ncd_io
   use abortutils     , only : endrun
   implicit none
-  save
   private
   !
   ! !PUBLIC TYPES:
@@ -24,6 +23,7 @@ module dynFileMod
   interface dyn_file_type
      module procedure constructor  ! initialize a new dyn_file_type object
   end interface dyn_file_type
+  !-----------------------------------------------------------------------
 
 contains
   

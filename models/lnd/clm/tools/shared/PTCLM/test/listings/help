@@ -21,7 +21,7 @@ Options:
     --debug             Flag to turn on debug mode so won't run, but display
                         what would happen
     --sdate=SDATE       Use entered date string in all files (use the given
-                        date string in place of the current date:140423)
+                        date string in place of the current date:140816)
     --clmnmlusecase=CLMNMLUSECASE
                         CLM namelist use case to use (default:2000_control)
     --phys=CLMPHYSVERS  CLM physics version to use (default:clm4_5)
@@ -29,8 +29,8 @@ Options:
     --mydatadir=MYDATADIR
                         Directory of where to put your data files (files will
                         be under subdirectories for each site) (default: /glad
-                        e/p/work/erik/clm_trunk/models/lnd/clm/tools/shared/PT
-                        CLM/mydatafiles)
+                        e/p/work/erik/clm_beta12ext/models/lnd/clm/tools/share
+                        d/PTCLM/mydatafiles)
     --donot_use_tower_yrs
                         Do NOT use the data years that correspond to the tower
                         years (when you plan on using global forcing)
@@ -55,4 +55,4 @@ Options:
     --mksurfdata_opts=MKSURFDATA_OPTS
                         Options to send directly to mksurfdata_map
 
-  Main Script Version Id: $Id: PTCLMmkdata 58530 2014-03-26 22:02:00Z erik $ Scripts URL: $HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk/PTCLMmkdata $:
+  Main Script Version Id: $Id: PTCLMmkdata 60504 2014-05-21 21:25:06Z sacks $ Scripts URL: $HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk_tags/PTCLM2_140521/PTCLMmkdata $:

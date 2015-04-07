@@ -1,8 +1,414 @@
 ================================================================================
-SVN $Id: ChangeLog 63584 2014-09-16 22:22:15Z sacks $
-SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/scripts/trunk_tags/scripts4_140916c/ChangeLog $
+SVN $Id: ChangeLog 64698 2014-10-23 16:35:27Z sacks $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/scripts/branch_tags/refactor_koven_tags/refactor_koven_n02_scripts4_141023/ChangeLog $
 ================================================================================
 This file describes what tags were created and why
+================================================================================
+Originator: sacks
+Date: 23 Oct 2014
+Model: scripts
+Version: scripts4_141023
+One-line: Re-remove some aux_glc tests
+
+Re-remove the FG and IG tests that I had removed in scripts4_141017a... that
+change was lost in scripts4_141022
+
+M       ccsm_utils/Testlistxml/testlist.xml
+
+================================================================================
+Originator: sacks
+Date: 22 Oct 2014
+Model: scripts
+Version: scripts4_141022g
+One-line: add a 4km test to the aux_glc test suite
+
+M       ccsm_utils/Testlistxml/testlist.xml
+
+================================================================================
+Originator: sacks
+Date: 22 Oct 2014
+Model: scripts
+Version: scripts4_141022f
+One-line: allow easy creation of cases using 4-km Greenland grid
+
+M       ccsm_utils/Case.template/config_grid.xml
+
+================================================================================
+Originator: sacks
+Date: 22 Oct 2014
+Model: scripts
+Version: scripts4_141022e
+One-line: allow 4-km Greenland grid
+
+M       ccsm_utils/Case.template/config_definition.xml
+
+================================================================================
+Originator: sacks
+Date: 22 Oct 2014
+Model: scripts
+Version: scripts4_141022d
+One-line: change CISM2 PEA test in aux_glc testlist so that it builds
+
+M       ccsm_utils/Testlistxml/testlist.xml
+
+================================================================================
+Originator: sacks
+Date: 22 Oct 2014
+Model: scripts
+Version: scripts4_141022c
+One-line: change description for the CISM_USE_TRILINOS xml variable
+
+M       ccsm_utils/Case.template/config_definition.xml
+
+================================================================================
+Originator: sacks
+Date: 22 Oct 2014
+Model: scripts
+Version: scripts4_141022b
+One-line: fix DLND_CPLHIST for TG cases that point to 20TR output
+
+Some 20TR cases had been accidentally renamed to HIST rather than 20TR when
+these compsets were renamed; this led to pointers to non-existent files
+
+M       ccsm_utils/Case.template/config_compsets.xml
+
+================================================================================
+Originator: sacks
+Date: 22 Oct 2014
+Model: scripts
+Version: scripts4_141022a
+One-line: remove CISM2P/CISM2S distinction
+
+Now that trilinos is not required in order to run CISM2 in parallel, there is no
+longer much need for a CISM2S compset. So I am removing this, and removing the P
+vs. S in the CISM2 compset names.
+
+In order to get reasonable PE layouts for CISM2 compsets, this requires
+Machines_141022.
+
+M       ccsm_utils/Case.template/config_compsets.xml
+M       ccsm_utils/Testlistxml/testlist.xml
+
+================================================================================
+Originator: muszala
+Date: 22 Oct 2014
+Model: scripts
+Version: scripts4_141022
+One-line: aux_clm45 testlist reorganization
+
+M       ccsm_utils/Case.template/config_compsets.xml
+-- xml doesn't like '--' in a comment line
+  -<!---P compsets -- PORT (CAM's Parallel Offline Radiation Tool) -->
+  +<!---P compsets PORT (CAM's Parallel Offline Radiation Tool) -->
+M       ccsm_utils/Testlistxml/testlist.xml
+-- yearly reorg of aux_clm45 tests.  add gnu+yellowstone, remove
+-- pgi+goldbach, balance tests between machine/compiler
+A  +    ccsm_utils/Testlistxml/testmods_dirs/clm/cropMonthOutput
+-- adds capability to just dump monthly output to crop tests
+D       ccsm_utils/Testlistxml/testmods_dirs/clm/ptsROB
+-- not required anymore
+D       ccsm_utils/Testlistxml/testmods_dirs/clm/ptsROB/user_nl_clm
+-- not required anymore
+D       ccsm_utils/Testlistxml/testmods_dirs/clm/ptsROB/xmlchange_cmnds
+-- not required anymore
+D       ccsm_utils/Testlistxml/testmods_dirs/clm/voc
+-- not required anymore
+D       ccsm_utils/Testlistxml/testmods_dirs/clm/voc/user_nl_clm
+-- not required anymore
+D       ccsm_utils/Testlistxml/testmods_dirs/clm/voc/user_nl_cpl
+-- not required anymore
+
+================================================================================
+Originator: sacks
+Date: 21 Oct 2014
+Model: scripts
+Version: scripts4_141021
+One-line: allow 'xmlchange_commands' in addition to 'xmlchange_cmds' in testmods
+
+Main purpose is to allow xmlchange_commands in addition to xmlchange_cmds in
+testmods. Eventually, I'd hope to do away with xmlchange_cmnds entirely, but for
+now that's supported for backwards compatibility. Motivation: cmnds is a
+non-standard abbreviation, and would be easy to get wrong (also the
+documentation was wrong, saying to use xmlchange_cmds).
+
+In doing this, I have also:
+
+(1) Removed handling of testmods from create_test, instead leveraging the
+existing -user_mods_dir functionality in create_newcase, in order to remove
+duplicated code.
+
+(2) Removed the -user_testmods_dir option of create_test, which didn't appear to
+be working correctly anyway (it seems like it was supposed to allow directories
+outside of the main testmods area, but it didn't).
+
+M       create_test
+M       create_newcase
+
+
+================================================================================
+Originator: sacks
+Date: 18 Oct 2014
+Model: scripts
+Version: scripts4_141018
+One-line: add some no_trilinos tests for aux_glc test list
+
+M       ccsm_utils/Testlistxml/testlist.xml
+A       ccsm_utils/Testlistxml/testmods_dirs/cism/no_trilinos
+A       ccsm_utils/Testlistxml/testmods_dirs/cism/no_trilinos/README
+A       ccsm_utils/Testlistxml/testmods_dirs/cism/no_trilinos/xmlchange_cmnds
+
+================================================================================
+Originator: jshollen
+Date: 17 Oct 2014
+Model: scripts
+Version: scripts4_141017c
+One-line: fix cesm_submit for SBN, regular tests, plain cases
+
+M       ccsm_utils/Tools/cesm_submit
+
+================================================================================
+Originator: aliceb
+Date: 17 Oct 2014
+Model: scripts
+Version: scripts4_141017b
+One-line: updates for the tseries generation support in CESM scripts
+
+(Note: you must manually edit the BSUB -P entry in the tseries_generate.run 
+script to accurately reflect your project number. This will change with 
+the integration into the new batch system that Jay is working on.)
+
+M       ccsm_utils/Tools/cesm_tseries_generator.py
+M       ccsm_utils/Tools/tseries_generate.submit
+M       ccsm_utils/Tools/tseries_generate.run
+M       ccsm_utils/Tools/pythonlib/cesmEnvLib.py
+M       ccsm_utils/Tools/cesm_postrun_setup
+M       ccsm_utils/Case.template/config_archive.xml
+M       ccsm_utils/Case.template/config_definition.xml
+M       create_newcase
+
+================================================================================
+
+Originator: sacks
+Date: 17 Oct 2014
+Model: scripts
+Version: scripts4_141017a
+One-line: Remove some aux_glc tests
+
+Removed FG tests (redundant with BG tests), and a couple of redundant IG tests
+
+(Note: running this through manage_xml_entries also resulted in a rearrangement
+of other tests)
+
+M       ccsm_utils/Testlistxml/testlist.xml
+
+
+================================================================================
+Originator: jshollen
+Date: 17 Oct 2014
+Model: scripts
+Version: scripts4_141017
+One-line: Fix cesm_submit bug for regular cases
+
+M       ccsm_utils/Tools/cesm_submit
+
+================================================================================
+Originator: jedwards
+Date: 16 Oct 2014
+Model: scripts
+Version: scripts4_141016
+One-line: rework of getTiming2.pl for compatibility with new gptl lib
+
+M ccsm_utils/Tools/timing/getTiming2.pl
+
+
+================================================================================
+Originator: jedwards
+Date: 15 Oct 2014
+Model: scripts
+Version: scripts4_141015
+One-line: Update GPTL timer library, add profile_papi_enable option
+                requires driver, timer and Machines tag updates.  
+	
+M ccsm_utils/Tools/timing/getTiming.csh
+M ccsm_utils/Tools/timing/getTiming2.pl
+M ccsm_utils/Case.template/config_definition.xml
+
+
+================================================================================
+Originator: erik
+Date: 09 Oct 2014
+Model: scripts
+Version: scripts4_141009
+One-line:  Fix several namelist-compare issues, change 20TR=>HIST, work on PDAY
+           work on test-lists
+
+Fix bugs: 2024, 2035, 2037
+
+Move scripts4_140819_nlcomparefix to trunk.
+
+Change compsets with 20TR to HIST. Change fixed PDAY to 2000, but change 1850PDAY 
+to PINDPDAY. Fix some issues with SBN tests. Move some aux_clm45 tests to use
+new test-mods to turn on drydep namelist without the megan namelist. And move
+some prebeata and prealpha tests from using CLM40 to using CLM45.
+
+Fix a bunch of issues with create_test for namelist-compare. And have namelist-compare
+cases retain config-test options so the compare will be more valid.
+
+----------- Add tests for running with drydep namelist and without megan namelist
+A  +    ccsm_utils/Testlistxml/testmods_dirs/clm/drydepnomegan
+A  +    ccsm_utils/Testlistxml/testmods_dirs/clm/drydepnomegan/user_nl_clm
+A  +    ccsm_utils/Testlistxml/testmods_dirs/clm/drydepnomegan/xmlchange_cmnds
+
+M       ccsm_utils/Case.template/config_compsets.xml - Rename 20TR to HIST, work on PDAY
+           compsets
+M       ccsm_utils/Testcases/SBN_script ----- Make sure some env variables are set
+M       ccsm_utils/Testlistxml/testlist.xml - Change testlists, add more CLM45 coupled
+           tests, rename 20TR compsets to HIST
+M       ccsm_utils/Tools/cesm_submit -------- a fix for SBN
+M       ccsm_utils/Tools/testcase_end ------- set base_name for both BASEGEN and BASECMP (bug 2035)
+M       ccsm_utils/Tools/testcase_env.csh --- unset BASECMP_NAME
+M       create_test --- Fix some errors, that use diagnostics found, set undefined variables.
+                        Change namelist tests so they retain test options in comparison.
+                        Change warn to print which seems to help a panic that happens in
+                        debug mode (bug 2024). Fix namelist compare to compare to another case that
+                        isn't identical (bug 2037).
+
+================================================================================
+Originator: sacks
+Date: 07 Oct 2014
+Model: scripts
+Version: scripts4_141007
+One-line: Modify IS2 tests in aux_glc testlist
+
+(1) Remove hopper tests. I may want to add these back in later (especially to
+    test gnu), but for now I'm not maintaining these.
+
+(2) Add SMS_D_Ly1.f09_g16_gl10.TGIS2 tests that use trilinos, both for
+    yellowstone-intel and titan-pgi. I may want to lengthen these tests, but for
+    now these 1-year tests should be sufficient to make sure trilinos basically
+    works.
+
+(3) Change one yellowstone-intel IS2 test to yellowstone-pgi: yellowstone-pgi
+    should work now that we're no longer using trilinos by default (we don't
+    have trilinos for pgi on yellowstone).
+
+M       ccsm_utils/Testlistxml/testlist.xml
+A       ccsm_utils/Testlistxml/testmods_dirs/cism/trilinos
+A       ccsm_utils/Testlistxml/testmods_dirs/cism/trilinos/README
+A       ccsm_utils/Testlistxml/testmods_dirs/cism/trilinos/user_nl_cism
+
+================================================================================
+Originator: fvitt
+Date: 03 Oct 2014
+Model: scripts
+Version: scripts4_141003
+One-line: Added PORT and CCMI chemistry compsets and renamed FSSOA to FSTRATSOA
+
+The new compsets:
+
+PORT (Parallel Offline Radiation Tool) for CAM4 and CAM5 configurations
+use stub surface models:
+  PC4  shortname: P_2000_CAM4  longname: 2000_CAM4%PORT_SLND_SICE_SOCN_SROF_SGLC_SWAV
+  PC5  shortname: P_2000_CAM5  longname: 2000_CAM5%PORT_SLND_SICE_SOCN_SROF_SGLC_SWAV
+
+CCMI chemistry (waccm and cam-chem) REFC1 compsets:
+  alias: FWMC4L40CCMIR1    shortname: F_1950-2010_CCMI_REFC1_WACCM_MA           longname: FRC1_CAM4%WCMA_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV
+  alias: FWTC4L40CCMIR1    shortname: F_1950-2010_CCMI_REFC1_WACCM_TSMLT        longname: FRC1_CAM4%WTSM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV
+  alias: FTSC4L40CCMIR1    shortname: F_1950-2010_CCMI_REFC1_TROP_STRAT         longname: FRC1_CAM4%SSOA_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV
+  alias: FWMC4L40CCMIR1SD  shortname: F_1975-2010_CCMI_REFC1SD_WACCM_MA         longname: SDC1_CAM4%WCMA_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV
+  alias: FWTC4L40CCMIR1SD  shortname: F_1975-2010_CCMI_REFC1SD_WACCM_TSMLT      longname: SDC1_CAM4%WTSM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV
+  alias: FTSC4L40CCMIR1SD  shortname: F_1975-2010_CCMI_REFC1SD_TROP_STRAT       longname: SDC1_CAM4%SSOA_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV
+
+CCMI chemistry (waccm and cam-chem) REFC2 compsets:
+  alias: BWMC4L40CCMIR2    shortname: B_1950-2100_CCMI_REFC2_RCP6.0_WACCM_MA    longname: C2R6_CAM4%WCMA_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV
+  alias: BWMC4L40CCMIS2R85 shortname: B_1950-2100_CCMI_SENC2_RCP8.5_WACCM_MA    longname: C2R8_CAM4%WCMA_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV
+  alias: BWTC4L40CCMIR2    shortname: B_1950-2100_CCMI_REFC2_RCP6.0_WACCM_TSMLT longname: C2R6_CAM4%WTSM_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV
+  alias: BTSC4L40CCMIR2    shortname: B_1950-2100_CCMI_REFC2_RCP6.0_TROP_STRAT  longname: C2R6_CAM4%SSOA_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV
+  alias: BTSC4L40CCMIS2R45 shortname: B_2004-2100_CCMI_SENC2_RCP4.5_TROP_STRAT  longname: C2R4_CAM4%SSOA_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV
+
+Renamed FSSOA to FSTRATSOA:
+  FSTRATSOA   shortname: F_2000_STRATSOA
+
+M      ccsm_utils/Case.template/config_compsets.xml
+ - added PORT and CCMI chemistry compsets and renamed FSSOA to FSTRATSOA
+
+M      ccsm_utils/Testlistxml/testlist.xml
+ - added tests for compsets listed above
+
+A      ccsm_utils/Testlistxml/testmods_dirs/cam/cam4_port/user_nl_cam
+A      ccsm_utils/Testlistxml/testmods_dirs/cam/cam4_port
+A      ccsm_utils/Testlistxml/testmods_dirs/cam/cam5_port/user_nl_cam
+A      ccsm_utils/Testlistxml/testmods_dirs/cam/cam5_port
+ - inputs for PORT tests are specified in user_nl_cam
+
+================================================================================
+Originator: tcraig
+Date: 30 Sep 2014
+Model: scripts
+Version: scripts4_140930
+One-line: add preview_namelist call after prestaging for cice5,
+ also make sure different parts of scripts are in the correct directory.
+
+M       ccsm_utils/Tools/cesm_setup
+M       ccsm_utils/Tools/cesm_buildnml
+M       ccsm_utils/Tools/cesm_prestage
+
+================================================================================
+Originator: mlevy
+Date: 25 Sep 2014
+Model: scripts
+Version: scripts4_140925
+One-line: add C1DECO and G1D compsets
+
+M       ccsm_utils/Case.template/config_compsets.xml
+
+================================================================================
+Originator: sacks
+Date: 24 Sep 2014
+Model: scripts
+Version: scripts4_140924a
+One-line: another tweak to CLM's irrigation testmods
+
+change secondary hist file to annual average
+
+Note that this and the previous tag will change answers for CLM hist file
+comparisons for any tests that use this testmods directory (currently there are
+two such tests in the aux_clm45 test suite).
+
+M       ccsm_utils/Testlistxml/testmods_dirs/clm/irrigOn_reduceOutput/user_nl_clm
+
+================================================================================
+Originator: sacks
+Date: 24 Sep 2014
+Model: scripts
+Version: scripts4_140924
+One-line: tweak CLM's irrigation testmods
+
+add QIRRIG output to primary and secondary (1-d) history files, and use
+double-precision output
+
+M       ccsm_utils/Testlistxml/testmods_dirs/clm/irrigOn_reduceOutput/user_nl_clm
+
+================================================================================
+Originator: dbailey
+Date: 18 Sep 2014
+Model: scripts
+Version: scripts4_140918
+One-line: Remove cam5=.true. and add cam4=.true. for CICE.
+
+Requires cice4_0_20140918
+
+ccsm_utils/Case.template/config_compsets.xml
+
+================================================================================
+Originator: jshollen
+Date: 17 Sept 2014
+Model: scripts
+Version: scripts4_140917
+One-line: create_test will set the machine automatically from text test lists.
+
+M       create_test
+
 ================================================================================
 Originator: sacks
 Date: 16 Sept 2014

@@ -19,18 +19,18 @@ module CanopyTemperatureMod
   use clm_varctl           , only : iulog
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation
   use SurfaceResistanceMod , only : calc_soilevap_stress
-  use EcophysConType       , only : ecophyscon
+  use pftconMod            , only : pftcon
   use atm2lndType          , only : atm2lnd_type
   use CanopyStateType      , only : canopystate_type
   use EnergyFluxType       , only : energyflux_type
-  use FrictionVelocityType , only : frictionvel_type
+  use FrictionVelocityMod  , only : frictionvel_type
   use SoilStateType        , only : soilstate_type
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use LandunitType         , only : lun                
   use ColumnType           , only : col                
-  use PatchType            , only : pft                
+  use PatchType            , only : patch                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -45,8 +45,8 @@ contains
   !------------------------------------------------------------------------------
   subroutine CanopyTemperature(bounds, &
        num_nolakec, filter_nolakec, num_nolakep, filter_nolakep, &
-       atm2lnd_vars, canopystate_vars, soilstate_vars, frictionvel_vars, &
-       waterstate_vars, waterflux_vars, energyflux_vars, temperature_vars)
+       atm2lnd_inst, canopystate_inst, soilstate_inst, frictionvel_inst, &
+       waterstate_inst, waterflux_inst, energyflux_inst, temperature_inst)
     !
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of leaf temperature
@@ -81,21 +81,21 @@ contains
     type(bounds_type)      , intent(in)    :: bounds    
     integer                , intent(in)    :: num_nolakec         ! number of column non-lake points in column filter
     integer                , intent(in)    :: filter_nolakec(:)   ! column filter for non-lake points
-    integer                , intent(in)    :: num_nolakep         ! number of column non-lake points in pft filter
+    integer                , intent(in)    :: num_nolakep         ! number of column non-lake points in patch filter
     integer                , intent(in)    :: filter_nolakep(:)   ! patch filter for non-lake points
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
-    type(canopystate_type) , intent(inout) :: canopystate_vars
-    type(soilstate_type)   , intent(inout) :: soilstate_vars
-    type(frictionvel_type) , intent(inout) :: frictionvel_vars
-    type(waterstate_type)  , intent(inout) :: waterstate_vars
-    type(waterflux_type)   , intent(inout) :: waterflux_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
-    type(temperature_type) , intent(inout) :: temperature_vars
+    type(atm2lnd_type)     , intent(in)    :: atm2lnd_inst
+    type(canopystate_type) , intent(inout) :: canopystate_inst
+    type(soilstate_type)   , intent(inout) :: soilstate_inst
+    type(frictionvel_type) , intent(inout) :: frictionvel_inst
+    type(waterstate_type)  , intent(inout) :: waterstate_inst
+    type(waterflux_type)   , intent(inout) :: waterflux_inst
+    type(energyflux_type)  , intent(inout) :: energyflux_inst
+    type(temperature_type) , intent(inout) :: temperature_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,c,p      ! indices
     integer  :: j            ! soil/snow level index
-    integer  :: fp           ! lake filter pft index
+    integer  :: fp           ! lake filter patch index
     integer  :: fc           ! lake filter column index
     real(r8) :: qred         ! soil surface relative humidity
     real(r8) :: avmuir       ! ir inverse optical depth per unit leaf area
@@ -123,88 +123,88 @@ contains
          z_d_town         =>    lun%z_d_town                          , & ! Input:  [real(r8) (:)   ] displacement height of urban landunit (m)
          urbpoi           =>    lun%urbpoi                            , & ! Input:  [logical  (:)   ] true => landunit is an urban point       
 
-         z0mr             =>    ecophyscon%z0mr                       , & ! Input:  [real(r8) (:)   ] ratio of momentum roughness length to canopy top height (-)
-         displar          =>    ecophyscon%displar                    , & ! Input:  [real(r8) (:)   ] ratio of displacement height to canopy top height (-)
+         z0mr             =>    pftcon%z0mr                           , & ! Input:  ratio of momentum roughness length to canopy top height (-)
+         displar          =>    pftcon%displar                        , & ! Input:  ratio of displacement height to canopy top height (-)
 
-         forc_hgt_t       =>    atm2lnd_vars%forc_hgt_t_grc           , & ! Input:  [real(r8) (:)   ] observational height of temperature [m]  
-         forc_u           =>    atm2lnd_vars%forc_u_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in east direction (m/s)
-         forc_v           =>    atm2lnd_vars%forc_v_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in north direction (m/s)
-         forc_hgt_u       =>    atm2lnd_vars%forc_hgt_u_grc           , & ! Input:  [real(r8) (:)   ] observational height of wind [m]         
-         forc_hgt_q       =>    atm2lnd_vars%forc_hgt_q_grc           , & ! Input:  [real(r8) (:)   ] observational height of specific humidity [m]
-         forc_pbot        =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ] atmospheric pressure (Pa)                
-         forc_q           =>    atm2lnd_vars%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)    
-         forc_t           =>    atm2lnd_vars%forc_t_downscaled_col    , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)         
-         forc_th          =>    atm2lnd_vars%forc_th_downscaled_col   , & ! Input:  [real(r8) (:)   ] atmospheric potential temperature (Kelvin)
+         forc_hgt_t       =>    atm2lnd_inst%forc_hgt_t_grc           , & ! Input:  [real(r8) (:)   ] observational height of temperature [m]  
+         forc_u           =>    atm2lnd_inst%forc_u_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in east direction (m/s)
+         forc_v           =>    atm2lnd_inst%forc_v_grc               , & ! Input:  [real(r8) (:)   ] atmospheric wind speed in north direction (m/s)
+         forc_hgt_u       =>    atm2lnd_inst%forc_hgt_u_grc           , & ! Input:  [real(r8) (:)   ] observational height of wind [m]         
+         forc_hgt_q       =>    atm2lnd_inst%forc_hgt_q_grc           , & ! Input:  [real(r8) (:)   ] observational height of specific humidity [m]
+         forc_pbot        =>    atm2lnd_inst%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ] atmospheric pressure (Pa)                
+         forc_q           =>    atm2lnd_inst%forc_q_downscaled_col    , & ! Input:  [real(r8) (:)   ] atmospheric specific humidity (kg/kg)    
+         forc_t           =>    atm2lnd_inst%forc_t_downscaled_col    , & ! Input:  [real(r8) (:)   ] atmospheric temperature (Kelvin)         
+         forc_th          =>    atm2lnd_inst%forc_th_downscaled_col   , & ! Input:  [real(r8) (:)   ] atmospheric potential temperature (Kelvin)
 
 
-         frac_h2osfc      =>    waterstate_vars%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
-         frac_sno_eff     =>    waterstate_vars%frac_sno_eff_col      , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
-         frac_sno         =>    waterstate_vars%frac_sno_col          , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
-         h2osfc           =>    waterstate_vars%h2osfc_col            , & ! Input:  [real(r8) (:)   ] surface water (mm)                      
-         h2osno           =>    waterstate_vars%h2osno_col            , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                      
-         h2osoi_ice       =>    waterstate_vars%h2osoi_ice_col        , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)                       
-         h2osoi_liq       =>    waterstate_vars%h2osoi_liq_col        , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)                   
-         qg_snow          =>    waterstate_vars%qg_snow_col           , & ! Output: [real(r8) (:)   ] specific humidity at snow surface [kg/kg]
-         qg_soil          =>    waterstate_vars%qg_soil_col           , & ! Output: [real(r8) (:)   ] specific humidity at soil surface [kg/kg]
-         qg               =>    waterstate_vars%qg_col                , & ! Output: [real(r8) (:)   ] ground specific humidity [kg/kg]         
-         qg_h2osfc        =>    waterstate_vars%qg_h2osfc_col         , & ! Output: [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]
-         dqgdT            =>    waterstate_vars%dqgdT_col             , & ! Output: [real(r8) (:)   ] d(qg)/dT                                 
+         frac_h2osfc      =>    waterstate_inst%frac_h2osfc_col       , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
+         frac_sno_eff     =>    waterstate_inst%frac_sno_eff_col      , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
+         frac_sno         =>    waterstate_inst%frac_sno_col          , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+         h2osfc           =>    waterstate_inst%h2osfc_col            , & ! Input:  [real(r8) (:)   ] surface water (mm)                      
+         h2osno           =>    waterstate_inst%h2osno_col            , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                      
+         h2osoi_ice       =>    waterstate_inst%h2osoi_ice_col        , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)                       
+         h2osoi_liq       =>    waterstate_inst%h2osoi_liq_col        , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)                   
+         qg_snow          =>    waterstate_inst%qg_snow_col           , & ! Output: [real(r8) (:)   ] specific humidity at snow surface [kg/kg]
+         qg_soil          =>    waterstate_inst%qg_soil_col           , & ! Output: [real(r8) (:)   ] specific humidity at soil surface [kg/kg]
+         qg               =>    waterstate_inst%qg_col                , & ! Output: [real(r8) (:)   ] ground specific humidity [kg/kg]         
+         qg_h2osfc        =>    waterstate_inst%qg_h2osfc_col         , & ! Output: [real(r8) (:)   ]  specific humidity at h2osfc surface [kg/kg]
+         dqgdT            =>    waterstate_inst%dqgdT_col             , & ! Output: [real(r8) (:)   ] d(qg)/dT                                 
 
-         qflx_evap_tot    =>    waterflux_vars%qflx_evap_tot_patch    , & ! Output: [real(r8) (:)   ] qflx_evap_soi + qflx_evap_can + qflx_tran_veg
-         qflx_evap_veg    =>    waterflux_vars%qflx_evap_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation evaporation (mm H2O/s) (+ = to atm)
-         qflx_tran_veg    =>    waterflux_vars%qflx_tran_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_evap_tot    =>    waterflux_inst%qflx_evap_tot_patch    , & ! Output: [real(r8) (:)   ] qflx_evap_soi + qflx_evap_can + qflx_tran_veg
+         qflx_evap_veg    =>    waterflux_inst%qflx_evap_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation evaporation (mm H2O/s) (+ = to atm)
+         qflx_tran_veg    =>    waterflux_inst%qflx_tran_veg_patch    , & ! Output: [real(r8) (:)   ] vegetation transpiration (mm H2O/s) (+ = to atm)
 
-         htvp             =>    energyflux_vars%htvp_col              , & ! Output: [real(r8) (:)   ] latent heat of vapor of water (or sublimation) [j/kg]
-         cgrnd            =>    energyflux_vars%cgrnd_patch           , & ! Output: [real(r8) (:)   ] deriv. of soil energy flux wrt to soil temp [w/m2/k]
-         cgrnds           =>    energyflux_vars%cgrnds_patch          , & ! Output: [real(r8) (:)   ] deriv. of soil sensible heat flux wrt soil temp [w/m2/k]
-         cgrndl           =>    energyflux_vars%cgrndl_patch          , & ! Output: [real(r8) (:)   ] deriv. of soil latent heat flux wrt soil temp [w/m**2/k]
-         eflx_sh_tot      =>    energyflux_vars%eflx_sh_tot_patch     , & ! Output: [real(r8) (:)   ] total sensible heat flux (W/m**2) [+ to atm]
-         eflx_sh_tot_r    =>    energyflux_vars%eflx_sh_tot_r_patch   , & ! Output: [real(r8) (:)   ] rural total sensible heat flux (W/m**2) [+ to atm]
-         eflx_lh_tot_u    =>    energyflux_vars%eflx_lh_tot_u_patch   , & ! Output: [real(r8) (:)   ] urban total latent heat flux (W/m**2)  [+ to atm]
-         eflx_lh_tot      =>    energyflux_vars%eflx_lh_tot_patch     , & ! Output: [real(r8) (:)   ] total latent heat flux (W/m**2)  [+ to atm]
-         eflx_lh_tot_r    =>    energyflux_vars%eflx_lh_tot_r_patch   , & ! Output: [real(r8) (:)   ] rural total latent heat flux (W/m**2)  [+ to atm]
-         eflx_sh_tot_u    =>    energyflux_vars%eflx_sh_tot_u_patch   , & ! Output: [real(r8) (:)   ] urban total sensible heat flux (W/m**2) [+ to atm]
-         eflx_sh_veg      =>    energyflux_vars%eflx_sh_veg_patch     , & ! Output: [real(r8) (:)   ] sensible heat flux from leaves (W/m**2) [+ to atm]
+         htvp             =>    energyflux_inst%htvp_col              , & ! Output: [real(r8) (:)   ] latent heat of vapor of water (or sublimation) [j/kg]
+         cgrnd            =>    energyflux_inst%cgrnd_patch           , & ! Output: [real(r8) (:)   ] deriv. of soil energy flux wrt to soil temp [w/m2/k]
+         cgrnds           =>    energyflux_inst%cgrnds_patch          , & ! Output: [real(r8) (:)   ] deriv. of soil sensible heat flux wrt soil temp [w/m2/k]
+         cgrndl           =>    energyflux_inst%cgrndl_patch          , & ! Output: [real(r8) (:)   ] deriv. of soil latent heat flux wrt soil temp [w/m**2/k]
+         eflx_sh_tot      =>    energyflux_inst%eflx_sh_tot_patch     , & ! Output: [real(r8) (:)   ] total sensible heat flux (W/m**2) [+ to atm]
+         eflx_sh_tot_r    =>    energyflux_inst%eflx_sh_tot_r_patch   , & ! Output: [real(r8) (:)   ] rural total sensible heat flux (W/m**2) [+ to atm]
+         eflx_lh_tot_u    =>    energyflux_inst%eflx_lh_tot_u_patch   , & ! Output: [real(r8) (:)   ] urban total latent heat flux (W/m**2)  [+ to atm]
+         eflx_lh_tot      =>    energyflux_inst%eflx_lh_tot_patch     , & ! Output: [real(r8) (:)   ] total latent heat flux (W/m**2)  [+ to atm]
+         eflx_lh_tot_r    =>    energyflux_inst%eflx_lh_tot_r_patch   , & ! Output: [real(r8) (:)   ] rural total latent heat flux (W/m**2)  [+ to atm]
+         eflx_sh_tot_u    =>    energyflux_inst%eflx_sh_tot_u_patch   , & ! Output: [real(r8) (:)   ] urban total sensible heat flux (W/m**2) [+ to atm]
+         eflx_sh_veg      =>    energyflux_inst%eflx_sh_veg_patch     , & ! Output: [real(r8) (:)   ] sensible heat flux from leaves (W/m**2) [+ to atm]
 
-         forc_hgt_t_patch =>    frictionvel_vars%forc_hgt_t_patch     , & ! Input:  [real(r8) (:)   ] observational height of temperature at pft level [m]
-         forc_hgt_q_patch =>    frictionvel_vars%forc_hgt_q_patch     , & ! Input:  [real(r8) (:)   ] observational height of specific humidity at pft level [m]
-         z0m              =>    frictionvel_vars%z0m_patch            , & ! Output: [real(r8) (:)   ] momentum roughness length (m)            
-         z0mv             =>    frictionvel_vars%z0mv_patch           , & ! Output: [real(r8) (:)   ] roughness length over vegetation, momentum [m]
-         z0hv             =>    frictionvel_vars%z0hv_patch           , & ! Output: [real(r8) (:)   ] roughness length over vegetation, sensible heat [m]
-         z0qv             =>    frictionvel_vars%z0qv_patch           , & ! Output: [real(r8) (:)   ] roughness length over vegetation, latent heat [m]
-         z0hg             =>    frictionvel_vars%z0hg_col             , & ! Output: [real(r8) (:)   ] roughness length over ground, sensible heat [m]
-         z0mg             =>    frictionvel_vars%z0mg_col             , & ! Output: [real(r8) (:)   ] roughness length over ground, momentum [m]
-         z0qg             =>    frictionvel_vars%z0qg_col             , & ! Output: [real(r8) (:)   ] roughness length over ground, latent heat [m]
-         forc_hgt_u_patch =>    frictionvel_vars%forc_hgt_u_patch     , & ! Output: [real(r8) (:)   ] observational height of wind at pft level [m]
+         forc_hgt_t_patch =>    frictionvel_inst%forc_hgt_t_patch     , & ! Input:  [real(r8) (:)   ] observational height of temperature at patch level [m]
+         forc_hgt_q_patch =>    frictionvel_inst%forc_hgt_q_patch     , & ! Input:  [real(r8) (:)   ] observational height of specific humidity at patch level [m]
+         z0m              =>    frictionvel_inst%z0m_patch            , & ! Output: [real(r8) (:)   ] momentum roughness length (m)            
+         z0mv             =>    frictionvel_inst%z0mv_patch           , & ! Output: [real(r8) (:)   ] roughness length over vegetation, momentum [m]
+         z0hv             =>    frictionvel_inst%z0hv_patch           , & ! Output: [real(r8) (:)   ] roughness length over vegetation, sensible heat [m]
+         z0qv             =>    frictionvel_inst%z0qv_patch           , & ! Output: [real(r8) (:)   ] roughness length over vegetation, latent heat [m]
+         z0hg             =>    frictionvel_inst%z0hg_col             , & ! Output: [real(r8) (:)   ] roughness length over ground, sensible heat [m]
+         z0mg             =>    frictionvel_inst%z0mg_col             , & ! Output: [real(r8) (:)   ] roughness length over ground, momentum [m]
+         z0qg             =>    frictionvel_inst%z0qg_col             , & ! Output: [real(r8) (:)   ] roughness length over ground, latent heat [m]
+         forc_hgt_u_patch =>    frictionvel_inst%forc_hgt_u_patch     , & ! Output: [real(r8) (:)   ] observational height of wind at patch level [m]
 
-         frac_veg_nosno   =>    canopystate_vars%frac_veg_nosno_patch , & ! Input:  [integer  (:)   ] fraction of vegetation not covered by snow (0 OR 1) [-]
-         elai             =>    canopystate_vars%elai_patch           , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow
-         esai             =>    canopystate_vars%esai_patch           , & ! Input:  [real(r8) (:)   ] one-sided stem area index with burying by snow
-         htop             =>    canopystate_vars%htop_patch           , & ! Input:  [real(r8) (:)   ] canopy top (m)                           
-         displa           =>    canopystate_vars%displa_patch         , & ! Output: [real(r8) (:)   ] displacement height (m)                  !TODO???
+         frac_veg_nosno   =>    canopystate_inst%frac_veg_nosno_patch , & ! Input:  [integer  (:)   ] fraction of vegetation not covered by snow (0 OR 1) [-]
+         elai             =>    canopystate_inst%elai_patch           , & ! Input:  [real(r8) (:)   ] one-sided leaf area index with burying by snow
+         esai             =>    canopystate_inst%esai_patch           , & ! Input:  [real(r8) (:)   ] one-sided stem area index with burying by snow
+         htop             =>    canopystate_inst%htop_patch           , & ! Input:  [real(r8) (:)   ] canopy top (m)                           
+         displa           =>    canopystate_inst%displa_patch         , & ! Output: [real(r8) (:)   ] displacement height (m)                  
 
-         smpmin           =>    soilstate_vars%smpmin_col             , & ! Input:  [real(r8) (:)   ] restriction for min of soil potential (mm)
-         sucsat           =>    soilstate_vars%sucsat_col             , & ! Input:  [real(r8) (:,:) ] minimum soil suction (mm)              
-         watsat           =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ] volumetric soil water at saturation (porosity)
-         watfc            =>    soilstate_vars%watfc_col              , & ! Input:  [real(r8) (:,:) ] volumetric soil water at field capacity
-         watdry           =>    soilstate_vars%watdry_col             , & ! Input:  [real(r8) (:,:) ] volumetric soil moisture corresponding to no restriction on ET from urban pervious surface
-         watopt           =>    soilstate_vars%watopt_col             , & ! Input:  [real(r8) (:,:) ] volumetric soil moisture corresponding to no restriction on ET from urban pervious surface
-         bsw              =>    soilstate_vars%bsw_col                , & ! Input:  [real(r8) (:,:) ] Clapp and Hornberger "b"               
-         rootfr_road_perv =>    soilstate_vars%rootfr_road_perv_col   , & ! Input:  [real(r8) (:,:) ] fraction of roots in each soil layer for urban pervious road
-         rootr_road_perv  =>    soilstate_vars%rootr_road_perv_col    , & ! Input:  [real(r8) (:,:) ] effective fraction of roots in each soil layer for urban pervious road
-         soilalpha        =>    soilstate_vars%soilalpha_col          , & ! Output: [real(r8) (:)   ] factor that reduces ground saturated specific humidity (-)
-         soilalpha_u      =>    soilstate_vars%soilalpha_u_col        , & ! Output: [real(r8) (:)   ] Urban factor that reduces ground saturated specific humidity (-)
+         smpmin           =>    soilstate_inst%smpmin_col             , & ! Input:  [real(r8) (:)   ] restriction for min of soil potential (mm)
+         sucsat           =>    soilstate_inst%sucsat_col             , & ! Input:  [real(r8) (:,:) ] minimum soil suction (mm)              
+         watsat           =>    soilstate_inst%watsat_col             , & ! Input:  [real(r8) (:,:) ] volumetric soil water at saturation (porosity)
+         watfc            =>    soilstate_inst%watfc_col              , & ! Input:  [real(r8) (:,:) ] volumetric soil water at field capacity
+         watdry           =>    soilstate_inst%watdry_col             , & ! Input:  [real(r8) (:,:) ] volumetric soil moisture corresponding to no restriction on ET from urban pervious surface
+         watopt           =>    soilstate_inst%watopt_col             , & ! Input:  [real(r8) (:,:) ] volumetric soil moisture corresponding to no restriction on ET from urban pervious surface
+         bsw              =>    soilstate_inst%bsw_col                , & ! Input:  [real(r8) (:,:) ] Clapp and Hornberger "b"               
+         rootfr_road_perv =>    soilstate_inst%rootfr_road_perv_col   , & ! Input:  [real(r8) (:,:) ] fraction of roots in each soil layer for urban pervious road
+         rootr_road_perv  =>    soilstate_inst%rootr_road_perv_col    , & ! Input:  [real(r8) (:,:) ] effective fraction of roots in each soil layer for urban pervious road
+         soilalpha        =>    soilstate_inst%soilalpha_col          , & ! Output: [real(r8) (:)   ] factor that reduces ground saturated specific humidity (-)
+         soilalpha_u      =>    soilstate_inst%soilalpha_u_col        , & ! Output: [real(r8) (:)   ] Urban factor that reduces ground saturated specific humidity (-)
 
-         t_h2osfc         =>    temperature_vars%t_h2osfc_col         , & ! Input:  [real(r8) (:)   ] surface water temperature               
-         t_soisno         =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
-         beta             =>    temperature_vars%beta_col             , & ! Output: [real(r8) (:)   ] coefficient of convective velocity [-]   
-         emg              =>    temperature_vars%emg_col              , & ! Output: [real(r8) (:)   ] ground emissivity                        
-         emv              =>    temperature_vars%emv_patch            , & ! Output: [real(r8) (:)   ] vegetation emissivity                    
-         t_h2osfc_bef     =>    temperature_vars%t_h2osfc_bef_col     , & ! Output: [real(r8) (:)   ] saved surface water temperature         
-         t_grnd           =>    temperature_vars%t_grnd_col           , & ! Output: [real(r8) (:)   ] ground temperature (Kelvin)              
-         thv              =>    temperature_vars%thv_col              , & ! Output: [real(r8) (:)   ] virtual potential temperature (kelvin)   
-         thm              =>    temperature_vars%thm_patch            , & ! Output: [real(r8) (:)   ] intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
-         tssbef           =>    temperature_vars%t_ssbef_col            & ! Output: [real(r8) (:,:) ] soil/snow temperature before update    
+         t_h2osfc         =>    temperature_inst%t_h2osfc_col         , & ! Input:  [real(r8) (:)   ] surface water temperature               
+         t_soisno         =>    temperature_inst%t_soisno_col         , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)              
+         beta             =>    temperature_inst%beta_col             , & ! Output: [real(r8) (:)   ] coefficient of convective velocity [-]   
+         emg              =>    temperature_inst%emg_col              , & ! Output: [real(r8) (:)   ] ground emissivity                        
+         emv              =>    temperature_inst%emv_patch            , & ! Output: [real(r8) (:)   ] vegetation emissivity                    
+         t_h2osfc_bef     =>    temperature_inst%t_h2osfc_bef_col     , & ! Output: [real(r8) (:)   ] saved surface water temperature         
+         t_grnd           =>    temperature_inst%t_grnd_col           , & ! Output: [real(r8) (:)   ] ground temperature (Kelvin)              
+         thv              =>    temperature_inst%thv_col              , & ! Output: [real(r8) (:)   ] virtual potential temperature (kelvin)   
+         thm              =>    temperature_inst%thm_patch            , & ! Output: [real(r8) (:)   ] intermediate variable (forc_t+0.0098*forc_hgt_t_patch)
+         tssbef           =>    temperature_inst%t_ssbef_col            & ! Output: [real(r8) (:,:) ] soil/snow temperature before update    
          )
 
       do j = -nlevsno+1, nlevgrnd
@@ -222,7 +222,7 @@ contains
       end do
 
       ! calculate moisture stress/resistance for soil evaporation
-      call calc_soilevap_stress(bounds, num_nolakec, filter_nolakec, soilstate_vars, waterstate_vars)
+      call calc_soilevap_stress(bounds, num_nolakec, filter_nolakec, soilstate_inst, waterstate_inst)
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
@@ -400,7 +400,7 @@ contains
          ! Initial set (needed for history tape fields)
 
          eflx_sh_tot(p) = 0._r8
-         l = pft%landunit(p)
+         l = patch%landunit(p)
          if (urbpoi(l)) then
             eflx_sh_tot_u(p) = 0._r8
          else if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then 
@@ -430,21 +430,21 @@ contains
 
          ! Roughness lengths over vegetation
 
-         z0m(p)    = z0mr(pft%itype(p)) * htop(p)
-         displa(p) = displar(pft%itype(p)) * htop(p)
+         z0m(p)    = z0mr(patch%itype(p)) * htop(p)
+         displa(p) = displar(patch%itype(p)) * htop(p)
 
          z0mv(p)   = z0m(p)
          z0hv(p)   = z0mv(p)
          z0qv(p)   = z0mv(p)
       end do
 
-      ! Make forcing height a pft-level quantity that is the atmospheric forcing 
-      ! height plus each pft's z0m+displa
+      ! Make forcing height a patch-level quantity that is the atmospheric forcing 
+      ! height plus each patch's z0m+displa
       do p = bounds%begp,bounds%endp
-         if (pft%active(p)) then
-            g = pft%gridcell(p)
-            l = pft%landunit(p)
-            c = pft%column(p)
+         if (patch%active(p)) then
+            g = patch%gridcell(p)
+            l = patch%landunit(p)
+            c = patch%column(p)
             if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
                if (frac_veg_nosno(p) == 0) then
                   forc_hgt_u_patch(p) = forc_hgt_u(g) + z0mg(c) + displa(p)
@@ -475,7 +475,7 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
+         c = patch%column(p)
 
          thm(p)  = forc_t(c) + 0.0098_r8*forc_hgt_t_patch(p)
       end do

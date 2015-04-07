@@ -7,18 +7,16 @@ module CNDVLightMod
   ! Called once per year
   !
   ! !USES:
-  use shr_kind_mod      , only: r8 => shr_kind_r8
-  use shr_const_mod     , only : SHR_CONST_PI
-  use decompMod         , only : bounds_type
-  use EcophysConType    , only : ecophyscon
-  use CNDVType          , only : dgv_ecophyscon
-  use CNDVType          , only : dgvs_type
-  use CNCarbonStateType , only : carbonstate_type
-  use PatchType         , only : pft                
+  use shr_kind_mod         , only: r8 => shr_kind_r8
+  use shr_const_mod        , only : SHR_CONST_PI
+  use decompMod            , only : bounds_type
+  use pftconMod            , only : pftcon
+  use CNDVType             , only : dgv_ecophyscon, dgvs_type
+  use CNVegCarbonStateType , only : cnveg_carbonstate_type
+  use PatchType            , only : patch                
   !
   ! !PUBLIC TYPES:
   implicit none
-  save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: Light
@@ -28,18 +26,18 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Light(bounds, num_natvegp, filter_natvegp, &
-       carbonstate_vars, dgvs_vars)
+       cnveg_carbonstate_inst, dgvs_inst)
     !
     ! !DESCRIPTION:
     ! Calculate light competition and update fpc for establishment routine
     ! Called once per year
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds                  
-    integer                , intent(in)    :: num_natvegp             ! number of naturally-vegetated patches in filter
-    integer                , intent(in)    :: filter_natvegp(:)       ! patch filter for naturally-vegetated points
-    type(carbonstate_type) , intent(in)    :: carbonstate_vars
-    type(dgvs_type)        , intent(inout) :: dgvs_vars
+    type(bounds_type)            , intent(in)    :: bounds                  
+    integer                      , intent(in)    :: num_natvegp             ! number of naturally-vegetated patches in filter
+    integer                      , intent(in)    :: filter_natvegp(:)       ! patch filter for naturally-vegetated points
+    type(cnveg_carbonstate_type) , intent(in)    :: cnveg_carbonstate_inst
+    type(dgvs_type)              , intent(inout) :: dgvs_inst
     !
     ! !LOCAL VARIABLES:
     real(r8), parameter :: fpc_tree_max = 0.95_r8 !maximum total tree FPC
@@ -63,25 +61,25 @@ contains
     real(r8) :: taper    ! ratio of height:radius_breast_height (tree allometry)
     !-----------------------------------------------------------------------
 
-    associate(                                                  & 
-         ivt           =>    pft%itype                        , & ! Input:  [integer  (:) ]  pft vegetation type                                
+    associate(                                                        & 
+         ivt           =>    patch%itype                              , & ! Input:  [integer  (:) ]  patch vegetation type                                
          
-         crownarea_max =>    dgv_ecophyscon%crownarea_max     , & ! Input:  [real(r8) (:) ]  ecophys const - tree maximum crown a              
-         reinickerp    =>    dgv_ecophyscon%reinickerp        , & ! Input:  [real(r8) (:) ]  ecophys const - parameter in allomet              
-         allom1        =>    dgv_ecophyscon%allom1            , & ! Input:  [real(r8) (:) ]  ecophys const - parameter in allomet              
+         crownarea_max =>    dgv_ecophyscon%crownarea_max           , & ! Input:  [real(r8) (:) ]  ecophys const - tree maximum crown a              
+         reinickerp    =>    dgv_ecophyscon%reinickerp              , & ! Input:  [real(r8) (:) ]  ecophys const - parameter in allomet              
+         allom1        =>    dgv_ecophyscon%allom1                  , & ! Input:  [real(r8) (:) ]  ecophys const - parameter in allomet              
 
-         dwood         =>    ecophyscon%dwood                 , & ! Input:  [real(r8) (:) ]  ecophys const - wood density (gC/m3)              
-         slatop        =>    ecophyscon%slatop                , & ! Input:  [real(r8) (:) ]  specific leaf area at top of canopy, projected area basis [m^2/gC]
-         dsladlai      =>    ecophyscon%dsladlai              , & ! Input:  [real(r8) (:) ]  dSLA/dLAI, projected area basis [m^2/gC]           
-         woody         =>    ecophyscon%woody                 , & ! Input:  [real(r8) (:) ]  ecophys const - woody pft or not                  
-         tree          =>    ecophyscon%tree                  , & ! Input:  [integer  (:) ]  ecophys const - tree pft or not                    
+         dwood         =>    pftcon%dwood                           , & ! Input:  wood density (gC/m3)              
+         slatop        =>    pftcon%slatop                          , & ! Input:  specific leaf area at top of canopy, projected area basis (m2/gC)
+         dsladlai      =>    pftcon%dsladlai                        , & ! Input:  dSLA/dLAI, projected area basis (m2/gC)           
+         woody         =>    pftcon%woody                           , & ! Input:  woody patch or not                  
+         tree          =>    pftcon%tree                            , & ! Input:  tree patch or not                    
          
-         deadstemc     =>    carbonstate_vars%deadstemc_patch , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
-         leafcmax      =>    carbonstate_vars%leafcmax_patch  , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C storage                            
+         deadstemc     =>    cnveg_carbonstate_inst%deadstemc_patch , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
+         leafcmax      =>    cnveg_carbonstate_inst%leafcmax_patch  , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C storage                            
 
-         crownarea     =>    dgvs_vars%crownarea_patch        , & ! Output: [real(r8) (:) ]  area that each individual tree takes up (m^2)     
-         nind          =>    dgvs_vars%nind_patch             , & ! Output: [real(r8) (:) ]  number of individuals                             
-         fpcgrid       =>    dgvs_vars%fpcgrid_patch            & ! Output: [real(r8) (:) ]  foliar projective cover on gridcell (fraction)    
+         crownarea     =>    dgvs_inst%crownarea_patch              , & ! Output: [real(r8) (:) ]  area that each individual tree takes up (m^2)     
+         nind          =>    dgvs_inst%nind_patch                   , & ! Output: [real(r8) (:) ]  number of individuals                             
+         fpcgrid       =>    dgvs_inst%fpcgrid_patch                  & ! Output: [real(r8) (:) ]  foliar projective cover on gridcell (fraction)    
          )
 
       taper = 200._r8 ! make a global constant; used in Establishment + ?
@@ -98,13 +96,13 @@ contains
 
       do fp = 1,num_natvegp
          p = filter_natvegp(fp)
-         g = pft%gridcell(p)
+         g = patch%gridcell(p)
 
          ! Update LAI and FPC as in the last lines of DGVMAllocation
 
          if (woody(ivt(p))==1._r8) then
             if (fpcgrid(p) > 0._r8 .and. nind(p) > 0._r8) then
-               stocking = nind(p)/fpcgrid(p) !#ind/m2 nat veg area -> #ind/m2 pft area
+               stocking = nind(p)/fpcgrid(p) !#ind/m2 nat veg area -> #ind/m2 patch area
                ! stemdiam derived here from cn's formula for htop found in
                ! CNVegStructUpdate and cn's assumption stemdiam=2*htop/taper
                ! this derivation neglects upper htop limit enforced elsewhere
@@ -160,7 +158,7 @@ contains
 
       do fp = 1,num_natvegp
          p = filter_natvegp(fp)
-         g = pft%gridcell(p)
+         g = patch%gridcell(p)
 
          ! light competition
 

@@ -1,35 +1,36 @@
 !===============================================================================
-! SVN $Id: shr_sys_mod.F90 59033 2014-04-11 01:55:15Z santos@ucar.edu $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/shr/shr_sys_mod.F90 $
+! SVN $Id: shr_sys_mod.F90 60325 2014-05-16 20:33:31Z santos@ucar.edu $
+! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_141022/shr/shr_sys_mod.F90 $
 !===============================================================================
 
-#if defined CPRIBM || defined CPRPGI || defined CPRINTEL || defined __GFORTRAN__ || defined CPRCRAY
+! Currently supported by all compilers
 #define HAVE_GET_ENVIRONMENT
 #define HAVE_SLEEP
-#define HAVE_FLUSH
-#endif
-#if defined CPRPATHSCALE
-#define HAVE_GET_ENVIRONMENT
-#define HAVE_SLEEP
-#endif
-#if defined CPRNAG
-#define HAVE_GET_ENVIRONMENT
-#define HAVE_FLUSH
-#define HAVE_EXECUTE
-#endif
 
-
+! Except this combination?
 #if defined CPRPGI && defined CNL
 #undef HAVE_GET_ENVIRONMENT
 #endif 
 
+#if defined CPRNAG
+#define HAVE_EXECUTE
+#endif
 
 MODULE shr_sys_mod
+
+   use, intrinsic :: iso_fortran_env, only: output_unit, error_unit
 
    use shr_kind_mod  ! defines real & integer kinds
    use shr_mpi_mod   ! wraps MPI layer
    use shr_log_mod, only: s_loglev  => shr_log_Level
    use shr_log_mod, only: s_logunit => shr_log_Unit
+
+#ifdef CPRNAG
+   ! NAG does not provide these as intrinsics, but it does provide modules
+   ! that implement commonly used POSIX routines.
+   use f90_unix_dir, only: chdir
+   use f90_unix_proc, only: abort, sleep
+#endif
 
    implicit none
 
@@ -44,6 +45,7 @@ MODULE shr_sys_mod
    public :: shr_sys_irtc    ! returns real-time clock tick
    public :: shr_sys_sleep   ! have program sleep for a while
    public :: shr_sys_flush   ! flush an i/o buffer
+   public :: shr_sys_backtrace   ! print a backtrace, if possible
 
 !===============================================================================
 CONTAINS
@@ -64,7 +66,7 @@ SUBROUTINE shr_sys_system(str,rcode)
 #if (defined CRAY) || (defined UNICOSMP)
    integer(SHR_KIND_IN),external    :: ishell ! function to envoke shell command
 #endif
-#if (defined OSF1 || defined SUNOS || (defined LINUX && !defined __GFORTRAN__ && !defined CATAMOUNT))
+#if (defined OSF1 || defined SUNOS || (defined LINUX && !defined CPRGNU && !defined CATAMOUNT))
    integer(SHR_KIND_IN),external    :: system ! function to envoke shell command
 #endif
 
@@ -102,7 +104,7 @@ SUBROUTINE shr_sys_system(str,rcode)
 
    call system(str,rcode)
 
-#elif (defined OSF1 || defined SUNOS || defined __GFORTRAN__ || (defined LINUX && !defined CATAMOUNT))
+#elif (defined OSF1 || defined SUNOS || defined CPRGNU || (defined LINUX && !defined CATAMOUNT))
 
    rcode = system(str)
 
@@ -150,7 +152,7 @@ SUBROUTINE shr_sys_chdir(path, rcode)
 
    !----- local -----
    integer(SHR_KIND_IN)             :: lenpath ! length of path
-#if (defined AIX || defined OSF1 || defined SUNOS || (defined LINUX && !defined __GFORTRAN__) || defined NEC_SX || defined CPRINTEL)
+#if (defined AIX || defined OSF1 || defined SUNOS || (defined LINUX && !defined CPRGNU && !defined CPRNAG) || defined NEC_SX || defined CPRINTEL)
    integer(SHR_KIND_IN),external    :: chdir   ! AIX system call
 #endif
 
@@ -175,6 +177,10 @@ SUBROUTINE shr_sys_chdir(path, rcode)
 #elif (defined OSF1 || defined SUNOS || defined NEC_SX || defined Darwin || (defined LINUX && !defined CPRNAG))
 
    rcode=chdir(path(1:lenpath))
+
+#elif (defined CPRNAG)
+
+   call chdir(path(1:lenpath), errno=rcode)
 
 #else
 
@@ -251,59 +257,44 @@ SUBROUTINE shr_sys_abort(string,rc)
    integer(SHR_KIND_IN),optional :: rc      ! error code
 
    !----- local -----
-   integer(SHR_KIND_IN) :: ierr
    logical              :: flag
 
    !----- formats -----
    character(*),parameter :: subName =   '(shr_sys_abort) '
    character(*),parameter :: F00     = "('(shr_sys_abort) ',4a)"
 
+   ! Local version of the string.
+   ! (Gets a default value if string is not present.)
+   character(len=shr_kind_cx) :: local_string
+
 !-------------------------------------------------------------------------------
 ! PURPOSE: consistent stopping mechanism
 !-------------------------------------------------------------------------------
 
-   call shr_sys_flush(s_logunit)
    if (present(string)) then
-      if (len_trim(string) > 0) write(s_logunit,F00) 'ERROR: '//trim(string)
+      local_string = trim(string)
+   else
+      local_string = "Unknown error submitted to shr_sys_abort."
    end if
-   write(s_logunit,F00) 'WARNING: calling shr_mpi_abort() and stopping'
-   call shr_sys_flush(s_logunit)
 
-   ! Make sure we always print to stdout as well; this way the abort
-   ! message can always be found in the CESM log.
-   if ( s_logunit/= 6 ) then
-      if (present(string)) then
-         if (len_trim(string) > 0)  write(6,F00) 'ERROR: '//trim(string)
-      end if
-      write(6,F00) 'WARNING: calling shr_mpi_abort() and stopping'
-      call shr_sys_flush(6)
-   end if
+   call print_error_to_logs("ERROR", local_string)
+
+   call shr_sys_backtrace()
 
    call shr_mpi_initialized(flag)
 
-#if defined(CPRIBM)
-   close(5)    ! needed to prevent batch jobs from hanging in xl__trbk
-#if !defined(BGL) && !defined(BGP)
-   call xl__trbk()
-#endif
-#endif
-
    if (flag) then
-     if (present(string).and.present(rc)) then
-       call shr_mpi_abort(trim(string),rc)
-     elseif (present(string)) then
-       call shr_mpi_abort(trim(string))
-     elseif (present(rc)) then
-       call shr_mpi_abort(rcode=rc)
-     else
-       call shr_mpi_abort()
-     endif
+      if (present(rc)) then
+         call shr_mpi_abort(trim(local_string),rc)
+      else
+         call shr_mpi_abort(trim(local_string))
+      endif
    endif
-   call shr_sys_flush(s_logunit)
-#ifndef CPRNAG
+
+  ! A compiler's abort method may print a backtrace or do other nice
+  ! things, but in fact we can rarely leverage this, because MPI_Abort
+  ! usually sends SIGTERM to the process, and we don't catch that signal.
    call abort()
-#endif
-   stop
 
 END SUBROUTINE shr_sys_abort
 
@@ -405,17 +396,110 @@ SUBROUTINE shr_sys_flush(unit)
 
 !-------------------------------------------------------------------------------
 ! PURPOSE: an architecture independent system call
+!
+! This is probably no longer needed; the "flush" statement is supported by
+! all compilers that CESM supports for years now.
+!
 !-------------------------------------------------------------------------------
-#ifdef HAVE_FLUSH
-   flush(unit,iostat=ierr)   !  F2003
-   if (ierr > 0) then
+   flush(unit)
+!
+! The following code was originally present, but there's an obvious issue.
+! Since shr_sys_flush is usually used to flush output to a log, when it
+! returns an error, does it do any good to print that error to the log?
+!
+!   if (ierr > 0) then
 !      write(s_logunit,*) subname,' Flush reports error: ',ierr
-   endif
-#else
-   call flush(unit)   !
-#endif
+!   endif
+!
 
 END SUBROUTINE shr_sys_flush
+
+!===============================================================================
+!===============================================================================
+
+subroutine shr_sys_backtrace()
+
+  ! This routine uses compiler-specific facilities to print a backtrace to
+  ! error_unit (standard error, usually unit 0).
+
+#if defined(CPRIBM)
+
+  ! This theoretically should be in xlfutility, but using it from that
+  ! module doesn't seem to always work.
+  interface
+     subroutine xl_trbk()
+     end subroutine xl_trbk
+  end interface
+
+  call xl__trbk()
+
+#elif defined(CPRGNU) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8 ))
+
+  ! gfortran 4.8 and later implement this intrinsic. We explicitly call it
+  ! out as such to make sure that it really is available, just in case the
+  ! CPP logic above screws up.
+  intrinsic :: backtrace
+
+  call backtrace()
+
+#elif defined(CPRINTEL)
+
+  ! tracebackqq uses optional arguments, so *must* have an explicit
+  ! interface.
+  use ifcore, only: tracebackqq
+
+  ! An exit code of -1 is a special value that prevents this subroutine
+  ! from aborting the run.
+  call tracebackqq(user_exit_code=-1)
+
+#else
+
+  ! Currently we have no means to request a backtrace from the NAG runtime,
+  ! even though it is capable of emitting backtraces itself, if you use the
+  ! "-gline" option.
+
+  ! Similarly, PGI has a -traceback option, but no user interface for
+  ! requesting a backtrace to be printed.
+
+#endif
+
+  flush(error_unit)
+
+end subroutine shr_sys_backtrace
+
+!===============================================================================
+!===============================================================================
+
+!
+! This routine prints error messages to s_logunit (which is standard output
+! for most tasks in CESM) and also to standard error if s_logunit is a
+! file.
+!
+! It also flushes these output units.
+!
+subroutine print_error_to_logs(error_type, message)
+  character(len=*), intent(in) :: error_type, message
+
+  integer, allocatable :: log_units(:)
+
+  integer :: i
+
+  if (s_logunit == output_unit .or. s_logunit == error_unit) then
+     ! If the log unit number is standard output or standard error, just
+     ! print to that.
+     allocate(log_units(1), source=[s_logunit])
+  else
+     ! Otherwise print the same message to both the log unit and standard
+     ! error.
+     allocate(log_units(2), source=[error_unit, s_logunit])
+  end if
+
+  do i = 1, size(log_units)
+     write(log_units(i),*) trim(error_type), ": ", trim(message)
+     flush(log_units(i))
+  end do
+
+end subroutine print_error_to_logs
 
 !===============================================================================
 !===============================================================================

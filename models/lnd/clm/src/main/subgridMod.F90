@@ -22,7 +22,7 @@ contains
 
   !------------------------------------------------------------------------------
   subroutine subgrid_get_gcellinfo (gi, &
-       nlunits, ncols, npfts, ncohorts, &
+       nlunits, ncols, npatches, ncohorts, &
        nveg, &
        ncrop, &
        nurban_tbd, &
@@ -38,46 +38,45 @@ contains
     ! Obtain gridcell properties
     !
     ! !USES
-    use clm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
-    use clm_varctl  , only : create_crop_landunit
-    use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
-    use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
-                             isturb_tbd, isturb_hd, isturb_md
-    use EDtypesMod  , only : cohorts_per_gcell
+    use clm_varpar      , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
+    use clm_varctl      , only : create_crop_landunit
+    use clm_instur      , only : wt_lunit, urban_valid, wt_glc_mec
+    use landunit_varcon , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet
+    use landunit_varcon , only : isturb_tbd, isturb_hd, isturb_md
+    use EDtypesMod      , only : cohorts_per_gcell
     !
     ! !ARGUMENTS
-    implicit none
-    integer , intent(in)  :: gi                   ! grid cell index
-    integer , optional, intent(out) :: nlunits    ! number of landunits
-    integer , optional, intent(out) :: ncols      ! number of columns 
-    integer , optional, intent(out) :: npfts      ! number of pfts 
-    integer , optional, intent(out) :: ncohorts   ! number of cohorts 
-    integer , optional, intent(out) :: nveg       ! number of vegetated pfts in naturally vegetated landunit
-    integer , optional, intent(out) :: ncrop      ! number of crop pfts in crop landunit
-    integer , optional, intent(out) :: nurban_tbd ! number of urban pfts (columns) in urban TBD landunit
-    integer , optional, intent(out) :: nurban_hd ! number of urban pfts (columns) in urban HD landunit
-    integer , optional, intent(out) :: nurban_md ! number of urban pfts (columns) in urban MD landunit
-    integer , optional, intent(out) :: nlake      ! number of lake pfts (columns) in lake landunit
-    integer , optional, intent(out) :: nwetland   ! number of wetland pfts (columns) in wetland landunit
-    integer , optional, intent(out) :: nglacier   ! number of glacier pfts (columns) in glacier landunit
-    integer , optional, intent(out) :: nglacier_mec  ! number of glacier_mec pfts (columns) in glacier_mec landunit
-    integer , optional, intent(in)  :: glcmask  ! = 1 if glc requires surface mass balance in this gridcell
+    integer , intent(in)  :: gi                     ! grid cell index
+    integer , optional, intent(out) :: nlunits      ! number of landunits
+    integer , optional, intent(out) :: ncols        ! number of columns 
+    integer , optional, intent(out) :: npatches     ! number of patchs 
+    integer , optional, intent(out) :: ncohorts     ! number of cohorts 
+    integer , optional, intent(out) :: nveg         ! number of vegetated patchs in naturally vegetated landunit
+    integer , optional, intent(out) :: ncrop        ! number of crop patchs in crop landunit
+    integer , optional, intent(out) :: nurban_tbd   ! number of urban patchs (columns) in urban TBD landunit
+    integer , optional, intent(out) :: nurban_hd    ! number of urban patchs (columns) in urban HD landunit
+    integer , optional, intent(out) :: nurban_md    ! number of urban patchs (columns) in urban MD landunit
+    integer , optional, intent(out) :: nlake        ! number of lake patchs (columns) in lake landunit
+    integer , optional, intent(out) :: nwetland     ! number of wetland patchs (columns) in wetland landunit
+    integer , optional, intent(out) :: nglacier     ! number of glacier patchs (columns) in glacier landunit
+    integer , optional, intent(out) :: nglacier_mec ! number of glacier_mec patchs (columns) in glacier_mec landunit
+    integer , optional, intent(in)  :: glcmask      ! = 1 if glc requires surface mass balance in this gridcell
     !
     ! !LOCAL VARIABLES:
-    integer  :: m                ! loop index
-    integer  :: n                ! elevation class index
-    integer  :: ipfts            ! number of pfts in gridcell
-    integer  :: icols            ! number of columns in gridcell
-    integer  :: ilunits          ! number of landunits in gridcell
-    integer  :: icohorts         ! number of cohorts in gridcell
-    integer  :: npfts_per_lunit  ! number of pfts in landunit
+    integer  :: m                  ! loop index
+    integer  :: n                  ! elevation class index
+    integer  :: ipatches           ! number of patches in gridcell
+    integer  :: icols              ! number of columns in gridcell
+    integer  :: ilunits            ! number of landunits in gridcell
+    integer  :: icohorts           ! number of cohorts in gridcell
+    integer  :: npatches_per_lunit ! number of patches in landunit
     !------------------------------------------------------------------------------
 
     ! -------------------------------------------------------------------------
-    ! Initialize pfts, columns and landunits counters for gridcell
+    ! Initialize patches, columns and landunits counters for gridcell
     ! -------------------------------------------------------------------------
 
-    ipfts    = 0
+    ipatches    = 0
     icols    = 0
     ilunits  = 0
     icohorts = 0
@@ -88,23 +87,23 @@ contains
 
     ! To support dynamic landunits, we have a naturally vegetated landunit in every grid
     ! cell, because it might need to come into existence even if its weight is 0 at the
-    ! start of the run. And to support transient pfts or dynamic vegetation, we always
-    ! allocate space for ALL PFTs on this landunit.
+    ! start of the run. And to support transient patches or dynamic vegetation, we always
+    ! allocate space for ALL patches on this landunit.
 
-    npfts_per_lunit = natpft_size
+    npatches_per_lunit = natpft_size
 
     ! Assume that the vegetated landunit has one column
     ilunits = ilunits + 1
     icols = icols + 1  
 
-    ipfts = ipfts + npfts_per_lunit
+    ipatches = ipatches + npatches_per_lunit
 
     !
     ! number of cohorts per gridcell set here.
     !
     icohorts = icohorts + cohorts_per_gcell
 
-    if (present(nveg )) nveg  = npfts_per_lunit
+    if (present(nveg )) nveg  = npatches_per_lunit
 
     ! -------------------------------------------------------------------------
     ! Set urban landunits
@@ -117,36 +116,36 @@ contains
 
     ! Set urban tall building district landunit
 
-    npfts_per_lunit = 0
+    npatches_per_lunit = 0
     if (urban_valid(gi)) then
-       npfts_per_lunit = maxpatch_urb
+       npatches_per_lunit = maxpatch_urb
        ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-       ipfts = ipfts + npfts_per_lunit
+       icols   = icols + npatches_per_lunit
+       ipatches = ipatches + npatches_per_lunit
     end if
-    if (present(nurban_tbd )) nurban_tbd  = npfts_per_lunit
+    if (present(nurban_tbd )) nurban_tbd  = npatches_per_lunit
 
     ! Set urban high density landunit
 
-    npfts_per_lunit = 0
+    npatches_per_lunit = 0
     if (urban_valid(gi)) then
-       npfts_per_lunit = maxpatch_urb
+       npatches_per_lunit = maxpatch_urb
        ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-       ipfts = ipfts + npfts_per_lunit
+       icols   = icols + npatches_per_lunit
+       ipatches = ipatches + npatches_per_lunit
     end if
-    if (present(nurban_hd )) nurban_hd  = npfts_per_lunit
+    if (present(nurban_hd )) nurban_hd  = npatches_per_lunit
 
     ! Set urban medium density landunit
 
-    npfts_per_lunit = 0
+    npatches_per_lunit = 0
     if (urban_valid(gi)) then
-       npfts_per_lunit = maxpatch_urb
+       npatches_per_lunit = maxpatch_urb
        ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-       ipfts = ipfts + npfts_per_lunit
+       icols   = icols + npatches_per_lunit
+       ipatches = ipatches + npatches_per_lunit
     end if
-    if (present(nurban_md )) nurban_md  = npfts_per_lunit
+    if (present(nurban_md )) nurban_md  = npatches_per_lunit
 
     ! -------------------------------------------------------------------------
     ! Set lake landunit
@@ -155,16 +154,16 @@ contains
     ! We currently do NOT allow the lake landunit to expand via dynamic landunits, so we
     ! only need to allocate space for it where its weight is currently non-zero.
 
-    npfts_per_lunit = 0
+    npatches_per_lunit = 0
     if (wt_lunit(gi, istdlak) > 0.0_r8) then
-       npfts_per_lunit = npfts_per_lunit + 1
+       npatches_per_lunit = npatches_per_lunit + 1
     end if
-    if (npfts_per_lunit > 0) then
+    if (npatches_per_lunit > 0) then
        ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
+       icols   = icols + npatches_per_lunit
     end if
-    ipfts = ipfts + npfts_per_lunit
-    if (present(nlake )) nlake  = npfts_per_lunit
+    ipatches = ipatches + npatches_per_lunit
+    if (present(nlake )) nlake  = npatches_per_lunit
 
     ! -------------------------------------------------------------------------
     ! Set wetland landunit
@@ -173,16 +172,16 @@ contains
     ! We currently do NOT allow the wetland landunit to expand via dynamic landunits, so
     ! we only need to allocate space for it where its weight is currently non-zero.
 
-    npfts_per_lunit = 0
+    npatches_per_lunit = 0
     if (wt_lunit(gi, istwet) > 0.0_r8) then
-       npfts_per_lunit = npfts_per_lunit + 1
+       npatches_per_lunit = npatches_per_lunit + 1
     end if
-    if (npfts_per_lunit > 0) then
+    if (npatches_per_lunit > 0) then
        ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
+       icols   = icols + npatches_per_lunit
     end if
-    ipfts = ipfts + npfts_per_lunit
-    if (present(nwetland )) nwetland  = npfts_per_lunit
+    ipatches = ipatches + npatches_per_lunit
+    if (present(nwetland )) nwetland  = npatches_per_lunit
 
     ! -------------------------------------------------------------------------
     ! Set glacier landunit
@@ -193,16 +192,16 @@ contains
     ! have dynamic glacier area, we will be using glacier_mec landunits rather than
     ! glacier landunits.)
 
-    npfts_per_lunit = 0
+    npatches_per_lunit = 0
     if (wt_lunit(gi, istice) > 0.0_r8) then
-       npfts_per_lunit = npfts_per_lunit + 1
+       npatches_per_lunit = npatches_per_lunit + 1
     end if
-    if (npfts_per_lunit > 0) then
+    if (npatches_per_lunit > 0) then
        ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
+       icols   = icols + npatches_per_lunit
     end if
-    ipfts = ipfts + npfts_per_lunit
-    if (present(nglacier )) nglacier  = npfts_per_lunit
+    ipatches = ipatches + npatches_per_lunit
+    if (present(nglacier )) nglacier  = npatches_per_lunit
 
     ! -------------------------------------------------------------------------
     ! Set glacier_mec landunit
@@ -214,50 +213,50 @@ contains
     ! needed with dynamic landunits, since CISM won't be able to create glaciers outside
     ! of the area specified by glcmask. 
 
-    npfts_per_lunit = 0
+    npatches_per_lunit = 0
     do m = 1, maxpatch_glcmec
        ! If the landunit has non-zero weight on the grid cell, and this column has
        ! non-zero weight on the landunit...
        if (wt_lunit(gi, istice_mec) > 0.0_r8 .and. wt_glc_mec(gi, m) > 0.0_r8) then
-          npfts_per_lunit = npfts_per_lunit + 1
+          npatches_per_lunit = npatches_per_lunit + 1
 
        elseif (present(glcmask)) then
           if (glcmask == 1) then      ! create a virtual column 
-             npfts_per_lunit = npfts_per_lunit + 1
+             npatches_per_lunit = npatches_per_lunit + 1
           endif  ! glcmask = 1 
        endif  ! wt > 0
     enddo   ! maxpatch_glcmec
-    if (npfts_per_lunit > 0) then
+    if (npatches_per_lunit > 0) then
        ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
+       icols   = icols + npatches_per_lunit
     end if
-    ipfts = ipfts + npfts_per_lunit
-    if (present(nglacier_mec )) nglacier_mec  = npfts_per_lunit
+    ipatches = ipatches + npatches_per_lunit
+    if (present(nglacier_mec )) nglacier_mec  = npatches_per_lunit
 
     ! -------------------------------------------------------------------------
     ! Set crop landunit if appropriate
     ! -------------------------------------------------------------------------
 
-    npfts_per_lunit = 0
+    npatches_per_lunit = 0
     if (create_crop_landunit) then
        ! To support dynamic landunits, we have a crop landunit in every grid cell (if
        ! create_crop_landunit is true), because it might need to come into existence even
        ! if its weight is 0 at the start of the run.
-       npfts_per_lunit = cft_size
+       npatches_per_lunit = cft_size
        ilunits = ilunits + 1
-       icols   = icols + npfts_per_lunit
-       ipfts = ipfts + npfts_per_lunit
+       icols   = icols + npatches_per_lunit
+       ipatches = ipatches + npatches_per_lunit
     end if
-    if (present(ncrop )) ncrop  = npfts_per_lunit
+    if (present(ncrop )) ncrop  = npatches_per_lunit
 
     ! -------------------------------------------------------------------------
     ! Determine return arguments
     ! -------------------------------------------------------------------------
 
-    if (present(nlunits)) nlunits  = ilunits
-    if (present(ncols))   ncols    = icols
-    if (present(npfts))   npfts    = ipfts
-    if (present(ncohorts))ncohorts = icohorts
+    if (present(nlunits  )) nlunits  = ilunits
+    if (present(ncols    )) ncols    = icols
+    if (present(npatches )) npatches = ipatches
+    if (present(ncohorts )) ncohorts = icohorts
 
   end subroutine subgrid_get_gcellinfo
 

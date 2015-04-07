@@ -4,15 +4,16 @@ module WaterfluxType
   ! !DESCRIPTION:
   !
   ! !USES:
-  use shr_kind_mod , only: r8 => shr_kind_r8
-  use decompMod    , only : bounds_type, get_proc_global
-  use clm_varcon   , only : spval
-  use LandunitType , only : lun                
-  use ColumnType   , only : col                
-  use PatchType    , only : pft                
+  use shr_kind_mod   , only: r8 => shr_kind_r8
+  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+  use clm_varpar     , only : nlevsno
+  use clm_varcon     , only : spval
+  use decompMod      , only : bounds_type
+  use LandunitType   , only : lun                
+  use ColumnType     , only : col                
+  use PatchType      , only : patch                
   !
   implicit none
-  save
   private
   !
   ! !PUBLIC TYPES:
@@ -88,12 +89,6 @@ module WaterfluxType
      real(r8), pointer :: qflx_liq_dynbal_grc      (:)   ! grc liq dynamic land cover change conversion runoff flux
      real(r8), pointer :: qflx_ice_dynbal_grc      (:)   ! grc ice dynamic land cover change conversion runoff flux
 
-     ! Irrigation
-     real(r8), pointer :: qflx_irrig_patch         (:)   ! patch irrigation flux (mm H2O/s)
-     real(r8), pointer :: qflx_irrig_col           (:)   ! col irrigation flux (mm H2O/s)
-     real(r8), pointer :: irrig_rate_patch         (:)   ! current irrigation rate [mm/s]
-     integer , pointer :: n_irrig_steps_left_patch (:)   ! number of time steps for which we still need to irrigate today (if 0, ignore)
-
    contains
  
      procedure, public  :: Init
@@ -126,8 +121,6 @@ contains
     ! Initialize module data structure
     !
     ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     class(waterflux_type) :: this
@@ -212,21 +205,14 @@ contains
     allocate(this%qflx_liq_dynbal_grc      (begg:endg))              ; this%qflx_liq_dynbal_grc      (:)   = nan
     allocate(this%qflx_ice_dynbal_grc      (begg:endg))              ; this%qflx_ice_dynbal_grc      (:)   = nan
 
-    allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = nan
-    allocate(this%qflx_irrig_col           (begc:endc))              ; this%qflx_irrig_col           (:)   = nan
-    allocate(this%irrig_rate_patch         (begp:endp))              ; this%irrig_rate_patch         (:)   = nan
-    allocate(this%n_irrig_steps_left_patch (begp:endp))              ; this%n_irrig_steps_left_patch (:)   = 0
-
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use clm_varpar     , only : nlevsno, crop_prog 
-    use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
+    use clm_varctl  , only : create_glacier_mec_landunit, use_cn
+    use histFileMod , only : hist_addfld1d
     !
     ! !ARGUMENTS:
     class(waterflux_type) :: this
@@ -326,11 +312,6 @@ contains
             avgflag='A', long_name='ice melt', &
             ptr_col=this%qflx_glcice_melt_col, l2g_scale_type='ice')
     end if
-
-    this%qflx_irrig_patch(begp:endp) = spval
-    call hist_addfld1d (fname='QIRRIG', units='mm/s', &
-         avgflag='A', long_name='water added through irrigation', &
-         ptr_patch=this%qflx_irrig_patch)
 
     this%qflx_prec_intr_patch(begp:endp) = spval
     call hist_addfld1d (fname='QINTR', units='mm/s',  &
@@ -492,45 +473,24 @@ contains
        end if
     end do
 
-    do p = bounds%begp, bounds%endp
-       l = pft%landunit(p)
-       
-       if (lun%itype(l)==istsoil) then
-          this%n_irrig_steps_left_patch(p) = 0
-          this%irrig_rate_patch(p)         = 0.0_r8
-       end if
-    end do
-
   end subroutine InitCold
 
   !------------------------------------------------------------------------
   subroutine Restart(this, bounds, ncid, flag)
     ! 
     ! !USES:
-    use spmdMod          , only : masterproc
-    use clm_varcon       , only : denice, denh2o, pondmx, watmin
-    use landunit_varcon  , only : istcrop, istdlak, istsoil 
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar       , only : nlevgrnd, nlevurb, nlevsno   
-    use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
+    use ncdio_pio, only : file_desc_t, ncd_double
     use restUtilMod
     !
     ! !ARGUMENTS:
-    class(waterflux_type) :: this
+    class(waterflux_type)            :: this
     type(bounds_type), intent(in)    :: bounds 
     type(file_desc_t), intent(inout) :: ncid   ! netcdf id
     character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
     !
     ! !LOCAL VARIABLES:
     logical :: readvar      ! determine if variable is on initial file
-    integer :: dimlen       ! dimension length
-    integer :: nump_global  ! total number of pfts, globally
-    integer :: err_code     ! error code
-    logical :: do_io
     !-----------------------------------------------------------------------
-
-    ! Get expected total number of points, for later error checks
-    call get_proc_global(np=nump_global)
 
     ! needed for SNICAR
     call restartvar(ncid=ncid, flag=flag, varname='qflx_snofrz_lyr', xtype=ncd_double,  &
@@ -550,46 +510,6 @@ contains
        ! initial run, not restart: initialize qflx_snow_melt to zero
        this%qflx_snow_melt_col(bounds%begc:bounds%endc) = 0._r8
     endif
-
-    do_io = .true.
-    if (flag == 'read') then
-       ! On a read, confirm that this variable has the expected size; if not, don't read
-       ! it (instead give it a default value). This is needed to support older initial
-       ! conditions for which this variable had a different size.
-       call ncd_inqvdlen(ncid, 'n_irrig_steps_left', 1, dimlen, err_code)
-       if (dimlen /= nump_global) then
-          do_io = .false.
-          readvar = .false.
-       end if
-    else if (flag == 'define' .or. do_io) then
-       call restartvar(ncid=ncid, flag=flag, varname='n_irrig_steps_left', xtype=ncd_int,  &
-            dim1name='pft', &
-            long_name='number of irrigation time steps left', units='#', &
-            interpinic_flag='interp', readvar=readvar, data=this%n_irrig_steps_left_patch)
-       if (flag=='read' .and. .not. readvar) then
-          this%n_irrig_steps_left_patch = 0
-       end if
-    end if
-
-    do_io = .true.
-    if (flag == 'read') then
-       ! On a read, confirm that this variable has the expected size; if not, don't read
-       ! it (instead give it a default value). This is needed to support older initial
-       ! conditions for which this variable had a different size.
-       call ncd_inqvdlen(ncid, 'irrig_rate', 1, dimlen, err_code)
-       if (dimlen /= nump_global) then
-          do_io = .false.
-          readvar = .false.
-       end if
-    else if (flag == 'define' .or. do_io) then
-       call restartvar(ncid=ncid, flag=flag, varname='irrig_rate', xtype=ncd_double,  &
-            dim1name='pft', &
-            long_name='irrigation rate', units='mm/s', &
-            interpinic_flag='interp', readvar=readvar, data=this%irrig_rate_patch)
-       if (flag=='read' .and. .not. readvar) then
-          this%irrig_rate_patch = 0.0_r8
-       end if
-    end if
 
   end subroutine Restart
 

@@ -1,0 +1,57 @@
+module test_irrigation_deficit
+  
+  ! Tests of IrrigationDeficit
+  
+  ! Note that these tests do not require setting up a subgrid structure, or even doing
+  ! any setup for the irrigation object
+
+  use pfunit_mod
+  use IrrigationMod, only : irrigation_type
+  use shr_kind_mod, only : r8 => shr_kind_r8
+
+  implicit none
+  save
+  
+  real(r8), parameter :: tol = 1.e-13_r8
+
+contains
+
+  @Test
+  subroutine irrigation_deficit_is_correct()
+    use clm_varcon, only : denh2o
+    type(irrigation_type) :: irrigation
+    real(r8) :: relsat_so, h2osoi_liq, eff_porosity, dz
+    real(r8) :: h2osoi_liq_so, h2osoi_liq_sat
+    real(r8) :: irrig_factor
+    real(r8) :: deficit
+    real(r8) :: expected
+
+    relsat_so = 0.1_r8
+    h2osoi_liq = 100.0_r8
+    eff_porosity = 0.5_r8
+    dz = 2._r8
+    irrig_factor = 0.7_r8
+    h2osoi_liq_so = relsat_so * eff_porosity * dz * denh2o
+    h2osoi_liq_sat = eff_porosity * denh2o * dz
+    expected = h2osoi_liq_so + irrig_factor*(h2osoi_liq_sat - h2osoi_liq_so) - h2osoi_liq
+
+    deficit = irrigation%IrrigationDeficit(&
+         relsat_so=relsat_so, h2osoi_liq=h2osoi_liq, eff_porosity=eff_porosity, dz=dz, irrig_factor=irrig_factor)
+
+    @assertEqual(expected, deficit, tolerance=tol)
+
+  end subroutine irrigation_deficit_is_correct
+
+  @Test
+  subroutine irrigation_deficit_returns_zero_when_no_deficit()
+    type(irrigation_type) :: irrigation
+    real(r8) :: deficit
+
+    deficit = irrigation%IrrigationDeficit(&
+         relsat_so=0.1_r8, h2osoi_liq = 1.e9_r8, eff_porosity=0.5_r8, dz=2._r8, irrig_factor=0.7_r8)
+    
+    @assertEqual(0._r8, deficit)
+
+  end subroutine irrigation_deficit_returns_zero_when_no_deficit
+    
+end module test_irrigation_deficit

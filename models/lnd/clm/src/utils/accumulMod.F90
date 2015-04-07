@@ -108,7 +108,7 @@ contains
     integer :: nf           ! field index
     integer :: beg1d,end1d  ! beggining and end subgrid indices
     integer :: num1d        ! total number subgrid indices
-    integer :: begp, endp   ! per-proc beginning and ending pft indices
+    integer :: begp, endp   ! per-proc beginning and ending patch indices
     integer :: begc, endc   ! per-proc beginning and ending column indices
     integer :: begl, endl   ! per-proc beginning and ending landunit indices
     integer :: begg, endg   ! per-proc gridcell ending gridcell indices

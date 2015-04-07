@@ -25,7 +25,7 @@ import xml.etree.ElementTree as ET
 from mpi4py import MPI
 
 # append the CASEROOT/Tools location to the PYTHONPATH
-sys.path.append('../Tools/pythonlib')
+sys.path.append('./Tools/pythonlib')
 
 # import the cesm environment module
 import cesmEnvLib
@@ -39,12 +39,12 @@ def readArchiveXML(cesmEnv):
     specifiers = list()
     xml_tree = ET.ElementTree()
 # check if the env_archive.xml file exists
-    if ( not os.path.isfile('../env_archive.xml') ):
-        err_msg = "cesm_tseries_generator.py ERROR: env_archive.xml does not exists."
+    if ( not os.path.isfile('./env_archive.xml') ):
+        err_msg = "cesm_tseries_generator.py ERROR: env_archive.xml does not exist."
         raise OSError(err_msg)
     else:
 # parse the xml
-        xml_tree.parse('../env_archive.xml')
+        xml_tree.parse('./env_archive.xml')
 
 # loop through all the comp_archive_spec elements to find the tseries related elements
         for comp_archive_spec in xml_tree.findall("components/comp_archive_spec"):
@@ -217,6 +217,6 @@ reshpr.convert()
 # Print timing diagnostics
 reshpr.print_diagnostics()
 
-# check if DOUT_S_SAVE_HISTORY_FILES is true or false
+# TO-DO check if DOUT_S_SAVE_HISTORY_FILES is true or false
 
 # Print a success statement to stdout

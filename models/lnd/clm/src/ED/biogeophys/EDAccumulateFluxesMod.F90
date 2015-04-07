@@ -1,4 +1,4 @@
- module EDAccumulateFluxesMod
+module EDAccumulateFluxesMod
 
   !------------------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -7,76 +7,77 @@
   ! This routine cannot be in EDPhotosynthesis because EDPhotosynthesis is a loop and therefore would
   ! erroneously add these things up multiple times. 
   ! Rosie Fisher. March 2014. 
-  
-  
+  !
   ! !USES:
-  use EDtypesMod         , only : patch, cohort, gridCellEdState
-  use PhotosynthesisType , only : photosyns_type
-  use PatchType          , only : pft
-
   implicit none
-  private
-  save
-  
+  !
   public :: AccumulateFluxes_ED
-
-  type(cohort), pointer  :: currentCohort ! current cohort
-  type(patch) , pointer  :: currentPatch ! current patch
+  !------------------------------------------------------------------------------
 
 contains
 
   !------------------------------------------------------------------------------
-  subroutine AccumulateFluxes_ED(p, photosyns_vars)
-      
-   use shr_kind_mod  , only : r8 => shr_kind_r8
-   use EDVecPatchType, only : EDpft
-   
-   implicit none
+  subroutine AccumulateFluxes_ED(bounds, p, ed_allsites_inst, photosyns_inst)
+    !
+    ! !DESCRIPTION:
+    ! see above
+    !
+    ! !USES:
+    use shr_kind_mod      , only : r8 => shr_kind_r8
+    use decompMod         , only : bounds_type
+    use EDTypesMod        , only : ed_patch_type, ed_cohort_type, ed_site_type, map_clmpatch_to_edpatch
+    use PatchType         , only : patch
+    use PhotosynthesisMod , only : photosyns_type
+    !
+    ! !ARGUMENTS    
+    type(bounds_type)    , intent(in)            :: bounds  
+    integer              , intent(in)            :: p     !patch/'p'
+    type(ed_site_type)   , intent(inout), target :: ed_allsites_inst( bounds%begg: )
+    type(photosyns_type) , intent(inout)         :: photosyns_inst
+    !
+    ! !LOCAL VARIABLES:
+    type(ed_cohort_type), pointer  :: currentCohort ! current cohort
+    type(ed_patch_type) , pointer  :: currentPatch ! current patch
+    integer :: iv !leaf layer
+    integer :: g  !gridcell
+    !----------------------------------------------------------------------
 
-   integer              , intent(in)    :: p  !patch/'p'
-   type(photosyns_type) , intent(inout) :: photosyns_vars
+    associate(& 
+         fpsn      => photosyns_inst%fpsn_patch      , & ! Output: [real(r8) (:)]   photosynthesis (umol CO2 /m**2 /s)
+         psncanopy => photosyns_inst%psncanopy_patch   & ! Output: [real(r8) (:,:)] canopy scale photosynthesis umol CO2 /m**2/ s
+         )
 
-   integer :: iv !leaf layer
-   integer :: g  !gridcell
-  
-   associate(& 
-        ED_patch            => EDpft%ED_patch                 , & ! Input:  [real(r8) (:,:)] does this 'p' have any vegetation associated with it?
+      fpsn(p) = psncanopy(p)
 
-        fpsn                => photosyns_vars%fpsn_patch      , & ! Output: [real(r8) (:)]   photosynthesis (umol CO2 /m**2 /s)
-        psncanopy           => photosyns_vars%psncanopy_patch   & ! Output: [real(r8) (:,:)] canopy scale photosynthesis umol CO2 /m**2/ s
-        )
-    
-     fpsn(p) = psncanopy(p)
-     if(ED_patch(p) == 1)then
-        g = pft%gridcell(p)
-        currentPatch => gridCellEdState(g)%spnt%oldest_patch   
-        do while(p /= currentPatch%clm_pno)
-           currentPatch => currentPatch%younger
-        enddo
+      if (patch%is_veg(p)) then
 
-        currentCohort => currentPatch%shortest
+         g = patch%gridcell(p)
+         currentPatch => map_clmpatch_to_edpatch(ed_allsites_inst(g), p) 
+         currentCohort => currentPatch%shortest
 
-        do while(associated(currentCohort))
+         do while(associated(currentCohort))
 
-           ! Accumulate fluxes from hourly to daily values. 
-           ! _clm fluxes are KgC/indiv/timestep _acc are KgC/indiv/day
+            ! Accumulate fluxes from hourly to daily values. 
+            ! _clm fluxes are KgC/indiv/timestep _acc are KgC/indiv/day
 
-           currentCohort%npp_acc  = currentCohort%npp_acc  + currentCohort%npp_clm 
-           currentCohort%gpp_acc  = currentCohort%gpp_acc  + currentCohort%gpp_clm 
-           currentCohort%resp_acc = currentCohort%resp_acc + currentCohort%resp_clm
+            currentCohort%npp_acc  = currentCohort%npp_acc  + currentCohort%npp_clm 
+            currentCohort%gpp_acc  = currentCohort%gpp_acc  + currentCohort%gpp_clm 
+            currentCohort%resp_acc = currentCohort%resp_acc + currentCohort%resp_clm
 
-           do iv=1,currentCohort%nv
-              if(currentCohort%year_net_uptake(iv) == 999._r8)then ! note that there were leaves in this layer this year. 
-                 currentCohort%year_net_uptake(iv) = 0._r8
-              end if
-              currentCohort%year_net_uptake(iv) = currentCohort%year_net_uptake(iv) + currentCohort%ts_net_uptake(iv)
-           enddo
+            do iv=1,currentCohort%nv
+               if(currentCohort%year_net_uptake(iv) == 999._r8)then ! note that there were leaves in this layer this year. 
+                  currentCohort%year_net_uptake(iv) = 0._r8
+               end if
+               currentCohort%year_net_uptake(iv) = currentCohort%year_net_uptake(iv) + currentCohort%ts_net_uptake(iv)
+            enddo
 
-           currentCohort => currentCohort%taller
-        enddo ! while(associated(currentCohort)
+            currentCohort => currentCohort%taller
+         enddo ! while(associated(currentCohort)
 
-     end if !ED_patch
-   end associate
- end subroutine AccumulateFluxes_ED
+      end if !is_veg
+
+    end associate
+
+  end subroutine AccumulateFluxes_ED
 
 end module EDAccumulateFluxesMod

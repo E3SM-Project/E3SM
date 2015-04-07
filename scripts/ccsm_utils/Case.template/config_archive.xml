@@ -63,7 +63,7 @@
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>y</keepLast>
-	<tseries_create>FALSE</tseries_create>
+	<tseries_create>TRUE</tseries_create>
 	<tseries_output_format>netcdf4c</tseries_output_format>
 	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
 	<tseries_tper>monthly</tseries_tper>
@@ -73,7 +73,7 @@
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>y</keepLast>
-	<tseries_create>FALSE</tseries_create>
+	<tseries_create>TRUE</tseries_create>
 	<tseries_output_format>netcdf4c</tseries_output_format>
 	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
 	<tseries_tper>daily</tseries_tper>
@@ -249,7 +249,7 @@
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>y</keepLast>
-	<tseries_create>FALSE</tseries_create>
+	<tseries_create>TRUE</tseries_create>
 	<tseries_output_format>netcdf4c</tseries_output_format>
 	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
 	<tseries_tper>monthly</tseries_tper>
@@ -259,7 +259,7 @@
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>y</keepLast>
-	<tseries_create>FALSE</tseries_create>
+	<tseries_create>TRUE</tseries_create>
 	<tseries_output_format>netcdf4c</tseries_output_format>
 	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
 	<tseries_tper>daily</tseries_tper>
@@ -384,7 +384,7 @@
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>y</keepLast>
-	<tseries_create>FALSE</tseries_create>
+	<tseries_create>TRUE</tseries_create>
 	<tseries_output_format>netcdf4c</tseries_output_format>
 	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
 	<tseries_tper>monthly</tseries_tper>
@@ -394,7 +394,7 @@
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>y</keepLast>
-	<tseries_create>FALSE</tseries_create>
+	<tseries_create>TRUE</tseries_create>
 	<tseries_output_format>netcdf4c</tseries_output_format>
 	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
 	<tseries_tper>daily</tseries_tper>
@@ -457,7 +457,7 @@
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>n</keepLast>
-	<tseries_create>FALSE</tseries_create>
+	<tseries_create>TRUE</tseries_create>
 	<tseries_output_format>netcdf4c</tseries_output_format>
 	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
 	<tseries_tper>monthly</tseries_tper>
@@ -561,7 +561,7 @@
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>n</keepLast>
-	<tseries_create>FALSE</tseries_create>
+	<tseries_create>TRUE</tseries_create>
 	<tseries_output_format>netcdf4c</tseries_output_format>
 	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
 	<tseries_tper>monthly</tseries_tper>
@@ -571,7 +571,7 @@
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>n</keepLast>
-	<tseries_create>FALSE</tseries_create>
+	<tseries_create>TRUE</tseries_create>
 	<tseries_output_format>netcdf4c</tseries_output_format>
 	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
 	<tseries_tper>daily</tseries_tper>

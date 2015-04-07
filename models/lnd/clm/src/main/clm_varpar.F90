@@ -50,7 +50,7 @@ module clm_varpar
   integer, parameter :: nlayer      =   3     ! number of VIC soil layer --Added by AWang
   integer            :: nlayert               ! number of VIC soil layer + 3 lower thermal layers
 
-  integer :: numpft      = mxpft   ! actual # of patches (without bare)
+  integer :: numpft      = mxpft   ! actual # of pfts (without bare)
   integer :: numcft      =  10     ! actual # of crops
   logical :: crop_prog   = .true.  ! If prognostic crops is turned on
   integer :: maxpatch_urb= 5       ! max number of urban patches (columns) in urban landunit
@@ -69,11 +69,11 @@ module clm_varpar
 
   ! Indices used in surface file read and set in clm_varpar_init
 
-  integer :: natpft_lb          ! In PFT arrays, lower bound of Patches on the natural veg landunit (i.e., bare ground index)
-  integer :: natpft_ub          ! In PFT arrays, upper bound of Patches on the natural veg landunit
+  integer :: natpft_lb          ! In PATCH arrays, lower bound of Patches on the natural veg landunit (i.e., bare ground index)
+  integer :: natpft_ub          ! In PATCH arrays, upper bound of Patches on the natural veg landunit
   integer :: natpft_size        ! Number of Patches on natural veg landunit (including bare ground)
-  integer :: cft_lb             ! In PFT arrays, lower bound of Patches on the crop landunit
-  integer :: cft_ub             ! In PFT arrays, upper bound of Patches on the crop landunit
+  integer :: cft_lb             ! In PATCH arrays, lower bound of Patches on the crop landunit
+  integer :: cft_ub             ! In PATCH arrays, upper bound of Patches on the crop landunit
   integer :: cft_size           ! Number of Patches on crop landunit
 
   integer :: maxpatch_glcmec    ! max number of elevation classes

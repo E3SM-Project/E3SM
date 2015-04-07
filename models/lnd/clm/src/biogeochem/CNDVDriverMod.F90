@@ -6,22 +6,21 @@ module CNDVDriverMod
   ! which cannot cannot be in CNDVMod due to circular dependencies 
   !
   ! !USES:
-  use shr_kind_mod      , only : r8 => shr_kind_r8
-  use abortutils        , only : endrun
-  use decompMod         , only : bounds_type
-  use shr_log_mod       , only : errMsg => shr_log_errMsg
-  use atm2lndType       , only : atm2lnd_type
-  use CNDVType          , only : dgvs_type
-  use CNCarbonStateType , only : carbonstate_type
-  use CNCarbonFluxType  , only : carbonflux_type
-  use clm_varcon        , only : grlnd
-  use LandunitType      , only : lun                
-  use PatchType         , only : pft                
+  use shr_kind_mod             , only : r8 => shr_kind_r8
+  use shr_log_mod              , only : errMsg => shr_log_errMsg
+  use abortutils               , only : endrun
+  use decompMod                , only : bounds_type
+  use atm2lndType              , only : atm2lnd_type
+  use CNDVType                 , only : dgvs_type
+  use CNVegCarbonStateType     , only : cnveg_carbonstate_type
+  use CNVegCarbonFluxType      , only : cnveg_carbonflux_type
+  use clm_varcon               , only : grlnd
+  use LandunitType             , only : lun                
+  use PatchType                , only : patch                
   !
   ! !PUBLIC TYPES:
   implicit none
   private
-  save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: CNDVDriver
@@ -36,7 +35,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNDVDriver(bounds, &
        num_natvegp, filter_natvegp, kyr, &
-       atm2lnd_vars, carbonflux_vars, carbonstate_vars, dgvs_vars)
+       atm2lnd_inst, cnveg_carbonflux_inst, cnveg_carbonstate_inst, dgvs_inst)
     !
     ! !DESCRIPTION:
     ! Drives the annual dynamic vegetation that works with CN
@@ -46,28 +45,28 @@ contains
     use CNDVEstablishmentMod , only : Establishment
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds                  
-    integer                , intent(inout) :: num_natvegp             ! number of naturally-vegetated patches in filter
-    integer                , intent(inout) :: filter_natvegp(:)       ! filter for naturally-vegetated patches
-    integer                , intent(in)    :: kyr                     ! used in routine climate20 below
-    type(atm2lnd_type)     , intent(inout) :: atm2lnd_vars
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
-    type(dgvs_type)        , intent(inout) :: dgvs_vars
+    type(bounds_type)               , intent(in)    :: bounds                  
+    integer                         , intent(inout) :: num_natvegp             ! number of naturally-vegetated patches in filter
+    integer                         , intent(inout) :: filter_natvegp(:)       ! filter for naturally-vegetated patches
+    integer                         , intent(in)    :: kyr                     ! used in routine climate20 below
+    type(atm2lnd_type)              , intent(inout) :: atm2lnd_inst
+    type(cnveg_carbonflux_type)     , intent(in)    :: cnveg_carbonflux_inst
+    type(cnveg_carbonstate_type)    , intent(inout) :: cnveg_carbonstate_inst
+    type(dgvs_type)                 , intent(inout) :: dgvs_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: p                    ! patch index
     !-----------------------------------------------------------------------
 
-    associate(                                            & 
-         fpcgrid     => dgvs_vars%fpcgrid_patch         , & ! Input:  [real(r8) (:) ]  foliar projective cover on gridcell (fraction)    
-         agdd20      => dgvs_vars%agdd20_patch          , & ! Output: [real(r8) (:) ]  20-yr running mean of agdd                        
-         tmomin20    => dgvs_vars%tmomin20_patch        , & ! Output: [real(r8) (:) ]  20-yr running mean of tmomin                      
+    associate(                                                & 
+         fpcgrid     => dgvs_inst%fpcgrid_patch             , & ! Input:  [real(r8) (:) ]  foliar projective cover on gridcell (fraction)    
+         agdd20      => dgvs_inst%agdd20_patch              , & ! Output: [real(r8) (:) ]  20-yr running mean of agdd                        
+         tmomin20    => dgvs_inst%tmomin20_patch            , & ! Output: [real(r8) (:) ]  20-yr running mean of tmomin                      
+         agdd        => dgvs_inst%agdd_patch                , & ! Input:  [real(r8) (:) ]  accumulated growing degree days above 5           
 
-         t_mo_min    => atm2lnd_vars%t_mo_min_patch     , & ! Output: [real(r8) (:) ]  annual min of t_mo (Kelvin)                       
-
-         agdd        => dgvs_vars%agdd_patch            , & ! Input:  [real(r8) (:) ]  accumulated growing degree days above 5           
-         leafcmax    => carbonstate_vars%leafcmax_patch   & ! Output: [real(r8) (:) ]  (gC/m2) ann max leaf C 
+         t_mo_min    => atm2lnd_inst%t_mo_min_patch         , & ! Output: [real(r8) (:) ]  annual min of t_mo (Kelvin)                       
+         
+         leafcmax    => cnveg_carbonstate_inst%leafcmax_patch & ! Output: [real(r8) (:) ]  (gC/m2) ann max leaf C 
          )
 
       ! *************************************************************************
@@ -90,7 +89,7 @@ contains
 
       num_natvegp = 0
       do p = bounds%begp,bounds%endp
-         if (dgvs_vars%present_patch(p)) then
+         if (dgvs_inst%present_patch(p)) then
             num_natvegp = num_natvegp + 1
             filter_natvegp(num_natvegp) = p
          end if
@@ -99,19 +98,19 @@ contains
       ! Returns fpcgrid and nind
 
       call Light(bounds, num_natvegp, filter_natvegp, &
-           carbonstate_vars, dgvs_vars)
+           cnveg_carbonstate_inst, dgvs_inst)
 
       ! Returns updated fpcgrid, nind, crownarea, and present. Due to updated
       ! present, we do not use the natveg filter in this subroutine.
 
       call Establishment(bounds, &
-           atm2lnd_vars, carbonflux_vars, carbonstate_vars, dgvs_vars)
+           atm2lnd_inst, cnveg_carbonflux_inst, cnveg_carbonstate_inst, dgvs_inst)
 
       ! Reset dgvm variables needed in next yr (too few to keep subr. dvreset)
 
       do p = bounds%begp,bounds%endp
-         carbonstate_vars%leafcmax_patch(p) = 0._r8
-         atm2lnd_vars%t_mo_min_patch(p) = 1.0e+36_r8
+         leafcmax(p) = 0._r8
+         t_mo_min(p) = 1.0e+36_r8
       end do
 
     end associate 
@@ -119,7 +118,7 @@ contains
   end subroutine CNDVDriver
 
   !-----------------------------------------------------------------------
-  subroutine CNDVHist(bounds, dgvs_vars) 
+  subroutine CNDVHist(bounds, dgvs_inst) 
     !
     ! !DESCRIPTION:
     ! Write CNDV history file
@@ -138,7 +137,7 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  
-    type(dgvs_type)  , intent(in) :: dgvs_vars
+    type(dgvs_type)  , intent(in) :: dgvs_inst
     !
     ! !LOCAL VARIABLES:
     character(len=256) :: dgvm_fn      ! dgvm history filename
@@ -162,8 +161,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(& 
-         fpcgrid => dgvs_vars%fpcgrid_patch , & ! Input:  [real(r8) (:)]  foliar projective cover on gridcell (fraction)    
-         nind    => dgvs_vars%nind_patch      & ! Input:  [real(r8) (:)]  number of individuals (#/m**2)                    
+         fpcgrid => dgvs_inst%fpcgrid_patch , & ! Input:  [real(r8) (:)]  foliar projective cover on gridcell (fraction)    
+         nind    => dgvs_inst%nind_patch      & ! Input:  [real(r8) (:)]  number of individuals (#/m**2)                    
          )
 
       allocate(rbuf2dg(bounds%begg:bounds%endg,maxpatch_pft), stat=ier)
@@ -373,18 +372,18 @@ contains
 
       rbuf2dg(bounds%begg : bounds%endg, :) = 0._r8
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
-         l = pft%landunit(p)
-         if (.not. lun%ifspecial(l)) rbuf2dg(g,pft%mxy(p)) = fpcgrid(p)*100._r8
+         g = patch%gridcell(p)
+         l = patch%landunit(p)
+         if (.not. lun%ifspecial(l)) rbuf2dg(g,patch%mxy(p)) = fpcgrid(p)*100._r8
       end do
       call ncd_io(ncid=ncid, varname='FPCGRID', dim1name=grlnd, data=rbuf2dg, &
            nt=1, flag='write')
 
       rbuf2dg(bounds%begg : bounds%endg, :) = 0._r8
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
-         l = pft%landunit(p)
-         if (.not. lun%ifspecial(l)) rbuf2dg(g,pft%mxy(p)) = nind(p)
+         g = patch%gridcell(p)
+         l = patch%landunit(p)
+         if (.not. lun%ifspecial(l)) rbuf2dg(g,patch%mxy(p)) = nind(p)
       end do
       call ncd_io(ncid=ncid, varname='NIND', dim1name=grlnd, data=rbuf2dg, &
            nt=1, flag='write')
@@ -437,7 +436,7 @@ contains
   end function set_dgvm_filename
 
   !-----------------------------------------------------------------------
-  subroutine BuildNatVegFilter(bounds, num_natvegp, filter_natvegp, dgvs_vars)
+  subroutine BuildNatVegFilter(bounds, num_natvegp, filter_natvegp, dgvs_inst)
     !
     ! !DESCRIPTION:
     ! Reconstruct a filter of naturally-vegetated Patches for use in DGVM
@@ -446,7 +445,7 @@ contains
     type(bounds_type) , intent(in)  :: bounds   
     integer           , intent(out) :: num_natvegp       ! number of patches in naturally-vegetated filter
     integer           , intent(out) :: filter_natvegp(:) ! patch filter for naturally-vegetated points
-    type(dgvs_type)   , intent(in)  :: dgvs_vars
+    type(dgvs_type)   , intent(in)  :: dgvs_inst
     !
     ! !LOCAL VARIABLES:
     integer :: p
@@ -454,7 +453,7 @@ contains
 
     num_natvegp = 0
     do p = bounds%begp,bounds%endp
-       if (dgvs_vars%present_patch(p)) then
+       if (dgvs_inst%present_patch(p)) then
           num_natvegp = num_natvegp + 1
           filter_natvegp(num_natvegp) = p
        end if

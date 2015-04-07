@@ -4,6 +4,400 @@ SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/Machines/trunk/ChangeLog $
 
 This file describes what tags were created and why
 =================================================================================
+Originator:  jshollen
+Date: Oct 17, 2014
+Model: Machines
+Version: Machines_141017a
+One-line: Fix broken CSL timing run PE layout
+
+M       config_pes.xml
+
+=================================================================================
+Originator:  jedwards
+Date: Oct 17, 2014
+Model: Machines
+Version: Machines_141017
+One-line: Improved pe layout for ne30_g16 on bluewaters
+
+M   config_pes.xml
+
+=================================================================================
+Originator:  jedwards
+Date: Oct 16, 2014
+Model: Machines
+Version: Machines_141016
+One-line: Updates for bluewaters
+
+M   env_mach_specific.bluewaters
+M   mkbatch.bluewaters
+M   config_compilers.xml
+
+
+=================================================================================
+Originator:  jedwards
+Date: Oct 15, 2014
+Model: Machines
+Version: Machines_141015
+One-line:i update gptl enable papi
+
+M   config_compilers.xml
+M   env_mach_specific.bluewaters
+M   env_mach_specific.yellowstone
+M   env_mach_specific.edison
+
+
+=================================================================================
+Originator: mickelso 
+Date: Oct 13, 2014
+Model: Machines
+Version: Machines_141013a
+One-line: update hopper pgi to 14.7.0
+
+M       env_mach_specific.hopper
+
+=================================================================================
+Originator: mickelso 
+Date: Oct 13, 2014
+Model: Machines
+Version: Machines_141013
+One-line: updates for mira
+
+M       mkbatch.mira
+	-Set the wallclock outside of the *.run script
+M       Depends.mira
+	-time_management need to be compiled w/o threads to enable threading
+	to work with POP
+M       env_mach_specific.mira
+	-Update compiler to version 2014-08
+M       config_machines.xml
+	-Change max pes from 48 to 64 on mira
+M       config_pes.xml
+	-Update/balance mira layouts to work with 64 max tasks
+
+
+=================================================================================
+Originator: sacks
+Date: Oct 10, 2014
+Model: Machines
+Version: Machines_141010a
+One-line: updates for titan
+
+(1) Point to newer trilinos
+
+(2) Fix nf-config call: the old logic pointed to a non-existent path; apparently
+this didn't cause problems for most cases, but caused problems for builds that
+include C++ code
+
+Tested with:
+PASS  SMS.T31_g37.B.titan_pgi 
+And a bunch of tests involving CISM
+
+M       config_compilers.xml
+
+=================================================================================
+Originator: jedwards
+Date: Oct 10, 2014
+Model: Machines
+Version: Machines_141010
+One-line: updates for mira and yellowstone
+
+M    config_compilers.xml
+      - Remove noI8 cpp not required on mira
+      - add BIT64 flag required for using gptl nanotime on yellowstone
+
+
+=================================================================================
+Originator: santos
+Date: Oct 7, 2014
+Model: Machines
+Version: Machines_141007a
+One-line: csm_share, NAG, and pFUnit updates
+
+M       Makefile
+        - Add csm_share/include to included paths.
+
+M       config_compilers.xml
+        - Remove duplicated flags for NAG.
+        - New pFUnit paths for Intel and NAG on goldbach.
+
+=================================================================================
+Originator: sacks
+Date: Oct 7, 2014
+Model: Machines
+Version: Machines_141007
+One-line: Point to newer pFUnit on yellowstone
+
+Point to pFUnit3.0.1, rather than the old 2.x that we had been using. This is
+built with intel14.0.2, because there are problems with pFUnit3 with intel13.1.2
+(and we're now switching to intel14.0.2 by default anyway).
+
+For running unit tests on yellowstone, this tag depends on unit_testing_0_08, to
+have consistency in compiler versions between the pFUnit build and your unit
+test build.
+
+M       config_compilers.xml
+
+=================================================================================
+Originator: jedwards
+Date: Oct 2, 2014
+Model: Machines
+Version: Machines_141002
+One-line: Switch Yellowstone INTEL to 14.0.2, update titan & cray support
+
+M       config_compilers.xml
+M       env_mach_specific.yellowstone
+A       Depends.cray
+M       Depends.intel
+M       env_mach_specific.titan
+M       config_machines.xml
+
+
+=================================================================================
+Originator: jshollen
+Date: Oct 1, 2014
+Model: Machines
+Version: Machines_141001
+One-line: Switch Yellowstone PGI to 14.7
+
+M       env_mach_specific.yellowstone
+
+=================================================================================
+Originator: santos
+Date: Sep 23, 2014
+Model: Machines
+Version: Machines_140923a
+One-line: Work around NAG fpp bug
+
+M       config_compilers.xml
+        - nagfor 5.3.1 can get stuck in an infinite loop if you mention a
+          function macro without giving it arguments. When this happens, it
+          is almost always due to a mention of the macro in comments, so
+          use the option "-Wp,-macro=no_com" to disable expansion of macros
+          in comments.
+
+=================================================================================
+Originator: sacks
+Date: Sep 23, 2014
+Model: Machines
+Version: Machines_140923
+One-line: use newer version of mkl on yellowstone
+
+Use mkl 11.1.2 rather than 11.0.1 on yellowstone. My main motivation
+for this is that, for some CISM2 configurations, answers were not
+bit-for-bit reproducible using 11.0.1, but are using 11.1.2.
+
+I have tested this change with the yellowstone-intel prealpha test
+list. All tests passed (except the two IS2 expected failures) and were
+bit-for-bit, except that there were roundoff-level changes in:
+
+  ERS_Ly21.f09_g16.TG.yellowstone_intel
+
+In addition, I ran:
+
+  ERI.f09_g16.ICLM45BGC.yellowstone_intel
+  ERI_D.f09_g16.ICLM45BGC.yellowstone_intel
+
+- both passed and were bit-for-bit.
+
+So it appears that this upgrade changes answers for CISM, but probably
+nothing else.
+
+
+
+M       env_mach_specific.yellowstone
+
+=================================================================================
+Originator: sacks
+Date: Sep 22, 2014
+Model: Machines
+Version: Machines_140922
+One-line: use newer version of trilinos on yellowstone
+
+With the old trilinos version (11.0.3), CISM2 runs were not bit-for-bit
+reproducible. With the new version (11.10.2), they are reproducible as long as I
+use a newer version of mkl (coming in a follow-on Machines tag).
+
+M       env_mach_specific.yellowstone
+
+=================================================================================
+Originator: sacks
+Date: Sep 9, 2014
+Model: Machines
+Version: Machines_140909
+One-line: fix PE layouts for TG compsets
+
+PE layouts for TG compsets had been using 8 atm PEs, when they should
+have used 1 (it uses SATM). I tracked this back to a movement of where
+the SATM PE layouts occurred in the file. Since nobody can remember
+the reason for these SATM layouts, I am reluctant to remove them or
+change them too drastically - so I am simply restricting them to work
+only when we are using SGLC (so they won't be activated for TG
+compsets, which use CISM).
+
+M       config_pes.xml
+
+=================================================================================
+Originator: aliceb
+Date: Sep 5, 2014
+Model: Machines
+Version: Machines_140905
+One-line: added calls to load python modules on yellowstone
+
+M      env_mach_specific.yellowstone
+
+=================================================================================
+Originator: jshollen
+Date: Sep 4, 2014
+Model: Machines
+Version: Machines_140904
+One-line: Bluewaters add -nofma, turn vectorization back on. 
+
+M      config_compilers.xml
+
+=================================================================================
+Originator: sacks
+Date: Aug 29, 2014
+Model: Machines
+Version: Machines_140829
+One-line: Make use of new PROJECT xml variable in scripts
+
+Removed logic for getting account numbers from mkbatch scripts - this logic is
+now in one shared place in scripts4_140829. Also, added PROJECT_REQUIRED = TRUE
+in config_machines.xml for machines that require you to specify a project
+number, either because it's needed in the batch script or because it's needed in
+directory paths (or both).
+
+Changes behavior in potentially user-visible ways as follows:
+- hopper & edison: include the #PBS -A line if an account number can be found
+  (but keeps it commented out if not found). Previously this was always
+  commented out. (This logic means that a project number is not actually
+  required on these machines... this optional specification of a project/account
+  number is currently unique to hopper & edison.)
+- titan: no longer gets a project automatically from showproj, instead requiring
+  you to specify one (via -project, $PROJECT, $ACCOUNT, ~/.cesm_proj or
+  ~/.ccsm_proj)
+- yellowstone: if a project number cannot be found, create_newcase now fails (in
+  the past, you would get a warning and then could change your batch scripts to
+  specify a project)
+- all machines: there is a chance that a different project number will be picked
+  up, because the order of precedence of various options ($PROJECT, $ACCOUNT,
+  ~/.cesm_proj and ~/.ccsm_proj) is now done more uniformly in scripts
+
+Requires scripts4_140829
+
+M       config_machines.xml
+M       mkbatch.edison
+M       mkbatch.eos
+M       mkbatch.erebus
+M       mkbatch.hopper
+M       mkbatch.pleiades-ivy
+M       mkbatch.pleiades-san
+M       mkbatch.pleiades-wes
+M       mkbatch.pronghorn
+M       mkbatch.titan
+M       mkbatch.yellowstone
+
+
+=================================================================================
+Originator: jedwards
+Date: Aug 27, 2014
+Model: Machines
+Version: Machines_140827
+One-line: Fix restart errors on bluewaters, update pgi compiler 
+
+M env_mach_specific.bluewaters
+M config_compilers.xml
+
+=================================================================================
+Originator: sacks
+Date: Aug 25, 2014
+Model: Machines
+Version: Machines_140825
+One-line: Fix ChangeLog typo
+
+M       ChangeLog
+
+=================================================================================
+Originator: mickelso 
+Date: Aug 24, 2014
+Model: Machines
+Version: Machines_140824
+One-line: Update a mira pe layout and update path on mira to remove
+scratch/exe.
+
+Update pe layout to avoid problems within the reprosum_mod function.  
+Removed scratch/exe to simplify the path on mira and make it consistent with what is
+on other machines.
+
+M       config_machines.xml
+M       config_pes.xml
+
+=================================================================================
+Originator: sacks
+Date: Aug 21, 2014
+Model: Machines
+Version: Machines_140821b
+One-line: Add 'usr' to paths on mira, at Sheri's suggestion
+
+Apparently this is the way Warren Washington's group has the directory structure
+on mira.
+
+M     config_machines.xml
+
+=================================================================================
+Originator: santos
+Date: Aug 21, 2014
+Model: Machines
+Version: Machines_140821a
+One-line: Fix Mira builds of CISM and cvmix
+
+M       Makefile
+        - Only provide the USE_CONTIGUOUS definition for files compiled
+          directly by the CESM Makefile. Builds with XLF require a comma to
+          be escaped in this macro, which is only feasible when you can
+          control the number of times that a flag is affected by shell
+          expansion. Also, only CESM needs this definition anyway.
+
+=================================================================================
+Originator: sacks
+Date: Aug 21, 2014
+Model: Machines
+Version: Machines_140821
+One-line: change how paths are set on some machines
+
+IMPORTANT NOTE FOR MIRA: You now need to set a PROJECT environment variable -
+this is no longer hard-coded to be ClimEndStation.
+
+Pat Worley suggested these changes to config_machines for titan, hopper, edison
+and mira. His main point was to follow the example set by yellowstone,
+especially for setting & using CESMSCRATCHROOT.
+
+Specific changes are:
+
+(1) Making RUNDIR, EXEROOT and DOUT_S_ROOT depend on CESMSCRATCHROOT where
+possible, so that these various locations are more likely to stay consistent.
+
+(2) Using things like $ENV{SCRATCH} rather than simply $SCRATCH in
+CESMSCRATCHROOT (I think the motivation here is that CESMSCRATCHROOT is supposed
+to be fully resolved before a case is built, according to a comment in
+config_machines.xml).
+
+(3) For mira, replacing the hard-coded ClimEndStation (which some people don't
+have access to) with $PROJECT. Note that this means that you will need to set
+the PROJECT environment variable when you run on mira. Also, note that this uses
+$PROJECT rather than $ENV{PROJECT}, because in some of Pat's other changes (not
+yet on the trunk), PROJECT becomes an xml variable (I plan to eventually bring
+these to the trunk, and until then it shouldn't matter that it's $PROJECT
+instead of $ENV{PROJECT}).
+
+
+I have tested cases on titan, hopper and edison, but not on mira (since I don't
+have an account there).
+
+
+M       config_machines.xml
+
+=================================================================================
 Originator: sacks
 Date: Aug 11, 2014
 Model: Machines

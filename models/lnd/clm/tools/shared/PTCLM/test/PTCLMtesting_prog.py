@@ -43,7 +43,7 @@ class PTCLMtesting_prog:
       options.add_option("--redo_compare_files", dest="redo_compare", action="store_true", default=self.redo_compare, \
                         help="Redo the compare files")
       parser.add_option_group(options)
-      svnurl          = '$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk_tags/PTCLM2_140521/test/PTCLMtesting_prog.py $'
+      svnurl          = '$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk_tags/PTCLM2_140816/test/PTCLMtesting_prog.py $'
       versiongroup    = OptionGroup( parser, "Version Id: $Id: PTCLMtesting_prog.py 58600 2014-03-28 23:08:40Z erik $ URL: "+svnurl )
       parser.add_option_group(versiongroup)
       (options, args) = parser.parse_args()

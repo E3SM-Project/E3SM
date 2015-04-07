@@ -148,7 +148,7 @@ contains
  end subroutine ndep_init
   
  !================================================================
- subroutine ndep_interp(bounds, atm2lnd_vars)
+ subroutine ndep_interp(bounds, atm2lnd_inst)
 
    !-----------------------------------------------------------------------
    use clm_time_manager, only : get_curr_date, get_days_per_year
@@ -157,7 +157,7 @@ contains
    !
    ! Arguments
    type(bounds_type) , intent(in)    :: bounds  
-   type(atm2lnd_type), intent(inout) :: atm2lnd_vars
+   type(atm2lnd_type), intent(inout) :: atm2lnd_inst
    !
    ! Local variables
    integer :: g, ig 
@@ -178,7 +178,7 @@ contains
    dayspyr = get_days_per_year( )
    do g = bounds%begg,bounds%endg
       ig = ig+1
-      atm2lnd_vars%forc_ndep_grc(g) = sdat%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
+      atm2lnd_inst%forc_ndep_grc(g) = sdat%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
    end do
    
  end subroutine ndep_interp

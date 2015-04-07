@@ -21,7 +21,7 @@ module SatellitePhenologyMod
   use decompMod       , only : gsmap_lnd_gdc2glo
   use domainMod       , only : ldomain
   use fileutils       , only : getavu, relavu
-  use PatchType       , only : pft                
+  use PatchType       , only : patch                
   use CanopyStateType , only : canopystate_type
   use WaterstateType  , only : waterstate_type
   use perf_mod        , only : t_startf, t_stopf
@@ -32,7 +32,7 @@ module SatellitePhenologyMod
   !
   ! !PUBLIC TYPES:
   implicit none
-  save
+  private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SatellitePhenology     ! CLMSP Ecosystem dynamics: phenology, vegetation
@@ -192,18 +192,18 @@ contains
   ! lai_interp
   !
   !-----------------------------------------------------------------------
-  subroutine lai_interp(bounds, canopystate_vars)
+  subroutine lai_interp(bounds, canopystate_inst)
     !
     ! Interpolate data stream information for Lai.
     !
     ! !USES:
     use clm_time_manager, only : get_curr_date
-    use pftvarcon       , only : noveg
+    use pftconMod       , only : noveg
     !
     ! !ARGUMENTS:
     implicit none
     type(bounds_type)      , intent(in)    :: bounds                          
-    type(canopystate_type) , intent(inout) :: canopystate_vars
+    type(canopystate_type) , intent(inout) :: canopystate_inst
     !
     ! !LOCAL VARIABLES:
     integer :: ivt, p, g, ip, ig, gpft
@@ -221,13 +221,13 @@ contains
     call shr_strdata_advance(sdat_lai, mcdate, sec, mpicom, 'laidyn')
 
     do p = bounds%begp, bounds%endp
-       ivt = pft%itype(p)
+       ivt = patch%itype(p)
        if (ivt /= noveg) then     ! vegetated pft
           write(stream_var_name,"(i6)") ivt
           stream_var_name = 'LAI_'//trim(adjustl(stream_var_name))
           ip = mct_aVect_indexRA(sdat_lai%avs(1),trim(stream_var_name))
        endif
-       gpft = pft%gridcell(p)
+       gpft = patch%gridcell(p)
 
        !
        ! Determine vector index corresponding to gpft
@@ -242,9 +242,9 @@ contains
        ! Set lai for each gridcell/patch combination
        !
        if (ivt /= noveg) then     ! vegetated pft
-          canopystate_vars%tlai_patch(p) = sdat_lai%avs(1)%rAttr(ip,ig)
+          canopystate_inst%tlai_patch(p) = sdat_lai%avs(1)%rAttr(ip,ig)
        else                       ! non-vegetated pft
-          canopystate_vars%tlai_patch(p) = 0._r8
+          canopystate_inst%tlai_patch(p) = 0._r8
        endif
     end do
 
@@ -293,21 +293,21 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SatellitePhenology(bounds, num_nolakep, filter_nolakep, &
-       waterstate_vars, canopystate_vars)
+       waterstate_inst, canopystate_inst)
     !
     ! !DESCRIPTION:
     ! Ecosystem dynamics: phenology, vegetation
     ! Calculates leaf areas (tlai, elai),  stem areas (tsai, esai) and height (htop).
     !
     ! !USES:
-    use pftvarcon, only : noveg, nbrdlf_dcd_brl_shrub
+    use pftconMod, only : noveg, nbrdlf_dcd_brl_shrub
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                          
-    integer                , intent(in)    :: num_nolakep                               ! number of column non-lake points in pft filter
+    integer                , intent(in)    :: num_nolakep                               ! number of column non-lake points in patch filter
     integer                , intent(in)    :: filter_nolakep(bounds%endp-bounds%begp+1) ! patch filter for non-lake points
-    type(waterstate_type)  , intent(in)    :: waterstate_vars
-    type(canopystate_type) , intent(inout) :: canopystate_vars
+    type(waterstate_type)  , intent(in)    :: waterstate_inst
+    type(canopystate_type) , intent(inout) :: canopystate_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: fp,p,c                            ! indices
@@ -316,24 +316,24 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                           &
-         frac_sno           => waterstate_vars%frac_sno_col   ,          & ! Input:  [real(r8) (:) ] fraction of ground covered by snow (0 to 1)       
-         snow_depth         => waterstate_vars%snow_depth_col ,          & ! Input:  [real(r8) (:) ] snow height (m)                                                       
-         tlai               => canopystate_vars%tlai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index, no burying by snow 
-         tsai               => canopystate_vars%tsai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index, no burying by snow
-         elai               => canopystate_vars%elai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow
-         esai               => canopystate_vars%esai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index with burying by snow
-         htop               => canopystate_vars%htop_patch    ,          & ! Output: [real(r8) (:) ] canopy top (m)                           
-         hbot               => canopystate_vars%hbot_patch    ,          & ! Output: [real(r8) (:) ] canopy bottom (m)                           
-         frac_veg_nosno_alb => canopystate_vars%frac_veg_nosno_alb_patch & ! Output: [integer  (:) ] fraction of vegetation not covered by snow (0 OR 1) [-]
+         frac_sno           => waterstate_inst%frac_sno_col   ,          & ! Input:  [real(r8) (:) ] fraction of ground covered by snow (0 to 1)       
+         snow_depth         => waterstate_inst%snow_depth_col ,          & ! Input:  [real(r8) (:) ] snow height (m)                                                       
+         tlai               => canopystate_inst%tlai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index, no burying by snow 
+         tsai               => canopystate_inst%tsai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index, no burying by snow
+         elai               => canopystate_inst%elai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow
+         esai               => canopystate_inst%esai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index with burying by snow
+         htop               => canopystate_inst%htop_patch    ,          & ! Output: [real(r8) (:) ] canopy top (m)                           
+         hbot               => canopystate_inst%hbot_patch    ,          & ! Output: [real(r8) (:) ] canopy bottom (m)                           
+         frac_veg_nosno_alb => canopystate_inst%frac_veg_nosno_alb_patch & ! Output: [integer  (:) ] fraction of vegetation not covered by snow (0 OR 1) [-]
          )
 
       if (use_lai_streams) then
-         call lai_interp(bounds, canopystate_vars)
+         call lai_interp(bounds, canopystate_inst)
       endif
 
       do fp = 1, num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
+         c = patch%column(p)
 
          ! need to update elai and esai only every albedo time step so do not
          ! have any inconsistency in lai and sai between SurfaceAlbedo calls (i.e.,
@@ -366,7 +366,7 @@ contains
          ! snow burial fraction for short vegetation (e.g. grasses) as in
          ! Wang and Zeng, 2007. 
 
-         if (pft%itype(p) > noveg .and. pft%itype(p) <= nbrdlf_dcd_brl_shrub ) then
+         if (patch%itype(p) > noveg .and. patch%itype(p) <= nbrdlf_dcd_brl_shrub ) then
             ol = min( max(snow_depth(c)-hbot(p), 0._r8), htop(p)-hbot(p))
             fb = 1._r8 - ol / max(1.e-06_r8, htop(p)-hbot(p))
          else
@@ -396,7 +396,7 @@ contains
   end subroutine SatellitePhenology
 
   !-----------------------------------------------------------------------
-  subroutine interpMonthlyVeg (bounds, canopystate_vars)
+  subroutine interpMonthlyVeg (bounds, canopystate_inst)
     !
     ! !DESCRIPTION:
     ! Determine if 2 new months of data are to be read.
@@ -407,7 +407,7 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  
-    type(canopystate_type), intent(inout) :: canopystate_vars
+    type(canopystate_type), intent(inout) :: canopystate_inst
     !
     ! !LOCAL VARIABLES:
     integer :: kyr         ! year (0, ...) for nstep+1
@@ -442,7 +442,7 @@ contains
           write(iulog,*) 'nstep = ',get_nstep(),' month = ',kmo,' day = ',kda
        end if
        call t_startf('readMonthlyVeg')
-       call readMonthlyVegetation (bounds, fsurdat, months, canopystate_vars)
+       call readMonthlyVegetation (bounds, fsurdat, months, canopystate_inst)
        InterpMonths1 = months(1)
        call t_stopf('readMonthlyVeg')
     end if
@@ -450,14 +450,14 @@ contains
   end subroutine interpMonthlyVeg
 
   !-----------------------------------------------------------------------
-  subroutine readAnnualVegetation (bounds, canopystate_vars)
+  subroutine readAnnualVegetation (bounds, canopystate_inst)
     !
     ! !DESCRIPTION:
     ! read 12 months of veg data for dry deposition
     !
     ! !USES:
     use clm_varpar  , only : numpft
-    use pftvarcon   , only : noveg
+    use pftconMod   , only : noveg
     use domainMod   , only : ldomain
     use fileutils   , only : getfil
     use clm_varctl  , only : fsurdat
@@ -465,7 +465,7 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  
-    type(canopystate_type), intent(inout) :: canopystate_vars
+    type(canopystate_type), intent(inout) :: canopystate_inst
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid             ! netcdf id
@@ -479,14 +479,14 @@ contains
     integer :: ntim                       ! number of input data time samples
     integer :: nlon_i                     ! number of input data longitudes
     integer :: nlat_i                     ! number of input data latitudes
-    integer :: npft_i                     ! number of input data pft types
+    integer :: npft_i                     ! number of input data patch types
     integer :: closelatidx,closelonidx    ! single column vars
     logical :: isgrid2d                   ! true => file is 2d
     character(len=256) :: locfn           ! local file name
     character(len=32) :: subname = 'readAnnualVegetation'
     !-----------------------------------------------------------------------
 
-    annlai    => canopystate_vars%annlai_patch 
+    annlai    => canopystate_inst%annlai_patch 
 
     ! Determine necessary indices
 
@@ -528,10 +528,10 @@ contains
        !! as determined in subroutine surfrd
 
        do p = bounds%begp,bounds%endp
-          g =pft%gridcell(p)
-          if (pft%itype(p) /= noveg) then     !! vegetated pft
+          g =patch%gridcell(p)
+          if (patch%itype(p) /= noveg) then     !! vegetated pft
              do l = 0, numpft
-                if (l == pft%itype(p)) then
+                if (l == patch%itype(p)) then
                    annlai(k,p) = mlai(g,l)
                 end if
              end do
@@ -550,14 +550,14 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine readMonthlyVegetation (bounds, &
-       fveg, months, canopystate_vars)
+       fveg, months, canopystate_inst)
     !
     ! !DESCRIPTION:
     ! Read monthly vegetation data for two consec. months.
     !
     ! !USES:
     use clm_varpar       , only : numpft
-    use pftvarcon        , only : noveg
+    use pftconMod        , only : noveg
     use fileutils        , only : getfil
     use spmdMod          , only : masterproc, mpicom, MPI_REAL8, MPI_INTEGER
     use shr_scam_mod     , only : shr_scam_getCloseLatLon
@@ -568,7 +568,7 @@ contains
     type(bounds_type) , intent(in) :: bounds  
     character(len=*)  , intent(in) :: fveg      ! file with monthly vegetation data
     integer           , intent(in) :: months(2) ! months to be interpolated (1 to 12)
-    type(canopystate_type), intent(inout) :: canopystate_vars
+    type(canopystate_type), intent(inout) :: canopystate_inst
     !
     ! !LOCAL VARIABLES:
     character(len=256) :: locfn           ! local file name
@@ -578,7 +578,7 @@ contains
     integer :: ntim                       ! number of input data time samples
     integer :: nlon_i                     ! number of input data longitudes
     integer :: nlat_i                     ! number of input data latitudes
-    integer :: npft_i                     ! number of input data pft types
+    integer :: npft_i                     ! number of input data patch types
     integer :: ier                        ! error code
     integer :: closelatidx,closelonidx
     real(r8):: closelat,closelon
@@ -605,7 +605,7 @@ contains
 
     ! ----------------------------------------------------------------------
     ! Open monthly vegetation file
-    ! Read data and convert from gridcell to pft data
+    ! Read data and convert from gridcell to patch data
     ! ----------------------------------------------------------------------
 
     call getfil(fveg, locfn, 0)
@@ -639,10 +639,10 @@ contains
        ! as determined in subroutine surfrd
 
        do p = bounds%begp,bounds%endp
-          g =pft%gridcell(p)
-          if (pft%itype(p) /= noveg) then     ! vegetated pft
+          g =patch%gridcell(p)
+          if (patch%itype(p) /= noveg) then     ! vegetated pft
              do l = 0, numpft
-                if (l == pft%itype(p)) then
+                if (l == patch%itype(p)) then
                    mlai2t(p,k) = mlai(g,l)
                    msai2t(p,k) = msai(g,l)
                    mhvt2t(p,k) = mhgtt(g,l)
@@ -671,7 +671,7 @@ contains
     deallocate(mlai, msai, mhgtt, mhgtb)
 
     do p = bounds%begp,bounds%endp
-       canopystate_vars%mlaidiff_patch(p) = mlai2t(p,1)-mlai2t(p,2)
+       canopystate_inst%mlaidiff_patch(p) = mlai2t(p,1)-mlai2t(p,2)
     enddo
 
   end subroutine readMonthlyVegetation

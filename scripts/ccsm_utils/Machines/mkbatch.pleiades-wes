@@ -13,16 +13,6 @@ set tlimit = "08:00:00"
 #--- Job name is first fifteen characters of case name ---
 set jobname = `echo ${CASE} | cut -c1-15`
 
-if ($?ACCOUNT) then
-  set account_name = $ACCOUNT
-else
-  # could set this from the linux id command..
-  set account_name = group_id 
-  if (-e ~/.ccsm_proj) then
-     set account_name = `head -1 ~/.ccsm_proj`
-  endif
-endif
-
 if ($?QUEUE) then
   set queue_name = $QUEUE
 else
@@ -39,7 +29,7 @@ cat >! $file << EOF1
 #!/bin/csh -f
 
 #PBS -S /bin/csh
-#PBS -W group_list=${account_name}
+#PBS -W group_list=${PROJECT}
 #PBS -N ${jobname}
 #PBS -q ${queue_name}
 #PBS -j oe
@@ -83,21 +73,11 @@ EOF1
 else if ($PHASE == set_larch) then
 #################################################################################
 
-if ($?ACCOUNT) then
-  set account_name = $ACCOUNT
-else
-  # could set this from the linux id command..
-  set account_name = group_id 
-  if (-e ~/.ccsm_proj) then
-     set account_name = `head -1 ~/.ccsm_proj`
-  endif
-endif
-
 cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #! /bin/csh -f
 #PBS -S /bin/csh
 #PBS -N l_archive
-#PBS -W group_list=${account_name}
+#PBS -W group_list=${PROJECT}
 #PBS -q ldan
 #PBS -j oe
 #PBS -l select=1

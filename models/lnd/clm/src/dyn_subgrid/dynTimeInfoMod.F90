@@ -12,9 +12,8 @@ module dynTimeInfoMod
   use clm_varctl     , only : iulog
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
-
+  !
   implicit none
-  save
   private
   !
   ! !PUBLIC TYPES:
@@ -31,17 +30,18 @@ module dynTimeInfoMod
      integer :: time_index_upper           ! upper bound index of the current interval
 
    contains
-     generic :: set_current_year => &   ! should be called every time step to update info with the current model year
+     generic :: set_current_year => &        ! should be called every time step to update info with the current model year
           set_current_year_get_year, &
           set_current_year_from_year
      procedure :: set_current_year_get_year  ! version of set_current_year that obtains current model year
      procedure :: set_current_year_from_year ! version of set_current_year that assumes you already have obtained the current model year
-     procedure :: get_time_index_lower               ! get lower bound index of current interval
-     procedure :: get_time_index_upper               ! get upper bound index of current interval
-     procedure :: get_year              ! get the year associated with a given time index
-     procedure :: is_within_bounds      ! return true if we are currently within the bounds of this file
-     procedure :: is_before_time_series ! returns true if we are currently prior to the bounds of this file
-     procedure :: is_after_time_series  ! returns true if we are currently after the bounds of this file (if the last year of the file is (e.g.) 2005, then this is TRUE if the current year is 2005)
+     procedure :: get_time_index_lower       ! get lower bound index of current interval
+     procedure :: get_time_index_upper       ! get upper bound index of current interval
+     procedure :: get_year                   ! get the year associated with a given time index
+     procedure :: is_within_bounds           ! return true if we are currently within the bounds of this file
+     procedure :: is_before_time_series      ! returns true if we are currently prior to the bounds of this file
+     procedure :: is_after_time_series       ! returns true if we are currently after the bounds of this file 
+                                             ! (if the last year of the file is (e.g.) 2005, then this is TRUE if the current year is 2005)
 
      procedure, private :: year_in_current_interval ! returns true if the current year is in the current interval
   end type time_info_type

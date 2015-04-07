@@ -7,8 +7,8 @@ module ch4varcon
   use abortutils  , only : endrun
   use clm_varctl  , only : iulog
   use clm_varctl  , only : NLFileName_in
+  !
   implicit none
-  save
   !
   ! Methane Model Parameters
   !

@@ -1193,7 +1193,7 @@ contains
           end if
 #else
           allocate(idata1d(size(data))) 
-          data = (idata == 1)
+          data = (idata1d == 1)
           if ( any(idata1d /= 0 .and. idata1d /= 1) )then
              call shr_sys_abort(' ERROR: read in bad integer value(s) for logical data'//errMsg(__FILE__, __LINE__))
           end if
@@ -1287,7 +1287,7 @@ contains
           end if
 #else
           allocate(idata1d(size(data))) 
-          data = (idata == 1)
+          data = (idata1d == 1)
           if ( any(idata1d /= 0 .and. idata1d /= 1) )then
              call shr_sys_abort(' ERROR: read in bad integer value(s) for logical data'//errMsg(__FILE__, __LINE__))
           end if
@@ -2481,7 +2481,7 @@ contains
 #endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid, vardesc, dids)
+             status = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid,dids(ndims),dimname)
              if ('time' == trim(dimname)) then
                 ndims_iod = ndims - 1
@@ -2521,7 +2521,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc, dids)
+       status = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
        status = pio_inq_dimname(ncid,dids(ndims),dimname)
        if ('time' == trim(dimname)) then
           ndims_iod = ndims - 1
@@ -2652,7 +2652,7 @@ contains
 #endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid, vardesc, dids)
+             status = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid,dids(ndims),dimname)
              if ('time' == trim(dimname)) then
                 ndims_iod = ndims - 1
@@ -2692,7 +2692,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc, dids)
+       status = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
        status = pio_inq_dimname(ncid,dids(ndims),dimname)
        if ('time' == trim(dimname)) then
           ndims_iod = ndims - 1
@@ -2823,7 +2823,7 @@ contains
 #endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid, vardesc, dids)
+             status = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid,dids(ndims),dimname)
              if ('time' == trim(dimname)) then
                 ndims_iod = ndims - 1
@@ -2863,7 +2863,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc, dids)
+       status = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
        status = pio_inq_dimname(ncid,dids(ndims),dimname)
        if ('time' == trim(dimname)) then
           ndims_iod = ndims - 1
@@ -3018,7 +3018,7 @@ contains
              endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid,vardesc, dids)
+             status = pio_inq_vardimid(ncid,vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid, dids(ndims), dimname)
              if (ndims == 0) then
                 write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
@@ -3072,7 +3072,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc , dids)
+       status = pio_inq_vardimid(ncid, vardesc , dids(1:ndims))
        if (ndims == 0) then
           write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
           call shr_sys_abort(errMsg(__FILE__, __LINE__))
@@ -3248,7 +3248,7 @@ contains
              endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid,vardesc, dids)
+             status = pio_inq_vardimid(ncid,vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid, dids(ndims), dimname)
              if (ndims == 0) then
                 write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
@@ -3302,7 +3302,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc , dids)
+       status = pio_inq_vardimid(ncid, vardesc , dids(1:ndims))
        if (ndims == 0) then
           write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
           call shr_sys_abort(errMsg(__FILE__, __LINE__))
@@ -3443,7 +3443,7 @@ contains
              status = pio_get_var(ncid, vardesc, start, count, data)
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid,vardesc, dids)
+             status = pio_inq_vardimid(ncid,vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid, dids(ndims), dimname)
              if (ndims == 0) then
                 write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
@@ -3472,7 +3472,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc , dids)
+       status = pio_inq_vardimid(ncid, vardesc , dids(1:ndims))
        if (ndims == 0) then
           write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
           call shr_sys_abort(errMsg(__FILE__, __LINE__))
@@ -3573,7 +3573,7 @@ contains
              status = pio_get_var(ncid, vardesc, start, count, data)
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid,vardesc, dids)
+             status = pio_inq_vardimid(ncid,vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid, dids(ndims), dimname)
              if (ndims == 0) then
                 write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
@@ -3602,7 +3602,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc , dids)
+       status = pio_inq_vardimid(ncid, vardesc , dids(1:ndims))
        if (ndims == 0) then
           write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
           call shr_sys_abort(errMsg(__FILE__, __LINE__))

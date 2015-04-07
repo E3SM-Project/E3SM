@@ -1,4 +1,7 @@
 module CropType
+
+#include "shr_assert.h"
+
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module containing variables needed for the crop model
@@ -17,22 +20,30 @@ module CropType
   ! !PUBLIC TYPES:
   implicit none
   private
-  save
   !
   ! !PUBLIC DATA TYPES:
   !
   ! Crop state variables structure
   type, public :: crop_type
+
      real(r8), pointer :: gddplant_patch          (:)   ! patch accum gdd past planting date for crop       (ddays)
      real(r8), pointer :: gddtsoi_patch           (:)   ! patch growing degree-days from planting (top two soil layers) (ddays)
 
    contains
+     ! Public routines
      procedure, public  :: Init
-     procedure, private :: InitAllocate 
-     procedure, private :: InitHistory
      procedure, public  :: InitAccBuffer
      procedure, public  :: InitAccVars
-     procedure, public  :: UpdateAccVars
+
+     ! NOTE(wjs, 2014-09-29) need to rename this from UpdateAccVars to CropUpdateAccVars
+     ! to prevent cryptic error messages with pgi (v. 13.9 on yellowstone)
+     ! This is probably related to this bug
+     ! <http://www.pgroup.com/userforum/viewtopic.php?t=4285>, which was fixed in pgi 14.7.
+     procedure, public  :: CropUpdateAccVars
+
+     ! Private routines
+     procedure, private :: InitAllocate 
+     procedure, private :: InitHistory
 
   end type crop_type
 
@@ -75,8 +86,8 @@ contains
 
     begp = bounds%begp; endp = bounds%endp
 
-    allocate(this%gddplant_patch           (begp:endp))                      ; this%gddplant_patch           (:)   = spval
-    allocate(this%gddtsoi_patch            (begp:endp))                      ; this%gddtsoi_patch            (:)   = spval
+    allocate(this%gddplant_patch (begp:endp)) ; this%gddplant_patch (:) = spval
+    allocate(this%gddtsoi_patch  (begp:endp)) ; this%gddtsoi_patch  (:) = spval
     
   end subroutine InitAllocate
 
@@ -179,7 +190,7 @@ contains
     
     begp = bounds%begp; endp = bounds%endp
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level patch field
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
        write(iulog,*)' in '
@@ -200,28 +211,28 @@ contains
   end subroutine InitAccVars
 
   !-----------------------------------------------------------------------
-  subroutine UpdateAccVars(this, bounds, temperature_vars, cnstate_vars)
+  subroutine CropUpdateAccVars(this, bounds, t_ref2m_patch, t_soisno_col, cnveg_state_inst)
     !
     ! !DESCRIPTION:
     ! Update accumulated variables. Should be called every time step.
-    !
     ! Should only be called if crop_prog is true.
     !
     ! !USES:
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     use clm_time_manager , only : get_step_size, get_nstep
-    use pftvarcon        , only : nwcereal, nwcerealirrig, mxtmp, baset
-    use TemperatureType  , only : temperature_type
-    use CNStateType      , only : cnstate_type
-    use PatchType        , only : pft                
+    use clm_varpar       , only : nlevsno, nlevgrnd
+    use pftconMod        , only : nwcereal, nwcerealirrig, pftcon 
+    use CNVegStateType   , only : cnveg_state_type
     use ColumnType       , only : col
+    use PatchType        , only : patch
     !
     ! !ARGUMENTS:
     class(crop_type)       , intent(inout) :: this
     type(bounds_type)      , intent(in)    :: bounds
-    type(temperature_type) , intent(in)    :: temperature_vars
-    type(cnstate_type)     , intent(in) :: cnstate_vars
+    real(r8)               , intent(in)    :: t_ref2m_patch( bounds%begp:)
+    real(r8)               , intent(inout) :: t_soisno_col(bounds%begc:, -nlevsno+1:)
+    type(cnveg_state_type) , intent(in)    :: cnveg_state_inst
     !
     ! !LOCAL VARIABLES:
     integer :: p,c   ! indices
@@ -230,17 +241,22 @@ contains
     integer :: nstep ! timestep number
     integer :: ier   ! error status
     integer :: begp, endp
-    real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
-    
-    character(len=*), parameter :: subname = 'UpdateAccVars'
+    integer :: begc, endc
+    real(r8), pointer :: rbufslp(:)      ! temporary single level - patch level
+    character(len=*), parameter :: subname = 'CropUpdateAccVars'
     !-----------------------------------------------------------------------
     
     begp = bounds%begp; endp = bounds%endp
+    begc = bounds%begc; endc = bounds%endc
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(t_ref2m_patch)  == (/endp/))          , errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(t_soisno_col)   == (/endc,nlevgrnd/)) , errMsg(__FILE__, __LINE__))
 
     dtime = get_step_size()
     nstep = get_nstep()
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level patch field
 
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
@@ -251,13 +267,13 @@ contains
     ! Accumulate and extract GDDPLANT
     
     do p = begp,endp
-       if (cnstate_vars%croplive_patch(p)) then ! relative to planting date
-          ivt = pft%itype(p)
-          rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
-               temperature_vars%t_ref2m_patch(p)-(SHR_CONST_TKFRZ + baset(ivt)))) &
+       if (cnveg_state_inst%croplive_patch(p)) then ! relative to planting date
+          ivt = patch%itype(p)
+          rbufslp(p) = max(0._r8, min(pftcon%mxtmp(ivt), &
+               t_ref2m_patch(p)-(SHR_CONST_TKFRZ + pftcon%baset(ivt)))) &
                * dtime/SHR_CONST_CDAY
           if (ivt == nwcereal .or. ivt == nwcerealirrig) then
-             rbufslp(p) = rbufslp(p)*cnstate_vars%vf_patch(p)
+             rbufslp(p) = rbufslp(p) * cnveg_state_inst%vf_patch(p)
           end if
        else
           rbufslp(p) = accumResetVal
@@ -271,15 +287,15 @@ contains
     ! to 0.05 m, so here we use the top two soil layers
 
     do p = begp,endp
-       if (cnstate_vars%croplive_patch(p)) then ! relative to planting date
-          ivt = pft%itype(p)
-          c = pft%column(p)
-          rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
-               ((temperature_vars%t_soisno_col(c,1)*col%dz(c,1) + &
-               temperature_vars%t_soisno_col(c,2)*col%dz(c,2))/(col%dz(c,1)+col%dz(c,2))) - &
-               (SHR_CONST_TKFRZ + baset(ivt)))) * dtime/SHR_CONST_CDAY
+       if (cnveg_state_inst%croplive_patch(p)) then ! relative to planting date
+          ivt = patch%itype(p)
+          c   = patch%column(p)
+          rbufslp(p) = max(0._r8, min(pftcon%mxtmp(ivt), &
+               ((t_soisno_col(c,1)*col%dz(c,1) + &
+               t_soisno_col(c,2)*col%dz(c,2))/(col%dz(c,1)+col%dz(c,2))) - &
+               (SHR_CONST_TKFRZ + pftcon%baset(ivt)))) * dtime/SHR_CONST_CDAY
           if (ivt == nwcereal .or. ivt == nwcerealirrig) then
-             rbufslp(p) = rbufslp(p)*cnstate_vars%vf_patch(p)
+             rbufslp(p) = rbufslp(p) * cnveg_state_inst%vf_patch(p)
           end if
        else
           rbufslp(p) = accumResetVal
@@ -290,7 +306,7 @@ contains
 
     deallocate(rbufslp)
 
-  end subroutine UpdateAccVars
+  end subroutine CropUpdateAccVars
 
 end module CropType
 

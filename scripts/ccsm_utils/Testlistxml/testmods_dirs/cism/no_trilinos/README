@@ -1,0 +1,5 @@
+Test that it works to not include trilinos in the build, even for a CISM2
+compset. This should work as long as we're not trying to use the trilinos
+solver.
+
+

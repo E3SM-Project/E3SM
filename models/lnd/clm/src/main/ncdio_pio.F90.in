@@ -210,20 +210,46 @@ contains
   end subroutine ncd_pio_closefile
 
   !-----------------------------------------------------------------------
-  subroutine ncd_pio_createfile(file, fname)
+  subroutine ncd_pio_createfile(file, fname, avoid_pnetcdf)
     !
     ! !DESCRIPTION:
     ! Create a new NetCDF file with PIO
     !
+    ! !USES:
+    use pio, only : pio_iotype_pnetcdf, pio_iotype_netcdf
+    !
     ! !ARGUMENTS:
     class(file_desc_t), intent(inout) :: file    ! PIO file descriptor
     character(len=*) ,  intent(in)    :: fname   ! File name to create
+
+    ! BUG(wjs, 2014-10-20, bugz 1730) Workaround for
+    ! http://bugs.cgd.ucar.edu/show_bug.cgi?id=1730
+    logical, intent(in), optional     :: avoid_pnetcdf
     !
     ! !LOCAL VARIABLES:
+    logical :: l_avoid_pnetcdf  ! local version of avoid_pnetcdf
+    integer :: my_io_type
     integer :: ierr
     !-----------------------------------------------------------------------
 
-    ierr = pio_createfile(pio_subsystem, file, io_type, fname, ior(PIO_CLOBBER,PIO_64BIT_OFFSET))
+    l_avoid_pnetcdf = .false.
+    if (present(avoid_pnetcdf)) then
+       l_avoid_pnetcdf = avoid_pnetcdf
+    end if
+
+    my_io_type = io_type
+    if (l_avoid_pnetcdf) then
+       if (my_io_type == pio_iotype_pnetcdf) then
+          my_io_type = pio_iotype_netcdf
+          if (pio_subsystem%io_rank==0) then
+             write(iulog,*) 'Workaround for bugz 1730: creating'
+             write(iulog,*) trim(fname)
+             write(iulog,*) 'with type netcdf instead of pnetcdf'
+          end if
+       end if
+    end if
+
+    ierr = pio_createfile(pio_subsystem, file, my_io_type, fname, ior(PIO_CLOBBER,PIO_64BIT_OFFSET))
 
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort( ' ncd_pio_createfile ERROR: Failed to open file to write: '//trim(fname))
@@ -1085,7 +1111,7 @@ contains
           end if
 #else
           allocate(idata1d(size(data))) 
-          data = (idata == 1)
+          data = (idata1d == 1)
           if ( any(idata1d /= 0 .and. idata1d /= 1) )then
              call shr_sys_abort(' ERROR: read in bad integer value(s) for logical data'//errMsg(__FILE__, __LINE__))
           end if
@@ -1398,7 +1424,7 @@ contains
 #endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid, vardesc, dids)
+             status = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid,dids(ndims),dimname)
              if ('time' == trim(dimname)) then
                 ndims_iod = ndims - 1
@@ -1438,7 +1464,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc, dids)
+       status = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
        status = pio_inq_dimname(ncid,dids(ndims),dimname)
        if ('time' == trim(dimname)) then
           ndims_iod = ndims - 1
@@ -1591,7 +1617,7 @@ contains
              endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid,vardesc, dids)
+             status = pio_inq_vardimid(ncid,vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid, dids(ndims), dimname)
              if (ndims == 0) then
                 write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
@@ -1645,7 +1671,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc , dids)
+       status = pio_inq_vardimid(ncid, vardesc , dids(1:ndims))
        if (ndims == 0) then
           write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
           call shr_sys_abort(errMsg(__FILE__, __LINE__))
@@ -1784,7 +1810,7 @@ contains
              status = pio_get_var(ncid, vardesc, start, count, data)
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
-             status = pio_inq_vardimid(ncid,vardesc, dids)
+             status = pio_inq_vardimid(ncid,vardesc, dids(1:ndims))
              status = pio_inq_dimname(ncid, dids(ndims), dimname)
              if (ndims == 0) then
                 write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
@@ -1813,7 +1839,7 @@ contains
 
        call ncd_inqvid(ncid, varname ,varid, vardesc)
        status = pio_inq_varndims(ncid, vardesc, ndims)
-       status = pio_inq_vardimid(ncid, vardesc , dids)
+       status = pio_inq_vardimid(ncid, vardesc , dids(1:ndims))
        if (ndims == 0) then
           write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
           call shr_sys_abort(errMsg(__FILE__, __LINE__))

@@ -3,9 +3,6 @@
 smc#4 TSMscript_tools.sh shared mkprocdata_map mkprocdata_map_wrap mkprocdata_ne30_to_f19_I2000^tools__ds
 blc#4 TBLscript_tools.sh shared mkprocdata_map mkprocdata_map_wrap mkprocdata_ne30_to_f19_I2000^tools__ds
 
-smd54 TSMtools.sh shared mkmapgrids   tools__ds namelist
-bld54 TBLtools.sh shared mkmapgrids   tools__ds namelist
-
 sme14 TSMCFGtools.sh shared gen_domain   CFGtools__ds T31.runoptions
 ble14 TBLCFGtools.sh shared gen_domain   CFGtools__ds T31.runoptions
 sme@4 TSMCFGtools.sh shared gen_domain   CFGtools__ds ne30.runoptions
@@ -27,17 +24,6 @@ op853 TOPtools.sh clm4_0 interpinic   tools__do runoptions
 sm857 TSMtools.sh clm4_0 interpinic   tools__o  runoptions
 bl857 TBLtools.sh clm4_0 interpinic   tools__o  runoptions
 op857 TOPtools.sh clm4_0 interpinic   tools__o  runoptions
-
-smh54 TSMtools.sh clm4_5 interpinic   tools__ds runoptions
-blh54 TBLtools.sh clm4_5 interpinic   tools__ds runoptions
-
-smh53 TSMtools.sh clm4_5 interpinic   tools__do runoptions
-blh53 TBLtools.sh clm4_5 interpinic   tools__do runoptions
-oph53 TOPtools.sh clm4_5 interpinic   tools__do runoptions
-
-smh57 TSMtools.sh clm4_5 interpinic   tools__o  runoptions
-blh57 TBLtools.sh clm4_5 interpinic   tools__o  runoptions
-oph57 TOPtools.sh clm4_5 interpinic   tools__o  runoptions
 
 sm924 TSMscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_T31_crpglc_2000^tools__ds
 bl924 TBLscript_tools.sh clm4_0 mksurfdata_map mksurfdata.pl mksrfdt_T31_crpglc_2000^tools__ds
@@ -94,3 +80,9 @@ blfg4 TBLscript_tools.sh shared PTCLM   PTCLMmkdata             PTCLM_USUMB_Glob
 
 smiS4 TSMscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional
 bliS4 TBLscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional
+smiS8 TSMscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional_ndep
+bliS8 TBLscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional_ndep
+smiS9 TSMscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional_T62
+bliS9 TBLscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional_T62
+smiS0 TSMscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional_0.5popd
+bliS0 TBLscript_tools.sh shared ncl_scripts getregional_datasets.pl getregional_0.5popd

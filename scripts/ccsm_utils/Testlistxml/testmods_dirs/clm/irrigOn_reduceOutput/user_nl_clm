@@ -1,4 +1,5 @@
 hist_empty_htapes = .true.
+! in addition to the standard fields for reduceOutput, also include QIRRIG for this irrigation test
 hist_fincl1       = 'SNOWLIQ','SNOWICE' ,
                     'TG','TBOT','FIRE','FIRA','FLDS','FSDS',
                     'FSR','FSA','FGEV','FSH','FGR','TSOI',
@@ -9,4 +10,14 @@ hist_fincl1       = 'SNOWLIQ','SNOWICE' ,
                     'H2OSNO','SOILLIQ','SOILICE', 
                     'TG', 
                     'RH2M_U', 'RH2M_R',
-                    'QRUNOFF'
+                    'QRUNOFF', 
+                    'QIRRIG'
+
+! Also include a 1-d, annual-average history tape with just QIRRIG
+hist_fincl2 = 'QIRRIG'
+hist_dov2xy = .true., .false.
+hist_nhtfrq = 0,-8760
+hist_mfilt  = 1,1
+
+! In contrast to the standard reduceOutput, use double-precision
+hist_ndens  = 1,1

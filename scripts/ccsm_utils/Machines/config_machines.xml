@@ -28,8 +28,13 @@
  of the form $ENV{VARIABLE_NAME} are substituted in create_newcase from the environment 
  variable of the same name if it exists.
 
- NOTE: The variable CESMSCRATCHROOT must be fully resolved before a case is built so cannot 
-            contain other variables defined in cesm.
+ ===============================================================
+ PROJECT_REQUIRED
+ ===============================================================
+ A machine may need the PROJECT xml variable to be defined either because it is
+ used in some paths, or because it is used to give an account number in the job
+ submission script. If either of these are the case, then PROJECT_REQUIRED
+ should be set to TRUE for the given machine.
 
 -->
 <machine MACH="userdefined">
@@ -121,12 +126,12 @@
          <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>intel,gnu,cray</COMPILERS>
 	 <MPILIBS>mpt,mpi-serial</MPILIBS>
-         <RUNDIR>$SCRATCH/$CASE/run</RUNDIR>
-         <EXEROOT>$SCRATCH/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>$SCRATCH</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$SCRATCH/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
@@ -203,6 +208,7 @@
          <GMAKE_J>8</GMAKE_J>
          <PES_PER_NODE>16</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="goldbach">
@@ -297,12 +303,12 @@
          <DESC>NERSC XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>pgi,intel,gnu,cray,pathscale</COMPILERS>
 	 <MPILIBS>mpt,mpi-serial</MPILIBS>
-         <RUNDIR>/scratch/scratchdirs/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/scratch/scratchdirs/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/scratch/scratchdirs/$USER</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/scratch/scratchdirs/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -363,12 +369,12 @@
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <RUNDIR>/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/run</RUNDIR>
-         <EXEROOT>/projects/ClimEndStation/$CCSMUSER/scratch/exe/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/projects/ClimEndStation/$CCSMUSER/scratch/exe</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/projects/$PROJECT/usr/$ENV{USER}</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/projects/ClimEndStation/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/projects/$PROJECT/usr/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
          <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
 	     <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -377,7 +383,8 @@
          <BATCHSUBMIT>csh</BATCHSUBMIT>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 
@@ -420,6 +427,7 @@
          <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="pleiades-san">
@@ -439,6 +447,7 @@
          <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="pleiades-ivy">
@@ -458,6 +467,7 @@
          <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="sierra">
@@ -506,14 +516,14 @@
 
 <machine MACH="titan">
          <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
-	 <COMPILERS>pgi,pgicuda</COMPILERS>
+	 <COMPILERS>pgi,pgicuda,intel,cray</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
-         <RUNDIR>$MEMBERWORK/$PROJECT/$CASE/run</RUNDIR>
-         <EXEROOT>$MEMBERWORK/$PROJECT/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>$MEMBERWORK/$PROJECT</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>$ENV{MEMBERWORK}/$PROJECT</CESMSCRATCHROOT>
+         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$MEMBERWORK/$PROJECT/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
@@ -523,6 +533,7 @@
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="yellowstone">
@@ -545,6 +556,7 @@
         <GMAKE_J>8</GMAKE_J>
         <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
         <PES_PER_NODE>16</PES_PER_NODE>
+        <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="pronghorn">
@@ -567,6 +579,7 @@
         <GMAKE_J>8</GMAKE_J>
         <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
         <PES_PER_NODE>16</PES_PER_NODE>
+        <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
 
 <machine MACH="rosa">

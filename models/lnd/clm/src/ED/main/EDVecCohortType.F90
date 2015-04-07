@@ -6,36 +6,36 @@ module EDVecCohortType
   ! necessary in the rest of CLM
   !
   ! !USES:
-  use shr_kind_mod   , only : r8 => shr_kind_r8
-  use decompMod      , only : bounds_type 
-  !
+
   ! !PUBLIC TYPES:
   implicit none
-  save
   public
   !
-  type, public :: EDVecCohort_type
+  type, public :: ed_vec_cohort_type
+     integer :: cohorts_per_gridcell
      integer , pointer :: gridcell(:) !index into gridcell level quantities
    contains
      procedure, public :: Init
-  end type EDVecCohort_type
+  end type ed_vec_cohort_type
 
-  type(EDVecCohort_type), public :: coh
+  type(ed_vec_cohort_type), public :: ed_vec_cohort
   !------------------------------------------------------------------------
 
 contains
 
   !------------------------------------------------------------------------
-  subroutine Init(this, bounds)
+  subroutine Init(this, beg, end)
+    !
+    ! !USES:
     !
     ! !ARGUMENTS:
-    class(EDVecCohort_type) :: this
-    type(bounds_type), intent(in) :: bounds
+    class(ed_vec_cohort_type) :: this
+    integer, intent(in) :: beg, end
     !------------------------------------------------------------------------
 
     ! FIX(SPM,032414) pull this out and put in own ED source
 
-    allocate(this%gridcell(bounds%begCohort:bounds%endCohort))
+    allocate(this%gridcell(beg:end))
 
   end subroutine Init
 

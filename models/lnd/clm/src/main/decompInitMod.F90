@@ -16,8 +16,8 @@ module decompInitMod
   use GridcellType    , only : grc
   use LandunitType    , only : lun                
   use ColumnType      , only : col                
-  use PatchType       , only : pft                
-  use EDVecCohortType , only : coh
+  use PatchType       , only : patch                
+  use EDVecCohortType , only : ed_vec_cohort
   use decompMod
   use mct_mod
   !
@@ -91,45 +91,45 @@ contains
        write(iulog,*) 'decompInit_lnd(): allocation error for procinfo%cid'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
-    procinfo%nclumps = clump_pproc
-    procinfo%cid(:)  = -1
-    procinfo%ncells  = 0
-    procinfo%nlunits = 0
-    procinfo%ncols   = 0
-    procinfo%npfts   = 0
-    procinfo%nCohorts = 0
-    procinfo%begg    = 1
-    procinfo%begl    = 1
-    procinfo%begc    = 1
-    procinfo%begp    = 1
-    procinfo%begCohort    = 1
-    procinfo%endg    = 0
-    procinfo%endl    = 0
-    procinfo%endc    = 0
-    procinfo%endp    = 0
-    procinfo%endCohort    = 0
+    procinfo%nclumps   = clump_pproc
+    procinfo%cid(:)    = -1
+    procinfo%ncells    = 0
+    procinfo%nlunits   = 0
+    procinfo%ncols     = 0
+    procinfo%npatches  = 0
+    procinfo%nCohorts  = 0
+    procinfo%begg      = 1
+    procinfo%begl      = 1
+    procinfo%begc      = 1
+    procinfo%begp      = 1
+    procinfo%begCohort = 1
+    procinfo%endg      = 0
+    procinfo%endl      = 0
+    procinfo%endc      = 0
+    procinfo%endp      = 0
+    procinfo%endCohort = 0
 
     allocate(clumps(nclumps), stat=ier)
     if (ier /= 0) then
        write(iulog,*) 'decompInit_lnd(): allocation error for clumps'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    clumps(:)%owner   = -1
-    clumps(:)%ncells  = 0
-    clumps(:)%nlunits = 0
-    clumps(:)%ncols   = 0
-    clumps(:)%npfts   = 0
-    clumps(:)%nCohorts = 0
-    clumps(:)%begg    = 1
-    clumps(:)%begl    = 1
-    clumps(:)%begc    = 1
-    clumps(:)%begp    = 1
-    clumps(:)%begCohort    = 1
-    clumps(:)%endg    = 0
-    clumps(:)%endl    = 0
-    clumps(:)%endc    = 0
-    clumps(:)%endp    = 0
-    clumps(:)%endCohort    = 0
+    clumps(:)%owner     = -1
+    clumps(:)%ncells    = 0
+    clumps(:)%nlunits   = 0
+    clumps(:)%ncols     = 0
+    clumps(:)%npatches  = 0
+    clumps(:)%nCohorts  = 0
+    clumps(:)%begg      = 1
+    clumps(:)%begl      = 1
+    clumps(:)%begc      = 1
+    clumps(:)%begp      = 1
+    clumps(:)%begCohort = 1
+    clumps(:)%endg      = 0
+    clumps(:)%endl      = 0
+    clumps(:)%endc      = 0
+    clumps(:)%endp      = 0
+    clumps(:)%endCohort = 0
 
     ! assign clumps to proc round robin 
     cid = 0
@@ -335,7 +335,7 @@ contains
     integer :: begg, endg         ! temporary
     integer :: ilunits            ! temporary
     integer :: icols              ! temporary
-    integer :: ipfts              ! temporary
+    integer :: ipatches           ! temporary
     integer :: icohorts           ! temporary
     integer :: ier                ! error code
     integer, allocatable :: allvecg(:,:)  ! temporary vector "global"
@@ -347,17 +347,17 @@ contains
     !--- assign gridcells to clumps (and thus pes) ---
     call get_proc_bounds(begg, endg)
 
-    allocate(allvecl(nclumps,5))   ! local  clumps [gcells,lunit,cols,pfts,coh]
-    allocate(allvecg(nclumps,5))   ! global clumps [gcells,lunit,cols,pfts,coh]
+    allocate(allvecl(nclumps,5))   ! local  clumps [gcells,lunit,cols,patches,coh]
+    allocate(allvecg(nclumps,5))   ! global clumps [gcells,lunit,cols,patches,coh]
 
-    ! Determine the number of gridcells, landunits, columns, and pfts, cohorts 
+    ! Determine the number of gridcells, landunits, columns, and patches, cohorts 
     ! on this processor 
-    ! Determine number of landunits, columns and pfts for each global
+    ! Determine number of landunits, columns and patches for each global
     ! gridcell index (an) that is associated with the local gridcell index (ln)
 
     ilunits=0
     icols=0
-    ipfts=0
+    ipatches=0
     icohorts=0 
 
     allvecg= 0
@@ -367,21 +367,21 @@ contains
        cid = lcid(an)
        ln  = anumg
        if (present(glcmask)) then
-          call subgrid_get_gcellinfo (ln, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+          call subgrid_get_gcellinfo (ln, nlunits=ilunits, ncols=icols, npatches=ipatches, &
               ncohorts=icohorts, glcmask=glcmask(ln))
        else
-          call subgrid_get_gcellinfo (ln, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+          call subgrid_get_gcellinfo (ln, nlunits=ilunits, ncols=icols, npatches=ipatches, &
                ncohorts=icohorts )
        endif
        allvecl(cid,1) = allvecl(cid,1) + 1
        allvecl(cid,2) = allvecl(cid,2) + ilunits  ! number of landunits for local clump cid
        allvecl(cid,3) = allvecl(cid,3) + icols    ! number of columns for local clump cid
-       allvecl(cid,4) = allvecl(cid,4) + ipfts    ! number of pfts for local clump cid 
+       allvecl(cid,4) = allvecl(cid,4) + ipatches ! number of patches for local clump cid 
        allvecl(cid,5) = allvecl(cid,5) + icohorts ! number of cohorts for local clump cid 
     enddo
     call mpi_allreduce(allvecl,allvecg,size(allvecg),MPI_INTEGER,MPI_SUM,mpicom,ier)
 
-    ! Determine overall  total gridcells, landunits, columns and pfts and distribute
+    ! Determine overall  total gridcells, landunits, columns and patches and distribute
     ! gridcells over clumps
 
     numg = 0
@@ -394,21 +394,21 @@ contains
        icells   = allvecg(cid,1)  ! number of all clump cid gridcells (over all processors)
        ilunits  = allvecg(cid,2)  ! number of all clump cid landunits (over all processors)
        icols    = allvecg(cid,3)  ! number of all clump cid columns (over all processors)
-       ipfts    = allvecg(cid,4)  ! number of all clump cid pfts (over all processors)
+       ipatches = allvecg(cid,4)  ! number of all clump cid patches (over all processors)
        icohorts = allvecg(cid,5)  ! number of all clump cid cohorts (over all processors)
 
        !--- overall total ---
-       numg = numg + icells      ! total number of gridcells
-       numl = numl + ilunits     ! total number of landunits
-       numc = numc + icols       ! total number of columns
-       nump = nump + ipfts       ! total number of pfts
-       numCohort = numCohort + icohorts       ! total number of cohorts
+       numg = numg + icells             ! total number of gridcells
+       numl = numl + ilunits            ! total number of landunits
+       numc = numc + icols              ! total number of columns
+       nump = nump + ipatches           ! total number of patches
+       numCohort = numCohort + icohorts ! total number of cohorts
 
        !--- give gridcell to cid ---
        !--- increment the beg and end indices ---
        clumps(cid)%nlunits  = clumps(cid)%nlunits  + ilunits  
        clumps(cid)%ncols    = clumps(cid)%ncols    + icols
-       clumps(cid)%npfts    = clumps(cid)%npfts    + ipfts
+       clumps(cid)%npatches = clumps(cid)%npatches    + ipatches
        clumps(cid)%nCohorts = clumps(cid)%nCohorts + icohorts
 
        do m = 1,nclumps
@@ -416,7 +416,7 @@ contains
               (clumps(m)%owner == clumps(cid)%owner .and. m > cid)) then
              clumps(m)%begl = clumps(m)%begl + ilunits
              clumps(m)%begc = clumps(m)%begc + icols
-             clumps(m)%begp = clumps(m)%begp + ipfts
+             clumps(m)%begp = clumps(m)%begp + ipatches
              clumps(m)%begCohort = clumps(m)%begCohort + icohorts
           endif
 
@@ -424,7 +424,7 @@ contains
               (clumps(m)%owner == clumps(cid)%owner .and. m >= cid)) then
              clumps(m)%endl = clumps(m)%endl + ilunits
              clumps(m)%endc = clumps(m)%endc + icols
-             clumps(m)%endp = clumps(m)%endp + ipfts
+             clumps(m)%endp = clumps(m)%endp + ipatches
              clumps(m)%endCohort = clumps(m)%endCohort + icohorts
           endif
        enddo
@@ -434,21 +434,21 @@ contains
        if (iam == clumps(cid)%owner) then
           procinfo%nlunits  = procinfo%nlunits  + ilunits
           procinfo%ncols    = procinfo%ncols    + icols
-          procinfo%npfts    = procinfo%npfts    + ipfts
+          procinfo%npatches = procinfo%npatches + ipatches
           procinfo%nCohorts = procinfo%nCohorts + icohorts
        endif
 
        if (iam >  clumps(cid)%owner) then
           procinfo%begl = procinfo%begl + ilunits
           procinfo%begc = procinfo%begc + icols
-          procinfo%begp = procinfo%begp + ipfts
+          procinfo%begp = procinfo%begp + ipatches
           procinfo%begCohort = procinfo%begCohort + icohorts
        endif
 
        if (iam >= clumps(cid)%owner) then
           procinfo%endl = procinfo%endl + ilunits
           procinfo%endc = procinfo%endc + icols
-          procinfo%endp = procinfo%endp + ipfts
+          procinfo%endp = procinfo%endp + ipatches
           procinfo%endCohort = procinfo%endCohort + icohorts
        endif
     enddo
@@ -457,17 +457,16 @@ contains
        if (clumps(n)%ncells   /= allvecg(n,1) .or. &
            clumps(n)%nlunits  /= allvecg(n,2) .or. &
            clumps(n)%ncols    /= allvecg(n,3) .or. &
-           clumps(n)%npfts    /= allvecg(n,4) .or. &
+           clumps(n)%npatches /= allvecg(n,4) .or. &
            clumps(n)%nCohorts /= allvecg(n,5)) then
 
-               write(iulog,*) 'decompInit_glcp(): allvecg error ncells ',iam,n,clumps(n)%ncells ,allvecg(n,1)
-               write(iulog,*) 'decompInit_glcp(): allvecg error lunits ',iam,n,clumps(n)%nlunits,allvecg(n,2)
-               write(iulog,*) 'decompInit_glcp(): allvecg error ncols  ',iam,n,clumps(n)%ncols  ,allvecg(n,3)
-               write(iulog,*) 'decompInit_glcp(): allvecg error pfts   ',iam,n,clumps(n)%npfts  ,allvecg(n,4)
-               write(iulog,*) 'decompInit_glcp(): allvecg error cohorts ',iam,n,clumps(n)%nCohorts ,allvecg(n,5)
-
-               call endrun(msg=errMsg(__FILE__, __LINE__))
-
+          write(iulog ,*) 'decompInit_glcp(): allvecg error ncells ',iam,n,clumps(n)%ncells   ,allvecg(n,1)
+          write(iulog ,*) 'decompInit_glcp(): allvecg error lunits ',iam,n,clumps(n)%nlunits  ,allvecg(n,2)
+          write(iulog ,*) 'decompInit_glcp(): allvecg error ncols  ',iam,n,clumps(n)%ncols    ,allvecg(n,3)
+          write(iulog ,*) 'decompInit_glcp(): allvecg error patches',iam,n,clumps(n)%npatches ,allvecg(n,4)
+          write(iulog ,*) 'decompInit_glcp(): allvecg error cohorts',iam,n,clumps(n)%nCohorts ,allvecg(n,5)
+          
+          call endrun(msg=errMsg(__FILE__, __LINE__))
        endif
     enddo
 
@@ -480,7 +479,7 @@ contains
   subroutine decompInit_glcp(lns,lni,lnj,glcmask)
     !
     ! !DESCRIPTION:
-    ! Determine gsMaps for landunits, columns, pfts and cohorts
+    ! Determine gsMaps for landunits, columns, patchesand cohorts
     !
     ! !USES:
     use spmdMod
@@ -500,17 +499,17 @@ contains
     integer :: begg,endg          ! beg,end gridcells
     integer :: begl,endl          ! beg,end landunits
     integer :: begc,endc          ! beg,end columns
-    integer :: begp,endp          ! beg,end pfts
-    integer :: begCohort,endCohort    ! beg,end pfts
+    integer :: begp,endp          ! beg,end patches
+    integer :: begCohort,endCohort! beg,end patches
     integer :: numg               ! total number of gridcells across all processors
     integer :: numl               ! total number of landunits across all processors
     integer :: numc               ! total number of columns across all processors
-    integer :: nump               ! total number of pfts across all processors
+    integer :: nump               ! total number of patches across all processors
     integer :: numCohort          ! ED cohorts
     integer :: icells             ! temporary
     integer :: ilunits            ! temporary
     integer :: icols              ! temporary
-    integer :: ipfts              ! temporary
+    integer :: ipatches           ! temporary
     integer :: icohorts           ! temporary
     integer :: ier                ! error code
     integer :: npmin,npmax,npint  ! do loop values for printing
@@ -567,16 +566,16 @@ contains
 
     do gi = begg,endg
        if (present(glcmask)) then
-          call subgrid_get_gcellinfo (gi, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+          call subgrid_get_gcellinfo (gi, nlunits=ilunits, ncols=icols, npatches=ipatches, &
               ncohorts=icohorts, glcmask=glcmask(gi))
        else
-          call subgrid_get_gcellinfo (gi, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+          call subgrid_get_gcellinfo (gi, nlunits=ilunits, ncols=icols, npatches=ipatches, &
                ncohorts=icohorts )
        endif
        gcount(gi)  = 1         ! number of gridcells for local gridcell index gi
        lcount(gi)  = ilunits   ! number of landunits for local gridcell index gi
        ccount(gi)  = icols     ! number of columns for local gridcell index gi
-       pcount(gi)  = ipfts     ! number of pfts for local gridcell index gi
+       pcount(gi)  = ipatches  ! number of patches for local gridcell index gi
        coCount(gi) = icohorts  ! number of ED cohorts for local gricell index gi
     enddo
 
@@ -723,7 +722,7 @@ contains
     allocate(gindex(begp:endp))
     ioff(:) = 0
     do pi = begp,endp
-       gi = pft%gridcell(pi)
+       gi = patch%gridcell(pi)
        gindex(pi) = pstart(gi) + ioff(gi)
        ioff(gi) = ioff(gi) + 1 
        ! check that this is less than [pstart(gi) + pcount(gi)]
@@ -738,7 +737,7 @@ contains
        allocate(gindex(begCohort:endCohort))
        ioff(:) = 0
        do coi = begCohort,endCohort
-          gi = coh%gridcell(coi) !function call to get gcell for this cohort idx
+          gi = ed_vec_cohort%gridcell(coi) !function call to get gcell for this cohort idx
           gindex(coi) = coStart(gi) + ioff(gi)
           ioff(gi) = ioff(gi) + 1
        enddo
@@ -767,7 +766,7 @@ contains
        write(iulog,*)'   total number of gridcells = ',numg
        write(iulog,*)'   total number of landunits = ',numl
        write(iulog,*)'   total number of columns   = ',numc
-       write(iulog,*)'   total number of pfts      = ',nump
+       write(iulog,*)'   total number of patches   = ',nump
        write(iulog,*)'   total number of cohorts   = ',numCohort
        write(iulog,*)' Decomposition Characteristics'
        write(iulog,*)'   clumps per process        = ',clump_pproc
@@ -776,7 +775,7 @@ contains
        write(iulog,*) '  gce gsmap glo num of segs = ',mct_gsMap_ngseg(gsMap_gce_gdc2glo)
        write(iulog,*) '  lun gsmap glo num of segs = ',mct_gsMap_ngseg(gsMap_lun_gdc2glo)
        write(iulog,*) '  col gsmap glo num of segs = ',mct_gsMap_ngseg(gsMap_col_gdc2glo)
-       write(iulog,*) '  pft gsmap glo num of segs = ',mct_gsMap_ngseg(gsMap_patch_gdc2glo)
+       write(iulog,*) '  patch gsmap glo num of segs = ',mct_gsMap_ngseg(gsMap_patch_gdc2glo)
        write(iulog,*) '  coh gsmap glo num of segs = ',mct_gsMap_ngseg(gsMap_cohort_gdc2glo)
        write(iulog,*)
     end if
@@ -821,9 +820,9 @@ contains
                ' end column  = ',procinfo%endc,                   &
                ' total columns per proc  = ',procinfo%ncols
           write(iulog,*)'proc= ',pid,&
-               ' beg pft     = ',procinfo%begp, &
-               ' end pft     = ',procinfo%endp,                   &
-               ' total pfts per proc     = ',procinfo%npfts
+               ' beg patch     = ',procinfo%begp, &
+               ' end patch     = ',procinfo%endp,                   &
+               ' total patches per proc = ',procinfo%npatches
           write(iulog,*)'proc= ',pid,&
                ' beg coh     = ',procinfo%begCohort, &
                ' end coh     = ',procinfo%endCohort,                   &
@@ -841,8 +840,8 @@ contains
                ' col ngseg   = ',mct_gsMap_ngseg(gsMap_col_gdc2glo), &
                ' col nlseg   = ',mct_gsMap_nlseg(gsMap_col_gdc2glo,iam)
           write(iulog,*)'proc= ',pid,&
-               ' pft ngseg   = ',mct_gsMap_ngseg(gsMap_patch_gdc2glo), &
-               ' pft nlseg   = ',mct_gsMap_nlseg(gsMap_patch_gdc2glo,iam)
+               ' patch ngseg   = ',mct_gsMap_ngseg(gsMap_patch_gdc2glo), &
+               ' patch nlseg   = ',mct_gsMap_nlseg(gsMap_patch_gdc2glo,iam)
           write(iulog,*)'proc= ',pid,&
                ' coh ngseg   = ',mct_gsMap_ngseg(gsMap_cohort_gdc2glo), &
                ' coh nlseg   = ',mct_gsMap_nlseg(gsMap_cohort_gdc2glo,iam)
@@ -874,9 +873,9 @@ contains
                   ' total columns per clump  = ',clumps(cid)%ncols
              write(iulog,*)'proc= ',pid,' clump no = ',n, &
                   ' clump id= ',procinfo%cid(n),    &
-                  ' beg pft     = ',clumps(cid)%begp, &
-                  ' end pft     = ',clumps(cid)%endp, &
-                  ' total pfts per clump     = ',clumps(cid)%npfts
+                  ' beg patch     = ',clumps(cid)%begp, &
+                  ' end patch     = ',clumps(cid)%endp, &
+                  ' total patches per clump = ',clumps(cid)%npatches 
              write(iulog,*)'proc= ',pid,' clump no = ',n, &
                   ' clump id= ',procinfo%cid(n),    &
                   ' beg cohort     = ',clumps(cid)%begCohort, &

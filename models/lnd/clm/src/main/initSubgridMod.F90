@@ -10,13 +10,13 @@ module initSubgridMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use clm_varctl     , only : iulog
+  use clm_varctl     , only : iulog, use_ed
   use clm_varcon     , only : namep, namec, namel
   use decompMod      , only : bounds_type
   use GridcellType   , only : grc                
   use LandunitType   , only : lun                
   use ColumnType     , only : col                
-  use PatchType      , only : pft                
+  use PatchType      , only : patch                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -85,26 +85,26 @@ contains
     curc = 0
     curl = 0
     do p = bounds%begp,bounds%endp
-       if (pft%column(p) /= curc) then
-          curc = pft%column(p)
+       if (patch%column(p) /= curc) then
+          curc = patch%column(p)
           if (curc < bounds%begc .or. curc > bounds%endc) then
              write(iulog,*) 'clm_ptrs_compdown ERROR: pcolumn ',p,curc,bounds%begc,bounds%endc
              call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
           endif
-          col%pfti(curc) = p
+          col%patchi(curc) = p
        endif
-       col%pftf(curc) = p
-       col%npfts(curc) = col%pftf(curc) - col%pfti(curc) + 1
-       if (pft%landunit(p) /= curl) then
-          curl = pft%landunit(p)
+       col%patchf(curc) = p
+       col%npatches(curc) = col%patchf(curc) - col%patchi(curc) + 1
+       if (patch%landunit(p) /= curl) then
+          curl = patch%landunit(p)
           if (curl < bounds%begl .or. curl > bounds%endl) then
              write(iulog,*) 'clm_ptrs_compdown ERROR: plandunit ',p,curl,bounds%begl,bounds%endl
              call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
           endif
-          lun%pfti(curl) = p
+          lun%patchi(curl) = p
        endif
-       lun%pftf(curl) = p
-       lun%npfts(curl) = lun%pftf(curl) - lun%pfti(curl) + 1
+       lun%patchf(curl) = p
+       lun%npatches(curl) = lun%patchf(curl) - lun%patchi(curl) + 1
     enddo
 
     curl = 0
@@ -198,8 +198,8 @@ contains
     if (minval(lun%gridcell(begl:endl)) < begg .or. maxval(lun%gridcell(begl:endl)) > endg) error=.true.
     if (minval(lun%coli(begl:endl)) < begc .or. maxval(lun%coli(begl:endl)) > endc) error=.true.
     if (minval(lun%colf(begl:endl)) < begc .or. maxval(lun%colf(begl:endl)) > endc) error=.true.
-    if (minval(lun%pfti(begl:endl)) < begp .or. maxval(lun%pfti(begl:endl)) > endp) error=.true.
-    if (minval(lun%pftf(begl:endl)) < begp .or. maxval(lun%pftf(begl:endl)) > endp) error=.true.
+    if (minval(lun%patchi(begl:endl)) < begp .or. maxval(lun%patchi(begl:endl)) > endp) error=.true.
+    if (minval(lun%patchf(begl:endl)) < begp .or. maxval(lun%patchf(begl:endl)) > endp) error=.true.
     if (error) then
        write(iulog,*) '   clm_ptrs_check: l index ranges - ERROR'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -209,8 +209,8 @@ contains
     error = .false.
     if (minval(col%gridcell(begc:endc)) < begg .or. maxval(col%gridcell(begc:endc)) > endg) error=.true.
     if (minval(col%landunit(begc:endc)) < begl .or. maxval(col%landunit(begc:endc)) > endl) error=.true.
-    if (minval(col%pfti(begc:endc)) < begp .or. maxval(col%pfti(begc:endc)) > endp) error=.true.
-    if (minval(col%pftf(begc:endc)) < begp .or. maxval(col%pftf(begc:endc)) > endp) error=.true.
+    if (minval(col%patchi(begc:endc)) < begp .or. maxval(col%patchi(begc:endc)) > endp) error=.true.
+    if (minval(col%patchf(begc:endc)) < begp .or. maxval(col%patchf(begc:endc)) > endp) error=.true.
     if (error) then
        write(iulog,*) '   clm_ptrs_check: c index ranges - ERROR'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -218,9 +218,9 @@ contains
     if (masterproc) write(iulog,*) '   clm_ptrs_check: c index ranges - OK'
 
     error = .false.
-    if (minval(pft%gridcell(begp:endp)) < begg .or. maxval(pft%gridcell(begp:endp)) > endg) error=.true.
-    if (minval(pft%landunit(begp:endp)) < begl .or. maxval(pft%landunit(begp:endp)) > endl) error=.true.
-    if (minval(pft%column(begp:endp)) < begc .or. maxval(pft%column(begp:endp)) > endc) error=.true.
+    if (minval(patch%gridcell(begp:endp)) < begg .or. maxval(patch%gridcell(begp:endp)) > endg) error=.true.
+    if (minval(patch%landunit(begp:endp)) < begl .or. maxval(patch%landunit(begp:endp)) > endl) error=.true.
+    if (minval(patch%column(begp:endp)) < begc .or. maxval(patch%column(begp:endp)) > endc) error=.true.
     if (error) then
        write(iulog,*) '   clm_ptrs_check: p index ranges - ERROR'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -237,8 +237,8 @@ contains
       end if
       if (lun%coli(l) < lun%coli(l-1)) error = .true.
       if (lun%colf(l) < lun%colf(l-1)) error = .true.
-      if (lun%pfti(l) < lun%pfti(l-1)) error = .true.
-      if (lun%pftf(l) < lun%pftf(l-1)) error = .true.
+      if (lun%patchi(l) < lun%patchi(l-1)) error = .true.
+      if (lun%patchf(l) < lun%patchf(l-1)) error = .true.
       if (error) then
          write(iulog,*) '   clm_ptrs_check: l mono increasing - ERROR'
          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
@@ -256,8 +256,8 @@ contains
          error = .true.
       end if
       if (col%landunit(c) < col%landunit(c-1)) error = .true.
-      if (col%pfti(c) < col%pfti(c-1)) error = .true.
-      if (col%pftf(c) < col%pftf(c-1)) error = .true.
+      if (col%patchi(c) < col%patchi(c-1)) error = .true.
+      if (col%patchf(c) < col%patchf(c-1)) error = .true.
       if (error) then
          write(iulog,*) '   clm_ptrs_check: c mono increasing - ERROR'
          call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
@@ -267,15 +267,15 @@ contains
 
     error = .false.
     do p=begp+1,endp
-      l = pft%landunit(p)
-      l_prev = pft%landunit(p-1)
+      l = patch%landunit(p)
+      l_prev = patch%landunit(p-1)
       if ((lun%itype(l) == lun%itype(l_prev)) .and. &
-           pft%gridcell(p) < pft%gridcell(p-1)) then
+           patch%gridcell(p) < patch%gridcell(p-1)) then
          ! grid cell indices should be monotonically increasing for a given landunit type
          error = .true.
       end if
-      if (pft%landunit(p) < pft%landunit(p-1)) error = .true.
-      if (pft%column  (p) < pft%column  (p-1)) error = .true.
+      if (patch%landunit(p) < patch%landunit(p-1)) error = .true.
+      if (patch%column  (p) < patch%column  (p-1)) error = .true.
       if (error) then
          write(iulog,*) '   clm_ptrs_check: p mono increasing - ERROR'
          call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
@@ -304,10 +304,10 @@ contains
                    write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
                    call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
                 endif
-                do p = col%pfti(c),col%pftf(c)
-                   if (pft%gridcell(p) /= g) error = .true.
-                   if (pft%landunit(p) /= l) error = .true.
-                   if (pft%column(p)   /= c) error = .true.
+                do p = col%patchi(c),col%patchf(c)
+                   if (patch%gridcell(p) /= g) error = .true.
+                   if (patch%landunit(p) /= l) error = .true.
+                   if (patch%column(p)   /= c) error = .true.
                    if (error) then
                       write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
                       call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
@@ -432,20 +432,26 @@ contains
     
     pi = pi + 1
 
-    pft%column(pi) = ci
+    patch%column(pi) = ci
     li = col%landunit(ci)
-    pft%landunit(pi) = li
-    pft%gridcell(pi) = col%gridcell(ci)
+    patch%landunit(pi) = li
+    patch%gridcell(pi) = col%gridcell(ci)
 
-    pft%wtcol(pi) = wtcol
+    patch%wtcol(pi) = wtcol
 
-    pft%itype(pi) = ptype
+    ! TODO (MV, 10-17-14): The following must be commented out because
+    ! currently patch%itype is used in CanopyTemperatureMod to calculate 
+    ! z0m(p) and displa(p) - and is still called even when ED is on
+
+    !if (.not. use_ed) then
+    patch%itype(pi) = ptype
+    !end if
 
     if (lun%itype(li) == istsoil .or. lun%itype(li) == istcrop) then
        lb_offset = 1 - natpft_lb
-       pft%mxy(pi) = ptype + lb_offset
+       patch%mxy(pi) = ptype + lb_offset
     else
-       pft%mxy(pi) = ispval
+       patch%mxy(pi) = ispval
     end if
     
 

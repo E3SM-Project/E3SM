@@ -97,7 +97,7 @@ EOF2
 
 set glc_opts = ""
 if ("$COMP_GLC" != "sglc" )then
-   set glc_opts = "-glc_grid $CISM_GRID -glc_smb .$GLC_SMB. "
+   set glc_opts = "-glc_present -glc_smb .$GLC_SMB. "
 endif
 
 set usecase = " "

@@ -6,6 +6,8 @@ unsetenv CPLLOG_INIT
 unsetenv CPLNML_INIT
 unsetenv COMPARE_NAMELISTS
 setenv COMPARE_BASELINE FALSE
+setenv BASEGEN_CPLHISTFILE NULL
+setenv BASECMP_CPLHISTFILE NULL
 
 set stat = "PASS"
 #======================================================================
@@ -21,6 +23,8 @@ if ( $status != 0 ) set stat = "FAIL"
 set CplNmlFile = `ls -1t $CASEROOT/CaseDocs/drv_in`
 setenv CPLNML_INIT $CplNmlFile
 setenv COMPARE_NAMELISTS 1
+setenv GENERATE_BASELINE   FALSE
+setenv COMPARE_BASELINE    FALSE
 
 #======================================================================
 # Copy namelist files to RUNDIR and create a CPL "log" file
@@ -32,6 +36,7 @@ endif
 set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
 setenv CPLLOG_INIT    $CplLogFile
 setenv BASEGEN_FILE01 $CplLogFile
+setenv CPLLOG_GENCMP  $CplLogFile
 
 #======================================================================
 # Check case validation first
@@ -46,4 +51,3 @@ else
 endif
 
 echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
-

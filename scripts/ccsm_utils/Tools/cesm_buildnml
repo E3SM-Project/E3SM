@@ -2,6 +2,7 @@ echo "-------------------------------------------------------------------------"
 echo " CESM BUILDNML SCRIPT STARTING"
 echo " - To prestage restarts, untar a restart.tar file into $RUNDIR"
 
+cd $CASEROOT
 ./preview_namelists 
 if ($status != 0) then
    echo "ERROR from preview namelist - EXITING"

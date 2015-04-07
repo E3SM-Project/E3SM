@@ -19,7 +19,7 @@ module histFileMod
   use GridcellType   , only : grc                
   use LandunitType   , only : lun                
   use ColumnType     , only : col                
-  use PatchType      , only : pft                
+  use PatchType      , only : patch                
   use ncdio_pio
   !
   implicit none
@@ -161,7 +161,7 @@ module histFileMod
      integer :: num1d_out                      ! size of hbuf first dimension (all nodes)
      integer :: num2d                          ! size of hbuf second dimension (e.g. number of vertical levels)
      integer :: hpindex                        ! history pointer index 
-     character(len=8) :: p2c_scale_type        ! scale factor when averaging pft to column
+     character(len=8) :: p2c_scale_type        ! scale factor when averaging patch to column
      character(len=8) :: c2l_scale_type        ! scale factor when averaging column to landunit
      character(len=8) :: l2g_scale_type        ! scale factor when averaging landunit to gridcell
      integer :: no_snow_behavior               ! for multi-layer snow fields, flag saying how to treat times when a given snow layer is absent
@@ -998,7 +998,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: hpindex                 ! history pointer index
-    integer  :: k                       ! gridcell, landunit, column or pft index
+    integer  :: k                       ! gridcell, landunit, column or patch index
     integer  :: beg1d,end1d             ! beginning and ending indices
     logical  :: check_active            ! true => check 'active' flag of each point (this refers to a point being active, NOT a history field being active)
     logical  :: valid                   ! true => history operation is valid
@@ -1118,7 +1118,7 @@ contains
        ! to determine whether that point should be assigned spval
        if (type1d == namep) then
           check_active = .true.
-          active => pft%active
+          active => patch%active
        else if (type1d == namec) then
           check_active = .true.
           active => col%active
@@ -1238,7 +1238,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: hpindex                 ! history pointer index
-    integer  :: k                       ! gridcell, landunit, column or pft index
+    integer  :: k                       ! gridcell, landunit, column or patch index
     integer  :: j                       ! level index
     integer  :: beg1d,end1d             ! beginning and ending indices
     logical  :: check_active            ! true => check 'active' flag of each point (this refers to a point being active, NOT a history field being active)
@@ -1391,7 +1391,7 @@ contains
        ! to determine whether that point should be assigned spval
        if (type1d == namep) then
           check_active = .true.
-          active => pft%active
+          active => patch%active
        else if (type1d == namec) then
           check_active = .true.
           active => col%active
@@ -1513,7 +1513,7 @@ contains
     !
     ! - no_snow_zero: Average in a 0 value for times when the snow layer isn't present
     !
-    ! Input and output fields can be defined at the pft or column level
+    ! Input and output fields can be defined at the patch or column level
     !
     ! !ARGUMENTS:
     integer         , intent(in)  :: beg1d                    ! beginning spatial index
@@ -1563,9 +1563,9 @@ contains
        if (type1d == namec) then
           c = point
        else if (type1d == namep) then
-          c = pft%column(point)
+          c = patch%column(point)
        else
-          write(iulog,*) trim(subname), ' ERROR: Only implemented for pft and col-level fields'
+          write(iulog,*) trim(subname), ' ERROR: Only implemented for patch and col-level fields'
           write(iulog,*) 'type1d = ', trim(type1d)
           call endrun()
        end if
@@ -1700,6 +1700,7 @@ contains
     integer :: numl                ! total number of landunits across all processors
     integer :: numg                ! total number of gridcells across all processors
     integer :: numa                ! total number of atm cells across all processors
+    logical :: avoid_pnetcdf       ! whether we should avoid using pnetcdf
     logical :: lhistrest           ! local history restart flag
     type(file_desc_t) :: lnfid     ! local file id
     character(len=  8) :: curdate  ! current date
@@ -1724,6 +1725,17 @@ contains
     ! define output write precsion for tape
 
     ncprec = tape(t)%ncprec
+    
+    ! BUG(wjs, 2014-10-20, bugz 1730) Workaround for
+    ! http://bugs.cgd.ucar.edu/show_bug.cgi?id=1730
+    ! - 1-d hist files have problems with pnetcdf. A better workaround in terms of
+    ! performance is to keep pnetcdf, but set PIO_BUFFER_SIZE_LIMIT=0, but that can't be
+    ! done on a per-file basis.
+    if (.not. tape(t)%dov2xy) then
+       avoid_pnetcdf = .true.
+    else
+       avoid_pnetcdf = .false.
+    end if
 
     ! Create new netCDF file. It will be in define mode
 
@@ -1733,7 +1745,7 @@ contains
                                       trim(locfnh(t))
           call shr_sys_flush(iulog)
        end if
-       call ncd_pio_createfile(lnfid, trim(locfnh(t)))
+       call ncd_pio_createfile(lnfid, trim(locfnh(t)), avoid_pnetcdf=avoid_pnetcdf)
        call ncd_putatt(lnfid, ncd_global, 'title', 'CLM History file information' )
        call ncd_putatt(lnfid, ncd_global, 'comment', &
           "NOTE: None of the variables are weighted by land fraction!" )
@@ -1743,7 +1755,7 @@ contains
                                       trim(locfnhr(t))
           call shr_sys_flush(iulog)
        end if
-       call ncd_pio_createfile(lnfid, trim(locfnhr(t)))
+       call ncd_pio_createfile(lnfid, trim(locfnhr(t)), avoid_pnetcdf=avoid_pnetcdf)
        call ncd_putatt(lnfid, ncd_global, 'title', &
           'CLM Restart History information, required to continue a simulation' )
        call ncd_putatt(lnfid, ncd_global, 'comment', &
@@ -1878,14 +1890,14 @@ contains
     !
     ! !USES:
     use clm_varpar, only : natpft_lb, natpft_ub
-    use pftvarcon , only : pftname_len, pftname
+    use pftconMod , only : pftname_len, pftname
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: lnfid ! local file id
     !
     ! !LOCAL VARIABLES:
-    integer :: ptype  ! pft type
-    integer :: ptype_1_indexing ! pft type, translated to 1 indexing
+    integer :: ptype  ! patch type
+    integer :: ptype_1_indexing ! patch type, translated to 1 indexing
     character(len=*), parameter :: att_prefix = 'natpft_' ! prefix for attributes
     character(len=len(att_prefix)+pftname_len) :: attname ! attribute name
 
@@ -1908,14 +1920,14 @@ contains
     !
     ! !USES:
     use clm_varpar, only : cft_lb, cft_ub
-    use pftvarcon , only : pftname_len, pftname
+    use pftconMod , only : pftname_len, pftname
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: lnfid ! local file id
     !
     ! !LOCAL VARIABLES:
-    integer :: ptype  ! pft type
-    integer :: ptype_1_indexing ! pft type, translated to 1 indexing
+    integer :: ptype  ! patch type
+    integer :: ptype_1_indexing ! patch type, translated to 1 indexing
     character(len=*), parameter :: att_prefix = 'cft_'    ! prefix for attributes
     character(len=len(att_prefix)+pftname_len) :: attname ! attribute name
 
@@ -2445,7 +2457,7 @@ contains
     else if (mode == 'write') then
 
        ! Most of this is constant and only needs to be done on tape(t)%ntimes=1
-       ! But, some may change for dynamic PFT mode for example
+       ! But, some may change for dynamic PATCH mode for example
 
        if (ldomain%isgrid2d) then
           call ncd_io(varname='lon', data=lon1d, ncid=nfid(t), flag='write')
@@ -2736,7 +2748,7 @@ contains
           call ncd_defvar(varname='cols1d_active', xtype=ncd_log, dim1name=namec, &
                long_name='true => do computations on this column', ncid=ncid)
 
-          ! Define pft info
+          ! Define patch info
 
           call ncd_defvar(varname='pfts1d_lon', xtype=ncd_double, dim1name=namep, &
                long_name='pft longitude', units='degrees_east', ncid=ncid)
@@ -2871,39 +2883,39 @@ contains
        call ncd_io(varname='cols1d_itype_lunit', data=icarr    , dim1name=namec, ncid=ncid, flag='write')
        call ncd_io(varname='cols1d_active' , data=col%active  , dim1name=namec, ncid=ncid, flag='write')
 
-       ! Write pft info
+       ! Write patch info
 
        do p = bounds%begp,bounds%endp
-         rparr(p) = grc%londeg(pft%gridcell(p))
+         rparr(p) = grc%londeg(patch%gridcell(p))
        enddo
        call ncd_io(varname='pfts1d_lon', data=rparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         rparr(p) = grc%latdeg(pft%gridcell(p))
+         rparr(p) = grc%latdeg(patch%gridcell(p))
        enddo
        call ncd_io(varname='pfts1d_lat', data=rparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         iparr(p) = mod(ldecomp%gdc2glo(pft%gridcell(p))-1,ldomain%ni) + 1
+         iparr(p) = mod(ldecomp%gdc2glo(patch%gridcell(p))-1,ldomain%ni) + 1
        enddo
        call ncd_io(varname='pfts1d_ixy', data=iparr, dim1name=namep, ncid=ncid, flag='write')
        do p = bounds%begp,bounds%endp
-         iparr(p) = (ldecomp%gdc2glo(pft%gridcell(p))-1)/ldomain%ni + 1
+         iparr(p) = (ldecomp%gdc2glo(patch%gridcell(p))-1)/ldomain%ni + 1
        enddo
        call ncd_io(varname='pfts1d_jxy'      , data=iparr        , dim1name=namep, ncid=ncid, flag='write')
        ! --- EBK Do NOT write out indices that are incorrect 4/1/2011 --- Bug 1310
-       !call ncd_io(varname='pfts1d_gi'       , data=pft%gridcell, dim1name=namep, ncid=ncid, flag='write')
-       !call ncd_io(varname='pfts1d_li'       , data=pft%landunit, dim1name=namep, ncid=ncid, flag='write')
-       !call ncd_io(varname='pfts1d_ci'       , data=pft%column  , dim1name=namep, ncid=ncid, flag='write')
+       !call ncd_io(varname='pfts1d_gi'       , data=patch%gridcell, dim1name=namep, ncid=ncid, flag='write')
+       !call ncd_io(varname='pfts1d_li'       , data=patch%landunit, dim1name=namep, ncid=ncid, flag='write')
+       !call ncd_io(varname='pfts1d_ci'       , data=patch%column  , dim1name=namep, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
-       call ncd_io(varname='pfts1d_wtgcell'  , data=pft%wtgcell , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_wtlunit'  , data=pft%wtlunit , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_wtcol'    , data=pft%wtcol   , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_itype_veg', data=pft%itype   , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wtgcell'  , data=patch%wtgcell , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wtlunit'  , data=patch%wtlunit , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wtcol'    , data=patch%wtcol   , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_itype_veg', data=patch%itype   , dim1name=namep, ncid=ncid, flag='write')
 
        do p = bounds%begp,bounds%endp
-          iparr(p) = lun%itype(pft%landunit(p))
+          iparr(p) = lun%itype(patch%landunit(p))
        enddo
        call ncd_io(varname='pfts1d_itype_lunit', data=iparr      , dim1name=namep, ncid=ncid, flag='write')
-       call ncd_io(varname='pfts1d_active'   , data=pft%active  , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_active'   , data=patch%active  , dim1name=namep, ncid=ncid, flag='write')
 
        deallocate(rgarr,rlarr,rcarr,rparr)
        deallocate(igarr,ilarr,icarr,iparr)
@@ -4036,7 +4048,7 @@ contains
     real(r8)        , optional, pointer    :: ptr_gcell(:)   ! pointer to gridcell array
     real(r8)        , optional, pointer    :: ptr_lunit(:)   ! pointer to landunit array
     real(r8)        , optional, pointer    :: ptr_col(:)     ! pointer to column array
-    real(r8)        , optional, pointer    :: ptr_patch(:)     ! pointer to pft array
+    real(r8)        , optional, pointer    :: ptr_patch(:)     ! pointer to patch array
     real(r8)        , optional, pointer    :: ptr_lnd(:)     ! pointer to lnd array
     real(r8)        , optional, pointer    :: ptr_atm(:)     ! pointer to atm array
     real(r8)        , optional, intent(in) :: set_lake       ! value to set lakes to
@@ -4158,37 +4170,37 @@ contains
        clmptr_rs(hpindex)%ptr => ptr_patch
        if (present(set_lake)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (lun%lakpoi(l)) ptr_patch(p) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (.not.(lun%lakpoi(l))) ptr_patch(p) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (lun%urbpoi(l)) ptr_patch(p) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (.not.(lun%urbpoi(l))) ptr_patch(p) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (lun%ifspecial(l)) ptr_patch(p) = set_spec
           end do
        end if
        if (present(set_noglcmec)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (.not.(lun%glcmecpoi(l))) ptr_patch(p) = set_noglcmec
           end do
        end if
@@ -4263,7 +4275,7 @@ contains
     real(r8)        , optional, pointer    :: ptr_gcell(:,:)   ! pointer to gridcell array
     real(r8)        , optional, pointer    :: ptr_lunit(:,:)   ! pointer to landunit array
     real(r8)        , optional, pointer    :: ptr_col(:,:)     ! pointer to column array
-    real(r8)        , optional, pointer    :: ptr_patch(:,:)     ! pointer to pft array
+    real(r8)        , optional, pointer    :: ptr_patch(:,:)     ! pointer to patch array
     real(r8)        , optional, intent(in) :: set_lake         ! value to set lakes to
     real(r8)        , optional, intent(in) :: set_nolake       ! value to set non-lakes to
     real(r8)        , optional, intent(in) :: set_urb          ! value to set urban to
@@ -4450,31 +4462,31 @@ contains
        clmptr_ra(hpindex)%ptr => ptr_patch
        if (present(set_lake)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (lun%lakpoi(l)) ptr_patch(p,:) = set_lake
           end do
        end if
        if (present(set_nolake)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (.not.(lun%lakpoi(l))) ptr_patch(p,:) = set_nolake
           end do
        end if
        if (present(set_urb)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (lun%urbpoi(l)) ptr_patch(p,:) = set_urb
           end do
        end if
        if (present(set_nourb)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (.not.(lun%urbpoi(l))) ptr_patch(p,:) = set_nourb
           end do
        end if
        if (present(set_spec)) then
           do p = bounds%begp,bounds%endp
-             l =pft%landunit(p)
+             l =patch%landunit(p)
              if (lun%ifspecial(l)) ptr_patch(p,:) = set_spec
           end do
        end if
@@ -4534,7 +4546,7 @@ contains
     character(len=1), intent(in) :: avgflag                  ! time averaging flag
     character(len=*), intent(in) :: long_name                ! long name of field
     real(r8)        , optional, pointer    :: ptr_col(:,:)   ! pointer to column array
-    real(r8)        , optional, pointer    :: ptr_patch(:,:)   ! pointer to pft array
+    real(r8)        , optional, pointer    :: ptr_patch(:,:)   ! pointer to patch array
     character(len=*), optional, intent(in) :: default        ! if set to 'inactive, field will not appear on primary tape
     !
     ! !LOCAL VARIABLES:
@@ -4570,7 +4582,7 @@ contains
 
     else if (present(ptr_patch)) then
 
-       ! pft-level data
+       ! patch-level data
        if (present(default)) then
           if ( nlevdecomp_full > 1 ) then
              call hist_addfld2d (fname=trim(fname), units=units, type2d=type2d, &
@@ -4596,7 +4608,7 @@ contains
        endif
 
     else
-       write(iulog, *) ' error: hist_addfld_decomp needs either pft or column level pointer'
+       write(iulog, *) ' error: hist_addfld_decomp needs either patch or column level pointer'
        write(iulog, *) fname
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif

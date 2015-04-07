@@ -1,0 +1,28 @@
+module test_humanstress
+
+  ! Tests of the humanstress functions in HumanIndexMod
+
+  use pfunit_mod
+
+  use shr_kind_mod , only : r8 => shr_kind_r8
+  use HumanIndexMod, only : Wet_BulbS
+
+  implicit none
+  save
+
+  real(r8), parameter :: tol = 1.e-8_r8
+
+contains
+
+  @Test
+  subroutine test_standard_WetBulb()
+    real(r8) :: wbt    ! Wet bulb temp
+
+    call Wet_BulbS( 0.0_r8, 0.0_r8, wbt )
+    @assertEqual( -3.6531108341574_r8, wbt, tolerance=tol)
+    call Wet_BulbS( 0.0_r8, 100.0_r8, wbt )
+    @assertEqual( -0.13165370616986_r8, wbt, tolerance=tol)
+  end subroutine test_standard_WetBulb
+
+
+end module test_humanstress

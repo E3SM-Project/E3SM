@@ -20,14 +20,14 @@ module dynLandunitAreaMod
   use LandunitType   , only : lun                
   !
   implicit none
-  save
   private
-
+  !
   public :: update_landunit_weights      ! update landunit weights for all grid cells
   
   ! The following is only public for the sake of unit testing; it should not be called
   ! directly by CLM code outside this module
   public :: update_landunit_weights_one_gcell
+  !-----------------------------------------------------------------------
 
 contains
 

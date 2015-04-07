@@ -6,42 +6,40 @@ module CNMRespMod
   ! nitrogen code.
   !
   ! !USES:
-  use shr_kind_mod        , only : r8 => shr_kind_r8
-  use clm_varpar          , only : nlevgrnd
-  use shr_const_mod       , only : SHR_CONST_TKFRZ
-  use decompMod           , only : bounds_type
-  use abortutils          , only : endrun
-  use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use pftvarcon           , only : npcropmin
-  use CNSharedParamsMod   , only : CNParamsShareInst
-  use EcophysconType      , only : ecophyscon
-  use SoilStateType       , only : soilstate_type
-  use CanopyStateType     , only : canopystate_type
-  use TemperatureType     , only : temperature_type
-  use PhotosynthesisType  , only : photosyns_type
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
-  use PatchType           , only : pft                
+  use shr_kind_mod           , only : r8 => shr_kind_r8
+  use shr_const_mod          , only : SHR_CONST_TKFRZ
+  use clm_varpar             , only : nlevgrnd
+  use decompMod              , only : bounds_type
+  use abortutils             , only : endrun
+  use shr_log_mod            , only : errMsg => shr_log_errMsg
+  use pftconMod              , only : npcropmin, pftcon
+  use SoilStateType          , only : soilstate_type
+  use CanopyStateType        , only : canopystate_type
+  use TemperatureType        , only : temperature_type
+  use PhotosynthesisMod      , only : photosyns_type
+  use CNVegcarbonfluxType    , only : cnveg_carbonflux_type
+  use CNVegnitrogenstateType , only : cnveg_nitrogenstate_type
+  use CNSharedParamsMod      , only : CNParamsShareInst
+  use PatchType              , only : patch                
   !
   implicit none
-  save
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
+  public :: readParams
   public :: CNMResp
-  public :: readCNMRespParams
 
-  type, private :: CNMRespParamsType
-     real(r8):: br        !base rate for maintenance respiration(gC/gN/s)
-  end type CNMRespParamsType
+  type, private :: params_type
+     real(r8) :: br  ! base rate for maintenance respiration(gC/gN/s)
+  end type params_type
 
-  type(CNMRespParamsType),private ::  CNMRespParamsInst
+  type(params_type), private :: params_inst
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readCNMRespParams ( ncid )
+  subroutine readParams ( ncid )
     !
     ! !DESCRIPTION:
     ! Read parameters
@@ -64,34 +62,31 @@ contains
     tString='br_mr'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNMRespParamsInst%br=tempr
+    params_inst%br=tempr
 
-  end subroutine readCNMRespParams
+  end subroutine readParams
 
   !-----------------------------------------------------------------------
   ! FIX(SPM,032414) this shouldn't even be called with ED on.
   !
-  subroutine CNMResp(bounds, &
-       num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
-       carbonflux_vars, nitrogenstate_vars)
+  subroutine CNMResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       canopystate_inst, soilstate_inst, temperature_inst, photosyns_inst, &
+       cnveg_carbonflux_inst, cnveg_nitrogenstate_inst)
     !
     ! !DESCRIPTION:
     !
-    ! !USES:
-    !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds          
-    integer                  , intent(in)    :: num_soilc       ! number of soil points in column filter
-    integer                  , intent(in)    :: filter_soilc(:) ! column filter for soil points
-    integer                  , intent(in)    :: num_soilp       ! number of soil points in patch filter
-    integer                  , intent(in)    :: filter_soilp(:) ! patch filter for soil points
-    type(canopystate_type)   , intent(in)    :: canopystate_vars
-    type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(temperature_type)   , intent(in)    :: temperature_vars
-    type(photosyns_type)     , intent(in)    :: photosyns_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+    type(bounds_type)              , intent(in)    :: bounds          
+    integer                        , intent(in)    :: num_soilc       ! number of soil points in column filter
+    integer                        , intent(in)    :: filter_soilc(:) ! column filter for soil points
+    integer                        , intent(in)    :: num_soilp       ! number of soil points in patch filter
+    integer                        , intent(in)    :: filter_soilp(:) ! patch filter for soil points
+    type(canopystate_type)         , intent(in)    :: canopystate_inst
+    type(soilstate_type)           , intent(in)    :: soilstate_inst
+    type(temperature_type)         , intent(in)    :: temperature_inst
+    type(photosyns_type)           , intent(in)    :: photosyns_inst
+    type(cnveg_carbonflux_type)    , intent(inout) :: cnveg_carbonflux_inst
+    type(cnveg_nitrogenstate_type) , intent(in)    :: cnveg_nitrogenstate_inst
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j ! indices
@@ -103,32 +98,34 @@ contains
     real(r8):: tcsoi(bounds%begc:bounds%endc,nlevgrnd) ! temperature correction by soil layer (unitless)
     !-----------------------------------------------------------------------
 
-    associate(                                                        &    
-         ivt            =>    pft%itype                             , & ! Input:  [integer  (:)   ]  patch vegetation type                                
-         woody          =>    ecophyscon%woody                      , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+    associate(                                                            &    
+         ivt            =>    patch%itype                                 , & ! Input:  [integer  (:)   ]  patch vegetation type                                
 
-         frac_veg_nosno =>    canopystate_vars%frac_veg_nosno_patch , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
-         laisun         =>    canopystate_vars%laisun_patch         , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index                  
-         laisha         =>    canopystate_vars%laisha_patch         , & ! Input:  [real(r8) (:)   ]  shaded projected leaf area index                  
+         woody          =>    pftcon%woody                              , & ! Input:  binary flag for woody lifeform (1=woody, 0=not woody)
 
-         rootfr         =>    soilstate_vars%rootfr_patch           , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
+         frac_veg_nosno =>    canopystate_inst%frac_veg_nosno_patch     , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
+         laisun         =>    canopystate_inst%laisun_patch             , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index                  
+         laisha         =>    canopystate_inst%laisha_patch             , & ! Input:  [real(r8) (:)   ]  shaded projected leaf area index                  
 
-         t_soisno       =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
-         t_ref2m        =>    temperature_vars%t_ref2m_patch        , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
+         rootfr         =>    soilstate_inst%rootfr_patch               , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
 
-         lmrsun         =>    photosyns_vars%lmrsun_patch           , & ! Input:  [real(r8) (:)   ]  sunlit leaf maintenance respiration rate (umol CO2/m**2/s)
-         lmrsha         =>    photosyns_vars%lmrsha_patch           , & ! Input:  [real(r8) (:)   ]  shaded leaf maintenance respiration rate (umol CO2/m**2/s)
+         t_soisno       =>    temperature_inst%t_soisno_col             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+         t_ref2m        =>    temperature_inst%t_ref2m_patch            , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
 
-         leaf_mr        =>    carbonflux_vars%leaf_mr_patch         , & ! Output: [real(r8) (:)   ]                                                    
-         froot_mr       =>    carbonflux_vars%froot_mr_patch        , & ! Output: [real(r8) (:)   ]                                                    
-         livestem_mr    =>    carbonflux_vars%livestem_mr_patch     , & ! Output: [real(r8) (:)   ]                                                    
-         livecroot_mr   =>    carbonflux_vars%livecroot_mr_patch    , & ! Output: [real(r8) (:)   ]                                                    
-         grain_mr       =>    carbonflux_vars%grain_mr_patch        , & ! Output: [real(r8) (:)   ]                                                    
+         lmrsun         =>    photosyns_inst%lmrsun_patch               , & ! Input:  [real(r8) (:)   ]  sunlit leaf maintenance respiration rate (umol CO2/m**2/s)
+         lmrsha         =>    photosyns_inst%lmrsha_patch               , & ! Input:  [real(r8) (:)   ]  shaded leaf maintenance respiration rate (umol CO2/m**2/s)
 
-         frootn         =>    nitrogenstate_vars%frootn_patch       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
-         livestemn      =>    nitrogenstate_vars%livestemn_patch    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
-         livecrootn     =>    nitrogenstate_vars%livecrootn_patch   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N                        
-         grainn         =>    nitrogenstate_vars%grainn_patch         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
+         frootn         =>    cnveg_nitrogenstate_inst%frootn_patch     , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
+         livestemn      =>    cnveg_nitrogenstate_inst%livestemn_patch  , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
+         livecrootn     =>    cnveg_nitrogenstate_inst%livecrootn_patch , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N                        
+         grainn         =>    cnveg_nitrogenstate_inst%grainn_patch     , & ! Input:  [real(r8) (:)   ]  (kgN/m2) grain N
+
+         leaf_mr        =>    cnveg_carbonflux_inst%leaf_mr_patch       , & ! Output: [real(r8) (:)   ]                                                    
+         froot_mr       =>    cnveg_carbonflux_inst%froot_mr_patch      , & ! Output: [real(r8) (:)   ]                                                    
+         livestem_mr    =>    cnveg_carbonflux_inst%livestem_mr_patch   , & ! Output: [real(r8) (:)   ]                                                    
+         livecroot_mr   =>    cnveg_carbonflux_inst%livecroot_mr_patch  , & ! Output: [real(r8) (:)   ]                                                    
+         grain_mr       =>    cnveg_carbonflux_inst%grain_mr_patch        & ! Output: [real(r8) (:)   ]                                                    
+
          )
 
       ! base rate for maintenance respiration is from:
@@ -137,14 +134,12 @@ contains
       ! Original expression is br = 0.0106 molC/(molN h)
       ! Conversion by molecular weights of C and N gives 2.525e-6 gC/(gN s)
       ! set constants
-      br = CNMRespParamsInst%br
+      br = params_inst%br
 
       ! Peter Thornton: 3/13/09 
       ! Q10 was originally set to 2.0, an arbitrary choice, but reduced to 1.5 as part of the tuning
       ! to improve seasonal cycle of atmospheric CO2 concentration in global
       ! simulatoins
-
-      ! Set Q10 from CNSharedParamsMod
       Q10 = CNParamsShareInst%Q10
 
       ! column loop to calculate temperature factors in each soil layer
@@ -193,7 +188,7 @@ contains
       do j = 1,nlevgrnd
          do fp = 1,num_soilp
             p = filter_soilp(fp)
-            c = pft%column(p)
+            c = patch%column(p)
 
             ! Fine root MR
             ! rootfr(j) sums to 1.0 over all soil layers, and

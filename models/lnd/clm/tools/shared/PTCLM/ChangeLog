@@ -3,6 +3,23 @@ This file describes changes made to the PTCLM tool
 ================================================================================        
 
 ================================================================================        
+Originator: erik
+Date: Aug/16/2014
+Tag: PTCLM2_140816
+One-line: Add geyser/caldera to yellowstone
+Testing:  Standard PTCLM test script on yellowstone, and test_driver.sh in clm4_5_1_r080
+Known Bugs: RF-Bra will work even without --donot_use_tower_yrs since it doesn't
+            check for valid values
+
+M      buildtools -- Allow yellowstone to use geyser and/or caldera
+
+------- Update test comparison and listings
+M    test/compdirs/*
+M    test/listings/sitelist
+M    test/listings/help
+M    test/listings/list
+
+================================================================================        
 Originator: sacks
 Date: May/21/2014
 Tag: PTCLM2_140521

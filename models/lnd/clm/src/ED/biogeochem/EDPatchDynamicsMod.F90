@@ -5,54 +5,52 @@ module EDPatchDynamicsMod
   ! ============================================================================
 
   use shr_kind_mod         , only : r8 => shr_kind_r8;
-  use clm_varpar           , only : nclmax
   use clm_varctl           , only : iulog 
-
-  use EcophysConType       , only : ecophyscon
-  use EDEcophysContype     , only : EDecophyscon
-  use EDtypesMod           , only : site, patch, cohort, udata, AREA, DBHMAX
-  use EDtypesMod           , only : DG_SF, GRIDCELLEDSTATE, NCWD, N_DBH_BINS, NTOL, NUMPFT_ED
-  use EDCohortDynamicsMod  , only : fuse_cohorts, terminate_cohorts, sort_cohorts, insert_cohort
-  use EDCohortDynamicsMod  , only : zero_cohort, copy_cohort
-  use EDGrowthFunctionsMod , only : mortality_rates
-
+  use pftconMod            , only : pftcon
+  use EDCohortDynamicsMod  , only : fuse_cohorts, sort_cohorts, insert_cohort
+  use EDtypesMod           , only : ncwd, n_dbh_bins, ntol, numpft_ed, area, dbhmax
+  use EDTypesMod           , only : ed_site_type, ed_patch_type, ed_cohort_type, udata
+  !
   implicit none
-  save
   private
-
-  public :: spawn_patches
+  !
   public :: create_patch
+  public :: spawn_patches
   public :: zero_patch
   public :: fuse_patches
-  public :: fuse_2_patches
   public :: terminate_patches
   public :: patch_pft_size_profile
   public :: disturbance_rates
   public :: check_patch_area
   public :: set_patchno
-  
-  ! ============================================================================
+
+  private:: fuse_2_patches
+
   ! 10/30/09: Created by Rosie Fisher
   ! ============================================================================
 
 contains
 
-   subroutine disturbance_rates( site_in )
   ! ============================================================================
-  ! Calculates the fire and mortality related disturbance rates for each patch,
-  ! and then determines which is the larger at the patch scale (for now, there an only
-  ! be one disturbance type for each timestep.  
-  ! all disturbance rates here are per daily timestep. 
-  ! ============================================================================
-
-    use EDGrowthFunctionsMod, only : c_area
-
-    implicit none
-
-    type (site) , intent(inout) :: site_in
-
-    type (patch) , pointer :: currentPatch
-    type (cohort), pointer :: currentCohort
+  subroutine disturbance_rates( site_in)
+    !
+    ! !DESCRIPTION:
+    ! Calculates the fire and mortality related disturbance rates for each patch,
+    ! and then determines which is the larger at the patch scale (for now, there an only
+    ! be one disturbance type for each timestep.  
+    ! all disturbance rates here are per daily timestep. 
+    !
+    ! !USES:
+    use EDGrowthFunctionsMod , only : c_area, mortality_rates
+    use EDTypesMod           , only : udata
+    !
+    ! !ARGUMENTS:
+    type(ed_site_type) , intent(inout), target :: site_in
+    !
+    ! !LOCAL VARIABLES:
+    type (ed_patch_type) , pointer :: currentPatch
+    type (ed_cohort_type), pointer :: currentCohort
+    !---------------------------------------------------------------------
 
     !MORTALITY
     site_in%disturbance_mortality = 0.0_r8
@@ -86,7 +84,7 @@ contains
        ! This is accumulating the daily fires over the whole 30 day patch generation phase.  
        currentPatch%disturbance_rates(2) = min(0.99_r8,currentPatch%disturbance_rates(2) + currentPatch%frac_burnt)
 
-       if(currentPatch%disturbance_rates(2) > 0.98_r8)then
+       if (currentPatch%disturbance_rates(2) > 0.98_r8)then
           write(iulog,*) 'very high fire areas',currentPatch%disturbance_rates(2),currentPatch%frac_burnt
        endif
 
@@ -118,10 +116,10 @@ contains
 
   end subroutine disturbance_rates
 
-!-------------------------------------------------------------------------------!
-
-  subroutine spawn_patches( sitetar )
     ! ============================================================================
+  subroutine spawn_patches( currentSite )
+    !
+    ! !DESCRIPTION:
     ! In this subroutine, the following happens
     ! 1) the total area disturbed is calculated
     ! 2) a new patch is created
@@ -133,33 +131,38 @@ contains
     ! 8) New cohorts are added to new patch and sorted. 
     ! 9) New patch is added into linked list
     ! 10) Area checked, and patchno recalculated. 
-    ! ============================================================================
-
-    use EDParamsMod, only : ED_val_maxspread, &
-         ED_val_understorey_death
-
-    implicit none 
-
-    type (site),  intent(inout), target :: sitetar
-
-    type (site), pointer :: currentSite
-
-    type (patch), pointer :: new_patch, currentPatch
-    type (cohort),pointer :: currentCohort, nc
-
-    real(r8) :: site_areadis        ! total area disturbed in m2 per site per day
-    real(r8) :: patch_site_areadis  ! total area disturbed in m2 per patch per day
-    real(r8) :: age                 ! notional age of this patch in years
-    integer  :: tnull               ! is there a tallest cohort?
-    integer  :: snull               ! is there a shortest cohort?
+    !
+    ! !USES:
+    use clm_varpar          , only : nclmax
+    use EDParamsMod         , only : ED_val_maxspread, ED_val_understorey_death
+    use EDCohortDynamicsMod , only : zero_cohort, copy_cohort, terminate_cohorts 
+    !
+    ! !ARGUMENTS:
+    type (ed_site_type), intent(inout), target :: currentSite
+    !
+    ! !LOCAL VARIABLES:
+    type (ed_patch_type) , pointer :: new_patch
+    type (ed_patch_type) , pointer :: currentPatch
+    type (ed_cohort_type), pointer :: currentCohort
+    type (ed_cohort_type), pointer :: nc
+    type (ed_cohort_type), pointer :: storesmallcohort
+    type (ed_cohort_type), pointer :: storebigcohort  
+    real(r8) :: site_areadis                 ! total area disturbed in m2 per site per day
+    real(r8) :: patch_site_areadis           ! total area disturbed in m2 per patch per day
+    real(r8) :: age                          ! notional age of this patch in years
+    integer  :: tnull                        ! is there a tallest cohort?
+    integer  :: snull                        ! is there a shortest cohort?
     real(r8) :: root_litter_local(numpft_ed) ! initial value of root litter. KgC/m2
     real(r8) :: leaf_litter_local(numpft_ed) ! initial value of leaf litter. KgC/m2
     real(r8) :: cwd_ag_local(ncwd)           ! initial value of above ground coarse woody debris. KgC/m2
     real(r8) :: cwd_bg_local(ncwd)           ! initial value of below ground coarse woody debris. KgC/m2
     real(r8) :: seed_bank_local(numpft_ed)   ! initial value of seed bank. KgC/m2
     real(r8) :: spread_local(nclmax)         ! initial value of canopy spread parameter.no units 
+    !---------------------------------------------------------------------
 
-    currentSite => sitetar
+    storesmallcohort => null() ! storage of the smallest cohort for insertion routine
+    storebigcohort   => null() ! storage of the largest cohort for insertion routine 
+
     ! calculate area of disturbed land, in this timestep, by summing contributions from each existing patch. 
     currentPatch => currentSite%youngest_patch
     currentSite%cwd_ag_burned       = 0.0_r8
@@ -187,8 +190,9 @@ contains
 
        call zero_patch(new_patch)
 
-       call create_patch(currentSite,new_patch,age,site_areadis,spread_local,cwd_ag_local,cwd_bg_local,leaf_litter_local, &
-            root_litter_local,seed_bank_local)
+       call create_patch(currentSite, new_patch, age, site_areadis, &
+            spread_local, cwd_ag_local, cwd_bg_local, leaf_litter_local, &
+            root_litter_local, seed_bank_local)
 
        new_patch%tallest  => null()
        new_patch%shortest => null()
@@ -198,11 +202,11 @@ contains
        do while(associated(currentPatch))   
           patch_site_areadis = currentPatch%area * currentPatch%disturbance_rate ! how much land is disturbed in this donor patch? 
 
-          call average_patch_properties(currentPatch,new_patch,patch_site_areadis)               
+          call average_patch_properties(currentPatch, new_patch, patch_site_areadis)               
           if (currentSite%disturbance_mortality > currentSite%disturbance_fire) then !mortality is dominant disturbance
-             call mortality_litter_fluxes(currentPatch,new_patch,patch_site_areadis)  
+             call mortality_litter_fluxes(currentPatch, new_patch, patch_site_areadis)
           else
-             call fire_litter_fluxes(currentPatch,new_patch,patch_site_areadis)  
+             call fire_litter_fluxes(currentPatch, new_patch, patch_site_areadis)  
           endif
 
           !INSERT SURVIVORS FROM DISTURBANCE INTO NEW PATCH 
@@ -214,7 +218,7 @@ contains
 
              ! nc is the new cohort that goes in the disturbed patch (new_patch)... currentCohort
              ! is the curent cohort that stays in the donor patch (currentPatch) 
-             call copy_cohort(currentCohort,nc)
+             call copy_cohort(currentCohort, nc)
 
              !this is the case as the new patch probably doesn't have a closed canopy, and
              ! even if it does, that will be sorted out in canopy_structure. 
@@ -227,7 +231,7 @@ contains
                    currentCohort%n = currentCohort%n * (1.0_r8 - min(1.0_r8,currentCohort%dmort * udata%deltat))
                    nc%n = 0.0_r8 ! kill all of the trees who caused the disturbance.         
                 else 
-                   if(ecophyscon%woody(currentCohort%pft) == 1)then
+                   if(pftcon%woody(currentCohort%pft) == 1)then
 
                       ! remaining of understory plants of those that are knocked over by the overstorey trees dying...  
                       nc%n = (1.0_r8 - ED_val_understorey_death) * currentCohort%n * patch_site_areadis/currentPatch%area 
@@ -253,9 +257,9 @@ contains
 
              endif
 
-             if(nc%n > 0.0_r8)then   
-                udata%storebigcohort   =>  new_patch%tallest
-                udata%storesmallcohort =>  new_patch%shortest 
+             if (nc%n > 0.0_r8) then   
+                storebigcohort   =>  new_patch%tallest
+                storesmallcohort =>  new_patch%shortest 
                 if(associated(new_patch%tallest))then
                    tnull = 0
                 else
@@ -272,16 +276,17 @@ contains
                    nc%shorter => null()
                 endif
                 nc%patchptr => new_patch
-                call insert_cohort(nc,new_patch%tallest,new_patch%shortest,tnull,snull)
-                new_patch%tallest  => udata%storebigcohort 
-                new_patch%shortest => udata%storesmallcohort   
+                call insert_cohort(nc, new_patch%tallest, new_patch%shortest, tnull, snull, storebigcohort, storesmallcohort)
+
+                new_patch%tallest  => storebigcohort 
+                new_patch%shortest => storesmallcohort   
              else
                 deallocate(nc) !get rid of the new memory.
              endif
 
              currentCohort => currentCohort%taller      
           enddo ! currentCohort 
-          call sort_cohorts(currentPatch) 
+          call sort_cohorts(currentPatch)
 
           !zero disturbance accumulators
           currentPatch%disturbance_rate  = 0._r8
@@ -302,10 +307,10 @@ contains
        !*************************/
        !**  INSERT NEW PATCH INTO LINKED LIST    
        !**********`***************/        
-       currentPatch => currentSite%youngest_patch
-       new_patch%older => currentPatch
-       new_patch%younger => NULL()
-       currentPatch%younger => new_patch
+       currentPatch               => currentSite%youngest_patch
+       new_patch%older            => currentPatch
+       new_patch%younger          => NULL()
+       currentPatch%younger       => new_patch
        currentSite%youngest_patch => new_patch
 
        call fuse_cohorts(new_patch)
@@ -319,22 +324,21 @@ contains
 
   end subroutine spawn_patches
 
-!-------------------------------------------------------------------------------!
-
+  ! ============================================================================
   subroutine check_patch_area( currentSite )
-
-  ! ============================================================================
-  !  Check to see that total area is not exceeded.  
-  ! ============================================================================
-
-    use clm_varctl, only : iulog 
-
-    implicit none      
-
-    type(site),intent(in), pointer  :: currentSite 
-
+    !
+    ! !DESCRIPTION:
+    !  Check to see that total area is not exceeded.  
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(ed_site_type), intent(in), target  :: currentSite 
+    !
+    ! !LOCAL VARIABLES:
     real(r8) :: areatot
-    type(patch), pointer :: currentPatch 
+    type(ed_patch_type), pointer :: currentPatch 
+    !---------------------------------------------------------------------
 
     areatot = 0._r8
     currentPatch => currentSite%oldest_patch
@@ -349,21 +353,21 @@ contains
 
   end subroutine check_patch_area
 
-!-------------------------------------------------------------------------------!
-
+  ! ============================================================================
   subroutine set_patchno( currentSite )
-
-  ! ============================================================================
-  !  Give patches an order number from the oldest to youngest. 
-  ! ============================================================================
-
-    implicit none      
-
-    type(site),intent(in), pointer :: currentSite 
-
-    type(patch), pointer :: currentPatch 
-
+    !
+    ! !DESCRIPTION:
+    !  Give patches an order number from the oldest to youngest. 
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(ed_site_type),intent(in), target :: currentSite 
+    !
+    ! !LOCAL VARIABLES:
+    type(ed_patch_type), pointer :: currentPatch 
     integer patchno
+    !---------------------------------------------------------------------
 
     patchno = 1
     currentPatch => currentSite%oldest_patch
@@ -375,22 +379,23 @@ contains
 
   end subroutine set_patchno
 
-!-------------------------------------------------------------------------------!
-
+  ! ============================================================================
   subroutine average_patch_properties( currentPatch, newPatch, patch_site_areadis )
-
-  ! ============================================================================
-  ! Average together the state properties of all of the donor patches that
-  ! make up the new patch. 
-  ! ============================================================================
-
-    implicit none      
-
-    type(patch),intent(in),    pointer :: currentPatch
-    type(patch),intent(inout), pointer :: newPatch 
-    real(r8), intent(out)              :: patch_site_areadis   ! amount of land disturbed in this patch. m2
-
+    !
+    ! !DESCRIPTION:
+    ! Average together the state properties of all of the donor patches that
+    ! make up the new patch. 
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(ed_patch_type) , intent(in), target  :: currentPatch
+    type(ed_patch_type) , intent(inout)       :: newPatch 
+    real(r8)            , intent(out)         :: patch_site_areadis   ! amount of land disturbed in this patch. m2
+    !
+    ! !LOCAL VARIABLES:
     integer  :: c,p ! counters for PFT and litter size class. 
+    !---------------------------------------------------------------------
 
     patch_site_areadis = currentPatch%area * currentPatch%disturbance_rate ! how much land is disturbed in this donor patch? 
  
@@ -412,38 +417,39 @@ contains
 
   end subroutine average_patch_properties
 
-!-------------------------------------------------------------------------------!
-
-  subroutine fire_litter_fluxes(cp_target,new_patch_target,patch_site_areadis)
   ! ============================================================================
-  !  CWD pool burned by a fire. 
-  !  Carbon going from burned trees into CWD pool
-  !  Burn parts of trees that don't die in fire
-  !  Burn live grasses and kill them. 
-  ! ============================================================================
-
+  subroutine fire_litter_fluxes(cp_target, new_patch_target, patch_site_areadis)
+    !
+    ! !DESCRIPTION:
+    !  CWD pool burned by a fire. 
+    !  Carbon going from burned trees into CWD pool
+    !  Burn parts of trees that don't die in fire
+    !  Burn live grasses and kill them. 
+    !
+    ! !USES:
     use EDParamsMod,          only : ED_val_ag_biomass
     use SFParamsMod,          only : SF_VAL_CWD_FRAC
     use EDGrowthFunctionsMod, only : c_area
+    use EDtypesMod          , only : dg_sf
+    !
+    ! !ARGUMENTS:
+    type(ed_patch_type) , intent(inout), target :: cp_target
+    type(ed_patch_type) , intent(inout), target :: new_patch_target
+    real(r8)            , intent(inout)         :: patch_site_areadis
+    !
+    ! !LOCAL VARIABLES:
+    type(ed_site_type)  , pointer :: currentSite
+    type(ed_patch_type) , pointer :: currentPatch
+    type(ed_patch_type) , pointer :: new_patch
+    type(ed_cohort_type), pointer :: currentCohort
+    real(r8) :: bcroot               ! amount of below ground coarse root per cohort  kgC. (goes into CWD_BG)
+    real(r8) :: bstem                ! amount of above ground stem biomass per cohort  kgC.(goes into CWG_AG)
+    real(r8) :: dead_tree_density    ! no trees killed by fire per m2
+    reaL(r8) :: burned_litter        ! amount of each litter pool burned by fire.  kgC/m2/day
+    real(r8) :: burned_leaves        ! amount of tissue consumed by fire for grass. KgC/individual/day
+    integer  :: c, p 
+    !---------------------------------------------------------------------
 
-    implicit none
-
-    type(patch), intent(inout), target :: cp_target
-    type(patch), intent(inout), target :: new_patch_target
-    real(r8),    intent(inout)         :: patch_site_areadis
-
-    type(site), pointer   :: currentSite
-    type(patch), pointer  :: currentPatch
-    type(patch), pointer  :: new_patch
-    type(cohort), pointer :: currentCohort
-
-    real(r8) bcroot               ! amount of below ground coarse root per cohort  kgC. (goes into CWD_BG)
-    real(r8) bstem                ! amount of above ground stem biomass per cohort  kgC.(goes into CWG_AG)
-    real(r8) dead_tree_density    ! no trees killed by fire per m2
-    reaL(r8) burned_litter        ! amount of each litter pool burned by fire.  kgC/m2/day
-    real(r8) burned_leaves        ! amount of tissue consumed by fire for grass. KgC/individual/day
-
-    integer c, p 
     !check that total area is not exceeded. 
     currentPatch => cp_target
     new_patch => new_patch_target
@@ -475,7 +481,7 @@ contains
        currentCohort => currentPatch%shortest
        do while(associated(currentCohort))
           p = currentCohort%pft
-          if(ecophyscon%woody(p) == 1)then !DEAD (FROM FIRE) TREES
+          if(pftcon%woody(p) == 1)then !DEAD (FROM FIRE) TREES
              !************************************/ 
              ! Number of trees that died because of the fire, per m2 of ground. 
              ! Divide their litter into the four litter streams, and spread evenly across ground surface. 
@@ -554,7 +560,7 @@ contains
        do while(associated(currentCohort))
 
           currentCohort%c_area = c_area(currentCohort) 
-          if(ecophyscon%woody(currentCohort%pft) == 1)then
+          if(pftcon%woody(currentCohort%pft) == 1)then
              burned_leaves = (currentCohort%bl+currentCohort%bsw) * currentCohort%cfa
           else
              burned_leaves = (currentCohort%bl+currentCohort%bsw) * currentPatch%burnt_frac_litter(6)
@@ -578,35 +584,32 @@ contains
 
   end subroutine fire_litter_fluxes
 
-!-------------------------------------------------------------------------------!
-
-  subroutine mortality_litter_fluxes(cp_target,new_patch_target,patch_site_areadis)
- 
   ! ============================================================================
-  !  Carbon going from ongoing mortality into CWD pools. 
-  ! ============================================================================
-
+  subroutine mortality_litter_fluxes(cp_target, new_patch_target, patch_site_areadis)
+    !
+    ! !DESCRIPTION:
+    !  Carbon going from ongoing mortality into CWD pools. 
+    !
+    ! !USES:
     use EDParamsMod,  only : ED_val_ag_biomass, ED_val_understorey_death
     use SFParamsMod,  only : SF_val_cwd_frac
-
-    implicit none      
-
-    type(patch), intent(inout), target :: cp_target 
-    type(patch), intent(inout), target :: new_patch_target
-    real(r8),    intent(in)            :: patch_site_areadis
-
+    !
+    ! !ARGUMENTS:
+    type(ed_patch_type) , intent(inout), target :: cp_target 
+    type(ed_patch_type) , intent(inout), target :: new_patch_target
+    real(r8)            , intent(in)            :: patch_site_areadis
+    !
+    ! !LOCAL VARIABLES:
     real(r8) :: cwd_litter_density
     real(r8) :: litter_area ! area over which to distribute this litter. 
-
-    type(cohort), pointer :: currentCohort
-    type(patch), pointer :: currentPatch 
-
-    type(patch), pointer :: new_patch 
+    type(ed_cohort_type), pointer :: currentCohort
+    type(ed_patch_type) , pointer :: currentPatch 
+    type(ed_patch_type) , pointer :: new_patch 
     real(r8) :: understorey_dead  !Number of individual dead from the canopy layer /day
     real(r8) :: canopy_dead       !Number of individual dead from the understorey layer /day
     real(r8) :: np_mult           !Fraction of the new patch which came from the current patch (and so needs the same litter) 
-
-    integer p,c
+    integer :: p,c
+    !---------------------------------------------------------------------
 
     currentPatch => cp_target
     new_patch => new_patch_target
@@ -622,7 +625,7 @@ contains
              !currentCohort%dmort = mortality_rates(currentCohort) 
              !the disturbance calculations are done with the previous n, c_area and d_mort. So it's probably &
              !not right to recalcualte dmort here.
-             canopy_dead = currentCohort%n * min(1.0_r8,currentCohort%dmort*udata%deltat)
+             canopy_dead = currentCohort%n * min(1.0_r8,currentCohort%dmort * udata%deltat)
 
              currentPatch%canopy_mortality_woody_litter   = currentPatch%canopy_mortality_woody_litter  + &
                   canopy_dead*(currentCohort%bdead+currentCohort%bsw)
@@ -632,7 +635,7 @@ contains
                   canopy_dead*(currentCohort%br+currentCohort%bstore)
 
          else 
-             if(ecophyscon%woody(currentCohort%pft) == 1)then
+             if(pftcon%woody(currentCohort%pft) == 1)then
 
                 understorey_dead = ED_val_understorey_death * currentCohort%n * (patch_site_areadis/currentPatch%area)  !kgC/site/day
                 currentPatch%canopy_mortality_woody_litter  = currentPatch%canopy_mortality_woody_litter  + &
@@ -691,22 +694,19 @@ contains
 
   end subroutine mortality_litter_fluxes
 
-!-------------------------------------------------------------------------------!
-
-
+  ! ============================================================================
   subroutine create_patch(currentSite, new_patch, age, areap, spread_local,cwd_ag_local,cwd_bg_local, &
        leaf_litter_local,root_litter_local,seed_bank_local)
-  ! ============================================================================
-  !   Set default values for creating a new patch
-  ! ============================================================================
-
+    !
+    ! !DESCRIPTION:
+    !  Set default values for creating a new patch
+    !
+    ! !USES:
     use clm_varpar      , only : nlevgrnd 
-
-    implicit none      
-
-    type(site),  target, intent(inout) :: currentSite
-    type(patch), target, intent(inout) :: new_patch
-
+    !
+    ! !ARGUMENTS:
+    type(ed_site_type) , intent(inout), target :: currentSite
+    type(ed_patch_type), intent(inout), target :: new_patch
     real(r8), intent(in) :: age                 ! notional age of this patch in years
     real(r8), intent(in) :: areap               ! initial area of this patch in m2. 
     real(r8), intent(in) :: cwd_ag_local(:)     ! initial value of above ground coarse woody debris. KgC/m2
@@ -715,196 +715,200 @@ contains
     real(r8), intent(in) :: leaf_litter_local(:)! initial value of leaf litter. KgC/m2
     real(r8), intent(in) :: spread_local(:)     ! initial value of canopy spread parameter.no units 
     real(r8), intent(in) :: seed_bank_local(:)  ! initial value of seed bank. KgC/m2
+    !
+    ! !LOCAL VARIABLES:
+    !---------------------------------------------------------------------
     
     call zero_patch(new_patch) !The nan value in here is not working??
 
-    new_patch%tallest => null()       ! pointer to patch's tallest cohort    
-    new_patch%shortest => null()      ! pointer to patch's shortest cohort   
-    new_patch%older => null()            ! pointer to next older patch   
-    new_patch%younger => null()       ! pointer to next shorter patch      
-    new_patch%siteptr => null()          ! pointer to the site that the patch is in
+    new_patch%tallest  => null() ! pointer to patch's tallest cohort    
+    new_patch%shortest => null() ! pointer to patch's shortest cohort   
+    new_patch%older    => null() ! pointer to next older patch   
+    new_patch%younger  => null() ! pointer to next shorter patch      
+    new_patch%siteptr  => null() ! pointer to the site that the patch is in
 
     ! assign known patch attributes 
 
-    new_patch%siteptr    => currentSite 
-
-    new_patch%age         = age   
-    new_patch%area        = areap 
-    new_patch%spread      = spread_local
-    new_patch%cwd_ag      = cwd_ag_local
-    new_patch%cwd_bg      = cwd_bg_local
-    new_patch%leaf_litter = leaf_litter_local
-    new_patch%root_litter = root_litter_local
-    new_patch%seed_bank   = seed_bank_local
+    new_patch%siteptr            => currentSite 
+    new_patch%age                = age   
+    new_patch%area               = areap 
+    new_patch%spread             = spread_local
+    new_patch%cwd_ag             = cwd_ag_local
+    new_patch%cwd_bg             = cwd_bg_local
+    new_patch%leaf_litter        = leaf_litter_local
+    new_patch%root_litter        = root_litter_local
+    new_patch%seed_bank          = seed_bank_local
  
     !zeroing things because of the surfacealbedo problem... shouldnt really be necesary
-    new_patch%cwd_ag_in(:) = 0._r8
-    new_patch%cwd_bg_in(:) = 0._r8
+    new_patch%cwd_ag_in(:)       = 0._r8
+    new_patch%cwd_bg_in(:)       = 0._r8
 
-    new_patch%f_sun = 0._r8
+    new_patch%f_sun              = 0._r8
     new_patch%ed_laisun_z(:,:,:) = 0._r8 
     new_patch%ed_laisha_z(:,:,:) = 0._r8 
     new_patch%ed_parsun_z(:,:,:) = 0._r8 
     new_patch%ed_parsha_z(:,:,:) = 0._r8 
-    new_patch%fabi = 0._r8
-    new_patch%fabd = 0._r8
-    new_patch%tr_soil_dir(:) = 1._r8
-    new_patch%tr_soil_dif(:) = 1._r8
+    new_patch%fabi               = 0._r8
+    new_patch%fabd               = 0._r8
+    new_patch%tr_soil_dir(:)     = 1._r8
+    new_patch%tr_soil_dif(:)     = 1._r8
     new_patch%tr_soil_dir_dif(:) = 0._r8
-    new_patch%fabd_sun_z(:,:,:) = 0._r8 
-    new_patch%fabd_sha_z(:,:,:) = 0._r8 
-    new_patch%fabi_sun_z(:,:,:) = 0._r8 
-    new_patch%fabi_sha_z(:,:,:) = 0._r8  
-    new_patch%frac_burnt = 0._r8  
-    new_patch%total_tree_area = 0.0_r8  
-    new_patch%NCL_p = 1
+    new_patch%fabd_sun_z(:,:,:)  = 0._r8 
+    new_patch%fabd_sha_z(:,:,:)  = 0._r8 
+    new_patch%fabi_sun_z(:,:,:)  = 0._r8 
+    new_patch%fabi_sha_z(:,:,:)  = 0._r8  
+    new_patch%frac_burnt         = 0._r8  
+    new_patch%total_tree_area    = 0.0_r8  
+    new_patch%NCL_p              = 1
 
     allocate(new_patch%rootfr_ft(numpft_ed,nlevgrnd))
     allocate(new_patch%rootr_ft(numpft_ed,nlevgrnd)) 
 
   end subroutine create_patch
 
-!-------------------------------------------------------------------------------!
-
+  ! ============================================================================
   subroutine zero_patch(cp_p)
-  ! ============================================================================
-  !  Sets all the variables in the patch to nan or zero (this needs to be two seperate routines, one for nan & one for zero
-  ! ============================================================================
-
+    !
+    ! !DESCRIPTION:
+    !  Sets all the variables in the patch to nan or zero 
+    ! (this needs to be two seperate routines, one for nan & one for zero
+    !
+    ! !USES:
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)  
-
-    implicit none   
-
-    type(patch), target, intent(inout) :: cp_p
-
-    type(patch), pointer :: currentPatch
+    !
+    ! !ARGUMENTS:
+    type(ed_patch_type), intent(inout), target :: cp_p
+    !
+    ! !LOCAL VARIABLES:
+    type(ed_patch_type), pointer :: currentPatch
+    !---------------------------------------------------------------------
 
     currentPatch  => cp_p  
 
-    currentPatch%tallest => null()          
+    currentPatch%tallest  => null()          
     currentPatch%shortest => null()         
-    currentPatch%older => null()               
-    currentPatch%younger => null()           
-    currentPatch%siteptr => null()             
+    currentPatch%older    => null()               
+    currentPatch%younger  => null()           
+    currentPatch%siteptr  => null()             
 
     currentPatch%patchno  = 999                            
     currentPatch%clm_pno  = 999                          
 
-    currentPatch%age = nan                          
-    currentPatch%area = nan                                           
-    currentPatch%canopy_layer_lai(:) = nan               
-    currentPatch%total_canopy_area = nan
-    currentPatch%canopy_area = nan                                 
-    currentPatch%bare_frac_area = nan                             
+    currentPatch%age                        = nan                          
+    currentPatch%area                       = nan                                           
+    currentPatch%canopy_layer_lai(:)        = nan               
+    currentPatch%total_canopy_area          = nan
+    currentPatch%canopy_area                = nan                                 
+    currentPatch%bare_frac_area             = nan                             
 
-    currentPatch%tlai_profile(:,:,:) = nan 
-    currentPatch%elai_profile(:,:,:) = nan 
-    currentPatch%tsai_profile(:,:,:) = nan 
-    currentPatch%esai_profile(:,:,:) = nan       
+    currentPatch%tlai_profile(:,:,:)        = nan 
+    currentPatch%elai_profile(:,:,:)        = nan 
+    currentPatch%tsai_profile(:,:,:)        = nan 
+    currentPatch%esai_profile(:,:,:)        = nan       
     currentPatch%canopy_area_profile(:,:,:) = nan       
 
-    currentPatch%fabd_sun_z(:,:,:) = nan 
-    currentPatch%fabd_sha_z(:,:,:) = nan 
-    currentPatch%fabi_sun_z(:,:,:) = nan 
-    currentPatch%fabi_sha_z(:,:,:) = nan  
+    currentPatch%fabd_sun_z(:,:,:)          = nan 
+    currentPatch%fabd_sha_z(:,:,:)          = nan 
+    currentPatch%fabi_sun_z(:,:,:)          = nan 
+    currentPatch%fabi_sha_z(:,:,:)          = nan  
 
-    currentPatch%ed_laisun_z(:,:,:) = nan 
-    currentPatch%ed_laisha_z(:,:,:) = nan 
-    currentPatch%ed_parsun_z(:,:,:) = nan 
-    currentPatch%ed_parsha_z(:,:,:) = nan 
-    currentPatch%psn_z(:,:,:) = nan   
+    currentPatch%ed_laisun_z(:,:,:)         = nan 
+    currentPatch%ed_laisha_z(:,:,:)         = nan 
+    currentPatch%ed_parsun_z(:,:,:)         = nan 
+    currentPatch%ed_parsha_z(:,:,:)         = nan 
+    currentPatch%psn_z(:,:,:)               = nan   
 
-    currentPatch%f_sun(:,:,:) = nan
-    currentPatch%tr_soil_dir(:) = nan    ! fraction of incoming direct  radiation that is transmitted to the soil as direct
-    currentPatch%tr_soil_dif(:) = nan    ! fraction of incoming diffuse radiation that is transmitted to the soil as diffuse
-    currentPatch%tr_soil_dir_dif(:) = nan! fraction of incoming direct  radiation that is transmitted to the soil as diffuse
-    currentPatch%fab(:) = nan            ! fraction of incoming total   radiation that is absorbed by the canopy
-    currentPatch%fabd(:) = nan           ! fraction of incoming direct  radiation that is absorbed by the canopy
-    currentPatch%fabi(:) = nan           ! fraction of incoming diffuse radiation that is absorbed by the canopy
+    currentPatch%f_sun(:,:,:)               = nan
+    currentPatch%tr_soil_dir(:)             = nan    ! fraction of incoming direct  radiation that is transmitted to the soil as direct
+    currentPatch%tr_soil_dif(:)             = nan    ! fraction of incoming diffuse radiation that is transmitted to the soil as diffuse
+    currentPatch%tr_soil_dir_dif(:)         = nan    ! fraction of incoming direct  radiation that is transmitted to the soil as diffuse
+    currentPatch%fab(:)                     = nan    ! fraction of incoming total   radiation that is absorbed by the canopy
+    currentPatch%fabd(:)                    = nan    ! fraction of incoming direct  radiation that is absorbed by the canopy
+    currentPatch%fabi(:)                    = nan    ! fraction of incoming diffuse radiation that is absorbed by the canopy
 
-    currentPatch%present(:,:) = 999              ! is there any of this pft in this layer?
-    currentPatch%nrad(:,:) = 999                 ! number of exposed leaf layers for each canopy layer and pft
-    currentPatch%ncan(:,:) = 999                 ! number of total leaf layers for each canopy layer and pft
-    currentPatch%lai = nan                       ! leaf area index of patch
-    currentPatch%spread(:) = nan                 ! dynamic ratio of dbh to canopy area.
-    currentPatch%pft_agb_profile(:,:) = nan    
-    currentPatch%gpp = 0._r8 
-    currentPatch%npp = 0._r8                
-    currentPatch%seed_bank(:) = 0._r8                    
-    currentPatch%dseed_dt(:) = 0._r8                    
+    currentPatch%present(:,:)               = 999    ! is there any of this pft in this layer?
+    currentPatch%nrad(:,:)                  = 999    ! number of exposed leaf layers for each canopy layer and pft
+    currentPatch%ncan(:,:)                  = 999    ! number of total leaf layers for each canopy layer and pft
+    currentPatch%lai                        = nan    ! leaf area index of patch
+    currentPatch%spread(:)                  = nan    ! dynamic ratio of dbh to canopy area.
+    currentPatch%pft_agb_profile(:,:)       = nan    
+    currentPatch%gpp                        = 0._r8 
+    currentPatch%npp                        = 0._r8                
+    currentPatch%seed_bank(:)               = 0._r8                    
+    currentPatch%dseed_dt(:)                = 0._r8                    
 
     ! DISTURBANCE 
-    currentPatch%disturbance_rates = 0._r8 
-    currentPatch%disturbance_rate = 0._r8 
+    currentPatch%disturbance_rates          = 0._r8 
+    currentPatch%disturbance_rate           = 0._r8 
 
     ! LITTER
-    currentPatch%cwd_ag(:) = 0.0_r8               ! above ground coarse woody debris gc/m2. 
-    currentPatch%cwd_bg(:) = 0.0_r8               ! below ground coarse woody debris
-    currentPatch%root_litter(:) = 0.0_r8
-    currentPatch%leaf_litter(:) = 0.0_r8
+    currentPatch%cwd_ag(:)                  = 0.0_r8 ! above ground coarse woody debris gc/m2. 
+    currentPatch%cwd_bg(:)                  = 0.0_r8 ! below ground coarse woody debris
+    currentPatch%root_litter(:)             = 0.0_r8
+    currentPatch%leaf_litter(:)             = 0.0_r8
 
     ! FIRE
-    currentPatch%fuel_eff_moist = 0.0_r8    ! average fuel moisture content of the ground fuel 
-                                            ! (incl. live grasses. omits 1000hr fuels)
-    currentPatch%livegrass = 0.0_r8         ! total ag grass biomass in patch. 1=c3 grass, 2=c4 grass. gc/m2
-    currentPatch%sum_fuel = 0.0_r8          ! total ground fuel related to ros (omits 1000hr fuels). gc/m2
-    currentPatch%fuel_bulkd  = 0.0_r8       ! average fuel bulk density of the ground fuel 
-                                            ! (incl. live grasses. omits 1000hr fuels). kgc/m3
-    currentPatch%fuel_sav  = 0.0_r8         ! average surface area to volume ratio of the ground fuel 
-                                            ! (incl. live grasses. omits 1000hr fuels).
-    currentPatch%fuel_mef  = 0.0_r8         ! average moisture of extinction factor of the ground fuel
-                                            ! (incl. live grasses. omits 1000hr fuels).
-    currentPatch%ros_front  = 0.0_r8        ! average rate of forward spread of each fire in the patch. m/min.
-    currentPatch%effect_wspeed = 0.0_r8     ! dailywind modified by fraction of relative grass and tree cover. m/min.
-    currentPatch%tau_l = 0.0_r8             ! mins p&r(1986)
-    currentPatch%fuel_frac(:) = 0.0_r8      ! fraction of each litter class in the sum_fuel 
-                                            !- for purposes of calculating weighted averages. 
-    currentPatch%tfc_ros = 0.0_r8           ! used in fi calc
-    currentPatch%fi = 0._r8                 ! average fire intensity of flaming front during day.  
-                                            ! backward ros plays no role. kj/m/s or kw/m.
-    currentPatch%fire = 999                 ! sr decide_fire.1=fire hot enough to proceed. 0=stop everything- no fires today
-    currentPatch%fd = 0.0_r8                ! fire duration (mins)
-    currentPatch%ros_back = 0.0_r8          ! backward ros (m/min)
-    currentPatch%ab = 0.0_r8                ! area burnt daily m2
-    currentPatch%nf = 0.0_r8                ! number of fires initiated daily 
-    currentPatch%sh  = 0.0_r8               ! average scorch height for the patch(m)
-    currentPatch%frac_burnt = 0.0_r8        ! fraction burnt in each timestep. 
-    currentPatch%burnt_frac_litter(:) = 0.0_r8 
-    currentPatch%btran_ft(:) = 0.0_r8
+    currentPatch%fuel_eff_moist             = 0.0_r8 ! average fuel moisture content of the ground fuel 
+    ! (incl. live grasses. omits 1000hr fuels)
+    currentPatch%livegrass                  = 0.0_r8 ! total ag grass biomass in patch. 1=c3 grass, 2=c4 grass. gc/m2
+    currentPatch%sum_fuel                   = 0.0_r8 ! total ground fuel related to ros (omits 1000hr fuels). gc/m2
+    currentPatch%fuel_bulkd                 = 0.0_r8 ! average fuel bulk density of the ground fuel 
+    ! (incl. live grasses. omits 1000hr fuels). kgc/m3
+    currentPatch%fuel_sav                   = 0.0_r8 ! average surface area to volume ratio of the ground fuel 
+    ! (incl. live grasses. omits 1000hr fuels).
+    currentPatch%fuel_mef                   = 0.0_r8 ! average moisture of extinction factor of the ground fuel
+    ! (incl. live grasses. omits 1000hr fuels).
+    currentPatch%ros_front                  = 0.0_r8 ! average rate of forward spread of each fire in the patch. m/min.
+    currentPatch%effect_wspeed              = 0.0_r8 ! dailywind modified by fraction of relative grass and tree cover. m/min.
+    currentPatch%tau_l                      = 0.0_r8 ! mins p&r(1986)
+    currentPatch%fuel_frac(:)               = 0.0_r8 ! fraction of each litter class in the sum_fuel 
+    !- for purposes of calculating weighted averages. 
+    currentPatch%tfc_ros                    = 0.0_r8 ! used in fi calc
+    currentPatch%fi                         = 0._r8  ! average fire intensity of flaming front during day.  
+    ! backward ros plays no role. kj/m/s or kw/m.
+    currentPatch%fire                       = 999    ! sr decide_fire.1=fire hot enough to proceed. 0=stop everything- no fires today
+    currentPatch%fd                         = 0.0_r8 ! fire duration (mins)
+    currentPatch%ros_back                   = 0.0_r8 ! backward ros (m/min)
+    currentPatch%ab                         = 0.0_r8 ! area burnt daily m2
+    currentPatch%nf                         = 0.0_r8 ! number of fires initiated daily 
+    currentPatch%sh                         = 0.0_r8 ! average scorch height for the patch(m)
+    currentPatch%frac_burnt                 = 0.0_r8 ! fraction burnt in each timestep. 
+    currentPatch%burnt_frac_litter(:)       = 0.0_r8 
+    currentPatch%btran_ft(:)                = 0.0_r8
 
-    currentPatch%canopy_layer_lai(:) = 0.0_r8
-    currentPatch%seeds_in(:)         = 0.0_r8
-    currentPatch%seed_decay(:)       = 0.0_r8
-    currentPatch%seed_germination(:) = 0.0_r8
-    currentPatch%fab(:)              = 0.0_r8
-    currentPatch%sabs_dir(:)         = 0.0_r8
-    currentPatch%sabs_dif(:)         = 0.0_r8
+    currentPatch%canopy_layer_lai(:)        = 0.0_r8
+    currentPatch%seeds_in(:)                = 0.0_r8
+    currentPatch%seed_decay(:)              = 0.0_r8
+    currentPatch%seed_germination(:)        = 0.0_r8
+    currentPatch%fab(:)                     = 0.0_r8
+    currentPatch%sabs_dir(:)                = 0.0_r8
+    currentPatch%sabs_dif(:)                = 0.0_r8
 
 
   end subroutine zero_patch
 
-!-------------------------------------------------------------------------------!
-
+  ! ============================================================================
   subroutine fuse_patches( csite )
-  ! ============================================================================
-  !      Decide to fuse patches if their cohort structures are similar           
-  ! ============================================================================
-
-    use clm_varctl,   only : iulog    
-
-    implicit none   
-
-    type(site), target, intent(inout)  :: csite
-
-    type(site), pointer :: currentSite
-    type(patch), pointer :: currentPatch,tpp,tmpptr
-    integer ft,z            !counters for pft and height class
+    !
+    ! !DESCRIPTION:
+    !  Decide to fuse patches if their cohort structures are similar           
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(ed_site_type), intent(inout), target  :: csite
+    !
+    ! !LOCAL VARIABLES:
+    type(ed_site_type) , pointer :: currentSite
+    type(ed_patch_type), pointer :: currentPatch,tpp,tmpptr
+    integer  :: ft,z        !counters for pft and height class
     real(r8) :: norm        !normalized difference between biomass profiles
     real(r8) :: profiletol  !tolerance of patch fusion routine. Starts off high and is reduced if there are too many patches.
     integer  :: maxpatch    !maximum number of allowed patches. FIX-RF. These should be namelist variables. 
     integer  :: nopatches   !number of patches presently in gridcell
     integer  :: iterate     !switch of patch reduction iteration scheme. 1 to keep going, 0 to stop
     integer  :: fuse_flag   !do patches get fused (1) or not (0). 
+    !---------------------------------------------------------------------
 
     maxpatch = 4  
 
@@ -983,7 +987,7 @@ contains
 
                    if(fuse_flag  ==  1)then 
                       tmpptr => currentPatch%older       
-                      call fuse_2_patches(currentPatch,tpp)                  
+                      call fuse_2_patches(currentPatch, tpp)
                       call fuse_cohorts(tpp)
                       call sort_cohorts(tpp)
                       currentPatch => tmpptr
@@ -1028,29 +1032,32 @@ contains
  
   end subroutine fuse_patches
 
-!-------------------------------------------------------------------------------!
-
+  ! ============================================================================
   subroutine fuse_2_patches(dp, rp)
-  ! ============================================================================
-  ! This function fuses the two patches specified in the argument.
-  ! It fuses the first patch in the argument (the "donor") into the second
-  ! patch in the argument (the "recipient"), and frees the memory 
-  ! associated with the secnd patch
-  ! ============================================================================
-
-    implicit none
-
-    type (patch),  intent(inout), pointer  :: dp ! Donor Patch
-    type (patch),  intent(inout), pointer  :: rp ! Recipient Patch
-
-    type (cohort), pointer :: currentCohort ! Current Cohort
-    type (cohort), pointer :: nextc         ! Remembers next cohort in list 
-
+    !
+    ! !DESCRIPTION:
+    ! This function fuses the two patches specified in the argument.
+    ! It fuses the first patch in the argument (the "donor") into the second
+    ! patch in the argument (the "recipient"), and frees the memory 
+    ! associated with the secnd patch
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type (ed_patch_type) , intent(inout), pointer :: dp ! Donor Patch
+    type (ed_patch_type) , intent(inout), pointer :: rp ! Recipient Patch
+    !
+    ! !LOCAL VARIABLES:
+    type (ed_cohort_type), pointer :: currentCohort ! Current Cohort
+    type (ed_cohort_type), pointer :: nextc         ! Remembers next cohort in list 
+    type (ed_cohort_type), pointer :: storesmallcohort
+    type (ed_cohort_type), pointer :: storebigcohort  
     integer :: c,p !counters for pft and litter size class. 
     integer :: tnull,snull  ! are the tallest and shortest cohorts associated?
+    !---------------------------------------------------------------------
 
     !area weighted average of ages & litter & seed bank
-     rp%age = (dp%age * dp%area + rp%age * rp%area)/(dp%area + rp%area)  
+    rp%age = (dp%age * dp%area + rp%age * rp%area)/(dp%area + rp%area)  
 
     do p = 1,numpft_ed
        rp%seed_bank(p)        = (rp%seed_bank(p)*rp%area + dp%seed_bank(p)*dp%area)/(rp%area + dp%area)
@@ -1102,8 +1109,8 @@ contains
 
        do while(associated(dp%shortest))
 
-          udata%storebigcohort   => rp%tallest
-          udata%storesmallcohort =>  rp%shortest
+          storebigcohort   => rp%tallest
+          storesmallcohort => rp%shortest
 
           if(associated(rp%tallest))then
              tnull = 0
@@ -1119,10 +1126,11 @@ contains
              rp%shortest => currentCohort
           endif
 
-          call insert_cohort(currentCohort,rp%tallest,rp%shortest,tnull,snull)
+          call insert_cohort(currentCohort, rp%tallest, rp%shortest, tnull, snull, storebigcohort, storesmallcohort)
 
-          rp%tallest => udata%storebigcohort 
-          rp%shortest => udata%storesmallcohort    
+          rp%tallest  => storebigcohort 
+          rp%shortest => storesmallcohort    
+
           currentCohort%patchptr => rp
           currentCohort => nextc
 
@@ -1158,23 +1166,22 @@ contains
 
   end subroutine fuse_2_patches
 
-!-------------------------------------------------------------------------------!
-
+  ! ============================================================================
   subroutine terminate_patches(cs_pnt)
-  ! ============================================================================
-  !  Terminate Patches if they  are too small                          
-  ! ============================================================================
-
-    use clm_varctl      ,only : iulog    
-
-    implicit none
-
-    type(site), target, intent(in) :: cs_pnt
-
-    type(site),  pointer :: currentSite
-    type(patch), pointer :: currentPatch
-
+    !
+    ! !DESCRIPTION:
+    !  Terminate Patches if they  are too small                          
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(ed_site_type), target, intent(in) :: cs_pnt
+    !
+    ! !LOCAL VARIABLES:
+    type(ed_site_type),  pointer :: currentSite
+    type(ed_patch_type), pointer :: currentPatch
     real(r8) areatot ! variable for checking whether the total patch area is wrong. 
+    !---------------------------------------------------------------------
  
     currentSite => cs_pnt
 
@@ -1189,7 +1196,7 @@ contains
             ! This is only really meant for very old patches. 
              write(iulog,*) 'fusing patches because one is too small',currentPatch%area, currentPatch%lai, &
                   currentPatch%older%area,currentPatch%older%lai,currentPatch%seed_bank(1)
-             call fuse_2_patches(currentPatch%older,currentPatch)
+             call fuse_2_patches(currentPatch%older, currentPatch)
              deallocate(currentPatch%older)
              write(iulog,*) 'after fusion',currentPatch%area,currentPatch%seed_bank(1)
            endif
@@ -1212,25 +1219,26 @@ contains
 
   end subroutine terminate_patches
 
-!-------------------------------------------------------------------------------!
-
+  ! ============================================================================
   subroutine patch_pft_size_profile(cp_pnt)
-  ! ============================================================================
-  !        Binned patch size profiles generated for patch fusion routine        
-  ! ============================================================================
- 
-    implicit none  
-
-    type(patch), target, intent(inout) :: cp_pnt
-
-    type(patch), pointer  :: currentPatch
-    type(cohort), pointer :: currentCohort
-
+    !
+    ! !DESCRIPTION:
+    !  Binned patch size profiles generated for patch fusion routine        
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(ed_patch_type), target, intent(inout) :: cp_pnt
+    !
+    ! !LOCAL VARIABLES:
+    type(ed_patch_type) , pointer  :: currentPatch
+    type(ed_cohort_type), pointer  :: currentCohort
     real(r8) :: mind(N_DBH_BINS) ! Bottom of DBH bin 
     real(r8) :: maxd(N_DBH_BINS) ! Top of DBH bin
     real(r8) :: delta_dbh   ! Size of DBH bin
     integer  :: p    ! Counter for PFT 
     integer  :: j    ! Counter for DBH bins 
+    !---------------------------------------------------------------------
 
     currentPatch => cp_pnt
 
@@ -1278,44 +1286,39 @@ contains
    
   end subroutine patch_pft_size_profile
 
-!-------------------------------------------------------------------------------!
-
-  function countPatches( bounds ) result ( totNumPatches ) 
-
   ! ============================================================================
-  !        Loop over all Patches to count how many there are
-  ! ============================================================================
-
-    use decompMod           , only : bounds_type
-    use abortutils          , only : endrun
-
-    implicit none
-
-    type(bounds_type), intent(in) :: bounds
-
-    type (site) , pointer :: currentSite
-    type (patch), pointer :: currentPatch
+  function countPatches( bounds, ed_allsites_inst ) result ( totNumPatches ) 
+    !
+    ! !DESCRIPTION:
+    !  Loop over all Patches to count how many there are
+    !
+    ! !USES:
+    use decompMod  , only : bounds_type
+    use abortutils , only : endrun
+    use EDTypesMod , only : ed_site_type
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)  , intent(in)            :: bounds
+    type(ed_site_type) , intent(inout), target :: ed_allsites_inst( bounds%begg: )
+    !
+    ! !LOCAL VARIABLES:
+    type (ed_patch_type), pointer :: currentPatch
     integer :: g              ! gridcell
     integer :: totNumPatches  ! total number of patches.  
+    !---------------------------------------------------------------------
 
     totNumPatches = 0
 
-    if (allocated(gridCellEdState)) then
-       do g = bounds%begg,bounds%endg
-          currentSite => gridCellEdState(g)%spnt
-          if(currentSite%istheresoil == 1)then
-             currentPatch => currentSite%oldest_patch
-             do while(associated(currentPatch))
-                totNumPatches = totNumPatches + 1
-                currentPatch => currentPatch%younger
-             enddo
-          endif
-       enddo
-    else
-      call endrun(' ED :: countPatches called, but gridCellEdState not yet allocated') 
-    endif
+    do g = bounds%begg,bounds%endg
+       if (ed_allsites_inst(g)%istheresoil) then
+          currentPatch => ed_allsites_inst(g)%oldest_patch
+          do while(associated(currentPatch))
+             totNumPatches = totNumPatches + 1
+             currentPatch => currentPatch%younger
+          enddo
+       endif
+    enddo
 
    end function countPatches
 
-  ! ============================================================================
 end module EDPatchDynamicsMod

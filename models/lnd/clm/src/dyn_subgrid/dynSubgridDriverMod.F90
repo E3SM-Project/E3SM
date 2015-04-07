@@ -9,30 +9,31 @@ module dynSubgridDriverMod
   ! dynamic landunits).
   !
   ! !USES:
-  use dynPriorWeightsMod  , only : prior_weights_type
-  use UrbanParamsType     , only : urbanparams_type
-  use CNDVType            , only : dgvs_type
-  use CanopyStateType     , only : canopystate_type
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNCarbonStateType   , only : carbonstate_type
-  use CNStateType         , only : cnstate_type
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
-  use EnergyFluxType      , only : energyflux_type
-  use LakeStateType       , only : lakestate_type
-  use PhotosynthesisType  , only : photosyns_type
-  use SoilHydrologyType   , only : soilhydrology_type  
-  use SoilStateType       , only : soilstate_type
-  use WaterfluxType       , only : waterflux_type
-  use WaterstateType      , only : waterstate_type
-  use TemperatureType     , only : temperature_type
-  use glc2lndMod          , only : glc2lnd_type
+  use dynPriorWeightsMod           , only : prior_weights_type
+  use UrbanParamsType              , only : urbanparams_type
+  use CNDVType                     , only : dgvs_type
+  use CanopyStateType              , only : canopystate_type
+  use CNVegStateType               , only : cnveg_state_type
+  use CNVegCarbonStateType         , only : cnveg_carbonstate_type
+  use CNVegCarbonFluxType          , only : cnveg_carbonflux_type
+  use CNVegNitrogenStateType       , only : cnveg_nitrogenstate_type
+  use CNVegNitrogenFluxType        , only : cnveg_nitrogenflux_type
+  use SoilBiogeochemStateType      , only : soilBiogeochem_state_type
+  use SoilBiogeochemCarbonFluxType , only : soilBiogeochem_carbonflux_type
+  use EnergyFluxType               , only : energyflux_type
+  use LakeStateType                , only : lakestate_type
+  use PhotosynthesisMod            , only : photosyns_type
+  use SoilHydrologyType            , only : soilhydrology_type  
+  use SoilStateType                , only : soilstate_type
+  use WaterfluxType                , only : waterflux_type
+  use WaterstateType               , only : waterstate_type
+  use TemperatureType              , only : temperature_type
+  use glc2lndMod                   , only : glc2lnd_type
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
   private
-  save
-
+  !
   public :: dynSubgrid_init             ! initialize transient land cover
   public :: dynSubgrid_driver           ! top-level driver for transient land cover
   !
@@ -43,7 +44,7 @@ module dynSubgridDriverMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynSubgrid_init(bounds, dgvs_vars)
+  subroutine dynSubgrid_init(bounds, dgvs_inst)
     !
     ! !DESCRIPTION:
     ! Determine initial subgrid weights for prescribed transient Patches, CNDV, and/or
@@ -64,7 +65,7 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in)    :: bounds  ! processor-level bounds
-    type(dgvs_type)  , intent(inout) :: dgvs_vars
+    type(dgvs_type)  , intent(inout) :: dgvs_inst
     !
     ! !LOCAL VARIABLES:
     character(len=*), parameter :: subname = 'dynSubgrid_init'
@@ -85,7 +86,7 @@ contains
     end if
 
     if (use_cndv) then
-       call dynCNDV_init(bounds, dgvs_vars)
+       call dynCNDV_init(bounds, dgvs_inst)
     end if
 
     call compute_higher_order_weights(bounds)
@@ -93,13 +94,14 @@ contains
   end subroutine dynSubgrid_init
 
   !-----------------------------------------------------------------------
-  subroutine dynSubgrid_driver(bounds_proc, &
-       urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-       waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars, &
-       canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars, &
-       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
-       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-       nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars)
+  subroutine dynSubgrid_driver(bounds_proc,                                            &
+       urbanparams_inst, soilstate_inst, soilhydrology_inst, lakestate_inst,           &
+       waterstate_inst, waterflux_inst, temperature_inst, energyflux_inst,             &
+       canopystate_inst, photosyns_inst, dgvs_inst, glc2lnd_inst, cnveg_state_inst,    &
+       cnveg_carbonstate_inst, c13_cnveg_carbonstate_inst, c14_cnveg_carbonstate_inst, &
+       cnveg_carbonflux_inst, c13_cnveg_carbonflux_inst, c14_cnveg_carbonflux_inst,    &
+       cnveg_nitrogenstate_inst, cnveg_nitrogenflux_inst,                              &
+       soilbiogeochem_state_inst, soilbiogeochem_carbonflux_inst)
     !
     ! !DESCRIPTION:
     ! Update subgrid weights for prescribed transient Patches, CNDV, and/or dynamic
@@ -127,28 +129,30 @@ contains
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
-    type(urbanparams_type)   , intent(in)    :: urbanparams_vars
-    type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
-    type(lakestate_type)     , intent(in)    :: lakestate_vars
-    type(waterstate_type)    , intent(inout) :: waterstate_vars
-    type(waterflux_type)     , intent(inout) :: waterflux_vars
-    type(temperature_type)   , intent(inout) :: temperature_vars
-    type(energyflux_type)    , intent(inout) :: energyflux_vars
-    type(canopystate_type)   , intent(inout) :: canopystate_vars
-    type(photosyns_type)     , intent(inout) :: photosyns_vars
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(dgvs_type)          , intent(inout) :: dgvs_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
-    type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(glc2lnd_type)       , intent(inout) :: glc2lnd_vars
+    type(bounds_type)                    , intent(in)    :: bounds_proc  ! processor-level bounds
+    type(urbanparams_type)               , intent(in)    :: urbanparams_inst
+    type(soilstate_type)                 , intent(in)    :: soilstate_inst
+    type(soilhydrology_type)             , intent(in)    :: soilhydrology_inst
+    type(lakestate_type)                 , intent(in)    :: lakestate_inst
+    type(waterstate_type)                , intent(inout) :: waterstate_inst
+    type(waterflux_type)                 , intent(inout) :: waterflux_inst
+    type(temperature_type)               , intent(inout) :: temperature_inst
+    type(energyflux_type)                , intent(inout) :: energyflux_inst
+    type(canopystate_type)               , intent(inout) :: canopystate_inst
+    type(photosyns_type)                 , intent(inout) :: photosyns_inst
+    type(dgvs_type)                      , intent(inout) :: dgvs_inst
+    type(glc2lnd_type)                   , intent(inout) :: glc2lnd_inst
+    type(cnveg_state_type)               , intent(inout) :: cnveg_state_inst
+    type(cnveg_carbonstate_type)         , intent(inout) :: cnveg_carbonstate_inst
+    type(cnveg_carbonstate_type)         , intent(inout) :: c13_cnveg_carbonstate_inst
+    type(cnveg_carbonstate_type)         , intent(inout) :: c14_cnveg_carbonstate_inst
+    type(cnveg_carbonflux_type)          , intent(inout) :: cnveg_carbonflux_inst
+    type(cnveg_carbonflux_type)          , intent(inout) :: c13_cnveg_carbonflux_inst
+    type(cnveg_carbonflux_type)          , intent(inout) :: c14_cnveg_carbonflux_inst
+    type(cnveg_nitrogenstate_type)       , intent(inout) :: cnveg_nitrogenstate_inst
+    type(cnveg_nitrogenflux_type)        , intent(inout) :: cnveg_nitrogenflux_inst
+    type(soilbiogeochem_state_type)      , intent(in)    :: soilbiogeochem_state_inst
+    type(soilbiogeochem_carbonflux_type) , intent(inout) :: soilbiogeochem_carbonflux_inst
     !
     ! !LOCAL VARIABLES:
     integer           :: nclumps      ! number of clumps on this processor
@@ -171,8 +175,8 @@ contains
        call get_clump_bounds(nc, bounds_clump)
 
        call dyn_hwcontent_init(bounds_clump, &
-            urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-            waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
+            urbanparams_inst, soilstate_inst, soilhydrology_inst, lakestate_inst, &
+            waterstate_inst, waterflux_inst, temperature_inst, energyflux_inst)
 
        call prior_weights%set_prior_weights(bounds_clump)
     end do
@@ -199,7 +203,7 @@ contains
        call get_clump_bounds(nc, bounds_clump)
 
        if (use_cndv) then
-          call dynCNDV_interp(bounds_clump, dgvs_vars)
+          call dynCNDV_interp(bounds_clump, dgvs_inst)
        end if
        
        if (use_ed) then
@@ -207,7 +211,7 @@ contains
        end if
 
        if (create_glacier_mec_landunit) then
-          call glc2lnd_vars%update_glc2lnd(bounds_clump)
+          call glc2lnd_inst%update_glc2lnd(bounds_clump)
        end if
 
        ! Everything following this point in this loop only needs to be called if we have
@@ -221,24 +225,25 @@ contains
 
        ! Here: filters are re-made
        call reweight_wrapup(bounds_clump, &
-            glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+            glc2lnd_inst%icemask_grc(bounds_clump%begg:bounds_clump%endg))
 
        call set_subgrid_diagnostic_fields(bounds_clump)
 
        call initialize_new_columns(bounds_clump, &
             prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), &
-            temperature_vars)
+            temperature_inst)
 
        call dyn_hwcontent_final(bounds_clump, &
-            urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-            waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
+            urbanparams_inst, soilstate_inst, soilhydrology_inst, lakestate_inst, &
+            waterstate_inst, waterflux_inst, temperature_inst, energyflux_inst)
 
        if (use_cn) then
-          call dyn_cnbal_patch(bounds_clump, prior_weights, &
-               canopystate_vars, photosyns_vars, cnstate_vars, &
-               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
-               carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-               nitrogenstate_vars, nitrogenflux_vars)
+          call dyn_cnbal_patch(bounds_clump, prior_weights,                                       &
+               canopystate_inst, photosyns_inst, cnveg_state_inst,                                &
+               cnveg_carbonstate_inst, c13_cnveg_carbonstate_inst, c14_cnveg_carbonstate_inst,    &
+               cnveg_carbonflux_inst, c13_cnveg_carbonflux_inst, c14_cnveg_carbonflux_inst,       &
+               cnveg_nitrogenstate_inst, cnveg_nitrogenflux_inst, soilbiogeochem_carbonflux_inst, &
+               soilbiogeochem_state_inst)
        end if
 
     end do

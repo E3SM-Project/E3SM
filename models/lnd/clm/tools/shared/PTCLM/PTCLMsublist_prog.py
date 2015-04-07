@@ -55,7 +55,7 @@ class PTCLMsublist_prog:
       options.add_option("--mach", dest="mach", default=self.mach, \
                         help="Machine name to use for batch submital")
       parser.add_option_group(options)
-      svnurl          = '$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk_tags/PTCLM2_140521/PTCLMsublist_prog.py $'
+      svnurl          = '$HeadURL: https://svn-ccsm-models.cgd.ucar.edu/PTCLM/trunk_tags/PTCLM2_140816/PTCLMsublist_prog.py $'
       versiongroup    = OptionGroup( parser, "Version Id: $Id: PTCLMsublist_prog.py 59464 2014-04-23 16:27:26Z erik $ URL: "+svnurl )
       parser.add_option_group(versiongroup)
       (options, args) = parser.parse_args()

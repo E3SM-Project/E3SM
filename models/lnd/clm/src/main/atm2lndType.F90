@@ -8,14 +8,12 @@ module atm2lndType
   use shr_kind_mod  , only : r8 => shr_kind_r8
   use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod   , only : errMsg => shr_log_errMsg
-  use shr_megan_mod , only : shr_megan_mechcomps_n
   use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use clm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_cndv, use_ed
-  use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   use abortutils    , only : endrun
-  use PatchType     , only : pft
+  use PatchType     , only : patch
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -481,7 +479,7 @@ contains
 
     begp = bounds%begp; endp = bounds%endp
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level patch field
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
        write(iulog,*)' in '
@@ -552,14 +550,14 @@ contains
     integer :: nstep                     ! timestep number
     integer :: ier                       ! error status
     integer :: begp, endp
-    real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
+    real(r8), pointer :: rbufslp(:)      ! temporary single level - patch level
     !---------------------------------------------------------------------
 
     begp = bounds%begp; endp = bounds%endp
 
     nstep = get_nstep()
 
-    ! Allocate needed dynamic memory for single level pft field
+    ! Allocate needed dynamic memory for single level patch field
 
     allocate(rbufslp(begp:endp), stat=ier)
     if (ier/=0) then
@@ -569,7 +567,7 @@ contains
 
     ! Accumulate and extract forc_solad24 & forc_solad240 
     do p = begp,endp
-       g = pft%gridcell(p)
+       g = patch%gridcell(p)
        rbufslp(p) = this%forc_solad_grc(g,1)
     end do
     call update_accum_field  ('FSD240', rbufslp               , nstep)
@@ -579,7 +577,7 @@ contains
 
     ! Accumulate and extract forc_solai24 & forc_solai240 
     do p = begp,endp
-       g = pft%gridcell(p)
+       g = patch%gridcell(p)
        rbufslp(p) = this%forc_solai_grc(g,1)
     end do
     call update_accum_field  ('FSI24' , rbufslp               , nstep)
@@ -588,7 +586,7 @@ contains
     call extract_accum_field ('FSI240', this%fsi240_patch     , nstep)
 
     do p = begp,endp
-       c = pft%column(p)
+       c = patch%column(p)
        rbufslp(p) = this%forc_rain_downscaled_col(c) + this%forc_snow_downscaled_col(c)
     end do
 
@@ -611,7 +609,7 @@ contains
        ! also determines t_mo_min
        
        do p = begp,endp
-          c = pft%column(p)
+          c = patch%column(p)
           rbufslp(p) = this%forc_t_downscaled_col(c)
        end do
        call update_accum_field  ('TDA', rbufslp, nstep)
@@ -628,14 +626,14 @@ contains
        call extract_accum_field ('PREC24', this%prec24_patch, nstep)
 
        do p = bounds%begp,bounds%endp
-          c = pft%column(p)
+          c = patch%column(p)
           rbufslp(p) = this%forc_wind_grc(g) 
        end do
        call update_accum_field  ('WIND24', rbufslp, nstep)
        call extract_accum_field ('WIND24', this%wind24_patch, nstep)
 
        do p = bounds%begp,bounds%endp
-          c = pft%column(p)
+          c = patch%column(p)
           rbufslp(p) = this%forc_rh_grc(g) 
        end do
        call update_accum_field  ('RH24', rbufslp, nstep)

@@ -21,7 +21,7 @@ module dynInitColumnsMod
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
   private
-  save
+  !
   ! The following is the public interface to the routines in this module:
   public :: initialize_new_columns  ! Do initialization for all columns that are newly-active in this time step
   
@@ -40,7 +40,7 @@ module dynInitColumnsMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine initialize_new_columns(bounds, cactive_prior, temperature_vars)
+  subroutine initialize_new_columns(bounds, cactive_prior, temperature_inst)
     !
     ! !DESCRIPTION:
     ! Do initialization for all columns that are newly-active in this time step
@@ -51,7 +51,7 @@ contains
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                        ! bounds
     logical                , intent(in)    :: cactive_prior( bounds%begc: ) ! column-level active flags from prior time step
-    type(temperature_type) , intent(inout) :: temperature_vars
+    type(temperature_type) , intent(inout) :: temperature_inst
     !
     ! !LOCAL VARIABLES:
     integer :: c          ! column index
@@ -67,7 +67,7 @@ contains
        if (col%active(c) .and. .not. cactive_prior(c)) then
           c_template = initial_template_col_dispatcher(bounds, c, cactive_prior(bounds%begc:bounds%endc))
           if (c_template /= ispval) then
-             call copy_state(c, c_template, temperature_vars)
+             call copy_state(c, c_template, temperature_inst)
           else
              write(iulog,*) subname// ' WARNING: No template column found to initialize newly-active column'
              write(iulog,*) '-- keeping the state that was already in memory, possibly from arbitrary initialization'
@@ -272,7 +272,7 @@ contains
   end function initial_template_col
 
   !-----------------------------------------------------------------------
-  subroutine copy_state(c_new, c_template, temperature_vars)
+  subroutine copy_state(c_new, c_template, temperature_inst)
     !
     ! !DESCRIPTION:
     ! Copy a subset of state variables from a template column (c_template) to a newly-
@@ -283,7 +283,7 @@ contains
     ! !ARGUMENTS:
     integer, intent(in) :: c_new      ! index of newly-active column
     integer, intent(in) :: c_template ! index of column to use as a template
-    type(temperature_type), intent(inout) :: temperature_vars
+    type(temperature_type), intent(inout) :: temperature_inst
     !
     ! !LOCAL VARIABLES:
     
@@ -292,7 +292,7 @@ contains
 
     ! For now, just copy t_soisno
     ! TODO: Figure out what else should be copied
-    temperature_vars%t_soisno_col(c_new,:) = temperature_vars%t_soisno_col(c_template,:)
+    temperature_inst%t_soisno_col(c_new,:) = temperature_inst%t_soisno_col(c_template,:)
     
   end subroutine copy_state
 

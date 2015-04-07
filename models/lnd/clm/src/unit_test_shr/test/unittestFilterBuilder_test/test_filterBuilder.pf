@@ -1,0 +1,46 @@
+module test_filterBuilder
+  
+  ! Tests of unittestFilterBuilder
+
+  use pfunit_mod
+  use unittestFilterBuilderMod
+
+  implicit none
+  save
+
+contains
+
+  ! ========================================================================
+  ! Tests of filter_from_range
+  ! ========================================================================
+
+  @Test
+  subroutine test_filter_from_range_multipoint()
+    integer :: numf
+    integer, allocatable :: filter(:)
+    
+    call filter_from_range(start=3, end=5, numf=numf, filter=filter)
+    @assertEqual(3, numf)
+    @assertEqual([3,4,5], filter)
+  end subroutine test_filter_from_range_multipoint
+
+  @Test
+  subroutine test_filter_from_range_onepoint()
+    integer :: numf
+    integer, allocatable :: filter(:)
+    
+    call filter_from_range(start=3, end=3, numf=numf, filter=filter)
+    @assertEqual(1, numf)
+    @assertEqual([3], filter)
+  end subroutine test_filter_from_range_onepoint
+    
+  @Test
+  subroutine test_filter_from_range_nopoints()
+    integer :: numf
+    integer, allocatable :: filter(:)
+
+    call filter_from_range(start=3, end=1, numf=numf, filter=filter)
+    @assertEqual(0, numf)
+  end subroutine test_filter_from_range_nopoints
+
+end module test_filterBuilder

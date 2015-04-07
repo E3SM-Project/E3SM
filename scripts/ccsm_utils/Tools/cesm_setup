@@ -234,6 +234,9 @@ if (! $clean ) {
 	$sysmod = "cat ${caseroot}/Tools/cesm_prestage >> $file";
 	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 	
+	$sysmod = "cat ${caseroot}/Tools/cesm_buildnml >> $file";
+	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+	
 	$sysmod = "env PHASE=set_exe CASE=$case CASEROOT=$caseroot ./Tools/mkbatch.${mach}";
 	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 	

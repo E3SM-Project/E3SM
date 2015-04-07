@@ -29,6 +29,11 @@ else
  set file = $CASEROOT/${CASE}.run 
 endif
 
+# Set walltime
+set wall_clock = 90
+if ($CCSM_ESTCOST > -3) set wall_clock = 180
+if ($CCSM_ESTCOST > 0) set wall_clock = 360
+
 cat >! $file << EOF1
 #! /bin/csh -f
 #==============================================================================
@@ -42,9 +47,7 @@ cd $CASEROOT
 source ./Tools/ccsm_getenv || exit -1
 
 # Set walltime
-set wt = 90
-if ($CCSM_ESTCOST > -3) set wt = 180
-if ($CCSM_ESTCOST > 0) set wt = 360
+set wt = $wall_clock
 
 # Determine tasks and threads for batch queue 
 

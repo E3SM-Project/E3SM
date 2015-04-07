@@ -31,7 +31,7 @@ fi
 # Machine dependent stuff
 #
 toolsmake=""
-if [[  "$host" =~ ys ]]; then
+if [[  "$host" =~ ys ]] || [[ "$host" =~ caldera ]] || [[ "host" =~ geyser ]]; then
   echo "Setup for yellowstone"
   module load netcdf/4.3.0
   module load ncl

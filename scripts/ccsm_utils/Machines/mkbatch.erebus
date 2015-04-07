@@ -46,15 +46,6 @@ endif
 @ batchpes = ${nodes} * ${PES_PER_NODE}
 ./xmlchange -file env_mach_pes.xml -id COST_PES -val ${batchpes}
 
-#if ($?ACCOUNT) then
-#  set account_name = $ACCOUNT
-#else
-#  set account_name = `grep -i "^${CCSMUSER}:" /etc/project.ncar | cut -f 1 -d "," | cut -f 2 -d ":" `
-#  if (-e ~/.ccsm_proj) then
-#set account_name = `head -1 ~/.ccsm_proj`
-#endif
-#endif
-
 set queue_x = "-x"
 if ($?QUEUE) then
   set queue_name = $QUEUE
@@ -137,11 +128,6 @@ endif
 # Create the archive script
 touch ${CASEROOT}/${CASE}.l_archive
 chmod 775 ${CASEROOT}/${CASE}.l_archive
-
-#set account_name = `grep -i "^${CCSMUSER}:" /etc/project.ncar | cut -f 1 -d "," | cut -f 2 -d ":" `
-#if (-e ~/.ccsm_proj) then
-#   set account_name = `head -1 ~/.ccsm_proj`
-#endif
 
 cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #! /bin/csh -f

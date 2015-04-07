@@ -36,6 +36,7 @@ module PatchType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varcon     , only : ispval
+  use clm_varctl     , only : use_ed 
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -43,6 +44,7 @@ module PatchType
   private
   !
   type, public :: patch_type
+
      ! g/l/c/p hierarchy, local g/l/c/p cells only
      integer , pointer :: column   (:) ! index into column level quantities
      real(r8), pointer :: wtcol    (:) ! weight (relative to column) 
@@ -51,10 +53,15 @@ module PatchType
      integer , pointer :: gridcell (:) ! index into gridcell level quantities
      real(r8), pointer :: wtgcell  (:) ! weight (relative to gridcell) 
 
-     ! topological mapping functionality
+     ! Non-ED only 
      integer , pointer :: itype    (:) ! patch vegetation 
      integer , pointer :: mxy      (:) ! m index for laixy(i,j,m),etc. (undefined for special landunits)
      logical , pointer :: active   (:) ! true=>do computations on this patch
+
+     ! ED only
+     logical , pointer :: is_veg   (:)
+     logical , pointer :: is_bareground  (:)
+     real(r8), pointer :: wt_ed       (:) !TODO mv ? can this be removed
 
    contains
 
@@ -62,7 +69,7 @@ module PatchType
      procedure, public :: Clean
      
   end type patch_type
-  type(patch_type), public, target :: pft  ! patch type data structure !***TODO*** - change the data instance to patch from pft
+  type(patch_type), public, target :: patch  ! patch type data structure
   !------------------------------------------------------------------------
 
 contains
@@ -78,15 +85,33 @@ contains
     !------------------------------------------------------------------------
 
     ! The following is set in InitGridCells
-    allocate(this%gridcell (begp:endp)); this%gridcell (:) = ispval
-    allocate(this%wtgcell  (begp:endp)); this%wtgcell  (:) = nan
-    allocate(this%landunit (begp:endp)); this%landunit (:) = ispval
-    allocate(this%wtlunit  (begp:endp)); this%wtlunit  (:) = nan
-    allocate(this%column   (begp:endp)); this%column   (:) = ispval
-    allocate(this%wtcol    (begp:endp)); this%wtcol    (:) = nan
-    allocate(this%itype    (begp:endp)); this%itype    (:) = ispval
-    allocate(this%mxy      (begp:endp)); this%mxy      (:) = ispval
-    allocate(this%active   (begp:endp)); this%active   (:) = .false.
+
+    allocate(this%gridcell      (begp:endp)); this%gridcell   (:) = ispval
+    allocate(this%wtgcell       (begp:endp)); this%wtgcell    (:) = nan
+
+    allocate(this%landunit      (begp:endp)); this%landunit   (:) = ispval
+    allocate(this%wtlunit       (begp:endp)); this%wtlunit    (:) = nan
+
+    allocate(this%column        (begp:endp)); this%column     (:) = ispval
+    allocate(this%wtcol         (begp:endp)); this%wtcol      (:) = nan
+
+    allocate(this%mxy           (begp:endp)); this%mxy        (:) = ispval
+    allocate(this%active        (begp:endp)); this%active     (:) = .false.
+
+    ! TODO (MV, 10-17-14): The following must be commented out because
+    ! currently the logic checking if patch%itype(p) is not equal to noveg
+    ! is used in RootBiogeophysMod in zeng2001_rootfr- a filter is not used
+    ! in that routine - which would elimate this problem
+
+    !    if (.not. use_ed) then
+    allocate(this%itype      (begp:endp)); this%itype      (:) = ispval
+    !    end if
+
+    if (use_ed) then
+       allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
+       allocate(this%is_bareground (begp:endp)); this%is_bareground (:) = .false.
+       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan 
+    end if
 
   end subroutine Init
 
@@ -106,6 +131,12 @@ contains
     deallocate(this%itype   )
     deallocate(this%mxy     )
     deallocate(this%active  )
+    
+    if (use_ed) then
+       deallocate(this%is_veg)
+       deallocate(this%is_bareground)
+       deallocate(this%wt_ed)
+    end if
 
   end subroutine Clean
 

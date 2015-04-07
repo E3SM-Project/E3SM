@@ -15,6 +15,10 @@ module shr_log_mod
 
   use shr_kind_mod
 
+  use shr_strconvert_mod, only: toString
+
+  use, intrinsic :: iso_fortran_env, only: output_unit
+
   implicit none
   private
 
@@ -25,6 +29,7 @@ module shr_log_mod
 ! !PUBLIC MEMBER FUNCTIONS:
 
   public :: shr_log_errMsg
+  public :: shr_log_OOBMsg
 
 ! !PUBLIC DATA MEMBERS:
 
@@ -35,7 +40,7 @@ module shr_log_mod
 
   ! low-level shared variables for logging, these may not be parameters
   integer(SHR_KIND_IN) :: shr_log_Level = 1
-  integer(SHR_KIND_IN) :: shr_log_Unit  = 6
+  integer(SHR_KIND_IN) :: shr_log_Unit  = output_unit
 
 contains
 
@@ -54,9 +59,7 @@ contains
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-function shr_log_errMsg(file, line)
-  
-  implicit none
+pure function shr_log_errMsg(file, line)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -66,8 +69,30 @@ function shr_log_errMsg(file, line)
 
 !EOP
 
-  write(shr_log_errMsg, '(a, a, a, i0)') 'ERROR in ', trim(file), ' at line ', line
+  shr_log_errMsg = 'ERROR in '//trim(file)//' at line '//toString(line)
 
 end function shr_log_errMsg
+
+! Create a message for an out of bounds error.
+pure function shr_log_OOBMsg(operation, bounds, idx) result(OOBMsg)
+
+  ! A name for the operation being attempted when the bounds error
+  ! occurred. A string containing the subroutine name is ideal, but more
+  ! generic descriptions such as "read", "modify", or "insert" could be used.
+  character(len=*), intent(in) :: operation
+
+  ! Upper and lower bounds allowed for the operation.
+  integer, intent(in) :: bounds(2)
+
+  ! Index at which access was attempted.
+  integer, intent(in) :: idx
+
+  ! Output message
+  character(len=:), allocatable :: OOBMsg
+
+  allocate(OOBMsg, source=(operation//": "//toString(idx)//" not in range ["//&
+       toString(bounds(1))//", "//toString(bounds(2))//"]."))
+
+end function shr_log_OOBMsg
 
 end module shr_log_mod

@@ -1,12 +1,15 @@
 module SoilWaterMovementMod
 
+#include "shr_assert.h"
+
   !-----------------------------------------------------------------------
   ! DESCRIPTION
   ! module contains different subroutines to couple soil and root water interactions
   !
   ! created by Jinyun Tang, Mar 12, 2014
+  use shr_log_mod    , only : errMsg => shr_log_errMsg
+  !
   implicit none
-  save 
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -16,6 +19,12 @@ module SoilWaterMovementMod
   ! !PRIVATE DATA MEMBERS:
   integer, parameter :: zengdecker_2009 = 0
   integer :: soilroot_water_method     !0: use the Zeng and deck method, this will be readin from namelist in the future
+
+  !
+  ! The following is only public for the sake of unit testing; it should not be called
+  ! directly by CLM code outside this module
+  public :: Compute_EffecRootFrac_And_VertTranSink
+
   !-----------------------------------------------------------------------
 
 contains
@@ -27,7 +36,6 @@ contains
     !specify method for doing soil&root water interactions
     !
     ! !ARGUMENTS:
-    implicit none
     !------------------------------------------------------------------------------
 
     soilroot_water_method = zengdecker_2009
@@ -36,8 +44,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SoilWater(bounds, num_hydrologyc, filter_hydrologyc, &
-       num_urbanc, filter_urbanc, soilhydrology_vars, soilstate_vars, &
-       waterflux_vars, waterstate_vars, temperature_vars, soil_water_retention_curve)
+       num_urbanc, filter_urbanc, soilhydrology_inst, soilstate_inst, &
+       waterflux_inst, waterstate_inst, temperature_inst, soil_water_retention_curve)
     !
     ! DESCRIPTION
     ! select one subroutine to do the soil and root water coupling
@@ -45,25 +53,27 @@ contains
     !USES
     use decompMod         , only : bounds_type   
     use abortutils        , only : endrun   
+    use shr_kind_mod      , only : r8 => shr_kind_r8
+    use clm_varpar        , only : nlevsoi
     use SoilHydrologyType , only : soilhydrology_type
     use SoilStateType     , only : soilstate_type
     use TemperatureType   , only : temperature_type
     use WaterFluxType     , only : waterflux_type
     use WaterStateType    , only : waterstate_type
+    use ColumnType        , only : col
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     !
     ! !ARGUMENTS:
-    implicit none     
     type(bounds_type)        , intent(in)    :: bounds                ! bounds
     integer                  , intent(in)    :: num_hydrologyc        ! number of column soil points in column filter
     integer                  , intent(in)    :: filter_hydrologyc(:)  ! column filter for soil points
     integer                  , intent(in)    :: num_urbanc            ! number of column urban points in column filter
     integer                  , intent(in)    :: filter_urbanc(:)      ! column filter for urban points
-    type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
-    type(soilstate_type)     , intent(inout) :: soilstate_vars
-    type(waterflux_type)     , intent(inout) :: waterflux_vars
-    type(waterstate_type)    , intent(inout) :: waterstate_vars
-    type(temperature_type)   , intent(in)    :: temperature_vars
+    type(soilhydrology_type) , intent(inout) :: soilhydrology_inst
+    type(soilstate_type)     , intent(inout) :: soilstate_inst
+    type(waterflux_type)     , intent(inout) :: waterflux_inst
+    type(waterstate_type)    , intent(inout) :: waterstate_inst
+    type(temperature_type)   , intent(in)    :: temperature_inst
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     !
     ! !LOCAL VARIABLES:
@@ -75,8 +85,8 @@ contains
     case (zengdecker_2009)
 
        call soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc, &
-            num_urbanc, filter_urbanc, soilhydrology_vars, soilstate_vars, &
-            waterflux_vars, waterstate_vars, temperature_vars, soil_water_retention_curve)
+            num_urbanc, filter_urbanc, soilhydrology_inst, soilstate_inst, &
+            waterflux_inst, waterstate_inst, temperature_inst, soil_water_retention_curve)
 
     case default
 
@@ -87,9 +97,104 @@ contains
   end subroutine SoilWater
 
   !-----------------------------------------------------------------------   
+  subroutine Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
+       filter_hydrologyc, vert_tran_sink, waterflux_inst, soilstate_inst)
+    !
+    ! Generic routine to apply transpiration as a sink condition that
+    ! is vertically distributed over the soil column. Should be
+    ! applicable to any Richards solver that is not coupled to plant
+    ! hydraulics.
+    !
+    !USES:
+    use decompMod        , only : bounds_type
+    use shr_kind_mod     , only : r8 => shr_kind_r8
+    use clm_varpar       , only : nlevsoi, max_patch_per_col
+    use SoilStateType    , only : soilstate_type
+    use WaterFluxType    , only : waterflux_type
+    use PatchType        , only : patch
+    use ColumnType       , only : col
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)    , intent(in)    :: bounds                          ! bounds
+    integer              , intent(in)    :: num_hydrologyc                  ! number of column soil points in column filter
+    integer              , intent(in)    :: filter_hydrologyc(:)            ! column filter for soil points
+    real(r8)             , intent(out)   :: vert_tran_sink(bounds%begc:,1:) ! vertically distributed transpiration sink (mm H2O/s) (+ = to atm)
+    type(waterflux_type) , intent(inout) :: waterflux_inst
+    type(soilstate_type) , intent(inout) :: soilstate_inst
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: p,c,fc,j                                              ! do loop indices
+    integer  :: pi                                                    ! patch index
+    real(r8) :: temp(bounds%begc:bounds%endc)                         ! accumulator for rootr weighting
+    !-----------------------------------------------------------------------   
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(vert_tran_sink)  == (/bounds%endc, nlevsoi/)), errMsg(__FILE__, __LINE__))
+
+    associate(&
+         qflx_tran_veg_col   => waterflux_inst%qflx_tran_veg_col   , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
+         qflx_tran_veg_patch => waterflux_inst%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
+         rootr_col           => soilstate_inst%rootr_col           , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
+         rootr_patch         => soilstate_inst%rootr_patch           & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
+         )
+
+    ! First step is to calculate the column-level effective rooting
+    ! fraction in each soil layer. This is done outside the usual
+    ! PATCH-to-column averaging routines because it is not a simple
+    ! weighted average of the PATCH level rootr arrays. Instead, the
+    ! weighting depends on both the per-unit-area transpiration
+    ! of the PATCH and the PATCHEs area relative to all PATCHES.
+
+    temp(bounds%begc : bounds%endc) = 0._r8
+
+    do j = 1, nlevsoi
+       do fc = 1, num_hydrologyc
+          c = filter_hydrologyc(fc)
+          rootr_col(c,j) = 0._r8
+       end do
+    end do
+
+    do pi = 1,max_patch_per_col
+       do j = 1,nlevsoi
+          do fc = 1, num_hydrologyc
+             c = filter_hydrologyc(fc)
+             if (pi <= col%npatches(c)) then
+                p = col%patchi(c) + pi - 1
+                if (patch%active(p)) then
+                   rootr_col(c,j) = rootr_col(c,j) + rootr_patch(p,j) * qflx_tran_veg_patch(p) * patch%wtcol(p)
+                end if
+             end if
+          end do
+       end do
+       do fc = 1, num_hydrologyc
+          c = filter_hydrologyc(fc)
+          if (pi <= col%npatches(c)) then
+             p = col%patchi(c) + pi - 1
+             if (patch%active(p)) then
+                temp(c) = temp(c) + qflx_tran_veg_patch(p) * patch%wtcol(p)
+             end if
+          end if
+       end do
+    end do
+
+    do j = 1, nlevsoi
+       do fc = 1, num_hydrologyc
+          c = filter_hydrologyc(fc)
+          if (temp(c) /= 0._r8) then
+             rootr_col(c,j) = rootr_col(c,j)/temp(c)
+          end if
+          vert_tran_sink(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
+       end do
+    end do
+
+  end associate
+
+  end subroutine Compute_EffecRootFrac_And_VertTranSink
+
+  !-----------------------------------------------------------------------
   subroutine soilwater_zengdecker2009(bounds, num_hydrologyc, filter_hydrologyc, &
-       num_urbanc, filter_urbanc, soilhydrology_vars, soilstate_vars, &
-       waterflux_vars, waterstate_vars, temperature_vars, soil_water_retention_curve)
+       num_urbanc, filter_urbanc, soilhydrology_inst, soilstate_inst, &
+       waterflux_inst, waterstate_inst, temperature_inst, soil_water_retention_curve)
     !
     ! !DESCRIPTION:
     ! Soil hydrology
@@ -154,37 +259,36 @@ contains
     ! r_j = a_j [d wat_j-1] + b_j [d wat_j] + c_j [d wat_j+1]
     !
     ! !USES:
-    use shr_kind_mod         , only : r8 => shr_kind_r8     
-    use shr_const_mod        , only : SHR_CONST_TKFRZ, SHR_CONST_LATICE, SHR_CONST_G
-    use decompMod            , only : bounds_type        
-    use clm_varcon           , only : wimp,grav,hfus,tfrz
-    use clm_varcon           , only : e_ice,denh2o, denice
-    use clm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
-    use clm_time_manager     , only : get_step_size
-    use column_varcon        , only : icol_roof, icol_road_imperv
-    use TridiagonalMod       , only : Tridiagonal
-    use abortutils           , only : endrun     
-    use SoilStateType        , only : soilstate_type
-    use SoilHydrologyType    , only : soilhydrology_type
-    use TemperatureType      , only : temperature_type
-    use WaterFluxType        , only : waterflux_type
-    use WaterStateType       , only : waterstate_type
-    use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-    use PatchType            , only : pft
-    use ColumnType           , only : col
+    use shr_kind_mod               , only : r8 => shr_kind_r8     
+    use shr_const_mod              , only : SHR_CONST_TKFRZ, SHR_CONST_LATICE, SHR_CONST_G
+    use decompMod                  , only : bounds_type        
+    use clm_varcon                 , only : wimp,grav,hfus,tfrz
+    use clm_varcon                 , only : e_ice,denh2o, denice
+    use clm_varpar                 , only : nlevsoi, max_patch_per_col, nlevgrnd
+    use clm_time_manager           , only : get_step_size
+    use column_varcon              , only : icol_roof, icol_road_imperv
+    use TridiagonalMod             , only : Tridiagonal
+    use abortutils                 , only : endrun     
+    use SoilStateType              , only : soilstate_type
+    use SoilHydrologyType          , only : soilhydrology_type
+    use TemperatureType            , only : temperature_type
+    use WaterFluxType              , only : waterflux_type
+    use WaterStateType             , only : waterstate_type
+    use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
+    use PatchType                  , only : patch
+    use ColumnType                 , only : col
     !
     ! !ARGUMENTS:
-    implicit none
     type(bounds_type)       , intent(in)    :: bounds               ! bounds
     integer                 , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
     integer                 , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
     integer                 , intent(in)    :: num_urbanc           ! number of column urban points in column filter
     integer                 , intent(in)    :: filter_urbanc(:)     ! column filter for urban points
-    type(soilhydrology_type), intent(inout) :: soilhydrology_vars
-    type(soilstate_type)    , intent(inout) :: soilstate_vars
-    type(waterflux_type)    , intent(inout) :: waterflux_vars
-    type(waterstate_type)   , intent(inout) :: waterstate_vars
-    type(temperature_type)  , intent(in)    :: temperature_vars
+    type(soilhydrology_type), intent(inout) :: soilhydrology_inst
+    type(soilstate_type)    , intent(inout) :: soilstate_inst
+    type(waterflux_type)    , intent(inout) :: waterflux_inst
+    type(waterstate_type)   , intent(inout) :: waterstate_inst
+    type(temperature_type)  , intent(in)    :: temperature_inst
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     !
     ! !LOCAL VARIABLES:
@@ -213,7 +317,7 @@ contains
     real(r8) :: s2                                           ! k*s**(2b+2)
     real(r8) :: smp(bounds%begc:bounds%endc,1:nlevsoi)       ! soil matrix potential [mm]
     real(r8) :: sdamp                                        ! extrapolates soiwat dependence of evaporation
-    integer  :: pi                                           ! pft index
+    integer  :: pi                                           ! patch index
     real(r8) :: temp(bounds%begc:bounds%endc)                ! accumulator for rootr weighting
     integer  :: jwt(bounds%begc:bounds%endc)                 ! index of the soil layer right above the water table (-)
     real(r8) :: smp1,dsmpdw1,wh,wh_zwt,ka
@@ -235,6 +339,7 @@ contains
     real(r8) :: dsmpds                                       !temporary variable
     real(r8) :: dhkds                                        !temporary variable
     real(r8) :: hktmp                                        !temporary variable
+    real(r8) :: vert_tran_sink(bounds%begc:bounds%endc,1:nlevsoi)  ! vertically distributed transpiration sink (mm H2O/s) (+ = to atm)
     !-----------------------------------------------------------------------
 
     associate(& 
@@ -242,39 +347,39 @@ contains
          zi                =>    col%zi                             , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
          dz                =>    col%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)                             
 
-         origflag          =>    soilhydrology_vars%origflag        , & ! Input:  constant
-         qcharge           =>    soilhydrology_vars%qcharge_col     , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)                      
-         zwt               =>    soilhydrology_vars%zwt_col         , & ! Input:  [real(r8) (:)   ]  water table depth (m)                             
-         fracice           =>    soilhydrology_vars%fracice_col     , & ! Input:  [real(r8) (:,:) ]  fractional impermeability (-)                   
-         icefrac           =>    soilhydrology_vars%icefrac_col     , & ! Input:  [real(r8) (:,:) ]  fraction of ice                                 
-         hkdepth           =>    soilhydrology_vars%hkdepth_col     , & ! Input:  [real(r8) (:)   ]  decay factor (m)                                  
+         origflag          =>    soilhydrology_inst%origflag        , & ! Input:  constant
+         qcharge           =>    soilhydrology_inst%qcharge_col     , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)                      
+         zwt               =>    soilhydrology_inst%zwt_col         , & ! Input:  [real(r8) (:)   ]  water table depth (m)                             
+         fracice           =>    soilhydrology_inst%fracice_col     , & ! Input:  [real(r8) (:,:) ]  fractional impermeability (-)                   
+         icefrac           =>    soilhydrology_inst%icefrac_col     , & ! Input:  [real(r8) (:,:) ]  fraction of ice                                 
+         hkdepth           =>    soilhydrology_inst%hkdepth_col     , & ! Input:  [real(r8) (:)   ]  decay factor (m)                                  
 
-         smpmin            =>    soilstate_vars%smpmin_col          , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)        
-         watsat            =>    soilstate_vars%watsat_col          , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
-         hksat             =>    soilstate_vars%hksat_col           , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
-         bsw               =>    soilstate_vars%bsw_col             , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
-         sucsat            =>    soilstate_vars%sucsat_col          , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
-         eff_porosity      =>    soilstate_vars%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
-         rootr_col         =>    soilstate_vars%rootr_col           , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
-         smp_l             =>    soilstate_vars%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]                      
-         hk_l              =>    soilstate_vars%hk_l_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity (mm/s)                   
-         rootr_pft         =>    soilstate_vars%rootr_patch         , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer  
+         smpmin            =>    soilstate_inst%smpmin_col          , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)        
+         watsat            =>    soilstate_inst%watsat_col          , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
+         hksat             =>    soilstate_inst%hksat_col           , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
+         bsw               =>    soilstate_inst%bsw_col             , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
+         sucsat            =>    soilstate_inst%sucsat_col          , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
+         eff_porosity      =>    soilstate_inst%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
+         smp_l             =>    soilstate_inst%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]                      
+         hk_l              =>    soilstate_inst%hk_l_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity (mm/s)                   
 
-         h2osoi_ice        =>    waterstate_vars%h2osoi_ice_col     , & ! Input:  [real(r8) (:,:) ]  ice water (kg/m2)                               
-         h2osoi_liq        =>    waterstate_vars%h2osoi_liq_col     , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
-         h2osoi_vol        =>    waterstate_vars%h2osoi_vol_col     , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_ice        =>    waterstate_inst%h2osoi_ice_col     , & ! Input:  [real(r8) (:,:) ]  ice water (kg/m2)                               
+         h2osoi_liq        =>    waterstate_inst%h2osoi_liq_col     , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
+         h2osoi_vol        =>    waterstate_inst%h2osoi_vol_col     , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
-         qflx_deficit      =>    waterflux_vars%qflx_deficit_col    , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
-         qflx_infl         =>    waterflux_vars%qflx_infl_col       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)                          
-         qflx_tran_veg_col =>    waterflux_vars%qflx_tran_veg_col   , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
-         qflx_tran_veg_pft =>    waterflux_vars%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
+         qflx_deficit      =>    waterflux_inst%qflx_deficit_col    , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
+         qflx_infl         =>    waterflux_inst%qflx_infl_col       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)                          
 
-         t_soisno          =>    temperature_vars%t_soisno_col        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
+         t_soisno          =>    temperature_inst%t_soisno_col        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
          )
 
       ! Get time step
       
       dtime = get_step_size()
+
+      call Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
+           filter_hydrologyc, vert_tran_sink(bounds%begc:bounds%endc, 1:), &
+           waterflux_inst, soilstate_inst)
 
       ! Because the depths in this routine are in mm, use local
       ! variable arrays instead of pointers
@@ -299,55 +404,7 @@ contains
          zwtmm(c)  = zwt(c)*1.e3_r8
       end do
 
-      ! First step is to calculate the column-level effective rooting
-      ! fraction in each soil layer. This is done outside the usual
-      ! PFT-to-column averaging routines because it is not a simple
-      ! weighted average of the PFT level rootr arrays. Instead, the
-      ! weighting depends on both the per-unit-area transpiration
-      ! of the PFT and the PFTs area relative to all PFTs.
-
-      temp(bounds%begc : bounds%endc) = 0._r8
-
-      do j = 1, nlevsoi
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-            rootr_col(c,j) = 0._r8
-         end do
-      end do
-
-      do pi = 1,max_patch_per_col
-         do j = 1,nlevsoi
-            do fc = 1, num_hydrologyc
-               c = filter_hydrologyc(fc)
-               if (pi <= col%npfts(c)) then
-                  p = col%pfti(c) + pi - 1
-                  if (pft%active(p)) then
-                     rootr_col(c,j) = rootr_col(c,j) + rootr_pft(p,j) * qflx_tran_veg_pft(p) * pft%wtcol(p)
-                  end if
-               end if
-            end do
-         end do
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-            if (pi <= col%npfts(c)) then
-               p = col%pfti(c) + pi - 1
-               if (pft%active(p)) then
-                  temp(c) = temp(c) + qflx_tran_veg_pft(p) * pft%wtcol(p)
-               end if
-            end if
-         end do
-      end do
-
-      do j = 1, nlevsoi
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-            if (temp(c) /= 0._r8) then
-               rootr_col(c,j) = rootr_col(c,j)/temp(c)
-            end if
-         end do
-      end do
-
-      !compute jwt index
+      ! compute jwt index
       ! The layer index of the first unsaturated layer, i.e., the layer right above
       ! the water table
 
@@ -517,7 +574,7 @@ contains
          qout(c,j)   = -hk(c,j)*num/den
          dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
          dqodw2(c,j) = -( hk(c,j)*dsmpdw(c,j+1) + num*dhkdw(c,j))/den
-         rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_tran_veg_col(c) * rootr_col(c,j)
+         rmx(c,j) =  qin(c,j) - qout(c,j) - vert_tran_sink(c,j)
          amx(c,j) =  0._r8
          bmx(c,j) =  dzmm(c,j)*(sdamp+1._r8/dtime) + dqodw1(c,j)
          cmx(c,j) =  dqodw2(c,j)
@@ -540,7 +597,7 @@ contains
             qout(c,j)   = -hk(c,j)*num/den
             dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
             dqodw2(c,j) = -( hk(c,j)*dsmpdw(c,j+1) + num*dhkdw(c,j))/den
-            rmx(c,j)    =  qin(c,j) - qout(c,j) - qflx_tran_veg_col(c)*rootr_col(c,j)
+            rmx(c,j)    =  qin(c,j) - qout(c,j) - vert_tran_sink(c,j)
             amx(c,j)    = -dqidw0(c,j)
             bmx(c,j)    =  dzmm(c,j)/dtime - dqidw1(c,j) + dqodw1(c,j)
             cmx(c,j)    =  dqodw2(c,j)
@@ -561,7 +618,7 @@ contains
             dqidw1(c,j) = -( hk(c,j-1)*dsmpdw(c,j)   + num*dhkdw(c,j-1))/den
             qout(c,j)   =  0._r8
             dqodw1(c,j) =  0._r8
-            rmx(c,j)    =  qin(c,j) - qout(c,j) - qflx_tran_veg_col(c)*rootr_col(c,j)
+            rmx(c,j)    =  qin(c,j) - qout(c,j) - vert_tran_sink(c,j)
             amx(c,j)    = -dqidw0(c,j)
             bmx(c,j)    =  dzmm(c,j)/dtime - dqidw1(c,j) + dqodw1(c,j)
             cmx(c,j)    =  0._r8
@@ -604,7 +661,7 @@ contains
             dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
             dqodw2(c,j) = -( hk(c,j)*dsmpdw1 + num*dhkdw(c,j))/den
 
-            rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_tran_veg_col(c)*rootr_col(c,j)
+            rmx(c,j) =  qin(c,j) - qout(c,j) - vert_tran_sink(c,j)
             amx(c,j) = -dqidw0(c,j)
             bmx(c,j) =  dzmm(c,j)/dtime - dqidw1(c,j) + dqodw1(c,j)
             cmx(c,j) =  dqodw2(c,j)

@@ -65,6 +65,7 @@ if ( "$COMPARE_BASELINE" == "TRUE" ) then
   echo "setenv BASECMP_CPLHISTFILE $BASELINE_ROOT/$BASECMP_CASE/cpl.hi.nc" >> $CASE.test || exit -1
 else
   echo "unsetenv COMPARE_BASELINE"    >> $CASE.test || exit -1
+  echo "unsetenv BASECMP_NAME"        >> $CASE.test || exit -1
   echo "unsetenv BASECMP_DIR"         >> $CASE.test || exit -1
   echo "unsetenv BASECMP_CPLLOGFILE"  >> $CASE.test || exit -1
   echo "unsetenv BASECMP_CPLHISTFILE" >> $CASE.test || exit -1

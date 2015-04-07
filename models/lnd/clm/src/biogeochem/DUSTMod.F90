@@ -26,14 +26,13 @@ module DUSTMod
   use SoilStateType        , only : soilstate_type
   use CanopyStateType      , only : canopystate_type
   use WaterstateType       , only : waterstate_type
-  use FrictionVelocityType , only : frictionvel_type
+  use FrictionVelocityMod  , only : frictionvel_type
   use LandunitType         , only : lun
   use ColumnType           , only : col
-  use PatchType            , only : pft
+  use PatchType            , only : patch
   !  
   ! !PUBLIC TYPES
   implicit none
-  save
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -184,8 +183,8 @@ contains
   !------------------------------------------------------------------------
   subroutine DustEmission (bounds, &
        num_nolakep, filter_nolakep, &
-       atm2lnd_vars, soilstate_vars, canopystate_vars, waterstate_vars, &
-       frictionvel_vars, dust_vars)
+       atm2lnd_inst, soilstate_inst, canopystate_inst, waterstate_inst, &
+       frictionvel_inst, dust_inst)
     !
     ! !DESCRIPTION: 
     ! Dust mobilization. This code simulates dust mobilization due to wind
@@ -200,14 +199,14 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                      
-    integer                , intent(in)    :: num_nolakep                 ! number of column non-lake points in pft filter
+    integer                , intent(in)    :: num_nolakep                 ! number of column non-lake points in patch filter
     integer                , intent(in)    :: filter_nolakep(num_nolakep) ! patch filter for non-lake points
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
-    type(soilstate_type)   , intent(in)    :: soilstate_vars
-    type(canopystate_type) , intent(in)    :: canopystate_vars
-    type(waterstate_type)  , intent(in)    :: waterstate_vars
-    type(frictionvel_type) , intent(in)    :: frictionvel_vars
-    type(dust_type)        , intent(inout) :: dust_vars
+    type(atm2lnd_type)     , intent(in)    :: atm2lnd_inst
+    type(soilstate_type)   , intent(in)    :: soilstate_inst
+    type(canopystate_type) , intent(in)    :: canopystate_inst
+    type(waterstate_type)  , intent(in)    :: waterstate_inst
+    type(frictionvel_type) , intent(in)    :: frictionvel_inst
+    type(dust_type)        , intent(inout) :: dust_inst
 
     !
     ! !LOCAL VARIABLES
@@ -241,26 +240,26 @@ contains
     !------------------------------------------------------------------------
 
     associate(                                                         & 
-         forc_rho            => atm2lnd_vars%forc_rho_downscaled_col , & ! Input:  [real(r8) (:)   ]  downscaled density (kg/m**3)                                 
+         forc_rho            => atm2lnd_inst%forc_rho_downscaled_col , & ! Input:  [real(r8) (:)   ]  downscaled density (kg/m**3)                                 
          
-         gwc_thr             => soilstate_vars%gwc_thr_col           , & ! Input:  [real(r8) (:)   ]  threshold gravimetric soil moisture based on clay content
-         mss_frc_cly_vld     => soilstate_vars%mss_frc_cly_vld_col   , & ! Input:  [real(r8) (:)   ]  [frc] Mass fraction clay limited to 0.20          
-         watsat              => soilstate_vars%watsat_col            , & ! Input:  [real(r8) (:,:) ]  saturated volumetric soil water                 
+         gwc_thr             => soilstate_inst%gwc_thr_col           , & ! Input:  [real(r8) (:)   ]  threshold gravimetric soil moisture based on clay content
+         mss_frc_cly_vld     => soilstate_inst%mss_frc_cly_vld_col   , & ! Input:  [real(r8) (:)   ]  [frc] Mass fraction clay limited to 0.20          
+         watsat              => soilstate_inst%watsat_col            , & ! Input:  [real(r8) (:,:) ]  saturated volumetric soil water                 
          
-         tlai                => canopystate_vars%tlai_patch          , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index, no burying by snow     
-         tsai                => canopystate_vars%tsai_patch          , & ! Input:  [real(r8) (:)   ]  one-sided stem area index, no burying by snow     
+         tlai                => canopystate_inst%tlai_patch          , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index, no burying by snow     
+         tsai                => canopystate_inst%tsai_patch          , & ! Input:  [real(r8) (:)   ]  one-sided stem area index, no burying by snow     
          
-         frac_sno            => waterstate_vars%frac_sno_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
-         h2osoi_vol          => waterstate_vars%h2osoi_vol_col       , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat)   
-         h2osoi_liq          => waterstate_vars%h2osoi_liq_col       , & ! Input:  [real(r8) (:,:) ]  liquid soil water (kg/m2)                       
-         h2osoi_ice          => waterstate_vars%h2osoi_ice_col       , & ! Input:  [real(r8) (:,:) ]  frozen soil water (kg/m2)                       
+         frac_sno            => waterstate_inst%frac_sno_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
+         h2osoi_vol          => waterstate_inst%h2osoi_vol_col       , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat)   
+         h2osoi_liq          => waterstate_inst%h2osoi_liq_col       , & ! Input:  [real(r8) (:,:) ]  liquid soil water (kg/m2)                       
+         h2osoi_ice          => waterstate_inst%h2osoi_ice_col       , & ! Input:  [real(r8) (:,:) ]  frozen soil water (kg/m2)                       
          
-         fv                  => frictionvel_vars%fv_patch            , & ! Input:  [real(r8) (:)   ]  friction velocity (m/s) (for dust model)          
-         u10                 => frictionvel_vars%u10_patch           , & ! Input:  [real(r8) (:)   ]  10-m wind (m/s) (created for dust model)          
+         fv                  => frictionvel_inst%fv_patch            , & ! Input:  [real(r8) (:)   ]  friction velocity (m/s) (for dust model)          
+         u10                 => frictionvel_inst%u10_patch           , & ! Input:  [real(r8) (:)   ]  10-m wind (m/s) (created for dust model)          
          
-         mbl_bsn_fct         => dust_vars%mbl_bsn_fct_col            , & ! Input:  [real(r8) (:)   ]  basin factor                                      
-         flx_mss_vrt_dst     => dust_vars%flx_mss_vrt_dst_patch      , & ! Output: [real(r8) (:,:) ]  surface dust emission (kg/m**2/s)               
-         flx_mss_vrt_dst_tot => dust_vars%flx_mss_vrt_dst_tot_patch    & ! Output: [real(r8) (:)   ]  total dust flux back to atmosphere (pft)
+         mbl_bsn_fct         => dust_inst%mbl_bsn_fct_col            , & ! Input:  [real(r8) (:)   ]  basin factor                                      
+         flx_mss_vrt_dst     => dust_inst%flx_mss_vrt_dst_patch      , & ! Output: [real(r8) (:,:) ]  surface dust emission (kg/m**2/s)               
+         flx_mss_vrt_dst_tot => dust_inst%flx_mss_vrt_dst_tot_patch    & ! Output: [real(r8) (:)   ]  total dust flux back to atmosphere (pft)
          )
 
       ttlai(bounds%begp : bounds%endp) = 0._r8
@@ -273,12 +272,12 @@ contains
       tlai_lu(bounds%begl : bounds%endl) = spval
       sumwt(bounds%begl : bounds%endl) = 0._r8
       do p = bounds%begp,bounds%endp
-         if (ttlai(p) /= spval .and. pft%active(p) .and. pft%wtlunit(p) /= 0._r8) then
-            c = pft%column(p)
-            l = pft%landunit(p)
+         if (ttlai(p) /= spval .and. patch%active(p) .and. patch%wtlunit(p) /= 0._r8) then
+            c = patch%column(p)
+            l = patch%landunit(p)
             if (sumwt(l) == 0._r8) tlai_lu(l) = 0._r8
-            tlai_lu(l) = tlai_lu(l) + ttlai(p) * pft%wtlunit(p)
-            sumwt(l) = sumwt(l) + pft%wtlunit(p)
+            tlai_lu(l) = tlai_lu(l) + ttlai(p) * patch%wtlunit(p)
+            sumwt(l) = sumwt(l) + patch%wtlunit(p)
          end if
       end do
       found = .false.
@@ -303,8 +302,8 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
-         l = pft%landunit(p)
+         c = patch%column(p)
+         l = patch%landunit(p)
 
          ! the following code from subr. lnd_frc_mbl_get was adapted for lsm use
          ! purpose: return fraction of each gridcell suitable for dust mobilization
@@ -348,9 +347,9 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
-         c = pft%column(p)
-         l = pft%landunit(p)
-         g = pft%gridcell(p)
+         c = patch%column(p)
+         l = patch%landunit(p)
+         g = patch%gridcell(p)
 
          ! only perform the following calculations if lnd_frc_mbl is non-zero 
 
@@ -466,7 +465,7 @@ contains
 
    !------------------------------------------------------------------------
   subroutine DustDryDep (bounds, &
-       atm2lnd_vars, frictionvel_vars, dust_vars)
+       atm2lnd_inst, frictionvel_inst, dust_inst)
     !
     ! !DESCRIPTION: 
     !
@@ -488,9 +487,9 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds 
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
-    type(frictionvel_type) , intent(in)    :: frictionvel_vars
-    type(dust_type)        , intent(inout) :: dust_vars
+    type(atm2lnd_type)     , intent(in)    :: atm2lnd_inst
+    type(frictionvel_type) , intent(in)    :: frictionvel_inst
+    type(dust_type)        , intent(inout) :: dust_inst
     !
     ! !LOCAL VARIABLES
     integer  :: p,c,g,m,n                             ! indices
@@ -510,24 +509,24 @@ contains
     !------------------------------------------------------------------------
 
     associate(                                                   & 
-         forc_pbot =>    atm2lnd_vars%forc_pbot_downscaled_col , & ! Input:  [real(r8)  (:)   ]  atm pressure (Pa)                                 
-         forc_rho  =>    atm2lnd_vars%forc_rho_downscaled_col  , & ! Input:  [real(r8)  (:)   ]  atm density (kg/m**3)                             
-         forc_t    =>    atm2lnd_vars%forc_t_downscaled_col    , & ! Input:  [real(r8)  (:)   ]  atm temperature (K)                               
+         forc_pbot =>    atm2lnd_inst%forc_pbot_downscaled_col , & ! Input:  [real(r8)  (:)   ]  atm pressure (Pa)                                 
+         forc_rho  =>    atm2lnd_inst%forc_rho_downscaled_col  , & ! Input:  [real(r8)  (:)   ]  atm density (kg/m**3)                             
+         forc_t    =>    atm2lnd_inst%forc_t_downscaled_col    , & ! Input:  [real(r8)  (:)   ]  atm temperature (K)                               
          
-         ram1      =>    frictionvel_vars%ram1_patch           , & ! Input:  [real(r8)  (:)   ]  aerodynamical resistance (s/m)                    
-         fv        =>    frictionvel_vars%fv_patch             , & ! Input:  [real(r8)  (:)   ]  friction velocity (m/s)                           
+         ram1      =>    frictionvel_inst%ram1_patch           , & ! Input:  [real(r8)  (:)   ]  aerodynamical resistance (s/m)                    
+         fv        =>    frictionvel_inst%fv_patch             , & ! Input:  [real(r8)  (:)   ]  friction velocity (m/s)                           
          
-         vlc_trb   =>    dust_vars%vlc_trb_patch               , & ! Output:  [real(r8) (:,:) ]  Turbulent deposn velocity (m/s)                 
-         vlc_trb_1 =>    dust_vars%vlc_trb_1_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 1                   
-         vlc_trb_2 =>    dust_vars%vlc_trb_2_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 2                   
-         vlc_trb_3 =>    dust_vars%vlc_trb_3_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 3                   
-         vlc_trb_4 =>    dust_vars%vlc_trb_4_patch               & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 4                   
+         vlc_trb   =>    dust_inst%vlc_trb_patch               , & ! Output:  [real(r8) (:,:) ]  Turbulent deposn velocity (m/s)                 
+         vlc_trb_1 =>    dust_inst%vlc_trb_1_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 1                   
+         vlc_trb_2 =>    dust_inst%vlc_trb_2_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 2                   
+         vlc_trb_3 =>    dust_inst%vlc_trb_3_patch             , & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 3                   
+         vlc_trb_4 =>    dust_inst%vlc_trb_4_patch               & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 4                   
          )
 
       do p = bounds%begp,bounds%endp
-         if (pft%active(p)) then
-            g = pft%gridcell(p)
-            c = pft%column(p)
+         if (patch%active(p)) then
+            g = patch%gridcell(p)
+            c = patch%column(p)
 
             ! from subroutine dst_dps_dry (consider adding sanity checks from line 212)
             ! when code asks to use midlayer density, pressure, temperature,
@@ -555,9 +554,9 @@ contains
 
       do m = 1, ndst
          do p = bounds%begp,bounds%endp
-            if (pft%active(p)) then
-               g = pft%gridcell(p)
-               c = pft%column(p)
+            if (patch%active(p)) then
+               g = patch%gridcell(p)
+               c = patch%column(p)
 
                stk_nbr = vlc_grv(p,m) * fv(p) * fv(p) / (grav * vsc_knm_atm(p))  ![frc] SeP97 p.965
                dff_aer = SHR_CONST_BOLTZ * forc_t(c) * slp_crc(p,m) / &          ![m2 s-1]
@@ -582,7 +581,7 @@ contains
 
       do m = 1, ndst
          do p = bounds%begp,bounds%endp
-            if (pft%active(p)) then
+            if (patch%active(p)) then
                rss_trb = ram1(p) + rss_lmn(p,m) + ram1(p) * rss_lmn(p,m) * vlc_grv(p,m) ![s m-1]
                vlc_trb(p,m) = 1.0_r8 / rss_trb                                          ![m s-1]
             end if
@@ -590,7 +589,7 @@ contains
       end do
 
       do p = bounds%begp,bounds%endp
-         if (pft%active(p)) then
+         if (patch%active(p)) then
             vlc_trb_1(p) = vlc_trb(p,1)
             vlc_trb_2(p) = vlc_trb(p,2)
             vlc_trb_3(p) = vlc_trb(p,3)

@@ -1,4 +1,5 @@
 module surfrdMod
+
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Contains methods for reading in surface data file and determining
@@ -391,9 +392,9 @@ contains
     ! Read the surface dataset and create subgrid weights.
     ! The model's surface dataset recognizes 6 basic land cover types within a grid
     ! cell: lake, wetland, urban, glacier, glacier_mec and vegetated. The vegetated
-    ! portion of the grid cell is comprised of up to [maxpatch_pft] PFTs. These
+    ! portion of the grid cell is comprised of up to [maxpatch_pft] patches. These
     ! subgrid patches are read in explicitly for each grid cell. This is in
-    ! contrast to LSMv1, where the PFTs were built implicitly from biome types.
+    ! contrast to LSMv1, where the patches were built implicitly from biome types.
     !    o real latitude  of grid cell (degrees)
     !    o real longitude of grid cell (degrees)
     !    o integer surface type: 0 = ocean or 1 = land
@@ -412,7 +413,7 @@ contains
     use clm_varctl  , only : create_crop_landunit
     use fileutils   , only : getfil
     use domainMod   , only : domain_type, domain_init, domain_clean
-    use clm_varsur  , only : wt_lunit, topo_glc_mec
+    use clm_instur  , only : wt_lunit, topo_glc_mec
     !
     ! !ARGUMENTS:
     integer,          intent(in) :: begg, endg      
@@ -449,7 +450,7 @@ contains
     call getfil( lfsurdat, locfn, 0 )
     call ncd_pio_openfile (ncid, trim(locfn), 0)
 
-    ! Read in pft mask - this variable is only on the surface dataset - but not
+    ! Read in patch mask - this variable is only on the surface dataset - but not
     ! on the domain dataset
 
     call ncd_io(ncid=ncid, varname= 'PFTDATA_MASK', flag='read', data=ldomain%pftm, &
@@ -536,13 +537,13 @@ contains
   subroutine surfrd_special(begg, endg, ncid, ns)
     !
     ! !DESCRIPTION:
-    ! Determine weight with respect to gridcell of all special "pfts" as well
+    ! Determine weight with respect to gridcell of all special "patches" as well
     ! as soil color and percent sand and clay
     !
     ! !USES:
     use clm_varpar      , only : maxpatch_glcmec, nlevurb
     use landunit_varcon , only : isturb_MIN, isturb_MAX, istdlak, istwet, istice, istice_mec
-    use clm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
+    use clm_instur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
     use UrbanParamsType , only : CheckUrban
     !
     ! !ARGUMENTS:
@@ -583,7 +584,7 @@ contains
 
     call check_dim(ncid, 'nlevsoi', nlevsoifl)
 
-       ! Obtain non-grid surface properties of surface dataset other than percent pft
+       ! Obtain non-grid surface properties of surface dataset other than percent patch
 
     call ncd_io(ncid=ncid, varname='PCT_WETLAND', flag='read', data=pctwet, &
          dim1name=grlnd, readvar=readvar)
@@ -674,7 +675,7 @@ contains
        if (found) exit
     end do
     if ( found ) then
-       write(iulog,*)'surfrd error: PFT cover>100 for nl=',nindx
+       write(iulog,*)'surfrd error: patch cover>100 for nl=',nindx
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
@@ -713,11 +714,11 @@ contains
     use clm_varctl      , only : irrigate
     use clm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
     use clm_varpar      , only : crop_prog
-    use clm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
+    use clm_instur      , only : wt_lunit, wt_nat_patch, wt_cft
     use landunit_varcon , only : istsoil, istcrop
-    use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
-    use pftvarcon       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig
-    use pftvarcon       , only : nscereal, nscerealirrig, nwcereal, nwcerealirrig
+    use pftconMod       , only : nc3crop, nc3irrig, npcropmin
+    use pftconMod       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig
+    use pftconMod       , only : nscereal, nscerealirrig, nwcereal, nwcerealirrig
     !
     ! !ARGUMENTS:
     integer, intent(in) :: begg, endg
@@ -830,8 +831,8 @@ contains
     ! Determine weights for CNDV mode.
     !
     ! !USES:
-    use pftvarcon , only : noveg
-    use clm_varsur, only : wt_nat_patch
+    use pftconMod , only : noveg
+    use clm_instur, only : wt_nat_patch
     !
     ! !ARGUMENTS:
     integer, intent(in) :: begg, endg  
@@ -840,7 +841,7 @@ contains
     character(len=*), parameter :: subname = 'surfrd_veg_dgvm'
     !-----------------------------------------------------------------------
 
-    ! Bare ground gets 100% weight; all other natural PFTs are zeroed out
+    ! Bare ground gets 100% weight; all other natural patches are zeroed out
     wt_nat_patch(begg:endg, :)     = 0._r8
     wt_nat_patch(begg:endg, noveg) = 1._r8
 

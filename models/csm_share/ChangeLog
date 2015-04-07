@@ -1,8 +1,273 @@
 ================================================================================
-SVN $Id: ChangeLog 60112 2014-05-09 20:40:56Z jedwards $
-SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_140509/ChangeLog $
+SVN $Id: ChangeLog 64637 2014-10-22 16:12:06Z muszala $
+SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_141022/ChangeLog $
 ================================================================================
 This file describes what tags were created and why
+===========================
+Originator: muszala
+Date: 2014/10/22
+Model: share
+Version: share3_141022
+One-line summary: change number of streams files from 1000 to 3000
+
+Temporary fix.  Should use Santos' dynamic vector class if nFileMax
+gets any larger.
+
+M       shr/shr_stream_mod.F90
+
+===========================
+Originator: santos
+Date: 2014/10/07
+Model: share
+Version: share3_141007a
+One-line summary: Fix dynamic vector unit test when compiling with XLF.
+
+M       test/unit/dynamic_vector/CMakeLists.txt
+        - Add more CMake hackery to run cpp before the pFUnit preprocessor.
+
+===========================
+Originator: santos
+Date: 2014/10/07
+Model: share
+Version: share3_141007
+One-line summary: Add toString function and dynamic vector templates
+
+A       include/dynamic_vector_procdef.inc
+A       include/dynamic_vector_typedef.inc
+A       include
+        - New dynamic vector template.
+
+A       shr/shr_strconvert_mod.F90
+M       shr/CMakeLists.txt
+        - New module holding the definition of toString for intrinsic
+          types.
+
+M       shr/shr_log_mod.F90
+        - Add shr_log_OOBMsg for creating strings to represent
+          out-of-bounds errors.
+
+D       unit_testers
+D       unit_testers/test_shr_streams.F90
+D       unit_testers/test_shr_sys.F90
+D       unit_testers/test_shr_file.F90
+D       unit_testers/bundle_expected.F90
+D       unit_testers/test_shr_log.F90
+D       unit_testers/test_shr_orb.F90
+D       unit_testers/test_shr_scam.F90
+D       unit_testers/config.h
+D       unit_testers/test_shr_tInterp.F90
+D       unit_testers/test_shr_mpi.F90
+D       unit_testers/make.Macros
+D       unit_testers/run_file_test
+D       unit_testers/Mksrcfiles
+D       unit_testers/new_framework
+D       unit_testers/new_framework/shr_spfn_test
+D       unit_testers/new_framework/shr_spfn_test/test_erf_r4.pf
+D       unit_testers/new_framework/shr_spfn_test/test_erf_r8.pf
+D       unit_testers/new_framework/shr_spfn_test/test_gamma_factorial.pf
+D       unit_testers/new_framework/shr_spfn_test/CMakeLists.txt
+D       unit_testers/new_framework/shr_spfn_test/test_igamma.pf
+D       unit_testers/new_framework/shr_infnan_test
+D       unit_testers/new_framework/shr_infnan_test/test_infnan.F90
+D       unit_testers/new_framework/shr_infnan_test/CMakeLists.txt
+D       unit_testers/new_framework/mock
+D       unit_testers/new_framework/mock/shr_sys_mod.nompi_abortthrows.F90
+D       unit_testers/new_framework/mock/CMakeLists.txt
+D       unit_testers/new_framework/shr_assert_test
+D       unit_testers/new_framework/shr_assert_test/test_assert_array.pf
+D       unit_testers/new_framework/shr_assert_test/test_assert.pf
+D       unit_testers/new_framework/shr_assert_test/test_macro.pf
+D       unit_testers/new_framework/shr_assert_test/test_ndebug.pf
+D       unit_testers/new_framework/shr_assert_test/CMakeLists.txt
+D       unit_testers/new_framework/CMakeLists.txt
+D       unit_testers/nl
+D       unit_testers/nl/ocn.stdin
+D       unit_testers/nl/ice.stdin
+D       unit_testers/nl/atm.stdin
+D       unit_testers/nl/lnd.stdin
+D       unit_testers/nl/cpl.stdin
+D       unit_testers/Mkdepends
+D       unit_testers/test_mod.F90
+D       unit_testers/namelist
+D       unit_testers/run_dshr_bundle_test
+D       unit_testers/Makefile
+A       test/unit/shr_spfn_test/test_erf_r4.pf
+A       test/unit/shr_spfn_test/test_erf_r8.pf
+A       test/unit/shr_spfn_test/test_gamma_factorial.pf
+A       test/unit/shr_spfn_test/CMakeLists.txt
+A       test/unit/shr_spfn_test/test_igamma.pf
+A       test/unit/shr_spfn_test
+A       test/unit/shr_infnan_test/test_infnan.F90
+A       test/unit/shr_infnan_test/CMakeLists.txt
+A       test/unit/shr_infnan_test
+A       test/unit/shr_strconvert_test/test_toString.pf
+A       test/unit/shr_strconvert_test/CMakeLists.txt
+A       test/unit/shr_strconvert_test
+A       test/unit/dynamic_vector/character16_vector_tests.pf.in
+A       test/unit/dynamic_vector/dynamic_vector_integer.F90
+A       test/unit/dynamic_vector/dynamic_vector_int_ptr.F90
+A       test/unit/dynamic_vector/ptr_wrapper.F90
+A       test/unit/dynamic_vector/dynamic_vector_character16.F90
+A       test/unit/dynamic_vector/r8_vector_tests.pf.in
+A       test/unit/dynamic_vector/dynamic_vector_base_tests.inc
+A       test/unit/dynamic_vector/integer_vector_tests.pf.in
+A       test/unit/dynamic_vector/dynamic_vector_r8.F90
+A       test/unit/dynamic_vector/int_ptr_vector_tests.pf.in
+A       test/unit/dynamic_vector/CMakeLists.txt
+A       test/unit/dynamic_vector
+A       test/unit/mock/shr_sys_mod.nompi_abortthrows.F90
+A       test/unit/mock/CMakeLists.txt
+A       test/unit/mock
+A       test/unit/shr_assert_test/test_assert_array.pf
+A       test/unit/shr_assert_test/test_assert.pf
+A       test/unit/shr_assert_test/test_macro.pf
+A       test/unit/shr_assert_test/test_ndebug.pf
+A       test/unit/shr_assert_test/CMakeLists.txt
+A       test/unit/shr_assert_test
+A       test/unit/shr_log_test/test_error_printers.pf
+A       test/unit/shr_log_test/CMakeLists.txt
+A       test/unit/shr_log_test
+A       test/unit/CMakeLists.txt
+A       test/unit
+A       test/old_unit_testers/test_shr_streams.F90
+A       test/old_unit_testers/test_shr_sys.F90
+A       test/old_unit_testers/test_shr_file.F90
+A       test/old_unit_testers/bundle_expected.F90
+A       test/old_unit_testers/test_shr_log.F90
+A       test/old_unit_testers/test_shr_orb.F90
+A       test/old_unit_testers/test_shr_scam.F90
+A       test/old_unit_testers/config.h
+A       test/old_unit_testers/test_shr_mpi.F90
+A       test/old_unit_testers/test_shr_tInterp.F90
+A       test/old_unit_testers/make.Macros
+A       test/old_unit_testers/run_file_test
+A       test/old_unit_testers/Mksrcfiles
+A       test/old_unit_testers/nl/ocn.stdin
+A       test/old_unit_testers/nl/ice.stdin
+A       test/old_unit_testers/nl/atm.stdin
+A       test/old_unit_testers/nl/lnd.stdin
+A       test/old_unit_testers/nl/cpl.stdin
+A       test/old_unit_testers/nl
+A       test/old_unit_testers/Mkdepends
+A       test/old_unit_testers/test_mod.F90
+A       test/old_unit_testers/run_dshr_bundle_test
+A       test/old_unit_testers/namelist
+A       test/old_unit_testers/Makefile
+A       test/old_unit_testers
+A       test
+        - Reorganize tests. New tests are in test/unit, while old ones are
+          in test/old_unit_testers.
+        - Add tests for new code in shr_strconvert_mod, shr_log_mod, and
+          the dynamic vector template.
+
+===========================
+Originator: jedwards
+Date: 2014/10/06
+Model: share
+Version: share3_141006
+One-line summary: Add vector intrinsic calls for intel MKL library
+
+M   shr/shr_vmath_mod.F90
+
+
+===========================
+Originator: erik
+Date: 2014/10/03
+Model: share
+Version: share3_141003
+One-line summary: Add some parameters to shr_cal for month names
+
+Translate month names into month numbers in a derived type
+remove now unused dpm and dpy constants.
+Add some more files to CLM unit test build.
+
+M       shr/CMakeLists.txt
+M       shr/shr_cal_mod.F90
+
+===========================
+Originator: sacks
+Date: 2014/09/26
+Model: share
+Version: share3_140926a
+One-line summary: bring back share3_140925
+
+Oops, I realized that we really DO want to include shr_file_mod, but then want
+to simply stub out the necessary functions from shr_sys_mod. (We already need a
+stub for shr_sys_mod for the CLM unit test build anyway.)
+
+So here I bring back shr_file_mod.F90 in the unit test build.
+
+M       shr/CMakeLists.txt
+
+===========================
+Originator: sacks
+Date: 2014/09/26
+Model: share
+Version: share3_140926
+One-line summary: back out share3_140925
+
+I realized that shr_file_mod pulls in shr_sys_mod, which I don't want. I'm not
+sure why I thought this worked originally. So I'm reverting to the version prior
+to share3_140925.
+
+M       shr/CMakeLists.txt
+
+===========================
+Originator: sacks
+Date: 2014/09/25
+Model: share
+Version: share3_140925
+One-line summary: add shr_file_mod.F90 to unit test build
+
+This is needed for the CLM unit test build
+
+M       shr/CMakeLists.txt
+
+===========================
+Originator: muszala
+Date: 2014/07/23
+Model: share
+Version: share3_140723
+One-line summary: add shr_string_listCreateField function in support of lai streams.
+
+M       shr/shr_string_mod.F90
+
+===========================
+Originator: tcraig
+Date: 2014/06/26
+Model: share
+Version: share3_140626
+One-line summary: add shr_const_isspval and masking to avect_vecmult
+
+M       shr/mct_mod.F90
+M       shr/shr_const_mod.F90
+
+===========================
+Originator: santos
+Date: 2014/05/16
+Model: share
+Version: share3_140516
+One-line summary: New shr_sys_backtrace subroutine added, shr_sys_abort update
+
+M       shr/shr_log_mod.F90
+         - Use "output_unit" instead of the traditional "6" as the default
+           for shr_log_Unit.
+
+M       shr/shr_orb_mod.F90
+         - Remove useless URL line that often clutters diffs.
+
+M       shr/shr_sys_mod.F90
+         - Add shr_sys_backtrace, which prints a backtrace to standard
+           error if the compiler is known to support it.
+         - Make some CPP macro logic a little more uniform.
+         - Use intrinsic parameters "output_unit" and "error_unit" in
+           preference to "6" and "0".
+         - Use NAG's f90_unix_* modules to get chdir, abort, and sleep.
+         - Bring in changes to abort message printing from the
+           "abstract_error" error-handling branch.
+         - The flush statement is now supported by all compilers, so make
+           shr_sys_flush do nothing but use it.
+
 ===========================
 Originator: jedwards
 Date: 2014/05/09

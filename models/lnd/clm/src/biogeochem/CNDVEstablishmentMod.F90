@@ -6,19 +6,19 @@ module CNDVEstablishmentMod
   ! Called once per year
   !
   ! !USES:
-  use shr_kind_mod      , only : r8 => shr_kind_r8
-  use decompMod         , only : bounds_type
-  use EcophysConType    , only : ecophyscon
-  use atm2lndType       , only : atm2lnd_type
-  use CNDVType          , only : dgvs_type, dgv_ecophyscon
-  use CNCarbonStateType , only : carbonstate_type
-  use CNCarbonFluxType  , only : carbonflux_type
-  use LandunitType      , only : lun                
-  use PatchType         , only : pft                
+  use shr_kind_mod         , only : r8 => shr_kind_r8
+  use decompMod            , only : bounds_type
+  use pftconMod            , only : pftcon
+  use atm2lndType          , only : atm2lnd_type
+  use CNDVType             , only : dgvs_type, dgv_ecophyscon
+  use CNVegCarbonStateType , only : cnveg_carbonstate_type
+  use CNVegCarbonFluxType  , only : cnveg_carbonflux_type
+  use CNVegcarbonfluxType  , only : cnveg_carbonflux_type
+  use LandunitType         , only : lun                
+  use PatchType            , only : patch                
   !
   ! !PUBLIC TYPES:
   implicit none
-  save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: Establishment
@@ -28,26 +28,25 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Establishment(bounds, &
-       atm2lnd_vars, carbonflux_vars, carbonstate_vars, dgvs_vars)
+       atm2lnd_inst, cnveg_carbonflux_inst, cnveg_carbonstate_inst, dgvs_inst)
     !
     ! !DESCRIPTION:
-    ! Calculates establishment of new patches
-    ! Called once per year
+    ! Calculates establishment of new patches - called once per year
     !
     ! !USES:
     use shr_const_mod   , only : SHR_CONST_CDAY, SHR_CONST_PI, SHR_CONST_TKFRZ
     use shr_log_mod     , only : errMsg => shr_log_errMsg
     use landunit_varcon , only : istsoil
     use clm_varctl      , only : iulog
-    use pftvarcon       , only : noveg, nc3_arctic_grass
+    use pftconMod       , only : noveg, nc3_arctic_grass
     use abortutils      , only : endrun
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds  
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
-    type(dgvs_type)        , intent(inout) :: dgvs_vars
+    type(bounds_type)            , intent(in)    :: bounds  
+    type(atm2lnd_type)           , intent(in)    :: atm2lnd_inst
+    type(cnveg_carbonflux_type)  , intent(in)    :: cnveg_carbonflux_inst
+    type(cnveg_carbonstate_type) , intent(inout) :: cnveg_carbonstate_inst
+    type(dgvs_type)              , intent(inout) :: dgvs_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: g,l,p,m                                 ! indices
@@ -80,7 +79,7 @@ contains
     ! parameters
     real(r8), parameter :: ramp_agddtw = 300.0
 
-    ! minimum individual density for persistence of PFT (indiv/m2)
+    ! minimum individual density for persistence of PATCH (indiv/m2)
     real(r8), parameter :: nind_min = 1.0e-10_r8
 
     ! minimum precip. for establishment (mm/s)
@@ -90,40 +89,40 @@ contains
     real(r8), parameter :: estab_max = 0.24_r8
     !-----------------------------------------------------------------------
 
-    associate(                                                       & 
-         ivt            =>    pft%itype                            , & ! Input:  [integer  (:) ]  patch vegetation type                                
-         slatop         =>    ecophyscon%slatop                    , & ! Input:  [real(r8) (:) ]  specific leaf area at top of canopy, projected area basis [m^2/gC]
-         dsladlai       =>    ecophyscon%dsladlai                  , & ! Input:  [real(r8) (:) ]  dSLA/dLAI, projected area basis [m^2/gC]           
-         dwood          =>    ecophyscon%dwood                     , & ! Input:  [real(r8) (:) ]  ecophys const - wood density (gC/m3)              
-         woody          =>    ecophyscon%woody                     , & ! Input:  [real(r8) (:) ]  ecophys const - woody pft or not                  
+    associate(                                                             & 
+         ivt            =>    patch%itype                                  , & ! Input:  [integer  (:) ]  patch vegetation type                                
 
-         crownarea_max  =>    dgv_ecophyscon%crownarea_max         , & ! Input:  [real(r8) (:) ]  ecophys const - tree maximum crown area [m2]      
-         twmax          =>    dgv_ecophyscon%twmax                 , & ! Input:  [real(r8) (:) ]  ecophys const - upper limit of temperature of the warmest month
-         reinickerp     =>    dgv_ecophyscon%reinickerp            , & ! Input:  [real(r8) (:) ]  ecophys const - parameter in allometric equation  
-         allom1         =>    dgv_ecophyscon%allom1                , & ! Input:  [real(r8) (:) ]  ecophys const - parameter in allometric           
-         tcmax          =>    dgv_ecophyscon%tcmax                 , & ! Input:  [real(r8) (:) ]  ecophys const - maximum coldest monthly mean temperature
-         tcmin          =>    dgv_ecophyscon%tcmin                 , & ! Input:  [real(r8) (:) ]  ecophys const - minimum coldest monthly mean temperature
-         gddmin         =>    dgv_ecophyscon%gddmin                , & ! Input:  [real(r8) (:) ]  ecophys const - minimum growing degree days (at or above 5 C)
+         slatop         =>    pftcon%slatop                              , & ! Input:  specific leaf area at top of canopy, projected area basis [m^2/gC]
+         dsladlai       =>    pftcon%dsladlai                            , & ! Input:  dSLA/dLAI, projected area basis [m^2/gC]           
+         dwood          =>    pftcon%dwood                               , & ! Input:  wood density (gC/m3)              
+         woody          =>    pftcon%woody                               , & ! Input:  woody patch or not                  
 
-         prec365        =>    atm2lnd_vars%prec365_patch           , & ! Input:  [real(r8) (:) ]  365-day running mean of tot. precipitation        
+         crownarea_max  =>    dgv_ecophyscon%crownarea_max               , & ! Input:  [real(r8) (:) ]  ecophys const - tree maximum crown area [m2]      
+         twmax          =>    dgv_ecophyscon%twmax                       , & ! Input:  [real(r8) (:) ]  ecophys const - upper limit of temperature of the warmest month
+         reinickerp     =>    dgv_ecophyscon%reinickerp                  , & ! Input:  [real(r8) (:) ]  ecophys const - parameter in allometric equation  
+         allom1         =>    dgv_ecophyscon%allom1                      , & ! Input:  [real(r8) (:) ]  ecophys const - parameter in allometric           
+         tcmax          =>    dgv_ecophyscon%tcmax                       , & ! Input:  [real(r8) (:) ]  ecophys const - maximum coldest monthly mean temperature
+         tcmin          =>    dgv_ecophyscon%tcmin                       , & ! Input:  [real(r8) (:) ]  ecophys const - minimum coldest monthly mean temperature
+         gddmin         =>    dgv_ecophyscon%gddmin                      , & ! Input:  [real(r8) (:) ]  ecophys const - minimum growing degree days (at or above 5 C)
 
-         agddtw         =>    dgvs_vars%agddtw_patch               , & ! Input:  [real(r8) (:) ]  accumulated growing degree days above twmax       
+         prec365        =>    atm2lnd_inst%prec365_patch                 , & ! Input:  [real(r8) (:) ]  365-day running mean of tot. precipitation        
 
-         annsum_npp     =>    carbonflux_vars%annsum_npp_patch     , & ! Input:  [real(r8) (:) ]  annual sum NPP (gC/m2/yr)                         
-         annsum_litfall =>    carbonflux_vars%annsum_litfall_patch , & ! Input:  [real(r8) (:) ]  annual sum litfall (gC/m2/yr)                     
+         agddtw         =>    dgvs_inst%agddtw_patch                     , & ! Input:  [real(r8) (:) ]  accumulated growing degree days above twmax       
+         agdd20         =>    dgvs_inst%agdd20_patch                     , & ! Input:  [real(r8) (:) ]  20-yr running mean of agdd                        
+         tmomin20       =>    dgvs_inst%tmomin20_patch                   , & ! Input:  [real(r8) (:) ]  20-yr running mean of tmomin                      
+         pftmayexist    =>    dgvs_inst%pftmayexist_patch                , & ! Input:  [logical  (:) ]  exclude seasonal decid patches from tropics [1=true, 0=false]
+         present        =>    dgvs_inst%present_patch                    , & ! Output: [logical  (:) ]  true=> PATCH present in patch                        
+         nind           =>    dgvs_inst%nind_patch                       , & ! Output: [real(r8) (:) ]  number of individuals (#/m**2)                    
+         fpcgrid        =>    dgvs_inst%fpcgrid_patch                    , & ! Output: [real(r8) (:) ]  foliar projective cover on gridcell (fraction)    
+         crownarea      =>    dgvs_inst%crownarea_patch                  , & ! Output: [real(r8) (:) ]  area that each individual tree takes up (m^2)     
+         greffic        =>    dgvs_inst%greffic_patch                    , & ! Output: [real(r8) (:) ]  lpj's growth efficiency                           
+         heatstress     =>    dgvs_inst%heatstress_patch                 , & ! Output: [real(r8) (:) ]                                                    
 
-         agdd20         =>    dgvs_vars%agdd20_patch               , & ! Input:  [real(r8) (:) ]  20-yr running mean of agdd                        
-         tmomin20       =>    dgvs_vars%tmomin20_patch             , & ! Input:  [real(r8) (:) ]  20-yr running mean of tmomin                      
-         pftmayexist    =>    dgvs_vars%pftmayexist_patch          , & ! Input:  [logical  (:) ]  exclude seasonal decid patches from tropics [1=true, 0=false]
-         present        =>    dgvs_vars%present_patch              , & ! Output: [logical  (:) ]  true=> PFT present in patch                        
-         nind           =>    dgvs_vars%nind_patch                 , & ! Output: [real(r8) (:) ]  number of individuals (#/m**2)                    
-         fpcgrid        =>    dgvs_vars%fpcgrid_patch              , & ! Output: [real(r8) (:) ]  foliar projective cover on gridcell (fraction)    
-         crownarea      =>    dgvs_vars%crownarea_patch            , & ! Output: [real(r8) (:) ]  area that each individual tree takes up (m^2)     
-         greffic        =>    dgvs_vars%greffic_patch              , & ! Output: [real(r8) (:) ]  lpj's growth efficiency                           
-         heatstress     =>    dgvs_vars%heatstress_patch           , & ! Output: [real(r8) (:) ]                                                    
+         annsum_npp     =>    cnveg_carbonflux_inst%annsum_npp_patch     , & ! Input:  [real(r8) (:) ]  annual sum NPP (gC/m2/yr)                         
+         annsum_litfall =>    cnveg_carbonflux_inst%annsum_litfall_patch , & ! Input:  [real(r8) (:) ]  annual sum litfall (gC/m2/yr)                     
 
-         deadstemc      =>    carbonstate_vars%deadstemc_patch     , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
-         leafcmax       =>    carbonstate_vars%leafcmax_patch        & ! Output: [real(r8) (:) ]  (gC/m2) ann max leaf C                            
+         deadstemc      =>    cnveg_carbonstate_inst%deadstemc_patch     , & ! Input:  [real(r8) (:) ]  (gC/m2) dead stem C                               
+         leafcmax       =>    cnveg_carbonstate_inst%leafcmax_patch        & ! Output: [real(r8) (:) ]  (gC/m2) ann max leaf C                            
          )
 
       ! **********************************************************************
@@ -132,7 +131,7 @@ contains
       ! temperature and growing degree days (5 degree base).
       ! For SURVIVAL, coldest month temperature and GDD should be
       ! at least as high as PFT-specific limits.
-      ! For REGENERATION, PFT must be able to survive AND coldest month
+      ! For REGENERATION, PATCH must be able to survive AND coldest month
       ! temperature should be no higher than a PFT-specific limit.
       ! **********************************************************************
       
@@ -149,7 +148,7 @@ contains
       end do
 
       do p = bounds%begp,bounds%endp
-         ! Set the presence of pft for this gridcell
+         ! Set the presence of patch for this gridcell
 
          if (nind(p) == 0._r8) present(p) = .false.
          if (.not. present(p)) then
@@ -165,7 +164,7 @@ contains
       ! Determine present, survive, estab.  Note: Even if tmomin20>tcmax, crops
       ! and 2nd boreal summergreen tree cannot exist (see
       ! EcosystemDynini) because this model cannot simulate such patches, yet.
-      ! Note - agddtw is only defined at the pft level and has now been moved
+      ! Note - agddtw is only defined at the patch level and has now been moved
       ! to an if-statement below to determine establishment of boreal trees
 
       do p = bounds%begp,bounds%endp
@@ -185,9 +184,9 @@ contains
       end do
 
       do p = bounds%begp,bounds%endp
-         l = pft%landunit(p)
+         l = patch%landunit(p)
 
-         ! Case 1 -- pft ceases to exist -kill patches not adapted to current climate
+         ! Case 1 -- patch ceases to exist -kill patches not adapted to current climate
 
          if (present(p) .and. (.not. survive(p) .or. nind(p)<nind_min)) then
             present(p) = .false.
@@ -195,7 +194,7 @@ contains
             nind(p) = 0._r8
          end if
 
-         ! Case 2 -- pft begins to exist - introduce newly "adapted" patches
+         ! Case 2 -- patch begins to exist - introduce newly "adapted" patches
 
          if (lun%itype(l) == istsoil) then
             if (.not. present(p) .and. prec365(p) >= prec_min_estab .and. estab(p)) then
@@ -237,7 +236,7 @@ contains
       ! Calculate total woody FPC and number of woody Patches present and able to establish
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = patch%gridcell(p)
          if (present(p)) then
             if (woody(ivt(p)) == 1._r8) then
                fpc_tree_total(g) = fpc_tree_total(g) + fpcgrid(p)
@@ -251,7 +250,7 @@ contains
       ! Above grid-level establishment counters are required for the next steps.
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = patch%gridcell(p)
 
          if (present(p) .and. woody(ivt(p)) == 1._r8 .and. estab(p)) then
 
@@ -262,7 +261,7 @@ contains
             estab_rate = estab_max * (1._r8-exp(5._r8*(fpc_tree_total(g)-1._r8))) / real(npft_estab(g))
 
             ! Calculate grid-level establishment rate per woody PFT
-            ! Space available for woody PFT establishment is fraction of grid cell
+            ! Space available for woody PATCH establishment is fraction of grid cell
             ! not currently occupied by woody Patches
 
             estab_grid = estab_rate * (1._r8-fpc_tree_total(g))
@@ -273,12 +272,12 @@ contains
 
             !slevis: lpj's lm_ind was the max leaf mass for the year;
             !now lm_ind is the max leaf mass for the year calculated in CNFire
-            !except when a pft is newly established (nind==0); then lm_ind
+            !except when a patch is newly established (nind==0); then lm_ind
             !is assigned a leafcmax above
 
             lm_ind = leafcmax(p) * fpcgrid(p) / nind(p) ! nind>0 for sure
             if (fpcgrid(p) > 0._r8 .and. nind(p) > 0._r8) then
-               stocking = nind(p)/fpcgrid(p) !#ind/m2 nat veg area -> #ind/m2 pft area
+               stocking = nind(p)/fpcgrid(p) !#ind/m2 nat veg area -> #ind/m2 patch area
                ! stemdiam derived here from cn's formula for htop found in
                ! CNVegStructUpdate and cn's assumption stemdiam=2*htop/taper
                ! this derivation neglects upper htop limit enforced elsewhere
@@ -315,7 +314,7 @@ contains
       ! Adjustments- don't allow trees to exceed 95% of vegetated landunit
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = patch%gridcell(p)
          if (fpc_total_new(g) > 0.95_r8) then
             if (woody(ivt(p)) == 1._r8 .and. present(p)) then
                nind(p) = nind(p) * 0.95_r8 / fpc_total_new(g)
@@ -331,7 +330,7 @@ contains
       ! Section for grasses. Grasses can establish in non-vegetated areas
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = patch%gridcell(p)
          if (present(p) .and. woody(ivt(p)) < 1._r8) then
             if (leafcmax(p) <= 0._r8 .or. fpcgrid(p) <= 0._r8 ) then
                present(p) = .false.
@@ -356,7 +355,7 @@ contains
       ! Adjustment of fpc_total > 1 due to grasses (ivt >= nc3_arctic_grass)
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = patch%gridcell(p)
 
          if (fpc_total(g) > 1._r8) then
             if (ivt(p) >= nc3_arctic_grass .and. fpcgrid(p) > 0._r8) then
@@ -376,7 +375,7 @@ contains
          end if
 
          ! Set the fpcgrid for bare ground if there is bare ground in
-         ! vegetated landunit and pft is bare ground so that everything
+         ! vegetated landunit and patch is bare ground so that everything
          ! can add up to one.
 
          if (fpc_total(g) < 1._r8 .and. ivt(p) == noveg) then
@@ -390,7 +389,7 @@ contains
       ! Ultimately may wish to place in separate subroutine...
 
       do p = bounds%begp,bounds%endp
-         g = pft%gridcell(p)
+         g = patch%gridcell(p)
 
          ! Stress mortality from lpj's subr Mortality
 

@@ -18,12 +18,12 @@ module lnd2atmMod
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
   use ch4Mod               , only : ch4_type
-  use CNCarbonFluxType     , only : carbonflux_type
+  use CNVegCarbonFluxType  , only : cnveg_carbonflux_type
   use DUSTMod              , only : dust_type
   use DryDepVelocity       , only : drydepvel_type
   use VocEmissionMod       , only : vocemis_type
   use EnergyFluxType       , only : energyflux_type
-  use FrictionVelocityType , only : frictionvel_type
+  use FrictionVelocityMod  , only : frictionvel_type
   use SolarAbsorbedType    , only : solarabs_type
   use SurfaceAlbedoType    , only : surfalb_type
   use TemperatureType      , only : temperature_type
@@ -34,7 +34,6 @@ module lnd2atmMod
   ! !PUBLIC TYPES:
   implicit none
   private
-  save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: lnd2atm
@@ -45,10 +44,10 @@ contains
 
   !------------------------------------------------------------------------
   subroutine lnd2atm_minimal(bounds, &
-      waterstate_vars, surfalb_vars, energyflux_vars, lnd2atm_vars)
+      waterstate_inst, surfalb_inst, energyflux_inst, lnd2atm_inst)
     !
     ! !DESCRIPTION:
-    ! Compute clm_l2a_vars component of gridcell derived type. This routine computes
+    ! Compute clm_l2a_inst component of gridcell derived type. This routine computes
     ! the bare minimum of components necessary to get the first step of a
     ! run started.
     !
@@ -57,10 +56,10 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds  
-    type(waterstate_type) , intent(in)    :: waterstate_vars
-    type(surfalb_type)    , intent(in)    :: surfalb_vars
-    type(energyflux_type) , intent(in)    :: energyflux_vars
-    type(lnd2atm_type)    , intent(inout) :: lnd2atm_vars 
+    type(waterstate_type) , intent(in)    :: waterstate_inst
+    type(surfalb_type)    , intent(in)    :: surfalb_inst
+    type(energyflux_type) , intent(in)    :: energyflux_inst
+    type(lnd2atm_type)    , intent(inout) :: lnd2atm_inst 
     !
     ! !LOCAL VARIABLES:
     integer :: g                                    ! index
@@ -72,69 +71,69 @@ contains
     !------------------------------------------------------------------------
 
     call c2g(bounds, &
-         waterstate_vars%h2osno_col (bounds%begc:bounds%endc), &
-         lnd2atm_vars%h2osno_grc    (bounds%begg:bounds%endg), &
+         waterstate_inst%h2osno_col (bounds%begc:bounds%endc), &
+         lnd2atm_inst%h2osno_grc    (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     do g = bounds%begg,bounds%endg
-       lnd2atm_vars%h2osno_grc(g) = lnd2atm_vars%h2osno_grc(g)/1000._r8
+       lnd2atm_inst%h2osno_grc(g) = lnd2atm_inst%h2osno_grc(g)/1000._r8
     end do
 
     call c2g(bounds, nlevgrnd, &
-         waterstate_vars%h2osoi_vol_col (bounds%begc:bounds%endc, :), &
-         lnd2atm_vars%h2osoi_vol_grc    (bounds%begg:bounds%endg, :), &
+         waterstate_inst%h2osoi_vol_col (bounds%begc:bounds%endc, :), &
+         lnd2atm_inst%h2osoi_vol_grc    (bounds%begg:bounds%endg, :), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     call p2g(bounds, numrad, &
-         surfalb_vars%albd_patch (bounds%begp:bounds%endp, :), &
-         lnd2atm_vars%albd_grc   (bounds%begg:bounds%endg, :), &
+         surfalb_inst%albd_patch (bounds%begp:bounds%endp, :), &
+         lnd2atm_inst%albd_grc   (bounds%begg:bounds%endg, :), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     call p2g(bounds, numrad, &
-         surfalb_vars%albi_patch (bounds%begp:bounds%endp, :), &
-         lnd2atm_vars%albi_grc   (bounds%begg:bounds%endg, :), &
+         surfalb_inst%albi_patch (bounds%begp:bounds%endp, :), &
+         lnd2atm_inst%albi_grc   (bounds%begg:bounds%endg, :), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         energyflux_vars%eflx_lwrad_out_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%eflx_lwrad_out_grc      (bounds%begg:bounds%endg), &
+         energyflux_inst%eflx_lwrad_out_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%eflx_lwrad_out_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     do g = bounds%begg,bounds%endg
-       lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(lnd2atm_vars%eflx_lwrad_out_grc(g)/sb))
+       lnd2atm_inst%t_rad_grc(g) = sqrt(sqrt(lnd2atm_inst%eflx_lwrad_out_grc(g)/sb))
     end do
 
   end subroutine lnd2atm_minimal
 
   !------------------------------------------------------------------------
   subroutine lnd2atm(bounds, &
-       atm2lnd_vars, surfalb_vars, temperature_vars, frictionvel_vars, &
-       waterstate_vars, waterflux_vars, energyflux_vars, &
-       solarabs_vars, carbonflux_vars, drydepvel_vars, &
-       vocemis_vars, dust_vars, ch4_vars, lnd2atm_vars) 
+       atm2lnd_inst, surfalb_inst, temperature_inst, frictionvel_inst, &
+       waterstate_inst, waterflux_inst, energyflux_inst,               &
+       solarabs_inst, cnveg_carbonflux_inst, drydepvel_inst,  &
+       vocemis_inst, dust_inst, ch4_inst, lnd2atm_inst) 
     !
     ! !DESCRIPTION:
-    ! Compute lnd2atm_vars component of gridcell derived type
+    ! Compute lnd2atm_inst component of gridcell derived type
     !
     ! !USES:
     use ch4varcon  , only : ch4offline
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)     :: bounds  
-    type(atm2lnd_type)     , intent(in)     :: atm2lnd_vars
-    type(surfalb_type)     , intent(in)     :: surfalb_vars
-    type(temperature_type) , intent(in)     :: temperature_vars
-    type(frictionvel_type) , intent(in)     :: frictionvel_vars
-    type(waterstate_type)  , intent(in)     :: waterstate_vars
-    type(waterflux_type)   , intent(in)     :: waterflux_vars
-    type(energyflux_type)  , intent(in)     :: energyflux_vars
-    type(solarabs_type)    , intent(in)     :: solarabs_vars
-    type(carbonflux_type)  , intent(in)     :: carbonflux_vars
-    type(drydepvel_type)   , intent(in)     :: drydepvel_vars
-    type(vocemis_type)     , intent(in)     :: vocemis_vars
-    type(dust_type)        , intent(in)     :: dust_vars
-    type(ch4_type)         , intent(in)     :: ch4_vars
-    type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars 
+    type(bounds_type)           , intent(in)    :: bounds  
+    type(atm2lnd_type)          , intent(in)    :: atm2lnd_inst
+    type(surfalb_type)          , intent(in)    :: surfalb_inst
+    type(temperature_type)      , intent(in)    :: temperature_inst
+    type(frictionvel_type)      , intent(in)    :: frictionvel_inst
+    type(waterstate_type)       , intent(inout) :: waterstate_inst
+    type(waterflux_type)        , intent(in)    :: waterflux_inst
+    type(energyflux_type)       , intent(in)    :: energyflux_inst
+    type(solarabs_type)         , intent(in)    :: solarabs_inst
+    type(cnveg_carbonflux_type) , intent(in)    :: cnveg_carbonflux_inst
+    type(drydepvel_type)        , intent(in)    :: drydepvel_inst
+    type(vocemis_type)          , intent(in)    :: vocemis_inst
+    type(dust_type)             , intent(in)    :: dust_inst
+    type(ch4_type)              , intent(in)    :: ch4_inst
+    type(lnd2atm_type)          , intent(inout) :: lnd2atm_inst 
     !
     ! !LOCAL VARIABLES:
     integer :: g             ! index
@@ -151,71 +150,71 @@ contains
     
     ! First, compute the "minimal" set of fields.
     call lnd2atm_minimal(bounds, &
-         waterstate_vars, surfalb_vars, energyflux_vars, lnd2atm_vars)
+         waterstate_inst, surfalb_inst, energyflux_inst, lnd2atm_inst)
 
     call p2g(bounds, &
-         temperature_vars%t_ref2m_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%t_ref2m_grc       (bounds%begg:bounds%endg), &
+         temperature_inst%t_ref2m_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%t_ref2m_grc       (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         waterstate_vars%q_ref2m_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%q_ref2m_grc      (bounds%begg:bounds%endg), &
+         waterstate_inst%q_ref2m_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%q_ref2m_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         frictionvel_vars%u10_clm_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%u_ref10m_grc      (bounds%begg:bounds%endg), &
+         frictionvel_inst%u10_clm_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%u_ref10m_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         energyflux_vars%taux_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%taux_grc      (bounds%begg:bounds%endg), &
+         energyflux_inst%taux_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%taux_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         energyflux_vars%tauy_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%tauy_grc      (bounds%begg:bounds%endg), &
+         energyflux_inst%tauy_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%tauy_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         waterflux_vars%qflx_evap_tot_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%qflx_evap_tot_grc     (bounds%begg:bounds%endg), &
+         waterflux_inst%qflx_evap_tot_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%qflx_evap_tot_grc     (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         solarabs_vars%fsa_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%fsa_grc    (bounds%begg:bounds%endg), &
+         solarabs_inst%fsa_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%fsa_grc    (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         frictionvel_vars%fv_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%fv_grc       (bounds%begg:bounds%endg), &
+         frictionvel_inst%fv_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%fv_grc       (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         frictionvel_vars%ram1_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%ram1_grc       (bounds%begg:bounds%endg), &
+         frictionvel_inst%ram1_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%ram1_grc       (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g( bounds, &
-         energyflux_vars%eflx_sh_tot_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%eflx_sh_tot_grc      (bounds%begg:bounds%endg), &
+         energyflux_inst%eflx_sh_tot_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%eflx_sh_tot_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity',c2l_scale_type='urbanf',l2g_scale_type='unity')
     do g = bounds%begg, bounds%endg
-       lnd2atm_vars%eflx_sh_tot_grc(g) =  lnd2atm_vars%eflx_sh_tot_grc(g) - &
-            energyflux_vars%eflx_dynbal_grc(g) 
+       lnd2atm_inst%eflx_sh_tot_grc(g) =  lnd2atm_inst%eflx_sh_tot_grc(g) - &
+            energyflux_inst%eflx_dynbal_grc(g) 
     enddo
 
     call p2g(bounds, &
-         energyflux_vars%eflx_lh_tot_patch (bounds%begp:bounds%endp), &
-         lnd2atm_vars%eflx_lh_tot_grc      (bounds%begg:bounds%endg), &
+         energyflux_inst%eflx_lh_tot_patch (bounds%begp:bounds%endp), &
+         lnd2atm_inst%eflx_lh_tot_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     if (use_cn) then
        call c2g(bounds, &
-            carbonflux_vars%nee_col(bounds%begc:bounds%endc), &
-            lnd2atm_vars%nee_grc   (bounds%begg:bounds%endg), &
+            cnveg_carbonflux_inst%nee_col(bounds%begc:bounds%endc), &
+            lnd2atm_inst%nee_grc         (bounds%begg:bounds%endg), &
             c2l_scale_type= 'unity', l2g_scale_type='unity')
 
        if (use_lch4) then
@@ -223,49 +222,49 @@ contains
              ! Adjust flux of CO2 by the net conversion of mineralizing C to CH4
              do g = bounds%begg,bounds%endg
                 ! nem is in g C/m2/sec
-                lnd2atm_vars%nee_grc(g) = lnd2atm_vars%nee_grc(g) + lnd2atm_vars%nem_grc(g) 
+                lnd2atm_inst%nee_grc(g) = lnd2atm_inst%nee_grc(g) + lnd2atm_inst%nem_grc(g) 
              end do
           end if
        end if
 
        ! Convert from gC/m2/s to kgCO2/m2/s
        do g = bounds%begg,bounds%endg
-          lnd2atm_vars%nee_grc(g) = lnd2atm_vars%nee_grc(g)*convertgC2kgCO2
+          lnd2atm_inst%nee_grc(g) = lnd2atm_inst%nee_grc(g)*convertgC2kgCO2
        end do
     else
        do g = bounds%begg,bounds%endg
-          lnd2atm_vars%nee_grc(g) = 0._r8
+          lnd2atm_inst%nee_grc(g) = 0._r8
        end do
     end if
 
     ! drydepvel
     if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
        call p2g(bounds, n_drydep, &
-            drydepvel_vars%velocity_patch (bounds%begp:bounds%endp, :), &
-            lnd2atm_vars%ddvel_grc        (bounds%begg:bounds%endg, :), &
+            drydepvel_inst%velocity_patch (bounds%begp:bounds%endp, :), &
+            lnd2atm_inst%ddvel_grc        (bounds%begg:bounds%endg, :), &
             p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
     endif
 
     ! voc emission flux
     if (use_voc .and. shr_megan_mechcomps_n>0) then
        call p2g(bounds, shr_megan_mechcomps_n, &
-            vocemis_vars%vocflx_patch(bounds%begp:bounds%endp,:), &
-            lnd2atm_vars%flxvoc_grc  (bounds%begg:bounds%endg,:), &
+            vocemis_inst%vocflx_patch(bounds%begp:bounds%endp,:), &
+            lnd2atm_inst%flxvoc_grc  (bounds%begg:bounds%endg,:), &
             p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
     end if
 
     ! dust emission flux
     call p2g(bounds, ndst, &
-         dust_vars%flx_mss_vrt_dst_patch(bounds%begp:bounds%endp, :), &
-         lnd2atm_vars%flxdst_grc        (bounds%begg:bounds%endg, :), &
+         dust_inst%flx_mss_vrt_dst_patch(bounds%begp:bounds%endp, :), &
+         lnd2atm_inst%flxdst_grc        (bounds%begg:bounds%endg, :), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
 
     ! ch4 flux
     if (use_lch4) then
        call c2g( bounds,     &
-            ch4_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
-            lnd2atm_vars%flux_ch4_grc      (bounds%begg:bounds%endg), &
+            ch4_inst%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
+            lnd2atm_inst%flux_ch4_grc      (bounds%begg:bounds%endg), &
             c2l_scale_type= 'unity', l2g_scale_type='unity' )
     end if
 
@@ -274,19 +273,19 @@ contains
     !----------------------------------------------------
 
     call c2g( bounds, &
-         waterflux_vars%qflx_runoff_col (bounds%begc:bounds%endc), &
-         lnd2atm_vars%qflx_rofliq_grc   (bounds%begg:bounds%endg), &
+         waterflux_inst%qflx_runoff_col (bounds%begc:bounds%endc), &
+         lnd2atm_inst%qflx_rofliq_grc   (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
     do g = bounds%begg, bounds%endg
-       lnd2atm_vars%qflx_rofliq_grc(g) = lnd2atm_vars%qflx_rofliq_grc(g) - waterflux_vars%qflx_liq_dynbal_grc(g)
+       lnd2atm_inst%qflx_rofliq_grc(g) = lnd2atm_inst%qflx_rofliq_grc(g) - waterflux_inst%qflx_liq_dynbal_grc(g)
     enddo
 
     call c2g( bounds, &
-         waterflux_vars%qflx_snwcp_ice_col(bounds%begc:bounds%endc),  &
-         lnd2atm_vars%qflx_rofice_grc     (bounds%begg:bounds%endg),  & 
+         waterflux_inst%qflx_snwcp_ice_col(bounds%begc:bounds%endc),  &
+         lnd2atm_inst%qflx_rofice_grc     (bounds%begg:bounds%endg),  & 
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
     do g = bounds%begg, bounds%endg
-       lnd2atm_vars%qflx_rofice_grc(g) = lnd2atm_vars%qflx_rofice_grc(g) - waterflux_vars%qflx_ice_dynbal_grc(g)          
+       lnd2atm_inst%qflx_rofice_grc(g) = lnd2atm_inst%qflx_rofice_grc(g) - waterflux_inst%qflx_ice_dynbal_grc(g)          
     enddo
 
     ! calculate total water storage for history files
@@ -295,11 +294,11 @@ contains
     ! TODO - this was in BalanceCheckMod - not sure where it belongs?
 
     call c2g( bounds, &
-         waterstate_vars%endwb_col(bounds%begc:bounds%endc), &
-         waterstate_vars%tws_grc  (bounds%begg:bounds%endg), &
+         waterstate_inst%endwb_col(bounds%begc:bounds%endc), &
+         waterstate_inst%tws_grc  (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
     do g = bounds%begg, bounds%endg
-       waterstate_vars%tws_grc(g) = waterstate_vars%tws_grc(g) + atm2lnd_vars%volr_grc(g) / grc%area(g) * 1.e-3_r8
+       waterstate_inst%tws_grc(g) = waterstate_inst%tws_grc(g) + atm2lnd_inst%volr_grc(g) / grc%area(g) * 1.e-3_r8
     enddo
 
   end subroutine lnd2atm

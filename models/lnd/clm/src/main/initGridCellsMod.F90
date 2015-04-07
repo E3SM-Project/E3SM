@@ -19,14 +19,13 @@ module initGridCellsMod
   use GridcellType   , only : grc                
   use LandunitType   , only : lun                
   use ColumnType     , only : col                
-  use PatchType      , only : pft                
+  use PatchType      , only : patch                
   use initSubgridMod , only : clm_ptrs_compdown, clm_ptrs_check
   use initSubgridMod , only : add_landunit, add_column, add_patch
   !
   ! !PUBLIC TYPES:
   implicit none
   private
-  save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public initGridcells ! initialize sub-grid gridcell mapping 
@@ -46,7 +45,7 @@ contains
     !
     ! !DESCRIPTION: 
     ! Initialize sub-grid mapping and allocates space for derived type hierarchy.
-    ! For each land gridcell determine landunit, column and pft properties.
+    ! For each land gridcell determine landunit, column and patch properties.
     !
     ! !USES
     use domainMod         , only : ldomain
@@ -68,13 +67,13 @@ contains
     ! of 1-d vectors in memory: 
     ! 
     ! (1) There is an outer loop over clumps; this results in all of a clump's points (at
-    !     the gridcell, landunit, column & pft level) being contiguous. This is important
+    !     the gridcell, landunit, column & patch level) being contiguous. This is important
     !     for the use of begg:endg, etc., and also for performance.
     !
     ! (2) Next, there is a section for each landunit, with the loop over grid cells
     !     happening separately for each landunit. This means that, within a given clump,
     !     points with the same landunit are grouped together (this is true at the
-    !     landunit, column and pft levels). Thus, different landunits for a given grid
+    !     landunit, column and patch levels). Thus, different landunits for a given grid
     !     cell are separated in memory. This improves performance in the many parts of
     !     the code that operate over a single landunit, or two similar landunits. 
     !
@@ -88,8 +87,8 @@ contains
     ! Gridcell:      1   2   1   2   1   2   3   4   3   4   3   4
     ! Landunit type: 1   1   2   2   3   3   1   1   2   2   3   3
     !
-    ! Example: pft-level array: For a processor with 1 clump, which has 2 grid cells, each
-    ! of which has 2 landunits, each of which has 3 pfts, the layout of a pft-level array
+    ! Example: patch-level array: For a processor with 1 clump, which has 2 grid cells, each
+    ! of which has 2 landunits, each of which has 3 patchs, the layout of a patch-level array
     ! looks like the following:
     !
     ! Array index:   1   2   3   4   5   6   7   8   9  10  11  12
@@ -99,7 +98,7 @@ contains
     ! PATCH type:      1   2   3   1   2   3   1   2   3   1   2   3
     !
     ! So note that clump index is most slowly varying, followed by landunit type,
-    ! followed by gridcell, followed by column and pft type.
+    ! followed by gridcell, followed by column and patch type.
     ! 
     ! Cohort layout
     ! Array index:   1   2   3   4   5   6   7   8   9  10  11  12
@@ -115,7 +114,7 @@ contains
 
        call get_clump_bounds(nc, bounds_clump)
 
-       ! For each land gridcell on global grid determine landunit, column and pft properties
+       ! For each land gridcell on global grid determine landunit, column and patch properties
        
        li = bounds_clump%begl-1
        ci = bounds_clump%begc-1
@@ -190,7 +189,7 @@ contains
           call set_cohort_decomp( bounds_clump=bounds_clump )
        end if
 
-       ! Ensure that we have set the expected number of pfts, cols and landunits for this clump
+       ! Ensure that we have set the expected number of patchs, cols and landunits for this clump
        SHR_ASSERT(li == bounds_clump%endl, errMsg(__FILE__, __LINE__))
        SHR_ASSERT(ci == bounds_clump%endc, errMsg(__FILE__, __LINE__))
        SHR_ASSERT(pi == bounds_clump%endp, errMsg(__FILE__, __LINE__))
@@ -212,10 +211,10 @@ contains
 
        ! By putting this check within the loop over clumps, we ensure that (for example)
        ! if a clump is responsible for landunit L, then that same clump is also
-       ! responsible for all columns and pfts in L.
+       ! responsible for all columns and patchs in L.
        call clm_ptrs_check(bounds_clump)
 
-       ! Set pft%wtlunit, pft%wtgcell and col%wtgcell
+       ! Set patch%wtlunit, patch%wtgcell and col%wtgcell
        call compute_higher_order_weights(bounds_clump)
 
     end do
@@ -229,22 +228,22 @@ contains
     ! !DESCRIPTION: 
     ! Set gridcell decomposition for cohorts
     !
-    use EDtypesMod      , only : cohorts_per_gcell
-    use EDVecCohortType , only : coh
+    use EDTypesMod      , only : cohorts_per_gcell
+    use EDVecCohortType , only : ed_vec_cohort
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in)    :: bounds_clump  
     !
     ! !LOCAL VARIABLES:
-    integer cohi, gi
+    integer c, gi
     !------------------------------------------------------------------------
 
     gi = bounds_clump%begg
 
-    do cohi = bounds_clump%begCohort, bounds_clump%endCohort
+    do c = bounds_clump%begCohort, bounds_clump%endCohort
 
-       coh%gridcell(cohi) = gi
-       if ( mod(cohi,cohorts_per_gcell ) == 0 ) gi = gi + 1
+       ed_vec_cohort%gridcell(c) = gi
+       if ( mod(c, cohorts_per_gcell ) == 0 ) gi = gi + 1
 
      end do
 
@@ -257,7 +256,7 @@ contains
     ! Initialize vegetated landunit with competition
     !
     ! !USES
-    use clm_varsur, only : wt_lunit, wt_nat_patch
+    use clm_instur, only : wt_lunit, wt_nat_patch
     use subgridMod, only : subgrid_get_gcellinfo
     use clm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub
     !
@@ -271,17 +270,17 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: m                                ! index
-    integer  :: npfts                            ! number of pfts in landunit
+    integer  :: npatches                         ! number of patches in landunit
     integer  :: pitype                           ! patch itype
     real(r8) :: wtlunit2gcell                    ! landunit weight in gridcell
     !------------------------------------------------------------------------
 
     ! Set decomposition properties
 
-    call subgrid_get_gcellinfo(gi, nveg=npfts)
+    call subgrid_get_gcellinfo(gi, nveg=npatches)
     wtlunit2gcell = wt_lunit(gi, ltype)
 
-    if (npfts > 0) then
+    if (npatches > 0) then
        call add_landunit(li=li, gi=gi, ltype=ltype, wtgcell=wtlunit2gcell)
        
        ! Assume one column on the landunit
@@ -302,11 +301,11 @@ contains
     !
     ! !USES
     use clm_varpar      , only : maxpatch_glcmec
-    use clm_varsur      , only : wt_lunit, wt_glc_mec
+    use clm_instur      , only : wt_lunit, wt_glc_mec
     use landunit_varcon , only : istwet, istdlak, istice, istice_mec
     use column_varcon   , only : icemec_class_to_col_itype
     use subgridMod      , only : subgrid_get_gcellinfo
-    use pftvarcon       , only : noveg
+    use pftconMod       , only : noveg
 
     !
     ! !ARGUMENTS:
@@ -322,7 +321,7 @@ contains
     integer  :: m                                ! index
     integer  :: c                                ! column loop index
     integer  :: ier                              ! error status 
-    integer  :: npfts                            ! number of pfts in landunit
+    integer  :: npatches                         ! number of pfts in landunit
     real(r8) :: wtlunit2gcell                    ! landunit weight in gridcell
     real(r8) :: wtcol2lunit                      ! col weight in landunit
     !------------------------------------------------------------------------
@@ -330,13 +329,13 @@ contains
     ! Set decomposition properties
 
     if (ltype == istwet) then
-       call subgrid_get_gcellinfo(gi, nwetland=npfts)
+       call subgrid_get_gcellinfo(gi, nwetland=npatches)
     else if (ltype == istdlak) then
-       call subgrid_get_gcellinfo(gi, nlake=npfts)
+       call subgrid_get_gcellinfo(gi, nlake=npatches)
     else if (ltype == istice) then 
-       call subgrid_get_gcellinfo(gi, nglacier=npfts)
+       call subgrid_get_gcellinfo(gi, nglacier=npatches)
     else if (ltype == istice_mec) then
-       call subgrid_get_gcellinfo(gi, nglacier_mec=npfts, glcmask = glcmask)
+       call subgrid_get_gcellinfo(gi, nglacier_mec=npatches, glcmask = glcmask)
     else
        write(iulog,*)' set_landunit_wet_ice_lake: ltype of ',ltype,' not valid'
        write(iulog,*)' only istwet, istdlak, istice and istice_mec ltypes are valid'
@@ -345,12 +344,12 @@ contains
 
     wtlunit2gcell = wt_lunit(gi, ltype)
 
-    if (npfts > 0) then
+    if (npatches > 0) then
 
-       if (npfts /=1 .and. ltype /= istice_mec) then
+       if (npatches /=1 .and. ltype /= istice_mec) then
           write(iulog,*)' set_landunit_wet_ice_lake: compete landunit must'// &
-               ' have one pft '
-          write(iulog,*)' current value of npfts=',npfts
+               ' have one patch '
+          write(iulog,*)' current value of npatches=',npatches
           call endrun(msg=errMsg(__FILE__, __LINE__))
        end if
 
@@ -387,7 +386,7 @@ contains
           call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
 
        end if   ! ltype = istice_mec
-    endif       ! npfts > 0       
+    endif       ! npatches > 0       
 
   end subroutine set_landunit_wet_ice_lake
 
@@ -403,7 +402,7 @@ contains
     ! since itype is istsoil if we are running with create_crop_landunit but crop_prog = false.
     !
     ! !USES
-    use clm_varsur      , only : wt_lunit, wt_cft
+    use clm_instur      , only : wt_lunit, wt_cft
     use landunit_varcon , only : istcrop, istsoil
     use subgridMod      , only : subgrid_get_gcellinfo
     use clm_varctl      , only : create_crop_landunit
@@ -420,16 +419,16 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: my_ltype                         ! landunit type for crops
     integer  :: m                                ! index
-    integer  :: npfts                            ! number of pfts in landunit
+    integer  :: npatches                         ! number of pfts in landunit
     real(r8) :: wtlunit2gcell                    ! landunit weight in gridcell
     !------------------------------------------------------------------------
 
     ! Set decomposition properties
 
-    call subgrid_get_gcellinfo(gi, ncrop=npfts)
+    call subgrid_get_gcellinfo(gi, ncrop=npatches)
     wtlunit2gcell = wt_lunit(gi, ltype)
 
-    if (npfts > 0) then
+    if (npatches > 0) then
 
        ! Note that we cannot simply use the 'ltype' argument to set itype here,
        ! because ltype will always indicate istcrop
@@ -441,7 +440,7 @@ contains
 
        call add_landunit(li=li, gi=gi, ltype=my_ltype, wtgcell=wtlunit2gcell)
        
-       ! Set column and pft properties for this landunit 
+       ! Set column and patch properties for this landunit 
        ! (each column has its own pft)
 
        if (create_crop_landunit) then
@@ -467,11 +466,11 @@ contains
     use column_varcon   , only : icol_road_perv, icol_road_imperv
     use landunit_varcon , only : isturb_tbd, isturb_hd, isturb_md, isturb_MIN
     use clm_varpar      , only : maxpatch_urb
-    use clm_varsur      , only : wt_lunit
+    use clm_instur      , only : wt_lunit
     use subgridMod      , only : subgrid_get_gcellinfo
     use UrbanParamsType , only : urbinp
     use decompMod       , only : ldecomp
-    use pftvarcon       , only : noveg
+    use pftconMod       , only : noveg
     !
     ! !ARGUMENTS:
     integer , intent(in)    :: ltype             ! landunit type
@@ -486,7 +485,7 @@ contains
     integer  :: m             ! index
     integer  :: n             ! urban density type index
     integer  :: ctype         ! column type
-    integer  :: npfts         ! number of pfts in landunit
+    integer  :: npatches      ! number of pfts in landunit
     real(r8) :: wtlunit2gcell ! weight relative to gridcell of landunit
     real(r8) :: wtcol2lunit   ! weight of column with respect to landunit
     real(r8) :: wtlunit_roof  ! weight of roof with respect to landunit
@@ -498,11 +497,11 @@ contains
 
     select case (ltype)
     case (isturb_tbd)
-       call subgrid_get_gcellinfo(gi, nurban_tbd=npfts)
+       call subgrid_get_gcellinfo(gi, nurban_tbd=npatches)
     case (isturb_hd)
-       call subgrid_get_gcellinfo(gi, nurban_hd=npfts)
+       call subgrid_get_gcellinfo(gi, nurban_hd=npatches)
     case (isturb_md)
-       call subgrid_get_gcellinfo(gi, nurban_md=npfts)
+       call subgrid_get_gcellinfo(gi, nurban_md=npatches)
     case default
        write(iulog,*)' set_landunit_urban: unknown ltype: ', ltype
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -514,11 +513,11 @@ contains
     wtlunit_roof = urbinp%wtlunit_roof(gi,n)
     wtroad_perv  = urbinp%wtroad_perv(gi,n)
 
-    if (npfts > 0) then
+    if (npatches > 0) then
 
        call add_landunit(li=li, gi=gi, ltype=ltype, wtgcell=wtlunit2gcell)
 
-       ! Loop through columns for this landunit and set the column and pft properties
+       ! Loop through columns for this landunit and set the column and patch properties
        ! For the urban landunits it is assumed that each column has its own pft
        
        do m = 1, maxpatch_urb

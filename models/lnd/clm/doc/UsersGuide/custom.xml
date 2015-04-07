@@ -236,7 +236,7 @@ Here is the output from the above.
 </screen>
 <para>
 The &clm; template already sets the resolution and mask as well as the &configure; file,
-the start-type, the co2_ppmv, glc_grid, rtm_tstep, and rtm_res, and defines an input
+the start-type, the co2_ppmv, rtm_tstep, and rtm_res, and defines an input
 namelist and namelist input file, and it normally sets either "-ignore_ic_year" or 
 "-ignore_ic_date". Also many
 of the options are designed solely for &clm; stand-alone testing and hence should NOT 

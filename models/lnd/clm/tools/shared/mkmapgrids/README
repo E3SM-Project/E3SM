@@ -1,52 +1,22 @@
-models/lnd/clm/tools/mkmapgrids/README		Jul/12/2011
+models/lnd/clm/tools/mkmapgrids/README		Oct/03/2014
 
-The routines in this directory create a grid map dataset in SCRIP format
-that can be read by the mkmapdata utility to create mapping files for either
-CLM or mksurfdata_map.
+NCL script to create a SCRIP grid file for a regular lat/lon grid.
 
-The following steps provide a method to create the executable
-and generate the grid map dataset:
+To use the script, set the following environment variables
 
-0) export your input data
+Required (or defaults to a single point over Boulder Colorado)
 
-1) cd to this directory 
+PTNAME    ! name of your grid
+S_LAT     ! Southern latitude corner
+N_LAT     ! Northern latitude corner
+E_LON     ! Eastern longitude corner
+W_LON     ! Western longitude corner
 
-2) run gmake
+Optional:
 
-NOTE: By default code compiles optimized so it's reasonably fast. If you want
-      to use the debugger, with bounds-checking, and float trapping on do the 
-      following:
-
-   gmake OPT=FALSE
-
-See Also: See the models/lnd/clm/tools/README file for notes about setting
-          the path for NetCDF.
-
-3) create namelist file :
-   (a sample namelist is: mkmapgrids.namelist)
-
-   make sure the datasets in the namelist correspond to the full path of where
-   you downloaded your input datasets.
-
-   Sample namelists (using /fs/cgd/csm as the root location where inputdata was exported) are:
-
-   mkmapgrids.namelist   ----- Standard global dataset at 10x15 resolution
-
-
-4) run code (e.g.):
-        mkmapgrids < mkmapgrids.namelist >&! mksurfdat.out
-
-5) move (and rename if appropriate) generated map grid dataset
-   to /fis/cgd/csm/inputdata/lnd/clm/mappingdata/grids, etc.
-
-6) Alturnative to steps 3-5: run the mkmapgrids.csh script to get files for the 
-   standard resolutions (already in the namelist_defaults_clm.xml file).
-
-Important files:
-
-  mkmapgrids.csh ------------ Script to run mkmapgrids for many resolutions
-  src/Makefile -------------- GNU makefile
-  src/Srcfiles -------------- List of source files needed (includes files outside this directory)
-  src/Filepath -------------- Filepath location to source files needed
-  mkmapgrids.namelist ------- Sample global grid namelist
+NX        ! Number of grid points along longitude (default 1)
+NY        ! Number of grid points along latitude (default 1)
+IMASK     ! 0 or 1, mask to use if all points are active or not (default active)
+PRINT     ! TRUE/FALSE do extra verbose printing or not (default FALSE)
+GRIDFILE  ! Output filename
 

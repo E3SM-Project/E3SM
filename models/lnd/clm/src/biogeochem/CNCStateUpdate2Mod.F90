@@ -5,16 +5,16 @@ module CNCStateUpdate2Mod
   ! Module for carbon state variable update, mortality fluxes.
   !
   ! !USES:
-  use shr_kind_mod     , only : r8 => shr_kind_r8
-  use shr_log_mod      , only : errMsg => shr_log_errMsg
-  use abortutils       , only : endrun
-  use clm_time_manager , only : get_step_size
-  use clm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use CNCarbonStateType, only : carbonstate_type
-  use CNCarbonFluxType , only : carbonflux_type
+  use shr_kind_mod                   , only : r8 => shr_kind_r8
+  use shr_log_mod                    , only : errMsg => shr_log_errMsg
+  use abortutils                     , only : endrun
+  use clm_time_manager               , only : get_step_size
+  use clm_varpar                     , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use CNvegCarbonStateType           , only : cnveg_carbonstate_type
+  use CNVegCarbonFluxType            , only : cnveg_carbonflux_type
+  use SoilBiogeochemCarbonStatetype  , only : soilbiogeochem_carbonstate_type
   !
   implicit none
-  save
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -26,19 +26,20 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       carbonflux_vars, carbonstate_vars)
+       cnveg_carbonflux_inst, cnveg_carbonstate_inst, soilbiogeochem_carbonstate_inst)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by gap-phase mortality fluxes
     !
     ! !ARGUMENTS:
-    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    integer                                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(cnveg_carbonflux_type)            , intent(in)    :: cnveg_carbonflux_inst
+    type(cnveg_carbonstate_type)           , intent(inout) :: cnveg_carbonstate_inst
+    type(soilbiogeochem_carbonstate_type)  , intent(inout) :: soilbiogeochem_carbonstate_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: c ,p,j ! indices
@@ -46,9 +47,11 @@ contains
     real(r8) :: dt     ! radiation time step (seconds)
     !-----------------------------------------------------------------------
     
-    associate(                   & 
-         cf => carbonflux_vars , &
-         cs => carbonstate_vars  &
+    associate(                                      & 
+         cf_veg => cnveg_carbonflux_inst          , &
+         cs_veg => cnveg_carbonstate_inst         , &
+
+         cs_soil => soilbiogeochem_carbonstate_inst  &
          )
 
       ! set time steps
@@ -61,14 +64,14 @@ contains
             c = filter_soilc(fc)
 
             ! column gap mortality fluxes
-            cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cwd) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
+            cs_soil%decomp_cpools_vr_col(c,j,i_met_lit) = &
+                 cs_soil%decomp_cpools_vr_col(c,j,i_met_lit) + cf_veg%gap_mortality_c_to_litr_met_c_col(c,j) * dt
+            cs_soil%decomp_cpools_vr_col(c,j,i_cel_lit) = &
+                 cs_soil%decomp_cpools_vr_col(c,j,i_cel_lit) + cf_veg%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
+            cs_soil%decomp_cpools_vr_col(c,j,i_lig_lit) = &
+                 cs_soil%decomp_cpools_vr_col(c,j,i_lig_lit) + cf_veg%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
+            cs_soil%decomp_cpools_vr_col(c,j,i_cwd) = &
+                 cs_soil%decomp_cpools_vr_col(c,j,i_cwd) + cf_veg%gap_mortality_c_to_cwdc_col(c,j) * dt
 
          end do
       end do
@@ -79,50 +82,72 @@ contains
 
          ! patch-level carbon fluxes from gap-phase mortality
          ! displayed pools
-         cs%leafc_patch(p)               = cs%leafc_patch(p)              - cf%m_leafc_to_litter_patch(p)              * dt
-         cs%frootc_patch(p)              = cs%frootc_patch(p)             - cf%m_frootc_to_litter_patch(p)             * dt
-         cs%livestemc_patch(p)           = cs%livestemc_patch(p)          - cf%m_livestemc_to_litter_patch(p)          * dt
-         cs%deadstemc_patch(p)           = cs%deadstemc_patch(p)          - cf%m_deadstemc_to_litter_patch(p)          * dt
-         cs%livecrootc_patch(p)          = cs%livecrootc_patch(p)         - cf%m_livecrootc_to_litter_patch(p)         * dt
-         cs%deadcrootc_patch(p)          = cs%deadcrootc_patch(p)         - cf%m_deadcrootc_to_litter_patch(p)         * dt
+         cs_veg%leafc_patch(p) = cs_veg%leafc_patch(p)                           &
+              - cf_veg%m_leafc_to_litter_patch(p) * dt
+         cs_veg%frootc_patch(p) = cs_veg%frootc_patch(p)                         &
+              - cf_veg%m_frootc_to_litter_patch(p) * dt
+         cs_veg%livestemc_patch(p) = cs_veg%livestemc_patch(p)                   &
+              - cf_veg%m_livestemc_to_litter_patch(p) * dt
+         cs_veg%deadstemc_patch(p) = cs_veg%deadstemc_patch(p)                   &
+              - cf_veg%m_deadstemc_to_litter_patch(p) * dt
+         cs_veg%livecrootc_patch(p) = cs_veg%livecrootc_patch(p)                 &
+              - cf_veg%m_livecrootc_to_litter_patch(p) * dt
+         cs_veg%deadcrootc_patch(p) = cs_veg%deadcrootc_patch(p)                 &
+              - cf_veg%m_deadcrootc_to_litter_patch(p) * dt
 
          ! storage pools
-         cs%leafc_storage_patch(p)       = cs%leafc_storage_patch(p)      - cf%m_leafc_storage_to_litter_patch(p)      * dt
-         cs%frootc_storage_patch(p)      = cs%frootc_storage_patch(p)     - cf%m_frootc_storage_to_litter_patch(p)     * dt
-         cs%livestemc_storage_patch(p)   = cs%livestemc_storage_patch(p)  - cf%m_livestemc_storage_to_litter_patch(p)  * dt
-         cs%deadstemc_storage_patch(p)   = cs%deadstemc_storage_patch(p)  - cf%m_deadstemc_storage_to_litter_patch(p)  * dt
-         cs%livecrootc_storage_patch(p)  = cs%livecrootc_storage_patch(p) - cf%m_livecrootc_storage_to_litter_patch(p) * dt
-         cs%deadcrootc_storage_patch(p)  = cs%deadcrootc_storage_patch(p) - cf%m_deadcrootc_storage_to_litter_patch(p) * dt
-         cs%gresp_storage_patch(p)       = cs%gresp_storage_patch(p)      - cf%m_gresp_storage_to_litter_patch(p)      * dt
+         cs_veg%leafc_storage_patch(p) = cs_veg%leafc_storage_patch(p)           &
+              - cf_veg%m_leafc_storage_to_litter_patch(p) * dt
+         cs_veg%frootc_storage_patch(p) = cs_veg%frootc_storage_patch(p)         &
+              - cf_veg%m_frootc_storage_to_litter_patch(p) * dt
+         cs_veg%livestemc_storage_patch(p) = cs_veg%livestemc_storage_patch(p)   &
+              - cf_veg%m_livestemc_storage_to_litter_patch(p) * dt
+         cs_veg%deadstemc_storage_patch(p) = cs_veg%deadstemc_storage_patch(p)   &
+              - cf_veg%m_deadstemc_storage_to_litter_patch(p) * dt
+         cs_veg%livecrootc_storage_patch(p) = cs_veg%livecrootc_storage_patch(p) &
+              - cf_veg%m_livecrootc_storage_to_litter_patch(p) * dt
+         cs_veg%deadcrootc_storage_patch(p) = cs_veg%deadcrootc_storage_patch(p) &
+              - cf_veg%m_deadcrootc_storage_to_litter_patch(p) * dt
+         cs_veg%gresp_storage_patch(p) = cs_veg%gresp_storage_patch(p)           &
+              - cf_veg%m_gresp_storage_to_litter_patch(p) * dt
 
          ! transfer pools
-         cs%leafc_xfer_patch(p)          = cs%leafc_xfer_patch(p)         - cf%m_leafc_xfer_to_litter_patch(p)         * dt
-         cs%frootc_xfer_patch(p)         = cs%frootc_xfer_patch(p)        - cf%m_frootc_xfer_to_litter_patch(p)        * dt
-         cs%livestemc_xfer_patch(p)      = cs%livestemc_xfer_patch(p)     - cf%m_livestemc_xfer_to_litter_patch(p)     * dt
-         cs%deadstemc_xfer_patch(p)      = cs%deadstemc_xfer_patch(p)     - cf%m_deadstemc_xfer_to_litter_patch(p)     * dt
-         cs%livecrootc_xfer_patch(p)     = cs%livecrootc_xfer_patch(p)    - cf%m_livecrootc_xfer_to_litter_patch(p)    * dt
-         cs%deadcrootc_xfer_patch(p)     = cs%deadcrootc_xfer_patch(p)    - cf%m_deadcrootc_xfer_to_litter_patch(p)    * dt
-         cs%gresp_xfer_patch(p)          = cs%gresp_xfer_patch(p)         - cf%m_gresp_xfer_to_litter_patch(p)         * dt
+         cs_veg%leafc_xfer_patch(p) = cs_veg%leafc_xfer_patch(p)                 &
+              - cf_veg%m_leafc_xfer_to_litter_patch(p) * dt
+         cs_veg%frootc_xfer_patch(p) = cs_veg%frootc_xfer_patch(p)               &
+              - cf_veg%m_frootc_xfer_to_litter_patch(p) * dt
+         cs_veg%livestemc_xfer_patch(p) = cs_veg%livestemc_xfer_patch(p)         &
+              - cf_veg%m_livestemc_xfer_to_litter_patch(p) * dt
+         cs_veg%deadstemc_xfer_patch(p) = cs_veg%deadstemc_xfer_patch(p)         &
+              - cf_veg%m_deadstemc_xfer_to_litter_patch(p) * dt
+         cs_veg%livecrootc_xfer_patch(p) = cs_veg%livecrootc_xfer_patch(p)       &
+              - cf_veg%m_livecrootc_xfer_to_litter_patch(p) * dt
+         cs_veg%deadcrootc_xfer_patch(p) = cs_veg%deadcrootc_xfer_patch(p)       &
+              - cf_veg%m_deadcrootc_xfer_to_litter_patch(p) * dt
+         cs_veg%gresp_xfer_patch(p) = cs_veg%gresp_xfer_patch(p)                 &
+              - cf_veg%m_gresp_xfer_to_litter_patch(p) * dt
       end do ! end of patch loop
 
     end associate
+
   end subroutine CStateUpdate2
 
   !-----------------------------------------------------------------------
   subroutine CStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       carbonflux_vars, carbonstate_vars)
+       cnveg_carbonflux_inst, cnveg_carbonstate_inst, soilbiogeochem_carbonstate_inst)
     !
     ! !DESCRIPTION:
     ! Update all the prognostic carbon state
     ! variables affected by harvest mortality fluxes
     !
     ! !ARGUMENTS:
-    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
-    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
-    type(carbonstate_type) , intent(inout) :: carbonstate_vars
+    integer                                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(cnveg_carbonflux_type)            , intent(in)    :: cnveg_carbonflux_inst
+    type(cnveg_carbonstate_type)           , intent(inout) :: cnveg_carbonstate_inst
+    type(soilbiogeochem_carbonstate_type)  , intent(inout) :: soilbiogeochem_carbonstate_inst
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,k,l ! indices
@@ -130,9 +155,10 @@ contains
     real(r8):: dt        ! radiation time step (seconds)
     !-----------------------------------------------------------------------
 
-    associate(                   & 
-         cf => carbonflux_vars , &
-         cs => carbonstate_vars  &
+    associate(                                     & 
+         cf_veg => cnveg_carbonflux_inst         , &
+         cs_veg => cnveg_carbonstate_inst        , &
+         cs_soil => soilbiogeochem_carbonstate_inst &
          )
      
       ! set time steps
@@ -140,19 +166,18 @@ contains
 
       ! column level carbon fluxes from harvest mortality
       do j = 1, nlevdecomp
-         ! column loop
          do fc = 1,num_soilc
             c = filter_soilc(fc)
 
             ! column harvest fluxes
-            cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cwd) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
+            cs_soil%decomp_cpools_vr_col(c,j,i_met_lit) = &
+                 cs_soil%decomp_cpools_vr_col(c,j,i_met_lit) + cf_veg%harvest_c_to_litr_met_c_col(c,j) * dt
+            cs_soil%decomp_cpools_vr_col(c,j,i_cel_lit) = &
+                 cs_soil%decomp_cpools_vr_col(c,j,i_cel_lit) + cf_veg%harvest_c_to_litr_cel_c_col(c,j) * dt
+            cs_soil%decomp_cpools_vr_col(c,j,i_lig_lit) = &
+                 cs_soil%decomp_cpools_vr_col(c,j,i_lig_lit) + cf_veg%harvest_c_to_litr_lig_c_col(c,j) * dt
+            cs_soil%decomp_cpools_vr_col(c,j,i_cwd) = &
+                 cs_soil%decomp_cpools_vr_col(c,j,i_cwd) + cf_veg%harvest_c_to_cwdc_col(c,j)  * dt
 
             ! wood to product pools - states updated in CNWoodProducts()
          end do
@@ -164,34 +189,56 @@ contains
 
          ! patch-level carbon fluxes from harvest mortality
          ! displayed pools
-         cs%leafc_patch(p)               = cs%leafc_patch(p)              - cf%hrv_leafc_to_litter_patch(p)              * dt
-         cs%frootc_patch(p)              = cs%frootc_patch(p)             - cf%hrv_frootc_to_litter_patch(p)             * dt
-         cs%livestemc_patch(p)           = cs%livestemc_patch(p)          - cf%hrv_livestemc_to_litter_patch(p)          * dt
-         cs%deadstemc_patch(p)           = cs%deadstemc_patch(p)          - cf%hrv_deadstemc_to_prod10c_patch(p)         * dt
-         cs%deadstemc_patch(p)           = cs%deadstemc_patch(p)          - cf%hrv_deadstemc_to_prod100c_patch(p)        * dt
-         cs%livecrootc_patch(p)          = cs%livecrootc_patch(p)         - cf%hrv_livecrootc_to_litter_patch(p)         * dt
-         cs%deadcrootc_patch(p)          = cs%deadcrootc_patch(p)         - cf%hrv_deadcrootc_to_litter_patch(p)         * dt
+         cs_veg%leafc_patch(p) = cs_veg%leafc_patch(p)                           &
+              - cf_veg%hrv_leafc_to_litter_patch(p) * dt
+         cs_veg%frootc_patch(p) = cs_veg%frootc_patch(p)                         &
+              - cf_veg%hrv_frootc_to_litter_patch(p) * dt
+         cs_veg%livestemc_patch(p) = cs_veg%livestemc_patch(p)                   &
+              - cf_veg%hrv_livestemc_to_litter_patch(p) * dt
+         cs_veg%deadstemc_patch(p) = cs_veg%deadstemc_patch(p)                   &
+              - cf_veg%hrv_deadstemc_to_prod10c_patch(p) * dt
+         cs_veg%deadstemc_patch(p) = cs_veg%deadstemc_patch(p)                   &
+              - cf_veg%hrv_deadstemc_to_prod100c_patch(p) * dt
+         cs_veg%livecrootc_patch(p) = cs_veg%livecrootc_patch(p)                 &
+              - cf_veg%hrv_livecrootc_to_litter_patch(p) * dt
+         cs_veg%deadcrootc_patch(p) = cs_veg%deadcrootc_patch(p)                 &
+              - cf_veg%hrv_deadcrootc_to_litter_patch(p) * dt
 
          ! xsmrpool
-         cs%xsmrpool_patch(p)            = cs%xsmrpool_patch(p)           - cf%hrv_xsmrpool_to_atm_patch(p)              * dt
+         cs_veg%xsmrpool_patch(p) = cs_veg%xsmrpool_patch(p)                     &
+              - cf_veg%hrv_xsmrpool_to_atm_patch(p) * dt
 
          ! storage pools
-         cs%leafc_storage_patch(p)       = cs%leafc_storage_patch(p)      - cf%hrv_leafc_storage_to_litter_patch(p)      * dt
-         cs%frootc_storage_patch(p)      = cs%frootc_storage_patch(p)     - cf%hrv_frootc_storage_to_litter_patch(p)     * dt
-         cs%livestemc_storage_patch(p)   = cs%livestemc_storage_patch(p)  - cf%hrv_livestemc_storage_to_litter_patch(p)  * dt
-         cs%deadstemc_storage_patch(p)   = cs%deadstemc_storage_patch(p)  - cf%hrv_deadstemc_storage_to_litter_patch(p)  * dt
-         cs%livecrootc_storage_patch(p)  = cs%livecrootc_storage_patch(p) - cf%hrv_livecrootc_storage_to_litter_patch(p) * dt
-         cs%deadcrootc_storage_patch(p)  = cs%deadcrootc_storage_patch(p) - cf%hrv_deadcrootc_storage_to_litter_patch(p) * dt
-         cs%gresp_storage_patch(p)       = cs%gresp_storage_patch(p)      - cf%hrv_gresp_storage_to_litter_patch(p)      * dt
+         cs_veg%leafc_storage_patch(p) = cs_veg%leafc_storage_patch(p)           &
+              - cf_veg%hrv_leafc_storage_to_litter_patch(p) * dt
+         cs_veg%frootc_storage_patch(p) = cs_veg%frootc_storage_patch(p)         &
+              - cf_veg%hrv_frootc_storage_to_litter_patch(p) * dt
+         cs_veg%livestemc_storage_patch(p) = cs_veg%livestemc_storage_patch(p)   &
+              - cf_veg%hrv_livestemc_storage_to_litter_patch(p) * dt
+         cs_veg%deadstemc_storage_patch(p) = cs_veg%deadstemc_storage_patch(p)   &
+              - cf_veg%hrv_deadstemc_storage_to_litter_patch(p) * dt
+         cs_veg%livecrootc_storage_patch(p) = cs_veg%livecrootc_storage_patch(p) &
+              - cf_veg%hrv_livecrootc_storage_to_litter_patch(p) * dt
+         cs_veg%deadcrootc_storage_patch(p) = cs_veg%deadcrootc_storage_patch(p) &
+              - cf_veg%hrv_deadcrootc_storage_to_litter_patch(p) * dt
+         cs_veg%gresp_storage_patch(p) = cs_veg%gresp_storage_patch(p)           &
+              - cf_veg%hrv_gresp_storage_to_litter_patch(p) * dt
 
          ! transfer pools
-         cs%leafc_xfer_patch(p)          = cs%leafc_xfer_patch(p)         - cf%hrv_leafc_xfer_to_litter_patch(p)         * dt
-         cs%frootc_xfer_patch(p)         = cs%frootc_xfer_patch(p)        - cf%hrv_frootc_xfer_to_litter_patch(p)        * dt
-         cs%livestemc_xfer_patch(p)      = cs%livestemc_xfer_patch(p)     - cf%hrv_livestemc_xfer_to_litter_patch(p)     * dt
-         cs%deadstemc_xfer_patch(p)      = cs%deadstemc_xfer_patch(p)     - cf%hrv_deadstemc_xfer_to_litter_patch(p)     * dt
-         cs%livecrootc_xfer_patch(p)     = cs%livecrootc_xfer_patch(p)    - cf%hrv_livecrootc_xfer_to_litter_patch(p)    * dt
-         cs%deadcrootc_xfer_patch(p)     = cs%deadcrootc_xfer_patch(p)    - cf%hrv_deadcrootc_xfer_to_litter_patch(p)    * dt
-         cs%gresp_xfer_patch(p)          = cs%gresp_xfer_patch(p)         - cf%hrv_gresp_xfer_to_litter_patch(p)         * dt
+         cs_veg%leafc_xfer_patch(p) = cs_veg%leafc_xfer_patch(p)                 &
+              - cf_veg%hrv_leafc_xfer_to_litter_patch(p) * dt
+         cs_veg%frootc_xfer_patch(p) = cs_veg%frootc_xfer_patch(p)               &
+              - cf_veg%hrv_frootc_xfer_to_litter_patch(p) * dt
+         cs_veg%livestemc_xfer_patch(p) = cs_veg%livestemc_xfer_patch(p)         &
+              - cf_veg%hrv_livestemc_xfer_to_litter_patch(p) * dt
+         cs_veg%deadstemc_xfer_patch(p) = cs_veg%deadstemc_xfer_patch(p)         &
+              - cf_veg%hrv_deadstemc_xfer_to_litter_patch(p) * dt
+         cs_veg%livecrootc_xfer_patch(p) = cs_veg%livecrootc_xfer_patch(p)       &
+              - cf_veg%hrv_livecrootc_xfer_to_litter_patch(p) * dt
+         cs_veg%deadcrootc_xfer_patch(p) = cs_veg%deadcrootc_xfer_patch(p)       &
+              - cf_veg%hrv_deadcrootc_xfer_to_litter_patch(p) * dt
+         cs_veg%gresp_xfer_patch(p) = cs_veg%gresp_xfer_patch(p)                 &
+              - cf_veg%hrv_gresp_xfer_to_litter_patch(p) * dt
 
       end do ! end of patch loop
 

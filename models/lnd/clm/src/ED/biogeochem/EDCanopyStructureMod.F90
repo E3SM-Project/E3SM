@@ -9,78 +9,75 @@ module EDCanopyStructureMod
   use shr_kind_mod          , only : r8 => shr_kind_r8;
   use clm_varpar            , only : nclmax
   use clm_varctl            , only : iulog
-  use EcophysConType        , only : ecophyscon
-
+  use pftconMod             , only : pftcon
   use EDGrowthFunctionsMod  , only : c_area
   use EDCohortDynamicsMod   , only : copy_cohort, terminate_cohorts, fuse_cohorts
-  use EDtypesMod            , only : site, patch, cohort, ncwd
+  use EDtypesMod            , only : ed_site_type, ed_patch_type, ed_cohort_type, ncwd
 
   implicit none
-  save
   private
 
   public :: canopy_structure
   public :: canopy_spread
 
-  ! ============================================================================
   ! 10/30/09: Created by Rosie Fisher
   ! ============================================================================
 
 contains
 
+  ! ============================================================================
   subroutine canopy_structure( currentSite )
-  ! ============================================================================
-  ! This routine allocates the 'canopy_layer' attribute to each cohort
-  ! All top leaves in the same canopy layer get the same light resources.
-  ! The first canopy layer is the 'canopy' or 'overstorey'. The second is the 'understorey'.
-  ! More than two layers is not permitted at the moment
-  ! Seeds germinating into the 3rd or higher layers are automatically removed. 
-  
-  ! ------Perfect Plasticity-----
-  ! The idea of these canopy layers derives originally from Purves et al. 2009
-  ! Their concept is that, given enoughplasticity in canopy position, size, shape and depth
-  ! all of the gound area will be filled perfectly by leaves, and additional leaves will have
-  ! to exist in the understorey. 
-  ! Purves et al. use the concept of 'Z*' to assume that the height required to attain a place in the
-  ! canopy is spatially uniform. In this implementation, described in Fisher et al. (2010, New Phyt) we
-  ! extent that concept to assume that position in the canopy has some random element, and that BOTH height
-  ! and chance combine to determine whether trees get into the canopy. 
-  ! Thus, when the canopy is closed and there is excess area, some of it must be demoted
-  ! If we demote -all- the trees less than a given height, there is a massive advantage in being the cohort that is 
-  ! the biggest when the canopy is closed. 
-  ! In this implementation, the amount demoted, ('weight') is a function of the height weighted by the competitive exclusion
-  ! parameter (ED_val_comp_excln). 
-  
-  ! Complexity in this routine results from a few things. 
-  ! Firstly, the complication of the demotion amount sometimes being larger than the cohort area (for a very small, short cohort)
-  ! Second, occasionaly, disturbance (specifically fire) can cause the canopy layer to become less than closed, 
-  ! without changing the area of the patch. If this happens, then some of the plants in the lower layer need to be 'promoted' so 
-  ! all of the routine has to happen in both the downwards and upwards directions. 
-  
-  
-  ! The order of events here is therefore:
-  ! (The entire subroutine has a single outer 'patch' loop. 
-  ! Section 1: figure out the total area, and whether there are >1 canopy layers at all. 
-  
-  
-  ! Sorts out cohorts into canopy and understorey layers...                              
-  ! ============================================================================
-
+    !
+    ! !DESCRIPTION:
+    ! create cohort instance
+    !
+    ! This routine allocates the 'canopy_layer' attribute to each cohort
+    ! All top leaves in the same canopy layer get the same light resources.
+    ! The first canopy layer is the 'canopy' or 'overstorey'. The second is the 'understorey'.
+    ! More than two layers is not permitted at the moment
+    ! Seeds germinating into the 3rd or higher layers are automatically removed. 
+    !
+    ! ------Perfect Plasticity-----
+    ! The idea of these canopy layers derives originally from Purves et al. 2009
+    ! Their concept is that, given enoughplasticity in canopy position, size, shape and depth
+    ! all of the gound area will be filled perfectly by leaves, and additional leaves will have
+    ! to exist in the understorey. 
+    ! Purves et al. use the concept of 'Z*' to assume that the height required to attain a place in the
+    ! canopy is spatially uniform. In this implementation, described in Fisher et al. (2010, New Phyt) we
+    ! extent that concept to assume that position in the canopy has some random element, and that BOTH height
+    ! and chance combine to determine whether trees get into the canopy. 
+    ! Thus, when the canopy is closed and there is excess area, some of it must be demoted
+    ! If we demote -all- the trees less than a given height, there is a massive advantage in being the cohort that is 
+    ! the biggest when the canopy is closed. 
+    ! In this implementation, the amount demoted, ('weight') is a function of the height weighted by the competitive exclusion
+    ! parameter (ED_val_comp_excln). 
+    
+    ! Complexity in this routine results from a few things. 
+    ! Firstly, the complication of the demotion amount sometimes being larger than the cohort area (for a very small, short cohort)
+    ! Second, occasionaly, disturbance (specifically fire) can cause the canopy layer to become less than closed, 
+    ! without changing the area of the patch. If this happens, then some of the plants in the lower layer need to be 'promoted' so 
+    ! all of the routine has to happen in both the downwards and upwards directions. 
+    !
+    ! The order of events here is therefore:
+    ! (The entire subroutine has a single outer 'patch' loop. 
+    ! Section 1: figure out the total area, and whether there are >1 canopy layers at all. 
+    !
+    ! Sorts out cohorts into canopy and understorey layers...                              
+    !
+    ! !USES:
     use clm_varpar,  only : nlevcan_ed
-
     use EDParamsMod, only : ED_val_comp_excln, ED_val_ag_biomass
     use SFParamsMod, only : SF_val_cwd_frac
-
-    implicit none 
-
-    type(site), intent(inout), pointer   :: currentSite
-
-    type(patch), pointer  :: currentPatch
-    type(cohort), pointer :: currentCohort,copyc
-
-    integer :: i,j
-    integer :: z     ! Current number of canopy layers. (1= canopy, 2 = understorey) 
-    
+    use EDtypesMod , only : ncwd
+    !
+    ! !ARGUMENTS    
+    type(ed_site_type) , intent(inout), target   :: currentSite
+    !
+    ! !LOCAL VARIABLES:
+    type(ed_patch_type) , pointer :: currentPatch
+    type(ed_cohort_type), pointer :: currentCohort,copyc
+    integer  :: i,j
+    integer  :: z     ! Current number of canopy layers. (1= canopy, 2 = understorey) 
     real(r8) :: checkarea
     real(r8) :: cc_loss
     real(r8) :: lossarea
@@ -95,10 +92,12 @@ contains
     integer  :: c
     real(r8) :: sumloss,excess_area
     integer  :: count_mi
+    !----------------------------------------------------------------------
 
     currentPatch => currentSite%oldest_patch
     
-! Section 1: Check  total canopy area.    
+    ! Section 1: Check  total canopy area.    
+
     new_total_area_check = 0._r8
     do while (associated(currentPatch)) ! Patch loop    
        excess_area = 1.0_r8   
@@ -169,7 +168,7 @@ contains
                       if(cc_loss < currentCohort%c_area)then
                          allocate(copyc)
 
-                         call copy_cohort(currentCohort,copyc) !makes an identical copy...
+                         call copy_cohort(currentCohort, copyc) !makes an identical copy...
                          ! n.b this needs to happen BEFORE the cohort goes into the new layer, 
                          ! otherwise currentPatch%spread(i+1) will be higher and the area will change...!!! 
                          sumloss = sumloss + cc_loss 
@@ -404,7 +403,7 @@ contains
                       if(cc_gain < currentCohort%c_area)then
                          allocate(copyc)
 
-                         call copy_cohort(currentCohort,copyc) !makes an identical copy...
+                         call copy_cohort(currentCohort, copyc) !makes an identical copy...
                          ! n.b this needs to happen BEFORE the cohort goes into the new layer, otherwise currentPatch
                          ! %spread(+1) will be higher and the area will change...!!!
                          sumgain = sumgain + cc_gain
@@ -567,23 +566,25 @@ contains
   end subroutine canopy_structure
 
   ! ============================================================================
-  !  Calculates the spatial spread of tree canopies based on canopy closure.                             
-  ! ============================================================================
   subroutine canopy_spread( currentSite )
-
+    !
+    ! !DESCRIPTION:
+    !  Calculates the spatial spread of tree canopies based on canopy closure.                             
+    !
+    ! !USES:
     use clm_varpar  , only : nlevcan_ed
     use EDParamsMod , only : ED_val_maxspread, ED_val_minspread 
-
-    implicit none
-
-    type (site), intent(inout),   pointer :: currentSite
-
-    type (cohort), pointer :: currentCohort
-    type (patch),  pointer :: currentPatch
-
+    !
+    ! !ARGUMENTS    
+    type (ed_site_type), intent(inout), target :: currentSite
+    !
+    ! !LOCAL VARIABLES:
+    type (ed_cohort_type), pointer :: currentCohort
+    type (ed_patch_type) , pointer :: currentPatch
     real(r8) :: arealayer(nlevcan_ed) ! Amount of canopy in each layer. 
     real(r8) :: inc                   ! Arbitrary daily incremental change in canopy area 
-    integer z
+    integer  :: z
+    !----------------------------------------------------------------------
 
     inc = 0.005_r8
 
@@ -596,7 +597,7 @@ contains
        currentCohort => currentPatch%tallest
        do while (associated(currentCohort))
           currentCohort%c_area = c_area(currentCohort) 
-          if(ecophyscon%woody(currentCohort%pft) == 1)then
+          if(pftcon%woody(currentCohort%pft) == 1)then
              arealayer(currentCohort%canopy_layer) = arealayer(currentCohort%canopy_layer) + currentCohort%c_area
           endif
           currentCohort => currentCohort%shorter
@@ -627,6 +628,4 @@ contains
 
   end subroutine canopy_spread
 
-
-  ! ============================================================================
 end module EDCanopyStructureMod

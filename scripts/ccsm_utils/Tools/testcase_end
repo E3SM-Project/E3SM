@@ -240,14 +240,17 @@ if ( $MODEL_GEN_COMP != "UNSET" ) then
       foreach extension ( $extension_list )
          set test_hist=`cd $RUNDIR; ls -1 ${CASE}.${MODEL_GEN_COMP}*.${extension}*.nc | tail -1`
          set base_hist="${MODEL_GEN_COMP}.${extension}.nc"
+         set base_name="undefined"
          set ran="nope"
          if ( "$type" == "compare_hist" && $?BASECMP_NAME ) then
             set ran="yep"
+            set base_name=$BASECMP_NAME
             $CASETOOLS/component_compare.sh -baseline_dir $BASECMP_DIR \
              -test_dir $RUNDIR -test_hist "$test_hist" -baseline_hist $base_hist >> $TESTSTATUS_LOG
          endif
          if ( "$type" == "generate" && $?BASEGEN_NAME ) then
             set ran="yep"
+            set base_name=$BASEGEN_NAME
             $CASETOOLS/component_generate.sh -baseline_dir $BASEGEN_DIR \
              -test_dir $RUNDIR -test_hist "$test_hist" -baseline_hist $base_hist >> $TESTSTATUS_LOG
          endif
@@ -255,12 +258,12 @@ if ( $MODEL_GEN_COMP != "UNSET" ) then
             set compstatus = `tail -1 $TESTSTATUS_LOG | cut -d ':' -f 1`
             if ( "$compstatus" != "BFAIL_NA" ) then
                set all_bfail=0
-               echo "$compstatus ${CASEBASEID}.${MODEL_GEN_COMP}.${extension}.${type}.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+               echo "$compstatus ${CASEBASEID}.${MODEL_GEN_COMP}.${extension}.${type}.${base_name} " >>& $TESTSTATUS_OUT
             endif
          endif
       end
       if ( $all_bfail  == 1 && "$ran" == "yep" ) then
-         echo "BFAIL_NA ${CASEBASEID}.${MODEL_GEN_COMP}.all_extensions.${type}.${BASECMP_NAME} " >>& $TESTSTATUS_OUT
+         echo "BFAIL_NA ${CASEBASEID}.${MODEL_GEN_COMP}.all_extensions.${type}.${base_name} " >>& $TESTSTATUS_OUT
       endif
    end
 endif

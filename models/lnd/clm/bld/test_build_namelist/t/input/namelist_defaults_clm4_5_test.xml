@@ -307,18 +307,9 @@ lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c130927.nc</fsurdat>
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_rcp2.6_simyr1850-2100_c130524.nc</flanduse_timeseries>
 
 <!-- GLC mask datasets (relative to {csmdata}) -->
-<fglcmask hgrid="48x96"    glc_grid="gland20" >glc/cism/griddata/glcmaskdata_48x96_Gland20km.nc</fglcmask>
-<fglcmask hgrid="48x96"    glc_grid="gland10" >glc/cism/griddata/glcmaskdata_48x96_Gland10km.nc</fglcmask>
-<fglcmask hgrid="48x96"    glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_48x96_Gland5km.nc</fglcmask>
-<fglcmask hgrid="48x96"    glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_48x96_Gland5km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland20" >glc/cism/griddata/glcmaskdata_0.9x1.25_Gland20km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland10" >glc/cism/griddata/glcmaskdata_0.9x1.25_Gland10km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>
-<fglcmask hgrid="0.9x1.25" glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland20" >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland20km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland10" >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland10km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland5"  >glc/cism/griddata/glcmaskdata_1.9x2.5_Gland5km.nc</fglcmask>
-<fglcmask hgrid="1.9x2.5"  glc_grid="gland5UM">glc/cism/griddata/glcmaskdata_1.9x2.5_Gland5km.nc</fglcmask>
+<fglcmask hgrid="48x96"    >glc/cism/griddata/glcmaskdata_48x96_gland_c141105.nc</fglcmask>
+<fglcmask hgrid="0.9x1.25" >glc/cism/griddata/glcmaskdata_0.9x1.25_gland_c141105.nc</fglcmask>
+<fglcmask hgrid="1.9x2.5"  >glc/cism/griddata/glcmaskdata_1.9x2.5_gland_c141105.nc</fglcmask>
 
 <!-- Land topo datasets (when running glc_nec) (relative to {csmdata}) -->
 <flndtopo hgrid="0.9x1.25"  >lnd/clm2/griddata/topodata_0.9x1.25_USGS_070110.nc</flndtopo>

@@ -11,7 +11,6 @@ module MEGANFactorsMod
   !
   implicit none
   private
-  save
   !
   ! !PUBLIC MEMBERS:
   public :: megan_factors_init

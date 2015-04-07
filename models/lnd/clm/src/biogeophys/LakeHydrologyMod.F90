@@ -20,11 +20,11 @@ module LakeHydrologyMod
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use decompMod            , only : bounds_type
   use ColumnType           , only : col                
-  use PatchType            , only : pft                
+  use PatchType            , only : patch                
   use atm2lndType          , only : atm2lnd_type
-  use AerosolType          , only : aerosol_type
+  use AerosolMod           , only : aerosol_type
   use EnergyFluxType       , only : energyflux_type
-  use FrictionVelocityType , only : frictionvel_type
+  use FrictionVelocityMod  , only : frictionvel_type
   use LakeStateType        , only : lakestate_type
   use SoilStateType        , only : soilstate_type
   use TemperatureType      , only : temperature_type
@@ -46,8 +46,8 @@ contains
   subroutine LakeHydrology(bounds, &
        num_lakec, filter_lakec, num_lakep, filter_lakep, &
        num_shlakesnowc, filter_shlakesnowc, num_shlakenosnowc, filter_shlakenosnowc, &
-       atm2lnd_vars, temperature_vars, soilstate_vars, waterstate_vars, waterflux_vars, &
-       energyflux_vars, aerosol_vars, lakestate_vars)
+       atm2lnd_inst, temperature_inst, soilstate_inst, waterstate_inst, waterflux_inst, &
+       energyflux_inst, aerosol_inst, lakestate_inst)
     !
     ! !DESCRIPTION:
     ! WARNING: This subroutine assumes lake columns have one and only one pft.
@@ -85,14 +85,14 @@ contains
     integer                , intent(out)   :: filter_shlakesnowc(:)   ! column filter for snow points
     integer                , intent(out)   :: num_shlakenosnowc       ! number of column non-snow points
     integer                , intent(out)   :: filter_shlakenosnowc(:) ! column filter for non-snow points
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
-    type(temperature_type) , intent(inout) :: temperature_vars
-    type(soilstate_type)   , intent(in)    :: soilstate_vars
-    type(waterstate_type)  , intent(inout) :: waterstate_vars
-    type(waterflux_type)   , intent(inout) :: waterflux_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
-    type(aerosol_type)     , intent(inout) :: aerosol_vars
-    type(lakestate_type)   , intent(inout) :: lakestate_vars
+    type(atm2lnd_type)     , intent(in)    :: atm2lnd_inst
+    type(temperature_type) , intent(inout) :: temperature_inst
+    type(soilstate_type)   , intent(in)    :: soilstate_inst
+    type(waterstate_type)  , intent(inout) :: waterstate_inst
+    type(waterflux_type)   , intent(inout) :: waterflux_inst
+    type(energyflux_type)  , intent(inout) :: energyflux_inst
+    type(aerosol_type)     , intent(inout) :: aerosol_inst
+    type(lakestate_type)   , intent(inout) :: lakestate_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: p,fp,g,l,c,j,fc,jtop                            ! indices
@@ -117,8 +117,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                            & 
-         pcolumn              =>  pft%column                            , & ! Input:  [integer  (:)   ]  pft's column index                       
-         pgridcell            =>  pft%gridcell                          , & ! Input:  [integer  (:)   ]  pft's gridcell index                     
+         pcolumn              =>  patch%column                            , & ! Input:  [integer  (:)   ]  pft's column index                       
+         pgridcell            =>  patch%gridcell                          , & ! Input:  [integer  (:)   ]  pft's gridcell index                     
          cgridcell            =>  col%gridcell                          , & ! Input:  [integer  (:)   ]  column's gridcell                        
          clandunit            =>  col%landunit                          , & ! Input:  [integer  (:)   ]  column's landunit                        
          dz_lake              =>  col%dz_lake                           , & ! Input:  [real(r8) (:,:) ]  layer thickness for lake (m)          
@@ -127,81 +127,79 @@ contains
          zi                   =>  col%zi                                , & ! Input:  [real(r8) (:,:) ]  interface depth (m)                   
          snl                  =>  col%snl                               , & ! Input:  [integer  (:)   ]  number of snow layers                    
 
-         forc_rain            =>  atm2lnd_vars%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                        
-         forc_snow            =>  atm2lnd_vars%forc_snow_downscaled_col , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                        
-         forc_t               =>  atm2lnd_vars%forc_t_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)        
-         qflx_floodg          =>  atm2lnd_vars%forc_flood_grc           , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM   
+         forc_rain            =>  atm2lnd_inst%forc_rain_downscaled_col , & ! Input:  [real(r8) (:)   ]  rain rate [mm/s]                        
+         forc_snow            =>  atm2lnd_inst%forc_snow_downscaled_col , & ! Input:  [real(r8) (:)   ]  snow rate [mm/s]                        
+         forc_t               =>  atm2lnd_inst%forc_t_downscaled_col    , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)        
+         qflx_floodg          =>  atm2lnd_inst%forc_flood_grc           , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM   
 
-         watsat               =>  soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
+         watsat               =>  soilstate_inst%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
 
-         t_lake               =>  temperature_vars%t_lake_col           , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)             
-         t_grnd               =>  temperature_vars%t_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
-         t_soisno             =>  temperature_vars%t_soisno_col         , & ! Output: [real(r8) (:,:) ]  snow temperature (Kelvin)             
-         dTdz_top             =>  temperature_vars%dTdz_top_col         , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer K m-1] !TOD 
-         snot_top             =>  temperature_vars%snot_top_col         , & ! Output: [real(r8) (:)   ]  snow temperature in top layer [K]  !TODO
+         t_lake               =>  temperature_inst%t_lake_col           , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)             
+         t_grnd               =>  temperature_inst%t_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)             
+         t_soisno             =>  temperature_inst%t_soisno_col         , & ! Output: [real(r8) (:,:) ]  snow temperature (Kelvin)             
+         dTdz_top             =>  temperature_inst%dTdz_top_col         , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer K m-1] !TOD 
+         snot_top             =>  temperature_inst%snot_top_col         , & ! Output: [real(r8) (:)   ]  snow temperature in top layer [K]  !TODO
 
-         do_capsnow           =>  waterstate_vars%do_capsnow_col        , & ! Input:  [logical  (:)   ]  true => do snow capping                  
-         begwb                =>  waterstate_vars%begwb_col             , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
-         endwb                =>  waterstate_vars%endwb_col             , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
-         snw_rds              =>  waterstate_vars%snw_rds_col           , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6] 
-         snw_rds_top          =>  waterstate_vars%snw_rds_top_col       , & ! Output: [real(r8) (:)   ]  effective snow grain size, top layer [microns] 
-         h2osno_top           =>  waterstate_vars%h2osno_top_col        , & ! Output: [real(r8) (:)   ]  mass of snow in top layer [kg]    
-         sno_liq_top          =>  waterstate_vars%sno_liq_top_col       , & ! Output: [real(r8) (:)   ]  liquid water fraction in top snow layer [frc] 
-         frac_sno_eff         =>  waterstate_vars%frac_sno_eff_col      , & ! Output: [real(r8) (:)   ]  needed for snicar code                  
-         frac_iceold          =>  waterstate_vars%frac_iceold_col       , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
-         snow_depth           =>  waterstate_vars%snow_depth_col        , & ! Output: [real(r8) (:)   ]  snow height (m)                         
-         h2osno               =>  waterstate_vars%h2osno_col            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
-         snowice              =>  waterstate_vars%snowice_col           , & ! Output: [real(r8) (:)   ]  average snow ice lens                   
-         snowliq              =>  waterstate_vars%snowliq_col           , & ! Output: [real(r8) (:)   ]  average snow liquid water               
-         h2osoi_ice           =>  waterstate_vars%h2osoi_ice_col        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
-         h2osoi_liq           =>  waterstate_vars%h2osoi_liq_col        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
-         h2osoi_vol           =>  waterstate_vars%h2osoi_vol_col        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
+         do_capsnow           =>  waterstate_inst%do_capsnow_col        , & ! Input:  [logical  (:)   ]  true => do snow capping                  
+         begwb                =>  waterstate_inst%begwb_col             , & ! Input:  [real(r8) (:)   ]  water mass begining of the time step    
+         endwb                =>  waterstate_inst%endwb_col             , & ! Output: [real(r8) (:)   ]  water mass end of the time step         
+         snw_rds              =>  waterstate_inst%snw_rds_col           , & ! Output: [real(r8) (:,:) ]  effective snow grain radius (col,lyr) [microns, m^-6] 
+         snw_rds_top          =>  waterstate_inst%snw_rds_top_col       , & ! Output: [real(r8) (:)   ]  effective snow grain size, top layer [microns] 
+         h2osno_top           =>  waterstate_inst%h2osno_top_col        , & ! Output: [real(r8) (:)   ]  mass of snow in top layer [kg]    
+         sno_liq_top          =>  waterstate_inst%sno_liq_top_col       , & ! Output: [real(r8) (:)   ]  liquid water fraction in top snow layer [frc] 
+         frac_sno_eff         =>  waterstate_inst%frac_sno_eff_col      , & ! Output: [real(r8) (:)   ]  needed for snicar code                  
+         frac_iceold          =>  waterstate_inst%frac_iceold_col       , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
+         snow_depth           =>  waterstate_inst%snow_depth_col        , & ! Output: [real(r8) (:)   ]  snow height (m)                         
+         h2osno               =>  waterstate_inst%h2osno_col            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
+         snowice              =>  waterstate_inst%snowice_col           , & ! Output: [real(r8) (:)   ]  average snow ice lens                   
+         snowliq              =>  waterstate_inst%snowliq_col           , & ! Output: [real(r8) (:)   ]  average snow liquid water               
+         h2osoi_ice           =>  waterstate_inst%h2osoi_ice_col        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
+         h2osoi_liq           =>  waterstate_inst%h2osoi_liq_col        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
+         h2osoi_vol           =>  waterstate_inst%h2osoi_vol_col        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
 
-         qflx_floodc          =>  waterflux_vars%qflx_floodc_col        , & ! Output: [real(r8) (:)   ]  column flux of flood water from RTM     
-         qflx_prec_grnd       =>  waterflux_vars%qflx_prec_grnd_patch   , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
-         qflx_snow_grnd_patch =>  waterflux_vars%qflx_snow_grnd_patch   , & ! Output: [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
-         qflx_rain_grnd       =>  waterflux_vars%qflx_rain_grnd_patch   , & ! Output: [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
-         qflx_rain_grnd_col   =>  waterflux_vars%qflx_rain_grnd_col     , & ! Output: [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
-         qflx_evap_tot        =>  waterflux_vars%qflx_evap_tot_patch    , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
-         qflx_evap_soi        =>  waterflux_vars%qflx_evap_soi_patch    , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
-         qflx_sub_snow        =>  waterflux_vars%qflx_sub_snow_patch    , & ! Output: [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
-         qflx_evap_grnd       =>  waterflux_vars%qflx_evap_grnd_patch   , & ! Output: [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
-         qflx_dew_snow        =>  waterflux_vars%qflx_dew_snow_patch    , & ! Output: [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
-         qflx_dew_grnd        =>  waterflux_vars%qflx_dew_grnd_patch    , & ! Output: [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
-         qflx_snwcp_ice       =>  waterflux_vars%qflx_snwcp_ice_patch   , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
-         qflx_snwcp_liq       =>  waterflux_vars%qflx_snwcp_liq_patch   , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+]
-         qflx_snomelt         =>  waterflux_vars%qflx_snomelt_col       , & ! Output: [real(r8) (:)   ]  snow melt (mm H2O /s)                   
-         qflx_prec_grnd_col   =>  waterflux_vars%qflx_prec_grnd_col     , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
-         qflx_evap_grnd_col   =>  waterflux_vars%qflx_evap_grnd_col     , & ! Output: [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
-         qflx_dew_grnd_col    =>  waterflux_vars%qflx_dew_grnd_col      , & ! Output: [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
-         qflx_dew_snow_col    =>  waterflux_vars%qflx_dew_snow_col      , & ! Output: [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
-         qflx_sub_snow_col    =>  waterflux_vars%qflx_sub_snow_col      , & ! Output: [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
-         qflx_snow_grnd_col   =>  waterflux_vars%qflx_snow_grnd_col     , & ! Output: [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
-         qflx_evap_tot_col    =>  waterflux_vars%qflx_evap_tot_col      , & ! Output: [real(r8) (:)   ]  pft quantity averaged to the column (assuming one pft)
-         qflx_snwcp_ice_col   =>  waterflux_vars%qflx_snwcp_ice_col     , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
-         qflx_snwcp_liq_col   =>  waterflux_vars%qflx_snwcp_liq_col     , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+]
-         qflx_drain_perched   =>  waterflux_vars%qflx_drain_perched_col , & ! Output: [real(r8) (:)   ]  perched wt sub-surface runoff (mm H2O /s) !TODO - move this to somewhere else
-         qflx_h2osfc_surf     =>  waterflux_vars%qflx_h2osfc_surf_col   , & ! Output: [real(r8) (:)   ]  surface water runoff (mm H2O /s)        
-         qflx_snow_melt       =>  waterflux_vars%qflx_snow_melt_col     , & ! Output: [real(r8) (:)   ]  net snow melt                           
-         qflx_rsub_sat        =>  waterflux_vars%qflx_rsub_sat_col      , & ! Output: [real(r8) (:)   ]  soil saturation excess [mm h2o/s]        
-         qflx_surf            =>  waterflux_vars%qflx_surf_col          , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)              
-         qflx_drain           =>  waterflux_vars%qflx_drain_col         , & ! Output: [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)          
-         qflx_infl            =>  waterflux_vars%qflx_infl_col          , & ! Output: [real(r8) (:)   ]  infiltration (mm H2O /s)                
-         qflx_qrgwl           =>  waterflux_vars%qflx_qrgwl_col         , & ! Output: [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes  
-         qflx_runoff          =>  waterflux_vars%qflx_runoff_col        , & ! Output: [real(r8) (:)   ]  total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
-         qflx_irrig           =>  waterflux_vars%qflx_irrig_patch       , & ! Output: [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
-         qflx_irrig_col       =>  waterflux_vars%qflx_irrig_col         , & ! Output: [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
-         qflx_top_soil        =>  waterflux_vars%qflx_top_soil_col      , & ! Output: [real(r8) (:)   ]  net water input into soil from top (mm/s)
-         qflx_sl_top_soil     =>  waterflux_vars%qflx_sl_top_soil_col   , & ! Output: [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
+         qflx_floodc          =>  waterflux_inst%qflx_floodc_col        , & ! Output: [real(r8) (:)   ]  column flux of flood water from RTM     
+         qflx_prec_grnd       =>  waterflux_inst%qflx_prec_grnd_patch   , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
+         qflx_snow_grnd_patch =>  waterflux_inst%qflx_snow_grnd_patch   , & ! Output: [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
+         qflx_rain_grnd       =>  waterflux_inst%qflx_rain_grnd_patch   , & ! Output: [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
+         qflx_rain_grnd_col   =>  waterflux_inst%qflx_rain_grnd_col     , & ! Output: [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
+         qflx_evap_tot        =>  waterflux_inst%qflx_evap_tot_patch    , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
+         qflx_evap_soi        =>  waterflux_inst%qflx_evap_soi_patch    , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
+         qflx_sub_snow        =>  waterflux_inst%qflx_sub_snow_patch    , & ! Output: [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
+         qflx_evap_grnd       =>  waterflux_inst%qflx_evap_grnd_patch   , & ! Output: [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
+         qflx_dew_snow        =>  waterflux_inst%qflx_dew_snow_patch    , & ! Output: [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
+         qflx_dew_grnd        =>  waterflux_inst%qflx_dew_grnd_patch    , & ! Output: [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
+         qflx_snwcp_ice       =>  waterflux_inst%qflx_snwcp_ice_patch   , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
+         qflx_snwcp_liq       =>  waterflux_inst%qflx_snwcp_liq_patch   , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+]
+         qflx_snomelt         =>  waterflux_inst%qflx_snomelt_col       , & ! Output: [real(r8) (:)   ]  snow melt (mm H2O /s)                   
+         qflx_prec_grnd_col   =>  waterflux_inst%qflx_prec_grnd_col     , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
+         qflx_evap_grnd_col   =>  waterflux_inst%qflx_evap_grnd_col     , & ! Output: [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
+         qflx_dew_grnd_col    =>  waterflux_inst%qflx_dew_grnd_col      , & ! Output: [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
+         qflx_dew_snow_col    =>  waterflux_inst%qflx_dew_snow_col      , & ! Output: [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
+         qflx_sub_snow_col    =>  waterflux_inst%qflx_sub_snow_col      , & ! Output: [real(r8) (:)   ]  sublimation rate from snow pack (mm H2O /s) [+]
+         qflx_snow_grnd_col   =>  waterflux_inst%qflx_snow_grnd_col     , & ! Output: [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
+         qflx_evap_tot_col    =>  waterflux_inst%qflx_evap_tot_col      , & ! Output: [real(r8) (:)   ]  pft quantity averaged to the column (assuming one pft)
+         qflx_snwcp_ice_col   =>  waterflux_inst%qflx_snwcp_ice_col     , & ! Output: [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]
+         qflx_snwcp_liq_col   =>  waterflux_inst%qflx_snwcp_liq_col     , & ! Output: [real(r8) (:)   ]  excess rainfall due to snow capping (mm H2O /s) [+]
+         qflx_drain_perched   =>  waterflux_inst%qflx_drain_perched_col , & ! Output: [real(r8) (:)   ]  perched wt sub-surface runoff (mm H2O /s) !TODO - move this to somewhere else
+         qflx_h2osfc_surf     =>  waterflux_inst%qflx_h2osfc_surf_col   , & ! Output: [real(r8) (:)   ]  surface water runoff (mm H2O /s)        
+         qflx_snow_melt       =>  waterflux_inst%qflx_snow_melt_col     , & ! Output: [real(r8) (:)   ]  net snow melt                           
+         qflx_rsub_sat        =>  waterflux_inst%qflx_rsub_sat_col      , & ! Output: [real(r8) (:)   ]  soil saturation excess [mm h2o/s]        
+         qflx_surf            =>  waterflux_inst%qflx_surf_col          , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)              
+         qflx_drain           =>  waterflux_inst%qflx_drain_col         , & ! Output: [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)          
+         qflx_infl            =>  waterflux_inst%qflx_infl_col          , & ! Output: [real(r8) (:)   ]  infiltration (mm H2O /s)                
+         qflx_qrgwl           =>  waterflux_inst%qflx_qrgwl_col         , & ! Output: [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes  
+         qflx_runoff          =>  waterflux_inst%qflx_runoff_col        , & ! Output: [real(r8) (:)   ]  total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
+         qflx_top_soil        =>  waterflux_inst%qflx_top_soil_col      , & ! Output: [real(r8) (:)   ]  net water input into soil from top (mm/s)
+         qflx_sl_top_soil     =>  waterflux_inst%qflx_sl_top_soil_col   , & ! Output: [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
 
-         eflx_snomelt         =>  energyflux_vars%eflx_snomelt_col      , & ! Output: [real(r8) (:)   ]  snow melt heat flux (W/m**2)
-         eflx_sh_tot          =>  energyflux_vars%eflx_sh_tot_patch     , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
-         eflx_sh_grnd         =>  energyflux_vars%eflx_sh_grnd_patch    , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         eflx_soil_grnd       =>  energyflux_vars%eflx_soil_grnd_patch  , & ! Output: [real(r8) (:)   ]  heat flux into snow / lake (W/m**2) [+ = into soil]
-         eflx_gnet            =>  energyflux_vars%eflx_gnet_patch       , & ! Output: [reay(r8) (:)   ]  net heat flux into ground (W/m**2)      
-         eflx_grnd_lake       =>  energyflux_vars%eflx_grnd_lake_patch  , & ! Output: [real(r8) (:)   ]  net heat flux into lake / snow surface, excluding light transmission (W/m**2)
+         eflx_snomelt         =>  energyflux_inst%eflx_snomelt_col      , & ! Output: [real(r8) (:)   ]  snow melt heat flux (W/m**2)
+         eflx_sh_tot          =>  energyflux_inst%eflx_sh_tot_patch     , & ! Output: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
+         eflx_sh_grnd         =>  energyflux_inst%eflx_sh_grnd_patch    , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
+         eflx_soil_grnd       =>  energyflux_inst%eflx_soil_grnd_patch  , & ! Output: [real(r8) (:)   ]  heat flux into snow / lake (W/m**2) [+ = into soil]
+         eflx_gnet            =>  energyflux_inst%eflx_gnet_patch       , & ! Output: [reay(r8) (:)   ]  net heat flux into ground (W/m**2)      
+         eflx_grnd_lake       =>  energyflux_inst%eflx_grnd_lake_patch  , & ! Output: [real(r8) (:)   ]  net heat flux into lake / snow surface, excluding light transmission (W/m**2)
 
-         lake_icefrac         =>  lakestate_vars%lake_icefrac_col       , & ! Output: [real(r8) (:,:) ]  mass fraction of lake layer that is frozen
+         lake_icefrac         =>  lakestate_inst%lake_icefrac_col       , & ! Output: [real(r8) (:,:) ]  mass fraction of lake layer that is frozen
 
          begc => bounds%begc, &
          endc => bounds%endc  &
@@ -288,8 +286,8 @@ contains
             frac_iceold(c,0) = 1._r8
 
              ! intitialize SNICAR variables for fresh snow:
-             call aerosol_vars%Reset(column=c)
-             call waterstate_vars%Reset(column=c)
+             call aerosol_inst%Reset(column=c)
+             call waterstate_inst%Reset(column=c)
 
          end if
 
@@ -345,8 +343,8 @@ contains
                   qflx_dew_grnd(p) = abs(qflx_evap_soi(p))
                end if
             end if
-            ! Update the pft-level qflx_snowcap
-            ! This was moved in from Hydrology2 to keep all pft-level
+            ! Update the patch-level qflx_snowcap
+            ! This was moved in from Hydrology2 to keep all patch-level
             ! calculations out of Hydrology2
             if (do_capsnow(c)) then
                qflx_snwcp_ice(p) = qflx_snwcp_ice(p) + qflx_dew_snow(p) 
@@ -429,7 +427,7 @@ contains
 
       call SnowWater(bounds, &
            num_shlakesnowc, filter_shlakesnowc, num_shlakenosnowc, filter_shlakenosnowc, &
-           atm2lnd_vars, waterflux_vars, waterstate_vars, aerosol_vars)
+           atm2lnd_inst, waterflux_inst, waterstate_inst, aerosol_inst)
 
       ! Determine soil hydrology
       ! Here this consists only of making sure that soil is saturated even as it melts and
@@ -474,17 +472,17 @@ contains
       ! Natural compaction and metamorphosis.
 
       call SnowCompaction(bounds, num_shlakesnowc, filter_shlakesnowc, &
-           temperature_vars, waterstate_vars)
+           temperature_inst, waterstate_inst)
 
       ! Combine thin snow elements
 
       call CombineSnowLayers(bounds, num_shlakesnowc, filter_shlakesnowc, &
-           aerosol_vars, temperature_vars, waterflux_vars, waterstate_vars)
+           aerosol_inst, temperature_inst, waterflux_inst, waterstate_inst)
 
       ! Divide thick snow elements
 
       call DivideSnowLayers(bounds, num_shlakesnowc, filter_shlakesnowc, &
-           aerosol_vars, temperature_vars, waterstate_vars, is_lake=.true.)
+           aerosol_inst, temperature_inst, waterstate_inst, is_lake=.true.)
 
       ! Check for single completely unfrozen snow layer over lake.  Modeling this ponding is unnecessary and
       ! can cause instability after the timestep when melt is completed, as the temperature after melt can be
@@ -497,23 +495,36 @@ contains
 
          j = 0
 
-         if (snl(c) == -1 .and. h2osoi_ice(c,j) == 0._r8) then
-            ! Remove layer
-            ! Take extra heat of layer and release to sensible heat in order to maintain energy conservation.
-            heatrem             = cpliq*h2osoi_liq(c,j)*(t_soisno(c,j) - tfrz)
-            eflx_sh_tot(p)      = eflx_sh_tot(p)    + heatrem/dtime
-            eflx_sh_grnd(p)     = eflx_sh_grnd(p)   + heatrem/dtime  ! Added this line 7/22/11 for consistency.
-            eflx_soil_grnd(p)   = eflx_soil_grnd(p) - heatrem/dtime
-            eflx_gnet(p)        = eflx_gnet(p)      - heatrem/dtime
-
-            eflx_grnd_lake(p)   = eflx_gnet(p) - heatrem/dtime
-            qflx_sl_top_soil(c) = qflx_sl_top_soil(c) + h2osno(c)
-            snl(c)              = 0
-            h2osno(c)           = 0._r8
-            snow_depth(c)       = 0._r8
-            ! Rest of snow layer book-keeping will be done below.
-         else
-            eflx_grnd_lake(p) = eflx_gnet(p)
+         if (snl(c) == -1) then 
+            if (h2osoi_ice(c,j) > 0._r8 .and. t_soisno(c,j) > tfrz) then
+    
+               ! Take extra heat of layer and release to sensible heat in order 
+               ! to maintain energy conservation.
+               heatrem           = (cpliq*h2osoi_liq(c,j))*(t_soisno(c,j) - tfrz)
+               t_soisno(c,j)     = tfrz
+               eflx_sh_tot(p)    = eflx_sh_tot(p) + heatrem/dtime
+               eflx_sh_grnd(p)   = eflx_sh_grnd(p) + heatrem/dtime
+               eflx_soil_grnd(p) = eflx_soil_grnd(p) - heatrem/dtime
+               eflx_gnet(p)      = eflx_gnet(p) - heatrem/dtime
+               eflx_grnd_lake(p) = eflx_grnd_lake(p) - heatrem/dtime
+            else if (h2osoi_ice(c,j) == 0._r8) then
+               ! Remove layer
+               ! Take extra heat of layer and release to sensible heat in order 
+               ! to maintain energy conservation.
+               heatrem             = cpliq*h2osoi_liq(c,j)*(t_soisno(c,j) - tfrz)
+               eflx_sh_tot(p)      = eflx_sh_tot(p) + heatrem/dtime
+               eflx_sh_grnd(p)     = eflx_sh_grnd(p) + heatrem/dtime
+               eflx_soil_grnd(p)   = eflx_soil_grnd(p) - heatrem/dtime
+               eflx_gnet(p)        = eflx_gnet(p) - heatrem/dtime
+               eflx_grnd_lake(p)   = eflx_grnd_lake(p) - heatrem/dtime
+               qflx_sl_top_soil(c) = qflx_sl_top_soil(c) + h2osno(c)/dtime
+               snl(c)              = 0
+               h2osno(c)           = 0._r8
+               snow_depth(c)       = 0._r8
+               ! Rest of snow layer book-keeping will be done below.
+            else
+               eflx_grnd_lake(p) = eflx_gnet(p)
+            end if
          end if
       end do
 
@@ -649,8 +660,6 @@ contains
          qflx_infl(c)          = 0._r8
          qflx_surf(c)          = 0._r8
          qflx_drain(c)         = 0._r8
-         qflx_irrig(p)         = 0._r8
-         qflx_irrig_col(c)     = 0._r8
 
          ! Insure water balance using qflx_qrgwl
          qflx_qrgwl(c)     = forc_rain(c) + forc_snow(c) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &

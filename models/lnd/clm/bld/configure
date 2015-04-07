@@ -548,7 +548,7 @@ if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if ( $snicar_frc eq 'on' ) {
     $cfg_cppdefs .= " -DSNICAR_FRC";
   }
-} elsif ($phys->as_long() == $phys->as_long("clm4_5") ) {
+} elsif ($phys->as_long() >= $phys->as_long("clm4_5") ) {
   # clm4_5 cppdefs -- SHOULD NOT BE ANY!
   if ( $cfg_cppdefs ne '' ) {
     die <<"EOF";
@@ -617,7 +617,6 @@ sub write_filepath_cesmbld
     # configuration parameters used to determine paths
     my $usr_src       = $cfg_ref->get('usr_src');
     my $clm_root      = $cfg_ref->get('clm_root');
-    my $phys_name     = $phys->as_filename();
 
     # User specified source directories.
     if ($usr_src  =~ /\S+/) {
@@ -635,7 +634,7 @@ sub write_filepath_cesmbld
 	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
 
 	# source directories under root
-	my @dirs = ( "main", "biogeophys", "biogeochem");
+	my @dirs = ( "main", "biogeophys", "biogeochem" );
 	foreach my $dir ( @dirs ) {
 	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
 		print $fh "$srcdir/$dir\n";
@@ -649,7 +648,7 @@ sub write_filepath_cesmbld
 	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
 
 	# source directories under root
-	my @dirs = ( "main", "biogeophys", "biogeochem", "dyn_subgrid", "ED", "ED/main", "ED/biogeophys", "ED/biogeochem", "ED/fire", "utils", "cpl" );
+	my @dirs = ( "main", "biogeophys", "biogeochem", "soilbiogeochem", "dyn_subgrid", "ED", "ED/main", "ED/biogeophys", "ED/biogeochem", "ED/fire", "utils", "cpl" );
 	foreach my $dir ( @dirs ) {
 	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
 		print $fh "$srcdir/$dir\n";

@@ -7,55 +7,61 @@ module EDBtranMod
   ! This routine cannot be in EDPhotosynthesis because EDPhotosynthesis is a loop and therefore would
   ! erroneously add these things up multiple times. 
   ! Rosie Fisher. March 2014. 
-  
-  
+  !
   ! !USES:
-  use EcophysConType   , only : ecophyscon
-  use EDtypesMod       , only : patch, cohort, gridCellEdState,numpft_ed
+  use pftconMod        , only : pftcon
+  use EDTypesMod       , only : ed_patch_type, ed_cohort_type, numpft_ed
   use EDEcophysContype , only : EDecophyscon
-  use EDVecPatchType   , only : EDpft
-
+  !
   implicit none
-  save
   private
-  
+  !
   public :: BTRAN_ED
-  
-  type(cohort), pointer  :: currentCohort ! current cohort
-  type(patch) , pointer  :: currentPatch ! current patch
+  !
+  type(ed_cohort_type), pointer  :: currentCohort ! current cohort
+  type(ed_patch_type) , pointer  :: currentPatch ! current patch
   !------------------------------------------------------------------------------
    
 contains 
 
   !------------------------------------------------------------------------------
-  subroutine BTRAN_ED(p, soilstate_vars, waterstate_vars, temperature_vars, energyflux_vars)
-
-    use shr_kind_mod       ,  only : r8 => shr_kind_r8
-    use shr_const_mod      ,  only : shr_const_pi  
-    use clm_varpar         ,  only : nlevgrnd
-    use clm_varctl         ,  only : iulog
-    use clm_varcon         ,  only : tfrz, denice, denh2o
-    use SoilStateType      ,  only : soilstate_type
-    use WaterStateType     ,  only : waterstate_type
-    use TemperatureType    ,  only : temperature_type
-    use EnergyFluxType     ,  only : energyflux_type
-    use GridcellType       ,  only : grc
-    use ColumnType         ,  only : col
-    use PatchType          ,  only : pft
-
-    implicit none
-
-    integer                , intent(in)    :: p  !patch/'p'
-    type(soilstate_type)   , intent(inout) :: soilstate_vars
-    type(waterstate_type)  , intent(in)    :: waterstate_vars
-    type(temperature_type) , intent(in)    :: temperature_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
-
+  subroutine btran_ed( bounds, p, ed_allsites_inst, &
+       soilstate_inst, waterstate_inst, temperature_inst, energyflux_inst)
+    !
+    ! !DESCRIPTION:
+    !
+    ! !USES:
+    use shr_kind_mod       , only : r8 => shr_kind_r8
+    use shr_const_mod      , only : shr_const_pi  
+    use decompMod          , only : bounds_type
+    use clm_varpar         , only : nlevgrnd
+    use clm_varctl         , only : iulog
+    use clm_varcon         , only : tfrz, denice, denh2o
+    use SoilStateType      , only : soilstate_type
+    use WaterStateType     , only : waterstate_type
+    use TemperatureType    , only : temperature_type
+    use EnergyFluxType     , only : energyflux_type
+    use GridcellType       , only : grc
+    use ColumnType         , only : col
+    use PatchType          , only : patch
+    use EDTypesMod         , only : ed_site_type, map_clmpatch_to_edpatch 
+    !
+    ! !ARGUMENTS    
+    type(bounds_type)      , intent(in)            :: bounds  ! clump bounds
+    integer                , intent(in)            :: p       ! patch/'p'
+    type(ed_site_type)     , intent(inout), target :: ed_allsites_inst( bounds%begg: )
+    type(soilstate_type)   , intent(inout)         :: soilstate_inst
+    type(waterstate_type)  , intent(in)            :: waterstate_inst
+    type(temperature_type) , intent(in)            :: temperature_inst
+    type(energyflux_type)  , intent(inout)         :: energyflux_inst
+    !
+    ! !LOCAL VARIABLES:
     integer :: iv !leaf layer
     integer :: g  !gridcell
     integer :: c  !column
     integer :: j  !soil layer
     integer :: ft ! plant functional type index
+    !----------------------------------------------------------------------
 
     ! Inputs to model from CLM. To be read in through an input file for the purposes of this program.      
     integer, parameter    :: nv = 5           ! Number of canopy layers
@@ -108,41 +114,35 @@ contains
     associate(& 
          dz          => col%dz                            , & ! Input:  [real(r8) (:,:) ]  layer depth (m)
 
-         smpso       => ecophyscon%smpso                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal opening (mm)
-         smpsc       => ecophyscon%smpsc                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal closure (mm)
+         smpso       => pftcon%smpso                      , & ! Input:  soil water potential at full stomatal opening (mm)
+         smpsc       => pftcon%smpsc                      , & ! Input:  soil water potential at full stomatal closure (mm)
 
-         sucsat      => soilstate_vars%sucsat_col         , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm) 
-         watsat      => soilstate_vars%watsat_col         , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
-         watdry      => soilstate_vars%watdry_col         , & ! Input:  [real(r8) (:,:) ]  btran parameter for btran=0
-         watopt      => soilstate_vars%watopt_col         , & ! Input:  [real(r8) (:,:) ]  btran parameter for btran = 1
-         bsw         => soilstate_vars%bsw_col            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b" 
-         soilbeta    => soilstate_vars%soilbeta_col       , & ! Input:  [real(r8) (:)   ]  soil wetness relative to field capacity 
-         sand        => soilstate_vars%sandfrac_patch     , & ! Input:  [real(r8) (:)   ]  % sand of soil 
-         rootfr      => soilstate_vars%rootfr_patch       , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer 
-         rootr       => soilstate_vars%rootr_patch        , & ! Output: [real(r8) (:,:) ]  Fraction of water uptake in each layer
+         sucsat      => soilstate_inst%sucsat_col         , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm) 
+         watsat      => soilstate_inst%watsat_col         , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
+         watdry      => soilstate_inst%watdry_col         , & ! Input:  [real(r8) (:,:) ]  btran parameter for btran=0
+         watopt      => soilstate_inst%watopt_col         , & ! Input:  [real(r8) (:,:) ]  btran parameter for btran = 1
+         bsw         => soilstate_inst%bsw_col            , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b" 
+         soilbeta    => soilstate_inst%soilbeta_col       , & ! Input:  [real(r8) (:)   ]  soil wetness relative to field capacity 
+         sand        => soilstate_inst%sandfrac_patch     , & ! Input:  [real(r8) (:)   ]  % sand of soil 
+         rootr       => soilstate_inst%rootr_patch        , & ! Output: [real(r8) (:,:) ]  Fraction of water uptake in each layer
 
-         h2osoi_ice  => waterstate_vars%h2osoi_ice_col    , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
-         h2osoi_vol  => waterstate_vars%h2osoi_vol_col    , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3] 
-         h2osoi_liq  => waterstate_vars%h2osoi_liq_col    , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) 
+         h2osoi_ice  => waterstate_inst%h2osoi_ice_col    , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osoi_vol  => waterstate_inst%h2osoi_vol_col    , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3] 
+         h2osoi_liq  => waterstate_inst%h2osoi_liq_col    , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) 
 
-         t_soisno    => temperature_vars%t_soisno_col     , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
+         t_soisno    => temperature_inst%t_soisno_col     , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
 
-         btran       => energyflux_vars%btran_patch       , & ! Output: [real(r8) (:)   ]  transpiration wetness factor (0 to 1)
-         btran2      => energyflux_vars%btran2_patch      , & ! Output: [real(r8) (:)   ] 
-         rresis      => energyflux_vars%rresis_patch      , & ! Output: [real(r8) (:,:) ]  root resistance by layer (0-1)  (nlevgrnd) 
-
-         ED_patch    => EDpft%ED_patch                      &
+         btran       => energyflux_inst%btran_patch       , & ! Output: [real(r8) (:)   ]  transpiration wetness factor (0 to 1)
+         btran2      => energyflux_inst%btran2_patch      , & ! Output: [real(r8) (:)   ] 
+         rresis      => energyflux_inst%rresis_patch        & ! Output: [real(r8) (:,:) ]  root resistance by layer (0-1)  (nlevgrnd) 
          )
    
-      if(ED_patch(p)==1)then
+      if (patch%is_veg(p)) then
 
-         g = pft%gridcell(p)
-         currentPatch => gridCellEdState(g)%spnt%oldest_patch   
-         do while(p /= currentPatch%clm_pno)
-            currentPatch => currentPatch%younger
-         enddo
-
-         c = pft%column(p)
+         c = patch%column(p)
+         g = patch%gridcell(p)
+         
+         currentPatch => map_clmpatch_to_edpatch(ed_allsites_inst(g), p) 
          do FT = 1,numpft_ed
             currentPatch%btran_ft(FT) = 0.0_r8
             do j = 1,nlevgrnd
@@ -344,6 +344,6 @@ contains
 
     end associate
 
-  end subroutine BTRAN_ED
+  end subroutine btran_ed
 
 end module EDBtranMod
