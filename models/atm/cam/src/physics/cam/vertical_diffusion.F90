@@ -343,7 +343,7 @@ contains
         if( masterproc ) write(iulog,*) &
              'vertical_diffusion_init: eddy_diffusivity scheme: UW Moist Turbulence Scheme by Bretherton and Park'
         ! Check compatibility of eddy and shallow scheme
-        if( shallow_scheme .ne. 'UW' ) then
+        if( shallow_scheme .ne. 'UW' .and. shallow_scheme .ne. 'off' ) then
             write(iulog,*) 'ERROR: shallow convection scheme ', shallow_scheme,' is incompatible with eddy scheme ', eddy_scheme
             call endrun( 'convect_shallow_init: shallow_scheme and eddy_scheme are incompatible' )
         endif
