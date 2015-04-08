@@ -165,6 +165,8 @@ def _main_func(description):
     expect(args.platform is None or len(args.platform.split(",")) == 2,
            "-p value must be in format: 'machine,compiler'")
 
+    acme_util.stop_buffering_output()
+
     update_acme_test(args.test_list_path, args.category, args.platform)
 
 if __name__ == "__main__":
