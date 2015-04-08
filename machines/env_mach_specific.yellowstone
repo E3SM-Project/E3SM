@@ -40,10 +40,11 @@ if ( $COMPILER == "intel") then
 
 # Currently netcdf-mpi is only supported for intel
   if ( $MPILIB == "mpi-serial") then
-    module load netcdf/4.3.0
+    module load netcdf/4.3.2
   else
 # Currently netcdf-mpi is only supported for intel
-    module load netcdf-mpi/4.3.0
+    module load netcdf-mpi/4.3.3-rc3
+    module load pnetcdf/1.6.0
   endif
 
 # Currently esmf is only supported with the INTEL compiler
@@ -65,12 +66,9 @@ endif
 if ( $COMPILER == "pgi" ) then
   module load pgi/14.7
   module load netcdf/4.3.0
-  if ( $?LSB_JOBID) then
-    # The following is needed at runtime, but seems to break the
-    # build.  So we only do it when LSB_JOBID is defined, which is a
-    # way of seeing whether it's runtime.
-    setenv MP_COMPILER gnu
-  endif
+if ( $MPILIB != "mpi-serial") then
+  module load pnetcdf/1.4.1
+endif
 endif
 if ( $COMPILER == "gnu" ) then
   module load gnu/4.9.2
@@ -81,12 +79,14 @@ if ( $COMPILER == "gnu" ) then
        ./xmlchange PIO_TYPENAME=netcdf
   endif
   #setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${NETCDF}/lib
-endif
 
-module load ncarcompilers/1.0
 if ( $MPILIB != "mpi-serial") then
   module load pnetcdf/1.4.1
 endif
+
+endif
+
+module load ncarcompilers/1.0
 module load cmake/2.8.10.2
 
 # -------------------------------------------------------------------------

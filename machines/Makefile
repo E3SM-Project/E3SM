@@ -36,17 +36,15 @@ complib: $(COMPLIB)  $(CURDIR)/Depends
 # Set the THREADDIR for the shared build 
 # based on the threaded build status
 compile_threaded = false
+THREADDIR = nothreads
 ifeq ($(strip $(SMP)),TRUE)
    compile_threaded = true
    THREADDIR = threads
 else
-   THREADDIR = nothreads
-endif
-ifeq ($(strip $(BUILD_THREADED)),TRUE)
-   compile_threaded = true
-   THREADDIR = threads
-else
-   THREADDIR = nothreads
+   ifeq ($(strip $(BUILD_THREADED)),TRUE)
+     compile_threaded = true
+     THREADDIR = threads
+  endif
 endif
 
 # set the debug directory based on the debug status
@@ -453,12 +451,21 @@ $(MCT_LIBDIR)/mct/libmct.a: $(MCT_LIBDIR)/mpeu/libmpeu.a
 $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a: $(MCT_LIBDIR)/Makefile.conf
 	$(MAKE) -C $(MCT_LIBDIR)/mpi-serial; \
 
+ifneq ("$(wildcard $(CIMEROOT)/externals/pio/src)", "")
+# This is a pio2 library
+  PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
+  PIOLIBNAME = -lpiof -lpioc
+else
+# This is a pio1 library
+  PIOLIB = $(PIO_LIBDIR)/libpio.a
+  PIOLIBNAME = -lpio
+endif
 
 MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a 
-PIOLIB = $(PIO_LIBDIR)/libpio.a
+
 GPTLLIB = $(GPTL_LIBDIR)/libgptl.a
 
-ULIBS += -L$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -lcsm_share -L$(SHAREDPATH)/lib -lpio -lgptl -lmct -lmpeu
+ULIBS += -L$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -lcsm_share -L$(SHAREDPATH)/lib $(PIOLIBNAME) -lgptl -lmct -lmpeu
 
 #------------------------------------------------------------------------------
 # Drive cmake script for cism and pio
