@@ -138,3 +138,22 @@ def get_current_commit(short=False, repo=None):
     """
     output = run_cmd("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
     return output.strip()
+
+###############################################################################
+def stop_buffering_output():
+###############################################################################
+    """
+    All stdout, stderr will not be buffered after this is called.
+    """
+    sys.stdout.flush()
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
+###############################################################################
+def start_buffering_output():
+###############################################################################
+    """
+    All stdout, stderr will be buffered after this is called. This is python's
+    default behavior.
+    """
+    sys.stdout.flush()
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w')
