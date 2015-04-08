@@ -1,6 +1,9 @@
 #!/usr/bin/env perl 
+
+# specify minimum version of perl
+use 5.010;
+
 use strict;
-use Switch;
 use warnings;
 use File::Path qw(mkpath);
 use File::Copy;
@@ -9,6 +12,9 @@ use File::Basename;
 use Data::Dumper;
 use Cwd;
 use POSIX qw(strftime);
+
+use English;
+no if ($PERL_VERSION ge v5.18.0), 'warnings' => 'experimental::smartmatch';
 
 #-----------------------------------------------------------------------------------------------
 # Global data. 
@@ -410,8 +416,10 @@ sub buildLibraries()
     if ($DEBUG eq 'TRUE') {$debugdir = "debug";}
     
     my $threaddir = 'nothreads';
-    if ($ENV{'SMP'}            eq 'TRUE'){ $threaddir = 'threads';}
-    if ($ENV{'BUILD_THREADED'} eq 'TRUE'){ $threaddir = 'threads';}
+    if ($ENV{'SMP'} eq 'TRUE' or $ENV{BUILD_THREADED} eq 'TRUE')
+	{
+		$threaddir = 'threads';
+	}
     
     $ENV{'SHAREDPATH'}  = "$SHAREDLIBROOT/$COMPILER/$MPILIB/$debugdir/$threaddir";
     $SHAREDPATH = $ENV{'SHAREDPATH'};
@@ -472,10 +480,10 @@ sub buildModel()
 	    if ($USE_ESMF_LIB eq "TRUE") {
 		$ESMFDIR = "esmf";
 	    } else {
-		$ESMFDIR = "noesmf"
-	    }
-	    switch ("$CLM_CONFIG_OPTS") {
-		case (/.*clm4_0.*/) {
+		$ESMFDIR = "noesmf";
+            }
+	    for ("$CLM_CONFIG_OPTS") {
+		when (/.*clm4_0.*/) {
 		    print "         - Building clm4_0 Library \n";
 		    $objdir = "$EXEROOT/$model/obj" ; if (! -d "$objdir") {mkpath "$objdir"};
 		    $libdir = "$EXEROOT/$model"     ; if (! -d "$libdir") {mkpath "$libdir"};
@@ -483,7 +491,7 @@ sub buildModel()
 		    print "       bldroot is $EXEROOT \n";
 		    print "       objdir  is $objdir \n";
 		    print "       libdir  is $libdir \n";
-		} else {
+		} default {
 		    print "         - Building clm4_5/clm5_0 shared library \n";
 		    $bldroot = "$SHAREDPATH/$COMP_INTERFACE/$ESMFDIR/" ;
 		    $objdir  = "$bldroot/$comp/obj" ; if (! -d "$objdir") {mkpath "$objdir"};

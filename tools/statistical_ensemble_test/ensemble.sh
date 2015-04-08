@@ -4,8 +4,8 @@
 # $Id$
 # $URL$
 #
-# Sets up and submits a 12-month  run; then calls create_clone 100 times, sets
-# these up and submits them, for a total of 101 ensemble members
+# Sets up and submits a 12-month  run; then calls create_clone 150 times, sets
+# these up and submits them, for a total of 151 ensemble members
 #
 #==============================================================================
 
@@ -16,13 +16,13 @@ gen_random_numbers ()
   # skewed towards smaller numbers: those smaller than 43 for first number,
   # smaller than 67 for second number, and smaller than 97 for final number.
   # Instead, we pick between 0 and floor(32768/N)*N-1. max_rand contains
-  # floor(32768/N)*N-1 for N = 101, 100, and 99.
+  # floor(32768/N)*N-1 for N = 151, 150, and 149.
   max_rand=( 32723 32699 32669 )
     
   for i in `seq 0 2`
   do
     # Want a random number between 0 and N-1, inclusive
-    N=$(( 101 - i ))
+    N=$(( 151 - i ))
     
     # Pick a random number
     tmp_rand=$((RANDOM))
@@ -35,12 +35,12 @@ gen_random_numbers ()
     rand_ints+=( $(( tmp_rand % N )) )
   done
     
-  # We want 3 numbers in {0,100}, but no duplicates. So we pick one number in
-  # {0,100}, one in {0,99}, and one in {0,98}. If the second number is smaller
+  # We want 3 numbers in {0,150}, but no duplicates. So we pick one number in
+  # {0,150}, one in {0,149}, and one in {0,148}. If the second number is smaller
   # than the first we keep it as is, otherwise we increment it by 1 (so instead
-  # of picking R2 in {0,99}, we effectively are picking it in the set
-  # {0,R1-1} U {R1+1,100}). Similarly, we want to pick R3 in the set
-  # {0,R1-1} U (R1+1,R2-1} U {R2+1,100} (assuming R1 < R2, which is reasonable
+  # of picking R2 in {0,149}, we effectively are picking it in the set
+  # {0,R1-1} U {R1+1,105}). Similarly, we want to pick R3 in the set
+  # {0,R1-1} U (R1+1,R2-1} U {R2+1,150} (assuming R1 < R2, which is reasonable
   # because we know R1 != R2).
     
   # If first and second number are same, increment second number by 1
@@ -70,70 +70,98 @@ gen_random_numbers ()
 
 get_pertlim ()
 {
-  # Return a single pertlim value from an integer in the range of 0 - 100
+  # Return a single pertlim value from an integer in the range of 0 - 150
   #  CASE   PERTLIM      CASE   PERTLIM
   #  ----   -------      ----   -------
   #   000   0.0
-  #   001   1.0d-14       051  -1.0d-14
-  #   002   1.1d-14       052  -1.1d-14
-  #   003   1.2d-14       053  -1.2d-14
-  #   004   1.3d-14       054  -1.3d-14
-  #   005   1.4d-14       055  -1.4d-14
-  #   006   1.5d-14       056  -1.5d-14
-  #   007   1.6d-14       057  -1.6d-14
-  #   008   1.7d-14       058  -1.7d-14
-  #   009   1.8d-14       059  -1.8d-14
-  #   010   1.9d-14       060  -1.9d-14
-  #   011   2.0d-14       061  -2.0d-14
-  #   012   2.1d-14       062  -2.1d-14
-  #   013   2.2d-14       063  -2.2d-14
-  #   014   2.3d-14       064  -2.3d-14
-  #   015   2.4d-14       065  -2.4d-14
-  #   016   2.5d-14       066  -2.5d-14
-  #   017   2.6d-14       067  -2.6d-14
-  #   018   2.7d-14       068  -2.7d-14
-  #   019   2.8d-14       069  -2.8d-14
-  #   020   2.9d-14       070  -2.9d-14
-  #   021   3.0d-14       071  -3.0d-14
-  #   022   3.1d-14       072  -3.1d-14
-  #   023   3.2d-14       073  -3.2d-14
-  #   024   3.3d-14       074  -3.3d-14
-  #   025   3.4d-14       075  -3.4d-14
-  #   026   3.5d-14       076  -3.5d-14
-  #   027   3.6d-14       077  -3.6d-14
-  #   028   3.7d-14       078  -3.7d-14
-  #   029   3.8d-14       079  -3.8d-14
-  #   030   3.9d-14       080  -3.9d-14
-  #   031   4.0d-14       081  -4.0d-14
-  #   032   4.1d-14       082  -4.1d-14
-  #   033   4.2d-14       083  -4.2d-14
-  #   034   4.3d-14       084  -4.3d-14
-  #   035   4.4d-14       085  -4.4d-14
-  #   036   4.5d-14       086  -4.5d-14
-  #   037   4.6d-14       087  -4.6d-14
-  #   038   4.7d-14       088  -4.7d-14
-  #   039   4.8d-14       089  -4.8d-14
-  #   040   4.9d-14       090  -4.9d-14
-  #   041   5.0d-14       091  -5.0d-14
-  #   042   5.1d-14       092  -5.1d-14
-  #   043   5.2d-14       093  -5.2d-14
-  #   044   5.3d-14       094  -5.3d-14
-  #   045   5.4d-14       095  -5.4d-14
-  #   046   5.5d-14       096  -5.5d-14
-  #   047   5.6d-14       097  -5.6d-14
-  #   048   5.7d-14       098  -5.7d-14
-  #   049   5.8d-14       099  -5.8d-14
-  #   050   5.9d-14       100  -5.9d-14
+  #   001   1.0d-14       076  -1.0d-14
+  #   002   1.1d-14       077  -1.1d-14
+  #   003   1.2d-14       078  -1.2d-14
+  #   004   1.3d-14       079  -1.3d-14
+  #   005   1.4d-14       080  -1.4d-14
+  #   006   1.5d-14       081  -1.5d-14
+  #   007   1.6d-14       082  -1.6d-14
+  #   008   1.7d-14       083  -1.7d-14
+  #   009   1.8d-14       084  -1.8d-14
+  #   010   1.9d-14       085  -1.9d-14
+  #   011   2.0d-14       086  -2.0d-14
+  #   012   2.1d-14       087  -2.1d-14
+  #   013   2.2d-14       088  -2.2d-14
+  #   014   2.3d-14       089  -2.3d-14
+  #   015   2.4d-14       090  -2.4d-14
+  #   016   2.5d-14       091  -2.5d-14
+  #   017   2.6d-14       092  -2.6d-14
+  #   018   2.7d-14       093  -2.7d-14
+  #   019   2.8d-14       094  -2.8d-14
+  #   020   2.9d-14       095  -2.9d-14
+  #   021   3.0d-14       096  -3.0d-14
+  #   022   3.1d-14       097  -3.1d-14
+  #   023   3.2d-14       098  -3.2d-14
+  #   024   3.3d-14       099  -3.3d-14
+  #   025   3.4d-14       100  -3.4d-14
+  #   026   3.5d-14       101  -3.5d-14
+  #   027   3.6d-14       102  -3.6d-14
+  #   028   3.7d-14       103  -3.7d-14
+  #   029   3.8d-14       104  -3.8d-14
+  #   030   3.9d-14       105  -3.9d-14
+  #   031   4.0d-14       106  -4.0d-14
+  #   032   4.1d-14       107  -4.1d-14
+  #   033   4.2d-14       108  -4.2d-14
+  #   034   4.3d-14       109  -4.3d-14
+  #   035   4.4d-14       110  -4.4d-14
+  #   036   4.5d-14       111  -4.5d-14
+  #   037   4.6d-14       112  -4.6d-14
+  #   038   4.7d-14       113  -4.7d-14
+  #   039   4.8d-14       114  -4.8d-14
+  #   040   4.9d-14       115  -4.9d-14
+  #   041   5.0d-14       116  -5.0d-14
+  #   042   5.1d-14       117  -5.1d-14
+  #   043   5.2d-14       118  -5.2d-14
+  #   044   5.3d-14       119  -5.3d-14
+  #   045   5.4d-14       120  -5.4d-14
+  #   046   5.5d-14       121  -5.5d-14
+  #   047   5.6d-14       122  -5.6d-14
+  #   048   5.7d-14       123  -5.7d-14
+  #   049   5.8d-14       124  -5.8d-14
+  #   050   5.9d-14       125  -5.9d-14
+  #   051   6.0d-14       126  -6.0d-14
+  #   052   6.1d-14       127  -6.1d-14
+  #   053   6.2d-14       128  -6.2d-14
+  #   054   6.3d-14       129  -6.3d-14
+  #   055   6.4d-14       130  -6.4d-14
+  #   056   6.5d-14       131  -6.5d-14
+  #   057   6.6d-14       132  -6.6d-14
+  #   058   6.7d-14       133  -6.7d-14
+  #   059   6.8d-14       134  -6.8d-14
+  #   060   6.9d-14       135  -6.9d-14
+  #   061   7.0d-14       136  -7.0d-14
+  #   062   7.1d-14       137  -7.1d-14
+  #   063   7.2d-14       138  -7.2d-14
+  #   064   7.3d-14       139  -7.3d-14
+  #   065   7.4d-14       140  -7.4d-14
+  #   066   7.5d-14       141  -7.5d-14
+  #   067   7.6d-14       142  -7.6d-14
+  #   068   7.7d-14       143  -7.7d-14
+  #   069   7.8d-14       144  -7.8d-14
+  #   070   7.9d-14       145  -7.9d-14
+  #   071   8.0d-14       146  -8.0d-14
+  #   072   8.1d-14       147  -8.1d-14
+  #   073   8.2d-14       148  -8.2d-14
+  #   074   8.3d-14       149  -8.3d-14
+  #   075   8.4d-14       150  -8.4d-14
+
+
+
 
   i=$1
   if (( $i == 0 )); then 
     ptlim=0
-  elif (( $i < 51 )); then
+  elif (( $i < 76 )); then
     let j=i+9
     ippt=`/usr/bin/printf "%2.2d" $j`
     ptlim="0.${ippt}d-13"
   else
-    let j=i-41
+    let j=i-66
     ippt=`/usr/bin/printf "%2.2d" $j`
     ptlim="-0.${ippt}d-13"
   fi
@@ -254,7 +282,7 @@ test_suite="FALSE"
 nobuild="off"
 nosubmit="off"
 
-# Default ensemble count is 101, 0-100. This is changed to 2 when runtype is
+# Default ensemble count is 151, 0-150. This is changed to 2 when runtype is
 # 'validation'
 
 # Process input arguments
@@ -276,7 +304,7 @@ while [ $i -le ${#Args[@]} ]; do
     ;;
     -ensemble )
       # Set CLONECOUNT and runtype
-      CLONECOUNT=100
+      CLONECOUNT=150
       runtype="ensemble"
     ;;
     -nb|-nobuild )
@@ -293,7 +321,7 @@ done
 # If runtype is 'validation', print the three choices of pertlim to screen
 if [ $runtype = 'validation' ]; then
     # Create empty array; this will be populated with 3 random integers
-    # between 0 and 100, inclusive
+    # between 0 and 150, inclusive
     rand_ints=()
 
     gen_random_numbers

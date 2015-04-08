@@ -1200,9 +1200,23 @@ sub runCreateNewcase
   my $exitcode = $?;
   if($exitcode != 0)
   {
-      die "invocation of create_newcase failed\n";
-  }
+      warn "invocation of create_newcase failed:\n";
+	  # create the testroot if needed. 
+	  mkdir $caseroot if(! -d $caseroot);
+	  my $failteststatus = "$caseroot/TestStatus";
+      my $failcasestatus = "$caseroot/CaseStatus";
+      
+	  open my $TS, ">", $failteststatus or print "cannot open $failteststatus, $?";
+	  print $TS "SFAIL $test{'case'}\n";
+      close $TS;
+	
+	  open my $CS, ">", $failcasestatus or print "cannot open $failcasestatus, $?";
+      print $CS "create_newcase failure \n";
+      close $CS;
 
+	  # Skip to the next test..
+      next;
+  }
   my $readmetmp = new IO::File;
   $readmetmp->open("> $caseroot/README.case.tmp") or print "can't open $caseroot/README.case.tmp";
   my $casestatustmp = new IO::File;

@@ -33,6 +33,10 @@ sub init
   my @node = $xml->findnodes("//cimeroot");
   $cimeroot = $node[0]->textContent(); 
 
+  if (! defined $opts{'expectedfails'}) {
+    $opts{'expectedfails'} = $ccsmroot . "/ExpectedTestFails.xml";
+  }
+
   chdir $cwd;
   return $testspec;
 }
@@ -328,9 +332,6 @@ sub getOpts
 	    "help|h"		=> \$opts{'help'},
 	);
 
-	if (! defined $opts{'expectedfails'}) {
-	    warn "*** WARNING: no expected fails specified - expected fails will not be checked *** \n\n";
-	} 
 }
 
 sub usage()
@@ -353,7 +354,10 @@ SYNOPSIS
 	-comparedir     The comparison directory, i.e. the directory one wishes to compare against.
 	-compareid      The testid of the -comparedir directory
 
-    
+        Optional arguments:
+        -expectedfails  Path to the expected fails file. Default is constructed from ccsmroot in testspec.
+
+
    	./cs.status.testid.machine -cost
 
     Will calculate the PE-hours/year divided by the actual runtime of the test, and sum the 
