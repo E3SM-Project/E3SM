@@ -247,6 +247,8 @@ def _main_func(description):
         doctest.testmod(verbose=True)
         return
 
+    acme_util.stop_buffering_output()
+
     generate_baselines, submit_to_dashboard, baseline_branch, namelists_only = \
         parse_command_line(sys.argv, description)
 

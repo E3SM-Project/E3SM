@@ -113,6 +113,8 @@ def _main_func(description):
         wait_for_tests.run_unit_tests()
         return
 
+    acme_util.stop_buffering_output()
+
     testname, testroot, project, compare, check_namelists, check_throughput, no_submit = \
         parse_command_line(sys.argv, description)
 
