@@ -410,7 +410,8 @@ sub buildLibraries()
     if ($DEBUG eq 'TRUE') {$debugdir = "debug";}
     
     my $threaddir = 'nothreads';
-    if ($ENV{'SMP'} eq 'TRUE'){ $threaddir = 'threads';}
+    if ($ENV{'SMP'}            eq 'TRUE'){ $threaddir = 'threads';}
+    if ($ENV{'BUILD_THREADED'} eq 'TRUE'){ $threaddir = 'threads';}
     
     $ENV{'SHAREDPATH'}  = "$SHAREDLIBROOT/$COMPILER/$MPILIB/$debugdir/$threaddir";
     $SHAREDPATH = $ENV{'SHAREDPATH'};

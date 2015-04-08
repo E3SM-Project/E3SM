@@ -36,15 +36,16 @@ complib: $(COMPLIB)  $(CURDIR)/Depends
 # Set the THREADDIR for the shared build 
 # based on the threaded build status
 compile_threaded = false
-THREADDIR = nothreads
 ifeq ($(strip $(SMP)),TRUE)
    compile_threaded = true
    THREADDIR = threads
 else
    ifeq ($(strip $(BUILD_THREADED)),TRUE)
-     compile_threaded = true
-     THREADDIR = threads
-  endif
+      compile_threaded = true
+      THREADDIR = threads
+   else
+      THREADDIR = nothreads
+   endif
 endif
 
 # set the debug directory based on the debug status

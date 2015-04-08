@@ -874,25 +874,8 @@ sub ExpandXmlList
 	  }
       }
   }
-    
-
-  # check for duplicates in the test list...
-  my %seen = ();
-  $seen{$_}++ for @actualtests;
-  my @nodupes = keys %seen;
-  my $testlistsize = @nodupes;
-  Debug("test list size: $testlistsize");
-  if($testlistsize == 0)
-  {
-#    print "No tests could be found with the test options given:\n";
-#    print "xml_mach: $opts{'xml_mach'}, xml_compiler: $opts{'xml_compiler'}, xml_category: $opts{'xml_category'}\n";
-#    print "aborting\n";
-#    exit(1);
-  }
-
-  #exit; #DEBUG
-  # Return the sorted list of tests
-  return sort @nodupes;
+  return @actualtests;
+  
 }  
 
 #-----------------------------------------------------------------------------------------------
@@ -1199,8 +1182,7 @@ sub runCreateNewcase
 	    $testmods = "$xml_testmod_dir/".$testmods;
 	    $cn_args .= " -user_mods_dir $testmods";
          } else {
-            print "Can NOT find testmod directory for $comp\n";
-	    die;
+            die "ERROR: Can NOT find testmod directory for $comp\n";
          }
      }
   }
@@ -1823,12 +1805,28 @@ sub main
 	my @testspec;
 
 	if($xmlmode){
+            my @actualtests;
 	    foreach my $key (keys %xml_testlist_files) {
 		my $file = $xml_testlist_files{$key};
 		my @complist; 
 		@complist = ExpandXmlList( $file, $opts{'xml_mach'}, $opts{'xml_category'}, $opts{'xml_compiler'});
-		push (@testlist, @complist) 
+		push (@actualtests, @complist) 
 	    }
+            # check for duplicates in the test list...
+            my %seen = ();
+            $seen{$_}++ for @actualtests;
+            my @nodupes = keys %seen;
+            my $testlistsize = @nodupes;
+            Debug("test list size: $testlistsize");
+            if($testlistsize == 0)
+            {
+               print "No tests could be found with the test options given:\n";
+               print "xml_mach: $opts{'xml_mach'}, xml_compiler: $opts{'xml_compiler'}, xml_category: $opts{'xml_category'}\n";
+               print "aborting\n";
+               exit(1);
+            }
+            @testlist = @nodupes;
+  
 	}else{
 	    checkTestSuiteOptions();
 	    @testlist = ExpandTestList($opts{'input_list'});

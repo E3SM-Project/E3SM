@@ -52,6 +52,9 @@
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
+      <test name="PEM">
+        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
+      </test>
     </grid>
     <grid name="f45_g37_rx1">
       <test name="CME_Ld3">
@@ -146,6 +149,9 @@
         <machine compiler="intel" testtype="prealpha">stampede</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
+      </test>
+      <test name="PET_D_E_CG">
+        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
       </test>
       <test name="PET_PT_Ld3">
         <machine compiler="pgi" testtype="prebeta">goldbach</machine>
