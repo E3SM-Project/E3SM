@@ -1011,9 +1011,9 @@ void brel(buf)
 	/*  Unlink the buffer from the free list  */
 	b->ql.blink->ql.flink = b->ql.flink;
 	b->ql.flink->ql.blink = b->ql.blink;
-	printf("%s %d calling direct release for %x\n",__FILE__,__LINE__,b);
+	//	printf("%s %d calling direct release for %x\n",__FILE__,__LINE__,b);
 	(*relfcn)(b);
-	printf("%s %d completed direct release \n",__FILE__,__LINE__);
+	//	printf("%s %d completed direct release \n",__FILE__,__LINE__);
 #ifdef BufStats
 	numprel++;		      /* Nr of expansion block releases */
 	numpblk--;		      /* Total number of blocks */

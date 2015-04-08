@@ -234,7 +234,7 @@ contains
 !                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
 
                 do frame=1,nframes
-                   if(mype==0) print *,__FILE__,__LINE__,frame
+!                   if(mype==0) print *,__FILE__,__LINE__,frame
                    do nv=1,nvars   
                       call PIO_setframe(File, vari(nv), frame)
                       call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= -nv)
@@ -281,9 +281,7 @@ contains
                 do frame=1,nframes                   
                    do nv=1,nvars
                       call PIO_setframe(File, vari(nv), frame)
-print *,__FILE__,__LINE__,frame,nv
                       call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv), ierr)
-print *,__FILE__,__LINE__,frame,nv
                    enddo
                 enddo
                 
