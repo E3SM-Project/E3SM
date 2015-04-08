@@ -4,13 +4,17 @@
 Wait for a queued ACME test to finish by watching the TestStatus file.
 If the test passes, 0 is returned, otherwise a non-zero error code
 is returned.
+
+The easiest way to test this script is to keep a set of create_test
+results laying around somewhere so you don't have to wait for tests
+to run to test this script.
 """
 
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
-import argparse, sys
+import argparse, sys, os
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -63,7 +67,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        wait_for_tests.run_unit_tests()
+        acme_util.run_cmd("python -m doctest %s/wait_for_tests.py -v" % os.path.dirname(sys.argv[0]), arg_stdout=None, arg_stderr=None)
         return
 
     test_paths, no_wait, check_throughput, ignore_namelist_diffs, cdash_build_name = \
