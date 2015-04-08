@@ -1057,7 +1057,7 @@
 			<var name="surfaceThicknessFlux"/>
 			<var name="seaIceEnergy"/>
 			<var name="penetrativeTemperatureFlux"/>
-			<var name="transmissionCoefficients"/>
+			<var name="fractionAbsorbed"/>
 			<var name="windStressZonal"/>
 			<var name="windStressMeridional"/>
 			<var name="latentHeatFlux"/>
@@ -1903,7 +1903,7 @@
 		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
 			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."
 		/>
-		<var name="transmissionCoefficients" type="real" dimensions="nVertLevels nCells Time" units="percent"
+		<var name="fractionAbsorbed" type="real" dimensions="nVertLevels nCells Time" units="fractional"
 			 description="Divergence of transmission through interfaces of surface fluxes below the surface layer at cell centers. These are not applied to short wave."
 		/>
 
