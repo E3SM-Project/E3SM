@@ -33,6 +33,8 @@ endif
 set wall_clock = 90
 if ($CCSM_ESTCOST > -3) set wall_clock = 180
 if ($CCSM_ESTCOST > 0) set wall_clock = 360
+set host = `hostname`
+if ($host == 'cetuslac1') set wall_clock = 60
 
 cat >! $file << EOF1
 #! /bin/csh -f

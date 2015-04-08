@@ -78,12 +78,23 @@ sub getTestStatus
 
 # find the testspec.xml. 
 my $testroot =  getcwd;
+my $csstatus;
+my $testspec;
 if ( $0 !~ /cs.submit\.(.*)$/ ) { 
-    die "Bad name for cs.submit script, no job-id: $0\n";
+      opendir(D,$testroot);
+      my @testspec = grep /testspec\..*\.xml$/,readdir(D);
+      closedir(D);
+      
+      $testspec = $testspec[0];
+      if($#testspec > 0){
+	  foreach(@testspec){
+	      $testspec = $_ if(-A $_ < -A $testspec);
+	  }
+      }
+}else{
+    $csstatus = "cs.status.$1";
+    $testspec = "$testroot/testspec.$1.xml";
 }
-my $csstatus = "cs.status.$1";
-my $testspec = "$testroot/testspec.$1.xml";
-
 # Find the scriptsroot
 open my $SPEC, "<", $testspec or die $!;
 my @speclines = grep (/scriptsroot/, <$SPEC>);

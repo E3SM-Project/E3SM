@@ -24,17 +24,28 @@ sub init
   $cwd = getcwd;
   $testroot =  getcwd;
   if ( $0 !~ /cs.status\.(.*)$/ ) {
-      die "Bad name for cs.status script, no job-id: $0\n";
+      opendir(D,$testroot);
+      my @testspec = grep /testspec\..*\.xml$/,readdir(D);
+      closedir(D);
+      
+      $testspec = $testspec[0];
+      if($#testspec > 0){
+	  foreach(@testspec){
+	      $testspec = $_ if(-A $_ < -A $testspec);
+	  }
+      }
+  }else{
+      $testspec = "$testroot/testspec.$1.xml";
   }
-  $testspec = "$testroot/testspec.$1.xml";
+
 
   my $parser = XML::LibXML->new( no_blanks => 1);
   my $xml = $parser->parse_file($testspec);
   my @node = $xml->findnodes("//cimeroot");
   $cimeroot = $node[0]->textContent(); 
 
-  if (! defined $opts{'expectedfails'}) {
-    $opts{'expectedfails'} = $ccsmroot . "/ExpectedTestFails.xml";
+  if (! defined $opts{'expectedfails'} and -e "$cimeroot/ExpectedTestFails.xml") {
+    $opts{'expectedfails'} = $cimeroot . "/ExpectedTestFails.xml";
   }
 
   chdir $cwd;
@@ -91,13 +102,14 @@ sub getTestStatus
 
     my @tests;
     my @casedirs = getCaseDirsFromSpec($testspec);
+
     foreach my $testcase(@casedirs)
     {
 	# each of these blocks is a target TestStatus file
 	
 	my $teststatusfile = "$testdir/$testcase/TestStatus";
 	next if (! -e $teststatusfile);
-	
+	print "Checking $testdir/$testcase ";
 	chdir "$testdir/$testcase";
 	my $testbase = `./xmlquery CASEBASEID -value`;
 	chdir $cwd;
@@ -113,7 +125,7 @@ sub getTestStatus
 	
 	my @teststatus_line = (split(/\s+/, $testhash{'status'}));
 	my $teststatus = "$teststatus_line[0]";
-	
+	print "$teststatus\n";
 	if ($teststatus ne 'GEN' && $teststatus ne 'PEND') {
 		
 	    if (defined $opts{'expectedfails'}) {
@@ -190,11 +202,6 @@ sub printStatus
 		print "    $_";
 	    }	    
 	    print "\n";
-	    # print "  $$test{'memleak'} memleak" if(defined $$test{'memleak'});
-	    # print "  $$test{'throughput'} throughput" if(defined $$test{'throughput'});
-	    # print "  $$test{'generate'} generate" if(defined $$test{'generate'});
-	    # print "  $$test{'compare'} compare" if(defined $$test{'compare'});
-	    # print "\n";
 	}
 }
 
