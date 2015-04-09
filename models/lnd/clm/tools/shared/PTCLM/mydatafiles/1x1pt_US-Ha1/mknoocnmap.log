@@ -1,0 +1,27 @@
+
+
+Create SCRIP grid and mapping files for a single-point
+Create land SCRIP gridfile
+Execute: env S_LAT=42.4878 W_LON=287.7785 N_LAT=42.5878 E_LON=287.8785 NX=1 NY=1 PTNAME=1x1pt_US-Ha1   GRIDFILE=/global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_US-Ha1_nomask_c150409.nc ncl mkscripgrid.ncl
+ Copyright (C) 1995-2013 - All Rights Reserved
+ University Corporation for Atmospheric Research
+ NCAR Command Language Version 6.1.1
+ The use of this software is governed by a License Agreement.
+ See http://www.ncl.ucar.edu/ for more details.
+Create ocean SCRIP gridfile
+Execute: env S_LAT=42.4878 W_LON=287.7785 N_LAT=42.5878 E_LON=287.8785 NX=1 NY=1 PTNAME=1x1pt_US-Ha1   GRIDFILE=/global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_US-Ha1_noocean_c150409.nc IMASK=0 ncl mkscripgrid.ncl
+ Copyright (C) 1995-2013 - All Rights Reserved
+ University Corporation for Atmospheric Research
+ NCAR Command Language Version 6.1.1
+ The use of this software is governed by a License Agreement.
+ See http://www.ncl.ucar.edu/ for more details.
+Create unity mapping file between the two gridfile
+Execute: env GRIDFILE1=/global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_US-Ha1_noocean_c150409.nc GRIDFILE2=/global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt_US-Ha1_nomask_c150409.nc MAPFILE=map_1x1pt_US-Ha1_noocean_to_1x1pt_US-Ha1_nomask_aave_da_150409.nc  ncl /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapdata/mkunitymap.ncl
+ Copyright (C) 1995-2013 - All Rights Reserved
+ University Corporation for Atmospheric Research
+ NCAR Command Language Version 6.1.1
+ The use of this software is governed by a License Agreement.
+ See http://www.ncl.ucar.edu/ for more details.
+
+
+Successfully created grid/mapping files for single-point

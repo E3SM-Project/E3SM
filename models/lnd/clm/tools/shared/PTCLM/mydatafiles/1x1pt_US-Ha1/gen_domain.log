@@ -1,0 +1,78 @@
+ fmap   = 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_US-Ha1
+ _noocean_to_1x1pt_US-Ha1_nomask_aave_da_150409.nc
+ fn1_out_ocn= domain.ocn.navy.150409.nc
+ fn2_out_lnd= domain.lnd.1x1pt_US-Ha1_navy.150409.nc
+ fn2_out_ocn= domain.ocn.1x1pt_US-Ha1_navy.150409.nc
+ usercomment= Running gen_domain from PTCLMmkdata
+ eps    =   9.999999960041972E-013
+ fminval=   1.000000047497451E-003
+ fmaxval=    1.00000000000000     
+ set_fv_pole_yc =            0
+  
+ input SCRIP data...
+ pole_fix =  F
+  
+ input file  = 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_US-Ha1
+ _noocean_to_1x1pt_US-Ha1_nomask_aave_da_150409.nc
+ open 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_US-Ha1
+ _noocean_to_1x1pt_US-Ha1_nomask_aave_da_150409.nc
+ domain_a     = 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt
+ _US-Ha1_noocean_c150409.nc
+ domain_b     = 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt
+ _US-Ha1_nomask_c150409.nc
+ grid_file_ocn= 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt
+ _US-Ha1_noocean_c150409.nc
+ grid_file_atm= 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt
+ _US-Ha1_nomask_c150409.nc
+ n,nv,ni,nj,na,ns=            1           4           1           1           1
+           1
+  
+ output domain data...
+ nf =            1
+ create domain.ocn.navy.150409.nc
+ write domain.ocn.navy.150409.nc
+ successfully created domain file domain.ocn.navy.150409.nc
+ pole_fix =  F
+  
+ input file  = 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_US-Ha1
+ _noocean_to_1x1pt_US-Ha1_nomask_aave_da_150409.nc
+ open 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapdata/map_1x1pt_US-Ha1
+ _noocean_to_1x1pt_US-Ha1_nomask_aave_da_150409.nc
+ domain_a     = 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt
+ _US-Ha1_noocean_c150409.nc
+ domain_b     = 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt
+ _US-Ha1_nomask_c150409.nc
+ grid_file_ocn= 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt
+ _US-Ha1_noocean_c150409.nc
+ grid_file_atm= 
+ /global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/mkmapgrids/SCRIPgrid_1x1pt
+ _US-Ha1_nomask_c150409.nc
+ n,nv,ni,nj,na,ns=            1           4           1           1           1
+           1
+ compute frac
+ ----------------------------------------------------------------------
+ IMPORTANT: note original min/max frac and decide if that's acceptable
+ original lfrac clipped above by       :    1.00000000000000     
+ original reset to zero when less than :   1.000000047497451E-003
+ original min, max lfrac :    1.00000000000000        1.00000000000000     
+ final min, max llfrac   :    1.00000000000000        1.00000000000000     
+ ----------------------------------------------------------------------
+  
+ output domain data...
+ nf =            2
+ write domain.lnd.1x1pt_US-Ha1_navy.150409.nc
+ successfully created domain file domain.lnd.1x1pt_US-Ha1_navy.150409.nc
+ write domain.ocn.1x1pt_US-Ha1_navy.150409.nc
+ successfully created domain file domain.ocn.1x1pt_US-Ha1_navy.150409.nc
