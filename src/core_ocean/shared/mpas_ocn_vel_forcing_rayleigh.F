@@ -20,7 +20,8 @@
 
 module ocn_vel_forcing_rayleigh
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use ocn_constants
 
    implicit none

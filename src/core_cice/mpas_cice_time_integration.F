@@ -12,7 +12,8 @@
 
 module cice_time_integration
 
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_pool_routines
   use mpas_timekeeping
 
   implicit none

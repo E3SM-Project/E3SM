@@ -7,7 +7,8 @@
 !
 module mpas_io
 
-   use mpas_dmpar_types
+   use mpas_derived_types
+   use mpas_attlist
    use mpas_dmpar
    use mpas_io_units
 
@@ -16,83 +17,11 @@ module mpas_io
    use pionfatt_mod
    use pio_types
 
-   
 #ifdef SINGLE_PRECISION
    integer, parameter :: PIO_REALKIND = PIO_REAL
 #else
    integer, parameter :: PIO_REALKIND = PIO_DOUBLE
 #endif
-
-   ! File access modes
-   integer, parameter :: MPAS_IO_READ  = 1, &
-                         MPAS_IO_WRITE = 2
-
-   ! I/O formats
-   integer, parameter :: MPAS_IO_NETCDF  = 3, &
-                         MPAS_IO_PNETCDF = 4
-
-   ! Field and attribute types
-   integer, parameter :: MPAS_IO_REAL     = 5,  &
-                         MPAS_IO_DOUBLE   = 6,  &
-                         MPAS_IO_INT      = 7,  &
-                         MPAS_IO_LOGICAL  = 8,  &
-                         MPAS_IO_CHAR     = 9
-
-   ! Field precision
-   integer, parameter :: MPAS_IO_SINGLE_PRECISION = 10, &
-                         MPAS_IO_DOUBLE_PRECISION = 11, &
-#ifdef SINGLE_PRECISION
-                         MPAS_IO_NATIVE_PRECISION = MPAS_IO_SINGLE_PRECISION
-#else
-                         MPAS_IO_NATIVE_PRECISION = MPAS_IO_DOUBLE_PRECISION
-#endif
-
-   ! Unlimited / record dimension
-   integer, parameter :: MPAS_IO_UNLIMITED_DIM = -123456
-
-   ! Error codes
-   integer, parameter :: MPAS_IO_NOERR              =  0, &
-                         MPAS_IO_ERR_INVALID_MODE   = -1, &
-                         MPAS_IO_ERR_INVALID_FORMAT = -2, &
-                         MPAS_IO_ERR_LONG_FILENAME  = -3, &
-                         MPAS_IO_ERR_UNINIT_HANDLE  = -4, &
-                         MPAS_IO_ERR_PIO            = -5, &
-                         MPAS_IO_ERR_DATA_MODE      = -6, &
-                         MPAS_IO_ERR_NOWRITE        = -7, &
-                         MPAS_IO_ERR_REDEF_DIM      = -8, &
-                         MPAS_IO_ERR_REDEF_VAR      = -9, &
-                         MPAS_IO_ERR_UNDEFINED_DIM  = -10, &
-                         MPAS_IO_ERR_UNDEFINED_VAR  = -11, &
-                         MPAS_IO_ERR_REDEF_ATT      = -12, &
-                         MPAS_IO_ERR_WRONG_ATT_TYPE = -13, &
-                         MPAS_IO_ERR_NO_DECOMP      = -14, &
-                         MPAS_IO_ERR_TWO_UNLIMITED_DIMS = -15, &
-                         MPAS_IO_ERR_WRONG_MODE         = -16, &
-                         MPAS_IO_ERR_NO_UNLIMITED_DIM   = -17, &
-                         MPAS_IO_ERR_UNIMPLEMENTED      = -18, &
-                         MPAS_IO_ERR_WOULD_CLOBBER      = -19, &
-                         MPAS_IO_ERR_NOEXIST_READ       = -20
-
-
-   type MPAS_IO_Handle_type
-      logical :: initialized = .false.
-      logical :: preexisting_file = .false.
-      logical :: data_mode = .false.
-      type (file_desc_t) :: pio_file
-      character (len=StrKIND) :: filename
-      integer :: iomode
-      integer :: ioformat
-      integer :: pio_unlimited_dimid
-      integer :: preexisting_records = 0
-      integer (kind=PIO_offset) :: frame_number = 1
-      type (dimlist_type), pointer :: dimlist_head => null()
-      type (dimlist_type), pointer :: dimlist_tail => null()
-      type (fieldlist_type), pointer :: fieldlist_head => null()
-      type (fieldlist_type), pointer :: fieldlist_tail => null()
-      type (attlist_type), pointer :: attlist_head => null()
-      type (attlist_type), pointer :: attlist_tail => null()
-   end type MPAS_IO_Handle_type
-
    
    interface MPAS_io_get_var
       module procedure MPAS_io_get_var_int0d
@@ -139,73 +68,6 @@ module mpas_io
       module procedure MPAS_io_put_att_real1d
       module procedure MPAS_io_put_att_text
    end interface MPAS_io_put_att
-
-
-   !!!!!!!! PRIVATE !!!!!!!!
-
-!   integer, parameter :: ATT_INT   = 1
-!   integer, parameter :: ATT_INTA  = 2
-!   integer, parameter :: ATT_REAL  = 3
-!   integer, parameter :: ATT_REALA = 4
-!   integer, parameter :: ATT_TEXT  = 5
-
-   type decomphandle_type
-      integer :: field_type
-      integer, dimension(:), pointer :: dims
-      integer, dimension(:), pointer :: indices
-      type (io_desc_t) :: pio_iodesc
-   end type decomphandle_type
-
-   type atthandle_type
-      character (len=StrKIND) :: attName
-      integer :: attType
-      integer :: attValueInt
-      integer, dimension(:), pointer :: attValueIntA => null()
-      real (kind=RKIND) :: attValueReal
-      real (kind=RKIND), dimension(:), pointer :: attValueRealA => null()
-      character (len=StrKIND) :: attValueText
-   end type atthandle_type
-
-   type dimhandle_type
-      character (len=StrKIND) :: dimname
-      logical :: is_unlimited_dim = .false.
-      integer :: dimsize
-      integer :: dimid
-   end type dimhandle_type
-
-   type fieldhandle_type
-      character (len=StrKIND) :: fieldname
-      integer :: fieldid
-      type (Var_desc_t) :: field_desc
-      integer :: field_type
-      logical :: has_unlimited_dim = .false.
-      integer :: ndims
-      integer :: precision
-      type (dimhandle_type), pointer, dimension(:) :: dims
-      type (attlist_type), pointer :: attlist_head => null()
-      type (attlist_type), pointer :: attlist_tail => null()
-      type (decomphandle_type), pointer :: decomp => null()
-   end type fieldhandle_type
-
-   type decomplist_type
-      type (decomphandle_type), pointer :: decomphandle
-      type (decomplist_type), pointer :: next => null()
-   end type decomplist_type
-
-   type attlist_type
-      type (atthandle_type), pointer :: atthandle
-      type (attlist_type), pointer :: next => null()
-   end type attlist_type
-
-   type dimlist_type
-      type (dimhandle_type), pointer :: dimhandle
-      type (dimlist_type), pointer :: next => null()
-   end type dimlist_type
-
-   type fieldlist_type
-      type (fieldhandle_type), pointer :: fieldhandle
-      type (fieldlist_type), pointer :: next => null()
-   end type fieldlist_type
 
    type (iosystem_desc_t), pointer, private, save :: pio_iosystem
    type (decomplist_type), pointer, private :: decomp_list => null()
@@ -367,12 +229,16 @@ module mpas_io
 
       if (mode == MPAS_IO_WRITE) then
 !write(stderrUnit,*) 'MGD PIO_createfile'
-         inquire(file=trim(filename), exist=exists)
+         if (local_dminfo % my_proc_id == 0) then
+            inquire(file=trim(filename), exist=exists)
+         end if
+         call mpas_dmpar_bcast_logical(local_dminfo, exists)
 
          ! If the file exists and we are not allowed to clobber it, return an
          !    appropriate error code
          if (exists .and. (.not. local_clobber)) then
             if (present(ierr)) ierr = MPAS_IO_ERR_WOULD_CLOBBER
+            return
          end if
  
          if (exists .and. (.not. local_truncate)) then
@@ -502,10 +368,9 @@ module mpas_io
 
       pio_ierr = PIO_inq_dimid(handle % pio_file, trim(dimname), new_dimlist_node % dimhandle % dimid)
       if (pio_ierr /= PIO_noerr) then
-         if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+         if (present(ierr)) ierr = MPAS_IO_ERR_MISSING_DIM
          deallocate(new_dimlist_node % dimhandle)
          deallocate(new_dimlist_node)
-         write(stderrUnit,*) 'WARNING: Dimension ', trim(dimname), ' not in input file.'
          dimsize = -1
          return
       end if
@@ -1156,6 +1021,7 @@ module mpas_io
       integer :: ndims
       integer (kind=PIO_OFFSET) :: pd, indx
       integer :: i 
+      integer :: early_return, early_return_global
       integer (kind=PIO_OFFSET) :: i1, i2, i3, i4, i5
       integer, dimension(:), pointer :: dimlist
       integer (kind=PIO_OFFSET), dimension(:), pointer :: compdof
@@ -1203,6 +1069,7 @@ module mpas_io
       !
       decomp_cursor => decomp_list
 !if (.not. associated(decomp_cursor)) write(stderrUnit,*) 'No existing decompositions to check...'
+      early_return = 0
       DECOMP_LOOP: do while (associated(decomp_cursor))
          if (decomp_cursor % decomphandle % field_type == field_cursor % fieldhandle % field_type) then
          if (size(decomp_cursor % decomphandle % dims) == field_cursor % fieldhandle % ndims) then
@@ -1232,7 +1099,8 @@ module mpas_io
             ! OK, we have a match... just use this decomposition for the field and return
             field_cursor % fieldhandle % decomp => decomp_cursor % decomphandle 
 !write(stderrUnit,*) 'Found a matching decomposition that we can use'
-            return
+            early_return = 1
+            exit DECOMP_LOOP
          else if ((size(decomp_cursor % decomphandle % dims) == field_cursor % fieldhandle % ndims - 1)  &
                   .and. field_cursor % fieldhandle % has_unlimited_dim  &
                  ) then
@@ -1264,11 +1132,21 @@ module mpas_io
             ! OK, we have a match... just use this decomposition for the field and return
             field_cursor % fieldhandle % decomp => decomp_cursor % decomphandle 
 !write(stderrUnit,*) 'Found a matching decomposition that we can use (aside from record dimension)'
-            return
+            early_return = 1
+            exit DECOMP_LOOP
          end if
          end if
          decomp_cursor => decomp_cursor % next
       end do DECOMP_LOOP
+
+      ! 
+      ! If all tasks have set early_return to 1, then we have a usable decomposition and can return
+      ! 
+      call mpas_dmpar_min_int(local_dminfo, early_return, early_return_global)
+      if (early_return_global == 1) then
+         return
+      end if
+
 
 !write(stderrUnit,*) 'Creating a new decomposition'
 
@@ -2814,7 +2692,7 @@ module mpas_io
          att_cursor => field_cursor % fieldhandle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_INT) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_INT) then
 !write(stderrUnit,*) 'Using cached attribute'
                   attValue = att_cursor % atthandle % attValueInt
                else
@@ -2831,7 +2709,7 @@ module mpas_io
          att_cursor => handle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_INT) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_INT) then
 !write(stderrUnit,*) 'Using cached attribute'
                   attValue = att_cursor % atthandle % attValueInt
                else
@@ -2867,7 +2745,7 @@ module mpas_io
       nullify(new_att_node % next)
       allocate(new_att_node % atthandle)
       new_att_node % atthandle % attName = attName
-      new_att_node % atthandle % attType = ATT_INT
+      new_att_node % atthandle % attType = MPAS_ATT_INT
       new_att_node % atthandle % attValueInt = attValue
 
       if (present(fieldname)) then
@@ -2948,7 +2826,7 @@ module mpas_io
          att_cursor => field_cursor % fieldhandle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_INTA) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_INTA) then
 !write(stderrUnit,*) 'Using cached attribute'
                   allocate(attValue(size(att_cursor % atthandle % attValueIntA)))
                   attValue = att_cursor % atthandle % attValueIntA
@@ -2966,7 +2844,7 @@ module mpas_io
          att_cursor => handle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_INTA) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_INTA) then
 !write(stderrUnit,*) 'Using cached attribute'
                   allocate(attValue(size(att_cursor % atthandle % attValueIntA)))
                   attValue = att_cursor % atthandle % attValueIntA
@@ -3011,7 +2889,7 @@ module mpas_io
       nullify(new_att_node % next)
       allocate(new_att_node % atthandle)
       new_att_node % atthandle % attName = attName
-      new_att_node % atthandle % attType = ATT_INTA
+      new_att_node % atthandle % attType = MPAS_ATT_INTA
       allocate(new_att_node % atthandle % attValueIntA(attlen))
       new_att_node % atthandle % attValueIntA = attValue
 
@@ -3093,7 +2971,7 @@ module mpas_io
          att_cursor => field_cursor % fieldhandle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_REAL) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_REAL) then
 !write(stderrUnit,*) 'Using cached attribute'
                   attValue = att_cursor % atthandle % attValueReal
                else
@@ -3110,7 +2988,7 @@ module mpas_io
          att_cursor => handle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_REAL) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_REAL) then
 !write(stderrUnit,*) 'Using cached attribute'
                   attValue = att_cursor % atthandle % attValueReal
                else
@@ -3146,7 +3024,7 @@ module mpas_io
       nullify(new_att_node % next)
       allocate(new_att_node % atthandle)
       new_att_node % atthandle % attName = attName
-      new_att_node % atthandle % attType = ATT_REAL
+      new_att_node % atthandle % attType = MPAS_ATT_REAL
       new_att_node % atthandle % attValueReal = attValue
 
       if (present(fieldname)) then
@@ -3227,7 +3105,7 @@ module mpas_io
          att_cursor => field_cursor % fieldhandle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_REALA) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_REALA) then
 !write(stderrUnit,*) 'Using cached attribute'
                   allocate(attValue(size(att_cursor % atthandle % attValueRealA)))
                   attValue = att_cursor % atthandle % attValueRealA
@@ -3245,7 +3123,7 @@ module mpas_io
          att_cursor => handle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_REALA) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_REALA) then
 !write(stderrUnit,*) 'Using cached attribute'
                   allocate(attValue(size(att_cursor % atthandle % attValueRealA)))
                   attValue = att_cursor % atthandle % attValueRealA
@@ -3290,7 +3168,7 @@ module mpas_io
       nullify(new_att_node % next)
       allocate(new_att_node % atthandle)
       new_att_node % atthandle % attName = attName
-      new_att_node % atthandle % attType = ATT_REALA
+      new_att_node % atthandle % attType = MPAS_ATT_REALA
       allocate(new_att_node % atthandle % attValueRealA(attlen))
       new_att_node % atthandle % attValueRealA = attValue
 
@@ -3372,7 +3250,7 @@ module mpas_io
          att_cursor => field_cursor % fieldhandle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_TEXT) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_TEXT) then
 !write(stderrUnit,*) 'Using cached attribute'
                   attValue = att_cursor % atthandle % attValueText
                else
@@ -3389,7 +3267,7 @@ module mpas_io
          att_cursor => handle % attlist_head
          do while (associated(att_cursor))
             if (trim(att_cursor % atthandle % attName) == trim(attName)) then
-               if (att_cursor % atthandle % attType == ATT_TEXT) then
+               if (att_cursor % atthandle % attType == MPAS_ATT_TEXT) then
 !write(stderrUnit,*) 'Using cached attribute'
                   attValue = att_cursor % atthandle % attValueText
                else
@@ -3425,7 +3303,7 @@ module mpas_io
       nullify(new_att_node % next)
       allocate(new_att_node % atthandle)
       new_att_node % atthandle % attName = attName
-      new_att_node % atthandle % attType = ATT_TEXT
+      new_att_node % atthandle % attType = MPAS_ATT_TEXT
       new_att_node % atthandle % attValueText = attValue
 
       if (present(fieldname)) then
@@ -3496,7 +3374,7 @@ module mpas_io
       nullify(new_attlist_node % next)
       allocate(new_attlist_node % attHandle)
       new_attlist_node % attHandle % attName = attName
-      new_attlist_node % attHandle % attType = ATT_INT
+      new_attlist_node % attHandle % attType = MPAS_ATT_INT
       new_attlist_node % attHandle % attValueInt = attValue
 
 
@@ -3513,7 +3391,7 @@ module mpas_io
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-                     if (attlist_cursor % atthandle % attType /= ATT_INT .or. &
+                     if (attlist_cursor % atthandle % attType /= MPAS_ATT_INT .or. &
                          attlist_cursor % atthandle % attValueInt /= attValue) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                         deallocate(new_attlist_node % attHandle)
@@ -3557,7 +3435,7 @@ module mpas_io
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-               if (attlist_cursor % atthandle % attType /= ATT_INT .or. &
+               if (attlist_cursor % atthandle % attType /= MPAS_ATT_INT .or. &
                    attlist_cursor % atthandle % attValueInt /= attValue) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                   deallocate(new_attlist_node % attHandle)
@@ -3633,7 +3511,7 @@ module mpas_io
       nullify(new_attlist_node % next)
       allocate(new_attlist_node % attHandle)
       new_attlist_node % attHandle % attName = attName
-      new_attlist_node % attHandle % attType = ATT_INTA
+      new_attlist_node % attHandle % attType = MPAS_ATT_INTA
       allocate(new_attlist_node % attHandle % attValueIntA(size(attValue)))
       new_attlist_node % attHandle % attValueIntA = attValue
 
@@ -3651,7 +3529,7 @@ module mpas_io
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-                     if (attlist_cursor % atthandle % attType /= ATT_INTA .or. &
+                     if (attlist_cursor % atthandle % attType /= MPAS_ATT_INTA .or. &
                          size(attlist_cursor % atthandle % attValueIntA) /= size(attValue)) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                         deallocate(new_attlist_node % attHandle)
@@ -3699,7 +3577,7 @@ module mpas_io
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-               if (attlist_cursor % atthandle % attType /= ATT_INTA .or. &
+               if (attlist_cursor % atthandle % attType /= MPAS_ATT_INTA .or. &
                    size(attlist_cursor % atthandle % attValueIntA) /= size(attValue)) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                   deallocate(new_attlist_node % attHandle)
@@ -3779,7 +3657,7 @@ module mpas_io
       nullify(new_attlist_node % next)
       allocate(new_attlist_node % attHandle)
       new_attlist_node % attHandle % attName = attName
-      new_attlist_node % attHandle % attType = ATT_REAL
+      new_attlist_node % attHandle % attType = MPAS_ATT_REAL
       new_attlist_node % attHandle % attValueReal = attValue
 
 
@@ -3796,7 +3674,7 @@ module mpas_io
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-                     if (attlist_cursor % atthandle % attType /= ATT_REAL .or. &
+                     if (attlist_cursor % atthandle % attType /= MPAS_ATT_REAL .or. &
                          attlist_cursor % atthandle % attValueReal /= attValue) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                         deallocate(new_attlist_node % attHandle)
@@ -3840,7 +3718,7 @@ module mpas_io
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-               if (attlist_cursor % atthandle % attType /= ATT_REAL .or. &
+               if (attlist_cursor % atthandle % attType /= MPAS_ATT_REAL .or. &
                    attlist_cursor % atthandle % attValueReal /= attValue) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                   deallocate(new_attlist_node % attHandle)
@@ -3916,7 +3794,7 @@ module mpas_io
       nullify(new_attlist_node % next)
       allocate(new_attlist_node % attHandle)
       new_attlist_node % attHandle % attName = attName
-      new_attlist_node % attHandle % attType = ATT_REALA
+      new_attlist_node % attHandle % attType = MPAS_ATT_REALA
       allocate(new_attlist_node % attHandle % attValueRealA(size(attValue)))
       new_attlist_node % attHandle % attValueRealA = attValue
 
@@ -3934,7 +3812,7 @@ module mpas_io
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-                     if (attlist_cursor % atthandle % attType /= ATT_REALA .or. &
+                     if (attlist_cursor % atthandle % attType /= MPAS_ATT_REALA .or. &
                          size(attlist_cursor % atthandle % attValueRealA) /= size(attValue)) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                         deallocate(new_attlist_node % attHandle)
@@ -3982,7 +3860,7 @@ module mpas_io
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-               if (attlist_cursor % atthandle % attType /= ATT_REALA .or. &
+               if (attlist_cursor % atthandle % attType /= MPAS_ATT_REALA .or. &
                    size(attlist_cursor % atthandle % attValueRealA) /= size(attValue)) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                   deallocate(new_attlist_node % attHandle)
@@ -4062,7 +3940,7 @@ module mpas_io
       nullify(new_attlist_node % next)
       allocate(new_attlist_node % attHandle)
       new_attlist_node % attHandle % attName = attName
-      new_attlist_node % attHandle % attType = ATT_TEXT
+      new_attlist_node % attHandle % attType = MPAS_ATT_TEXT
       new_attlist_node % attHandle % attValueText = attValue
 
 
@@ -4079,7 +3957,7 @@ module mpas_io
                do while (associated(attlist_cursor))
                   if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-                     if (attlist_cursor % atthandle % attType /= ATT_TEXT .or. &
+                     if (attlist_cursor % atthandle % attType /= MPAS_ATT_TEXT .or. &
                          trim(attlist_cursor % atthandle % attValueText) /= trim(attValue)) then
                         if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                         deallocate(new_attlist_node % attHandle)
@@ -4123,7 +4001,7 @@ module mpas_io
          do while (associated(attlist_cursor))
             if (trim(attName) == trim(attlist_cursor % atthandle % attName)) then
 !write(stderrUnit,*) 'Attribute already defined'
-               if (attlist_cursor % atthandle % attType /= ATT_TEXT .or. &
+               if (attlist_cursor % atthandle % attType /= MPAS_ATT_TEXT .or. &
                    trim(attlist_cursor % atthandle % attValueText) /= trim(attValue)) then
                   if (present(ierr)) ierr = MPAS_IO_ERR_REDEF_ATT
                   deallocate(new_attlist_node % attHandle)
@@ -4272,8 +4150,8 @@ module mpas_io
          do while (associated(attlist_ptr))
             attlist_del => attlist_ptr 
             attlist_ptr => attlist_ptr % next
-            if (attlist_del % atthandle % attType == ATT_INTA) deallocate(attlist_del % atthandle % attValueIntA)
-            if (attlist_del % atthandle % attType == ATT_REALA) deallocate(attlist_del % atthandle % attValueRealA)
+            if (attlist_del % atthandle % attType == MPAS_ATT_INTA) deallocate(attlist_del % atthandle % attValueIntA)
+            if (attlist_del % atthandle % attType == MPAS_ATT_REALA) deallocate(attlist_del % atthandle % attValueRealA)
             deallocate(attlist_del % atthandle)
          end do
          nullify(fieldlist_del % fieldhandle % attlist_head)
@@ -4299,8 +4177,8 @@ module mpas_io
       do while (associated(attlist_ptr))
          attlist_del => attlist_ptr 
          attlist_ptr => attlist_ptr % next
-         if (attlist_del % atthandle % attType == ATT_INTA) deallocate(attlist_del % atthandle % attValueIntA)
-         if (attlist_del % atthandle % attType == ATT_REALA) deallocate(attlist_del % atthandle % attValueRealA)
+         if (attlist_del % atthandle % attType == MPAS_ATT_INTA) deallocate(attlist_del % atthandle % attValueIntA)
+         if (attlist_del % atthandle % attType == MPAS_ATT_REALA) deallocate(attlist_del % atthandle % attValueRealA)
          deallocate(attlist_del % atthandle)
       end do
       nullify(handle % attlist_head)

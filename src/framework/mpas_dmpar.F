@@ -17,8 +17,7 @@
 !-----------------------------------------------------------------------
 module mpas_dmpar
 
-   use mpas_dmpar_types
-   use mpas_grid_types
+   use mpas_derived_types
    use mpas_sort
    use mpas_hash
    use mpas_io_units
@@ -142,9 +141,7 @@ include 'mpif.h'
       write(stderrUnit,'(a,i5,a,i5,a)') 'task ', mpi_rank, ' of ', mpi_size, &
         ' is running'
 
-#ifndef MPAS_CESM
       call open_streams(dminfo % my_proc_id)
-#endif
 
       dminfo % info = MPI_INFO_NULL
 #else
@@ -1024,8 +1021,10 @@ include 'mpif.h'
       integer, intent(out) :: local_start !< Output: Starting index in local range
       integer, intent(out) :: local_end !< Output: Ending index in local range
 
-      local_start = nint(real(dminfo % my_proc_id) * real(global_end - global_start + 1) / real(dminfo % nprocs)) + 1
-      local_end   = nint(real(dminfo % my_proc_id + 1) * real(global_end - global_start + 1) / real(dminfo % nprocs)) 
+      local_start = nint(real(dminfo % my_proc_id,R8KIND) * real(global_end - global_start + 1,R8KIND) &
+                       / real(dminfo % nprocs,R8KIND)) + 1
+      local_end   = nint(real(dminfo % my_proc_id + 1,R8KIND) * real(global_end - global_start + 1,R8KIND) &
+                       / real(dminfo % nprocs,R8KIND)) 
 
    end subroutine mpas_dmpar_get_index_range!}}}
 

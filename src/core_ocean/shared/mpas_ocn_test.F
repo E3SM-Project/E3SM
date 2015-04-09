@@ -21,7 +21,9 @@
 module ocn_test
 
    use mpas_constants
-   use mpas_framework
+   use mpas_derived_types
+   use mpas_pool_routines
+   use mpas_field_routines
    use mpas_timekeeping
    use mpas_dmpar
    use mpas_timer

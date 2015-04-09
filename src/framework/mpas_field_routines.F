@@ -7,585 +7,19 @@
 !
 !***********************************************************************
 !
-!  mpas_grid_types
+!  mpas_field_routines
 !
-!> \brief   MPAS Grid and field type defintion module
-!> \author  Michael Duda, Doug Jacobsen
-!> \date    04/02/13
+!> \brief   MPAS Field Routines
+!> \author  Doug Jacobsen, Michael Duda
+!> \date    03/10/2015
 !> \details 
-!> This module defines derived data types related to fields, and variable structures.
-!> It also includes routines for allocating and deallocating these types.
+!> This module defines routines related to MPAS field types (defined in mpas_data_types).
 !
 !-----------------------------------------------------------------------
-module mpas_grid_types
+module mpas_field_routines
 
    use mpas_kind_types
-   use mpas_dmpar_types
-   use mpas_attlist
-   use mpas_packages
-   use mpas_io_units, only : stderrUnit
-   use mpas_timekeeping, only : MPAS_Clock_type
-
-   integer, parameter :: nTimeLevs = 2
-
-   ! Derived type describing info for doing I/O specific to a field
-   type io_info
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND) :: units
-      character (len=StrKIND) :: description
-      integer, dimension(4) :: start
-      integer, dimension(4) :: count
-      logical :: input
-      logical :: sfc
-      logical :: restart
-      logical :: output
-   end type io_info
-
-   ! Derived type for storing fields
-   type field5DReal
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:,:,:,:,:), pointer :: array
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      character (len=StrKIND), dimension(5) :: dimNames
-      integer, dimension(5) :: dimSizes
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field5DReal), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field5DReal
-
-
-   ! Derived type for storing fields
-   type field4DReal
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:,:,:,:), pointer :: array
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      character (len=StrKIND), dimension(4) :: dimNames
-      integer, dimension(4) :: dimSizes
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field4DReal), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field4DReal
-
-
-
-   ! Derived type for storing fields
-   type field3DReal
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:,:,:), pointer :: array
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      character (len=StrKIND), dimension(3) :: dimNames
-      integer, dimension(3) :: dimSizes
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field3DReal), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field3DReal
-
-
-   ! Derived type for storing fields
-   type field2DReal
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:,:), pointer :: array
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      character (len=StrKIND), dimension(2) :: dimNames
-      integer, dimension(2) :: dimSizes
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field2DReal), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field2DReal
-
-
-   ! Derived type for storing fields
-   type field1DReal
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      real (kind=RKIND), dimension(:), pointer :: array
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      character (len=StrKIND), dimension(1) :: dimNames
-      integer, dimension(1) :: dimSizes
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field1DReal), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field1DReal
-
-
-   ! Derived type for storing fields
-   type field0DReal
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      real (kind=RKIND) :: scalar
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field0DReal), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field0DReal
-
-
-   ! Derived type for storing fields
-   type field3DInteger
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      integer, dimension(:,:,:), pointer :: array
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      character (len=StrKIND), dimension(3) :: dimNames
-      integer, dimension(3) :: dimSizes
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field3DInteger), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field3DInteger
-
-
-   ! Derived type for storing fields
-   type field2DInteger
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      integer, dimension(:,:), pointer :: array
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      character (len=StrKIND), dimension(2) :: dimNames
-      integer, dimension(2) :: dimSizes
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field2DInteger), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field2DInteger
-
-
-   ! Derived type for storing fields
-   type field1DInteger
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      integer, dimension(:), pointer :: array
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      character (len=StrKIND), dimension(1) :: dimNames
-      integer, dimension(1) :: dimSizes
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field1DInteger), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field1DInteger
-
-
-   ! Derived type for storing fields
-   type field0DInteger
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      integer :: scalar
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field0DInteger), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field0DInteger
-
-
-   ! Derived type for storing fields
-   type field1DChar
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      character (len=StrKIND), dimension(:), pointer :: array
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      character (len=StrKIND), dimension(1) :: dimNames
-      integer, dimension(1) :: dimSizes
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field1DChar), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field1DChar
-
-
-   ! Derived type for storing fields
-   type field0DChar
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      character (len=StrKIND) :: scalar
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field0DChar), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field0DChar
-
-
-   ! Derived type for storing fields
-   type field0DLogical
-  
-      ! Back-pointer to the containing block
-      type (block_type), pointer :: block
-
-      ! Raw array holding field data on this block
-      logical :: scalar
-
-      ! Information used by the I/O layer
-      type (io_info), pointer :: ioinfo       ! to be removed later
-      character (len=StrKIND) :: fieldName
-      character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
-      logical :: hasTimeDimension
-      logical :: isActive
-      logical :: isVarArray
-      type (att_list_type), pointer :: attList => null()     
-
-      ! Pointers to the prev and next blocks for this field on this task
-      type (field0DLogical), pointer :: prev, next
-
-      ! Halo communication lists
-      type (mpas_multihalo_exchange_list), pointer :: sendList
-      type (mpas_multihalo_exchange_list), pointer :: recvList
-      type (mpas_multihalo_exchange_list), pointer :: copyList
-   end type field0DLogical
-
-   !!! TYPES FOR MPAS_POOL
-   integer, parameter :: MPAS_POOL_TABLE_SIZE = 128
-
-   integer, parameter :: MPAS_POOL_SILENT = 1001, &
-                         MPAS_POOL_WARN   = 1002, &
-                         MPAS_POOL_FATAL  = 1003
-
-   integer, parameter :: MPAS_POOL_FIELD     = 1004, &
-                         MPAS_POOL_CONFIG    = 1005, &
-                         MPAS_POOL_DIMENSION = 1006, &
-                         MPAS_POOL_SUBPOOL   = 1007, &
-                         MPAS_POOL_PACKAGE   = 1008
-
-   integer, parameter :: MPAS_POOL_REAL      = 1009, &
-                         MPAS_POOL_INTEGER   = 1010, &
-                         MPAS_POOL_LOGICAL   = 1011, &
-                         MPAS_POOL_CHARACTER = 1012
-
-   integer, parameter :: MPAS_DECOMP_NONDECOMP = 1013, &
-                         MPAS_DECOMP_CELLS     = 1014, &
-                         MPAS_DECOMP_EDGES     = 1015, &
-                         MPAS_DECOMP_VERTICES  = 1016
-
-   type mpas_pool_data_type
-      integer :: contentsType
-      integer :: contentsDims
-      integer :: contentsTimeLevs
-
-      ! For storing fields
-      type (field0DReal), pointer :: r0 => null()
-      type (field1DReal), pointer :: r1 => null()
-      type (field2DReal), pointer :: r2 => null()
-      type (field3DReal), pointer :: r3 => null()
-      type (field4DReal), pointer :: r4 => null()
-      type (field5DReal), pointer :: r5 => null()
-      type (field0DReal), dimension(:), pointer :: r0a => null()
-      type (field1DReal), dimension(:), pointer :: r1a => null()
-      type (field2DReal), dimension(:), pointer :: r2a => null()
-      type (field3DReal), dimension(:), pointer :: r3a => null()
-      type (field4DReal), dimension(:), pointer :: r4a => null()
-      type (field5DReal), dimension(:), pointer :: r5a => null()
-      type (field0DInteger), pointer :: i0 => null()
-      type (field1DInteger), pointer :: i1 => null()
-      type (field2DInteger), pointer :: i2 => null()
-      type (field3DInteger), pointer :: i3 => null()
-      type (field0DInteger), dimension(:), pointer :: i0a => null()
-      type (field1DInteger), dimension(:), pointer :: i1a => null()
-      type (field2DInteger), dimension(:), pointer :: i2a => null()
-      type (field3DInteger), dimension(:), pointer :: i3a => null()
-      type (field0DChar), pointer :: c0 => null()
-      type (field1DChar), pointer :: c1 => null()
-      type (field0DChar), dimension(:), pointer :: c0a => null()
-      type (field1DChar), dimension(:), pointer :: c1a => null()
-      type (field0DLogical), pointer :: l0 => null()
-      type (field0DLogical), dimension(:), pointer :: l0a => null()
-      type (mpas_pool_type), pointer :: p => null()
- 
-      ! For storing config options, dimensions, and packages
-      integer, pointer :: simple_int => null()
-      integer, dimension(:), pointer :: simple_int_arr => null()
-      real(kind=RKIND), pointer :: simple_real => null()
-      logical, pointer :: simple_logical => null()
-      character(len=StrKIND), pointer :: simple_char => null()
-   end type mpas_pool_data_type
-
-   type mpas_pool_member_type
-      character (len=StrKIND) :: key
-      integer :: keyLen
-      integer :: contentsType
-      type (mpas_pool_data_type), pointer :: data => null()
-      type (mpas_pool_member_type), pointer :: next => null()
-   end type mpas_pool_member_type
-
-   type mpas_pool_head_type
-      type (mpas_pool_member_type), pointer :: head => null()
-   end type mpas_pool_head_type
-
-   type mpas_pool_type
-      integer :: size
-      integer :: iteratorIndex
-      type (mpas_pool_head_type), dimension(:), pointer :: table => null()
-      type (mpas_pool_member_type), pointer :: iterator => null()
-   end type mpas_pool_type
-
-   type mpas_pool_iterator_type
-      character (len=StrKIND) :: memberName
-      integer :: memberType
-      integer :: dataType
-      integer :: nDims
-      integer :: nTimeLevels
-   end type mpas_pool_iterator_type
-
-   type mpas_pool_field_info_type
-      integer :: fieldType
-      integer :: nDims
-      integer :: nTimeLevels
-      logical :: isActive
-   end type mpas_pool_field_info_type
-   !!! END TYPES FOR MPAS POOL
-
-
-   ! Type for storing (possibly architecture specific) information concerning to parallelism
-   type parallel_info
-      type (mpas_multihalo_exchange_list), pointer :: cellsToSend            ! List of types describing which cells to send to other blocks
-      type (mpas_multihalo_exchange_list), pointer :: cellsToRecv            ! List of types describing which cells to receive from other blocks
-      type (mpas_multihalo_exchange_list), pointer :: cellsToCopy            ! List of types describing which cells to copy from other blocks
-
-      type (mpas_multihalo_exchange_list), pointer :: edgesToSend            ! List of types describing which edges to send to other blocks
-      type (mpas_multihalo_exchange_list), pointer :: edgesToRecv            ! List of types describing which edges to receive from other blocks
-      type (mpas_multihalo_exchange_list), pointer :: edgesToCopy            ! List of types describing which edges to copy from other blocks
-
-      type (mpas_multihalo_exchange_list), pointer :: verticesToSend         ! List of types describing which vertices to send to other blocks
-      type (mpas_multihalo_exchange_list), pointer :: verticesToRecv         ! List of types describing which vertices to receive from other blocks
-      type (mpas_multihalo_exchange_list), pointer :: verticesToCopy         ! List of types describing which vertices to copy from other blocks
-   end type parallel_info
-
-
-   ! Derived type for storing part of a domain; used as a basic unit of work for a process
-   type block_type
-
-      integer :: blockID   ! Unique global ID number for this block
-      integer :: localBlockID  ! Unique local ID number for this block
-
-      type (domain_type), pointer :: domain
-
-      type (parallel_info), pointer :: parinfo
-
-      type (block_type), pointer :: prev => null()
-      type (block_type), pointer :: next => null()
-
-      type (mpas_pool_type), pointer :: structs, dimensions, configs, packages
-      type (mpas_pool_type), pointer :: allFields, allStructs
-   end type block_type
-
-
-   ! Derived type for storing list of blocks from a domain to be handled by a process
-   type domain_type
-      type (block_type), pointer :: blocklist
-      type (mpas_pool_type), pointer :: configs, packages
-
-      type (MPAS_Clock_type), pointer :: clock
-   
-      ! Also store parallelization info here
-      type (dm_info), pointer :: dminfo
-#include "model_variables.inc"
-      logical :: on_a_sphere
-      real (kind=RKIND) :: sphere_radius
-      character (len=StrKIND*2) :: history !< History attribute, read in from input file.
-      character (len=StrKIND) :: mesh_id !< mesh_id attribute, randomly generated
-      character (len=StrKIND) :: Conventions !< Conventions attribute, read in from input file.
-      character (len=StrKIND) :: source !< source attribute, read in from input file.
-      character (len=StrKIND) :: mesh_spec !< mesh_spec attribute, read in from input file.
-      character (len=StrKIND) :: parent_id !< parent_id attribute, read in from input file.
-   end type domain_type
+   use mpas_derived_types
 
    interface mpas_allocate_mold
       module procedure mpas_allocate_mold_1dreal
@@ -671,199 +105,7 @@ module mpas_grid_types
       module procedure mpas_deallocate_field1d_char
    end interface
 
-   interface mpas_pool_add_field
-      module procedure mpas_pool_add_field_0d_real
-      module procedure mpas_pool_add_field_1d_real
-      module procedure mpas_pool_add_field_2d_real
-      module procedure mpas_pool_add_field_3d_real
-      module procedure mpas_pool_add_field_4d_real
-      module procedure mpas_pool_add_field_5d_real
-      module procedure mpas_pool_add_field_0d_int
-      module procedure mpas_pool_add_field_1d_int
-      module procedure mpas_pool_add_field_2d_int
-      module procedure mpas_pool_add_field_3d_int
-      module procedure mpas_pool_add_field_0d_char
-      module procedure mpas_pool_add_field_1d_char
-      module procedure mpas_pool_add_field_0d_reals
-      module procedure mpas_pool_add_field_1d_reals
-      module procedure mpas_pool_add_field_2d_reals
-      module procedure mpas_pool_add_field_3d_reals
-      module procedure mpas_pool_add_field_4d_reals
-      module procedure mpas_pool_add_field_5d_reals
-      module procedure mpas_pool_add_field_0d_ints
-      module procedure mpas_pool_add_field_1d_ints
-      module procedure mpas_pool_add_field_2d_ints
-      module procedure mpas_pool_add_field_3d_ints
-      module procedure mpas_pool_add_field_0d_chars
-      module procedure mpas_pool_add_field_1d_chars
-   end interface
-
-   interface mpas_pool_get_field
-      module procedure mpas_pool_get_field_0d_real
-      module procedure mpas_pool_get_field_1d_real
-      module procedure mpas_pool_get_field_2d_real
-      module procedure mpas_pool_get_field_3d_real
-      module procedure mpas_pool_get_field_4d_real
-      module procedure mpas_pool_get_field_5d_real
-      module procedure mpas_pool_get_field_0d_int
-      module procedure mpas_pool_get_field_1d_int
-      module procedure mpas_pool_get_field_2d_int
-      module procedure mpas_pool_get_field_3d_int
-      module procedure mpas_pool_get_field_0d_char
-      module procedure mpas_pool_get_field_1d_char
-   end interface
-
-   interface mpas_pool_get_array
-      module procedure mpas_pool_get_array_0d_real
-      module procedure mpas_pool_get_array_1d_real
-      module procedure mpas_pool_get_array_2d_real
-      module procedure mpas_pool_get_array_3d_real
-      module procedure mpas_pool_get_array_4d_real
-      module procedure mpas_pool_get_array_5d_real
-      module procedure mpas_pool_get_array_0d_int
-      module procedure mpas_pool_get_array_1d_int
-      module procedure mpas_pool_get_array_2d_int
-      module procedure mpas_pool_get_array_3d_int
-      module procedure mpas_pool_get_array_0d_char
-      module procedure mpas_pool_get_array_1d_char
-   end interface
-
-   interface mpas_pool_add_config
-      module procedure mpas_pool_add_config_real
-      module procedure mpas_pool_add_config_int
-      module procedure mpas_pool_add_config_char
-      module procedure mpas_pool_add_config_logical
-   end interface
-
-   interface mpas_pool_get_config
-      module procedure mpas_pool_get_config_real
-      module procedure mpas_pool_get_config_int
-      module procedure mpas_pool_get_config_char
-      module procedure mpas_pool_get_config_logical
-   end interface
-
-   interface mpas_pool_add_dimension
-      module procedure mpas_pool_add_dimension_0d
-      module procedure mpas_pool_add_dimension_1d
-   end interface
-
-   interface mpas_pool_get_dimension
-      module procedure mpas_pool_get_dimension_0d
-      module procedure mpas_pool_get_dimension_1d
-   end interface
-
-   integer :: currentErrorLevel = MPAS_POOL_SILENT
-
-
-
    contains
-
-!***********************************************************************
-!
-!  routine mpas_allocate_domain
-!
-!> \brief   MPAS Domain allocation routine
-!> \author  Michael Duda
-!> \date    04/02/13
-!> \details 
-!> This routine allocates a domain structure.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_allocate_domain(dom, dminfo)!{{{
-
-      implicit none
-
-      type (domain_type), pointer :: dom !< Input/Output: Domain structure
-      type (dm_info), pointer :: dminfo !< Input: Domain Information
-
-      nullify(dom % blocklist)
-      dom % dminfo => dminfo
-
-      allocate(dom % configs)
-      allocate(dom % packages)
-      allocate(dom % clock)
-
-      call mpas_pool_create_pool(dom % configs)
-      call mpas_pool_create_pool(dom % packages)
-
-   end subroutine mpas_allocate_domain!}}}
-
-!***********************************************************************
-!
-!  routine mpas_allocate_block
-!
-!> \brief   MPAS Block allocation routine
-!> \author  Michael Duda
-!> \date    04/02/13
-!> \details 
-!> This routine allocates a block structure. It calls routines to allocate the variable structures
-!> that are members of the block type.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_allocate_block(nHaloLayers, b, dom, blockID, &!{{{
-#include "dim_dummy_args.inc"
-                            )
-
-      implicit none
-
-      integer, intent(in) :: nHaloLayers !< Input: Number of halo laters
-      type (block_type), pointer :: b !< Input/Output: Block structure
-      type (domain_type), pointer :: dom !< Input: Domain structure
-      integer, intent(in) :: blockID !< Input: Global ID of block
-#include "dim_dummy_defines_input.inc"
-
-      integer :: i
-
-      b % blockID = blockID
-
-      allocate(b % parinfo)
-
-      b % domain => dom
-
-      allocate(b % structs)
-      allocate(b % dimensions)
-      allocate(b % allFields)
-      call mpas_pool_create_pool(b % structs)
-      call mpas_pool_create_pool(b % dimensions)
-      call mpas_pool_create_pool(b % allFields)
-      call mpas_pool_create_pool(b % allStructs)
-
-      b % configs => dom % configs
-      b % packages => dom % packages
-
-   end subroutine mpas_allocate_block!}}}
-
-
-!***********************************************************************
-!
-!  routine mpas_deallocate_domain
-!
-!> \brief   MPAS Domain deallocation routine
-!> \author  Michael Duda
-!> \date    04/02/13
-!> \details 
-!> This routine deallocates a domain structure. 
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_deallocate_domain(dom)!{{{
-
-      implicit none
-
-      type (domain_type), pointer :: dom !< Input/Output: Domain to deallocate
-
-      type (block_type), pointer :: block_ptr
-
-      block_ptr => dom % blocklist
-      do while (associated(block_ptr))
-         call mpas_deallocate_block(block_ptr)
-         block_ptr => block_ptr % next
-      end do
-
-      call mpas_pool_destroy_pool(dom % configs)
-      call mpas_pool_destroy_pool(dom % packages)
-      deallocate(dom % clock)
-
-   end subroutine mpas_deallocate_domain!}}}
 
 !***********************************************************************
 !
@@ -908,6 +150,7 @@ module mpas_grid_types
 
    end subroutine mpas_allocate_scratch_field1d_integer!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_allocate_scratch_field2d_integer
@@ -950,6 +193,7 @@ module mpas_grid_types
        end if
 
    end subroutine mpas_allocate_scratch_field2d_integer!}}}
+
 
 !***********************************************************************
 !
@@ -994,6 +238,7 @@ module mpas_grid_types
 
    end subroutine mpas_allocate_scratch_field3d_integer!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_allocate_scratch_field1d_real
@@ -1036,6 +281,7 @@ module mpas_grid_types
        end if
 
    end subroutine mpas_allocate_scratch_field1d_real!}}}
+
 
 !***********************************************************************
 !
@@ -1080,6 +326,7 @@ module mpas_grid_types
 
    end subroutine mpas_allocate_scratch_field2d_real!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_allocate_scratch_field3d_real
@@ -1122,6 +369,7 @@ module mpas_grid_types
        end if
 
    end subroutine mpas_allocate_scratch_field3d_real!}}}
+
 
 !***********************************************************************
 !
@@ -1166,6 +414,7 @@ module mpas_grid_types
 
    end subroutine mpas_allocate_scratch_field4d_real!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_allocate_scratch_field5D_real
@@ -1209,6 +458,7 @@ module mpas_grid_types
 
    end subroutine mpas_allocate_scratch_field5d_real!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_allocate_scratch_field1D_char
@@ -1251,6 +501,7 @@ module mpas_grid_types
        end if
 
    end subroutine mpas_allocate_scratch_field1d_char!}}}
+
 
 !***********************************************************************
 !
@@ -1296,6 +547,7 @@ module mpas_grid_types
 
    end subroutine mpas_deallocate_scratch_field1d_integer!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_deallocate_scratch_field2D_integer
@@ -1339,6 +591,7 @@ module mpas_grid_types
        end if
 
    end subroutine mpas_deallocate_scratch_field2d_integer!}}}
+
 
 !***********************************************************************
 !
@@ -1384,6 +637,7 @@ module mpas_grid_types
 
    end subroutine mpas_deallocate_scratch_field3d_integer!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_deallocate_scratch_field1D_real
@@ -1427,6 +681,7 @@ module mpas_grid_types
        end if
 
    end subroutine mpas_deallocate_scratch_field1d_real!}}}
+
 
 !***********************************************************************
 !
@@ -1472,6 +727,7 @@ module mpas_grid_types
 
    end subroutine mpas_deallocate_scratch_field2d_real!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_deallocate_scratch_field3D_real
@@ -1515,6 +771,7 @@ module mpas_grid_types
        end if
 
    end subroutine mpas_deallocate_scratch_field3d_real!}}}
+
 
 !***********************************************************************
 !
@@ -1560,6 +817,7 @@ module mpas_grid_types
 
    end subroutine mpas_deallocate_scratch_field4d_real!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_deallocate_scratch_field5D_real
@@ -1603,6 +861,7 @@ module mpas_grid_types
        end if
 
    end subroutine mpas_deallocate_scratch_field5d_real!}}}
+
 
 !***********************************************************************
 !
@@ -1648,6 +907,7 @@ module mpas_grid_types
 
    end subroutine mpas_deallocate_scratch_field1d_char!}}}
 
+
 !***********************************************************************
 !
 !  routine mpas_deallocate_field0d_logical
@@ -1672,15 +932,12 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          deallocate(f_cursor)
          f_cursor => f
        end do
 
    end subroutine mpas_deallocate_field0d_logical!}}}
+
 
 !***********************************************************************
 !
@@ -1706,15 +963,12 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          deallocate(f_cursor)
          f_cursor => f
        end do
 
    end subroutine mpas_deallocate_field0d_integer!}}}
+
 
 !***********************************************************************
 !
@@ -1739,10 +993,6 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -1753,6 +1003,7 @@ module mpas_grid_types
        end do
 
    end subroutine mpas_deallocate_field1d_integer!}}}
+
 
 !***********************************************************************
 !
@@ -1777,10 +1028,6 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -1791,6 +1038,7 @@ module mpas_grid_types
        end do
 
    end subroutine mpas_deallocate_field2d_integer!}}}
+
 
 !***********************************************************************
 !
@@ -1815,10 +1063,6 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -1829,6 +1073,7 @@ module mpas_grid_types
        end do
 
    end subroutine mpas_deallocate_field3d_integer!}}}
+
 
 !***********************************************************************
 !
@@ -1854,16 +1099,13 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          deallocate(f_cursor)
 
          f_cursor => f
        end do
 
    end subroutine mpas_deallocate_field0d_real!}}}
+
 
 !***********************************************************************
 !
@@ -1888,10 +1130,6 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -1902,6 +1140,7 @@ module mpas_grid_types
        end do
 
    end subroutine mpas_deallocate_field1d_real!}}}
+
 
 !***********************************************************************
 !
@@ -1926,10 +1165,6 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -1940,6 +1175,7 @@ module mpas_grid_types
        end do
 
    end subroutine mpas_deallocate_field2d_real!}}}
+
 
 !***********************************************************************
 !
@@ -1964,10 +1200,6 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -1978,6 +1210,7 @@ module mpas_grid_types
        end do
 
    end subroutine mpas_deallocate_field3d_real!}}}
+
 
 !***********************************************************************
 !
@@ -2002,10 +1235,6 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -2016,6 +1245,7 @@ module mpas_grid_types
        end do
 
    end subroutine mpas_deallocate_field4d_real!}}}
+
 
 !***********************************************************************
 !
@@ -2040,10 +1270,6 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -2054,6 +1280,7 @@ module mpas_grid_types
        end do
 
    end subroutine mpas_deallocate_field5d_real!}}}
+
 
 !***********************************************************************
 !
@@ -2079,15 +1306,12 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          deallocate(f_cursor)
          f_cursor => f
        end do
 
    end subroutine mpas_deallocate_field0d_char!}}}
+
 
 !***********************************************************************
 !
@@ -2112,10 +1336,6 @@ module mpas_grid_types
            nullify(f)
          end if
 
-         if(associated(f_cursor % ioinfo)) then
-           deallocate(f_cursor % ioinfo)
-         end if
-
          if(associated(f_cursor % array)) then
            deallocate(f_cursor % array)
          end if
@@ -2126,48 +1346,6 @@ module mpas_grid_types
        end do
 
    end subroutine mpas_deallocate_field1d_char!}}}
-
-!***********************************************************************
-!
-!  routine mpas_deallocate_block
-!
-!> \brief   MPAS Block deallocation routine
-!> \author  Doug Jacobsen
-!> \date    04/02/13
-!> \details 
-!> This routine deallocates a block structure.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_deallocate_block(b)!{{{
- 
-      implicit none
-
-      type (block_type), intent(inout) :: b !< Input/Output: Block to be deallocated.
-
-      integer :: i
-
-      ! BUG: It seems like we should be deallocating the exchange lists before we 
-      !      deallocate the array of head pointers and the parinfo type...
-      !      It also seems like these deallocations should happen with mpas_dmpar_destroy_multihalo_exchange_list
-
-      call mpas_pool_destroy_pool(b % structs)
-      call mpas_pool_destroy_pool(b % dimensions)
-
-      deallocate(b % parinfo % cellsToSend)
-      deallocate(b % parinfo % cellsToRecv)
-      deallocate(b % parinfo % cellsToCopy)
-
-      deallocate(b % parinfo % edgesToSend)
-      deallocate(b % parinfo % edgesToRecv)
-      deallocate(b % parinfo % edgesToCopy)
-
-      deallocate(b % parinfo % verticesToSend)
-      deallocate(b % parinfo % verticesToRecv)
-      deallocate(b % parinfo % verticesToCopy)
-
-      deallocate(b % parinfo)
-
-   end subroutine mpas_deallocate_block!}}}
 
 
 !***********************************************************************
@@ -2184,7 +1362,7 @@ module mpas_grid_types
 !> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_mold_1dreal(dst, src)
+   subroutine mpas_allocate_mold_1dreal(dst, src)!{{{
 
       implicit none
 
@@ -2193,7 +1371,7 @@ module mpas_grid_types
   
       allocate(dst(size(src)))
 
-   end subroutine mpas_allocate_mold_1dreal
+   end subroutine mpas_allocate_mold_1dreal!}}}
 
 
 !***********************************************************************
@@ -2210,7 +1388,7 @@ module mpas_grid_types
 !> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_mold_2dreal(dst, src)
+   subroutine mpas_allocate_mold_2dreal(dst, src)!{{{
 
       implicit none
 
@@ -2223,7 +1401,7 @@ module mpas_grid_types
 
       allocate(dst(dims(1),dims(2)))
 
-   end subroutine mpas_allocate_mold_2dreal
+   end subroutine mpas_allocate_mold_2dreal!}}}
 
 
 !***********************************************************************
@@ -2240,7 +1418,7 @@ module mpas_grid_types
 !> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_mold_3dreal(dst, src)
+   subroutine mpas_allocate_mold_3dreal(dst, src)!{{{
 
       implicit none
 
@@ -2253,7 +1431,7 @@ module mpas_grid_types
 
       allocate(dst(dims(1),dims(2),dims(3)))
 
-   end subroutine mpas_allocate_mold_3dreal
+   end subroutine mpas_allocate_mold_3dreal!}}}
 
 
 !***********************************************************************
@@ -2270,7 +1448,7 @@ module mpas_grid_types
 !> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_mold_4dreal(dst, src)
+   subroutine mpas_allocate_mold_4dreal(dst, src)!{{{
 
       implicit none
 
@@ -2283,7 +1461,7 @@ module mpas_grid_types
 
       allocate(dst(dims(1),dims(2),dims(3),dims(4)))
 
-   end subroutine mpas_allocate_mold_4dreal
+   end subroutine mpas_allocate_mold_4dreal!}}}
 
 
 !***********************************************************************
@@ -2300,7 +1478,7 @@ module mpas_grid_types
 !> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_mold_5dreal(dst, src)
+   subroutine mpas_allocate_mold_5dreal(dst, src)!{{{
 
       implicit none
 
@@ -2313,7 +1491,7 @@ module mpas_grid_types
 
       allocate(dst(dims(1),dims(2),dims(3),dims(4),dims(5)))
 
-   end subroutine mpas_allocate_mold_5dreal
+   end subroutine mpas_allocate_mold_5dreal!}}}
 
 
 !***********************************************************************
@@ -2330,7 +1508,7 @@ module mpas_grid_types
 !> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_mold_1dinteger(dst, src)
+   subroutine mpas_allocate_mold_1dinteger(dst, src)!{{{
 
       implicit none
 
@@ -2339,7 +1517,7 @@ module mpas_grid_types
   
       allocate(dst(size(src)))
 
-   end subroutine mpas_allocate_mold_1dinteger
+   end subroutine mpas_allocate_mold_1dinteger!}}}
 
 
 !***********************************************************************
@@ -2356,7 +1534,7 @@ module mpas_grid_types
 !> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_mold_2dinteger(dst, src)
+   subroutine mpas_allocate_mold_2dinteger(dst, src)!{{{
 
       implicit none
 
@@ -2369,7 +1547,7 @@ module mpas_grid_types
 
       allocate(dst(dims(1),dims(2)))
 
-   end subroutine mpas_allocate_mold_2dinteger
+   end subroutine mpas_allocate_mold_2dinteger!}}}
 
 
 !***********************************************************************
@@ -2386,7 +1564,7 @@ module mpas_grid_types
 !> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_mold_3dinteger(dst, src)
+   subroutine mpas_allocate_mold_3dinteger(dst, src)!{{{
 
       implicit none
 
@@ -2399,7 +1577,7 @@ module mpas_grid_types
 
       allocate(dst(dims(1),dims(2),dims(3)))
 
-   end subroutine mpas_allocate_mold_3dinteger
+   end subroutine mpas_allocate_mold_3dinteger!}}}
 
 
 !***********************************************************************
@@ -2416,7 +1594,7 @@ module mpas_grid_types
 !> ALLOCATE(A,SOURCE=B) but without actually copying the source values.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_mold_1dchar(dst, src)
+   subroutine mpas_allocate_mold_1dchar(dst, src)!{{{
 
       implicit none
 
@@ -2426,7 +1604,7 @@ module mpas_grid_types
       allocate(dst(size(src)))
 
    end subroutine mpas_allocate_mold_1dchar
-
+!}}}
 
 !***********************************************************************
 !
@@ -2793,7 +1971,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_0dreal(fldarr)
+   subroutine mpas_shift_time_levs_0dreal(fldarr)!{{{
 
       implicit none
 
@@ -2805,7 +1983,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_scalar.inc"
 
-   end subroutine mpas_shift_time_levs_0dreal
+   end subroutine mpas_shift_time_levs_0dreal!}}}
 
 
 !***********************************************************************
@@ -2822,7 +2000,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_1dreal(fldarr)
+   subroutine mpas_shift_time_levs_1dreal(fldarr)!{{{
 
       implicit none
 
@@ -2834,7 +2012,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_array.inc"
 
-   end subroutine mpas_shift_time_levs_1dreal
+   end subroutine mpas_shift_time_levs_1dreal!}}}
 
 
 !***********************************************************************
@@ -2851,7 +2029,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_2dreal(fldarr)
+   subroutine mpas_shift_time_levs_2dreal(fldarr)!{{{
 
       implicit none
 
@@ -2863,7 +2041,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_array.inc"
 
-   end subroutine mpas_shift_time_levs_2dreal
+   end subroutine mpas_shift_time_levs_2dreal!}}}
 
 
 !***********************************************************************
@@ -2880,7 +2058,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_3dreal(fldarr)
+   subroutine mpas_shift_time_levs_3dreal(fldarr)!{{{
 
       implicit none
 
@@ -2892,7 +2070,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_array.inc"
 
-   end subroutine mpas_shift_time_levs_3dreal
+   end subroutine mpas_shift_time_levs_3dreal!}}}
 
 
 !***********************************************************************
@@ -2909,7 +2087,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_4dreal(fldarr)
+   subroutine mpas_shift_time_levs_4dreal(fldarr)!{{{
 
       implicit none
 
@@ -2921,7 +2099,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_array.inc"
 
-   end subroutine mpas_shift_time_levs_4dreal
+   end subroutine mpas_shift_time_levs_4dreal!}}}
 
 
 !***********************************************************************
@@ -2938,7 +2116,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_5dreal(fldarr)
+   subroutine mpas_shift_time_levs_5dreal(fldarr)!{{{
 
       implicit none
 
@@ -2950,7 +2128,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_array.inc"
 
-   end subroutine mpas_shift_time_levs_5dreal
+   end subroutine mpas_shift_time_levs_5dreal!}}}
 
 
 !***********************************************************************
@@ -2967,7 +2145,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_0dinteger(fldarr)
+   subroutine mpas_shift_time_levs_0dinteger(fldarr)!{{{
 
       implicit none
 
@@ -2979,7 +2157,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_scalar.inc"
 
-   end subroutine mpas_shift_time_levs_0dinteger
+   end subroutine mpas_shift_time_levs_0dinteger!}}}
 
 
 !***********************************************************************
@@ -2996,7 +2174,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_1dinteger(fldarr)
+   subroutine mpas_shift_time_levs_1dinteger(fldarr)!{{{
 
       implicit none
 
@@ -3008,7 +2186,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_array.inc"
 
-   end subroutine mpas_shift_time_levs_1dinteger
+   end subroutine mpas_shift_time_levs_1dinteger!}}}
 
 
 !***********************************************************************
@@ -3025,7 +2203,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_2dinteger(fldarr)
+   subroutine mpas_shift_time_levs_2dinteger(fldarr)!{{{
 
       implicit none
 
@@ -3037,7 +2215,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_array.inc"
 
-   end subroutine mpas_shift_time_levs_2dinteger
+   end subroutine mpas_shift_time_levs_2dinteger!}}}
 
 
 !***********************************************************************
@@ -3054,7 +2232,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_3dinteger(fldarr)
+   subroutine mpas_shift_time_levs_3dinteger(fldarr)!{{{
 
       implicit none
 
@@ -3066,7 +2244,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_array.inc"
 
-   end subroutine mpas_shift_time_levs_3dinteger
+   end subroutine mpas_shift_time_levs_3dinteger!}}}
 
 
 !***********************************************************************
@@ -3083,7 +2261,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_0dchar(fldarr)
+   subroutine mpas_shift_time_levs_0dchar(fldarr)!{{{
 
       implicit none
 
@@ -3095,7 +2273,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_scalar.inc"
 
-   end subroutine mpas_shift_time_levs_0dchar
+   end subroutine mpas_shift_time_levs_0dchar!}}}
 
 
 !***********************************************************************
@@ -3112,7 +2290,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_1dchar(fldarr)
+   subroutine mpas_shift_time_levs_1dchar(fldarr)!{{{
 
       implicit none
 
@@ -3124,7 +2302,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_array.inc"
 
-   end subroutine mpas_shift_time_levs_1dchar
+   end subroutine mpas_shift_time_levs_1dchar!}}}
 
 
 !***********************************************************************
@@ -3141,7 +2319,7 @@ module mpas_grid_types
 !> for fldarr(N) will point to what was the storage for fldarr(1).
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_shift_time_levs_0dlogical(fldarr)
+   subroutine mpas_shift_time_levs_0dlogical(fldarr)!{{{
 
       implicit none
 
@@ -3153,69 +2331,7 @@ module mpas_grid_types
       
 #include "shift_time_levs_scalar.inc"
 
-   end subroutine mpas_shift_time_levs_0dlogical
-
-!***********************************************************************
-!
-!  routine mpas_link_fields
-!
-!> \brief   MPAS Link Fields routine
-!> \author  Doug Jacobsen
-!> \date    04/24/2014
-!> \details 
-!> Sets up field links across blocks. This routine should be called prior to
-!> any halo exchanges. Also links parinfo into each field.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_link_fields(domain)!{{{
-      type (domain_type), intent(in) :: domain
-
-      type (block_type), pointer :: blockPtr
-      type (block_type), pointer :: prevBlock
-      type (block_type), pointer :: nextBlock
-
-      blockPtr => domain % blocklist
-      do while(associated(blockPtr))
-         if (associated(blockPtr % prev)) then
-            prevBlock => blockPtr % prev
-         else
-            nullify(prevBlock)
-         end if
-
-         if (associated(blockPtr % next)) then
-            nextBlock => blockPtr % next
-         else
-            nullify(nextBlock)
-         end if
-
-         if (associated(prevBlock) .and. associated(nextBlock)) then
-            call mpas_pool_link_pools(blockPtr % structs, prevBlock % structs, nextBlock % structs)
-         else if (associated(prevBlock)) then
-            call mpas_pool_link_pools(blockPtr % structs, prevBlock % structs)
-         else if (associated(nextBlock)) then
-            call mpas_pool_link_pools(blockPtr % structs, nextPool=nextBlock % structs)
-         else
-            call mpas_pool_link_pools(blockPtr % structs)
-         end if
-
-         call mpas_pool_link_parinfo(blockPtr, blockPtr % structs)
-
-         blockPtr => blockPtr % next
-      end do
-
-   end subroutine mpas_link_fields!}}}
+   end subroutine mpas_shift_time_levs_0dlogical!}}}
 
 
-
-
-
-#include "pool_subroutines.inc"
-
-
-#include "define_dimensions.inc"
-#include "define_packages.inc"
-!#include "link_fields.inc"
-#include "structs_and_variables.inc"
-
-
-end module mpas_grid_types
+end module mpas_field_routines

@@ -12,7 +12,9 @@
 
 module cice_unit_test
 
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_pool_routines
+  use mpas_io_units
 
   private
   save

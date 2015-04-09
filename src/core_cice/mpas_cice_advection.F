@@ -12,7 +12,8 @@
 
 module cice_advection
 
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_pool_routines
   use mpas_timekeeping
   use mpas_dmpar
 
@@ -75,8 +76,8 @@ contains
     use mpas_tracer_advection_helpers, only: &
          mpas_tracer_advection_coefficients
     
-    use mpas_tracer_advection_mono, only: &
-         mpas_tracer_advection_mono_init
+!   use mpas_tracer_advection_mono, only: &
+!        mpas_tracer_advection_mono_init
 
     use cice_mesh, only: &
          cice_normal_vectors_polygon

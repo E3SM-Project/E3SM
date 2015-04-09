@@ -13,7 +13,8 @@
 
 module cice_forcing
 
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_pool_routines
   use mpas_timekeeping
   use mpas_forcing
   use mpas_stream_manager

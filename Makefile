@@ -482,7 +482,7 @@ mpas_main:
 ifeq "$(AUTOCLEAN)" "true"
 	$(RM) .mpas_core_*
 endif
-	cd src; $(MAKE) -j1 FC="$(FC)" \
+	cd src; $(MAKE) FC="$(FC)" \
                  CC="$(CC)" \
                  CXX="$(CXX)" \
                  SFC="$(SFC)" \
@@ -506,11 +506,7 @@ endif
 
 	@echo "$(EXE_NAME)" > .mpas_core_$(CORE)
 	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
-	if [ -e src/inc/namelist.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/namelist.$(NAMELIST_SUFFIX).defaults .; fi
-	if [ ! -e namelist.$(NAMELIST_SUFFIX) ]; then cp namelist.$(NAMELIST_SUFFIX).defaults namelist.$(NAMELIST_SUFFIX); fi
-	if [ -e src/inc/streams.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/streams.$(NAMELIST_SUFFIX).defaults .; fi
-	if [ ! -e streams.$(NAMELIST_SUFFIX) ]; then cp streams.$(NAMELIST_SUFFIX).defaults streams.$(NAMELIST_SUFFIX); fi
-	for f in `find src/inc -name "stream_list.*"`; do mv $$f .; done
+	( cd src/core_$(CORE); $(MAKE) ROOT_DIR="$(PWD)" post_build )
 	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
@@ -520,8 +516,6 @@ ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
 endif
 	@echo $(GEN_F90_MESSAGE)
-	@echo $(NAMELIST_MESSAGE)
-	@echo $(STREAM_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
