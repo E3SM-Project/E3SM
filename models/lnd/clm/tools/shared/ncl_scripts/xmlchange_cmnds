@@ -1,0 +1,4 @@
+./xmlchange ATM_DOMAIN_PATH=/global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/ncl_scripts/~/clm_input/inputdata/share/domains
+./xmlchange LND_DOMAIN_PATH=/global/u1/j/jinyun/ACME/models/lnd/clm/tools/shared/ncl_scripts/~/clm_input/inputdata/share/domains
+./xmlchange ATM_DOMAIN_FILE=domain.lnd.0.9x1.25_US-Ha1_gx1v6_c141127.nc
+./xmlchange LND_DOMAIN_FILE=domain.lnd.0.9x1.25_US-Ha1_gx1v6_c141127.nc

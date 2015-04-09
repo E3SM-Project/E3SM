@@ -1,0 +1,7 @@
+# xmlchange commands written by PTCLMmkdata:
+# ./PTCLMmkdata -s US-Ha1 -d /global/homes/j/jinyun/clm_input/inputdata/ 
+./xmlchange CLM_USRDAT_NAME=1x1pt_US-Ha1
+./xmlchange DATM_CLMNCEP_YR_START=1991
+./xmlchange DATM_CLMNCEP_YR_END=2006
+./xmlchange CLM_BLDNML_OPTS='-mask navy'
+./xmlchange MPILIB=mpi-serial

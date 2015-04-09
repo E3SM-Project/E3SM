@@ -462,7 +462,7 @@ contains
   real(r8) :: n2_n2o_ratio_denit(bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: nh4_no3_ratio(bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: nuptake_prof(bounds%begc:bounds%endc,1:ubj)
-  
+  real(r8) :: pscal 
   
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
   
@@ -533,7 +533,7 @@ contains
      chemstate_vars%soil_pH(bounds%begc:bounds%endc, lbj:ubj),  pot_co2_hr, anaerobic_frac, &
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x), &     
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_no3x), &
-     soilstate_vars, waterstate_vars, centurybgc_vars, n2_n2o_ratio_denit, nh4_no3_ratio, &
+     soilstate_vars, waterstate_vars, carbonflux_vars, n2_n2o_ratio_denit, nh4_no3_ratio, &
      k_decay(centurybgc_vars%lid_nh4_nit_reac, bounds%begc:bounds%endc, lbj:ubj), &
      k_decay(centurybgc_vars%lid_no3_den_reac, bounds%begc:bounds%endc, lbj:ubj))
      
@@ -555,6 +555,8 @@ contains
   
   
   !do ode integration and update state variables for each layer
+  !print*,get_nstep()
+  lpr = .true.
   do j = lbj, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)
@@ -567,16 +569,18 @@ contains
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8 
-      lpr = .false.
-      call ode_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
+!      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
+      call ode_mbbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j),pscal)
+!      print*,'cjp',c,j,pscal
+      
+      !if(pscal>0._r8)pause
       !if(c==21192 .and. get_nstep()==43939 .and. j==9)then
       !  write(iulog,*)'y0',(k,y0(k,c,j),k=1,centurybgc_vars%nstvars)
       !  write(iulog,*)'yf',(k,yf(k,c,j),k=1,centurybgc_vars%nstvars)
       !endif
     enddo
   enddo  
-
-  
+!  pause 
   !retrieve the flux variable
   call retrieve_flux_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, dtime, yf, y0, &
      centurybgc_vars, betrtracer_vars, tracerflux_vars, carbonflux_vars, nitrogenflux_vars, plantsoilnutrientflux_vars)
@@ -765,7 +769,7 @@ contains
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_no3_ratio, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
       
   !if(lpr)then
-  !  print*,'reac'
+  !  print*,'reac',centurybgc_vars%lid_no3,reaction_rates(centurybgc_vars%lid_no3_den_reac)
   !  print*,reaction_rates
   !endif
  !do pool degradation
@@ -815,7 +819,10 @@ contains
       reaction_rates(lk)=ystate(centurybgc_vars%primvarid(lk))*Extra_inst%k_decay(lk)
     endif
   enddo
-
+!  if(lpr)then
+!    print*,'reac',centurybgc_vars%lid_nh4,reaction_rates(centurybgc_vars%lid_nh4_nit_reac)
+!    print*,reaction_rates
+!  endif
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
   

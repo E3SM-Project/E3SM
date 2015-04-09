@@ -457,7 +457,6 @@ module BGCCenturySubMod
 
   compet_decomp_no3_scal = compet_decomp_no3 / (compet_decomp_no3 + nh4_no3_ratio*compet_decomp_nh4)
   compet_plant_no3_scal  = compet_plant_no3 / (compet_plant_no3 + nh4_no3_ratio*compet_plant_nh4)
-
   !note all reactions are in the form products - substrates = 0, therefore
   !mass balance is automatically ensured.
   !set up first order reactions
@@ -1016,7 +1015,7 @@ module BGCCenturySubMod
 !-------------------------------------------------------------------------------  
 
   subroutine calc_nitrif_denitrif_rate(bounds, lbj, ubj, numf, filter, jtops, dz, t_soisno, pH, &
-    pot_co2_hr, anaerobic_frac, smin_nh4_vr, smin_no3_vr, soilstate_vars, waterstate_vars, centurybgc_vars, &
+    pot_co2_hr, anaerobic_frac, smin_nh4_vr, smin_no3_vr, soilstate_vars, waterstate_vars, carbonflux_vars, &
     n2_n2o_ratio_denit, nh4_no3_ratio, decay_nh4, decay_no3)
   !
   ! calculate nitrification denitrification rate
@@ -1027,6 +1026,7 @@ module BGCCenturySubMod
   use WaterStateType      , only : waterstate_type
   use MathfuncMod         , only : safe_div
   use shr_const_mod       , only : SHR_CONST_TKFRZ
+  use CNCarbonFluxType    , only : carbonflux_type
   
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
@@ -1042,7 +1042,7 @@ module BGCCenturySubMod
   real(r8),               intent(in) :: smin_no3_vr(bounds%begc: , lbj: )   !soil no3 concentration [mol N/m3]
   type(waterstate_type) , intent(in) :: waterstate_vars  
   type(soilstate_type)  , intent(in) :: soilstate_vars  
-  type(centurybgc_type) , intent(in) :: centurybgc_vars
+  type(carbonflux_type) , intent(in) :: carbonflux_vars  
   real(r8)             , intent(out) :: n2_n2o_ratio_denit(bounds%begc: , lbj: )  !ratio of n2 to n2o in denitrification
   real(r8)             , intent(out) :: nh4_no3_ratio(bounds%begc: , lbj: )       !ratio of soil nh4 and no3
   real(r8)             , intent(out) :: decay_nh4(bounds%begc: ,lbj: )            !1/s, decay rate of nh4
@@ -1094,8 +1094,8 @@ module BGCCenturySubMod
     h2osoi_vol                    =>    waterstate_vars%h2osoi_vol_col , & !
     h2osoi_liq                    =>    waterstate_vars%h2osoi_liq_col , & !
     finundated                    =>    waterstate_vars%finundated_col , & ! Input: [real(r8) (:)]
-    t_scalar                      =>    centurybgc_vars%t_scalar_col   , & ! Input: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
-    w_scalar                      =>    centurybgc_vars%w_scalar_col     & ! Input: [real(r8) (:,:)   ]  soil water scalar for decomp                           
+    t_scalar                      =>    carbonflux_vars%t_scalar_col   , & ! Input: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
+    w_scalar                      =>    carbonflux_vars%w_scalar_col     & ! Input: [real(r8) (:,:)   ]  soil water scalar for decomp                           
   )
   ! Set maximum nitrification rate constant 
   k_nitr_max =  0.1_r8 / secspday   ! [1/sec] 10%/day  Parton et al., 2001 
@@ -1129,7 +1129,6 @@ module BGCCenturySubMod
 
       ! limit to oxic fraction of soils
       pot_f_nit_vr(c,j)  = pot_f_nit_vr(c,j) * (1._r8 - anaerobic_frac(c,j))   ![1/s]
-
       ! limit to non-frozen soil layers
       if ( t_soisno(c,j) <= SHR_CONST_TKFRZ .and. no_frozen_nitrif_denitrif) then
         pot_f_nit_vr(c,j) = 0._r8
@@ -1172,7 +1171,6 @@ module BGCCenturySubMod
       pot_f_denit_vr(c,j) = f_denit_base_vr(c,j) * anaerobic_frac(c,j)
       
       decay_no3(c,j) = safe_div(pot_f_denit_vr(c,j), smin_no3_vr(c,j)) ![1/s]
-
       ! now calculate the ratio of N2O to N2 from denitrifictaion, following Del Grosso et al., 2000
       ! diffusivity constant (figure 6b)
       ratio_k1(c,j) = max(1.7_r8, 38.4_r8 - 350._r8 * diffus(c,j))
@@ -1735,7 +1733,7 @@ module BGCCenturySubMod
   
  !-----------------------------------------------------------------------  
   subroutine calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, centurybgc_vars, &
-     k_decay(1:centurybgc_vars%nreactions, bounds%begc:bounds%endc ,1:ubj))
+     k_decay)
      
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: ubj
