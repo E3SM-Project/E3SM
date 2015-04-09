@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" version="2.1">
+<registry model="mpas" core="atmosphere" version="3.3">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -170,7 +170,6 @@
 			<var name="t_init"/>
 			<var name="qv_init"/>
 			<var name="deriv_two"/>
-			<var name="advCells"/>
 			<var name="defc_a"/>
 			<var name="defc_b"/>
 			<var name="coeffs_reconstruct"/>
@@ -295,7 +294,6 @@
 			<var name="t_init"/>
 			<var name="qv_init"/>
 			<var name="deriv_two"/>
-			<var name="advCells"/>
 			<var name="defc_a"/>
 			<var name="defc_b"/>
 			<var name="coeffs_reconstruct"/>
@@ -740,7 +738,6 @@
 
                 <!-- Space needed for advection -->
                 <var name="deriv_two"                 type="real"     dimensions="FIFTEEN TWO nEdges"/>
-                <var name="advCells"                  type="integer"  dimensions="TWENTYONE nCells"/>
                 <var name="adv_coefs"                 type="real"     dimensions="FIFTEEN nEdges"/>
                 <var name="adv_coefs_3rd"             type="real"     dimensions="FIFTEEN nEdges"/>
                 <var name="advCellsForEdge"           type="integer"  dimensions="FIFTEEN nEdges"/>

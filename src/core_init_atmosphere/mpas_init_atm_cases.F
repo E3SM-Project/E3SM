@@ -517,7 +517,7 @@ module init_atm_cases
 
       !     Metrics for hybrid coordinate and vertical stretching
 
-      str = 1.8
+      str = 1.5
       zt = 45000.
       dz = zt/float(nz1)
 
@@ -4004,11 +4004,12 @@ write(0,*) 'PROCESSING SEAICE'
             sorted_arr(2,k) = rh_fg(k,iCell)
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,nVertLevels
+         do k=nVertLevels,1,-1
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
 !           scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
             scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
                                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+            if (target_z < z_fg(1,iCell)) scalars(index_qv,k,iCell) = scalars(index_qv,k+1,iCell) 
             rh(k,iCell) = scalars(index_qv,k,iCell)
          end do
 
@@ -4140,6 +4141,7 @@ write(0,*) 'PROCESSING SEAICE'
 
             ! QV
             es = 6.112 * exp((17.27*(t(k,iCell) - 273.16))/(t(k,iCell) - 35.86))
+            es = min(es,0.99*0.01*pressure(k,iCell))             ! WCS 20141003, from LF; temporary fix 
             rs = 0.622 * es * 100. / (pressure(k,iCell) - es * 100.)
             scalars(index_qv,k,iCell) = 0.01 * rs * scalars(index_qv,k,iCell)
 

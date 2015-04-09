@@ -13,7 +13,7 @@
 		/>
 		<nml_option name="config_number_zonal_mean_bins" type="integer" default_value="180" units="unitless"
 			description="Number of bins used for zonal mean.  Must be less than or equal to the dimension nZonalMeanBins (set in Registry)."
-			possible_values="Any positive integer value <= nZonalMeanBins."
+			possible_values="Any positive integer value less than or equal to nZonalMeanBins."
 		/>
 		<nml_option name="config_min_zonal_mean_bin" type="real" default_value="-1.0e34" units="varies"
 			description="minimum bin boundary value.  If set to -1.0e34, the minimum value in the domain is found."
@@ -39,9 +39,13 @@
 		<stream name="zonalMeanOutput" type="output"
 				filename_template="analysis_members/zonalMeans.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="0000_12:00:00"
+				filename_interval="01-00-00_00:00:00"
+				clobber_mode="truncate"
+				packages="amZonalMean"
 				runtime_format="single_file">
 
 			<var_array name="tracersZonalMean"/>
+			<var name="xtime"/>
 			<var name="binCenterZonalMean"/>
 			<var name="binBoundaryZonalMean"/>
 			<var name="velocityZonalZonalMean"/>

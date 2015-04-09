@@ -822,7 +822,7 @@ module mpas_timekeeping
                      end if
 
                      nowInterval = alarmNow - alarmPtr % prevRingTime
-                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
                      alarmPtr % prevRingTime = alarmNow - nowRemainder
                   else
                      if (present(interval)) then
@@ -830,7 +830,7 @@ module mpas_timekeeping
                      end if
 
                      nowInterval = alarmPtr % prevRingTime - alarmNow
-                     call mpas_interval_division(alarmNow, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
+                     call mpas_interval_division(alarmPtr % prevRingTime, nowInterval, alarmPtr % ringTimeInterval, nDivs, nowRemainder)
                      alarmPtr % prevRingTime = alarmNow + nowRemainder
                   end if
                end if
@@ -964,6 +964,8 @@ module mpas_timekeeping
             if (present(ierr)) ierr = 1
             write(stderrUnit,*) 'ERROR: Invalid DateTime string', dateTimeString
             return
+         else
+            deallocate(subStrings)
          end if
 
          call mpas_split_string(dateTimeString_, "_", subStrings)
@@ -1239,17 +1241,17 @@ module mpas_timekeeping
             call mpas_split_string(dateSubString, "-", subStrings)
 
             if(size(subStrings) == 3) then ! Contains year, month, and day
-               read(subStrings(1), *), year
-               read(subStrings(2), *), month
-               read(subStrings(3), *), day
+               read(subStrings(1), *) year
+               read(subStrings(2), *) month
+               read(subStrings(3), *) day
             else if(size(subStrings) == 2) then ! Contains month and day
                year = 0
-               read(subStrings(1), *), month
-               read(subStrings(2), *), day
+               read(subStrings(1), *) month
+               read(subStrings(2), *) day
             else if(size(subStrings) == 1) then ! Contains day
                year = 0
                month = 0
-               read(subStrings(1), *), day
+               read(subStrings(1), *) day
             else ! Error?
                year = 0
                month = 0
@@ -1354,6 +1356,10 @@ module mpas_timekeeping
           call ESMF_TimeIntervalGet(interval % ti, D=days, S_i8=seconds, Sn=sn, Sd=sd, rc=ierr)
       endif
 
+      if (sd == 0) then   ! may only occur if (sn == 0)?
+         sd = 1
+      end if
+
       if (present(dt)) then
          dt = (days * 24 * 60 * 60) + seconds + (sn / sd)
       end if
@@ -1364,14 +1370,14 @@ module mpas_timekeeping
       end if
 
       if (present(H)) then
-         H = (seconds - mod(seconds,3600)) / 3600
+         H = (seconds - mod(seconds,3600_I8KIND)) / 3600
          seconds = seconds - H*3600
          H = H + days * 24
          days = 0
       end if
 
       if (present(M)) then
-         M = (seconds - mod(seconds,60)) / 60
+         M = (seconds - mod(seconds,60_I8KIND)) / 60
          seconds = seconds - M*60
          M = M + days * 1440
          days = 0
@@ -1390,9 +1396,6 @@ module mpas_timekeeping
       end if
 
       if (present(S_d)) then
-         if (sd == 0) then   ! may only occur if (sn == 0)?
-            sd = 1
-         end if
          S_d = sd
       end if
 
@@ -1511,13 +1514,11 @@ module mpas_timekeeping
       integer :: days, secondsNum, secondsDen
       integer (kind=I8KIND) :: seconds
 
-      call mpas_get_timeInterval(num, startTimeIn=ref_time, DD=days, S_i8=seconds, S_n=secondsNum, S_d=secondsDen)
-      call mpas_set_timeInterval(newNum, DD=days, S_i8=seconds, S_n=secondsNum, S_d=secondsDen)
-
-      call mpas_get_timeInterval(den, startTimeIn=ref_time, DD=days, S_i8=seconds, S_n=secondsNum, S_d=secondsDen)
-      call mpas_set_timeInterval(newDen, DD=days, S_i8=seconds, S_n=secondsNum, S_d=secondsDen)
-
-      call mpas_interval_division_log(newNum, newDen, n, rem)
+      if ( num % ti % YR == 0 .and. num % ti % MM == 0 .and. den % ti % YR == 0 .and. den % ti % MM == 0 ) then
+          call mpas_interval_division_log(num, den, n, rem)
+      else
+          call mpas_interval_division_linear(ref_time, num, den, n, rem)
+      end if
 
    end subroutine mpas_interval_division
 
@@ -1624,10 +1625,12 @@ module mpas_timekeeping
       integer, intent(out) :: n
       type (MPAS_TimeInterval_type), intent(out) :: rem
 
-      type (MPAS_Time_type) :: target_time
-      type (MPAS_Time_type) :: updated_time
+      integer :: m
 
-      type (MPAS_TimeInterval_type) :: temp
+      type (MPAS_Time_type) :: target_time
+      type (MPAS_Time_type) :: updated_time, mid_time
+
+      type (MPAS_TimeInterval_type) :: temp, mid_int
       type (MPAS_TimeInterval_type) :: zero
 
       target_time = ref_time + num
@@ -1645,10 +1648,40 @@ module mpas_timekeeping
 
       ! One interval of den already fits into num
       n = n + 1
+      temp = den
+
+      ! Search forward, doubling the interval each time.
+      do while (target_time > updated_time)
+         n = n * 2
+         temp = den * n
+         updated_time = ref_time + temp
+      end do
+
+      ! Setup midpoint of search
+      ! The last value of n puts updated_time after target_time, need to back off and find the final time.
+      n = n / 2
+      m = n
+      mid_int = den * n
+      temp = mid_int
+      updated_time = ref_time + mid_int + temp
+
+      ! Seach backward, halving the interval each time.
+      do while (target_time < updated_time)
+         m  = m / 2
+         temp = den * m
+         updated_time = ref_time + mid_int + temp
+      end do
+
+      ! Final number of interavls is n + m
+      n = n + m
+
+      ! Do a final linear search, just to ensure we aren't missing any divisions.
+      temp = den * n
+      updated_time = ref_time + temp
 
       do while (target_time > updated_time)
-         updated_time = updated_time + den
          n = n + 1
+         updated_time = updated_time + den
       end do
 
       ! Here, if updated_time is larger than target time. Need to subtract den once, and compute remainder
