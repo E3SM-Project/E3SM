@@ -360,7 +360,7 @@ module BGCCenturySubMod
   ! calculate cascade matrix for the decomposition model
   !
   use clm_varcon                , only : nitrif_n2o_loss_frac
-  use BGCCenturyParMod          , only : CNDecompBgcParamsInst
+  use BGCCenturyParMod          , only : CNDecompBgcParamsInst, NutrientCompetitionParamsInst
   use MathfuncMod               , only : safe_div
   integer                       , intent(in) :: nstvars
   integer                       , intent(in) :: nreactions
@@ -374,6 +374,14 @@ module BGCCenturySubMod
   real(r8),intent(out) :: cascade_matrix(nstvars, nreactions)
   
   real(r8) :: ftxt, f1, f2
+  real(r8) :: compet_plant_no3 
+  real(r8) :: compet_plant_nh4 
+  real(r8) :: compet_decomp_no3 
+  real(r8) :: compet_decomp_nh4 
+  real(r8) :: compet_denit   
+  real(r8) :: compet_nit
+  real(r8) :: compet_decomp_no3_scal
+  real(r8) :: compet_plant_no3_scal
   integer :: k, reac
   
   
@@ -434,9 +442,21 @@ module BGCCenturySubMod
     lid_ar_aere_reac => centurybgc_vars%lid_ar_aere_reac      , & !
     lid_co2_aere_reac=> centurybgc_vars%lid_co2_aere_reac       & !
   )
+  
+  !load parameters
+  compet_plant_no3  = NutrientCompetitionParamsInst%compet_plant_no3
+  compet_plant_nh4  = NutrientCompetitionParamsInst%compet_plant_nh4
+  compet_decomp_no3 = NutrientCompetitionParamsInst%compet_decomp_no3
+  compet_decomp_nh4 = NutrientCompetitionParamsInst%compet_decomp_nh4
+  compet_denit      = NutrientCompetitionParamsInst%compet_denit
+  compet_nit        = NutrientCompetitionParamsInst%compet_nit
+    
   !initialize all entries to zero
   cascade_matrix = 0._r8
-  
+
+  compet_decomp_no3_scal = compet_decomp_no3 / (compet_decomp_no3 + nh4_no3_ratio*compet_decomp_nh4)
+  compet_plant_no3_scal  = compet_plant_no3 / (compet_plant_no3 + nh4_no3_ratio*compet_plant_nh4)
+
   !note all reactions are in the form products - substrates = 0, therefore
   !mass balance is automatically ensured.
   !set up first order reactions
@@ -464,8 +484,8 @@ module BGCCenturySubMod
     !a formulation is different from the century BGC in CLM4.5. Rather, CLM4.5 bgc assumes that the nitrogen mineralized from nitrogen releasing
     !decomposition pathways is first used to meet the nitrogen demand from nitrogen immobilizing decomposition pathways. In the later case, the stoichiometry becomes
     !rate dependent.     
-    !it requires nitrogen uptake  
-    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    !it requires nitrogen uptake
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * compet_decomp_no3_scal
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
     cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
@@ -491,7 +511,7 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
     
     !it requires nitrogen uptake  
-    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * compet_decomp_no3_scal
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
     cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
@@ -517,7 +537,7 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
    
     !it requires nitrogen uptake  
-    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * compet_decomp_no3 / (compet_decomp_no3 + nh4_no3_ratio*compet_decomp_nh4)
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
     cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
@@ -551,7 +571,7 @@ module BGCCenturySubMod
   primvarid(reac) = (som1-1)*nelms+c_loc
   if(cascade_matrix(lid_nh4, reac)<0._r8)then   
     !it requires nitrogen uptake  
-    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * compet_decomp_no3_scal
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
     cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
@@ -581,7 +601,7 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
 
     !it requires nitrogen uptake  
-    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * compet_decomp_no3_scal
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
     cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
@@ -607,7 +627,7 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
     
     !it requires nitrogen uptake  
-    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * compet_decomp_no3_scal
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
     cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
@@ -633,7 +653,7 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
      
     !it requires nitrogen uptake  
-    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) / (1._r8 + nh4_no3_ratio)
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * compet_decomp_no3_scal
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
     cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
@@ -668,8 +688,8 @@ module BGCCenturySubMod
   !reaction 10, plant mineral nitrogen uptake
   reac = lid_plant_minn_up_reac
   ! f nh4 + (1-f) no3 -> plant_nitrogen
-  cascade_matrix(lid_nh4, reac)        = -nh4_no3_ratio/(1._r8+nh4_no3_ratio)
-  cascade_matrix(lid_no3, reac)        = -1._r8/(1._r8 + nh4_no3_ratio)
+  cascade_matrix(lid_nh4, reac)        = -(1._r8-compet_plant_no3_scal)
+  cascade_matrix(lid_no3, reac)        = -compet_plant_no3_scal
   cascade_matrix(lid_plant_minn, reac) = 1._r8
   cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)

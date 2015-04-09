@@ -6,7 +6,7 @@ implicit none
 
   public :: readCentDecompBgcParams
   public :: readCentNitrifDenitrifParams
-
+  public :: readCentCNAllocParams
 
   type, private :: CNNitrifDenitrifParamsType
    real(r8) :: k_nitr_max               !  maximum nitrification rate constant (1/s)
@@ -21,6 +21,21 @@ implicit none
   type(CNNitrifDenitrifParamsType), protected ::  CNNitrifDenitrifParamsInst
 
 
+  type :: NutrientCompetitionParamsType
+
+     real(r8) :: dayscrecover      ! number of days to recover negative cpool
+     real(r8) :: compet_plant_no3  ! (unitless) relative compettiveness of plants for NO3
+     real(r8) :: compet_plant_nh4  ! (unitless) relative compettiveness of plants for NH4
+     real(r8) :: compet_decomp_no3 ! (unitless) relative competitiveness of immobilizers for NO3
+     real(r8) :: compet_decomp_nh4 ! (unitless) relative competitiveness of immobilizers for NH4
+     real(r8) :: compet_denit      ! (unitless) relative competitiveness of denitrifiers for NO3
+     real(r8) :: compet_nit        ! (unitless) relative competitiveness of nitrifiers for NH4
+  end type NutrientCompetitionParamsType
+  
+  ! NutrientCompetitionParamsInst is populated in readCNAllocParams which is called in 
+  type(NutrientCompetitionParamsType),protected ::  NutrientCompetitionParamsInst
+  
+  
   type, private :: CNDecompBgcParamsType
      real(r8) :: cn_s1_bgc     !C:N for SOM 1
      real(r8) :: cn_s2_bgc     !C:N for SOM 2
@@ -520,5 +535,59 @@ implicit none
   
   
 
+  
+!-----------------------------------------------------------------------
+  subroutine readCentCNAllocParams ( ncid )
+    !
+    ! !USES:
+    use ncdio_pio , only : file_desc_t,ncd_io
+
+    ! !ARGUMENTS:
+    implicit none
+    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+    !
+    ! !LOCAL VARIABLES:
+    character(len=32)  :: subname = 'readCentCNAllocParams'
+    character(len=100) :: errCode = '-Error reading in parameters file:'
+    logical            :: readv ! has variable been read in or not
+    real(r8)           :: tempr ! temporary to read in parameter
+    character(len=100) :: tString ! temp. var for reading
+    !-----------------------------------------------------------------------
+
+    ! read in parameters
+
+
+    tString='compet_plant_no3'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    NutrientCompetitionParamsInst%compet_plant_no3=tempr
+
+    tString='compet_plant_nh4'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    NutrientCompetitionParamsInst%compet_plant_nh4=tempr
+   
+    tString='compet_decomp_no3'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    NutrientCompetitionParamsInst%compet_decomp_no3=tempr
+
+    tString='compet_decomp_nh4'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    NutrientCompetitionParamsInst%compet_decomp_nh4=tempr
+   
+    tString='compet_denit'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    NutrientCompetitionParamsInst%compet_denit=tempr
+
+    tString='compet_nit'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    NutrientCompetitionParamsInst%compet_nit=tempr   
+
+  end subroutine readCentCNAllocParams
+  
            
 end module BGCCenturyParMod
