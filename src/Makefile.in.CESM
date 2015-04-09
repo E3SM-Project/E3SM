@@ -55,7 +55,7 @@ all:
 	  CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FCINCLUDES="$(FCINCLUDES)" \
 	  FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" )
 
-mpas: reg_includes externals frame ops dycore drver
+mpas: externals frame ops dycore drver
 	ar ru lib$(COMPONENT).a framework/*.o
 	ar ru lib$(COMPONENT).a operators/*.o
 	ar ru lib$(COMPONENT).a external/ezxml/*.o
@@ -65,6 +65,6 @@ mpas: reg_includes externals frame ops dycore drver
 externals:
 	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" ezxml-lib )
 
-drver:  reg_includes externals frame ops dycore
+drver: externals frame ops dycore
 	( cd $(DRIVER); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FREEFLAGS="$(FREEFLAGS)" all ) 
 
