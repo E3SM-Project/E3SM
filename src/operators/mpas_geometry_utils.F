@@ -8,10 +8,14 @@
 module mpas_geometry_utils
 
    use mpas_kind_types
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_configure
    use mpas_constants
    use mpas_io_units
+   use mpas_vector_operations
+
+   implicit none
 
    contains
 
@@ -185,7 +189,56 @@ module mpas_geometry_utils
    end subroutine mpas_arc_bisect!}}}
 
 
+!***********************************************************************
+!
+!  routine mpas_distance_plane
+!
+!> \brief   Calculates distance between two points on a plane.
+!> \author  Matthew Hoffman
+!> \date    5 February 2015
+!> \details
+!>  This routine calculates distance between two points on a plane.
+!>  It does not work for periodic meshes.
+!-----------------------------------------------------------------------
+   real(kind=RKIND) function mpas_distance_plane(a, b)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3), intent(in) :: a, b  !< Input: 3d (x,y,z) points between which to calculate distance
+
+      mpas_distance_plane = sqrt(sum((a - b)**2))
+   end function mpas_distance_plane !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_distance
+!
+!> \brief   Calculates distance between two points on a plane or sphere
+!> \author  Matthew Hoffman
+!> \date    5 February 2015
+!> \details
+!>  This routine calculates distance between two points on a plane or sphere.
+!>  It does not work for periodic meshes because mpas_distance_plane does not!
+!-----------------------------------------------------------------------
+   real(kind=RKIND) function mpas_distance(a, b, on_a_sphere)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3), intent(in) :: a, b  !< Input: 3d (x,y,z) points between which to calculate distance
+      logical, intent(in) :: on_a_sphere  !< Input: If on a sphere
+
+      if (on_a_sphere) then
+         mpas_distance = mpas_arc_length(a(1), a(2), a(3), b(1), b(2), b(3))
+      else
+         mpas_distance = mpas_distance_plane(a, b)
+      endif
+   end function mpas_distance !}}}
+
+
    subroutine mpas_poly_fit_2(a_in,b_out,weights_in,m,n,ne)!{{{
+
+      use mpas_matrix_operations
 
       implicit none
 
@@ -244,131 +297,625 @@ module mpas_geometry_utils
    end subroutine mpas_poly_fit_2!}}}
 
 
-! Updated 10/24/2001.
+!***********************************************************************
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!   Program 4.4   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  routine mpas_calculate_barycentric_weights
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!                                                                       !
-! Please Note:                                                          !
-!                                                                       !
-! (1) This computer program is written by Tao Pang in conjunction with  !
-!     his book, "An Introduction to Computational Physics," published   !
-!     by Cambridge University Press in 1997.                            !
-!                                                                       !
-! (2) No warranties, express or implied, are made for this program.     !
-!                                                                       !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-subroutine mpas_migs (a,n,x,indx)!{{{
-!
-! subroutine to invert matrix a(n,n) with the inverse stored
-! in x(n,n) in the output.  copyright (c) tao pang 2001.
-!
-  implicit none
-  integer, intent (in) :: n
-  integer :: i,j,k
-  integer, intent (out), dimension (n) :: indx
-  real (kind=RKIND), intent (inout), dimension (n,n):: a
-  real (kind=RKIND), intent (out), dimension (n,n):: x
-  real (kind=RKIND), dimension (n,n) :: b
-!
-  do i = 1, n
-    do j = 1, n
-      b(i,j) = 0.0
-    end do
-  end do
-  do i = 1, n
-    b(i,i) = 1.0
-  end do
-!
-  call mpas_elgs (a,n,indx)
-!
-  do i = 1, n-1
-    do j = i+1, n
-      do k = 1, n
-        b(indx(j),k) = b(indx(j),k)-a(indx(j),i)*b(indx(i),k)
-      end do
-    end do
-  end do
-!
-  do i = 1, n
-    x(n,i) = b(indx(n),i)/a(indx(n),n)
-    do j = n-1, 1, -1
-      x(j,i) = b(indx(j),i)
-      do k = j+1, n
-        x(j,i) = x(j,i)-a(indx(j),k)*x(k,i)
-      end do
-      x(j,i) =  x(j,i)/a(indx(j),j)
-    end do
-  end do
-end subroutine mpas_migs!}}}
+!> \brief   Calculates barycentric weights for a point relative to a triangle
+!> \author  Matthew Hoffman
+!> \date    8 January 2015
+!> \details
+!>  This routine calculates calculates barycentric weights (coordinates)
+!>  for a point relative to three points provided that form a triangle.
+!>  Note this does not handle triangles spanning planar periodic meshes because mpas_triangle_signed_area_plane does not!
+!-----------------------------------------------------------------------
+   subroutine mpas_calculate_barycentric_weights(point, a, b, c, meshPool, weight_a, weight_b, weight_c, ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3), intent(in) :: point  !< Input: 3d (x,y,z) point
+      real(kind=RKIND), dimension(3), intent(in) :: a, b, c  !< Input: 3d (x,y,z) points forming the triangle in which to calculate the bary weights
+      type (mpas_pool_type), intent(in) :: meshPool  !< Input: Mesh information
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
 
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), intent(out) :: weight_a, weight_b, weight_c  !< Output: The 3 bary weights
+      integer, intent(out) :: ierr !< Output: error flag
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND) :: triangleArea, error
+      integer, pointer :: vertexDegree
 
-subroutine mpas_elgs (a,n,indx)!{{{
-!
-! subroutine to perform the partial-pivoting gaussian elimination.
-! a(n,n) is the original matrix in the input and transformed matrix
-! plus the pivoting element ratios below the diagonal in the output.
-! indx(n) records the pivoting order.  copyright (c) tao pang 2001.
-!
-  implicit none
-  integer, intent (in) :: n
-  integer :: i,j,k,itmp
-  integer, intent (out), dimension (n) :: indx
-  real (kind=RKIND) :: c1,pi,pi1,pj
-  real (kind=RKIND), intent (inout), dimension (n,n) :: a
-  real (kind=RKIND), dimension (n) :: c
-!
-! initialize the index
-!
-  do i = 1, n
-    indx(i) = i
-  end do
-!
-! find the rescaling factors, one from each row
-!
-  do i = 1, n
-    c1= 0.0
-    do j = 1, n
-      c1 = max(c1,abs(a(i,j)))
-    end do
-    c(i) = c1
-  end do
-!
-! search the pivoting (largest) element from each column
-!
-  do j = 1, n-1
-    pi1 = 0.0
-    do i = j, n
-      pi = abs(a(indx(i),j))/c(indx(i))
-      if (pi.gt.pi1) then
-        pi1 = pi
-        k   = i
+      ierr = 0
+
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+      if (vertexDegree /= 3) then
+         write (stderrUnit,*) 'Error: Barycentric weights can only be calculated if vertexDegree is 3'
+         ierr = 1
       endif
-    end do
+
+      triangleArea = mpas_triangle_signed_area(a, b, c, meshPool)
+      if (triangleArea > 0.0_RKIND) then
+         weight_a = mpas_triangle_signed_area(point, b, c, meshPool) / triangleArea
+         weight_b = mpas_triangle_signed_area(point, c, a, meshPool) / triangleArea
+         weight_c = mpas_triangle_signed_area(point, a, b, meshPool) / triangleArea
+      else
+         weight_a = 0.0_RKIND
+         weight_b = 0.0_RKIND
+         weight_c = 0.0_RKIND
+      endif
+
+      error = abs(weight_a + weight_b + weight_c - 1.0_RKIND)
+      if (error > 1.0e-12_RKIND) then
+          write (stderrUnit,*) 'Error: Barycentric weights sum to substantially different from 1.0. error:', error  !, triangleArea, weight_a, weight_b, weight_c
+         ierr = 1
+      endif
+
+! An alternate implementation:
+! Reference: http://math.stackexchange.com/questions/544946/determine-if-projection-of-3d-point-onto-plane-is-within-a-triangle
+!      real(kind=RKIND), dimension(3), u_vec, v_vec, w_vec, n_vec, uxw, wxv
+!      u_vec = b - a
+!      v_vec = c - a
+!      w_vec = point - a
+!      call mpas_cross_product_in_r3(u_vec, v_vec, n_vec)
+!      call mpas_cross_product_in_r3(u_vec, w_vec, uxw)
+!      call mpas_cross_product_in_r3(w_vec, v_vec, wxv)
+!      weight_c = sum(uxw * n_vec) / sum(n_vec * n_vec)
+!      weight_b = sum(wxv * n_vec) / sum(n_vec * n_vec)
+!      weight_a = 1.0_RKIND - weight_c - weight_b
+
+   end subroutine mpas_calculate_barycentric_weights!}}}
+
+
+!***********************************************************************
 !
-! interchange the rows via indx(n) to record pivoting order
+!  routine mpas_calculate_barycentric_weights_for_points
 !
-    itmp    = indx(j)
-    indx(j) = indx(k)
-    indx(k) = itmp
-    do i = j+1, n
-      pj  = a(indx(i),j)/a(indx(j),j)
+!> \brief   Calculates barycentric weights for a set of points
+!> \author  Matthew Hoffman
+!> \date    13 January 2015
+!> \details
+!>  This routine calculates calculates barycentric weights (coordinates)
+!>  for a set of points provided.  Requires a mesh with a triangular dual mesh.
+!>  The routine will attempt to find which triangle (made of cell centers)
+!>  in which each point lies.  Those cell center indices will be stored in the 
+!>  baryCellsOnPoints array.
+!>  The triangle search is limited to a triangle location provided to the routine
+!>  and its surrounding triangles.  The triangle location is identified by a vertex
+!>  id, which is stored in the input array searchVertex.
+!>  If the pointset is vertices, the list of vertices can be passed in.  If the 
+!>  pointset is something else, then the callling routine must
+!>  first determine which vertices each point is closest (or at least close) to.
+!>  If no 'owning' triangle is identified in this routine, then
+!>  the closest valid triangle that was searched will be used, and therefore
+!>  barycentric extrapolation will be set up.  The barycentric weights associated with
+!>  the triangle nodes identified in baryCellsOnPoints are stored in the array
+!>  baryWeightsOnPoints.
+!>
+!>  Note this does not handle triangles spanning planar periodic meshes because
+!>  mpas_triangle_signed_area_plane does not!
+!>
+!>  Note that this routine will store local indices in baryCellsOnVertex so this
+!>  field will differ across decompositions.  For this reason, baryCellsOnVertex
+!>  should not be used as a restart variable.  Calculating baryCellsOnVertex during
+!>  init for each simulation is the only robust solution.  Similarly, if you choose
+!>  to output baryCellsOnVertex, be aware that you will be looking at local indices
+!>  which may be of limited use.
+!>
+!>  To use this routine to build weights for interpolating from cells to vertices
+!>  you can call this routine like:
+!>     do iVertex = 1, nVertices
+!>        vertexIndicesField % array(iVertex) = iVertex
+!>     enddo
+!>     call mpas_calculate_barycentric_weights_for_points(meshPool, &
+!>            xVertex(1:nVertices), yVertex(1:nVertices), zVertex(1:nVertices), &
+!>            vertexIndicesField % array(1:nVertices), &
+!>            baryCellsOnVertex(:, 1:nVertices), baryWeightsOnVertex(:, 1:nVertices), err_tmp)
+!>  Note that you should only pass in the indices up to nVertices in this case -
+!>  this routine will not perform special treatment of the extra 'garbage' index at nVertices+1.
+!>  Also note that vertexIndicesField%array is just the local indices 1:nVertices.
+!-----------------------------------------------------------------------
+   subroutine mpas_calculate_barycentric_weights_for_points(meshPool, xPoint, yPoint, zPoint, searchVertex, baryCellsOnPoints, baryWeightsOnPoints, ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(:), intent(in) :: xPoint, yPoint, zPoint  !< Input: coordinate of the points for which barycentric weights should be calculated
+      integer, dimension(:), intent(in) :: searchVertex  !< Input: list of the vertex id to be used as the search origin for each point listed in xPoint, yPoint, XPoint
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: meshPool  !< Input: Mesh information
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, dimension(:,:), intent(out) :: baryCellsOnPoints  !< Output: An array of dimension (3, nPoints) that contains the 3 neighboring cells to be used for the barycentric interpolation/extrapolation
+      real(kind=RKIND), dimension(:,:), intent(out) :: baryWeightsOnPoints  !< Output: An array of dimension (3, nPoints) that contains the 3 bary weights for each point
+      integer, intent(out) :: ierr !< Output: error flag
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer, pointer :: vertexDegree, nCells, nVertices
+      logical, pointer :: on_a_sphere
+      integer :: nPoints, iPoint, baseVertex
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnVertex, verticesOnCell
+      real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex
+      real(kind=RKIND), dimension(3,3) :: triangleVertices
+      integer :: cell1, cell2, cell3, c, t, iCell, iTriangle
+      real(kind=RKIND), dimension(3) :: point, triangle_a, triangle_b, triangle_c
+      logical :: in_a_triangle
+      real(kind=RKIND) :: this_triangle_distance, nearest_triangle_distance
+      integer :: nearest_triangle_index
+
+      ierr = 0
+
+      nPoints = size(xPoint)
+
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+      call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+
+      if (vertexDegree /= 3) then
+         write (stderrUnit,*) 'Error: Barycentric weights can only be calculated if vertexDegree is 3'
+         ierr = 1
+         return
+      endif
+
+      do iPoint = 1, nPoints
+         point = (/ xPoint(iPoint), yPoint(iPoint), zPoint(iPoint) /)
+         baseVertex = searchVertex(iPoint)
+
+         in_a_triangle = .false.
+         nearest_triangle_distance = huge(nearest_triangle_distance)
+         nearest_triangle_index = -1
+
+         ! Step 1 - Identify the 'owning' triangle, if possible
+         ! Start with the triangle defined by cellsOnVertex for the searchVertex.
+         baryCellsOnPoints(:, iPoint) = cellsOnVertex(:, baseVertex)   ! start by assigning cellsOnVertex as the triangle
+         cell1 = cellsOnVertex(1, baseVertex)
+         cell2 = cellsOnVertex(2, baseVertex)
+         cell3 = cellsOnVertex(3, baseVertex)
+         if (cell1 <= nCells .and. cell2 <= nCells .and. cell3 <= nCells) then
+            triangleVertices(1,:) = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
+            triangleVertices(2,:) = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
+            triangleVertices(3,:) = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
+            in_a_triangle = mpas_point_in_polygon(point, triangleVertices, on_a_sphere)
+            nearest_triangle_distance = mpas_distance(point, (/ xVertex(baseVertex), yVertex(baseVertex), zVertex(baseVertex) /), on_a_sphere)
+            nearest_triangle_index = baseVertex
+         else
+            in_a_triangle = .false.
+            nearest_triangle_distance = huge(this_triangle_distance)
+            nearest_triangle_index = baseVertex
+         endif
+
+         if (.not. in_a_triangle) then
+            ! If that was the owning triangle, don't do anything because we've already assigned cellsOnVertex as the triangle
+            ! If that was not the owning triangle, check the neighboring triangles
+            neighborCellsLoop: do c = 1, 3
+               iCell = cellsOnVertex(c, baseVertex)
+               if (iCell <= nCells) then
+                  do t = 1, nEdgesOnCell(iCell)
+                     iTriangle = verticesOnCell(t, iCell)
+                     if (iTriangle <= nVertices) then
+                        cell1 = cellsOnVertex(1, iTriangle)
+                        cell2 = cellsOnVertex(2, iTriangle)
+                        cell3 = cellsOnVertex(3, iTriangle)
+                        if (cell1 <= nCells .and. cell2 <= nCells .and. cell3 <= nCells) then
+                           triangleVertices(1,:) = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
+                           triangleVertices(2,:) = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
+                           triangleVertices(3,:) = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
+                           if (mpas_point_in_polygon(point, triangleVertices, on_a_sphere)) then
+                              in_a_triangle = .true.
+                              baryCellsOnPoints(:, iPoint) = cellsOnVertex(:, iTriangle)
+                              exit neighborCellsLoop ! No need to keep searching
+                           endif
+                           this_triangle_distance = mpas_distance(point, (/ xVertex(iTriangle), yVertex(iTriangle), zVertex(iTriangle) /), on_a_sphere)
+                        else
+                           this_triangle_distance = huge(this_triangle_distance)
+                        endif ! check that all 3 cells are valid
+                        if (this_triangle_distance < nearest_triangle_distance) then
+                           nearest_triangle_distance = this_triangle_distance
+                           nearest_triangle_index = iTriangle
+                        endif
+                     endif ! check if triangle is valid
+                  end do
+               endif
+            end do neighborCellsLoop
+         endif
+
+         if (.not. in_a_triangle) then
+            ! If none of the neighboring triangles are the owning triangle, then
+            ! here we revert back to the closest valid triangle (which will be extrapolation)
+            baryCellsOnPoints(:, iPoint) = cellsOnVertex(:, nearest_triangle_index)
+         endif
+
+
+         ! Step 2 - Determine the barycentric weights for the identified 'owning' triangle
+         cell1 = baryCellsOnPoints(1, iPoint)
+         cell2 = baryCellsOnPoints(2, iPoint)
+         cell3 = baryCellsOnPoints(3, iPoint)
+
+         triangle_a = (/ xCell(cell1), yCell(cell1), zCell(cell1) /)
+         triangle_b = (/ xCell(cell2), yCell(cell2), zCell(cell2) /)
+         triangle_c = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
+
+         call mpas_calculate_barycentric_weights(point, triangle_a, triangle_b, triangle_c, meshPool,     &
+             baryWeightsOnPoints(1, iPoint), baryWeightsOnPoints(2, iPoint), baryWeightsOnPoints(3, iPoint), ierr)
+
+      enddo
+
+   end subroutine mpas_calculate_barycentric_weights_for_points !}}}
+
+
+!***********************************************************************
 !
-! record pivoting ratios below the diagonal
+!  routine mpas_triangle_signed_area
 !
-      a(indx(i),j) = pj
+!> \brief   Calculates area of a triangle, whether on a sphere or a plane.
+!> \author  Matthew Hoffman
+!> \date    13 January 2015
+!> \details
+!>  This routine calculates the area of a triangle whether on a sphere or a plane.
+!>  Note this does not handle triangles spanning planar periodic meshes because mpas_triangle_signed_area_plane does not!
+!-----------------------------------------------------------------------
+   real(kind=RKIND) function mpas_triangle_signed_area(a, b, c, meshPool)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3), intent(in) :: a, b, c  !< Input: 3d (x,y,z) points forming the triangle for which to get the area
+      type (mpas_pool_type), intent(in) :: meshPool  !< Input: Mesh information (to find out if on a sphere)
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      logical, pointer :: on_a_sphere
+      real(kind=RKIND), dimension(3) :: normalvec
+
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+
+      if (on_a_sphere) then
+         mpas_triangle_signed_area = mpas_triangle_signed_area_sphere(a, b, c)
+      else
+         normalvec = (/ 0, 0, 1 /)
+         mpas_triangle_signed_area = mpas_triangle_signed_area_plane(a, b, c, normalvec)
+      endif
+   end function mpas_triangle_signed_area !}}}
+
+
+!***********************************************************************
 !
-! modify other elements accordingly
+!  routine mpas_triangle_signed_area_plane
 !
-      do k = j+1, n
-        a(indx(i),k) = a(indx(i),k)-pj*a(indx(j),k)
-      end do
-    end do
-  end do
+!> \brief   Calculates signed area of a triangle in a plane
+!> \author  Matthew Hoffman
+!> \date    13 January 2015
+!> \details
+!>  This routine calculates the area of a triangle in a plane.
+!>  Uses cross product.  Signed area will be positive if the vertices are oriented counterclockwise.
+!>  Note this does not handle triangles spanning periodic meshes!
+!-----------------------------------------------------------------------
+   real(kind=RKIND) function mpas_triangle_signed_area_plane(a, b, c, normalvec)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3), intent(in) :: a, b, c  !< Input: 3d (x,y,z) points forming the triangle for which to calculate the area
+      real(kind=RKIND), dimension(3), intent(in) :: normalvec  !< Input: 3d vector indicating the normal direction for the plane for assigning a sign to the area
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3) :: ab, ac, crossprod, triangleNormal
+
+      ab = b - a
+      ac = c - a
+      call mpas_cross_product_in_r3(ab, ac, crossprod)
+      if (mpas_vec_mag_in_r3(crossprod) == 0.0_RKIND) then
+         mpas_triangle_signed_area_plane = 0.0_RKIND
+      else
+         triangleNormal = crossprod / mpas_vec_mag_in_r3(crossprod)
+         mpas_triangle_signed_area_plane = 0.5_RKIND * (mpas_vec_mag_in_r3(crossprod)) *  &
+              sum(triangleNormal * normalvec)
+      endif
+   end function mpas_triangle_signed_area_plane !}}}
+
+
+!***********************************************************************
 !
-end subroutine mpas_elgs!}}}
+!  routine mpas_triangle_signed_area_sphere
+!
+!> \brief   Calculates area of a triangle on a sphere
+!> \author  Matthew Hoffman
+!> \date    13 January 2015
+!> \details
+!>  This routine calculates the area of a triangle on the surface of a sphere.
+!>  Uses the spherical analog of Heron's formula.
+!>  Copied from mesh generator.
+!-----------------------------------------------------------------------
+   real(kind=RKIND) function mpas_triangle_signed_area_sphere(a, b, c)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3), intent(in) :: a, b, c  !< Input: 3d (x,y,z) points forming the triangle in which to calculate the bary weights
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND) :: ab, bc, ca, semiperim, tanqe
+
+      ab = mpas_arc_length(a(1), a(2), a(3), b(1), b(2), b(3))
+      bc = mpas_arc_length(b(1), b(2), b(3), c(1), c(2), c(3))
+      ca = mpas_arc_length(c(1), c(2), c(3), a(1), a(2), a(3))
+      semiperim = 0.5 * (ab + bc + ca)
+
+      tanqe = sqrt(tan(0.5_RKIND * semiperim) * tan(0.5_RKIND * (semiperim - ab)) &
+                   * tan(0.5_RKIND * (semiperim - bc)) * tan(0.5_RKIND * (semiperim - ca)) )
+
+      mpas_triangle_signed_area_sphere = 4.0_RKIND * atan(tanqe)
+   end function mpas_triangle_signed_area_sphere !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_point_in_polygon
+!
+!> \brief   Hit test to determine if a point is inside of a polygon
+!> \author  Matthew Hoffman
+!> \date    13 January 2015
+!> \details
+!>  This routine determines if a point is inside of a polygon.
+!>  This is difficult because floating point arithmetic prevents a precise
+!>  determination.  A tolerance is used to allow the point to be within the
+!>  the polygon within some tolerance.  This means it is possible for a point
+!>  to be identified to be within multiple polygons.  However, it avoids the
+!>  situation where a point on a edge could be 'orphaned' - determined
+!>  to not belong to *any* polygons.
+!-----------------------------------------------------------------------
+   logical function mpas_point_in_polygon(point, polygonVertices, on_a_sphere)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3), intent(in) :: point  !< Input: 3d (x,y,z) point
+      real(kind=RKIND), dimension(:,:), intent(in) :: polygonVertices  !< Input: 3d (x,y,z) points forming the polygon to test, second dimension should be 3
+      logical, intent(in) :: on_a_sphere  !< Input: If on a sphere
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(3) :: normal_vector, crossprod, vec1, vec2
+      integer :: polygonDegree, i
+      integer, dimension(:), allocatable :: vertexNeighborFwd
+      real(kind=RKIND), parameter :: eps = 1.0e-12_RKIND
+
+      if (on_a_sphere) then
+         normal_vector = point
+      else
+         normal_vector = (/ 0.0_RKIND, 0.0_RKIND, 1.0_RKIND /)
+      endif
+
+      polygonDegree = size(polygonVertices, 1)
+      allocate(vertexNeighborFwd(polygonDegree))
+      vertexNeighborFwd  = (/ (i+1, i = 1, polygonDegree) /)
+      vertexNeighborFwd(polygonDegree) = 1
+
+      mpas_point_in_polygon = .true.
+      do i = 1, polygonDegree
+         vec1 = polygonVertices(vertexNeighborFwd(i),:) - polygonVertices(i,:)
+         vec2 = point - polygonVertices(i,:)
+         call mpas_cross_product_in_r3(vec1, vec2, crossprod)
+         if (sum(crossprod * normal_vector) < (0.0_RKIND - eps)) then
+            mpas_point_in_polygon = .false.
+            exit  ! If the point is ouside one of the edges, then we need not look further.
+         endif
+      enddo
+
+      deallocate(vertexNeighborFwd)
+
+   end function mpas_point_in_polygon !}}}
+
+
+!***********************************************************************
+!
+!  subroutine mpas_cells_to_points_using_baryweights
+!
+!> \brief   Converts a single layer scalar field from cells to specified points using barycentric weights.
+!> \author  Matt Hoffman
+!> \date    14 Jan 2015
+!> \details 
+!>  This routine converts a single layer scalar field from cells to a provided set
+!>  of point locations using barycentric weights.
+!>  The weights should be calculated on init using the
+!>  mpas_calculate_barycentric_weights_for_points routine above.  That routine
+!>  will calculate the baryCellsOnPoints, baryWeightsOnPoints fields.  These may
+!>  be stored in meshPool, but that is not assumed.
+!>
+!>  To use this routine to interpolate from cells to vertices you can call this
+!>  routine like:
+!>    call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
+!>       baryWeightsOnVertex(:, 1:nVertices), upperSurface, upperSurfaceVertex(1:nVertices), err_tmp)
+!>  Note that you should only pass in the indices up to nVertices for the fields
+!>  with a nVertices dimension in this case -
+!>  this routine will not perform special treatment of the extra 'garbage' index at nVertices+1.
+!-----------------------------------------------------------------------
+   subroutine mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnPoints, baryWeightsOnPoints, fieldCells, fieldPoints, ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         fieldCells    !< Input: field on cells
+      integer, dimension(:,:), intent(in) :: &
+         baryCellsOnPoints    !< Input: The three cells that should be used for barycentric interpolation (or possibly extrapolation) for each point.  First dimension should be 3.
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         baryWeightsOnPoints    !< Input: the weights corresponding to each cell in baryCellsOnPoints.  First dimension should be 3.
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         fieldPoints    !< Output: field on points
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer, pointer :: vertexDegree
+      integer :: nPoints, iPoint, cell1, cell2, cell3
+
+      ierr = 0
+
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+      if (vertexDegree /= 3) then
+         write (stderrUnit,*) 'Error: Barycentric weights can only be calculated if vertexDegree is 3'
+         ierr = 1
+         return
+      endif
+
+      nPoints = size(fieldPoints)
+
+      do iPoint = 1, nPoints  ! Loop over vertices
+        cell1 = baryCellsOnPoints(1, iPoint)
+        cell2 = baryCellsOnPoints(2, iPoint)
+        cell3 = baryCellsOnPoints(3, iPoint)
+        fieldPoints(iPoint) = baryWeightsOnPoints(1, iPoint) * fieldCells(cell1) +    &
+                              baryWeightsOnPoints(2, iPoint) * fieldCells(cell2) +    &
+                              baryWeightsOnPoints(3, iPoint) * fieldCells(cell3)
+      enddo
+
+   end subroutine mpas_cells_to_points_using_baryweights !}}}
+
+
+
+!***********************************************************************
+!
+!  subroutine mpas_unit_test_in_triangle
+!
+!> \brief   Simple unit test for testing the mpas_point_in_polygon routine.
+!> \author  Matt Hoffman
+!> \date    4 Feb 2015
+!> \details 
+!>  This routine tests the mpas_point_in_polygon routine.
+!-----------------------------------------------------------------------
+   subroutine mpas_unit_test_in_triangle(ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(3,3) :: trianglePoints
+      real (kind=RKIND), dimension(3) :: point1, point2
+
+      ierr = 0
+
+      trianglePoints(1,:) = (/ 0.0, 0.0, 0.0 /)
+      trianglePoints(2,:) = (/ 1.0, 0.0, 0.0 /)
+      trianglePoints(3,:) = (/ 0.0, 1.0, 0.0 /)
+
+      point1 = (/ 0.333, 0.333, 0.333 /)
+      point2 = (/ -0.01, 0.5, 0.0 /)
+
+      if (.not. mpas_point_in_polygon(point1, trianglePoints, .false.)) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_in_triangle: point1 calculated to be outside of triangle.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_in_triangle: point1 test - SUCCESS'
+      endif
+
+      if (mpas_point_in_polygon(point2, trianglePoints, .false.)) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_in_triangle: point2 calculated to be inside of triangle.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_in_triangle: point2 test - SUCCESS'
+      endif
+
+   end subroutine mpas_unit_test_in_triangle !}}}
+
+
+
+!***********************************************************************
+!
+!  subroutine mpas_unit_test_bary_weights
+!
+!> \brief   Simple unit test for testing the mpas_calculate_barycentric_weights routine.
+!> \author  Matt Hoffman
+!> \date    4 Feb 2015
+!> \details 
+!>  This routine tests the mpas_calculate_barycentric_weights routine.
+!-----------------------------------------------------------------------
+   subroutine mpas_unit_test_bary_weights(meshPool, ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool  !< Input: Mesh information
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(3,3) :: trianglePoints
+      real (kind=RKIND), dimension(3) :: point1, point2
+      real (kind=RKIND), dimension(3) :: weights
+      real (kind=RKIND) :: eps = 1.0e-12_RKIND
+
+      ierr = 0
+
+      trianglePoints(1,:) = (/ 0.0, 0.0, 0.0 /)
+      trianglePoints(2,:) = (/ 1.0, 0.0, 0.0 /)
+      trianglePoints(3,:) = (/ 0.0, 1.0, 0.0 /)
+
+      point1 = (/ 0.33333333333333333, 0.33333333333333333, 0.33333333333333333 /)
+      point2 = (/ 0.0, 0.0, 0.0 /)
+
+
+      call mpas_calculate_barycentric_weights(point1, trianglePoints(1,:), trianglePoints(2,:), trianglePoints(3,:), meshPool,     &
+             weights(1), weights(2), weights(3), ierr)
+      if (maxval(abs(weights - (/ 0.33333333333333333, 0.33333333333333333, 0.33333333333333333 /) )) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_bary_weights: point1 test - SUCCESS'
+      endif
+
+      call mpas_calculate_barycentric_weights(point2, trianglePoints(1,:), trianglePoints(2,:), trianglePoints(3,:), meshPool,     &
+             weights(1), weights(2), weights(3), ierr)
+      if (maxval(abs(weights - (/ 1.0, 0.0, 0.0 /) )) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_bary_weights: point2 test - SUCCESS'
+      endif
+
+   end subroutine mpas_unit_test_bary_weights !}}}
 
 !-------------------------------------------------------------
 

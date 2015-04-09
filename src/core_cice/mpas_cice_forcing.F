@@ -2,435 +2,592 @@
 !
 !  cice_forcing
 !
-!> \brief 
+!> \brief A core forcing module example 
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>  An example of a forcing module that might be implemented in a core
+!>  using the MPAS_forcing module
 !
 !-----------------------------------------------------------------------
 
 module cice_forcing
 
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_pool_routines
   use mpas_timekeeping
+  use mpas_forcing
+  use mpas_stream_manager
 
   implicit none
 
   private
-  save
-
   public :: &
-       cice_init_forcing, &
-       cice_get_forcing, &
-       cice_convert_pop_forcing_to_mpas
+       cice_forcing_init, &
+       cice_forcing_get, &
+       cice_forcing_write_restart
 
-  character(len=200), parameter :: &
-       forcingType = "480km"
-         
-  integer, parameter, private :: &
-       epoch = 1900
+  type (MPAS_forcing_group_type), pointer :: ciceForcingGroups 
 
-  type (MPAS_Time_type), private :: &
-       epochTime
+  ! forcing parameters
+  real (kind=RKIND), parameter :: &
+       fracShortwaveVisibleDirect  = 0.28_RKIND, & ! fraction of incoming shortwave in visible direct band
+       fracShortwaveVisibleDiffuse = 0.24_RKIND, & ! fraction of incoming shortwave in visible diffuse band
+       fracShortwaveIRDirectDown   = 0.31_RKIND, & ! fraction of incoming shortwave in near IR direct band
+       fracShortwaveIRDiffuseDown  = 0.17_RKIND    ! fraction of incoming shortwave in near IR diffuse band
 
-  type (MPAS_Time_type), private :: &
-       startYearTime, &
-       endYearTime
-
-  integer, private :: currentYear
-
-  real(kind=RKIND), private :: &
-       currentYearDuration, &
-       currentYearEpoch
-
-  ! individual forcing field derived type
-  type, private :: forcing_field
-
-     character(len=10) :: forcingType            ! 'interval', 'monthly'
-     character(len=200) :: filenameDirectory
-     character(len=200) :: filenamePrefix
-     character(len=200) :: filenameSuffix
-     integer :: currentYear
-     integer :: pointsPerYear
-     real(kind=RKIND) :: interval                ! forcing data interval
-     real(kind=RKIND) :: positionInInterval      ! [0.0,1.0]
-     character(len=10) :: filetype               ! 'binary', 'netcdf'
-
-     real(kind=RKIND), dimension(2) :: dataTimes ! times of the stored data
-     integer, dimension(2) :: dataRecordNumbers
-     integer, dimension(2) :: dataYears
-     integer, dimension(2) :: dataOrder
-     integer :: ndata
-     real(kind=RKIND), dimension(:,:), allocatable :: data
-
-  end type forcing_field
-
-  ! all forcing fields
-  type, private :: forcing_fields
-
-     integer :: nCellsGlobal
-     integer :: nForcingFields
-     character(len=200) :: forcingDirectory
-     type(forcing_field), dimension(:), allocatable :: forcingFieldsArray
-
-  end type forcing_fields
-
-  type(forcing_fields), private :: &
-       atmosForcingFields
-
-  real(kind=RKIND), private :: &
-       elapsed_time_forcing
+  ! precipitation factor
+  real(kind=RKIND) :: &
+       precipitationFactor
 
 contains
 
 !-----------------------------------------------------------------------
-! Specific forcings
+! initialization
 !-----------------------------------------------------------------------
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_forcing
+!  cice_forcing_init
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \date 
 !> \details
 !>  
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_forcing(block)!{{{
+  subroutine cice_forcing_init(domain, streamManager)
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type (domain_type) :: domain
 
-    type(MPAS_pool_type), pointer :: &
-         mesh, &
-         atmos_forcing
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
 
-    real(kind=RKIND), dimension(:,:), pointer :: &
-         uPOPAlongGridVector, &
-         vPOPAlongGridVector
+    ! initialize all coupling and foricng variables with default values
+    call init_forcing_coupling_variables(domain)
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
+    ! init the atmospheric forcing
+    call init_atmospheric_forcing(domain, streamManager)
 
-    call init_forcing_generic()
+    ! init the ocean forcing
+    call init_oceanic_forcing(domain, streamManager)
 
-    call init_atmos_forcing(block, mesh)
-
-    elapsed_time_forcing = 0.0_RKIND
-
-    call MPAS_pool_get_array(atmos_forcing, "uPOPAlongGridVector", uPOPAlongGridVector)
-    call MPAS_pool_get_array(atmos_forcing, "vPOPAlongGridVector", vPOPAlongGridVector)
-
-    !call POP_grid_basis(&
-    !     mesh, &
-    !     uPOPAlongGridVector, &
-    !     vPOPAlongGridVector)
-
-  end subroutine cice_init_forcing!}}}
+  end subroutine cice_forcing_init
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_atmos_forcing
+!  init_atmospheric_forcing
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \date 
 !> \details
 !>  
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_atmos_forcing(block, mesh)!{{{
+  subroutine init_atmospheric_forcing(domain, streamManager)
 
-    use mpas_dmpar, only: mpas_dmpar_sum_int
-    
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type (domain_type) :: domain
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
 
-    integer, pointer :: &
-         nCellsSolve
+    character(len=strKIND), pointer :: &
+         config_atmospheric_forcing_type
 
-    ! global numner of cells
-    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
-    call mpas_dmpar_sum_int(block % domain % dminfo, nCellsSolve, atmosForcingFields % nCellsGlobal)
+    ! set the precipitation factor
+    call init_precipitation_factor(domain)
 
-    if (trim(forcingType) == "gx3_POP") then
+    call MPAS_pool_get_config(domain % configs, "config_atmospheric_forcing_type", config_atmospheric_forcing_type)
 
-       ! set number of forcing fields
-       atmosForcingFields % nForcingFields = 8
-       allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
-       
-       ! set forcing directory
-       atmosForcingFields % forcingDirectory = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/"
-       
-       ! air temperature
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
-            "/NCEP/4XDAILY/STATES/", "t_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+    select case (trim(config_atmospheric_forcing_type))
+    case ("CORE")
+       call init_atmospheric_forcing_CORE(domain, streamManager)
+    case default
+       write(stderrUnit,*) "Atmospheric forcing type unknown: ", trim(config_atmospheric_forcing_type)
+       call MPAS_dmpar_global_abort('Unknown config_atmospheric_forcing_type')
+    end select
 
-       ! u air velocity
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(2), "interval", &
-            "/NCEP/4XDAILY/STATES/", "u_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+  end subroutine init_atmospheric_forcing
 
-       ! v air velocity
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(3), "interval", &
-            "/NCEP/4XDAILY/STATES/", "v_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_atmospheric_forcing_CORE
+!
+!> \brief Initialize the forcing objects
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  This routine calls the MPAS_forcing module subroutines that initializes
+!>  the forcings type
+!
+!-----------------------------------------------------------------------
 
-       ! air density
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(4), "interval", &
-            "/NCEP/4XDAILY/STATES/", "dn10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+  subroutine init_atmospheric_forcing_CORE(domain, streamManager)
 
-       ! air humidity
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(5), "interval", &
-            "/NCEP/4XDAILY/STATES/", "q_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
+    type(domain_type) :: domain
 
-       ! shortwave down
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(6), "monthly", &
-            "/ISCCPM/MONTHLY/RADFLX/", "swdn.", ".dat", "binaryPOP", 12, 0.5_RKIND)
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
 
-       ! cloudFraction
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(7), "monthly", &
-            "/ISCCPM/MONTHLY/RADFLX/", "cldf.", ".dat", "binaryPOP", 12, 0.5_RKIND)
+    real(kind=RKIND), pointer :: &
+         config_dt
 
-       ! precipitation
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(8), "monthly", &
-            "/MXA/MONTHLY/PRECIP/", "prec.", ".dat", "binaryPOP", 12, 0.5_RKIND)
+    character(len=strKIND), pointer :: &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration, &
+         config_forcing_restart_file
 
-    else if (trim(forcingType) == "gx3_MPAS") then
+    logical, pointer :: &
+         config_do_restart
 
-       ! set number of forcing fields
-       atmosForcingFields % nForcingFields = 8
-       allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
-       
-       ! set forcing directory
-       atmosForcingFields % forcingDirectory = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/"
+    character(len=strKIND) :: &
+         forcingIntervalSixHourly, &
+         forcingReferenceTimeSixHourly, &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly
 
-       ! air temperature
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
-            "/NCEP/4XDAILY/STATES/", "t_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+    ! get atmospheric forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_forcing_start_time", config_forcing_start_time)
+    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_start", config_forcing_cycle_start)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_duration", config_forcing_cycle_duration)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
-       ! u air velocity
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(2), "interval", &
-            "/NCEP/4XDAILY/STATES/", "u_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+    ! create the six hourly forcing group
+    call MPAS_forcing_init_group(&
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_sixhrly", &
+         domain, &
+         config_forcing_start_time, &
+         "none", &
+         config_forcing_cycle_duration, &
+         config_do_restart, &
+         config_forcing_restart_file, &
+         .false.)
 
-       ! v air velocity
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(3), "interval", &
-            "/NCEP/4XDAILY/STATES/", "v_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+    forcingIntervalSixHourly = "06:00:00"
+    forcingReferenceTimeSixHourly = "2000-01-01_00:00:00"
 
-       ! air density
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(4), "interval", &
-            "/NCEP/4XDAILY/STATES/", "dn10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_sixhrly", &
+         "airTemperature", &
+         "LYqSixHourlyForcing", &
+         "atmos_coupling", &
+         "airTemperature", &
+         "linear", &
+         forcingReferenceTimeSixHourly, &
+         forcingIntervalSixHourly, &
+         "next")
 
-       ! air humidity
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(5), "interval", &
-            "/NCEP/4XDAILY/STATES/", "q_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_sixhrly", &
+         "airSpecificHumidity", &
+         "LYqSixHourlyForcing", &
+         "atmos_coupling", &
+         "airSpecificHumidity", &
+         "linear", &
+         forcingReferenceTimeSixHourly, &
+         forcingIntervalSixHourly, &
+         "next")
 
-       ! shortwave down
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(6), "monthly", &
-            "/ISCCPM/MONTHLY/RADFLX/", "swdn_mpas.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_sixhrly", &
+         "uAirVelocity", &
+         "LYqSixHourlyForcing", &
+         "atmos_coupling", &
+         "uAirVelocity", &
+         "linear", &
+         forcingReferenceTimeSixHourly, &
+         forcingIntervalSixHourly, &
+         "next")
 
-       ! cloudFraction
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(7), "monthly", &
-            "/ISCCPM/MONTHLY/RADFLX/", "cldf_mpas.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_sixhrly", &
+         "vAirVelocity", &
+         "LYqSixHourlyForcing", &
+         "atmos_coupling", &
+         "vAirVelocity", &
+         "linear", &
+         forcingReferenceTimeSixHourly, &
+         forcingIntervalSixHourly, &
+         "next")
 
-       ! precipitation
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(8), "monthly", &
-            "/MXA/MONTHLY/PRECIP/", "prec_mpas.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+    call MPAS_forcing_init_field_data(&
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_sixhrly", &
+         streamManager)
 
-    else if (trim(forcingType) == "480km") then
+    ! create the monthly forcing group
+    call MPAS_forcing_init_group(&
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_monthly", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart, &
+         config_forcing_restart_file)
 
-       ! set number of forcing fields
-       atmosForcingFields % nForcingFields = 6
-       allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
-       
-       ! set forcing directory
-       atmosForcingFields % forcingDirectory = "/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/"
+    forcingIntervalMonthly = "00-01-00_00:00:00"
+    forcingReferenceTimeMonthly = "2000-01-15_00:00:00"
 
-       ! air temperature
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(1), "interval", &
-            "", "t_10.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_monthly", &
+         "cloudFraction", &
+         "LYqMonthlyForcing", &
+         "atmos_forcing", &
+         "cloudFraction", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
 
-       ! u air velocity
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(2), "interval", &
-            "", "u_10.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_monthly", &
+         "rainfallRate", &
+         "LYqMonthlyForcing", &
+         "atmos_coupling", &
+         "rainfallRate", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
 
-       ! v air velocity
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(3), "interval", &
-            "", "v_10.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+    call MPAS_forcing_init_field_data(&
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_monthly", &
+         streamManager)
 
-       ! air humidity
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(4), "interval", &
-            "", "q_10.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+  end subroutine init_atmospheric_forcing_CORE
 
-       ! cloudFraction
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(5), "monthly", &
-            "", "cldf.omip.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+!-----------------------------------------------------------------------
+! runtime
+!-----------------------------------------------------------------------
 
-       ! precipitation
-       call init_forcing_field(mesh, atmosForcingFields % nCellsGlobal, atmosForcingFields % forcingFieldsArray(6), "monthly", &
-            "", "prec.nmyr.", ".dat", "binaryMPAS", 12, 0.5_RKIND)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_forcing
+!
+!> \brief Retrieve forcing data during time stepping
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  This routine calls the MPAS_forcing routine that will perform the 
+!>  forcing data aquisition and interpolation during timestepping
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_forcing_get(&
+       streamManager, &
+       domain, &
+       simulationClock, &
+       firstTimeStep)
+
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
+
+    type (domain_type) :: domain
+
+    type (MPAS_clock_type) :: simulationClock
+
+    logical, intent(in) :: &
+         firstTimeStep
+
+    call atmospheric_forcing(&
+         streamManager, &
+         domain, &
+         simulationClock)
+
+    call oceanic_forcing(&
+         streamManager, &
+         domain, &
+         simulationClock, &
+         firstTimeStep)
+
+  end subroutine cice_forcing_get
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  atmospheric_forcing
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine atmospheric_forcing(&
+       streamManager, &
+       domain, &
+       simulationClock)
+
+    use cice_debug, only: cice_debug_output_array
+
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
+
+    type (domain_type) :: domain
+
+    type (MPAS_clock_type) :: simulationClock
+
+    type (block_type), pointer :: block
+
+    real(kind=RKIND), pointer :: &
+         config_dt
+
+    character(len=strKIND), pointer :: &
+         config_atmospheric_forcing_type
+
+    ! configurations
+    call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+    call mpas_pool_get_config(domain % configs, 'config_atmospheric_forcing_type', config_atmospheric_forcing_type)
+
+    ! use the forcing layer to get data
+    if (trim(config_atmospheric_forcing_type) == "CORE") then
+
+       call MPAS_forcing_get_forcing(&
+            ciceForcingGroups, &
+            "cice_atmospheric_forcing_sixhrly", &
+            streamManager, &
+            config_dt)
+
+       call MPAS_forcing_get_forcing(&
+            ciceForcingGroups, &
+            "cice_atmospheric_forcing_monthly", &
+            streamManager, &
+            config_dt)
 
     endif
 
-  end subroutine init_atmos_forcing!}}}
+    block => domain % blocklist
+    do while (associated(block))
+
+       ! convert the input forcing variables to the coupling variables       
+       select case (trim(config_atmospheric_forcing_type))
+       case ("CORE")
+          call prepare_atmospheric_coupling_variables_CORE(block)
+       end select
+       
+       ! perform post coupling operations
+       call post_atmospheric_coupling(block)
+       
+       ! perform post forcing
+       call post_atmospheric_forcing(block)
+
+       call forcing_testing(block)
+
+       block => block % next
+    end do
+    
+  end subroutine atmospheric_forcing
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_get_forcing
+!  prepare_atmospheric_coupling_variables_CORE
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \date 
 !> \details
 !>  
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_get_forcing(&
-       block, &
-       clock)!{{{
+  subroutine prepare_atmospheric_coupling_variables_CORE(block)
 
-    use cice_debug, only: cice_time_output_variable_real
+    use cice_constants, only: &
+         ciceFreshWaterFreezingPoint
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type (block_type), pointer :: block
 
-    type (MPAS_Clock_type), intent(in) :: &
-         clock !< Input: 
-
-    type (MPAS_pool_type), pointer :: &
+    type (mpas_pool_type), pointer :: &
          mesh, &
-         atmos_forcing, &
-         configs
-
-    integer :: &
-         year, &
-         month, &
-         dayOfMonth
+         atmosCoupling, &
+         atmosForcing, &
+         oceanCoupling, &
+         icestate
     
-    real(kind=RKIND) :: &
-         forcingTime, &
-         forcingTimeEpoch
+    real(kind=RKIND), dimension(:), pointer :: &
+         airLevelHeight, &
+         airPotentialTemperature, &
+         airTemperature, &
+         airSpecificHumidity, &
+         airDensity, &
+         shortwaveDown, &
+         shortwaveVisibleDirectDown, &
+         shortwaveVisibleDiffuseDown, &
+         shortwaveIRDirectDown, &
+         shortwaveIRDiffuseDown, &
+         longwaveDown, &
+         rainfallRate, &
+         snowfallRate, &
+         cloudFraction, &
+         seaSurfaceTemperature, &
+         surfaceTemperatureCell, &
+         lonCell, &
+         latCell, &
+         iceAreaCell
 
-    !real(kind=RKIND), dimension(:), pointer :: airTemperature
-
-    configs => block % configs
-
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
-
-    elapsed_time_forcing = elapsed_time_forcing + 3600.0_RKIND
-
-    call get_forcing_times(&
-         forcingTime, &
-         forcingTimeEpoch, &
-         year, &
-         month, &
-         dayOfMonth, &
-         clock)
-
-    call get_atmos_forcing(&
-         mesh, &
-         clock, &
-         configs, &
-         atmos_forcing, &
-         forcingTime, &
-         forcingTimeEpoch, &
-         year, &
-         month, &
-         dayOfMonth)
-
-    !call MPAS_pool_get_array(atmos_forcing, "airTemperature", airTemperature)
-
-    !call cice_time_output_variable_real(mesh, airTemperature, clock, "airTemperature")
-
-  end subroutine cice_get_forcing!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  get_atmos_forcing
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine get_atmos_forcing(&
-       mesh, &
-       clock, &
-       configs, &
-       atmos_forcing, &
-       forcingTime, &
-       forcingTimeEpoch, &
-       year, &
-       month, &
-       dayOfMonth)!{{{
-
-    use cice_mesh, only: &
-         cice_latlon_vector_rotation_forward
-    
-    type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh, & !< Input: 
-         configs !< Input: 
-
-    type (MPAS_Clock_type), intent(in) :: &
-         clock
-
-    type (MPAS_pool_type), pointer :: &
-         atmos_forcing !< Input/Output: 
-
-    integer, intent(in) :: &
-         year, &    !< Input: 
-         month, &   !< Input: 
-         dayOfMonth !< Input: 
-    
-    real(kind=RKIND), intent(in) :: &
-         forcingTime, &   !< Input: 
-         forcingTimeEpoch !< Input: 
-
-    integer :: &
-         iCell
+    type (MPAS_time_type) :: &
+         currentForcingTime
 
     integer, pointer :: &
          nCells
 
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)    
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)    
+    call MPAS_pool_get_array(mesh, "latCell", latCell)   
+
+    call MPAS_pool_get_array(atmosCoupling, "airLevelHeight", airLevelHeight)
+    call MPAS_pool_get_array(atmosCoupling, "airPotentialTemperature", airPotentialTemperature)
+    call MPAS_pool_get_array(atmosCoupling, "airTemperature", airTemperature)
+    call MPAS_pool_get_array(atmosCoupling, "airSpecificHumidity", airSpecificHumidity)
+    call MPAS_pool_get_array(atmosCoupling, "airDensity", airDensity)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveIRDirectDown", shortwaveIRDirectDown)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveIRDiffuseDown", shortwaveIRDiffuseDown)
+    call MPAS_pool_get_array(atmosCoupling, "longwaveDown", longwaveDown)
+    call MPAS_pool_get_array(atmosCoupling, "rainfallRate", rainfallRate)
+    call MPAS_pool_get_array(atmosCoupling, "snowfallRate", snowfallRate)
+
+    call MPAS_pool_get_array(atmosForcing, "cloudFraction", cloudFraction)
+    call MPAS_pool_get_array(atmosForcing, "shortwaveDown", shortwaveDown)
+
+    call MPAS_pool_get_array(oceanCoupling, "seaSurfaceTemperature", seaSurfaceTemperature)
+
+    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(icestate, "surfaceTemperatureCell", surfaceTemperatureCell)
+
+    ! get the current time
+    call MPAS_forcing_get_forcing_time(&
+         ciceForcingGroups, &
+         "cice_atmospheric_forcing_sixhrly", &
+         currentForcingTime)
+
+    do iCell = 1, nCells
+
+       ! limit air temperature values where ice is present
+       if (iceAreaCell(iCell) > 0.1_RKIND) then
+          airTemperature(iCell) = min(airTemperature(iCell), ciceFreshWaterFreezingPoint + 0.1_RKIND)
+       endif
+
+       ! prevent supersaturated humidity
+       call limit_specific_humidity(&
+            airTemperature(iCell), &
+            airSpecificHumidity(iCell))
+
+       ! shortwave
+       call shortwave_down(&
+            shortwaveDown(iCell), &
+            lonCell(iCell), &
+            latCell(iCell), &
+            cloudFraction(iCell), &
+            airSpecificHumidity(iCell), &
+            currentForcingTime)
+
+       shortwaveVisibleDirectDown(iCell)  = shortwaveDown(iCell) * fracShortwaveVisibleDirect
+       shortwaveVisibleDiffuseDown(iCell) = shortwaveDown(iCell) * fracShortwaveVisibleDiffuse
+       shortwaveIRDirectDown(iCell)       = shortwaveDown(iCell) * fracShortwaveIRDirectDown
+       shortwaveIRDiffuseDown(iCell)      = shortwaveDown(iCell) * fracShortwaveIRDiffuseDown
+
+       ! ensure physically realistic values
+       cloudFraction(iCell)       = max(min(cloudFraction(iCell),1.0_RKIND),0.0_RKIND)
+       shortwaveDown(iCell)       = max(shortwaveDown(iCell),0.0_RKIND)
+       rainfallRate(iCell)        = max(rainfallRate(iCell),0.0_RKIND)
+       airSpecificHumidity(iCell) = max(airSpecificHumidity(iCell),0.0_RKIND)
+
+       ! atmospheric level height
+       airLevelHeight(iCell) = 10.0_RKIND
+
+       ! air potential temperature
+       airPotentialTemperature(iCell) = &
+            airTemperature(iCell) - ciceFreshWaterFreezingPoint
+
+       ! air density
+       airDensity(iCell) = 1.3_RKIND
+
+       ! longwave radiation
+       call longwave_rosati_miyakoda(&
+            longWavedown(iCell), &
+            cloudFraction(iCell), &
+            iceAreaCell(iCell), &
+            surfaceTemperatureCell(iCell), &
+            seaSurfaceTemperature(iCell), &
+            airSpecificHumidity(iCell), &
+            airTemperature(iCell))
+
+       ! precipitation
+       call precipitation(&
+            rainfallRate(iCell), &
+            snowfallRate(iCell), &
+            airTemperature(iCell))
+
+    enddo ! iCell
+
+  end subroutine prepare_atmospheric_coupling_variables_CORE
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  post_atmospheric_coupling
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine post_atmospheric_coupling(block)
+
+    use cice_mesh, only: &
+         cice_latlon_vector_rotation_forward
+
+    type (block_type), pointer :: block
+
+    type (mpas_pool_type), pointer :: &
+         mesh, &
+         atmosCoupling, &
+         atmosForcing
+
     real(kind=RKIND), dimension(:), pointer :: &
-         airTemperature, &
-         uAirVelocityPOP, &
-         vAirVelocityPOP, &
-         airDensity, &
-         airSpecificHumidity, &
-         shortwaveDown, &
-         cloudFraction, &
-         precipitationRate, &
-         longwaveDown, &
-         snowfallRate, &
-         airPotentialTemperature, &
-         windSpeed, &
-         sensibleTransferCoefficient, &
-         latentTransferCoefficient, &
-         uAirStress, &
-         vAirStress, &
+         shortwaveVisibleDirectDown, &
+         shortwaveVisibleDiffuseDown, &
+         shortwaveIRDirectDown, &
+         shortwaveIRDiffuseDown, &
          uAirVelocity, &
          vAirVelocity, &
+         windSpeed, &
+         shortwaveDown, &
+         latCell, &
+         lonCell, &
          xCell, &
          yCell, &
-         zCell, &
-         latCell, &
-         lonCell
-
-    real(kind=RKIND), dimension(:,:), pointer :: &
-         uPOPAlongGridVector, &
-         vPOPAlongGridVector
+         zCell
 
     real(kind=RKIND), pointer :: &
          sphere_radius
@@ -438,138 +595,45 @@ contains
     logical, pointer :: &
          config_rotate_cartesian_grid
 
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)    
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
+
+    call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
     call MPAS_pool_get_array(mesh, "zCell", zCell)
-    call MPAS_pool_get_array(mesh, "latCell", latCell)
-    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
-    
-    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
-    call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
-    call MPAS_pool_get_array(atmos_forcing, "airTemperature", airTemperature)
-    call MPAS_pool_get_array(atmos_forcing, "uAirVelocityPOP", uAirVelocityPOP)
-    call MPAS_pool_get_array(atmos_forcing, "vAirVelocityPOP", vAirVelocityPOP)
-    call MPAS_pool_get_array(atmos_forcing, "airDensity", airDensity)
-    call MPAS_pool_get_array(atmos_forcing, "airSpecificHumidity", airSpecificHumidity)
-    call MPAS_pool_get_array(atmos_forcing, "shortwaveDown", shortwaveDown)
-    call MPAS_pool_get_array(atmos_forcing, "cloudFraction", cloudFraction)
-    call MPAS_pool_get_array(atmos_forcing, "precipitationRate", precipitationRate)
-    call MPAS_pool_get_array(atmos_forcing, "longwaveDown", longwaveDown)
-    call MPAS_pool_get_array(atmos_forcing, "snowfallRate", snowfallRate)
-    call MPAS_pool_get_array(atmos_forcing, "airPotentialTemperature", airPotentialTemperature)
-    call MPAS_pool_get_array(atmos_forcing, "windSpeed", windSpeed)
-    call MPAS_pool_get_array(atmos_forcing, "sensibleTransferCoefficient", sensibleTransferCoefficient)
-    call MPAS_pool_get_array(atmos_forcing, "latentTransferCoefficient", latentTransferCoefficient)
-    call MPAS_pool_get_array(atmos_forcing, "uAirStress", uAirStress) 
-    call MPAS_pool_get_array(atmos_forcing, "vAirStress", vAirStress)
-    call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)
-    call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)
-    call MPAS_pool_get_array(atmos_forcing, "uPOPAlongGridVector", uPOPAlongGridVector)
-    call MPAS_pool_get_array(atmos_forcing, "vPOPAlongGridVector", vPOPAlongGridVector)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveIRDirectDown", shortwaveIRDirectDown)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveIRDiffuseDown", shortwaveIRDiffuseDown)
+    call MPAS_pool_get_array(atmosCoupling, "uAirVelocity", uAirVelocity)
+    call MPAS_pool_get_array(atmosCoupling, "vAirVelocity", vAirVelocity)
 
-    ! get the forcing fields
-    if (trim(forcingType) == "gx3_POP" .or. trim(forcingType) == "gx3_MPAS") then
+    call MPAS_pool_get_array(atmosForcing, "windSpeed", windSpeed)
+    call MPAS_pool_get_array(atmosForcing, "shortwaveDown", shortwaveDown)
 
-       ! air temperature
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(1), &
-            airTemperature)
-
-       ! u air velocity
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(2), &
-            uAirVelocityPOP)
-
-       ! v air velocity
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(3), &
-            vAirVelocityPOP)
-
-       ! air density
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(4), &
-            airDensity)
-
-       ! air humidity
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(5), &
-            airSpecificHumidity)
-
-       ! shortwave down
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(6), &
-            shortwaveDown)
-
-       ! cloudFraction
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(7), &
-            cloudFraction)
-
-       ! precipitation
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(8), &
-            precipitationRate)
-
-    else if (trim(forcingType) == "480km") then
-
-       ! air temperature
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(1), &
-            airTemperature)
-
-       ! u air velocity
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(2), &
-            uAirVelocityPOP)
-
-       ! v air velocity
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(3), &
-            vAirVelocityPOP)
-
-       ! air humidity
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(4), &
-            airSpecificHumidity)
-
-       ! cloudFraction
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(5), &
-            cloudFraction)
-
-       ! precipitation
-       call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
-            atmosForcingFields % forcingDirectory, &
-            atmosForcingFields % forcingFieldsArray(6), &
-            precipitationRate)
-
-    endif
-
-    ! calculate other quantities
     do iCell = 1, nCells
 
-       ! rotate the geographical inputs to the rotated grid
+       ! rotate velocities from geographical to local
        call cice_latlon_vector_rotation_forward(&
             uAirVelocity(iCell), &
             vAirVelocity(iCell), &
-            uAirVelocityPOP(iCell), &
-            vAirVelocityPOP(iCell), &
+            uAirVelocity(iCell), &
+            vAirVelocity(iCell), &
             latCell(iCell), &
             lonCell(iCell), &
             xCell(iCell), &
@@ -577,330 +641,392 @@ contains
             zCell(iCell), &
             sphere_radius, &
             config_rotate_cartesian_grid)
-       !uAirVelocity(iCell) = uAirVelocityPOP(iCell)
-       !vAirVelocity(iCell) = vAirVelocityPOP(iCell)
 
+       ! wind speed
+       windSpeed(iCell) = sqrt(uAirVelocity(iCell)**2 + vAirVelocity(iCell)**2)
+
+       ! shortwave
+       shortwaveDown(iCell) = &
+            shortwaveVisibleDirectDown(iCell) + &
+            shortwaveVisibleDiffuseDown(iCell) + &
+            shortwaveIRDirectDown(iCell) + &
+            shortwaveIRDiffuseDown(iCell)
+       
     enddo ! iCell
 
-
-    if (trim(forcingType) == "gx3_POP" .or. trim(forcingType) == "gx3_MPAS") then
-
-       do iCell = 1, nCells
-
-          call calculate_derived_forcing_variables_gx3(&
-               longWavedown(iCell), &
-               snowfallRate(iCell), &
-               airPotentialTemperature(iCell), &
-               windSpeed(iCell), &
-               sensibleTransferCoefficient(iCell), &
-               latentTransferCoefficient(iCell), &
-               uAirStress(iCell), &
-               vAirStress(iCell), &
-               airTemperature(iCell), &
-               cloudFraction(iCell), &
-               precipitationRate(iCell), &
-               uAirVelocity(iCell), &
-               vAirVelocity(iCell), &
-               airDensity(iCell))
-          
-       enddo ! iCell
-
-    else if (trim(forcingType) == "480km") then
-
-       do iCell = 1, nCells
-
-          call calculate_derived_forcing_variables_gx1(&
-               longWavedown(iCell), &
-               snowfallRate(iCell), &
-               airPotentialTemperature(iCell), &
-               windSpeed(iCell), &
-               sensibleTransferCoefficient(iCell), &
-               latentTransferCoefficient(iCell), &
-               uAirStress(iCell), &
-               vAirStress(iCell), &
-               airTemperature(iCell), &
-               cloudFraction(iCell), &
-               precipitationRate(iCell), &
-               uAirVelocity(iCell), &
-               vAirVelocity(iCell), &
-               airDensity(iCell), &
-               shortwaveDown(iCell))
-
-       enddo ! iCell
-
-       call calculate_shortwave(&
-            mesh, &
-            clock, &
-            cloudFraction, &
-            airSpecificHumidity, &
-            shortwaveDown)
-
-    endif
-
-  end subroutine get_atmos_forcing!}}}
-
-!-----------------------------------------------------------------------
-! Physical conversions
-!-----------------------------------------------------------------------
+  end subroutine post_atmospheric_coupling
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  calculate_derived_forcing_variables
+!  post_atmospheric_forcing
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \date 
 !> \details
 !>  
 !
 !-----------------------------------------------------------------------
 
-  subroutine calculate_derived_forcing_variables_gx1(&
-       longWavedown, &
-       snowfallRate, &
-       airPotentialTemperature, &
-       windSpeed, &
-       sensibleTransferCoefficient, &
-       latentTransferCoefficient, &
-       uAirStress, &
-       vAirStress, &
-       airTemperature, &
-       cloudFraction, &
-       precipitationRate, &
-       uAirVelocity, &
-       vAirVelocity, &
-       airDensity, &
-       shortwaveDown)!{{{
-    
-    real(kind=RKIND), intent(out) :: &
-         longWavedown, &                !< Output: 
-         snowfallRate, &                !< Output: 
-         airPotentialTemperature, &     !< Output: 
-         windSpeed, &                   !< Output: 
-         sensibleTransferCoefficient, & !< Output: 
-         latentTransferCoefficient, &   !< Output: 
-         uAirStress, &                  !< Output: 
-         vAirStress, &                  !< Output: 
-         airDensity, &                  !< Output: 
-         shortwaveDown                  !< Output: 
-
-    real(kind=RKIND), intent(inout) :: &
-         precipitationRate !< Input/Output: 
-
-    real(kind=RKIND), intent(in) :: &
-         airTemperature, & !< Input: 
-         cloudFraction, &  !< Input: 
-         uAirVelocity, &   !< Input: 
-         vAirVelocity      !< Input: 
-
-
-    real(kind=RKIND), parameter :: &
-         stefanBoltzmann         = 5.79484e-8_RKIND , & ! J m-2 K-4 s-1
-         freshWaterFreezingPoint = 273.15_RKIND     , & ! freezing temp of fresh ice (K)
-         airSpecificHeat         = 1005.0_RKIND     , & ! specific heat of air (J/kg/K)
-         latentHeatSublimation   = 2.835e6_RKIND        ! latent heat, sublimation freshwater (J/kg)
-
-    real(kind=RKIND), parameter :: &
-         seconds_per_year        = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
-
-    real(kind=RKIND) :: &
-         airStressCoefficient
-
-    airDensity = 1.3_RKIND
-
-    ! Longwave down
-    ! Parkinson, C. L. and W. M. Washington (1979),
-    ! Large-scale numerical-model of sea ice,
-    ! JGR, 84, 311-337, doi:10.1029/JC084iC01p00311
-
-    longWavedown = stefanBoltzmann * airTemperature**4 * &
-                   (1.0_RKIND - 0.261_RKIND * exp(-7.77e-4_RKIND * (freshWaterFreezingPoint - airTemperature)**2)) * &
-                   (1.0_RKIND + 0.275_RKIND * cloudFraction)
-
-    ! snowfall rate
-    precipitationRate = precipitationRate * (12.0_RKIND / seconds_per_year) ! convert mm per year
-
-    snowfallRate = 0.0_RKIND
-
-    if (airTemperature < freshWaterFreezingPoint) then
-
-       snowfallRate = precipitationRate
-       precipitationRate = 0.0_RKIND
-
-    endif
-
-    ! air potential temperature
-    airPotentialTemperature = airTemperature - freshWaterFreezingPoint
-
-    ! wind speed
-    windSpeed = sqrt(uAirVelocity**2 + vAirVelocity**2)
-
-    ! transfer coefficients
-    sensibleTransferCoefficient = 1.20e-3_RKIND * airSpecificHeat        * airDensity * windSpeed
-    latentTransferCoefficient   = 1.50e-3_RKIND * latentHeatSublimation  * airDensity * windSpeed
-
-    ! air stresses
-    airStressCoefficient = 0.0012_RKIND * airDensity * windSpeed
-
-    uAirStress = uAirVelocity * airStressCoefficient
-    vAirStress = vAirVelocity * airStressCoefficient
-
-  end subroutine calculate_derived_forcing_variables_gx1
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  calculate_derived_forcing_variables_gx3
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine calculate_derived_forcing_variables_gx3(&
-       longWavedown, &
-       snowfallRate, &
-       airPotentialTemperature, &
-       windSpeed, &
-       sensibleTransferCoefficient, &
-       latentTransferCoefficient, &
-       uAirStress, &
-       vAirStress, &
-       airTemperature, &
-       cloudFraction, &
-       precipitationRate, &
-       uAirVelocity, &
-       vAirVelocity, &
-       airDensity)!{{{
-    
-    real(kind=RKIND), intent(out) :: &
-         longWavedown, &                !< Output: 
-         snowfallRate, &                !< Output: 
-         airPotentialTemperature, &     !< Output: 
-         windSpeed, &                   !< Output: 
-         sensibleTransferCoefficient, & !< Output: 
-         latentTransferCoefficient, &   !< Output: 
-         uAirStress, &                  !< Output: 
-         vAirStress                     !< Output: 
-
-    real(kind=RKIND), intent(inout) :: &
-         precipitationRate !< Input/Output: 
-
-    real(kind=RKIND), intent(in) :: &
-         airTemperature, & !< Input: 
-         cloudFraction, &  !< Input: 
-         uAirVelocity, &   !< Input: 
-         vAirVelocity, &   !< Input: 
-         airDensity        !< Input: 
-
-    real(kind=RKIND), parameter :: &
-         stefanBoltzmann         = 5.79484e-8_RKIND , & ! J m-2 K-4 s-1
-         freshWaterFreezingPoint = 273.15_RKIND     , & ! freezing temp of fresh ice (K)
-         airSpecificHeat         = 1005.0_RKIND     , & ! specific heat of air (J/kg/K)
-         latentHeatSublimation   = 2.835e6_RKIND        ! latent heat, sublimation freshwater (J/kg)
-
-    real(kind=RKIND), parameter :: &
-         seconds_per_year        = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
-
-    real(kind=RKIND) :: &
-         airStressCoefficient
-
-    ! Longwave down
-    ! Parkinson, C. L. and W. M. Washington (1979),
-    ! Large-scale numerical-model of sea ice,
-    ! JGR, 84, 311-337, doi:10.1029/JC084iC01p00311
-
-    longWavedown = stefanBoltzmann * airTemperature**4 * &
-                   (1.0_RKIND - 0.261_RKIND * exp(-7.77e-4_RKIND * (freshWaterFreezingPoint - airTemperature)**2)) * &
-                   (1.0_RKIND + 0.275_RKIND * cloudFraction)
-
-    ! snowfall rate
-    precipitationRate = precipitationRate * (12.0_RKIND / seconds_per_year) ! convert mm per year
-
-    snowfallRate = 0.0_RKIND
-
-    if (airTemperature < freshWaterFreezingPoint) then
-
-       snowfallRate = precipitationRate
-       precipitationRate = 0.0_RKIND
-
-    endif
-
-    ! air potential temperature
-    airPotentialTemperature = airTemperature - freshWaterFreezingPoint
-
-    ! wind speed
-    windSpeed = sqrt(uAirVelocity**2 + vAirVelocity**2)
-
-    ! transfer coefficients
-    sensibleTransferCoefficient = 1.20e-3_RKIND * airSpecificHeat        * airDensity * windSpeed
-    latentTransferCoefficient   = 1.50e-3_RKIND * latentHeatSublimation  * airDensity * windSpeed
-
-    ! air stresses
-    airStressCoefficient = 0.0012_RKIND * airDensity * windSpeed
-
-    uAirStress = uAirVelocity * airStressCoefficient
-    vAirStress = vAirVelocity * airStressCoefficient
-
-  end subroutine calculate_derived_forcing_variables_gx3!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  calculate_shortwave
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date September 19th 2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine calculate_shortwave(&
-       mesh, &
-       clock, &
-       cloudFraction, &
-       airSpecificHumidity, &
-       shortwaveDown)
-
-    use mpas_timekeeping
+  subroutine post_atmospheric_forcing(block)
 
     use cice_constants, only: &
-         ciceDegreesToRadians
+         ciceAirSpecificHeat, &
+         ciceLatentHeatSublimation
 
-    use mpas_constants, only: &
-         pii
-    
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh
+    type (block_type), pointer :: block
 
-    type(MPAS_Clock_type), intent(in) :: &
-         clock
+    type (mpas_pool_type), pointer :: &
+         mesh, &
+         atmosCoupling, &
+         atmosForcing
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         cloudFraction, &
-         airSpecificHumidity
+    real(kind=RKIND), dimension(:), pointer :: &
+         airDensity, &
+         uAirVelocity, &
+         vAirVelocity, &
+         windSpeed, &
+         sensibleTransferCoefficient, &
+         latentTransferCoefficient, &
+         uAirStress, &
+         vAirStress
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         shortwaveDown
-
-    integer :: &
-         iCell
+    real(kind=RKIND) :: &
+         airStressCoefficient
 
     integer, pointer :: &
          nCells
 
     integer :: &
-         dayOfYear, H, M, S, S_d, S_n
+         iCell
 
-    real(kind=RKIND), dimension(:), pointer :: &
-         lonCell, &
-         latCell
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)    
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(atmosCoupling, "airDensity", airDensity)
+    call MPAS_pool_get_array(atmosCoupling, "uAirVelocity", uAirVelocity)
+    call MPAS_pool_get_array(atmosCoupling, "vAirVelocity", vAirVelocity)
+
+    call MPAS_pool_get_array(atmosForcing, "windSpeed", windSpeed)
+    call MPAS_pool_get_array(atmosForcing, "sensibleTransferCoefficient", sensibleTransferCoefficient)
+    call MPAS_pool_get_array(atmosForcing, "latentTransferCoefficient", latentTransferCoefficient)
+    call MPAS_pool_get_array(atmosForcing, "uAirStress", uAirStress)
+    call MPAS_pool_get_array(atmosForcing, "vAirStress", vAirStress)
+
+    do iCell = 1, nCells
+
+       ! transfer coefficients
+       sensibleTransferCoefficient(iCell) = 1.20e-3_RKIND * ciceAirSpecificHeat       * airDensity(iCell) * windSpeed(iCell)
+       latentTransferCoefficient(iCell)   = 1.50e-3_RKIND * ciceLatentHeatSublimation * airDensity(iCell) * windSpeed(iCell)
+       
+       ! air stresses
+       airStressCoefficient = 0.0012_RKIND * airDensity(iCell) * windSpeed(iCell)
+       
+       uAirStress(iCell) = uAirVelocity(iCell) * airStressCoefficient
+       vAirStress(iCell) = vAirVelocity(iCell) * airStressCoefficient
+       
+    enddo ! iCell
+
+  end subroutine post_atmospheric_forcing
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  limit_specific_humidity
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 17th Febuary 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine limit_specific_humidity(&
+       airTemperature, &
+       airSpecificHumidity)
+
+    use cice_constants, only: &
+         ciceFreshWaterFreezingPoint, &
+         cicePuny
+
+    real(kind=RKIND), intent(in) :: &
+         airTemperature
+
+    real(kind=RKIND), intent(inout) :: &
+         airSpecificHumidity
 
     real(kind=RKIND) :: &
-         lonCell1, &
+         airSpecificHumidityMax
+
+    ! convert air temperature from Kelvin to Celcius
+    airSpecificHumidityMax = airTemperature - ciceFreshWaterFreezingPoint
+
+    airSpecificHumidityMax = 2.0_RKIND + &
+         ((0.7859_RKIND + 0.03477_RKIND * airSpecificHumidityMax) / &
+          (1.0_RKIND    + 0.00412_RKIND * airSpecificHumidityMax)) + &
+          0.00422_RKIND * airSpecificHumidityMax
+
+    ! vapor pressure
+    airSpecificHumidityMax = 10.0_RKIND**airSpecificHumidityMax ! saturated 
+    airSpecificHumidityMax = max(airSpecificHumidityMax,cicePuny) ! prevent division by zero
+
+    ! specific humidity
+    airSpecificHumidityMax = &
+         (0.622_RKIND * airSpecificHumidityMax) / &
+         (1.0e5_RKIND - 0.378_RKIND * airSpecificHumidityMax)
+
+    ! limit the specific humidity
+    airSpecificHumidity = min(airSpecificHumidity, airSpecificHumidityMax)
+
+  end subroutine limit_specific_humidity
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  longwave_rosati_miyakoda
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 17th Febuary 2015
+!> \details
+!>  based on 
+!   Rosati, A. and K. Miyakoda (1988), 
+!   A general-circulation model for upper ocean simulation, 
+!   J. Physical Oceanography, 18, 1601-1626, 
+!   doi:10.1175/1520-0485(1988)018<1601:AGCMFU>2.0.CO;2 
+!
+!-----------------------------------------------------------------------
+
+  subroutine longwave_rosati_miyakoda(&
+       longWavedown, &
+       cloudFraction, &
+       iceAreaCell, &
+       surfaceTemperature, &
+       seaSurfaceTemperature, &
+       airSpecificHumidity, &
+       airTemperature)
+
+    use cice_constants, only: &
+         ciceStefanBoltzmann, &
+         ciceFreshWaterFreezingPoint, &
+         ciceIceSnowEmissivity
+
+    real(kind=RKIND), intent(out) :: &
+         longWavedown
+
+    real(kind=RKIND), intent(in) :: &
+         cloudFraction, &
+         iceAreaCell, &
+         surfaceTemperature, &
+         seaSurfaceTemperature, &
+         airSpecificHumidity, &
+         airTemperature
+
+    real(kind=RKIND) :: &
+         clearSkyFraction, &
+         combinedSurfaceTemperature, &
+         vapourPressureSqrt, &
+         airPotentialTemperature, &
+         airSeaTemperatureDifferenceTerm
+
+    ! get a clear sky fraction
+    clearSkyFraction = 1.0_RKIND - 0.8_RKIND * cloudFraction
+    
+    ! combined ice and ocean temperature in Kelvin
+    combinedSurfaceTemperature = &
+         iceAreaCell               * surfaceTemperature + &
+         (1.0_RKIND - iceAreaCell) * seaSurfaceTemperature
+
+    combinedSurfaceTemperature = combinedSurfaceTemperature + ciceFreshWaterFreezingPoint
+
+    ! square root of the vapour pressure
+    vapourPressureSqrt = sqrt((1000.0_RKIND * airSpecificHumidity) / &
+                              (0.622_RKIND + 0.378_RKIND * airSpecificHumidity))
+
+    ! potential temperature (CICE comment: get this from stability?)
+    airPotentialTemperature = airTemperature
+
+    ! unknown
+    airSeaTemperatureDifferenceTerm = airPotentialTemperature**3 * &
+         (airPotentialTemperature * (0.39_RKIND - 0.05_RKIND * vapourPressureSqrt) * clearSkyFraction + &
+         4.0_RKIND * (combinedSurfaceTemperature - airPotentialTemperature))
+
+
+    ! final longwave calculation from stefan-boltzmann law
+    longWavedown = ciceIceSnowEmissivity * ciceStefanBoltzmann * &
+                   (combinedSurfaceTemperature**4 - airSeaTemperatureDifferenceTerm)
+
+  end subroutine longwave_rosati_miyakoda
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine longwave_parkinson_and_washington(&
+       longWavedown, &
+       airTemperature, &
+       cloudFraction)
+
+    use cice_constants, only: &
+         ciceStefanBoltzmann, &
+         ciceFreshWaterFreezingPoint
+
+    real(kind=RKIND), intent(out) :: &
+         longWavedown
+
+    real(kind=RKIND), intent(in) :: &    
+         airTemperature, &
+         cloudFraction
+
+    ! Longwave down
+    ! Parkinson, C. L. and W. M. Washington (1979),
+    ! Large-scale numerical-model of sea ice,
+    ! JGR, 84, 311-337, doi:10.1029/JC084iC01p00311
+
+    longWavedown = &
+         ciceStefanBoltzmann * airTemperature**4 * &
+         (1.0_RKIND - 0.261_RKIND * exp(-7.77e-4_RKIND * (ciceFreshWaterFreezingPoint - airTemperature)**2)) * &
+         (1.0_RKIND + 0.275_RKIND * cloudFraction)
+
+  end subroutine longwave_parkinson_and_washington
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  convert precipitation units to kg/m^2 s
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_precipitation_factor(domain)
+
+    use cice_constants, only: &
+         ciceSecondsPerYear, &
+         ciceSecondsPerDay
+
+    type(domain_type) :: domain
+
+    character(len=strKIND), pointer :: &
+         config_forcing_precipitation_units
+
+    call MPAS_pool_get_config(domain % configs, "config_forcing_precipitation_units", config_forcing_precipitation_units)
+
+    select case (trim(config_forcing_precipitation_units))
+    case ("mm_per_month")
+       precipitationFactor = 12.0_RKIND / real(ciceSecondsPerYear,RKIND)
+    case ("mm_per_day")
+       precipitationFactor = 1.0_RKIND / real(ciceSecondsPerDay,RKIND)
+    case ("mm_per_sec","mks")
+       precipitationFactor = 1.0_RKIND
+    case default
+       write(stderrUnit,*) "Unknown config_precipitation_units"
+       call MPAS_dmpar_global_abort('Unknown config_precipitation_units')
+    end select
+
+  end subroutine init_precipitation_factor
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine precipitation(&
+       rainfallRate, &
+       snowfallRate, &
+       airTemperature)
+
+    use cice_constants, only: &
+         ciceSecondsPerYear, &
+         ciceFreshWaterFreezingPoint
+
+    real(kind=RKIND), intent(inout) :: &
+         rainfallRate
+
+    real(kind=RKIND), intent(out) :: &    
+         snowfallRate
+
+    real(kind=RKIND), intent(out) :: & 
+         airTemperature
+   
+    rainfallRate = rainfallRate * precipitationFactor
+
+    ! divide total precipitation between rain and snow
+    snowfallRate = 0.0_RKIND
+
+    if (airTemperature < ciceFreshWaterFreezingPoint) then
+
+       snowfallRate = rainfallRate
+       rainfallRate = 0.0_RKIND
+
+    endif
+
+  end subroutine precipitation
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine shortwave_down(&
+       shortwaveDown, &
+       longitudeIn, &
+       latitude, &
+       cloudFraction, &
+       airSpecificHumidity, &
+       currentTime)
+
+    use cice_constants, only: &
+         ciceDegreesToRadians, &
+         ciceSecondsPerDay
+
+    use mpas_constants, only: &
+         pii
+
+    real(kind=RKIND), intent(out) :: &
+         shortwaveDown
+
+    real(kind=RKIND), intent(in) :: &    
+         longitudeIn, &
+         latitude, &
+         cloudFraction, &
+         airSpecificHumidity
+
+    type(MPAS_time_type), intent(in) :: &
+         currentTime
+
+    integer :: &
+         dayOfYear, H, M, S, S_d, S_n
+
+    real(kind=RKIND) :: &
+         longitude, &
          secondsToday, &
          solarTime, &
          hourAngle, &
@@ -910,18 +1036,6 @@ contains
          d, &
          sw0
 
-    type(MPAS_Time_type) :: &
-         currentTime
-
-    real(kind=RKIND), parameter :: &
-         secondsPerDay = 86400.0_RKIND
-
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
-    call MPAS_pool_get_array(mesh, "latCell", latCell)
-
-    currentTime = mpas_get_clock_time(clock, MPAS_NOW)
     call mpas_get_time(currentTime, DoY=dayOfYear, H=H, M=M, S=S, S_n=S_n, S_d=S_d)
 
     secondsToday = real(H,RKIND)*3600.0_RKIND + &
@@ -929,1594 +1043,586 @@ contains
                    real(S,RKIND) + &
                    real(S_n,RKIND)/real(S_d,RKIND)
 
-    do iCell = 1, nCells
+    ! longitude needs to be [-pi,pi] not [0,2pi]
+    longitude = longitudeIn
+    if (longitude > pii) longitude = longitude - 2.0_RKIND * pii
 
-       ! longitude needs to be [-pi,pi] not [0,2pi]
-       lonCell1 = lonCell(iCell)
-       if (lonCell1 > pii) lonCell1 = lonCell1 - 2.0_RKIND * pii
+    solarTime = mod(real(secondsToday,kind=RKIND),ciceSecondsPerDay)/3600.0_RKIND + 12.0_RKIND*sin(0.5_RKIND*longitude)
 
-       solarTime = mod(real(secondsToday,kind=RKIND),secondsPerDay)/3600.0_RKIND + 12.0_RKIND*sin(0.5_RKIND*lonCell1)
-       
-       hourAngle = (12.0_RKIND - solarTime)*pii/12.0_RKIND
-       
-       ! solar declinatiom
-       declination = 23.44_RKIND*cos((172.0_RKIND-real(dayOfYear,RKIND)) * 2.0_RKIND*pii/365.0_RKIND)*ciceDegreesToRadians
-       declination = 0.0_RKIND
+    hourAngle = (12.0_RKIND - solarTime)*pii/12.0_RKIND
 
-       ! solar zenith angle
-       cosZ = sin(latCell(iCell))*sin(declination) + cos(latCell(iCell))*cos(declination)*cos(hourAngle)
-       cosZ = max(cosZ,0.0_RKIND)
-       
-       e = 1.0e5_RKIND*airSpecificHumidity(iCell)/(0.622_RKIND + 0.378_RKIND*airSpecificHumidity(iCell))
-       
-       d = (cosZ + 2.7_RKIND)*e*1.0e-5_RKIND+1.085_RKIND*cosZ+0.1_RKIND
-       
-       sw0 = 1353.0_RKIND*cosZ**2/d
-       sw0 = max(sw0,0.0_RKIND)
-       
-       shortwaveDown(iCell) = sw0 * (1.0_RKIND - 0.6_RKIND * cloudFraction(iCell)**3) 
+    ! solar declinatiom
+    declination = 23.44_RKIND*cos((172.0_RKIND-real(dayOfYear,RKIND)) * 2.0_RKIND*pii/365.0_RKIND)*ciceDegreesToRadians
 
-    enddo
-        
-  end subroutine calculate_shortwave
+    ! solar zenith angle
+    cosZ = sin(latitude)*sin(declination) + cos(latitude)*cos(declination)*cos(hourAngle)
+    cosZ = max(cosZ,0.0_RKIND)
+
+    e = 1.0e5_RKIND*airSpecificHumidity/(0.622_RKIND + 0.378_RKIND*airSpecificHumidity)
+
+    d = (cosZ + 2.7_RKIND)*e*1.0e-5_RKIND+1.085_RKIND*cosZ+0.1_RKIND
+
+    sw0 = 1353.0_RKIND*cosZ**2/d
+    sw0 = max(sw0,0.0_RKIND)
+
+    shortwaveDown = sw0 * (1.0_RKIND - 0.6_RKIND * cloudFraction**3) 
+
+  end subroutine shortwave_down
 
 !-----------------------------------------------------------------------
-! Generic forcing routines
+! ocean forcing
 !-----------------------------------------------------------------------
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_forcing_generic
+!  init_oceanic_forcing
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \date 17th Febuary 2015
 !> \details
 !>  
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_forcing_generic()!{{{
+  subroutine init_oceanic_forcing(domain, streamManager)
 
-    ! set currentYear
-    currentYear = -1e6
-    currentYearDuration = 0.0_RKIND
+    type (domain_type) :: domain
 
-    ! set epoch time
-    call mpas_set_time(epochTime, YYYY=epoch, MM=1, DD=1)
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
 
-  end subroutine init_forcing_generic!}}}
+    character(len=strKIND), pointer :: &
+         config_forcing_sst_type
+
+    call MPAS_pool_get_config(domain % configs, "config_forcing_sst_type", config_forcing_sst_type)
+
+    select case (trim(config_forcing_sst_type))
+    case ("ncar")
+       call init_oceanic_forcing_ncar(domain, streamManager)
+    case default
+       write(stderrUnit,*) "Oceanic forcing type unknown: ", trim(config_forcing_sst_type)
+       call MPAS_dmpar_global_abort('Unknown config_forcing_sst_type')
+    end select
+
+  end subroutine init_oceanic_forcing
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_forcing_field
+!  init_oceanic_forcing_ncar
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \date 17th Febuary 2015
 !> \details
 !>  
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_forcing_field(&
-       mesh, &
-       nCellsGlobal, &
-       forcingField, &
-       forcingType, &
-       filenameDirectory, &
-       filenamePrefix, &
-       filenameSuffix, &
-       filetype, &
-       pointsPerYear, &
-       positionInInterval)!{{{
+  subroutine init_oceanic_forcing_ncar(domain, streamManager)
 
-    type (MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
+    type (domain_type) :: domain
 
-    integer, intent(in) :: &
-         nCellsGlobal !< Input: 
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
 
-    type (forcing_field), intent(inout) :: &
-         forcingField !< Input/Output: 
+    character(len=strKIND), pointer :: &
+         config_forcing_restart_file
 
-    character(len=*), intent(in) :: &
-         forcingType, &       !< Input: 
-         filenameDirectory, & !< Input: 
-         filenamePrefix, &    !< Input: 
-         filenameSuffix, &    !< Input: 
-         filetype             !< Input: 
+    logical, pointer :: &
+         config_do_restart
 
-    integer, intent(in) :: &
-         pointsPerYear !< Input: 
+    character(len=strKIND) :: &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly
 
-    real(kind=RKIND) :: &
-         positionInInterval
+    ! get oceanic forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
 
-    forcingField % forcingType = trim(forcingType)
+    forcingIntervalMonthly = "00-01-00_00:00:00"
+    forcingReferenceTimeMonthly = "2000-01-15_00:00:00"
 
-    forcingField % filenameDirectory = trim(filenameDirectory)
-    forcingField % filenamePrefix    = trim(filenamePrefix)
-    forcingField % filenameSuffix    = trim(filenameSuffix)
+    ! create the sea surface temperature forcing group
+    call MPAS_forcing_init_group(&
+         ciceForcingGroups, &
+         "cice_sst_forcing_monthly", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart, &
+         config_forcing_restart_file)
 
-    forcingField % positionInInterval = positionInInterval
-    forcingField % filetype           = trim(filetype)
-    forcingField % pointsPerYear      = pointsPerYear
+    ! sea surface temperature
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_sst_forcing_monthly", &
+         "seaSurfaceTemperature", &
+         "NCARMonthlySSTForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTemperature", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
 
-    forcingField % dataTimes(:) = -1.0e30_RKIND
-    forcingField % dataRecordNumbers(:) = -1
-    forcingField % dataYears(:) = 0    
+    call MPAS_forcing_init_field_data(&
+         ciceForcingGroups, &
+         "cice_sst_forcing_monthly", &
+         streamManager)
 
-    forcingField % dataOrder(1) = 1
-    forcingField % dataOrder(2) = 2
-    
-    forcingField % currentYear = 0  
+    ! create the monthly forcing group
+    call MPAS_forcing_init_group(&
+         ciceForcingGroups, &
+         "cice_oceanic_forcing_monthly", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart, &
+         config_forcing_restart_file)
 
-    forcingField % ndata = nCellsGlobal
+    ! sea surface salinity
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_oceanic_forcing_monthly", &
+         "seaSurfaceSalinity", &
+         "NCARMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceSalinity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
 
-    allocate(forcingField % data(1:forcingField % ndata,1:2))
+    ! u ocean velocity
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_oceanic_forcing_monthly", &
+         "uOceanVelocity", &
+         "NCARMonthlyForcing", &
+         "ocean_coupling", &
+         "uOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
 
-  end subroutine init_forcing_field!}}}
+    ! v ocean velocity
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_oceanic_forcing_monthly", &
+         "vOceanVelocity", &
+         "NCARMonthlyForcing", &
+         "ocean_coupling", &
+         "vOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! u surface tilt
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_oceanic_forcing_monthly", &
+         "seaSurfaceTiltU", &
+         "NCARMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTiltU", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! v surface tilt
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_oceanic_forcing_monthly", &
+         "seaSurfaceTiltV", &
+         "NCARMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTiltV", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! ocean mixed layer depth
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_oceanic_forcing_monthly", &
+         "oceanMixedLayerDepth", &
+         "NCARMonthlyForcing", &
+         "ocean_coupling", &
+         "oceanMixedLayerDepth", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! deep ocean heat flux convergence
+    call MPAS_forcing_init_field(&
+         streamManager, &
+         ciceForcingGroups, &
+         "cice_oceanic_forcing_monthly", &
+         "oceanHeatFluxConvergence", &
+         "NCARMonthlyForcing", &
+         "ocean_coupling", &
+         "oceanHeatFluxConvergence", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field_data(&
+         ciceForcingGroups, &
+         "cice_oceanic_forcing_monthly", &
+         streamManager)
+
+  end subroutine init_oceanic_forcing_ncar
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  get_forcing_times
+!  oceanic_forcing
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \date 
 !> \details
 !>  
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_forcing_times(&
-       forcingTime, &
-       forcingTimeEpoch, &
-       year, &
-       month, &
-       dayOfMonth, &
-       clock)!{{{
+  subroutine oceanic_forcing(&
+       streamManager, &
+       domain, &
+       simulationClock, &
+       firstTimeStep)
 
-    real(kind=RKIND), intent(out) :: &
-         forcingTime, &   !< Output: 
-         forcingTimeEpoch !< Output: 
+    use cice_debug, only: cice_debug_output_array
 
-    integer, intent(out) :: &
-         year, &    !< Output: 
-         month, &   !< Output: 
-         dayOfMonth !< Output: 
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
 
-    type (MPAS_Clock_type), intent(in) :: &
-         clock !< Input: 
+    type (domain_type) :: domain
 
-    type (MPAS_Time_Type) :: &
-         currTime
+    type (MPAS_clock_type) :: simulationClock
 
-    integer :: &
-         ierr
+    logical, intent(in) :: &
+         firstTimeStep
 
-    type (MPAS_TimeInterval_type) :: &
-         epochTimeDifference, &
-         startYearTimeDifference, &
-         currentYearInterval, &
-         epochYearInterval
+    type(block_type), pointer :: &
+         block
 
-    ! get the current time
-    currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
-    call mpas_get_time(&
-         curr_time = currTime, &
-         YYYY      = year, &
-         MM        = month, &
-         DD        = dayOfMonth, &
-         ierr=ierr)
+    real(kind=RKIND), pointer :: &
+         config_dt
 
-    ! current year duration
-    if (currentYear /= year) then
+    character(len=strKIND), pointer :: &
+         config_forcing_sst_type
 
-       ! start year time
-       call mpas_set_time(startYearTime, YYYY=year, MM=1, DD=1)
+    logical, pointer :: &
+         config_do_restart
 
-       ! start year time
-       call mpas_set_time(endYearTime, YYYY=year+1, MM=1, DD=1)
+    ! configurations
+    call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+    call mpas_pool_get_config(domain % configs, 'config_forcing_sst_type', config_forcing_sst_type)
+    call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
-       ! year duration
-       currentYearInterval = endYearTime - startYearTime
-       call mpas_get_timeInterval(currentYearInterval, startYearTime, dt=currentYearDuration)
+    ! use the forcing layer to get data
+    if (trim(config_forcing_sst_type) == 'ncar') then
 
-       ! epoch duration
-       epochYearInterval = startYearTime - epochTime
-       call mpas_get_timeInterval(epochYearInterval, epochTime, dt=currentYearEpoch)
+       call MPAS_forcing_get_forcing(&
+            ciceForcingGroups, &
+            "cice_oceanic_forcing_monthly", &
+            streamManager, &
+            config_dt)
 
-       currentYear = year
+       ! only get sst data on first timestep
+       if (firstTimeStep .and. .not. config_do_restart) then
 
-    endif
-
-    ! epoch time
-    epochTimeDifference = currTime - epochTime
-    call mpas_get_timeInterval(epochTimeDifference, epochTime, dt=forcingTimeEpoch)
-
-    ! forcing time
-    startYearTimeDifference = currTime - startYearTime
-    call mpas_get_timeInterval(startYearTimeDifference, startYearTime, dt=forcingTime)
-
-  end subroutine get_forcing_times!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  calc_interval
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  function calc_interval(&
-       forcingField) &
-       result(interval)!{{{
-
-    type (forcing_field), intent(in) :: &
-         forcingField !< Input: 
-
-    real(kind=RKIND) :: &
-         interval
-    
-    interval = currentYearDuration / real(forcingField % pointsPerYear,RKIND)
-
-  end function calc_interval!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  get_individual_forcing
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine get_individual_forcing(&
-       mesh, &
-       forcingTime, &
-       forcingTimeEpoch, &
-       year, &
-       month, &
-       dayOfMonth, &
-       forcingDirectory, &
-       forcingField, &
-       forcingArray)!{{{
-
-    use mpas_timekeeping
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-
-    real(kind=RKIND), intent(in) :: &
-         forcingTime, &   !< Input: 
-         forcingTimeEpoch !< Input: 
-
-    integer, intent(in) :: &
-         year, &    !< Input: 
-         month, &   !< Input: 
-         dayOfMonth !< Input: 
-
-    character(len=*), intent(in) :: &
-         forcingDirectory !< Input: 
-
-    type (forcing_field), intent(inout) :: &
-         forcingField !< Input/Output: 
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         forcingArray !< Output: 
-
-    integer, dimension(2) :: &
-         desiredYears, &
-         desiredRecordNumbers
-
-    real(kind=RKIND), dimension(2) :: &
-         desiredTimes
-    
-    integer, dimension(2) :: &
-         existingDataLocation
-
-    logical, dimension(2) :: &
-         existingHasData
-
-    real(kind=RKIND), dimension(2) :: &
-         interpolationCoeff
-
-    integer :: &
-         nDesired, &
-         nExist, &
-         iCell
-    
-    integer, dimension(:), pointer :: &
-         indexToCellID
-
-    integer, pointer :: &
-         nCells
-
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
-
-    iCell = POPiCell(mesh,69,59)
-
-    call get_desired_record_positions(&
-         forcingTime, &
-         year, &
-         month, &
-         dayOfMonth, &
-         forcingField, &
-         desiredYears, &
-         desiredRecordNumbers, &
-         desiredTimes)
-
-    ! get desired data
-    existingDataLocation = 0
-    existingHasData      = .false.
-
-    ! fill starting data
-    do nDesired = 1, 2
-       do nExist = 1, 2
-          
-          if (forcingField % dataYears(nExist)         == desiredYears(nDesired) .and. &
-              forcingField % dataRecordNumbers(nExist) == desiredRecordNumbers(nDesired)) then
-
-             ! use the preexisting data
-             existingDataLocation(nDesired) = nExist
-             existingHasData(nExist)        = .true.
-
-             forcingField % dataOrder(nDesired) = nExist 
-             
-             exit
-             
-          endif
-          
-       enddo ! nExist
-    enddo ! nDesired
-
-    do nDesired = 1, 2
-
-       if (existingDataLocation(nDesired) == 0) then
-
-          ! where do it read it into?
-          if (.not. existingHasData(1)) then
-
-             ! read into 1
-             call read_data(&
-                  mesh, &
-                  forcingDirectory, &
-                  forcingField, &
-                  1, &
-                  desiredYears(nDesired), &
-                  desiredRecordNumbers(nDesired), &
-                  nDesired)
-
-             forcingField % dataTimes(1)         = desiredTimes(nDesired)
-             forcingField % dataRecordNumbers(1) = desiredRecordNumbers(nDesired)
-             forcingField % dataYears(1)         = desiredYears(nDesired)
-             forcingField % dataOrder(nDesired) = 1
-
-             existingHasData(1) = .true.
-
-          else if (.not. existingHasData(2)) then
-
-             ! read into 2
-             call read_data(&
-                  mesh, &
-                  forcingDirectory, &
-                  forcingField, &
-                  2, &
-                  desiredYears(nDesired), &
-                  desiredRecordNumbers(nDesired), &
-                  nDesired)
-
-             forcingField % dataTimes(2)         = desiredTimes(nDesired)
-             forcingField % dataRecordNumbers(2) = desiredRecordNumbers(nDesired)
-             forcingField % dataYears(2)         = desiredYears(nDesired)
-             forcingField % dataOrder(nDesired) = 2
-
-             existingHasData(2) = .true.
-
-          else
-
-             ! major error
-
-          endif
+          call MPAS_forcing_get_forcing(&
+               ciceForcingGroups, &
+               "cice_sst_forcing_monthly", &
+               streamManager, &
+               config_dt)
 
        endif
-
-    enddo ! nDesired
-
-    ! interpolate
-
-    interpolationCoeff(1) = (desiredTimes(2) - forcingTimeEpoch) / (desiredTimes(2) - desiredTimes(1))
-    interpolationCoeff(2) = (forcingTimeEpoch - desiredTimes(1)) / (desiredTimes(2) - desiredTimes(1))
-
-    do iCell = 1, nCells
-       forcingArray(iCell) = forcingField % data(indexToCellID(iCell),forcingField % dataOrder(1)) * interpolationCoeff(1) + &
-                             forcingField % data(indexToCellID(iCell),forcingField % dataOrder(2)) * interpolationCoeff(2)
-    end do ! iCell
-
-  end subroutine get_individual_forcing!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  get_desired_record_positions
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine get_desired_record_positions(&
-       secOfYear, &
-       year, &
-       month, &
-       dayOfMonth, &
-       forcingField, &
-       desiredYears, &
-       desiredRecordNumbers, &
-       desiredTimes)!{{{
-
-    real(kind=RKIND), intent(in) :: &
-         secOfYear !< Input: 
-
-    integer, intent(in) :: &
-         year, &    !< Input: 
-         month, &   !< Input: 
-         dayOfMonth !< Input: 
-   
-    type (forcing_field), intent(in) :: &
-         forcingField !< Input: 
-
-    integer, dimension(2), intent(out) :: &
-         desiredYears, &      !< Output: 
-         desiredRecordNumbers !< Output: 
-
-    real(kind=RKIND), dimension(2), intent(out) :: &
-         desiredTimes !< Output: 
-
-    real(kind=RKIND) :: &
-         dataPosition
-
-    integer :: &
-         intervalNumber
-
-    integer :: &
-         nDesire
-         
-    if (trim(forcingField % forcingType) == "interval") then
-
-       intervalNumber = ceiling(secOfYear / calc_interval(forcingField))
-       dataPosition = forcingTimeInYear(intervalNumber, forcingField % positionInInterval, calc_interval(forcingField))
-
-    else if (trim(forcingField % forcingType) == "monthly") then
-
-       intervalNumber = month
-       dataPosition = forcingTimeInYearMonthly(year, month, forcingField % positionInInterval)
-    
-    endif
-
-    desiredYears = year
-
-    if (dataPosition > secOfYear) then
-
-       desiredRecordNumbers(1) = intervalNumber - 1
-       desiredRecordNumbers(2) = intervalNumber
-
-    else
-
-       desiredRecordNumbers(1) = intervalNumber
-       desiredRecordNumbers(2) = intervalNumber + 1
        
     endif
 
-    do nDesire = 1, 2
-       if (desiredRecordNumbers(nDesire) < 1) then
-          desiredRecordNumbers(nDesire) = desiredRecordNumbers(nDesire) + forcingField % pointsPerYear
-          desiredYears(nDesire) = desiredYears(nDesire) - 1
-       endif
-       
-       if (desiredRecordNumbers(nDesire) > forcingField % pointsPerYear) then
-          desiredRecordNumbers(nDesire) = desiredRecordNumbers(nDesire) - forcingField % pointsPerYear
-          desiredYears(nDesire) = desiredYears(nDesire) + 1
-       endif
+    block => domain % blocklist
+    do while (associated(block))
 
-       if (trim(forcingField % forcingType) == "interval") then
+       ! convert the input forcing variables to the coupling variables       
+       select case (trim(config_forcing_sst_type))
+       case ("ncar")
+          call prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
+       end select
 
-          desiredTimes(nDesire) = forcingTimeSinceEpoch(desiredRecordNumbers(nDesire), forcingField % positionInInterval, &
-                                                        calc_interval(forcingField), desiredYears(nDesire))
+       call forcing_testing(block)
 
-       else if (trim(forcingField % forcingType) == "monthly") then
+       block => block % next
+    end do
 
-          desiredTimes(nDesire) = forcingTimeSinceEpochMonthly(desiredYears(nDesire), desiredRecordNumbers(nDesire), &
-                                                               forcingField % positionInInterval)
-
-       endif
-
-    enddo ! nDesire
-
-  end subroutine get_desired_record_positions!}}}
+  end subroutine oceanic_forcing
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  forcingTimeInYear
+!  prepare_oceanic_coupling_variables_ncar
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \date 
 !> \details
 !>  
 !
 !-----------------------------------------------------------------------
 
-  function forcingTimeInYear(&
-       intervalNumber, &
-       positionInInterval, &
-       interval) &
-       result(forcingTime)!{{{
+  subroutine prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
 
-    integer, intent(in) :: &
-         intervalNumber !< Input: 
+    !use ice_colpkg, only: &
+    !     colpkg_liquidus_temperature
 
-    real(kind=RKIND), intent(in) :: &
-         positionInInterval, & !< Input: 
-         interval              !< Input: 
+    type (block_type), pointer :: block
 
-    real(kind=RKIND) :: &
-         forcingTime
+    logical, intent(in) :: &
+         firstTimeStep
 
-    forcingTime = (real(intervalNumber-1,RKIND) + positionInInterval) * interval
-
-  end function forcingTimeInYear!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  forcingTimeSinceEpoch
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  function forcingTimeSinceEpoch(&
-       intervalNumber, &
-       positionInInterval, &
-       interval, &
-       year) &
-       result(forcingTime)!{{{
-
-    integer, intent(in) :: &
-         intervalNumber, & !< Input: 
-         year              !< Input: 
-
-    real(kind=RKIND), intent(in) :: &
-         positionInInterval, & !< Input: 
-         interval              !< Input: 
-
-    real(kind=RKIND) :: &
-         forcingTime
-
-    type (MPAS_Time_type) :: &
-         startOfThisYear
-
-    type (MPAS_TimeInterval_type) :: &
-         startThisYearEpoch
-
-    call mpas_set_time(startOfThisYear, YYYY=year, MM=1, DD=1)    
-
-    startThisYearEpoch = startOfThisYear - epochTime
-    call mpas_get_timeInterval(startThisYearEpoch, epochTime, dt=forcingTime)
-
-    forcingTime = forcingTime + forcingTimeInYear(intervalNumber, positionInInterval, interval)
-
-  end function forcingTimeSinceEpoch!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  forcingTimeInYearMonthly
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  function forcingTimeInYearMonthly(&
-       year, &
-       month, &
-       positionInInterval) &
-       result(forcingTime)!{{{
-    
-    integer, intent(in) :: &
-         year, & !< Input: 
-         month   !< Input: 
-
-    real(kind=RKIND), intent(in) :: &
-         positionInInterval !< Input: 
-
-    real(kind=RKIND) :: &
-         forcingTime
-
-    type (MPAS_Time_type) :: &
-         startOfThisYear, &
-         thisForcingTime
-
-    type (MPAS_TimeInterval_type) :: &
-         forcingTimeInterval
-
-    call mpas_set_time(startOfThisYear, YYYY=year, MM=1, DD=1)  
-    call mpas_set_time(thisForcingTime, YYYY=year, MM=month, DD=15)
-
-    forcingTimeInterval = thisForcingTime - startOfThisYear
-
-    call mpas_get_timeInterval(forcingTimeInterval, startOfThisYear, dt=forcingTime)
-
-  end function forcingTimeInYearMonthly!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  forcingTimeSinceEpochMonthly
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  function forcingTimeSinceEpochMonthly(&
-       year, &
-       month, &
-       positionInInterval) &
-       result(forcingTime)!{{{
-
-    integer, intent(in) :: &
-         year, & !< Input: 
-         month   !< Input: 
-
-    real(kind=RKIND), intent(in) :: &
-         positionInInterval !< Input: 
-
-    real(kind=RKIND) :: &
-         forcingTime
-
-    type (MPAS_Time_type) :: &
-         thisForcingTime
-
-    type (MPAS_TimeInterval_type) :: &
-         forcingTimeInterval
-
-    call mpas_set_time(thisForcingTime, YYYY=year, MM=month, DD=15)
-
-    forcingTimeInterval = thisForcingTime - epochTime
-
-    call mpas_get_timeInterval(forcingTimeInterval, epochTime, dt=forcingTime)
-
-  end function forcingTimeSinceEpochMonthly!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  read_data
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine read_data(&
-       mesh, &
-       forcingDirectory, &
-       forcingField, &
-       slot, &
-       desiredYear, &
-       desiredRecordNumber, &
-       position)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-
-    character(len=*), intent(in) :: &
-         forcingDirectory !< Input: 
-
-    type (forcing_field), intent(inout) :: &
-         forcingField !< Input/Output: 
-
-    integer, intent(in) :: &
-         slot, &                !< Input: 
-         desiredYear, &         !< Input: 
-         desiredRecordNumber, & !< Input: 
-         position               !< Input: 
-
-    if (forcingField % filetype == trim("binaryPOP")) then
-    
-       call read_data_binaryPOP(&
-            mesh, &
-            forcingDirectory, &
-            forcingField, &
-            slot, &
-            desiredYear, &
-            desiredRecordNumber, &
-            position)
-
-    else if (forcingField % filetype == trim("binaryMPAS")) then
-
-       call read_data_binaryMPAS(&
-            mesh, &
-            forcingDirectory, &
-            forcingField, &
-            slot, &
-            desiredYear, &
-            desiredRecordNumber, &
-            position)
-
-    endif
-
-  end subroutine read_data!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  read_data_binaryPOP
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine read_data_binaryPOP(&
-       mesh, &
-       forcingDirectory, &
-       forcingField, &
-       slot, &
-       desiredYear, &
-       desiredRecordNumber, &
-       position)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-
-    character(len=*), intent(in) :: &
-         forcingDirectory !< Input: 
-
-    type (forcing_field), intent(inout) :: &
-         forcingField !< Input/Output: 
-
-    integer, intent(in) :: &
-         slot, &                !< Input: 
-         desiredYear, &         !< Input: 
-         desiredRecordNumber, & !< Input: 
-         position               !< Input: 
-
-    character(len=404) :: &
-         filename
-
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         arrayPOP
-
-    integer :: &
-         iCell, &
-         recordLength, &
-         usedRecordNumber
-
-    logical :: &
-         lexist
-
-    integer, pointer :: &
-         POP_nx, &
-         POP_ny, &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         POPindxi, &
-         POPindxj
-
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-    call MPAS_pool_get_dimension(mesh, "POP_nx", POP_nx)
-    call MPAS_pool_get_dimension(mesh, "POP_ny", POP_ny)
-
-    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
-    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
-
-    allocate(arrayPOP(1:POP_nx, 1:POP_ny))
-
-    recordLength = POP_nx * POP_ny * 8
-
-    usedRecordNumber = desiredRecordNumber
-
-    call get_filename(&
-         filename, &
-         usedRecordNumber, &
-         forcingDirectory, &
-         forcingField, &
-         desiredYear, &
-         position)
-
-    open(55,file=trim(filename),form='unformatted',access='direct',recl=recordLength,action='read',status='old')
-
-    read(55,rec=usedRecordNumber) arrayPOP
- 
-    close(55)
-
-    forcingField % data(:,slot) = 1.0e30_RKIND
-    
-    do iCell = 1, nCells
-
-       forcingField % data(iCell,slot) = arrayPOP(POPindxi(iCell),POPindxj(iCell))
-
-       !write(*,*) iCell, POPindxi(iCell),POPindxj(iCell)
-
-    enddo ! iCell
-
-    deallocate(arrayPOP)
-
-  end subroutine read_data_binaryPOP!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  read_data_binaryMPAS
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine read_data_binaryMPAS(&
-       mesh, &
-       forcingDirectory, &
-       forcingField, &
-       slot, &
-       desiredYear, &
-       desiredRecordNumber, &
-       position)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-
-    character(len=*), intent(in) :: &
-         forcingDirectory !< Input: 
-
-    type (forcing_field), intent(inout) :: &
-         forcingField !< Input/Output: 
-
-    integer, intent(in) :: &
-         slot, &                !< Input: 
-         desiredYear, &         !< Input: 
-         desiredRecordNumber, & !< Input: 
-         position               !< Input: 
-
-    character(len=404) :: &
-         filename
-
-    integer :: &
-         recordLength, &
-         usedRecordNumber
-
-    logical :: &
-         lexist
-
-integer :: i
-
-    recordLength = forcingField % ndata * 8
-
-    usedRecordNumber = desiredRecordNumber
-
-    call get_filename(&
-         filename, &
-         usedRecordNumber, &
-         forcingDirectory, &
-         forcingField, &
-         desiredYear, &
-         position)
-
-    open(55,file=trim(filename),form='unformatted',access='direct',recl=recordLength,action='read',status='old')
-
-    read(55,rec=usedRecordNumber) forcingField % data(:,slot)
-
-    !do i = 1, size(forcingField % data(:,slot),1)
-    !   write(*,*) i, forcingField % data(i,slot)
-    !enddo ! i
-! stop
-    close(55)
-
-  end subroutine read_data_binaryMPAS!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  get_filename
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine get_filename(&
-       filename, &
-       usedRecordNumber, &
-       forcingDirectory, &
-       forcingField, &
-       desiredYear, &
-       position)!{{{
-
-    character(len=*), intent(out) :: &
-         filename !< Output: 
-
-    integer, intent(out) :: &
-         usedRecordNumber !< Output: 
-
-    character(len=*), intent(in) :: &
-         forcingDirectory !< Input: 
-
-    type (forcing_field), intent(in) :: &
-         forcingField !< Input: 
-
-    integer, intent(in) :: &
-         desiredYear !< Input: 
-
-    integer, intent(in) :: &
-         position !< Input: 
-
-    logical :: &
-         lexist
-
-    write(filename,fmt='(a,a,a,i4.4,a)') trim(forcingDirectory), trim(forcingField % filenameDirectory), trim(forcingField % filenamePrefix), desiredYear, trim(forcingField % filenameSuffix)
-
-    inquire(file=trim(filename),exist=lexist)
-
-    if (.not. lexist) then
-
-       if (forcingField % forcingType == "interval") then
-          
-          if (position == 1) then
-
-             write(filename,fmt='(a,a,a,i4.4,a)') trim(forcingDirectory), trim(forcingField % filenameDirectory), trim(forcingField % filenamePrefix), desiredYear+1, trim(forcingField % filenameSuffix)
-             
-             usedRecordNumber = 1
-
-          else if (position == 2) then
-
-             write(filename,fmt='(a,a,a,i4.4,a)') trim(forcingDirectory), trim(forcingField % filenameDirectory), trim(forcingField % filenamePrefix), desiredYear-1, trim(forcingField % filenameSuffix)
-
-             usedRecordNumber = forcingField % pointsPerYear
-
-          endif
-
-       else if (forcingField % forcingType == "monthly") then
-
-          if (position == 1) then
-
-             write(filename,fmt='(a,a,a,i4.4,a)') trim(forcingDirectory), trim(forcingField % filenameDirectory), trim(forcingField % filenamePrefix), desiredYear+1, trim(forcingField % filenameSuffix)
-             
-             usedRecordNumber = forcingField % pointsPerYear
-
-          else if (position == 2) then
-
-             write(filename,fmt='(a,a,a,i4.4,a)') trim(forcingDirectory), trim(forcingField % filenameDirectory), trim(forcingField % filenamePrefix), desiredYear-1, trim(forcingField % filenameSuffix)
-
-             usedRecordNumber = 1
-
-          endif
-
-       endif
-
-    endif
-
-  end subroutine get_filename!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  POPiCell
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  function POPiCell(&
-       mesh, &
-       i, &
-       j) &
-       result(iCellOut)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-    
-    integer, intent(in) :: &
-         i, & !< Input: 
-         j    !< Input: 
-
-    integer :: &
-         iCellOut
-
-    integer :: &
-         iCell
-
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         POPindxi, &
-         POPindxj
-
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
-    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
-
-    iCellOut = -1
-
-    do iCell = 1, nCells
-
-       if (POPindxi(iCell) == i .and. POPindxj(iCell) == j) then
-
-          iCellOut = iCell
-          exit
-
-       endif
-
-    enddo ! iCell
-
-  end function POPiCell!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  rotate_vector_POP_to_cartesian
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine rotate_vector_POP_to_cartesian(&
-       uArrayCartesian, &
-       vArrayCartesian, &
-       uArrayPOP, &
-       vArrayPOP, &
-       uPOPAlongGridVector, &
-       vPOPAlongGridVector)!{{{
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         uArrayCartesian, & !< Output: 
-         vArrayCartesian    !< Output: 
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uArrayPOP, & !< Input: 
-         vArrayPOP    !< Input: 
-
-    real(kind=RKIND), dimension(:,:), intent(in) :: &
-         uPOPAlongGridVector, & !< Input: 
-         vPOPAlongGridVector    !< Input: 
-
-    integer :: &
-         nPoints, &
-         iPoint
-
-    nPoints = size(uArrayCartesian)
-
-    do iPoint = 1, nPoints
-
-       uArrayCartesian(iPoint) = uArrayPOP(iPoint) * uPOPAlongGridVector(1,iPoint) + &
-                                 vArrayPOP(iPoint) * vPOPAlongGridVector(1,iPoint)
-       vArrayCartesian(iPoint) = uArrayPOP(iPoint) * uPOPAlongGridVector(2,iPoint) + &
-                                 vArrayPOP(iPoint) * vPOPAlongGridVector(2,iPoint)
-
-    enddo ! iPoint
-
-  end subroutine rotate_vector_POP_to_cartesian!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  POP_grid_basis 
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine POP_grid_basis(&
-       mesh, &
-       uPOPAlongGridVector, &
-       vPOPAlongGridVector)!{{{
-
-    use cice_mesh, only: &
-         cice_grid_rotation_forward, &
-         cice_dot_product_3space
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
-         uPOPAlongGridVector, & !< Output: 
-         vPOPAlongGridVector    !< Output: 
-
-    real(kind=RKIND) :: &
-         xCell0, &
-         yCell0, &
-         zCell0, &
-         xEdge1, &
-         yEdge1, &
-         zEdge1, &
-         xEdge2, &
-         yEdge2, &
-         zEdge2
-
-    real(kind=RKIND), dimension(3) :: &
-         eastwardsVector, &
-         uVector, &
-         vVector
-
-    integer :: &
-         iCell, &
-         iPOPCell, &
-         jPOPCell, &
-         iEdgeOnCell, &
-         iCellAdjacent, &
-         iPOPAdjacent, &
-         jPOPAdjacent, &
-         iEdgeOnCellU2, &
-         iEdgeOnCellU1, &
-         iEdgeOnCellV2, &
-         iEdgeOnCellV1, &
-         iEdgeU2, &
-         iEdgeU1, &
-         iEdgeV2, &
-         iEdgeV1
-
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         POPindxi, &
-         POPindxj, &
-         nEdgesOnCell
-
-    integer, dimension(:,:), pointer :: &
-         cellsOnCell, &
-         edgesOnCell
+    type (mpas_pool_type), pointer :: &
+         mesh, &
+         ocean_coupling
 
     real(kind=RKIND), dimension(:), pointer :: &
-         xCell, &
-         yCell, &
-         zCell, &
-         xEdge, &
-         yEdge, &
-         zEdge
+         seaSurfaceTemperature, &
+         seaSurfaceSalinity, &
+         oceanMixedLayerDepth, &
+         seaFreezingTemperature
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
-    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
-    call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
-
-    call MPAS_pool_get_array(mesh, "xCell", xCell)
-    call MPAS_pool_get_array(mesh, "yCell", yCell)
-    call MPAS_pool_get_array(mesh, "zCell", zCell)
-    call MPAS_pool_get_array(mesh, "xEdge", xEdge)
-    call MPAS_pool_get_array(mesh, "yEdge", yEdge)
-    call MPAS_pool_get_array(mesh, "zEdge", zEdge)
-
-    do iCell = 1, nCells
-
-       ! eastwards vector
-       call cice_grid_rotation_forward(&
-            xCell0,       yCell0,       zCell0, &
-            xCell(iCell), yCell(iCell), zCell(iCell), &
-            .true.)
-
-       eastwardsVector(1) = -yCell0
-       eastwardsVector(2) =  xCell0
-       eastwardsVector(3) = 0.0_RKIND
-       eastwardsVector = eastwardsVector / &
-                         sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
-
-       ! cell location in POP coordinates
-       iPOPCell = POPindxi(iCell)
-       jPOPCell = POPindxj(iCell)       
-
-       iEdgeOnCellU2 = -1
-       iEdgeOnCellU1 = -1
-       iEdgeOnCellV2 = -1
-       iEdgeOnCellV1 = -1
-
-       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-
-          iCellAdjacent = cellsOnCell(iEdgeOnCell,iCell)
-
-          if (iCellAdjacent < nCells + 1) then
-
-             iPOPAdjacent = POPindxi(iCellAdjacent)
-             jPOPAdjacent = POPindxj(iCellAdjacent)
-
-             if (iPOPAdjacent == iPOPCell+1 .and. jPOPAdjacent == jPOPCell) then
-                
-                iEdgeOnCellU2 = iEdgeOnCell
-                iEdgeOnCellU1 = iEdgeOnCell + 2
-                iEdgeOnCellV2 = iEdgeOnCell + 1
-                iEdgeOnCellV1 = iEdgeOnCell + 3
-                exit
-
-             else if (iPOPAdjacent == iPOPCell .and. jPOPAdjacent == jPOPCell+1) then
-
-                iEdgeOnCellU2 = iEdgeOnCell + 3
-                iEdgeOnCellU1 = iEdgeOnCell + 1
-                iEdgeOnCellV2 = iEdgeOnCell
-                iEdgeOnCellV1 = iEdgeOnCell + 2
-                exit
-
-             else if (iPOPAdjacent == iPOPCell-1 .and. jPOPAdjacent == jPOPCell) then
-
-                iEdgeOnCellU2 = iEdgeOnCell + 2
-                iEdgeOnCellU1 = iEdgeOnCell
-                iEdgeOnCellV2 = iEdgeOnCell + 3
-                iEdgeOnCellV1 = iEdgeOnCell + 1
-                exit
-
-             else if (iPOPAdjacent == iPOPCell .and. jPOPAdjacent == jPOPCell-1) then
-
-                iEdgeOnCellU2 = iEdgeOnCell + 1
-                iEdgeOnCellU1 = iEdgeOnCell + 3
-                iEdgeOnCellV2 = iEdgeOnCell + 2
-                iEdgeOnCellV1 = iEdgeOnCell
-                exit
-
-             endif
-
-          endif ! iCellAdjacent exists
-
-       enddo ! iEdgeOnCell
-
-       if (iEdgeOnCellU2 > nEdgesOnCell(iCell)) iEdgeOnCellU2 = iEdgeOnCellU2 - nEdgesOnCell(iCell)
-       if (iEdgeOnCellU1 > nEdgesOnCell(iCell)) iEdgeOnCellU1 = iEdgeOnCellU1 - nEdgesOnCell(iCell)
-       if (iEdgeOnCellV2 > nEdgesOnCell(iCell)) iEdgeOnCellV2 = iEdgeOnCellV2 - nEdgesOnCell(iCell)
-       if (iEdgeOnCellV1 > nEdgesOnCell(iCell)) iEdgeOnCellV1 = iEdgeOnCellV1 - nEdgesOnCell(iCell)
-
-       if (iEdgeOnCellU2 == -1 .or. iEdgeOnCellU1 == -1 .or. iEdgeOnCellV2 == -1 .or. iEdgeOnCellV1 == -1) then
-
-          write(*,*) "POP_grid_basis failure!"
-          write(*,*) iEdgeOnCellU2, iEdgeOnCellU1, iEdgeOnCellV2, iEdgeOnCellV1
-          stop
-
-       endif
-
-       iEdgeU2 = edgesOnCell(iEdgeOnCellU2,iCell)
-       iEdgeU1 = edgesOnCell(iEdgeOnCellU1,iCell)
-       iEdgeV2 = edgesOnCell(iEdgeOnCellV2,iCell)
-       iEdgeV1 = edgesOnCell(iEdgeOnCellV1,iCell)
-
-       !write(*,*) iCell, iEdgeOnCellU2, iEdgeOnCellU1, iEdgeOnCellV2, iEdgeOnCellV1, &
-       !           iEdgeU2, iEdgeU1, iEdgeV2, iEdgeV1
-       
-       ! U vector
-       call cice_grid_rotation_forward(&
-            xEdge2,         yEdge2,         zEdge2, &
-            xEdge(iEdgeU2), yEdge(iEdgeU2), zEdge(iEdgeU2), &
-            .true.)
-       
-       call cice_grid_rotation_forward(&
-            xEdge1,         yEdge1,         zEdge1, &
-            xEdge(iEdgeU1), yEdge(iEdgeU1), zEdge(iEdgeU1), &
-            .true.)
-       
-       uVector(1) = xEdge2 - xEdge1
-       uVector(2) = yEdge2 - yEdge1
-       uVector(3) = zEdge2 - zEdge1
-       uVector = uVector / sqrt(uVector(1)**2 + uVector(2)**2 + uVector(3)**2)
-
-       call cice_dot_product_3space(&
-            uPOPAlongGridVector(1,iCell), &
-            uVector(1),         uVector(2),         uVector(3), &
-            eastwardsVector(1), eastwardsVector(2), eastwardsVector(3)) 
-
-       uPOPAlongGridVector(2,iCell) = sign(1.0_RKIND,uVector(3))&
-                                    * sqrt(1.0_RKIND - min(uPOPAlongGridVector(1,iCell),1.0_RKIND)**2)
-
-       !write(*,*) iCell, uPOPAlongGridVector(1,iCell), uPOPAlongGridVector(2,iCell)
-       
-       ! V vector
-       call cice_grid_rotation_forward(&
-            xEdge2,         yEdge2,         zEdge2, &
-            xEdge(iEdgeV2), yEdge(iEdgeV2), zEdge(iEdgeV2), &
-            .true.)
-       
-       call cice_grid_rotation_forward(&
-            xEdge1,         yEdge1,         zEdge1, &
-            xEdge(iEdgeV1), yEdge(iEdgeV1), zEdge(iEdgeV1), &
-            .true.)
-       
-       vVector(1) = xEdge2 - xEdge1
-       vVector(2) = yEdge2 - yEdge1
-       vVector(3) = zEdge2 - zEdge1
-       vVector = vVector / sqrt(vVector(1)**2 + vVector(2)**2 + vVector(3)**2)
-
-       call cice_dot_product_3space(&
-            vPOPAlongGridVector(1,iCell), &
-            vVector(1),         vVector(2),         vVector(3), &
-            eastwardsVector(1), eastwardsVector(2), eastwardsVector(3)) 
-
-       vPOPAlongGridVector(2,iCell) = sign(1.0_RKIND,vVector(3))&
-                                    * sqrt(1.0_RKIND - min(vPOPAlongGridVector(1,iCell),1.0_RKIND)**2)
-
-    enddo ! iCell
-
-    !stop
-
-  end subroutine POP_grid_basis!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  forcing_file_comparison
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine forcing_file_comparison(mesh)!{{{
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input: 
-
-    ! POP input
-    character(len=200), parameter :: filein_POP = &
-!         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10.1997.dat'
-         '/Users/akt/Work/Forcing/gx1/4XDAILY/v_10.2000.dat'
-
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         array_POP
-
-
-    ! MPAS input
-    character(len=200), parameter :: filein_MPAS = &
-!         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10_mpas.1997.dat'
-         '/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/perform_remap/gx1/v_10.2000.dat'
-
-    real(kind=RKIND), dimension(:), allocatable :: &
-         array_MPAS
-
-    ! comparison
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         array_POP_out, &
-         array_MPAS_out, &
-         array_comp
-
-    integer :: &
-         iCell, &
-         i, &
-         j, &
-         recl
+    logical, pointer :: &
+         config_do_restart
 
     integer, pointer :: &
-         POP_nx, &
-         POP_ny, &
          nCells
 
-    integer, dimension(:), pointer :: &
-         POPindxi, &
-         POPindxj
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh) 
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
-    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
-    call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
-    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
-    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
+    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
+    call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
+    call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
-    allocate(array_POP(POP_nx, POP_ny))
-    allocate(array_MPAS(nCells))
-    allocate(array_POP_out(POP_nx, POP_ny))
-    allocate(array_MPAS_out(POP_nx, POP_ny))
-    allocate(array_comp(POP_nx, POP_ny))
-
-    ! read in POP data
-    recl = 8 * POP_nx * POP_ny
-
-    open(55,file=trim(filein_POP),form="unformatted",access="direct",recl=recl)
-
-    read(55,rec=1) array_POP
-
-    close(55)
-
-    ! read in MPAS data
-    recl = 8 * nCells
-
-    open(55,file=trim(filein_MPAS),form="unformatted",access="direct",recl=recl)
-
-    read(55,rec=1) array_MPAS
-
-    close(55)
-
-    ! convert inputs
-    array_POP_out  = 0.0_RKIND
-    array_MPAS_out = 0.0_RKIND
-    
     do iCell = 1, nCells
 
-       i = POPindxi(iCell)
-       j = POPindxj(iCell)
-       
-       array_POP_out(i,j)  = array_POP(i,j)
-       array_MPAS_out(i,j) = array_MPAS(iCell)
+       ! ensure physical realism
+       seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
+       oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
 
-       !write(*,*) iCell, i, j
+       ! ocean freezing temperature
+       seaFreezingTemperature(iCell) = colpkg_liquidus_temperature(seaSurfaceSalinity(iCell)) !!!AKT!!! use correct one
 
     enddo ! iCell
 
-    ! compare
-    array_comp = 0.0_RKIND
-
-    do j = 1, POP_ny
-    do i = 1, POP_nx
-
-       array_comp(i,j) = array_MPAS_out(i,j) - array_POP_out(i,j)
-
-    enddo ! i
-    enddo ! j
-
-    ! output
-    open(55,file="comp_POP.txt")
-    open(56,file="comp_MPAS.txt")
-    open(57,file="comp_MPAS-POP.txt")
-
-    do j = 1, POP_ny
-    do i = 1, POP_nx
-
-       write(55,*) i, i+1, j, j+1, array_POP_out(i,j)
-       write(56,*) i, i+1, j, j+1, array_MPAS_out(i,j)
-       write(57,*) i, i+1, j, j+1, array_comp(i,j)
-
-    enddo ! i
-    enddo ! j
-
-    close(55)
-    close(56)
-    close(57)
-
-    deallocate(array_POP)
-    deallocate(array_MPAS)
-    deallocate(array_POP_out)
-    deallocate(array_MPAS_out)
-    deallocate(array_comp)
-
-  end subroutine forcing_file_comparison!}}}
-
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  convert_pop_forcing_to_mpas
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date July 16th, 2014
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-  
-  subroutine cice_convert_pop_forcing_to_mpas(block)
-
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
-
-    type(MPAS_pool_type), pointer :: mesh
-
-    ! 6 hourly
-    !character(len=1000), parameter :: &
-    !     filein  = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/v_10.1997.dat", &
-    !     fileout = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/v_10_mpas.1997.dat"
-
-    ! radiation - monthly climatology
-    !character(len=1000), parameter :: &
-    !     filein  = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/ISCCPM/MONTHLY/RADFLX/swdn.1997.dat", &
-    !     fileout = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/ISCCPM/MONTHLY/RADFLX/swdn_mpas.1997.dat"
-
-    ! precipitation - monthly climatology
-    character(len=1000), parameter :: &
-         filein  = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/MXA/MONTHLY/PRECIP/prec.1997.dat", &
-         fileout = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/MXA/MONTHLY/PRECIP/prec_mpas.1997.dat"
-
-    !integer, parameter :: nTimes = 1460
-    integer, parameter :: nTimes = 12
-
-    real(kind=RKIND), dimension(:,:), allocatable :: input_array
-    real(kind=RKIND), dimension(:), allocatable :: output_array
-
-    integer :: &
-         iTime
-
-    integer, pointer :: &
-         nCells, &
-         POP_nx, &
-         POP_ny
-
-    integer :: &
-         iCell, &
-         reclPOP, &
-         reclMPAS
-
-    integer, dimension(:), pointer :: &
-         POPindxi, &
-         POPindxj
-
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-    call MPAS_pool_get_dimension(mesh, "POP_nx", POP_nx)
-    call MPAS_pool_get_dimension(mesh, "POP_ny", POP_ny)
-
-    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
-    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
-
-    allocate(input_array(POP_nx,POP_ny))
-    allocate(output_array(nCells))
-
-    reclPOP  = POP_nx * POP_ny * 8
-    reclMPAS = nCells * 8
-
-    open(55,file=trim(filein),action="read",access='direct',recl=reclPOP,form="unformatted")
-    open(56,file=trim(fileout),action="write",access='direct',recl=reclMPAS,form="unformatted")
-
-    do iTime = 1, nTimes
-       read(55,rec=iTime) input_array
+    ! only update sea surface temperature on first non-restart timestep
+    if (firstTimeStep .and. .not. config_do_restart) then
 
        do iCell = 1, nCells
-          
-          output_array(iCell) = input_array(POPindxi(iCell),POPindxj(iCell))
+
+          ! sea surface temperature
+          seaSurfaceTemperature(iCell) = max(seaSurfaceTemperature(iCell), seaFreezingTemperature(iCell))
 
        enddo ! iCell
 
-       write(56,rec=iTime) output_array
-    enddo ! iTime
+    endif
 
-    close(55)
-    close(56)
+  end subroutine prepare_oceanic_coupling_variables_ncar
 
-    deallocate(input_array)
-    deallocate(output_array)
+!-----------------------------------------------------------------------
+! variable initialzation
+!-----------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
-    stop
+  subroutine init_forcing_coupling_variables(domain)
+    
+    !use ice_colpkg, only: &
+    !     colpkg_liquidus_temperature
+    
+    type(domain_type) :: domain
 
-  end subroutine cice_convert_pop_forcing_to_mpas
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         atmosCoupling, &
+         atmosForcing, &
+         oceanCoupling, &
+         oceanForcing
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         seaSurfaceTemperature, &
+         seaSurfaceSalinity, &
+         seaFreezingTemperature
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)    
+       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
+       call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
+       call MPAS_pool_get_subpool(block % structs, "ocean_forcing", oceanForcing)
+       
+       call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+       call MPAS_pool_get_array(oceanCoupling, "seaSurfaceTemperature", seaSurfaceTemperature)
+       call MPAS_pool_get_array(oceanCoupling, "seaSurfaceSalinity", seaSurfaceSalinity)
+       call MPAS_pool_get_array(oceanCoupling, "seaFreezingTemperature", seaFreezingTemperature)
+
+       do iCell = 1, nCells
+
+          !-----------------------------------------------------------------------
+          ! ocean state
+          !-----------------------------------------------------------------------
+
+          seaSurfaceSalinity(iCell) = 34.0_RKIND
+          seaFreezingTemperature(iCell) = colpkg_liquidus_temperature(seaSurfaceSalinity(iCell))
+          seaSurfaceTemperature(iCell) = seaFreezingTemperature(iCell)
+
+       enddo ! iCell
+
+       block => block % next
+    end do    
+
+  end subroutine init_forcing_coupling_variables
+
+  !!!!!AKT!!!!! replace with colpkg version
+  function colpkg_liquidus_temperature(Sbr) result(zTin)
+    
+    real(kind=RKIND), intent(in) :: Sbr
+    real(kind=RKIND) :: zTin
+
+    real(kind=RKIND) :: &
+         t_high ! mask for high temperature liquidus region
+
+    real(kind=RKIND), parameter :: &
+         c1000 = 1000.0_RKIND
+
+    ! liquidus relation - higher temperature region
+    real(kind=RKIND), parameter :: &
+         az1_liq = -18.48_RKIND, &
+         bz1_liq =    0.0_RKIND
+
+    ! liquidus relation - lower temperature region
+    real(kind=RKIND), parameter :: &
+         az2_liq = -10.3085_RKIND, &
+         bz2_liq =     62.4_RKIND
+
+    ! liquidus break
+    real(kind=RKIND), parameter :: &
+         Tb_liq = -7.6362968855167352_RKIND, & ! temperature of liquidus break
+         Sb_liq =  123.66702800276086_RKIND    ! salinity of liquidus break
+
+    ! basic liquidus relation constants
+    real(kind=RKIND), parameter :: &
+         az1p_liq = az1_liq / c1000, &
+         bz1p_liq = bz1_liq / c1000, &
+         az2p_liq = az2_liq / c1000, &
+         bz2p_liq = bz2_liq / c1000
+
+    ! brine salinity to temperature
+    real(kind=RKIND), parameter :: &
+         M1_liq = az1_liq            , &
+         N1_liq = -az1p_liq          , &
+         O1_liq = -bz1_liq / az1_liq , &
+         M2_liq = az2_liq            , &
+         N2_liq = -az2p_liq          , &
+         O2_liq = -bz2_liq / az2_liq
+
+    t_high = merge(1.0_RKIND, 0.0_RKIND, (Sbr <= Sb_liq))
+
+    zTin = ((Sbr / (M1_liq + N1_liq * Sbr)) + O1_liq) * t_high + &
+           ((Sbr / (M2_liq + N2_liq * Sbr)) + O2_liq) * (1.0_RKIND - t_high)
+
+  end function colpkg_liquidus_temperature
+  
+!-----------------------------------------------------------------------
+! restart
+!-----------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_forcing_write_restart(domain)
+
+    type(domain_type) :: domain
+
+    character(len=strKIND), pointer :: &
+         config_forcing_restart_file
+
+    call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
+
+    call MPAS_forcing_write_restart_times(ciceForcingGroups, config_forcing_restart_file)
+    
+  end subroutine cice_forcing_write_restart
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine forcing_testing(block)
+
+    use cice_debug, only: cice_debug_output_array
+
+    type(block_type) :: block
+
+    type(MPAS_pool_type), pointer :: pool
+
+    real(kind=RKIND), dimension(:), pointer :: array
+
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", pool)
+    
+    call MPAS_pool_get_array(pool, "seaSurfaceTemperature", array)
+
+    call cice_debug_output_array(array)
+
+  end subroutine forcing_testing
 
 !-----------------------------------------------------------------------
 

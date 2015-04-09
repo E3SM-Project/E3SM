@@ -11,9 +11,9 @@ module mpas_core
    contains
 
 
-   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)
+   subroutine mpas_core_init(domain, startTimeStamp)
    
-      use mpas_grid_types
+      use mpas_derived_types
       use mpas_stream_manager
       use mpas_io_streams, only : MPAS_STREAM_NEAREST
       use mpas_configure
@@ -22,7 +22,6 @@ module mpas_core
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
 
       type (block_type), pointer :: block
@@ -49,23 +48,23 @@ module mpas_core
          block => block % next
       end do 
 
-      call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius, streamID='output', ierr=ierr)
-      call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius, streamID='surface', ierr=ierr)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius, streamID='output', ierr=ierr)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius, streamID='surface', ierr=ierr)
 
       !
       ! We don't actually expect the time in the (most likely 'static') file to
       !    match the time in the namelist, so just read whatever time we find in
       !    the input file.
       !
-      call MPAS_stream_mgr_read(stream_manager, whence=MPAS_STREAM_NEAREST, ierr=ierr)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+      call MPAS_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_NEAREST, ierr=ierr)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
    end subroutine mpas_core_init
    
    
-   subroutine mpas_core_run(domain, stream_manager)
+   subroutine mpas_core_run(domain)
    
-      use mpas_grid_types
+      use mpas_derived_types
       use mpas_stream_manager
       use mpas_timer
       use init_atm_cases
@@ -73,11 +72,10 @@ module mpas_core
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
    
       integer :: ierr
       
-      call init_atm_setup_case(domain, stream_manager)
+      call init_atm_setup_case(domain, domain % streamManager)
    
    !
    ! Note: The following initialization calls have been moved to the mpas_init_atm_case_*() subroutines,
@@ -86,29 +84,31 @@ module mpas_core
    !   call atm_initialize_advection_rk(mesh)
    !   call atm_initialize_deformation_weights(mesh)
   
-      call mpas_stream_mgr_write(stream_manager, streamID='output', ierr=ierr)
-      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+      call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
    
    end subroutine mpas_core_run
    
    
-   subroutine mpas_core_finalize(domain, stream_manager)
+   subroutine mpas_core_finalize(domain)
    
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_decomp
       use mpas_stream_manager
    
       implicit none
    
       type (domain_type), intent(inout) :: domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
+
+      call mpas_decomp_destroy_decomp_list(domain % decompositions)
    
    end subroutine mpas_core_finalize
 
 
    subroutine mpas_core_setup_packages(configs, packages, ierr)
 
-      use mpas_packages
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
 
       implicit none
 
@@ -116,13 +116,16 @@ module mpas_core
       type (mpas_pool_type), intent(inout) :: packages
       integer, intent(out) :: ierr
 
-      logical, pointer :: initial_conds, sfc_update
+      logical, pointer :: initial_conds, sfc_update, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out
+      logical, pointer :: config_static_interp, config_vertical_grid, config_met_interp
       integer, pointer :: config_init_case
 
       ierr = 0
 
-      nullify(config_init_case)
       call mpas_pool_get_config(configs, 'config_init_case', config_init_case)
+      call mpas_pool_get_config(configs, 'config_static_interp', config_static_interp)
+      call mpas_pool_get_config(configs, 'config_vertical_grid', config_vertical_grid)
+      call mpas_pool_get_config(configs, 'config_met_interp', config_met_interp)
 
       nullify(initial_conds)
       call mpas_pool_get_package(packages, 'initial_condsActive', initial_conds)
@@ -130,9 +133,24 @@ module mpas_core
       nullify(sfc_update)
       call mpas_pool_get_package(packages, 'sfc_updateActive', sfc_update)
 
-      if (.not. associated(config_init_case) .or. &
-          .not. associated(initial_conds) .or. &
-          .not. associated(sfc_update)) then
+      nullify(vertical_stage_in)
+      call mpas_pool_get_package(packages, 'vertical_stage_inActive', vertical_stage_in)
+
+      nullify(vertical_stage_out)
+      call mpas_pool_get_package(packages, 'vertical_stage_outActive', vertical_stage_out)
+
+      nullify(met_stage_in)
+      call mpas_pool_get_package(packages, 'met_stage_inActive', met_stage_in)
+
+      nullify(met_stage_out)
+      call mpas_pool_get_package(packages, 'met_stage_outActive', met_stage_out)
+
+      if (.not. associated(initial_conds) .or. &
+          .not. associated(sfc_update) .or. &
+          .not. associated(vertical_stage_in) .or. &
+          .not. associated(vertical_stage_out) .or. &
+          .not. associated(met_stage_in) .or. &
+          .not. associated(met_stage_out)) then
          write(stderrUnit,*) '********************************************************************************'
          write(stderrUnit,*) '* Error while setting up packages for init_atmosphere core.'
          write(stderrUnit,*) '********************************************************************************'
@@ -148,6 +166,18 @@ module mpas_core
          sfc_update = .false.
       end if
 
+      if (config_init_case == 7) then
+         vertical_stage_in = (config_vertical_grid .and. .not.  config_static_interp)
+         vertical_stage_out = (config_vertical_grid .and. .not.  config_met_interp)
+         met_stage_in = (config_met_interp .and. .not. config_vertical_grid)
+         met_stage_out = config_met_interp
+      else
+         vertical_stage_in = .false.
+         vertical_stage_out = .false.
+         met_stage_in = .false.
+         met_stage_out = .true.
+      end if
+
    end subroutine mpas_core_setup_packages
 
 
@@ -156,7 +186,7 @@ module mpas_core
    !
    !  routine mpas_core_setup_clock
    !
-   !> \brief   Pacakge setup routine
+   !> \brief   Sets up the simulation clock before the start of a run
    !> \author  Michael Duda
    !> \date    6 August 2014
    !> \details 
@@ -171,9 +201,9 @@ module mpas_core
    !-----------------------------------------------------------------------
    subroutine mpas_core_setup_clock(core_clock, configs, ierr)
 
-      use mpas_timekeeping, only : MPAS_Clock_type, MPAS_Time_type, MPAS_Timeinterval_type, &
-                                   mpas_set_time, mpas_set_timeInterval, mpas_create_clock
-      use mpas_grid_types, only : mpas_pool_type, mpas_pool_get_config
+      use mpas_timekeeping, only : mpas_set_time, mpas_set_timeInterval, mpas_create_clock
+      use mpas_derived_types, only : MPAS_Clock_type, MPAS_Time_type, MPAS_Timeinterval_type, mpas_pool_type
+      use mpas_pool_routines, only : mpas_pool_get_config
       use mpas_kind_types, only : StrKIND
 
       implicit none
@@ -188,6 +218,8 @@ module mpas_core
       type (MPAS_Time_type)         :: start_time, stop_time
       type (MPAS_TimeInterval_type) :: dt
 
+
+      ierr = 0
 
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
@@ -217,7 +249,8 @@ module mpas_core
    !-----------------------------------------------------------------------
    subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
-      use mpas_grid_types, only : mpas_pool_type, mpas_pool_get_config
+      use mpas_derived_types, only : mpas_pool_type
+      use mpas_pool_routines, only : mpas_pool_get_config
 
       implicit none
 
@@ -231,5 +264,41 @@ module mpas_core
       write(stream,'(a)') 'input'
 
    end subroutine mpas_core_get_mesh_stream
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_decompositions
+   !
+   !> \brief   Decomposition setup routine
+   !> \author  Doug Jacobsen
+   !> \date    September 2011
+   !> \details 
+   !>  This routine is intended to create the decomposition list within a
+   !>  domain type, and register any decompositons the core wants within it.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_setup_decompositions(domain, ierr)
+
+      use mpas_derived_types
+      use mpas_decomp
+
+      implicit none
+
+      type (domain_type), intent(in) :: domain
+
+      integer, intent(out) :: ierr
+      procedure (mpas_decomp_function), pointer :: decompFunc
+
+      ierr = 0
+
+      call mpas_decomp_create_decomp_list(domain % decompositions)
+
+      decompFunc => mpas_uniform_decomp
+
+      call mpas_decomp_register_method(domain % decompositions, 'uniform', decompFunc, iErr)
+
+   end subroutine mpas_core_setup_decompositions
+
    
 end module mpas_core

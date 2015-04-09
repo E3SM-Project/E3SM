@@ -12,7 +12,7 @@
 
 module cice_numerics
 
-  use mpas_grid_types
+  use mpas_derived_types
 
   implicit none
 

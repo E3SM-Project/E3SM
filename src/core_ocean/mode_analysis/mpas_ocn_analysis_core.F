@@ -57,15 +57,15 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)!{{{
+   subroutine mpas_core_init(domain, startTimeStamp)!{{{
 
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_stream_manager
 
       implicit none
 
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
 
       type (block_type), pointer :: block
@@ -74,12 +74,14 @@ module mpas_core
 
       integer :: err, err_tmp
 
+      type (MPAS_timeInterval_type) :: timeStep
+
       ! remove dt later
       real (kind=RKIND) :: dt
-      real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
 
+      err = 0
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
@@ -95,13 +97,12 @@ module mpas_core
 
       ! Setup ocean config pool
       call ocn_constants_init(domain % configs, domain % packages)
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
       !
       ! Read input data for model
       !
-      call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=err)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
+      call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err)
 
       dminfo = domain % dminfo
       err = 0
@@ -117,7 +118,8 @@ module mpas_core
 
       call ocn_compute_max_level(domain)
 
-      dt = config_dt
+      timeStep = mpas_get_clock_timestep(clock, ierr=err_tmp)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       block => domain % blocklist
       do while (associated(block))
@@ -161,9 +163,7 @@ module mpas_core
       integer :: err_tmp
       character (len=StrKIND), pointer :: config_start_time, config_stop_time
       character (len=StrKIND), pointer :: config_run_duration
-      character (len=StrKIND), pointer :: config_stats_interval
-      real(kind=RKIND), pointer :: config_dt
-
+      character (len=StrKIND), pointer :: config_stats_interval, config_dt, config_restart_timestamp_name
 
       ierr = 0
 
@@ -172,10 +172,18 @@ module mpas_core
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
       call mpas_pool_get_config(configs, 'config_stats_interval', config_stats_interval)
+      call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
-      call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+      if ( trim(config_start_time) == "file" ) then
+         open(22,file=config_restart_timestamp_name,form='formatted',status='old')
+         read(22,*) restartTimeStamp
+         close(22)
+         call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=err_tmp)
+      else
+         call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+      end if
 
-      call mpas_set_timeInterval(timeStep, dt=config_dt, ierr=err_tmp)
+      call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       if (trim(config_run_duration) /= "none") then
          call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=err_tmp)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=err_tmp)
@@ -216,7 +224,8 @@ module mpas_core
 !-----------------------------------------------------------------------
    subroutine mpas_init_block(block, dt, err)!{{{
    
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_rbf_interpolation
       use mpas_vector_operations
       use mpas_vector_reconstruction
@@ -362,17 +371,17 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain, stream_manager)!{{{
+   subroutine mpas_core_run(domain)!{{{
    
       use mpas_kind_types
       use mpas_stream_manager
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_timer
    
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
    
       integer :: itimestep
       real (kind=RKIND) :: dt
@@ -388,13 +397,15 @@ module mpas_core
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: scratchPool
 
-      real (kind=RKIND), pointer :: config_dt
+      type (MPAS_timeInterval_type) :: timeStep
+      character (len=StrKIND), pointer :: config_dt
       logical, pointer :: config_write_output_on_startup
 
       call mpas_pool_get_config(ocnConfigs, 'config_dt', config_dt)
       call mpas_pool_get_config(ocnConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
    
-      dt = config_dt
+      timeStep = mpas_get_clock_timestep(clock, ierr=ierr)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
@@ -417,23 +428,24 @@ module mpas_core
 
       if (config_write_output_on_startup) then
          call ocn_analysis_compute(domain, err) 
-         call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       endif
 
    end subroutine mpas_core_run!}}}
    
-   subroutine mpas_core_finalize(domain, stream_manager)!{{{
+   subroutine mpas_core_finalize(domain)!{{{
    
-      use mpas_grid_types
-      use mpas_stream_manager
+      use mpas_derived_types
+      use mpas_decomp
    
       implicit none
 
       type (domain_type), intent(inout) :: domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       integer :: ierr
 
       call mpas_destroy_clock(clock, ierr)
+
+      call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
    end subroutine mpas_core_finalize!}}}
 
@@ -453,8 +465,6 @@ module mpas_core
 !-----------------------------------------------------------------------
    subroutine mpas_core_setup_packages(configPool, packagePool, ierr)!{{{
 
-      use mpas_packages
-
       implicit none
 
       type (mpas_pool_type), intent(in) :: configPool
@@ -470,6 +480,42 @@ module mpas_core
       ierr = ior(ierr, err_tmp)
 
    end subroutine mpas_core_setup_packages!}}}
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_decompositions
+   !
+   !> \brief   Decomposition setup routine
+   !> \author  Doug Jacobsen
+   !> \date    September 2011
+   !> \details 
+   !>  This routine is intended to create the decomposition list within a
+   !>  domain type, and register any decompositons the core wants within it.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_setup_decompositions(domain, ierr)!{{{
+
+      use mpas_derived_types
+      use mpas_decomp
+
+      implicit none
+
+      type (domain_type), intent(in) :: domain
+
+      integer, intent(out) :: ierr
+      procedure (mpas_decomp_function), pointer :: decompFunc
+
+      ierr = 0
+
+      call mpas_decomp_create_decomp_list(domain % decompositions)
+
+      decompFunc => mpas_uniform_decomp
+
+      call mpas_decomp_register_method(domain % decompositions, 'uniform', decompFunc, iErr)
+
+   end subroutine mpas_core_setup_decompositions!}}}
+
 
    !***********************************************************************
    !

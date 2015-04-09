@@ -26,6 +26,7 @@ module mpas_core
              mpas_core_finalize, &
              mpas_core_setup_packages, &
              mpas_core_setup_clock, &
+             mpas_core_setup_decompositions, &
              mpas_core_get_mesh_stream
 
    !--------------------------------------------------------------------
@@ -55,10 +56,11 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)
+   subroutine mpas_core_init(domain, startTimeStamp)
    
       use mpas_configure
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_stream_manager
       use li_velocity
       use li_setup
@@ -79,7 +81,6 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain  !< Input/output: Domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -124,15 +125,15 @@ module mpas_core
       err = ior(err, err_tmp)
 
       if (config_do_restart) then
-         call mpas_stream_mgr_read(stream_manager, streamID='restart', ierr=err_tmp)
+         call mpas_stream_mgr_read(domain % streamManager, streamID='restart', ierr=err_tmp)
       else
-         call mpas_stream_mgr_read(stream_manager, streamID='input', ierr=err_tmp)
+         call mpas_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
       end if
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err_tmp)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=err_tmp)
       err = ior(err, err_tmp)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err_tmp)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err_tmp)
       err = ior(err, err_tmp)
-      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
 
 
@@ -183,16 +184,16 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain, stream_manager)
+   subroutine mpas_core_run(domain)
    
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_timer
       use li_diagnostic_vars
       use li_setup
-!!!      use li_annual_forcing
-   
+
       implicit none
    
       !-----------------------------------------------------------------
@@ -207,7 +208,6 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain   !< Input/output: Domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -224,6 +224,7 @@ module mpas_core
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       logical, pointer :: config_do_restart, config_write_output_on_startup
+      character(len=StrKIND), pointer :: config_restart_timestamp_name
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
@@ -240,6 +241,7 @@ module mpas_core
       ! Get Pool stuff that will be needed
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(liConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
+      call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       call mpas_timer_start("land ice core run")
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
@@ -279,7 +281,7 @@ module mpas_core
       ! ===
       call mpas_timer_start("write output")
       if (config_write_output_on_startup) then
-         call mpas_stream_mgr_write(stream_manager, 'output', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=err_tmp)
       endif
       call mpas_timer_stop("write output")
 
@@ -321,15 +323,6 @@ module mpas_core
 
          !write(6,*) '  dt (s) = ', dtSeconds
 
-!!! These lines were used previously to assign annual forcing fields.  We may want to reassess how to do that.
-!!!         call mpas_timer_start("assign forcing fields")
-!!!         block_ptr => domain % blocklist
-!!!         do while(associated(block_ptr))
-!!!           call li_assign_annual_forcing(currTime, block_ptr % mesh, ierr)
-!!!           block_ptr => block_ptr % next
-!!!         end do
-!!!         call mpas_timer_stop("assign forcing fields")
-
 
          ! ===
          ! === Perform Timestep
@@ -349,16 +342,39 @@ module mpas_core
          call mpas_timer_stop("time integration")
 
 
-         !TODO: mpas_get_clock_ringing_alarms is probably faster than multiple mpas_is_alarm_ringing...
+         ! ===
+         ! === Read time-varying inputs, if present (i.e., forcing)
+         ! ===
+         ! This should happen at the end of the time step so that if we write out
+         ! the forcing it is at the correct time level.
+         ! For an explicit time-stepping method, we want the forcing to be at the
+         ! *old* time when it is applied during time integration.  Reading it here
+         ! will allow that.
+         ! Finally, set whence to latest_before so we have piecewise-constant forcing.
+         ! Could add, e.g., linear interpolation later.
+         call mpas_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+         err = ior(err, err_tmp)
+
 
          ! ===
          ! === Write Output and/or Restart, if needed
          ! ===
-
          call mpas_timer_start("write output")
-         call mpas_stream_mgr_write(stream_manager, ierr=err_tmp)
+         ! Update the restart_timestamp file with the new time, if needed.
+         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
+            write(22, *) timeStamp
+            close(22)
+         end if
          err = ior(err, err_tmp)
-         call mpas_stream_mgr_reset_alarms(stream_manager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+         ! These calls will handle ALL output streams that need writing.
+         ! [Could add them individually, as the ocean does, if some other actions are needed when a
+         ! specific alarm is ringing (e.g., global stats calculated only when output stream gets written)]
+         call mpas_stream_mgr_write(domain % streamManager, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
          call mpas_timer_stop("write output")
 
@@ -388,10 +404,10 @@ module mpas_core
 !>  This routine finalizes the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_core_finalize(domain, stream_manager)
+   subroutine mpas_core_finalize(domain)
    
-      use mpas_grid_types
-      use mpas_stream_manager
+      use mpas_derived_types
+      use mpas_decomp
       use li_velocity, only: li_velocity_finalize
    
       implicit none
@@ -408,7 +424,6 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain    !< Input/output: Domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -432,6 +447,8 @@ module mpas_core
 
       call mpas_destroy_clock(clock, err_tmp)
       err = ior(err, err_tmp)
+
+      call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -540,6 +557,40 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
    end subroutine mpas_core_get_mesh_stream
 
 
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_decompositions
+   !
+   !> \brief   Decomposition setup routine
+   !> \author  Doug Jacobsen
+   !> \date    September 2011
+   !> \details 
+   !>  This routine is intended to create the decomposition list within a
+   !>  domain type, and register any decompositons the core wants within it.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_setup_decompositions(domain, ierr)
+
+      use mpas_derived_types
+      use mpas_decomp
+
+      implicit none
+
+      type (domain_type), intent(in) :: domain
+
+      integer, intent(out) :: ierr
+      procedure (mpas_decomp_function), pointer :: decompFunc
+
+      ierr = 0
+
+      call mpas_decomp_create_decomp_list(domain % decompositions)
+
+      decompFunc => mpas_uniform_decomp
+
+      call mpas_decomp_register_method(domain % decompositions, 'uniform', decompFunc, iErr)
+
+   end subroutine mpas_core_setup_decompositions
+
 
 !***********************************************************************
 !***********************************************************************
@@ -562,7 +613,8 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 !-----------------------------------------------------------------------
    subroutine landice_init_block(block, startTimeStamp, dminfo)
 
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
       use li_setup
@@ -620,11 +672,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
       call li_setup_sign_and_index_fields(meshPool)
 
-! This was needed for annual forcing, which may or not be implemented in the same way.
-!!!      currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
-!!!      err = ior(err, err_tmp)
-!!!      call li_assign_annual_forcing(currTime, mesh, err_tmp)
-!!!      err = ior(err, err_tmp)
 
 ! This was needed to init FCT once.
 !!!      ! Init for FCT tracer advection
@@ -678,7 +725,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 !-----------------------------------------------------------------------
    subroutine landice_timestep(domain, itimestep, dt, timeStamp, err)
    
-      use mpas_grid_types
+      use mpas_derived_types
       use li_time_integration
       use mpas_timer
 !!!      use li_global_diagnostics
@@ -781,6 +828,9 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
    subroutine simulation_clock_init(core_clock, configs, ierr)
 
+      use mpas_derived_types
+      use mpas_pool_routines
+
       implicit none
 
       !-----------------------------------------------------------------
@@ -814,6 +864,8 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval ! MPAS standard configs
       character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
+      character (len=StrKIND), pointer :: config_restart_timestamp_name
+      character (len=StrKIND) :: restartTimeStamp !< string to be read from file
       integer :: err_tmp
 
 
@@ -826,11 +878,21 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_output_interval', config_output_interval)
       call mpas_pool_get_config(configs, 'config_restart_interval', config_restart_interval)
+      call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
 
-      ! Set time to the user-specified start time
-      call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
-      ierr = ior(ierr,err_tmp)
+      ! Set time to the user-specified start time OR use a restart time from file
+      if ( trim(config_start_time) == "file" ) then
+         open(22, file=config_restart_timestamp_name, form='formatted', status='old')
+         read(22,*) restartTimeStamp
+         close(22)
+         call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=err_tmp)
+         ierr = ior(ierr,err_tmp)
+      else
+         call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
+         ierr = ior(ierr,err_tmp)
+      end if
+
       ! Set interval to the user-specified time interval string
       call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)

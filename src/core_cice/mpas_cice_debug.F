@@ -12,7 +12,8 @@
 
 module cice_debug
 
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_pool_routines
 
   implicit none
 
@@ -32,7 +33,8 @@ module cice_debug
        cice_time_output_variable_int, &
        cice_time_output_variable_int_2D, &
        cice_plot_vertices_planar, &
-       cice_plot_cells_planar
+       cice_plot_cells_planar, &
+       cice_debug_output_array
 
   integer, private :: &
        iObject = 2, &
@@ -2606,6 +2608,35 @@ contains
     close(22)
 
   end subroutine cice_time_output_variable_int_2D
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_debug_output_array
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date Feburary 11th 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_output_array(array)
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         array
+
+    integer :: recl
+
+    recl = size(array,1) * 8
+
+    open(60,file="mpas_array_comparison.dat",form="unformatted",access="direct",recl=recl)
+
+    write(60,rec=1) array
+
+    close(60)
+
+  end subroutine cice_debug_output_array
 
 !-----------------------------------------------------------------------
 

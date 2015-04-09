@@ -27,7 +27,7 @@ mpas_spline_interpolation:
 mpas_tracer_advection_helpers.o: mpas_geometry_utils.o $(DEPS)
 mpas_tracer_advection_mono.o: mpas_tracer_advection_helpers.o
 mpas_tracer_advection_std.o: mpas_tracer_advection_helpers.o
-mpas_geometry_utils.o:
+mpas_geometry_utils.o: mpas_matrix_operations.o
 
 clean:
 	$(RM) *.o *.mod *.f90 libops.a

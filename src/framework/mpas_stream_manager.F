@@ -6,43 +6,16 @@ module mpas_stream_manager
 #define STREAM_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
 
     use mpas_kind_types
-    use mpas_grid_types
+    use mpas_derived_types
+    use mpas_field_routines
+    use mpas_pool_routines
     use mpas_timekeeping
     use mpas_io_units
     use mpas_io_streams
     use mpas_stream_list
 
 
-    integer, public, parameter :: MPAS_STREAM_ERR_FATAL  = 1000, &
-                                  MPAS_STREAM_ERR_WARN   = 1001, &
-                                  MPAS_STREAM_ERR_SILENT = 1002
-
-    integer, public, parameter :: MPAS_STREAM_MGR_NOERR            =  0, &
-                                  MPAS_STREAM_MGR_ERR_CLOBBER_FILE = -1, &
-                                  MPAS_STREAM_MGR_ERR_CLOBBER_REC  = -2, &
-                                  MPAS_STREAM_MGR_ERROR            = -3
-
-    integer, public, parameter :: MPAS_STREAM_INPUT        = 1, &
-                                  MPAS_STREAM_OUTPUT       = 2, &
-                                  MPAS_STREAM_INPUT_OUTPUT = 3, &
-                                  MPAS_STREAM_NONE         = 4
-
-    integer, public, parameter :: MPAS_STREAM_PROPERTY_ACTIVE        =  5, &
-                                  MPAS_STREAM_PROPERTY_IMMUTABLE     =  6, &
-                                  MPAS_STREAM_PROPERTY_FILENAME      =  7, &
-                                  MPAS_STREAM_PROPERTY_REF_TIME      =  8, &
-                                  MPAS_STREAM_PROPERTY_RECORD_INTV   =  9, &
-                                  MPAS_STREAM_PROPERTY_PRECISION     = 10, &
-                                  MPAS_STREAM_PROPERTY_FILENAME_INTV = 11, &
-                                  MPAS_STREAM_PROPERTY_CLOBBER       = 12
-
-    integer, public, parameter :: MPAS_STREAM_CLOBBER_NEVER     = 100, &
-                                  MPAS_STREAM_CLOBBER_APPEND    = 101, &
-                                  MPAS_STREAM_CLOBBER_TRUNCATE  = 102, &
-                                  MPAS_STREAM_CLOBBER_OVERWRITE = 103
-
-    public :: MPAS_streamManager_type, &
-              MPAS_stream_mgr_init, &
+    public :: MPAS_stream_mgr_init, &
               MPAS_stream_mgr_finalize, &
               MPAS_stream_mgr_create_stream, &
               MPAS_stream_mgr_destroy_stream, &
@@ -53,6 +26,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_remove_pkg, &
               MPAS_stream_mgr_add_pool, &
               MPAS_stream_mgr_add_field, &
+              MPAS_stream_mgr_add_stream_fields, &
               MPAS_stream_mgr_remove_field, &
               MPAS_stream_mgr_add_alarm, &
               MPAS_stream_mgr_remove_alarm, &
@@ -60,27 +34,14 @@ module mpas_stream_manager
               MPAS_stream_mgr_ringing_alarms, &
               MPAS_stream_mgr_add_att, &
               MPAS_stream_mgr_write, &
-              MPAS_stream_mgr_read
+              MPAS_stream_mgr_read, &
+              MPAS_stream_mgr_begin_iteration, &
+              MPAS_stream_mgr_get_next_stream, &
+              MPAS_stream_mgr_get_next_field, &
+              MPAS_get_stream_filename, &
+              MPAS_build_stream_filename
 
     private
-
-    type MPAS_streamManager_type
-
-        integer :: numStreams = 0
-        integer :: errorLevel
-
-        type (MPAS_Clock_type), pointer :: streamClock
-        type (MPAS_Pool_type), pointer :: allFields
-        type (MPAS_Pool_type), pointer :: allPackages
-        type (MPAS_Pool_type), pointer :: allStructs
-        type (MPAS_Pool_type), pointer :: defaultAtts
-
-        type (MPAS_stream_list_type), pointer :: streams
-        type (MPAS_stream_list_type), pointer :: alarms_in
-        type (MPAS_stream_list_type), pointer :: alarms_out
-
-    end type MPAS_streamManager_type
-
 
     interface MPAS_stream_mgr_set_property
         module procedure MPAS_stream_mgr_set_property_int
@@ -401,6 +362,7 @@ module mpas_stream_manager
         call mpas_pool_create_pool(new_stream % att_pool)
         call mpas_pool_clone_pool(manager % defaultAtts, new_stream % att_pool)
         call mpas_pool_create_pool(new_stream % field_pool)
+        call mpas_pool_create_pool(new_stream % field_pkg_pool)
         call mpas_pool_create_pool(new_stream % pkg_pool)
         nullify(new_stream % next)
 
@@ -498,6 +460,7 @@ module mpas_stream_manager
         call MPAS_stream_list_destroy(stream % alarmList_out, ierr=err_local)
         call mpas_pool_destroy_pool(stream % att_pool)
         call mpas_pool_destroy_pool(stream % field_pool)
+        call mpas_pool_destroy_pool(stream % field_pkg_pool)
         call mpas_pool_destroy_pool(stream % pkg_pool)
         if (associated(stream % referenceTime)) then
             deallocate(stream % referenceTime)
@@ -552,16 +515,18 @@ module mpas_stream_manager
     !  routine MPAS_stream_mgr_add_pool
     !
     !> \brief Add a pool of fields to the specified stream in an MPAS stream manager.
-    !> \author Doug Jacobsen
+    !> \author Doug Jacobsen, Michael Duda
     !> \date   09/15/2014
     !> \details
     !>  Adds a pool from the allStructs pool to the specified stream in an MPAS
     !>   stream manager. Currently, it adds only explicitly named var's and
     !>   var_array's to the stream, but commented code will allow adding all nested
-    !>   structs as well.
+    !>   structs as well. If the optional 'packages' argument is supplied, the
+    !>   specified packages will be attached to all var and var_array members
+    !>   added to the stream.
     !
     !-----------------------------------------------------------------------
-    recursive subroutine MPAS_stream_mgr_add_pool(manager, streamID, poolName, ierr)!{{{
+    recursive subroutine MPAS_stream_mgr_add_pool(manager, streamID, poolName, packages, ierr)!{{{
 
         implicit none
 
@@ -570,6 +535,7 @@ module mpas_stream_manager
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: poolName
+        character (len=*), intent(in), optional :: packages
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream
@@ -633,49 +599,49 @@ module mpas_stream_manager
         do while (mpas_pool_get_next_member(fieldPool, poolItr))
             if (poolItr % memberType == MPAS_POOL_SUBPOOL) then
                 STREAM_DEBUG_WRITE('-- Try to add subpool...')
-                ! call mpas_stream_mgr_add_pool(manager, streamId, poolItr % memberName, iErr)
+                ! call mpas_stream_mgr_add_pool(manager, streamId, poolItr % memberName, packages=packages, ierr=ierr)
             else if (poolItr % memberType == MPAS_POOL_FIELD) then
                 if (poolItr % dataType == MPAS_POOL_REAL) then
                     if (poolItr % nDims == 0) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real0DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real0DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real1DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real1DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real1DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 2) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real2DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real2DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real2DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 3) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real3DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real3DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real3DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 4) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real4DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real4DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real4DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 5) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, real5DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, real5DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, real5DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 else if (poolItr % dataType == MPAS_POOL_INTEGER) then
                     if (poolItr % nDims == 0) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, int0DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, int0DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, int0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, int1DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, int1DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, int1DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 2) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, int2DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, int2DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, int2DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 3) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, int3DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, int3DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, int3DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 else if (poolItr % dataType == MPAS_POOL_CHARACTER) then
                     if (poolItr % nDims == 0) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, char0DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, char0DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, char0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
                         call mpas_pool_get_field(fieldPool, poolItr % memberName, char1DField)
-                        call mpas_stream_mgr_add_field(manager, streamID, char1DField % fieldName, ierr)
+                        call mpas_stream_mgr_add_field(manager, streamID, char1DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 end if
             end if
@@ -691,10 +657,12 @@ module mpas_stream_manager
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
-    !>  Adds a field from the allFields pool to a stream.
+    !>  Adds a field from the allFields pool to a stream. If the optional
+    !>  argument 'packages' is present, those packages will be attached to
+    !>  the field as well.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr)!{{{
+    subroutine MPAS_stream_mgr_add_field(manager, streamID, fieldName, packages, ierr)!{{{
 
         implicit none
 
@@ -703,11 +671,14 @@ module mpas_stream_manager
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in) :: streamID
         character (len=*), intent(in) :: fieldName
+        character (len=*), intent(in), optional :: packages
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream
         type (mpas_pool_field_info_type) :: info
+        character (len=StrKIND) :: field_pkg
         integer, pointer :: test_ptr
+        logical :: test_logical
         integer :: err_level
         integer :: err_local
 
@@ -760,15 +731,158 @@ module mpas_stream_manager
         end if
 
         !
+        ! Validate packages
+        !
+        if (present(packages)) then
+            test_logical = parse_package_list(manager % allPackages, trim(packages), err_local)
+            if (err_local /= 0) then
+                STREAM_WARNING_WRITE('One or more packages in '''//trim(packages)//''' attached to field '''//trim(fieldName)//''' is undefined')
+            end if
+        end if
+
+        !
         ! Add field to field pool in stream if the field is activated
         !
         if (info % isActive) then
             call mpas_pool_add_config(stream % field_pool, fieldName, 1)
+
+            if (present(packages)) then
+               STREAM_DEBUG_WRITE('-- Attaching packages '//trim(packages)//' to field '//trim(fieldName)//' in stream '//trim(streamID))
+               write(field_pkg,'(a)') trim(fieldName)//':packages'
+               call mpas_pool_add_config(stream % field_pkg_pool, field_pkg, packages)
+            end if
         else
             write(stderrUnit, *) ' * Requested field '//trim(fieldName)//' is deactivated due to packages, or is a scratch variable.'
         end if
 
     end subroutine MPAS_stream_mgr_add_field!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_add_stream_fields
+    !
+    !> \brief Add all fields from another stream to the specified stream in an MPAS stream manager.
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   5 November 2014
+    !> \details
+    !>  Adds all fields from another specified stream into the new specified stream.
+    !>  Both streams need to exist within the same stream manager. If the
+    !>  optional 'packages' argument is supplied, the specified packages will be
+    !>  attached to all fields added from refStreamID.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, packages, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_stream_fields'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: refStreamID
+        character (len=*), intent(in), optional :: packages
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream, refStream
+        type (mpas_pool_field_info_type) :: info
+        type (mpas_pool_iterator_type) :: itr
+        character (len=StrKIND) :: field_pkg
+        integer, pointer :: test_ptr
+        logical :: test_logical
+        integer :: err_level
+        integer :: err_local
+
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_add_stream_fields()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        !
+        ! Check that reference stream exists
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, refStreamID, refStream, ierr=err_local)) then
+            STREAM_ERROR_WRITE('Requested reference stream '//trim(refStreamID)//' does not exist in stream manager')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        !
+        ! Check that stream exists
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        !
+        ! Don't modify an immutable stream
+        !
+        if (stream % immutable) then
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' is immutable.')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        !
+        ! Validate packages
+        !
+        if (present(packages)) then
+            test_logical = parse_package_list(manager % allPackages, trim(packages), err_local)
+            if (err_local /= 0) then
+                STREAM_WARNING_WRITE('One or more packages in '''//trim(packages)//''' attached to fields from stream '''//trim(refStreamID)//''' is undefined')
+            end if
+        end if
+
+        !
+        ! Loop over all fields in refStream and add them one by one to stream
+        !
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+        call mpas_pool_begin_iteration(refStream % field_pool)
+        do while (mpas_pool_get_next_member(refStream % field_pool, itr))
+            if ( itr % memberType == MPAS_POOL_CONFIG ) then
+                if ( itr % dataType == MPAS_POOL_INTEGER ) then
+
+                    !
+                    ! Check that field exists
+                    !
+                    info % nDims = -1
+                    call mpas_pool_get_field_info(manager % allFields, itr % memberName, info)
+                    if (info % nDims == -1) then
+                        STREAM_ERROR_WRITE('Requested field '//trim(itr % memberName)//' not available')
+                        if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                        return
+                    end if
+
+                    ! Test that the field does not already exist in stream
+                    nullify(test_ptr)
+                    call mpas_pool_get_config(stream % field_pool, itr % memberName, value=test_ptr)
+
+                    if ( associated(test_ptr) ) then
+                        STREAM_ERROR_WRITE('Requested field '//trim(itr % memberName)//' already in stream '//trim(streamID))
+                        if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                    end if
+
+                    if ( info % isActive ) then
+                        call mpas_pool_add_config(stream % field_pool, itr % memberName, 1)
+
+                        if (present(packages)) then
+                           STREAM_DEBUG_WRITE('-- Attaching packages '//trim(packages)//' to field '//trim(itr % memberName)//' in stream '//trim(streamID))
+                           write(field_pkg,'(a)') trim(itr % memberName)//':packages'
+                           call mpas_pool_add_config(stream % field_pkg_pool, field_pkg, packages)
+                        end if
+                    else
+                        write(stderrUnit, *) ' * Requested field '//trim(itr % memberName)//' is deactivated due to packages, or is a scratch variable.'
+                    end if
+
+                end if
+            end if
+        end do
+        call mpas_pool_set_error_level(err_level)
+
+    end subroutine MPAS_stream_mgr_add_stream_fields!}}}
 
 
     !-----------------------------------------------------------------------
@@ -2324,7 +2438,7 @@ module mpas_stream_manager
             if ( stream % filename_interval /= 'none' ) then
                 now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
                 call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
-                call build_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, stream % filename, ierr=local_ierr)
+                call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, stream % filename, ierr=local_ierr)
             else
                 call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
                 call mpas_expand_string(time_string, stream % filename_template, stream % filename)
@@ -2385,7 +2499,7 @@ module mpas_stream_manager
                 end if
             end if
 
-            call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+            call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -2398,7 +2512,7 @@ module mpas_stream_manager
                 now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
                 call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
     
-                call build_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+                call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
             else
                 call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
                 call mpas_expand_string(time_string, stream % filename_template, temp_filename)
@@ -2472,7 +2586,7 @@ module mpas_stream_manager
                     end if
                 end if
 
-                call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+                call build_stream(stream, MPAS_STREAM_OUTPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
                 if (local_ierr /= MPAS_STREAM_NOERR) then
                     ierr = MPAS_STREAM_MGR_ERROR
                     return
@@ -2733,6 +2847,8 @@ module mpas_stream_manager
         character (len=*), intent(out), optional :: actualWhen
         integer, intent(out) :: ierr
 
+        character (len=StrKIND) :: err_string
+
         type (MPAS_stream_list_type), pointer :: alarm_cursor
         type (MPAS_Time_type) :: now_time, ref_time, temp_time
         type (MPAS_TimeInterval_type) :: temp_interval
@@ -2800,7 +2916,7 @@ module mpas_stream_manager
             call mpas_set_time(now_time, dateTimeString=when, ierr=local_ierr)
             call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
             
-            call build_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+            call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
         else
             call mpas_expand_string(when, stream % filename_template, temp_filename)
         end if
@@ -2821,11 +2937,17 @@ module mpas_stream_manager
             call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, &
                                    precision=stream % precision, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
-                ierr = MPAS_STREAM_MGR_ERROR
+                if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
+                    write(err_string,'(a)') 'Stream '''//trim(stream % name)//''' attempted to read non-existent file '''//trim(stream % filename)//''''
+                    STREAM_ERROR_WRITE(trim(err_string))
+                    ierr = MPAS_STREAM_MGR_ERROR
+                else
+                    ierr = MPAS_STREAM_MGR_ERROR
+                end if
                 return
             end if
 
-            call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+            call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -2852,11 +2974,17 @@ module mpas_stream_manager
            !
            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
-               ierr = MPAS_STREAM_MGR_ERROR
+               if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
+                   write(err_string,'(a)') 'Stream '''//trim(stream % name)//''' attempted to read non-existent file '''//trim(stream % filename)//''''
+                   STREAM_ERROR_WRITE(trim(err_string))
+                   ierr = MPAS_STREAM_MGR_ERROR
+               else
+                   ierr = MPAS_STREAM_MGR_ERROR
+               end if
                return
            end if
 
-           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
                ierr = MPAS_STREAM_MGR_ERROR
                return
@@ -2957,7 +3085,7 @@ module mpas_stream_manager
 
            call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
            
-           call build_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, test_filename, ierr=local_ierr)
+           call mpas_build_stream_filename(stream % referenceTime, filenameTime, filename_interval, stream % filename_template, test_filename, ierr=local_ierr)
 
            STREAM_DEBUG_WRITE(' --- Retesting filename is ' COMMA trim(test_filename))
 
@@ -3045,7 +3173,7 @@ module mpas_stream_manager
                return
            end if
 
-           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, timeLevel, mgLevel, local_ierr)
+           call build_stream(stream, MPAS_STREAM_INPUT, manager % allFields, manager % allPackages, timeLevel, mgLevel, local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
                ierr = MPAS_STREAM_MGR_ERROR
                return
@@ -3127,7 +3255,70 @@ module mpas_stream_manager
 
 
     !-----------------------------------------------------------------------
-    !  routine build_filename
+    !  routine mpas_get_stream_filename
+    !
+    !> \brief Determine the filename that contains a specific time in a stream
+    !> \author Michael Duda, Doug Jacobsen
+    !> \date   21 August 2014
+    !> \details
+    !>  Given a stream manger, a stream name, and an optional time stamp,
+    !>  return the filename that would contain that time stamp, or the filename
+    !>  that should contain the current time as defined by the clock associated
+    !>  with the stream manager.
+    !>
+    !>  Return error codes:
+    !>  0 no error
+    !-----------------------------------------------------------------------
+    subroutine mpas_get_stream_filename(manager, streamID, when, filename, ierr) !{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(in) :: manager !< Input: Stream manager to get stream from
+        character (len=*), intent(in) :: streamID !< Input: Stream name to use for building the filename
+        character (len=*), intent(in), optional :: when !< Optional Input: Time file should contain
+        character (len=StrKIND), intent(out) :: filename !< Output: Name of file containing time
+        integer, intent(out), optional :: ierr !< Optional Output: Error code
+
+        type (mpas_stream_list_type), pointer :: streamCursor
+
+        integer :: err_local
+
+        character(len=StrKIND) :: when_string
+        type (MPAS_TimeInterval_type) :: filename_interval
+        type (MPAS_Time_type) :: now_time
+
+        ierr = 0
+
+        if ( mpas_stream_list_query(manager % streams, streamID, streamCursor, err_local) ) then
+           if ( present(when) ) then
+              call mpas_set_time(now_time, dateTimeString=when, ierr=err_local)
+           else
+              now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=err_local)
+           end if
+
+           !
+           ! First we need to build the filename for the current read time.
+           !
+           if ( streamCursor % filename_interval /= 'none' ) then
+               call mpas_set_timeInterval(filename_interval, timeString=streamCursor % filename_interval)
+               call mpas_build_stream_filename(streamCursor % referenceTime, now_time, filename_interval, streamCursor % filename_template, filename, ierr=err_local)
+           else
+               call mpas_get_time(now_time, dateTimeString=when_string, ierr=err_local)
+               call mpas_expand_string(when_string, streamCursor % filename_template, filename)
+           end if
+
+        else
+            if ( present(ierr) ) ierr = MPAS_STREAM_MGR_ERROR
+            if ( manager % errorLevel /= MPAS_STREAM_ERR_SILENT ) then
+                write(stderrUnit, *) 'ERROR: Stream ' // trim(streamID) // ' does not exist. Filename creation failed...'
+            end if
+        end if
+
+    end subroutine mpas_get_stream_filename !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine mpas_build_stream_filename
     !
     !> \brief Construct the filename that contains a specific time in a stream
     !> \author Michael Duda, Doug Jacobsen
@@ -3140,11 +3331,14 @@ module mpas_stream_manager
     !>  Filenames are assumed to start at the earliest time. In other words, a
     !>  file name is expanded using the earliest time that could possibly be
     !>  stored in the file.
+    !>
+    !>  This is a low level subroutine to complement the
+    !>  mpas_get_stream_Filename routine
     !>  
     !>  Return error codes:
     !>  0 no error
     !-----------------------------------------------------------------------
-    subroutine build_filename(ref_time, when, filename_interval, filename_template, filename, ierr) !{{{
+    subroutine mpas_build_stream_filename(ref_time, when, filename_interval, filename_template, filename, ierr) !{{{
 
         implicit none
 
@@ -3207,7 +3401,7 @@ module mpas_stream_manager
 
         call mpas_expand_string(when_string, filename_template, filename)
 
-    end subroutine build_filename !}}}
+    end subroutine mpas_build_stream_filename !}}}
 
 
     !-----------------------------------------------------------------------
@@ -3220,13 +3414,14 @@ module mpas_stream_manager
     !>  This routine will take as input a pool representing a stream.
     !>  It will then generate a stream type based on this pool, and return that.
     !-----------------------------------------------------------------------
-    subroutine build_stream(stream, direction, allFields, timeLevelIn, mgLevelIn, ierr) !{{{
+    subroutine build_stream(stream, direction, allFields, allPackages, timeLevelIn, mgLevelIn, ierr) !{{{
 
         implicit none
 
         type (MPAS_stream_list_type), intent(inout) :: stream
         integer, intent(in) :: direction
         type (MPAS_Pool_type), intent(in) :: allFields
+        type (MPAS_Pool_type), intent(in) :: allPackages
         integer, intent(in) :: timeLevelIn
         integer, intent(in) :: mgLevelIn
         integer, intent(out) :: ierr
@@ -3259,6 +3454,10 @@ module mpas_stream_manager
 
         integer, parameter :: idLength = 10
         character (len=idLength) :: file_id
+
+        character (len=StrKIND), pointer :: packages
+        logical :: active_field
+        integer :: err_level
 
 
         if (direction == MPAS_STREAM_OUTPUT) then
@@ -3311,9 +3510,25 @@ module mpas_stream_manager
 
         call mpas_pool_begin_iteration(stream % field_pool)
 
-        do while ( mpas_pool_get_next_member(stream % field_pool, itr) )
+        FIELD_LOOP: do while ( mpas_pool_get_next_member(stream % field_pool, itr) )
 
             if (itr % memberType == MPAS_POOL_CONFIG) then
+
+                err_level = mpas_pool_get_error_level()
+                call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+                nullify(packages)
+                call mpas_pool_get_config(stream % field_pkg_pool, trim(itr % memberName)//':packages', packages)
+                if (associated(packages)) then
+                    active_field = parse_package_list(allPackages, trim(packages))
+                else
+                    active_field = .true.
+                end if
+                call mpas_pool_set_error_level(err_level)
+
+                STREAM_DEBUG_WRITE('Is field '''//trim(itr % memberName)//''' active in stream '''//trim(stream % name)//'? ' COMMA active_field)
+
+                if (.not. active_field) cycle FIELD_LOOP
 
                 ! To avoid accidentally matching in case statements below...
                 info % fieldType = -1
@@ -3377,7 +3592,7 @@ module mpas_stream_manager
                 end select
 
             end if
-        end do
+        end do FIELD_LOOP
 
     end subroutine build_stream !}}}
 
@@ -3545,6 +3760,99 @@ module mpas_stream_manager
         end if
 
     end function stream_active_pkg_check !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine parse_package_list
+    !
+    !> \brief Parses a semi-colon-separated list of package names, indicating whether any are active
+    !> \author Michael Duda
+    !> \date   19 March 2015
+    !> \details 
+    !>  This function determines whether any of the named strings in 
+    !>  the semi-colon-separated list provided in the 'packages' argument are
+    !>  active. 
+    !>  If any of the packages does not exist in the package pool, the optional
+    !>  argument ierr is set to a non-zero value; otherwise, if all packages exist, 
+    !>  ierr will be set to zero upon return.
+    !
+    !-----------------------------------------------------------------------
+    logical function parse_package_list(package_pool, packages, ierr) result(active)
+ 
+        implicit none
+ 
+        type (mpas_pool_type), intent(in) :: package_pool
+        character (len=*), intent(in) :: packages
+        integer, intent(out), optional :: ierr
+ 
+        integer :: i, j, slen
+        integer :: err_level
+        logical, pointer :: pkg_val
+ 
+ 
+        if (present(ierr)) ierr = 0
+ 
+        slen = len_trim(packages)
+ 
+
+        !
+        ! No packages
+        !
+        if (slen == 0) then
+            active = .true.
+            return
+        end if
+  
+        active = .false.
+
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+
+        !
+        ! Possible semi-colons in 'packages'
+        !
+        i = 1
+        j = index(packages,';')
+        do while (j >= i)
+            if (j > i) then
+                nullify(pkg_val)
+                call mpas_pool_get_package(package_pool, packages(i:j-1)//'Active', pkg_val)
+                if (associated(pkg_val)) then
+                    if (pkg_val) then
+                        active = .true.
+                        call mpas_pool_set_error_level(err_level)
+                        return
+                    end if
+                else
+                    if (present(ierr)) ierr = 1
+                end if
+            end if
+            i = j+1
+            j = index(packages(i:slen),';') + i - 1
+        end do
+
+
+        !
+        ! No more semi-colons to worry about
+        !
+        if (i < slen) then
+            nullify(pkg_val)
+            call mpas_pool_get_package(package_pool, packages(i:slen)//'Active', pkg_val)
+            if (associated(pkg_val)) then
+                if (pkg_val) then
+                    active = .true.
+                    call mpas_pool_set_error_level(err_level)
+                    return
+                end if
+            else
+                if (present(ierr)) ierr = 1
+            end if
+        end if
+
+        call mpas_pool_set_error_level(err_level)
+
+    end function parse_package_list
 
 
     !-----------------------------------------------------------------------
@@ -3860,7 +4168,6 @@ module mpas_stream_manager
             call mpas_pool_get_dimension(indexToCellID % block % dimensions, 'vertexDegree', vertexDegree)
 
             if (associated(cellsOnCell)) then
-                nullify(cellsOnCell_ptr % ioinfo)
                 cellsOnCell_ptr % array => cellsOnCell % array
                 allocate(cellsOnCell % array(maxEdges, nCells+1))
 
@@ -3881,7 +4188,6 @@ module mpas_stream_manager
             end if
 
             if (associated(edgesOnCell)) then
-                nullify(edgesOnCell_ptr % ioinfo)
                 edgesOnCell_ptr % array => edgesOnCell % array
                 allocate(edgesOnCell % array(maxEdges, nCells+1))
 
@@ -3902,7 +4208,6 @@ module mpas_stream_manager
             end if
 
             if (associated(verticesOnCell)) then
-                nullify(verticesOnCell_ptr % ioinfo)
                 verticesOnCell_ptr % array => verticesOnCell % array
                 allocate(verticesOnCell % array(maxEdges, nCells+1))
 
@@ -3923,7 +4228,6 @@ module mpas_stream_manager
             end if
 
             if (associated(cellsOnEdge)) then
-                nullify(cellsOnEdge_ptr % ioinfo)
                 cellsOnEdge_ptr % array => cellsOnEdge % array
                 allocate(cellsOnEdge % array(2, nEdges+1))
 
@@ -3941,7 +4245,6 @@ module mpas_stream_manager
             end if
 
             if (associated(verticesOnEdge)) then
-                nullify(verticesOnEdge_ptr % ioinfo)
                 verticesOnEdge_ptr % array => verticesOnEdge % array
                 allocate(verticesOnEdge % array(2, nEdges+1))
 
@@ -3959,7 +4262,6 @@ module mpas_stream_manager
             end if
 
             if (associated(edgesOnEdge)) then
-                nullify(edgesOnEdge_ptr % ioinfo)
                 edgesOnEdge_ptr % array => edgesOnEdge % array
                 allocate(edgesOnEdge % array(maxEdges2, nEdges+1))
 
@@ -3980,7 +4282,6 @@ module mpas_stream_manager
             end if
 
             if (associated(cellsOnVertex)) then
-                nullify(cellsOnVertex_ptr % ioinfo)
                 cellsOnVertex_ptr % array => cellsOnVertex % array
                 allocate(cellsOnVertex % array(vertexDegree, nVertices+1))
 
@@ -3999,7 +4300,6 @@ module mpas_stream_manager
             end if
 
             if (associated(edgesOnVertex)) then
-                nullify(edgesOnVertex_ptr % ioinfo)
                 edgesOnVertex_ptr % array => edgesOnVertex % array
                 allocate(edgesOnVertex % array(vertexDegree, nVertices+1))
 
@@ -4425,6 +4725,219 @@ module mpas_stream_manager
         end do
 
     end subroutine postread_reindex !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_begin_iteration
+    !
+    !> \brief Reset iterator within stream manager
+    !> \author Doug Jacobsen, Michael Duda
+    !> \date   03/03/2015
+    !> \details
+    !>  If the optional 'streamID' argument is provided, this routine resets 
+    !>  the iterator  within a stream manager so that streams may subsequently 
+    !>  be iterated over using the MPAS_stream_mgr_get_next_stream function. 
+    !>
+    !>  If an optional stream name is provided via the 'streamID' argument, this
+    !>  routine will reset the iterator for fields within the specified stream, 
+    !>  which may subsequently iterated over using the 
+    !>  MPAS_stream_mgr_get_next_field() routine.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_begin_iteration(manager, streamID, ierr) !{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager     !< Input: Stream manager to begin iteration for
+        character (len=*), intent(in), optional :: streamID          !< Input: Name of the stream to iterate over
+        integer, intent(out), optional :: ierr                       !< Output: Return error code
+
+        type (MPAS_stream_list_type), pointer :: stream
+        integer :: err_local
+
+
+        if (.not. present(streamID)) then
+
+           nullify(manager % currentStream)
+
+        else
+
+           !
+           ! Check that stream exists
+           !
+           if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
+               STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
+               if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+               return
+           end if
+
+           call mpas_pool_begin_iteration(stream % field_pool)
+
+        end if
+
+    end subroutine MPAS_stream_mgr_begin_iteration !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  logical function MPAS_stream_mgr_get_next_stream
+    !
+    !> \brief Retrieve information about next stream
+    !> \author Doug Jacobsen
+    !> \date   03/03/2015
+    !> \details
+    !>  This routine advances the internal iterator to the next stream, and
+    !>  returns information about it.
+    !
+    !-----------------------------------------------------------------------
+    logical function MPAS_stream_mgr_get_next_stream(manager, streamID, directionProperty, activeProperty, & !{{{
+                                                     immutableProperty, filenameTemplateProperty, &
+                                                     referenceTimeProperty, recordIntervalProperty, precisionProperty, &
+                                                     filenameIntervalProperty, clobberProperty) result(validStream)
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager                   !< Input: Stream manager to iterate over
+        character (len=StrKIND), intent(out), optional :: streamID                 !< Output: Name of next stream
+        integer, intent(out), optional :: directionProperty                        !< Output: Integer describing the direction of the stream
+        logical, intent(out), optional :: activeProperty                           !< Output: Logical describing if the stream is active or not
+        logical, intent(out), optional :: immutableProperty                        !< Output: Logical describing if the stream is immutable or not
+        character (len=StrKIND), intent(out), optional :: filenameTemplateProperty !< Output: String containing the filename template for the stream
+        character (len=StrKIND), intent(out), optional :: referenceTimeProperty    !< Output: String containing the reference time for the stream
+        character (len=StrKIND), intent(out), optional :: recordIntervalProperty   !< Output: String containing the record interval for the stream
+        integer, intent(out), optional :: precisionProperty                        !< Output: Integer describing the precision of the stream
+        character (len=StrKIND), intent(out), optional :: filenameIntervalProperty !< Output: String containing the filename interval for the stream
+        integer, intent(out), optional :: clobberProperty                          !< Output: Interger describing the clobber mode of the stream
+
+
+        if ( associated(manager % currentStream) .and. .not. associated(manager % currentStream % next) ) then
+            validStream = .false.
+            return
+        end if
+
+        if ( .not. associated(manager % currentStream) ) then
+           validStream = .true.
+           manager % currentStream => manager % streams % head
+        else
+           validStream = .true.
+           manager % currentStream => manager % currentStream % next
+        end if
+
+        if ( present(streamID) ) then
+           streamID = manager % currentStream % name
+        end if
+
+        if ( present(directionProperty) ) then
+            directionProperty = manager % currentStream % direction
+        end if
+
+        if ( present(activeProperty) ) then
+            activeProperty = manager % currentStream % active_stream
+        end if
+
+        if ( present(immutableProperty) ) then
+            immutableProperty = manager % currentStream % immutable
+        end if
+
+        if ( present(filenameTemplateProperty) ) then
+            filenameTemplateProperty = manager % currentStream % filename_template
+        end if
+
+        if ( present(referenceTimeProperty) ) then
+            call mpas_get_time(manager % currentStream % referenceTime, dateTimeString=referenceTimeProperty)
+        end if
+
+        if ( present(recordIntervalProperty) ) then
+            call mpas_get_timeInterval(manager % currentStream % recordInterval, timeString=recordIntervalProperty)
+        end if
+
+        if ( present(precisionProperty) ) then
+            precisionProperty = manager % currentStream % precision
+        end if
+
+        if ( present(filenameIntervalProperty)) then
+            filenameIntervalProperty = manager % currentStream % filename_interval
+        end if
+
+        if ( present(clobberProperty) ) then
+            clobberProperty = manager % currentStream % clobber_mode
+        end if
+
+    end function MPAS_stream_mgr_get_next_stream !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  logical function MPAS_stream_mgr_get_next_field
+    !
+    !> \brief Retrieve the name of the next field in a stream
+    !> \author Michael Duda
+    !> \date   06 March 2015
+    !> \details
+    !>  This function queries the name of the next field belonging to the stream
+    !>  indicated by the streamID argument. Before the first call to this
+    !>  routine for a stream, the routine MPAS_stream_mgr_begin_iteration() must
+    !>  have been called to initialize iteration for the specified streamID in
+    !>  the stream manager.
+    !>
+    !>  This function returns .TRUE. if the stream contains another field,
+    !>  whether active or not, in which case the output argument fieldName 
+    !>  provides the name of this field, and .FALSE. otherwise. If a field name
+    !>  is returned, the optional logical argument isActive may be used to
+    !>  determine whether the field is currently active in the stream.
+    !
+    !-----------------------------------------------------------------------
+    logical function MPAS_stream_mgr_get_next_field(manager, streamID, fieldName, isActive) result(validField) !{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager    !< Input: Stream manager containing stream indicated by streamID
+        character (len=*), intent(in) :: streamID                   !< Input: Name of the stream to iterate over
+        character (len=StrKIND), intent(out) :: fieldName           !< Output: Name of the next field in streamID
+        logical, intent(out), optional :: isActive                  !< Output: Name of the next field in streamID
+
+        type (MPAS_stream_list_type), pointer :: stream
+        type (mpas_pool_iterator_type) :: poolItr
+        character (len=StrKIND), pointer :: packages
+        integer :: err_level
+        integer :: err_local
+
+
+        validField = .false.
+
+        !
+        ! Check that stream exists
+        !
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
+            STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
+            return
+        end if
+
+        !
+        ! Get the name of the next field, if one exists
+        !
+        if (mpas_pool_get_next_member(stream % field_pool, poolItr)) then
+            fieldName = poolItr % memberName
+            validField = .true.
+        end if
+
+        !
+        ! Optionally, set the isActive variable
+        !
+        if (validField .and. present(isActive)) then
+            err_level = mpas_pool_get_error_level()
+            call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+            nullify(packages)
+            call mpas_pool_get_config(stream % field_pkg_pool, trim(fieldName)//':packages', packages)
+            if (associated(packages)) then
+                isActive = parse_package_list(manager % allPackages, trim(packages))
+            else
+                isActive = .true.
+            end if
+    
+            call mpas_pool_set_error_level(err_level)
+        end if
+
+    end function MPAS_stream_mgr_get_next_field !}}}
  
 
 end module mpas_stream_manager
@@ -4442,13 +4955,13 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
-                                    MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
-                                    MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
-                                    MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
-                                    MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE, MPAS_stream_mgr_create_stream, &
-                                    MPAS_stream_mgr_set_property
-
+    use mpas_derived_types, only : MPAS_streamManager_type, &
+                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
+                                        MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
+                                        MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
+                                        MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
+                                        MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE
+    use mpas_stream_manager, only : MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
     use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION
     use mpas_io_units, only : stderrUnit
@@ -4550,11 +5063,12 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 end subroutine stream_mgr_create_stream_c !}}}
 
 
-subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, ierr_c) bind(c)!{{{
+subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, packages_c, ierr_c) bind(c)!{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_pool
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR
+    use mpas_stream_manager, only : MPAS_stream_mgr_add_pool
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -4562,18 +5076,24 @@ subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, ierr_c) bind
     type (c_ptr) :: manager_c
     character(kind=c_char) :: streamID_c(*)
     character(kind=c_char) :: poolName_c(*)
+    character(kind=c_char) :: packages_c(*)
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
-    character(len=StrKIND) :: streamID, poolName
+    character(len=StrKIND) :: streamID, poolName, packages
     integer :: ierr
 
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
     call mpas_c_to_f_string(poolName_c, poolName)
+    call mpas_c_to_f_string(packages_c, packages)
 
-    call MPAS_stream_mgr_add_pool(manager, streamID, poolName, ierr)
+    if (len_trim(packages) > 0) then
+       call MPAS_stream_mgr_add_pool(manager, streamID, poolName, packages=packages, ierr=ierr)
+    else
+       call MPAS_stream_mgr_add_pool(manager, streamID, poolName, ierr=ierr)
+    end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
         ierr_c = 0
@@ -4584,11 +5104,12 @@ subroutine stream_mgr_add_pool_c(manager_c, streamID_c, poolName_c, ierr_c) bind
 end subroutine stream_mgr_add_pool_c!}}}
 
 
-subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bind(c) !{{{
+subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, packages_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_field
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR
+    use mpas_stream_manager, only : MPAS_stream_mgr_add_field
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -4596,18 +5117,24 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bi
     type (c_ptr) :: manager_c
     character(kind=c_char) :: streamID_c(*)
     character(kind=c_char) :: fieldName_c(*)
+    character(kind=c_char) :: packages_c(*)
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
-    character(len=StrKIND) :: streamID, fieldName
+    character(len=StrKIND) :: streamID, fieldName, packages
     integer :: ierr
 
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
     call mpas_c_to_f_string(fieldName_c, fieldName)
+    call mpas_c_to_f_string(packages_c, packages)
 
-    call MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr)
+    if (len_trim(packages) > 0) then
+       call MPAS_stream_mgr_add_field(manager, streamID, fieldName, packages=packages, ierr=ierr)
+    else
+       call MPAS_stream_mgr_add_field(manager, streamID, fieldName, ierr=ierr)
+    end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
         ierr_c = 0
@@ -4618,15 +5145,56 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, ierr_c) bi
 end subroutine stream_mgr_add_field_c !}}}
 
 
+subroutine stream_mgr_add_stream_fields_c(manager_c, streamID_c, refStreamID_c, packages_c, ierr_c) bind(c) !{{{
+
+    use mpas_c_interfacing, only : mpas_c_to_f_string
+    use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR
+    use mpas_stream_manager, only : MPAS_stream_mgr_add_stream_fields
+    use mpas_kind_types, only : StrKIND
+
+    implicit none
+
+    type (c_ptr) :: manager_c
+    character(kind=c_char) :: streamID_c(*)
+    character(kind=c_char) :: refStreamID_c(*)
+    character(kind=c_char) :: packages_c(*)
+    integer(kind=c_int) :: ierr_c
+
+    type (MPAS_streamManager_type), pointer :: manager
+    character(len=StrKIND) :: streamID, refStreamID, packages
+    integer :: ierr
+
+
+    call c_f_pointer(manager_c, manager)
+    call mpas_c_to_f_string(streamID_c, streamID)
+    call mpas_c_to_f_string(refStreamID_c, refStreamID)
+    call mpas_c_to_f_string(packages_c, packages)
+
+    if (len_trim(packages) > 0) then
+       call MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, packages=packages, ierr=ierr)
+    else
+       call MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, ierr=ierr)
+    end if
+
+    if (ierr == MPAS_STREAM_MGR_NOERR) then
+        ierr_c = 0
+    else
+        ierr_c = 1
+    end if
+
+end subroutine stream_mgr_add_stream_fields_c !}}}
+
+
 subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_c, alarmInterval_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, &
-                                    MPAS_stream_mgr_get_clock, MPAS_stream_mgr_add_alarm
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_Clock_type, MPAS_Time_type, MPAS_TimeInterval_type, &
+                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_START_TIME
+    use mpas_stream_manager, only : MPAS_stream_mgr_get_clock, MPAS_stream_mgr_add_alarm
     use mpas_kind_types, only : StrKIND
-    use mpas_timekeeping, only : MPAS_Clock_type, MPAS_START_TIME, MPAS_Time_type, MPAS_TimeInterval_type, mpas_add_clock_alarm, &
-                                 mpas_set_time, mpas_set_timeInterval, mpas_get_clock_time
+    use mpas_timekeeping, only : mpas_add_clock_alarm, mpas_set_time, mpas_set_timeInterval, mpas_get_clock_time
 
     implicit none
 
@@ -4696,7 +5264,8 @@ subroutine stream_mgr_add_pkg_c(manager_c, streamID_c, package_c, ierr_c) bind(c
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_stream_mgr_add_pkg
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR
+    use mpas_stream_manager, only : MPAS_stream_mgr_add_pkg
     use mpas_kind_types, only : StrKIND
 
     implicit none

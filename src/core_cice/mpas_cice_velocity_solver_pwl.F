@@ -12,7 +12,8 @@
 
 module cice_velocity_solver_pwl
 
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_pool_routines
 
   implicit none
 

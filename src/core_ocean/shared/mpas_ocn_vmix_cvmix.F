@@ -13,7 +13,8 @@
 
 module ocn_vmix_cvmix
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timer
    use mpas_io_units
 
@@ -668,6 +669,14 @@ contains
       ! initialize convective mixing
       !
       if (config_use_cvmix_convection) then
+
+        ! config_cvmix_convective_basedOnBVF is not supported at this time
+        if (.not.config_cvmix_convective_basedOnBVF) then
+            write(stderrUnit, *) "ERROR: config_cvmix_convective_basedOnBVF = .false. is not supported. Change to true."
+            err = 1
+            return
+        endif
+
         call cvmix_init_conv( &
                convect_diff = config_cvmix_convective_diffusion,  &
                convect_visc = config_cvmix_convective_viscosity,  &

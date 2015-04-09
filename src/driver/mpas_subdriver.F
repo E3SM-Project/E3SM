@@ -11,34 +11,27 @@ module mpas_subdriver
    use mpas_core
    use mpas_kind_types
 
-   ! TODO: This should be moved inside the domain type?
-   !       Unless we re-arrange modules, doing so would create a circular dependence
-   !       between the mpas_grid_types and mpas_stream_manager modules.
-   use mpas_stream_manager, only : MPAS_streamManager_type
+   use mpas_derived_types, only: dm_info, domain_type
 
    type (dm_info), pointer :: dminfo
    type (domain_type), save, target :: domain
    type (domain_type), pointer :: domain_ptr
-
-   ! TODO: This should be moved inside the domain type?
-   !       Unless we re-arrange modules, doing so would create a circular dependence
-   !       between the mpas_grid_types and mpas_stream_manager modules.
-   type (MPAS_streamManager_type), pointer :: stream_manager
-
 
    contains
 
 
    subroutine mpas_init()
 
-      use mpas_stream_manager, only : MPAS_stream_mgr_init
+      use mpas_stream_manager, only : MPAS_stream_mgr_init, MPAS_build_stream_filename
       use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
-      use mpas_timekeeping, only : MPAS_Time_type, mpas_get_clock_time, mpas_get_time
-      use mpas_bootstrapping, only : mpas_bootstrap_framework, mpas_setup_immutable_streams
+      use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_time
+      use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2, mpas_setup_immutable_streams
  
       implicit none
 
+      integer :: iArg, nArgs
+      character(len=StrKIND) :: argument, namelistFile, streamsFile
       character(len=StrKIND) :: timeStamp
       integer :: ierr
 
@@ -49,10 +42,17 @@ module mpas_subdriver
       character(len=StrKIND) :: mesh_stream
       character(len=StrKIND) :: mesh_filename
       character(len=StrKIND) :: mesh_filename_temp
+      character(len=StrKIND) :: ref_time_temp
+      character(len=StrKIND) :: filename_interval_temp
       character(kind=c_char), dimension(StrKIND+1) :: c_mesh_stream
       character(kind=c_char), dimension(StrKIND+1) :: c_mesh_filename_temp
+      character(kind=c_char), dimension(StrKIND+1) :: c_ref_time_temp
+      character(kind=c_char), dimension(StrKIND+1) :: c_filename_interval_temp
       type (MPAS_Time_type) :: start_time
+      type (MPAS_Time_type) :: ref_time
+      type (MPAS_TimeInterval_type) :: filename_interval
       character(len=StrKIND) :: start_timestamp
+      logical :: streamsExists
 
 
       interface
@@ -64,25 +64,72 @@ module mpas_subdriver
             integer(kind=c_int), intent(out) :: ierr
          end subroutine xml_stream_parser
 
-         subroutine xml_stream_get_filename(xmlname, streamname, comm, filename, ierr) bind(c)
+         subroutine xml_stream_get_attributes(xmlname, streamname, comm, filename, ref_time, filename_interval, ierr) bind(c)
             use iso_c_binding, only : c_char, c_int
             character(kind=c_char), dimension(*), intent(in) :: xmlname
             character(kind=c_char), dimension(*), intent(in) :: streamname
             integer(kind=c_int), intent(inout) :: comm
             character(kind=c_char), dimension(*), intent(in) :: filename
+            character(kind=c_char), dimension(*), intent(in) :: ref_time
+            character(kind=c_char), dimension(*), intent(in) :: filename_interval
             integer(kind=c_int), intent(out) :: ierr
-         end subroutine xml_stream_get_filename
+         end subroutine xml_stream_get_attributes
       end interface
 
+      namelistFile = domain % namelist_filename
+      streamsFile = domain % streams_filename
+
+      nArgs = command_argument_count()
+      iArg = 1
+      do while (iArg < nArgs)
+         call get_command_argument(iArg, argument)
+         if (len_trim(argument) == 0) exit
+
+         if ( trim(argument) == '-n' ) then
+            iArg = iArg + 1
+            call get_command_argument(iArg, namelistFile)
+            if ( len_trim(namelistFile) == 0 ) then
+                write(0,*) 'ERROR: The -n argument requires a namelist file argument.'
+                stop
+            else if ( trim(namelistFile) == '-s' ) then
+                write(0,*) 'ERROR: The -n argument requires a namelist file argument.'
+                stop
+            end if
+         else if ( trim(argument) == '-s' ) then
+            iArg = iArg + 1
+            call get_command_argument(iArg, streamsFile)
+            if ( len_trim(streamsFile) == 0 ) then
+                write(0,*) 'ERROR: The -s argument requires a streams file argument.'
+                stop
+            else if ( trim(streamsFile) == '-n' ) then
+                write(0,*) 'ERROR: The -s argument requires a streams file argument.'
+                stop
+            end if
+         end if
+
+         iArg = iArg + 1
+      end do
 
       domain_ptr => domain
+
+      domain % namelist_filename = namelistFile
+      domain % streams_filename = streamsFile
 
       !
       ! Initialize infrastructure
       !
       call mpas_framework_init(dminfo, domain_ptr)
+
       call mpas_core_setup_packages(domain_ptr % configs, domain_ptr % packages, ierr)
+      call mpas_core_setup_decompositions(domain_ptr, ierr)
       call mpas_core_setup_clock(domain_ptr % clock, domain_ptr % configs, ierr)
+
+      write(stderrUnit,*) 'Reading streams configuration from file '//trim(domain % streams_filename)
+      inquire(file=trim(domain % streams_filename), exist=streamsExists)
+
+      if ( .not. streamsExists ) then
+         call mpas_dmpar_global_abort('ERROR: Streams file '//trim(domain % streams_filename)//' does not exist.')
+      end if
 
       call mpas_timer_start('total time')
       call mpas_timer_start('initialize')
@@ -98,37 +145,55 @@ module mpas_subdriver
       call mpas_f_to_c_string(domain % streams_filename, c_filename)
       call mpas_f_to_c_string(mesh_stream, c_mesh_stream)
       c_comm = dminfo % comm
-      call xml_stream_get_filename(c_filename, c_mesh_stream, c_comm, c_mesh_filename_temp, c_ierr)
+      call xml_stream_get_attributes(c_filename, c_mesh_stream, c_comm, &
+                                     c_mesh_filename_temp, c_ref_time_temp, &
+                                     c_filename_interval_temp, c_ierr)
       if (c_ierr /= 0) then
          call mpas_dmpar_abort(dminfo)
       end if
       call mpas_c_to_f_string(c_mesh_filename_temp, mesh_filename_temp)
-      start_time = mpas_get_clock_time(domain_ptr % clock, MPAS_START_TIME, ierr)
-      call mpas_get_time(start_time, dateTimeString=start_timestamp, ierr=ierr)
-      call mpas_expand_string(start_timestamp, mesh_filename_temp, mesh_filename)
-      call mpas_bootstrap_framework(domain_ptr, mesh_filename)
+      call mpas_c_to_f_string(c_ref_time_temp, ref_time_temp)
+      call mpas_c_to_f_string(c_filename_interval_temp, filename_interval_temp)
 
+      start_time = mpas_get_clock_time(domain_ptr % clock, MPAS_START_TIME, ierr)
+      if ( trim(ref_time_temp) == 'initial_time' ) then
+          call mpas_get_time(start_time, dateTimeString=ref_time_temp, ierr=ierr)
+      end if
+
+      if ( trim(filename_interval_temp) == 'none' ) then
+          call mpas_expand_string(ref_time_temp, mesh_filename_temp, mesh_filename)
+      else
+          call mpas_set_time(ref_time, dateTimeString=ref_time_temp, ierr=ierr)
+          call mpas_set_timeInterval(filename_interval, timeString=filename_interval_temp, ierr=ierr)
+          call mpas_build_stream_filename(ref_time, start_time, filename_interval, mesh_filename_temp, mesh_filename, ierr)
+      end if
+      write(stderrUnit, *) ' ** Attempting to bootstrap MPAS framework using stream: ', trim(mesh_stream)
+      call mpas_bootstrap_framework_phase1(domain_ptr, mesh_filename)
 
       !
       ! Set up run-time streams
       !
-      call MPAS_stream_mgr_init(stream_manager, domain % clock, domain % blocklist % allFields, domain % packages, domain % blocklist % allStructs)
+      call MPAS_stream_mgr_init(domain_ptr % streamManager, domain % clock, domain % blocklist % allFields, domain % packages, domain % blocklist % allStructs)
 
-      call add_stream_attributes(stream_manager, domain)
+      call add_stream_attributes(domain)
 
-      call mpas_setup_immutable_streams(stream_manager)
+      call mpas_setup_immutable_streams(domain_ptr % streamManager)
 
-      mgr_p = c_loc(stream_manager)
+      mgr_p = c_loc(domain_ptr % streamManager)
       call xml_stream_parser(c_filename, mgr_p, c_comm, c_ierr)
       if (c_ierr /= 0) then
          call mpas_dmpar_abort(dminfo)
       end if
 
+      !
+      ! Finalize the setup of blocks and fields
+      !
+      call mpas_bootstrap_framework_phase2(domain_ptr)
 
       !
       ! Initialize core
       !
-      call mpas_core_init(domain_ptr, stream_manager, timeStamp)
+      call mpas_core_init(domain_ptr, timeStamp)
 
       call mpas_timer_stop('initialize')
 
@@ -139,7 +204,7 @@ module mpas_subdriver
 
       implicit none
 
-      call mpas_core_run(domain_ptr, stream_manager)
+      call mpas_core_run(domain_ptr)
 
    end subroutine mpas_run
 
@@ -154,7 +219,7 @@ module mpas_subdriver
       !
       ! Finalize core
       !
-      call mpas_core_finalize(domain_ptr, stream_manager)
+      call mpas_core_finalize(domain_ptr)
 
       call mpas_timer_stop('total time')
       call mpas_timer_write()
@@ -163,20 +228,19 @@ module mpas_subdriver
       !
       ! Finalize infrastructure
       !
-      call MPAS_stream_mgr_finalize(stream_manager)
+      call MPAS_stream_mgr_finalize(domain_ptr % streamManager)
 
       call mpas_framework_finalize(dminfo, domain_ptr)
 
    end subroutine mpas_finalize
 
 
-   subroutine add_stream_attributes(stream_manager, domain)
+   subroutine add_stream_attributes(domain)
 
       use mpas_stream_manager, only : MPAS_stream_mgr_add_att
 
       implicit none
 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       type (domain_type), intent(inout) :: domain
 
       type (MPAS_Pool_iterator_type) :: itr
@@ -203,19 +267,19 @@ module mpas_subdriver
       end if
      
 
-      call MPAS_stream_mgr_add_att(stream_manager, 'on_a_sphere', domain % on_a_sphere)
-      call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius)
-      call MPAS_stream_mgr_add_att(stream_manager, 'model_name', domain % modelName)
-      call MPAS_stream_mgr_add_att(stream_manager, 'core_name', domain % coreName)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'model_name', domain % modelName)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'core_name', domain % coreName)
       ! DWJ 10/01/2014: Eventually add the real history attribute, for now (due to length restrictions)
       ! add a shortened version.
-!     call MPAS_stream_mgr_add_att(stream_manager, 'history', domain % history)
-      call MPAS_stream_mgr_add_att(stream_manager, 'history', histAtt)
-      call MPAS_stream_mgr_add_att(stream_manager, 'source', domain % source)
-      call MPAS_stream_mgr_add_att(stream_manager, 'Conventions', domain % Conventions)
-      call MPAS_stream_mgr_add_att(stream_manager, 'parent_id', domain % parent_id)
-      call MPAS_stream_mgr_add_att(stream_manager, 'mesh_spec', domain % mesh_spec)
-      call MPAS_stream_mgr_add_att(stream_manager, 'git_version', domain % git_version)
+!     call MPAS_stream_mgr_add_att(domain % streamManager, 'history', domain % history)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'history', histAtt)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'source', domain % source)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', domain % Conventions)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'parent_id', domain % parent_id)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'mesh_spec', domain % mesh_spec)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'git_version', domain % git_version)
 
       call mpas_pool_begin_iteration(domain % configs)
 
@@ -225,19 +289,19 @@ module mpas_subdriver
 
             if ( itr % dataType == MPAS_POOL_REAL ) then
                call mpas_pool_get_config(domain % configs, itr % memberName, realAtt)
-               call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, realAtt, ierr=local_ierr)
+               call MPAS_stream_mgr_add_att(domain % streamManager, itr % memberName, realAtt, ierr=local_ierr)
             else if ( itr % dataType == MPAS_POOL_INTEGER ) then
                call mpas_pool_get_config(domain % configs, itr % memberName, intAtt)
-               call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, intAtt, ierr=local_ierr)
+               call MPAS_stream_mgr_add_att(domain % streamManager, itr % memberName, intAtt, ierr=local_ierr)
             else if ( itr % dataType == MPAS_POOL_CHARACTER ) then
                call mpas_pool_get_config(domain % configs, itr % memberName, charAtt)
-               call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, charAtt, ierr=local_ierr)
+               call MPAS_stream_mgr_add_att(domain % streamManager, itr % memberName, charAtt, ierr=local_ierr)
             else if ( itr % dataType == MPAS_POOL_LOGICAL ) then
                call mpas_pool_get_config(domain % configs, itr % memberName, logAtt)
                if (logAtt) then
-                  call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, 'YES', ierr=local_ierr)
+                  call MPAS_stream_mgr_add_att(domain % streamManager, itr % memberName, 'YES', ierr=local_ierr)
                else
-                  call MPAS_stream_mgr_add_att(stream_manager, itr % memberName, 'NO', ierr=local_ierr)
+                  call MPAS_stream_mgr_add_att(domain % streamManager, itr % memberName, 'NO', ierr=local_ierr)
                end if
             end if
 

@@ -20,7 +20,8 @@
 
 module ocn_high_freq_thickness_hmix_del2
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use ocn_constants
 
    implicit none

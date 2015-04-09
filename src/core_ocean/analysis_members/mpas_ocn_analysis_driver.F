@@ -19,7 +19,8 @@
 
 module ocn_analysis_driver
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timekeeping
    use mpas_stream_manager
 
@@ -216,7 +217,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_compute_startup(domain, stream_manager, err)!{{{
+   subroutine ocn_analysis_compute_startup(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -231,7 +232,6 @@ contains
       !-----------------------------------------------------------------
 
       type (domain_type), intent(inout) :: domain
-      type (mpas_streamManager_type), intent(inout) :: stream_manager
 
       !-----------------------------------------------------------------
       !
@@ -260,7 +260,7 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_global_stats_compute_startup', config_global_stats_compute_startup)
       if (config_use_global_stats.and.config_global_stats_compute_startup) then
          call ocn_compute_global_stats(domain, timeLevel, err_tmp)
-         call mpas_stream_mgr_write(stream_manager, streamID='globalStatsOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, streamID='globalStatsOutput', forceWriteNow=.true., ierr=err_tmp)
          err = ior(err, err_tmp)
       endif 
 
@@ -268,7 +268,7 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_zonal_mean_compute_startup', config_zonal_mean_compute_startup)
       if (config_use_zonal_mean.and.config_zonal_mean_compute_startup) then
          call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
-         call mpas_stream_mgr_write(stream_manager, streamID='zonalMeanOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, streamID='zonalMeanOutput', forceWriteNow=.true., ierr=err_tmp)
          err = ior(err, err_tmp)
       endif
 
@@ -362,7 +362,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_compute_w_alarms(stream_manager, domain, err)!{{{
+   subroutine ocn_analysis_compute_w_alarms(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -376,7 +376,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
@@ -402,21 +401,21 @@ contains
       timeLevel=1
       call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_global_stats(domain, timeLevel, err_tmp)
          endif 
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='zonalMeanOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='zonalMeanOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
          endif
       endif
 
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
-!        if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) then
+!        if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) then
 !            call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !         endif
 !      endif
@@ -507,7 +506,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_write(stream_manager, err)!{{{
+   subroutine ocn_analysis_write(streamManager, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -515,7 +514,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
+      type (MPAS_streamManager_type), intent(inout) :: streamManager
 
       !-----------------------------------------------------------------
       !
@@ -546,21 +545,21 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
-          call mpas_stream_mgr_write(stream_manager, streamID='globalStatsOutput', ierr=err_tmp)
-          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='globalStatsOutput', ierr=err_tmp)
+          call mpas_stream_mgr_write(streamManager, streamID='globalStatsOutput', ierr=err_tmp)
+          call mpas_stream_mgr_reset_alarms(streamManager, streamID='globalStatsOutput', ierr=err_tmp)
           err = ior(err, err_tmp)
       endif
 
       call mpas_pool_get_config(ocnConfigs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
-         call mpas_stream_mgr_write(stream_manager, streamID='zonalMeanOutput', ierr=err_tmp)
-         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='zonalMeanOutput', ierr=err_tmp)
+         call mpas_stream_mgr_write(streamManager, streamID='zonalMeanOutput', ierr=err_tmp)
+         call mpas_stream_mgr_reset_alarms(streamManager, streamID='zonalMeanOutput', ierr=err_tmp)
       endif
 
 !      call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
-!         call mpas_stream_mgr_write(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
-!         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+!         call mpas_stream_mgr_write(streamManager, streamID='TEMPLATEOutput', ierr=err_tmp)
+!         call mpas_stream_mgr_reset_alarms(streamManager, streamID='TEMPLATEOutput', ierr=err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 

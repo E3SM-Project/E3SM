@@ -20,18 +20,7 @@
 module mpas_attlist
 
    use mpas_kind_types
-
-   ! Derived type for holding field attributes
-   type att_list_type
-      character (len=StrKIND) :: attName
-      integer :: attType
-      integer :: attValueInt
-      integer, dimension(:), pointer :: attValueIntA => null()
-      real (kind=RKIND) :: attValueReal
-      real (kind=RKIND), dimension(:), pointer :: attValueRealA => null()
-      character (len=StrKIND) :: attValueText
-      type (att_list_type), pointer :: next => null()
-   end type att_list_type
+   use mpas_derived_types
 
    interface mpas_add_att
       module procedure mpas_add_att_int0d
@@ -48,15 +37,6 @@ module mpas_attlist
       module procedure mpas_get_att_real1d
       module procedure mpas_get_att_text
    end interface mpas_get_att
-
-
-   !!!!! PRIVATE? !!!!!
-
-   integer, parameter :: ATT_INT   = 1
-   integer, parameter :: ATT_INTA  = 2
-   integer, parameter :: ATT_REAL  = 3
-   integer, parameter :: ATT_REALA = 4
-   integer, parameter :: ATT_TEXT  = 5
 
 
 contains
@@ -97,7 +77,7 @@ contains
          cursor => cursor % next
       end if
      
-      cursor % attType = ATT_INT
+      cursor % attType = MPAS_ATT_INT
       write(cursor % attName,'(a)') trim(attName)
       cursor % attValueInt = attValue
 
@@ -139,7 +119,7 @@ contains
          cursor => cursor % next
       end if
      
-      cursor % attType = ATT_INTA
+      cursor % attType = MPAS_ATT_INTA
       allocate(cursor % attValueIntA(size(attValue)))
       write(cursor % attName,'(a)') trim(attName)
       cursor % attValueIntA(:) = attValue(:)
@@ -182,7 +162,7 @@ contains
          cursor => cursor % next
       end if
      
-      cursor % attType = ATT_REAL
+      cursor % attType = MPAS_ATT_REAL
       write(cursor % attName,'(a)') trim(attName)
       cursor % attValueReal = attValue
 
@@ -224,7 +204,7 @@ contains
          cursor => cursor % next
       end if
      
-      cursor % attType = ATT_REALA
+      cursor % attType = MPAS_ATT_REALA
       allocate(cursor % attValueRealA(size(attValue)))
       write(cursor % attName,'(a)') trim(attName)
       cursor % attValueRealA(:) = attValue(:)
@@ -267,7 +247,7 @@ contains
          cursor => cursor % next
       end if
      
-      cursor % attType = ATT_TEXT
+      cursor % attType = MPAS_ATT_TEXT
       write(cursor % attName,'(a)') trim(attName)
       write(cursor % attValueText,'(a)') trim(attValue)
 
@@ -300,7 +280,7 @@ contains
       cursor => attList
       do while (associated(cursor))
          if (trim(attName) == trim(cursor % attName)) then
-            if (cursor % attType /= ATT_INT) then
+            if (cursor % attType /= MPAS_ATT_INT) then
                if (present(ierr)) ierr = 1        ! Wrong type
             else
                attValue = cursor % attValueInt
@@ -341,7 +321,7 @@ contains
       cursor => attList
       do while (associated(cursor))
          if (trim(attName) == trim(cursor % attName)) then
-            if (cursor % attType /= ATT_INTA) then
+            if (cursor % attType /= MPAS_ATT_INTA) then
                if (present(ierr)) ierr = 1        ! Wrong type
             else
                allocate(attValue(size(cursor % attValueIntA)))
@@ -383,7 +363,7 @@ contains
       cursor => attList
       do while (associated(cursor))
          if (trim(attName) == trim(cursor % attName)) then
-            if (cursor % attType /= ATT_REAL) then
+            if (cursor % attType /= MPAS_ATT_REAL) then
                if (present(ierr)) ierr = 1        ! Wrong type
             else
                attValue = cursor % attValueReal
@@ -424,7 +404,7 @@ contains
       cursor => attList
       do while (associated(cursor))
          if (trim(attName) == trim(cursor % attName)) then
-            if (cursor % attType /= ATT_REALA) then
+            if (cursor % attType /= MPAS_ATT_REALA) then
                if (present(ierr)) ierr = 1        ! Wrong type
             else
                allocate(attValue(size(cursor % attValueRealA)))
@@ -466,7 +446,7 @@ contains
       cursor => attList
       do while (associated(cursor))
          if (trim(attName) == trim(cursor % attName)) then
-            if (cursor % attType /= ATT_TEXT) then
+            if (cursor % attType /= MPAS_ATT_TEXT) then
                if (present(ierr)) ierr = 1        ! Wrong type
             else
                write(attValue,'(a)') trim(cursor % attValueText)
@@ -508,9 +488,9 @@ contains
       ! Item is at the head of the list
       if (trim(attName) == trim(cursor % attName)) then
          attList => cursor % next
-         if (cursor % attType == ATT_REALA) then
+         if (cursor % attType == MPAS_ATT_REALA) then
             deallocate(cursor % attValueRealA)
-         else if (cursor % attType == ATT_INTA) then
+         else if (cursor % attType == MPAS_ATT_INTA) then
             deallocate(cursor % attValueIntA)
          end if
          deallocate(cursor)
@@ -523,9 +503,9 @@ contains
          if (trim(attName) == trim(cursor % attName)) then
             cursor_prev % next => cursor % next
 
-            if (cursor % attType == ATT_REALA) then
+            if (cursor % attType == MPAS_ATT_REALA) then
                deallocate(cursor % attValueRealA)
-            else if (cursor % attType == ATT_INTA) then
+            else if (cursor % attType == MPAS_ATT_INTA) then
                deallocate(cursor % attValueIntA)
             end if
             deallocate(cursor)
@@ -566,9 +546,9 @@ contains
       cursor => attList
       do while (associated(cursor))
          attList => attList % next
-         if (cursor % attType == ATT_REALA) then
+         if (cursor % attType == MPAS_ATT_REALA) then
             deallocate(cursor % attValueRealA)
-         else if (cursor % attType == ATT_INTA) then
+         else if (cursor % attType == MPAS_ATT_INTA) then
             deallocate(cursor % attValueIntA)
          end if
          deallocate(cursor)

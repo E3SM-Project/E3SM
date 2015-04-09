@@ -13,7 +13,8 @@
 module cice_initialize
 
   use mpas_dmpar
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_pool_routines
   use mpas_timekeeping
 
   implicit none
@@ -39,7 +40,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_init(&
-       block, &
+       domain, &
        clock, &
        dt)!{{{
 
@@ -49,19 +50,18 @@ contains
     use cice_advection, only: cice_init_advection
     use cice_velocity_solver, only: cice_init_velocity_solver
     use cice_debug, only: cice_test_case_output
-    use cice_forcing, only: cice_init_forcing, cice_get_forcing, cice_convert_pop_forcing_to_mpas
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output: 
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input: 
 
     real(kind=RKIND), intent(in) :: &
          dt !< Input: 
-    
-    type (MPAS_pool_type), pointer :: &
-         configs
+
+    type(block_type), pointer :: &
+         block
 
     logical, pointer :: &
          config_use_velocity_solver, &
@@ -69,50 +69,51 @@ contains
          config_use_forcing, &
          config_do_restart
 
-    !call cice_convert_pop_forcing_to_mpas(block)
 
-    configs => block % configs
+    call MPAS_pool_get_config(domain % configs, "config_use_velocity_solver", config_use_velocity_solver)
+    call MPAS_pool_get_config(domain % configs, "config_use_advection", config_use_advection)
+    call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
-    call MPAS_pool_get_config(configs, "config_use_velocity_solver", config_use_velocity_solver)
-    call MPAS_pool_get_config(configs, "config_use_advection", config_use_advection)
-    call MPAS_pool_get_config(configs, "config_use_forcing", config_use_forcing)
-    call MPAS_pool_get_config(configs, "config_do_restart", config_do_restart)
-
-    call init_junk_values(block)
-
+    block => domain % blocklist
+    do while (associated(block))
+       call init_junk_values(block)
+       block => block % next
+    end do
+    
     ! calculate boundary variables
-    call cice_init_boundary(block)
-
-    ! init forcing
-    if (config_use_forcing) then
-
-       call cice_init_forcing(&
-            block)
-       
-       call cice_get_forcing(&
-            block, &
-            clock)
-       
-    endif
+    call cice_init_boundary(domain)
 
     ! init dynamics
-    if (config_use_velocity_solver) &
-         call cice_init_velocity_solver(block, dt)
+    if (config_use_velocity_solver) then
+       block => domain % blocklist
+       do while (associated(block))
+          call cice_init_velocity_solver(block, dt)
+          block => block % next
+       end do
+    endif
     
     ! init advection
-    if (config_use_advection) &
-         call cice_init_advection(block)
-    
-    if (.not. config_do_restart) then
+    if (config_use_advection) then
+       block => domain % blocklist
+       do while (associated(block))
+          call cice_init_advection(block)
+          block => block % next
+       end do
+    endif
 
-       ! init ice state
-       call init_ice_state(&
-            block, &
-            configs)
-       
-    end if
+    ! init ice state
+    if (.not. config_do_restart) &
+         call init_ice_state(domain)
 
-    call cice_test_case_output(block, 0)
+    block => domain % blocklist
+    do while (associated(block))
+       call cice_test_case_output(block, 0)
+       block => block % next
+    end do
+
+    ! initial halo exchange
+    call initial_halo_exchanges(domain)
 
   end subroutine cice_init!}}}
 
@@ -153,7 +154,7 @@ contains
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
-    call cice_init_ijpop_from_ivertex(mesh)
+    !call cice_init_ijpop_from_ivertex(mesh)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
@@ -178,19 +179,18 @@ contains
 !-----------------------------------------------------------------------
   
   subroutine init_ice_state(&
-       block, &
-       configs)!{{{
+       domain)!{{{
 
     use mpas_configure
     use cice_testing, only: &
          cice_init_square_test_case_hex, &
          cice_init_square_point_test_case_hex
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output: 
 
-    type (MPAS_pool_type), pointer, intent(in) :: &
-         configs !< Input: 
+    type(block_type), pointer :: &
+         block
 
     character(len=strKIND), pointer :: &
          config_initial_condition_type, &
@@ -199,92 +199,140 @@ contains
     integer, dimension(:), pointer :: &
          interiorVertex
 
-    call MPAS_pool_get_config(configs, "config_initial_condition_type", config_initial_condition_type)
-    call MPAS_pool_get_config(configs, "config_initial_velocity_type", config_initial_velocity_type)
+    type(MPAS_pool_type), pointer :: &
+         tracers_fields, &
+         velocity_solver_fields
+
+    type(field3DReal), pointer :: &
+         iceAreaCategoryField, &
+         iceVolumeCategoryField, &
+         snowVolumeCategoryField, &
+         surfaceTemperatureField
+
+    type(field1DReal), pointer :: &
+         uVelocityField, &
+         vVelocityField
+
+    call MPAS_pool_get_config(domain % configs, "config_initial_condition_type", config_initial_condition_type)
+    call MPAS_pool_get_config(domain % configs, "config_initial_velocity_type", config_initial_velocity_type)
 
     ! set volumes/areas
-    if (trim(config_initial_condition_type) == "uniform") then
+    block => domain % blocklist
+    do while (associated(block))
 
-       call init_ice_state_uniform_ice(&
-            block, &
-            configs)
+       if (trim(config_initial_condition_type) == "uniform") then
 
-    else if (trim(config_initial_condition_type) == "circle") then
+          call init_ice_state_uniform_ice(&
+               block, &
+               domain % configs)
 
-       call init_ice_state_circle_of_ice(&
-            block, &
-            configs)
+       else if (trim(config_initial_condition_type) == "circle") then
 
-    else if (trim(config_initial_condition_type) == "uniform_interior") then
+          call init_ice_state_circle_of_ice(&
+               block, &
+               domain % configs)
 
-       call init_ice_state_uniform_interior(&
-            block, &
-            configs)
+       else if (trim(config_initial_condition_type) == "uniform_interior") then
 
-    else if (trim(config_initial_condition_type) == "special") then
+          call init_ice_state_uniform_interior(&
+               block, &
+               domain % configs)
 
-       call init_ice_state_special(&
-            block, &
-            configs)
+       else if (trim(config_initial_condition_type) == "special") then
 
-    else if (trim(config_initial_condition_type) == "random_coverage") then
+          call init_ice_state_special(&
+               block, &
+               domain % configs)
 
-       call init_ice_state_random_coverage(&
-            block, &
-            configs)
+       else if (trim(config_initial_condition_type) == "random_coverage") then
 
-    else if (trim(config_initial_condition_type) == "square") then
+          call init_ice_state_random_coverage(&
+               block, &
+               domain % configs)
 
-       call cice_init_square_test_case_hex(&
-            block, &
-            configs)
+       else if (trim(config_initial_condition_type) == "square") then
 
-    else if (trim(config_initial_condition_type) == "square_point") then
+          call cice_init_square_test_case_hex(&
+               block, &
+               domain % configs)
 
-       call cice_init_square_point_test_case_hex(&
-            block, &
-            configs)
+       else if (trim(config_initial_condition_type) == "square_point") then
 
-    else
-       
-       write(*,*) "Ice initial condition type unknown!"
-       write(*,*) "config_initial_condition_type: ", trim(config_initial_condition_type)
-       stop
+          call cice_init_square_point_test_case_hex(&
+               block, &
+               domain % configs)
 
-    endif
+       else
+
+          write(*,*) "Ice initial condition type unknown!"
+          write(*,*) "config_initial_condition_type: ", trim(config_initial_condition_type)
+          stop
+
+       endif
+
+       block => block % next
+    end do
+
+    ! halo exchanges
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracers_fields)
+    
+    call MPAS_pool_get_field(tracers_fields, "iceAreaCategory", iceAreaCategoryField)
+    call MPAS_pool_get_field(tracers_fields, "iceVolumeCategory", iceVolumeCategoryField)
+    call MPAS_pool_get_field(tracers_fields, "snowVolumeCategory", snowVolumeCategoryField)
+    call MPAS_pool_get_field(tracers_fields, "surfaceTemperature", surfaceTemperatureField)
+
+    call MPAS_dmpar_exch_halo_field(iceAreaCategoryField)
+    call MPAS_dmpar_exch_halo_field(iceVolumeCategoryField)
+    call MPAS_dmpar_exch_halo_field(snowVolumeCategoryField)
+    call MPAS_dmpar_exch_halo_field(surfaceTemperatureField)
 
     ! set velocities
-    if (trim(config_initial_velocity_type) == "uniform") then
+    block => domain % blocklist
+    do while (associated(block))
+       
+       if (trim(config_initial_velocity_type) == "uniform") then
 
-       call init_ice_velocity_uniform(&
-            block, &
-            configs)
+          call init_ice_velocity_uniform(&
+               block, &
+               domain % configs)
 
-    else if (trim(config_initial_velocity_type) == "ocean") then
+       else if (trim(config_initial_velocity_type) == "ocean") then
 
-       call init_ice_velocity_ocean(&
-            block, &
-            configs)
+          call init_ice_velocity_ocean(&
+               block, &
+               domain % configs)
 
-    else if (trim(config_initial_velocity_type) == "random") then
+       else if (trim(config_initial_velocity_type) == "random") then
 
-       call init_ice_velocity_random(&
-            block, &
-            configs)
+          call init_ice_velocity_random(&
+               block, &
+               domain % configs)
 
-    else if (trim(config_initial_velocity_type) == "special") then
+       else if (trim(config_initial_velocity_type) == "special") then
 
-       call init_ice_velocity_special(&
-            block, &
-            configs)
+          call init_ice_velocity_special(&
+               block, &
+               domain % configs)
 
-    else
+       else
 
-       write(*,*) "Ice initial velocity type unknown!"
-       write(*,*) "config_initial_velocity_type: ", trim(config_initial_velocity_type)
-       stop
+          write(*,*) "Ice initial velocity type unknown!"
+          write(*,*) "config_initial_velocity_type: ", trim(config_initial_velocity_type)
+          stop
 
-    endif
+       endif
+
+       block => block % next
+    end do
+
+    ! halo exchanges
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocity_solver_fields)
+
+    call MPAS_pool_get_field(velocity_solver_fields, "uVelocity", uVelocityField)
+    call MPAS_pool_get_field(velocity_solver_fields, "vVelocity", vVelocityField)
+
+    call MPAS_dmpar_exch_halo_field(uVelocityField)
+    call MPAS_dmpar_exch_halo_field(vVelocityField)
 
   end subroutine init_ice_state!}}}
 
@@ -315,7 +363,8 @@ contains
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
-         tracers
+         tracers, &
+         icestate
 
     integer, pointer :: &
          nCellsSolve
@@ -323,11 +372,15 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          latCell
     
-    type(field3DReal), pointer :: &
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
          snowVolumeCategory, &
          surfaceTemperature
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         surfaceTemperatureCell
 
     real(kind=RKIND), pointer :: &
          config_initial_ice_area, &
@@ -347,44 +400,50 @@ contains
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)
 
     call MPAS_pool_get_array(mesh, "latCell", latCell)
 
-    call MPAS_pool_get_field(tracers, "iceAreaCategory", iceAreaCategory, 1)
-    call MPAS_pool_get_field(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
-    call MPAS_pool_get_field(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
-    call MPAS_pool_get_field(tracers, "surfaceTemperature", surfaceTemperature, 1)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+
+    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(icestate, "surfaceTemperatureCell", surfaceTemperatureCell)
 
     do iCell = 1, nCellsSolve
 
-       if (latCell(iCell) >= config_initial_latitude_north * ciceDegreesToRadians .or. &
-           latCell(iCell) <= config_initial_latitude_south * ciceDegreesToRadians) then
+       if (latCell(iCell) > config_initial_latitude_north * ciceDegreesToRadians .or. &
+           latCell(iCell) < config_initial_latitude_south * ciceDegreesToRadians) then
 
           ! has ice
-          iceAreaCategory % array(1,:,iCell)    = config_initial_ice_area
-          iceVolumeCategory % array(1,:,iCell)  = config_initial_ice_volume
-          snowVolumeCategory % array(1,:,iCell) = config_initial_snow_volume
-          surfaceTemperature % array(1,:,iCell) = -1.0_RKIND
+          iceAreaCategory(1,:,iCell)    = config_initial_ice_area
+          iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume
+          snowVolumeCategory(1,:,iCell) = config_initial_snow_volume
+          surfaceTemperature(1,:,iCell) = -1.0_RKIND
           
        else
 
           ! no ice
-          iceAreaCategory % array(1,:,iCell)    = 0.0_RKIND
-          iceVolumeCategory % array(1,:,iCell)  = 0.0_RKIND
-          snowVolumeCategory % array(1,:,iCell) = 0.0_RKIND
-          surfaceTemperature % array(1,:,iCell) = 0.0_RKIND
+          iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+          iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+          snowVolumeCategory(1,:,iCell) = 0.0_RKIND
+          surfaceTemperature(1,:,iCell) = 0.0_RKIND
 
        endif
 
     enddo ! iCell
 
-    ! halo exchanges
-    call mpas_dmpar_exch_halo_field(iceAreaCategory)
-    call mpas_dmpar_exch_halo_field(iceVolumeCategory)
-    call mpas_dmpar_exch_halo_field(snowVolumeCategory)
-    call mpas_dmpar_exch_halo_field(surfaceTemperature)
+    ! integrated quantities
+    do iCell = 1, nCellsSolve
+
+       iceAreaCell(iCell) = sum(iceAreaCategory(1,:,iCell))
+       surfaceTemperatureCell(iCell) = -20.15_RKIND
+
+    enddo ! iCell
 
   end subroutine init_ice_state_uniform_ice!}}}
 
@@ -1153,6 +1212,37 @@ contains
     uVelocity(:) = 1.0_RKIND
 
   end subroutine init_ice_velocity_special!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  initial_halo_exchanges
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date Januray 13th 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine initial_halo_exchanges(domain)
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(MPAS_pool_type), pointer :: &
+         velocity_weak_fields
+
+    type(field3DReal), pointer :: &
+         normalVectorTriangleField
+
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_weak", velocity_weak_fields)
+
+    call MPAS_pool_get_field(velocity_weak_fields, "normalVectorTriangle", normalVectorTriangleField)
+
+    call MPAS_dmpar_exch_halo_field(normalVectorTriangleField)
+
+  end subroutine initial_halo_exchanges
 
 !-----------------------------------------------------------------------
 

@@ -12,7 +12,9 @@
 
 module cice_velocity_solver_unit_tests
 
-  use mpas_grid_types
+  use mpas_derived_types
+  use mpas_pool_routines
+  use mpas_io_units
 
   implicit none
 

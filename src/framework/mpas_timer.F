@@ -21,7 +21,7 @@
       module mpas_timer
 
         use mpas_kind_types
-        use mpas_grid_types
+        use mpas_derived_types
         use mpas_io_units
 
         implicit none
@@ -30,16 +30,6 @@
 #ifdef _PAPI
         include 'f90papi.h'
 #endif
-
-        type timer_node
-          character (len=StrKIND) :: timer_name
-          logical :: running, printable
-          integer :: levels, calls
-          real (kind=RKIND) :: start_time, end_time, total_time
-          real (kind=RKIND) :: max_time, min_time, avg_time
-          real (kind=RKIND) :: efficiency
-          type (timer_node), pointer :: next
-        end type timer_node
 
         type (timer_node), pointer :: all_timers
         integer :: levels, synced
@@ -74,13 +64,16 @@
           logical, optional, intent(in) :: clear_timer !< Input: flag to clear timer
           type (timer_node), optional, pointer :: timer_ptr !< Output: pointer to store timer in module
 
+          character (len=len(timer_name)) :: trimed_name
           logical :: timer_added, timer_found, string_equal, check_flag
           type (timer_node), pointer :: current, temp
 
-          integer :: clock, hz, usecs
+          integer :: clock, hz, usecs, nlen
+          trimed_name = trim(timer_name)
+          nlen = len(trimed_name)
 
 #ifdef MPAS_TAU 
-          call tau_start(timer_name)
+          call tau_start(trimed_name)
 #endif
 
           timer_added = .false.
@@ -93,12 +86,13 @@
             levels = 0
 
             all_timers%timer_name = ''
+            all_timers%nlen = 0
             current => all_timers%next
             nullify(current%next)
           else 
             current => all_timers%next
             timer_search: do while ((.not.timer_found) .and. associated(current))
-              string_equal = (trim(current%timer_name) == trim(timer_name))
+              string_equal = (current%timer_name(1:current%nlen) == trimed_name)
               if(string_equal) then
                 timer_found = .true.
               else
@@ -121,7 +115,8 @@
               current => timer_ptr
               nullify(timer_ptr%next)
               current%levels = levels
-              current%timer_name = timer_name
+              current%timer_name = trimed_name
+              current%nlen = nlen
               current%running = .false.
               current%total_time = 0.0
               current%max_time = 0.0
@@ -149,7 +144,8 @@
 
           if(timer_added .and. (.not.timer_found)) then
             current%levels = levels
-            current%timer_name = timer_name
+            current%timer_name = trimed_name
+            current%nlen = nlen
             current%running = .false.
             current%total_time = 0.0
             current%max_time = 0.0
@@ -171,7 +167,7 @@
 #else
             call system_clock (count=clock)
             call system_clock (count_rate=hz)
-            current%start_time = real(clock,kind=RKIND)/real(hz,kind=RKIND)
+            current%start_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
 #endif
           endif
 
@@ -213,15 +209,18 @@
 
           character (len=*), intent(in) :: timer_name !< Input: name of timer to stop
           type (timer_node), pointer, optional :: timer_ptr !< Input: pointer to timer, for stopping
+          character (len=len(timer_name)) :: trimed_name !< Trimed timer name
 
           type (timer_node), pointer :: current
           
-          real (kind=RKIND) :: time_temp
+          real (kind=R8KIND) :: time_temp
           logical :: timer_found, string_equal, check_flag
-          integer :: clock, hz, usecs
+          integer :: clock, hz, usecs, nlen
+          trimed_name = trim(timer_name)
+          nlen = len(trimed_name)
 
 #ifdef MPAS_TAU 
-          call tau_stop(timer_name)
+          call tau_stop(trimed_name)
 #endif
  
           timer_found = .false.
@@ -236,7 +235,7 @@
           else if(.not. timer_found) then
             current => all_timers
             timer_find: do while(.not.timer_found .and. associated(current))
-              string_equal = (trim(current%timer_name) == trim(timer_name))
+              string_equal = (current%timer_name(1:current%nlen) == trimed_name)
 
               if(string_equal) then
                 timer_found = .true.
@@ -263,21 +262,20 @@
 #else
             call system_clock(count=clock)
             call system_clock(count_rate=hz)
-            current%end_time = real(clock,kind=RKIND)/real(hz,kind=RKIND)
+            current%end_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
 #endif
             
             time_temp = current%end_time - current%start_time
             current%total_time = current%total_time + time_temp
 
-            if(time_temp > current%max_time) then
-              current%max_time = time_temp
+            if(real(time_temp,RKIND) > current%max_time) then
+              current%max_time = real(time_temp,RKIND)
             endif
 
-            if(time_temp < current%min_time) then
-              current%min_time = time_temp
+            if(real(time_temp,RKIND) < current%min_time) then
+              current%min_time = real(time_temp,RKIND)
             endif
 
-            current%avg_time = current%avg_time + time_temp
             current%calls = current%calls + 1
           endif
 
@@ -304,7 +302,7 @@
           logical :: total_found, string_equals
           type (timer_node), pointer :: current, total
           real (kind=RKIND) :: percent
-          integer :: i
+          integer :: i, nlen
 
           total_found = .false.
 
@@ -323,14 +321,14 @@
               tname = tname//' '
             end do
 
-            if(timer_ptr%total_time == 0.0d0) then
-              timer_ptr%min_time = 0.0d0
-              timer_ptr%max_time = 0.0d0
-              timer_ptr%avg_time = 0.0d0
-              percent = 0.0d0
+            if(timer_ptr%total_time == 0.0_R8KIND) then
+              timer_ptr%min_time = 0.0_RKIND
+              timer_ptr%max_time = 0.0_RKIND
+              timer_ptr%avg_time = 0.0_RKIND
+              percent = 0.0_RKIND
             else
-              timer_ptr%avg_time = timer_ptr%total_time/timer_ptr%calls
-              percent = timer_ptr%total_time/total_ptr%total_time
+              timer_ptr%avg_time = timer_ptr%total_time / real(timer_ptr%calls, kind=R8KIND)
+              percent = timer_ptr%total_time / total_ptr%total_time
             endif
 
             write(stdoutUnit,'(i2, 1x, a35, f15.5, i10, 3f15.5, 2f8.2)') timer_ptr%levels, tname(1:timer_ptr%levels)// &
@@ -342,7 +340,7 @@
           total => all_timers
 
           find_total: do while((.not.total_found) .and. associated(total))
-            string_equals = (trim(total%timer_name) == trim("total time"))
+            string_equals = (total%timer_name(1:total%nlen) == "total time")
             if(string_equals) then
               total_found = .true.
             else
@@ -363,8 +361,8 @@
           current => all_timers
 
           print_timers: do while(associated(current))
-            string_equals = (trim(current%timer_name) == trim("total time"))
-            string_equals = string_equals .or. (trim(current%timer_name) == trim(" "))
+            string_equals = (current%timer_name(1:current%nlen) == "total time")
+            string_equals = string_equals .or. (current%timer_name(1:current%nlen) == "")
 
             if(.not.string_equals) then
               call mpas_timer_write(current, total)
@@ -408,6 +406,12 @@
 !> \details 
 !> This routine synchronizes timers across all processors in order to better represent
 !> the entire run domain with the timer output.
+!>
+!> Note: To avoid the need for additional implementations of
+!> mpas_dmpar_max_real() and mpas_dmpar_sum_real(), the total_time is
+!> cast from R8KIND to RKIND in the process of computing all_total_time
+!> and all_ave_time. This is not expected to have a practical impact on
+!> the reported times.
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_sync()!{{{
@@ -424,15 +428,15 @@
             all_max_time = 0.0
             all_min_time = 0.0
 
-            call mpas_dmpar_max_real(domain_info, current % total_time, all_total_time)
-            call mpas_dmpar_sum_real(domain_info, current % total_time, all_ave_time)
+            call mpas_dmpar_max_real(domain_info, real(current % total_time, kind=RKIND), all_total_time)
+            call mpas_dmpar_sum_real(domain_info, real(current % total_time, kind=RKIND), all_ave_time)
             
             all_ave_time = all_ave_time / domain_info % nprocs
 
             current % total_time = all_total_time
 
 #ifdef _MPI
-            if ( all_total_time > 0.0d0 ) then
+            if ( all_total_time > 0.0_RKIND ) then
                current % efficiency = all_ave_time / all_total_time
             else
                current % efficiency = 1.0
@@ -442,7 +446,7 @@
 #endif
 
             if ( current % calls > 0 ) then
-               current % avg_time = current % total_time / current % calls
+               current % avg_time = current % total_time / real(current % calls, kind=R8KIND)
             else
                current % avg_time = current % total_time
             end if
