@@ -286,7 +286,6 @@ contains
          dvEdge, &
          areaCell
 
-    ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 

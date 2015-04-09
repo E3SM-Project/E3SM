@@ -30,7 +30,9 @@ module cice_debug
        cice_time_output_variable_real, &
        cice_time_output_variable_real_2D, &
        cice_time_output_variable_int, &
-       cice_time_output_variable_int_2D
+       cice_time_output_variable_int_2D, &
+       cice_plot_vertices_planar, &
+       cice_plot_cells_planar
 
   integer, private :: &
        iObject = 2, &
@@ -1351,7 +1353,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  plot_vertices_planar
+!  cice_plot_vertices_planar
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -1361,7 +1363,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine plot_vertices_planar(mesh, array, interiorVertex, filename)!{{{
+  subroutine cice_plot_vertices_planar(mesh, array, interiorVertex, filename)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
@@ -1461,11 +1463,11 @@ contains
 
     close(55)
 
-  end subroutine plot_vertices_planar!}}}
+  end subroutine cice_plot_vertices_planar!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  plot_cells_planar
+!  cice_plot_cells_planar
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -1475,7 +1477,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine plot_cells_planar(mesh, array, filename, tag)!{{{
+  subroutine cice_plot_cells_planar(mesh, array, filename, tag)!{{{
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
@@ -1573,7 +1575,7 @@ contains
 
     close(55)
 
-  end subroutine plot_cells_planar!}}}
+  end subroutine cice_plot_cells_planar!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

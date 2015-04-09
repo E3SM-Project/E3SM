@@ -20,9 +20,319 @@ module cice_velocity_solver_variational
   save
 
   public :: &
-       cice_stress_tensor_variational
+       cice_init_velocity_solver_variational, &
+       cice_strain_tensor_variational, &
+       cice_stress_divergence_variational, &
+       cice_internal_stress_variational
 
 contains
+
+!-----------------------------------------------------------------------
+! initialization
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_init_velocity_solver_variational
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 24 October 2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_init_velocity_solver_variational(&
+       mesh, &
+       velocity_variational, &
+       boundary, &
+       rotateCartesianGrid, &
+       includeMetricTerms, &
+       variationalBasisType)!{{{
+    
+    use cice_velocity_solver_wachspress, only: &
+         cice_init_velocity_solver_wachspress
+
+    use cice_velocity_solver_pwl, only: &
+         cice_init_velocity_solver_pwl
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
+
+    type(MPAS_pool_type), pointer :: &
+         velocity_variational, & !< Input/Output: 
+         boundary                !< Input/Output: 
+
+    logical, intent(in) :: &
+         rotateCartesianGrid, & !< Input: 
+         includeMetricTerms     !< Input: 
+
+    character(len=*), intent(in) :: &
+         variationalBasisType
+
+    if (trim(variationalBasisType) == "wachspress") then
+
+       call cice_init_velocity_solver_wachspress(&
+            mesh, &
+            velocity_variational, &
+            boundary, &
+            rotateCartesianGrid, &
+            includeMetricTerms)
+
+    else if (trim(variationalBasisType) == "pwl") then
+
+       call cice_init_velocity_solver_pwl(&
+            mesh, &
+            velocity_variational, &
+            boundary, &
+            rotateCartesianGrid, &
+            includeMetricTerms)
+
+    endif
+
+  end subroutine cice_init_velocity_solver_variational
+
+!-----------------------------------------------------------------------
+! time step
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_internal_stress_variational
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_internal_stress_variational(&
+       mesh, &
+       velocity_variational, &
+       uVelocity, &
+       vVelocity, &
+       icePressure, &
+       replacementPressure, &
+       dtElastic, &
+       evpDamping, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       solveStress, &
+       solveVelocity)!{{{
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &   !< Input/Output: 
+         velocity_variational !< Input/Output: 
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         uVelocity, & !< Input:
+         vVelocity    !< Input: 
+
+    real(kind=RKIND), dimension(:), intent(inout) :: &
+         icePressure, &      !< Input/Output: 
+         replacementPressure !< Input/Output: 
+
+    real(kind=RKIND), intent(in) :: &
+         dtElastic  !< Input: 
+
+    logical, intent(in) :: &
+         evpDamping !< Input: 
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         stressDivergenceU, & !< Output: 
+         stressDivergenceV    !< Output: 
+
+    integer, dimension(:), intent(in) :: &
+         solveStress, & !< Input: 
+         solveVelocity  !< Input: 
+
+    integer, dimension(:,:), pointer :: &
+         cellVerticesAtVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         tanLatVertexRotatedOverRadius
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         basisGradientU, &
+         basisGradientV, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         basisIntegralsMetric
+
+    call MPAS_pool_get_array(velocity_variational, "strain11", strain11)
+    call MPAS_pool_get_array(velocity_variational, "strain22", strain22)
+    call MPAS_pool_get_array(velocity_variational, "strain12", strain12)
+    call MPAS_pool_get_array(velocity_variational, "stress11", stress11)
+    call MPAS_pool_get_array(velocity_variational, "stress22", stress22)
+    call MPAS_pool_get_array(velocity_variational, "stress12", stress12)
+    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
+    call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
+    call MPAS_pool_get_array(velocity_variational, "basisGradientU", basisGradientU)
+    call MPAS_pool_get_array(velocity_variational, "basisGradientV", basisGradientV)
+    call MPAS_pool_get_array(velocity_variational, "basisIntegralsU", basisIntegralsU)
+    call MPAS_pool_get_array(velocity_variational, "basisIntegralsV", basisIntegralsV)
+    call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
+
+    call cice_strain_tensor_variational(mesh, &
+         strain11, &
+         strain22, &
+         strain12, &
+         uVelocity, &
+         vVelocity, &
+         basisGradientU, &
+         basisGradientV, &
+         tanLatVertexRotatedOverRadius, &
+         solveStress)
+    
+    call cice_stress_tensor_variational(mesh, &
+         stress11, &
+         stress22, &
+         stress12, &
+         strain11, & 
+         strain22, &
+         strain12, &
+         icePressure, &
+         replacementPressure, &
+         solveStress, &
+         dtElastic, evpDamping)
+    
+    call cice_stress_divergence_variational(mesh, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         stress11, &
+         stress22, &
+         stress12, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         basisIntegralsMetric, &
+         tanLatVertexRotatedOverRadius, &
+         cellVerticesAtVertex, &
+         solveVelocity)
+    
+  end subroutine cice_internal_stress_variational!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_strain_tensor_variational
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_strain_tensor_variational(&
+       mesh, &
+       strain11, &
+       strain22, &
+       strain12, &
+       uVelocity, &
+       vVelocity, &
+       basisGradientU, &
+       basisGradientV, &
+       tanLatVertexRotatedOverRadius, &
+       solveStress)!{{{
+    
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
+
+    real(kind=RKIND), dimension(:,:), intent(out) :: &
+         strain11, & !< Output: 
+         strain22, & !< Output: 
+         strain12    !< Output: 
+    
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         uVelocity, & !< Input: 
+         vVelocity, & !< Input: 
+         tanLatVertexRotatedOverRadius !< Input: 
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         basisGradientU, & !< Input: 
+         basisGradientV    !< Input: 
+    
+    integer, dimension(:), intent(in) :: &
+         solveStress !< Input: 
+
+    integer :: &
+         iCell, &
+         iGradientVertex, &
+         iBasisVertex, &
+         iVertex, &
+         jVertex
+
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+
+    ! init variables
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+
+    ! loop over cells
+    do iCell = 1, nCells
+
+       strain11(:,iCell) = 0.0_RKIND
+       strain22(:,iCell) = 0.0_RKIND
+       strain12(:,iCell) = 0.0_RKIND
+
+       if (solveStress(iCell) == 1) then
+
+          ! loop over velocity points surrounding cell - location of stress and derivative
+          do iGradientVertex = 1, nEdgesOnCell(iCell)
+
+             ! loop over basis functions
+             do iBasisVertex = 1, nEdgesOnCell(iCell)
+
+                iVertex = verticesOnCell(iBasisVertex,iCell)
+
+                strain11(iGradientVertex,iCell) = strain11(iGradientVertex,iCell) + &
+                     uVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell)
+
+                strain22(iGradientVertex,iCell) = strain22(iGradientVertex,iCell) + &
+                     vVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell)
+
+                strain12(iGradientVertex,iCell) = strain12(iGradientVertex,iCell) + 0.5_RKIND * (&
+                     uVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell) + &
+                     vVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell))
+
+             enddo ! iVertexOnCell
+
+             ! metric terms
+             jVertex = verticesOnCell(iGradientVertex,iCell)
+
+             strain11(iGradientVertex,iCell) = strain11(iGradientVertex,iCell) - &
+                  vVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex)
+
+             strain12(iGradientVertex,iCell) = strain12(iGradientVertex,iCell) + &
+                  uVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex) * 0.5_RKIND
+
+          enddo ! jVertexOnCell
+
+       endif ! solveStress
+
+    enddo ! iCell
+
+  end subroutine cice_strain_tensor_variational!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -149,6 +459,147 @@ contains
     enddo ! iCell
 
   end subroutine cice_stress_tensor_variational!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_stress_divergence_variational
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_stress_divergence_variational(&
+       mesh, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       stress11, &
+       stress22, &
+       stress12, &
+       basisIntegralsU, &
+       basisIntegralsV, &
+       basisIntegralsMetric, &
+       tanLatVertexRotatedOverRadius, &
+       cellVerticesAtVertex, &
+       solveVelocity)!{{{
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input: 
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         stressDivergenceU, & !< Output: 
+         stressDivergenceV    !< Output: 
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &    
+         stress11, & !< Input: 
+         stress22, & !< Input: 
+         stress12    !< Input: 
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &   
+         basisIntegralsU, &   !< Input: 
+         basisIntegralsV, &   !< Input: 
+         basisIntegralsMetric !< Input: 
+
+    real(kind=RKIND), dimension(:), intent(in) :: & 
+         tanLatVertexRotatedOverRadius !< Input: 
+
+    integer, dimension(:,:), intent(in) :: &
+         cellVerticesAtVertex !< Input: 
+
+    integer, dimension(:), intent(in) :: &
+         solveVelocity !< Input: 
+
+    real(kind=RKIND) :: &
+         stressDivergenceUCell, &
+         stressDivergenceVCell
+
+    integer :: &
+         iVertex, &
+         iSurroundingCell, &
+         iCell, &
+         iStressVertex, &
+         iVelocityVertex
+
+    integer, pointer :: &
+         nVertices, &
+         vertexDegree
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex, &
+         verticesOnCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaTriangle
+
+    ! init variables
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
+
+    ! loop over velocity positions
+    do iVertex = 1, nVertices
+
+       stressDivergenceU(iVertex) = 0.0_RKIND
+       stressDivergenceV(iVertex) = 0.0_RKIND
+
+       if (solveVelocity(iVertex) == 1) then
+
+          ! loop over surrounding cells
+          do iSurroundingCell = 1, vertexDegree
+             
+             ! get the cell number of this cell
+             iCell = cellsOnVertex(iSurroundingCell, iVertex)
+             
+             ! get the vertexOnCell number of the iVertex velocity point from cell iCell
+             iVelocityVertex = cellVerticesAtVertex(iSurroundingCell,iVertex)
+
+             stressDivergenceUCell = 0.0_RKIND
+             stressDivergenceVCell = 0.0_RKIND
+
+             ! loop over the vertices of the surrounding cell
+             do iStressVertex = 1, nEdgesOnCell(iCell)
+
+                ! normal terms
+                stressDivergenceUCell = stressDivergenceUCell - &
+                     stress11(iStressVertex,iCell) * basisIntegralsU(iStressVertex,iVelocityVertex,iCell) - &
+                     stress12(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell)
+                
+                stressDivergenceVCell = stressDivergenceVCell - &
+                     stress22(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell) - &
+                     stress12(iStressVertex,iCell) * basisIntegralsU(iStressVertex,iVelocityVertex,iCell)
+                
+                ! metric terms
+                stressDivergenceUCell = stressDivergenceUCell - &
+                     stress12(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * tanLatVertexRotatedOverRadius(iVertex)
+
+                stressDivergenceVCell = stressDivergenceVCell + &
+                     stress11(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * tanLatVertexRotatedOverRadius(iVertex)
+
+             enddo ! iStressVertex
+
+             stressDivergenceU(iVertex) = stressDivergenceU(iVertex) + stressDivergenceUCell
+             stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + stressDivergenceVCell
+             
+          enddo ! iSurroundingCell
+
+          stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
+          stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)
+
+       endif ! solveVelocity
+
+    enddo ! iVertex
+
+  end subroutine cice_stress_divergence_variational!}}}
 
 !-----------------------------------------------------------------------
 

@@ -30,7 +30,8 @@ module cice_mesh
        cice_latlon_vector_rotation_forward, &
        cice_latlon_vector_rotation_backward, &
        cice_latlon_from_xyz, &
-       cice_interpolate_cell_to_vertex
+       cice_interpolate_cell_to_vertex, &
+       cice_project_3D_vector_onto_local_2D
 
 contains
 
@@ -1534,7 +1535,12 @@ contains
           call get_polygon_side_normal_3D_vector(mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, rotateCartesianGrid, normalVector3D)
 
           ! project the 3D vector onto the local 2D plane
-          call project_3D_vector_onto_local_2D(normalVectorPolygon(:,iEdgeOnCell,iCell), normalVector3D, xCell0, yCell0, zCell0)
+          call cice_project_3D_vector_onto_local_2D(normalVectorPolygon(:,iEdgeOnCell,iCell), normalVector3D, xCell0, yCell0, zCell0)
+
+          ! normalize the projected vector
+          vectorMagnitude = sqrt(normalVectorPolygon(1,iEdgeOnCell,iCell)**2 + normalVectorPolygon(2,iEdgeOnCell,iCell)**2)
+          normalVectorPolygon(1,iEdgeOnCell,iCell) = normalVectorPolygon(1,iEdgeOnCell,iCell) / vectorMagnitude
+          normalVectorPolygon(2,iEdgeOnCell,iCell) = normalVectorPolygon(2,iEdgeOnCell,iCell) / vectorMagnitude
 
        enddo ! iEdgeOnCell
 
@@ -1584,7 +1590,8 @@ contains
          normalVector3D
 
     real(kind=RKIND) :: &
-         xVertex0, yVertex0, zVertex0
+         xVertex0, yVertex0, zVertex0, &
+         vectorMagnitude
 
     integer, pointer :: &
          nVertices, &
@@ -1630,7 +1637,12 @@ contains
              call get_triangle_side_normal_3D_vector(mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, rotateCartesianGrid, normalVector3D)
 
              ! project the 3D vector onto the local 2D plane
-             call project_3D_vector_onto_local_2D(normalVectorTriangle(:,iVertexDegree,iVertex), normalVector3D, xVertex0, yVertex0, zVertex0)
+             call cice_project_3D_vector_onto_local_2D(normalVectorTriangle(:,iVertexDegree,iVertex), normalVector3D, xVertex0, yVertex0, zVertex0)
+
+             ! normalize the projected vector
+             vectorMagnitude = sqrt(normalVectorTriangle(1,iVertexDegree,iVertex)**2 + normalVectorTriangle(2,iVertexDegree,iVertex)**2)
+             normalVectorTriangle(1,iVertexDegree,iVertex) = normalVectorTriangle(1,iVertexDegree,iVertex) / vectorMagnitude
+             normalVectorTriangle(2,iVertexDegree,iVertex) = normalVectorTriangle(2,iVertexDegree,iVertex) / vectorMagnitude
 
           enddo ! iVertexDegree
 
@@ -1642,7 +1654,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  project_3D_vector_onto_local_2D
+!  cice_project_3D_vector_onto_local_2D
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -1652,7 +1664,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine project_3D_vector_onto_local_2D(&
+  subroutine cice_project_3D_vector_onto_local_2D(&
        normalVector2D, &
        normalVector3D, &
        xPoint, &
@@ -1674,9 +1686,6 @@ contains
          unitVectorEast, &
          unitVectorNorth
 
-    real(kind=RKIND) :: &
-         vectorMagnitude
-
     ! calculate the local eastern and northern unit vectors at the point
     call local_eastern_and_northern_unit_vectors(&
          xPoint, yPoint, zPoint, &
@@ -1695,14 +1704,7 @@ contains
          normalVector3D(1),  normalVector3D(2),  normalVector3D(3), &
          unitVectorNorth(1), unitVectorNorth(2), unitVectorNorth(3))
 
-    ! magnitude of projected vector
-    vectorMagnitude = sqrt(normalVector2D(1)**2 + normalVector2D(2)**2)
-
-    ! normalize projected vector
-    normalVector2D(1) = normalVector2D(1) / vectorMagnitude
-    normalVector2D(2) = normalVector2D(2) / vectorMagnitude
-
-  end subroutine project_3D_vector_onto_local_2D!}}}
+  end subroutine cice_project_3D_vector_onto_local_2D!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1955,6 +1957,15 @@ contains
        unitVectorNorth(1) = unitVectorNorth(1) / vectorMagnitude
        unitVectorNorth(2) = unitVectorNorth(2) / vectorMagnitude
        unitVectorNorth(3) = unitVectorNorth(3) / vectorMagnitude
+
+       if (zPoint < 0.0_RKIND) then
+
+          ! have calculated due south vector if in southern hemisphere
+          unitVectorNorth(1) = -unitVectorNorth(1)
+          unitVectorNorth(2) = -unitVectorNorth(2)
+          unitVectorNorth(3) = -unitVectorNorth(3)
+       
+       endif
 
     else   
 

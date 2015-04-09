@@ -59,6 +59,8 @@ contains
     call MPAS_pool_get_config(configs, "config_unit_test_type", config_unit_test_type)
     call MPAS_pool_get_config(configs, "config_unit_test_subtype", config_unit_test_subtype)
 
+    write(stderrUnit,*) "Unit test: ", trim(config_unit_test_type), " ", trim(config_unit_test_subtype)
+
     select case (trim(config_unit_test_type))
     case ("strain rate operator")
        call cice_strain_rate_operator_unit_test(block, trim(config_unit_test_subtype))
