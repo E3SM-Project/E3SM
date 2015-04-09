@@ -191,7 +191,7 @@ implicit none
   
   subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, &
        dtime, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars,&
-       cnstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+       cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
   ! eventually this will be an abstract subroutine, but now I use the select case approach for a quick and dirty implementation.
@@ -209,6 +209,7 @@ implicit none
    use CNStateType              , only : cnstate_type     
    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
    use CNCarbonFluxType         , only : carbonflux_type   
+   use CNCarbonStateType        , only : carbonstate_type
    use CNNitrogenFluxType       , only : nitrogenflux_type     
    !ARGUMENTS
    class(bgc_reaction_mock_run_type)   , intent(in) :: this
@@ -224,6 +225,7 @@ implicit none
    type(temperature_type)              , intent(in) :: temperature_vars                   ! energy state variable
    type(soilstate_type)                , intent(in) :: soilstate_vars
    type(cnstate_type)                  , intent(inout) :: cnstate_vars
+   type(carbonstate_type)              , intent(in) :: carbonstate_vars
    type(carbonflux_type)               , intent(inout) :: carbonflux_vars
    type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
    type(chemstate_type)                , intent(in) :: chemstate_vars

@@ -295,7 +295,7 @@ module PlantSoilnutrientFluxType
   real(r8), intent(in) :: frootc_patch(bounds%begp:bounds%endp)
   
   
-  real(r8) :: Vmax_minn = 1.e-8_r8  ! gN/gC/s
+  real(r8) :: Vmax_minn = 1.e-7_r8  ! gN/gC/s
   integer  :: fp, p, fc, c
   
   SHR_ASSERT_ALL((ubound(frootc_patch) == (/bounds%endp/)), errMsg(__FILE__,__LINE__))
@@ -304,7 +304,7 @@ module PlantSoilnutrientFluxType
   !default approach
   !
   !do fc = 1, num_soilc
-  !  c = fitler_soilc(fc)
+  !  c = filter_soilc(fc)
   !  
   !  this%plant_minn_uptake_potential_col(c) = this%plant_totn_demand_flx_col(c)
   !enddo
@@ -312,7 +312,7 @@ module PlantSoilnutrientFluxType
   !new approach
   do fp = 1, num_soilp
     p = filter_soilp(fp)    
-    this%plant_minn_uptake_potential_patch(p) = max(Vmax_minn * frootc_patch(p),Vmax_min*0.1_r8)    
+    this%plant_minn_uptake_potential_patch(p) = max(Vmax_minn * frootc_patch(p),Vmax_minn*100._r8)    
   enddo
 
   

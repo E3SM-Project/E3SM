@@ -398,7 +398,7 @@ contains
 
   subroutine calc_bgc_reaction(this, bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, jtops, dtime, &
     betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, &
-    cnstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+    cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
   ! this returns net carbon fluxes from decay and translocation
@@ -419,6 +419,7 @@ contains
   use CNStateType              , only : cnstate_type  
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   use CNVerticalProfileMod     , only : decomp_vertprofiles
+  use CNCarbonStateType        , only : carbonstate_type
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type  
   !ARGUMENTS
@@ -437,6 +438,7 @@ contains
   type(chemstate_type)               , intent(in) :: chemstate_vars
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information
   type(tracercoeff_type)             , intent(in) :: tracercoeff_vars
+  type(carbonstate_type)             , intent(in) :: carbonstate_vars
   type(cnstate_type)                 , intent(inout) :: cnstate_vars
   type(carbonflux_type)              , intent(inout) :: carbonflux_vars
   type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars  
@@ -496,7 +498,7 @@ contains
   !update plant nitrogen uptake potential
   
   call plantsoilnutrientflux_vars%calc_nutrient_uptake_potential(bounds, num_soilc, filter_soilc, num_soilp, &
-     filter_soilp, carbonstate_vars%frootc_patch))
+     filter_soilp, carbonstate_vars%frootc_patch)
      
   !calculate multiplicative scalars for decay parameters
   call calc_decompK_multiply_scalar(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, &
