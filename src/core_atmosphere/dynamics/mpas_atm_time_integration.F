@@ -119,6 +119,8 @@ module atm_time_integration
       logical, pointer :: config_scalar_advection
       logical, pointer :: config_positive_definite
       logical, pointer :: config_monotonic
+      logical, pointer :: config_print_global_minmax_vel
+      logical, pointer :: config_print_global_minmax_sca
       real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: config_microp_scheme
 
@@ -161,6 +163,8 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_monotonic', config_monotonic)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_microp_scheme', config_microp_scheme)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_vel', config_print_global_minmax_vel)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_sca', config_print_global_minmax_sca)
 
       !
       ! Retrieve field structures
@@ -504,61 +508,76 @@ module atm_time_integration
       end do
 #endif
 
-      102 format(' global min, max scalar',i4,2(1x,e17.10))
-      write(0,*)
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'state', state)
-         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+      if (config_print_global_minmax_vel) then
+         write(0,*)
 
-         call mpas_pool_get_array(state, 'w', w, 2)
-         call mpas_pool_get_array(state, 'u', u, 2)
-         call mpas_pool_get_array(state, 'scalars', scalars, 2)
-         call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
-         call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
-         call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
-         call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'state', state)
 
-         scalar_min = 0.
-         scalar_max = 0.
-         do iCell = 1, nCellsSolve
-         do k = 1, nVertLevels
-            scalar_min = min(scalar_min, w(k,iCell))
-            scalar_max = max(scalar_max, w(k,iCell))
-         end do
-         end do
-         call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
-         call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-         write(0,*) 'global min, max w ',global_scalar_min, global_scalar_max
+            call mpas_pool_get_array(state, 'w', w, 2)
+            call mpas_pool_get_array(state, 'u', u, 2)
+            call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
+            call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
-         scalar_min = 0.
-         scalar_max = 0.
-         do iEdge = 1, nEdgesSolve
-         do k = 1, nVertLevels
-            scalar_min = min(scalar_min, u(k,iEdge))
-            scalar_max = max(scalar_max, u(k,iEdge))
-         end do
-         end do
-         call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
-         call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-         write(0,*) 'global min, max u ',global_scalar_min, global_scalar_max
-
-         do iScalar = 1, num_scalars
-            scalar_min = 0.
-            scalar_max = 0.
+            scalar_min = 0.0
+            scalar_max = 0.0
             do iCell = 1, nCellsSolve
             do k = 1, nVertLevels
-               scalar_min = min(scalar_min, scalars(iScalar,k,iCell))
-               scalar_max = max(scalar_max, scalars(iScalar,k,iCell))
+               scalar_min = min(scalar_min, w(k,iCell))
+               scalar_max = max(scalar_max, w(k,iCell))
             end do
             end do
             call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
             call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
-            write(0,102) iScalar,global_scalar_min,global_scalar_max
-         end do
+            write(0,*) 'global min, max w ', global_scalar_min, global_scalar_max
 
-         block => block % next
-      end do
+            scalar_min = 0.0
+            scalar_max = 0.0
+            do iEdge = 1, nEdgesSolve
+            do k = 1, nVertLevels
+               scalar_min = min(scalar_min, u(k,iEdge))
+               scalar_max = max(scalar_max, u(k,iEdge))
+            end do
+            end do
+            call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
+            call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
+            write(0,*) 'global min, max u ', global_scalar_min, global_scalar_max
+
+            block => block % next
+         end do
+      end if
+
+      if (config_print_global_minmax_sca) then
+         if (.not. config_print_global_minmax_vel) write(0,*)
+
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+
+            call mpas_pool_get_array(state, 'scalars', scalars, 2)
+            call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+            call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
+
+            do iScalar = 1, num_scalars
+               scalar_min = 0.0
+               scalar_max = 0.0
+               do iCell = 1, nCellsSolve
+               do k = 1, nVertLevels
+                  scalar_min = min(scalar_min, scalars(iScalar,k,iCell))
+                  scalar_max = max(scalar_max, scalars(iScalar,k,iCell))
+               end do
+               end do
+               call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
+               call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
+               write(0,'(a,i4,2(1x,e17.10))') ' global min, max scalar ', iScalar, global_scalar_min, global_scalar_max
+            end do
+
+            block => block % next
+         end do
+      end if
 
    end subroutine atm_srk3
 
@@ -1837,7 +1856,7 @@ module atm_time_integration
       ! do one scalar at a time
 
       do iScalar = 1, num_scalars
-         write(0,*) ' mono transport for scalar ',iScalar
+!         write(0,*) ' mono transport for scalar ',iScalar
 
          do iCell = 1, nCells
          do k = 1, nVertLevels
@@ -2353,7 +2372,7 @@ module atm_time_integration
 
       prandtl_inv = 1.0_RKIND/prandtl
 
-      write(0,*) ' rk_step in compute_dyn_tend ',rk_step
+!      write(0,*) ' rk_step in compute_dyn_tend ',rk_step
 
 
       delsq_horiz_mixing = .false.
@@ -2384,9 +2403,9 @@ module atm_time_integration
          h_mom_eddy_visc4   = config_visc4_2dsmag * config_len_disp**3
          h_theta_eddy_visc4 = h_mom_eddy_visc4
          delsq_horiz_mixing = .true.
-         write(0,*) '... config_visc4_2dsmag = ', config_visc4_2dsmag
-         write(0,*) '... h_mom_eddy_visc4    = ', h_mom_eddy_visc4
-         write(0,*) '... h_theta_eddy_visc4  = ', h_theta_eddy_visc4
+!         write(0,*) '... config_visc4_2dsmag = ', config_visc4_2dsmag
+!         write(0,*) '... h_mom_eddy_visc4    = ', h_mom_eddy_visc4
+!         write(0,*) '... h_theta_eddy_visc4  = ', h_theta_eddy_visc4
       else if ( config_horiz_mixing == "2d_fixed") then
          h_mom_eddy_visc4   = config_h_mom_eddy_visc4
          h_theta_eddy_visc4 = config_h_theta_eddy_visc4

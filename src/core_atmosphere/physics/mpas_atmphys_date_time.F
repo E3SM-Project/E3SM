@@ -36,7 +36,7 @@
 !>      StrKIND to 2 to input correctly the reference date to subroutine get_julgmt_date.
 !>    * in subroutines get_julgmt_date and split_date_char, changed the declaration of date_str
 !>      from StrKIND to *.
-!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-10-18.
+!>      Laura D. Fowler (laura@ucar.edu) / 2013-10-18.
 
 
  contains

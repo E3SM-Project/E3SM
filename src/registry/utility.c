@@ -211,29 +211,43 @@ char * check_dimensions(ezxml_t registry, char * dims){/*{{{*/
 	return NULL;
 }/*}}}*/
 
-char * check_streams(char * streams){/*{{{*/
-	char * stream;
-	int length, i, bad_streams;
 
-	length = strlen(streams);
+char * check_streams(ezxml_t registry, char * streams)
+{
+	ezxml_t streams_xml, stream_xml;
 
-	stream = (char *)malloc(2*sizeof(char));
-	stream[1] = '\0';
+	const char *streamname;
 
-	for (i = 0; i < length; i++){
-		bad_streams = 1;	
-		stream[0] = streams[i];
-		if(strcmp(stream, "i") == 0 || strcmp(stream, "r") == 0 || strcmp(stream, "o") == 0 || strcmp(stream, "s") == 0){
-			bad_streams = 0;
+	char *string, *tofree, *token;
+	char *failed;
+	int missing_stream;
+
+	string = strdup(streams);
+	tofree = string;
+	failed = NULL;
+
+	while( (token = strsep(&string, ";")) != NULL) {
+		missing_stream = 1;
+		for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+			for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
+				streamname = ezxml_attr(stream_xml, "name");
+
+				if(strcasecmp(streamname, token) == 0) {    /* TODO: Not portable? */
+					missing_stream = 0;
+				}
+			}
 		}
 
-		if (bad_streams == 1){
-			return stream;
+		if (missing_stream) {
+			failed = strdup(token);
+			free(tofree);
+			return failed;
 		}
 	}
+	free(tofree);
+	return failed;
+}
 
-	return NULL;
-}/*}}}*/
 
 int check_persistence(const char * persistence){/*{{{*/
 	if(persistence){

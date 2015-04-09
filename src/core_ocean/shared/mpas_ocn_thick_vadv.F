@@ -67,7 +67,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_vadv_tend(meshPool, vertTransportVelocityTop, tend, err)!{{{
+   subroutine ocn_thick_vadv_tend(meshPool, vertAleTransportTop, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -76,7 +76,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         vertTransportVelocityTop     !< Input: vertical velocity on top layer
+         vertAleTransportTop     !< Input: vertical velocity on top layer
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
@@ -127,7 +127,7 @@ contains
 
       do iCell = 1, nCells
          do k = 1, maxLevelCell(iCell)
-            tend(k,iCell) = tend(k,iCell) + vertTransportVelocityTop(k+1,iCell) - vertTransportVelocityTop(k,iCell)
+            tend(k,iCell) = tend(k,iCell) + vertAleTransportTop(k+1,iCell) - vertAleTransportTop(k,iCell)
          end do
       end do
 

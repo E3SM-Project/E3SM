@@ -423,8 +423,7 @@ contains
 
       ! mrp: find out how to do correct error check.
       if (size(A,1).ne.n.or.size(A,2).ne.m) then
-        write(stderrUnit,*) 'error, mpas_outer_product: size of A must match u and v'
-        stop
+        call mpas_dmpar_global_abort('ERROR: in subroutine mpas_outer_product(), size of A must match u and v')
       endif
 
       do i=1,n

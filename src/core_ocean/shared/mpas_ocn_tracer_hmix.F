@@ -78,22 +78,30 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_tend(meshPool, layerThicknessEdge, tracers, tend, err)!{{{
+   subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
+                                   relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend, err)!{{{
+
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge    !< Input: thickness at edge
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         layerThickness,     &!< Input: thickness at cell centers
+         layerThicknessEdge, &!< Input: thickness at edge
+         zMid                 !< Input: Z coordinate at the center of a cell
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         relativeSlopeTopOfEdge, &
+         relativeSlopeTapering, &
+         relativeSlopeTaperingCell
 
       !-----------------------------------------------------------------
       !
@@ -131,7 +139,8 @@ contains
       if(.not.tracerHmixOn) return
 
       call mpas_timer_start("del2", .false., del2Timer)
-      call ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err1)
+      call ocn_tracer_hmix_del2_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
+                                     relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend, err1)
       call mpas_timer_stop("del2", del2Timer)
       call mpas_timer_start("del4", .false., del4Timer)
       call ocn_tracer_hmix_del4_tend(meshPool, layerThicknessEdge, tracers, tend, err2)

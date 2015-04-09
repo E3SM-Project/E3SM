@@ -10,23 +10,39 @@
 # If none of the methods used in this script are successful in acquiring the 
 #   tables, please attempt to manually download the files from the MPAS-Data 
 #   repository at https://github.com/MPAS-Dev/MPAS-Data/.  All *.TBL and *DATA* 
-#   files, as well as the VERSION file, should be copied into a subdirectory 
-#   named src/core_atmosphere/physics/physics_wrf/files before continuing 
-#   the build process.
+#   files, as well as the COMPATIBILITY file, should be copied into 
+#   a subdirectory named src/core_atmosphere/physics/physics_wrf/files before 
+#   continuing the build process.
 #
 # If all else fails, please contact the MPAS-A developers 
 #   via "mpas-atmosphere-help@googlegroups.com".
 #
 ################################################################################
 
-if [ -s physics_wrf/files/VERSION ]; then
-   vers=`cat physics_wrf/files/VERSION`
-   if [ "$vers" = "2.0" ]; then
-      echo "*** WRF physics tables appear to already exist; no need to obtain them again ***"
+mpas_vers="2.1"
+
+if [ -s physics_wrf/files/COMPATIBILITY ]; then
+
+   compatible=0
+
+   compat=`cat physics_wrf/files/COMPATIBILITY | grep -v "#"`
+   for ver in $compat; do
+      if [ "$ver" = "$mpas_vers" ]; then
+         compatible=1
+      fi
+   done
+
+   if [ $compatible -eq 1 ]; then
+      echo "*** Compatible versions of WRF physics tables appear to already exist; no need to obtain them again ***"
       exit 0
    else
-      echo "*** WRF physics tables appear to be out of date; downloading the latest version ***"
+      echo "*** Existing WRF physics tables appear to be incompatible with MPAS v$mpas_vers; downloading the latest tables ***"
    fi
+
+else
+
+   echo "*** No compatible version of WRF physics tables found; downloading the latest tables ***"
+
 fi
 
 

@@ -13,5 +13,5 @@ void split_derived_dim_string(char * dim, char ** p1, char ** p2);
 int is_integer_constant(char * c);
 char * check_packages(ezxml_t registry, char * packages);
 char * check_dimensions(ezxml_t registry, char * dims);
-char * check_streams(char * streams);
+char * check_streams(ezxml_t registry, char * streams);
 int check_persistence(const char * persistence);

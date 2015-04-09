@@ -23,6 +23,7 @@ module ocn_global_stats
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
+   use mpas_stream_manager
 
    use ocn_constants
    use ocn_diagnostics_routines
@@ -45,9 +46,7 @@ module ocn_global_stats
 
    public :: ocn_setup_packages_global_stats, &
              ocn_init_global_stats, &
-             ocn_init_alarms_global_stats, &
              ocn_compute_global_stats, &
-             ocn_write_global_stats, &
              ocn_restart_global_stats, &
              ocn_finalize_global_stats
 
@@ -170,77 +169,6 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_init_alarms_global_stats
-!
-!> \brief   Initialize alarms for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine conducts all alarm initializations required for the 
-!>  MPAS-Ocean analysis member.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_init_alarms_global_stats(clock, startTime, computeAlarmID, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(in) :: computeAlarmID
-      type (MPAS_Time_Type), intent(in) :: startTime
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      type (MPAS_Clock_type), intent(inout) :: clock
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: ierr
-      character(len=StrKIND) :: compute_interval
-      type (MPAS_Time_Type) :: alarmStartTime
-      type (MPAS_TimeInterval_type) :: alarmTimeStep
-
-      character (len=StrKIND), pointer :: config_global_stats_compute_interval, config_output_interval
-
-      err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_global_stats_compute_interval', config_global_stats_compute_interval)
-      call mpas_pool_get_config(ocnConfigs, 'config_output_interval', config_output_interval)
-
-      ! set compute alarm for this analysis member
-      if (config_global_stats_compute_interval=='same_as_output') then
-         compute_interval = config_output_interval
-      else
-         compute_interval = config_global_stats_compute_interval
-      endif
-
-      call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-
-   end subroutine ocn_init_alarms_global_stats!}}}
-
-!***********************************************************************
-!
 !  routine ocn_compute_global_stats
 !
 !> \brief   Compute MPAS-Ocean analysis member
@@ -307,7 +235,7 @@ contains
       real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal, time_days
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
-         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, vertVelocityTop, &
+         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertAleTransportTop, vertVelocityTop, &
          lowFreqDivergence, highFreqThickness, density
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       
@@ -383,7 +311,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
          call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdge)
          call mpas_pool_get_array(diagnosticsPool, 'normalizedPlanetaryVorticityEdge', normalizedPlanetaryVorticityEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
          call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
          call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
          call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
@@ -393,7 +321,6 @@ contains
 
          allocate(areaEdge(1:nEdgesSolve))
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
-
 
          allocate(workArray(nVertLevels,nCellsSolve))
 
@@ -534,9 +461,9 @@ contains
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
-         ! vertTransportVelocityTop vertical velocity
+         ! vertAleTransportTop vertical velocity
          variableIndex = variableIndex + 1
-         workArray = vertTransportVelocityTop(1:nVertLevels,1:nCellsSolve)
+         workArray = vertAleTransportTop(1:nVertLevels,1:nCellsSolve)
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
             workArray, sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
             verticalSumMaxes_tmp(variableIndex))
@@ -722,7 +649,7 @@ contains
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
 
-      ! vertTransportVelocityTop vertical velocity
+      ! vertAleTransportTop vertical velocity
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
@@ -810,54 +737,6 @@ contains
       err = 0
 
    end subroutine ocn_restart_global_stats!}}}
-
-!***********************************************************************
-!
-!  routine ocn_write_global_stats
-!
-!> \brief   MPAS-Ocean analysis output
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine writes all output for this MPAS-Ocean analysis member.
-!>  At this time this is just a stub, and all analysis output is written
-!>  to the output file specified by config_output_name.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_write_global_stats(domain, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (domain_type), intent(in) :: domain
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      err = 0
-
-   end subroutine ocn_write_global_stats!}}}
 
 !***********************************************************************
 !

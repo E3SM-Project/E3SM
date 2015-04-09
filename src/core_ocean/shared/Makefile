@@ -24,12 +24,14 @@ OBJS = mpas_ocn_init.o \
 	   mpas_ocn_vmix_coefs_const.o \
 	   mpas_ocn_vmix_coefs_rich.o \
 	   mpas_ocn_vmix_coefs_tanh.o \
+       mpas_ocn_vmix_coefs_redi.o \
 	   mpas_ocn_vmix_cvmix.o \
 	   mpas_ocn_tendency.o \
 	   mpas_ocn_tracer_hmix.o \
 	   mpas_ocn_tracer_hmix_del2.o \
 	   mpas_ocn_tracer_hmix_del4.o \
 	   mpas_ocn_tracer_advection.o \
+	   mpas_ocn_tracer_nonlocalflux.o \
 	   mpas_ocn_tracer_short_wave_absorption.o \
 	   mpas_ocn_tracer_short_wave_absorption_jerlov.o \
 	   mpas_ocn_high_freq_thickness_hmix_del2.o \
@@ -48,7 +50,7 @@ all: $(OBJS)
 
 mpas_ocn_init.o: mpas_ocn_constants.o
 
-mpas_ocn_tendency.o: mpas_ocn_time_average.o mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_surface_flux.o mpas_ocn_thick_surface_flux.o mpas_ocn_tracer_short_wave_absorption.o mpas_ocn_tracer_advection.o mpas_ocn_tracer_hmix.o
+mpas_ocn_tendency.o: mpas_ocn_time_average.o mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_surface_flux.o mpas_ocn_thick_surface_flux.o mpas_ocn_tracer_short_wave_absorption.o mpas_ocn_tracer_advection.o mpas_ocn_tracer_hmix.o mpas_ocn_tracer_nonlocalflux.o
 
 mpas_ocn_diagnostics_routines.o:
 
@@ -100,13 +102,15 @@ mpas_ocn_tracer_advection.o:
 
 mpas_ocn_high_freq_thickness_hmix_del2.o:
 
+mpas_ocn_tracer_nonlocalflux.o:
+
 mpas_ocn_tracer_surface_flux.o: mpas_ocn_forcing.o
 
 mpas_ocn_tracer_short_wave_absorption.o: mpas_ocn_tracer_short_wave_absorption_jerlov.o
 
 mpas_ocn_tracer_short_wave_absorption_jerlov.o:
 
-mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o mpas_ocn_vmix_cvmix.o 
+mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o mpas_ocn_vmix_cvmix.o mpas_ocn_vmix_coefs_redi.o
 
 mpas_ocn_vmix_coefs_const.o:
 
@@ -115,6 +119,8 @@ mpas_ocn_vmix_coefs_rich.o: mpas_ocn_equation_of_state.o
 mpas_ocn_vmix_coefs_tanh.o:
 
 mpas_ocn_vmix_cvmix.o: 
+
+mpas_ocn_vmix_coefs_redi.o:
 
 mpas_ocn_equation_of_state.o: mpas_ocn_equation_of_state_jm.o mpas_ocn_equation_of_state_linear.o
 

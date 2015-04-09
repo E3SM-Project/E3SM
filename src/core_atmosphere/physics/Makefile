@@ -14,30 +14,30 @@ OBJS_init = \
 	mpas_atmphys_o3climatology.o
 
 OBJS = \
-	mpas_atmphys_camrad_init.o            \
-	mpas_atmphys_control.o                \
-	mpas_atmphys_driver.o                 \
-	mpas_atmphys_driver_cloudiness.o      \
-	mpas_atmphys_driver_convection_deep.o \
-	mpas_atmphys_driver_gwdo.o            \
-	mpas_atmphys_driver_lsm.o             \
-	mpas_atmphys_driver_microphysics.o    \
-	mpas_atmphys_driver_pbl.o             \
-	mpas_atmphys_driver_radiation_lw.o    \
-	mpas_atmphys_driver_radiation_sw.o    \
-	mpas_atmphys_driver_sfclayer.o        \
-	mpas_atmphys_init.o                   \
-	mpas_atmphys_landuse.o                \
-	mpas_atmphys_lsm_noahinit.o           \
-	mpas_atmphys_manager.o                \
-	mpas_atmphys_rrtmg_lwinit.o           \
-	mpas_atmphys_rrtmg_swinit.o           \
-	mpas_atmphys_todynamics.o             \
-	mpas_atmphys_update_surface.o         \
-	mpas_atmphys_update.o                 \
+	mpas_atmphys_camrad_init.o         \
+	mpas_atmphys_control.o             \
+	mpas_atmphys_driver.o              \
+	mpas_atmphys_driver_cloudiness.o   \
+	mpas_atmphys_driver_convection.o   \
+	mpas_atmphys_driver_gwdo.o         \
+	mpas_atmphys_driver_lsm.o          \
+	mpas_atmphys_driver_microphysics.o \
+	mpas_atmphys_driver_pbl.o          \
+	mpas_atmphys_driver_radiation_lw.o \
+	mpas_atmphys_driver_radiation_sw.o \
+	mpas_atmphys_driver_sfclayer.o     \
+	mpas_atmphys_init.o                \
+	mpas_atmphys_landuse.o             \
+	mpas_atmphys_lsm_noahinit.o        \
+	mpas_atmphys_manager.o             \
+	mpas_atmphys_rrtmg_lwinit.o        \
+	mpas_atmphys_rrtmg_swinit.o        \
+	mpas_atmphys_todynamics.o          \
+	mpas_atmphys_update_surface.o      \
+	mpas_atmphys_update.o              \
 	mpas_atmphys_vars.o
 
-OBJS_dyn = mpas_atmphys_interface_nhyd.o
+OBJS_dyn = mpas_atmphys_interface.o
 
 all: lookup_tables core_physics_init core_physics_wrf core_dyn core_physics
 
@@ -67,7 +67,7 @@ mpas_atmphys_control.o: \
 
 mpas_atmphys_driver.o: \
 	mpas_atmphys_driver_cloudiness.o \
-	mpas_atmphys_driver_convection_deep.o \
+	mpas_atmphys_driver_convection.o \
 	mpas_atmphys_driver_gwdo.o \
 	mpas_atmphys_driver_lsm.o \
 	mpas_atmphys_driver_pbl.o \
@@ -75,7 +75,7 @@ mpas_atmphys_driver.o: \
 	mpas_atmphys_driver_radiation_sw.o \
 	mpas_atmphys_driver_sfclayer.o \
 	mpas_atmphys_constants.o \
-	mpas_atmphys_interface_nhyd.o \
+	mpas_atmphys_interface.o \
 	mpas_atmphys_update.o \
 	mpas_atmphys_vars.o
 
@@ -83,7 +83,7 @@ mpas_atmphys_driver_cloudiness.o: \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_vars.o
 
-mpas_atmphys_driver_convection_deep.o: \
+mpas_atmphys_driver_convection.o: \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_utilities.o \
 	mpas_atmphys_vars.o \
@@ -103,7 +103,7 @@ mpas_atmphys_driver_lsm.o: \
 
 mpas_atmphys_driver_microphysics.o: \
 	mpas_atmphys_constants.o \
-	mpas_atmphys_interface_nhyd.o \
+	mpas_atmphys_interface.o \
 	mpas_atmphys_vars.o \
 	./physics_wrf/module_mp_kessler.o \
 	./physics_wrf/module_mp_wsm6.o
@@ -138,7 +138,7 @@ mpas_atmphys_driver_sfclayer.o: \
 	./physics_wrf/module_sf_sfclay.o
 
 mpas_atmphys_init.o: \
-	mpas_atmphys_driver_convection_deep.o \
+	mpas_atmphys_driver_convection.o \
 	mpas_atmphys_driver_lsm.o \
 	mpas_atmphys_driver_microphysics.o \
 	mpas_atmphys_driver_radiation_lw.o \
@@ -147,7 +147,7 @@ mpas_atmphys_init.o: \
 	mpas_atmphys_landuse.o \
 	mpas_atmphys_o3climatology.o
 
-mpas_atmphys_interface_nhyd.o: \
+mpas_atmphys_interface.o: \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_vars.o
 
@@ -193,7 +193,7 @@ mpas_atmphys_update_surface.o: \
 	mpas_atmphys_vars.o
 
 mpas_atmphys_update.o: \
-	mpas_atmphys_driver_convection_deep.o \
+	mpas_atmphys_driver_convection.o \
 	mpas_atmphys_vars.o
 
 clean:

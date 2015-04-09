@@ -62,7 +62,6 @@ module atm_advection
       real (kind=RKIND), dimension(maxEdges) :: angle_2d
 
       integer, parameter :: polynomial_order = 2
-      logical, parameter :: debug = .false.
       logical, parameter :: least_squares = .true.
       logical, parameter :: reset_poly = .true.
 
@@ -389,8 +388,6 @@ module atm_advection
  
       end do ! end of loop over cells
 
-      if (debug) stop
-
 !      write(0,*) ' check for deriv2 coefficients, iEdge 4 '
 !
 !      iEdge = 4
@@ -407,7 +404,6 @@ module atm_advection
 !      do j=2,7
 !         write(0,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,2,iEdge)
 !      end do
-!      stop
 
    end subroutine atm_initialize_advection_rk
 
@@ -600,9 +596,9 @@ module atm_advection
 !      real (kind=RKIND), dimension(n,n)  :: ata_inv
       integer, dimension(n) :: indx
    
-      if ( (ne<n) .or. (ne<m) ) then
-         write(6,*) ' error in poly_fit_2 inversion ',m,n,ne
-         stop
+      if ( (ne < n) .or. (ne < m) ) then
+         write(stderrUnit,*) ' error in poly_fit_2 inversion ',m,n,ne
+         call mpas_dmpar_global_abort('ERROR: in poly_fit_2 inversion')
       end if
    
       a(1:m,1:n) = a_in(1:m,1:n)

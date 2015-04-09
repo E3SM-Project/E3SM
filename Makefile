@@ -1,5 +1,4 @@
-#MODEL_FORMULATION = -DNCAR_FORMULATION
-MODEL_FORMULATION = -DLANL_FORMULATION
+MODEL_FORMULATION = 
 
 
 dummy:
@@ -108,7 +107,7 @@ ifort-gcc:
 	"CFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -g -traceback" \
+	"CFLAGS_DEBUG = -g" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -226,21 +225,32 @@ CPPINCLUDES =
 FCINCLUDES = 
 LIBS = 
 ifneq ($(wildcard $(PIO)/lib), ) # Check for newer PIO version
-	CPPINCLUDES = -I$(NETCDF)/include -I$(PIO)/include -I$(PNETCDF)/include
-	FCINCLUDES = -I$(NETCDF)/include -I$(PIO)/include -I$(PNETCDF)/include
-	LIBS = -L$(PIO)/lib -L$(PNETCDF)/lib -L$(NETCDF)/lib -lpio -lpnetcdf
+	CPPINCLUDES = -I$(PIO)/include
+	FCINCLUDES = -I$(PIO)/include
+	LIBS = -L$(PIO)/lib -lpio
 else
-	CPPINCLUDES = -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-	FCINCLUDES = -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-	LIBS = -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -lpio -lpnetcdf
+	CPPINCLUDES = -I$(PIO)
+	FCINCLUDES = -I$(PIO)
+	LIBS = -L$(PIO) -lpio
 endif
 
-NCLIB = -lnetcdf
-NCLIBF = -lnetcdff
-ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
-	LIBS += $(NCLIBF)
-endif # CHECK FOR NETCDF4
-LIBS += $(NCLIB)
+ifneq "$(PNETCDF)" ""
+	CPPINCLUDES += -I$(PNETCDF)/include
+	FCINCLUDES += -I$(PNETCDF)/include
+	LIBS += -L$(PNETCDF)/lib -lpnetcdf
+endif
+
+ifneq "$(NETCDF)" ""
+	CPPINCLUDES += -I$(NETCDF)/include
+	FCINCLUDES += -I$(NETCDF)/include
+	LIBS += -L$(NETCDF)/lib
+	NCLIB = -lnetcdf
+	NCLIBF = -lnetcdff
+	ifneq ($(wildcard $(NETCDF)/lib/libnetcdff.*), ) # CHECK FOR NETCDF4
+		LIBS += $(NCLIBF)
+	endif # CHECK FOR NETCDF4
+	LIBS += $(NCLIB)
+endif
 
 RM = rm -f
 CPP = cpp -P -traditional
@@ -348,6 +358,12 @@ else
 	NAMELIST_MESSAGE="A default namelist file (namelist.$(NAMELIST_SUFFIX).defaults) has been generated and copied to namelist.$(NAMELIST_SUFFIX)."
 endif
 
+ifneq ($(wildcard streams.$(NAMELIST_SUFFIX)), ) # Check for generated streams file.
+	STREAM_MESSAGE="A default streams file (streams.$(NAMELIST_SUFFIX).defaults) has been generated, but streams.$(NAMELIST_SUFFIX) has not been modified."
+else
+	STREAM_MESSAGE="A default streams file (streams.$(NAMELIST_SUFFIX).defaults) has been generated and copied to streams.$(NAMELIST_SUFFIX)."
+endif
+
 
 ifeq "$(findstring clean, $(MAKECMDGOALS))" "clean" # CHECK FOR CLEAN TARGET
 	override AUTOCLEAN=false
@@ -422,6 +438,9 @@ endif
 	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
 	if [ -e src/inc/namelist.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/namelist.$(NAMELIST_SUFFIX).defaults .; fi
 	if [ ! -e namelist.$(NAMELIST_SUFFIX) ]; then cp namelist.$(NAMELIST_SUFFIX).defaults namelist.$(NAMELIST_SUFFIX); fi
+	if [ -e src/inc/streams.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/streams.$(NAMELIST_SUFFIX).defaults .; fi
+	if [ ! -e streams.$(NAMELIST_SUFFIX) ]; then cp streams.$(NAMELIST_SUFFIX).defaults streams.$(NAMELIST_SUFFIX); fi
+	for f in `find src/inc -name "stream_list.*"`; do mv $$f .; done
 	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
@@ -432,12 +451,14 @@ ifeq "$(AUTOCLEAN)" "true"
 endif
 	@echo $(GEN_F90_MESSAGE)
 	@echo $(NAMELIST_MESSAGE)
+	@echo $(STREAM_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
 	$(RM) .mpas_core_*
 	$(RM) $(EXE_NAME)
 	$(RM) namelist.$(NAMELIST_SUFFIX).defaults
+	$(RM) streams.$(NAMELIST_SUFFIX).defaults
 core_error:
 	@echo ""
 	@echo "*******************************************************************************"

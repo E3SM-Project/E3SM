@@ -24,6 +24,7 @@ module ocn_zonal_mean
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
+   use mpas_stream_manager
 
    use ocn_constants
    use ocn_diagnostics_routines
@@ -46,9 +47,7 @@ module ocn_zonal_mean
 
    public :: ocn_setup_packages_zonal_mean, &
              ocn_init_zonal_mean, &
-             ocn_init_alarms_zonal_mean, &
              ocn_compute_zonal_mean, &
-             ocn_write_zonal_mean, &
              ocn_restart_zonal_mean, &
              ocn_finalize_zonal_mean
 
@@ -119,7 +118,6 @@ contains
       amZonalMeanActive = .true.
 
    end subroutine ocn_setup_packages_zonal_mean!}}}
-
 
 !***********************************************************************
 !
@@ -258,79 +256,6 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_init_alarms_zonal_mean
-!
-!> \brief   Initialize alarms for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine conducts all alarm initializations required for the 
-!>  MPAS-Ocean analysis member.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_init_alarms_zonal_mean(clock, startTime, computeAlarmID, err)!{{{
-
-      use mpas_packages
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(in) :: computeAlarmID
-      type (MPAS_Time_Type), intent(in) :: startTime
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      type (MPAS_Clock_type), intent(inout) :: clock
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: ierr
-      character(len=StrKIND) :: compute_interval
-      type (MPAS_Time_Type) :: alarmStartTime
-      type (MPAS_TimeInterval_type) :: alarmTimeStep
-
-      character (len=StrKIND), pointer :: config_zonal_mean_compute_interval, config_output_interval
-
-      err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_zonal_mean_compute_interval', config_zonal_mean_compute_interval)
-      call mpas_pool_get_config(ocnConfigs, 'config_output_interval', config_output_interval)
-
-      ! set compute alarm for this analysis member
-      if (config_zonal_mean_compute_interval == 'same_as_output') then
-         compute_interval = config_output_interval
-      else
-         compute_interval = config_zonal_mean_compute_interval
-      endif
-
-      call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-
-   end subroutine ocn_init_alarms_zonal_mean!}}}
-
-!***********************************************************************
-!
 !  routine ocn_compute_zonal_mean
 !
 !> \brief   Compute MPAS-Ocean analysis member
@@ -388,8 +313,8 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryZonalMean
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
-      real (kind=RKIND), dimension(:,:), pointer :: zonalVelocityZonalMean, meridionalVelocityZonalMean
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonalZonalMean, velocityMeridionalZonalMean
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       real (kind=RKIND), dimension(:,:,:), allocatable :: sumZonalMean, totalSumZonalMean, normZonalMean
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersZonalMean
@@ -441,8 +366,8 @@ contains
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)        
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)    
          call mpas_pool_get_array(statePool, 'tracers', tracers,timeLevel)         
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
 
          ! Bin by latitude on a sphere, by yCell otherwise.
          if (on_a_sphere) then
@@ -470,9 +395,9 @@ contains
                      enddo
 
                      iField = num_tracers+2
-                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + normalVelocityZonal(k,iCell)*areaCell(iCell)
+                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityZonal(k,iCell)*areaCell(iCell)
                      iField = iField+1
-                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + normalVelocityMeridional(k,iCell)*areaCell(iCell)
+                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityMeridional(k,iCell)*areaCell(iCell)
 
                   end do
                   exit
@@ -517,8 +442,8 @@ contains
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
          call mpas_pool_get_array(amZonalMeanPool, 'tracersZonalMean', tracersZonalMean)
-         call mpas_pool_get_array(amZonalMeanPool, 'zonalVelocityZonalMean', zonalVelocityZonalMean)
-         call mpas_pool_get_array(amZonalMeanPool, 'meridionalVelocityZonalMean', meridionalVelocityZonalMean)
+         call mpas_pool_get_array(amZonalMeanPool, 'velocityZonalZonalMean', velocityZonalZonalMean)
+         call mpas_pool_get_array(amZonalMeanPool, 'velocityMeridionalZonalMean', velocityMeridionalZonalMean)
 
          do iBin = 1, nZonalMeanBins
             do k = 1, nVertLevels
@@ -528,9 +453,9 @@ contains
                enddo
 
                iField = num_tracers + 2
-               zonalVelocityZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
+               velocityZonalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
                iField = iField+1
-               meridionalVelocityZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
+               velocityMeridionalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
 
             end do
          end do
@@ -590,54 +515,6 @@ contains
       err = 0
 
    end subroutine ocn_restart_zonal_mean!}}}
-
-!***********************************************************************
-!
-!  routine ocn_write_zonal_mean
-!
-!> \brief   MPAS-Ocean analysis output
-!> \author  Mark Petersen
-!> \date    March 2014
-!> \details 
-!>  This routine writes all output for this MPAS-Ocean analysis member.
-!>  At this time this is just a stub, and all analysis output is written
-!>  to the output file specified by config_output_name.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_write_zonal_mean(domain, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (domain_type), intent(in) :: domain
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      err = 0
-
-   end subroutine ocn_write_zonal_mean!}}}
 
 !***********************************************************************
 !
