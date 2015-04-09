@@ -883,6 +883,4 @@ module mpas_bootstrapping
 
    end subroutine get_dimlist_for_field!}}}
 
-#include "setup_immutable_streams.inc"
-
 end module mpas_bootstrapping

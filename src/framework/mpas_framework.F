@@ -32,71 +32,65 @@ module mpas_framework
 
 
 !-----------------------------------------------------------------------
-!  routine mpas_framework_init
+!  routine mpas_framework_init_phase1
 !
-!> \brief MPAS framework initialization routine.
+!> \brief MPAS framework initialization phase 1 routine.
 !> \author Michael Duda, Doug Jacobsen
 !> \date   03/26/13
 !> \details
-!>  This routine initializes the MPAS framework. It calls routines related 
-!>  to initializing different parts of MPAS, that are housed within the framework.
+!>  This routine initializes the first parts of MPAS framework. It initializes
+!>  MPI, the log unit numbers.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system, calendar, stdoutUnit_in, stderrUnit_in)!{{{
+   subroutine mpas_framework_init_phase1(dminfo, mpi_comm, stdoutUnit_in, stderrUnit_in)!{{{
 
       implicit none
 
       type (dm_info), pointer :: dminfo
-      type (domain_type), pointer :: domain
       integer, intent(in), optional :: mpi_comm
 
-      character(len=*), optional :: nml_filename
-      type (iosystem_desc_t), optional, pointer :: io_system
-      character(len=*), intent(in), optional :: calendar
-
       integer, intent(in), optional :: stdoutUnit_in, stderrUnit_in
-
-      character(len=StrKIND), pointer :: config_calendar_type
-      logical :: nmlExists
-      integer, pointer :: config_pio_num_iotasks, config_pio_stride
-      integer :: pio_num_iotasks
-      integer :: pio_stride
-
 
       allocate(dminfo)
       call mpas_io_units_init(stdoutUnit_in, stderrUnit_in)
       call mpas_dmpar_init(dminfo, mpi_comm)
 
+   end subroutine mpas_framework_init_phase1!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_framework_init_phase2
+!
+!> \brief MPAS framework initialization phase 2 routine.
+!> \author Michael Duda, Doug Jacobsen
+!> \date   03/26/13
+!> \details
+!>  This routine finalizes the initialization of the MPAS framework. It calls initializes 
+!>  the time keeper, and the IO infrastructure.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_framework_init_phase2(domain, io_system, calendar)!{{{
+
+      implicit none
+
+      type (domain_type), pointer :: domain
+
+      type (iosystem_desc_t), optional, pointer :: io_system
+      character(len=*), intent(in), optional :: calendar
+
+      character(len=StrKIND), pointer :: config_calendar_type
+      integer, pointer :: config_pio_num_iotasks, config_pio_stride
+      integer :: pio_num_iotasks
+      integer :: pio_stride
+
 #ifdef MPAS_DEBUG
       call mpas_pool_set_error_level(MPAS_POOL_WARN)
+      call mpas_pool_set_error_level(MPAS_POOL_FATAL)
 #endif
-
-      call mpas_allocate_domain(domain, dminfo)
-
-      if (.not. present(nml_filename)) then
-         write(stderrUnit,*) 'Reading namelist from file '//trim(domain % namelist_filename)
-         inquire(file=trim(domain % namelist_filename), exist=nmlExists)
-
-         if ( .not. nmlExists ) then
-            call mpas_dmpar_global_abort('ERROR: Namelist file '//trim(domain % namelist_filename)//' does not exist.')
-         end if
-         call mpas_setup_namelists(domain % configs, domain % namelist_filename, domain % dminfo)
-      else
-         write(stderrUnit,*) 'Reading namelist from file '//trim(nml_filename)
-         inquire(file=nml_filename, exist=nmlExists)
-
-         if ( .not. nmlExists ) then
-            call mpas_dmpar_global_abort('ERROR: Namelist file '//trim(nml_filename)//' does not exist.')
-         end if
-         call mpas_setup_namelists(domain % configs, nml_filename, domain % dminfo)
-      end if
 
       call mpas_pool_get_config(domain % configs, 'config_calendar_type', config_calendar_type)
       call mpas_pool_get_config(domain % configs, 'config_pio_num_iotasks', config_pio_num_iotasks)
       call mpas_pool_get_config(domain % configs, 'config_pio_stride', config_pio_stride)
 
-      call mpas_generate_packages(domain % packages)
-      
       if (present(calendar)) then
          call mpas_timekeeping_init(calendar)
       else
@@ -108,9 +102,10 @@ module mpas_framework
       if (pio_num_iotasks == 0) then
          pio_num_iotasks = domain % dminfo % nprocs
       end if
-      call MPAS_io_init(dminfo, pio_num_iotasks, pio_stride, io_system)
+      call MPAS_io_init(domain % dminfo, pio_num_iotasks, pio_stride, io_system)
 
-   end subroutine mpas_framework_init!}}}
+   end subroutine mpas_framework_init_phase2!}}}
+
 
 !-----------------------------------------------------------------------
 !  routine mpas_framework_finalize
