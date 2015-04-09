@@ -1734,8 +1734,7 @@ module BGCCenturySubMod
   
   
  !-----------------------------------------------------------------------  
-  subroutine calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, centurybgc_vars, &
-     k_decay(1:centurybgc_vars%nreactions, bounds%begc:bounds%endc ,1:ubj))
+  subroutine calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, centurybgc_vars, k_decay)
      
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: ubj
