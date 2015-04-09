@@ -20,8 +20,6 @@ OBJS = 	mpas_cice_mpas_core.o \
 	mpas_cice_diagnostics.o \
 	mpas_cice_numerics.o \
 	mpas_cice_constants.o \
-	MPAS_forcing.o \
-	mpas_cice_forcing_test.o \
 
 all: core_cice
 
@@ -33,11 +31,7 @@ core_reg:
 
 mpas_cice_constants.o:
 
-MPAS_forcing.o:
-
-mpas_cice_forcing_test.o: MPAS_forcing.o
-
-mpas_cice_mesh.o: mpas_cice_constants.o mpas_cice_forcing_test.o
+mpas_cice_mesh.o: mpas_cice_constants.o
 
 mpas_cice_diagnostics.o: mpas_cice_constants.o 
 
