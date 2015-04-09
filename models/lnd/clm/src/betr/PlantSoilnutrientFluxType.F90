@@ -273,9 +273,6 @@ module PlantSoilnutrientFluxType
     c = filter_soilc(fc)
     this%plant_minn_active_yield_flx_col(c)  =dot_sum(this%plant_minn_active_yield_flx_vr_col(c,1:ubj),dz(c,1:ubj))/dtime
     this%plant_minn_passive_yield_flx_col(c) =(nh4_transp(c) + no3_transp(c))/dtime 
-    if(c==4689)then
-      print*,'npasp',this%plant_minn_passive_yield_flx_col(c)
-    endif
   enddo
   
   end subroutine summary
@@ -312,7 +309,7 @@ module PlantSoilnutrientFluxType
   !new approach
   do fp = 1, num_soilp
     p = filter_soilp(fp)    
-    this%plant_minn_uptake_potential_patch(p) = max(Vmax_minn * frootc_patch(p),Vmax_minn*100._r8)    
+    this%plant_minn_uptake_potential_patch(p) = max(Vmax_minn * frootc_patch(p),Vmax_minn*10._r8)    
   enddo
 
   
