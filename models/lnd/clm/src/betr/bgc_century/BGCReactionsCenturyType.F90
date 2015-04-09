@@ -544,6 +544,9 @@ contains
      plantsoilnutrientflux_vars%plant_minn_uptake_potential_col(bounds%begc:bounds%endc), &
      nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
      k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj))
+
+  call calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, centurybgc_vars, &
+     k_decay(1:centurybgc_vars%nreactions, bounds%begc:bounds%endc ,1:ubj))
   
   !apply root distribution here
   call apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
@@ -760,10 +763,11 @@ contains
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_no3_ratio, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
-  if(lpr)then
-    print*,'reac'
-    print*,reaction_rates
-  endif
+      
+  !if(lpr)then
+  !  print*,'reac'
+  !  print*,reaction_rates
+  !endif
  !do pool degradation
   do lk = 1, Extra_inst%nr
     if(Extra_inst%is_zero_order(lk))then

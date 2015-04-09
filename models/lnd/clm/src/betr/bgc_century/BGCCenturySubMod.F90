@@ -28,6 +28,7 @@ module BGCCenturySubMod
   public :: calc_plant_nitrogen_uptake_prof
   public :: calc_extneral_bgc_input
   public :: set_reaction_order
+  public :: calc_nutrient_compet_rescal
   
   type, public :: centurybgc_type
   
@@ -1729,5 +1730,39 @@ module BGCCenturySubMod
   is_zero_order(centurybgc_vars%lid_plant_minn_up_reac) = .true.
   is_zero_order(centurybgc_vars%lid_at_rt_reac)    = .true.
   
-  end subroutine set_reaction_order  
+  end subroutine set_reaction_order
+  
+  
+ !-----------------------------------------------------------------------  
+  subroutine calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, centurybgc_vars, &
+     k_decay(1:centurybgc_vars%nreactions, bounds%begc:bounds%endc ,1:ubj))
+     
+  type(bounds_type)                  , intent(in) :: bounds                             ! bounds
+  integer                            , intent(in) :: ubj
+  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
+  integer                            , intent(in) :: filter_soilc(:)                          ! column filter
+  type(centurybgc_type)              , intent(in)  :: centurybgc_vars  
+  real(r8)                           , intent(inout):: k_decay(1:, bounds%begc: ,1: )
+  
+  integer :: j, fc, c
+  
+  SHR_ASSERT_ALL((ubound(k_decay)     == (/centurybgc_vars%nreactions, bounds%endc, ubj/)), errMsg(__FILE__, __LINE__))  
+  
+  return
+  do j = 1, ubj
+    do fc = 1, num_soilc
+      c = filter_soilc(fc)
+      
+      !add nitrogen demand from decomposition fluxes
+      
+      !add nitrogen demand from plant
+      
+      !add nitrogen demand from denitrification
+      
+      !add nitrogen demand from nitrification
+      
+      
+    enddo
+  enddo
+  end subroutine calc_nutrient_compet_rescal   
 end module BGCCenturySubMod
