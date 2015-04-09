@@ -40,6 +40,7 @@ module mpas_core
       use mpas_configure
       use mpas_grid_types
       use mpas_stream_manager
+      use cice_forcing, only: cice_forcing_init
    
       implicit none
    
@@ -89,6 +90,9 @@ module mpas_core
       ! Read all other inputs
       call MPAS_stream_mgr_read(stream_manager, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+
+      ! initialize forcing
+      call cice_forcing_init(domain, stream_manager)
 
       !
       ! Initialize core
@@ -225,6 +229,7 @@ module mpas_core
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_timer
+      use cice_forcing, only: cice_forcing_get
    
       implicit none
    
@@ -259,13 +264,13 @@ module mpas_core
       call mpas_stream_mgr_write(stream_manager, ierr=ierr)
       call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-      ! During integration, time level 1 stores the model state at the beginning of the
-      !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
-      itimestep = 0
-      do while (.not. mpas_is_clock_stop_time(clock))
+      itimestep = 1
+      call mpas_advance_clock(clock)
 
-         itimestep = itimestep + 1
-         call mpas_advance_clock(clock)
+      ! initial forcing
+      call cice_forcing_get(stream_manager, domain, clock, .true.)
+
+      timeLoop: do
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
@@ -286,7 +291,17 @@ module mpas_core
          call mpas_stream_mgr_write(stream_manager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-      end do
+         ! check if the simulation is finished
+         if (mpas_is_clock_stop_time(clock)) exit timeLoop
+
+         ! advance the clock
+         itimestep = itimestep + 1
+         call mpas_advance_clock(clock)
+
+         ! forcing
+         call cice_forcing_get(stream_manager, domain, clock, .false.)
+
+      end do timeLoop
 
    end subroutine mpas_core_run
    

@@ -49,7 +49,6 @@ contains
     use cice_advection, only: cice_init_advection
     use cice_velocity_solver, only: cice_init_velocity_solver
     use cice_debug, only: cice_test_case_output
-    use cice_forcing, only: cice_init_forcing, cice_get_forcing, cice_convert_pop_forcing_to_mpas
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output: 
@@ -69,6 +68,7 @@ contains
          config_use_forcing, &
          config_do_restart
 
+
     call MPAS_pool_get_config(domain % configs, "config_use_velocity_solver", config_use_velocity_solver)
     call MPAS_pool_get_config(domain % configs, "config_use_advection", config_use_advection)
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
@@ -82,24 +82,6 @@ contains
     
     ! calculate boundary variables
     call cice_init_boundary(domain)
-
-    ! init forcing
-    if (config_use_forcing) then
-
-       block => domain % blocklist
-       do while (associated(block))
-          
-          call cice_init_forcing(&
-               block)
-          
-          call cice_get_forcing(&
-               block, &
-               clock)
-          
-          block => block % next
-       end do
-       
-    endif
 
     ! init dynamics
     if (config_use_velocity_solver) then
@@ -380,7 +362,8 @@ contains
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
-         tracers
+         tracers, &
+         icestate
 
     integer, pointer :: &
          nCellsSolve
@@ -393,6 +376,10 @@ contains
          iceVolumeCategory, &
          snowVolumeCategory, &
          surfaceTemperature
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         surfaceTemperatureCell
 
     real(kind=RKIND), pointer :: &
          config_initial_ice_area, &
@@ -412,6 +399,7 @@ contains
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)
 
@@ -422,10 +410,13 @@ contains
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
     call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
 
+    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(icestate, "surfaceTemperatureCell", surfaceTemperatureCell)
+
     do iCell = 1, nCellsSolve
 
-       if (latCell(iCell) >= config_initial_latitude_north * ciceDegreesToRadians .or. &
-           latCell(iCell) <= config_initial_latitude_south * ciceDegreesToRadians) then
+       if (latCell(iCell) > config_initial_latitude_north * ciceDegreesToRadians .or. &
+           latCell(iCell) < config_initial_latitude_south * ciceDegreesToRadians) then
 
           ! has ice
           iceAreaCategory(1,:,iCell)    = config_initial_ice_area
@@ -442,6 +433,14 @@ contains
           surfaceTemperature(1,:,iCell) = 0.0_RKIND
 
        endif
+
+    enddo ! iCell
+
+    ! integrated quantities
+    do iCell = 1, nCellsSolve
+
+       iceAreaCell(iCell) = sum(iceAreaCategory(1,:,iCell))
+       surfaceTemperatureCell(iCell) = -20.15_RKIND
 
     enddo ! iCell
 

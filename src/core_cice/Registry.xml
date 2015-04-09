@@ -62,6 +62,15 @@
 		<nml_option name="config_use_forcing"                 type="logical"       default_value="false"/>
 		<nml_option name="config_use_vertical_thermodynamics" type="logical"       default_value="false"/>
 	</nml_record>
+	<nml_record name="forcing" in_defaults="true">
+		<nml_option name="config_atmospheric_forcing_type"    type="character"     default_value="CORE"/>
+		<nml_option name="config_forcing_start_time"          type="character"     default_value="2000-01-01_00:00:00"/>
+		<nml_option name="config_forcing_cycle_start"         type="character"     default_value="2000-01-01_00:00:00"/>
+		<nml_option name="config_forcing_cycle_duration"      type="character"     default_value="1-00-00_00:00:00"/>
+		<nml_option name="config_forcing_restart_file"        type="character"     default_value="restart_forcing_timestamps"/>
+		<nml_option name="config_forcing_precipitation_units" type="character"     default_value="mm_per_sec"/>
+		<nml_option name="config_forcing_sst_type"            type="character"     default_value="ncar"/>
+	</nml_record>
 	<nml_record name="unit_test" in_defaults="true">
 		<nml_option name="config_perform_unit_test"           type="logical"       default_value="false"/>
 		<nml_option name="config_unit_test_type"              type="character"     default_value=""/>
@@ -324,7 +333,7 @@ c		/>
 	    <var name="shortwaveDown"/>
 	    <var name="longwaveDown"/>
 	    <var name="cloudFraction"/>
-	    <var name="precipitationRate"/>
+	    <var name="rainfallRate"/>
 	    <var name="snowfallRate"/>
 	    <var name="sensibleTransferCoefficient"/>
 	    <var name="latentTransferCoefficient"/>
@@ -355,6 +364,51 @@ c		/>
 	    <var name="basisGradientU"/>
 	    <var name="basisGradientV"/>
 	  </stream>
+
+        <!-- forcing streams -->
+	<stream name="LYqSixHourlyForcing"
+	    type="input"
+	    filename_template="/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/LYq_six_hourly.$Y.nc"
+	    filename_interval="0001-00-00_00:00:00"
+	    input_interval="none"
+	    immutable="true">
+	    <var name="airTemperature"/>
+	    <var name="airSpecificHumidity"/>
+	    <var name="uAirVelocity"/>
+	    <var name="vAirVelocity"/>
+	</stream>
+	<stream name="LYqMonthlyForcing"
+	    type="input"
+	    filename_template="/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/LYq_monthly.nc"
+	    filename_interval="none"
+	    input_interval="none"
+	    immutable="true">
+	    <var name="cloudFraction"/>
+	    <var name="rainfallRate"/>
+	</stream>
+	<stream name="NCARMonthlySSTForcing"
+	    type="input"
+	    filename_template="/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/LYq_monthly.nc"
+	    filename_interval="none"
+	    input_interval="none"
+	    immutable="true">
+	    <var name="seaSurfaceTemperature"/>
+	</stream>
+	<stream name="NCARMonthlyForcing"
+	    type="input"
+	    filename_template="/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/LYq_monthly.nc"
+	    filename_interval="none"
+	    input_interval="none"
+	    immutable="true">
+	    <var name="seaSurfaceSalinity"/>
+	    <var name="uOceanVelocity"/>
+	    <var name="vOceanVelocity"/>
+	    <var name="seaSurfaceTiltU"/>
+	    <var name="seaSurfaceTiltV"/>
+	    <var name="oceanMixedLayerDepth"/>
+	    <var name="oceanHeatFluxConvergence"/>
+	</stream>
+
 	</streams>
 	
 	<var_struct name="mesh" time_levs="1">
@@ -465,6 +519,7 @@ c		/>
 		<var name="iceAreaCell"                       type="real"     dimensions="nCells Time"              name_in_code="iceAreaCell"/>
 		<var name="iceVolumeCell"                     type="real"     dimensions="nCells Time"              name_in_code="iceVolumeCell"/>
 		<var name="snowVolumeCell"                    type="real"     dimensions="nCells Time"              name_in_code="snowVolumeCell"/>
+		<var name="surfaceTemperatureCell"            type="real"     dimensions="nCells Time"              name_in_code="surfaceTemperatureCell"/>
 		<var name="iceAreaVertex"                     type="real"     dimensions="nVertices Time"           name_in_code="iceAreaVertex"/>
 		<var name="totalMassCell"                     type="real"     dimensions="nCells Time"              name_in_code="totalMassCell"/>
 		<var name="totalMassVertex"                   type="real"     dimensions="nVertices Time"           name_in_code="totalMassVertex"/>
@@ -479,36 +534,51 @@ c		/>
 		<var name="snowEnthalpyCons"                  type="real"     dimensions="nSnowLayers nCategories"  name_in_code="snowEnthalpy"/>
 	</var_struct>
 
-	<!--atmos forcing -->
-	<var_struct name="atmos_forcing" time_levs="1">
+	<!--atmos coupling -->
+	<var_struct name="atmos_coupling" time_levs="1">
+	        <var name="airLevelHeight"                    type="real"     dimensions="nCells"                   name_in_code="airLevelHeight"/>
+	        <var name="airPotentialTemperature"           type="real"     dimensions="nCells"                   name_in_code="airPotentialTemperature"/>
 	        <var name="airTemperature"                    type="real"     dimensions="nCells Time"              name_in_code="airTemperature"/>
-	        <var name="airPotentialTemperature"           type="real"     dimensions="nCells"              name_in_code="airPotentialTemperature"/>
-		<var name="uAirVelocity"                      type="real"     dimensions="nCells Time"              name_in_code="uAirVelocity"/>
-		<var name="vAirVelocity"                      type="real"     dimensions="nCells Time"              name_in_code="vAirVelocity"/>
-		<var name="uAirVelocityPOP"                   type="real"     dimensions="nCells Time"              name_in_code="uAirVelocityPOP"/>
-		<var name="vAirVelocityPOP"                   type="real"     dimensions="nCells Time"              name_in_code="vAirVelocityPOP"/>
-		<var name="windSpeed"                         type="real"     dimensions="nCells"              name_in_code="windSpeed"/>
-		<var name="uAirStress"                        type="real"     dimensions="nCells"              name_in_code="uAirStress"/>
-		<var name="vAirStress"                        type="real"     dimensions="nCells"              name_in_code="vAirStress"/>
-		<var name="airDensity"                        type="real"     dimensions="nCells"              name_in_code="airDensity"/>
-		<var name="airSpecificHumidity"               type="real"     dimensions="nCells Time"              name_in_code="airSpecificHumidity"/>
-		<var name="shortwaveDown"                     type="real"     dimensions="nCells Time"              name_in_code="shortwaveDown"/>
-		<var name="longwaveDown"                      type="real"     dimensions="nCells Time"              name_in_code="longwaveDown"/>
-		<var name="cloudFraction"                     type="real"     dimensions="nCells Time"              name_in_code="cloudFraction"/>
-		<var name="precipitationRate"                 type="real"     dimensions="nCells Time"              name_in_code="precipitationRate"/>
-		<var name="snowfallRate"                      type="real"     dimensions="nCells"              name_in_code="snowfallRate"/>
-		<var name="sensibleTransferCoefficient"       type="real"     dimensions="nCells"              name_in_code="sensibleTransferCoefficient"/>
-		<var name="latentTransferCoefficient"         type="real"     dimensions="nCells"              name_in_code="latentTransferCoefficient"/>
-		<var name="uPOPAlongGridVector"               type="real"     dimensions="TWO nCells"          name_in_code="uPOPAlongGridVector"/>
-		<var name="vPOPAlongGridVector"               type="real"     dimensions="TWO nCells"          name_in_code="vPOPAlongGridVector"/>
+	        <var name="airSpecificHumidity"               type="real"     dimensions="nCells Time"              name_in_code="airSpecificHumidity"/>
+	        <var name="airDensity"                        type="real"     dimensions="nCells"                   name_in_code="airDensity"/>
+	        <var name="shortwaveVisibleDirectDown"        type="real"     dimensions="nCells"                   name_in_code="shortwaveVisibleDirectDown"/>
+	        <var name="shortwaveVisibleDiffuseDown"       type="real"     dimensions="nCells"                   name_in_code="shortwaveVisibleDiffuseDown"/>
+	        <var name="shortwaveIRDirectDown"             type="real"     dimensions="nCells"                   name_in_code="shortwaveIRDirectDown"/>
+	        <var name="shortwaveIRDiffuseDown"            type="real"     dimensions="nCells"                   name_in_code="shortwaveIRDiffuseDown"/>
+	        <var name="longwaveDown"                      type="real"     dimensions="nCells"                   name_in_code="longwaveDown"/>
+	        <var name="rainfallRate"                      type="real"     dimensions="nCells Time"              name_in_code="rainfallRate"/>
+	        <var name="snowfallRate"                      type="real"     dimensions="nCells"                   name_in_code="snowfallRate"/>
+	        <var name="uAirVelocity"                      type="real"     dimensions="nCells Time"              name_in_code="uAirVelocity"/>
+	        <var name="vAirVelocity"                      type="real"     dimensions="nCells Time"              name_in_code="vAirVelocity"/>
 	</var_struct>
 
-	<!--ocean forcing -->
-	<var_struct name="ocean_forcing" time_levs="1">
-		<var name="seaSurfaceSalinity"                type="real"     dimensions="nCells"              name_in_code="seaSurfaceSalinity"/>
+	<!--atmos forcing -->
+	<var_struct name="atmos_forcing" time_levs="1">
+		<var name="uAirVelocityPOP"                   type="real"     dimensions="nCells Time"              name_in_code="uAirVelocityPOP"/>
+		<var name="vAirVelocityPOP"                   type="real"     dimensions="nCells Time"              name_in_code="vAirVelocityPOP"/>
+		<var name="windSpeed"                         type="real"     dimensions="nCells"                   name_in_code="windSpeed"/>
+		<var name="uAirStress"                        type="real"     dimensions="nCells"                   name_in_code="uAirStress"/>
+		<var name="vAirStress"                        type="real"     dimensions="nCells"                   name_in_code="vAirStress"/>
+		<var name="shortwaveDown"                     type="real"     dimensions="nCells Time"              name_in_code="shortwaveDown"/>
+		<var name="cloudFraction"                     type="real"     dimensions="nCells Time"              name_in_code="cloudFraction"/>
+		<var name="sensibleTransferCoefficient"       type="real"     dimensions="nCells"                   name_in_code="sensibleTransferCoefficient"/>
+		<var name="latentTransferCoefficient"         type="real"     dimensions="nCells"                   name_in_code="latentTransferCoefficient"/>
+		<var name="uPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="uPOPAlongGridVector"/>
+		<var name="vPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="vPOPAlongGridVector"/>
+	</var_struct>
+
+	<!--ocean coupling -->	
+	<var_struct name="ocean_coupling" time_levs="1">
 		<var name="seaSurfaceTemperature"             type="real"     dimensions="nCells"              name_in_code="seaSurfaceTemperature"/>
-		<var name="uOceanVelocity"                    type="real"     dimensions="nCells Time"         name_in_code="uOceanVelocity"/>
-		<var name="vOceanVelocity"                    type="real"     dimensions="nCells Time"         name_in_code="vOceanVelocity"/>
+		<var name="seaSurfaceSalinity"                type="real"     dimensions="nCells"              name_in_code="seaSurfaceSalinity"/>
+		<var name="seaFreezingTemperature"            type="real"     dimensions="nCells"              name_in_code="seaFreezingTemperature"/>
+		<var name="freezingMeltingPotential"	      type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotential"/>
+		<var name="uOceanVelocity"                    type="real"     dimensions="nCells"              name_in_code="uOceanVelocity"/>
+		<var name="vOceanVelocity"                    type="real"     dimensions="nCells"              name_in_code="vOceanVelocity"/>
+		<var name="seaSurfaceTiltU"                   type="real"     dimensions="nCells"              name_in_code="seaSurfaceTiltU"/>	
+		<var name="seaSurfaceTiltV"                   type="real"     dimensions="nCells"              name_in_code="seaSurfaceTiltV"/>
+		<var name="oceanMixedLayerDepth"              type="real"     dimensions="nCells"              name_in_code="oceanMixedLayerDepth"/>
+		<var name="oceanHeatFluxConvergence"          type="real"     dimensions="nCells"              name_in_code="oceanHeatFluxConvergence"/>
 	</var_struct>
 
 	<!-- boundary variables -->

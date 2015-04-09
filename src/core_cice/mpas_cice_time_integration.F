@@ -59,9 +59,6 @@ contains
     use cice_therm_zerolayer, only: &
          cice_zerolayer_thermodynamics
 
-    use cice_forcing, only: &
-         cice_get_forcing
-
     use cice_diagnostics, only: &
          cice_run_diagnostics
 
@@ -89,7 +86,6 @@ contains
 
     logical, pointer :: &
          config_perform_unit_test, &
-         config_use_forcing, &
          config_use_velocity_solver, &
          config_use_advection, &
          config_use_vertical_thermodynamics
@@ -98,7 +94,6 @@ contains
 
     configs => domain % configs
 
-    call MPAS_pool_get_config(configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(configs, "config_use_velocity_solver", config_use_velocity_solver)
     call MPAS_pool_get_config(configs, "config_use_advection", config_use_advection)
     call MPAS_pool_get_config(configs, "config_use_vertical_thermodynamics", config_use_vertical_thermodynamics)
@@ -108,19 +103,6 @@ contains
        call cice_perform_unit_test(domain, configs)
        return
     endif
-
-    ! get forcing
-    call mpas_timer_start("forcing")
-    if (config_use_forcing) then
-
-       block => domain % blocklist
-       do while (associated(block))
-          call cice_get_forcing(block, clock)
-          block => block % next
-       end do
-       
-    endif
-    call mpas_timer_stop("forcing")
 
     ! zero layer thermodynamics
     call mpas_timer_start("thermodynamics")
