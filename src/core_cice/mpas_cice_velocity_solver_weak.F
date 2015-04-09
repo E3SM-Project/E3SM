@@ -63,21 +63,21 @@ contains
     logical, intent(in) :: &
          rotateCartesianGrid !< Input: 
 
-    type(field3DReal), pointer :: &
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorPolygon, &
          normalVectorTriangle
 
-    type(field1DReal), pointer :: &
+    real(kind=RKIND), dimension(:), pointer :: &
          latCellRotated, &
          latVertexRotated
 
     integer, dimension(:), pointer :: &
          interiorVertex
 
-    call MPAS_pool_get_field(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
-    call MPAS_pool_get_field(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
-    call MPAS_pool_get_field(velocity_weak, "latCellRotated", latCellRotated)
-    call MPAS_pool_get_field(velocity_weak, "latVertexRotated", latVertexRotated)
+    call MPAS_pool_get_array(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_array(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(velocity_weak, "latCellRotated", latCellRotated)
+    call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
     call cice_normal_vectors(&

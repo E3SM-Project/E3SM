@@ -103,7 +103,7 @@ contains
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          derivTwo
 
-    type(field3DReal), pointer :: &
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorEdge
 
     real(kind=RKIND), dimension(:,:), pointer :: &
@@ -141,29 +141,29 @@ contains
     call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)
     call MPAS_pool_get_array(mesh, "boundaryCell", boundaryCell)
 
-    call MPAS_pool_get_field(velocity_solver, "normalVectorEdge", normalVectorEdge)
+    call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
 
     err = 0
 
-    call mpas_tracer_advection_coefficients(&
-         mesh, &
-         config_horiz_tracer_adv_order, &
-         derivTwo, &
-         advCoefs, &
-         advCoefs3rd, &
-         nAdvCellsForEdge, &
-         advCellsForEdge, &
-         err, &
-         maxLevelCell, &
-         highOrderAdvectionMask, &
-         boundaryCell)
+    !call mpas_tracer_advection_coefficients(&
+    !     mesh, &
+    !     config_horiz_tracer_adv_order, &
+    !     derivTwo, &
+    !     advCoefs, &
+    !     advCoefs3rd, &
+    !     nAdvCellsForEdge, &
+    !     advCellsForEdge, &
+    !     err, &
+    !     maxLevelCell, &
+    !     highOrderAdvectionMask, &
+    !     boundaryCell)
 
-    call mpas_tracer_advection_mono_init(&
-         3, &
-         config_horiz_tracer_adv_order, &
-         config_vert_tracer_adv_order, &
-         config_coef_3rd_order, &
-         .false., .true., err)
+    !call mpas_tracer_advection_mono_init(&
+    !     3, &
+    !     config_horiz_tracer_adv_order, &
+    !     config_vert_tracer_adv_order, &
+    !     config_coef_3rd_order, &
+    !     .false., .true., err)
 
     call define_tracer_connectivities(&
          config_use_velocity_solver)
@@ -422,10 +422,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_run_advection(block, clock, dt)!{{{
+  subroutine cice_run_advection(domain, clock, dt)!{{{
 
-    type (block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output: 
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
@@ -433,8 +433,10 @@ contains
     real(kind=RKIND), intent(in) :: &
          dt !< Input: 
 
+    type(block_type), pointer :: &
+         block
+
     type (MPAS_pool_type), pointer :: &
-         configs, &
          mesh, &
          boundary, &
          tracers, &
@@ -462,70 +464,94 @@ contains
     integer, dimension(:), pointer :: &
          interiorEdge
 
-    configs => block % configs
+    block => domain % blocklist
+    do while (associated(block))
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
-    call MPAS_pool_get_subpool(block % structs, "tracer_tendencies", tracer_tendencies)
-    call MPAS_pool_get_subpool(block % structs, "tracer_edge_fluxes", tracer_edge_fluxes)
-    call MPAS_pool_get_subpool(block % structs, "tracer_conservation", tracer_conservation)
-    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+       call MPAS_pool_get_subpool(block % structs, "tracer_tendencies", tracer_tendencies)
+       call MPAS_pool_get_subpool(block % structs, "tracer_edge_fluxes", tracer_edge_fluxes)
+       call MPAS_pool_get_subpool(block % structs, "tracer_conservation", tracer_conservation)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
 
-    call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
-    call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
-    call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
+       call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)  
 
-    call MPAS_pool_get_array(boundary, "interiorEdge", interiorEdge)    
+       call prepare_advection(&
+            clock, &
+            block % configs, &
+            mesh, &
+            tracers, &
+            tracer_tendencies, &
+            tracer_edge_fluxes, &
+            tracer_conservation, &
+            uVelocity, &
+            vVelocity, &
+            normalVectorEdge, &
+            edgeVelocity, &
+            edgeFlux)
 
-    call prepare_advection(&
-         clock, &
-         configs, &
-         mesh, &
-         tracers, &
-         tracer_tendencies, &
-         tracer_edge_fluxes, &
-         tracer_conservation, &
-         uVelocity, &
-         vVelocity, &
-         normalVectorEdge, &
-         edgeVelocity, &
-         edgeFlux)
+       block => block % next
+    end do
 
-    do iTracerVariable = 1, nTracerVariables
+    ! advection halo exchange
+    call halo_exchange_advection(domain)
 
-       !write(*,*) trim(tracerConnectivities(iTracerVariable) % childTracerName), trim(tracerConnectivities(iTracerVariable) % parentTracerName)
+    block => domain % blocklist
+    do while (associated(block))
 
-       if (tracerConnectivities(iTracerVariable) % defined == 1) then
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+       call MPAS_pool_get_subpool(block % structs, "tracer_tendencies", tracer_tendencies)
+       call MPAS_pool_get_subpool(block % structs, "tracer_edge_fluxes", tracer_edge_fluxes)
+       call MPAS_pool_get_subpool(block % structs, "tracer_conservation", tracer_conservation)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
 
-          call run_advection_variable(&
-               clock, &
-               mesh, &
-               tracers, &
-               tracer_tendencies, &
-               tracer_edge_fluxes, &
-               trim(tracerConnectivities(iTracerVariable) % childTracerName), &
-               trim(tracerConnectivities(iTracerVariable) % parentTracerName), &
-               tracerConnectivities(iTracerVariable) % childTracerMinimum, &
-               tracerConnectivities(iTracerVariable) % parentTracerMinimum, &
-               tracerConnectivities(iTracerVariable) % updateHalo, &
-               edgeVelocity, &
-               edgeFlux, &
-               interiorEdge, &
-               dt)
+       call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
 
-       endif
+       call MPAS_pool_get_array(boundary, "interiorEdge", interiorEdge)  
 
-    enddo ! iTracerVariable
+       do iTracerVariable = 1, nTracerVariables
 
-    call finalize_advection(&
-         clock, &
-         configs, &
-         mesh, &
-         tracers, &
-         tracer_conservation, &
-         edgeVelocity, &
-         edgeFlux)
+          !write(*,*) trim(tracerConnectivities(iTracerVariable) % childTracerName), trim(tracerConnectivities(iTracerVariable) % parentTracerName)
+
+          if (tracerConnectivities(iTracerVariable) % defined == 1) then
+
+             call run_advection_variable(&
+                  clock, &
+                  mesh, &
+                  tracers, &
+                  tracer_tendencies, &
+                  tracer_edge_fluxes, &
+                  trim(tracerConnectivities(iTracerVariable) % childTracerName), &
+                  trim(tracerConnectivities(iTracerVariable) % parentTracerName), &
+                  tracerConnectivities(iTracerVariable) % childTracerMinimum, &
+                  tracerConnectivities(iTracerVariable) % parentTracerMinimum, &
+                  tracerConnectivities(iTracerVariable) % updateHalo, &
+                  edgeVelocity, &
+                  edgeFlux, &
+                  interiorEdge, &
+                  dt)
+
+          endif
+
+       enddo ! iTracerVariable
+       
+       call finalize_advection(&
+            clock, &
+            block % configs, &
+            mesh, &
+            tracers, &
+            tracer_conservation, &
+            edgeVelocity, &
+            edgeFlux)
+
+       block => block % next
+    end do
 
   end subroutine cice_run_advection!}}}
 
@@ -736,7 +762,7 @@ contains
     call MPAS_pool_get_array(tracer_edge_fluxes, trim(childTracerName), childEdgeFlux)
 
     ! halo update
-    if (updateHalo) call mpas_dmpar_exch_halo_field(childTracerOld)
+    !if (updateHalo) call mpas_dmpar_exch_halo_field(childTracerOld)
 
     if (trim(parentTracerName) == 'none') then
 
@@ -1015,7 +1041,7 @@ contains
     call MPAS_pool_get_array(tracer_edge_fluxes, trim(childTracerName), childEdgeFlux)
 
     ! halo update
-    if (updateHalo) call mpas_dmpar_exch_halo_field(childTracerOld)
+    !if (updateHalo) call mpas_dmpar_exch_halo_field(childTracerOld)
 
     ! parent tracer
     call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerOld, 1)
@@ -1761,6 +1787,59 @@ contains
     snowEnthalpyEdgeFlux1 = 0.0_RKIND
 
   end subroutine initialize_timelevel_variables
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  halo_exchange_advection
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date January 13th 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine halo_exchange_advection(domain)
+
+    type(domain_type), intent(inout) :: &
+         domain
+    
+    type(MPAS_pool_type), pointer :: &         
+         tracers_fields
+
+    type (MPAS_pool_field_info_type) :: &
+         childFieldInfo
+
+    type(field3DReal), pointer :: tracer3DReal
+    type(field4DReal), pointer :: tracer4DReal
+
+    integer :: &
+         iTracerVariable
+
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracers_fields)
+
+    do iTracerVariable = 1, nTracerVariables
+
+       if (tracerConnectivities(iTracerVariable) % defined == 1 .and. &
+           tracerConnectivities(iTracerVariable) % updateHalo) then
+
+          call MPAS_pool_get_field_info(tracers_fields, trim(tracerConnectivities(iTracerVariable) % childTracerName), childFieldInfo)
+
+          select case (childFieldInfo % nDims)
+          case (3)
+             call MPAS_pool_get_field(tracers_fields, trim(tracerConnectivities(iTracerVariable) % childTracerName), tracer3DReal)
+             call MPAS_dmpar_exch_halo_field(tracer3DReal)
+          case (4)
+             call MPAS_pool_get_field(tracers_fields, trim(tracerConnectivities(iTracerVariable) % childTracerName), tracer4DReal)
+             call MPAS_dmpar_exch_halo_field(tracer4DReal)
+          end select
+
+       endif
+
+    enddo ! iTracerVariable
+
+  end subroutine halo_exchange_advection
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

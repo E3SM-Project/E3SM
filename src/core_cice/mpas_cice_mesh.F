@@ -48,10 +48,13 @@ contains
 !-----------------------------------------------------------------------
   
   subroutine cice_init_boundary(&
-       block)!{{{
+       domain)!{{{
 
-    type (block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output: 
+
+    type(block_type), pointer :: &
+         block
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
@@ -60,15 +63,40 @@ contains
     integer, dimension(:), pointer :: &
          blockIDout
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+    type (MPAS_pool_type), pointer :: &
+         boundaryField
 
-    call MPAS_pool_get_array(boundary, "blockIDout", blockIDout)
-    blockIDout = block % blockID
+    type(field1DInteger), pointer :: &
+         interiorVertexField, &
+         interiorCellField, &
+         interiorEdgeField
 
-    call interior_vertices(mesh, boundary)
-    call interior_cells(mesh, boundary)
-    call interior_edges(mesh, boundary)
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+       
+       call MPAS_pool_get_array(boundary, "blockIDout", blockIDout)
+       blockIDout = block % blockID
+       
+       call interior_vertices(mesh, boundary)
+       call interior_cells(mesh, boundary)
+       call interior_edges(mesh, boundary)
+
+       block => block % next
+    end do
+
+    ! exchange fields
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "boundary", boundaryField)
+
+    call MPAS_pool_get_field(boundaryField, "interiorVertex", interiorVertexField)
+    call MPAS_pool_get_field(boundaryField, "interiorCell", interiorCellField)
+    call MPAS_pool_get_field(boundaryField, "interiorEdge", interiorEdgeField)
+
+    call MPAS_dmpar_exch_halo_field(interiorVertexField)
+    call MPAS_dmpar_exch_halo_field(interiorCellField)
+    call MPAS_dmpar_exch_halo_field(interiorEdgeField)
 
   end subroutine cice_init_boundary!}}}
 
@@ -105,7 +133,7 @@ contains
          vertexDegree, &
          nCells
 
-    type(field1DInteger), pointer :: &
+    integer, dimension(:), pointer :: &
          interiorVertex
 
     integer :: &
@@ -113,7 +141,7 @@ contains
          iVertexDegree, &
          iCell
 
-    call MPAS_pool_get_field(boundary, "interiorVertex", interiorVertex)
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
     call MPAS_pool_get_dimension(mesh, "nVerticesSolve", nVerticesSolve)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
@@ -124,7 +152,7 @@ contains
     ! boundary vertices
     do iVertex = 1, nVerticesSolve
 
-       interiorVertex % array(iVertex) = 0
+       interiorVertex(iVertex) = 0
        
        nInteriorAdjacentCells = 0
 
@@ -143,13 +171,11 @@ contains
        ! vertex points we directly calculate on
        if (nInteriorAdjacentCells == vertexDegree) then
 
-          interiorVertex % array(iVertex) = 1
+          interiorVertex(iVertex) = 1
           
        endif
 
     enddo ! iVertex
-
-    call mpas_dmpar_exch_halo_field(interiorVertex)
 
   end subroutine interior_vertices!}}}
 
@@ -189,10 +215,10 @@ contains
     integer, dimension(:,:), pointer :: &
          cellsOnCell
 
-    type(field1DInteger), pointer :: &
+    integer, dimension(:), pointer :: &
          interiorCell
 
-    call MPAS_pool_get_field(boundary, "interiorCell", interiorCell)
+    call MPAS_pool_get_array(boundary, "interiorCell", interiorCell)
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
@@ -202,21 +228,19 @@ contains
 
     do iCell = 1, nCellsSolve
 
-       interiorCell % array(iCell) = 1
+       interiorCell(iCell) = 1
 
        do iEdgeOnCell = 1, nEdgesOnCell(iCell)
 
           if (cellsOnCell(iEdgeOnCell,iCell) > nCells) then
 
-             interiorCell % array(iCell) = 0
+             interiorCell(iCell) = 0
 
           endif
 
        enddo ! iEdgeOnCell
 
     enddo ! iCell
-
-    call mpas_dmpar_exch_halo_field(interiorCell)
 
   end subroutine interior_cells!}}}
 
@@ -249,14 +273,14 @@ contains
     integer, dimension(:,:), pointer :: &
          cellsOnEdge
 
-    type(field1DInteger), pointer :: &
+    integer, dimension(:), pointer :: &
          interiorEdge
 
     integer :: &
          iEdge, &
          iCellOnEdge
     
-    call MPAS_pool_get_field(boundary, "interiorEdge", interiorEdge)
+    call MPAS_pool_get_array(boundary, "interiorEdge", interiorEdge)
 
     call MPAS_pool_get_dimension(mesh, "nEdgesSolve", nEdgesSolve)
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
@@ -265,21 +289,19 @@ contains
 
     do iEdge = 1, nEdgesSolve
 
-       interiorEdge % array(iEdge) = 1
+       interiorEdge(iEdge) = 1
 
        do iCellOnEdge = 1, 2
 
           if (cellsOnEdge(iCellOnEdge,iEdge) > nCells) then
 
-             interiorEdge % array(iEdge) = 0
+             interiorEdge(iEdge) = 0
 
           endif
 
        enddo ! iCellOnEdge
 
     end do ! iEdge
-
-    call mpas_dmpar_exch_halo_field(interiorEdge)
 
   end subroutine interior_edges
 
@@ -390,7 +412,7 @@ contains
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
 
-    type(field3DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon, & !< Output: 
          normalVectorTriangle   !< Output: 
 
@@ -401,7 +423,7 @@ contains
          rotateCartesianGrid, & !< Input: 
          removeMetricTerms !< Input: 
 
-    type(field1DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:), intent(out) :: &
          latCellRotated, & !< Output: 
          latVertexRotated  !< Output: 
 
@@ -444,14 +466,14 @@ contains
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
 
-    type(field3DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon !< Output: 
 
     logical, intent(in) :: &
          rotateCartesianGrid, & !< Input: 
          removeMetricTerms !< Input: 
 
-    type(field1DReal), pointer, optional, intent(out) :: &
+    real(kind=RKIND), dimension(:), optional, intent(out) :: &
          latCellRotated !< Output: 
 
     logical, pointer :: &
@@ -463,7 +485,7 @@ contains
        call normal_vectors_spherical_polygon_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorPolygon, latCellRotated)
     else 
        call normal_vectors_planar_polygon(mesh, normalVectorPolygon)
-       if (present(latCellRotated)) latCellRotated % array = 0.0_RKIND
+       if (present(latCellRotated)) latCellRotated = 0.0_RKIND
     endif
 
   end subroutine cice_normal_vectors_polygon!}}}
@@ -491,7 +513,7 @@ contains
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
 
-    type(field3DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle !< Output: 
 
     integer, dimension(:), intent(in) :: &
@@ -501,7 +523,7 @@ contains
          rotateCartesianGrid, & !< Input: 
          removeMetricTerms !< Input: 
 
-    type(field1DReal), pointer, optional, intent(out) :: &
+    real(kind=RKIND), dimension(:), optional, intent(out) :: &
          latVertexRotated !< Output: 
 
     logical, pointer :: &
@@ -513,7 +535,7 @@ contains
        call normal_vectors_spherical_triangle_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorTriangle, interiorVertex, latVertexRotated)
     else 
        call normal_vectors_planar_triangle(mesh, normalVectorTriangle, interiorVertex)
-       if (present(latVertexRotated)) latVertexRotated % array = 0.0_RKIND
+       if (present(latVertexRotated)) latVertexRotated = 0.0_RKIND
     endif
 
   end subroutine cice_normal_vectors_triangle!}}}
@@ -537,7 +559,7 @@ contains
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
 
-    type(field3DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon !< Output: 
 
     integer, pointer :: &
@@ -582,8 +604,8 @@ contains
           dx = xEdge(iEdge) - xCell(iCell)
           dy = yEdge(iEdge) - yCell(iCell)
 
-          normalVectorPolygon % array(1,iEdgeOnCell,iCell) = dx / sqrt(dx**2 + dy**2)
-          normalVectorPolygon % array(2,iEdgeOnCell,iCell) = dy / sqrt(dx**2 + dy**2)
+          normalVectorPolygon(1,iEdgeOnCell,iCell) = dx / sqrt(dx**2 + dy**2)
+          normalVectorPolygon(2,iEdgeOnCell,iCell) = dy / sqrt(dx**2 + dy**2)
 
        enddo ! iEdgeOnCell
 
@@ -611,7 +633,7 @@ contains
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
 
-    type(field3DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle !< Output: 
 
     integer, dimension(:), intent(in) :: &
@@ -650,7 +672,7 @@ contains
 
     do iVertex = 1, nVertices
 
-       normalVectorTriangle % array(:,:,iVertex) = 0.0_RKIND
+       normalVectorTriangle(:,:,iVertex) = 0.0_RKIND
 
        if (interiorVertex(iVertex) == 1) then
 
@@ -661,8 +683,8 @@ contains
              dx = xEdge(iEdge) - xVertex(iVertex)
              dy = yEdge(iEdge) - yVertex(iVertex)
              
-             normalVectorTriangle % array(1,iVertexDegree,iVertex) = dx / sqrt(dx**2 + dy**2)
-             normalVectorTriangle % array(2,iVertexDegree,iVertex) = dy / sqrt(dx**2 + dy**2)
+             normalVectorTriangle(1,iVertexDegree,iVertex) = dx / sqrt(dx**2 + dy**2)
+             normalVectorTriangle(2,iVertexDegree,iVertex) = dy / sqrt(dx**2 + dy**2)
              
           enddo ! iVertexDegree
 
@@ -698,10 +720,10 @@ contains
          rotateCartesianGrid, & !< Input: 
          removeMetricTerms !< Input: 
 
-    type(field3DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon !< Output: 
 
-    type(field1DReal), pointer, optional, intent(out) :: &
+    real(kind=RKIND), dimension(:), optional, intent(out) :: &
          latCellRotatedOut !< Output: 
     
     real(kind=RKIND), dimension(3) :: &
@@ -874,16 +896,16 @@ contains
           eastwardsVector = eastwardsVector / &
                             sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
 
-          call cice_dot_product_3space(normalVectorPolygon % array(1,iEdgeOnCell,iCell), &
+          call cice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
                                        normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                        eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
-          normalVectorPolygon % array(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
-               * sqrt(1.0_RKIND - max(min(normalVectorPolygon % array(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
+          normalVectorPolygon(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
+               * sqrt(1.0_RKIND - max(min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
 
        enddo ! iEdgeOnCell
 
-       if (present(latCellRotatedOut)) latCellRotatedOut % array(iCell) = latCellRotated
+       if (present(latCellRotatedOut)) latCellRotatedOut(iCell) = latCellRotated
        
     enddo ! iCell
 
@@ -912,7 +934,7 @@ contains
     logical, intent(in) :: &
          rotateCartesianGrid !< Input: 
 
-    type(field3DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon !< Output: 
 
     real(kind=RKIND), dimension(3) :: &
@@ -1014,12 +1036,12 @@ contains
           eastwardsVector = eastwardsVector / &
                             sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
 
-          call cice_dot_product_3space(normalVectorPolygon % array(1,iEdgeOnCell,iCell), &
+          call cice_dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
                                        normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                        eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
-          normalVectorPolygon % array(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
-               * sqrt(1.0_RKIND - max(min(normalVectorPolygon % array(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
+          normalVectorPolygon(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
+               * sqrt(1.0_RKIND - max(min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
 
        enddo ! iEdgeOnCell
        
@@ -1054,13 +1076,13 @@ contains
          rotateCartesianGrid, & !< Input: 
          removeMetricTerms !< Input: 
 
-    type(field3DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle !< Output: 
 
     integer, dimension(:), intent(in) :: &
          interiorVertex !< Input: 
 
-    type(field1DReal), pointer, optional, intent(out) :: &
+    real(kind=RKIND), dimension(:), optional, intent(out) :: &
          latVertexRotatedOut !< Output: 
 
     real(kind=RKIND), dimension(3) :: &
@@ -1141,9 +1163,9 @@ contains
 
     do iVertex = 1, nVerticesSolve
 
-       normalVectorTriangle % array(:,:,iVertex) = 0.0_RKIND
+       normalVectorTriangle(:,:,iVertex) = 0.0_RKIND
 
-       if (present(latVertexRotatedOut)) latVertexRotatedOut % array(iVertex) = 0.0_RKIND
+       if (present(latVertexRotatedOut)) latVertexRotatedOut(iVertex) = 0.0_RKIND
 
        if (interiorVertex(iVertex) == 1) then
 
@@ -1237,22 +1259,20 @@ contains
              eastwardsVector = eastwardsVector / &
                                sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
              
-             call cice_dot_product_3space(normalVectorTriangle % array(1,iVertexDegree,iVertex), &
+             call cice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
                                           normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                           eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
-             normalVectorTriangle % array(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3)) &
-                  * sqrt(1.0_RKIND - max(min(normalVectorTriangle % array(1,iVertexDegree,iVertex),1.0_RKIND),-1.0_RKIND)**2)
+             normalVectorTriangle(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3)) &
+                  * sqrt(1.0_RKIND - max(min(normalVectorTriangle(1,iVertexDegree,iVertex),1.0_RKIND),-1.0_RKIND)**2)
 
           enddo ! iVertexDegree
 
-          if (present(latVertexRotatedOut)) latVertexRotatedOut % array(iVertex) = latVertexRotated
+          if (present(latVertexRotatedOut)) latVertexRotatedOut(iVertex) = latVertexRotated
 
        endif ! interiorVertex
 
     enddo ! iVertex
-
-    call mpas_dmpar_exch_halo_field(normalVectorTriangle)
 
   end subroutine normal_vectors_spherical_triangle_metric!}}}
 
@@ -1280,7 +1300,7 @@ contains
     logical, intent(in) :: &
          rotateCartesianGrid !< Input: 
 
-    type(field3DReal), pointer, intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle !< Output: 
 
     integer, dimension(:), intent(in) :: &
@@ -1335,7 +1355,7 @@ contains
 
     do iVertex = 1, nVertices
 
-       normalVectorTriangle % array(:,:,iVertex) = 0.0_RKIND
+       normalVectorTriangle(:,:,iVertex) = 0.0_RKIND
 
        if (interiorVertex(iVertex) == 1) then
 
@@ -1379,12 +1399,12 @@ contains
              eastwardsVector = eastwardsVector / &
                                sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
              
-             call cice_dot_product_3space(normalVectorTriangle % array(1,iVertexDegree,iVertex), &
+             call cice_dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
                                           normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
                                           eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
-             normalVectorTriangle % array(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3))&
-                  * sqrt(1.0_RKIND - min(normalVectorTriangle % array(1,iVertexDegree,iVertex),1.0_RKIND)**2)
+             normalVectorTriangle(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3))&
+                  * sqrt(1.0_RKIND - min(normalVectorTriangle(1,iVertexDegree,iVertex),1.0_RKIND)**2)
              
           enddo ! iVertexDegree
 
