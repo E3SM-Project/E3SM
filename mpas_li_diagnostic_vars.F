@@ -511,7 +511,7 @@ contains
       endif
 
       ! This information is only needed for some external dycores.
-      if (config_velocity_solver /= 'sia') then
+      if (trim(config_velocity_solver) /= 'sia') then
          procDynamicVertexMaskChanged = 0
 
          ! Note: External dycores don't support multiple blocks per proc., but checking across
