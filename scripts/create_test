@@ -1528,6 +1528,7 @@ TESTXML
     $testxml .= "    <confopts>$$test{'confopts'}</confopts>\n" if defined $$test{'confopts'};
     $testxml .= "    <compiler>$$test{'compiler'}</compiler>\n";
     $testxml .= "    <compset>$$test{'compset'}</compset>\n";
+    $testxml .= "    <casebaseid>$$test{'casebaseid'}</casebaseid>\n";
     $testxml .= "    <baselineroot>$opts{'baselineroot'}</baselineroot>\n" if defined $$test{'baselineroot'};
     $testxml .= "    <basegen_case>$$test{'basegen_case'}</basegen_case>\n" if defined $$test{'basegen_case'};
     $testxml .= "    <basecmp_case>$$test{'basecmp_case'}</basecmp_case>\n" if defined $$test{'basecmp_case'};
@@ -1547,8 +1548,8 @@ TESTXML
 sub testBuildSubmit
 {
   
-  my $cssubmit = "cs.submit.$opts{'testid'}.$opts{'mach'}";
-  my $csstatus = "cs.status.$opts{'testid'}.$opts{'mach'}";
+  my $cssubmit = "cs.submit";
+  my $csstatus = "cs.status";
   copy("$scriptsroot/Tools/testreporter.pl", "$opts{'testroot'}/testreporter.pl");
   chmod 0755, "$opts{'testroot'}/testreporter.pl";
   copy("$scriptsroot/Tools/cs.submit", "$opts{'testroot'}/$cssubmit");
