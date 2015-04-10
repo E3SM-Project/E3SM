@@ -27,4 +27,4 @@ else
 endif
 
 .c.o:
-	$(CC) $(CFLAGS) $(CINCLUDES) -c $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(CINCLUDES) -c $<

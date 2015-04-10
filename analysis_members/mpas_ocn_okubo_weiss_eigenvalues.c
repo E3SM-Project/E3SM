@@ -21,6 +21,16 @@
 
 #include <math.h>
 
+#ifdef UNDERSCORE
+#define compute_ev_2 compute_ev_2_
+#define compute_ev_3 compute_ev_3_
+#else
+#ifdef DOUBLEUNDERSCORE
+#define compute_ev_2 compute_ev_2__
+#define compute_ev_3 compute_ev_3__
+#endif
+#endif
+
 #ifdef SINGLE_PRECISION
     typedef float real;
 #else
@@ -62,7 +72,7 @@ inline void sort_descending_complex_3(real* wr, real* wi)
 !
 !-----------------------------------------------------------------------
 */
-void compute_ev_2_(real A[4], real wr[2], real wi[2])
+void compute_ev_2(real A[4], real wr[2], real wi[2])
 {
     real a = A[0];
     real b = A[1];
@@ -118,7 +128,7 @@ void compute_ev_2_(real A[4], real wr[2], real wi[2])
 !
 !-----------------------------------------------------------------------
 */
-void compute_ev_3_(real* mat, real* wr, real* wi )
+void compute_ev_3(real* mat, real* wr, real* wi )
 {
     /* find value to normalize with, to protect against over-/underflow */
     double maxAbsVal = 0.;
