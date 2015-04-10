@@ -214,13 +214,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex, areaTriangle
       real (kind=RKIND), pointer :: radius
       type (field1DInteger), pointer :: indexToCellIDField, indexToEdgeIDField, indexToVertexIDField
-      ! Variables needed to set FEM mask
-      type (mpas_pool_type), pointer :: statePool
-      character (len=StrKIND), pointer :: config_velocity_solver
-      real (kind=RKIND), dimension(:), pointer :: &
-         thickness, lowerSurface, layerThicknessFractions
-      integer, dimension(:), pointer :: vertexMask, floatingEdges
-      integer, dimension(:,:), pointer :: dirichletVelocityMask
 
       ! halo exchange arrays
       integer, dimension(:), pointer :: sendCellsArray, &
@@ -299,23 +292,6 @@ contains
                  recvVerticesArray, &
                  sendEdgesArray, &
                  recvEdgesArray)
-
-      ! Now build the FEM mesh for the first solve
-      ! (This needs to be additionally called here so that HO restarts work correctly.
-      !  However, it won't be called again in solve unless the grid has changed.
-      !  One exception is on a restart where the dynamic ice extent does not change between the
-      !  initial time and the first time step - in the case this will be called twice
-      !  unnecessarily.  That seemed preferable to complicating the logic.)
-      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-      call mpas_pool_get_subpool(block % structs, 'state', statePool)
-      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
-      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=1)
-      call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=1)
-      call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel=1)
-      call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=1)
-      call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=1)
-      call generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, &
-              floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
 
       ! === error check
       if (err > 0) then
