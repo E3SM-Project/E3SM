@@ -1365,6 +1365,13 @@ subroutine tphysac (ztodt,   cam_in,  &
 
     ! Debug physics_state.
     logical :: state_debug_checks
+
+    logical :: l_tracer_aero
+    logical :: l_vdiff
+    logical :: l_rayleigh
+    logical :: l_gw_drag
+    logical :: l_ac_energy_chk
+
     !
     !-----------------------------------------------------------------------
     !
@@ -1374,7 +1381,13 @@ subroutine tphysac (ztodt,   cam_in,  &
     nstep = get_nstep()
     
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
-                       state_debug_checks_out = state_debug_checks)
+                       state_debug_checks_out = state_debug_checks &
+                      ,l_tracer_aero_out      = l_tracer_aero      &
+                      ,l_vdiff_out            = l_vdiff            &
+                      ,l_rayleigh_out         = l_rayleigh         &
+                      ,l_gw_drag_out          = l_gw_drag          &
+                      ,l_ac_energy_chk_out    = l_ac_energy_chk    &
+                     )
 
     ! Adjust the surface fluxes to reduce instabilities in near sfc layer
     if (phys_do_flux_avg()) then 
@@ -1414,6 +1427,8 @@ subroutine tphysac (ztodt,   cam_in,  &
             + (cam_out%precsc(i) + cam_out%precsl(i))*latice*rhoh2o
     end do
 
+if (l_tracer_aero) then
+
     ! emissions of aerosols and gas-phase chemistry constituents at surface
     call chem_emissions( state, cam_in )
 
@@ -1422,6 +1437,8 @@ subroutine tphysac (ztodt,   cam_in,  &
        call carma_emission_tend (state, ptend, cam_in, ztodt)
        call physics_update(state, ptend, ztodt, tend)
     end if
+
+end if ! l_tracer_aero
 
     ! get nstep and zero array for energy checker
     zero = 0._r8
@@ -1436,6 +1453,8 @@ subroutine tphysac (ztodt,   cam_in,  &
          cam_in%lhf , cam_in%cflx )
 
     call t_stopf('tphysac_init')
+
+if (l_tracer_aero) then
     !===================================================
     ! Source/sink terms for advected tracers.
     !===================================================
@@ -1464,6 +1483,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     end if
     call t_stopf('adv_tracer_src_snk')
 
+end if ! l_tracer_aero
+
+if (l_vdiff) then
     !===================================================
     ! Vertical diffusion/pbl calculation
     ! Call vertical diffusion code (pbl, free atmosphere and molecular)
@@ -1499,7 +1521,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     
     endif
 
+end if ! l_vdiff
 
+if (l_rayleigh) then
     !===================================================
     ! Rayleigh friction calculation
     !===================================================
@@ -1516,6 +1540,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     endif
     
     call check_tracers_chng(state, tracerint, "vdiff", nstep, ztodt, cam_in%cflx)
+
+end if ! l_rayleigh
+
+if (l_tracer_aero) then
 
     !  aerosol dry deposition processes
     call t_startf('aero_drydep')
@@ -1539,12 +1567,14 @@ subroutine tphysac (ztodt,   cam_in,  &
      call t_stopf('carma_timestep_tend')
    end if
 
-
     !---------------------------------------------------------------------------------
     !	... enforce charge neutrality
     !---------------------------------------------------------------------------------
     call charge_fix( ncol, state%q(:,:,:) )
 
+end if ! l_tracer_aero
+
+if (l_gw_drag) then
     !===================================================
     ! Gravity wave drag
     !===================================================
@@ -1583,7 +1613,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     call check_energy_chng(state, tend, "iondrag", nstep, ztodt, zero, zero, zero, zero)
     call t_stopf  ( 'iondrag' )
 
+end if ! l_gw_drag
 
+if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/))       
@@ -1618,6 +1650,9 @@ subroutine tphysac (ztodt,   cam_in,  &
 !!!   call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
 
     !-------------- Energy budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+end if ! l_ac_energy_chk
+
+
     if (aqua_planet) then
        labort = .false.
        do i=1,ncol
@@ -1877,12 +1912,28 @@ subroutine tphysbc (ztodt,               &
     real(r8)  :: lcldo(pcols,pver)              !HW pass old liqclf from macro_driver to micro_driver
     !BSINGH - ENDS
 
-    
+
+    !HuiWan (2014/15): added for a short-term time step convergence test ++ 
+    logical :: l_bc_energy_fix
+    logical :: l_dry_adj
+    logical :: l_tracer_aero
+    logical :: l_st_mac
+    logical :: l_st_mic
+    logical :: l_rad
+    !HuiWan (2014/15): added for a short-term time step convergence test ==
+
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
                        use_subcol_microp_out  = use_subcol_microp, &
-                       state_debug_checks_out = state_debug_checks)
+                       state_debug_checks_out = state_debug_checks &
+                      ,l_bc_energy_fix_out    = l_bc_energy_fix    &
+                      ,l_dry_adj_out          = l_dry_adj          &
+                      ,l_tracer_aero_out      = l_tracer_aero      &
+                      ,l_st_mac_out           = l_st_mac           &
+                      ,l_st_mic_out           = l_st_mic           &
+                      ,l_rad_out              = l_rad              &
+                      )
     
     !-----------------------------------------------------------------------
     call t_startf('bc_init')
@@ -1959,6 +2010,8 @@ subroutine tphysbc (ztodt,               &
     !===================================================
     ! Global mean total energy fixer
     !===================================================
+if (l_bc_energy_fix) then
+
     call t_startf('energy_fixer')
 
     !*** BAB's FV heating kludge *** save the initial temperature
@@ -1991,11 +2044,15 @@ subroutine tphysbc (ztodt,               &
     end if
 
     call t_stopf('energy_fixer')
+
+end if
     !
     !===================================================
     ! Dry adjustment
     ! This code block is not a good example of interfacing a parameterization
     !===================================================
+if (l_dry_adj) then
+
     call t_startf('dry_adjustment')
 
     ! Copy state info for input to dadadj
@@ -2014,6 +2071,8 @@ subroutine tphysbc (ztodt,               &
     call physics_update(state, ptend, ztodt, tend)
 
     call t_stopf('dry_adjustment')
+
+end if
     !
     !===================================================
     ! Moist convection
@@ -2072,6 +2131,8 @@ subroutine tphysbc (ztodt,               &
 
     call t_stopf('moist_convection')
 
+if (l_tracer_aero) then
+
     ! Rebin the 4-bin version of sea salt into bins for coarse and accumulation
     ! modes that correspond to the available optics data.  This is only necessary
     ! for CAM-RT.  But it's done here so that the microphysics code which is called
@@ -2106,8 +2167,12 @@ subroutine tphysbc (ztodt,               &
 
     call t_stopf('carma_timestep_tend')
 
+end if
+
+
     if( microp_scheme == 'RK' ) then
 
+     if (l_st_mac) then
        !===================================================
        ! Calculate stratiform tendency (sedimentation, detrain, cloud fraction and microphysics )
        !===================================================
@@ -2125,13 +2190,14 @@ subroutine tphysbc (ztodt,               &
        call check_energy_chng(state, tend, "cldwat_tend", nstep, ztodt, zero, prec_str, snow_str, zero)
 
        call t_stopf('stratiform_tend')
+     end if !l_st_mac
 
     elseif( microp_scheme == 'MG' ) then
 
        !===================================================
        ! Calculate macrophysical tendency (sedimentation, detrain, cloud fraction)
        !===================================================
-
+     if (l_st_mac) then
        call t_startf('macrop_tend')
 
        ! don't call Park macrophysics if CLUBB is called
@@ -2175,7 +2241,9 @@ subroutine tphysbc (ztodt,               &
        endif 
 
        call t_stopf('macrop_tend') 
+     end if ! l_st_mac
 
+     if (l_st_mic) then
        !===================================================
        ! Calculate cloud microphysics 
        !===================================================
@@ -2229,7 +2297,11 @@ subroutine tphysbc (ztodt,               &
        call physics_ptend_dealloc(ptend_aero)
        call t_stopf('microp_tend')
 
+     end if ! l_st_mic
+
     endif
+
+if (l_tracer_aero) then
 
     ! Add the precipitation from CARMA to the precipitation from stratiform.
     if (carma_do_cldice .or. carma_do_cldliq) then
@@ -2321,6 +2393,7 @@ subroutine tphysbc (ztodt,               &
        call t_stopf('bc_aerosols')
 
    endif
+end if ! l_tracer_aero
 
     !===================================================
     ! Moist physical parameteriztions complete: 
@@ -2343,6 +2416,7 @@ subroutine tphysbc (ztodt,               &
 
     call t_stopf('bc_cld_diag_history_write')
 
+if (l_rad) then
     !===================================================
     ! Radiation computations
     !===================================================
@@ -2363,6 +2437,8 @@ subroutine tphysbc (ztodt,               &
     call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
 
     call t_stopf('radiation')
+
+end if ! l_rad
 
     ! Diagnose the location of the tropopause and its location to the history file(s).
     call t_startf('tropopause')
