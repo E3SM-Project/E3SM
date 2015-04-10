@@ -114,7 +114,7 @@ sub set_compiler
     # Parse the config_compiler.xml file into a Macros file for the
     # given machine and compiler. Search the user's ~/.cesm directory
     # first, then use the standard compiler file if it is not available.
-    my ($os,$compiler_file, $compiler, $machine, $mpilib, $print, $macrosfile) = @_;
+    my ($os,$compiler_file, $compiler, $machine, $mpilib, $print, $macrosfile, $output_format) = @_;
 
     my @compiler_settings = read_compiler_xml($os, "$ENV{\"HOME\"}/.cesm/config_compilers.xml", $compiler, $machine, $mpilib, $print, $macrosfile);
 
@@ -185,38 +185,77 @@ sub set_compiler
     }
 
 #    print Dumper($macros);
-
-
-#open Macros file to write
+    $output_format="make" unless defined($output_format);
     open MACROS,">$macrosfile" or die "Could not open file $macrosfile to write";
-
-    print MACROS "#\n# Makefile Macros generated from $compiler_file using\n";
-    print MACROS "# COMPILER=$compiler\n";
+    print MACROS "#\n# COMPILER=$compiler\n";
     print MACROS "# OS=$os\n";
-    print MACROS "# MACH=$machine\n#\n";
-
-#    print Dumper($macros);
+    print MACROS "# MACH=$machine\n";
     my @keys =  sort keys %{$macros};
 
-# print the settings out to the Macros file
+    if($output_format eq "make"){
+#open Macros file to write
+	print MACROS "#\n# Makefile Macros generated from $compiler_file \n#\n";
+#    print Dumper($macros);
 
-    foreach (@keys){
-	next if($_ eq '_COND_');
-	if($_ =~ /^ADD_(.*)/){
-	    print MACROS "$1+=".$macros->{$_}."\n\n";
-	}else{
-	    print MACROS "$_:=".$macros->{$_}."\n\n";
+# print the settings out to the Macros file
+	foreach (@keys){
+	    next if($_ eq '_COND_');
+	    if($_ =~ /^ADD_(.*)/){
+		print MACROS "$1+=".$macros->{$_}."\n\n";
+	    }else{
+		print MACROS "$_:=".$macros->{$_}."\n\n";
+	    }
 	}
+    }elsif($output_format eq "cmake"){
+	print MACROS "#\n# cmake Macros generated from $compiler_file \n#\n";
+        print MACROS "include(Compilers)\n";
+	print MACROS "set(CMAKE_C_FLAGS_RELEASE \"\" CACHE STRING \"Flags used by c compiler.\" FORCE)\n";
+	print MACROS "set(CMAKE_C_FLAGS_DEBUG \"\" CACHE STRING \"Flags used by c compiler.\" FORCE)\n";
+	print MACROS "set(CMAKE_Fortran_FLAGS_RELEASE \"\" CACHE STRING \"Flags used by Fortran compiler.\" FORCE)\n";
+	print MACROS "set(CMAKE_Fortran_FLAGS_DEBUG \"\" CACHE STRING \"Flags used by Fortran compiler.\" FORCE)\n";
+        print MACROS "set(all_build_types \"None Debug Release RelWithDebInfo MinSizeRel\")\n";
+        print MACROS "set(CMAKE_BUILD_TYPE \"\${CMAKE_BUILD_TYPE}\" CACHE STRING \"Choose the type of build, options are: \${all_build_types}.\" FORCE)\n\n";
+# print the settings out to the Macros file, do it in two passes so that path values appear first in the file.
+	foreach (@keys){
+	    next if($_ eq '_COND_');
+	    my $value = $macros->{$_};
+	    $value =~ s/\(/\{/g;
+	    $value =~ s/\)/\}/g;
+	    if($_ =~ /^.*_PATH/){
+		print MACROS "set($_ $value)\n";
+                print MACROS "list(APPEND CMAKE_PREFIX_PATH $value)\n\n";
+	    }
+	}
+	foreach (@keys){
+	    next if($_ eq '_COND_');
+	    my $value = $macros->{$_};
+	    $value =~ s/\(/\{/g;
+	    $value =~ s/\)/\}/g;
+	    if($_ =~ /CFLAGS/){
+		print MACROS "add_flags(CMAKE_C_FLAGS $value)\n\n";
+	    }elsif($_ =~ /FFLAGS/){
+		print MACROS "add_flags(CMAKE_Fortran_FLAGS $value)\n\n";
+            }elsif($_ =~ /CPPDEFS/){
+		print MACROS "list(APPEND COMPILE_DEFINITIONS $value)\n\n"; 
+            }elsif($_ =~ /SLIBS/ or $_ =~ /LDFLAGS/){
+		print MACROS "add_flags(CMAKE_EXE_LINKER_FLAGS $value)\n\n"; 
+#	    }elsif($_ =~ /^ADD_(.*)/){
+#		print MACROS "add_flags($1 $value)\n\n";
+#	    }else{
+#		print MACROS "add_flags($_ $value)\n\n";
+	    }
+	}	
+
     }
 # Recursively print the conditionals, combining tests to avoid repetition    
-
-    parse_hash($macros->{_COND_}, 0);
+    parse_hash($macros->{_COND_}, 0, $output_format);
+	
     close MACROS;
 }
 
 sub parse_hash
 {
-    my($href,$depth) = @_;
+    my($href,$depth, $output_format, $cmakedebug) = @_;
     my @keys = keys %{$href};
     my $k1;
 
@@ -224,23 +263,56 @@ sub parse_hash
     foreach $k1 (@keys){
 	if(ref($href->{$k1})){
 	    my $k2;
-	    foreach $k2 (keys %{$href->{$k1}}){
-		printf(MACROS "%${width}s"," ") if($width>0);
-		printf(MACROS "ifeq (\$(%s), %s) \n",$k1,$k2);
-		parse_hash($href->{$k1}{$k2},$depth+1);
+	    if($output_format eq "make" or $k1 =~ /DEBUG/){
+		foreach $k2 (keys %{$href->{$k1}}){
+		    if($output_format eq "make"){
+			printf(MACROS "%${width}s"," ") if($width>0);
+			printf(MACROS "ifeq (\$(%s), %s) \n",$k1,$k2);
+		    }
+		    
+		    parse_hash($href->{$k1}{$k2},$depth+1, $output_format, $k2);
+		}
 	    }
 	}else{
-	    if($k1=~/ADD_(.*)/){
-		printf(MACROS "%${width}s %s +=%s\n"," ",$1,$href->{$k1});
+	    if($output_format eq "make"){
+		if($k1=~/ADD_(.*)/){
+		    printf(MACROS "%${width}s %s +=%s\n"," ",$1,$href->{$k1});
+		}else{
+		    printf(MACROS "%${width}s %s :=%s\n"," ",$k1,$href->{$k1});
+		}
 	    }else{
-		printf(MACROS "%${width}s %s :=%s\n"," ",$k1,$href->{$k1});
+		my $value = $href->{$k1};
+		$value =~ s/\(/\{/g;
+		$value =~ s/\)/\}/g;
+		if($cmakedebug =~ /TRUE/){
+		    if($k1 =~ /CFLAGS/){
+			printf(MACROS "add_flags(CMAKE_C_FLAGS_DEBUG $value)\n\n");
+		    }elsif($k1 =~ /FFLAGS/){
+			printf(MACROS "add_flags(CMAKE_Fortran_FLAGS_DEBUG $value)\n\n");
+		    }elsif($k1 =~ /CPPDEF/){
+			printf(MACROS "add_config_definitions(DEBUG $value)\n\n");
+		    }elsif($_ =~ /SLIBS/ or $_ =~ /LDFLAGS/){
+			print MACROS "add_flags(CMAKE_EXE_LINKER_FLAGS_DEBUG $value)\n\n"; 
+		    }
+		}else{
+		    if($k1 =~ /CFLAGS/){
+			printf( MACROS "add_flags(CMAKE_C_FLAGS_RELEASE $value)\n\n");
+		    }elsif($k1 =~ /FFLAGS/){
+			printf( MACROS "add_flags(CMAKE_Fortran_FLAGS_RELEASE $value)\n\n");
+		    }elsif($k1 =~ /CPPDEF/){
+			printf(MACROS "add_config_definitions(RELEASE $value)\n\n");
+		    }elsif($_ =~ /SLIBS/ or $_ =~ /LDFLAGS/){
+			print MACROS "add_flags(CMAKE_EXE_LINKER_FLAGS_RELEASE $value)\n\n"; 
+		    }
+		}		    
 	    }
 	}
     }
     $width-=2;
-    printf(MACROS "%${width}s"," ") if($width>0);
-    printf(MACROS "endif\n\n") if($depth>0) ;    
-   
+    if($output_format eq "make"){
+	printf(MACROS "%${width}s"," ") if($width>0);
+	printf(MACROS "endif\n\n") if($depth>0) ;    
+    }
 }
 
 

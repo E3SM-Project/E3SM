@@ -6,6 +6,7 @@ use strict;
 use warnings;
 use Cwd qw(getcwd abs_path);
 use File::Basename;
+use File::stat;
 use Data::Dumper;
 use Getopt::Long;
 use XML::LibXML;
@@ -55,11 +56,35 @@ sub init
   {
     $opts{'expectedfails'} = $cimeroot . "/scripts/Testing/TestListxml/ExpectedTestFails.xml";
   }
-  foreach my $testspec(@testspecs)
+
+
+  if(defined $opts{'all'})
   {
-     #my $testspecxml = $parser->parse_file($testspec);
-     push(@testspecxmls, $testspec);
+      foreach my $testspec(@testspecs)
+      {
+         push(@testspecxmls, $testspec);
+      }
   }
+  else
+  { 
+     my $modtime = 0;
+     my $latestspecname;
+     foreach my $testspec(@testspecs)
+     {
+         open my $SPEC, "<", "./$testspec" or die "couldn't open testspec file";
+		 my $fstat = stat($SPEC);
+         my $specmodtime = $fstat->mtime;
+         close $SPEC;
+         if($specmodtime > $modtime)
+		 {
+             $modtime = $specmodtime; 
+             $latestspecname = $testspec;
+         }
+     }
+     push(@testspecxmls, $latestspecname);
+
+  }
+      
 
   chdir $cwd;
   return @testspecxmls;
@@ -346,6 +371,7 @@ sub getOpts
 	    "comparedir=s"	=> \$opts{'comparedir'},
 	    "compareid=s"	=> \$opts{'compareid'},
 	    "expectedfails=s"   => \$opts{'expectedfails'},
+        "all"           => \$opts{'all'},
 	    "help|h"		=> \$opts{'help'},
 	);
 
@@ -356,15 +382,18 @@ sub usage()
 my $usage = <<EOF;
 SYNOPSIS
 
-    ./cs.status.testid.machine
-	Running cs.status without arguments will give you the status for ALL test suites found in the current directory. 
-    It will look at EVERY testspec*xml file found in the current working directory. 
+    ./cs.status
+	Running cs.status without arguments will give you the status for the latest test set 
+    found in the current directory. 
 
+    ./cs.status --all 
+    Prints the test status for ALL test sets found in the current directory. 
+    
     ./cs.status --testspec testspec.xml 
     Prints the test status for ONLY the suite specified by the given testspec.xml file. 
     
 
-    ./cs.status.testid.machine [-p|-compareperf]  -testroot `pwd` \
+    ./cs.status [-p|-compareperf]  -testroot `pwd` \
 	-comparedir /scratch/cluster/jshollen/tests/cesm1_3_alpha10aintel/ -compareid cesm13a10aintel
 
         Meant to compare throughput from one test run to another.  Only passing tests will be compared 

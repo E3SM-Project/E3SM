@@ -101,11 +101,12 @@ for mct, etc.
   -->
   <ADD_CPPDEFS> -DFORTRAN_SAME </ADD_CPPDEFS>
   <CPRE>-WF,-D</CPRE>
-  <CFLAGS> -O2 -g -qfullpath -qmaxmem=-1 </CFLAGS>
+  <CFLAGS> -g -qfullpath -qmaxmem=-1 </CFLAGS>
   <FIXEDFLAGS>  -qsuffix=f=f -qfixed=132 </FIXEDFLAGS>
   <FREEFLAGS> -qsuffix=f=f90:cpp=F90  </FREEFLAGS>
   <FFLAGS> -g -qfullpath -qmaxmem=-1 </FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -qstrict -Q </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O3  </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qsmp=omp </ADD_CFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -qsmp=omp </ADD_LDFLAGS>
@@ -115,7 +116,6 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_CFLAGS>
   <ADD_LDFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_LDFLAGS>
   <ADD_FFLAGS DEBUG="TRUE" MODEL="pop"> -C </ADD_FFLAGS>
-
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 
 </compiler>
