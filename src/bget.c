@@ -784,7 +784,7 @@ void *bget(requested_size)
 		bpool(newpool, exp_incr);
                 buf =  bget(requested_size);  /* This can't, I say, can't
 						 get into a loop. */
-		printf("%s %d new memory block of size %d\n",__FILE__,__LINE__,exp_incr);
+		//		printf("%s %d new memory block of size %d\n",__FILE__,__LINE__,exp_incr);
 		return buf;
 	    }
 	}
