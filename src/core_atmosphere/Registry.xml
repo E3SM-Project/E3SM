@@ -1525,6 +1525,8 @@
                 <var name="albedo12m"   type="real"     dimensions="nMonths nCells"/>
                 <var name="greenfrac"   type="real"     dimensions="nMonths nCells"/>
 
+                <var name="dzs"         type="real"     dimensions="nSoilLevels nCells"/>
+
                 <var name="sfc_albbck"  type="real"     dimensions="nCells Time"/>
                 <var name="skintemp"    type="real"     dimensions="nCells Time"/>
                 <var name="snow"        type="real"     dimensions="nCells Time"/>
@@ -1537,7 +1539,6 @@
                 <var name="xice"        type="real"     dimensions="nCells Time"/>
                 <var name="xland"       type="real"     dimensions="nCells Time"/>
 
-                <var name="dzs"         type="real"     dimensions="nSoilLevels nCells Time"/>
                 <var name="smcrel"      type="real"     dimensions="nSoilLevels nCells Time"/>
                 <var name="sh2o"        type="real"     dimensions="nSoilLevels nCells Time"/>
                 <var name="smois"       type="real"     dimensions="nSoilLevels nCells Time"/>
@@ -1558,15 +1559,15 @@
                 <!--  ol3        : orographic direction asymmetry function                                          (-) -->
                 <!--  ol4        : orographic direction asymmetry function                                          (-) -->
 
-		<var name="var2d"                             type="real"     dimensions="nCells"/>
-		<var name="con"                               type="real"     dimensions="nCells"/>
-		<var name="oa1"                               type="real"     dimensions="nCells"/>
-		<var name="oa2"                               type="real"     dimensions="nCells"/>
-		<var name="oa3"                               type="real"     dimensions="nCells"/>
-		<var name="oa4"                               type="real"     dimensions="nCells"/>
-		<var name="ol1"                               type="real"     dimensions="nCells"/>
-		<var name="ol2"                               type="real"     dimensions="nCells"/>
-		<var name="ol3"                               type="real"     dimensions="nCells"/>
-		<var name="ol4"                               type="real"     dimensions="nCells"/>
+		<var name="var2d"       type="real"     dimensions="nCells"/>
+		<var name="con"         type="real"     dimensions="nCells"/>
+		<var name="oa1"         type="real"     dimensions="nCells"/>
+		<var name="oa2"         type="real"     dimensions="nCells"/>
+		<var name="oa3"         type="real"     dimensions="nCells"/>
+		<var name="oa4"         type="real"     dimensions="nCells"/>
+		<var name="ol1"         type="real"     dimensions="nCells"/>
+		<var name="ol2"         type="real"     dimensions="nCells"/>
+		<var name="ol3"         type="real"     dimensions="nCells"/>
+		<var name="ol4"         type="real"     dimensions="nCells"/>
         </var_struct>
 </registry>
