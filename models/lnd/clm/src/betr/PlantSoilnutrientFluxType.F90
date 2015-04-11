@@ -294,6 +294,7 @@ module PlantSoilnutrientFluxType
   
   real(r8) :: Vmax_minn = 1.e-7_r8  ! gN/gC/s
   integer  :: fp, p, fc, c
+  real(r8) :: nscal = 3._r8
   
   SHR_ASSERT_ALL((ubound(frootc_patch) == (/bounds%endp/)), errMsg(__FILE__,__LINE__))
   !calculate root nitrogen uptake potential
@@ -303,7 +304,7 @@ module PlantSoilnutrientFluxType
   !do fc = 1, num_soilc
   !  c = filter_soilc(fc)
   !  
-  !  this%plant_minn_uptake_potential_col(c) = this%plant_totn_demand_flx_col(c)
+  !  this%plant_minn_uptake_potential_col(c) = this%plant_totn_demand_flx_col(c)*nscal
   !enddo
   
   !new approach
