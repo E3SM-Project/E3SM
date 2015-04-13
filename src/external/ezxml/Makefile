@@ -2,7 +2,10 @@
 
 OBJS = ezxml.o
 
-all: $(OBJS)
+all: clean
+	$(MAKE) library
+
+library: $(OBJS)
 
 clean:
 	$(RM) *.o *.i
