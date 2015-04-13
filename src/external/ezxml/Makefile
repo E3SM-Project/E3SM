@@ -7,4 +7,4 @@ all: $(OBJS)
 clean:
 	$(RM) *.o *.i
 
-.c.o: $(CC) $(CPPFLAGS) -c $<
+.c.o: $(CC) $(CFLAGS) $(CPPFLAGS) -c $<

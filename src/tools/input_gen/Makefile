@@ -27,4 +27,4 @@ clean:
 	$(RM) *.i
 
 .c.o:
-	$(CC) $(CPPFLAGS) -I$(EZXML_PATH) -c $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(EZXML_PATH) -c $<

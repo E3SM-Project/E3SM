@@ -21,4 +21,4 @@ clean:
 	$(RM) *.i
 
 .c.o: ezxml
-	$(CC) $(CPPFLAGS) -I$(EZXML_PATH) -c $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(EZXML_PATH) -c $<
