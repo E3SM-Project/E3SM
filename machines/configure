@@ -332,7 +332,7 @@ if ($print>=2) { print "Machine specifier: $mach.$eol"; }
 
 my $repotag;
 if (-f "$cimeroot/ChangeLog") { 
-    $repotag =`cat $cimeroot/ChangeLog | grep 'Tag name:' | head -1`;
+    $repotag =`cat $cimeroot/ChangeLog | grep 'Version:' | head -1`;
 }
 my @repotag = split(/ /,$repotag); 
 $repotag = $repotag[2]; 
