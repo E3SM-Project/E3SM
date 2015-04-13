@@ -686,12 +686,12 @@
 			<var name="lfc"/>
 			<var name="srh_0_1km"/>
 			<var name="srh_0_3km"/>
-			<var name="u_zonal_surface"/>
-			<var name="u_zonal_1km"/>
-			<var name="u_zonal_6km"/>
-			<var name="u_meridional_surface"/>
-			<var name="u_meridional_1km"/>
-			<var name="u_meridional_6km"/>
+			<var name="uzonal_surface"/>
+			<var name="uzonal_1km"/>
+			<var name="uzonal_6km"/>
+			<var name="umeridional_surface"/>
+			<var name="umeridional_1km"/>
+			<var name="umeridional_6km"/>
 			<var name="temperature_surface"/>
 			<var name="dewpoint_surface"/>
 		</stream>
@@ -990,12 +990,12 @@
                 <var name="lfc"                    type="real"     dimensions="nCells Time"/>
                 <var name="srh_0_1km"              type="real"     dimensions="nCells Time"/>
                 <var name="srh_0_3km"              type="real"     dimensions="nCells Time"/>
-                <var name="u_zonal_surface"        type="real"     dimensions="nCells Time"/>
-                <var name="u_zonal_1km"            type="real"     dimensions="nCells Time"/>
-                <var name="u_zonal_6km"            type="real"     dimensions="nCells Time"/>
-                <var name="u_meridional_surface"   type="real"     dimensions="nCells Time"/>
-                <var name="u_meridional_1km"       type="real"     dimensions="nCells Time"/>
-                <var name="u_meridional_6km"       type="real"     dimensions="nCells Time"/>
+                <var name="uzonal_surface"         type="real"     dimensions="nCells Time"/>
+                <var name="uzonal_1km"             type="real"     dimensions="nCells Time"/>
+                <var name="uzonal_6km"             type="real"     dimensions="nCells Time"/>
+                <var name="umeridional_surface"    type="real"     dimensions="nCells Time"/>
+                <var name="umeridional_1km"        type="real"     dimensions="nCells Time"/>
+                <var name="umeridional_6km"        type="real"     dimensions="nCells Time"/>
                 <var name="temperature_surface"    type="real"     dimensions="nCells Time"/>
                 <var name="dewpoint_surface"       type="real"     dimensions="nCells Time"/>
 

@@ -115,12 +115,12 @@
  real (kind=RKIND), dimension(:), pointer :: lfc
  real (kind=RKIND), dimension(:), pointer :: srh_0_1km
  real (kind=RKIND), dimension(:), pointer :: srh_0_3km
- real (kind=RKIND), dimension(:), pointer :: u_zonal_surface
- real (kind=RKIND), dimension(:), pointer :: u_zonal_1km
- real (kind=RKIND), dimension(:), pointer :: u_zonal_6km
- real (kind=RKIND), dimension(:), pointer :: u_meridional_surface
- real (kind=RKIND), dimension(:), pointer :: u_meridional_1km
- real (kind=RKIND), dimension(:), pointer :: u_meridional_6km
+ real (kind=RKIND), dimension(:), pointer :: uzonal_surface
+ real (kind=RKIND), dimension(:), pointer :: uzonal_1km
+ real (kind=RKIND), dimension(:), pointer :: uzonal_6km
+ real (kind=RKIND), dimension(:), pointer :: umeridional_surface
+ real (kind=RKIND), dimension(:), pointer :: umeridional_1km
+ real (kind=RKIND), dimension(:), pointer :: umeridional_6km
  real (kind=RKIND), dimension(:), pointer :: temperature_surface
  real (kind=RKIND), dimension(:), pointer :: dewpoint_surface
 
@@ -524,12 +524,12 @@
  call mpas_pool_get_array(diag, 'lfc',  lfc)
  call mpas_pool_get_array(diag, 'srh_0_1km', srh_0_1km)
  call mpas_pool_get_array(diag, 'srh_0_3km', srh_0_3km)
- call mpas_pool_get_array(diag, 'u_zonal_surface', u_zonal_surface)
- call mpas_pool_get_array(diag, 'u_zonal_1km', u_zonal_1km)
- call mpas_pool_get_array(diag, 'u_zonal_6km', u_zonal_6km)
- call mpas_pool_get_array(diag, 'u_meridional_surface', u_meridional_surface)
- call mpas_pool_get_array(diag, 'u_meridional_1km', u_meridional_1km)
- call mpas_pool_get_array(diag, 'u_meridional_6km', u_meridional_6km)
+ call mpas_pool_get_array(diag, 'uzonal_surface', uzonal_surface)
+ call mpas_pool_get_array(diag, 'uzonal_1km', uzonal_1km)
+ call mpas_pool_get_array(diag, 'uzonal_6km', uzonal_6km)
+ call mpas_pool_get_array(diag, 'umeridional_surface', umeridional_surface)
+ call mpas_pool_get_array(diag, 'umeridional_1km', umeridional_1km)
+ call mpas_pool_get_array(diag, 'umeridional_6km', umeridional_6km)
  call mpas_pool_get_array(diag, 'temperature_surface', temperature_surface)
  call mpas_pool_get_array(diag, 'dewpoint_surface', dewpoint_surface)
 
@@ -550,14 +550,14 @@
    zp(1:nVertLevels) = 0.5*(height(1:nVertLevels,iCell)+height(2:nVertlevels+1,iCell)) - height(1,iCell)
    zrel(1:nVertLevels+1) = height(1:nVertLevels+1,iCell) - height(1,iCell)
 
-   u_zonal_surface(iCell) = uzonal(1,iCell)
-   u_meridional_surface(iCell) = umeridional(1,iCell)
+   uzonal_surface(iCell) = uzonal(1,iCell)
+   umeridional_surface(iCell) = umeridional(1,iCell)
    temperature_surface(iCell) = temperature(1,iCell)
    dewpoint_surface(iCell) = dewpoint(1,iCell)
-   u_zonal_1km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 1000., nVertLevels)
-   u_meridional_1km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 1000., nVertLevels)
-   u_zonal_6km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 6000., nVertLevels)
-   u_meridional_6km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 6000., nVertLevels)
+   uzonal_1km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 1000., nVertLevels)
+   umeridional_1km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 1000., nVertLevels)
+   uzonal_6km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 6000., nVertLevels)
+   umeridional_6km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 6000., nVertLevels)
 
 !  storm-relative helicity
 !  first, calculate storm motion, using Bunkers formula for right-moving storms
