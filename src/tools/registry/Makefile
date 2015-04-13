@@ -9,7 +9,7 @@ all: ezxml parse
 	($(MAKE) parse CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)")
 
 ezxml:
-	(cd $(EZXML_PATH); $(MAKE) )
+	(cd $(EZXML_PATH); $(MAKE) CFLAGS="$(CFLAGS) $(TOOL_TARGET_ARCH)")
 
 parse: ezxml $(OBJS)
 	$(CC) $(CPPFLAGS) $(EZXML_PATH)/ezxml.o  -I$(EZXML_PATH) -o $@ $(OBJS)
@@ -21,4 +21,4 @@ clean:
 	$(RM) *.i
 
 .c.o: ezxml
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(EZXML_PATH) -c $<
+	$(CC) $(TOOL_TARGET_ARCH) $(CFLAGS) $(CPPFLAGS) -I$(EZXML_PATH) -c $<
