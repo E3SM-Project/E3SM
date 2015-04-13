@@ -40,7 +40,7 @@ set STOP_OPTION = `./xmlquery STOP_OPTION -value`
 
 if (${STOP_N} < 3) then
   echo "ERROR:  stop_n too short" >>& $TESTSTATUS_LOG
-  echo "TFAIL ${CASEBASEID} "     >&! $TESTSTATUS_OUT
+  echo "TFAIL ${CASE} "     >&! $TESTSTATUS_OUT
   exit -1
 endif
 

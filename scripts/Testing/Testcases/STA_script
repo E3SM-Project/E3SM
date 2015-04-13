@@ -18,7 +18,7 @@ set DOUT_S_ROOT = `./xmlquery DOUT_S_ROOT -value`
 
 if (${STOP_N} < 3) then
   echo "ERROR in ${0}:  stop_n too short" >>& $TESTSTATUS_LOG
-  echo "TFAIL ${CASEBASEID} " >&! $TESTSTATUS_OUT
+  echo "TFAIL ${CASE} " >&! $TESTSTATUS_OUT
   exit -1
 endif
 
