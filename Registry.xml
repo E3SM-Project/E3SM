@@ -228,6 +228,7 @@
 
 	<packages>
 		<package name="SIAvelocity" description="Variables only needed by the SIA velocity solver"/>
+
 		<package name="higherOrderVelocity" description="This package includes variables required for higher order velocity solvers."/>
 	</packages>
 
@@ -237,56 +238,13 @@
 
 	<streams>
 
-		<!-- basicmesh contains all the required MPAS mesh fields - attach this to other streams as needed -->
-		<stream name="basicmesh"
-				type="none"
-				immutable="true"
-				filename_template="not-to-be-used.nc">
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="layerThicknessFractions"/>
-		</stream>
-
-
 		<stream name="input"
 				type="input"
 				immutable="true"
 				filename_template="landice_grid.nc"
 				input_interval="initial_only">
-			<stream name="basicmesh"/>
+			<var_struct name="mesh"/>
+			<var name="layerThicknessFractions"/>
 			<var_array name="tracers"/>
 			<var name="thickness"/>
 			<var name="bedTopography"/>
@@ -325,7 +283,8 @@
 				precision="double"
 				clobber_mode="replace_files">
 
-			<stream name="basicmesh"/>
+			<var_struct name="mesh"/>
+			<var name="layerThicknessFractions"/>
 			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
@@ -353,11 +312,13 @@
 				clobber_mode="replace_files">
 				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
 
-			<stream name="basicmesh"/>
+			<var_struct name="mesh"/>
+			<var name="layerThicknessFractions"/>
+			<var name="layerCenterSigma"/>
+			<var name="layerInterfaceSigma"/>
 			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
-			<var name="layerThickness"/>
 			<var name="lowerSurface"/>
 			<var name="upperSurface"/>
 			<var name="cellMask"/>
@@ -366,9 +327,6 @@
 			<var name="normalVelocity"/>
 			<var name="uReconstructX"/>
 			<var name="uReconstructY"/>
-			<var name="uReconstructZ"/>
-			<var name="uReconstructZonal"/>
-			<var name="uReconstructMeridional"/>
 		</stream>
 
 	</streams>
@@ -378,7 +336,8 @@
 <!-- INTERNAL MODEL VARIABLES -->
 
 
-	<!-- Mesh Variables required by MPAS -->
+	<!-- Mesh Variables required by MPAS framework -->
+	<!-- The following list of fields are required by all MPAS cores, and the MPAS framework assumes these fields exist. -->
 	<var_struct name="mesh" time_levs="1">
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
 			 description="Latitude location of cell centers in radians."
@@ -434,20 +393,35 @@
 		<var name="indexToVertexID" type="integer" dimensions="nVertices" units="unitless"
 		     description="List of global vertex IDs."
 		/>
-		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
-		     description="List of cells that straddle each edge."
-		/>
 		<var name="nEdgesOnCell" type="integer" dimensions="nCells" units="unitless"
 		     description="Number of edges that border each cell."
 		/>
 		<var name="nEdgesOnEdge" type="integer" dimensions="nEdges" units="unitless"
 		     description="Number of edges that surround each of the cells that straddle each edge. These edges are used to reconstruct the tangential velocities."
 		/>
+		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+		     description="List of cells that straddle each edge."
+		/>
 		<var name="edgesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="List of edges that border each cell."
 		/>
 		<var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges" units="unitless"
 		     description="List of edges that border each of the cells that straddle each edge."
+		/>
+		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of cells that neighbor each cell."
+		/>
+		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of vertices that border each cell."
+		/>
+		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+		     description="List of vertices that straddle each edge."
+		/>
+		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+		     description="List of edges that share a vertex as an endpoint."
+		/>
+		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+		     description="List of cells that share a vertex."
 		/>
 		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" units="unitless"
 		     description="Reconstruction weights associated with each of the edgesOnEdge."
@@ -467,6 +441,37 @@
 		<var name="areaTriangle" type="real" dimensions="nVertices" units="m^2"
 		     description="Area of each cell (triangle) in the dual grid."
 		/>
+		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
+		     description="Area of the portions of each dual cell that are part of each cellsOnVertex."
+		/>
+		<var name="meshDensity" type="real" dimensions="nCells" units="unitless"
+		     description="The value of the generating density function at each cell center."
+		/>
+	</var_struct>
+
+<!-- ================ -->
+
+	<!-- Additional Mesh Variables used by the land ice core -->
+	<var_struct name="meshLI" time_levs="1">
+		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
+		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<var name="layerThicknessFractions" type="real" dimensions="nVertLevels" units="none"
+		     description="Fractional thickness of each sigma layer"
+		/>
+		<!-- layerThicknessFractions is required as an input.  The other fields below are calculated by the model -->
+		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
+		     description="Sigma (fractional) level at center of each layer"
+		/>
+		<var name="layerInterfaceSigma" type="real" dimensions="nVertInterfaces" units="none"
+		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
+		/>
+		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
+		/>
+		<var name="edgeSignOnVertex" type="integer" dimensions="maxEdges nVertices" units="unitless"
+		     description="Sign of edge contributions to a vertex for each edge on vertex. Used for bit-reproducible loops. Represents directionality of vector connecting vertices."
+		/>
 		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
 		     description="Normal vector defined at an edge."
 		/>
@@ -476,60 +481,21 @@
 		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
 		     description="The two vectors that define a tangent plane at a cell center."
 		/>
-		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
-		     description="List of cells that neighbor each cell."
-		/>
-		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
-		     description="List of vertices that border each cell."
-		/>
-		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
-		     description="List of vertices that straddle each edge."
-		/>
-		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
-		     description="List of edges that share a vertex as an endpoint."
-		/>
-		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
-		     description="List of cells that share a vertex."
-		/>
-		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
-		     description="Area of the portions of each dual cell that are part of each cellsOnVertex."
-		/>
 		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
 		     description="Coefficients to reconstruct velocity vectors at cell centers."
 		/>
-	</var_struct>
-
-
-	<!-- Mesh Variables specific to land ice core -->
-	<var_struct name="meshLI" time_levs="1">
-		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
-		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
-		/>
+		<!-- Variables only needed by SIA solver -->
 		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
-			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!"
+			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity"
 		/>
 		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
-			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex."
-		/>
-		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
-		     description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
-		/>
-		<var name="edgeSignOnVertex" type="integer" dimensions="maxEdges nVertices" units="unitless"
-		     description="Sign of edge contributions to a vertex for each edge on vertex. Used for bit-reproducible loops. Represents directionality of vector connecting vertices."
-		/>
-		<var name="layerThicknessFractions" type="real" dimensions="nVertLevels" units="none"
-		     description="Fractional thickness of each sigma layer"
-		/>
-		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
-		     description="Sigma (fractional) level at center of each layer"
-		/>
-		<var name="layerInterfaceSigma" type="real" dimensions="nVertInterfaces" units="none"
-		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
+			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
 		/>
 	</var_struct>
 
+<!-- ================ -->
 
-	<!-- Land Ice Variables related to geometry -->
+	<!--  Variables related to ice sheet geometry -->
 	<var_struct name="geometry" time_levs="1">
 		<var name="bedTopography" type="real" dimensions="nCells Time" units="m above datum"
 		     description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
@@ -558,7 +524,14 @@
 		<var name="vertexMask" type="integer" dimensions="nVertices Time" units="none" time_levs="2"
 		     description="bitmask indicating various properties about the ice sheet on vertices."
 		/>
-		<!-- Note vertexMask has two time level to easily check if it changes - this is only needed by the HO dycores -->
+		<!-- Note vertexMask has two time level to easily check if it changes - this is only used by the HO dycores -->
+
+		<var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^2 s^{-1}"
+		     description="Surface mass balance"
+		/>
+		<var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^2 s^{-1}"
+		     description="Basal mass balance"
+		/>
 
 		<!-- Variables only needed by SIA solver -->
 		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
@@ -575,9 +548,13 @@
 		/>
 	</var_struct>
 
+<!-- ================ -->
 
-	<!-- Land Ice Variables related to velocity -->
+	<!-- Variables related to velocity -->
 	<var_struct name="velocity" time_levs="1">
+		<var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
+		     description="flow law parameter, A"
+		/>
 		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge"
 		/>
@@ -628,12 +605,10 @@
 		/>
 	</var_struct>
 
+<!-- ================ -->
 
-	<!-- Land Ice Variables related to thermal state -->
+	<!-- Variables related to thermal state -->
 	<var_struct name="thermal" time_levs="1">
-		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K"
-		     description="upper surface ice temperature"
-		/>
 		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K"
 		     description="lower surface ice temperature"
 		/>
@@ -643,19 +618,15 @@
 			/>
 		</var_array>
 		<!-- Note: putting tracers in this pool is a bit awkward since additional tracers may not be thermally-related -->
-		<var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
-		     description="flow law parameter, A"
+		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K"
+		     description="upper surface ice temperature"
+		/>
+		<var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+		     description="basal heat flux into the ice (positive upward)"
 		/>
 	</var_struct>
 
-
-	<!-- Land Ice Variables related to model forcing -->
-	<var_struct name="forcing" time_levs="1">
-		<var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^2 s^{-1}"
-		     description="Surface mass balance"
-		/>
-	</var_struct>
-
+<!-- ================ -->
 
 	<!-- Tendency Variables --> 
 	<var_struct name="tendency" time_levs="1">
@@ -669,6 +640,7 @@
 		</var_array>
 	</var_struct>
 
+<!-- ================ -->
 
 	<!-- Scratch Variables -->
 	<var_struct name="scratch" time_levs="1">
