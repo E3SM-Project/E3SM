@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_mask_init(meshPool, statePool, timeLevel, err)
+   subroutine li_calculate_mask_init(geometryPool, err)
 
       !-----------------------------------------------------------------
       !
@@ -128,27 +128,19 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
-
-      integer, intent(in) :: &
-         timeLevel     !< Input: time level for which to init mask
-
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-
       type (mpas_pool_type), intent(inout) :: &
-         statePool          !< Input/Output: state information 
+         geometryPool          !< Input/Output: geometry information
 
       !-----------------------------------------------------------------
       !
       ! output variables
       !
       !-----------------------------------------------------------------
-
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -163,8 +155,8 @@ contains
       err = 0
 
       ! Assign pointers and variables
-      call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
 
@@ -196,7 +188,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_mask(meshPool, statePool, timeLevel, err)
+   subroutine li_calculate_mask(meshPool, velocityPool, geometryPool, timeLevel, err)
 
       !-----------------------------------------------------------------
       !
@@ -207,6 +199,9 @@ contains
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
 
+      type (mpas_pool_type), intent(inout) :: &
+         velocityPool          !< Input: velocity information
+
       integer, intent(in) :: &
          timeLevel     !< Input: time level for which to calculate mask
 
@@ -215,9 +210,8 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
-
       type (mpas_pool_type), intent(inout) :: &
-         statePool          !< Input/Output: state information 
+         geometryPool          !< Input/Output: geometry information
 
       !-----------------------------------------------------------------
       !
@@ -258,12 +252,12 @@ contains
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography)
 
-      call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
@@ -291,7 +285,7 @@ contains
             cellMask = ior(cellMask, li_mask_ValueDynamicIce)
          end where
       else  ! HO external FEM dycore
-         call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=timeLevel)
+         call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask)
          ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
          where ( (thickness > config_dynamic_thickness) .and.    &  ! same as for SIA case
               (dirichletVelocityMask(1,:) == 0) )   ! but exclude dirichletVelocityMask locations set as lateral b.c.  To ignore dirichlet b.c. on the basal boundary, just check the surface level

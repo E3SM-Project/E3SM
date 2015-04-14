@@ -243,6 +243,7 @@
 				immutable="true"
 				filename_template="landice_grid.nc"
 				input_interval="initial_only">
+
 			<var_struct name="mesh"/>
 			<var name="layerThicknessFractions"/>
 			<var_array name="tracers"/>
@@ -500,10 +501,10 @@
 		<var name="bedTopography" type="real" dimensions="nCells Time" units="m above datum"
 		     description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
 		/>
-		<var name="thickness" type="real" dimensions="nCells Time" units="m"
+		<var name="thickness" type="real" dimensions="nCells Time" units="m" time_levs="2"
 		     description="ice thickness"
 		/>
-		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
+		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m" time_levs="2"
 		     description="layer thickness"
 		/>
 		<var name="lowerSurface" type="real" dimensions="nCells Time" units="m above datum"

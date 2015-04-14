@@ -154,6 +154,7 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: meshLIPool
       type (mpas_pool_type), pointer :: scratchPool
       integer :: iCell, iLevel, i, iVertex, err_tmp
       integer, pointer :: nVertices
@@ -168,9 +169,10 @@ contains
       err_tmp = 0
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'meshLI', meshLIPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-      call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
-      call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
+      call mpas_pool_get_array(meshLIPool, 'baryCellsOnVertex', baryCellsOnVertex)
+      call mpas_pool_get_array(meshLIPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
       call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
       call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
       call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
@@ -215,7 +217,7 @@ contains
 !>  on an edge using the average of the two neighboring cells (2nd order).
 !
 !-----------------------------------------------------------------------
-   subroutine li_sia_solve(meshPool, statePool, timeLevel, err)
+   subroutine li_sia_solve(meshPool, meshLIPool, geometryPool, timeLevel, velocityPool, err)
       use mpas_constants, only: gravity
 
       !-----------------------------------------------------------------
@@ -227,6 +229,12 @@ contains
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
 
+      type (mpas_pool_type), intent(in) :: &
+         meshLIPool          !< Input: LI mesh information
+
+      type (mpas_pool_type), intent(in) :: &
+         geometryPool          !< Input: geometry information
+
       integer, intent(in) :: &
          timeLevel     !< Input: time level from which to calculate velocity
 
@@ -237,7 +245,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(inout) :: &
-         statePool          !< Input: state information 
+         velocityPool          !< Input/Output: velocity information 
 
       !-----------------------------------------------------------------
       !
@@ -275,15 +283,15 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshLIPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
-      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'flowParamA', flowParamA, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'slopeEdge', slopeEdge, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+      call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'slopeEdge', slopeEdge, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
 
 
       ! Get parameters specified in the namelist
