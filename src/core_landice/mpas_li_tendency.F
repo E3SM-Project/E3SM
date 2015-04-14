@@ -73,7 +73,7 @@ module li_tendency
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_tendency_thickness(meshPool, statePool, layerThickness_tend, dt, dminfo, allowableDt, err)
+   subroutine li_tendency_thickness(meshPool, velocityPool, geometryPool, layerThickness_tend, dt, dminfo, allowableDt, err)
 
       !-----------------------------------------------------------------
       !
@@ -83,6 +83,9 @@ module li_tendency
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
+
+      type (mpas_pool_type), intent(in) :: &
+         velocityPool      !< Input: velocity information
 
       real (kind=RKIND), intent(in) :: &
          dt       !< Input: dt
@@ -97,8 +100,7 @@ module li_tendency
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(inout) :: &
-         statePool         !< Input: state to use to calculate tendency (old time level)
-         ! Note: state needs to be inout (rather than just in) so that adjust_marine_boundary_fluxes can modify it.
+         geometryPool         !< Input: geometry information to be updated
 
       real (kind=RKIND), dimension(:,:), pointer, intent(inout) :: &
          layerThickness_tend         !< Input/Output: layer thickness tendency
@@ -135,12 +137,12 @@ module li_tendency
       err_tmp = 0
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_array(meshPool, 'sfcMassBal', sfcMassBal)
+      call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
       ! Assuming tendency will always be calculated using time level 1!
-      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=1)
-      call mpas_pool_get_array(statePool, 'layerThicknessEdge', layerThicknessEdge, timeLevel=1)
-      call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=1)
-      call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=1)
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity, timeLevel=1)
+      call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge, timeLevel=1)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask, timeLevel=1)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask, timeLevel=1)
 !!!     marineBasalMassBal => mesh % marineBasalMassBal % array
 !!!     iceArea => state % iceArea % array
 !!!     areaCell => mesh % areaCell % array
@@ -258,7 +260,7 @@ module li_tendency
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_tendency_tracers(meshPool, statePool, layerThickness_tend, tracer_tendency, dt, dminfo, err)
+   subroutine li_tendency_tracers(meshPool, velocityPool, geometryPool, thermalPool, layerThickness_tend, tracer_tendency, dt, dminfo, err)
 
       !-----------------------------------------------------------------
       !
@@ -270,10 +272,16 @@ module li_tendency
          meshPool          !< Input: mesh information
 
       type (mpas_pool_type), intent(in) :: &
-         statePool         !< Input: state to use to calculate tendency
+         velocityPool         !< Input: velocity information
+
+      type (mpas_pool_type), intent(in) :: &
+         geometryPool         !< Input: geometry information
+
+      type (mpas_pool_type), intent(in) :: &
+         thermalPool         !< Input: thermal information
 
       real (kind=RKIND), dimension(:,:), pointer, intent(in) :: &
-         layerThickness_tend         !< Input/Output: layer thickness tendency
+         layerThickness_tend         !< Input: layer thickness tendency
 
       real (kind=RKIND), intent(in) :: &
          dt       !< Input: dt
@@ -405,7 +413,7 @@ module li_tendency
 !> marine-terminating ice.
 !
 !-----------------------------------------------------------------------
-   subroutine li_apply_calving(meshPool, statePool, err)!{{{
+   subroutine li_apply_calving(meshPool, geometryPool, thermalPool, err)
 
       !-----------------------------------------------------------------
       !
@@ -422,8 +430,11 @@ module li_tendency
       !
       !-----------------------------------------------------------------
 
+      type (mpas_pool_type), intent(in) :: &
+         geometryPool          !< Input/Output: geometry information
+
       type (mpas_pool_type), intent(inout) :: &
-         statePool         !< Input/Output: state for which to update diagnostic variables
+         thermalPool         !< Input/Output: thermal information
 
       !-----------------------------------------------------------------
       !

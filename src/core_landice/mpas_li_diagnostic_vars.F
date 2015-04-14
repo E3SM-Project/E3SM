@@ -112,7 +112,10 @@ contains
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: meshLIPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: thermalPool
+      type (mpas_pool_type), pointer :: velocityPool
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       type (field2DReal), pointer :: normalVelocityField, layerThicknessEdgeField
@@ -148,9 +151,12 @@ contains
           block => domain % blocklist
           do while (associated(block))
              call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-             call mpas_pool_get_subpool(block % structs, 'state', statePool)
+             call mpas_pool_get_subpool(block % structs, 'meshLI', meshLIPool)
+             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+             call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+             call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
 
-             call li_velocity_solve(meshPool, statePool, timeLevel, err_tmp)    ! ****** Calculate Velocity ******
+             call li_velocity_solve(meshPool, meshLIPool, geometryPool, thermalPool, velocityPool, timeLevel, err)    ! ****** Calculate Velocity ******
 
              err = ior(err, err_tmp)
 
@@ -159,8 +165,8 @@ contains
 
           ! update halos on velocity
           call mpas_timer_start("halo updates")
-          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-          call mpas_pool_get_field(statePool, 'normalVelocity', normalVelocityField, timeLevel=timeLevel)
+          call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+          call mpas_pool_get_field(velocityPool, 'normalVelocity', normalVelocityField, timeLevel=timeLevel)
           call mpas_dmpar_exch_halo_field(normalVelocityField)
           call mpas_timer_stop("halo updates")
 
@@ -180,22 +186,22 @@ contains
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
-         call mpas_pool_get_array(statePool, 'uReconstructX', uReconstructX, timeLevel=timeLevel)
-         call mpas_pool_get_array(statePool, 'uReconstructY', uReconstructY, timeLevel=timeLevel)
-         call mpas_pool_get_array(statePool, 'surfaceSpeed', surfaceSpeed, timeLevel=timeLevel)
-         call mpas_pool_get_array(statePool, 'basalSpeed', basalSpeed, timeLevel=timeLevel)
+         call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX, timeLevel=timeLevel)
+         call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY, timeLevel=timeLevel)
+         call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed, timeLevel=timeLevel)
+         call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed, timeLevel=timeLevel)
 
          ! Native SIA dycore needs to have reconstructed velocities calculated.
          ! External dycores return their native velocities at cell center locations,
          ! but these can optionally be overwritten by reconstructed velocities for testing.
          if ( (trim(config_velocity_solver) == 'sia') .or.    &
                config_do_velocity_reconstruction_for_external_dycore ) then
-            call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
-            call mpas_pool_get_array(statePool, 'uReconstructZ', uReconstructZ, timeLevel=timeLevel)
-            call mpas_pool_get_array(statePool, 'uReconstructZonal', uReconstructZonal, timeLevel=timeLevel)
-            call mpas_pool_get_array(statePool, 'uReconstructMeridional', uReconstructMeridional, timeLevel=timeLevel)
+            call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+            call mpas_pool_get_array(velocityPool, 'uReconstructZ', uReconstructZ, timeLevel=timeLevel)
+            call mpas_pool_get_array(velocityPool, 'uReconstructZonal', uReconstructZonal, timeLevel=timeLevel)
+            call mpas_pool_get_array(velocityPool, 'uReconstructMeridional', uReconstructMeridional, timeLevel=timeLevel)
 
             call mpas_reconstruct(meshPool, normalVelocity,               &
                             uReconstructX, uReconstructY, uReconstructZ, &
@@ -213,16 +219,17 @@ contains
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call diagnostic_solve_after_velocity(meshPool, statePool, timeLevel, err)  ! Some diagnostic variables require velocity to compute
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call diagnostic_solve_after_velocity(meshPool, geometryPool, velocityPool, timeLevel, err_tmp)  ! Some diagnostic variables require velocity to compute
          err = ior(err, err_tmp)
 
          block => block % next
       end do
 
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-      call mpas_pool_get_field(statePool, 'layerThicknessEdge', layerThicknessEdgeField, timeLevel=timeLevel)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_field(geometryPool, 'layerThicknessEdge', layerThicknessEdgeField, timeLevel=timeLevel)
       call mpas_dmpar_exch_halo_field(layerThicknessEdgeField)
       call mpas_timer_stop("halo updates")
 
@@ -296,7 +303,10 @@ contains
       ! pointers to get from pools
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: meshLIPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: thermalPool
+      type (mpas_pool_type), pointer :: velocityPool
       real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
         lowerSurface, bedTopography, upperSurfaceVertex, slopeEdge, &
         normalSlopeEdge, tangentSlopeEdge, dcEdge, dvEdge
@@ -332,10 +342,11 @@ contains
       do while (associated(block))
          ! Mesh information
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
          ! Calculate masks - needs to happen before calculating lower surface so we know where the ice is floating
-         call li_calculate_mask(meshPool, statePool, timeLevel, err_tmp)
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, timeLevel, err_tmp)
 
          err = ior(err, err_tmp)
 
@@ -344,10 +355,10 @@ contains
 
       ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-      call mpas_pool_get_field(statePool, 'cellMask', cellMaskField, timeLevel=timeLevel)
-      call mpas_pool_get_field(statePool, 'edgeMask', edgeMaskField, timeLevel=timeLevel)
-      call mpas_pool_get_field(statePool, 'vertexMask', vertexMaskField, timeLevel=timeLevel)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_field(geometryPool, 'cellMask', cellMaskField, timeLevel=timeLevel)
+      call mpas_pool_get_field(geometryPool, 'edgeMask', edgeMaskField, timeLevel=timeLevel)
+      call mpas_pool_get_field(geometryPool, 'vertexMask', vertexMaskField, timeLevel=timeLevel)
       call mpas_dmpar_exch_halo_field(cellMaskField)
       call mpas_dmpar_exch_halo_field(edgeMaskField)
       call mpas_dmpar_exch_halo_field(vertexMaskField)
@@ -371,7 +382,8 @@ contains
       block => domain % blocklist
       do while (associated(block))
           call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-          call mpas_pool_get_subpool(block % structs, 'state', statePool)
+          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
           call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
@@ -381,15 +393,15 @@ contains
           call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
           call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
-          call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
-          call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-          call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
-          call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
-          call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=timeLevel)
-          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLevel)
-          call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel=timeLevel)
-          call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-          call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography)
+          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask, timeLevel=timeLevel)
+          call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+          call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel=timeLevel)
+          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface, timeLevel=timeLevel)
+          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface, timeLevel=timeLevel)
+          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel=timeLevel)
+          call mpas_pool_get_array(thermalPool, 'tracers', tracers, timeLevel=timeLevel)
+          call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
+          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
@@ -420,17 +432,17 @@ contains
              call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
              call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
-             call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-             call mpas_pool_get_array(statePool, 'slopeEdge', slopeEdge, timeLevel=timeLevel)
-             call mpas_pool_get_array(statePool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
-             call mpas_pool_get_array(statePool, 'tangentSlopeEdge', tangentSlopeEdge, timeLevel=timeLevel)
-             call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
-             call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
-             call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
-             call mpas_pool_get_array(statePool, 'flowParamA', flowParamA, timeLevel=timeLevel)
+             call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+             call mpas_pool_get_array(geometryPool, 'slopeEdge', slopeEdge, timeLevel=timeLevel)
+             call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
+             call mpas_pool_get_array(geometryPool, 'tangentSlopeEdge', tangentSlopeEdge, timeLevel=timeLevel)
+             call mpas_pool_get_array(geometryPool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
+             call mpas_pool_get_array(meshLIPool, 'baryCellsOnVertex', baryCellsOnVertex)
+             call mpas_pool_get_array(meshLIPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
+             call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA, timeLevel=timeLevel)
 
              ! Calculate flowA
-             call calculate_flowParamA(meshPool, tracers(index_temperature,:,:), thickness, flowParamA, err_tmp)
+             call calculate_flowParamA(meshLIPool, tracers(index_temperature,:,:), thickness, flowParamA, err_tmp)
              err = ior(err, err_tmp)
 
              ! Calculate normal slope
@@ -485,15 +497,15 @@ contains
 
 
           ! Do vertical remapping of layerThickness and tracers
-          call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
+          call vertical_remap(thickness, cellMask, meshLIPool, layerThickness, tracers, err)
           err = ior(err, err_tmp)
 
           ! This information is only needed by external dycores.
           if (config_velocity_solver /= 'sia') then
              ! The interface expects an array where 1's are floating edges and 0's are non-floating edges.
-             call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=timeLevel)
+             call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges, timeLevel=timeLevel)
              floatingEdges = li_mask_is_floating_ice_int(edgeMask)
-             call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel=timeLevel)
+             call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=timeLevel)
              call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
           end if
 
@@ -504,8 +516,8 @@ contains
       if (config_velocity_solver /= 'sia') then
          ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
          call mpas_timer_start("halo updates")
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-         call mpas_pool_get_field(statePool, 'floatingEdges', floatingEdgesField, timeLevel=timeLevel)
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+         call mpas_pool_get_field(velocityPool, 'floatingEdges', floatingEdgesField, timeLevel=timeLevel)
          call mpas_dmpar_exch_halo_field(floatingEdgesField)
          call mpas_timer_stop("halo updates")
       endif
@@ -518,12 +530,13 @@ contains
          !  blocks anyway, in case some day they do.
          block => domain % blocklist
          do while (associated(block))
-
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
             ! Determine if the vertex mask changed during this time step for this block (needed for external dycores)
             ! TODO:  there may be some aspects of the mask that are ok change for external dycores, but for now just check the whole thing.
             ! TODO: if we ever have more than one time level, then this logic should be revisited.
-            call mpas_pool_get_array(statePool, 'vertexMask', vertexMaskOld, timeLevel=1)
-            call mpas_pool_get_array(statePool, 'vertexMask', vertexMaskNew, timeLevel=2)
+            call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMaskOld, timeLevel=1)
+            call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMaskNew, timeLevel=2)
             if ( sum(li_mask_is_dynamic_ice_int(vertexMaskNew) - li_mask_is_dynamic_ice_int(vertexMaskOld)) /= 0 ) then
                 blockDynamicVertexMaskChanged = 1
             else
@@ -535,8 +548,8 @@ contains
             !print *,'procVertexMaskChanged', procVertexMaskChanged
 
             ! Also check to see if the Dirichlet b.c. mask has changed
-            call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMaskOld, timeLevel=1)
-            call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMaskNew, timeLevel=2)
+            call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMaskOld, timeLevel=1)
+            call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMaskNew, timeLevel=2)
             if ( sum(dirichletVelocityMaskNew - dirichletVelocityMaskOld) /= 0 ) then
                 blockDirichletMaskChanged = 1
             else
@@ -549,11 +562,11 @@ contains
          end do
 
          ! Determine if the vertex mask has changed on any processor and store the value for later use (need to exit the block loop to do so)
-         call mpas_pool_get_array(statePool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged, timeLevel=timeLevel)
+         call mpas_pool_get_array(velocityPool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged, timeLevel=timeLevel)
          call mpas_dmpar_max_int(domain % dminfo, procDynamicVertexMaskChanged, anyDynamicVertexMaskChanged)
          !print *,'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged
          ! Do the same for the Dirichlet b.c. mask
-         call mpas_pool_get_array(statePool, 'dirichletMaskChanged', dirichletMaskChanged, timeLevel=timeLevel)
+         call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged, timeLevel=timeLevel)
          call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)
          !print *,'dirichletMaskChanged', dirichletMaskChanged
       end if
@@ -580,7 +593,7 @@ contains
 !> This routine computes the diagnostic variables that require knowing velocity for land ice
 !
 !-----------------------------------------------------------------------
-   subroutine diagnostic_solve_after_velocity(meshPool, statePool, timeLevel, err)
+   subroutine diagnostic_solve_after_velocity(meshPool, geometryPool, velocityPool, timeLevel, err)
 
       !-----------------------------------------------------------------
       !
@@ -590,6 +603,9 @@ contains
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
 
+      type (mpas_pool_type), intent(in) :: &
+         velocityPool          !< Input: velocity information
+
       integer, intent(in) :: timeLevel  !< Input: Time level on which to calculate diagnostic variables
 
       !-----------------------------------------------------------------
@@ -598,7 +614,7 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: &
-         statePool         !< Input/Output: state for which to update diagnostic variables
+         geometryPool         !< Input/Output: geometry info
 
       !-----------------------------------------------------------------
       !
@@ -627,9 +643,9 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
 
-      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'layerThicknessEdge', layerThicknessEdge, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge, timeLevel=timeLevel)
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
 
       ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.  
       ! Note: FO-Upwind thickness advection does not explicitly use h_edge but a FO h_edge is implied.
@@ -688,7 +704,7 @@ contains
 !>  version until tracer advection exists!)
 !
 !-----------------------------------------------------------------------
-   subroutine vertical_remap_cism_loops(layerThickness, thickness, tracers, meshPool, err)
+   subroutine vertical_remap_cism_loops(layerThickness, thickness, tracers, meshLIPool, err)
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -699,7 +715,7 @@ contains
          thickness    !< Input: 
 
       type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         meshLIPool          !< Input: LI mesh information
 
       !-----------------------------------------------------------------
       !
@@ -740,12 +756,12 @@ contains
 
       err = 0
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshLIPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshLIPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, 1)
 
-      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
-      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshLIPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshLIPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
       allocate(recipThickness(nCells+1))
       allocate(layerInterfaceSigma_Input(nVertLevels+1, nCells+1))
@@ -844,7 +860,7 @@ contains
 !>  rather than using if/where-statements.
 !
 !-----------------------------------------------------------------------
-   subroutine vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
+   subroutine vertical_remap(thickness, cellMask, meshLIPool, layerThickness, tracers, err)
 
       !-----------------------------------------------------------------
       !
@@ -859,7 +875,7 @@ contains
          cellMask    !< Input: mask for cells (needed for determining presence/absence of ice)
 
       type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         meshLIPool          !< Input: LI mesh information
 
       !-----------------------------------------------------------------
       !
@@ -900,12 +916,12 @@ contains
 
       err = 0
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshLIPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshLIPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, 1)
 
-      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
-      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshLIPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshLIPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
       allocate(layerInterfaceSigma_Input(nVertLevels+1))
       allocate(hTsum(nTracers, nVertLevels))
@@ -1083,7 +1099,7 @@ contains
 !>
 !>  All options are adjusted by the enhancement factor (which defaults to 1.0).
 !-----------------------------------------------------------------------
-   subroutine calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err)
+   subroutine calculate_flowParamA(meshLIPool, temperature, thickness, flowParamA, err)
       use mpas_constants, only: gravity
       use li_constants, only: idealGasConstant
 
@@ -1094,7 +1110,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         meshLIPool          !< Input: mesh information
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          temperature    !< Input: temperature
       real (kind=RKIND), dimension(:), intent(in) :: &
@@ -1134,10 +1150,10 @@ contains
 
       err_tmp = 0
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshLIPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshLIPool, 'nVertLevels', nVertLevels)
 
-      call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+      call mpas_pool_get_array(meshLIPool, 'layerCenterSigma', layerCenterSigma)
 
       call mpas_pool_get_config(liConfigs, 'config_flowParamA_calculation', config_flowParamA_calculation)
       call mpas_pool_get_config(liConfigs, 'config_enhancementFactor', config_enhancementFactor)

@@ -123,7 +123,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_setup_vertical_grid(meshPool, err)
+   subroutine li_setup_vertical_grid(meshLIPool, err)
 
       !-----------------------------------------------------------------
       !
@@ -131,13 +131,12 @@ contains
       !
       !-----------------------------------------------------------------
 
-
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(inout) :: meshPool  !< Input/Output: mesh object
+      type (mpas_pool_type), intent(inout) :: meshLIPool  !< Input/Output: meshLI object
 
       !-----------------------------------------------------------------
       !
@@ -160,11 +159,11 @@ contains
       real (kind=RKIND) :: fractionTotal
 
       ! Get pool stuff
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshLIPool, 'nVertLevels', nVertLevels)
       ! layerThicknessFractions is provided by input
-      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
-      call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
-      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshLIPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshLIPool, 'layerCenterSigma', layerCenterSigma)
+      call mpas_pool_get_array(meshLIPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
       ! Check that layerThicknessFractions are valid
       ! TODO - switch to having the user input the sigma levels instead???
@@ -206,20 +205,21 @@ contains
 !>  This routine determines the sign for various mesh items.
 !
 !-----------------------------------------------------------------------
-   subroutine li_setup_sign_and_index_fields(meshPool)
+   subroutine li_setup_sign_and_index_fields(meshPool, meshLIPool)
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool  !< Input: mesh object
 
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(inout) :: meshPool  !< Input/Output: mesh object
+      type (mpas_pool_type), intent(inout) :: meshLIPool  !< Input/Output: meshLI object
 
       !-----------------------------------------------------------------
       !
@@ -242,11 +242,10 @@ contains
 
       ! Get pool stuff
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      ! layerThicknessFractions is provided by input
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+      call mpas_pool_get_array(meshLIPool, 'edgeSignOnCell', edgeSignOnCell)
 
        edgeSignOnCell = 0.0_RKIND
        !edgeSignOnVertex = 0.0_RKIND
