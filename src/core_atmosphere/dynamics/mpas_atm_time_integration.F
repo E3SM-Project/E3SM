@@ -417,10 +417,10 @@ module atm_time_integration
                   !       so we use the advance_scalars routine for the first two RK substeps.
                   !
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-                     call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nVertLevels, rk_timestep(rk_step) )
+                     call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), advance_density=.false. )
                   else
                      block % domain = domain 
-                     call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step) )
+                     call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), advance_density=.false.)
                   end if
                   block => block % next
                end do
@@ -518,10 +518,10 @@ module atm_time_integration
                !       so we use the advance_scalars routine for the first two RK substeps.
                !
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-                  call atm_advance_scalars_1( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step) )
+                  call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), advance_density=.true.)
                else
                   block % domain = domain 
-                  call atm_advance_scalars_mono_1( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step) )
+                  call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), advance_density=.true.)
                end if
                block => block % next
             end do
@@ -1549,11 +1549,18 @@ module atm_time_integration
 
 !---------------------------------------------------------------------------------------
 
-   subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nVertLevels, dt)
+   subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nCells, nVertLevels, dt, advance_density)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    !
    ! Integrate scalar equations - explicit transport plus other tendencies
    !
+   !  this transport routine is similar to the original atm_advance_scalars, except it also advances
+   !  (re-integrates) the density.  This re-integration allows the scalar transport routine to use a different 
+   !  timestep than the dry dynamics, and also makes possible a spatial splitting of the scalar transport integration
+   !  (and density integration).  The current integration is, however, not spatially split.
+   !
+   !  WCS 18 November 2014
+   !-----------------------
    ! Input: s - current model state, 
    !            including tendencies from sources other than resolved transport.
    !        grid - grid metadata
@@ -1577,15 +1584,17 @@ module atm_time_integration
       type (mpas_pool_type), intent(in) :: mesh
       type (mpas_pool_type), intent(in) :: configs
       integer, intent(in) :: num_scalars      ! for allocating stack variables
+      integer, intent(in) :: nCells           ! for allocating stack variables
       integer, intent(in) :: nVertLevels      ! for allocating stack variables
       real (kind=RKIND) :: dt
+      logical, intent(in), optional :: advance_density
 
       integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
       real (kind=RKIND) :: scalar_weight
 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalar_old, scalar_new, scalar_tend
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
-      real (kind=RKIND), dimension(:,:), pointer :: uhAvg, h_old, h_new, wwAvg, rho_edge, rho_zz, zgrid, kdiff
+      real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, zgrid, kdiff
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, qv_init
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -1595,6 +1604,8 @@ module atm_time_integration
       real (kind=RKIND), dimension( num_scalars, nVertLevels ) :: flux_arr
 
       real (kind=RKIND), dimension( num_scalars, nVertLevels + 1 ) :: wdtn
+      real (kind=RKIND), dimension( nVertLevels, nCells ) :: rho_zz_int
+      real (kind=RKIND), dimension( num_scalars, nVertLevels, nCells ) :: scalar_tend_save
       integer, pointer :: nCellsSolve, nEdges
 
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
@@ -1604,6 +1615,8 @@ module atm_time_integration
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
+
+      logical :: local_advance_density
 
       integer, pointer :: config_scalar_vadv_order
 
@@ -1616,14 +1629,19 @@ module atm_time_integration
                 flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
                 coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
 
+      if (present(advance_density)) then
+         local_advance_density = advance_density
+      else
+         local_advance_density = .true.
+      end if
+
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_scalar_vadv_order', config_scalar_vadv_order)
 
       call mpas_pool_get_array(state, 'scalars', scalar_old, 1)
       call mpas_pool_get_array(state, 'scalars', scalar_new, 2)
-      call mpas_pool_get_array(state, 'rho_zz', h_old, 1)
-      call mpas_pool_get_array(state, 'rho_zz', h_new, 2)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz_old, 1)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz_new, 2)
 
       call mpas_pool_get_array(diag, 'kdiff', kdiff)
       call mpas_pool_get_array(diag, 'ruAvg', uhAvg)
@@ -1667,6 +1685,13 @@ module atm_time_integration
       !
       !  horizontal flux divergence, accumulate in scalar_tend
 
+      if (local_advance_density) then
+         rho_zz_int = 0.
+         scalar_tend_save = scalar_tend
+      else
+         rho_zz_int = rho_zz_new
+      end if
+
       do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -1696,6 +1721,10 @@ module atm_time_integration
                   scalar_tend(iScalar,k,cell2) = scalar_tend(iScalar,k,cell2) &
                          + uhAvg(k,iEdge)*flux_arr(iScalar,k)/areaCell(cell2)
             end do
+            if (local_advance_density) then
+               rho_zz_int(k,cell1) = rho_zz_int(k,cell1) - uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(cell1)
+               rho_zz_int(k,cell2) = rho_zz_int(k,cell2) + uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(cell2)
+            end if
             end do
 
          end if
@@ -1710,6 +1739,15 @@ module atm_time_integration
       wdtn(:,1) = 0.
       wdtn(:,nVertLevels+1) = 0.
 
+      if (local_advance_density) then
+         ! update density first
+         do iCell=1,nCellsSolve
+            do k=1,nVertLevels
+               rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
+            end do
+         end do
+      end if
+
       if (config_scalar_vadv_order == 2) then
 
          do iCell=1,nCellsSolve
@@ -1720,8 +1758,8 @@ module atm_time_integration
             end do
             do k=1,nVertLevels
                do iScalar=1,num_scalars
-                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*h_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/h_new(k,iCell)
+                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
+                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/rho_zz_int(k,iCell)
                end do
             end do
          end do
@@ -1749,8 +1787,8 @@ module atm_time_integration
 
             do k=1,nVertLevels
                do iScalar=1,num_scalars
-                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*h_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/h_new(k,iCell)
+                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
+                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/rho_zz_int(k,iCell)
                end do
             end do
 
@@ -1777,8 +1815,8 @@ module atm_time_integration
 
             do k=1,nVertLevels
                do iScalar=1,num_scalars
-                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*h_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/h_new(k,iCell)
+                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
+                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/rho_zz_int(k,iCell)
                end do
             end do
 
@@ -1790,14 +1828,26 @@ module atm_time_integration
 
       end if
 
+      if (local_advance_density) then
+         scalar_tend = scalar_tend_save
+      end if
+
    end subroutine atm_advance_scalars
 
-!---------------------------
+!------------------------------------------------
 
-   subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels, dt)
+   subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels, dt, advance_density)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    !
    ! Integrate scalar equations - transport plus other tendencies
+   !
+   !  this transport routine is similar to the original atm_advance_scalars_mono, except it also advances
+   !  (re-integrates) the density.  This re-integration allows the scalar transport routine to use a different 
+   !  timestep than the dry dynamics, and also makes possible a spatial splitting of the scalar transport integration
+   !  (and density integration).  The current integration is, however, not spatially split.
+   !
+   !  WCS 18 November 2014
+   !-----------------------
    !
    ! Input: s - current model state, 
    !            including tendencies from sources other than resolved transport.
@@ -1828,13 +1878,14 @@ module atm_time_integration
       integer, intent(in)                  :: nEdges           ! for allocating stack variables
       integer, intent(in)                  :: nVertLevels      ! for allocating stack variables
       real (kind=RKIND), intent(in)        :: dt
+      logical, intent(in), optional :: advance_density
 
       integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
       real (kind=RKIND) :: flux, scalar_weight
 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
-      real (kind=RKIND), dimension(:,:), pointer :: uhAvg, h_old, h_new, wwAvg, rho_edge, rho_zz, zgrid, kdiff
+      real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, rho_zz, zgrid, kdiff
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, qv_init
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell
 
@@ -1850,6 +1901,7 @@ module atm_time_integration
       real (kind=RKIND), dimension( nVertLevels, nCells ) :: scalar_old, scalar_new
       real (kind=RKIND), dimension( nVertLevels, nCells ) :: s_max, s_min
       real (kind=RKIND), dimension( 2, nVertLevels, nCells ), target :: scale_arr
+      real (kind=RKIND), dimension( nVertLevels, nCells ) :: rho_zz_int
 
       integer, parameter :: SCALE_IN = 1, SCALE_OUT = 2
 
@@ -1869,6 +1921,8 @@ module atm_time_integration
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3, scmin,scmax
       real (kind=RKIND) :: s_min_update, s_max_update, s_upwind, scale_factor
 
+      logical :: local_advance_density
+
       integer, parameter :: hadv_opt = 2
       real (kind=RKIND), parameter :: eps=1.e-20
       logical, parameter :: debug_print = .false.
@@ -1880,6 +1934,11 @@ module atm_time_integration
                 flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
                 coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
 
+      if (present(advance_density)) then
+         local_advance_density = advance_density
+      else
+         local_advance_density = .true.
+      end if
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
@@ -1895,8 +1954,8 @@ module atm_time_integration
 
       call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
 
-      call mpas_pool_get_array(state, 'rho_zz', h_old, 1)
-      call mpas_pool_get_array(state, 'rho_zz', h_new, 2)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz_old, 1)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz_new, 2)
       call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
       call mpas_pool_get_array(state, 'scalars', scalars_old, 1)
       call mpas_pool_get_array(state, 'scalars', scalars_new, 2)
@@ -1933,7 +1992,7 @@ module atm_time_integration
       do iCell = 1, nCellsSolve
       do k = 1, nVertLevels
       do iScalar = 1,num_scalars
-         scalars_old(iScalar,k,iCell) = scalars_old(iScalar,k,iCell)+dt*scalar_tend(iScalar,k,iCell) / h_old(k,iCell)
+         scalars_old(iScalar,k,iCell) = scalars_old(iScalar,k,iCell)+dt*scalar_tend(iScalar,k,iCell) / rho_zz_old(k,iCell)
          scalar_tend(iScalar,k,iCell) = 0.
       end do
       end do
@@ -1947,7 +2006,29 @@ module atm_time_integration
       ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
       !
 
-      ! do one scalar at a time
+      if (local_advance_density) then
+         !  begin with update of density
+         rho_zz_int = 0.
+         do iEdge=1,nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
+               do k=1,nVertLevels
+                  rho_zz_int(k,cell1) = rho_zz_int(k,cell1) - uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(cell1)
+                  rho_zz_int(k,cell2) = rho_zz_int(k,cell2) + uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(cell2)
+               end do
+            end if
+         end do
+         do iCell=1,nCellsSolve
+            do k=1,nVertLevels
+               rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
+            end do
+         end do
+      else
+         rho_zz_int = rho_zz_new
+      end if
+
+      ! next, do one scalar at a time
 
       do iScalar = 1, num_scalars
 !         write(0,*) ' mono transport for scalar ',iScalar
@@ -2054,10 +2135,10 @@ module atm_time_integration
          do iCell = 1, nCellsSolve
 
             k = 1
-            scalar_new(k,iCell) = scalar_old(k,iCell)*h_old(k,iCell)
+            scalar_new(k,iCell) = scalar_old(k,iCell)*rho_zz_old(k,iCell)
 
             do k = 2, nVertLevels
-               scalar_new(k,iCell) = scalar_old(k,iCell)*h_old(k,iCell)
+               scalar_new(k,iCell) = scalar_old(k,iCell)*rho_zz_old(k,iCell)
                flux_upwind = dt*(max(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k-1,iCell) + min(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k,iCell))
                scalar_new(k-1,iCell) = scalar_new(k-1,iCell) - flux_upwind*rdnw(k-1)
                scalar_new(k  ,iCell) = scalar_new(k  ,iCell) + flux_upwind*rdnw(k)
@@ -2102,9 +2183,9 @@ module atm_time_integration
 
          do iCell = 1, nCellsSolve
             do k = 1, nVertLevels
-               s_min_update = (scalar_new(k,iCell)+scale_arr(SCALE_OUT,k,iCell))/h_new(k,iCell)
-               s_max_update = (scalar_new(k,iCell)+scale_arr(SCALE_IN,k,iCell))/h_new(k,iCell)
-               s_upwind = scalar_new(k,iCell)/h_new(k,iCell)
+               s_min_update = (scalar_new(k,iCell)+scale_arr(SCALE_OUT,k,iCell))/rho_zz_int(k,iCell)
+               s_max_update = (scalar_new(k,iCell)+scale_arr(SCALE_IN,k,iCell))/rho_zz_int(k,iCell)
+               s_upwind = scalar_new(k,iCell)/rho_zz_int(k,iCell)
 
 #ifdef SINGLE_PRECISION_IFORT
                ! ifort 13.0.1 seems to have problems optimizing this particular
@@ -2194,7 +2275,7 @@ module atm_time_integration
          do iCell=1,nCellsSolve
             do k=1,nVertLevels
                scalar_new(k,iCell) = (   scalar_new(k,iCell)  &
-                   + (-rdnw(k)*(wdtn(k+1,iCell)-wdtn(k,iCell)) ) )/h_new(k,iCell)
+                   + (-rdnw(k)*(wdtn(k+1,iCell)-wdtn(k,iCell)) ) )/rho_zz_int(k,iCell)
             end do
          end do
 
@@ -3928,743 +4009,6 @@ module atm_time_integration
    end subroutine atm_init_coupled_diagnostics
 
 !---------------------------------------------------------------------------------------
-
-   subroutine atm_advance_scalars_1( tend, state, diag, mesh, configs, num_scalars, nCells, nVertLevels, dt)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-   !
-   ! Integrate scalar equations - explicit transport plus other tendencies
-   !
-   !  this transport routine is similar to the original atm_advance_scalars, except it also advances
-   !  (re-integrates) the density.  This re-integration allows the scalar transport routine to use a different 
-   !  timestep than the dry dynamics, and also makes possible a spatial splitting of the scalar transport integration
-   !  (and density integration).  The current integration is, however, not spatially split.
-   !
-   !  WCS 18 November 2014
-   !-----------------------
-   ! Input: s - current model state, 
-   !            including tendencies from sources other than resolved transport.
-   !        grid - grid metadata
-   !
-   ! input scalars in state are uncoupled (i.e. not mulitplied by density)
-   ! 
-   ! Output: updated uncoupled scalars (scalars in state).
-   ! Note: scalar tendencies are also modified by this routine.
-   !
-   ! This routine DOES NOT apply any positive definite or monotonic renormalizations.
-   !
-   ! The transport scheme is from Skamarock and Gassmann MWR 2011.
-   !
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-
-      implicit none
-
-      type (mpas_pool_type), intent(in) :: tend
-      type (mpas_pool_type), intent(inout) :: state
-      type (mpas_pool_type), intent(in) :: diag
-      type (mpas_pool_type), intent(in) :: mesh
-      type (mpas_pool_type), intent(in) :: configs
-      integer, intent(in) :: num_scalars      ! for allocating stack variables
-      integer, intent(in) :: nCells           ! for allocating stack variables
-      integer, intent(in) :: nVertLevels      ! for allocating stack variables
-      real (kind=RKIND) :: dt
-
-      integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
-      real (kind=RKIND) :: scalar_weight
-
-      real (kind=RKIND), dimension(:,:,:), pointer :: scalar_old, scalar_new, scalar_tend
-      real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
-      real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, zgrid, kdiff
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, qv_init
-      integer, dimension(:,:), pointer :: cellsOnEdge
-
-      integer, dimension(:,:), pointer :: advCellsForEdge
-      integer, dimension(:), pointer :: nAdvCellsForEdge
-      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
-      real (kind=RKIND), dimension( num_scalars, nVertLevels ) :: flux_arr
-
-      real (kind=RKIND), dimension( num_scalars, nVertLevels + 1 ) :: wdtn
-      real (kind=RKIND), dimension( nVertLevels, nCells ) :: rho_zz_int
-      real (kind=RKIND), dimension( num_scalars, nVertLevels, nCells ) :: scalar_tend_save
-      integer, pointer :: nCellsSolve, nEdges
-
-      real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
-      real (kind=RKIND), pointer :: coef_3rd_order
-
-      real (kind=RKIND), pointer :: h_theta_eddy_visc2, v_theta_eddy_visc2
-
-      real (kind=RKIND) :: flux3, flux4
-      real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
-
-      integer, pointer :: config_scalar_vadv_order
-
-      integer, parameter :: hadv_opt = 2
-
-      flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
-          ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
-
-      flux3(q_im2, q_im1, q_i, q_ip1, ua, coef3) =              &
-                flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
-                coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
-
-      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
-      call mpas_pool_get_config(configs, 'config_scalar_vadv_order', config_scalar_vadv_order)
-
-      call mpas_pool_get_array(state, 'scalars', scalar_old, 1)
-      call mpas_pool_get_array(state, 'scalars', scalar_new, 2)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz_old, 1)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz_new, 2)
-
-      call mpas_pool_get_array(diag, 'kdiff', kdiff)
-      call mpas_pool_get_array(diag, 'ruAvg', uhAvg)
-      call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
-
-      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
-      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
-      call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
-
-      call mpas_pool_get_array(mesh, 'fzm', fnm)
-      call mpas_pool_get_array(mesh, 'fzp', fnp)
-      call mpas_pool_get_array(mesh, 'rdzw', rdnw)
-      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
-      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
-
-      call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
-      call mpas_pool_get_array(mesh, 'advCellsForEdge', advCellsForEdge)
-      call mpas_pool_get_array(mesh, 'adv_coefs', adv_coefs)
-      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
-
-      call mpas_pool_get_array(diag, 'rho_edge', rho_edge)
-      call mpas_pool_get_array(mesh, 'qv_init', qv_init)
-      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
-
-      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
-      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
-
-      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
-      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', v_theta_eddy_visc2)
-
-
-#ifndef DO_PHYSICS
-      scalar_tend = 0.  !  testing purposes - we have no sources or sinks
-#endif
-
-      !
-      ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
-      !
-      !  horizontal flux divergence, accumulate in scalar_tend
-
-      rho_zz_int = 0.
-      scalar_tend_save = scalar_tend
-
-      do iEdge=1,nEdges
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
-  
-            !  flux_arr stores the value of the scalar at the edge.
-            !  a better name perhaps would be scalarEdge
-
-            flux_arr(:,:) = 0.
-            do i=1,nAdvCellsForEdge(iEdge)
-               iCell = advCellsForEdge(i,iEdge)
-               do k=1,nVertLevels
-                  scalar_weight = adv_coefs(i,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge)
-                  do iScalar=1,num_scalars
-                     flux_arr(iScalar,k) = flux_arr(iScalar,k) + scalar_weight* scalar_new(iScalar,k,iCell)
-                  end do
-               end do
-            end do
-
-            ! here we add the horizontal flux divergence into the scalar tendency.
-            ! note that the scalar tendency is modified.
-
-            do k=1,nVertLevels
-            do iScalar=1,num_scalars
-                  scalar_tend(iScalar,k,cell1) = scalar_tend(iScalar,k,cell1) &
-                         - uhAvg(k,iEdge)*flux_arr(iScalar,k)/areaCell(cell1)
-                  scalar_tend(iScalar,k,cell2) = scalar_tend(iScalar,k,cell2) &
-                         + uhAvg(k,iEdge)*flux_arr(iScalar,k)/areaCell(cell2)
-            end do
-                  rho_zz_int(k,cell1) = rho_zz_int(k,cell1) - uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(cell1)
-                  rho_zz_int(k,cell2) = rho_zz_int(k,cell2) + uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(cell2)
-            end do
-
-         end if
-      end do
-
-      !
-      !  vertical flux divergence and update of the scalars
-      !
-
-      ! zero fluxes at top and bottom
-
-      wdtn(:,1) = 0.
-      wdtn(:,nVertLevels+1) = 0.
-
-      ! update density first
-
-      do iCell=1,nCellsSolve
-         do k=1,nVertLevels
-            rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
-         end do
-      end do
-
-      if (config_scalar_vadv_order == 2) then
-
-         do iCell=1,nCellsSolve
-            do k = 2, nVertLevels
-               do iScalar=1,num_scalars
-                  wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-               end do
-            end do
-            do k=1,nVertLevels
-               do iScalar=1,num_scalars
-                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/rho_zz_int(k,iCell)
-               end do
-            end do
-         end do
-
-      else if ( config_scalar_vadv_order == 3 ) then
-
-         do iCell=1,nCellsSolve
-
-            k = 2
-            do iScalar=1,num_scalars
-               wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-            end do
-             
-            do k=3,nVertLevels-1
-               do iScalar=1,num_scalars
-                  wdtn(iScalar,k) = flux3( scalar_new(iScalar,k-2,iCell),scalar_new(iScalar,k-1,iCell),  &
-                                           scalar_new(iScalar,k  ,iCell),scalar_new(iScalar,k+1,iCell),  &
-                                           wwAvg(k,iCell), coef_3rd_order )
-               end do
-            end do
-            k = nVertLevels
-            do iScalar=1,num_scalars
-               wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-            end do
-
-            do k=1,nVertLevels
-               do iScalar=1,num_scalars
-                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/rho_zz_int(k,iCell)
-               end do
-            end do
-
-         end do
-
-      else if ( config_scalar_vadv_order == 4 ) then
-
-         do iCell=1,nCellsSolve
-
-            k = 2
-            do iScalar=1,num_scalars
-               wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-            end do
-            do k=3,nVertLevels-1
-               do iScalar=1,num_scalars
-                  wdtn(iScalar,k) = flux4( scalar_new(iScalar,k-2,iCell),scalar_new(iScalar,k-1,iCell),  &
-                                           scalar_new(iScalar,k  ,iCell),scalar_new(iScalar,k+1,iCell), wwAvg(k,iCell) )
-               end do
-            end do
-            k = nVertLevels
-            do iScalar=1,num_scalars
-               wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-            end do
-
-            do k=1,nVertLevels
-               do iScalar=1,num_scalars
-                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/rho_zz_int(k,iCell)
-               end do
-            end do
-
-         end do
-                                                                                        
-      else 
-
-         write(0,*) ' bad value for config_scalar_vadv_order - ', config_scalar_vadv_order
-
-      end if
-
-      scalar_tend = scalar_tend_save
-
-   end subroutine atm_advance_scalars_1
-
-!------------------------------------------------
-
-   subroutine atm_advance_scalars_mono_1(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels, dt)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-   !
-   ! Integrate scalar equations - transport plus other tendencies
-   !
-   !  this transport routine is similar to the original atm_advance_scalars_mono, except it also advances
-   !  (re-integrates) the density.  This re-integration allows the scalar transport routine to use a different 
-   !  timestep than the dry dynamics, and also makes possible a spatial splitting of the scalar transport integration
-   !  (and density integration).  The current integration is, however, not spatially split.
-   !
-   !  WCS 18 November 2014
-   !-----------------------
-   !
-   ! Input: s - current model state, 
-   !            including tendencies from sources other than resolved transport.
-   !        grid - grid metadata
-   !
-   ! input scalars in state are uncoupled (i.e. not mulitplied by density)
-   ! 
-   ! Output: updated uncoupled scalars (scalars in s_new).
-   ! Note: scalar tendencies are also modified by this routine.
-   !
-   ! This routine DOES apply positive definite or monotonic renormalizations.
-   !
-   ! The transport scheme is from Skamarock and Gassmann MWR 2011.
-   !
-   ! The positive-definite or monotonic renormalization is from Zalesak JCP 1979
-   !   as used in the RK3 scheme as described in Wang et al MWR 2009
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-
-      implicit none
-
-      type (block_type), intent(inout), target :: block
-      type (mpas_pool_type), intent(in)    :: tend
-      type (mpas_pool_type), intent(inout) :: state
-      type (mpas_pool_type), intent(in)    :: diag
-      type (mpas_pool_type), intent(in)    :: mesh
-      type (mpas_pool_type), intent(in)    :: configs
-      integer, intent(in)                  :: nCells           ! for allocating stack variables
-      integer, intent(in)                  :: nEdges           ! for allocating stack variables
-      integer, intent(in)                  :: nVertLevels      ! for allocating stack variables
-      real (kind=RKIND), intent(in)        :: dt
-
-      integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
-      real (kind=RKIND) :: flux, scalar_weight
-
-      real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
-      real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
-      real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, rho_zz, zgrid, kdiff
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, qv_init
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell
-
-      integer, dimension(:,:), pointer :: advCellsForEdge
-      integer, dimension(:), pointer :: nAdvCellsForEdge
-      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
-      real (kind=RKIND), dimension(:,:,:), pointer :: scalars_old, scalars_new
-      type (field3DReal), pointer :: scalars_old_field
-
-      type (field3DReal), pointer :: tempField
-      type (field3DReal), target :: tempFieldTarget
-
-      real (kind=RKIND), dimension( nVertLevels, nCells ) :: scalar_old, scalar_new
-      real (kind=RKIND), dimension( nVertLevels, nCells ) :: s_max, s_min
-      real (kind=RKIND), dimension( 2, nVertLevels, nCells ), target :: scale_arr
-      real (kind=RKIND), dimension( nVertLevels, nCells ) :: rho_zz_int
-
-      integer, parameter :: SCALE_IN = 1, SCALE_OUT = 2
-
-      real (kind=RKIND), dimension( nVertLevels, nEdges ) :: flux_arr
-      real (kind=RKIND), dimension( nVertLevels + 1, nCells ) :: wdtn
-
-      integer, pointer :: nCellsSolve, num_scalars
-      integer :: icellmax, kmax
-
-      real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
-      integer, dimension(:), pointer :: nEdgesOnCell
-      real (kind=RKIND), pointer :: coef_3rd_order
-
-      real (kind=RKIND), pointer :: h_theta_eddy_visc2, v_theta_eddy_visc2
-
-      real (kind=RKIND) :: flux3, flux4, flux_upwind
-      real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3, scmin,scmax
-      real (kind=RKIND) :: s_min_update, s_max_update, s_upwind, scale_factor
-
-      integer, parameter :: hadv_opt = 2
-      real (kind=RKIND), parameter :: eps=1.e-20
-      logical, parameter :: debug_print = .false.
-
-      flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
-          ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
-
-      flux3(q_im2, q_im1, q_i, q_ip1, ua, coef3) =              &
-                flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
-                coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
-
-
-      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
-      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
-      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', v_theta_eddy_visc2)
-
-      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
-      call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
-
-      call mpas_pool_get_array(diag, 'kdiff', kdiff)
-      call mpas_pool_get_array(diag, 'ruAvg', uhAvg)
-      call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
-      call mpas_pool_get_array(diag, 'rho_edge', rho_edge)
-
-      call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
-
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz_old, 1)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz_new, 2)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
-      call mpas_pool_get_array(state, 'scalars', scalars_old, 1)
-      call mpas_pool_get_array(state, 'scalars', scalars_new, 2)
-      call mpas_pool_get_field(state, 'scalars', scalars_old_field, 1)
-
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
-      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
-      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
-      call mpas_pool_get_array(mesh, 'fzm', fnm)
-      call mpas_pool_get_array(mesh, 'fzp', fnp)
-      call mpas_pool_get_array(mesh, 'rdzw', rdnw)
-      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
-      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
-      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
-      call mpas_pool_get_array(mesh, 'advCellsForEdge', advCellsForEdge)
-      call mpas_pool_get_array(mesh, 'adv_coefs', adv_coefs)
-      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
-      call mpas_pool_get_array(mesh, 'qv_init', qv_init)
-      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
-
-#ifndef DO_PHYSICS
-      scalar_tend = 0.  !  testing purposes - we have no sources or sinks
-#endif
-
-      !  for positive-definite or monotonic option, we first update scalars using the tendency from sources other than
-      !  the resolved transport (these should constitute a positive definite update).  
-      !  Note, however, that we enforce positive-definiteness in this update.
-      !  The transport will maintain this positive definite solution and optionally, shape preservation (monotonicity).
-
-      do iCell = 1, nCellsSolve
-      do k = 1, nVertLevels
-      do iScalar = 1,num_scalars
-         scalars_old(iScalar,k,iCell) = scalars_old(iScalar,k,iCell)+dt*scalar_tend(iScalar,k,iCell) / rho_zz_old(k,iCell)
-         scalar_tend(iScalar,k,iCell) = 0.
-      end do
-      end do
-      end do
-
-      !  halo exchange
-
-      call mpas_dmpar_exch_halo_field(scalars_old_field)
-
-      !
-      ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
-      !
-
-      !  begin with update of density
-
-      rho_zz_int = 0.
-      do iEdge=1,nEdges
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
-            do k=1,nVertLevels
-               rho_zz_int(k,cell1) = rho_zz_int(k,cell1) - uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(cell1)
-               rho_zz_int(k,cell2) = rho_zz_int(k,cell2) + uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(cell2)
-            end do
-         end if
-      end do
-      do iCell=1,nCellsSolve
-         do k=1,nVertLevels
-            rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
-         end do
-      end do
-
-      ! next, do one scalar at a time
-
-      do iScalar = 1, num_scalars
-!         write(0,*) ' mono transport for scalar ',iScalar
-
-         do iCell = 1, nCells
-         do k = 1, nVertLevels
-            scalar_old(k,iCell) = scalars_old(iScalar,k,iCell)
-            scalar_new(k,iCell) = scalars_new(iScalar,k,iCell)
-         end do
-         end do
-
-         if (debug_print) then
-            scmin = scalar_old(1,1)
-            scmax = scalar_old(1,1)
-            do iCell = 1, nCells
-            do k=1, nVertLevels
-               scmin = min(scmin,scalar_old(k,iCell))
-               scmax = max(scmax,scalar_old(k,iCell))
-            end do
-            end do
-            write(0,*) ' scmin, scmin old in ',scmin,scmax
-
-            scmin = scalar_new(1,1)
-            scmax = scalar_new(1,1)
-            do iCell = 1, nCells
-            do k=1, nVertLevels
-               scmin = min(scmin,scalar_new(k,iCell))
-               scmax = max(scmax,scalar_new(k,iCell))
-            end do
-            end do
-            write(0,*) ' scmin, scmin new in ',scmin,scmax
-         end if
-
-
-      !
-      !  vertical flux divergence, and min and max bounds for flux limiter
-      !
-
- 
-         do iCell=1,nCellsSolve
-
-            ! zero flux at top and bottom
-            wdtn(1,iCell) = 0.
-            wdtn(nVertLevels+1,iCell) = 0.
-
-            k = 1
-            s_max(k,iCell) = max(scalar_old(1,iCell),scalar_old(2,iCell))
-            s_min(k,iCell) = min(scalar_old(1,iCell),scalar_old(2,iCell))
-
-            k = 2
-            wdtn(k,iCell) = wwAvg(k,iCell)*(fnm(k)*scalar_new(k,iCell)+fnp(k)*scalar_new(k-1,iCell))
-            s_max(k,iCell) = max(scalar_old(k-1,iCell),scalar_old(k,iCell),scalar_old(k+1,iCell))
-            s_min(k,iCell) = min(scalar_old(k-1,iCell),scalar_old(k,iCell),scalar_old(k+1,iCell))
-             
-            do k=3,nVertLevels-1
-               wdtn(k,iCell) = flux3( scalar_new(k-2,iCell),scalar_new(k-1,iCell),  &
-                                      scalar_new(k  ,iCell),scalar_new(k+1,iCell),  &
-                                      wwAvg(k,iCell), coef_3rd_order )
-               s_max(k,iCell) = max(scalar_old(k-1,iCell),scalar_old(k,iCell),scalar_old(k+1,iCell))
-               s_min(k,iCell) = min(scalar_old(k-1,iCell),scalar_old(k,iCell),scalar_old(k+1,iCell))
-            end do
- 
-            k = nVertLevels
-            wdtn(k,iCell) = wwAvg(k,iCell)*(fnm(k)*scalar_new(k,iCell)+fnp(k)*scalar_new(k-1,iCell))
-            s_max(k,iCell) = max(scalar_old(k,iCell),scalar_old(k-1,iCell))
-            s_min(k,iCell) = min(scalar_old(k,iCell),scalar_old(k-1,iCell))
-
-      ! pull s_min and s_max from the (horizontal) surrounding cells
-
-            do i=1, nEdgesOnCell(iCell)
-               do k=1, nVertLevels
-                  s_max(k,iCell) = max(s_max(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
-                  s_min(k,iCell) = min(s_min(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
-               end do
-            end do
-
-         end do
-
-      !
-      !  horizontal flux divergence
-
-         flux_arr(:,:) = 0.
-         do iEdge=1,nEdges
-
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-
-            if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
-  
-               do i=1,nAdvCellsForEdge(iEdge)
-                  iCell = advCellsForEdge(i,iEdge)
-                  do k=1,nVertLevels
-                     scalar_weight = uhAvg(k,iEdge)*(adv_coefs(i,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge))
-                     flux_arr(k,iEdge) = flux_arr(k,iEdge) + scalar_weight* scalar_new(k,iCell)
-                  end do
-               end do
-
-            end if
-
-         end do
-
-!  vertical flux divergence for upwind update, we will put upwind update into scalar_new, and put factor of dt in fluxes
-
-         do iCell = 1, nCellsSolve
-
-            k = 1
-            scalar_new(k,iCell) = scalar_old(k,iCell)*rho_zz_old(k,iCell)
-
-            do k = 2, nVertLevels
-               scalar_new(k,iCell) = scalar_old(k,iCell)*rho_zz_old(k,iCell)
-               flux_upwind = dt*(max(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k-1,iCell) + min(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k,iCell))
-               scalar_new(k-1,iCell) = scalar_new(k-1,iCell) - flux_upwind*rdnw(k-1)
-               scalar_new(k  ,iCell) = scalar_new(k  ,iCell) + flux_upwind*rdnw(k)
-               wdtn(k,iCell) = dt*wdtn(k,iCell) - flux_upwind
-            end do
-
-! scale_arr(SCALE_IN,:,:) and scale_arr(SCALE_OUT:,:) are used here to store the incoming and outgoing perturbation flux 
-! contributions to the update:  first the vertical flux component, then the horizontal
-
-            do k=1,nVertLevels
-               scale_arr(SCALE_IN, k,iCell) = - rdnw(k)*(min(0.0_RKIND,wdtn(k+1,iCell))-max(0.0_RKIND,wdtn(k,iCell)))
-               scale_arr(SCALE_OUT,k,iCell) = - rdnw(k)*(max(0.0_RKIND,wdtn(k+1,iCell))-min(0.0_RKIND,wdtn(k,iCell)))
-            end do
-
-         end do
-
-!  horizontal flux divergence for upwind update
-
-         !  upwind flux computation
-
-         do iEdge=1,nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
-               do k=1, nVertLevels
-                  flux_upwind = dvEdge(iEdge) * dt *   &
-                         (max(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell1) + min(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell2))
-                  flux_arr(k,iEdge) = dt*flux_arr(k,iEdge) - flux_upwind
-                  scalar_new(k,cell1) = scalar_new(k,cell1) - flux_upwind / areaCell(cell1)
-                  scalar_new(k,cell2) = scalar_new(k,cell2) + flux_upwind / areaCell(cell2)
- 
-                  scale_arr(SCALE_OUT,k,cell1) = scale_arr(SCALE_OUT,k,cell1) - max(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell1)
-                  scale_arr(SCALE_IN, k,cell1) = scale_arr(SCALE_IN, k,cell1) - min(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell1)
-                  scale_arr(SCALE_OUT,k,cell2) = scale_arr(SCALE_OUT,k,cell2) + min(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell2)
-                  scale_arr(SCALE_IN, k,cell2) = scale_arr(SCALE_IN, k,cell2) + max(0.0_RKIND,flux_arr(k,iEdge)) / areaCell(cell2)
- 
-               end do
-            end if
-         end do
-
-!  next, the limiter
-
-         do iCell = 1, nCellsSolve
-            do k = 1, nVertLevels
-               s_min_update = (scalar_new(k,iCell)+scale_arr(SCALE_OUT,k,iCell))/rho_zz_int(k,iCell)
-               s_max_update = (scalar_new(k,iCell)+scale_arr(SCALE_IN,k,iCell))/rho_zz_int(k,iCell)
-               s_upwind = scalar_new(k,iCell)/rho_zz_int(k,iCell)
-
-#ifdef SINGLE_PRECISION_IFORT
-               ! ifort 13.0.1 seems to have problems optimizing this particular
-               ! bit of code without generating NaNs in single precision, so we write it differently
-               if ((s_max_update - s_upwind) /= 0.0) then
-                  scale_factor = (s_max(k,iCell)-s_upwind)/(s_max_update-s_upwind)
-                  scale_arr(SCALE_IN,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
-               else
-                  scale_arr(SCALE_IN,k,iCell) = 1.0
-               end if
-
-               if ((s_upwind - s_min_update) /= 0.0) then
-                  scale_factor = (s_upwind-s_min(k,iCell))/(s_upwind-s_min_update)
-                  scale_arr(SCALE_OUT,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
-               else
-                  scale_arr(SCALE_OUT,k,iCell) = 1.0
-               end if
-#else
-               scale_factor = (s_max(k,iCell)-s_upwind)/(s_max_update-s_upwind+eps)
-               scale_arr(SCALE_IN,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
- 
-               scale_factor = (s_upwind-s_min(k,iCell))/(s_upwind-s_min_update+eps)
-               scale_arr(SCALE_OUT,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
-#endif
-            end do
-         end do
-
-!
-!  communicate scale factors here.
-!  communicate only first halo row in these next two exchanges
-!
-         tempField => tempFieldTarget
-
-         tempField % block => block
-         tempField % dimSizes(1) = 2
-         tempField % dimSizes(2) = nVertLevels
-         tempField % dimSizes(3) = nCells
-         tempField % sendList => block % parinfo % cellsToSend
-         tempField % recvList => block % parinfo % cellsToRecv
-         tempField % copyList => block % parinfo % cellsToCopy
-         tempField % prev => null()
-         tempField % next => null()
-
-         tempField % array => scale_arr
-         call mpas_dmpar_exch_halo_field(tempField, (/ 1 /))
-
-!
-!  rescale the fluxes
-!
-         do iEdge = 1, nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
-               do k = 1, nVertLevels
-                  flux = flux_arr(k,iEdge)
-                  flux = max(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k,cell1), scale_arr(SCALE_IN, k,cell2)) &
-                       + min(0.0_RKIND,flux) * min(scale_arr(SCALE_IN, k,cell1), scale_arr(SCALE_OUT,k,cell2))
-                  flux_arr(k,iEdge) = flux
-               end do
-            end if
-         end do
- 
-       ! rescale the vertical flux
- 
-         do iCell=1,nCellsSolve
-            do k = 2, nVertLevels
-               flux =  wdtn(k,iCell)
-               flux = max(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k-1,iCell), scale_arr(SCALE_IN,k  ,iCell)) &
-                    + min(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k  ,iCell), scale_arr(SCALE_IN,k-1,iCell))
-               wdtn(k,iCell) = flux
-            end do
-         end do
-!
-!  do the scalar update now that we have the fluxes
-!
-         do iEdge=1,nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
-               do k=1,nVertLevels
-                  scalar_new(k,cell1) = scalar_new(k,cell1) - flux_arr(k,iEdge)/areaCell(cell1)
-                  scalar_new(k,cell2) = scalar_new(k,cell2) + flux_arr(k,iEdge)/areaCell(cell2)
-               end do
-            end if
-         end do
-
-         do iCell=1,nCellsSolve
-            do k=1,nVertLevels
-               scalar_new(k,iCell) = (   scalar_new(k,iCell)  &
-                   + (-rdnw(k)*(wdtn(k+1,iCell)-wdtn(k,iCell)) ) )/rho_zz_int(k,iCell)
-            end do
-         end do
-
-         if(debug_print) then
-
-            scmin = scalar_new(1,1)
-            scmax = scalar_new(1,1)
-            do iCell = 1, nCellsSolve
-            do k=1, nVertLevels
-               scmax = max(scmax,scalar_new(k,iCell))
-               scmin = min(scmin,scalar_new(k,iCell))
-               if (s_max(k,iCell) < scalar_new(k,iCell)) then
-                  write(32,*) ' over - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
-               end if
-               if (s_min(k,iCell) > scalar_new(k,iCell)) then
-                  write(32,*) ' under - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
-               end if
-            end do
-            end do
-            write(0,*) ' scmin, scmax new out ',scmin,scmax
-            write(0,*) ' icell_min, k_min ',icellmax, kmax
-
-         end if
-
-         ! the update should be positive definite. but roundoff can sometimes leave small negative values
-         ! hence the enforcement of PD in the copy back to the model state.
-
-         do iCell = 1, nCells
-         do k=1, nVertLevels
-            scalars_new(iScalar,k,iCell) = max(0.0_RKIND,scalar_new(k,iCell))
-         end do
-         end do
-
-      end do !  loop over scalars
-
-   end subroutine atm_advance_scalars_mono_1
-
-!-----
 
    subroutine atm_rk_dynamics_substep_finish( state, diag, dynamics_substep, dynamics_split )
 
