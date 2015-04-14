@@ -1,15 +1,15 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_ocn_analysis_mode.o
+OBJS = mpas_ocn_mpas_core.o
 
-all: analysis_mode
+all: core_ocean
 
-analysis_mode: $(OBJS)
+core_ocean: $(OBJS) 
 
-mpas_ocn_am_mpas_mode.o:
+mpas_ocn_mpas_core.o:
 
 clean:
-	$(RM) *.o *.i *.mod *.f90
+	$(RM) *.o *.mod *.f90
 
 .F.o:
 	$(RM) $@ $*.mod
