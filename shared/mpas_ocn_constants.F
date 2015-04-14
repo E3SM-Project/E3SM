@@ -33,6 +33,9 @@ module ocn_constants
    type (mpas_pool_type), pointer :: ocnConfigs
    type (mpas_pool_type), pointer :: ocnPackages
 
+   character (len=*), parameter :: statsAlarmID = 'stats'
+   character (len=*), parameter :: coupleAlarmID = 'coupling'
+
    real (kind=RKIND), public ::      &
       rho_air               ,&! ambient air density (kg/m^3)
       rho_fw                ,&! density of fresh water (kg/m^3)

@@ -1,4 +1,4 @@
-	<nml_record name="global_stats" in_defaults="true">
+	<nml_record name="global_stats" mode="forward;analysis">
 		<nml_option name="config_use_global_stats" type="logical" default_value=".true." units="unitless"
 			description="If true, ocean analysis member global_stats is called."
 			possible_values=".true. or .false."
@@ -17,6 +17,7 @@
 	</packages>
 	<streams>
 		<stream name="globalStatsOutput" type="output"
+				mode="forward;analysis"
 				filename_template="analysis_members/globalStats.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="0000_01:00:00"
 				filename_interval="01-00-00_00:00:00"

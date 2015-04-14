@@ -15,7 +15,7 @@ mpas_ocn_global_stats.o:
 mpas_ocn_zonal_mean.o:
 
 clean:
-	$(RM) *.o *.i *.mod *.f90 lib*.a 
+	$(RM) *.o *.i *.mod *.f90
 
 .F.o:
 	$(RM) $@ $*.mod

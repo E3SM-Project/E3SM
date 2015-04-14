@@ -1,4 +1,4 @@
-	<nml_record name="TEMPLATE" in_defaults="true">
+	<nml_record name="TEMPLATE" mode="forward;analysis">
 		<nml_option name="config_use_TEMPLATE" type="logical" default_value=".false." units="unitless"
 			description="If true, ocean analysis member TEMPLATE is called."
 			possible_values=".true. or .false."
@@ -17,6 +17,7 @@
 	</packages>
 	<streams>
 		<stream name="TEMPLATEOutput" type="output"
+				mode="forward;analysis"
 				filename_template="analysis_members/template.$Y-$M-$D.nc"
 				filename_interval="01-00-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
