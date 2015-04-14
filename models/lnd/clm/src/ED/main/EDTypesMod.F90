@@ -24,9 +24,9 @@ module EDTypesMod
 
   ! for setting number of patches per gridcell and number of cohorts per patch
   ! for I/O and converting to a vector
-  integer, parameter :: numPatchesPerGridCell = 4          !
-  integer, parameter :: numCohortsPerPatch    = 20         !
-  integer, parameter :: cohorts_per_gcell     = 80         ! should be numPatchesPerGridCell*numCohortsPerPatch 
+  integer, parameter :: numPatchesPerGridCell = 20         !
+  integer, parameter :: numCohortsPerPatch    = 30         !
+  integer, parameter :: cohorts_per_gcell     = 600        ! should be numPatchesPerGridCell*numCohortsPerPatch 
   integer, parameter :: numWaterMem           = 10         ! watermemory saved as site level var
 
   ! BIOLOGY/BIOGEOCHEMISTRY        
@@ -35,7 +35,7 @@ module EDTypesMod
   integer , parameter :: SENES                = 10         ! Window of time over which we track temp for cold sensecence (days)
   real(r8), parameter :: DINC_ED              = 1.0_r8     ! size of LAI bins. 
   integer , parameter :: N_DIST_TYPES         = 2          ! number of disturbance types (mortality, fire)
-  integer , parameter :: numpft_ed            = 2          ! number of PFTs used in ED. 
+  integer , parameter :: numpft_ed            = 10         ! number of PFTs used in ED. 
 
   ! SPITFIRE     
   integer , parameter :: NLSC                 = 5          ! number carbon compartments in above ground litter array 
