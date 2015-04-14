@@ -29,6 +29,7 @@ core_input_gen:
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.overflow mode=init configuration=overflow)
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.cvmix_convection_unit_test mode=init configuration=cvmix_convection_unit_test)
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.cvmix_shear_unit_test mode=init configuration=cvmix_shear_unit_test)
+	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.global_realistic mode=init configuration=global_realistic)
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean stream_list.ocean. mutable )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis )
