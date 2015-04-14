@@ -471,7 +471,7 @@ module ocn_forward_mode
            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
            call ocn_forcing_build_arrays(meshPool, statePool, forcingPool, ierr, 1)
-           call ocn_forcing_build_transmission_array(meshPool, statePool, forcingpool, ierr, 1)
+           call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingpool, ierr, 1)
            block_ptr => block_ptr % next
          end do
 
