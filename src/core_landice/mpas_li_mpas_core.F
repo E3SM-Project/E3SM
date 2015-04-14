@@ -26,6 +26,7 @@ module mpas_core
              mpas_core_finalize, &
              mpas_core_setup_packages, &
              mpas_core_setup_clock, &
+             mpas_core_setup_decompositions, &
              mpas_core_get_mesh_stream
 
    !--------------------------------------------------------------------
@@ -429,6 +430,7 @@ module mpas_core
    
       use mpas_grid_types
       use mpas_stream_manager
+      use mpas_decomp
       use li_velocity, only: li_velocity_finalize
    
       implicit none
@@ -469,6 +471,8 @@ module mpas_core
 
       call mpas_destroy_clock(clock, err_tmp)
       err = ior(err, err_tmp)
+
+      call mpas_decomp_destroy_decomp_list(decompositions)
 
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -598,6 +602,37 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
    end subroutine mpas_core_get_mesh_stream
 
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_decompositions
+   !
+   !> \brief   Decomposition setup routine
+   !> \author  Doug Jacobsen
+   !> \date    September 2011
+   !> \details 
+   !>  This routine is intended to create the decomposition list within a
+   !>  domain type, and register any decompositons the core wants within it.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_setup_decompositions(ierr)
+
+      use mpas_decomp
+
+      implicit none
+
+      integer, intent(out) :: ierr
+      procedure (mpas_decomp_function), pointer :: decompFunc
+
+      ierr = 0
+
+      call mpas_decomp_create_decomp_list(decompositions)
+
+      decompFunc => mpas_uniform_decomp
+
+      call mpas_decomp_register_method(decompositions, 'uniform', decompFunc, iErr)
+
+   end subroutine mpas_core_setup_decompositions
 
 
 !***********************************************************************

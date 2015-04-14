@@ -77,7 +77,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	ezxml_t streams_xml, stream_xml, substream_xml;
 	ezxml_t streams_xml2, stream_xml2;
 
-	const char *dimname, *dimunits, *dimdesc, *dimdef;
+	const char *dimname, *dimunits, *dimdesc, *dimdef, *dimdecomp;
 	const char *nmlrecname, *nmlrecindef;
 	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
 	const char *structname, *structpackages, *structstreams;
@@ -156,6 +156,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			dimdef = ezxml_attr(dim_xml, "definition");	
 			dimunits = ezxml_attr(dim_xml, "units");
 			dimdesc = ezxml_attr(dim_xml, "description");
+			dimdecomp = ezxml_attr(dim_xml, "decomposition");
 
 			if (dimname == NULL){
 				fprintf(stderr,"ERROR: Name missing for dimension.\n");
@@ -163,29 +164,19 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			}
 
 			if (dimdef != NULL){
+				if ( dimdecomp != NULL ) {
+					fprintf(stderr, "ERROR: Dimension %s cannot have a decomposition and a definition attribute.\n", dimname);
+					return 1;
+				}
 				if (strncmp(dimdef, "namelist:", 9) == 0){
 					found = 0;
 					snprintf(name_holder, 1024, "%s",dimdef);
 					snprintf(name_holder, 1024, "%s",(name_holder)+9);
 					for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
-						nmlrecindef = ezxml_attr(nmlrecs_xml, "in_defaults");
 
-						if(nmlrecindef != NULL){
-							if(strncmp(nmlrecindef, "true", 1024) != 0 && strncmp(nmlrecindef, "false", 1024) != 0){
-								fprintf(stderr, "ERROR: Namelist record %s has an invalid value for in_defaults attribute. Valide values are true or false.\n", nmlrecname);
-							}
-						}
 						for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
 							nmloptname = ezxml_attr(nmlopt_xml, "name");
 							nmlopttype = ezxml_attr(nmlopt_xml, "type");
-							nmloptindef = ezxml_attr(nmlopt_xml, "in_defaults");
-
-
-							if(nmloptindef != NULL){
-								if(strncmp(nmloptindef, "true", 1024) != 0 && strncmp(nmloptindef, "false", 1024) != 0){
-									fprintf(stderr, "ERROR: Namelist option %s in record %s has an invalid value for in_defaults attribute. Valide values are true or false.\n", nmloptname, nmlrecname);
-								}
-							}
 
 							if (strncmp(name_holder, nmloptname, 1024) == 0){
 								if (strcasecmp("integer", nmlopttype) != 0){

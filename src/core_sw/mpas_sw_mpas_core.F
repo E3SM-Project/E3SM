@@ -331,6 +331,7 @@ module mpas_core
    
       use mpas_grid_types
       use mpas_stream_manager
+      use mpas_decomp
    
       implicit none
 
@@ -339,6 +340,7 @@ module mpas_core
       integer :: ierr
  
      call mpas_destroy_clock(clock, ierr)
+     call mpas_decomp_destroy_decomp_list(decompositions)
 
    end subroutine mpas_core_finalize
 
@@ -409,6 +411,38 @@ module mpas_core
       ierr = 0
 
    end subroutine mpas_core_setup_packages!}}}
+
+
+   !***********************************************************************
+   !
+   !  routine mpas_core_setup_decompositions
+   !
+   !> \brief   Decomposition setup routine
+   !> \author  Doug Jacobsen
+   !> \date    September 2011
+   !> \details
+   !>  This routine is intended to create the decomposition list within a
+   !>  domain type, and register any decompositons the core wants within it.
+   !
+   !-----------------------------------------------------------------------
+   subroutine mpas_core_setup_decompositions(ierr)!{{{
+
+      use mpas_decomp
+
+      implicit none
+
+      integer, intent(out) :: ierr
+      procedure (mpas_decomp_function), pointer :: decompFunc
+
+      ierr = 0
+
+      call mpas_decomp_create_decomp_list(decompositions)
+
+      decompFunc => mpas_uniform_decomp
+
+      call mpas_decomp_register_method(decompositions, 'uniform', decompFunc, iErr)
+
+   end subroutine mpas_core_setup_decompositions!}}}
 
 
    !***********************************************************************

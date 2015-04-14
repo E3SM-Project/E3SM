@@ -1,12 +1,19 @@
 include $(CASEROOT)/Macros
 
-# Map the ACME component corresponding to each MPAS core
+ifneq ($(wildcard core_$(CORE)/build_options.mk), ) # Check for build_options.mk
+    include core_$(CORE)/build_options.mk
+else # ELSE Use Default Options
+    EXE_NAME=$(CORE)_model
+    NAMELIST_SUFFIX=$(CORE)
+endif
+
+# Map the ESM component corresponding to each MPAS core
 ifeq "$(CORE)" "ocean"
-COMPONENT=ocn
+    COMPONENT=ocn
 else ifeq "$(CORE)" "landice"
-COMPONENT=glc
+    COMPONENT=glc
 else ifeq "$(CORE)" "cice"
-COMPONENT=ice
+    COMPONENT=ice
 endif
 
 ifeq ($(strip $(USE_ESMF_LIB)), TRUE)
@@ -23,12 +30,17 @@ NETCDF=$(NETCDF_PATH)
 PNETCDF=$(PNETCDF_PATH)
 PIO=$(EXEROOT)/pio
 FILE_OFFSET = -DOFFSET64BIT
-CFLAGS += -DMPAS_CESM -DMPAS_NAMELIST_SUFFIX=$(MPAS_NAMELIST_SUFFIX)
-FFLAGS += -DMPAS_CESM -DMPAS_NAMELIST_SUFFIX=$(MPAS_NAMELIST_SUFFIX)
-CPPFLAGS += $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_CESM -D_MPI -DUNDERSCORE -DMPAS_NAMELIST_SUFFIX=$(MPAS_NAMELIST_SUFFIX)
+CFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST
+FFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST
+CPPFLAGS += $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -D_MPI -DUNDERSCORE -DMPAS_NAMELIST_SUFFIX=$(NAMELIST_SUFFIX) -DMPAS_EXE_NAME=$(EXE_NAME)
 CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
 FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
 LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
+
+ifeq ($(DEBUG), TRUE)
+    override CPPFLAGS += -DMPAS_DEBUG
+endif
+
 
 all:
 	@echo $(CPPINCLUDES)
@@ -45,7 +57,8 @@ mpas: reg_includes externals frame ops dycore drver
 	ar ru lib$(COMPONENT).a `find core_$(CORE)/ -type f -name "*.o"`  # Find command finds objects in any subdirectories
 	ar ru lib$(COMPONENT).a $(DRIVER)/*.o
 
-externals: 
+externals:
+	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" ezxml-lib )
 
 drver:  reg_includes externals frame ops dycore
 	( cd $(DRIVER); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FREEFLAGS="$(FREEFLAGS)" all ) 
