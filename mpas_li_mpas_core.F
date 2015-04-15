@@ -282,10 +282,17 @@ module mpas_core
          solveVelo = .true.
       endif
 
-      call li_calculate_diagnostic_vars(domain, timeLevel=1, solveVelo=solveVelo, err=err_tmp)
+      call li_calculate_diagnostic_vars(domain, solveVelo=solveVelo, err=err_tmp)
       err = ior(err, err_tmp)
 
       call mpas_timer_stop("initial state calculation")
+
+      if (config_write_stats_on_startup) then
+         call mpas_timer_start("compute_statistics")
+         call li_compute_statistics(domain, 0)     ! itimestep = 0
+                                                   ! (itimestep is initialized below)
+         call mpas_timer_stop("compute_statistics")
+      endif
 
       ! ===
       ! === Write Initial Output
@@ -298,21 +305,23 @@ module mpas_core
 
       call mpas_timer_stop("write output")
 
-      if (config_write_stats_on_startup) then
-         call mpas_timer_start("compute_statistics")
-         call li_compute_statistics(domain, 0)     ! itimestep = 0
-                                                   ! (itimestep is initialized below)
-         call mpas_timer_stop("compute_statistics")
-      endif
+      ! Move time level 1 fields (current values) into time level 2 (old values) for next time step
+      ! (for those fields with multiple time levels)
+      block => domain % blocklist
+      do while(associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_shift_time_levels(geometryPool)
+         block => block % next
+      end do
 
       if (config_do_restart .and. (trim(config_velocity_solver) /= 'sia')) then
          ! On a restart with the HO dycore, we need to make sure the FEM mesh will be rebuilt
          ! on the first time step.  Force this by setting the vertexMask at the end of the
-         ! initial time to garbage.  (Do this after writing output.)
+         ! initial time to 0.  (Do this after writing output.)
          block => domain % blocklist
          do while(associated(block))
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-            call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
+            call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=2)  ! Get the old vertexMask
             vertexMask = 0
             block => block % next
          end do
@@ -372,14 +381,6 @@ module mpas_core
             end if
          end if
 
-         ! Move time level 2 fields back into time level 1 for next time step
-         block => domain % blocklist
-         do while(associated(block))
-            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-            call mpas_pool_shift_time_levels(geometryPool)
-            block => block % next
-         end do
-
          call mpas_timer_stop("time integration")
 
          ! ===
@@ -418,6 +419,14 @@ module mpas_core
          err = ior(err, err_tmp)
          call mpas_timer_stop("write output")
 
+         ! Move time level 1 fields (current values) into time level 2 (old values) for next time step
+         ! (for those fields with multiple time levels)
+         block => domain % blocklist
+         do while(associated(block))
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_shift_time_levels(geometryPool)
+            block => block % next
+         end do
 
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -731,9 +740,9 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       ! Copy data from first time level into all other time levels
       call mpas_pool_initialize_time_levels(geometryPool)
 
-      ! Initialize vertexMask on time level 2 to junk, so diagnostic_solve_before_velocity in li_diagnostic_vars says that the vertexMask has changed (needed by external dycore)
+      ! Initialize vertexMask on time level 2 to 0, so diagnostic_solve_before_velocity in li_diagnostic_vars says that the vertexMask has changed (needed by external dycore)
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 2)
-      vertexMask = -9999
+      vertexMask = 0
 
       ! ===
       ! === Call init routines ===
@@ -772,8 +781,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       call li_calculate_mask_init(geometryPool, err=err_tmp)
       err = ior(err, err_tmp)
 
-      ! Make sure all time levels have a copy of the initial state
-      call mpas_pool_initialize_time_levels(geometryPool)
 
       ! === error check
       if (err > 0) then

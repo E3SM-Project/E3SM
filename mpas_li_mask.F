@@ -188,7 +188,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_mask(meshPool, velocityPool, geometryPool, timeLevel, err)
+   subroutine li_calculate_mask(meshPool, velocityPool, geometryPool, err)
 
       !-----------------------------------------------------------------
       !
@@ -201,9 +201,6 @@ contains
 
       type (mpas_pool_type), intent(inout) :: &
          velocityPool          !< Input: velocity information
-
-      integer, intent(in) :: &
-         timeLevel     !< Input: time level for which to calculate mask
 
       !-----------------------------------------------------------------
       !
@@ -256,7 +253,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
