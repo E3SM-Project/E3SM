@@ -1257,8 +1257,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <!-- ======================================================== -->
 
 <!-- <gridmap ocn_grid="gx1v6" lnd_grid="0.9x1.25">  -->
-<!--   <OCN2GLC_FMAPNAME>cpl/cpl6/map_r01_to_gx1v6_120711.nc</OCN2GLC_FMAPNAME>   -->
-<!--   <OCN2GLC_SMAPNAME>cpl/cpl6/map_r01_to_gx1v6_120711.nc</OCN2GLC_SMAPNAME>  -->
+<!--   <OCN2GLC_FMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</OCN2GLC_FMAPNAME>   -->
+<!--   <OCN2GLC_SMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</OCN2GLC_SMAPNAME>  -->
 <!-- </gridmap> -->
 
 </config_compset >
