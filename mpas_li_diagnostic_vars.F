@@ -112,7 +112,6 @@ contains
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: meshLIPool
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: velocityPool
@@ -151,12 +150,11 @@ contains
           block => domain % blocklist
           do while (associated(block))
              call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-             call mpas_pool_get_subpool(block % structs, 'meshLI', meshLIPool)
              call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
              call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
              call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
 
-             call li_velocity_solve(meshPool, meshLIPool, geometryPool, thermalPool, velocityPool, timeLevel, err)    ! ****** Calculate Velocity ******
+             call li_velocity_solve(meshPool, geometryPool, thermalPool, velocityPool, timeLevel, err)    ! ****** Calculate Velocity ******
 
              err = ior(err, err_tmp)
 
@@ -303,7 +301,6 @@ contains
       ! pointers to get from pools
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: meshLIPool
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: velocityPool
@@ -437,12 +434,12 @@ contains
              call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
              call mpas_pool_get_array(geometryPool, 'tangentSlopeEdge', tangentSlopeEdge, timeLevel=timeLevel)
              call mpas_pool_get_array(geometryPool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
-             call mpas_pool_get_array(meshLIPool, 'baryCellsOnVertex', baryCellsOnVertex)
-             call mpas_pool_get_array(meshLIPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
+             call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
+             call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
              call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA, timeLevel=timeLevel)
 
              ! Calculate flowA
-             call calculate_flowParamA(meshLIPool, tracers(index_temperature,:,:), thickness, flowParamA, err_tmp)
+             call calculate_flowParamA(meshPool, tracers(index_temperature,:,:), thickness, flowParamA, err_tmp)
              err = ior(err, err_tmp)
 
              ! Calculate normal slope
@@ -497,7 +494,7 @@ contains
 
 
           ! Do vertical remapping of layerThickness and tracers
-          call vertical_remap(thickness, cellMask, meshLIPool, layerThickness, tracers, err)
+          call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
           err = ior(err, err_tmp)
 
           ! This information is only needed by external dycores.
@@ -704,7 +701,7 @@ contains
 !>  version until tracer advection exists!)
 !
 !-----------------------------------------------------------------------
-   subroutine vertical_remap_cism_loops(layerThickness, thickness, tracers, meshLIPool, err)
+   subroutine vertical_remap_cism_loops(layerThickness, thickness, tracers, meshPool, err)
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -715,7 +712,7 @@ contains
          thickness    !< Input: 
 
       type (mpas_pool_type), intent(in) :: &
-         meshLIPool          !< Input: LI mesh information
+         meshPool          !< Input: LI mesh information
 
       !-----------------------------------------------------------------
       !
@@ -756,12 +753,12 @@ contains
 
       err = 0
 
-      call mpas_pool_get_dimension(meshLIPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshLIPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, 1)
 
-      call mpas_pool_get_array(meshLIPool, 'layerThicknessFractions', layerThicknessFractions)
-      call mpas_pool_get_array(meshLIPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
       allocate(recipThickness(nCells+1))
       allocate(layerInterfaceSigma_Input(nVertLevels+1, nCells+1))
@@ -860,7 +857,7 @@ contains
 !>  rather than using if/where-statements.
 !
 !-----------------------------------------------------------------------
-   subroutine vertical_remap(thickness, cellMask, meshLIPool, layerThickness, tracers, err)
+   subroutine vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
 
       !-----------------------------------------------------------------
       !
@@ -875,7 +872,7 @@ contains
          cellMask    !< Input: mask for cells (needed for determining presence/absence of ice)
 
       type (mpas_pool_type), intent(in) :: &
-         meshLIPool          !< Input: LI mesh information
+         meshPool          !< Input: LI mesh information
 
       !-----------------------------------------------------------------
       !
@@ -916,12 +913,12 @@ contains
 
       err = 0
 
-      call mpas_pool_get_dimension(meshLIPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshLIPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, 1)
 
-      call mpas_pool_get_array(meshLIPool, 'layerThicknessFractions', layerThicknessFractions)
-      call mpas_pool_get_array(meshLIPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
       allocate(layerInterfaceSigma_Input(nVertLevels+1))
       allocate(hTsum(nTracers, nVertLevels))
@@ -1099,7 +1096,7 @@ contains
 !>
 !>  All options are adjusted by the enhancement factor (which defaults to 1.0).
 !-----------------------------------------------------------------------
-   subroutine calculate_flowParamA(meshLIPool, temperature, thickness, flowParamA, err)
+   subroutine calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err)
       use mpas_constants, only: gravity
       use li_constants, only: idealGasConstant
 
@@ -1110,7 +1107,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(in) :: &
-         meshLIPool          !< Input: mesh information
+         meshPool          !< Input: mesh information
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          temperature    !< Input: temperature
       real (kind=RKIND), dimension(:), intent(in) :: &
@@ -1150,10 +1147,10 @@ contains
 
       err_tmp = 0
 
-      call mpas_pool_get_dimension(meshLIPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshLIPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      call mpas_pool_get_array(meshLIPool, 'layerCenterSigma', layerCenterSigma)
+      call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
 
       call mpas_pool_get_config(liConfigs, 'config_flowParamA_calculation', config_flowParamA_calculation)
       call mpas_pool_get_config(liConfigs, 'config_enhancementFactor', config_enhancementFactor)

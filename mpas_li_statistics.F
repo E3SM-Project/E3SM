@@ -86,7 +86,6 @@ module li_statistics
 
      ! pools
      type (mpas_pool_type), pointer :: meshPool
-     type (mpas_pool_type), pointer :: meshLIPool
      type (mpas_pool_type), pointer :: geometryPool
      type (mpas_pool_type), pointer :: velocityPool
      type (mpas_pool_type), pointer :: thermalPool
@@ -208,7 +207,6 @@ module li_statistics
         ! pools
 
         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block % structs, 'meshLI', meshLIPool)
         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
@@ -227,8 +225,8 @@ module li_statistics
         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
 
         ! LI mesh arrays
-        call mpas_pool_get_array(meshLIPool, 'xtime', xtime)
-        call mpas_pool_get_array(meshLIPool, 'layerCenterSigma', layerCenterSigma)
+        call mpas_pool_get_array(meshPool, 'xtime', xtime)
+        call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
 
         ! Geometry arrays
         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)

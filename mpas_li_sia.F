@@ -154,7 +154,6 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: meshLIPool
       type (mpas_pool_type), pointer :: scratchPool
       integer :: iCell, iLevel, i, iVertex, err_tmp
       integer, pointer :: nVertices
@@ -169,10 +168,9 @@ contains
       err_tmp = 0
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-      call mpas_pool_get_subpool(block % structs, 'meshLI', meshLIPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-      call mpas_pool_get_array(meshLIPool, 'baryCellsOnVertex', baryCellsOnVertex)
-      call mpas_pool_get_array(meshLIPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
+      call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
+      call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
       call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
       call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
       call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
@@ -217,7 +215,7 @@ contains
 !>  on an edge using the average of the two neighboring cells (2nd order).
 !
 !-----------------------------------------------------------------------
-   subroutine li_sia_solve(meshPool, meshLIPool, geometryPool, timeLevel, velocityPool, err)
+   subroutine li_sia_solve(meshPool, geometryPool, timeLevel, velocityPool, err)
       use mpas_constants, only: gravity
 
       !-----------------------------------------------------------------
@@ -228,9 +226,6 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
-
-      type (mpas_pool_type), intent(in) :: &
-         meshLIPool          !< Input: LI mesh information
 
       type (mpas_pool_type), intent(in) :: &
          geometryPool          !< Input: geometry information
@@ -283,7 +278,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshLIPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA, timeLevel=timeLevel)

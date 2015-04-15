@@ -316,7 +316,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_velocity_external_solve(meshPool, meshLIPool, geometryPool, thermalPool, velocityPool, timeLevel, err)
+   subroutine li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, timeLevel, err)
 
        use li_mask
 
@@ -328,9 +328,6 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
           meshPool !< Input: mesh information
-
-      type (mpas_pool_type), intent(in) :: &
-          meshLIPool !< Input: meshLI information
 
       type (mpas_pool_type), intent(in) :: &
           geometryPool !< Input: geometry information
@@ -386,7 +383,7 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
 
       ! Mesh variables
-      call mpas_pool_get_array(meshLIPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
 
       ! Geometry variables
       call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel=timeLevel)

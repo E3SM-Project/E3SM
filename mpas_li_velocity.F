@@ -213,7 +213,7 @@ contains
 !>  This routine calls velocity solvers.
 !
 !-----------------------------------------------------------------------
-   subroutine li_velocity_solve(meshPool, meshLIPool, geometryPool, thermalPool, velocityPool, timeLevel, err)
+   subroutine li_velocity_solve(meshPool, geometryPool, thermalPool, velocityPool, timeLevel, err)
 
       use li_mask
 
@@ -225,9 +225,6 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
-
-      type (mpas_pool_type), intent(in) :: &
-         meshLIPool          !< Input: meshLI information
 
       type (mpas_pool_type), intent(in) :: &
          geometryPool          !< Input: geometry information
@@ -280,9 +277,9 @@ contains
       case ('none')
          ! Do nothing
       case ('sia')
-          call li_sia_solve(meshPool, meshLIPool, geometryPool, timeLevel, velocityPool, err)
+          call li_sia_solve(meshPool, geometryPool, timeLevel, velocityPool, err)
       case ('L1L2', 'FO', 'Stokes')
-          call li_velocity_external_solve(meshPool, meshLIPool, geometryPool, thermalPool, velocityPool, timeLevel, err)
+          call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, timeLevel, err)
       case default
           write(stderrUnit,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1

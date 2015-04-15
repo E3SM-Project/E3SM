@@ -574,7 +574,7 @@ module li_tendency
 !>  results.  
 !
 !-----------------------------------------------------------------------
-   subroutine tend_layerThickness_fo_upwind(meshPool, normalVelocity, layerThicknessEdge, edgeMask, tend, dt, MinOfMaxAllowableDt, err)!{{{
+   subroutine tend_layerThickness_fo_upwind(meshPool, normalVelocity, layerThicknessEdge, edgeMask, tend, dt, MinOfMaxAllowableDt, err)
 
       use mpas_timekeeping
 

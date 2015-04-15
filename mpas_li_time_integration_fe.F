@@ -343,7 +343,7 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshLIPool, geometryPool, tendencyPool
+      type (mpas_pool_type), pointer :: meshPool, geometryPool, tendencyPool
       integer, pointer :: nCells
       logical, pointer :: config_print_thickness_advection_info
 
@@ -361,11 +361,11 @@ module li_time_integration_fe
       block => domain % blocklist
       do while (associated(block))
 
-         call mpas_pool_get_subpool(block % structs, 'meshLI', meshLIPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'tendency', tendencyPool)
-         call mpas_pool_get_dimension(meshLIPool, 'nCells', nCells)
-         call mpas_pool_get_array(meshLIPool, 'layerThicknessFractions', layerThicknessFractions)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
 
          ! State at time n
          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=1)

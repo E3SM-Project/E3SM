@@ -238,13 +238,58 @@
 
 	<streams>
 
+		<!-- basicmesh contains all the required MPAS mesh fields - attach this to other streams as needed -->
+		<stream name="basicmesh"
+				type="none"
+				immutable="true"
+				filename_template="not-to-be-used.nc">
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="layerThicknessFractions"/>
+			<var name="meshDensity"/>
+		</stream>
+
+
 		<stream name="input"
 				type="input"
 				immutable="true"
 				filename_template="landice_grid.nc"
 				input_interval="initial_only">
 
-			<var_struct name="mesh"/>
+			<stream name="basicmesh"/>
 			<var name="layerThicknessFractions"/>
 			<var_array name="tracers"/>
 			<var name="thickness"/>
@@ -284,7 +329,7 @@
 				precision="double"
 				clobber_mode="replace_files">
 
-			<var_struct name="mesh"/>
+			<stream name="basicmesh"/>
 			<var name="layerThicknessFractions"/>
 			<var_array name="tracers"/>
 			<var name="xtime"/>
@@ -313,7 +358,7 @@
 				clobber_mode="replace_files">
 				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
 
-			<var_struct name="mesh"/>
+			<stream name="basicmesh"/>
 			<var name="layerThicknessFractions"/>
 			<var name="layerCenterSigma"/>
 			<var name="layerInterfaceSigma"/>
@@ -338,8 +383,8 @@
 
 
 	<!-- Mesh Variables required by MPAS framework -->
-	<!-- The following list of fields are required by all MPAS cores, and the MPAS framework assumes these fields exist. -->
 	<var_struct name="mesh" time_levs="1">
+		<!-- The following fields are part of the MPAS mesh spec. -->
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
 			 description="Latitude location of cell centers in radians."
 		/>
@@ -448,19 +493,25 @@
 		<var name="meshDensity" type="real" dimensions="nCells" units="unitless"
 		     description="The value of the generating density function at each cell center."
 		/>
-	</var_struct>
-
-<!-- ================ -->
-
-	<!-- Additional Mesh Variables used by the land ice core -->
-	<var_struct name="meshLI" time_levs="1">
-		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
-		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		<!-- The following fields are expected by some operators but not formally part of the MPAS mesh spec. -->
+		<!-- They are not input by the model but calculated internally. -->
+		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="unitless"
+		     description="Unit surface normal vectors defined at cell centers."
 		/>
+		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
+		     description="Normal vector defined at an edge."
+		/>
+		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
+		     description="The two vectors that define a tangent plane at a cell center."
+		/>
+		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
+		     description="Coefficients to reconstruct velocity vectors at cell centers."
+		/>
+		<!-- The following field is required as input by MPAS-LI -->
 		<var name="layerThicknessFractions" type="real" dimensions="nVertLevels" units="none"
 		     description="Fractional thickness of each sigma layer"
 		/>
-		<!-- layerThicknessFractions is required as an input.  The other fields below are calculated by the model -->
+		<!-- The following fields are required by MPAS-LI but are calculated internally -->
 		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
 		     description="Sigma (fractional) level at center of each layer"
 		/>
@@ -473,24 +524,16 @@
 		<var name="edgeSignOnVertex" type="integer" dimensions="maxEdges nVertices" units="unitless"
 		     description="Sign of edge contributions to a vertex for each edge on vertex. Used for bit-reproducible loops. Represents directionality of vector connecting vertices."
 		/>
-		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
-		     description="Normal vector defined at an edge."
-		/>
-		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="unitless"
-		     description="Unit surface normal vectors defined at cell centers."
-		/>
-		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
-		     description="The two vectors that define a tangent plane at a cell center."
-		/>
-		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
-		     description="Coefficients to reconstruct velocity vectors at cell centers."
-		/>
 		<!-- Variables only needed by SIA solver -->
 		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
 			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity"
 		/>
 		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
 			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
+		/>
+		<!-- xtime has to go somewhere.  "mesh" is a more general place than the other pools -->
+		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
+		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
 	</var_struct>
 

@@ -99,7 +99,7 @@ module li_time_integration
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshLIPool
+      type (mpas_pool_type), pointer :: meshPool
       character (len=StrKIND), pointer :: xtime
       character (len=StrKIND), pointer :: config_time_integration
       integer :: err_tmp
@@ -126,8 +126,8 @@ module li_time_integration
       block => domain % blocklist
       do while (associated(block))
          ! Assign the time stamp for this time step
-         call mpas_pool_get_subpool(block % structs, 'meshLI', meshLIPool)
-         call mpas_pool_get_array(meshLIPool, 'xtime', xtime)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(meshPool, 'xtime', xtime)
          xtime = timeStamp
 
 !         ! Abort the simulation if NaNs occur in the velocity field
