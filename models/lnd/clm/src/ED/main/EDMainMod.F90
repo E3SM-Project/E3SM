@@ -276,13 +276,13 @@ contains
           currentCohort%gpp_acc  = 0.0_r8
           currentCohort%resp_acc = 0.0_r8
           
-          call allocate_live_biomass(currentCohort)
+          call allocate_live_biomass(currentCohort,1)
   
           currentCohort => currentCohort%taller
 
        enddo
       
-       write(6,*)'DEBUG18: calling non_canopy_derivs with pno= ',currentPatch%clm_pno
+!       write(6,*)'DEBUG18: calling non_canopy_derivs with pno= ',currentPatch%clm_pno
        call non_canopy_derivs( currentPatch, temperature_inst, soilstate_inst, waterstate_inst )
 
        !update state variables simultaneously according to derivatives for this time period. 

@@ -152,6 +152,7 @@ module clm_varcon
   character(len=16), parameter :: namec  = 'column'       ! name of columns
   character(len=16), parameter :: namep  = 'pft'          ! name of patches
   character(len=16), parameter :: nameCohort = 'cohort'   ! name of cohorts (ED specific)
+  character(len=16), parameter :: namesc = 'treesizeclass'! name of size class (ED specific)
 
   !------------------------------------------------------------------
   ! Initialize miscellaneous radiation constants
@@ -181,6 +182,8 @@ module clm_varcon
   real(r8) ,allocatable :: zsoifl(:)       !original soil midpoint (used in interpolation of sand and clay)
   real(r8) ,allocatable :: zisoifl(:)      !original soil interface depth (used in interpolation of sand and clay)
   real(r8) ,allocatable :: dzsoifl(:)      !original soil thickness  (used in interpolation of sand and clay)
+
+
 
   !------------------------------------------------------------------
   ! (Non-tunable) Constants for the CH4 submodel (Tuneable constants in ch4varcon)
@@ -244,7 +247,7 @@ contains
     allocate( zsoifl(1:nlevsoifl             ))
     allocate( zisoifl(0:nlevsoifl            ))
     allocate( dzsoifl(1:nlevsoifl            ))
-
+ 
     ! Zero out wastheat factors for simpler building temperature method (introduced in CLM4.5)
     if ( is_simple_buildtemp )then
         ht_wasteheat_factor = 0.0_r8

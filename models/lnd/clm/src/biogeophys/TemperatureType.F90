@@ -1058,13 +1058,11 @@ contains
             subgrid_type='pft', numlev=1, init_value=SHR_CONST_TKFRZ)
     end if
 
-    if ( use_ed ) then
-
-       call init_accum_field (name='ED_GDD0', units='K', &
-            desc='growing degree-days base 0C from planting', accum_type='runaccum', accum_period=not_used, &
-            subgrid_type='pft', numlev=1, init_value=0._r8)
-
-    end if
+!    if ( use_ed ) then
+!       call init_accum_field (name='ED_GDD0', units='K', &
+!            desc='growing degree-days base 0C from planting', accum_type='runaccum', accum_period=not_used, &
+!            subgrid_type='pft', numlev=1, init_value=0._r8)
+!    end if
 
     if ( crop_prog )then
 
@@ -1170,10 +1168,10 @@ contains
        this%t_ref2m_min_inst_u_patch(begp:endp) =  spval
     end if
 
-    if ( use_ed ) then
-       call extract_accum_field ('ED_GDD0', rbufslp, nstep)
-       this%gdd0_patch(begp:endp) = rbufslp(begp:endp)
-    end if
+!    if ( use_ed ) then
+!       call extract_accum_field ('ED_GDD0', rbufslp, nstep)
+!       this%gdd0_patch(begp:endp) = rbufslp(begp:endp)
+!    end if
 
     if ( crop_prog ) then
 

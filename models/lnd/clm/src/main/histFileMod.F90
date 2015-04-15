@@ -12,7 +12,7 @@ module histFileMod
   use shr_sys_mod    , only : shr_sys_flush
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use clm_varctl     , only : iulog, use_vertsoilc
+  use clm_varctl     , only : iulog, use_vertsoilc, use_ed
   use clm_varcon     , only : spval, ispval, dzsoi_decomp 
   use clm_varcon     , only : grlnd, nameg, namel, namec, namep, nameCohort
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
@@ -39,7 +39,8 @@ module histFileMod
   ! calls to hist_addfld2d; the private parameters are just used internally by the
   ! histFile implementation.
   integer , private, parameter :: no_snow_MIN = 1                 ! minimum valid value for this flag
-  integer , public , parameter :: no_snow_normal = 1              ! normal treatment, which should be used for most fields (use spval when snow layer not present)
+  integer , public , parameter :: no_snow_normal = 1              ! normal treatment, which should be used for most fields 
+                                                                  ! (use spval when snow layer not present)
   integer , public , parameter :: no_snow_zero = 2                ! average in a 0 value for times when the snow layer isn't present
   integer , private, parameter :: no_snow_MAX = 2                 ! maximum valid value for this flag
   integer , private, parameter :: no_snow_unset = no_snow_MIN - 1 ! flag specifying that field is NOT a multi-layer snow field
@@ -1671,8 +1672,9 @@ contains
     ! wrapper calls to define the history file contents.
     !
     ! !USES:
-    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, nlevurb, numrad
+    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, nlevurb, numrad, mxpft
     use clm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec, nlevdecomp_full
+    use EDtypesMod      , only : nlevsclass_ed
     use landunit_varcon , only : max_lunit
     use clm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile
     use clm_varctl      , only : version, hostname, username, conventions, source
@@ -1835,9 +1837,16 @@ contains
     end do
     call ncd_defdim(lnfid, 'string_length', 8, strlen_dimid)
     call ncd_defdim( lnfid, 'levdcmp', nlevdecomp_full, dimid)
+
+    if(use_ed)then
+       call ncd_defdim(lnfid, 'levscls', nlevsclass_ed, dimid)
+       call ncd_defdim(lnfid, 'levscpf', nlevsclass_ed*mxpft, dimid)
+    end if
+
     if ( .not. lhistrest )then
        call ncd_defdim(lnfid, 'hist_interval', 2, hist_interval_dimid)
        call ncd_defdim(lnfid, 'time', ncd_unlimited, time_dimid)
+       
        nfid(t) = lnfid
        if (masterproc)then
           write(iulog,*) trim(subname), &
@@ -2225,7 +2234,8 @@ contains
     use domainMod       , only : ldomain, lon1d, lat1d
     use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time
     use clm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
-    !
+    use EDTypesMod      , only : levsclass_ed,pft_levscpf_ed,scls_levscpf_ed
+    !e 
     ! !ARGUMENTS:
     integer, intent(in) :: t              ! tape index
     character(len=*), intent(in) :: mode  ! 'define' or 'write'
@@ -2274,6 +2284,16 @@ contains
                long_name='coordinate lake levels', units='m', ncid=nfid(t))
           call ncd_defvar(varname='levdcmp', xtype=tape(t)%ncprec, dim1name='levdcmp', &
                long_name='coordinate soil levels', units='m', ncid=nfid(t))
+          
+          if(use_ed)then
+             call ncd_defvar(varname='levscls', xtype=tape(t)%ncprec, dim1name='levscls', &
+                  long_name='diameter size class lower bound', units='cm', ncid=nfid(t))
+             call ncd_defvar(varname='pft_levscpf',xtype=ncd_int, dim1name='levscpf', &
+                  long_name='pft index of the combined pft-size class dimension', units='-', ncid=nfid(t))
+             call ncd_defvar(varname='scls_levscpf',xtype=ncd_int, dim1name='levscpf', &
+                  long_name='size index of the combined pft-size class dimension', units='-', ncid=nfid(t))
+          end if
+
        elseif (mode == 'write') then
           if ( masterproc ) write(iulog, *) ' zsoi:',zsoi
           call ncd_io(varname='levgrnd', data=zsoi, ncid=nfid(t), flag='write')
@@ -2284,6 +2304,12 @@ contains
              zsoi_1d(1) = 1._r8
              call ncd_io(varname='levdcmp', data=zsoi_1d, ncid=nfid(t), flag='write')
           end if
+          if(use_ed)then
+             call ncd_io(varname='levscls',data=levsclass_ed, ncid=nfid(t), flag='write')
+             call ncd_io(varname='pft_levscpf',data=pft_levscpf_ed, ncid=nfid(t), flag='write')
+             call ncd_io(varname='scls_levscpf',data=scls_levscpf_ed, ncid=nfid(t), flag='write')
+          end if
+
        endif
     endif
 
@@ -4259,9 +4285,10 @@ contains
     ! initial or branch run to initialize the actual history tapes.
     !
     ! !USES:
-    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full 
+    use clm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, mxpft
     use clm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec
     use landunit_varcon , only : max_lunit
+    use EDTypesMod      , only : nlevsclass_ed
     !
     ! !ARGUMENTS:
     character(len=*), intent(in) :: fname                      ! field name
@@ -4338,6 +4365,10 @@ contains
        num2d = numrad
     case ('levdcmp')
        num2d = nlevdecomp_full
+    case ('levscls')
+       num2d = nlevsclass_ed
+    case ('levscpf')
+       num2d = nlevsclass_ed*mxpft
     case('ltype')
        num2d = max_lunit
     case('natpft')
@@ -4373,7 +4404,7 @@ contains
     case default
        write(iulog,*) trim(subname),' ERROR: unsupported 2d type ',type2d, &
           ' currently supported types for multi level fields are: ', &
-          '[levgrnd,levlak,numrad,levdcmp,ltype,natpft,cft,glc_nec,elevclas,levsno]'
+          '[levgrnd,levlak,numrad,levdcmp,levscls,ltype,natpft,cft,glc_nec,elevclas,levsno]'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 

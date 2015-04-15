@@ -677,15 +677,19 @@ contains
     real(r8) :: f_store  !fraction of NPP allocated to storage in this timestep (functionf of stored pool)
     real(r8) :: gr_fract !fraction of carbon balance that is allocated to growth (not reproduction)
     real(r8) :: target_balive  !target leaf biomass under allometric optimum.  
+    real(r8) :: cmort    ! starvation mortality rate (fraction per year)
+    real(r8) :: bmort    ! background mortality rate (fraction per year)
+    real(r8) :: hmort    ! hydraulic failure mortality rate (fraction per year)
     real(r8) :: balive_loss
     !----------------------------------------------------------------------
 
     currentSite => currentCohort%siteptr
 
-    ! Mortality for trees in the understorey. 
+    ! Mortality for trees in the understory. 
     !if trees are in the canopy, then their death is 'disturbance'. This probably needs a different terminology
     if (currentCohort%canopy_layer > 1)then 
-       currentCohort%dndt = -1.0_r8 * mortality_rates(currentCohort) * currentCohort%n
+       call mortality_rates(currentCohort,cmort,hmort,bmort)
+       currentCohort%dndt = -1.0_r8 * (cmort+hmort+bmort)* currentCohort%n
     else
        currentCohort%dndt = 0._r8
     endif
@@ -694,7 +698,7 @@ contains
     currentCohort%hite = Hite(currentCohort) 
     h = currentCohort%hite
                        
-    call allocate_live_biomass(currentCohort)
+    call allocate_live_biomass(currentCohort,0)
 
    ! calculate target size of living biomass compartment for a given dbh.   
     target_balive = Bleaf(currentCohort) * (1.0_r8 + pftcon%froot_leaf(currentCohort%pft) + &
@@ -752,6 +756,13 @@ contains
 
     currentCohort%carbon_balance = currentCohort%npp - currentCohort%md *  EDecophyscon%leaf_stor_priority(currentCohort%pft)
 
+    ! Allowing only carbon from NPP pool to account for npp flux into the maintenance pools
+    ! ie this does not include any use of storage carbon or balive to make up for missing carbon balance in the transfer
+    currentCohort%npp_leaf  = min(currentCohort%npp*currentCohort%leaf_md/currentCohort%md, &
+                                  currentCohort%leaf_md*EDecophyscon%leaf_stor_priority(currentCohort%pft))
+    currentCohort%npp_froot = min(currentCohort%npp*currentCohort%root_md/currentCohort%md, &
+                                  currentCohort%root_md*EDecophyscon%leaf_stor_priority(currentCohort%pft))
+
     if (Bleaf(currentCohort) > 0._r8)then
 
        if (currentCohort%carbon_balance > 0._r8)then !spend C on growing and storing
@@ -784,7 +795,19 @@ contains
     if (currentCohort%carbon_balance > currentCohort%md*(1.0_r8- EDecophyscon%leaf_stor_priority(currentCohort%pft)))then ! Yes...
        currentCohort%carbon_balance = currentCohort%carbon_balance - currentCohort%md * (1.0_r8 - &
              EDecophyscon%leaf_stor_priority(currentCohort%pft))
+
+       currentCohort%npp_leaf  = currentCohort%npp_leaf  + &
+            currentCohort%leaf_md *  (1.0_r8-EDecophyscon%leaf_stor_priority(currentCohort%pft))
+       currentCohort%npp_froot = currentCohort%npp_froot + &
+            currentCohort%root_md *  (1.0_r8-EDecophyscon%leaf_stor_priority(currentCohort%pft))
+
     else ! we can't maintain constant leaf area and root area. Balive is reduced
+
+       currentCohort%npp_leaf  = currentCohort%npp_leaf  + &
+             max(0.0_r8,currentCohort%carbon_balance*(currentCohort%leaf_md/currentCohort%md))
+       currentCohort%npp_froot = currentCohort%npp_froot + &
+             max(0.0_r8,currentCohort%carbon_balance*(currentCohort%root_md/currentCohort%md))
+
        balive_loss = currentCohort%md *(1.0_r8- EDecophyscon%leaf_stor_priority(currentCohort%pft))- currentCohort%carbon_balance
        currentCohort%carbon_balance = 0._r8
     endif
@@ -850,9 +873,15 @@ contains
        currentCohort%dbalivedt = 0._r8 
     endif
 
+    currentCohort%npp_bseed = currentCohort%seed_prod
+    currentCohort%npp_store = max(0.0_r8,currentCohort%storage_flux)
+
     ! calculate change in diameter and height 
     currentCohort%ddbhdt = currentCohort%dbdeaddt * dDbhdBd(currentCohort)
     currentCohort%dhdt   = currentCohort%dbdeaddt * dHdBd(currentCohort)
+
+    ! If the cohort has grown, it is not new
+    currentCohort%isnew=.false.
 
   end subroutine Growth_Derivatives
 

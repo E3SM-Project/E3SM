@@ -322,46 +322,50 @@ contains
 
   end function dDbhdBl
 
-! ============================================================================
+  ! ============================================================================
+  subroutine mortality_rates(cohort_in,cmort,hmort,bmort)
+     
+     ! ============================================================================
+     !  Calculate mortality rates as a function of carbon storage       
+     ! ============================================================================
+     
+     use shr_kind_mod, only : r8 => shr_kind_r8
+     use EDParamsMod,  only : ED_val_stress_mort
+     
+     implicit none    
+     
+     type (ed_cohort_type), intent(in) :: cohort_in
+     real(r8), intent(out)      :: cmort  ! carbon starvation mortality
+     real(r8), intent(out)      :: bmort  ! background mortality
+     real(r8), intent(out)      :: hmort  ! hydraulic failure mortality
+     
+     real(r8) :: frac  ! relativised stored carbohydrate
+     
+     ! 'Background' mortality (can vary as a function of density as in ED1.0 and ED2.0, but doesn't here for tractability) 
+     bmort = 0.014_r8 
+     
+     ! Proxy for hydraulic failure induced mortality. 
+     if(cohort_in%patchptr%btran_ft(cohort_in%pft) <= 0.000001_r8)then 
+        hmort = ED_val_stress_mort
+     else
+        hmort = 0.0_r8
+     endif
+     
+     ! Carbon Starvation induced mortality.
+     if ( cohort_in%dbh  >  0._r8 ) then
+        if(Bleaf(cohort_in) > 0._r8.and.cohort_in%bstore <= Bleaf(cohort_in))then
+           frac = cohort_in%bstore/(Bleaf(cohort_in))
+           cmort = max(0.0_r8,ED_val_stress_mort*(1.0_r8 - frac))
+        else
+           cmort = 0.0_r8
+        endif
+     else
+        write(iulog,*) 'dbh problem in mortality_rates', &
+              cohort_in%dbh,cohort_in%pft,cohort_in%n,cohort_in%canopy_layer,cohort_in%indexnumber
+     endif
+     
+  end subroutine mortality_rates
 
-  real(r8) function mortality_rates( cohort_in )
-
-    ! ============================================================================
-    !  Calculate mortality rates as a function of carbon storage       
-    ! ============================================================================
-
-    use EDParamsMod,  only : ED_val_stress_mort
-
-    type (ed_cohort_type), intent(in) :: cohort_in
-
-    real(r8) :: frac  ! relativised stored carbohydrate
-    real(r8) :: smort ! stress mortality     : Fraction per year
-    real(r8) :: bmort ! background mortality : Fraction per year
-
-    ! 'Background' mortality (can vary as a function of density as in ED1.0 and ED2.0, but doesn't here for tractability) 
-    bmort = 0.014_r8 
-   
-    ! Proxy for hydraulic failure induced mortality. 
-    smort = 0.0_r8
-    if(cohort_in%patchptr%btran_ft(cohort_in%pft) <= 0.000001_r8)then 
-       smort = smort + ED_val_stress_mort 
-    endif
-    
-    ! Carbon Starvation induced mortality.
-    if ( cohort_in%dbh  >  0._r8 ) then
-       if(Bleaf(cohort_in) > 0._r8.and.cohort_in%bstore <= Bleaf(cohort_in))then
-          frac = cohort_in%bstore/(Bleaf(cohort_in))
-          smort = smort + max(0.0_r8,ED_val_stress_mort*(1.0_r8 - frac))
-       endif
-    else
-       write(iulog,*) 'dbh problem in mortality_rates', &
-            cohort_in%dbh,cohort_in%pft,cohort_in%n,cohort_in%canopy_layer,cohort_in%indexnumber
-    endif
-
-    mortality_rates = smort + bmort
-
-  end function mortality_rates
-
-! ============================================================================
+  ! ============================================================================
 
 end module EDGrowthFunctionsMod

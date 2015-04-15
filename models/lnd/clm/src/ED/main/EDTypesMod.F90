@@ -2,7 +2,7 @@ module EDTypesMod
 
   use shr_kind_mod , only : r8 => shr_kind_r8;
   use decompMod    , only : bounds_type 
-  use clm_varpar   , only : nlevcan_ed, nclmax, numrad, nlevgrnd
+  use clm_varpar   , only : nlevcan_ed, nclmax, numrad, nlevgrnd, mxpft
   use domainMod    , only : domain_type
   use shr_sys_mod  , only : shr_sys_flush
 
@@ -60,6 +60,35 @@ module EDTypesMod
 
   character*4 yearchar                     
 
+
+  !the lower limit of the size classes of ED cohorts
+  !0-10,10-20....
+  integer, parameter :: nlevsclass_ed = 11    ! Number of dbh size classes for size structure analysis
+                                              ! |0-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80,80-90,90-100,100+|
+  real(r8), parameter, dimension(11) ::  sclass_ed  = (/0.0_r8,10.0_r8,20.0_r8,30.0_r8,40.0_r8, &
+                                                       50.0_r8,60.0_r8,70.0_r8,80.0_r8,90.0_r8,100.0_r8/)
+ 
+ !  integer, parameter :: nlevsclass_ed = 17
+ !  real(r8), parameter, dimension(17) ::  sclass_ed  = (/0.1_r8, 5.0_r8,10.0_r8,15.0_r8,20.0_r8,25.0_r8, &
+ !                                                       30.0_r8,35.0_r8,40.0_r8,45.0_r8,50.0_r8,55.0_r8, &
+ !                                                       60.0_r8,65.0_r8,70.0_r8,75.0_r8,80.0_r8/)
+   
+  integer, parameter :: nlevmclass_ed = 5      ! nlev "mortality" classes in ED
+                                               ! Number of ways to die (background,hydraulic,carbon,impact,fire)
+   
+  character(len = 10), parameter,dimension(5) :: char_list = (/"background","hydraulic ","carbon    ","impact    ","fire      "/)
+
+
+  ! These three vectors are used for history output mapping
+  real(r8) ,allocatable :: levsclass_ed(:) ! The lower bound on size classes for ED trees. This 
+                                           ! is used really for IO into the history tapes. It gets copied from
+                                           ! the parameter array sclass_ed.
+  integer , allocatable :: pft_levscpf_ed(:)
+  integer , allocatable :: scls_levscpf_ed(:)
+
+  
+
+
   !************************************
   !** COHORT type structure          **
   !************************************
@@ -98,6 +127,8 @@ module EDTypesMod
      real(r8) ::  c_area                                 ! areal extent of canopy (m2)
      real(r8) ::  treelai                                ! lai of tree (total leaf area (m2) / canopy area (m2)
      real(r8) ::  treesai                                ! stem area index of tree (total stem area (m2) / canopy area (m2)
+     logical  ::  isnew                                  ! flag to signify a new cohort, new cohorts have not experienced
+                                                         ! npp or mortality and should therefore not be fused or averaged
 
      ! CARBON FLUXES 
      real(r8) ::  gpp                                    ! GPP:  kgC/indiv/year
@@ -109,6 +140,13 @@ module EDTypesMod
      real(r8) ::  resp                                   ! Resp: kgC/indiv/year
      real(r8) ::  resp_acc                               ! Resp: kgC/indiv/day
      real(r8) ::  resp_clm                               ! Resp: kgC/indiv/timestep
+
+     real(r8) ::  npp_leaf                               ! NPP into leaves (includes replacement of turnover):  KgC/indiv/day
+     real(r8) ::  npp_froot                              ! NPP into fine roots (includes replacement of turnover):  KgC/indiv/day
+     real(r8) ::  npp_bsw                                ! NPP into sapwood:  KgC/indiv/day
+     real(r8) ::  npp_bdead                              ! NPP into deadwood (structure):  KgC/indiv/day
+     real(r8) ::  npp_bseed                              ! NPP into seeds:  KgC/indiv/day
+     real(r8) ::  npp_store                              ! NPP into storage:  KgC/indiv/day
 
      real(r8) ::  ts_net_uptake(nlevcan_ed)              ! Net uptake of leaf layers: kgC/m2/s
      real(r8) ::  year_net_uptake(nlevcan_ed)            ! Net uptake of leaf layers: kgC/m2/year
@@ -132,7 +170,14 @@ module EDTypesMod
 
      !MORTALITY
      real(r8) ::  dmort                                  ! proportional mortality rate. (year-1)
-
+     
+     ! Mortality Rate Partitions
+     real(r8) ::  bmort                                  ! background mortality rate        n/year
+     real(r8) ::  cmort                                  ! carbon starvation mortality rate n/year
+     real(r8) ::  hmort                                  ! hydraulic failure mortality rate n/year
+     real(r8) ::  imort                                  ! mortality from impacts by others n/year
+     real(r8) ::  fmort                                  ! fire mortality                   n/year
+     
      ! NITROGEN POOLS      
      real(r8) ::  livestemn                              ! live stem nitrogen       : KgN/invid
      real(r8) ::  livecrootn                             ! live coarse root nitrogen: KgN/invid
@@ -382,7 +427,40 @@ module EDTypesMod
   type(userdata), public, target :: udata
   !-------------------------------------------------------------------------------------!
 
+  public :: ed_hist_scpfmaps
+
 contains
+  
+  !-------------------------------------------------------------------------------------!
+  subroutine ed_hist_scpfmaps
+    ! This subroutine allocates and populates the variables
+    ! that define the mapping of variables in history files in the "scpf" format back to
+    ! its respective size-class "sc" and pft "pf"
+    
+    integer :: i
+    integer :: isc
+    integer :: ipft
+
+    allocate( levsclass_ed(1:nlevsclass_ed   ))
+    allocate( pft_levscpf_ed(1:nlevsclass_ed*mxpft))
+    allocate(scls_levscpf_ed(1:nlevsclass_ed*mxpft))
+
+    ! Fill the IO array of plant size classes
+    ! For some reason the history files did not like
+    ! a hard allocation of sclass_ed
+    levsclass_ed(:) = sclass_ed(:)
+    
+    ! Fill the IO arrays that match pft and size class to their combined array
+    i=0
+    do ipft=1,mxpft
+       do isc=1,nlevsclass_ed
+          i=i+1
+          pft_levscpf_ed(i) = ipft
+          scls_levscpf_ed(i) = isc
+       end do
+    end do
+
+  end subroutine ed_hist_scpfmaps
 
   !-------------------------------------------------------------------------------------!
   function map_clmpatch_to_edpatch(site, clmpatch_number) result(edpatch_pointer)

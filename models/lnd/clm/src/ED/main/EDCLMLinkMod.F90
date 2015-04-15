@@ -7,9 +7,12 @@ module EDCLMLinkMod
 
   use shr_kind_mod     , only : r8 => shr_kind_r8;
   use decompMod        , only : bounds_type
-  use clm_varpar       , only : nclmax, nlevcan_ed, numpft, numcft
+  use clm_varpar       , only : nclmax, nlevcan_ed, numpft, numcft, mxpft
   use clm_varctl       , only : iulog 
-  use EDtypesMod       , only : ed_site_type, ed_cohort_type, ed_patch_type
+  use EDtypesMod       , only : ed_site_type, ed_cohort_type, ed_patch_type, nlevsclass_ed
+  use EDtypesMod       , only : sclass_ed,nlevsclass_ed,AREA
+  use EDParamsMod      , only : ED_val_ag_biomass
+  
   !
   implicit none
   private
@@ -71,6 +74,48 @@ module EDCLMLinkMod
      real(r8), pointer, private  :: npp_patch                  (:)   ! (gC/m2/s) patch net primary production
      real(r8), pointer, private  :: gpp_patch                  (:)   ! (gC/m2/s) patch gross primary production 
 
+     
+     ! ED currently does not differentiate stems of any size in regards to tracking biomass or fluxes
+     ! within a cohort
+     ! ED currently does not include stems in the seasonal litter cycling of live trees (only leaves)
+     ! coarse roots should be calculated as the sum of non-fine belowground terms: bswd and bdwd
+     
+     ! Carbon Flux Variables - dimensions: (grid cell, pft x size)
+     ! Note that npp fluxes account only from carbon that is available following gpp and respiration
+     ! these fluxes do not account for cross-pool transfers, such as using storage or alive biomass
+     ! to help with maintenance demand
+     ! =============================================================================================
+ 
+     real(r8), pointer :: ed_gpp_gd_scpf          (:,:)   ! [kg/m2/yr] gross primary production
+     real(r8), pointer :: ed_npp_totl_gd_scpf     (:,:)   ! [kg/m2/yr] net primary production (npp)
+     real(r8), pointer :: ed_npp_leaf_gd_scpf     (:,:)   ! [kg/m2/yr] npp flux into leaf pool
+     real(r8), pointer :: ed_npp_seed_gd_scpf     (:,:)   ! [kg/m2/yr] npp flux into flower,fruit,nut,seed
+     real(r8), pointer :: ed_npp_fnrt_gd_scpf     (:,:)   ! [kg/m2/yr] npp flux into fine roots
+     real(r8), pointer :: ed_npp_bgsw_gd_scpf     (:,:)   ! [kg/m2/yr] npp flux into below ground sapwood
+     real(r8), pointer :: ed_npp_bgdw_gd_scpf     (:,:)   ! [kg/m2/yr] npp flux into below ground structural (dead) wood
+     real(r8), pointer :: ed_npp_agsw_gd_scpf     (:,:)   ! [kg/m2/yr] npp flux into above ground sapwood
+     real(r8), pointer :: ed_npp_agdw_gd_scpf     (:,:)   ! [kg/m2/yr] npp flux into below ground structural (dead) wood
+     real(r8), pointer :: ed_npp_stor_gd_scpf     (:,:)   ! [kg/m2/yr] npp flux through the storage pool
+     real(r8), pointer :: ed_litt_leaf_gd_scpf    (:,:)   ! [kg/m2/yr] carbon flux of live leaves to litter
+     real(r8), pointer :: ed_litt_fnrt_gd_scpf    (:,:)   ! [kg/m2/yr] carbon flux of fine roots to litter
+     real(r8), pointer :: ed_litt_sawd_gd_scpf    (:,:)   ! [kg/m2/yr] carbon flux of sapwood to litter (above+below)
+     real(r8), pointer :: ed_litt_ddwd_gd_scpf    (:,:)   ! [kg/m2/yr] carbon flux of dead wood (above+below) to litter
+     real(r8), pointer :: ed_r_leaf_gd_scpf       (:,:)   ! [kg/m2/yr] total leaf respiration 
+     real(r8), pointer :: ed_r_stem_gd_scpf       (:,:)   ! [kg/m2/yr] total above ground live wood (stem) respiration
+     real(r8), pointer :: ed_r_root_gd_scpf       (:,:)   ! [kg/m2/yr] total below ground live wood (root) respiration
+     real(r8), pointer :: ed_r_stor_gd_scpf       (:,:)   ! [kg/m2/yr] total storage respiration
+     
+     ! Carbon State Variables for direct comparison to inventory - dimensions: (disturbance patch, pft x size)
+     
+     real(r8), pointer :: ed_ddbh_gd_scpf               (:,:) ! [cm/yr] diameter increment
+     real(r8), pointer :: ed_ba_gd_scpf                 (:,:) ! [m2/ha] basal area
+     real(r8), pointer :: ed_np_gd_scpf                 (:,:) ! [/m2] number of plants
+     real(r8), pointer :: ed_m1_gd_scpf                 (:,:) ! [Stems/ha/yr] Mean Background Mortality
+     real(r8), pointer :: ed_m2_gd_scpf                 (:,:) ! [Stems/ha/yr] Mean Hydraulic Mortaliry rate
+     real(r8), pointer :: ed_m3_gd_scpf                 (:,:) ! [Stems/ha/yr] Mean Carbon Starvation Mortality rate
+     real(r8), pointer :: ed_m4_gd_scpf                 (:,:) ! [Stems/ha/yr] Mean Impact Mortality Rate
+     real(r8), pointer :: ed_m5_gd_scpf                 (:,:) ! [Stems/ha/yr] Mean Fire Mortality Rate     
+
    contains
 
      ! Public routines
@@ -123,6 +168,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer           :: begp,endp
+    integer           :: begg,endg
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp = bounds%endp
@@ -170,6 +216,36 @@ contains
 
     allocate(this%gpp_patch                  (begp:endp))            ; this%gpp_patch                  (:) = nan
     allocate(this%npp_patch                  (begp:endp))            ; this%npp_patch                  (:) = nan
+
+    begg = bounds%begg; endg = bounds%endg
+    allocate(this%ed_gpp_gd_scpf       (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_gpp_gd_scpf        (:,:) = 0.0_r8
+    allocate(this%ed_npp_totl_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_totl_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_npp_leaf_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_leaf_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_npp_seed_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_seed_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_npp_fnrt_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_fnrt_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_npp_bgsw_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_bgsw_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_npp_bgdw_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_bgdw_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_npp_agsw_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_agsw_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_npp_agdw_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_agdw_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_npp_stor_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_stor_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_litt_leaf_gd_scpf (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_litt_leaf_gd_scpf  (:,:) = 0.0_r8
+    allocate(this%ed_litt_fnrt_gd_scpf (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_litt_fnrt_gd_scpf  (:,:) = 0.0_r8
+    allocate(this%ed_litt_sawd_gd_scpf (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_litt_sawd_gd_scpf  (:,:) = 0.0_r8 
+    allocate(this%ed_litt_ddwd_gd_scpf (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_litt_ddwd_gd_scpf  (:,:) = 0.0_r8
+    allocate(this%ed_r_leaf_gd_scpf    (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_r_leaf_gd_scpf     (:,:) = 0.0_r8
+    allocate(this%ed_r_stem_gd_scpf    (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_r_stem_gd_scpf     (:,:) = 0.0_r8
+    allocate(this%ed_r_root_gd_scpf    (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_r_root_gd_scpf     (:,:) = 0.0_r8
+    allocate(this%ed_r_stor_gd_scpf    (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_r_stor_gd_scpf     (:,:) = 0.0_r8
+    
+    ! Carbon State Variables for direct comparison to inventory - dimensions: (disturbance patch, pft x size)
+    allocate(this%ed_ddbh_gd_scpf (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_ddbh_gd_scpf (:,:) = 0.0_r8
+    allocate(this%ed_ba_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_ba_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_np_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_np_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_m1_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_m1_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_m2_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_m2_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_m3_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_m3_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_m4_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_m4_gd_scpf   (:,:) = 0.0_r8
+    allocate(this%ed_m5_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_m5_gd_scpf   (:,:) = 0.0_r8
 
   end subroutine InitAllocate
 
@@ -378,6 +454,78 @@ contains
     call hist_addfld1d (fname='NPP', units='gC/m^2/s', &
          avgflag='A', long_name='net primary production', &
          ptr_patch=this%npp_patch)
+
+
+    ! Carbon Flux (grid dimension x scpf)
+    ! ==============================================================
+    
+    call hist_addfld2d (fname='ED_GPP_GD_SCPF',units='kgC/m2/yr',type2d='levscpf',&
+          avgflag='A', long_name='gross primary production',     &
+          ptr_gcell=this%ed_gpp_gd_scpf,default='inactive')
+    
+    call hist_addfld2d (fname='ED_NPP_LEAF_GD_SCPF',units='kgC/m2/yr',type2d='levscpf',&
+          avgflag='A', long_name='NPP flux into leaves',               &  
+          ptr_gcell=this%ed_npp_leaf_gd_scpf,default='inactive')
+    
+    call hist_addfld2d (fname='ED_NPP_SEED_GD_SCPF',units='kgC/m2/yr',type2d='levscpf',&
+          avgflag='A', long_name='NPP flux into seeds',                &
+          ptr_gcell=this%ed_npp_seed_gd_scpf,default='inactive')
+    
+    call hist_addfld2d (fname='ED_NPP_FNRT_GD_SCPF',units='kgC/m2/yr',type2d='levscpf',&
+          avgflag='A', long_name='NPP flux into fine roots',           &
+          ptr_gcell=this%ed_npp_fnrt_gd_scpf,default='inactive')
+    
+    call hist_addfld2d (fname='ED_NPP_BGSW_GD_SCPF',units='kgC/m2/yr',type2d='levscpf',&
+          avgflag='A', long_name='NPP flux into below-ground sapwood', &
+          ptr_gcell=this%ed_npp_bgsw_gd_scpf,default='inactive')
+    
+    call hist_addfld2d (fname='ED_NPP_BGDW_GD_SCPF',units='kgC/m2/yr',type2d='levscpf',&
+          avgflag='A', long_name='NPP flux into below-ground deadwood', &
+          ptr_gcell=this%ed_npp_bgdw_gd_scpf,default='inactive')
+    
+    call hist_addfld2d (fname='ED_NPP_AGSW_GD_SCPF',units='kgC/m2/yr',type2d='levscpf',&
+          avgflag='A', long_name='NPP flux into above-ground sapwood',  &
+          ptr_gcell=this%ed_npp_agsw_gd_scpf,default='inactive')
+    
+    call hist_addfld2d ( fname = 'ED_NPP_AGDW_GD_SCPF', units='kgC/m2/yr',type2d='levscpf',&
+          avgflag='A', long_name='NPP flux into above-ground deadwood', &
+          ptr_gcell=this%ed_npp_agdw_gd_scpf,default='inactive')
+    
+    call hist_addfld2d ( fname = 'ED_NPP_STOR_GD_SCPF', units='kgC/m2/yr',type2d='levscpf',&
+          avgflag='A', long_name='NPP flux into storage',          &
+          ptr_gcell=this%ed_npp_stor_gd_scpf,default='inactive')
+
+    call hist_addfld2d (fname='ED_DDBH_GD_SCPF', units = 'cm/yr/ha', type2d = 'levscpf', &
+          avgflag='A', long_name='diameter growth increment and pft/size', &
+          ptr_gcell=this%ed_ddbh_gd_scpf, default='inactive')
+
+    call hist_addfld2d (fname='ED_BA_GD_SCPF',units = 'm2/ha', type2d = 'levscpf', &
+          avgflag='A', long_name='basal area by patch and pft/size', &
+          ptr_gcell=this%ed_ba_gd_scpf, default='inactive')
+    
+    call hist_addfld2d (fname='ED_NPLANT_GD_SCPF',units = 'N/ha', type2d = 'levscpf', &
+          avgflag='A', long_name='stem number density by patch and pft/size', &
+          ptr_gcell=this%ed_np_gd_scpf, default='inactive')
+    
+    call hist_addfld2d (fname='ED_M1_GD_SCPF',units = 'N/ha/yr', type2d = 'levscpf', &
+          avgflag='A', long_name='background mortality rate by patch and pft/size', &
+          ptr_gcell=this%ed_m1_gd_scpf, default='inactive')
+    
+    call hist_addfld2d (fname='ED_M2_GD_SCPF',units = 'N/ha/yr', type2d = 'levscpf', &
+          avgflag='A', long_name='hydraulic mortality rate by patch and pft/size', &
+          ptr_gcell=this%ed_m2_gd_scpf, default='inactive')
+    
+    call hist_addfld2d (fname='ED_M3_GD_SCPF',units = 'N/ha/yr', type2d = 'levscpf', &
+          avgflag='A', long_name='carbon starvation mortality rate by patch and pft/size', &
+          ptr_gcell=this%ed_m3_gd_scpf, default='inactive')
+    
+    call hist_addfld2d (fname='ED_M4_GD_SCPF',units = 'N/ha/yr', type2d = 'levscpf', &
+          avgflag='A', long_name='impact mortality rate by patch and pft/size', &
+          ptr_gcell=this%ed_m4_gd_scpf, default='inactive')
+    
+    call hist_addfld2d (fname='ED_M5_GD_SCPF',units = 'N/ha/yr', type2d = 'levscpf', &
+          avgflag='A', long_name='fire mortality rate by patch and pft/size', &
+          ptr_gcell=this%ed_m5_gd_scpf, default='inactive')
 
   end subroutine InitHistory
 
@@ -729,7 +877,8 @@ contains
     use EDPhenologyType  , only : ed_phenology_type
     use CanopyStateType  , only : canopystate_type
     use PatchType        , only : clmpatch => patch
-    !
+    use pftconMod        , only : pftcon
+    
     ! !ARGUMENTS:
     class(ed_clm_type)                              ::  this
     type(bounds_type)       , intent(in)            :: bounds  ! clump bounds
@@ -742,7 +891,12 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: G,p,ft
     integer  :: firstsoilpatch(bounds%begg:bounds%endg)
-    real(r8) :: n_density   ! individual of cohort per m2.
+    real(r8) :: n_density   ! individual of cohort per m2 per patch
+    real(r8) :: n_perm2     ! individuals per m2 for the whole grid cell
+    real(r8) :: dbh         ! actual dbh used to identify relevant size class
+    integer  :: scpf        ! size class x pft index
+    integer  :: sc
+
     !-----------------------------------------------------------------------
 
     associate(                                                           &
@@ -783,6 +937,29 @@ contains
          
          gpp                  => this%gpp_patch                  , & ! Output: 
          npp                  => this%npp_patch                  , & ! Output:
+
+         ed_gpp_scpf          => this%ed_gpp_gd_scpf             , &
+         ed_npp_totl_scpf     => this%ed_npp_totl_gd_scpf        , &
+         ed_npp_leaf_scpf     => this%ed_npp_leaf_gd_scpf        , &
+         ed_npp_seed_scpf     => this%ed_npp_seed_gd_scpf        , &
+         ed_npp_fnrt_scpf     => this%ed_npp_fnrt_gd_scpf        , &
+         ed_npp_bgsw_scpf     => this%ed_npp_bgsw_gd_scpf        , &
+         ed_npp_bgdw_scpf     => this%ed_npp_bgdw_gd_scpf        , &
+         ed_npp_agsw_scpf     => this%ed_npp_agsw_gd_scpf        , &
+         ed_npp_agdw_scpf     => this%ed_npp_agdw_gd_scpf        , &
+         ed_npp_stor_scpf     => this%ed_npp_stor_gd_scpf        , &
+         
+         ed_ddbh_gd_scpf        => this%ed_ddbh_gd_scpf          , &
+         ed_ba_gd_scpf          => this%ed_ba_gd_scpf            , &
+         ed_np_gd_scpf          => this%ed_np_gd_scpf            , &
+         ed_m1_gd_scpf          => this%ed_m1_gd_scpf            , &
+         ed_m2_gd_scpf          => this%ed_m2_gd_scpf            , &
+         ed_m3_gd_scpf          => this%ed_m3_gd_scpf            , &
+         ed_m4_gd_scpf          => this%ed_m4_gd_scpf            , &
+         ed_m5_gd_scpf          => this%ed_m5_gd_scpf            , &
+
+ 
+
          
          tlai                 => canopystate_inst%tlai_patch     , & ! InOut:
          elai                 => canopystate_inst%elai_patch     , & ! InOut:
@@ -831,6 +1008,26 @@ contains
       ED_bstore(:)            = 0.0_r8
       ED_balive(:)            = 0.0_r8
       phen_cd_status(:)       = 2
+
+      ed_gpp_scpf(:,:)      = 0.0_r8
+      ed_npp_totl_scpf(:,:) = 0.0_r8
+      ed_npp_leaf_scpf(:,:) = 0.0_r8
+      ed_npp_seed_scpf(:,:) = 0.0_r8
+      ed_npp_fnrt_scpf(:,:) = 0.0_r8
+      ed_npp_bgsw_scpf(:,:) = 0.0_r8
+      ed_npp_bgdw_scpf(:,:) = 0.0_r8
+      ed_npp_agsw_scpf(:,:) = 0.0_r8
+      ed_npp_agdw_scpf(:,:) = 0.0_r8
+      ed_npp_stor_scpf(:,:) = 0.0_r8
+      
+      ed_ddbh_gd_scpf(:,:) = 0.0_r8
+      ed_ba_gd_scpf(:,:)   = 0.0_r8
+      ed_np_gd_scpf(:,:)   = 0.0_r8
+      ed_m1_gd_scpf(:,:)   = 0.0_r8
+      ed_m2_gd_scpf(:,:)   = 0.0_r8
+      ed_m3_gd_scpf(:,:)   = 0.0_r8
+      ed_m4_gd_scpf(:,:)   = 0.0_r8
+      ed_m5_gd_scpf(:,:)   = 0.0_r8
 
       do g = bounds%begg,bounds%endg
 
@@ -892,9 +1089,11 @@ contains
                      !accumulate into history variables. 
                      ft = currentCohort%pft
                      if(currentPatch%area>0._r8)then
-                        n_density = currentCohort%n/currentPatch%area
+                        n_density             = currentCohort%n/currentPatch%area
+                        n_perm2               = currentCohort%n/AREA   ! plant density using whole area (for grid cell averages)
                      else
-                        n_density = 0.0_r8
+                        n_density             = 0.0_r8
+                        n_perm2               = 0.0_r8
                      endif
                      ED_bleaf(p)           = ED_bleaf(p)           + n_density * currentCohort%bl 
                      ED_bstore(p)          = ED_bstore(p)          + n_density * currentCohort%bstore 
@@ -907,6 +1106,62 @@ contains
                      PFTleafbiomass(p,ft)  = PFTleafbiomass(p,ft)  + n_density * currentCohort%bl
                      PFTstorebiomass(p,ft) = PFTstorebiomass(p,ft) + n_density * currentCohort%bstore
                      PFTnindivs(p,ft)      = PFTnindivs(p,ft)      + currentCohort%n 
+
+                     dbh = currentCohort%dbh !-0.5*(1./365.25)*currentCohort%ddbhdt
+                     sc  = count(dbh-sclass_ed.ge.0.0) 
+                     scpf = (ft-1)*nlevsclass_ed+sc
+                     
+                     ! Flux Variables (must pass a NaN check on growth increment and not be recruits)
+                     if(currentCohort%ddbhdt == currentCohort%ddbhdt .and. .not.(currentCohort%isnew)) then
+                        ed_gpp_scpf(g,scpf)      = ed_gpp_scpf(g,scpf) + n_perm2*currentCohort%gpp ! [kgC/m2/yr]
+                        ed_npp_totl_scpf(g,scpf) = ed_npp_totl_scpf(g,scpf) + currentcohort%npp*n_perm2
+                        ed_npp_leaf_scpf(g,scpf) = ed_npp_leaf_scpf(g,scpf) + currentcohort%npp_leaf*n_perm2
+                        ed_npp_fnrt_scpf(g,scpf) = ed_npp_fnrt_scpf(g,scpf) + currentcohort%npp_froot*n_perm2
+                        ed_npp_bgsw_scpf(g,scpf) = ed_npp_bgsw_scpf(g,scpf) + currentcohort%npp_bsw*(1._r8-ED_val_ag_biomass)*n_perm2
+                        ed_npp_agsw_scpf(g,scpf) = ed_npp_agsw_scpf(g,scpf) + currentcohort%npp_bsw*ED_val_ag_biomass*n_perm2
+                        ed_npp_bgdw_scpf(g,scpf) = ed_npp_bgdw_scpf(g,scpf) + currentcohort%npp_bdead*(1._r8-ED_val_ag_biomass)*n_perm2
+                        ed_npp_agdw_scpf(g,scpf) = ed_npp_agdw_scpf(g,scpf) + currentcohort%npp_bdead*ED_val_ag_biomass*n_perm2
+                        ed_npp_seed_scpf(g,scpf) = ed_npp_seed_scpf(g,scpf) + currentcohort%npp_bseed*n_perm2
+                        ed_npp_stor_scpf(g,scpf) = ed_npp_stor_scpf(g,scpf) + currentcohort%npp_store*n_perm2
+                        if( abs(currentcohort%npp-(currentcohort%npp_leaf+currentcohort%npp_froot+ &
+                                                   currentcohort%npp_bsw+currentcohort%npp_bdead+ &
+                                                   currentcohort%npp_bseed+currentcohort%npp_store))>1.e-9) then
+                           write(iulog,*) 'NPP Partitions are not balancing'
+                           write(iulog,*) 'Fractional Error: ',abs(currentcohort%npp-(currentcohort%npp_leaf+currentcohort%npp_froot+ &
+                                 currentcohort%npp_bsw+currentcohort%npp_bdead+ &
+                                 currentcohort%npp_bseed+currentcohort%npp_store))/currentcohort%npp
+                           write(iulog,*) 'Terms: ',currentcohort%npp,currentcohort%npp_leaf,currentcohort%npp_froot, &
+                                                    currentcohort%npp_bsw,currentcohort%npp_bdead,                    &
+                                                    currentcohort%npp_bseed,currentcohort%npp_store
+                           stop
+                        end if
+                        ! Woody State Variables (basal area and number density and mortality)
+                        if (pftcon%woody(ft) == 1) then
+
+                           ed_m1_gd_scpf(g,scpf) = ed_m1_gd_scpf(g,scpf) + currentcohort%bmort*n_perm2*AREA
+                           ed_m2_gd_scpf(g,scpf) = ed_m2_gd_scpf(g,scpf) + currentcohort%hmort*n_perm2*AREA
+                           ed_m3_gd_scpf(g,scpf) = ed_m3_gd_scpf(g,scpf) + currentcohort%cmort*n_perm2*AREA
+                           ed_m4_gd_scpf(g,scpf) = ed_m4_gd_scpf(g,scpf) + currentcohort%imort*n_perm2*AREA
+                           ed_m5_gd_scpf(g,scpf) = ed_m5_gd_scpf(g,scpf) + currentcohort%fmort*n_perm2*AREA
+
+                           ! basal area  [m2/ha]
+                           ed_ba_gd_scpf(g,scpf) = ed_ba_gd_scpf(g,scpf) + &
+                                 0.25*3.14159*((dbh/100.0)**2.0)*n_perm2*AREA
+                           
+                           ! number density [/ha]
+                           ed_np_gd_scpf(g,scpf) = ed_np_gd_scpf(g,scpf) + AREA*n_perm2
+                           
+                           ! Growth Incrments must have NaN check and woody check
+                           if(currentCohort%ddbhdt == currentCohort%ddbhdt) then
+                              ed_ddbh_gd_scpf(g,scpf) = ed_ddbh_gd_scpf(g,scpf) + &
+                                    currentCohort%ddbhdt*n_perm2*AREA 
+                           else
+                              ed_ddbh_gd_scpf(g,scpf) = -999.9
+                           end if
+                        end if
+
+                     end if
+
                      currentCohort         => currentCohort%taller
                   enddo ! cohort loop
 

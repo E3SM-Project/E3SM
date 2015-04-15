@@ -14,14 +14,15 @@ module initVerticalMod
   use spmdMod        , only : masterproc
   use clm_varpar     , only : more_vertlayers, nlevsno, nlevgrnd, nlevlak
   use clm_varpar     , only : toplev_equalspace, nlev_equalspace
-  use clm_varpar     , only : nlevsoi, nlevsoifl, nlevurb 
-  use clm_varctl     , only : fsurdat, iulog
+  use clm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, mxpft 
+  use clm_varctl     , only : fsurdat, iulog, use_ed
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
   use clm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd 
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use landunit_varcon, only : istdlak, istice_mec
   use fileutils      , only : getfil
   use LandunitType   , only : lun                
+  use EDTypesMod     , only : nlevsclass_ed,sclass_ed,ed_hist_scpfmaps
   use ColumnType     , only : col                
   use ncdio_pio
   !
@@ -69,6 +70,7 @@ contains
     real(r8)              :: depthratio        ! ratio of lake depth to standard deep lake depth 
     integer               :: begc, endc
     integer               :: begl, endl
+    integer               :: ipft, isc
     !------------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -173,6 +175,11 @@ contains
        end if
     end if
 
+    if(use_ed)then
+       call ed_hist_scpfmaps
+    end if
+    
+       
     ! Column level initialization for urban wall and roof layers and interfaces
     do l = bounds%begl,bounds%endl
 
