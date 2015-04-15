@@ -39,7 +39,7 @@
 
 #define swap(A, B) tmp = A; A = B; B = tmp;
 
-inline void sort_descending_complex_3(real* wr, real* wi)
+static inline void sort_descending_complex_3(real* wr, real* wi)
 {
     real tmp;
     if (wr[0] < wr[1])
