@@ -648,7 +648,7 @@ sub gettime2{
     my @tmp = grep( /$strw/, @$fin_ref );
 
     if ($#tmp == 0) {
-	if ($tmp[0] =~ /\s*${strw}\s+(\d+)\s+(\d+)\s/) {
+	if ($tmp[0] =~ /\s*${strw}\s+([\.\de\+]+)\s+(\d+)\s/) {
 	    $procs=$2;
 	    $count=$1;
 	}
