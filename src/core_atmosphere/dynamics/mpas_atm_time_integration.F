@@ -1604,8 +1604,8 @@ module atm_time_integration
       real (kind=RKIND), dimension( num_scalars, nVertLevels ) :: flux_arr
 
       real (kind=RKIND), dimension( num_scalars, nVertLevels + 1 ) :: wdtn
-      real (kind=RKIND), dimension( nVertLevels, nCells ) :: rho_zz_int
-      real (kind=RKIND), dimension( num_scalars, nVertLevels, nCells ) :: scalar_tend_save
+      real (kind=RKIND), dimension(:,:), pointer :: rho_zz_int
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend_save
       integer, pointer :: nCellsSolve, nEdges
 
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
@@ -1686,10 +1686,12 @@ module atm_time_integration
       !  horizontal flux divergence, accumulate in scalar_tend
 
       if (local_advance_density) then
-         rho_zz_int = 0.
-         scalar_tend_save = scalar_tend
+         allocate(rho_zz_int(nVertLevels,nCells))
+         allocate(scalar_tend_save(num_scalars,nVertLevels,nCells))
+         rho_zz_int(:,:) = 0.0
+         scalar_tend_save(:,:,1:nCells) = scalar_tend(:,:,1:nCells)
       else
-         rho_zz_int = rho_zz_new
+         rho_zz_int => rho_zz_new
       end if
 
       do iEdge=1,nEdges
@@ -1829,7 +1831,9 @@ module atm_time_integration
       end if
 
       if (local_advance_density) then
-         scalar_tend = scalar_tend_save
+         scalar_tend(:,:,1:nCells) = scalar_tend_save(:,:,1:nCells)
+         deallocate(rho_zz_int)
+         deallocate(scalar_tend_save)
       end if
 
    end subroutine atm_advance_scalars
@@ -1901,7 +1905,7 @@ module atm_time_integration
       real (kind=RKIND), dimension( nVertLevels, nCells ) :: scalar_old, scalar_new
       real (kind=RKIND), dimension( nVertLevels, nCells ) :: s_max, s_min
       real (kind=RKIND), dimension( 2, nVertLevels, nCells ), target :: scale_arr
-      real (kind=RKIND), dimension( nVertLevels, nCells ) :: rho_zz_int
+      real (kind=RKIND), dimension(:,:), pointer :: rho_zz_int
 
       integer, parameter :: SCALE_IN = 1, SCALE_OUT = 2
 
@@ -2008,7 +2012,8 @@ module atm_time_integration
 
       if (local_advance_density) then
          !  begin with update of density
-         rho_zz_int = 0.
+         allocate(rho_zz_int(nVertLevels,nCells))
+         rho_zz_int(:,:) = 0.0
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -2025,7 +2030,7 @@ module atm_time_integration
             end do
          end do
       else
-         rho_zz_int = rho_zz_new
+         rho_zz_int => rho_zz_new
       end if
 
       ! next, do one scalar at a time
@@ -2310,6 +2315,10 @@ module atm_time_integration
          end do
 
       end do !  loop over scalars
+
+      if (local_advance_density) then
+         deallocate(rho_zz_int)
+      end if
 
    end subroutine atm_advance_scalars_mono
 
