@@ -710,7 +710,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: meshLIPool
       type (mpas_pool_type), pointer :: geometryPool
       integer, dimension(:), pointer :: vertexMask
       character (len=StrKIND), pointer :: xtime
@@ -724,7 +723,6 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
       ! Get pool stuff
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-      call mpas_pool_get_subpool(block % structs, 'meshLI', meshLIPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
@@ -740,10 +738,10 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       ! ===
       ! === Call init routines ===
       ! ===
-      call li_setup_vertical_grid(meshLIPool, err_tmp)
+      call li_setup_vertical_grid(meshPool, err_tmp)
       err = ior(err, err_tmp)
 
-      call li_setup_sign_and_index_fields(meshPool, meshLIPool)
+      call li_setup_sign_and_index_fields(meshPool)
 
 ! This was needed to init FCT once.
 !!!      ! Init for FCT tracer advection
@@ -767,7 +765,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
       endif
 
       ! Assign initial time stamp
-      call mpas_pool_get_array(meshLIPool, 'xtime', xtime)
+      call mpas_pool_get_array(meshPool, 'xtime', xtime)
       xtime = startTimeStamp
 
       ! Mask init identifies initial ice extent
