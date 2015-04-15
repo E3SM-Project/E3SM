@@ -11,7 +11,7 @@
 ### NOTE: On Yellowstone, ESMF is only available with the intel compilers ######
 ###       And require running the following:                              ######
 ###           $ module load esmf                                          ######
-###           $ module load esmf-6.1.1-ncdfio-uni-O                       ######
+###           $ module load esmf-6.3.0r-ncdfio-uni-O                      ######
 ###       The executable should run on the yellowstone login node         ######
 ################################################################################
 
