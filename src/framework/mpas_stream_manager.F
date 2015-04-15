@@ -5145,12 +5145,12 @@ subroutine stream_mgr_add_field_c(manager_c, streamID_c, fieldName_c, packages_c
 end subroutine stream_mgr_add_field_c !}}}
 
 
-subroutine stream_mgr_add_stream_fields_c(manager_c, streamID_c, refStreamID_c, packages_c, ierr_c) bind(c) !{{{
+subroutine stream_mgr_add_immutable_stream_fields_c(manager_c, streamID_c, refStreamID_c, packages_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
-    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR
-    use mpas_stream_manager, only : MPAS_stream_mgr_add_stream_fields
+    use mpas_derived_types, only : MPAS_streamManager_type, MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_IMMUTABLE
+    use mpas_stream_manager, only : MPAS_stream_mgr_add_stream_fields, MPAS_stream_mgr_get_property
     use mpas_kind_types, only : StrKIND
 
     implicit none
@@ -5163,6 +5163,7 @@ subroutine stream_mgr_add_stream_fields_c(manager_c, streamID_c, refStreamID_c, 
 
     type (MPAS_streamManager_type), pointer :: manager
     character(len=StrKIND) :: streamID, refStreamID, packages
+    logical :: is_immutable
     integer :: ierr
 
 
@@ -5170,6 +5171,12 @@ subroutine stream_mgr_add_stream_fields_c(manager_c, streamID_c, refStreamID_c, 
     call mpas_c_to_f_string(streamID_c, streamID)
     call mpas_c_to_f_string(refStreamID_c, refStreamID)
     call mpas_c_to_f_string(packages_c, packages)
+
+
+    call MPAS_stream_mgr_get_property(manager, streamID, MPAS_STREAM_PROPERTY_IMMUTABLE, is_immutable, ierr=ierr)
+    if (.not. is_immutable) then
+       return ! This stream is not immutable so do not continue.
+    endif
 
     if (len_trim(packages) > 0) then
        call MPAS_stream_mgr_add_stream_fields(manager, streamID, refStreamID, packages=packages, ierr=ierr)
@@ -5183,7 +5190,7 @@ subroutine stream_mgr_add_stream_fields_c(manager_c, streamID_c, refStreamID_c, 
         ierr_c = 1
     end if
 
-end subroutine stream_mgr_add_stream_fields_c !}}}
+end subroutine stream_mgr_add_immutable_stream_fields_c !}}}
 
 
 subroutine stream_mgr_add_alarm_c(manager_c, streamID_c, direction_c, alarmTime_c, alarmInterval_c, ierr_c) bind(c) !{{{
