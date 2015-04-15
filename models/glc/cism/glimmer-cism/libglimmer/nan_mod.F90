@@ -40,7 +40,8 @@ module nan_mod
   real(dp), parameter :: NaN = O'0777700000000000000000'
 #else
 ! signaling nan otherwise
-  real(dp), parameter :: NaN = O'0777610000000000000000'
+  !real(dp), parameter :: NaN = O'0777610000000000000000'
+  integer(dp), parameter :: NaN = O'0777610000000000000000' !BSINGH - NAG need it to be an integer
 #endif
 
 end module nan_mod

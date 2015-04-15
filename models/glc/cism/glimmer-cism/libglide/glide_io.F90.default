@@ -233,7 +233,7 @@ contains
     ! Now apply necessary changes if the file is a restart file.
     if (NCO%restartfile) then
        if ((len_trim(NCO%vars) + len_trim(restart_variable_list) + 2) >= len(NCO%vars) ) then
-          call write_log('Adding restart variables has made the list of output variables too long for file ' // NCO%filename, GM_FATAL)
+          call write_log('Adding restart variables has made the list of output variables too long for file '//NCO%filename,GM_FATAL)
        else
           ! Expand the restart variable list 
           ! Need to maintain a space at beginning and end of list
@@ -660,7 +660,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable dissip')
-       status = parallel_def_var(NCO%id,'dissip',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'dissip',get_xtype(outfile,NF90_FLOAT),&
+       (/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'long_name', 'dissipation divided by rhoi Ci')
        status = parallel_put_att(NCO%id, varid, 'units', 'deg C')
@@ -733,7 +734,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable efvs')
-       status = parallel_def_var(NCO%id,'efvs',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, staglevel_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'efvs',get_xtype(outfile,NF90_FLOAT),&
+       (/x1_dimid, y1_dimid, staglevel_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_efvs))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'effective viscosity')
@@ -771,7 +773,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable flwa')
-       status = parallel_def_var(NCO%id,'flwa',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'flwa',get_xtype(outfile,NF90_FLOAT),&
+       (/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_flwa))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'Pre-exponential flow law parameter')
@@ -790,7 +793,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable flwastag')
-       status = parallel_def_var(NCO%id,'flwastag',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, staglevel_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'flwastag',get_xtype(outfile,NF90_FLOAT),&
+       (/x1_dimid, y1_dimid, staglevel_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_flwa))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'Pre-exponential flow law parameter')
@@ -1027,7 +1031,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable litho_temp')
-       status = parallel_def_var(NCO%id,'litho_temp',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, lithoz_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'litho_temp',get_xtype(outfile,NF90_FLOAT),&
+       (/x1_dimid, y1_dimid, lithoz_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'long_name', 'lithosphere temperature')
        status = parallel_put_att(NCO%id, varid, 'units', 'degree_Celsius')
@@ -1236,7 +1241,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable tau_xz')
-       status = parallel_def_var(NCO%id,'tau_xz',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, staglevel_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'tau_xz',get_xtype(outfile,NF90_FLOAT),&
+       (/x1_dimid, y1_dimid, staglevel_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_tau))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'X component vertical shear stress')
@@ -1254,7 +1260,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable tau_yz')
-       status = parallel_def_var(NCO%id,'tau_yz',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, staglevel_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'tau_yz',get_xtype(outfile,NF90_FLOAT),&
+       (/x1_dimid, y1_dimid, staglevel_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_tau))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'Y component vertical shear stress')
@@ -1345,7 +1352,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable tempstag')
-       status = parallel_def_var(NCO%id,'tempstag',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, stagwbndlevel_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'tempstag',get_xtype(outfile,NF90_FLOAT),&
+       (/x1_dimid, y1_dimid, stagwbndlevel_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'long_name', 'ice temperature on staggered vertical levels with boundaries')
        status = parallel_put_att(NCO%id, varid, 'standard_name', 'land_ice_temperature_stag')
@@ -1519,7 +1527,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable uvel_icegrid')
-       status = parallel_def_var(NCO%id,'uvel_icegrid',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'uvel_icegrid',get_xtype(outfile,NF90_FLOAT)&
+       ,(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_uvel))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'ice velocity in x direction')
@@ -1578,7 +1587,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable velnorm')
-       status = parallel_def_var(NCO%id,'velnorm',get_xtype(outfile,NF90_FLOAT),(/x0_dimid, y0_dimid, level_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'velnorm',get_xtype(outfile,NF90_FLOAT),&
+       (/x0_dimid, y0_dimid, level_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_uvel))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'Horizontal ice velocity magnitude')
@@ -1634,7 +1644,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable vvel_icegrid')
-       status = parallel_def_var(NCO%id,'vvel_icegrid',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'vvel_icegrid',get_xtype(outfile,NF90_FLOAT)&
+       ,(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_uvel))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'ice velocity in y direction')
@@ -1653,7 +1664,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable waterfrac')
-       status = parallel_def_var(NCO%id,'waterfrac',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'waterfrac',get_xtype(outfile,NF90_FLOAT)&
+       ,(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'long_name', 'internal water fraction')
        status = parallel_put_att(NCO%id, varid, 'units', 'unitless [0,1]')
@@ -1671,7 +1683,8 @@ contains
     end if
     if (pos.ne.0 .and. status.eq.nf90_enotvar) then
        call write_log('Creating variable wgrd')
-       status = parallel_def_var(NCO%id,'wgrd',get_xtype(outfile,NF90_FLOAT),(/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
+       status = parallel_def_var(NCO%id,'wgrd',get_xtype(outfile,NF90_FLOAT),&
+       (/x1_dimid, y1_dimid, level_dimid, time_dimid/),varid)
        call nc_errorhandle(__FILE__,__LINE__,status)
        status = parallel_put_att(NCO%id, varid, 'scale_factor',(scale_wvel))
        status = parallel_put_att(NCO%id, varid, 'long_name', 'Vertical grid velocity')
@@ -2669,7 +2682,8 @@ contains
           end if
           if (abs(scaling_factor-1.0d0).gt.1.d-17) then
              call write_log("scaling temp",GM_DIAGNOSTIC)
-             data%temper%temp(up,1:data%general%ewn,1:data%general%nsn) = data%temper%temp(up,1:data%general%ewn,1:data%general%nsn)*scaling_factor
+             data%temper%temp(up,1:data%general%ewn,1:data%general%nsn)=data%temper%temp(up,1:data%general%ewn,1:data%general%nsn)&
+	     *scaling_factor
           end if
        end do
     end if
@@ -2687,7 +2701,8 @@ contains
           end if
           if (abs(scaling_factor-1.0d0).gt.1.d-17) then
              call write_log("scaling tempstag",GM_DIAGNOSTIC)
-             data%temper%temp(up,1:data%general%ewn,1:data%general%nsn) = data%temper%temp(up,1:data%general%ewn,1:data%general%nsn)*scaling_factor
+             data%temper%temp(up,1:data%general%ewn,1:data%general%nsn)=data%temper%temp(up,1:data%general%ewn,1:data%general%nsn)&
+	     *scaling_factor
           end if
        end do
     end if
