@@ -92,6 +92,9 @@ if ($ProgDir) {
 
 #-----------------------------------------------------------------------------------------------
 # Parse command-line options.
+
+my @saved_argv = @ARGV;
+
 my %opts = (
     file=>undef,
     id=>undef,
@@ -314,6 +317,22 @@ foreach my $filename ( keys(%myfiles) ) {
 foreach my $backupfile(@backupfiles) {
 	unlink($backupfile) or warn "unable to link $backupfile, $!";
 }
+
+echo_command_to_CaseStatus();
+
 if ($print>=2) { print "xmlchange done.\n"; }
 exit;
 
+
+sub echo_command_to_CaseStatus {
+   # Echoes this xmlchange command to the CaseStatus file
+
+   if (-f "./CaseStatus") {
+      open my $CS, ">>", "$cwd/CaseStatus";
+      print $CS "<command>xmlchange @saved_argv</command>\n";
+      close $CS;
+   }
+   else {
+      warn "WARNING: No CaseStatus file found; this xmlchange command has been executed, but not recorded in the CaseStatus file\n";
+   }
+}   
