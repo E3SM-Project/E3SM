@@ -99,7 +99,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   for(int i=0;i<PIO_MAX_VARS;i++)
     file->request[i]=MPI_REQUEST_NULL;
   file->nreq=0;
-  file->indep_rank=0;
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   if(ierr==PIO_NOERR){
@@ -213,7 +212,6 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   for(int i=0;i<PIO_MAX_VARS;i++)
     file->request[i]=MPI_REQUEST_NULL;
   file->nreq=0;
-  file->indep_rank=0;
   
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 

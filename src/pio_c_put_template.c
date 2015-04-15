@@ -48,13 +48,12 @@ int PIO_function()
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      if(ios->io_rank==file->indep_rank){
+      if(ios->io_rank==0){
 	ierr = ncmpi_function();
 	if(ierr == PIO_NOERR){
 	  pio_push_request(file, request);
 	}
       }
-      file->indep_rank = (file->indep_rank + 1) % ios->num_iotasks;
       flush_output_buffer(file, false, 0);
       break;
 #endif
