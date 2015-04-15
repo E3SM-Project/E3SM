@@ -35,10 +35,10 @@
       integer :: ncomps	                           ! Total number of components
       integer :: mygrank                           ! Rank of this processor in 
                                                    ! global communicator.
-      integer,dimension(:),pointer :: nprocspid	   ! Number of processes 
+      integer,dimension(:),pointer :: nprocspid => null()   ! Number of processes
                                                    ! each component is on (e.g. rank of its
 						   ! local communicator.
-      integer,dimension(:,:),pointer :: idGprocid  ! Translate between local component rank
+      integer,dimension(:,:),pointer :: idGprocid => null() ! Translate between local component rank
                                                    ! rank in global communicator.
 						   ! idGprocid(modelid,localrank)=globalrank
     end type MCTWorld
@@ -51,6 +51,7 @@
       public :: initialized          ! Determine if MCT is initialized
       public :: init                 ! Create a MCTWorld
       public :: clean                ! Destroy a MCTWorld
+      public :: printnp                ! Print contents of a MCTWorld
       public :: NumComponents        ! Number of Components in the MCTWorld
       public :: ComponentNumProcs    ! Number of processes owned by a given
                                      ! component
@@ -73,6 +74,7 @@
       initr_
     end interface
     interface clean ; module procedure clean_ ; end interface
+    interface printnp ; module procedure printnp_ ; end interface
     interface NumComponents ; module procedure &
        NumComponents_ 
     end interface
@@ -294,8 +296,8 @@
 !  First on the global root, post a receive for each component
   if(myGid == 0) then
     do i=1,ncomps
-       apoint => tmparray(0:Gsize-1,i)
-       call MPI_IRECV(apoint(1), root_nprocs(i),MP_INTEGER, &
+       apoint => tmparray(0:root_nprocs(i)-1,i)
+       call MPI_IRECV(apoint, root_nprocs(i),MP_INTEGER, &
        MP_ANY_SOURCE,i,globalcomm, reqs(i), ier)
        if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV()',ier)
     enddo
@@ -567,6 +569,7 @@
 !
 ! !USES:
 !
+      use m_mpif90
       use m_die
 
       implicit none
@@ -587,6 +590,9 @@
 
   deallocate(ThisMCTWorld%nprocspid,ThisMCTWorld%idGprocid,stat=ier)
   if(ier /= 0) call warn(myname_,'deallocate(MCTW,...)',ier)
+
+  call MP_comm_free(ThisMCTWorld%MCT_comm, ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_free()',ier)
 
   ThisMCTWorld%ncomps = 0
   ThisMCTWorld%mygrank = 0
@@ -835,6 +841,43 @@
   ComponentRootRank_ = world_comp_root
 
  end function ComponentRootRank_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: printnp_ - Print number of procs for a component id.
+!
+! !DESCRIPTION:
+! Print out number of MPI processes for the givin component id.
+!
+! !INTERFACE:
+
+    subroutine printnp_(compid,lun)
+!
+! !USES:
+!
+      use m_die
+      use m_mpif90
+
+      implicit none 
+
+!INPUT/OUTPUT PARAMETERS:
+      integer, intent(in)           :: compid
+      integer, intent(in)           :: lun  
+
+! !REVISION HISTORY:
+! 06Jul12 - R. Jacob <jacob@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+
+    integer ier
+    character(len=*),parameter :: myname_=myname//'::printnp_'
+
+    write(lun,*) ThisMCTWorld%nprocspid(compid)
+
+ end subroutine printnp_
+
 
  end module m_MCTWorld
 

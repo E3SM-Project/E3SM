@@ -18,6 +18,7 @@
  module m_Router
 
       use m_realkinds, only : FP
+      use m_zeit
 
       implicit none
 
@@ -125,7 +126,7 @@
 !
 ! !INTERFACE:
 
- subroutine initd_(othercomp,GSMap,mycomm,Rout )
+ subroutine initd_(othercomp,GSMap,mycomm,Rout,name )
 !
 ! !USES:
 !
@@ -141,6 +142,7 @@
       integer, intent(in)	       :: othercomp
       integer, intent(in)	       :: mycomm
       type(GlobalSegMap),intent(in)    :: GSMap     ! of the calling comp
+      character(len=*), intent(in),optional     :: name
 
 ! !OUTPUT PARAMETERS:
 !
@@ -162,6 +164,7 @@
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initd_'
+  character(len=40) :: tagname
 
   type(GlobalSegMap)    :: RGSMap  !  the other GSMap
   integer ::		   ier
@@ -170,12 +173,21 @@
 
 !!!!!!!!!!!!!!!!!Exchange of global map data 
 
-  call MCT_ExGSMap(GSMap,mycomm,RGSMap,othercomp,ier)
-  if(ier /= 0) call die(myname_,'ExGSMap',ier)
+  if(present(name)) then
+    tagname='01'//name//'ExGSMap'
+    
+    call zeit_ci(trim(tagname))
+    call MCT_ExGSMap(GSMap,mycomm,RGSMap,othercomp,ier)
+    if(ier /= 0) call die(myname_,'ExGSMap',ier)
+    call zeit_co(trim(tagname))
 
 !!!!!!!!!!!!!!!!!Begin comparison of globalsegmaps
 
-  call initp_(GSMap,RGSMap, mycomm, Rout)
+    call initp_(GSMap,RGSMap, mycomm, Rout,name)
+  else
+    call MCT_ExGSMap(GSMap,mycomm,RGSMap,othercomp,ier)
+    call initp_(GSMap,RGSMap, mycomm, Rout)
+  endif
 
  end subroutine initd_
 
@@ -195,7 +207,7 @@
 !
 ! !INTERFACE:
 
- subroutine initp_(inGSMap,inRGSMap,mycomm,Rout )
+ subroutine initp_(inGSMap,inRGSMap,mycomm,Rout,name )
 !
 ! !USES:
 !
@@ -235,6 +247,7 @@
       type(GlobalSegMap), intent(in)	:: inGSMap
       type(GlobalSegMap), intent(in)	:: inRGSMap
       integer	     ,    intent(in)	:: mycomm
+      character(len=*), intent(in),optional     :: name
 
 ! !OUTPUT PARAMETERS:
 !
@@ -294,6 +307,7 @@
   integer, dimension(:), pointer   :: permarr
   integer, dimension(:), pointer   :: rpermarr
   integer  :: gmapsize
+  character(len=40) :: tagname
 
 
   integer,save  :: t_initialized=0   ! rml timers
@@ -306,6 +320,10 @@
 
   nullify(Rout%permarr)
 
+  if(present(name)) then
+    tagname='02'//name//'incheck'
+    call zeit_ci(trim(tagname))
+  endif
   if (.not. GSMap_increasing(inGSMap)) then
     if(myPid == 0) call warn(myname_,'GSMap indices not increasing...Will correct')
     call GlobalSegMap_OPoints(inGSMap,myPid,gpoints)
@@ -345,17 +363,10 @@
   else
     call GlobalSegMap_copy(inRGSMap,RGSMap)
   endif
+  if(present(name)) then
+    call zeit_co(trim(tagname))
+  endif
 
-
-#if 0
-   if (t_initialized == 0) then        ! rml timers
-     t_initialized=1                   ! rml timers
-
-     call shr_timer_get(t_loop,"m_Router:initp_ loop")  ! rml timers
-     call shr_timer_get(t_loop2,"m_Router:initp_ loop2")  ! rml timers
-     call shr_timer_get(t_load,"m_Router:initp_ load")  ! rml timers
-   endif
-#endif
 
   mysize = ProcessStorage(GSMap,myPid)
   othercomp = GSMap_comp_id(RGSMap)
@@ -364,15 +375,16 @@
 !.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
 
 
-!!!!  call zeit_ci('t_loop2')
-!  call shr_timer_start(t_loop2)    ! rml timers
-
 
 !! 
 !! determine the global segments on this processor 
 !! just once, so the info be used repeatedly below
 !! same code was used in m_GlobalToLocal - should make a subroutine...
 !!
+  if(present(name)) then
+    tagname='03'//name//'lloop'
+    call zeit_ci(trim(tagname))
+  endif
 
   ngseg = GlobalSegMap_ngseg(GSMap)
   nlseg = GlobalSegMap_nlseg(GSMap, myPid)
@@ -400,6 +412,9 @@
   do i=2,nlseg
     mygs_lstart(i)=mygs_lstart(i-1)+mygs_len(i-1)
   enddo
+  if(present(name)) then
+    call zeit_co(trim(tagname))
+  endif
 
 
 !!
@@ -418,6 +433,10 @@
   !!   tmpsegstart()/count() and possibly seg_starts()/lengths (the 
   !!   latter would be a major change).
 
+  if(present(name)) then
+    tagname='04'//name//'rloop'
+    call zeit_ci(trim(tagname))
+  endif
   r_max_nlseg = GlobalSegMap_max_nlseg(RGSMap)
 
   allocate( rgs_count(nprocs) , &
@@ -439,15 +458,26 @@
      rgs_ub( rgs_count(proc) , proc )=RGSMap%start(i) + RGSMap%length(i) -1
   enddo 
 
+  if(present(name)) then
+    call zeit_co(trim(tagname))
+  endif
+
 !!! 
 !!! this is purely for error checking
 
+  if(present(name)) then
+    tagname='05'//name//'erchck'
+    call zeit_ci(trim(tagname))
+  endif
   do proc = 1, nprocs
     if (rgs_count(proc) > r_max_nlseg) then
       write(stderr,*) myname_,"overflow on rgs array",proc,rgs_count(proc)
       call die(myname_,'overflow on rgs',0)
     endif
   enddo
+  if(present(name)) then
+    call zeit_co(trim(tagname))
+  endif
 
 !!!
 
@@ -458,6 +488,10 @@
 !   overlap segments to a given remote proc cannot be more than
 !   the max of the local segments and the remote segments
 
+  if(present(name)) then
+    tagname='06'//name//'loop2'
+    call zeit_ci(trim(tagname))
+  endif
   max_rgs_count=0
   do proc=1,nprocs
     max_rgs_count = max( max_rgs_count, rgs_count(proc) )
@@ -554,10 +588,9 @@
 
 
 !  call shr_timer_stop(t_loop2)    ! rml timers
-!!!!  call zeit_co('t_loop2')
-!!!!  call zeit_flush(6)
-! this doesn't seem to work
-!  call zeit_allflush(mycomm,0,6)
+  if(present(name)) then
+    call zeit_co(trim(tagname))
+  endif
 
 
 
@@ -568,7 +601,10 @@
 
 ! start loading up the Router with data
 
-!  call shr_timer_start(t_load)    ! rml timers
+  if(present(name)) then
+    tagname='07'//name//'load'
+    call zeit_ci(trim(tagname))
+  endif
 
   Rout%comp1id = GSMap_comp_id(GSMap)
   Rout%comp2id = othercomp
@@ -632,7 +668,9 @@
   call GlobalSegMap_clean(GSMap)
 
 
-!  call shr_timer_stop(t_load)    ! rml timers
+  if(present(name)) then
+    call zeit_co(trim(tagname))
+  endif
 
  end subroutine initp_
 

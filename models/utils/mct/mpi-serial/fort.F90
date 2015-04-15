@@ -44,6 +44,20 @@
 	end
 
 
+!
+! mpi_get_fort_status
+!
+! In Fortran, MPI_STATUS_IGNORE and  MPI_STATUSES_IGNORE
+! are in a COMMON block and not accessible by C code.
+! This routine calls back a C routine to store the
+! addresses.
+!
 
+	subroutine mpi_get_fort_status
+	implicit none
+	include "mpif.h"
 
+	call mpi_save_fort_status(MPI_STATUS_IGNORE,MPI_STATUSES_IGNORE)
+
+	end subroutine mpi_get_fort_status
 
