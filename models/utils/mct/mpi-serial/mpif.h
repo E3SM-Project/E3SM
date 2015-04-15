@@ -51,64 +51,64 @@
         integer MPI_SUCCESS
         parameter (MPI_SUCCESS=0)
 
-        integer MPI_ERR_BUFFER 
+        integer MPI_ERR_BUFFER
         parameter (MPI_ERR_BUFFER= -1)
 
-        integer MPI_ERR_COUNT 
+        integer MPI_ERR_COUNT
         parameter (MPI_ERR_COUNT= -1)
 
-        integer MPI_ERR_TYPE 
+        integer MPI_ERR_TYPE
         parameter (MPI_ERR_TYPE= -1)
 
         integer MPI_ERR_TAG
         parameter (MPI_ERR_TAG= -1)
 
-        integer MPI_ERR_COMM 
+        integer MPI_ERR_COMM
         parameter (MPI_ERR_COMM= -1)
 
-        integer MPI_ERR_RANK 
+        integer MPI_ERR_RANK
         parameter (MPI_ERR_RANK= -1)
 
-        integer MPI_ERR_REQUEST 
+        integer MPI_ERR_REQUEST
         parameter (MPI_ERR_REQUEST= -1)
 
-        integer MPI_ERR_ROOT 
+        integer MPI_ERR_ROOT
         parameter (MPI_ERR_ROOT= -1)
 
-        integer MPI_ERR_GROUP 
+        integer MPI_ERR_GROUP
         parameter (MPI_ERR_GROUP= -1)
 
-        integer MPI_ERR_OP 
+        integer MPI_ERR_OP
         parameter (MPI_ERR_OP= -1)
 
-        integer MPI_ERR_TOPOLOGY 
+        integer MPI_ERR_TOPOLOGY
         parameter (MPI_ERR_TOPOLOGY= -1)
 
-        integer MPI_ERR_DIMS 
+        integer MPI_ERR_DIMS
         parameter (MPI_ERR_DIMS= -1)
 
-        integer MPI_ERR_ARG 
+        integer MPI_ERR_ARG
         parameter (MPI_ERR_ARG= -1)
 
-        integer MPI_ERR_UNKNOWN 
+        integer MPI_ERR_UNKNOWN
         parameter (MPI_ERR_UNKNOWN= -1)
 
-        integer MPI_ERR_TRUNCATE 
+        integer MPI_ERR_TRUNCATE
         parameter (MPI_ERR_TRUNCATE= -1)
 
-        integer MPI_ERR_OTHER 
+        integer MPI_ERR_OTHER
         parameter (MPI_ERR_OTHER= -1)
 
-        integer MPI_ERR_INTERN 
+        integer MPI_ERR_INTERN
         parameter (MPI_ERR_INTERN= -1)
 
-        integer MPI_PENDING 
+        integer MPI_PENDING
         parameter (MPI_PENDING= -1)
 
-        integer MPI_ERR_IN_STATUS 
+        integer MPI_ERR_IN_STATUS
         parameter (MPI_ERR_IN_STATUS= -1)
 
-        integer MPI_ERR_LASTCODE 
+        integer MPI_ERR_LASTCODE
         parameter (MPI_ERR_LASTCODE= -1)
 
 !
@@ -128,101 +128,115 @@
 
 
         INTEGER MPI_STATUS_SIZE
-        PARAMETER (MPI_STATUS_SIZE=3)
+        PARAMETER (MPI_STATUS_SIZE=4)
 
         INTEGER MPI_SOURCE, MPI_TAG, MPI_ERROR
         PARAMETER(MPI_SOURCE=1, MPI_TAG=2, MPI_ERROR=3)
+        ! There is a 4th value only used internally
+
+        INTEGER MPI_STATUS_IGNORE(MPI_STATUS_SIZE)
+        INTEGER MPI_STATUSES_IGNORE(MPI_STATUS_SIZE,1)
+
+        COMMON /MPISERIAL/ MPI_STATUS_IGNORE
+        COMMON /MPISERIAL/ MPI_STATUSES_IGNORE
 
 
 
 !
 ! MPI_Datatype values
-!  
-! The value is the size of the datatype in bytes.
-! Change if necessary for the machine in question.
-! (The mpi.h file uses sizeof(), so it should be more
-! portable).
-! 
+!
+!  New datatype values
+!  Type constants represent integer handles, matching up to the index of the
+!  type array equal to the absolute value of the constant plus one.  For 
+!  example, MPI_BYTE=-12, corresponding to type index 11. 
+!  (Array in type_const.c)
 !
 
 
-	INTEGER MPI_DATATYPE_NULL
-	PARAMETER (MPI_DATATYPE_NULL=0)
+        INTEGER MPI_DATATYPE_NULL
+        PARAMETER (MPI_DATATYPE_NULL=0)
 
-	INTEGER MPI_BYTE
-	PARAMETER (MPI_BYTE=1)
+        INTEGER MPI_BYTE
+	PARAMETER (MPI_BYTE=-12)
 
-	INTEGER MPI_CHARACTER
-	PARAMETER (MPI_CHARACTER=1)
+	INTEGER MPI_PACKED
+	PARAMETER (MPI_PACKED=-13)
+
+	INTEGER MPI_LB
+	PARAMETER (MPI_LB=-14)
+
+	INTEGER MPI_UB
+	PARAMETER (MPI_UB=-15)
 
 	INTEGER MPI_INTEGER
-	PARAMETER (MPI_INTEGER=4)
-
-	INTEGER MPI_LOGICAL
-	PARAMETER (MPI_LOGICAL=4)
-
-!!!!!!!
+	PARAMETER (MPI_INTEGER=-16)
+	
 	INTEGER MPI_REAL
-	PARAMETER (MPI_REAL=4)
+	PARAMETER (MPI_REAL=-17)
 
 	INTEGER MPI_DOUBLE_PRECISION
-	PARAMETER (MPI_DOUBLE_PRECISION=8)
-!!!!!!!
+	PARAMETER (MPI_DOUBLE_PRECISION=-18)
 
-	integer MPI_COMPLEX
-	parameter (MPI_COMPLEX=2*MPI_REAL)
+	INTEGER MPI_COMPLEX
+	PARAMETER (MPI_COMPLEX=-19)
+
+	INTEGER MPI_DOUBLE_COMPLEX
+	PARAMETER (MPI_DOUBLE_COMPLEX=-20)
+
+	INTEGER MPI_LOGICAL
+	PARAMETER (MPI_LOGICAL=-21)
+
+	INTEGER MPI_CHARACTER
+	PARAMETER (MPI_CHARACTER=-22)
 
         integer MPI_2REAL
-        parameter (MPI_2REAL=2*MPI_REAL)
+        parameter (MPI_2REAL= -23)
 
         integer MPI_2DOUBLE_PRECISION
-        parameter (MPI_2DOUBLE_PRECISION=2*MPI_DOUBLE_PRECISION)
+        parameter (MPI_2DOUBLE_PRECISION= -24)
 
         integer MPI_2INTEGER
-        parameter (MPI_2INTEGER=2*MPI_INTEGER)
-
-        integer MPI_PACKED
-        parameter (MPI_PACKED=1)
+        parameter (MPI_2INTEGER= -25)
 
 
 !
 ! Size-specific types
 !
 
-	INTEGER MPI_REAL4
-	PARAMETER (MPI_REAL4=4)
+        INTEGER MPI_INTEGER1
+        PARAMETER (MPI_INTEGER1= -32 )
 
-	INTEGER MPI_REAL8
-	PARAMETER (MPI_REAL8=8)
+        INTEGER MPI_INTEGER2
+        PARAMETER (MPI_INTEGER2= -33 )
 
-	INTEGER MPI_REAL16
-	PARAMETER (MPI_REAL16=16)
+        INTEGER MPI_INTEGER4
+        PARAMETER (MPI_INTEGER4= -34 )
 
+        INTEGER MPI_INTEGER8
+        PARAMETER (MPI_INTEGER8= -35 )
 
-	integer MPI_COMPLEX8
-        parameter (MPI_COMPLEX8=8)
-
-	integer MPI_COMPLEX16
-        parameter (MPI_COMPLEX16=16)
-
-	integer MPI_COMPLEX32
-        parameter (MPI_COMPLEX32=32)
+        INTEGER MPI_INTEGER16
+        PARAMETER (MPI_INTEGER16= -36 )
 
 
-	INTEGER MPI_INTEGER1
-	PARAMETER (MPI_INTEGER1=1)
+        INTEGER MPI_REAL4
+        PARAMETER (MPI_REAL4= -37 )
 
-	INTEGER MPI_INTEGER2
-	PARAMETER (MPI_INTEGER2=2)
+        INTEGER MPI_REAL8
+        PARAMETER (MPI_REAL8= -38 )
 
-	INTEGER MPI_INTEGER4
-	PARAMETER (MPI_INTEGER4=4)
+        INTEGER MPI_REAL16
+        PARAMETER (MPI_REAL16= -39 ) 
 
-	INTEGER MPI_INTEGER8
-	PARAMETER (MPI_INTEGER8=8)
 
-	INTEGER MPI_INTEGER16
-	PARAMETER (MPI_INTEGER16=16)
+        integer MPI_COMPLEX8
+        parameter (MPI_COMPLEX8= -40 )
+
+        integer MPI_COMPLEX16
+        parameter (MPI_COMPLEX16= -41 )
+
+        integer MPI_COMPLEX32
+        parameter (MPI_COMPLEX32= -42 )
 
 
         

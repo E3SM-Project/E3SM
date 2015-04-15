@@ -20,6 +20,11 @@ echo MCT_LIBDIR $MCT_LIBDIR
   mkdir mpi-serial
   cp $MCT_DIR/mpi-serial/Makefile mpi-serial
 
+# mpeu needs mpif.h which is included in the source in mpi-serial 2.0
+  if ( "$MPILIB" == "mpi-serial" ) then
+    cp $MCT_DIR/mpi-serial/mpif.h $LIBDIR/include
+  endif
+
   set runconf = 0
   set runclean = 0
 
@@ -65,11 +70,13 @@ echo MCT_LIBDIR $MCT_LIBDIR
     #endif 
   #endif
 
+# mpi-serial 2.0 looks for Makefile.conf in its own directory
+# so overwrite that with the one generated.
+  cp $MCT_LIBDIR/Makefile.conf mpi-serial/
+
   if ($runclean == 1) then
     $GMAKE clean
   endif
-
-  cp -p Makefile.conf Makefile.conf.old
 
   $GMAKE  || exit 1
 
@@ -78,8 +85,9 @@ echo MCT_LIBDIR $MCT_LIBDIR
   cp -p mpeu/lib*.a $LIBDIR/lib
   if ( "$MPILIB" == "mpi-serial" ) then
     cp -p mpi-serial/lib*.a $LIBDIR/lib
-    cp -p mpi-serial/*.h $LIBDIR/include
-    cp -p $MCT_DIR/mpi-serial/mpi.h $LIBDIR/include
+    cp -p mpi-serial/*.mod $LIBDIR/include
+    cp -p $MCT_DIR/mpi-serial/*.h $LIBDIR/include
+    cp -p $MCT_DIR/mpi-serial/*.h $LIBDIR/mct/mpi-serial
   endif
   cp -p mct/*.mod $LIBDIR/include/
   cp -p mpeu/*.mod $LIBDIR/include/
