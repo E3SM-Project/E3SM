@@ -381,6 +381,15 @@
 <!-- ======================================================================= -->
 <!-- INTERNAL MODEL VARIABLES -->
 
+<!-- Note: by default, all MPAS-LI variables have only one time level.  There
+are/will be some variables that require a second time level, and they are/can be
+individually specified to have a second time level.  Within the code, all routines
+assume there is only one time level, except where explicitly needed otherwise.
+Therefore, to minimize confusion, the convention is that the current time to be
+computed on is always time level 1.  And time level 2, if it exists for a variable,
+is the value of that variable from the *previous* time level!
+ -->
+
 
 	<!-- Mesh Variables required by MPAS framework -->
 	<var_struct name="mesh" time_levs="1">

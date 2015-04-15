@@ -213,7 +213,7 @@ contains
 !>  This routine calls velocity solvers.
 !
 !-----------------------------------------------------------------------
-   subroutine li_velocity_solve(meshPool, geometryPool, thermalPool, velocityPool, timeLevel, err)
+   subroutine li_velocity_solve(meshPool, geometryPool, thermalPool, velocityPool, err)
 
       use li_mask
 
@@ -231,8 +231,6 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          thermalPool          !< Input: thermal information
-
-      integer, intent(in) :: timeLevel  !< Input: Time level on which to calculate diagnostic variables
 
       !-----------------------------------------------------------------
       !
@@ -269,17 +267,17 @@ contains
       ! Get variables from pools
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
-      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
 
       select case (config_velocity_solver)
       case ('none')
          ! Do nothing
       case ('sia')
-          call li_sia_solve(meshPool, geometryPool, timeLevel, velocityPool, err)
+          call li_sia_solve(meshPool, geometryPool, velocityPool, err)
       case ('L1L2', 'FO', 'Stokes')
-          call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, timeLevel, err)
+          call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err)
       case default
           write(stderrUnit,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1

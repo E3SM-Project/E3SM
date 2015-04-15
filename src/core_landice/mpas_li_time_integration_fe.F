@@ -128,7 +128,7 @@ module li_time_integration_fe
       ! If needed, that guess should be inserted into normalVelocity
       ! in time level 2 before calling li_calculate_diagnostic_vars.
 
-      call li_calculate_diagnostic_vars(domain, timeLevel=2, solveVelo=.true., err=err_tmp)
+      call li_calculate_diagnostic_vars(domain, solveVelo=.true., err=err_tmp)
       err = ior(err, err_tmp)
 
 
@@ -368,13 +368,13 @@ module li_time_integration_fe
          call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
 
          ! State at time n
-         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=1)
+         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=2)
 !!!         tracersOld => stateOld % tracers % array
 !!!         cellMaskOld => stateOld % cellMask % array
 
          ! State at time n+1 (advanced by dt by Forward Euler)
-         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=2)
-         call mpas_pool_get_array(geometryPool, 'thickness', thicknessNew, timeLevel=2)
+         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=1)
+         call mpas_pool_get_array(geometryPool, 'thickness', thicknessNew, timeLevel=1)
 !!!         tracersNew => stateNew % tracers % array
 
          ! Tendencies

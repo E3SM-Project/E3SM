@@ -139,10 +139,10 @@ module li_tendency
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
       ! Assuming tendency will always be calculated using time level 1!
-      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity, timeLevel=1)
-      call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge, timeLevel=1)
-      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask, timeLevel=1)
-      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask, timeLevel=1)
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+      call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 !!!     marineBasalMassBal => mesh % marineBasalMassBal % array
 !!!     iceArea => state % iceArea % array
 !!!     areaCell => mesh % areaCell % array
