@@ -65,7 +65,7 @@ MACHINE_INFO = {
         "acme_developer",
         True,
         "ACME",
-        "/lcrc/project/$PROJECT/$CCSMUSER/acme_scratch",
+        "/lcrc/project/<PROJECT>/<USER>/acme_scratch",
         None
     ),
 }
@@ -137,6 +137,8 @@ def cleanup_queue(set_of_jobs_we_created):
         stat = acme_util.run_cmd(del_cmd, verbose=True, ok_to_fail=True)[0]
         if (stat != 0):
             warning("FAILED to clean up leftover job: %s" % job_to_delete)
+        else:
+            warning("Deleted leftover job: %s" % job_to_delete)
 
 ###############################################################################
 def get_my_queued_jobs():
@@ -161,7 +163,7 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
            "Missing machine info for machine '%s'" % acme_machine)
 
     compiler, test_suite, use_batch, project, testroot, proxy = MACHINE_INFO[acme_machine]
-    testroot = testroot.replace("<USER>", getpass.getuser())
+    testroot = testroot.replace("<USER>", getpass.getuser()).replace("<PROJECT>", project)
     casearea = os.path.join(testroot, "jenkins")
 
     #
