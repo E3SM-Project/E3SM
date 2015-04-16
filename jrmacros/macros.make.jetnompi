@@ -1,0 +1,163 @@
+# This file contains macro settings which are used by the Makefile. Some require
+# "yes" or "no", where various subflags are required if the value is
+# "yes". The intent is for the user to edit whichever parts of this file are
+# necessary, save to a file named "macros.make", then run "make" to build the
+# GPTL library.
+
+##########################################################################
+
+# Where to install GPTL library and include files.
+# if "git" is not available, set REVNO by hand
+REVNO = $(shell git describe)
+INSTALLDIR = /home/hpc/GPTL/gptl-$(REVNO)/intel_nompi
+
+# Where to install man pages (if blank, defaults to $INSTALLDIR)
+MANDIR = 
+
+# C compiler
+CC = icc
+
+# Whether to build debug lib or optimized lib, and associated flags
+DEBUG = no
+ifeq ($(DEBUG),yes)
+  CFLAGS = -g -O0 -Wall -fno-inline
+else
+  CFLAGS = -g -O3 -finline-functions -Winline -Wall
+endif
+
+# Set compiler flags for non-default ABIs (e.g. 64-bit addressing). 
+# Normally this can be blank.
+ABIFLAGS =
+
+# Is the /proc filesystem available? On most Linux systems it is. If available, get_memusage() 
+# reads from it to find memory usage info. Otherwise get_memusage() will use get_rusage()
+HAVE_SLASHPROC = yes
+
+# GPTL can enable threading either via OPENMP=yes, or PTHREADS=yes. Since
+# most OpenMP implementations are built on top of pthreads, OpenMP
+# applications linked with GPTL as built with PTHREADS=yes should work fine.
+# Thus COMPFLAG should be set to the compiler flag that enables OpenMP directives
+# if either OPENMP=yes, or PTHREADS=yes. If OPENMP=no and PTHREADS=no, GPTL 
+# will not be thread-safe.
+OPENMP = no
+COMPFLAG = -openmp
+# Set PTHREADS if available and OPENMP=no
+ifeq ($(OPENMP),no)
+  PTHREADS = yes
+endif
+
+# For gcc, -Dinline=inline is a no-op. For other C compilers, things like 
+# -Dinline=__inline__ may be required. To find your compiler's definition, try 
+# running "./suggestions CC=<your_C_compiler>".
+INLINEFLAG = -Dinline=inline
+
+# To get some C compilers such as gcc to behave properly with -O0 and no inlining, 
+# need to effectively delete the "inline" keyword
+ifeq ($(DEBUG),yes)
+  INLINEFLAG = -Dinline=
+endif
+
+# To build the Fortran interface, set FORTRAN=yes and define the entries under
+# ifeq ($(FORTRAN),yes). Otherwise, set FORTRAN=no and skip this section.
+FORTRAN = yes
+ifeq ($(FORTRAN),yes)
+# Fortran name mangling: possibilities are: leave UNDERSCORING blank meaning none
+# (e.g. xlf90), -DFORTRANDOUBLEUNDERSCORE (e.g. g77), and -DFORTRANUNDERSCORE 
+# (e.g. gfortran, pathf95)
+#
+#  UNDERSCORING =
+#  UNDERSCORING = -DFORTRANDOUBLEUNDERSCORE
+  UNDERSCORING = -DFORTRANUNDERSCORE
+
+# Set Fortran compiler, flags, and OpenMP compiler flag. Note that Fortran
+# OpenMP tests are possible with OPENMP=no as long as PTHREADS=yes
+# These settings are only used by the Fortran test applications in ftests/.
+  FC     = ifort
+  FFLAGS = -g -O2
+  FOMPFLAG = -openmp
+endif
+
+# Archiver: normally it's just ar
+AR = ar
+
+# PAPI: If a recent version of PAPI is installed, set HAVE_PAPI=yes and set inc and lib 
+# info as appropriate. 
+HAVE_PAPI = no
+ifeq ($(HAVE_PAPI),yes)
+  PAPI_INCFLAGS = -I/contrib/papi/5.3.2/include
+  PAPI_LIBFLAGS = -L/contrib/papi/5.3.2/lib -lpapi
+endif
+
+# Whether to build GPTL with MPI support. Set inc and lib info if needed. 
+# If CC=mpicc, MPI_INCFLAGS and MPI_LIBFLAGS can be blank.
+HAVE_MPI = no
+ifeq ($(HAVE_MPI),yes)
+# Hopefully MPI_Comm_f2c() exists, but if not, set HAVE_COMM_F2C = no
+  HAVE_COMM_F2C = yes
+  MPI_INCFLAGS = 
+  MPI_LIBFLAGS = 
+# Want 2 MPI tasks
+  MPICMD = mpiexec -n 2
+endif
+
+# clock_gettime() in librt.a is an option for gathering wallclock time stats
+# on some machines. Setting HAVE_LIBRT=yes enables this, but will probably
+# require linking applications with -lrt 
+HAVE_LIBRT = no
+
+# Only define HAVE_NANOTIME if this is a x86. It provides by far the finest grained,
+# lowest overhead wallclock timer on that architecture.
+# If HAVE_NANOTIME=yes, set BIT64=yes if this is an x86_64
+HAVE_NANOTIME = yes
+ifeq ($(HAVE_NANOTIME),yes)
+  BIT64 = yes
+endif
+
+# Some old compilers don't support vprintf. Set to "no" in this case
+HAVE_VPRINTF = yes
+
+# Some old compilers don't support the C times() function. Set to "no" in this case
+HAVE_TIMES = yes
+
+# gettimeofday() should be available everywhere. But if not, set to "no"
+HAVE_GETTIMEOFDAY = yes
+
+# Whether to test auto-profiling (adds 2 tests to "make test"). If compiler is gcc or 
+# pathscale, set INSTRFLAG to -finstrument-functions. PGI 8.0.2 and later provide 
+# -Minstrument:functions.
+TEST_AUTOPROFILE = yes
+ifeq ($(TEST_AUTOPROFILE),yes)
+  INSTRFLAG = -finstrument-functions
+  CXX = icpc
+endif
+
+# Whether to enable PMPI wrappers. Turning this on will result in automatic 
+# start/stop entries for a number of MPI calls.
+ifeq ($(HAVE_MPI),yes)
+  ENABLE_PMPI = no
+  ifeq ($(ENABLE_PMPI),yes)
+# Some newer MPI releases change the prototype of some input arguments from "void *" 
+# to "const void *". The prototype for these functions inside GPTL must match the
+# MPI library in use. For ENABLE_PMPI=yes, set MPI_CONST to yes or no appropriately.
+    MPI_CONST = no
+# Yet another (Fortran-only) wart: the value of MPI_STATUS_SIZE varies among MPI distributions. 
+# Normal values are 5 or 10. AIX and very new MPICH versions it is 10. Set it here--if you get it
+# wrong your instrumented code will tell you at run time the proper value. Or run ftests/pmpi
+   MPI_STATUS_SIZE_IN_INTS = 5
+  endif
+# If Fortran is enabled, the ability to automatically initialize GPTL from
+# mpi_init can be enabled if iargc() and getarg() are available.
+  ifeq ($(FORTRAN),yes)
+    HAVE_IARGCGETARG = no
+  endif
+endif
+
+# Whether system functions backtrace() and backtrace_symbols() exist. Setting HAVE_BACKTRACE=yes
+# will enable auto-generation of function name when auto-profiling and GPTLdopr_memusage has been
+# enabled at run-time. If HAVE_BACKTRACE=no, function address will be printed instead.
+# GNU compilers: compile application code with -finstrument-functions -rdynamic
+# Intel compilers: compile application code with -finstrument-functions -rdynamic -g
+HAVE_BACKTRACE = yes
+ifeq ($(HAVE_BACKTRACE),yes)
+  CFLAGS += -DHAVE_BACKTRACE
+endif

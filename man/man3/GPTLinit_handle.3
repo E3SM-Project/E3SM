@@ -1,0 +1,97 @@
+.\" $Id$
+.TH GPTLinit_handle 3 "October, 2013" "GPTL"
+
+.SH NAME
+GPTLinit_handle \- Initializer for GPTLstart_handle and GPTLstop_handle
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLinit_handle (const char *name, int *handle);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlinit_handle (character(len=*) name, integer handle)
+.fi
+
+.SH DESCRIPTION
+.B GPTLinit_handle() 
+Initialize the handle variable for later use by 
+.B GPTLstart_handle()
+and
+.B GPTLstop_handle().
+Use of this function is
+.B optional.
+Its purpose is to avoid some of the overhead incurred on the initial call to
+.B GPTLstart_handle()
+when the handle variable is in an unitialized state (zero). In addition to
+isolating this one-time initialization overhead, 
+.B GPTLinit_handle()
+is particularly useful when subsequent
+.B GPTLstart_handle()
+and
+.B GPTLstop_handle()
+calls are within threaded regions of user code. Invoking 
+.B GPTLinit_handle()
+outside the threaded region avoids the one-time case of multiple threads
+initializing the handle variable.
+
+.SH ARGUMENTS
+.I name
+-- name of timer for which to initialize its handle variable. Only the first 63 characters are
+significant. This limit can be modified in the GPTL library code by changing
+the value of MAX_CHARS in private.h.
+
+.I handle
+-- output value to be used later by the GPTL library. It is the hash value of
+the 
+.B
+name
+variable.
+
+.SH RESTRICTIONS
+For 
+.B GPTLstop() 
+or
+.B GPTLstop_handle()
+, a previous call to
+.B GPTLstart()
+or
+.B GPTLstart_handle()
+with the same
+.I name
+and handle must have been made.
+
+.SH RETURN VALUE
+On success, these functions return 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+A sequence of GPTL library calls using
+.B GPTLinit_handle()
+prior to a threaded region utilizing
+.B GPTLstart_handle()
+and
+.B GPTLstop_handle()
+might look something like the following:
+.nf         
+.if t .ft CW
+
+int handle;                                  /* for calling _handle GPTL routines */
+...
+ret = GPTLinitialize();                      /* initialize the GPTL library */
+ret = GPTLinit_handle ("inner", &handle);    /* initialize the handle */
+...
+#pragma omp parallel for private(ret)        /* OMP loop */
+for (i=0; i<1000; ++i) {
+  ret = GPTLstart_handle ("inner", &handle); /* start a timer */
+  do_work();                                 /* do some work */
+  ret = GPTLstop_handle ("inner", &handle);  /* stop a timer */
+}
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTLstart "(3)" 

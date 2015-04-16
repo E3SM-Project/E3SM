@@ -1,0 +1,188 @@
+<html>
+<head>
+<title>GPTL usage example 4</title>
+<meta name="example" content="Automatic GPTL instrumentation C++">
+<meta name="Keywords" content="gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Author" content="Jim Rosinski">
+</head>
+<body bgcolor="peachpuff">
+
+<hr />
+<a href="example3.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Example 3"
+				  /></a> 
+<a href="example5.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 5" /></a>
+
+<br />
+
+<h2>Example 4: Auto-instrumentation of a C++ code</h2>
+This example is a C++ code compiled with auto-instrumentation enabled. Note
+that the constructor and destructor for X are inside the class definition,
+and outside the class definition for Y. After running the code,
+function addresses in the timing output file are translated to human-readable
+form with perl script <b><em>hex2name.pl</em></b>.
+<p>
+<b><em>profcxx.C:</em></b>
+<pre>
+<div style="background-color:white;">
+#include &#60gptl.h&gt
+#include &#60myclasses.h&gt
+
+int main ()
+{
+  X *x;
+  Y *y;
+  int ret;
+
+  ret = GPTLinitialize ();
+  ret = GPTLstart ("total");
+
+  x = new (X);
+  x->func (1.2);
+  x->func (1);
+  delete (x);
+
+  y = new (Y);
+  y->func (1.2);
+  y->func (1);
+  delete (y);
+
+  ret = GPTLstop ("total");
+  ret = GPTLpr (0);
+}
+
+</div>
+</pre>
+
+<b><em>myclasses.h:</em></b>
+<div style="background-color:white;">
+<pre>
+class Base
+{
+ public:
+  Base ();
+  ~Base ();
+};
+
+Base::Base ()
+{
+}
+
+Base::~Base ()
+{
+}
+
+class X: Base
+{
+ public:
+  X () 
+  {
+  }
+  ~X() 
+  {
+  }
+  void func (int x)
+  {
+  }
+  void func (double x)
+  {
+  }
+};
+
+class Y: Base
+{
+ public:
+  Y ();
+  ~Y();
+  void func (int);
+  void func (double);
+};
+
+Y::Y ()
+{
+}
+
+Y::~Y()
+{
+}
+
+void Y::func (int x)
+{
+}
+
+void Y::func (double x)
+{
+}
+</div>
+</pre>
+Compile <em>profcxx.C</em> with auto-instrumentation, then link and
+run. In this case, The <em>-fopenmp</em> argument is needed because GPTL was built
+with threading support.
+<pre>
+% g++ -fopenmp -finstrument-functions profcxx.C -o profcxx -lgptl
+% ./profcxx
+</pre>
+
+Now convert the auto-instrumented output to human-readable form:
+<pre>
+% hex2name.pl -demangle profcxx timing.0 > timing.0.converted
+</pre>
+
+Output file <em>timing.0.converted</em> looks like this:
+<pre>
+<div style="background-color:white;">
+Stats for thread 0:
+                      Called  Recurse Wallclock max       min       UTR_Overhead  
+  total                     1     -       0.000     0.000     0.000         0.000 
+    ???                     1     -       0.000     0.000     0.000         0.000 
+*     Base::Base()          2     -       0.000     0.000     0.000         0.000 
+    ???                     1     -       0.000     0.000     0.000         0.000 
+    ???                     1     -       0.000     0.000     0.000         0.000 
+    ???                     1     -       0.000     0.000     0.000         0.000 
+*     Base::~Base()         2     -       0.000     0.000     0.000         0.000 
+    Y::Y()                  1     -       0.000     0.000     0.000         0.000 
+    Y::func(double)         1     -       0.000     0.000     0.000         0.000 
+    Y::func(int)            1     -       0.000     0.000     0.000         0.000 
+    Y::~Y()                 1     -       0.000     0.000     0.000         0.000 
+Overhead sum          =  8.32e-06 wallclock seconds
+Total calls           = 13
+Total recursive calls = 0
+
+Multiple parent info (if any) for thread 0:
+Columns are count and name for the listed child
+Rows are each parent, with their common child being the last entry, which is indented
+Count next to each parent is the number of times it called the child
+Count next to child is total number of times it was called by the listed parents
+
+       1 ???                         
+       1 Y::Y()                         
+       2   Base::Base()                         
+
+       1 ???                         
+       1 Y::~Y()                         
+       2   Base::~Base()                         
+</div>
+</pre>
+<h3>Explanation of the above output</h3>
+Most of the output should be self-explanatory. But what are the "???"
+strings? Those represent function invocations for which <em>nm</em> (invoked
+by <em>hex2name.pl</em>) was unable to translate an address to a function
+name. Note that constructor and destructor definitions for "X"
+(<em>myclasses.h</em> above) are in-line. They're automatically inlined,
+so there is no name to associate with their address and <em>hex2name.pl</em>
+punts by printing three "?" characters.
+<p>
+Constructor and destructor definitions for "Y" however, are outside the class
+definition. Therefore they are compiled as separate functions,
+and <em>hex2name.pl</em> is able to associate a name with their address.
+<hr />
+<a href="example3.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Example 3"
+				  /></a> 
+<a href="example5.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 5" /></a>
+
+<br />
+
+</html>

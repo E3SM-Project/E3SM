@@ -1,0 +1,120 @@
+.\" $Id$
+.TH GPTLstart 3 "October, 2013" "GPTL"
+
+.SH NAME
+GPTLstart \- Start a timer
+.TP
+GPTLstop \- Stop a timer
+.P
+GPTLstart_handle \- Start a timer with a given handle
+.TP
+GPTLstop_handle \- Stop a timer with a given handle
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLstart (const char *name);
+int GPTLstop (const char *name);
+.P
+int GPTLstart_handle (const char *name, int *handle);
+int GPTLstop_handle (const char *name, int *handle);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlstart (character(len=*) name)
+integer gptlstop (character(len=*) name)
+.P
+integer gptlstart_handle (character(len=*) name, integer handle)
+integer gptlstop_handle (character(len=*) name, integer handle)
+.fi
+
+.SH DESCRIPTION
+.B GPTLstart() 
+and
+.B GPTLstart_handle()
+start a timer defined by
+.I name.
+.B GPTLstop()
+and
+.B GPTLstop_handle()
+stop a timer defined by
+.I name.
+
+.SH ARGUMENTS
+.I name
+-- name of timer to start/stop. Only the first 63 characters are
+significant. This limit can be modified in the GPTL library code by changing
+the value of MAX_CHARS in private.h.
+.P
+The
+.B _handle
+versions of these routines are designed to be more efficient. They take a second argument 
+(integer), which must be initialized by the user to zero. A different 
+.I handle
+is required for each region to be timed. On first invocation for each region, 
+GPTL writes an internal hash index into 
+.I handle.
+On subsequent invocations, GPTL uses this index directly, rather than going through
+the hash-table lookup procedure required by GPTLstart() and GPTLstop(). This can save
+substantial overhead when timing fine grained regions that are invoked many times
+over the course of the run being timed.
+.P
+The 
+.B _handle
+versions work correctly within threaded code. For OpenMP codes, the handle should have
+scope
+.B shared.
+This is because for a given region name, all threads will use the same value for the handle 
+variable.
+.P
+It is possible to mix use of GPTLstart()/GPTLstop() with use of 
+GPTLstart_handle()/GPTLstop_handle(), even for the same region.
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called. For 
+.B GPTLstop()
+, a previous call to
+.B GPTLstart()
+with the same
+.I name
+must have been made. Likewise for the
+.B _handle
+versions of these routines.
+
+.SH RETURN VALUE
+On success, these functions return 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+A complete sequence of GPTL library calls within a program might look
+something like the following:
+.nf         
+.if t .ft CW
+
+int handle = 0;                            /* for calling _handle GPTL routines */
+ret = GPTLsetoption (GPTLcpu, 1);          /* enable cpu timings: default false */
+ret = GPTLsetoption (GPTLwall, 0);         /* disable wallclock timings: default true */
+ret = GPTLsetoption (PAPI_TOT_CYC, 1);     /* use PAPI to count total cycles */
+...
+ret = GPTLinitialize();                    /* initialize the GPTL library */
+ret = GPTLstart ("total");                 /* start a timer */
+...
+ret = GPTLstart ("do_work");               /* start another timer */
+do_work();                                 /* do some work */
+ret = GPTLstop ("do_work");                /* stop a timer */
+ret = GPTLstart_handle ("work2", &handle); /* start a timer and give it a handle */
+do_work2();
+ret = GPTLstop_handle ("work2", &handle);  /* stop a timer with a handle */
+ret = GPTLstop ("total");                  /* stop a timer */
+...
+ret = GPTLpr (mympitaskid);                /* print results to timing.<mympitaskid> */
+
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTLpr "(3)" 
+.BR GPTLpr_file "(3)" 

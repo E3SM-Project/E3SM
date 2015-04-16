@@ -1,0 +1,63 @@
+.\" $Id$
+.TH GPTLget_eventvalue 3 "December, 2008" "GPTL"
+
+.SH NAME
+GPTLget_eventvalue \- Request current value of PAPI or derived counter
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLget_eventvalue (const char *name, const char *eventname, int t, 
+                        double *value);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlget_eventvalue (character(len=*) name, character(len=*) eventname, integer t,
+                            real*8 value)
+.fi
+
+.SH DESCRIPTION
+.B GPTLget_eventvalue()
+Returns current value of PAPI-based event
+.IR eventname
+in region
+.IR name
+in user-supplied argument
+.IR value .
+Whether the event is derived (e.g. GPTL_CI) or a simple PAPI counter
+(e.g. PAPI_FP_OPS), the result is returned in floating-point format.
+
+.SH ARGUMENTS
+.TP
+.I name
+-- existing timer name
+.TP
+.I eventname
+-- event name (e.g. GPTL_CI)
+.TP
+.I t
+-- thread number. If < 0, return results for the current thread.
+.TP
+.I *value
+-- output 64-bit current value of the event.
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called,
+.I eventname
+enabled with a call to 
+.B GPTLsetoption()
+and at least one pair of calls to
+.B GPTLstart()
+and 
+.B GPTLstop()
+for the desired region.
+
+.SH RETURN VALUE
+On success, 0 is returned.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH SEE ALSO
+.BR GPTLsetoption "(3)" 

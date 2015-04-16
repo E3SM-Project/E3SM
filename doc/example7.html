@@ -1,0 +1,136 @@
+<html>
+<head>
+<title>GPTL usage example 7: Using GPTLstart_handle() and GPTLstop_handle()</title>
+<meta name="example" content="MPI profile">
+<meta name="Keywords" content="pmpi","mpi","gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Author" content="Jim Rosinski">
+</head>
+<body bgcolor="peachpuff">
+
+<hr />
+<a href="example6.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Example 6"
+				  /></a> 
+<a href="gptl_homepage.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="GPTL home page" /></a>
+
+<br />
+
+<h2>Example 7: Using GPTLstart_handle() and GPTLstop_handle()</h2>
+This is a threaded Fortran code which uses functions <b>GPTLstart_handle()</b>
+and <b>GPTLstop_handle()</b>. The purpose of these functions is to lower GPTL
+overhead by maintaining in user-space the value of the hash function for the region of
+interest, avoiding the overhead of hash table lookup every time the start or stop functions
+are called. On initial invocation, a zero input value of the "handle"
+argument is a flag which tells GPTL to compute the hash value and store its
+contents for later use by the library.
+<p>
+The hash value for any given GPTL region is invariant across threads. So
+per-thread copies of the handle are not needed. Also, these
+functions can be freely mixed with their <b>GPTLstart()</b>
+and <b>GPTLstop()</b> counterparts, as shown in the example below.
+
+<p>
+<b><em>handle.F90:</em></b>
+<pre>
+<div style="background-color:white;">
+program handle
+  use gptl
+  implicit none
+
+  integer :: handle1       ! Hash index
+  integer :: n
+  integer :: ret
+
+  ret = gptlinitialize ()
+
+  ret = gptlstart ('total') ! Time the entire code
+! IMPORTANT: Start with a zero handle value so GPTLstart_handle knows to initialize
+! Instead of setting handle1=0 here we could also do:
+! ret=gptlinit_handle('loop', handle1)
+! This latter approach is actually preferable to avoid one-time multiple threads
+! computing the handle value inside the threaded loop.
+  handle1 = 0
+
+!$OMP PARALLEL DO SHARED (handle1)
+  do n=1,1000000
+! First call the "_handle" versions of start and stop for the region
+    ret = gptlstart_handle ('loop', handle1)
+    ret = gptlstop_handle ('loop', handle1)
+! Now call the standard start and stop functions for the same region
+    ret = gptlstart ('loop')
+    ret = gptlstop ('loop')
+  end do
+  ret = gptlstop ('total') ! Time the entire code
+
+  ret = gptlpr (0)
+  stop
+end program handle
+</div>
+</pre>
+Now compile and run:
+<pre>
+<div>
+% mpif90 -fopenmp -o handle handle.F90 -L.. -lgptl
+% ./handle
+</div>
+</pre>
+
+Here's the important output from the timing.0 file that got created by the
+call to gptlpr(0):
+<pre>
+<div style="background-color:white;">
+
+Total overhead of 1 GPTL start or GPTLstop call=1.08e-07 seconds
+Components are as follows:
+Fortran layer:             2.0e-09 =   1.9% of total
+Get thread number:         2.0e-08 =  18.5% of total
+Generate hash index:       3.1e-08 =  28.7% of total
+Find hashtable entry:      2.2e-08 =  20.4% of total
+Underlying timing routine: 3.3e-08 =  30.6% of total
+...
+Stats for thread 0:
+           Called  Recurse Wallclock max       min       self_OH  parent_OH 
+  total           1    -       0.159     0.159     0.159     0.000     0.000 
+    loop     500000    -       0.045  1.40e-05  0.00e+00     0.018     0.091 
+Overhead sum =     0.108 wallclock seconds
+Total calls  = 500001
+...
+Same stats sorted by timer for threaded regions:
+Thd      Called  Recurse Wallclock max       min       self_OH  parent_OH 
+000 loop   500000    -       0.045  1.40e-05  0.00e+00     0.018     0.091 
+001 loop   500000    -       0.046  2.50e-05  0.00e+00     0.018     0.091 
+002 loop   500000    -       0.048  8.60e-05  0.00e+00     0.018     0.091 
+003 loop   500000    -       0.049  3.30e-03  0.00e+00     0.018     0.091 
+SUM loop  2.0e+06    -       0.189  3.30e-03  0.00e+00     0.070     0.362 
+</div>
+</pre>
+<h3>Explanation of the above output</h3>
+Only a single region named "loop" was timed. It was called a total of 2
+million times across 4 threads. One million for the loop induction variable,
+and another factor of two for the two different flavors of <b>GPTLstart()</b>
+and <b>GPTLstop()</b>. These different flavors each accumulated time into
+the same reported timer ("loop"). 
+<p>
+It is worth noting that the reported
+overhead assumes that only <b>GPTLstart()</b> and <b>GPTLstop()</b> were
+called. This estimate can be further refined in this example by taking the reported 28.7%
+of overhead that is due to generating the hash index, multiplying it by 0.5 (since
+half of the start/stop calls used the "_handle" GPTL routines which don't
+need to generate hash indices), and subtracting that fraction from the 0.108
+seconds reported overhead to a new overhead estimate of 0.092 seconds.
+<p>
+Note that the reported overhead was very high relative to the cost of the
+work being timed. This is understandable considering that no real work is
+being done between GPTL "start" and "stop" calls.
+
+<hr />
+<a href="example6.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="Example 6"
+				  /></a> 
+<a href="gptl_homepage.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="GPTL home page" /></a>
+
+<br />
+
+</html>

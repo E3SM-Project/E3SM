@@ -1,0 +1,88 @@
+.\" $Id$
+.TH GPTLpr_summary 3 "December, 2012" "GPTL"
+
+.SH NAME
+GPTLpr_summary \- Print a statistical summary of region times across all threads and tasks
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLpr_summary (MPI_Comm comm);  /* when built with HAVE_MPI */
+int GPTLpr_summary ();               /* when built without HAVE_MPI */
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlpr_summary (integer comm) ! when built with HAVE_MPI
+integer gptlpr_summary ()             ! when built without HAVE_MPI
+.fi
+
+.SH DESCRIPTION
+When built with HAVE_MPI=yes, GPTLpr_summary() provides max, min, mean, and standard 
+deviation stats for all timed regions across all threads and tasks. The data are 
+written to a file named
+.B timing.summary. 
+If PAPI counters were enabled, they are included in the summary.
+.P
+The computation algorithm uses a binary tree so it scales easily to many thousands of cores
+with minimal additional per-core memory. Mean and standard deviation stats use the one-pass 
+algorithm described in http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+Mean and standard deviation are across
+.B ranks,
+where each data point is represented by the maximum time across threads owned by the rank.
+.P
+If GPTL was built with HAVE_MPI=no, GPTLpr_summary() does everything mentioned above, except
+for aggration across MPI tasks. Of course mean and standard deviation stats are not printed
+because they have no meaning on only one task. Users should note that calling this routine
+with mulitple MPI tasks when GPTL was built with HAVE_MPI=no will not produce the desired
+behavior.
+
+.SH ARGUMENTS
+.I comm
+-- MPI communicator to sum across. An input of 0 means use MPI_COMM_WORLD
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called. Must be between calls to
+.B MPI_Initialize()
+and
+.B MPI_Finalize()
+
+.SH RETURN VALUES
+On success, this function returns 0. On error, a negative error code is returned and a 
+descriptive message printed. 
+
+.SH EXAMPLE OUTPUT
+Below is GPTLpr_summary output from a simple 2-rank, 4-thread run with 4 regions timed.
+.P
+.nf
+.if t .ft CW
+total ranks in communicator=2
+nthreads on rank 0=1
+'N' used for mean, std. dev. calcs.: 'ncalls'/'nthreads'
+'ncalls': number of times the region was invoked across tasks and threads.
+'nranks' is the number of ranks which invoked the region.
+mean and std. dev. are across tasks for max time taken by any thread.
+wallmax and wallmin are across tasks and threads.
+
+name   ncalls nranks mean_time std_dev wallmax (rank thread) wallmin (rank thread)
+total       2      2     0.754   0.639   1.206 (   1      0)   0.303 (   0      0)
+region1     4      2     0.250   0.071   0.300 (   0      1)   0.100 (   1      0)
+region2     4      2     0.000   0.000   0.000 (   0      0)   0.000 (   1      1)
+region3     1      1     1.000   0.000   1.000 (   1      0)   1.000 (   1      0)
+.if t .ft P
+.fi
+
+.SH NOTES
+Building GPTL with MPI enabled means all executables linked with GPTL will require linking 
+with the MPI library as well.
+.P
+C and C++ applications must be linked with the 
+.B -lm
+flag because standard deviation calculations require the square root function.
+
+.SH AUTHOR
+Jim Rosinski. With inspiration from Pat Worley.
+.SH SEE ALSO
+.BR GPTLpr "(3)" 
+.BR GPTLpr_file "(3)" 

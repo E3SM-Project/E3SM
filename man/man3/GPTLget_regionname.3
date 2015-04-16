@@ -1,0 +1,42 @@
+.\" $Id: GPTLget_regionname.3,v 1.1 2007-04-17 20:09:03 rosinski Exp $
+.TH GPTLget_regionname 3 "March, 2007" "GPTL"
+
+.SH NAME
+GPTLget_regionname \- Return the number of regions (timers) for a thread
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLget_regionname (int t, int region, char *name, int nc);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlget_regionname (integer t, integer region, character(len=*) name)
+.fi
+
+.SH DESCRIPTION
+finds the region name corresponding to a given region number. The total
+number of regions can be found by calling GPTLget_nregions().
+
+.SH ARGUMENTS
+.TP
+.I t
+-- thread number. If < 0, return results for the current thread.
+.TP
+.I region
+-- region number
+.TP
+.I name
+-- name (output) corresponding to input region number
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called.
+
+.SH RETURN VALUE
+On success, this function returns 0.
+On error, -1 is returned.
+
+.SH SEE ALSO
+.BR GPTLget_nregions "(3)" 

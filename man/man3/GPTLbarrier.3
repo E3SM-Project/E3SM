@@ -1,0 +1,47 @@
+.\" $Id$
+.TH GPTLbarrier 3 "December, 2012" "GPTL"
+
+.SH NAME
+GPTLbarrier \- Set an MPI barrier and time it
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLbarrier (MPI_Comm comm, const char *name);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlbarrier (integer comm, character(len=*) name)
+.fi
+
+.SH DESCRIPTION
+Call 
+.B MPI_Barrier()
+, and time its execution with 
+.B GPTLstart()
+and
+.B GPTLstop()
+. This routine is only available if GPTL was built with MPI enabled.
+
+.SH ARGUMENTS
+.I comm
+-- Communicator for MPI_Barrier()
+.I name
+-- Region name for GPTLstart() and GPTLstop()
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called. Must be between calls to
+.B MPI_Initialize()
+and
+.B MPI_Finalize()
+
+.SH RETURN VALUES
+On success, this function returns 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH SEE ALSO
+.BR GPTLstart "(3)" 
+.BR GPTLstop "(3)" 

@@ -1,0 +1,242 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>Earlier changes to GPTL</title>
+<meta name="Author" content="Jim Rosinski">
+</head><body bgcolor="peachpuff"><h1>Earlier changes to GPTL</h1>
+
+<hr noshade="noshade" size="2" width="100%" align="LEFT">
+<h3>gptl-v5.3.2</h3>
+<ul>
+<li> Bugfix to enable multiplexed use of latest PAPI library which includes
+  the <em>Component</em> interface (PAPI-C), which became available around
+  PAPI-3.9.0. The problem occurred in GPTL because the PAPI-C API changed
+  slightly vs. previous versions. Thanks to Crystal Jernigan of ORNL for
+  discovering and reporting the bug. 
+</li><li> New entry point <b>GPTLprint_rusage()</b> enables printing useful
+    information from standard C library routine <b>getrusage()</b>. This is
+    the preferred mechanism for getting memory hiwater mark from GPTL now that Linux
+    supports it (as of Linux 2.6.32). Other information printed includes
+    number of hard and soft page faults, and number of voluntary context switches.
+</li><li> Do not print values of timers which are ON. This is 
+    because a GPTLstop call is required to achieve a current accumulation.
+</li><li> Obsoleted FORTRANCAPS
+</li><li> Relevant to ENABLE_PMPI=yes only: Migrate specification of
+    MPI_STATUS_SIZE up to macros.make. A value of 10 is now more common,
+    while in older MPI libraries it was often 5.
+</li><li> Relevant to ENABLE_PMPI=yes only: Bugfix to PMPI hooks enables use
+    of recent MPI libraries which include mods to the function prototypes
+    adding "const" to appropriate MPI arguments. This was a change to the MPI
+    standard adopted around definition of the MPI 2.2 standard.
+<p> 
+  <b>Note to MPI forum:</b> Please only change existing API specs when absolutely
+  necessary! Changing the API can cause major disruption to other library
+  developers and to users of your library! The recent addition of "const" to
+  the API spec of some arguments of existing MPI functions seems totally
+  unnecessary.
+</li>
+</ul>
+
+<h3>gptl-v5.0</h3>
+<ul>
+<li> Lower overhead incurred by the GPTL library itself: New hash algorithm results in fewer 
+  collisions by employing better randomization.
+<li> Improved user interface to <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b> by changing
+  the second argument (the <em>handle</em>) to be the hash index instead of a
+  pointer to the timer itself. This has the <em>huge</em> advantage that inside of
+  threaded loops, thread-local storage for the <em>handle</em> variable is no longer
+  required in user code. The previous severe restriction of thread-local storage for these
+  variables effectively rendered <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>
+  unusable inside of threaded regions. And threaded regions are exactly where these more
+  efficient equivalents of <b>GPTLstart()</b> and <b>GPTLstop()</b> are most likely to be
+  useful! 
+
+  <p><b>IMPORTANT NOTE:</b> Slight API changes to <b>GPTLstart_handle()</b>
+  and <b>GPTLstop_handle()</b> were required. In C/C++ the type of the <em>handle</em>
+  argument was changed from <em>void **</em> to <em>int *</em>. In Fortran the type
+  changed from <em>integer(8)</em> to <em>integer</em>. Tests of the new library with the
+  GNU compilers using the old types produced compiler warnings but still worked
+  properly.
+<li> Produce a much more accurate estimate of the overhead incurred by the GPTL
+  library itself. Previously, the overhead estimate printed was only for the underlying
+  timing utility employed by GPTL (e.g. gettimeofday()). Now the printed overhead estimate
+  is for the <em>entire</em> GPTL library, not just the underlying timing utility.
+
+  <p>Also, a breakdown of overhead components by GPTL function is presented
+  when <b>gptlpr()</b> or <b>gptlpr_file()</b> are called. Examples include the Fortran
+  wrapper layer, generating the hash index, and calling the underlying timing
+  routine. More importantly, also printed is a per-region estimate of total overhead
+  incurred, and total overhead incurred in the parent of the region as a 
+  result of timing the region.
+
+  <p><b>IMPORTANT NOTE</b>: Currently GPTL doesn't know if the user API was Fortran or
+  C/C++. Also, calls to the start/stop routines can be intermixed with their
+  start_handle and stop_handle counterparts at will. Therefore GPTL produces a
+  "worst-case" estimate of induced overhead. Specifically, Fortran user-level code and
+  exclusive use of <b>GPTLstart()/GPTLstop()</b> instead of the more efficient
+  <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b> is assumed. Users can refine the
+  overhead estimate by hand by subtracting the components which do not apply. For example,
+  if the Fortran API is not used and GPTL reports that the relative cost of the Fortran
+  API is 10% of the total overhead, the total overhead estimate can be reduced by 10%.
+</ul>
+
+<h3>gptl-v4.3</h3>
+<ul>
+<li> Complete rewrite of <b>GPTLpr_summary()</b> for accuracy and scalability to many thousands 
+  of cores. Mean and standard deviation timing statistics across MPI tasks are calculated using 
+  the algorithm of Chan et. al. described
+  <a href="http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">here</a>.
+  It is a one-pass algorithm well-suited to parallel computation. Additional statistics
+  from <b>GPTLpr_summary()</b> include max and min times across MPI tasks, MPI rank responsible
+  for max and min times, threading information, and PAPI statistics (if applicable). Thanks to
+  Pat Worley for suggesting the addition of this scalable function to GPTL.
+</li><li> Added option <b>GPTLmaxthreads</b> to the list of settable options in
+      <b>GPTLsetoption()</b>. This setting indicates the maximum number of threads (OMP 
+      or pthreads) that can have timers enabled. Especially useful when building
+      with <b>THREADED_PTHREADS</b> because the internal thread array used in this mode 
+      defaults to a fixed size. If this size is much larger than needed it
+      will result in large memory wastage. If too small it limits the number of threads which
+      can enable timers. Also useful when GPTL is built with <b>OPENMP=yes</b>, in cases where the 
+      invoking application sets the number of threads <em>after</em> <b>GPTLinitialize()</b> 
+      is called.
+</li><li> Changed default value of MAX_THREADS from 256 to 64. This value is only relevant 
+      when GPTL is built with <b>PTHREADS=yes</b>).
+</li><li> Bugfix for Fortran namelist parsing which indicated the incorrect print method to
+      be applied in <b>GPTLpr()</b>.
+</li><li> Bugfix for incorrect estimate of memory overhead caused by the timing library itself.
+</li>
+</ul>
+
+<h3>gptl-v4.2</h3>
+<li> Enable <b>GPTLget_wallclock()</b> and <b>GPTLget_eventvalue()</b> to work when passed either
+  auto-instrumented or manually instrumented regions.
+</li><li> Modify print_memusage to ensure size2 always exceeds size
+</li><li> Add tests of <b>GPTLget_nregions()</b>, <b>GPTLget_regionname()</b>, and <b>GPTLget_wallclock()</b> to 
+  cygprofile
+</li><li> Add MPI_Ssend test to pmpi.c, and checks that MPI wrappers are working for
+      all expected regions.
+
+<h3>gptl-v4.0</h3>
+<ul>
+<li>Speedups for PTHREADS implementation eliminate
+  critical sections except on 1st invocation of each timer. Library overhead
+  is significantly reduced on many machines, especially when applications
+  are profiled with high thread counts.
+</li><li>New entries <b>GPTLstart_handle()</b> and <b>GPTLstop_handle()</b>. These
+  routines work just like <b>GPTLstart()</b> and <b>GPTLstop()</b>, except
+  they take a 2nd argument, a "handle" to the region being
+  timed. The space for this argument is provided by the user, but is managed
+  by GPTL. It contains the address of the region being timed, and allows GPTL
+  to bypass determing the hash value and performing an address lookup on each
+  call. See "man GPTLstart_handle", and <a href="http://jmrosinski.github.com/GPTL/example7.html">Example 7</a>.
+</li><li>New underlying timer option for AIX "read_real_time", provides
+  significantly better granularity than gettimeofday, with somewhat lower
+  overhead.
+</li><li>Now safe to call <b>GPTLinitialize()</b> after <b>GPTLfinalize()</b>.
+</li><li>Works with craycc/crayftn (see macros.make.xt5).
+</li></ul>
+
+<h3>gptl-v3.7</h3>
+<ul>
+<li>Added Fortran module enabling "use gptl" instead of "include gptl.inc". 
+Adds interface block for argument checking.
+</li><li>Enable auto-profiling under AIX.
+</li><li>Enable <b>GPTLprint_memusage()</b> under MacOS (thanks to Chuck Bardeen).
+</li><li>Bugfix for Fortran entry <b>gptlget_regionname()</b> to remove null terminator put 
+there by underlying <b>GPTLget_regionname()</b>.
+</li><li>Bugfix for "make install" creates directories if they don't already exist.
+</li><li>Added auto-profiling entry for MPI_Init_thread.
+</li><li>Changed default print method from most_frequent to full_tree.
+</li></ul>
+
+<h3>gptl-v3.6.3</h3>
+<ul>
+<li><b>GPTLprint_memusage()</b> converts memory usage units to MB by default (if possible).
+</li><li>Added support for bluegene (see macros.make.bluegene).
+</li><li>Bugfix for gptl_papilibraryinit (Fortran): needed to return an int.
+</li><li>Bugfix for GPTLpr_summary: slave tried to receive too much data.
+</li><li>Changed LINUX ifdef to HAVE_SLASHPROC. Not all Linux systems have /proc/pid/statm.
+</li><li>Makefile uses "findstring xlf" to decide how Fortran defines are set.
+</li></ul>
+
+<h3>gptl-v3.6.1</h3>
+<ul>
+<li>Bugfix for auto-profiling MPI_Recv wrapper (when ENABLE_PMPI is set in macros.make): 
+ previous version could cause hangs in some cases.
+</li><li>Added auto-profiling entries for more MPI routines: MPI_Iprobe, MPI_Probe, MPI_Ssend, 
+ MPI_Alltoallv, MPI_Scatterv, MPI_Test.
+</li><li>Better estimates of bytes transferred for auto-profiled MPI routines.
+</li></ul>
+
+<h3>gptl-v3.6</h3>
+<ul>
+<li>Makefile simplification. Can now run "make" from ctests/ and ftests/.
+</li><li>Initial set of PMPI wrappers. Automatically generates MPI times and
+  statistics for the most common MPI calls.
+</li><li>Option to synchronize and time certain collectives (see ENABLE_PMPI in
+  macros.make.linux). Note that the set of MPI routines profiled is not yet
+  complete. This option has not yet been fully tested.
+</li></ul>
+
+<h3>gptl-v3.5.2</h3>
+<ul>
+<li> Bugfix for when omp_get_max_threads() returns zero.
+</li><li> <b>GPTLallocate()</b> returns error when asked for zero bytes.
+</li></ul>
+
+<h3>gptl-v3.5.1</h3>
+<ul>
+<li> OpenMP applications now work when GPTL is built with PTHREADS
+</li><li> Fortran bugfix enables longer event names. This allows one to enable the
+  PAPI native event names which can be long.
+</li><li> Remove some of the relatively unuseful entries from ctests/ and ftests/.
+</li><li> Tested on AIX.
+</li></ul>
+
+<h3>gptl-v3.5</h3>
+<ul>
+<li> Easier linking with C++ applications.
+</li><li> Options for call-tree generation based on number of invocations per
+parent: most_frequent (default), first_parent, last_parent, full_tree. 
+Previous versions always used first_parent. New option <em>full_tree</em> can
+produce <b>tons</b> of output depending the nature of the call tree. But it
+can also be very useful because it shows all parent-child relationships.
+</li><li> Derived events based on PAPI:
+  <ul>
+  <li> L2 miss rate (GPTL_L2MRT)
+  </li><li> Load-stores per L2 miss (GPTL_LSTPL2M)
+  </li><li> L3 miss rate (GPTL_L3MRT)
+  </li></ul>
+</li><li> Function <b>GPTLpr_summary()</b> now takes an MPI communicator as its
+argument. Passing an "int" doesn't work with some MPI implementations (e.g. OpenMPI).
+</li><li> New subroutine <b>gptlprocess_namelist()</b> enables Fortran codes to
+use a namelist to set <b>GPTL</b> options. This allows changing settings
+without having to recompile or relink application
+codes. See <a href="http://jmrosinski.github.com/GPTL/example5.html">Example 5</a> for example usage.
+</li><li> New function <b>GPTLget_eventvalue()</b> allows an application to query
+the current value of any PAPI-based event, including derived events.
+</li><li> New function <b>GPTLget_wallclock()</b> allows an application to query
+the current wallclock accumulation for any region.
+</li><li> New function <b>GPTLbarrier()</b> calls <b>MPI_Barrier()</b> and times it.
+</li><li> <em><b>parsegptlout.pl</b></em> now takes header name as an argument rather
+than an integer index.
+</li><li> <em><b>hex2name.pl</b></em> converts auto-instrumented entries for thread summary regions.
+</li></ul>
+
+<h3>gptl-v3.4.7</h3>
+<ul>
+<li> Derived events based on PAPI:
+  <ul>
+  <li> Computational intensity (GPTL_CI)
+  </li><li> Instructions per cycle (GPTL_IPC)
+  </li><li> FP ops per cycle (GPTL_FPC)
+  </li><li> FP ops per instruction (GPTL_FPI)
+  </li><li> Load-store instruction fraction (GPTL_LSTPI)
+  </li><li> L1 miss rate (GPTL_DCMRT)
+  </li><li> Load-stores per L1 miss (GPTL_LSTPDCM)
+  </li></ul>
+</li><li> New entry points <b>GPTLevent_code_to name()</b> and <b>GPTLevent_name_to_code()</b>
+</li><li> Ability to disable portions of printed output (e.g. GPTLdopr_preamble)
+</li><li> Better description of enabled events
+</li></ul>
+
+</body></html>

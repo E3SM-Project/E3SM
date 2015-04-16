@@ -1,0 +1,30 @@
+.\" $Id$
+.TH GPTLnum_errors 3 "January, 2014" "GPTL"
+
+.SH NAME
+GPTLnum_errors \- Return the number of times GPTLerror() was returned by the GPTL library
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLnum_errors (void);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlnum_errors ()
+.fi
+
+.SH DESCRIPTION
+.B GPTLnum_errors ():
+Returns number of times 
+.B GPTLerror() 
+has been called.
+
+.SH RESTRICTIONS
+None.
+
+.SH RETURN VALUE
+Current value of internal scalar 
+.B num_errors
+.

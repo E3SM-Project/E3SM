@@ -1,0 +1,191 @@
+<html>
+<head>
+<title>GPTL usage example 1</title>
+<meta name="example" content="Manual GPTL instrumentation">
+<meta name="Keywords" content="gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Author" content="Jim Rosinski">
+</head>
+<body bgcolor="peachpuff">
+
+<hr />
+<a href="gptl_homepage.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="GPTL home page"
+				  /></a> 
+<a href="example2.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 2" /></a>
+
+<br />
+
+<h2>Example 1: Simple manual instrumentation</h2>
+This is an OpenMP Fortran code manually instrumented with <b>GPTL</b> calls. The 
+output produced by the embedded call to <b>gptlpr()</b> is shown and
+explained. <b>PAPI</b> is used to compute floating point operation count.
+<p>
+<b><em>papiomptest.f90:</em></b>
+<pre>
+<div style="background-color:white;">
+program papiomptest
+  implicit none
+  include 'gptl.inc'                 ! Fortran GPTL include file
+  include 'f90papi.h'                ! Needed for PAPI_FP_OPS
+  integer :: ret, iter
+  integer, parameter :: nompiter = 2 ! Number of OMP threads
+
+  ret = gptlsetoption (gptlabort_on_error, 1) ! Abort on GPTL error
+  ret = gptlsetoption (PAPI_FP_OPS, 1)        ! Count floating point ops
+  ret = gptlsetoption (gptlnarrowprint, 1)    ! Print fewer sig figs
+  ret = gptlsetoption (gptlpercent, 1)        ! Turn on "% of" print
+  ret = gptlsetoption (gptloverhead, 0)       ! Turn off overhead estimate
+  ret = gptlinitialize ()                     ! Initialize GPTL
+  ret = gptlstart ('total')                   ! Start a timer
+
+!$OMP PARALLEL DO PRIVATE (iter)   ! Threaded loop
+  do iter=1,nompiter
+    ret = gptlstart ('A')          ! Start a timer
+    ret = gptlstart ('B')          ! Start another timer
+    ret = gptlstart ('C')
+    call sleep (iter)              ! Sleep for "iter" seconds
+    ret = gptlstop ('C')           ! Stop a timer
+    ret = gptlstart ('CC')
+    ret = gptlstop ('CC')
+    ret = gptlstop ('A')
+    ret = gptlstop ('B')         
+  end do
+  ret = gptlstop ('total')
+  ret = gptlpr (0)                 ! Print timer stats
+  ret = gptlfinalize ()            ! Clean up
+end program papiomptest
+</div>
+</pre>
+
+Compile and link, then run:
+<pre>
+% gfortran -fopenmp papiomptest.f90 -I/usr/local/include -lgptl -lpapi 
+% env OMP_NUM_THREADS=2 ./a.out
+</pre>
+
+The call to <b>gptlpr(0)</b> wrote a file named timing.0, which looks like this:
+
+<pre>
+<div style="background-color:white;">
+PAPI event multiplexing was OFF
+PAPI events enabled (including derived):
+  Floating point operations executed
+
+Underlying timing routine was gettimeofday.
+Per-call utr overhead est: 2.9e-07 sec.
+Per-call PAPI overhead est: 1.4e-07 sec.
+If overhead stats are printed, roughly half the estimated number is
+embedded in the wallclock (and/or PAPI counter) stats for each timer
+
+If a '% of' field is present, it is w.r.t. the first timer for thread 0.
+If a 'e6 per sec' field is present, it is in millions of PAPI counts per sec.
+
+A '*' in column 1 below means the timer had multiple parents, though the
+values printed are for all calls. Further down the listing is more detailed
+information about multiple parents. Look for 'Multiple parent info'
+
+Stats for thread 0:
+             Called Recurse Wallclock max       min       % of total   FP_OPS e6 / sec 
+  total             1   -       2.000     2.000     2.000     100.00       59     0.00 
+    A               1   -       1.000     1.000     1.000      50.00       32     0.00 
+      B             1   -       1.000     1.000     1.000      50.00       36     0.00 
+        C           1   -       1.000     1.000     1.000      50.00        4     0.00 
+        CC          1   -       0.000     0.000     0.000       0.00        4     4.00 
+Total calls           = 5
+Total recursive calls = 0
+
+Stats for thread 1:
+        Called Recurse Wallclock max       min       % of total   FP_OPS e6 / sec 
+  A            1   -       2.000     2.000     2.000     100.00       50     0.00 
+    B          1   -       2.000     2.000     2.000     100.00       54     0.00 
+      C        1   -       2.000     2.000     2.000     100.00       22     0.00 
+      CC       1   -       0.000     0.000     0.000       0.00        4     4.00 
+Total calls           = 4
+Total recursive calls = 0
+
+Same stats sorted by timer for threaded regions:
+Thd      Called Recurse Wallclock max       min       % of total   FP_OPS e6 / sec 
+000 A           1   -       1.000     1.000     1.000      50.00       32     0.00 
+001 A           1   -       2.000     2.000     2.000     100.00       50     0.00 
+SUM A           2   -       3.000     2.000     1.000     150.00       82     0.00 
+
+000 B           1   -       1.000     1.000     1.000      50.00       36     0.00 
+001 B           1   -       2.000     2.000     2.000     100.00       54     0.00 
+SUM B           2   -       3.000     2.000     1.000     150.00       90     0.00 
+
+000 C           1   -       1.000     1.000     1.000      50.00        4     0.00 
+001 C           1   -       2.000     2.000     2.000     100.00       22     0.00 
+SUM C           2   -       3.000     2.000     1.000     150.00       26     0.00 
+
+000 CC          1   -       0.000     0.000     0.000       0.00        4     4.00 
+001 CC          1   -       0.000     0.000     0.000       0.00        4     4.00 
+SUM CC          2   -       0.000     0.000     0.000       0.00        8     4.00 
+</div>
+</pre>
+
+<h3>Explanation of the above output</h3>
+The output file contains a preamble which lists <b>PAPI</b>
+settings such as whether multiplexing was on or off, and
+which <b>PAPI</b> events were enabled. In this case 
+"Floating point operations executed" were counted. Other preamble contents
+include estimates of underlying timing routine (UTR)
+overhead, <b>PAPI</b> overhead, and an explanation of the printed
+statistics. 
+<p>
+The statistics themselves begin with the line which reads "Stats for
+thread 0:". The region names are listed on the far left. A 
+"region" is defined in the application by calling
+<b>GPTLstart()</b>, then <b>GPTLstop()</b> for the same input (character
+string) argument.
+Indenting of 
+the names preserves parent-child relationships between the regions. In
+the example, we see that region "A" was contained in "total", "B"
+contained in "A", and regions "C" and "CC" both contained in "B". 
+<p>
+Reading across the output from left to right, the next column is labelled
+"Called". This is the number of times the region was invoked. If any regions
+were called recursively, that information is printed next. In this case there
+were no recursive calls, so just a "-" is printed. Total wallclock time for
+each region is printed next, followed by the max and min values for any
+single invocation. In this simple example each region was called only once, so
+"Wallclock", "max", and "min" are all the same. The next column lists the
+percentage of wallclock time each region took compared to the first
+region timed, and was produced due to the call to <b>GPTLsetoption (GPTLpercent,1)</b>. 
+Turning this option on is generally useful only if there is a single region
+wrapping the entire execution ("total" in the above example).
+<b>PAPI</b>-based statistics are presented next. In
+the example, the counter PAPI_FP_OPS was enabled. The name was shortened to FP_OPS to
+confine the printed output to as few columns as possible. Finally, each <b>PAPI</b>
+count is divided by wallclock time and printed as millions per second (in
+this case millions of floating point operations per second). This column can
+be turned off, with a call to <b>GPTLsetoption (GPTLpersec, 0)</b>. 
+
+<p>
+Since this was a threaded code run with OMP_NUM_THREADS=2, statistics
+for the second thread are also printed. It starts at "Stats for thread 1:" The
+output shows that thread 1
+participated in the computations for regions "A", "B", "C", and "CC", but not
+"total". This is reflected in the code itself, since only the master
+thread was active when start and stop calls were made for region "total".
+
+<p>
+After the per-thread statistics section, the same information is repeated, sorted by
+region name if more than one thread was active. This section is delimited by
+the string "Same stats sorted by
+timer for threaded regions:". This region presentation order makes it easier
+	to inspect for load 
+balance across threads. The leftmost column is thread number, and the region
+names are not indented. A sum across threads for each region is also printed,
+and labeled "SUM".
+
+<hr />
+<a href="gptl_homepage.html"><img border="0" src="btn_previous.gif"
+				  width="100" height="20" alt="GPTL home page"
+				  /></a> 
+<a href="example2.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 2" /></a>
+
+<br />
+
+</html>
