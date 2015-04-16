@@ -817,7 +817,6 @@
 <resus_fix>.false.</resus_fix>
 <!-- BSINGH - Ends -->
 
-
 <!-- in-cloud scav for cloud-borne aerosol tuning factor -->
 <sol_facti_cloud_borne                 >1.0D0</sol_facti_cloud_borne>
 <sol_facti_cloud_borne clubb_sgs="1"   >0.6D0</sol_facti_cloud_borne>
