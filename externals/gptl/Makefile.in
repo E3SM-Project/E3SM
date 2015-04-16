@@ -1,0 +1,43 @@
+CC       = @CC@
+CFLAGS   = @CFLAGS@ @THREADFLAGS@ @FDEFS@ @THREADDEFS@ @DEFS@ @PAPIPREP@ @BITFLAGS@
+
+LIBNAME  = libgptl.a
+LIBDIR   = @prefix@/lib
+INCDIR   = @prefix@/include
+MANDIR   = @prefix@/man/man3
+OBJS     = f_wrappers.o gptl.o util.o threadutil.o get_memusage.o \
+           print_memusage.o gptl_papi.o
+AR       = @AR@
+
+@SET_MAKE@
+
+all: $(LIBNAME) ctests/all ftests/all
+
+$(LIBNAME): $(OBJS)
+	ar @ARFLAGS@ $@ $(OBJS)
+	rm -f ctests/*.o ftests/*.o
+
+install: $(LIBNAME)
+	cp $(LIBNAME) $(LIBDIR)
+	cp gptl.h gptl.inc $(INCDIR)
+	cp man/man3/*.3 $(MANDIR)
+
+uninstall:
+	rm -f $(LIBDIR)/$(LIBNAME) $(INCDIR)/gptl.h $(INCDIR)/gptl.inc
+
+ctests/all:
+	(cd ctests && $(MAKE) all)
+
+ftests/all:
+	(cd ftests && $(MAKE) all)
+
+clean:
+	rm -f $(OBJS) $(LIBNAME)
+	(cd ctests && $(MAKE) clean)
+	(cd ftests && $(MAKE) clean)
+
+f_wrappers.o: f_wrappers.c gptl.h private.h
+gptl.o: gptl.c gptl.h private.h
+util.o: util.c gptl.h private.h
+threadutil.o: threadutil.c gptl.h private.h
+gptl_papi.o: gptl_papi.c gptl.h private.h

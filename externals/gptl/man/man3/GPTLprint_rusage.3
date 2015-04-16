@@ -1,0 +1,49 @@
+.\" $Id$
+.TH GPTLprint_rusage 3 "April, 2014" "GPTL"
+
+.SH NAME
+GPTLprint_rusage \- Print info from getrusage()
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLprint_rusage (const char *str);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlprint_rusage (character(len=*) str)
+.fi
+
+.SH DESCRIPTION
+.B GPTLprint_rusage
+prints info from getrusage(): max memory usage in MB, number of minor page
+faults in K (no I/O activity), number of major page faults in K (I/O activity
+required), and number of voluntary context switches in K (normally due to
+waiting on a resource).
+
+.SH ARGUMENTS
+.I str
+-- input string gets printed ahead of the other information. Normally used
+as a tag to identify where in the code the call was made.
+
+.SH RESTRICTIONS
+None
+
+.SH RETURN VALUE
+On success, this function returns 0.
+On error, -1 is returned.
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+...
+ret = GPTLprint_rusage ("start"); // print rusage stats at program start
+ret = do_work();
+ret = GPTLprint_rusage ("end");   // print rusage stats at program end
+
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTLprint_memusage "(3)" 

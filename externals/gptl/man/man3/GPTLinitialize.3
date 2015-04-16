@@ -1,0 +1,46 @@
+.\" $Id: GPTLinitialize.3,v 1.3 2009-01-04 21:14:41 rosinski Exp $
+.TH GPTLinitialize 3 "January, 2009" "GPTL"
+
+.SH NAME
+GPTLinitialize \- Initialize the GPTL library.
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLinitialize (void);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptinitialize ()
+.fi
+
+.SH DESCRIPTION
+Initializes the GPTL library.
+
+.SH RESTRICTIONS
+This function must be called after all calls to
+.B GPTLsetoption() 
+and
+.B GPTLsetutr(),
+and before all calls to
+.B GPTLstart()
+and
+.B GPTLstop().
+There must be only one call to this routine, so it is better to invoke it
+from an unthreaded region.
+
+.SH RETURN VALUE
+On success, this function returns 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+
+if (GPTLinitialize () != 0)
+  abort();
+
+.if t .ft P
+.fi
