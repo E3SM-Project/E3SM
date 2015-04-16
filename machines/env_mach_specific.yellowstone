@@ -76,7 +76,7 @@ if ( $COMPILER == "gnu" ) then
   set iotype = `./xmlquery PIO_TYPENAME `
   if( "$iotype" =~ {*pnetcdf*} ) then
        echo "Changing PIO_TYPENAME to netcdf for gnu compiler"
-       ./xmlchange PIO_TYPENAME=netcdf
+       ./xmlchange -noecho PIO_TYPENAME=netcdf
   endif
   #setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${NETCDF}/lib
 

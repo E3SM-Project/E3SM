@@ -30,7 +30,7 @@ foreach model ($MODELS)
 end
 
 
-./xmlchange -file env_mach_pes.xml -id COST_PES -val 0
+./xmlchange -noecho -file env_mach_pes.xml -id COST_PES -val 0
 # This is the maximum number of mpi tasks we want on a node.
 @ ptile = ${MAX_TASKS_PER_NODE} / 2
 set ntasks_tot = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
@@ -55,7 +55,7 @@ endif
 # or the total number of cores used, that needs to be set for cost
 @ costpes = ${nodes} * ${PES_PER_NODE}
 
-./xmlchange -file env_mach_pes.xml -id COST_PES -val ${costpes}
+./xmlchange -noecho -file env_mach_pes.xml -id COST_PES -val ${costpes}
 
 if ($?TESTMODE) then
  set file = $CASEROOT/${CASE}.test 

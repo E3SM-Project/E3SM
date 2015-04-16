@@ -139,7 +139,7 @@ if (! $clean ) {
 	foreach my $attr (keys %xmlvars){
 	    if($attr =~ /NTASKS_/){
 		$xmlvars{$attr}=1;
-		my $sysmod = "./xmlchange -file env_mach_pes.xml -id $attr -val 1";
+		my $sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id $attr -val 1";
 		system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
 		
 	    }
@@ -152,7 +152,7 @@ if (! $clean ) {
 	my $ntasks = "NTASKS_".$comp;
 	if ($xmlvars{$ninst} > $xmlvars{$ntasks}) {
 	    if($xmlvars{$ntasks}==1){
-		system("./xmlchange $ntasks=$xmlvars{$ninst}");
+		system("./xmlchange -noecho $ntasks=$xmlvars{$ninst}");
 		$xmlvars{$ntasks}=$xmlvars{$ninst};
 	    }else{
 		die "ERROR cesm_setup: $comp NINST value greater than $comp NTASKS";
@@ -169,7 +169,7 @@ if (! $clean ) {
 	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
 	
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
-	$sysmod = "./xmlchange -file env_mach_pes.xml -id TOTALPES -val $pestot";
+	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
 	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
 	
         # Compute cost based on PE count
@@ -205,13 +205,13 @@ if (! $clean ) {
 	my $CCSM_MCOST = $xmlvars{'CCSM_MCOST'};
 	my $estcost = $CCSM_CCOST + $CCSM_GCOST + $CCSM_MCOST + $CCSM_TCOST + $pcost + $ccsm_dcost + $ccsm_lcost;
 	
-	my $sysmod = "./xmlchange -file env_mach_pes.xml -id TOTALPES -val $pestot";
+	my $sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
 	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
 
-	$sysmod = "./xmlchange -file env_mach_pes.xml -id CCSM_PCOST -val $pcost";
+	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id CCSM_PCOST -val $pcost";
 	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
 
-	$sysmod = "./xmlchange -file env_mach_pes.xml -id CCSM_ESTCOST -val $estcost";
+	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id CCSM_ESTCOST -val $estcost";
 	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
 	
 	#--------------------------------------------------------------
@@ -354,7 +354,7 @@ if ($clean) {
     # only do the following if are NOT in testmode
     if (! $testmode)  {
 	# rebuild the models (even on restart)
-	$sysmod = "./xmlchange -file env_build.xml -id BUILD_COMPLETE -val FALSE";
+	$sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE";
 	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
     
 	# backup and then clean test script

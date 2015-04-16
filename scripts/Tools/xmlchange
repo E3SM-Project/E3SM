@@ -5,6 +5,11 @@
 #
 # This utility allows the user to change a env_*xml file via a commandline interface.
 #
+# The command is echoed to the CaseStatus file, unless -noecho is given. The
+# purpose of this echoing is to provide a "paper trail" of changes made by the
+# user, so calls to xmlchange by cesm scripts that are part of the normal case
+# setup/build process should generally use -noecho.
+#
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -51,6 +56,7 @@ REQUIRED OPTIONS
 OPTIONAL
      -append [or -a]      append value to the end of existing value
      -help [or -h]        Print usage to STDOUT.
+     -noecho              Do NOT echo command to CaseStatus file
      -silent [or -s]      Turns on silent mode - only fatal messages issued.
      -verbose [or -v]     Turn on verbose echoing of settings.
      -warn [or -w]        Warn and abort if you are overwriting data that is not blank
@@ -107,6 +113,7 @@ GetOptions(
     "id=s"       => \$opts{'id'},
     "val=s"      => \$opts{'val'},
     "h|help"     => \$opts{'help'},
+    "noecho"     => \$opts{'noecho'},
     "s|silent"   => \$opts{'silent'},
     "v|verbose"  => \$opts{'verbose'},
     "w|warn"     => \$opts{'warn'},
@@ -318,7 +325,9 @@ foreach my $backupfile(@backupfiles) {
 	unlink($backupfile) or warn "unable to link $backupfile, $!";
 }
 
-echo_command_to_CaseStatus();
+if (! $opts{'noecho'}) {
+   echo_command_to_CaseStatus();
+}
 
 if ($print>=2) { print "xmlchange done.\n"; }
 exit;

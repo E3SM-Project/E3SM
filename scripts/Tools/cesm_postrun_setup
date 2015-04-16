@@ -135,12 +135,12 @@ if ($RESUBMIT > 0 || $exceeded_max_time == 1 ) then
     #use COMP_RUN_BARRIERS as surrogate for timing run logical
     if ($?COMP_RUN_BARRIERS) then
       if (${COMP_RUN_BARRIERS} == "FALSE") then
-         ./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+         ./xmlchange -noecho -file env_run.xml -id CONTINUE_RUN -val TRUE
       endif
     else
-      ./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+      ./xmlchange -noecho -file env_run.xml -id CONTINUE_RUN -val TRUE
     endif
-    ./xmlchange -file env_run.xml -id RESUBMIT     -val $RESUBMIT
+    ./xmlchange -noecho -file env_run.xml -id RESUBMIT     -val $RESUBMIT
   endif
    if ($LBSUBMIT == "TRUE") then
 cat > tempres <<EOF
