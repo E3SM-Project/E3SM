@@ -12,16 +12,33 @@ function Usage {
     echo "SYNOPSIS"
     echo "     $progname [options]"
     echo ""
-    echo "     Does a baseline comparison of history files and/or a baseline generation of history files"
+    echo "     Does a baseline comparison of history files or a baseline generation of history files for one test"
     echo "     If there are multiple history file types for the component (e.g., h0 & h1),"
     echo "     it uses one of each type (e.g., the latest h0 file and the latest h1 file)."
     echo "     It then outputs the test status (PASS/BFAIL/GFAIL/etc.) for each comparison / generation."
     echo ""
-    echo "OPTIONS"
-    echo "     -testname <casename>  case name (identical to $CASE)"
+    echo "     Exactly one of -generate_tag or -compare_tag should be provided."
+    echo "     (They cannot both be provided, because only one -baseline_dir is supplied.)"
     echo ""
-    echo "     -test_dir <path>      Path to directory containing test run directories (optional)"
-    echo "                           A given test's run directory can be found in: \$test_dir/\$CASE/run"
+    echo "OPTIONS"
+    echo "     -baseline_dir <path>  Path to directory containing baselines for this particular test (required)"
+    echo "                           If -compare_tag is given, this gives the path to the"
+    echo "                           baselines to compare against."
+    echo "                           If -generate_tag is given, this gives the path in which"
+    echo "                           the new baselines should be placed."
+    echo ""
+    echo "     -test_dir <path>      Path to the given test's run directory (required)"
+    echo ""
+    echo "     -testcase_base <name> Name of test case, used for printing results (required)"
+    echo ""
+    echo "     -generate_tag <tag>   Tag to use for baseline generation (optional)"
+    echo ""
+    echo "     -compare_tag <tag>    Tag to use for baseline comparison (optional)"
+    echo ""
+    echo "     -cprnc_exe <name>     Full pathname to cprnc executable (optional)"
+    echo "                           This is optional, but if not provided, then the environment"
+    echo "                           variable CASEROOT must be defined (in which case, CCSM_CPRNC"
+    echo "                           will be found from the xml files in CASEROOT)."
     echo ""
     echo "     -help                 Print this help message and exit"
     echo ""
@@ -84,6 +101,7 @@ tools_dir=`dirname $0`
 #----------------------------------------------------------------------
 # Define default values for command-line arguments
 #----------------------------------------------------------------------
+cprnc_exe=''
 baseline_dir=''
 test_dir=''
 generate=''
@@ -119,6 +137,10 @@ while [ $# -gt 0 ]; do
 	    compare_tag=$2
 	    shift
 	    ;;
+	-cprnc_exe )
+	    cprnc_exe=$2
+	    shift
+	    ;;
 
 	-help )
 	    Usage
@@ -145,6 +167,20 @@ if [ -z "$test_dir" ]; then
     echo "$progname: test_dir must be provided" >&2
     error=1
 fi
+if [ -z "$testcase_base" ]; then
+    echo "$progname: testcase_base must be provided" >&2
+    error=1
+fi
+if [ -z "$compare_tag" -a -z "$generate_tag" ]; then
+    echo "$progname: Must provide either -compare_tag or -generate_tag" >&2
+    error=1
+fi
+if [ -n "$compare_tag" -a -n "$generate_tag" ]; then
+    echo "$progname: Can only provide -compare_tag OR -generate_tag, not both" >&2
+    echo "(this is because only one -baseline_dir is provided to this script)" >&2
+    error=1
+fi
+
 if [ $error -gt 0 ]; then
     echo "" >&2
     echo "Run $progname -help for usage" >&2
@@ -152,14 +188,16 @@ if [ $error -gt 0 ]; then
 fi
 
 #------------------------------------------------------------------
-# Determine location of cprnc
+# Determine location of cprnc, if not provided
 #------------------------------------------------------------------
-if [ -z $CASEROOT ]; then
-    echo " environment variable CASEROOT is not defined "
-    exit 1
+if [ -z "$cprnc_exe" ]; then
+    if [ -z $CASEROOT ]; then
+	echo " environment variable CASEROOT is not defined "
+	exit 1
+    fi
+    cd $CASEROOT
+    cprnc_exe=`./xmlquery CCSM_CPRNC -value`
 fi
-cd $CASEROOT
-cprnc_exe=`./xmlquery CCSM_CPRNC -value`
 
 #------------------------------------------------------------------
 # Loop over models
