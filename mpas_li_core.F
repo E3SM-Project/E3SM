@@ -13,7 +13,6 @@ module li_core
    implicit none
    private
 
-   type (MPAS_Clock_type), pointer :: clock
 
    !--------------------------------------------------------------------
    !
@@ -110,14 +109,9 @@ module li_core
       err = ior(err, err_tmp)
 
       !
-      ! Set "local" clock to point to the clock contained in the domain type
-      !
-      clock => domain % clock
-
-      !
       ! Set startTimeStamp based on the start time of the simulation clock
       !
-      startTime = mpas_get_clock_time(clock, MPAS_START_TIME, err_tmp)
+      startTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, err_tmp)
       call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
       err = ior(err, err_tmp)
 
@@ -194,10 +188,11 @@ module li_core
       use li_diagnostic_vars
       use li_setup
       use li_statistics
+      use li_time_integration
       use mpas_io_streams, only: MPAS_STREAM_LATEST_BEFORE
 
       implicit none
-   
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -229,13 +224,12 @@ module li_core
       logical, pointer :: config_do_restart, config_write_output_on_startup, config_write_stats_on_startup
       character(len=StrKIND), pointer :: config_restart_timestamp_name
       character(len=StrKIND), pointer :: config_velocity_solver
-
+      ! Variables needed for printing timestamps
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
+
       integer :: err, err_tmp, globalErr
       logical :: solveVelo
-      type (MPAS_TimeInterval_type) :: timeStepInterval  !< time step as an interval
-      real (kind=RKIND) :: dtSeconds  !< time step in seconds
 
       integer, dimension(:), pointer :: vertexMask
 
@@ -253,10 +247,10 @@ module li_core
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       call mpas_timer_start("land ice core run")
-      currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
+      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
       err = ior(err, err_tmp)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
-      err = ior(err, err_tmp)         
+      err = ior(err, err_tmp)
       write(stderrUnit,*) 'Initial timestep ', trim(timeStamp)
       write(stdoutUnit,*) 'Initial timestep ', trim(timeStamp)
 
@@ -337,36 +331,19 @@ module li_core
       ! ===
       ! === Time step loop
       ! ===
-      do while (.not. mpas_is_clock_stop_time(clock))
+      do while (.not. mpas_is_clock_stop_time(domain % clock))
 
          itimestep = itimestep + 1
+         write(stderrUnit,*) 'Starting timestep number ', iTimeStep
+         write(stdoutUnit,*) 'Starting timestep number ', iTimeStep
 
-         ! Get the interval at this point in time - currently this does not change during the simulation, but re-calculating it explicitly for generality
-         timeStepInterval = mpas_get_clock_timestep(clock, ierr=err_tmp)
-         err = ior(err,err_tmp)
-         ! Convert the clock's time interval into a dt in seconds to be used by the time stepper, using the currTime as the start time for this interval.
-         ! (We want to do this conversion before advancing the clock because the dt in seconds may change
-         !  as the base time changes, and we want the old time as the base time.
-         !  For example, the number of seconds in a year will be longer in a leap year.)
-         call mpas_get_timeInterval(timeStepInterval, StartTimeIn=currTime, dt=dtSeconds, ierr=err_tmp)
-         err = ior(err,err_tmp)
-
-         call mpas_advance_clock(clock)
-
-         currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
-         err = ior(err, err_tmp)
-         write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
-         write(stdoutUnit,*) 'Doing timestep ', trim(timeStamp)
-
-         !write(stdoutUnit,*) '  dt (s) = ', dtSeconds
 
          ! ===
          ! === Perform Timestep
          ! ===
          call mpas_timer_start("time integration")
 
-         call landice_timestep(domain, itimestep, dtSeconds, timeStamp, err_tmp)
+         call li_timestep(domain, err_tmp)
          err = ior(err,err_tmp)
 
          ! Write statistics at designated interval
@@ -402,6 +379,12 @@ module li_core
          call mpas_timer_start("write output")
          ! Update the restart_timestamp file with the new time, if needed.
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+            ! Need updated timestamp for writing restart timestamp
+            currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
+            err = ior(err, err_tmp)
+            call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
+            err = ior(err, err_tmp)
+            ! write the timestamp to file
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) timeStamp
             close(22)
@@ -491,7 +474,7 @@ module li_core
       call li_velocity_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 
-      call mpas_destroy_clock(clock, err_tmp)
+      call mpas_destroy_clock(domain % clock, err_tmp)
       err = ior(err, err_tmp)
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
@@ -570,7 +553,6 @@ module li_core
       character (len=StrKIND), pointer :: xtime
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
-      type (MPAS_Time_Type) :: currTime
       integer :: err, err_tmp
 
       err = 0
@@ -640,71 +622,7 @@ module li_core
 
 !***********************************************************************
 !
-!  routine landice_timestep
-!
-!> \brief   Performs a time step
-!> \author  Matt Hoffman
-!> \date    11 September 2013
-!> \details
-!>  This routine performs a time step for the land ice core.
-!
-!-----------------------------------------------------------------------
-   subroutine landice_timestep(domain, itimestep, dt, timeStamp, err)
-   
-      use mpas_derived_types
-      use li_time_integration
-      use mpas_timer
-   
-      implicit none
-   
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      integer, intent(in) :: itimestep              !< Input: time step number 
-      real (kind=RKIND), intent(in) :: dt           !< Input: time step, in seconds
-      character(len=*), intent(in) :: timeStamp     !< Input: time stamp of current time step
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-      type (domain_type), intent(inout) :: domain   !< Input/output: Domain 
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      type (block_type), pointer :: block_ptr
-      integer :: err_tmp
-
-      err = 0
-      err_tmp = 0
-
-      call li_timestep(domain, dt, timeStamp, err_tmp)
-      err = ior(err,err_tmp)
-   
-      ! === error check
-      if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in mpas_timestep."
-      endif
-   
-   end subroutine landice_timestep
-   
-
-!***********************************************************************
-!
-!  routine li_simulation_clock_init
+!  routine simulation_clock_init
 !
 !> \brief   Initializes the simulation clock
 !> \author  ??
