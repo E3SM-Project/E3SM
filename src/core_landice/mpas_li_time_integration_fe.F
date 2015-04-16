@@ -165,14 +165,14 @@ module li_time_integration_fe
 !
 !-----------------------------------------------------------------------
 
-   subroutine calculate_tendencies(domain, deltat, err)
+   subroutine calculate_tendencies(domain, dtSeconds, err)
 
       use mpas_timekeeping
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real (kind=RKIND) :: deltat
+      real (kind=RKIND) :: dtSeconds
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -196,11 +196,12 @@ module li_time_integration_fe
 
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness_tend
       type (field2DReal), pointer :: layerThickness_tend_field
-      integer :: allowableDtProcNumber, allowableDtMinProcNumber
-      real (kind=RKIND) :: allowableDt, allowableDtMin
       logical, pointer :: config_print_thickness_advection_info
-      type (MPAS_TimeInterval_type) :: allowableDtMinStringInterval
-      character (len=StrKIND) :: allowableDtMinString
+      logical, pointer :: config_adaptive_timestep
+      integer :: allowableDtProcNumber
+      real (kind=RKIND) :: allowableDt, allowableDtOnProc, allowableDtAllProcs
+      type (MPAS_TimeInterval_type) :: allowableDtOnProcInterval, allowableDtAllProcsStringInterval
+      character (len=StrKIND) :: allowableDtOnProcString, allowableDtAllProcsString
       integer :: err_tmp
 
       integer :: y, m, d, hh, mm, ss
@@ -208,12 +209,14 @@ module li_time_integration_fe
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
 
       dminfo => domain % dminfo
 
       ! ===
       ! === Thickness tendencies
       ! ===
+      allowableDtOnProc = 1.0e36 ! set to large number
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -223,8 +226,9 @@ module li_time_integration_fe
          call mpas_pool_get_array(tendencyPool, 'layerThickness', layerThickness_tend)
 
          ! Calculate thickness tendency using state at time n =========
-         call li_tendency_thickness(meshPool, velocityPool, geometryPool, layerThickness_tend, deltat, dminfo, allowableDt, err_tmp)
+         call li_tendency_thickness(meshPool, velocityPool, geometryPool, layerThickness_tend, dtSeconds, dminfo, allowableDt, err_tmp)
          err = ior(err,err_tmp)
+         allowableDtOnProc = min(allowableDtOnProc, allowableDt)
 
          block => block % next
       end do
@@ -237,25 +241,51 @@ module li_time_integration_fe
       call mpas_dmpar_exch_halo_field(layerThickness_tend_field)
       call mpas_timer_stop("halo updates")
 
+
+      ! Build a time string of the maximum allowable dt calculated
+      ! (We only need this if a CFL violation occurred or config_print_thickness_advection_info is true)
+      call mpas_set_timeInterval(allowableDtOnProcInterval, dt=allowableDtOnProc, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      call mpas_get_timeInterval(allowableDtOnProcInterval, timeString=allowableDtOnProcString, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      if (dtSeconds > allowableDtOnProc) then
+         write(stderrUnit,*) 'ERROR: CFL violation on this processor.  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtOnProcString)
+                  err = ior(err,1)
+      endif
+      if (config_print_thickness_advection_info) then
+         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtOnProcString)
+      endif
+
+
       ! If we are printing advection debug information,
       ! then find out what the global CFL limit is.  Don't do this otherwise because
       ! it requires 2 unnecessary MPI communications.
-      if (config_print_thickness_advection_info) then
+      if (config_print_thickness_advection_info .or. config_adaptive_timestep) then
           ! Determine CFL limit on all procs
-          call mpas_dmpar_min_real(dminfo, allowableDt, allowableDtMin)
+          call mpas_dmpar_min_real(dminfo, allowableDtOnProc, allowableDtAllProcs)
           ! Determine which processor has the limiting CFL
-          if (allowableDt .eq. allowableDtMin) then
+          if (allowableDt == allowableDtAllProcs) then
             allowableDtProcNumber = dminfo % my_proc_id
           else 
             allowableDtProcNumber = -1
           endif
-          call mpas_dmpar_max_int(dminfo, allowableDtProcNumber, allowableDtMinProcNumber)
-          call mpas_set_timeInterval(allowableDtMinStringInterval, dt=allowableDtMin, ierr=err_tmp)
+          call mpas_dmpar_max_int(dminfo, allowableDtProcNumber, allowableDtProcNumber)
+          call mpas_set_timeInterval(allowableDtAllProcsStringInterval, dt=allowableDtOnProc, ierr=err_tmp)
           err = ior(err,err_tmp)
-          call mpas_get_timeInterval(allowableDtMinStringInterval, timeString=allowableDtMinString, ierr=err_tmp)
+          call mpas_get_timeInterval(allowableDtAllProcsStringInterval, timeString=allowableDtAllProcsString, ierr=err_tmp)
           err = ior(err,err_tmp)
-          write(stdoutUnit,*) '  Maximum allowable time step for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString) //  '  Time step is limited by processor number ', allowableDtMinProcNumber
       endif
+      if (config_print_thickness_advection_info) then
+          write(stdoutUnit,*) '  Maximum allowable time step for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtAllProcsString) //  '  Time step is limited by processor number ', allowableDtProcNumber
+      endif
+      if (config_adaptive_timestep) then
+         call set_timestep(allowableDtAllProcs, dtSeconds, err_tmp)
+         err = ior(err,err_tmp)
+      elseif (dtSeconds > allowableDtAllProcs) then
+          write(stdErrUnit,*) 'Error: CFL violation has occurred on some processor(s)!'
+          err = ior(err,1)
+      endif
+
 
       if (err > 0) then
            write(stderrUnit,*) 'Error in calculating thickness tendency  (possibly CFL violation)'
@@ -461,6 +491,56 @@ module li_time_integration_fe
 
    !--------------------------------------------------------------------
    end subroutine update_prognostics
+
+
+
+!***********************************************************************
+!
+!  routine set_timestep
+!
+!> \brief   Adjusts the time step based on the CFL condition.
+!> \author  Matthew Hoffman
+!> \date    23 Jan 2014
+!> \details
+!>  This routine sdjusts the time step based on the CFL condition.
+!
+!-----------------------------------------------------------------------
+   subroutine set_timestep(allowableDt, dtSeconds, err)
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND) :: allowableDt
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND) :: dtSeconds
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      logical, pointer :: config_adaptive_timestep
+      real (kind=RKIND), pointer :: config_adaptive_timestep_CFL_fraction
+      real (kind=RKIND), pointer :: config_max_adaptive_timestep
+      real (kind=RKIND), pointer :: config_min_adaptive_timestep
+
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_CFL_fraction', config_adaptive_timestep_CFL_fraction)
+      call mpas_pool_get_config(liConfigs, 'config_max_adaptive_timestep', config_max_adaptive_timestep)
+      call mpas_pool_get_config(liConfigs, 'config_min_adaptive_timestep', config_min_adaptive_timestep)
+
+      if (config_adaptive_timestep) then
+         dtSeconds = min(allowableDt * config_adaptive_timestep_CFL_fraction, config_max_adaptive_timestep)
+         write(stdOutUnit,*) '  Setting time step (days) to:', dtSeconds / (86400.0)
+         if (dtSeconds < config_min_adaptive_timestep) then
+            write(stdErrUnit,*) 'ERROR: New deltat is less than config_min_adaptive_timestep.'
+            err = 1
+         endif
+      endif
+
+   !--------------------------------------------------------------------
+   end subroutine set_timestep
 
 
 

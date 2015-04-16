@@ -124,6 +124,22 @@
 		            description="Time integration method."
 		            possible_values="'forward_euler'"
 		/>
+		<nml_option name="config_adaptive_timestep" type="logical" default_value=".false." units="unitless"
+			description="Determines if the time step should be adjusted based on the CFL condition or should be steady in time. If true, the config_dt_* options are ignored."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_min_adaptive_timestep" type="real" default_value="0.0" units="s"
+			description="The minimum allowable time step in seconds.  If the CFL condition dictates the time step should be shorter than this, then the model aborts."
+			possible_values="Any non-negative real value."
+		/>
+		<nml_option name="config_max_adaptive_timestep" type="real" default_value="3.15e9" units="s"
+			description="The maximum allowable time step in seconds.  If the CFL condition allows the time step to be longer than this, then the model uses this value instead.  Defaults to 100 years (in seconds)."
+			possible_values="Any non-negative real value."
+		/>
+		<nml_option name="config_adaptive_timestep_CFL_fraction" type="real" default_value="0.5" units="none"
+			description="A multiplier on the minimum allowable time step calculated from the CFL condition. (Setting to 1.0 may be unstable, so smaller values are recommended.)"
+			possible_values="Any positive real value less than 1.0."
+		/>
 	</nml_record>
 
 
