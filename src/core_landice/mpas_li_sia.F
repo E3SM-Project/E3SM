@@ -215,7 +215,7 @@ contains
 !>  on an edge using the average of the two neighboring cells (2nd order).
 !
 !-----------------------------------------------------------------------
-   subroutine li_sia_solve(meshPool, statePool, timeLevel, err)
+   subroutine li_sia_solve(meshPool, geometryPool, velocityPool, err)
       use mpas_constants, only: gravity
 
       !-----------------------------------------------------------------
@@ -227,8 +227,8 @@ contains
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
 
-      integer, intent(in) :: &
-         timeLevel     !< Input: time level from which to calculate velocity
+      type (mpas_pool_type), intent(in) :: &
+         geometryPool          !< Input: geometry information
 
       !-----------------------------------------------------------------
       !
@@ -237,7 +237,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(inout) :: &
-         statePool          !< Input: state information 
+         velocityPool          !< Input/Output: velocity information 
 
       !-----------------------------------------------------------------
       !
@@ -277,13 +277,13 @@ contains
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
-      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'flowParamA', flowParamA, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'slopeEdge', slopeEdge, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'normalSlopeEdge', normalSlopeEdge, timeLevel=timeLevel)
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+      call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'slopeEdge', slopeEdge)
+      call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge)
 
 
       ! Get parameters specified in the namelist

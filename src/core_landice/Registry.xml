@@ -228,6 +228,7 @@
 
 	<packages>
 		<package name="SIAvelocity" description="Variables only needed by the SIA velocity solver"/>
+
 		<package name="higherOrderVelocity" description="This package includes variables required for higher order velocity solvers."/>
 	</packages>
 
@@ -278,6 +279,7 @@
 			<var name="cellsOnVertex"/>
 			<var name="kiteAreasOnVertex"/>
 			<var name="layerThicknessFractions"/>
+			<var name="meshDensity"/>
 		</stream>
 
 
@@ -286,7 +288,9 @@
 				immutable="true"
 				filename_template="landice_grid.nc"
 				input_interval="initial_only">
+
 			<stream name="basicmesh"/>
+			<var name="layerThicknessFractions"/>
 			<var_array name="tracers"/>
 			<var name="thickness"/>
 			<var name="bedTopography"/>
@@ -326,6 +330,7 @@
 				clobber_mode="replace_files">
 
 			<stream name="basicmesh"/>
+			<var name="layerThicknessFractions"/>
 			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
@@ -354,10 +359,12 @@
 				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
 
 			<stream name="basicmesh"/>
+			<var name="layerThicknessFractions"/>
+			<var name="layerCenterSigma"/>
+			<var name="layerInterfaceSigma"/>
 			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
-			<var name="layerThickness"/>
 			<var name="lowerSurface"/>
 			<var name="upperSurface"/>
 			<var name="cellMask"/>
@@ -366,9 +373,6 @@
 			<var name="normalVelocity"/>
 			<var name="uReconstructX"/>
 			<var name="uReconstructY"/>
-			<var name="uReconstructZ"/>
-			<var name="uReconstructZonal"/>
-			<var name="uReconstructMeridional"/>
 		</stream>
 
 	</streams>
@@ -377,122 +381,19 @@
 <!-- ======================================================================= -->
 <!-- INTERNAL MODEL VARIABLES -->
 
-	<var_struct name="state" time_levs="2">
-		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
-		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
-		/>
-		<!-- Prognostic Variables: typically read from input, saved in restart, written to output --> 
-		<var name="thickness" type="real" dimensions="nCells Time" units="m"
-		     description="ice thickness"
-		/>
-		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
-		     description="layer thickness"
-		/>
-		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K"
-		     description="upper surface ice temperature"
-		/>
-		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K"
-		     description="lower surface ice temperature"
-		/>
-		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
-			<var name="temperature" array_group="dynamics" units="K"
-			     description="interior ice temperature"
-			/>
-		</var_array>
+<!-- Note: by default, all MPAS-LI variables have only one time level.  There
+are/will be some variables that require a second time level, and they are/can be
+individually specified to have a second time level.  Within the code, all routines
+assume there is only one time level, except where explicitly needed otherwise.
+Therefore, to minimize confusion, the convention is that the current time to be
+computed on is always time level 1.  And time level 2, if it exists for a variable,
+is the value of that variable from the *previous* time level!
+ -->
 
-		<!-- Diagnostic Variables: typically just written to output --> 
-		<var name="lowerSurface" type="real" dimensions="nCells Time" units="m above datum"
-		     description="elevation at bottom of ice"
-		/>
-		<var name="upperSurface" type="real" dimensions="nCells Time" units="m above datum"
-		     description="elevation at top of ice"
-		/>
-		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
-		     description="layer thickness on cell edges"
-		/>
-		<var name="cellMask" type="integer" dimensions="nCells Time" units="none"
-		     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
-		/>
-		<var name="edgeMask" type="integer" dimensions="nEdges Time" units="none"
-		     description="bitmask indicating various properties about the ice sheet on edges."
-		/>
-		<var name="vertexMask" type="integer" dimensions="nVertices Time" units="none"
-		     description="bitmask indicating various properties about the ice sheet on vertices."
-		/>
-		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
-		     description="horizonal velocity, normal component to an edge"
-		/>
-		<var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
-		     description="flow law parameter, A"
-		/>
-		<var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers.  Also, for higher-order dycores, on input: value of the x-component of velocity that should be applied where dirichletVelocityMask==1."
-		/>
-		<var name="uReconstructY"                     type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="y-component of velocity reconstructed on cell centers.    Also, for higher-order dycores, on input: value of the y-component of velocity that should be applied where dirichletVelocityMask==1."
-		/>
-		<var name="uReconstructZ"                     type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="z-component of velocity reconstructed on cell centers"
-		/>
-		<var name="uReconstructZonal"                 type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="zonal velocity reconstructed on cell centers"
-		/>
-		<var name="uReconstructMeridional"            type="real"     dimensions="nVertInterfaces nCells Time"
-		     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
-		/>
-		<!-- Variables related to the sia_velocity package (only needed by SIA solver) -->
-		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
-		     description="elevation at top of ice on vertices" packages="SIAvelocity"
-		/>
-		<var name="surfaceSpeed"                     type="real"     dimensions="nCells Time"
-		     units="m s^{-1}"  description="ice surface speed reconstructed at cell centers"
-		/>
-		<var name="basalSpeed"                     type="real"     dimensions="nCells Time"
-		     units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
-		/>
-		<var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
-		     units="m m^{-1}"  description="normal surface slope on edges" packages="SIAvelocity"
-		/>
-		<var name="tangentSlopeEdge"            type="real"     dimensions="nEdges Time"
-		     units="m m^{-1}"  description="tangent surface slope on edges" packages="SIAvelocity"
-		/>
-		<var name="slopeEdge"            type="real"     dimensions="nEdges Time"
-		     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
-		/>
-		<var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
-		     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
-			packages="higherOrderVelocity"
-		/>
-		<var name="dirichletVelocityMask"            type="integer"     dimensions="nVertInterfaces nCells Time"
-		     units="none"  description="mask of where Dirichlet boundary conditions should be applied to the velocity solution.  1 means apply a Dirichlet boundary condition, 0 means do not. (higher-order dycores only)"
-			packages="higherOrderVelocity"
-		/>
-		<var name="dirichletMaskChanged"              type="integer"  dimensions="Time"
-		     units="none"  description="flag needed by external velocity solvers that indicates if the Dirichlet boundary condition mask has changed (treated as a logical)"
-			packages="higherOrderVelocity"
-		/>
-		<var name="floatingEdges"
-			type="integer" dimensions="nEdges Time"
-			units="unitless"
-			description="edges which are floating have a value of 1.  non floating edges have a value of 0."
-			packages="higherOrderVelocity"
-		/>
-	</var_struct>
 
-	<!-- Tendency Variables --> 
-	<var_struct name="tend" time_levs="1">
-		<var name="tend_layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThickness"
-		     description="time tendency of layer thickness"
-		/>
-		<var_array name="tendTracers" type="real" dimensions="nVertLevels nCells Time" name_in_code="tracers">
-			<var name="tend_temperature" array_group="dynamics" units="K s^{-1}" name_in_code="temperature"
-			     description="time tendency of ice temperature"
-			/>
-		</var_array>
-	</var_struct>
-
-	<!-- Mesh Variables (includes some time-independent variables)--> 
+	<!-- Mesh Variables required by MPAS framework -->
 	<var_struct name="mesh" time_levs="1">
+		<!-- The following fields are part of the MPAS mesh spec. -->
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
 			 description="Latitude location of cell centers in radians."
 		/>
@@ -547,20 +448,35 @@
 		<var name="indexToVertexID" type="integer" dimensions="nVertices" units="unitless"
 		     description="List of global vertex IDs."
 		/>
-		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
-		     description="List of cells that straddle each edge."
-		/>
 		<var name="nEdgesOnCell" type="integer" dimensions="nCells" units="unitless"
 		     description="Number of edges that border each cell."
 		/>
 		<var name="nEdgesOnEdge" type="integer" dimensions="nEdges" units="unitless"
 		     description="Number of edges that surround each of the cells that straddle each edge. These edges are used to reconstruct the tangential velocities."
 		/>
+		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+		     description="List of cells that straddle each edge."
+		/>
 		<var name="edgesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="List of edges that border each cell."
 		/>
 		<var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges" units="unitless"
 		     description="List of edges that border each of the cells that straddle each edge."
+		/>
+		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of cells that neighbor each cell."
+		/>
+		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of vertices that border each cell."
+		/>
+		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+		     description="List of vertices that straddle each edge."
+		/>
+		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+		     description="List of edges that share a vertex as an endpoint."
+		/>
+		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+		     description="List of cells that share a vertex."
 		/>
 		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" units="unitless"
 		     description="Reconstruction weights associated with each of the edgesOnEdge."
@@ -580,42 +496,36 @@
 		<var name="areaTriangle" type="real" dimensions="nVertices" units="m^2"
 		     description="Area of each cell (triangle) in the dual grid."
 		/>
-		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
-		     description="Normal vector defined at an edge."
+		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
+		     description="Area of the portions of each dual cell that are part of each cellsOnVertex."
 		/>
+		<var name="meshDensity" type="real" dimensions="nCells" units="unitless"
+		     description="The value of the generating density function at each cell center."
+		/>
+		<!-- The following fields are expected by some operators but not formally part of the MPAS mesh spec. -->
+		<!-- They are not input by the model but calculated internally. -->
 		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="unitless"
 		     description="Unit surface normal vectors defined at cell centers."
+		/>
+		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
+		     description="Normal vector defined at an edge."
 		/>
 		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
 		     description="The two vectors that define a tangent plane at a cell center."
 		/>
-		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
-		     description="List of cells that neighbor each cell."
-		/>
-		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
-		     description="List of vertices that border each cell."
-		/>
-		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
-		     description="List of vertices that straddle each edge."
-		/>
-		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
-		     description="List of edges that share a vertex as an endpoint."
-		/>
-		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
-		     description="List of cells that share a vertex."
-		/>
-		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
-		     description="Area of the portions of each dual cell that are part of each cellsOnVertex."
-		/>
 		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
 		     description="Coefficients to reconstruct velocity vectors at cell centers."
 		/>
-		<!-- Mesh Variables specific to land ice core -->
-		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
-			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!"
+		<!-- The following field is required as input by MPAS-LI -->
+		<var name="layerThicknessFractions" type="real" dimensions="nVertLevels" units="none"
+		     description="Fractional thickness of each sigma layer"
 		/>
-		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
-			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex."
+		<!-- The following fields are required by MPAS-LI but are calculated internally -->
+		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
+		     description="Sigma (fractional) level at center of each layer"
+		/>
+		<var name="layerInterfaceSigma" type="real" dimensions="nVertInterfaces" units="none"
+		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
 		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
@@ -623,27 +533,167 @@
 		<var name="edgeSignOnVertex" type="integer" dimensions="maxEdges nVertices" units="unitless"
 		     description="Sign of edge contributions to a vertex for each edge on vertex. Used for bit-reproducible loops. Represents directionality of vector connecting vertices."
 		/>
-		<var name="layerThicknessFractions" type="real" dimensions="nVertLevels" units="none"
-		     description="Fractional thickness of each sigma layer"
+		<!-- Variables only needed by SIA solver -->
+		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
+			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity"
 		/>
-		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
-		     description="Sigma (fractional) level at center of each layer"
+		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
+			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
 		/>
-		<var name="layerInterfaceSigma" type="real" dimensions="nVertInterfaces" units="none"
-		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
+		<!-- xtime has to go somewhere.  "mesh" is a more general place than the other pools -->
+		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
+		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
-		<var name="bedTopography" type="real" dimensions="nCells" units="m above datum"
+	</var_struct>
+
+<!-- ================ -->
+
+	<!--  Variables related to ice sheet geometry -->
+	<var_struct name="geometry" time_levs="1">
+		<var name="bedTopography" type="real" dimensions="nCells Time" units="m above datum"
 		     description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
 		/>
-		<var name="sfcMassBal" type="real" dimensions="nCells" units="kg m^2 s^{-1}"
+		<var name="thickness" type="real" dimensions="nCells Time" units="m" time_levs="2"
+		     description="ice thickness"
+		/>
+		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m" time_levs="2"
+		     description="layer thickness"
+		/>
+		<var name="lowerSurface" type="real" dimensions="nCells Time" units="m above datum"
+		     description="elevation at bottom of ice"
+		/>
+		<var name="upperSurface" type="real" dimensions="nCells Time" units="m above datum"
+		     description="elevation at top of ice"
+		/>
+		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
+		     description="layer thickness on cell edges"
+		/>
+		<var name="cellMask" type="integer" dimensions="nCells Time" units="none"
+		     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
+		/>
+		<var name="edgeMask" type="integer" dimensions="nEdges Time" units="none"
+		     description="bitmask indicating various properties about the ice sheet on edges."
+		/>
+		<var name="vertexMask" type="integer" dimensions="nVertices Time" units="none" time_levs="2"
+		     description="bitmask indicating various properties about the ice sheet on vertices."
+		/>
+		<!-- Note vertexMask has two time level to easily check if it changes - this is only used by the HO dycores -->
+
+		<var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^2 s^{-1}"
 		     description="Surface mass balance"
 		/>
-		<var name="beta" type="real" dimensions="nCells" units="Pa s m^{−1}"
+		<var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^2 s^{-1}"
+		     description="Basal mass balance"
+		/>
+
+		<!-- Variables only needed by SIA solver -->
+		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
+		     description="elevation at top of ice on vertices" packages="SIAvelocity"
+		/>
+		<var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
+		     units="m m^{-1}"  description="normal surface slope on edges" packages="SIAvelocity"
+		/>
+		<var name="tangentSlopeEdge"            type="real"     dimensions="nEdges Time"
+		     units="m m^{-1}"  description="tangent surface slope on edges" packages="SIAvelocity"
+		/>
+		<var name="slopeEdge"            type="real"     dimensions="nEdges Time"
+		     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
+		/>
+	</var_struct>
+
+<!-- ================ -->
+
+	<!-- Variables related to velocity -->
+	<var_struct name="velocity" time_levs="1">
+		<var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
+		     description="flow law parameter, A"
+		/>
+		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
+		     description="horizonal velocity, normal component to an edge"
+		/>
+		<var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
+		     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers.  Also, for higher-order dycores, on input: value of the x-component of velocity that should be applied where dirichletVelocityMask==1."
+		/>
+		<var name="uReconstructY"                     type="real"     dimensions="nVertInterfaces nCells Time"
+		     units="m s^{-1}"  description="y-component of velocity reconstructed on cell centers.    Also, for higher-order dycores, on input: value of the y-component of velocity that should be applied where dirichletVelocityMask==1."
+		/>
+		<var name="uReconstructZ"                     type="real"     dimensions="nVertInterfaces nCells Time"
+		     units="m s^{-1}"  description="z-component of velocity reconstructed on cell centers"
+		/>
+		<var name="uReconstructZonal"                 type="real"     dimensions="nVertInterfaces nCells Time"
+		     units="m s^{-1}"  description="zonal velocity reconstructed on cell centers"
+		/>
+		<var name="uReconstructMeridional"            type="real"     dimensions="nVertInterfaces nCells Time"
+		     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
+		/>
+		<var name="surfaceSpeed"                     type="real"     dimensions="nCells Time"
+		     units="m s^{-1}"  description="ice surface speed reconstructed at cell centers"
+		/>
+		<var name="basalSpeed"                     type="real"     dimensions="nCells Time"
+		     units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
+		/>
+
+		<!-- Variables only needed by HO solver -->
+		<var name="beta" type="real" dimensions="nCells Time" units="Pa s m^{−1}"
 		     description="higher-order basal traction parameter"
 			packages="higherOrderVelocity"
 		/>
-		<!-- Note: beta should be moved to diagnostic fields when a process model is added -->
+		<var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
+		     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
+			packages="higherOrderVelocity"
+		/>
+		<var name="dirichletVelocityMask"            type="integer"     dimensions="nVertInterfaces nCells Time"
+		     units="none"  description="mask of where Dirichlet boundary conditions should be applied to the velocity solution.  1 means apply a Dirichlet boundary condition, 0 means do not. (higher-order dycores only)"
+			packages="higherOrderVelocity"
+		/>
+		<var name="dirichletMaskChanged"              type="integer"  dimensions="Time"
+		     units="none"  description="flag needed by external velocity solvers that indicates if the Dirichlet boundary condition mask has changed (treated as a logical)"
+			packages="higherOrderVelocity"
+		/>
+		<var name="floatingEdges"
+			type="integer" dimensions="nEdges Time"
+			units="unitless"
+			description="edges which are floating have a value of 1.  non floating edges have a value of 0."
+			packages="higherOrderVelocity"
+		/>
 	</var_struct>
+
+<!-- ================ -->
+
+	<!-- Variables related to thermal state -->
+	<var_struct name="thermal" time_levs="1">
+		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K"
+		     description="lower surface ice temperature"
+		/>
+		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
+			<var name="temperature" array_group="dynamics" units="K"
+			     description="interior ice temperature"
+			/>
+		</var_array>
+		<!-- Note: putting tracers in this pool is a bit awkward since additional tracers may not be thermally-related -->
+		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K"
+		     description="upper surface ice temperature"
+		/>
+		<var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+		     description="basal heat flux into the ice (positive upward)"
+		/>
+	</var_struct>
+
+<!-- ================ -->
+
+	<!-- Tendency Variables --> 
+	<var_struct name="tendency" time_levs="1">
+		<var name="tend_layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThickness"
+		     description="time tendency of layer thickness"
+		/>
+		<var_array name="tendTracers" type="real" dimensions="nVertLevels nCells Time" name_in_code="tracers">
+			<var name="tend_temperature" array_group="dynamics" units="K s^{-1}" name_in_code="temperature"
+			     description="time tendency of ice temperature"
+			/>
+		</var_array>
+	</var_struct>
+
+<!-- ================ -->
 
 	<!-- Scratch Variables -->
 	<var_struct name="scratch" time_levs="1">

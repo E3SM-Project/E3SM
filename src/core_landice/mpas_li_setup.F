@@ -131,7 +131,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-
       !-----------------------------------------------------------------
       !
       ! input/output variables
@@ -213,13 +212,13 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool  !< Input: mesh object
 
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(inout) :: meshPool  !< Input/Output: mesh object
 
       !-----------------------------------------------------------------
       !
@@ -242,7 +241,6 @@ contains
 
       ! Get pool stuff
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      ! layerThicknessFractions is provided by input
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)

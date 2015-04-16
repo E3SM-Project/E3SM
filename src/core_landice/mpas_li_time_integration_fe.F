@@ -128,7 +128,7 @@ module li_time_integration_fe
       ! If needed, that guess should be inserted into normalVelocity
       ! in time level 2 before calling li_calculate_diagnostic_vars.
 
-      call li_calculate_diagnostic_vars(domain, timeLevel=2, solveVelo=.true., err=err_tmp)
+      call li_calculate_diagnostic_vars(domain, solveVelo=.true., err=err_tmp)
       err = ior(err, err_tmp)
 
 
@@ -188,9 +188,10 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: tendPool
+      type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: tendencyPool
 
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness_tend
       type (field2DReal), pointer :: layerThickness_tend_field
@@ -214,13 +215,14 @@ module li_time_integration_fe
       ! ===
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
-         call mpas_pool_get_array(tendPool, 'layerThickness', layerThickness_tend)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'tendency', tendencyPool)
+         call mpas_pool_get_array(tendencyPool, 'layerThickness', layerThickness_tend)
 
          ! Calculate thickness tendency using state at time n =========
-         call li_tendency_thickness(meshPool, statePool, layerThickness_tend, deltat, dminfo, allowableDt, err_tmp)
+         call li_tendency_thickness(meshPool, velocityPool, geometryPool, layerThickness_tend, deltat, dminfo, allowableDt, err_tmp)
          err = ior(err,err_tmp)
 
          block => block % next
@@ -229,8 +231,8 @@ module li_time_integration_fe
       ! Now that we have exited the block loop, do any needed halo updates.
       ! update halos on thickness tend
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
-      call mpas_pool_get_field(tendPool, 'layerThickness', layerThickness_tend_field)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'tendency', tendencyPool)
+      call mpas_pool_get_field(tendencyPool, 'layerThickness', layerThickness_tend_field)
       call mpas_dmpar_exch_halo_field(layerThickness_tend_field)
       call mpas_timer_stop("halo updates")
 
@@ -341,7 +343,7 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshPool, statePool, tendPool
+      type (mpas_pool_type), pointer :: meshPool, geometryPool, tendencyPool
       integer, pointer :: nCells
       logical, pointer :: config_print_thickness_advection_info
 
@@ -358,26 +360,25 @@ module li_time_integration_fe
 
       block => domain % blocklist
       do while (associated(block))
-         ! Mesh information
 
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'tendency', tendencyPool)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
 
          ! State at time n
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessOld, timeLevel=1)
+         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=2)
 !!!         tracersOld => stateOld % tracers % array
 !!!         cellMaskOld => stateOld % cellMask % array
 
          ! State at time n+1 (advanced by dt by Forward Euler)
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, timeLevel=2)
-         call mpas_pool_get_array(statePool, 'thickness', thicknessNew, timeLevel=2)
+         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=1)
+         call mpas_pool_get_array(geometryPool, 'thickness', thicknessNew, timeLevel=1)
 !!!         tracersNew => stateNew % tracers % array
 
          ! Tendencies
-         call mpas_pool_get_array(tendPool, 'layerThickness', layerThickness_tend)
+         call mpas_pool_get_array(tendencyPool, 'layerThickness', layerThickness_tend)
 !!!         tracer_tendency => block % tend % tracers % array
 
 

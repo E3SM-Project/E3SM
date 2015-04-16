@@ -316,7 +316,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_velocity_external_solve(meshPool, statePool, timeLevel, err)
+   subroutine li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err)
 
        use li_mask
 
@@ -329,8 +329,11 @@ contains
       type (mpas_pool_type), intent(in) :: &
           meshPool !< Input: mesh information
 
-      integer, intent(in) :: &
-         timeLevel     !< Input: time level from which to calculate velocity
+      type (mpas_pool_type), intent(in) :: &
+          geometryPool !< Input: geometry information
+
+      type (mpas_pool_type), intent(in) :: &
+          thermalPool !< Input: thermal information
 
       !-----------------------------------------------------------------
       !
@@ -339,7 +342,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(inout) :: &
-         statePool          !< Input: state information
+         velocityPool          !< Input/Output: velocity information
 
       !-----------------------------------------------------------------
       !
@@ -378,24 +381,29 @@ contains
 
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
-      call mpas_pool_get_array(meshPool, 'beta', beta)
 
-      ! State variables
-      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'uReconstructX', uReconstructX, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'uReconstructY', uReconstructY, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'uReconstructZ', uReconstructZ, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel=timeLevel)
-      call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-      call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'dirichletMaskChanged', dirichletMaskChanged, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=timeLevel)
-      call mpas_pool_get_array(statePool, 'floatingEdges', floatingEdges, timeLevel=timeLevel)
+      ! Geometry variables
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+      call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask)
+      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+
+      ! Thermal variables
+      call mpas_pool_get_array(thermalPool, 'tracers', tracers)
+      call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
+
+      ! Velocity variables
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+      call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
+      call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
+      call mpas_pool_get_array(velocityPool, 'uReconstructZ', uReconstructZ)
+      call mpas_pool_get_array(velocityPool, 'beta', beta)
+      call mpas_pool_get_array(velocityPool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged)
+      call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
+      call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask)
+      call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
+
 
       if (maxval(thickness) < config_dynamic_thickness) then
          ! External dycores may not be able to handle case when there is no ice

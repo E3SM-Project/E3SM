@@ -71,14 +71,12 @@ module li_statistics
 !> 
 !-----------------------------------------------------------------------
 
-   subroutine li_compute_statistics(domain, timeLevel, itimestep)
+   subroutine li_compute_statistics(domain, itimestep)
 
      implicit none
 
      ! Input/output arguments
      type (domain_type), intent(inout) :: domain !< Input/Output: domain object
-     integer, intent(in) :: timeLevel   !< Input: time level used by pools for variables with multiple time levels
-                                        !  (typically '2' when this subroutine is called at the end of a time step)
      integer, intent(in) :: itimestep   !< Input: current time step counter
 
      ! Local variables
@@ -87,10 +85,11 @@ module li_statistics
      type (dm_info),        pointer :: dminfo
 
      ! pools
-     type (mpas_pool_type), pointer :: statePool
      type (mpas_pool_type), pointer :: meshPool
+     type (mpas_pool_type), pointer :: geometryPool
+     type (mpas_pool_type), pointer :: velocityPool
+     type (mpas_pool_type), pointer :: thermalPool
      type (mpas_pool_type), pointer :: scratchPool
-     type (mpas_pool_type), pointer :: diagnosticsPool
 
      ! mesh dimensions 
      integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve
@@ -207,10 +206,11 @@ module li_statistics
 
         ! pools
 
-        call mpas_pool_get_subpool(block % structs, 'state', statePool)
         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+        call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+        call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-        call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
         ! mesh dimensions
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -223,27 +223,32 @@ module li_statistics
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+
+        ! LI mesh arrays
+        call mpas_pool_get_array(meshPool, 'xtime', xtime)
         call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
-        call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography)
-        call mpas_pool_get_array(meshPool, 'sfcMassBal', sfcMassBal)
-         
+
+        ! Geometry arrays
+        call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+        call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+        call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+        call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+        call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+        call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+
         ! scratch fields
         call mpas_pool_get_field(scratchPool, 'iceCellMask', iceCellMaskField)
         call mpas_pool_get_field(scratchPool, 'iceEdgeMask', iceEdgeMaskField)
         call mpas_pool_get_field(scratchPool, 'workLevelCell', workLevelCellField)
 
-        ! state variables
-        call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel)
-        call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel)
-        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
-        call mpas_pool_get_array(statePool, 'upperSurface', upperSurface,   timeLevel)
-        call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-        call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
-        call mpas_pool_get_array(statePool, 'surfaceTemperature', surfaceTemperature, timeLevel)
-        call mpas_pool_get_array(statePool, 'basalTemperature', basalTemperature, timeLevel)
-        !Note: xtime only has one time level, but stating it explicitly here to avoid confusion
-        call mpas_pool_get_array(statePool, 'xtime', xtime, timeLevel=1)
-        call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
+        ! velocity variables
+        call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+
+        ! thermal variables
+        call mpas_pool_get_array(thermalPool, 'tracers', tracers)
+        call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
+        call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
+        call mpas_pool_get_dimension(thermalPool, 'index_temperature', indexTemperature)
 
         ! config settings
         call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
