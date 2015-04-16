@@ -6,10 +6,9 @@ set CIMEROOT  = `./xmlquery  CIMEROOT	-value `
 set CASETOOLS = `./xmlquery  CASETOOLS	-value `
 set GMAKE     = `./xmlquery  GMAKE	-value ` 
 set GMAKE_J   = `./xmlquery  GMAKE_J	-value ` 
-
+set BLDROOT = $1
 # directory in which pio is built
-set pio_dir=$1/pio
-
+set pio_dir=$BLDROOT/pio
 cd $pio_dir
 
 # ----------------------------------------------------------------------
@@ -31,12 +30,16 @@ $GMAKE  $pio_dir/Makefile MODEL=pio USER_CMAKE_OPTS="$cmake_opts" \
 # created by cmake
 # ----------------------------------------------------------------------
 $GMAKE -j $GMAKE_J || exit 2
-if ( -d src ) then
-  cp -p src/lib*.a $pio_dir/../lib
-  cp -p src/*.h src/*.mod $pio_dir/../include
+if ( -d "$pio_dir/src" ) then
+  cp -p src/lib*.a $BLDROOT/lib
+  cp -p src/*.h src/*.mod $BLDROOT/include
 else
-  cp -p lib*.a $pio_dir/../lib
-  cp -p *.h *.mod $pio_dir/../include
+  if( -d "$pio_dir/pio" ) then
+    cd pio
+  endif
+  pwd
+  cp -p lib*.a $BLDROOT/lib
+  cp -p *.h *.mod $BLDROOT/include
 endif
 exit 0
 

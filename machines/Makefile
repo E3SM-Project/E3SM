@@ -456,10 +456,16 @@ ifneq ("$(wildcard $(CIMEROOT)/externals/pio/src)", "")
 # This is a pio2 library
   PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
   PIOLIBNAME = -lpiof -lpioc
+  PIO_SRC_DIR = $(CIMEROOT)/externals/pio
 else
 # This is a pio1 library
   PIOLIB = $(PIO_LIBDIR)/libpio.a
   PIOLIBNAME = -lpio
+  ifneq ("$(wildcard $(CIMEROOT)/externals/pio/pio)", "")
+    PIO_SRC_DIR = $(CIMEROOT)/externals/pio
+  else
+    PIO_SRC_DIR = $(CIMEROOT)/externals/pio/pio
+  endif
 endif
 
 MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a 
@@ -518,9 +524,9 @@ $(GLC_DIR)/Makefile:
 	cd $(GLC_DIR); \
 	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/../components/cism/glimmer-cism
 
-$(PIO_LIBDIR)/Makefile:
+$(PIO_LIBDIR)/Makefile: 
 	cd $(PIO_LIBDIR); \
-	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/externals/pio
+	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(PIO_SRC_DIR)
 
 #-------------------------------------------------------------------------------
 # Build & include dependency files
