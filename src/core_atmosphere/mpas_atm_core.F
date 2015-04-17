@@ -17,7 +17,7 @@ module atm_core
    contains
 
 
-   function atm_core_init(domain, startTimeStamp) result(iErr)
+   function atm_core_init(domain, startTimeStamp) result(ierr)
 
       use mpas_timekeeping
       use mpas_kind_types
@@ -27,13 +27,13 @@ module atm_core
 
       type (domain_type), intent(inout) :: domain
       character(len=*), intent(out) :: startTimeStamp
+      integer :: ierr
 
       real (kind=RKIND), pointer :: dt
       type (block_type), pointer :: block
 
       character(len=StrKIND) :: timeStamp
       integer :: i
-      integer :: ierr
       logical, pointer :: config_do_restart
      
       type (mpas_pool_type), pointer :: state
@@ -43,7 +43,7 @@ module atm_core
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
 
-      iErr = 0
+      ierr = 0
 
 
       !
@@ -314,7 +314,7 @@ module atm_core
    end subroutine atm_mpas_init_block
    
    
-   function atm_core_run(domain) result(iErr)
+   function atm_core_run(domain) result(ierr)
    
       use mpas_timekeeping
       use mpas_kind_types
@@ -325,6 +325,7 @@ module atm_core
       implicit none
    
       type (domain_type), intent(inout) :: domain
+      integer :: ierr
    
       real (kind=RKIND), pointer :: dt
       logical, pointer :: config_do_restart
@@ -334,14 +335,13 @@ module atm_core
       character(len=StrKIND) :: timeStamp
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       integer :: itimestep
-      integer :: ierr
 
       type (mpas_pool_type), pointer :: state, diag, diag_physics, mesh
 
       ! For high-frequency diagnostics output
       character (len=StrKIND) :: tempfilename
 
-      iErr = 0
+      ierr = 0
 
       ! Eventually, dt should be domain specific
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
@@ -623,7 +623,7 @@ module atm_core
    end subroutine atm_do_timestep
    
    
-   function atm_core_finalize(domain) result(iErr)
+   function atm_core_finalize(domain) result(ierr)
    
       use mpas_decomp
       use mpas_timekeeping
@@ -633,7 +633,7 @@ module atm_core
       type (domain_type), intent(inout) :: domain 
       integer :: ierr
 
-      iErr = 0
+      ierr = 0
 
       call mpas_destroy_clock(clock, ierr)
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
@@ -682,8 +682,6 @@ module atm_core
 
    subroutine atm_compute_damping_coefs(mesh, configs)
 
-!      use mpas_configure
-
       implicit none
 
       type (mpas_pool_type), intent(inout) :: mesh
@@ -722,8 +720,6 @@ module atm_core
 
 
    subroutine atm_compute_pgf_coefs(mesh, configs)
-
-!      use mpas_configure
 
       implicit none
 

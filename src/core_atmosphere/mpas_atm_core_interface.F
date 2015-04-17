@@ -7,23 +7,28 @@
 !
 module atm_core_interface
 
+
    contains
+
 
    !***********************************************************************
    !
    !  routine atm_setup_core
    !
-   !> \brief   Init atm core setup routine
-   !> \author  Doug Jacobsen
-   !> \date    03/18/2015
+   !> \brief   Atmosphere core setup routine
+   !> \author  Doug Jacobsen, Michael Duda
+   !> \date    18 March 2015
    !> \details 
-   !>  This routine is intended to setup the necessary variables within a core_type
-   !>  for the init atm core.
+   !>  This routine is intended to setup the necessary variables within 
+   !>  a core_type for the atm core.
    !
    !-----------------------------------------------------------------------
    subroutine atm_setup_core(core)
-      use mpas_derived_types
-      use atm_core
+
+      use mpas_derived_types, only : core_type
+      use atm_core, only : atm_core_init, atm_core_run, atm_core_finalize
+
+      implicit none
 
       type (core_type), pointer :: core
 
@@ -42,6 +47,7 @@ module atm_core_interface
 
       core % Conventions = 'MPAS'
       core % source = 'MPAS'
+
 #include "inc/core_variables.inc"
 
    end subroutine atm_setup_core
@@ -51,16 +57,19 @@ module atm_core_interface
    !
    !  routine atm_setup_domain
    !
-   !> \brief   Init atm domain setup routine
-   !> \author  Doug Jacobsen
-   !> \date    03/18/2015
+   !> \brief   Atmosphere domain setup routine
+   !> \author  Doug Jacobsen, Michael Duda
+   !> \date    18 March 2015
    !> \details 
-   !>  This routine is intended to setup the necessary variables within a domain_type
-   !>  for the init atm core.
+   !>  This routine is intended to setup the necessary variables within 
+   !>  a domain_type for the init atm core.
    !
    !-----------------------------------------------------------------------
    subroutine atm_setup_domain(domain)
-      use mpas_derived_types
+
+      use mpas_derived_types, only : domain_type
+
+      implicit none
 
       type (domain_type), pointer :: domain
 
@@ -69,10 +78,24 @@ module atm_core_interface
    end subroutine atm_setup_domain
 
 
+   !***********************************************************************
+   !
+   !  function atm_setup_packages
+   !
+   !> \brief   Package setup routine
+   !> \author  Michael Duda
+   !> \date    6 August 2014
+   !> \details 
+   !>  This routine is responsible for setting up packages for the
+   !>  atmosphere core. It may use ay logic based on configuration options
+   !>  to set packages variables to either .true. or .false. Model fields are
+   !>  not allocated until after this routine has been called.
+   !
+   !-----------------------------------------------------------------------
    function atm_setup_packages(configs, packages) result(ierr)
 
-      use mpas_derived_types
-      use mpas_pool_routines
+      use mpas_derived_types, only : mpas_pool_type
+      use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
 
       implicit none
 
@@ -89,7 +112,7 @@ module atm_core_interface
    !
    !  function atm_setup_clock
    !
-   !> \brief   Pacakge setup routine
+   !> \brief   Simulation clock setup routine
    !> \author  Michael Duda
    !> \date    6 August 2014
    !> \details 
@@ -104,11 +127,8 @@ module atm_core_interface
    !-----------------------------------------------------------------------
    function atm_setup_clock(core_clock, configs) result(ierr)
 
-      use mpas_timekeeping, only : mpas_set_time, mpas_set_timeInterval, mpas_create_clock
-      use mpas_derived_types, only : MPAS_Clock_type, MPAS_Time_type, MPAS_Timeinterval_type, mpas_pool_type
-      use mpas_pool_routines, only : mpas_pool_get_config
-      use mpas_kind_types, only : StrKIND
-      use atm_core
+      use mpas_derived_types, only : MPAS_Clock_type, mpas_pool_type
+      use atm_core, only : atm_simulation_clock_init
 
       implicit none
 
@@ -139,7 +159,7 @@ module atm_core_interface
    !-----------------------------------------------------------------------
    function atm_get_mesh_stream(configs) result(stream)
 
-      use mpas_kind_types
+      use mpas_kind_types, only : StrKIND
       use mpas_derived_types, only : mpas_pool_type
       use mpas_pool_routines, only : mpas_pool_get_config
 
@@ -168,8 +188,8 @@ module atm_core_interface
    !  function atm_setup_decompositions
    !
    !> \brief   Decomposition setup function
-   !> \author  Doug Jacobsen
-   !> \date    September 2011
+   !> \author  Doug Jacobsen, Michael Duda
+   !> \date    11 March 2015
    !> \details 
    !>  This function is intended to create the decomposition list within a
    !>  domain type, and register any decompositons the core wants within it.
@@ -177,8 +197,9 @@ module atm_core_interface
    !-----------------------------------------------------------------------
    function atm_setup_decompositions(decompList) result(ierr)
 
-      use mpas_derived_types
-      use mpas_decomp
+      use mpas_derived_types, only : mpas_decomp_list, mpas_decomp_function, MPAS_DECOMP_NOERR
+      use mpas_decomp, only : mpas_decomp_create_decomp_list, mpas_decomp_register_method, &
+                              mpas_uniform_decomp
 
       implicit none
 
@@ -193,34 +214,42 @@ module atm_core_interface
 
       decompFunc => mpas_uniform_decomp
 
-      call mpas_decomp_register_method(decompList, 'uniform', decompFunc, iErr)
+      call mpas_decomp_register_method(decompList, 'uniform', decompFunc, ierr)
 
-      if ( iErr == MPAS_DECOMP_NOERR ) then
-         iErr = 0
+      if ( ierr == MPAS_DECOMP_NOERR ) then
+         ierr = 0
       end if
 
    end function atm_setup_decompositions
 
+
    !***********************************************************************
    !
-   !  function sw_setup_block
+   !  function atm_setup_block
    !
-   !> \brief   Shallow water block setup function
-   !> \author  Doug Jacobsen
+   !> \brief   Block setup function
+   !> \author  Doug Jacobsen, Michael Duda
    !> \date    03/18/2015
    !> \details 
-   !>  This function is a wrapper function to properly setup a block to be a
-   !>  init atm core block.
+   !>  This function is a wrapper function to properly setup a block to be
+   !>  an atmosphere core block.
    !
    !-----------------------------------------------------------------------
-   function atm_setup_block(block) result(iErr)
-      use mpas_derived_types
-      type (block_type), pointer :: block
-      integer :: iErr
+   function atm_setup_block(block) result(ierr)
 
-      iErr = 0
+      use mpas_derived_types, only : block_type
+
+      implicit none
+
+      type (block_type), pointer :: block
+      integer :: ierr
+
+      ierr = 0
+
       call atm_generate_structs(block, block % structs, block % dimensions, block % packages)
+
    end function atm_setup_block
+
 
 #include "inc/setup_immutable_streams.inc"
 
