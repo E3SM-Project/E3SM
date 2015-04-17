@@ -316,16 +316,8 @@ def wait_for_test(test_path, results, wait, check_throughput, ignore_namelists):
                 break
 
 ###############################################################################
-def wait_for_tests(test_paths, no_wait, check_throughput, ignore_namelists, cdash_build_name):
+def get_test_results(test_paths, no_wait, check_throughput, ignore_namelists):
 ###############################################################################
-    # Set up signal handling, we want to print results before the program
-    # is terminated
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
-
-    if (cdash_build_name):
-        start_time = time.time()
-
     results = Queue.Queue()
 
     for test_path in test_paths:
@@ -336,12 +328,12 @@ def wait_for_tests(test_paths, no_wait, check_throughput, ignore_namelists, cdas
     while threading.active_count() > 1:
         time.sleep(SLEEP_INTERVAL_SEC)
 
-    tests_with_results = dict()
+    test_results = dict()
     completed_test_paths = []
     while (not results.empty()):
         test_name, test_path, test_status = results.get()
-        if (test_name in tests_with_results):
-            prior_path, prior_status = tests_with_results[test_name]
+        if (test_name in test_results):
+            prior_path, prior_status = test_results[test_name]
             if (test_status == prior_status):
                 warning("Test name '%s' was found in both '%s' and '%s'" %
                         (test_name, test_path, prior_path))
@@ -349,20 +341,35 @@ def wait_for_tests(test_paths, no_wait, check_throughput, ignore_namelists, cdas
                 raise SystemExit("Test name '%s' was found in both '%s' and '%s' with different results" %
                                  (test_name, test_path, prior_path))
 
-        tests_with_results[test_name] = (test_path, test_status)
+        test_results[test_name] = (test_path, test_status)
         completed_test_paths.append(test_path)
 
     expect(set(test_paths) == set(completed_test_paths),
            "Missing results for test paths: %s" % (set(test_paths) - set(completed_test_paths)) )
 
+    return test_results
+
+###############################################################################
+def wait_for_tests(test_paths, no_wait, check_throughput, ignore_namelists, cdash_build_name):
+###############################################################################
+    # Set up signal handling, we want to print results before the program
+    # is terminated
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    if (cdash_build_name):
+        start_time = time.time()
+
+    test_results = get_test_results(test_paths, no_wait, check_throughput, ignore_namelists)
+
     all_pass = True
-    for test_name, test_data in sorted(tests_with_results.iteritems()):
+    for test_name, test_data in sorted(test_results.iteritems()):
         test_path, test_status = test_data
         print "Test '%s' finished with status '%s'" % (test_name, test_status)
         print "    Path: %s" % test_path
         all_pass &= test_status == TEST_PASSED_STATUS
 
     if (cdash_build_name):
-        create_cdash_xml(start_time, tests_with_results, cdash_build_name)
+        create_cdash_xml(start_time, test_results, cdash_build_name)
 
     return all_pass
