@@ -77,6 +77,7 @@
 			filename_interval="01-00-00_00:00:00"
 			packages="amOkuboWeiss"
 			clobber_mode="truncate"
+			mode="forward;analysis"
 			runtime_format="single_file">
 
 		<stream name="mesh"/>
