@@ -336,8 +336,6 @@ contains
        block => block % next
     end do
 
-    !call cice_debug_write_out_fields(domain)
-
     ! halo exchanges
     call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracers_fields)
     
@@ -1626,6 +1624,9 @@ contains
          ciceStefanBoltzmann, &
          ciceFreshWaterFreezingPoint
 
+    use cice_column, only: &
+         cice_column_initial_air_drag_coefficient
+
     type(domain_type) :: domain
 
     type(block_type), pointer :: block
@@ -1635,7 +1636,8 @@ contains
          atmosCoupling, &
          atmosForcing, &
          oceanCoupling, &
-         atmosFluxes
+         atmosFluxes, &
+         drag
 
     real(kind=RKIND), dimension(:), pointer :: &
          airLevelHeight, &
@@ -1653,7 +1655,8 @@ contains
          seaSurfaceTemperature, &
          oceanMixedLayerDepth, &
          longwaveUp, &
-         windSpeed
+         windSpeed, &
+         airDragCoefficient
 
     integer, pointer :: &
          nCells
@@ -1723,11 +1726,13 @@ contains
        !------------------------------------------------------------- 
 
        call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxes)
+       call MPAS_pool_get_subpool(block % structs, "drag", drag)
 
        call MPAS_pool_get_array(atmosFluxes, "longwaveUp", longwaveUp)
+       call MPAS_pool_get_array(drag, "airDragCoefficient", airDragCoefficient)
 
        longwaveUp = -ciceStefanBoltzmann * ciceFreshWaterFreezingPoint**4
-
+       airDragCoefficient = cice_column_initial_air_drag_coefficient()
 
        block => block % next
     enddo

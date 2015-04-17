@@ -47,7 +47,8 @@ module cice_debug
        iLabel  = 1, &
        iArrow  = 1
 
-  logical, public :: ldebug_output_fields = .false.
+  integer, public :: &
+       istep = 0
 
 contains
 
@@ -2734,9 +2735,21 @@ contains
     
   end subroutine cice_debug_output_domain
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
 !-----------------------------------------------------------------------
 
   subroutine cice_debug_write_out_field(domain, poolname, fieldname, cicename)
+
+    use mpas_constants
 
     type(domain_type) :: domain
 
@@ -2773,6 +2786,10 @@ contains
     case(1)
 
        call MPAS_pool_get_field(pool, trim(fieldname), array1D)
+
+       if (trim(fieldname) == "lonCell") where(array1D % array > pii) array1D % array = array1D % array - 2.0_RKIND * pii
+
+
        if (array1D % isActive) then
           fileout = "comparison/pop_mpas_array_comparison_"//trim(cicename)//".dat"
           call cice_debug_output_array(array1D % array, trim(fileout))
@@ -2822,16 +2839,54 @@ contains
 
   end subroutine cice_debug_write_out_field
 
-  subroutine cice_debug_write_out_fields(domain)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_write_out_fields(domain, callingSubroutine, location)
 
     type(domain_type) :: domain
 
-    write(*,*) "cice_debug_write_out_fields", ldebug_output_fields
+    character(len=*), intent(in) :: callingSubroutine
 
-    if (ldebug_output_fields) then
+    integer, intent(in) :: location
+
+    ! parameters where we want to writeout output
+    character(len=strKIND), parameter :: callingSubroutineDesired = "cice_timestep"
+    integer, parameter :: locationDesired = 3
+    integer, parameter :: iStepDesired = 1
+
+! cice_init_column_shortwave           1           0
+! column_radiation           1           0
+! column_radiation           2           0
+! cice_init_column_shortwave           2           0
+! column_prep_radiation           1           1
+! column_prep_radiation           2           1
+! column_vertical_thermodynamics           1           1
+! column_vertical_thermodynamics           2           1
+! column_itd_thermodynamics           1           1
+! column_itd_thermodynamics           2           1
+! column_ridging           1           1
+! column_ridging           2           1
+! column_radiation           1           1
+! column_radiation           2           1
+
+    write(stderrUnit,*) trim(callingSubroutine), location, iStep
+
+    if (trim(callingSubroutine) == trim(callingSubroutineDesired) .and. &
+        location == locationDesired .and. &
+        iStep == iStepDesired) then
+
+       write(stderrUnit,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
        
-       write(stderrUnit,*) "cice_debug_write_out_fields"
-
        ! tracer
        call cice_debug_write_out_field(domain, "tracers", "iceAreaCategory", "aicen")
        call cice_debug_write_out_field(domain, "tracers", "iceVolumeCategory", "vicen")   
@@ -3014,14 +3069,23 @@ contains
        call cice_debug_write_out_field(domain, "mesh", "lonCell", "TLON")
        call cice_debug_write_out_field(domain, "mesh", "latCell", "TLAT")
 
-
        stop
 
     endif
 
-    write(*,*) "cice_debug_write_out_fields end"
-
   end subroutine cice_debug_write_out_fields
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine cice_writeout_config(domain, unit, mpasConfig, popConfig, type)
 
@@ -3067,6 +3131,19 @@ contains
     end select
 
   end subroutine cice_writeout_config
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
   function config_cice_int(configName, configValue) result(configValueCice)
 
     character(len=*), intent(in) :: &
@@ -3149,6 +3226,17 @@ contains
 
   end function config_cice_int
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
   subroutine cice_writeout_configs(domain)
 
@@ -3219,6 +3307,18 @@ contains
     close(55)
 
   end subroutine cice_writeout_configs
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
   
   subroutine cice_debug_rotate_winds(domain)
 
@@ -3388,5 +3488,7 @@ contains
 
   end subroutine cice_debug_rotate_winds
  
+!-----------------------------------------------------------------------
+
 end module cice_debug
 

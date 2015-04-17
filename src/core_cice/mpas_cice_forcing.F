@@ -1392,7 +1392,7 @@ contains
   subroutine prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
 
     use ice_colpkg, only: &
-         colpkg_liquidus_temperature
+         colpkg_sea_freezing_temperature
 
     type (block_type), pointer :: block
 
@@ -1408,6 +1408,9 @@ contains
          seaSurfaceSalinity, &
          oceanMixedLayerDepth, &
          seaFreezingTemperature
+
+    character(len=strKIND), pointer :: &
+         config_sea_freezing_temperature_type
 
     logical, pointer :: &
          config_do_restart
@@ -1425,6 +1428,7 @@ contains
 
 
     call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(block % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh) 
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
@@ -1447,8 +1451,8 @@ contains
        seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
        oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
 
-       ! ocean freezing temperature
-       seaFreezingTemperature(iCell) = colpkg_liquidus_temperature(seaSurfaceSalinity(iCell))
+       ! sea freezing temperature 
+       seaFreezingTemperature(iCell) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(iCell))
 
     enddo ! iCell
 

@@ -76,6 +76,7 @@
 		<nml_option name="config_forcing_precipitation_units" type="character"     default_value="mm_per_sec"/>
 		<nml_option name="config_forcing_sst_type"            type="character"     default_value="ncar"/>
 		<nml_option name="config_update_ocean_fluxes"         type="logical"       default_value="false"/>
+		<nml_option name="config_include_pond_freshwater_feedback" type="logical"       default_value="false"/>
 	</nml_record>
 	<nml_record name="unit_test" in_defaults="true">
 		<nml_option name="config_perform_unit_test"           type="logical"       default_value="false"/>
@@ -154,11 +155,11 @@
 		<nml_option name="config_snow_shortwave_tuning_parameter"        type="real"          default_value="1.5"/>
 		<nml_option name="config_temp_change_snow_grain_radius_change"   type="real"          default_value="1.5"/>
 		<nml_option name="config_max_melting_snow_grain_radius"          type="real"          default_value="1500.0"/>
+		<nml_option name="config_algae_absorption_coefficient"           type="real"          default_value="0.6"/>
 	</nml_record>
 
 	<nml_record name="meltponds" in_defaults="true">
 		<nml_option name="config_snow_to_ice_transition_depth"            type="real"          default_value="0.0"/>
-		<nml_option name="config_adjust_shortwave_meltwater_infiltration" type="logical"       default_value="true"/>
 		<nml_option name="config_pond_refreezing_type"                    type="character"     default_value="hlid"/>
 		<nml_option name="config_pond_flushing_timescale"                 type="real"          default_value="1.0e-3"/>
 		<nml_option name="config_min_meltwater_retained_fraction"         type="real"          default_value="0.15"/>
@@ -189,6 +190,7 @@
 		<nml_option name="config_ridging_participation_function"          type="character"     default_value="exponential"/>
 		<nml_option name="config_ridging_redistribution_function"         type="character"     default_value="exponential"/>
     		<nml_option name="config_ridiging_efolding_scale"                 type="real"          default_value="3.0"/>
+    		<nml_option name="config_ratio_ridging_work_to_PE"                type="real"          default_value="17.0"/>
 	</nml_record>
 
 	<nml_record name="atmosphere" in_defaults="true">
@@ -203,6 +205,8 @@
 	<nml_record name="ocean" in_defaults="true">
     		<nml_option name="config_use_ocean_mixed_layer"                   type="logical"       default_value="true"/>
     		<nml_option name="config_min_friction_velocity"                   type="real"          default_value="0.0005"/>
+    		<nml_option name="config_ocean_heat_transfer_type"                type="character"     default_value="constant"/>
+    		<nml_option name="config_sea_freezing_temperature_type"           type="character"     default_value="mushy"/>
 	</nml_record>
 
 
@@ -727,6 +731,7 @@
 	<!--alternative atmos forcing -->
 	<var_struct name="alternative_atmos_forcing" time_levs="1">
 		<var name="latentHeatFluxCouple"              type="real"     dimensions="nCategories nCells"       name_in_code="latentHeatFluxCouple"/>
+		<var name="sensibleHeatFluxCouple"            type="real"     dimensions="nCategories nCells"       name_in_code="sensibleHeatFluxCouple"/>
 		<var name="surfaceHeatFluxCouple"             type="real"     dimensions="nCategories nCells"       name_in_code="surfaceHeatFluxCouple"/>
 		<var name="surfaceConductiveFluxCouple"       type="real"     dimensions="nCategories nCells"       name_in_code="surfaceConductiveFluxCouple"/>
 		<var name="airStressForcingU"                 type="real"     dimensions="nCells"                   name_in_code="airStressForcingU"/>
@@ -864,6 +869,7 @@
 		<var name="surfaceConductiveFluxCategory"     type="real"     dimensions="nCategories nCells"  name_in_code="surfaceConductiveFluxCategory"/>
 		<var name="longwaveUp"                        type="real"     dimensions="nCells"              name_in_code="longwaveUp"/>
 		<var name="sensibleHeatFlux"                  type="real"     dimensions="nCells"              name_in_code="sensibleHeatFlux"/>
+		<var name="sensibleHeatFluxCategory"          type="real"     dimensions="nCategories nCells"  name_in_code="sensibleHeatFluxCategory"/>
 		<var name="latentHeatFlux"                    type="real"     dimensions="nCells"              name_in_code="latentHeatFlux"/>
 		<var name="latentHeatFluxCategory"            type="real"     dimensions="nCategories nCells"  name_in_code="latentHeatFluxCategory"/>
 		<var name="evaporativeHeatFlux"               type="real"     dimensions="nCells"              name_in_code="evaporativeHeatFlux"/>
@@ -875,6 +881,22 @@
 		<var name="oceanSaltFlux"                     type="real"     dimensions="nCells"              name_in_code="oceanSaltFlux"/>
 		<var name="oceanHeatFlux"                     type="real"     dimensions="nCells"              name_in_code="oceanHeatFlux"/>
 		<var name="oceanShortwaveFlux"                type="real"     dimensions="nCells"              name_in_code="oceanShortwaveFlux"/>
+	</var_struct>
+
+	<!-- ocean atmosphere interaction -->
+	<var_struct name="ocean_atmosphere" time_levs="1">
+		<var name="airStressOceanU"                   type="real"     dimensions="nCells"              name_in_code="airStressOceanU"/>
+		<var name="airStressOceanV"                   type="real"     dimensions="nCells"              name_in_code="airStressOceanV"/>
+		<var name="airReferenceTemperature2mOcean"    type="real"     dimensions="nCells"              name_in_code="airReferenceTemperature2mOcean"/>
+		<var name="airReferenceHumidity2mOcean"       type="real"     dimensions="nCells"              name_in_code="airReferenceHumidity2mOcean"/>
+		<var name="albedoVisibleDirectOcean"          type="real"     dimensions="nCells"              name_in_code="albedoVisibleDirectOcean"/>
+		<var name="albedoVisibleDiffuseOcean"         type="real"     dimensions="nCells"              name_in_code="albedoVisibleDiffuseOcean"/>
+		<var name="albedoIRDirectOcean"               type="real"     dimensions="nCells"              name_in_code="albedoIRDirectOcean"/>
+		<var name="albedoIRDiffuseOcean"              type="real"     dimensions="nCells"              name_in_code="albedoIRDiffuseOcean"/>
+		<var name="longwaveUpOcean"                   type="real"     dimensions="nCells"              name_in_code="longwaveUpOcean"/>
+		<var name="sensibleHeatFluxOcean"             type="real"     dimensions="nCells"              name_in_code="sensibleHeatFluxOcean"/>
+		<var name="latentHeatFluxOcean"               type="real"     dimensions="nCells"              name_in_code="latentHeatFluxOcean"/>
+		<var name="evaporativeHeatFluxOcean"          type="real"     dimensions="nCells"              name_in_code="evaporativeHeatFluxOcean"/>
 	</var_struct>
 
 	<!-- shortwave radiation -->

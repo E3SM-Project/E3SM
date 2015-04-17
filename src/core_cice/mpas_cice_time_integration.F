@@ -15,6 +15,7 @@ module cice_time_integration
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timekeeping
+  use cice_debug
 
   implicit none
 
@@ -99,6 +100,8 @@ contains
 
     write(stderrUnit,*) "cice_timestep"
 
+    call cice_debug_write_out_fields(domain, "cice_timestep", 1)
+
     call store_timestep_counter(domain, itimestep)
 
     ! init history variables
@@ -152,6 +155,8 @@ contains
     ! shortwave
     call cice_column_postdynamics_time_integration(domain, clock)
 
+    call cice_debug_write_out_fields(domain, "cice_timestep", 2)
+
     ! prepare output variables
     call mpas_timer_start("prepare out")
 
@@ -176,6 +181,8 @@ contains
        call cice_run_diagnostics(block, clock)
        block => block % next
     end do
+
+    call cice_debug_write_out_fields(domain, "cice_timestep", 3)
 
   end subroutine cice_timestep!}}}
 
