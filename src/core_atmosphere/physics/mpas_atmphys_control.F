@@ -98,7 +98,7 @@
     if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
     if (trim(config_radt_lw_scheme) == 'suite')    config_radt_lw_scheme    = 'rrtmg_lw'
     if (trim(config_radt_sw_scheme) == 'suite')    config_radt_sw_scheme    = 'rrtmg_sw'
-    if (trim(config_radt_cld_scheme) == 'suite')   config_radt_cld_scheme   = 'cld_incidence'
+    if (trim(config_radt_cld_scheme) == 'suite')   config_radt_cld_scheme   = 'cld_fraction'
     if (trim(config_sfclayer_scheme) == 'suite')   config_sfclayer_scheme   = 'monin_obukhov'
     if (trim(config_lsm_scheme) == 'suite')        config_lsm_scheme        = 'noah'
 
