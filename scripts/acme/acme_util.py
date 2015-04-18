@@ -158,3 +158,32 @@ def start_buffering_output():
     """
     sys.stdout.flush()
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w')
+
+###############################################################################
+def match_any(item, re_list):
+###############################################################################
+    """
+    Return true if item matches any regex in re_list
+    """
+    for regex_str in re_list:
+        regex = re.compile(regex_str)
+        if (regex.match(item)):
+            return True
+
+    return False
+
+###############################################################################
+def safe_copy(src_dir, tgt_dir, files):
+###############################################################################
+    """
+    Copies a set of files from one dir to another. Works even if overwriting a
+    read-only file. Files can be relative paths and the relative path will be
+    matched on the tgt side.
+    """
+    for file_ in files:
+        full_tgt = os.path.join(tgt_dir, file_)
+        full_src = os.path.join(src_dir, file_)
+        expect(os.path.isfile(full_src), "Source dir '%s' missing file '%s'" % (src_dir, file_))
+        if (os.path.isfile(full_tgt)):
+            os.remove(full_tgt)
+        shutil.copy2(full_src, full_tgt)

@@ -26,7 +26,9 @@ BATCH_INFO = \
     ),
 }
 
-# machine -> defaults (compiler, test_suite, use_batch, project, testroot, proxy)
+# TODO: Get these values from ACME XML files instead of duplicating here.
+
+# machine -> defaults (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
 MACHINE_INFO = {
     "redsky"    : (
         "intel",
@@ -34,6 +36,7 @@ MACHINE_INFO = {
         True,
         "fy150001",
         "/gscratch1/<USER>/acme_scratch",
+        "/projects/ccsm/ccsm_baselines",
         "wwwproxy.sandia.gov:80"
     ),
     "skybridge" : (
@@ -42,6 +45,7 @@ MACHINE_INFO = {
         True,
         "fy150001",
         "/gscratch1/<USER>/acme_scratch/skybridge",
+        "/projects/ccsm/ccsm_baselines",
         "wwwproxy.sandia.gov:80"
     ),
     "melvin"    : (
@@ -50,6 +54,7 @@ MACHINE_INFO = {
         False,
         "ignore",
         "/home/<USER>/acme/scratch",
+        "/home/jgfouca/acme/baselines",
         "sonproxy.sandia.gov:80"
     ),
     "edison"    : (
@@ -58,6 +63,7 @@ MACHINE_INFO = {
         True,
         "acme",
         "/scratch1/scratchdirs/<USER>/acme_scratch",
+        "/project/projectdirs/acme/baselines",
         None
     ),
     "blues"    : (
@@ -66,6 +72,7 @@ MACHINE_INFO = {
         True,
         "ACME",
         "/lcrc/project/<PROJECT>/<USER>/acme_scratch",
+        "/lcrc/group/earthscience/acme_baselines",
         None
     ),
 }
@@ -79,7 +86,23 @@ OR
 %s --help
 OR
 %s --test
-""" % ((os.path.basename(args[0]), ) * 3),
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run the tests and compare baselines \033[0m
+    > %s
+    \033[1;32m# Run the tests, compare baselines, and update dashboard \033[0m
+    > %s -d
+    \033[1;32m# Run the tests, generating a full set of baselines (useful for first run on a machine) \033[0m
+    > %s -g
+    \033[1;32m# From most recent run, bless any namelist changes \033[0m
+    > %s -b -n
+    \033[1;32m# From most recent run, bless all changes \033[0m
+    > %s -b
+    \033[1;32m# From most recent run, bless changes to test foo and bar only \033[0m
+    > %s -b foo bar
+    \033[1;32m# From most recent run, bless only namelist changes to test foo and bar only \033[0m
+    > %s -n -b foo bar
+""" % ((os.path.basename(args[0]), ) * 10),
 
 description=description,
 
@@ -98,14 +121,29 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-n", "--namelists-only", action="store_true", dest="namelists_only", default=False,
                         help="Only compare/generate namelists. Useful for quickly blessing namelist changes")
 
-    parser.add_argument("-b", "--branch", action="store", dest="branch", default=None,
-                        help="Force baseline actions (compare/generate) to use baselines for a specific branch instead of the current branch. Also impacts dashboard job name.")
+    parser.add_argument("--branch", action="store", dest="branch", default=None,
+                        help="Force baseline actions (compare/generate) to use baselines for a specific branch instead of the current branch. Also impacts dashboard job name. Useful for testing a branch other than next or master")
+
+    parser.add_argument("-b" "--bless", action="store_true", dest="bless", default=False,
+                        help="Update baselines by copying diffing files from most recent nightly run directly into baselines")
+
+    parser.add_argument("bless_tests", nargs="*",
+                        help="When blessing, limit the bless to tests matching these regex")
 
     args = parser.parse_args(args[1:])
 
     acme_util.set_verbosity(args.verbose)
 
-    return args.generate_baselines, args.submit_to_dashboard, args.branch, args.namelists_only
+    expect(not (args.generate_baselines and args.bless),
+           "Does not make sense to use -g and -r together")
+    expect(not (args.submit_to_dashboard and args.generate_baselines),
+           "Does not make sense to use -g and -d together")
+    expect(not (args.submit_to_dashboard and args.bless),
+           "Does not make sense to use -r and -d together")
+    expect(not (len(args.bless_tests) > 0 and not args.bless),
+           "Providing specific test names only makes sense with -r")
+
+    return args.generate_baselines, args.submit_to_dashboard, args.branch, args.namelists_only, args.bless, args.bless_tests
 
 ###############################################################################
 def probe_batch_system():
@@ -153,18 +191,81 @@ def get_my_queued_jobs():
     return set(acme_util.run_cmd(list_cmd).split())
 
 ###############################################################################
+def bless_test_results(casearea, baseline_root, git_branch, namelists_only, bless_tests):
+###############################################################################
+    test_results = wait_for_tests.get_test_results(glob.glob("%s/*/TestStatus" % casearea),
+                                                   True, # no wait
+                                                   False, # don't check throughput
+                                                   False) # don't ignore namelist diffs
+
+    baseline_area = os.path.join(baseline_root, git_branch)
+
+    for test_name, test_data in test_results.iteritems():
+        if (bless_tests in [[], None] or acme_util.match_any(test_name, bless_tests)):
+            test_result = test_data[1]
+
+            if (test_result == wait_for_tests.TEST_PASSED_STATUS):
+                if (bless_tests not in [[], None]):
+                    warning("Asked to bless test %s, but it passed" % test_name)
+            else:
+
+                print "Blessing results for test:", test_name
+
+                # Get baseline dir for this test
+                baseline_dir_for_test = os.path.join(baseline_area, test_name)
+                expect(os.path.isdir(baseline_dir_for_test),
+                       "Problem, baseline dir '%s' does not exist" % baseline_dir_for_test)
+
+                # Get testcase dir for this test
+                globs = glob.glob("%s*" % os.path.join(casearea, test_name))
+                expect(len(globs) == 1, "Expected exactly one match for testcase area for test '%s', found '%s'" % (test_name, globs))
+                testcase_dir_for_test = globs[0]
+
+                # Find files of various types
+                namelist_files = []
+                other_files = []
+                for root, _, files in os.walk(baseline_dir_for_test):
+                    if (root == baseline_dir_for_test):
+                        rel_root = ""
+                    else:
+                        rel_root = root.replace("%s/" % baseline_dir_for_test, "")
+
+                    for file_ in files:
+                        rel_file = os.path.join(rel_root, file_)
+
+                        if (rel_root == "CaseDocs" or file_.startswith("user_nl")):
+                            namelist_files.append(rel_file)
+                        else:
+                            other_files.append(rel_file)
+
+                # Update namelist files
+                acme_util.safe_copy(testcase_dir_for_test, baseline_dir_for_test, namelist_files)
+
+                # Update other files
+                if (test_result != wait_for_tests.NAMELIST_FAIL_STATUS and not namelists_only):
+                    acme_util.safe_copy(testcase_dir_for_test, baseline_dir_for_test, other_files)
+
+###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_dashboard,
-                        baseline_branch=None, namelists_only=False):
+                        baseline_branch=None, namelists_only=False, bless=False,
+                        bless_tests=None):
 ###############################################################################
     acme_machine = acme_util.probe_machine_name()
     expect(acme_machine is not None,
            "Did not recognize current machine '%s'" % socket.gethostname())
     expect(acme_machine in MACHINE_INFO,
            "Missing machine info for machine '%s'" % acme_machine)
+    expect(os.path.isdir("ACME_Climate"),
+           "Missing ACME clone, expected pwd/ACME_Climate")
 
-    compiler, test_suite, use_batch, project, testroot, proxy = MACHINE_INFO[acme_machine]
+    compiler, test_suite, use_batch, project, testroot, baseline_root, proxy = MACHINE_INFO[acme_machine]
     testroot = testroot.replace("<USER>", getpass.getuser()).replace("<PROJECT>", project)
     casearea = os.path.join(testroot, "jenkins")
+    git_branch = acme_util.get_current_branch() if baseline_branch is None else baseline_branch
+
+    if (bless):
+        bless_test_results(casearea, baseline_root, git_branch, namelists_only, bless_tests)
+        return True
 
     #
     # Env changes
@@ -172,14 +273,6 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
 
     if (submit_to_dashboard and proxy is not None):
         os.environ["http_proxy"] = proxy
-
-    expect(os.path.isdir("ACME_Climate"),
-           "Missing ACME clone, expected pwd/ACME_Climate")
-    acme_scripts_path = os.path.join(os.getcwd(), "ACME_Climate", "scripts", "acme")
-    if ("PATH" in os.environ):
-        os.environ["PATH"] = "%s:%s" % (acme_scripts_path, os.environ["PATH"])
-    else:
-        os.environ["PATH"] = acme_scripts_path
 
     #
     # Cleanup previous test leftovers
@@ -259,10 +352,10 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    generate_baselines, submit_to_dashboard, baseline_branch, namelists_only = \
+    generate_baselines, submit_to_dashboard, baseline_branch, namelists_only, bless, bless_tests = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch, namelists_only) else 1)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch, namelists_only, bless, bless_tests) else 1)
 
 ###############################################################################
 
