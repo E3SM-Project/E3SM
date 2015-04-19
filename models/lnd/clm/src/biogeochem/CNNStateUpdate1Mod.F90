@@ -50,6 +50,7 @@ contains
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
     real(r8):: dt        ! radiation time step (seconds)
+    real(r8), parameter :: frootc_nfix_thc = 5._r8  !threshold fine root carbon for nitrogen fixation gC/m2
     !-----------------------------------------------------------------------
 
     associate(                                                                                           & 
@@ -81,13 +82,18 @@ contains
 
       if( is_active_betr_bgc  )then
         !summarize Organic N input and mineral nitrogen input from litter, deposition, fixation and fertilization
+        do fc = 1, num_soilc
+          c = filter_soilc(fc)
+          ns%plant_nbuffer_col(c)        = ns%plant_nbuffer_col(c)        + nf%nfix_to_sminn_col(c)*dt * exp(-cnstate_vars%frootc_nfix_scalar_col(c)/frootc_nfix_thc)
+
+        enddo
         do j = 1, nlevdecomp
           do fc = 1,num_soilc
             c = filter_soilc(fc)
             ! N deposition and fixation (put all into NH4 pool)
             nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%ndep_to_sminn_col(c)*dt * ndep_prof(c,j)
-            nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%nfix_to_sminn_col(c)*dt * nfixation_prof(c,j)
-            
+            !now a fraction of fixed nitrogen is first added to plant nitrogen pool 
+            nf%sminn_nh4_input_vr_col(c,j) = nf%sminn_nh4_input_vr_col(c,j) + nf%nfix_to_sminn_col(c)*dt * nfixation_prof(c,j) * (1._r8-exp(-cnstate_vars%frootc_nfix_scalar_col(c)/frootc_nfix_thc))
             
             ! plant to litter fluxes
             ! phenology and dynamic landcover fluxes

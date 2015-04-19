@@ -121,6 +121,7 @@ module CNStateType
      real(r8), pointer :: annmax_retransn_patch        (:)     ! patch annual max of retranslocated N pool (gN/m2)
      real(r8), pointer :: downreg_patch                (:)     ! patch fractional reduction in GPP due to N limitation (DIM)
      real(r8), pointer :: rc14_atm_patch               (:)     ! patch C14O2/C12O2 in atmosphere
+     real(r8), pointer :: frootc_nfix_scalar_col       (:)     ! col scalar for nitrogen fixation
      real(r8), pointer :: decomp_litpool_rcn_col       (:,:,:)   ! cn ratios of the decomposition pools
      integer           :: CropRestYear                        ! restart year from initial conditions file - increment as time elapses
 
@@ -243,6 +244,7 @@ contains
     allocate(this%lfwt_col            (begc:endc))                   ; this%lfwt_col            (:)   = nan
     allocate(this%farea_burned_col    (begc:endc))                   ; this%farea_burned_col    (:)   = nan
     allocate(this%decomp_litpool_rcn_col (begc:endc, 1:nlevdecomp_full, 4)); this%decomp_litpool_rcn_col (:,:,:) = nan
+    allocate(this%frootc_nfix_scalar_col (begc:endc))                ; this%frootc_nfix_scalar_col(:) = nan
     this%CropRestYear = 0
 
     allocate(this%dormant_flag_patch          (begp:endp)) ;    this%dormant_flag_patch          (:) = nan

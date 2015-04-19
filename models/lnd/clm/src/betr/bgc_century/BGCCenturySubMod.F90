@@ -307,10 +307,10 @@ module BGCCenturySubMod
   integer                   ,  intent(in) :: filter(:)
   type(betrtracer_type)     ,  intent(in) :: betrtracer_vars                    ! betr configuration information
   type(centurybgc_type)     ,  intent(in) :: centurybgc_vars
-    type(carbonflux_type)   ,  intent(in) :: carbonflux_vars  
+  type(carbonflux_type)     ,  intent(in) :: carbonflux_vars  
   type(tracercoeff_type)    ,  intent(in) :: tracercoeff_vars
   type(tracerstate_type)    ,  intent(inout) :: tracerstate_vars
-  real(r8)                  , intent(out) :: k_decay(nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8)                  ,  intent(out) :: k_decay(nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   
   !local variables
   integer :: fc, c, j
