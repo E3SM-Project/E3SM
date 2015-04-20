@@ -121,9 +121,11 @@ contains
              g2x(index_g2x_Sg_topo(elev_class), g) = gtopo(i,jj,elev_class)
              g2x(index_g2x_Flgg_hflx(elev_class), g) = ghflx(i,jj,elev_class)
           enddo
-	  
+	 
           g2x(index_g2x_Sg_icemask, g) = ice_sheet_grid_mask(i,jj)
           g2x(index_g2x_Sg_icemask_coupled_fluxes, g) = icemask_coupled_fluxes(i,jj)
+	  
+	  g2x(index_g2x_Sg_topg,g) = gtopo(i,jj,0)
           
        enddo
     enddo

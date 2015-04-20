@@ -1603,6 +1603,14 @@ module seq_flds_mod
      units    = 'K'
      attname  = 'So_tglc'
      call metadata_set(attname, longname, stdname, units)
+     
+     call seq_flds_add(g2x_states,'Sg_topg')
+     call seq_flds_add(x2o_states,'Sg_topg')     
+     longname = 'Ice sheet ice-free topography for ocean-ice sheet coupling'
+     stdname  = ''
+     units    = 'm'
+     attname  = 'Sg_topg'
+     call metadata_set(attname, longname, stdname, units)     
 	
      if (flds_co2a) then
 
