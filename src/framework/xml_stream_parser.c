@@ -27,7 +27,7 @@
  */
 void stream_mgr_create_stream_c(void *, const char *, int *, const char *, const char *, const char *, const char *, int *, int *, int *, int *);
 void mpas_stream_mgr_add_field_c(void *, const char *, const char *, const char *, int *);
-void mpas_stream_mgr_add_stream_fields_c(void *, const char *, const char *, const char *, int *);
+void mpas_stream_mgr_add_immutable_stream_fields_c(void *, const char *, const char *, const char *, int *);
 void mpas_stream_mgr_add_pool_c(void *, const char *, const char *, const char *, int *);
 void stream_mgr_add_alarm_c(void *, const char *, const char *, const char *, const char *, int *);
 void stream_mgr_add_pkg_c(void *, const char *, const char *, int *);
@@ -1469,46 +1469,45 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				packages_local[0] = '\0';
 
 
-			/* Immutable streams are added through the stream_mgr_add_stream_fields_c function, since
+			/* Immutable streams are added through the stream_mgr_add_immutable_stream_fields_c function, since
 			 * they aren't defined in the XML file, and are instead defined in Registry.xml.
 			 */
-			for(streammatch_xml = ezxml_child(streams, "immutable_stream"); streammatch_xml; streammatch_xml = ezxml_next(streammatch_xml)) {
-				compstreamname_const = ezxml_attr(streammatch_xml, "name");
+			stream_mgr_add_immutable_stream_fields_c(manager, streamID, streamname_const, packages_local, &err);
+			if (err != 0) {
+				/* If that call was successful, we DID add an immutable_stream, so do not attempt to add
+				 * a mutable stream below.  Otherwise do attempt to add a mutable stream and continue.
+				 */
 
-				if (strcmp(streamname_const, compstreamname_const) == 0) {
-					stream_mgr_add_stream_fields_c(manager, streamID, streamname_const, packages_local, &err);
-				}
-			}
+				for(streammatch_xml = ezxml_child(streams, "stream"); streammatch_xml; streammatch_xml = ezxml_next(streammatch_xml)) {
+					compstreamname_const = ezxml_attr(streammatch_xml, "name");
 
-			for(streammatch_xml = ezxml_child(streams, "stream"); streammatch_xml; streammatch_xml = ezxml_next(streammatch_xml)) {
-				compstreamname_const = ezxml_attr(streammatch_xml, "name");
-
-				if (strcmp(streamname_const, compstreamname_const) == 0) {
-					for (var_xml = ezxml_child(streammatch_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
-						fieldname_const = ezxml_attr(var_xml, "name");
-						stream_mgr_add_field_c(manager, streamID, fieldname_const, packages_local, &err);
-						if (err != 0) {
-							*status = 1;
-							return;
+					if (strcmp(streamname_const, compstreamname_const) == 0) {
+						for (var_xml = ezxml_child(streammatch_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
+							fieldname_const = ezxml_attr(var_xml, "name");
+							stream_mgr_add_field_c(manager, streamID, fieldname_const, packages_local, &err);
+							if (err != 0) {
+								*status = 1;
+								return;
+							}
 						}
-					}
 
 
-					for (vararray_xml = ezxml_child(streammatch_xml, "var_array"); vararray_xml; vararray_xml = ezxml_next(vararray_xml)) {
-						fieldname_const = ezxml_attr(vararray_xml, "name");
-						stream_mgr_add_field_c(manager, streamID, fieldname_const, packages_local, &err);
-						if (err != 0) {
-							*status = 1;
-							return;
+						for (vararray_xml = ezxml_child(streammatch_xml, "var_array"); vararray_xml; vararray_xml = ezxml_next(vararray_xml)) {
+							fieldname_const = ezxml_attr(vararray_xml, "name");
+							stream_mgr_add_field_c(manager, streamID, fieldname_const, packages_local, &err);
+							if (err != 0) {
+								*status = 1;
+								return;
+							}
 						}
-					}
 
-					for (varstruct_xml = ezxml_child(streammatch_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
-						structname_const = ezxml_attr(varstruct_xml, "name");
-						stream_mgr_add_pool_c(manager, streamID, structname_const, packages_local, &err);
-						if (err != 0){
-							*status = 1;
-							return;
+						for (varstruct_xml = ezxml_child(streammatch_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+							structname_const = ezxml_attr(varstruct_xml, "name");
+							stream_mgr_add_pool_c(manager, streamID, structname_const, packages_local, &err);
+							if (err != 0){
+								*status = 1;
+								return;
+							}
 						}
 					}
 				}
