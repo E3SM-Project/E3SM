@@ -933,6 +933,46 @@ a restart file."
 ></entry>
 -->
 
+<entry id="GLC2OCN_SMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="glc2ocn state mapping file"
+></entry>
+
+
+
+<!--- 
+<entry id="GLC2OCN_SMAPTYPE" 
+ type="char"
+ valid_values="X,Y" 
+ value="Y" 
+ group="run_domain"
+ sdesc="glc2ocn state mapping file decomp type"
+></entry>
+-->
+
+<entry id="GLC2OCN_FMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="glc2ocn flux mapping file"
+></entry>
+
+
+
+<!--- 
+<entry id="GLC2OCN_FMAPTYPE" 
+ type="char"
+ valid_values="X,Y" 
+ value="Y" 
+ group="run_domain"
+ sdesc="glc2ocn flux mapping file decomp type"
+></entry>
+-->
+
 <entry id="GLC2ICE_RMAPNAME" 
  type="char"
  valid_values="" 
