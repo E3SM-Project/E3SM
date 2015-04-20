@@ -193,42 +193,55 @@ module li_time_integration_fe
       type (mpas_pool_type), pointer :: velocityPool
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: tendencyPool
+      type (mpas_pool_type), pointer :: scratchPool
 
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness_tend
       type (field2DReal), pointer :: layerThickness_tend_field
       logical, pointer :: config_print_thickness_advection_info
       logical, pointer :: config_adaptive_timestep
-      integer :: allowableDtProcNumber
-      real (kind=RKIND) :: allowableDt, allowableDtOnProc, allowableDtAllProcs
-      type (MPAS_TimeInterval_type) :: allowableDtOnProcInterval, allowableDtAllProcsStringInterval
-      character (len=StrKIND) :: allowableDtOnProcString, allowableDtAllProcsString
+      logical, pointer :: config_adaptive_timestep_include_DCFL
+      integer :: allowableAdvecDtProcNumber
+      real (kind=RKIND) :: allowableAdvecDt, allowableAdvecDtOnProc, allowableAdvecDtAllProcs
+      type (MPAS_TimeInterval_type) :: allowableAdvecDtOnProcInterval, allowableAdvecDtAllProcsInterval
+      character (len=StrKIND) :: allowableAdvecDtOnProcString, allowableAdvecDtAllProcsString
+      integer :: allowableDiffDtProcNumber
+      real (kind=RKIND) :: allowableDiffDt, allowableDiffDtOnProc, allowableDiffDtAllProcs
+      type (MPAS_TimeInterval_type) :: allowableDiffDtOnProcInterval, allowableDiffDtAllProcsInterval
+      character (len=StrKIND) :: allowableDiffDtOnProcString, allowableDiffDtAllProcsString
       integer :: err_tmp
-
-      integer :: y, m, d, hh, mm, ss
 
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
       dminfo => domain % dminfo
 
       ! ===
       ! === Thickness tendencies
       ! ===
-      allowableDtOnProc = 1.0e36 ! set to large number
+      allowableAdvecDtOnProc = 1.0e36 ! set to large number
+      allowableDiffDtOnProc = 1.0e36 ! set to large number
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'tendency', tendencyPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_array(tendencyPool, 'layerThickness', layerThickness_tend)
 
          ! Calculate thickness tendency using state at time n =========
-         call li_tendency_thickness(meshPool, velocityPool, geometryPool, layerThickness_tend, dtSeconds, dminfo, allowableDt, err_tmp)
+         call li_tendency_thickness(meshPool, velocityPool, geometryPool, layerThickness_tend, dtSeconds, dminfo, allowableAdvecDt, err_tmp)
          err = ior(err,err_tmp)
-         allowableDtOnProc = min(allowableDtOnProc, allowableDt)
+         allowableAdvecDtOnProc = min(allowableAdvecDtOnProc, allowableAdvecDt)
+
+         ! Calculate diffusive CFL timestep, if needed
+         if (config_adaptive_timestep_include_DCFL) then
+            call li_calculate_apparent_diffusivity(meshPool, velocityPool, scratchPool, geometryPool, allowableDiffDt)
+            allowableDiffDtOnProc = min(allowableDiffDtOnProc, allowableDiffDt)
+         endif
 
          block => block % next
       end do
@@ -242,49 +255,86 @@ module li_time_integration_fe
       call mpas_timer_stop("halo updates")
 
 
-      ! Build a time string of the maximum allowable dt calculated
-      ! (We only need this if a CFL violation occurred or config_print_thickness_advection_info is true)
-      call mpas_set_timeInterval(allowableDtOnProcInterval, dt=allowableDtOnProc, ierr=err_tmp)
+      ! Local advective CFL info
+      call mpas_set_timeInterval(allowableAdvecDtOnProcInterval, dt=allowableAdvecDtOnProc, ierr=err_tmp)
       err = ior(err,err_tmp)
-      call mpas_get_timeInterval(allowableDtOnProcInterval, timeString=allowableDtOnProcString, ierr=err_tmp)
+      call mpas_get_timeInterval(allowableAdvecDtOnProcInterval, timeString=allowableAdvecDtOnProcString, ierr=err_tmp)
       err = ior(err,err_tmp)
-      if (dtSeconds > allowableDtOnProc) then
-         write(stderrUnit,*) 'ERROR: CFL violation on this processor.  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtOnProcString)
-                  err = ior(err,1)
-      endif
+
       if (config_print_thickness_advection_info) then
-         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtOnProcString)
+         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on advective CFL is (Days_hhh:mmm:sss):   ' // trim(allowableAdvecDtOnProcString)
+      endif
+
+      if (dtSeconds > allowableAdvecDtOnProc) then
+         write(stderrUnit,*) 'ERROR: Advective CFL violation on this processor.  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtOnProcString)
+         err = ior(err,1)
+      endif
+
+      ! Local diffusive CFL info
+      if (config_adaptive_timestep_include_DCFL) then
+          call mpas_set_timeInterval(allowableDiffDtOnProcInterval, dt=allowableDiffDtOnProc, ierr=err_tmp)
+          err = ior(err,err_tmp)
+          call mpas_get_timeInterval(allowableDiffDtOnProcInterval, timeString=allowableDiffDtOnProcString, ierr=err_tmp)
+          err = ior(err,err_tmp)
+
+          if (config_print_thickness_advection_info) then
+             write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on diffusive CFL is (Days_hhh:mmm:sss):   ' // trim(allowableDiffDtOnProcString)
+          endif
+
+          if (dtSeconds > allowableDiffDtOnProc) then
+             write(stderrUnit,*) 'WARNING: Diffusive CFL violation on this processor.  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtOnProcString)
+          endif
       endif
 
 
-      ! If we are printing advection debug information,
+      ! If we are printing advection debug information or adaptive timestepping,
       ! then find out what the global CFL limit is.  Don't do this otherwise because
       ! it requires 2 unnecessary MPI communications.
       if (config_print_thickness_advection_info .or. config_adaptive_timestep) then
-          ! Determine CFL limit on all procs
-          call mpas_dmpar_min_real(dminfo, allowableDtOnProc, allowableDtAllProcs)
+          ! Determine ACFL limit on all procs
+          call mpas_dmpar_min_real(dminfo, allowableAdvecDtOnProc, allowableAdvecDtAllProcs)
           ! Determine which processor has the limiting CFL
-          if (allowableDt == allowableDtAllProcs) then
-            allowableDtProcNumber = dminfo % my_proc_id
+          if (allowableAdvecDtOnProc == allowableAdvecDtAllProcs) then
+            allowableAdvecDtProcNumber = dminfo % my_proc_id
           else 
-            allowableDtProcNumber = -1
+            allowableAdvecDtProcNumber = -1
           endif
-          call mpas_dmpar_max_int(dminfo, allowableDtProcNumber, allowableDtProcNumber)
-          call mpas_set_timeInterval(allowableDtAllProcsStringInterval, dt=allowableDtOnProc, ierr=err_tmp)
+          call mpas_dmpar_max_int(dminfo, allowableAdvecDtProcNumber, allowableAdvecDtProcNumber)
+          call mpas_set_timeInterval(allowableAdvecDtAllProcsInterval, dt=allowableAdvecDtAllProcs, ierr=err_tmp)
           err = ior(err,err_tmp)
-          call mpas_get_timeInterval(allowableDtAllProcsStringInterval, timeString=allowableDtAllProcsString, ierr=err_tmp)
+          call mpas_get_timeInterval(allowableAdvecDtAllProcsInterval, timeString=allowableAdvecDtAllProcsString, ierr=err_tmp)
           err = ior(err,err_tmp)
+
+          ! Repeat for diffusive CFL
+          if (config_adaptive_timestep_include_DCFL) then
+              ! Determine DCFL limit on all procs
+              call mpas_dmpar_min_real(dminfo, allowableDiffDtOnProc, allowableDiffDtAllProcs)
+              ! Determine which processor has the limiting CFL
+              if (allowableDiffDtOnProc == allowableDiffDtAllProcs) then
+                allowableDiffDtProcNumber = dminfo % my_proc_id
+              else 
+                allowableDiffDtProcNumber = -1
+              endif
+              call mpas_dmpar_max_int(dminfo, allowableDiffDtProcNumber, allowableDiffDtProcNumber)
+              call mpas_set_timeInterval(allowableDiffDtAllProcsInterval, dt=allowableDiffDtAllProcs, ierr=err_tmp)
+              err = ior(err,err_tmp)
+              call mpas_get_timeInterval(allowableDiffDtAllProcsInterval, timeString=allowableDiffDtAllProcsString, ierr=err_tmp)
+              err = ior(err,err_tmp)
+          endif
       endif
+
+      ! Write messages if they are turned on
       if (config_print_thickness_advection_info) then
-          write(stdoutUnit,*) '  Maximum allowable time step for all processors is (Days_hhh:mmm:sss): ' // trim(allowableDtAllProcsString) //  '  Time step is limited by processor number ', allowableDtProcNumber
+          write(stdoutUnit,*) '  Maximum allowable time step for all processors based on advective CFL is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtAllProcsString) //  '  Time step is limited by processor number ', allowableAdvecDtProcNumber
+          if (config_adaptive_timestep_include_DCFL) then
+             write(stdoutUnit,*) '  Maximum allowable time step for all processors based on diffusive CFL is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtAllProcsString) //  '  Time step is limited by processor number ', allowableDiffDtProcNumber
+          endif
       endif
-      if (config_adaptive_timestep) then
-         call set_timestep(allowableDtAllProcs, dtSeconds, err_tmp)
-         err = ior(err,err_tmp)
-      elseif (dtSeconds > allowableDtAllProcs) then
-          write(stdErrUnit,*) 'Error: CFL violation has occurred on some processor(s)!'
-          err = ior(err,1)
-      endif
+
+
+      ! Set adaptive timestep
+      call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, dtSeconds, err_tmp)
+      err = ior(err,err_tmp)
 
 
       if (err > 0) then
@@ -505,11 +555,12 @@ module li_time_integration_fe
 !>  This routine sdjusts the time step based on the CFL condition.
 !
 !-----------------------------------------------------------------------
-   subroutine set_timestep(allowableDt, dtSeconds, err)
+   subroutine set_timestep(allowableAdvecDt, allowableDiffDt, dtSeconds, err)
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real (kind=RKIND) :: allowableDt
+      real (kind=RKIND) :: allowableAdvecDt
+      real (kind=RKIND) :: allowableDiffDt
 
       !-----------------------------------------------------------------
       ! output variables
@@ -521,16 +572,26 @@ module li_time_integration_fe
       ! local variables
       !-----------------------------------------------------------------
       logical, pointer :: config_adaptive_timestep
+      logical, pointer :: config_adaptive_timestep_include_DCFL
       real (kind=RKIND), pointer :: config_adaptive_timestep_CFL_fraction
       real (kind=RKIND), pointer :: config_max_adaptive_timestep
       real (kind=RKIND), pointer :: config_min_adaptive_timestep
+      real (kind=RKIND) :: allowableDt
 
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
-      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_CFL_fraction', config_adaptive_timestep_CFL_fraction)
-      call mpas_pool_get_config(liConfigs, 'config_max_adaptive_timestep', config_max_adaptive_timestep)
-      call mpas_pool_get_config(liConfigs, 'config_min_adaptive_timestep', config_min_adaptive_timestep)
 
       if (config_adaptive_timestep) then
+         call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_CFL_fraction', config_adaptive_timestep_CFL_fraction)
+         call mpas_pool_get_config(liConfigs, 'config_max_adaptive_timestep', config_max_adaptive_timestep)
+         call mpas_pool_get_config(liConfigs, 'config_min_adaptive_timestep', config_min_adaptive_timestep)
+         call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+
+         if (config_adaptive_timestep_include_DCFL) then
+            allowableDt = min(allowableAdvecDt, allowableDiffDt)
+         else
+            allowableDt = allowableAdvecDt
+         endif
+
          dtSeconds = min(allowableDt * config_adaptive_timestep_CFL_fraction, config_max_adaptive_timestep)
          write(stdOutUnit,*) '  Setting time step (days) to:', dtSeconds / (86400.0)
          if (dtSeconds < config_min_adaptive_timestep) then
