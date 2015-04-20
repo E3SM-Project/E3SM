@@ -630,7 +630,7 @@ module li_tendency
       logical, pointer :: config_print_thickness_advection_info
       real (kind=RKIND) :: invAreaCell, flux, maxAllowableDt, layerNormalVelocity
       integer :: iEdge, iCell, i, k
-      real (kind=RKIND) :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
+      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
       integer :: err_tmp
 
       ! Only needed for optional check for mass conservation

@@ -21,6 +21,9 @@
 		<dim name="nVertices" units="unitless"
 		     description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
 		/>
+		<dim name="ONE" definition="1" units="unitless"
+		     description="The number one as a dimension."
+		/>
 		<dim name="TWO" definition="2" units="unitless"
 		     description="The number two as a dimension."
 		/>
@@ -140,6 +143,10 @@
 			description="A multiplier on the minimum allowable time step calculated from the CFL condition. (Setting to 1.0 may be unstable, so smaller values are recommended.)"
 			possible_values="Any positive real value less than 1.0."
 		/>
+		<nml_option name="config_adaptive_timestep_include_DCFL" type="logical" default_value=".false." units="none"
+			description="Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep."
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 
@@ -246,6 +253,9 @@
 		<package name="SIAvelocity" description="Variables only needed by the SIA velocity solver"/>
 
 		<package name="higherOrderVelocity" description="This package includes variables required for higher order velocity solvers."/>
+
+		<package name="calcDiffusivity" description="Variables only needed for calculation of apparent diffusivity."/>
+
 	</packages>
 
 
@@ -602,7 +612,7 @@ is the value of that variable from the *previous* time level!
 		     description="Basal mass balance"
 		/>
 
-		<!-- Variables only needed by SIA solver -->
+		<!-- Variables only needed by SIA solver or for calculating diffusivity -->
 		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
 		     description="elevation at top of ice on vertices" packages="SIAvelocity"
 		/>
@@ -614,6 +624,11 @@ is the value of that variable from the *previous* time level!
 		/>
 		<var name="slopeEdge"            type="real"     dimensions="nEdges Time"
 		     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
+		/>
+
+		<!-- Variables only needed for calculating diffusivity at cell centers -->
+		<var name="apparentDiffusivity" type="real" dimensions="nCells Time" units="m^2 s^{-1}"
+			description="apparent diffusivity at cell centers"
 		/>
 	</var_struct>
 
@@ -726,7 +741,19 @@ is the value of that variable from the *previous* time level!
 	       description="generic work array with dimensions of (nVertLevels nCells)"
 	       persistence="scratch"
 	       />
-          <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
+	  <var name="workCell" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="slopeCellX" type="real" dimensions="nCells" units="none"
+	       descriptiom="x-component of slope on cell centers"
+	       persistence="scratch"
+	       />
+	  <var name="slopeCellY" type="real" dimensions="nCells" units="none"
+	       descriptiom="y-component of slope on cell centers"
+	       persistence="scratch"
+	       />
+	  <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
 	       description="local indices of each vertex"
 	       persistence="scratch"
 	       />

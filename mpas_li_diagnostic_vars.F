@@ -45,7 +45,7 @@ module li_diagnostic_vars
    ! Public member functions
    !
    !--------------------------------------------------------------------
-   public :: li_calculate_diagnostic_vars
+   public :: li_calculate_diagnostic_vars, li_calculate_apparent_diffusivity
 
    !--------------------------------------------------------------------
    !
@@ -242,6 +242,141 @@ contains
    !--------------------------------------------------------------------
    end subroutine li_calculate_diagnostic_vars
 
+
+
+!***********************************************************************
+!
+!  subroutine li_calculate_apparent_diffusivity
+!
+!> \brief   Computes apparent diffusivity
+!> \author  Matt Hoffman
+!> \date    19 April 2012
+!> \details 
+!> This routine computes the apparent diffusivity.
+!> Estimate diffusivity using the relation that the 2-d flux Q=-D grad h and Q=UH,
+!> where h is surface elevation, D is diffusivity, U is 2-d velocity vector, and H is thickness
+!> Solving for D = UH/-grad h
+!> DCFL: dt = 0.5 * dx**2 / D = 0.5 * dx**2 * slopemag / flux_downslope
+!-----------------------------------------------------------------------
+   subroutine li_calculate_apparent_diffusivity(meshPool, velocityPool, scratchPool, geometryPool, allowableDiffDt)
+      use mpas_vector_reconstruction
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      type (mpas_pool_type), intent(in) :: &
+         velocityPool          !< Input: velocity information
+
+      type (mpas_pool_type), intent(in) :: &
+         scratchPool          !< Input: scratch information
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         geometryPool          !< Input: geometry information
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), intent(out) :: allowableDiffDt !< Output: allowable timestep based on diffusive CFL
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:), pointer :: normalSlopeEdge
+      type (field1dReal), pointer :: cellJunk
+      type (field1dReal), pointer :: slopeCellXField
+      type (field1dReal), pointer :: slopeCellYField
+      real (kind=RKIND), dimension(:), pointer :: slopeCellX, slopeCellY
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
+      real (kind=RKIND), dimension(:), pointer :: apparentDiffusivity
+      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
+      integer, pointer :: nCells, nVertLevels
+      logical, pointer :: on_a_sphere
+      real (kind=RKIND) :: allowableDtHere
+      real (kind=RKIND) :: cellVeloX, cellVeloY
+      real (kind=RKIND) :: fluxDownslope
+      real (kind=RKIND) :: slopeCellMagnitude
+      real (kind=RKIND) :: dCell
+      integer :: iCell, iEdge, iLevel
+      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
+      real (kind=RKIND), parameter :: smallNumber = 1.0e-36
+
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+      if (on_a_sphere) then
+         write (stdErrUnit, *) "WARNING: Diffusive CFL cannot currently be calculated on a sphere."
+         return
+      endif
+
+      ! get needed variables
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+      call mpas_pool_get_array(geometryPool, 'apparentDiffusivity', apparentDiffusivity)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
+      call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_field(scratchPool, 'workCell', cellJunk)
+      call mpas_allocate_scratch_field(cellJunk, .true.)
+      call mpas_pool_get_field(scratchPool, 'slopeCellX', slopeCellXField)
+      call mpas_allocate_scratch_field(slopeCellXField, .true.)
+      slopeCellX => slopeCellXField % array
+      call mpas_pool_get_field(scratchPool, 'slopeCellY', slopeCellYField)
+      call mpas_allocate_scratch_field(slopeCellYField, .true.)
+      slopeCellY => slopeCellYField % array
+
+
+      ! Initialize output
+      allowableDiffDt = bigNumber
+
+      ! Approximate slope at cell centers
+
+      call mpas_reconstruct(meshPool, normalSlopeEdge,        &
+                            slopeCellX, slopeCellY, cellJunk % array, &
+                            cellJunk % array, cellJunk % array )
+
+      ! Approximate flux at cell centers
+      do iCell = 1, nCells
+         slopeCellMagnitude = sqrt(slopeCellX(iCell)**2 + slopeCellY(iCell)**2) + smallNumber
+
+         fluxDownslope = 0.0_RKIND
+         do iLevel = 1, nVertLevels
+            cellVeloX = (uReconstructX(iLevel, iCell) + uReconstructX(iLevel+1, iCell)) * 0.5_RKIND
+            cellVeloY = (uReconstructY(iLevel, iCell) + uReconstructY(iLevel+1, iCell)) * 0.5_RKIND
+            fluxDownslope = fluxDownslope + (-1.0_RKIND * slopeCellX(iCell) * cellVeloX - slopeCellY(iCell) * cellVeloY) * layerThickness(iLevel, iCell) /slopeCellMagnitude
+         enddo
+         apparentDiffusivity(iCell) = abs(fluxDownslope) / slopeCellMagnitude
+
+         ! Calculate allowable timestep based on DCFL
+         if ( li_mask_is_grounded_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
+            ! Find shortest distance to a neighboring cell center, dCell
+            dCell = minval(dcEdge(1:nEdgesOnCell(iCell)))
+            allowableDtHere = 0.5_RKIND * dCell**2 / (apparentDiffusivity(iCell) + smallNumber)
+         else
+            allowableDtHere = bigNumber
+         endif
+         allowableDiffDt = min(allowableDiffDt, allowableDtHere)
+      enddo
+
+      call mpas_deallocate_scratch_field(cellJunk, .true.)
+      call mpas_deallocate_scratch_field(slopeCellXField, .true.)
+      call mpas_deallocate_scratch_field(slopeCellYField, .true.)
+   !--------------------------------------------------------------------
+   end subroutine li_calculate_apparent_diffusivity
 
 
 
