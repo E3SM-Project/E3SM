@@ -1475,8 +1475,8 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 			stream_mgr_add_immutable_stream_fields_c(manager, streamID, streamname_const, packages_local, &err);
 			if (err != 0) {
 				/* If that call was successful, we DID add an immutable_stream, so do not attempt to add
-				* a mutable stream below.  Otherwise do attempt to add a mutable stream and continue.
-				*/
+				 * a mutable stream below.  Otherwise do attempt to add a mutable stream and continue.
+				 */
 
 				for(streammatch_xml = ezxml_child(streams, "stream"); streammatch_xml; streammatch_xml = ezxml_next(streammatch_xml)) {
 					compstreamname_const = ezxml_attr(streammatch_xml, "name");

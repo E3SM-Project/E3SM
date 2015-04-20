@@ -5175,6 +5175,11 @@ subroutine stream_mgr_add_immutable_stream_fields_c(manager_c, streamID_c, refSt
 
     call MPAS_stream_mgr_get_property(manager, streamID, MPAS_STREAM_PROPERTY_IMMUTABLE, is_immutable, ierr=ierr)
     if (.not. is_immutable) then
+       if (ierr == MPAS_STREAM_MGR_NOERR) then
+          ierr_c = 0
+       else
+          ierr_c = 1
+       end if
        return ! This stream is not immutable so do not continue.
     endif
 
