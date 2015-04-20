@@ -210,7 +210,7 @@ contains
        ! Also note that bheatflx is generally <= 0, since defined as positive down.
 
        ! calculate dsigma for the bottom layer between the basal boundary and the temp. point above
-       dsigbot = (1.0d0 - model%numerics%stagsigma(model%general%upn-1))                                                                  
+       dsigbot = (1.0d0 - model%numerics%stagsigma(model%general%upn-1))
 
        ! =====Backward Euler flux basal boundary condition=====
        ! MJH: If Crank-Nicolson is desired for the b.c., it is necessary to

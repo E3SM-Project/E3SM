@@ -5683,9 +5683,7 @@
         <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
         <machine compiler="intel" testtype="acme_developer">cascade</machine>
-        <machine compiler="nag" testtype="acme_developer">cascade</machine>
         <machine compiler="intel" testtype="acme_integration">cascade</machine>
-        <machine compiler="nag" testtype="acme_integration">cascade</machine>
         <machine compiler="ibm" testtype="acme_developer">cetus</machine>
         <machine compiler="ibm" testtype="acme_integration">cetus</machine>
         <machine compiler="pgi" testtype="acme_developer">eastwind</machine>
