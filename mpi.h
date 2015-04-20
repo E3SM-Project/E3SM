@@ -128,6 +128,12 @@ typedef int MPI_Datatype;
 #define MPI_COMPLEX16      (-41)
 #define MPI_COMPLEX32      (-42)
 
+/* Some more types */
+
+#define MPI_LONG_LONG_INT       (-43)
+#define MPI_LONG_LONG           MPI_LONG_LONG_INT
+#define MPI_UNSIGNED_LONG_LONG  (-44)
+
 
 /*
  * Fortran int size
@@ -206,6 +212,11 @@ typedef void MPI_User_function( void *invec, void *inoutvec, int *len,
 
 
 #define MPI_STATUS_SIZE       (sizeof(MPI_Status) / sizeof(int))
+
+#define MPI_INFO_NULL (0)
+
+/* NOTE: the C type MPI_Offset is NOT the same as MPI datatype MPI_OFFSET */
+typedef long long int MPI_Offset;
 
 
 /**********************************************************
@@ -369,6 +380,7 @@ extern int MPI_Type_indexed_block(int count, int blocklen, int *displacements,
                                   MPI_Datatype oldtype, MPI_Datatype *newtype);
 extern int MPI_Type_hindexed(int count, int *blocklens, MPI_Aint *displacements, 
                              MPI_Datatype oldtype, MPI_Datatype *newtype);
+extern int MPI_Type_size(MPI_Datatype type, int * size);
 extern int MPI_Type_struct(int count, int *blocklens, MPI_Aint *displacements, 
                            MPI_Datatype *oldtypes, MPI_Datatype *newtype);
 extern int MPI_Type_dup(MPI_Datatype oldtype, MPI_Datatype *newtype);

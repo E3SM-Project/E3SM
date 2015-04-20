@@ -74,6 +74,8 @@ typedef Typestruct* Datatype;
 #define SIMPLE_FCOMPLEX16  30
 #define SIMPLE_FCOMPLEX32  31
 
+#define SIMPLE_LONGLONG    32
+#define SIMPLE_ULONGLONG   33
 
 //internal type functions 
 int Simpletype_length(Simpletype s);

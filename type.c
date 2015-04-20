@@ -127,6 +127,10 @@ int Simpletype_length(Simpletype t)
       return 16; break;
     case SIMPLE_FCOMPLEX32:
       return 32; break;
+    case SIMPLE_LONGLONG:
+      return sizeof(long long); break;
+    case SIMPLE_ULONGLONG:
+      return sizeof(unsigned long long); break;
 
     default:
       printf("Invalid simple type\n");
