@@ -72,7 +72,7 @@ contains
   end subroutine CStateUpdate0
 
   !-----------------------------------------------------------------------
-  subroutine CStateUpdate1(&
+  subroutine CStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
        cnstate_vars, carbonflux_vars, carbonstate_vars)
@@ -82,8 +82,10 @@ contains
     ! variables (except for gap-phase mortality and fire fluxes)
     !
     use tracer_varcon       , only : is_active_betr_bgc
-    use subgridAveMod       , only : p2c    
+    use subgridAveMod       , only : p2c
+    use decompMod           , only : bounds_type    
     ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds  
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter

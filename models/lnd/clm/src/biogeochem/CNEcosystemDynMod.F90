@@ -290,15 +290,15 @@ contains
                isotope='c14')
        end if
 
-       call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, carbonflux_vars, carbonstate_vars)
 
        if ( use_c13 ) then
-          call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, c13_carbonflux_vars, c13_carbonstate_vars)
        end if
        if ( use_c14 ) then
-          call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, c14_carbonflux_vars, c14_carbonstate_vars)
        end if
 
