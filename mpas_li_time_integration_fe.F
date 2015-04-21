@@ -242,6 +242,17 @@ module li_time_integration_fe
             call li_calculate_apparent_diffusivity(meshPool, velocityPool, scratchPool, geometryPool, allowableDiffDt)
             allowableDiffDtOnProc = min(allowableDiffDtOnProc, allowableDiffDt)
          endif
+         ! Note: The calculation of the ACFL and DCFL timesteps could be calculated in
+         ! diagnostic_variables_solve_after_velocity.  In that case, we could also add
+         ! variables to store their values, rather than just relying on the values
+         ! written to the log files.  However, the current logic only calculates these
+         ! values if certain config options are set, so that would need to be dealt with.
+         ! If the ACFL and DCFL timesteps are moved to diagnostic_variables_solve_after_velocity,
+         ! Then the setting of the timestep value could happen at the beginning of the timestep,
+         ! probably in li_timestep rather than here.  That might be cleaner, but I have
+         ! persisted with doing it here, because since the calculation of ACFL/DCFL have a lot
+         ! in common with the advection calculation, and it seems kind of silly to do those calculations
+         ! on the previous time step.  That said, the calculations are pretty cheap.
 
          block => block % next
       end do

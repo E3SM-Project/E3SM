@@ -240,6 +240,11 @@ contains
       real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
       real (kind=RKIND), parameter :: smallNumber = 1.0e-36
 
+      ! Note: This routine could be broken into 2: one to calculate diffusivity
+      ! and another to get the diffusive CFL timestep.  In that case, the first (and possibly the second)
+      ! could be moved to diagnostic_variable_solve_after_velocity.  However, since
+      ! diffusivity is only used for this check, I don't think it makes sense to separate these
+      ! calculations for now.
 
       ! get needed variables
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
