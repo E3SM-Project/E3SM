@@ -41,6 +41,7 @@
             end if
             dst_cursor % isPersistent = src_cursor % isPersistent
             dst_cursor % isActive = src_cursor % isActive
+            dst_cursor % isDecomposed = src_cursor % isDecomposed
             dst_cursor % hasTimeDimension = src_cursor % hasTimeDimension
             dst_cursor % dimNames = src_cursor % dimNames
             dst_cursor % dimSizes = src_cursor % dimSizes
