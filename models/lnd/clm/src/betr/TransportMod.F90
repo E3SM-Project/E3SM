@@ -778,7 +778,7 @@ module TransportMod
    ! do backward track of the boundaries
    ! USES
    !
-   use ODEMod, only : ode_rk4 
+   use ODEMod, only : ode_rk4, ode_rk2
    implicit none
    real(r8), dimension(:), intent(in) :: zi     !boundary interfaces,  [0 : n+4], 2:n+2 are to be advected
    real(r8), dimension(:), intent(in) :: us     !interface velocities, [0 : n+4] including ghost cells
@@ -794,8 +794,8 @@ module TransportMod
    
    neq = size(zold)
    call Extra_inst%AAssign(zi,us)
-   time =0._r8   
-   call ode_rk4(trajectory, zi(3:neq+2), neq, time, dtime, zold)
+   time =0._r8
+   call ode_rk2(trajectory, zi(3:neq+2), neq, time, dtime, zold)
    
 
    
@@ -818,7 +818,6 @@ module TransportMod
   integer  :: j
   integer, parameter  :: pn = 1
   real(r8) :: ui(neq)
-
   call Lagrange_interp(pn, Extra_inst%zi(1:Extra_inst%nlen), Extra_inst%us(1:Extra_inst%nlen), y0, ui)
   do j = 1, neq
     dxdt(j) = -ui(j)

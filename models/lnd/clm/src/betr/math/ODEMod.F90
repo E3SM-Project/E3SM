@@ -10,7 +10,7 @@ implicit none
    
    public :: ode_mbbks1, ode_adapt_mbbks1
    public :: ode_rk4
-   
+   public :: ode_rk2   
    real(r8), parameter :: tiny = 1.e-23_r8
    
    type, private:: mbkks_type
@@ -518,5 +518,51 @@ contains
       y(n) = y0(n) + dt * (k1(n)+2._r8*K2(n)+2._r8*k3(n)+k4(n))/6._r8
    enddo
    end subroutine ode_rk4
+
+
+!-------------------------------------------------------------------------------   
+   subroutine ode_rk2(odefun, y0, neq, t, dt, y )
+   !
+   ! DESCRIPTION
+   !  2-th order runge-kutta method for ode integration
+   implicit none
+   !rk3  Solve differential equations with a non-adaptive method of order 2.
+   !   call rk2(y, ODEFUN,t, dt,Y0, neq) integrates 
+   !   the system of differential equations y' = f(t,y) by stepping from T to 
+   !   t+dt. Function ODEFUN(T,Y) must return f(t,y) in a column vector.
+   !   The vector Y0 is the initial conditions at T0. Each row in the solution 
+   !   array Y corresponds to a time specified in TSPAN.
+
+   !
+   !   This is a non-adaptive solver. The step sequence is determined by TSPAN
+   !   but the derivative function ODEFUN is evaluated multiple times per step.
+   !
+
+   integer,  intent(in)  :: neq
+   real(r8), intent(in)  :: y0(neq)
+   real(r8), intent(in)  :: t
+   real(r8), intent(in)  :: dt
+   real(r8), intent(out) :: y(neq)
+
+   real(r8) :: k1(neq)
+   real(r8) :: k2(neq)
+   real(r8) :: ti, dt05
+   integer :: n
+   external :: odefun
+
+   ti = t
+   dt05 = dt * 0.5_r8
+
+   call odefun(y0, dt, ti, neq, k1)
+   do n = 1, neq
+      y(n) = y0(n) + dt05 * k1(n)
+   enddo
+   ti = t + dt05
+   call odefun(y, dt05, ti, neq, k2)
+   do n = 1, neq
+      y(n) = y0(n) + dt * k2(n)
+   enddo
+
+   end subroutine ode_rk2
    
 end module ODEMod
