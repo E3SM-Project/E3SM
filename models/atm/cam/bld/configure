@@ -2426,7 +2426,7 @@ EOF
 	    $mct_flags_str = " -O2 -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,".
 		"mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,".
 		"mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,".
-		"mpi_file_write_all,mpibcast,mpiscatterv ";
+		"mpi_file_write_all,mpibcast,mpiscatterv,mpi_alltoallw ";
 	    if ($debug eq 'ON') { $mct_flags_str .= " -g -gline -time -f95 -C=all "; }
 
 	    # Set to both FFLAGS and FCFLAGS to ensure all files use this.

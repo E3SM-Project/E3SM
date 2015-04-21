@@ -3350,7 +3350,8 @@ contains
 
       auto_loss(:,:,auto_ind) = autotrophs(auto_ind)%mort * Pprime(:,:,auto_ind) * Tfunc
 
-      auto_agg(:,:,auto_ind) = min((autotrophs(auto_ind)%agg_rate_max * dps) * Pprime(:,:,auto_ind), autotrophs(auto_ind)%mort2 * Pprime(:,:,auto_ind) * Pprime(:,:,auto_ind))
+      auto_agg(:,:,auto_ind) = min((autotrophs(auto_ind)%agg_rate_max * dps) * Pprime(:,:,auto_ind), autotrophs(auto_ind)%mort2 * & !BALLI
+           Pprime(:,:,auto_ind) * Pprime(:,:,auto_ind))
       auto_agg(:,:,auto_ind) = max((autotrophs(auto_ind)%agg_rate_min * dps) * Pprime(:,:,auto_ind), auto_agg(:,:,auto_ind))
 
 !-----------------------------------------------------------------------

@@ -83,7 +83,8 @@ contains
        call interp_to_local(instance%lgrid_fulldomain,g_airpress,instance%downs,localdp=instance%airpress,z_constrain=.true.)
     end if
 
-    if (orogflag) call interp_to_local(instance%lgrid_fulldomain,g_orog,instance%downs,localdp=instance%global_orog,z_constrain=.true.)
+    if (orogflag) call interp_to_local(instance%lgrid_fulldomain,g_orog,instance%downs,&
+         localdp=instance%global_orog,z_constrain=.true.)
 
     if (instance%whichprecip==PRECIP_RL .or. instance%whichacab==MASS_BALANCE_EBM) &
          call interp_wind_to_local(instance%lgrid_fulldomain,g_zonwind,g_merwind,instance%downs,instance%xwind,instance%ywind)

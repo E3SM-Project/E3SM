@@ -208,7 +208,8 @@ contains
     call nc_errorhandle(__FILE__,__LINE__,status)
     status = parallel_get_att(ncid,mapid,'false_northing',CFproj_get_stere_polar%false_northing)
     call nc_errorhandle(__FILE__,__LINE__,status)
-    status = parallel_get_att(ncid,mapid,'straight_vertical_longitude_from_pole',CFproj_get_stere_polar%longitude_of_central_meridian)
+    status = parallel_get_att(ncid,mapid,'straight_vertical_longitude_from_pole', &
+         CFproj_get_stere_polar%longitude_of_central_meridian)
     call nc_errorhandle(__FILE__,__LINE__,status)
     CFproj_get_stere_polar%latitude_of_projection_origin=90.0
     status = parallel_get_att(ncid,mapid,'latitude_of_projection_origin',CFproj_get_stere_polar%latitude_of_projection_origin)
