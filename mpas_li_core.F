@@ -408,6 +408,14 @@ module li_core
             block => block % next
          end do
 
+         ! Reset the alarm for checking for force setting of the adaptive timestep interval
+         if (mpas_is_alarm_ringing(domain % clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)) then
+            err = ior(err, err_tmp)
+            call mpas_reset_clock_alarm(domain % clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)
+            err = ior(err, err_tmp)
+         endif
+         err = ior(err, err_tmp)
+
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
          if (globalErr > 0) then
@@ -668,8 +676,10 @@ module li_core
       !-----------------------------------------------------------------
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
-      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time ! MPAS standard configs
+      type (MPAS_TimeInterval_type) :: adaptDtForceInterval
+      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval ! MPAS standard configs
       character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
+      character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       character (len=StrKIND) :: restartTimeStamp !< string to be read from file
       integer, pointer :: config_year_digits
@@ -688,6 +698,7 @@ module li_core
       call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call mpas_pool_get_config(configs, 'config_adaptive_timestep_force_interval', config_adaptive_timestep_force_interval)
 
 
       ! Set time to the user-specified start time OR use a restart time from file
@@ -730,6 +741,19 @@ module li_core
           ierr = 1
       end if
 
+      ! Set up the adaptiveTimestepForceInterval alarm.
+      ! This is only needed if the adaptive time stepper is being used, but can be set up regardless.
+      call mpas_set_timeInterval(adaptDtForceInterval, timeString=config_adaptive_timestep_force_interval, ierr=err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call mpas_add_clock_alarm(core_clock, 'adaptiveTimestepForceInterval', alarmTime=startTime, alarmTimeInterval=adaptDtForceInterval, ierr=err_tmp)
+      ierr = ior(ierr,err_tmp)
+      ! Reset the alarm for checking for force setting of the adaptive timestep interval
+      if (mpas_is_alarm_ringing(core_clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)) then
+         ierr = ior(ierr, err_tmp)
+         call mpas_reset_clock_alarm(core_clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)
+         ierr = ior(ierr, err_tmp)
+      endif
+      ierr = ior(ierr, err_tmp)
 
       ! === error check
       if (ierr > 0) then
