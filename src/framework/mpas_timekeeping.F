@@ -598,6 +598,35 @@ module mpas_timekeeping
    end function mpas_alarm_interval
 
 
+   !-----------------------------------------------------------------------
+   !  routine mpas_alarm_get_ringtime
+   !
+   !> \brief This function returns the next ring time of an alarm.
+   !> \author Matthew Hoffman
+   !> \date   04/21/2015
+   !> \details This function returns the next ring time of an alarm.
+   !>
+   !-----------------------------------------------------------------------
+   type (MPAS_Time_type) function mpas_alarm_get_ringtime(clock, alarmId)
+
+      implicit none
+      type (MPAS_Clock_type), intent(in) :: clock
+      character (len=*), intent(in) :: alarmID
+      ! Local variables
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+
+      alarmPtr => clock % alarmListHead
+      do while (associated(alarmPtr))
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            mpas_alarm_get_ringtime = alarmPtr % ringTime
+            exit
+         end if
+         alarmPtr => alarmPtr % next
+      end do
+
+   end function mpas_alarm_get_ringtime
+
+
    subroutine mpas_print_alarm(clock, alarmID, ierr)
 
       implicit none
@@ -798,6 +827,7 @@ module mpas_timekeeping
                   end if
                end if
             end if
+            alarmPtr % ringTime = alarmPtr % prevRingTime + alarmPtr % ringTimeInterval
             exit
          end if
          alarmPtr => alarmPtr % next
