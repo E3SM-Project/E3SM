@@ -20,7 +20,6 @@ MODULE shr_orb_mod
    public :: shr_orb_params
    public :: shr_orb_decl
    public :: shr_orb_print
-   public :: shr_orb_init
 
    real   (SHR_KIND_R8),public,parameter :: SHR_ORB_UNDEF_REAL = 1.e36_SHR_KIND_R8 ! undefined real 
    integer(SHR_KIND_IN),public,parameter :: SHR_ORB_UNDEF_INT  = 2000000000        ! undefined int
@@ -38,24 +37,12 @@ MODULE shr_orb_mod
    real   (SHR_KIND_R8),parameter :: SHR_ORB_MVELP_MIN  =   0.0_SHR_KIND_R8 ! min value for mvelp
    real   (SHR_KIND_R8),parameter :: SHR_ORB_MVELP_MAX  = 360.0_SHR_KIND_R8 ! max value for mvelp
 
-   ! dt for averaged cosz calculation
-   real   (SHR_KIND_R8)           :: dt_avg=-1
 
 !===============================================================================
 CONTAINS
 !===============================================================================
 
-subroutine shr_orb_init(dt_in)
-
-   ! Set the dt for the average cosz calculation if it is supplied
-   real(SHR_KIND_R8), intent(in) :: dt_in
-
-   dt_avg = dt_in
-
-end subroutine shr_orb_init
-
-
-real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin)
+real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg)
 
    !----------------------------------------------------------------------------
    !
@@ -74,15 +61,24 @@ real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin)
    real   (SHR_KIND_R8),intent(in) :: lat    ! Centered latitude (radians)
    real   (SHR_KIND_R8),intent(in) :: lon    ! Centered longitude (radians)
    real   (SHR_KIND_R8),intent(in) :: declin ! Solar declination (radians)
+   real   (SHR_KIND_R8),intent(in), optional   :: dt_avg ! if present and set non-zero, then use in the 
+                                                         ! average cosz calculation
+   logical :: use_dt_avg
 
    !----------------------------------------------------------------------------
 
+   use_dt_avg = .false.
+   if (present(dt_avg)) then
+      if (dt_avg /= 0.0_shr_kind_r8) use_dt_avg = .true.
+   end if
+
+
    ! If dt for the average cosz is specified, then call the shr_orb_avg_cosz
-   if (dt_avg == -1) then
+   if (use_dt_avg) then
+      shr_orb_cosz =  shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
+   else
       shr_orb_cosz = sin(lat)*sin(declin) - &
       &              cos(lat)*cos(declin)*cos(jday*2.0_SHR_KIND_R8*pi + lon)
-   else
-      shr_orb_cosz =  shr_orb_avg_cosz(jday, lat, lon, declin)
    end if
 
 END FUNCTION shr_orb_cosz
@@ -95,7 +91,7 @@ END FUNCTION shr_orb_cosz
 ! Ref.  : Zhou et al., GRL, 2015
 !=======================================================================
 
-real (SHR_KIND_R8) pure function shr_orb_avg_cosz(jday, lat, lon, declin)
+real (SHR_KIND_R8) pure function shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
 
     use shr_const_mod, only : pi => shr_const_pi
 
@@ -108,6 +104,7 @@ real (SHR_KIND_R8) pure function shr_orb_avg_cosz(jday, lat, lon, declin)
     real(SHR_KIND_R8), intent(in) :: lat    ! latitude (radian)
     real(SHR_KIND_R8), intent(in) :: lon    ! longitude (radian)
     real(SHR_KIND_R8), intent(in) :: declin ! solar declination (radian)
+    real(SHR_KIND_R8), intent(in) :: dt_avg ! dt for averaged cosz calculation
 
 !-----------------------------------------------------------------------
 ! Local Arguments
