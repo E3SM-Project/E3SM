@@ -566,9 +566,12 @@ is the value of that variable from the *previous* time level!
 		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
 			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
 		/>
-		<!-- xtime has to go somewhere.  "mesh" is a more general place than the other pools -->
+		<!-- time-related fields have to go somewhere.  "mesh" is a more general place than the other pools -->
 		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
 		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<var name="deltat" type="real" time_levs="1" dimensions="Time" units="s"
+		     description="time step length, in seconds.  Value on a given time is the value used between the previous time level and the current time level."
 		/>
 	</var_struct>
 
