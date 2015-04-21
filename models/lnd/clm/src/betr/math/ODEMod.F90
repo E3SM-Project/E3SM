@@ -491,7 +491,8 @@ contains
    real(r8) :: k2(neq)
    real(r8) :: k3(neq)
    real(r8) :: k4(neq)
-   real(r8) :: ti, dt05
+   real(r8) :: kt(neq)
+   real(r8) :: ti, dt05, a
    integer :: n
    external :: odefun
 
@@ -499,24 +500,33 @@ contains
    dt05 = dt * 0.5_r8
    
    call odefun(y0, dt05, ti, neq, k1)
-   do n = 1, neq
-      y(n) = y0(n) + dt05 * k1(n)
-   enddo
+
+   y(:) = y0(:)
+   call daxpy(neq, dt05, k1, 1, y, 1)
+   
    ti = t + dt05
    call odefun(y, dt05, ti, neq, k2)
-   do n = 1, neq
-      y(n) = y0(n) + dt05 * k2(n)
-   enddo
+   
+   y(:) = y0(:)
+   call daxpy(neq, dt05, k2, 1, y, 1)
+   
    ti = t + dt05
    call odefun( y, dt05, ti, neq, k3)
-   do n = 1, neq
-      y(n) = y0(n) + dt * k3(n)
-   enddo
+
+   y(:) = y0(:)
+   call daxpy(neq, dt, k3, 1, y, 1)
+   
    ti = t + dt
-   call odefun(y, dt, ti, neq, k4)   
+   call odefun(y, dt, ti, neq, k4)
+   
    do n = 1, neq
-      y(n) = y0(n) + dt * (k1(n)+2._r8*K2(n)+2._r8*k3(n)+k4(n))/6._r8
+      kt(n) = k1(n)+2._r8*K2(n)+2._r8*k3(n)+k4(n)
    enddo
+   a = dt / 6._r8
+
+   y(:) = y0(:)
+   call daxpy(neq, a, kt, 1, y, 1)
+   
    end subroutine ode_rk4
 
 
@@ -554,15 +564,15 @@ contains
    dt05 = dt * 0.5_r8
 
    call odefun(y0, dt, ti, neq, k1)
-   do n = 1, neq
-      y(n) = y0(n) + dt05 * k1(n)
-   enddo
+
+   y(:) = y0(:)
+   call daxpy(neq, dt05, k1, 1, y, 1)   
+
    ti = t + dt05
    call odefun(y, dt05, ti, neq, k2)
-   do n = 1, neq
-      y(n) = y0(n) + dt * k2(n)
-   enddo
 
+   y(:) = y0(:)
+   call daxpy(neq, dt, k2, 1, y, 1)
    end subroutine ode_rk2
    
 end module ODEMod

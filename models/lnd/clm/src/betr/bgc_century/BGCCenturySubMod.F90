@@ -455,6 +455,7 @@ module BGCCenturySubMod
   !initialize all entries to zero
   cascade_matrix = 0._r8
 
+  !higher [nh4] makes lower [no3] competitiveness 
   compet_decomp_no3_scal = compet_decomp_no3 / (compet_decomp_no3 + nh4_no3_ratio*compet_decomp_nh4)
   compet_plant_no3_scal  = compet_plant_no3 / (compet_plant_no3 + nh4_no3_ratio*compet_plant_nh4)
   !note all reactions are in the form products - substrates = 0, therefore
