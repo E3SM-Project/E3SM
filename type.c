@@ -131,6 +131,8 @@ int Simpletype_length(Simpletype t)
       return sizeof(long long); break;
     case SIMPLE_ULONGLONG:
       return sizeof(unsigned long long); break;
+    case SIMPLE_OFFSET:
+      return sizeof(MPI_Offset); break;
 
     default:
       printf("Invalid simple type\n");
