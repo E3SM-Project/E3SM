@@ -439,6 +439,38 @@ int MPI_Alltoallv(void *sendbuf, int *sendcounts,
 /*********/
 
 
+FC_FUNC( mpi_alltoallw , MPI_ALLTOALLW )
+           ( void *sendbuf, int *sendcounts, int *sdispls, int *sendtypes,
+	     void *recvbuf, int *recvcounts, int *rdispls, int *recvtypes,
+             int *comm, int *ierror )
+{
+
+  *ierror=MPI_Alltoallw(sendbuf, sendcounts, sdispls, sendtypes,
+			recvbuf, recvcounts, rdispls, recvtypes,
+			*comm);
+
+}
+
+
+int MPI_Alltoallw(void *sendbuf, int *sendcounts,
+		  int *sdispls, MPI_Datatype *sendtypes,
+                  void *recvbuf, int *recvcounts,
+		  int *rdispls, MPI_Datatype *recvtypes,
+                  MPI_Comm comm) 
+
+{
+
+  copy_data2((char*)sendbuf+sdispls[0], sendcounts[0], sendtypes[0],
+             (char*)recvbuf+rdispls[0], recvcounts[0], recvtypes[0]);
+  
+
+  return(MPI_SUCCESS);
+}
+
+
+/*********/
+
+
 FC_FUNC( mpi_op_create , MPI_OP_CREATE )
   ( void *function, int *commute, int *op, int *ierror )
 {
