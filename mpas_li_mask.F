@@ -157,7 +157,7 @@ contains
 
       ! Assign pointers and variables
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
 
@@ -252,8 +252,8 @@ contains
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 1)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
+      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)

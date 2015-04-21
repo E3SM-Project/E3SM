@@ -391,7 +391,7 @@ contains
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
 
       ! Geometry variables
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
       call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 1)
