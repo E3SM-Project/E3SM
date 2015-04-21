@@ -328,7 +328,7 @@ extern int MPI_Abort(MPI_Comm comm, int errorcode);
 extern int MPI_Error_string(int errorcode, char *string, int *resultlen);
 extern int MPI_Get_processor_name(char *name, int *resultlen);
 
-extern int MPI_info_create(MPI_Info *info);
+extern int MPI_Info_create(MPI_Info *info);
 extern int MPI_Info_set(MPI_Info info, char *key, char *value);
 
 extern int MPI_Initialized(int *flag);
