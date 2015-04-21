@@ -145,6 +145,10 @@
 					description="Logical flag that controls if a spherical mesh is expanded to an earth sized sphere or not."
 					possible_values=".true. or .false."
 		/>
+                <nml_option name="config_realistic_coriolis_parameter" type="logical" default_value="false" units="unitless"
+                                        description="Logical flag that controls if a spherical mesh will get realistic coriolis parameters or not."
+                                        possible_values=".true. or .false."
+                />
 		<nml_option name="config_write_cull_cell_mask" type="logical" default_value="false" units="unitless"
 					description="Logicial flag that controls if the cullCell field is written to output."
 					possible_values=".true. or .false."
