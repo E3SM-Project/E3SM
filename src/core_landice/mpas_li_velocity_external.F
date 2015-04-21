@@ -119,17 +119,24 @@ contains
          err_tmp = 1
       endif
       err = ior(err,err_tmp)
+
       if (config_number_of_blocks /= 0) then
          write(stderrUnit,*) "Error: External velocity solvers require that config_number_of_blocks=0"
          err_tmp = 1
       endif
       err = ior(err,err_tmp)
 
+      ! Check if we are on a sphere - not supported by external dycores
+      if (domain % on_a_sphere) then
+         write(stderrUnit,*) "ERROR: External velocity solvers cannot be run with a spherical mesh."
+         err_tmp = 1
+      endif
+      err = ior(err,err_tmp)
 
       ! These calls are needed for setting up the external velocity solvers
-
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       !call external first order solver to set the grid of the velocity solver
+      write(stdoutUnit,*) "Initializing external velocity solver."
       call velocity_solver_init_mpi(domain % dminfo % comm)
 #else
       err = 1
@@ -270,6 +277,7 @@ contains
       !zCell is supposed to be zero when working on planar geometries (radius = 0)
       !nVertLevels should be equal to nVertLevelsSolve (no splitting of the domain in the vertical direction)
       call mpas_timer_start("velocity_solver_set_grid_data")
+      write(stdoutUnit,*) "Initializing external velocity solver grid data."
       call velocity_solver_set_grid_data(nCells, nEdges, nVertices, nVertInterfaces, &
               nCellsSolve, nEdgesSolve, nVerticesSolve, maxNEdgesOnCell, radius, &
               cellsOnEdge, cellsOnVertex, verticesOnCell, verticesOnEdge, edgesOnCell, &
@@ -370,6 +378,7 @@ contains
       logical, pointer :: config_always_compute_fem_grid
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
+      real(kind=RKIND), parameter :: secondsInYear = 365.0 * 24.0 * 3600.0  !< The value of seconds in a year assumed by external dycores
 
       err = 0
 
@@ -410,7 +419,8 @@ contains
          uReconstructX = 0.0_RKIND
          uReconstructY = 0.0_RKIND
          uReconstructZ = 0.0_RKIND
-      else
+         return
+      endif
 
 
       ! ==================================================================
@@ -421,6 +431,7 @@ contains
       ! initialize vertexMask to garbage which sets anyDynamicVertexMaskChanged to 1.
       if ((anyDynamicVertexMaskChanged == 1) .or. (config_always_compute_fem_grid) .or. &
           (dirichletMaskChanged == 1) ) then
+         write(stdoutUnit,*) "Generating new external velocity solver FEM grid."
          call generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, &
               floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
       endif
@@ -430,6 +441,12 @@ contains
       ! External dycore calls to be made every time step (solve velocity!)
       ! ==================================================================
 
+      ! convert from m/s (used by MPAS) to m/yr (used by external dycores)
+      normalVelocity = normalVelocity * secondsInYear  ! this is intent(out) by dycores, but setting anyway for consistency
+      uReconstructX =  uReconstructX  * secondsInYear
+      uReconstructY =  uReconstructY  * secondsInYear
+
+      write(stdoutUnit,*) "Beginning velocity solve using external velocity solver."
       select case (config_velocity_solver)
       case ('L1L2') ! ===============================================
 #ifdef USE_EXTERNAL_L1L2
@@ -481,14 +498,14 @@ contains
           return
 #endif
       end select
+      write(stdoutUnit,*) "Completed velocity solve using external velocity solver."
+
+      ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
+      normalVelocity = normalVelocity / secondsInYear
+      uReconstructX =  uReconstructX  / secondsInYear
+      uReconstructY =  uReconstructY  / secondsInYear
 
 
-   normalVelocity = normalVelocity / (365.0*24.0*3600.0)  ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
-   uReconstructX =  uReconstructX / (365.0*24.0*3600.0)   ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
-   uReconstructY =  uReconstructY / (365.0*24.0*3600.0)   ! convert from m/yr (used by external dycores) to m/s (used by MPAS)
-
-
-   endif ! if ice
 
    !--------------------------------------------------------------------
    end subroutine li_velocity_external_solve
@@ -537,7 +554,7 @@ contains
       !-----------------------------------------------------------------
 
       err = 0
-print *, 'dfghjkhgfhjgf'
+
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       ! This call is needed for using any of the external velocity solvers
    !   call velocity_solver_finalize()
