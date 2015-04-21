@@ -507,27 +507,27 @@ int Type_indexed(int count, int *blocklens, int *displacements,
 
 /*******************************************************/
 
-FC_FUNC( mpi_type_indexed_block, MPI_TYPE_INDEXED_BLOCK )
+FC_FUNC( mpi_type_create_indexed_block, MPI_TYPE_CREATE_INDEXED_BLOCK )
          (int * count,   int * blocklen, int * displacements,
           int * oldtype, int * newtype,  int * ierr)
 {
-  *ierr = MPI_Type_indexed_block(*count, *blocklen, displacements, 
-                                 *oldtype, newtype);
+  *ierr = MPI_Type_create_indexed_block(*count, *blocklen, displacements, 
+					*oldtype, newtype);
 }
 
-int MPI_Type_indexed_block(int count, int blocklen, int *displacements, 
-                           MPI_Datatype oldtype, MPI_Datatype * newtype)
+int MPI_Type_create_indexed_block(int count, int blocklen, int *displacements, 
+				  MPI_Datatype oldtype, MPI_Datatype * newtype)
 {
   int ret;
   Datatype old_ptr = *(Datatype*) mpi_handle_to_datatype(oldtype);
   Datatype * new_ptr;
 
   mpi_alloc_handle(newtype, (void**) &new_ptr);
-  return Type_indexed_block(count, blocklen, displacements, old_ptr, new_ptr);
+  return Type_create_indexed_block(count, blocklen, displacements, old_ptr, new_ptr);
 }
 
-int Type_indexed_block(int count, int blocklen, int *displacements,
-                       Datatype oldtype, Datatype *newtype)
+int Type_create_indexed_block(int count, int blocklen, int *displacements,
+			      Datatype oldtype, Datatype *newtype)
 {
   int i;
   int blocklens[count];

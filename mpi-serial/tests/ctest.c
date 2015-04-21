@@ -199,7 +199,7 @@ void test_simple_bindexed()
 
   //block indexed of simple types
   printf("\nBlock indexed type of MPI_INT.\n");
-  MPI_Type_indexed_block(3, 2, disps, MPI_INT, &indexed_type);
+  MPI_Type_create_indexed_block(3, 2, disps, MPI_INT, &indexed_type);
   MPI_Type_commit(&indexed_type);
 #ifdef TEST_INTERNAL
   copy_data(&a, &b, indexed_type);
