@@ -223,8 +223,8 @@
         data index_test/1,2,5,6,8,9/
         print *, "Block indexed type"
 
-        call mpi_type_indexed_block(3,2,disps,mpi_integer, & 
-                        indexed_type, ierr)
+        call mpi_type_create_indexed_block(3,2,disps,mpi_integer, & 
+                                           indexed_type, ierr)
         call mpi_type_commit(indexed_type, ierr)
 #ifdef TEST_INTERNAL
         call copy_data2(a,1,indexed_type, b,1,indexed_type, ierr)

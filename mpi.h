@@ -397,7 +397,7 @@ extern int MPI_Type_hvector(int count, int blocklen, MPI_Aint stride,
 extern int MPI_Type_indexed(int count, int *blocklens, int *displacements,
                             MPI_Datatype oldtype, MPI_Datatype *newtype);
 
-extern int MPI_Type_indexed_block(int count, int blocklen, int *displacements, 
+extern int MPI_Type_create_indexed_block(int count, int blocklen, int *displacements, 
                                   MPI_Datatype oldtype, MPI_Datatype *newtype);
 extern int MPI_Type_hindexed(int count, int *blocklens, MPI_Aint *displacements, 
                              MPI_Datatype oldtype, MPI_Datatype *newtype);
