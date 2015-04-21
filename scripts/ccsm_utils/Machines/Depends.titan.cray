@@ -7,3 +7,9 @@ ice_boundary.o: ice_boundary.F90
 POP_HaloMod.o: POP_HaloMod.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
 
+derivative_mod.o: derivative_mod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -h fusion1 $(FREEFLAGS) $<
+
+modal_aero_gasaerexch.o: modal_aero_gasaerexch.F90
+	$(FC) -c $(INCLDIR) $(INCS) -O0 -h byteswapio -f free -N 255 -em $(FREEFLAGS) $<
+

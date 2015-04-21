@@ -470,6 +470,12 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
+<compiler COMPILER="cray" MACH="titan">
+  <!-- http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-74;idx=books_search;this_sort=title;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
+  <ADD_FFLAGS DEBUG="TRUE"> -g -m 2 </ADD_FFLAGS>
+  <FFLAGS> -h byteswapio -f free -N 1023 -em </FFLAGS>
+  <FFLAGS_NOOPT> -O1 </FFLAGS_NOOPT>
+</compiler>
 
 <compiler COMPILER="nag">
 

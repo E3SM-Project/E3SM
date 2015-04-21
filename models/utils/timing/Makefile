@@ -5,11 +5,12 @@
 VPATH := $(GPTL_DIR)
 
 # Determine whether to compile threaded or not
+compile_threaded := false
 ifeq ($(strip $(BUILD_THREADED)),TRUE)
-   compile_threaded = true
+   compile_threaded := true
 endif
 ifeq ($(strip $(SMP)),TRUE)
-   compile_threaded = true
+   compile_threaded := true
 endif
 
 

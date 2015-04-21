@@ -67,6 +67,7 @@ if (-e /opt/modules/default/init/csh) then
   if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
     module load cce
+    module swap cce cce/8.3.9
     module swap cray-mpich cray-mpich/7.0.4
   endif
 
