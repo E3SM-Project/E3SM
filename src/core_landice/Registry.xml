@@ -147,6 +147,10 @@
 			description="Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_adaptive_timestep_force_interval" type="character" default_value="1000-00-00_00:00:00" units="unitless"
+		            description="If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring you get output at a specific desired interval (rather than the closest time after) or for running coupled to earth system models that expect a certain interval."
+		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		/>
 	</nml_record>
 
 

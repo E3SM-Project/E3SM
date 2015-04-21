@@ -344,7 +344,7 @@ module li_time_integration_fe
 
 
       ! Set adaptive timestep
-      call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, dtSeconds, err_tmp)
+      call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, domain % clock, dtSeconds, err_tmp)
       err = ior(err,err_tmp)
 
 
@@ -566,12 +566,15 @@ module li_time_integration_fe
 !>  This routine sdjusts the time step based on the CFL condition.
 !
 !-----------------------------------------------------------------------
-   subroutine set_timestep(allowableAdvecDt, allowableDiffDt, dtSeconds, err)
+   subroutine set_timestep(allowableAdvecDt, allowableDiffDt, clock, dtSeconds, err)
+      use mpas_timekeeping
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       real (kind=RKIND) :: allowableAdvecDt
       real (kind=RKIND) :: allowableDiffDt
+      type (MPAS_Clock_type), intent(in) :: clock
 
       !-----------------------------------------------------------------
       ! output variables
@@ -587,7 +590,15 @@ module li_time_integration_fe
       real (kind=RKIND), pointer :: config_adaptive_timestep_CFL_fraction
       real (kind=RKIND), pointer :: config_max_adaptive_timestep
       real (kind=RKIND), pointer :: config_min_adaptive_timestep
+      type (MPAS_Time_type) :: nextForceTime, currTime
+      type (MPAS_TimeInterval_type) :: intervalToNextForceTime
+      real (kind=RKIND) :: secondsToNextForceTime
       real (kind=RKIND) :: allowableDt
+      real (kind=RKIND) :: proposedDt
+      integer :: err_tmp
+
+      err = 0
+      err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
 
@@ -602,8 +613,21 @@ module li_time_integration_fe
          else
             allowableDt = allowableAdvecDt
          endif
+         proposedDt = min(allowableDt * config_adaptive_timestep_CFL_fraction, config_max_adaptive_timestep)
 
-         dtSeconds = min(allowableDt * config_adaptive_timestep_CFL_fraction, config_max_adaptive_timestep)
+         ! Check if we need to force a timestep length to hit the target interval
+         currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
+         !print *, 'curr', currTime % t % YR, currTime % t % basetime % S
+         err = ior(err,err_tmp)
+         nextForceTime = mpas_alarm_get_next_ring_time(clock, 'adaptiveTimestepForceInterval')
+         !print *, 'ring', nextForceTime % t % YR, nextForceTime % t % basetime % S
+         intervalToNextForceTime = nextForceTime - currTime
+         !print *, 'int', intervalToNextForceTime % ti % YR, intervalToNextForceTime % ti % MM, intervalToNextForceTime % ti % basetime % S
+         call mpas_get_timeInterval(intervalToNextForceTime, dt=secondsToNextForceTime, ierr=err_tmp)
+         err = ior(err,err_tmp)
+         !print *, proposedDt, secondsToNextForceTime
+         dtSeconds = min(proposedDt, secondsToNextForceTime)
+
          write(stdOutUnit,*) '  Setting time step (days) to:', dtSeconds / (86400.0)
          if (dtSeconds < config_min_adaptive_timestep) then
             write(stdErrUnit,*) 'ERROR: New deltat is less than config_min_adaptive_timestep.'
