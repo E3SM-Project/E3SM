@@ -8,7 +8,7 @@
 
 FC_FUNC( mpi_info_create , MPI_INFO_CREATE ) (int *info, int *ierror)
 {
-  *ierror=MPI_info_create(info);
+  *ierror=MPI_Info_create(info);
 }
 
 
