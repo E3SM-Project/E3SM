@@ -118,10 +118,11 @@ extern void mpi_alloc_handle(int *handle, void **data);
 extern void *mpi_handle_to_ptr(int handle);
 extern void mpi_free_handle(int handle);
 
-extern void FC_FUNC(mpi_get_fort_status,MPI_GET_FORT_STATUS)(void);
+extern void FC_FUNC(mpi_get_fort_pointers,MPI_GET_FORT_POINTERS)(void);
 
 extern MPI_Status *mpi_c_status(int *status);
 extern MPI_Status *mpi_c_statuses(int *statuses);
+extern void *mpi_c_in_place(void *buffer);
 
 
 #endif /* _MPIP_H */

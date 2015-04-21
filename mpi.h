@@ -67,6 +67,7 @@ typedef int MPI_Group;
 
 typedef unsigned long int MPI_Aint;
 #define MPI_BOTTOM (0)
+#define MPI_IN_PLACE (void *)(-1)
 typedef int MPI_Datatype;
 
 
