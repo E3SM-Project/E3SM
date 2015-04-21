@@ -103,6 +103,8 @@ module li_time_integration
       character (len=StrKIND), pointer :: xtime
       character (len=StrKIND), pointer :: config_time_integration
       logical, pointer :: config_adaptive_timestep
+      real (kind=RKIND), pointer :: deltat_output !< variable used for output, in seconds
+
       type (MPAS_TimeInterval_type) :: timeStepInterval !< the current time step as an interval
       real (kind=RKIND) :: dtSeconds !< the current time step in seconds
       type (MPAS_Time_Type) :: currTime  !< current time as time type
@@ -189,11 +191,9 @@ module li_time_integration
          call mpas_pool_get_array(meshPool, 'xtime', xtime)
          xtime = timeStamp
 
-!         ! Abort the simulation if NaNs occur in the velocity field
-!         if (isNaN(sum(block % state % time_levs(2) % state % u % array))) then
-!            write(stderrUnit,*) 'Abort: NaN detected'
-!            call mpas_dmpar_abort(dminfo)
-!         endif
+         call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
+         deltat_output = dtSeconds
+
 
          block => block % next
       end do
