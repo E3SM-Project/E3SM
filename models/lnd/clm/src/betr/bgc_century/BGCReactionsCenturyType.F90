@@ -781,6 +781,8 @@ contains
         if(lk == centurybgc_vars%lid_o2_aere_reac)then
           jj = centurybgc_vars%lid_o2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj)) 
+          !I add the following line to disconnect the nitrogen and oxygen interaction
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         else
           reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
         endif    
@@ -789,6 +791,7 @@ contains
         if(lk == centurybgc_vars%lid_o2_aere_reac)then
           jj = centurybgc_vars%lid_o2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         elseif(lk == centurybgc_vars%lid_ch4_aere_reac)then
           jj = centurybgc_vars%lid_ch4
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
