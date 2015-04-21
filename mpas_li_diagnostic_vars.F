@@ -187,6 +187,7 @@ contains
 !> where h is surface elevation, D is diffusivity, U is 2-d velocity vector, and H is thickness
 !> Solving for D = UH/-grad h
 !> DCFL: dt = 0.5 * dx**2 / D = 0.5 * dx**2 * slopemag / flux_downslope
+!
 !-----------------------------------------------------------------------
    subroutine li_calculate_apparent_diffusivity(meshPool, velocityPool, scratchPool, geometryPool, allowableDiffDt)
       use mpas_vector_reconstruction
@@ -218,21 +219,20 @@ contains
       ! local variables
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:), pointer :: normalSlopeEdge
-      type (field1dReal), pointer :: cellJunk
-      type (field1dReal), pointer :: slopeCellXField
-      type (field1dReal), pointer :: slopeCellYField
-      real (kind=RKIND), dimension(:), pointer :: slopeCellX, slopeCellY
+      type (field1dReal), pointer :: slopeReconstructXField, slopeReconstructYField, slopeReconstructZField  !< Only needed for calling mpas_reconstruct, but not actually used here
+      type (field1dReal), pointer :: slopeCellAxis1Field
+      type (field1dReal), pointer :: slopeCellAxis2Field
+      real (kind=RKIND), dimension(:), pointer :: slopeCellAxis1, slopeCellAxis2
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructAxis1, uReconstructAxis2
       real (kind=RKIND), dimension(:), pointer :: apparentDiffusivity
       real (kind=RKIND), dimension(:), pointer :: dcEdge
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, pointer :: nCells, nVertLevels
-      logical, pointer :: on_a_sphere
       real (kind=RKIND) :: allowableDtHere
-      real (kind=RKIND) :: cellVeloX, cellVeloY
+      real (kind=RKIND) :: fluxVeloAxis1, fluxVeloAxis2
       real (kind=RKIND) :: fluxDownslope
       real (kind=RKIND) :: slopeCellMagnitude
       real (kind=RKIND) :: dCell
@@ -240,11 +240,6 @@ contains
       real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
       real (kind=RKIND), parameter :: smallNumber = 1.0e-36
 
-      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
-      if (on_a_sphere) then
-         write (stdErrUnit, *) "WARNING: Diffusive CFL cannot currently be calculated on a sphere."
-         return
-      endif
 
       ! get needed variables
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -257,37 +252,43 @@ contains
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'apparentDiffusivity', apparentDiffusivity)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-      call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
-      call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
+      call mpas_pool_get_array(velocityPool, 'uReconstructZonal', uReconstructAxis1)
+      call mpas_pool_get_array(velocityPool, 'uReconstructMeridional', uReconstructAxis2)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-      call mpas_pool_get_field(scratchPool, 'workCell', cellJunk)
-      call mpas_allocate_scratch_field(cellJunk, .true.)
-      call mpas_pool_get_field(scratchPool, 'slopeCellX', slopeCellXField)
-      call mpas_allocate_scratch_field(slopeCellXField, .true.)
-      slopeCellX => slopeCellXField % array
-      call mpas_pool_get_field(scratchPool, 'slopeCellY', slopeCellYField)
-      call mpas_allocate_scratch_field(slopeCellYField, .true.)
-      slopeCellY => slopeCellYField % array
+      call mpas_pool_get_field(scratchPool, 'workCell', slopeReconstructXField)
+      call mpas_allocate_scratch_field(slopeReconstructXField, .true.)
+      call mpas_pool_get_field(scratchPool, 'workCell2', slopeReconstructYField)
+      call mpas_allocate_scratch_field(slopeReconstructYField, .true.)
+      call mpas_pool_get_field(scratchPool, 'workCell3', slopeReconstructZField)
+      call mpas_allocate_scratch_field(slopeReconstructZField, .true.)
+      call mpas_pool_get_field(scratchPool, 'slopeCellX', slopeCellAxis1Field)
+      call mpas_allocate_scratch_field(slopeCellAxis1Field, .true.)
+      slopeCellAxis1 => slopeCellAxis1Field % array
+      call mpas_pool_get_field(scratchPool, 'slopeCellY', slopeCellAxis2Field)
+      call mpas_allocate_scratch_field(slopeCellAxis2Field, .true.)
+      slopeCellAxis2 => slopeCellAxis2Field % array
 
 
       ! Initialize output
       allowableDiffDt = bigNumber
 
       ! Approximate slope at cell centers
-
+      ! reconstruct routines set uReconstructZonal = uReconstructX; uReconstructMeridional = uReconstructY
+      ! for planar meshes, so those variables can be used as orthogonal components of the vector
+      ! in either the plane or sphere.  This avoids needing to add logic for if we are on a sphere or not.
       call mpas_reconstruct(meshPool, normalSlopeEdge,        &
-                            slopeCellX, slopeCellY, cellJunk % array, &
-                            cellJunk % array, cellJunk % array )
+                            slopeReconstructXField % array, slopeReconstructYField % array, slopeReconstructZField % array, &
+                            slopeCellAxis1, slopeCellAxis2)
 
       ! Approximate flux at cell centers
       do iCell = 1, nCells
-         slopeCellMagnitude = sqrt(slopeCellX(iCell)**2 + slopeCellY(iCell)**2) + smallNumber
+         slopeCellMagnitude = sqrt(slopeCellAxis1(iCell)**2 + slopeCellAxis2(iCell)**2) + smallNumber
 
          fluxDownslope = 0.0_RKIND
          do iLevel = 1, nVertLevels
-            cellVeloX = (uReconstructX(iLevel, iCell) + uReconstructX(iLevel+1, iCell)) * 0.5_RKIND
-            cellVeloY = (uReconstructY(iLevel, iCell) + uReconstructY(iLevel+1, iCell)) * 0.5_RKIND
-            fluxDownslope = fluxDownslope + (-1.0_RKIND * slopeCellX(iCell) * cellVeloX - slopeCellY(iCell) * cellVeloY) * layerThickness(iLevel, iCell) /slopeCellMagnitude
+            fluxVeloAxis1 = (uReconstructAxis1(iLevel, iCell) + uReconstructAxis1(iLevel+1, iCell)) * 0.5_RKIND
+            fluxVeloAxis2 = (uReconstructAxis2(iLevel, iCell) + uReconstructAxis2(iLevel+1, iCell)) * 0.5_RKIND
+            fluxDownslope = fluxDownslope + (-1.0_RKIND * slopeCellAxis1(iCell) * fluxVeloAxis1 - slopeCellAxis2(iCell) * fluxVeloAxis2) * layerThickness(iLevel, iCell) / slopeCellMagnitude
          enddo
          apparentDiffusivity(iCell) = abs(fluxDownslope) / slopeCellMagnitude
 
@@ -302,9 +303,11 @@ contains
          allowableDiffDt = min(allowableDiffDt, allowableDtHere)
       enddo
 
-      call mpas_deallocate_scratch_field(cellJunk, .true.)
-      call mpas_deallocate_scratch_field(slopeCellXField, .true.)
-      call mpas_deallocate_scratch_field(slopeCellYField, .true.)
+      call mpas_deallocate_scratch_field(slopeReconstructXField, .true.)
+      call mpas_deallocate_scratch_field(slopeReconstructYField, .true.)
+      call mpas_deallocate_scratch_field(slopeReconstructZField, .true.)
+      call mpas_deallocate_scratch_field(slopeCellAxis1Field, .true.)
+      call mpas_deallocate_scratch_field(slopeCellAxis2Field, .true.)
    !--------------------------------------------------------------------
    end subroutine li_calculate_apparent_diffusivity
 
