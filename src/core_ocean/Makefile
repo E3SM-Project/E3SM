@@ -31,6 +31,11 @@ core_input_gen:
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean_$(MODE) )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean_$(MODE) stream_list.ocean_$(MODE). mutable )
 
+gen_includes:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+	(if [ ! -d inc ]; then mkdir -p inc; fi) # To generate *.inc files
+	(cd inc; $(REG_PARSE) < ../Registry_processed.xml )
+
 post_build:
 	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
 	cp default_inputs/* $(ROOT_DIR)/default_inputs/.

@@ -35,7 +35,4 @@ module mpas_configure
 !
 !-----------------------------------------------------------------------
 
-#include "namelist_call.inc"
-#include "namelist_defines.inc"
-
 end module mpas_configure

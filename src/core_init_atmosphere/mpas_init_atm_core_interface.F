@@ -5,120 +5,109 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-module mpas_core
+module init_atm_core_interface
 
 
    contains
 
 
-   subroutine mpas_core_init(domain, startTimeStamp)
-   
-      use mpas_derived_types
-      use mpas_stream_manager
-      use mpas_io_streams, only : MPAS_STREAM_NEAREST
-      use mpas_configure
-      use init_atm_cases
-   
-      implicit none
-   
-      type (domain_type), intent(inout) :: domain
-      character(len=*), intent(out) :: startTimeStamp
-
-      type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: state, mesh 
-      character (len=StrKIND), pointer :: xtime
-      character (len=StrKIND), pointer :: config_start_time
-      real (kind=RKIND), pointer :: sphere_radius
-      integer :: ierr
-
-
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'state', state)
-         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-         call mpas_pool_get_array(state, 'xtime', xtime)
-         call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
-         call mpas_pool_get_config(block % configs, 'config_start_time', config_start_time)
-
-         startTimeStamp = config_start_time
-         xtime = config_start_time
-         domain % sphere_radius = a      ! Appears in output files
-         sphere_radius = a               ! Used in setting up test cases
-
-         block => block % next
-      end do 
-
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius, streamID='output', ierr=ierr)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius, streamID='surface', ierr=ierr)
-
-      !
-      ! We don't actually expect the time in the (most likely 'static') file to
-      !    match the time in the namelist, so just read whatever time we find in
-      !    the input file.
-      !
-      call MPAS_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_NEAREST, ierr=ierr)
-      call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
-
-   end subroutine mpas_core_init
-   
-   
-   subroutine mpas_core_run(domain)
-   
-      use mpas_derived_types
-      use mpas_stream_manager
-      use mpas_timer
-      use init_atm_cases
-   
-      implicit none
-   
-      type (domain_type), intent(inout) :: domain
-   
-      integer :: ierr
-      
-      call init_atm_setup_case(domain, domain % streamManager)
-   
+   !***********************************************************************
    !
-   ! Note: The following initialization calls have been moved to the mpas_init_atm_case_*() subroutines,
-   !       since values computed by these routines are needed to produce initial fields
+   !  routine init_atm_setup_core
    !
-   !   call atm_initialize_advection_rk(mesh)
-   !   call atm_initialize_deformation_weights(mesh)
-  
-      call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
-      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-   
-   end subroutine mpas_core_run
-   
-   
-   subroutine mpas_core_finalize(domain)
-   
-      use mpas_derived_types
-      use mpas_decomp
-      use mpas_stream_manager
-   
+   !> \brief   Init atmosphere core setup routine
+   !> \author  Doug Jacobsen, Michael Duda
+   !> \date    18 March 2015
+   !> \details 
+   !>  This routine is intended to setup the necessary variables within 
+   !>  a core_type for the init atmosphere core.
+   !
+   !-----------------------------------------------------------------------
+   subroutine init_atm_setup_core(core)
+
+      use mpas_derived_types, only : core_type
+      use init_atm_core, only : init_atm_core_init, init_atm_core_run, init_atm_core_finalize
+
       implicit none
-   
-      type (domain_type), intent(inout) :: domain 
 
-      call mpas_decomp_destroy_decomp_list(domain % decompositions)
-   
-   end subroutine mpas_core_finalize
+      type (core_type), pointer :: core
+
+      core % core_init => init_atm_core_init
+      core % core_run => init_atm_core_run
+      core % core_finalize => init_atm_core_finalize
+      core % define_packages => init_atm_define_packages
+      core % setup_packages => init_atm_setup_packages
+      core % setup_decompositions => init_atm_setup_decompositions
+      core % setup_clock => init_atm_setup_clock
+      core % get_mesh_stream => init_atm_get_mesh_stream
+      core % setup_immutable_streams => init_atm_setup_immutable_streams
+      core % setup_derived_dimensions => init_atm_setup_derived_dimensions
+      core % setup_block => init_atm_setup_block
+      core % setup_namelist => init_atm_setup_namelists
+
+      core % Conventions = 'MPAS'
+      core % source = 'MPAS'
+
+#include "inc/core_variables.inc"
+
+   end subroutine init_atm_setup_core
 
 
-   subroutine mpas_core_setup_packages(configs, packages, ierr)
+   !***********************************************************************
+   !
+   !  routine init_atm_setup_domain
+   !
+   !> \brief   Init atmosphere domain setup routine
+   !> \author  Doug Jacobsen, Michael Duda
+   !> \date    18 March 2015
+   !> \details 
+   !>  This routine is intended to setup the necessary variables within 
+   !>  a domain_type for the init atmosphere core.
+   !
+   !-----------------------------------------------------------------------
+   subroutine init_atm_setup_domain(domain)
 
-      use mpas_derived_types
-      use mpas_pool_routines
+      use mpas_derived_types, only : domain_type
+
+      implicit none
+
+      type (domain_type), pointer :: domain
+
+#include "inc/domain_variables.inc"
+
+   end subroutine init_atm_setup_domain
+
+
+   !***********************************************************************
+   !
+   !  function init_atm_setup_packages
+   !
+   !> \brief   Package setup routine
+   !> \author  Michael Duda
+   !> \date    6 August 2014
+   !> \details 
+   !>  This routine is responsible for setting up packages for the
+   !>  init_atmosphere core. It may use ay logic based on configuration options
+   !>  to set packages variables to either .true. or .false. Model fields are
+   !>  not allocated until after this routine has been called.
+   !
+   !-----------------------------------------------------------------------
+   function init_atm_setup_packages(configs, packages) result(ierr)
+
+      use mpas_derived_types, only : mpas_pool_type
+      use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
+      use mpas_io_units, only : stderrUnit
 
       implicit none
 
       type (mpas_pool_type), intent(inout) :: configs
       type (mpas_pool_type), intent(inout) :: packages
-      integer, intent(out) :: ierr
+      integer :: ierr
 
       logical, pointer :: initial_conds, sfc_update, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out
       logical, pointer :: config_static_interp, config_vertical_grid, config_met_interp
       integer, pointer :: config_init_case
+
 
       ierr = 0
 
@@ -178,15 +167,14 @@ module mpas_core
          met_stage_out = .true.
       end if
 
-   end subroutine mpas_core_setup_packages
-
+   end function init_atm_setup_packages
 
 
    !***********************************************************************
    !
-   !  routine mpas_core_setup_clock
+   !  function init_atm_setup_clock
    !
-   !> \brief   Sets up the simulation clock before the start of a run
+   !> \brief   Simulation clock setup routine
    !> \author  Michael Duda
    !> \date    6 August 2014
    !> \details 
@@ -199,7 +187,7 @@ module mpas_core
    !>  options are available.
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_clock(core_clock, configs, ierr)
+   function init_atm_setup_clock(core_clock, configs) result(ierr)
 
       use mpas_timekeeping, only : mpas_set_time, mpas_set_timeInterval, mpas_create_clock
       use mpas_derived_types, only : MPAS_Clock_type, MPAS_Time_type, MPAS_Timeinterval_type, mpas_pool_type
@@ -210,7 +198,7 @@ module mpas_core
 
       type (MPAS_Clock_type), intent(inout) :: core_clock
       type (mpas_pool_type), intent(inout) :: configs
-      integer, intent(out) :: ierr
+      integer :: ierr
 
       character(len=StrKIND), pointer :: config_start_time, config_stop_time
       integer, pointer :: config_fg_interval
@@ -230,12 +218,12 @@ module mpas_core
       call mpas_set_timeInterval(dt, S=config_fg_interval)
       call mpas_create_clock(core_clock, start_time, dt, stopTime=stop_time)
 
-   end subroutine mpas_core_setup_clock
+   end function init_atm_setup_clock
 
 
    !***********************************************************************
    !
-   !  routine mpas_core_get_mesh_stream
+   !  function init_atm_get_mesh_stream
    !
    !> \brief   Returns the name of the stream containing mesh information
    !> \author  Michael Duda
@@ -247,58 +235,100 @@ module mpas_core
    !>  are available.
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
+   function init_atm_get_mesh_stream(configs) result(stream)
 
+      use mpas_kind_types, only : StrKIND
       use mpas_derived_types, only : mpas_pool_type
       use mpas_pool_routines, only : mpas_pool_get_config
 
       implicit none
 
-      type (mpas_pool_type), intent(in) :: configs
-      character(len=*), intent(out) :: stream
-      integer, intent(out) :: ierr
-
-
-      ierr = 0
+      type (mpas_pool_type), intent(inout) :: configs
+      character(len=StrKIND) :: stream
 
       write(stream,'(a)') 'input'
 
-   end subroutine mpas_core_get_mesh_stream
+   end function init_atm_get_mesh_stream
 
 
    !***********************************************************************
    !
-   !  routine mpas_core_setup_decompositions
+   !  function init_atm_setup_decompositions
    !
-   !> \brief   Decomposition setup routine
-   !> \author  Doug Jacobsen
-   !> \date    September 2011
+   !> \brief   Decomposition setup function
+   !> \author  Doug Jacobsen, Michael Duda
+   !> \date    11 March 2015
    !> \details 
-   !>  This routine is intended to create the decomposition list within a
+   !>  This function is intended to create the decomposition list within a
    !>  domain type, and register any decompositons the core wants within it.
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_decompositions(domain, ierr)
+   function init_atm_setup_decompositions(decompList) result(ierr)
 
-      use mpas_derived_types
-      use mpas_decomp
+      use mpas_derived_types, only : mpas_decomp_list, mpas_decomp_function, MPAS_DECOMP_NOERR
+      use mpas_decomp, only : mpas_decomp_create_decomp_list, mpas_decomp_register_method, &
+                              mpas_uniform_decomp 
 
       implicit none
 
-      type (domain_type), intent(in) :: domain
+      type (mpas_decomp_list), pointer :: decompList
+      integer :: ierr
 
-      integer, intent(out) :: ierr
       procedure (mpas_decomp_function), pointer :: decompFunc
 
       ierr = 0
 
-      call mpas_decomp_create_decomp_list(domain % decompositions)
+      call mpas_decomp_create_decomp_list(decompList)
 
       decompFunc => mpas_uniform_decomp
 
-      call mpas_decomp_register_method(domain % decompositions, 'uniform', decompFunc, iErr)
+      call mpas_decomp_register_method(decompList, 'uniform', decompFunc, ierr)
 
-   end subroutine mpas_core_setup_decompositions
+      if ( ierr == MPAS_DECOMP_NOERR ) then
+         ierr = 0
+      end if
 
-   
-end module mpas_core
+   end function init_atm_setup_decompositions
+
+
+   !***********************************************************************
+   !
+   !  function init_atm_setup_block
+   !
+   !> \brief   Block setup function
+   !> \author  Doug Jacobsen
+   !> \date    03/18/2015
+   !> \details 
+   !>  This function is a wrapper function to properly setup a block to be a
+   !>  init atmosphere core block.
+   !
+   !-----------------------------------------------------------------------
+   function init_atm_setup_block(block) result(ierr)
+
+      use mpas_derived_types, only : block_type
+
+      implicit none
+
+      type (block_type), pointer :: block
+      integer :: ierr
+
+      ierr = 0
+
+      call init_atm_generate_structs(block, block % structs, block % dimensions, block % packages)
+
+   end function init_atm_setup_block
+
+
+#include "inc/setup_immutable_streams.inc"
+
+#include "inc/block_dimension_routines.inc"
+
+#include "inc/define_packages.inc"
+
+#include "inc/structs_and_variables.inc"
+
+#include "inc/namelist_call.inc"
+
+#include "inc/namelist_defines.inc"
+
+end module init_atm_core_interface

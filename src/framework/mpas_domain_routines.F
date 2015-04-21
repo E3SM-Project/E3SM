@@ -36,15 +36,14 @@ module mpas_domain_routines
 !> This routine allocates a domain structure.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_allocate_domain(dom, dminfo)!{{{
+   subroutine mpas_allocate_domain(dom)!{{{
 
       implicit none
 
       type (domain_type), pointer :: dom !< Input/Output: Domain structure
-      type (dm_info), pointer :: dminfo !< Input: Domain Information
 
+      allocate(dom % dminfo)
       nullify(dom % blocklist)
-      dom % dminfo => dminfo
 
       allocate(dom % configs)
       allocate(dom % packages)
@@ -254,11 +253,5 @@ module mpas_domain_routines
       end if
 
    end function mpas_dimension_num_garbage_elements!}}}
-
-
-#include "define_packages.inc"
-
-
-#include "structs_and_variables.inc"
 
 end module mpas_domain_routines
