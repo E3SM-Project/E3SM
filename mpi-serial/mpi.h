@@ -213,10 +213,18 @@ typedef void MPI_User_function( void *invec, void *inoutvec, int *len,
 
 #define MPI_STATUS_SIZE       (sizeof(MPI_Status) / sizeof(int))
 
-#define MPI_INFO_NULL (0)
 
 /* NOTE: the C type MPI_Offset is NOT the same as MPI datatype MPI_OFFSET */
 typedef long long int MPI_Offset;
+
+
+/* info
+ */
+
+typedef int MPI_Info;         /* handle */
+
+#define MPI_INFO_NULL (0)
+
 
 
 /**********************************************************
@@ -310,6 +318,10 @@ extern int MPI_Finalize(void);
 extern int MPI_Abort(MPI_Comm comm, int errorcode);
 extern int MPI_Error_string(int errorcode, char *string, int *resultlen);
 extern int MPI_Get_processor_name(char *name, int *resultlen);
+
+extern int MPI_info_create(MPI_Info *info);
+extern int MPI_Info_set(MPI_Info info, char *key, char *value);
+
 extern int MPI_Initialized(int *flag);
 extern int MPI_Pack( void *inbuf, int incount, MPI_Datatype datatype,
                      void *outbuf, int outsize, int *position, MPI_Comm comm);

@@ -27,7 +27,8 @@ SRCS_C		= mpi.c \
                   op.c \
                   cart.c \
                   getcount.c \
-                  probe.c
+                  probe.c \
+                  info.c
 
 
 OBJS_ALL	= $(SRCS_C:.c=.o) \
