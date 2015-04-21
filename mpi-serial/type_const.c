@@ -157,6 +157,11 @@ Typestruct TSulonglong = {.count = 1,   .lb = 0,   .ub=sizeof(unsigned long long
                             .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0]=
 			    {.disp = 0,   .type = (Simpletype) SIMPLE_ULONGLONG }};
 
+Typestruct TSoffset = {.count = 1,   .lb = 0,   .ub=sizeof(MPI_Offset),
+                            .committed=1, .o_lb = 0, .o_ub = 0, .pairs[0]=
+			    {.disp = 0,   .type = (Simpletype) SIMPLE_OFFSET }};
+
+
 
  /* RML NOTE: the order and numbering of the elements of simpletypes[] MUST match
   * the values for the MPI type constants e.g. MPI_INT
@@ -174,7 +179,8 @@ Typestruct TSulonglong = {.count = 1,   .lb = 0,   .ub=sizeof(unsigned long long
 		       &TS2int    , &TSshort_int , &TSldouble_int, &TSinteger1,   //28
                        &TSinteger2, &TSinteger4  , &TSinteger8   , &TSinteger16,  //32 
                        &TSreal4	  , &TSreal8	 , &TSreal16     , &TScomplex8,   //36
-                       &TScomplex16, &TScomplex32, &TSlonglong   , &TSulonglong   //40
+                       &TScomplex16, &TScomplex32, &TSlonglong   , &TSulonglong,  //40
+                       &TSoffset
                        }; 
 
 

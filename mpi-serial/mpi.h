@@ -134,6 +134,8 @@ typedef int MPI_Datatype;
 #define MPI_LONG_LONG           MPI_LONG_LONG_INT
 #define MPI_UNSIGNED_LONG_LONG  (-44)
 
+#define MPI_OFFSET              (-45)
+
 
 /*
  * Fortran int size
