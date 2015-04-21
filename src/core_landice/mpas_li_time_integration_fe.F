@@ -428,7 +428,7 @@ module li_time_integration_fe
       integer, pointer :: nCells
       logical, pointer :: config_print_thickness_advection_info
 
-      real (kind=RKIND), dimension(:), pointer :: thicknessNew, layerThicknessFractions
+      real (kind=RKIND), dimension(:), pointer :: thickness, layerThicknessFractions
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessOld, layerThicknessNew, layerThickness_tend
 !!!      real (kind=RKIND), dimension(:,:,:), pointer :: tracer_tendency, tracersNew, tracersOld
 !!!      integer, dimension(:), pointer :: cellMaskOld
@@ -455,7 +455,7 @@ module li_time_integration_fe
 
          ! State at time n+1 (advanced by dt by Forward Euler)
          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=1)
-         call mpas_pool_get_array(geometryPool, 'thickness', thicknessNew, timeLevel=1)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 !!!         tracersNew => stateNew % tracers % array
 
          ! Tendencies
@@ -472,7 +472,7 @@ module li_time_integration_fe
 
 
          layerThicknessNew = layerThicknessOld + layerThickness_tend * deltat
-         thicknessNew = sum(layerThicknessNew, 1)
+         thickness = sum(layerThicknessNew, 1)
 
 
          !Optionally print some information about the new thickness
@@ -490,9 +490,9 @@ module li_time_integration_fe
 !!!         endif
 
          ! reset negative thickness to 0.  This should not happen unless negative MB is larger than entire ice column.
-         where (thicknessNew < 0.0_RKIND)
+         where (thickness < 0.0_RKIND)
             masktmp = 1
-            thicknessNew = 0.0_RKIND
+            thickness = 0.0_RKIND
 !!!            stateNew % iceArea % array = 0.0_RKIND
          end where
 
@@ -503,7 +503,7 @@ module li_time_integration_fe
 
             ! Note how many cells have ice.
             masktmp = 0
-            where (thicknessNew > 0.0_RKIND)
+            where (thickness > 0.0_RKIND)
                masktmp = 1
             end where
             write(stdoutUnit,*) '  Cells with nonzero thickness:', sum(masktmp)

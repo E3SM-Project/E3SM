@@ -249,7 +249,7 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge)
-      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel=1)
       call mpas_pool_get_array(geometryPool, 'apparentDiffusivity', apparentDiffusivity)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(velocityPool, 'uReconstructZonal', uReconstructAxis1)
@@ -459,7 +459,7 @@ contains
 
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-          call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
+          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
           call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
           call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
