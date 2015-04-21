@@ -286,6 +286,13 @@ extern int MPI_Alltoallv(void *sendbuf, int *sendcounts,
                          void *recvbuf, int *recvcounts,
                          int *rdispls, MPI_Datatype recvtype,
                          MPI_Comm comm) ;
+extern int MPI_Alltoallw(void *sendbuf, int *sendcounts,
+                         int *sdispls, MPI_Datatype *sendtypes,
+                         void *recvbuf, int *recvcounts,
+                         int *rdispls, MPI_Datatype *recvtypes,
+                         MPI_Comm comm) ;
+
+
 extern int MPI_Op_create(MPI_User_function *function, int commute,
                          MPI_Op *op);
 extern MPI_Op MPI_Op_f2c(MPI_Fint op);
