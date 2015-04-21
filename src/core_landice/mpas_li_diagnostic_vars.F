@@ -78,8 +78,6 @@ contains
 
    subroutine li_calculate_diagnostic_vars(domain, solveVelo, err)
 
-      use mpas_vector_reconstruction
-
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -115,19 +113,11 @@ contains
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: velocityPool
-      character (len=StrKIND), pointer :: config_velocity_solver
-      logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
-      type (field2DReal), pointer :: normalVelocityField, layerThicknessEdgeField
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
-      real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
-      integer, pointer :: nVertInterfaces
+      type (field2DReal), pointer :: layerThicknessEdgeField
       integer :: err_tmp
 
 
       err = 0
-
-      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-      call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
 
       ! ===
       ! === Diagnostic solve of variables prior to velocity 
@@ -143,32 +133,8 @@ contains
       ! === Diagnostic solve of velocity 
       ! ===
       if (solveVelo) then
-          call mpas_timer_start("velocity solve")
-
-          ! TODO Once multiple blocks are supported, this section will need to change.
-          ! LifeV does not support multiple blocks but the MPAS SIA could.
-          block => domain % blocklist
-          do while (associated(block))
-             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-             call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
-             call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-
-             call li_velocity_solve(meshPool, geometryPool, thermalPool, velocityPool, err)    ! ****** Calculate Velocity ******
-
-             err = ior(err, err_tmp)
-
-             block => block % next
-          end do
-
-          ! update halos on velocity
-          call mpas_timer_start("halo updates")
-          call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
-          call mpas_pool_get_field(velocityPool, 'normalVelocity', normalVelocityField)
-          call mpas_dmpar_exch_halo_field(normalVelocityField)
-          call mpas_timer_stop("halo updates")
-
-          call mpas_timer_stop("velocity solve")
+          call li_velocity_solve(domain, err)    ! ****** Calculate Velocity ******
+          err = ior(err, err_tmp)
       endif
 
 
@@ -177,42 +143,6 @@ contains
       ! ===
 
       call mpas_timer_start("calc. diagnostic vars except vel")
-
-      ! Calculate reconstructed velocities 
-      ! do this after velocity halo update in case velocities on the 1-halo edge are wrong (depends on velocity solver)
-      ! Still do this even if we didn't calculate velocity because on a restart these will be defined at the initial time.
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
-         call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
-         call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
-         call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
-         call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
-
-         ! Native SIA dycore needs to have reconstructed velocities calculated.
-         ! External dycores return their native velocities at cell center locations,
-         ! but these can optionally be overwritten by reconstructed velocities for testing.
-         if ( (trim(config_velocity_solver) == 'sia') .or.    &
-               config_do_velocity_reconstruction_for_external_dycore ) then
-            call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
-            call mpas_pool_get_array(velocityPool, 'uReconstructZ', uReconstructZ)
-            call mpas_pool_get_array(velocityPool, 'uReconstructZonal', uReconstructZonal)
-            call mpas_pool_get_array(velocityPool, 'uReconstructMeridional', uReconstructMeridional)
-
-            call mpas_reconstruct(meshPool, normalVelocity,               &
-                            uReconstructX, uReconstructY, uReconstructZ, &
-                            uReconstructZonal, uReconstructMeridional )
-         endif
-
-         ! Calculate diagnostic speed arrays
-         surfaceSpeed = sqrt(uReconstructX(1,:)**2 + uReconstructY(1,:)**2)
-         basalSpeed   = sqrt(uReconstructX(nVertInterfaces,:)**2 + uReconstructY(nVertInterfaces,:)**2)
-
-         block => block % next
-      end do
-
 
       block => domain % blocklist
       do while (associated(block))
