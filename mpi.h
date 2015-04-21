@@ -98,9 +98,13 @@ typedef int MPI_Datatype;
 #define MPI_REAL              (-17)     // RML: why not (MPI_FLOAT)
 #define MPI_DOUBLE_PRECISION  (-18)     // RML: why not (MPI_DOUBLE)
 
-/* Handles -19 through -25 are only provided in mpif.h
- * If they're needed just copy values here.
- */ 
+#define MPI_COMPLEX           (-19)
+#define MPI_DOUBLE_COMPLEX    (-20)
+#define MPI_LOGICAL           (-21)
+#define MPI_CHARACTER         (-22)
+#define MPI_2REAL             (-23)
+#define MPI_2DOUBLE_PRECISION (-24)
+#define MPI_2INTEGER          (-25)
 
 //Reduction function types
 
