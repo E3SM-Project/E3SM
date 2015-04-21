@@ -8,13 +8,34 @@
 module mpas_subdriver
 
    use mpas_framework
-   use mpas_core
    use mpas_kind_types
 
    use mpas_derived_types, only: dm_info, domain_type
 
+#ifdef CORE_ATMOSPHERE
+   use atm_core_interface
+#endif
+#ifdef CORE_CICE
+   use cice_core_interface
+#endif
+#ifdef CORE_INIT_ATMOSPHERE
+   use init_atm_core_interface
+#endif
+#ifdef CORE_LANDICE
+   use li_core_interface
+#endif
+#ifdef CORE_OCEAN
+   use ocn_core_interface
+#endif
+#ifdef CORE_SW
+   use sw_core_interface
+#endif
+#ifdef CORE_TEST
+   use test_core_interface
+#endif
+
+   type (core_type), pointer :: corelist => null()
    type (dm_info), pointer :: dminfo
-   type (domain_type), save, target :: domain
    type (domain_type), pointer :: domain_ptr
 
    contains
@@ -26,11 +47,12 @@ module mpas_subdriver
       use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_time
-      use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2, mpas_setup_immutable_streams
+      use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2
  
       implicit none
 
       integer :: iArg, nArgs
+      logical :: readNamelistArg, readStreamsArg
       character(len=StrKIND) :: argument, namelistFile, streamsFile
       character(len=StrKIND) :: timeStamp
       integer :: ierr
@@ -54,7 +76,6 @@ module mpas_subdriver
       character(len=StrKIND) :: start_timestamp
       logical :: streamsExists
 
-
       interface
          subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
             use iso_c_binding, only : c_char, c_ptr, c_int
@@ -76,8 +97,8 @@ module mpas_subdriver
          end subroutine xml_stream_get_attributes
       end interface
 
-      namelistFile = domain % namelist_filename
-      streamsFile = domain % streams_filename
+      readNamelistArg = .false.
+      readStreamsArg = .false.
 
       nArgs = command_argument_count()
       iArg = 1
@@ -87,6 +108,7 @@ module mpas_subdriver
 
          if ( trim(argument) == '-n' ) then
             iArg = iArg + 1
+            readNamelistArg = .true.
             call get_command_argument(iArg, namelistFile)
             if ( len_trim(namelistFile) == 0 ) then
                 write(0,*) 'ERROR: The -n argument requires a namelist file argument.'
@@ -97,6 +119,7 @@ module mpas_subdriver
             end if
          else if ( trim(argument) == '-s' ) then
             iArg = iArg + 1
+            readStreamsArg = .true.
             call get_command_argument(iArg, streamsFile)
             if ( len_trim(streamsFile) == 0 ) then
                 write(0,*) 'ERROR: The -s argument requires a streams file argument.'
@@ -110,25 +133,91 @@ module mpas_subdriver
          iArg = iArg + 1
       end do
 
-      domain_ptr => domain
+      allocate(corelist)
+      nullify(corelist % next)
 
-      domain % namelist_filename = namelistFile
-      domain % streams_filename = streamsFile
+      allocate(corelist % domainlist)
+      nullify(corelist % domainlist % next)
+
+      domain_ptr => corelist % domainlist
+      domain_ptr % core => corelist
+
+      call mpas_allocate_domain(domain_ptr)
 
       !
       ! Initialize infrastructure
       !
-      call mpas_framework_init(dminfo, domain_ptr)
+      call mpas_framework_init_phase1(domain_ptr % dminfo)
 
-      call mpas_core_setup_packages(domain_ptr % configs, domain_ptr % packages, ierr)
-      call mpas_core_setup_decompositions(domain_ptr, ierr)
-      call mpas_core_setup_clock(domain_ptr % clock, domain_ptr % configs, ierr)
+#ifdef CORE_ATMOSPHERE
+      call atm_setup_core(corelist)
+      call atm_setup_domain(domain_ptr)
+#endif
+#ifdef CORE_CICE
+      call cice_setup_core(corelist)
+      call cice_setup_domain(domain_ptr)
+#endif
+#ifdef CORE_INIT_ATMOSPHERE
+      call init_atm_setup_core(corelist)
+      call init_atm_setup_domain(domain_ptr)
+#endif
+#ifdef CORE_LANDICE
+      call li_setup_core(corelist)
+      call li_setup_domain(domain_ptr)
+#endif
+#ifdef CORE_OCEAN
+      call ocn_setup_core(corelist)
+      call ocn_setup_domain(domain_ptr)
+#endif
+#ifdef CORE_SW
+      call sw_setup_core(corelist)
+      call sw_setup_domain(domain_ptr)
+#endif
+#ifdef CORE_TEST
+      call test_setup_core(corelist)
+      call test_setup_domain(domain_ptr)
+#endif
 
-      write(stderrUnit,*) 'Reading streams configuration from file '//trim(domain % streams_filename)
-      inquire(file=trim(domain % streams_filename), exist=streamsExists)
+      if ( readNamelistArg ) then
+         domain_ptr % namelist_filename = namelistFile
+      end if
+
+      if ( readStreamsArg ) then
+         domain_ptr % streams_filename = streamsFile
+      end if
+
+      ierr = domain_ptr % core % setup_namelist(domain_ptr % configs, domain_ptr % namelist_filename, domain_ptr % dminfo)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Namelist setup failed for core ' // trim(domain_ptr % core % coreName))
+      end if
+
+      call mpas_framework_init_phase2(domain_ptr)
+
+      ierr = domain_ptr % core % define_packages(domain_ptr % packages)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Package definition failed for core ' // trim(domain_ptr % core % coreName))
+      end if
+
+      ierr = domain_ptr % core % setup_packages(domain_ptr % configs, domain_ptr % packages)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Package setup failed for core ' // trim(domain_ptr % core % coreName))
+      end if
+
+      ierr = domain_ptr % core % setup_decompositions(domain_ptr % decompositions)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Decomposition setup failed for core ' // trim(domain_ptr % core % coreName))
+      end if
+
+      ierr = domain_ptr % core % setup_clock(domain_ptr % clock, domain_ptr % configs)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Clock setup failed for core ' // trim(domain_ptr % core % coreName))
+      end if
+
+      write(stderrUnit,*) 'Reading streams configuration from file '//trim(domain_ptr % streams_filename)
+      inquire(file=trim(domain_ptr % streams_filename), exist=streamsExists)
 
       if ( .not. streamsExists ) then
-         call mpas_dmpar_global_abort('ERROR: Streams file '//trim(domain % streams_filename)//' does not exist.')
+         call mpas_dmpar_global_abort('ERROR: Streams file '//trim(domain_ptr % streams_filename)//' does not exist.')
       end if
 
       call mpas_timer_start('total time')
@@ -138,18 +227,15 @@ module mpas_subdriver
       ! Using information from the namelist, a graph.info file, and a file containing
       !    mesh fields, build halos and allocate blocks in the domain
       !
-      call mpas_core_get_mesh_stream(domain_ptr % configs, mesh_stream, ierr)
-      if (ierr /= 0) then
-         call mpas_dmpar_abort(dminfo)
-      end if
-      call mpas_f_to_c_string(domain % streams_filename, c_filename)
+      mesh_stream = domain_ptr % core % get_mesh_stream(domain_ptr % configs)
+      call mpas_f_to_c_string(domain_ptr % streams_filename, c_filename)
       call mpas_f_to_c_string(mesh_stream, c_mesh_stream)
-      c_comm = dminfo % comm
+      c_comm = domain_ptr % dminfo % comm
       call xml_stream_get_attributes(c_filename, c_mesh_stream, c_comm, &
                                      c_mesh_filename_temp, c_ref_time_temp, &
                                      c_filename_interval_temp, c_ierr)
       if (c_ierr /= 0) then
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_abort(domain_ptr % dminfo)
       end if
       call mpas_c_to_f_string(c_mesh_filename_temp, mesh_filename_temp)
       call mpas_c_to_f_string(c_ref_time_temp, ref_time_temp)
@@ -173,16 +259,19 @@ module mpas_subdriver
       !
       ! Set up run-time streams
       !
-      call MPAS_stream_mgr_init(domain_ptr % streamManager, domain % clock, domain % blocklist % allFields, domain % packages, domain % blocklist % allStructs)
+      call MPAS_stream_mgr_init(domain_ptr % streamManager, domain_ptr % clock, domain_ptr % blocklist % allFields, domain_ptr % packages, domain_ptr % blocklist % allStructs)
 
-      call add_stream_attributes(domain)
+      call add_stream_attributes(domain_ptr)
 
-      call mpas_setup_immutable_streams(domain_ptr % streamManager)
+      ierr = domain_ptr % core % setup_immutable_streams(domain_ptr % streamManager)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Immutable streams setup failed for core ' // trim(domain_ptr % core % coreName))
+      end if
 
       mgr_p = c_loc(domain_ptr % streamManager)
       call xml_stream_parser(c_filename, mgr_p, c_comm, c_ierr)
       if (c_ierr /= 0) then
-         call mpas_dmpar_abort(dminfo)
+         call mpas_dmpar_abort(domain_ptr % dminfo)
       end if
 
       !
@@ -193,7 +282,10 @@ module mpas_subdriver
       !
       ! Initialize core
       !
-      call mpas_core_init(domain_ptr, timeStamp)
+      iErr = domain_ptr % core % core_init(domain_ptr, timeStamp)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Core init failed for core ' // trim(domain_ptr % core % coreName))
+      end if
 
       call mpas_timer_stop('initialize')
 
@@ -204,7 +296,12 @@ module mpas_subdriver
 
       implicit none
 
-      call mpas_core_run(domain_ptr)
+      integer :: iErr
+
+      iErr = domain_ptr % core % core_run(domain_ptr)
+      if ( iErr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Core run failed for core ' // trim(domain_ptr % core % coreName))
+      end if
 
    end subroutine mpas_run
 
@@ -215,11 +312,16 @@ module mpas_subdriver
    
       implicit none
 
+      integer :: iErr
+
 
       !
       ! Finalize core
       !
-      call mpas_core_finalize(domain_ptr)
+      iErr = domain_ptr % core % core_finalize(domain_ptr)
+      if ( iErr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Core finalize failed for core ' // trim(domain_ptr % core % coreName))
+      end if
 
       call mpas_timer_stop('total time')
       call mpas_timer_write()
@@ -230,7 +332,10 @@ module mpas_subdriver
       !
       call MPAS_stream_mgr_finalize(domain_ptr % streamManager)
 
-      call mpas_framework_finalize(dminfo, domain_ptr)
+      call mpas_framework_finalize(domain_ptr % dminfo, domain_ptr)
+
+      deallocate(corelist % domainlist)
+      deallocate(corelist)
 
    end subroutine mpas_finalize
 
@@ -253,33 +358,33 @@ module mpas_subdriver
       integer :: local_ierr
 
       if (domain % dminfo % nProcs < 10) then
-          write(histAtt, '(A,I1,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+          write(histAtt, '(A,I1,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       else if (domain % dminfo % nProcs < 100) then
-          write(histAtt, '(A,I2,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+          write(histAtt, '(A,I2,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       else if (domain % dminfo % nProcs < 1000) then
-          write(histAtt, '(A,I3,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+          write(histAtt, '(A,I3,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       else if (domain % dminfo % nProcs < 10000) then
-          write(histAtt, '(A,I4,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+          write(histAtt, '(A,I4,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       else if (domain % dminfo % nProcs < 100000) then
-          write(histAtt, '(A,I5,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+          write(histAtt, '(A,I5,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       else
-          write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % coreName), '_model'
+          write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       end if
      
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'model_name', domain % core % modelName)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'core_name', domain % core % coreName)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'source', domain % core % source)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', domain % core % Conventions)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'git_version', domain % core % git_version)
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'model_name', domain % modelName)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'core_name', domain % coreName)
       ! DWJ 10/01/2014: Eventually add the real history attribute, for now (due to length restrictions)
       ! add a shortened version.
 !     call MPAS_stream_mgr_add_att(domain % streamManager, 'history', domain % history)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'history', histAtt)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'source', domain % source)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', domain % Conventions)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'parent_id', domain % parent_id)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'parent_id', domain %  parent_id)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'mesh_spec', domain % mesh_spec)
-      call MPAS_stream_mgr_add_att(domain % streamManager, 'git_version', domain % git_version)
 
       call mpas_pool_begin_iteration(domain % configs)
 

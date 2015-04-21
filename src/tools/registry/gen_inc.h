@@ -28,7 +28,6 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, const char *parentname, const char * corename);
 int determine_struct_depth(int curLevel, ezxml_t superStruct);
 int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t registry);
-int generate_field_links(ezxml_t registry);
 int generate_field_exchanges(FILE *fd, int curLevel, ezxml_t superStruct);
 int generate_field_halo_exchanges_and_copies(ezxml_t registry);
 int generate_field_inputs(FILE *fd, int curLevel, ezxml_t superStruct);
