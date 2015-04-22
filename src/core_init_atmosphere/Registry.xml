@@ -327,7 +327,7 @@
                         <var name="rho" packages="met_stage_out"/>
                         <var name="theta" packages="met_stage_out"/>
                         <var name="v" packages="met_stage_out"/>
-                        <var name="rh" packages="met_stage_out"/>
+                        <var name="relhum" packages="met_stage_out"/>
                         <var name="uReconstructX" packages="met_stage_out"/>
                         <var name="uReconstructY" packages="met_stage_out"/>
                         <var name="uReconstructZ" packages="met_stage_out"/>
@@ -527,7 +527,7 @@
                 <var name="rho"                               type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="theta"                             type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="v"                                 type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="rh"                                type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="relhum"                            type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"/>
