@@ -523,7 +523,7 @@ module atm_core
          end do
       end do
 
-      call interp_diagnostics(mesh, state, time_lev, diag, diag_physics)
+      call interp_diagnostics(mesh, state, time_lev, diag)
    
    end subroutine atm_compute_output_diagnostics
    

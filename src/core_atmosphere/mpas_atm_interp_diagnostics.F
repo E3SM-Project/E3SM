@@ -20,7 +20,7 @@
  contains
 
 !==================================================================================================
- subroutine interp_diagnostics(mesh, state, time_lev, diag, diag_physics)
+ subroutine interp_diagnostics(mesh, state, time_lev, diag)
 !==================================================================================================
 
 !input arguments:
@@ -30,7 +30,6 @@
 
 !inout arguments:
  type (mpas_pool_type), intent(inout) :: diag
- type (mpas_pool_type), intent(inout) :: diag_physics
 
 !local variables:
  integer :: iCell,iVert,iVertD,k,kk
@@ -126,7 +125,7 @@
  call mpas_pool_get_array(diag, 'vorticity', vorticity)
  call mpas_pool_get_array(diag, 'uReconstructMeridional', umeridional)
  call mpas_pool_get_array(diag, 'uReconstructZonal', uzonal)
- call mpas_pool_get_array(diag_physics, 'relhum', relhum)
+ call mpas_pool_get_array(diag, 'relhum', relhum)
 
  call mpas_pool_get_array(diag, 'temperature_200hPa', temperature_200hPa)
  call mpas_pool_get_array(diag, 'temperature_500hPa', temperature_500hPa)

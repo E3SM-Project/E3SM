@@ -181,7 +181,7 @@
 			<var name="w"/>
 			<var name="rho"/>
 			<var name="theta"/>
-			<var name="rh"/>
+			<var name="relhum"/>
 			<var name="exner_base"/>
 			<var name="pressure_base"/>
 			<var name="rho_base"/>
@@ -310,7 +310,7 @@
 			<var name="pressure_p"/>
 			<var name="rho"/>
 			<var name="theta"/>
-			<var name="rh"/>
+			<var name="relhum"/>
 			<var name="uReconstructZonal"/>
 			<var name="uReconstructMeridional"/>
 			<var name="rv"/>
@@ -565,7 +565,7 @@
 			<var name="rho"/>
 			<var name="theta"/>
 			<var_array name="scalars"/>
-			<var name="rh"/>
+			<var name="relhum"/>
 			<var name="divergence"/>
 			<var name="vorticity"/>
 			<var name="ke"/>
@@ -574,7 +574,6 @@
 			<var name="i_rainnc"/>
 			<var name="rainnc"/>
 			<var name="precipw"/>
-			<var name="relhum"/>
 			<var name="cuprec"/>
 			<var name="i_rainc"/>
 			<var name="rainc"/>
@@ -814,7 +813,7 @@
                 <!-- needed for those 4 variables to get bit for bit restart capabilities, otherwise.                    -->
                 <var name="rho"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="theta"                   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rh"                      type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="relhum"                  type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="v"                       type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="divergence"              type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="vorticity"               type="real"     dimensions="nVertLevels nVertices Time"/>
@@ -1038,7 +1037,6 @@
                 <var name="graupelnc"     type="real"     dimensions="nCells Time"/>
 
                 <var name="precipw"       type="real"     dimensions="nCells Time"/>
-                <var name="relhum"        type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF CONVECTION:                                                                -->
