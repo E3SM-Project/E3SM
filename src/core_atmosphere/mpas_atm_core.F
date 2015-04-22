@@ -363,7 +363,7 @@ module atm_core
             call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
             call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-            call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
+            call atm_compute_output_diagnostics(state, 1, diag, mesh)
 
             block_ptr => block_ptr % next
          end do
@@ -428,7 +428,7 @@ module atm_core
                call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
                call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
                call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-               call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
+               call atm_compute_output_diagnostics(state, 1, diag, mesh)
 
                block_ptr => block_ptr % next
             end do
@@ -472,7 +472,7 @@ module atm_core
    end function atm_core_run
    
    
-   subroutine atm_compute_output_diagnostics(state, time_lev, diag, diag_physics, mesh)
+   subroutine atm_compute_output_diagnostics(state, time_lev, diag, mesh)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute diagnostic fields for a domain to be written to history files
    !
@@ -490,7 +490,6 @@ module atm_core
       type (mpas_pool_type), intent(inout) :: state
       integer, intent(in) :: time_lev            ! which time level to use from state
       type (mpas_pool_type), intent(inout) :: diag
-      type (mpas_pool_type), intent(inout) :: diag_physics
       type (mpas_pool_type), intent(in) :: mesh
    
       integer :: iCell, k
