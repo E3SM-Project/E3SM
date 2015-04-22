@@ -474,6 +474,7 @@ contains
     integer :: ierr
     type(dim3) :: blockdim , griddim
 
+    call t_startf('precompute_divdp_cuda')
 
     do ie = nets , nete
       qdp1_h(:,:,:,ie) = elem(ie)%state%Qdp(:,:,:,1,n0_qdp)
@@ -512,6 +513,8 @@ contains
         elem(ie)%derived%divdp_proj  (:,:,k) = elem(ie)%derived%divdp_proj  (:,:,k) * elem(ie)%rspheremp(:,:)
       enddo
     enddo
+
+    call t_stopf('precompute_divdp_cuda')
 
 
   end subroutine precompute_divdp_cuda
@@ -929,8 +932,8 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
   nSendCycles = pSchedule%nSendCycles
   nRecvCycles = pSchedule%nRecvCycles
 
-  call t_startf('CUDA PEU NEWER')
   ierr = cudaStreamSynchronize(streams(1))
+  call t_startf('CUDA PEU NEWER')
   do icycle=1,nRecvCycles
     pCycle => pSchedule%RecvCycle(icycle)
     source  = pCycle%source - 1
