@@ -9,6 +9,7 @@ implicit none
    private
    
    public :: ode_mbbks1, ode_adapt_mbbks1
+   public :: ode_ebbks1
    public :: ode_rk4
    public :: ode_rk2   
    real(r8), parameter :: tiny = 1.e-23_r8
@@ -455,9 +456,10 @@ contains
    if(nJ>0)then
       p = min(jsmin*beta,1._r8)
    endif
-   do n = 1, neq
-      y(n) = y0(n) + f(n)*p*dt
-   enddo
+   
+   y(:) = y0(:)
+   p = p * dt
+   call daxpy(neq, p, f, 1, y, 1)
    
    end subroutine ebbks   
 
