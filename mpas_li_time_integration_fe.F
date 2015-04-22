@@ -200,11 +200,11 @@ module li_time_integration_fe
       logical, pointer :: config_print_thickness_advection_info
       logical, pointer :: config_adaptive_timestep
       logical, pointer :: config_adaptive_timestep_include_DCFL
-      integer :: allowableAdvecDtProcNumber
+      integer :: allowableAdvecDtProcNumberHere, allowableAdvecDtProcNumber
       real (kind=RKIND) :: allowableAdvecDt, allowableAdvecDtOnProc, allowableAdvecDtAllProcs
       type (MPAS_TimeInterval_type) :: allowableAdvecDtOnProcInterval, allowableAdvecDtAllProcsInterval
       character (len=StrKIND) :: allowableAdvecDtOnProcString, allowableAdvecDtAllProcsString
-      integer :: allowableDiffDtProcNumber
+      integer :: allowableDiffDtProcNumberHere,  allowableDiffDtProcNumber  
       real (kind=RKIND) :: allowableDiffDt, allowableDiffDtOnProc, allowableDiffDtAllProcs
       type (MPAS_TimeInterval_type) :: allowableDiffDtOnProcInterval, allowableDiffDtAllProcsInterval
       character (len=StrKIND) :: allowableDiffDtOnProcString, allowableDiffDtAllProcsString
@@ -306,11 +306,11 @@ module li_time_integration_fe
           call mpas_dmpar_min_real(dminfo, allowableAdvecDtOnProc, allowableAdvecDtAllProcs)
           ! Determine which processor has the limiting CFL
           if (allowableAdvecDtOnProc == allowableAdvecDtAllProcs) then
-            allowableAdvecDtProcNumber = dminfo % my_proc_id
+            allowableAdvecDtProcNumberHere = dminfo % my_proc_id
           else 
-            allowableAdvecDtProcNumber = -1
+            allowableAdvecDtProcNumberHere = -1
           endif
-          call mpas_dmpar_max_int(dminfo, allowableAdvecDtProcNumber, allowableAdvecDtProcNumber)
+          call mpas_dmpar_max_int(dminfo, allowableAdvecDtProcNumberHere, allowableAdvecDtProcNumber)
           call mpas_set_timeInterval(allowableAdvecDtAllProcsInterval, dt=allowableAdvecDtAllProcs, ierr=err_tmp)
           err = ior(err,err_tmp)
           call mpas_get_timeInterval(allowableAdvecDtAllProcsInterval, timeString=allowableAdvecDtAllProcsString, ierr=err_tmp)
@@ -322,11 +322,11 @@ module li_time_integration_fe
               call mpas_dmpar_min_real(dminfo, allowableDiffDtOnProc, allowableDiffDtAllProcs)
               ! Determine which processor has the limiting CFL
               if (allowableDiffDtOnProc == allowableDiffDtAllProcs) then
-                allowableDiffDtProcNumber = dminfo % my_proc_id
+                allowableDiffDtProcNumberHere = dminfo % my_proc_id
               else 
-                allowableDiffDtProcNumber = -1
+                allowableDiffDtProcNumberHere = -1
               endif
-              call mpas_dmpar_max_int(dminfo, allowableDiffDtProcNumber, allowableDiffDtProcNumber)
+              call mpas_dmpar_max_int(dminfo, allowableDiffDtProcNumberHere, allowableDiffDtProcNumber)
               call mpas_set_timeInterval(allowableDiffDtAllProcsInterval, dt=allowableDiffDtAllProcs, ierr=err_tmp)
               err = ior(err,err_tmp)
               call mpas_get_timeInterval(allowableDiffDtAllProcsInterval, timeString=allowableDiffDtAllProcsString, ierr=err_tmp)
