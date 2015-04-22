@@ -56,7 +56,7 @@ FC_FUNC( mpi_gather , MPI_GATHER )
 			void *recvbuf, int *recvcount, int *recvtype,
 			int *root, int *comm, int *ierror)
 {
-  *ierror=MPI_Gather( sendbuf, *sendcount, *sendtype,
+  *ierror=MPI_Gather( mpi_c_in_place(sendbuf), *sendcount, *sendtype,
 		      recvbuf, *recvcount, *recvtype,
 		      *root, *comm);
 }
@@ -66,6 +66,9 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 	       void* recvbuf, int recvcount, MPI_Datatype recvtype,
 	       int root, MPI_Comm comm)
 {
+  if (sendbuf==MPI_IN_PLACE)
+    return(MPI_SUCCESS);
+
   if (root==MPI_ROOT)
     return(MPI_SUCCESS);
 
@@ -91,7 +94,7 @@ FC_FUNC( mpi_gatherv , MPI_GATHERV )
 			  void *recvbuf, int *recvcounts, int *displs,
 			  int *recvtype, int *root, int *comm, int *ierror)
 {
-  *ierror=MPI_Gatherv( sendbuf, *sendcount, *sendtype,
+  *ierror=MPI_Gatherv( mpi_c_in_place(sendbuf), *sendcount, *sendtype,
 		       recvbuf, recvcounts, displs,
 		       *recvtype, *root, *comm);
 }
@@ -103,6 +106,9 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 {
   int offset;
   MPI_Aint rt_extent;
+
+  if (sendbuf==MPI_IN_PLACE)
+    return(MPI_SUCCESS);
 
   if (root==MPI_ROOT)
     return(MPI_SUCCESS);
@@ -134,7 +140,7 @@ FC_FUNC( mpi_allgather , MPI_ALLGATHER )
 			    void *recvbuf, int *recvcount, int *recvtype,
 			    int *comm, int *ierror)
 {
-  *ierror=MPI_Allgather( sendbuf, *sendcount, *sendtype,
+  *ierror=MPI_Allgather( mpi_c_in_place(sendbuf), *sendcount, *sendtype,
 			 recvbuf, *recvcount, *recvtype,
 			 *comm );
 }
@@ -144,6 +150,8 @@ int MPI_Allgather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 		  void* recvbuf, int recvcount, MPI_Datatype recvtype,
 		  MPI_Comm comm)
 {
+  if (sendbuf==MPI_IN_PLACE)
+    return(MPI_SUCCESS);
 
   copy_data2(sendbuf, sendcount, sendtype,
              recvbuf, recvcount, recvtype);
@@ -162,7 +170,7 @@ FC_FUNC( mpi_allgatherv , MPI_ALLGATHERV )
 			    void *recvbuf, int *recvcounts, int *displs,
                             int *recvtype, int *comm, int *ierror)
 {
-  *ierror=MPI_Allgatherv( sendbuf, *sendcount, *sendtype,
+  *ierror=MPI_Allgatherv( mpi_c_in_place(sendbuf), *sendcount, *sendtype,
 			  recvbuf, recvcounts, displs,
                           *recvtype, *comm );
 }
@@ -174,6 +182,9 @@ int MPI_Allgatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 {
   int offset;
   MPI_Aint rt_extent;
+
+  if (sendbuf==MPI_IN_PLACE)
+    return(MPI_SUCCESS);
 
   MPI_Type_extent(recvtype, &rt_extent);
   offset=displs[0]*rt_extent;
@@ -200,7 +211,7 @@ FC_FUNC( mpi_scatter, MPI_SCATTER )
 			 int *root, int *comm, int *ierror)
 {
   *ierror = MPI_Scatter(sendbuf, *sendcount, *sendtype,
-  			recvbuf, *recvcount, *recvtype,
+  			mpi_c_in_place(recvbuf), *recvcount, *recvtype,
 			*root, *comm);
 }
 
@@ -208,6 +219,9 @@ int MPI_Scatter(void * sendbuf, int sendcount, MPI_Datatype sendtype,
 		void * recvbuf, int recvcount, MPI_Datatype recvtype,
 		int root, MPI_Comm comm)
 {
+  if (recvbuf==MPI_IN_PLACE)
+    return(MPI_SUCCESS);
+
   if (root==MPI_ROOT)
     return(MPI_SUCCESS);
 
@@ -234,7 +248,7 @@ FC_FUNC( mpi_scatterv , MPI_SCATTERV )
 			   int *recvtype, int *root, int *comm, int *ierror)
 {
   *ierror=MPI_Scatterv(sendbuf, sendcounts, displs,
-		       *sendtype, recvbuf, *recvcount,
+		       *sendtype, mpi_c_in_place(recvbuf), *recvcount,
 		       *recvtype, *root, *comm);
 }
 		       
@@ -246,6 +260,9 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 {
   int offset;
   MPI_Aint st_extent;
+
+  if (recvbuf==MPI_IN_PLACE)
+    return(MPI_SUCCESS);
 
   if (root==MPI_ROOT)
     return(MPI_SUCCESS);
