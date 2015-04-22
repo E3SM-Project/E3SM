@@ -1070,7 +1070,6 @@ contains
        end if
     
 #if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
-#ifndef _MPISERIAL
        call mpi_info_create(iosystem(i)%info,ierr)
        ! turn on mpi-io aggregation 
        !DBG    print *,'PIO_init: before call to setnumagg'
@@ -1091,7 +1090,6 @@ contains
 #ifdef PIO_LUSTRE_HINTS
        call PIO_set_hint(iosystem(i), 'romio_ds_read','disable') 
        call PIO_set_hint(iosystem(i),'romio_ds_write','disable') 
-#endif
 #endif
 #endif
     end do

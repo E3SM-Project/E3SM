@@ -395,11 +395,8 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosys->ioroot = iosys->ioranks[0];
 #endif
 
-#ifndef _MPISERIAL
   CheckMPIReturn(MPI_Info_create(&(iosys->info)),__FILE__,__LINE__);
   iosys->info = MPI_INFO_NULL;
-#endif
-
 
   if(iosys->comp_rank == iosys->ioranks[0])
     iosys->iomaster = true;
@@ -450,10 +447,9 @@ int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios == NULL)
     return PIO_EBADID;
-#ifndef _MPISERIAL  
   if(ios->ioproc)
     CheckMPIReturn( MPI_Info_set(ios->info, hint, hintval), __FILE__,__LINE__);
-#endif
+
   return PIO_NOERR;
 
 }
