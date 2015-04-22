@@ -617,12 +617,21 @@ module li_time_integration_fe
 
          ! Check if we need to force a timestep length to hit the target interval
          currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
-         !print *, 'curr', currTime % t % YR, currTime % t % basetime % S
+         !print *, 'curr', currTime % t % YR, currTime % t % basetime % S, currTime % t % basetime % Sn, currTime % t % basetime % Sd
          err = ior(err,err_tmp)
          nextForceTime = mpas_alarm_get_next_ring_time(clock, 'adaptiveTimestepForceInterval')
-         !print *, 'ring', nextForceTime % t % YR, nextForceTime % t % basetime % S
+         !print *, 'ring', nextForceTime % t % YR, nextForceTime % t % basetime % S, nextForceTime % t % basetime % Sn, nextForceTime % t % basetime % Sd
          intervalToNextForceTime = nextForceTime - currTime
-         !print *, 'int', intervalToNextForceTime % ti % YR, intervalToNextForceTime % ti % MM, intervalToNextForceTime % ti % basetime % S
+         !print *, 'int', intervalToNextForceTime % ti % YR, intervalToNextForceTime % ti % MM, intervalToNextForceTime % ti % basetime % S, intervalToNextForceTime % ti % basetime % Sn, intervalToNextForceTime % ti % basetime % Sd
+         ! Due to roundoff errors, we might be just shy of the desired time.
+         ! To avoid this, add one to the numerator of the fractional seconds to
+         ! make sure we get pushed over the edge.  The way ESMF does fractional
+         ! seconds, this means we get the desired interval to better than 1 part per 100 million seconds
+         ! Note that even though this is a *very* tiny fudge factor, it does not
+         ! affect conservation within MPAS-LI, but it could have a very, very tiny
+         ! effect on a climate model that thinks we ran for, say, 10 years, but we
+         ! actually ran for 10 years +/- 1e-8 seconds.
+         intervalToNextForceTime % ti % basetime % Sn = intervalToNextForceTime % ti % basetime % Sn + 1
          call mpas_get_timeInterval(intervalToNextForceTime, dt=secondsToNextForceTime, ierr=err_tmp)
          err = ior(err,err_tmp)
          !print *, proposedDt, secondsToNextForceTime
