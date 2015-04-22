@@ -107,10 +107,9 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
 
       count = min(count, preposts);
 
-#ifndef _MPISERIAL	
-      if(count>0)
+      if(count>0){
 	CheckMPIReturn(MPI_Waitall( count, rcvid, MPI_STATUSES_IGNORE),__FILE__,__LINE__);
-#endif
+      }
     }else{
       if(sendcnt > 0){
 	CheckMPIReturn(MPI_Recv( &hs, 1, MPI_INT, root, mtag, comm, &status), __FILE__,__LINE__);
@@ -147,9 +146,6 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
   int dsize;
   
 
-#ifdef _MPISERIAL
-  memcpy(recvbuf, sendbuf, sizeof(sendtype));
-#else
   if(flow_cntl > 0){
     fc_gather = true;
     gather_block_size = min(flow_cntl,MAX_GATHER_BLOCK_SIZE);
@@ -210,7 +206,7 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
   }else{
     CheckMPIReturn(MPI_Gatherv ( sendbuf, sendcnt, sendtype, recvbuf, recvcnts, displs, recvtype, root, comm), __FILE__,__LINE__);
   }
-#endif
+
   return PIO_NOERR;
 }
 
@@ -255,7 +251,6 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   CheckMPIReturn(MPI_Comm_size(comm, &nprocs),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_rank(comm, &mytask),__FILE__,__LINE__);
 
-#ifndef _MPISERIAL
   if(max_requests == 0) {
 #ifdef DEBUG
     int totalrecv=0;
@@ -271,7 +266,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }
-#endif
+
   int tag;
   int offset_t;
   int ierr;
@@ -430,7 +425,6 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
       }
     }
   }
-#ifndef _MPISERIAL
   //     printf("%s %d %d \n",__FILE__,__LINE__,nprocs);
   if(steps>0){
     CheckMPIReturn(MPI_Waitall(steps, rcvids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
@@ -438,7 +432,6 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
       CheckMPIReturn(MPI_Waitall(steps, sndids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
   }
   //      printf("%s %d %d \n",__FILE__,__LINE__,nprocs);
-#endif
   
   return PIO_NOERR;
 }
