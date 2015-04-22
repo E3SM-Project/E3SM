@@ -48,13 +48,14 @@ module cuda_mod
   public :: copy_qdp_d2h
   public :: copy_qdp_h2d
   public :: cudaThreadSynchronize_wrap
+  public :: precompute_divdp_cuda
 
   integer,parameter :: numk_eul = 6
   integer,parameter :: numk_hyp = 6
   integer,parameter :: numk_lim2d = 15
 
   !This is from prim_advection_mod.F90
-  type(EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdvQ2, edgeAdvDSS
+  type(EdgeBuffer_t) :: edgeAdv, edgeAdv3, edgeAdvQ3, edgeAdvQ2, edgeAdvDSS
   integer,parameter :: DSSeta = 1
   integer,parameter :: DSSomega = 2
   integer,parameter :: DSSdiv_vdp_ave = 3
@@ -82,6 +83,7 @@ module cuda_mod
   integer              ,device,allocatable,dimension(:,:)         :: getmapP_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: vstar_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: divdp_d
+  real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: divdp_proj_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dp_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dp_star_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: qmin_d
@@ -102,6 +104,7 @@ module cuda_mod
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:)   :: qtens_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dp_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: divdp_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: divdp_proj_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dp_star_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dp_np1_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dpdiss_ave_h
@@ -232,6 +235,7 @@ contains
     allocate( dpdiss_biharmonic_d      (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( vstar_d                  (np,np,nlev,2                 ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( divdp_d                  (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
+    allocate( divdp_proj_d             (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( dp_d                     (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( hyai_d                   (      nlev+1                        ) , stat = ierr ); _CHECK(__LINE__)
     allocate( hybi_d                   (      nlev+1                        ) , stat = ierr ); _CHECK(__LINE__)
@@ -258,6 +262,7 @@ contains
     allocate( qtens_biharmonic         (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( dp_h                     (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( divdp_h                  (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
+    allocate( divdp_proj_h             (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( dp_star_h                (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( dpdiss_biharmonic_h      (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( dp_np1_h                 (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
@@ -317,7 +322,7 @@ contains
     !These have to be in a threaded region or they complain and die
 !$OMP END MASTER
     call initEdgeBuffer(edgeAdv   ,qsize_d*nlev  )
-    call initEdgeBuffer(edgeAdvDSS,      nlev  )
+    call initEdgeBuffer(edgeAdvDSS,      3*nlev  )
     call initEdgeBuffer(edgeAdvQ2 ,qsize_d*nlev*2)
     call initEdgeBuffer(edgeAdvQ3 ,qsize_d*nlev*3)
 !$OMP MASTER
@@ -452,6 +457,65 @@ contains
 
 
 
+  subroutine precompute_divdp_cuda( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
+    use element_mod, only: element_t
+    use derivative_mod, only: derivative_t, divergence_sphere
+    use hybrid_mod, only: hybrid_t
+    use edge_mod, only: edgeVpack,edgeVunpack
+    use bndry_mod, only: bndry_exchangeV
+    use perf_mod, only: t_startf, t_stopf
+    implicit none
+    type(element_t)      , intent(inout) :: elem(:)
+    type (hybrid_t)      , intent(in   ) :: hybrid
+    type (derivative_t)  , intent(in   ) :: deriv
+    real(kind=real_kind) , intent(in   ) :: dt
+    integer              , intent(in   ) :: nets , nete , n0_qdp
+    integer :: ie , k
+    integer :: ierr
+    type(dim3) :: blockdim , griddim
+
+
+    do ie = nets , nete
+      qdp1_h(:,:,:,ie) = elem(ie)%state%Qdp(:,:,:,1,n0_qdp)
+    enddo
+    !$OMP BARRIER
+    !$OMP MASTER
+    ierr = cudaMemcpyAsync( qdp1_d , qdp1_h , size( qdp1_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
+    blockdim = dim3( np     , np , nlev )
+    griddim  = dim3( nelemd , 1  , 1    )
+    call unpack_qdp1<<<griddim,blockdim,0,streams(1)>>>( qdp1_d , qdp_d , n0_qdp , nets , nete ); _CHECK(__LINE__)
+    !$OMP END MASTER
+
+    do ie = nets , nete
+      do k = 1 , nlev   ! div( U dp Q), 
+        elem(ie)%derived%divdp(:,:,k) = divergence_sphere(elem(ie)%derived%vn0(:,:,:,k),deriv,elem(ie))
+        elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:) * elem(ie)%derived%eta_dot_dpdn(:,:,k)
+        elem(ie)%derived%omega_p     (:,:,k) = elem(ie)%spheremp(:,:) * elem(ie)%derived%omega_p     (:,:,k)
+        elem(ie)%derived%divdp_proj  (:,:,k) = elem(ie)%spheremp(:,:) * elem(ie)%derived%divdp       (:,:,k)
+      enddo
+      call edgeVpack(edgeAdvDSS,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0*nlev,elem(ie)%desc)
+      call edgeVpack(edgeAdvDSS,elem(ie)%derived%omega_p     (:,:,1:nlev),nlev,1*nlev,elem(ie)%desc)
+      call edgeVpack(edgeAdvDSS,elem(ie)%derived%divdp_proj  (:,:,1:nlev),nlev,2*nlev,elem(ie)%desc)
+    enddo
+    call t_startf('eus_cuda_bexchV')
+    call bndry_exchangeV(hybrid,edgeAdvDSS)
+    call t_stopf('eus_cuda_bexchV')
+    do ie = nets , nete
+      call edgeVunpack(edgeAdvDSS,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0*nlev,elem(ie)%desc)
+      call edgeVunpack(edgeAdvDSS,elem(ie)%derived%omega_p     (:,:,1:nlev),nlev,1*nlev,elem(ie)%desc)
+      call edgeVunpack(edgeAdvDSS,elem(ie)%derived%divdp_proj  (:,:,1:nlev),nlev,2*nlev,elem(ie)%desc)
+      do k = 1 , nlev
+        elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%derived%eta_dot_dpdn(:,:,k) * elem(ie)%rspheremp(:,:)
+        elem(ie)%derived%omega_p     (:,:,k) = elem(ie)%derived%omega_p     (:,:,k) * elem(ie)%rspheremp(:,:)
+        elem(ie)%derived%divdp_proj  (:,:,k) = elem(ie)%derived%divdp_proj  (:,:,k) * elem(ie)%rspheremp(:,:)
+      enddo
+    enddo
+
+
+  end subroutine precompute_divdp_cuda
+
+
+
   subroutine euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
   use kinds             , only: real_kind
   use dimensions_mod    , only: np, npdg, nlev, qsize
@@ -482,7 +546,6 @@ contains
   real(kind=real_kind), dimension(np,np,2                     ) :: gradQ
   real(kind=real_kind), dimension(np,np,2,nlev                ) :: Vstar
   real(kind=real_kind), dimension(np,np  ,nlev                ) :: dp,dp_star
-  real(kind=real_kind), pointer, dimension(:,:,:)               :: DSSvar
   real(kind=real_kind) :: dp0,qmintmp,qmaxtmp
   integer :: ie,q,i,j,k
   integer :: rhs_viss = 0
@@ -497,24 +560,6 @@ contains
     write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH LIMITER_OPTION == 8 AT THIS TIME!'
     write(*,*) 'PLEASE USE LIMITER_OPTION == 0 WHEN THE GPU OPTION IS ENABLED!'
     stop
-  endif
-!  if (nu_p > 0) then
-!    write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH NU_P > 0 AT THIS TIME!'
-!    write(*,*) 'PLEASE USE NU_P == 0 WHEN THE GPU OPTION IS ENABLED!'
-!    stop
-!  endif
-
-  if (rhs_multiplier == 0) then
-    do ie = nets , nete
-      qdp1_h(:,:,:,ie) = elem(ie)%state%Qdp(:,:,:,1,n0_qdp)
-    enddo
-    !$OMP BARRIER
-    !$OMP MASTER
-    ierr = cudaMemcpyAsync( qdp1_d , qdp1_h , size( qdp1_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
-    blockdim = dim3( np     , np , nlev )
-    griddim  = dim3( nelemd , 1  , 1    )
-    call unpack_qdp1<<<griddim,blockdim,0,streams(1)>>>( qdp1_d , qdp_d , n0_qdp , nets , nete ); _CHECK(__LINE__)
-    !$OMP END MASTER
   endif
 
   rhs_viss = 0
@@ -533,51 +578,19 @@ contains
   ierr = cudaMemcpyAsync( vstar_d , vstar_h , size( vstar_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
   blockdim = dim3( np*np*numk_eul , 1 , 1 )
   griddim  = dim3( int(ceiling(dble(nlev)/numk_eul))*qsize_d*nelemd , 1 , 1 )
-  call euler_step_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , spheremp_d , qmin_d , qmax_d , dp_d , vstar_d , divdp_d , hybi_d ,               &
-                                                              dpdiss_biharmonic_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
-                                                              n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , 1 , nelemd ); _CHECK(__LINE__)
+  call euler_step_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , spheremp_d , vstar_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
+                                                              n0_qdp , np1_qdp , rhs_viss , dt , 1 , nelemd ); _CHECK(__LINE__)
   if ( limiter_option == 4 ) then
   blockdim = dim3( np*np*numk_lim2d , 1 , 1 )
   griddim  = dim3( int(ceiling(dble(nlev)/numk_lim2d))*qsize_d*nelemd , 1 , 1 )
     call limiter2d_zero_kernel<<<griddim,blockdim,0,streams(1)>>>( qdp_d , 1 , nelemd , np1_qdp ); _CHECK(__LINE__)
   endif
-!$OMP END MASTER
-  !This is a departure from the original order, adding an extra MPI communication. It's advantageous because it simplifies
-  !the Pack-Exchange-Unpack procedure for us, since we're adding complexity to overlap MPI and packing
-  if ( DSSopt /= DSSno_var ) then
-    do ie = nets , nete
-      if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
-      if ( DSSopt == DSSomega       ) DSSvar => elem(ie)%derived%omega_p(:,:,:)
-      if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
-      do k = 1 , nlev
-        DSSvar(:,:,k) = elem(ie)%spheremp(:,:)*DSSvar(:,:,k) 
-      enddo
-      call edgeVpack(edgeAdvDSS,DSSvar(:,:,1:nlev),nlev,0,elem(ie)%desc)
-    enddo
-
-    call t_startf('eus_cuda_bexchV')
-    call bndry_exchangeV(hybrid,edgeAdvDSS)
-    call t_stopf('eus_cuda_bexchV')
-
-    do ie = nets , nete
-      if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
-      if ( DSSopt == DSSomega       ) DSSvar => elem(ie)%derived%omega_p(:,:,:)
-      if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
-      call edgeVunpack(edgeAdvDSS,DSSvar(:,:,1:nlev),nlev,0,elem(ie)%desc)
-      do k = 1 , nlev
-        DSSvar(:,:,k)=DSSvar(:,:,k)*elem(ie)%rspheremp(:,:)
-      enddo
-    enddo
-  endif
-!$OMP MASTER
-
   call t_startf('eus_cuda_peus')
   call pack_exchange_unpack_stage(np1_qdp,hybrid,qdp_d,timelevels)
   call t_stopf('eus_cuda_peus')
   blockdim = dim3( np*np   * nlev  , 1 , 1 )
   griddim  = dim3( qsize_d , nelemd , 1 )
-  call euler_hypervis_kernel_last<<<griddim,blockdim>>>( qdp_d , rspheremp_d , 1 , nelemd , np1_qdp ); _CHECK(__LINE__)
-  ierr = cudaThreadSynchronize()
+  call euler_hypervis_kernel_last<<<griddim,blockdim,0,streams(1)>>>( qdp_d , rspheremp_d , 1 , nelemd , np1_qdp ); _CHECK(__LINE__)
 !$OMP END MASTER
 !$OMP BARRIER
 
@@ -598,11 +611,9 @@ subroutine qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP BARRIER
 !$OMP MASTER
-  ierr = cudaThreadSynchronize()
   blockdim = dim3( np      , np     , nlev )
   griddim  = dim3( qsize_d , nelemd , 1    )
-  call qdp_time_avg_kernel<<<griddim,blockdim>>>( qdp_d , rkstage , n0_qdp , np1_qdp , 1 , nelemd ); _CHECK(__LINE__)
-  ierr = cudaThreadSynchronize()
+  call qdp_time_avg_kernel<<<griddim,blockdim,0,streams(1)>>>( qdp_d , rkstage , n0_qdp , np1_qdp , 1 , nelemd ); _CHECK(__LINE__)
 !$OMP END MASTER
 !$OMP BARRIER
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -663,18 +674,15 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
 !$OMP MASTER
     ierr = cudaMemcpyAsync( dpdiss_ave_d , dpdiss_ave_h , size( dpdiss_ave_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
     ierr = cudaMemcpyAsync( dp_d         , dp_h         , size( dp_h )         , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
+
     !KERNEL 1
     blockdim = dim3( np*np*numk_hyp , 1 , 1 )
     griddim  = dim3( int(ceiling(dble(nlev)/numk_hyp))*qsize_d*nelemd , 1 , 1 )
     call hypervis_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , dpdiss_ave_d , spheremp_d , &
                                                               deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , 1 , nelemd , dt , nt_qdp , nu_p ); _CHECK(__LINE__)
-    ierr = cudaThreadSynchronize()
-
     call t_startf('ahs_cuda_peus1')
     call pack_exchange_unpack_stage(1,hybrid,qtens_d,1)
     call t_stopf('ahs_cuda_peus1')
-
-    ierr = cudaThreadSynchronize()
 
     !KERNEL 2
     blockdim = dim3( np*np*numk_hyp , 1 , 1 )
@@ -684,13 +692,10 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     blockdim = dim3( np*np*numk_lim2d , 1 , 1 )
     griddim  = dim3( int(ceiling(dble(nlev)/numk_lim2d))*qsize_d*nelemd , 1 , 1 )
     call limiter2d_zero_kernel<<<griddim,blockdim,0,streams(1)>>>(qdp_d,nets,nete,nt_qdp); _CHECK(__LINE__)
-    ierr = cudaThreadSynchronize()
 
     call t_startf('ahs_cuda_peus2')
     call pack_exchange_unpack_stage(nt_qdp,hybrid,qdp_d,timelevels)
     call t_stopf('ahs_cuda_peus2')
-
-    ierr = cudaThreadSynchronize()
 
     !KERNEL 3
     blockdim = dim3( np * np * nlev , 1 , 1 )
@@ -759,26 +764,18 @@ end subroutine qdp_time_avg_kernel
 
 
 
-attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax , dp , vstar , divdp , hybi ,                   &
-                                                  dpdiss_biharmonic , qtens_biharmonic , metdet , rmetdet , dinv , deriv_dvv , &
-                                                  n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , nets , nete )
+attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , vstar , qtens_biharmonic , metdet , rmetdet , dinv , deriv_dvv , n0_qdp , np1_qdp , rhs_viss , dt , nets , nete )
   implicit none
   real(kind=real_kind), dimension(np,np,nlev,qsize_d,timelevels,nets:nete), intent(inout) :: Qdp
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: spheremp
-  real(kind=real_kind), dimension(      nlev,qsize_d           ,nets:nete), intent(in   ) :: qmin
-  real(kind=real_kind), dimension(      nlev,qsize_d           ,nets:nete), intent(in   ) :: qmax
-  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dp
   real(kind=real_kind), dimension(np,np,nlev,2                 ,nets:nete), intent(in   ) :: vstar
-  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: divdp
-  real(kind=real_kind), dimension(      nlev+1                           ), intent(in   ) :: hybi
-  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dpdiss_biharmonic
   real(kind=real_kind), dimension(np,np,nlev,qsize_d           ,nets:nete), intent(in   ) :: qtens_biharmonic
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: metdet
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: rmetdet
   real(kind=real_kind), dimension(np,np,2,2                    ,nets:nete), intent(in   ) :: dinv
   real(kind=real_kind), dimension(np,np                                  ), intent(in   ) :: deriv_dvv
-  real(kind=real_kind), value                                             , intent(in   ) :: dt, nu_q, nu_p
-  integer, value                                                          , intent(in   ) :: n0_qdp, np1_qdp, rhs_viss, limiter_option, nets, nete
+  real(kind=real_kind), value                                             , intent(in   ) :: dt
+  integer, value                                                          , intent(in   ) :: n0_qdp, np1_qdp, rhs_viss, nets, nete
   integer :: ks
   integer :: i , j , k , kk , q , ie , ij
   real(kind=real_kind), shared :: deriv_dvv_s(np*np+1)
@@ -794,7 +791,6 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax ,
   q  = modulo((blockidx%x-1)/ks,qsize_d)+1
   ie =       ((blockidx%x-1)/ks)/qsize_d+1
   ij   =              (j-1)*np+i
-
   if (k  <= nlev .and. q  <= qsize_d .and. ie <= nete ) then
     if (kk == 1) deriv_dvv_s(ij) = deriv_dvv(i,j)
     qtmp = Qdp(i,j,k,q,n0_qdp,ie)
@@ -933,8 +929,8 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
   nSendCycles = pSchedule%nSendCycles
   nRecvCycles = pSchedule%nRecvCycles
 
-  ierr = cudaThreadSynchronize()
   call t_startf('CUDA PEU NEWER')
+  ierr = cudaStreamSynchronize(streams(1))
   do icycle=1,nRecvCycles
     pCycle => pSchedule%RecvCycle(icycle)
     source  = pCycle%source - 1
@@ -987,7 +983,7 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
     call edgeVunpack_kernel_stage<<<griddim6,blockdim6,0,streams(1)>>>(edgebuf_d,array_in,getmapP_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in); _CHECK(__LINE__)
   endif
-  ierr = cudaThreadSynchronize()
+  ierr = cudaStreamSynchronize(streams(2))
   call t_stopf('CUDA PEU NEWER')
 
 end subroutine pack_exchange_unpack_stage

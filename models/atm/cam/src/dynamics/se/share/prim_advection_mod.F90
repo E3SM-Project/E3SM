@@ -1178,7 +1178,7 @@ contains
     !                            it is not needed 
     ! Also: save a copy of div(U dp) in derived%div(:,:,:,1), which will be DSS'd 
     !       and a DSS'ed version stored in derived%div(:,:,:,2)
-    call precompute_divdp( elem , deriv , nets , nete )
+    call precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
 
     !rhs_multiplier is for obtaining dp_tracers at each stage:
     !dp_tracers(stage) = dp - rhs_multiplier*dt*divdp_proj
@@ -1239,12 +1239,21 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine precompute_divdp( elem , deriv , nets , nete )
+  subroutine precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
+#if USE_CUDA_FORTRAN
+    use cuda_mod, only: precompute_divdp_cuda
+#endif
     implicit none
     type(element_t)      , intent(inout) :: elem(:)
+    type (hybrid_t)      , intent(in   ) :: hybrid
     type (derivative_t)  , intent(in   ) :: deriv
-    integer              , intent(in   ) :: nets , nete
+    real(kind=real_kind) , intent(in   ) :: dt
+    integer              , intent(in   ) :: nets , nete , n0_qdp
     integer :: ie , k
+#if USE_CUDA_FORTRAN
+    call precompute_divdp_cuda( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
+    return
+#endif
     do ie = nets , nete
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k)
