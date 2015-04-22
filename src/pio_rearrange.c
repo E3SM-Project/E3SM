@@ -1615,6 +1615,7 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
   if(iodesc->llen>0){
     ibuf = bget( iodesc->llen * tsize );
   }
+  printf("%s %d %d %d\n",__FILE__,__LINE__,iodesc->ndof, iodesc->llen);
 
   if(iodesc->rearranger == PIO_REARR_BOX){
     mycomm = ios.union_comm;
@@ -1632,7 +1633,7 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
   MPI_Barrier(mycomm);
   GPTLstamp( &wall[0], &usr[0], &sys[0]);
   rearrange_comp2io(ios, iodesc, cbuf, ibuf, 1);
-  rearrange_io2comp(ios, iodesc, cbuf, ibuf);
+  rearrange_io2comp(ios, iodesc, ibuf, cbuf);
   GPTLstamp( &wall[1], &usr[1], &sys[1]);
   mintime = wall[1]-wall[0];
   MPI_Allreduce(MPI_IN_PLACE, &mintime, 1, MPI_DOUBLE, MPI_MAX, mycomm);
@@ -1661,7 +1662,7 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
 	MPI_Barrier(mycomm);
 	GPTLstamp( wall, usr, sys);
 	rearrange_comp2io(ios, iodesc, cbuf, ibuf, 1);
-	rearrange_io2comp(ios, iodesc, cbuf, ibuf);
+	rearrange_io2comp(ios, iodesc, ibuf, cbuf);
 	GPTLstamp( wall+1, usr, sys);
 	wall[1]-=wall[0];
 	MPI_Allreduce(MPI_IN_PLACE, wall+1,1,MPI_DOUBLE, MPI_MAX, mycomm);

@@ -12,6 +12,11 @@
 #endif
 #include <bget.h>
 #include <limits.h>
+#include <math.h>
+#ifdef TIMING
+#include <gptl.h>
+#endif
+
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \

@@ -257,11 +257,11 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 
 #ifndef _MPISERIAL
   if(max_requests == 0) {
-    #ifdef DEBUG
+    //    #ifdef DEBUG
     for(int i=0;i<nprocs;i++){
-      printf("%d sndlths %d %d %d %d\n",i,sndlths[i],sdispls[i],rcvlths[i],rdispls[i]);
+      printf("%d sndlths %d %d %d %d %x %x\n",i,sndlths[i],sdispls[i],rcvlths[i],rdispls[i],sndbuf,rcvbuf);
     }
-    #endif
+    // #endif
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }
