@@ -135,6 +135,7 @@ if(${PIO_BUILD_TIMING})
     SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -DTIMING )
     ADD_SUBDIRECTORY(timing timing)
     LIST(APPEND pio_include_dirs_  ${CMAKE_CURRENT_BINARY_DIR}/timing)
+    LIST(APPEND pio_include_dirs_  ${CMAKE_CURRENT_SOURCE_DIR}/timing)
   endif()
 endif()
 
