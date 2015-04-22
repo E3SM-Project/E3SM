@@ -477,9 +477,11 @@ contains
 
     do ie = nets , nete
       qdp1_h(:,:,:,ie) = elem(ie)%state%Qdp(:,:,:,1,n0_qdp)
+      dpdiss_ave_h(:,:,:,ie) = elem(ie)%derived%dpdiss_ave(:,:,:)
     enddo
     !$OMP BARRIER
     !$OMP MASTER
+    ierr = cudaMemcpyAsync( dpdiss_ave_d , dpdiss_ave_h , size( dpdiss_ave_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
     ierr = cudaMemcpyAsync( qdp1_d , qdp1_h , size( qdp1_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
     blockdim = dim3( np     , np , nlev )
     griddim  = dim3( nelemd , 1  , 1    )
@@ -667,12 +669,10 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     do ie = nets , nete
       do k = 1 , nlev
         dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
-        dpdiss_ave_h(:,:,k,ie) = elem(ie)%derived%dpdiss_ave(:,:,k)
       enddo
     enddo
 !$OMP BARRIER
 !$OMP MASTER
-    ierr = cudaMemcpyAsync( dpdiss_ave_d , dpdiss_ave_h , size( dpdiss_ave_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
     ierr = cudaMemcpyAsync( dp_d         , dp_h         , size( dp_h )         , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
 
     !KERNEL 1
@@ -705,7 +705,7 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     griddim  = dim3( nelemd , 1 , 1 )
     call pack_qdp1<<<griddim,blockdim,0,streams(1)>>>( qdp1_d , qdp_d , nt_qdp , 1 , nelemd ); _CHECK(__LINE__)
     ierr = cudaMemcpyAsync( qdp1_h , qdp1_d , size( qdp1_h ) , cudaMemcpyDeviceToHost , streams(1) ); _CHECK(__LINE__)
-    ierr = cudaThreadSynchronize()
+    ierr = cudaStreamSynchronize(streams(1))
 !$OMP END MASTER
 !$OMP BARRIER
     do ie = nets , nete
