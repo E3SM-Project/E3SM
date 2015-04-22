@@ -1655,7 +1655,7 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
       }
       iodesc->max_requests = 0;
 
-      for(nreqs=2;nreqs<=nprocs;nreqs*=2){
+      for(nreqs=nprocs;nreqs>=1;nreqs/=2){
 	iodesc->max_requests = nreqs;
 	//	printf("%s %d %d %f %f\n",__FILE__,__LINE__,nreqs,mintime,wall[1]);
 	MPI_Barrier(mycomm);
@@ -1672,7 +1672,8 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
 	  maxreqs = nreqs;
 	  mintime = wall[1];
 	  printf("%s %d %d %d %d %f\n",__FILE__,__LINE__,nreqs,handshake,isend,mintime);
-
+	}else if(wall[1]> (mintime*1.1)){
+	  exit;
 	}
       }
     }
