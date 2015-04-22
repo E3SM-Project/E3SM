@@ -252,11 +252,17 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   CheckMPIReturn(MPI_Comm_rank(comm, &mytask),__FILE__,__LINE__);
 
   if(max_requests == 0) {
-    #ifdef DEBUG
+#ifdef DEBUG
+    int totalrecv=0;
+    int totalsend=0;
     for(int i=0;i<nprocs;i++){
-      printf("%d sndlths %d %d %d %d\n",i,sndlths[i],sdispls[i],rcvlths[i],rdispls[i]);
+      //      printf("%d sndlths %d %d %d %d\n",i,sndlths[i],sdispls[i],rcvlths[i],rdispls[i]);
+      totalsend+=sndlths[i];
+      totalrecv+=rcvlths[i];
     }
-    #endif
+    printf("%s %d totalsend %d totalrecv %d \n",__FILE__,__LINE__,totalsend,totalrecv);
+
+#endif
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }

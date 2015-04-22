@@ -521,16 +521,25 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     recv_displs[0] = 0;
     for(i=1;i<nrecvs;i++)
       recv_displs[iodesc->rfrom[i]] = recv_displs[iodesc->rfrom[i-1]]+iodesc->rcount[i-1]*tsize;
-    // recalculate llen with repeats (such as halo region) included
+
+
     if(totalrecv>0){
+      printf("%s %d %d %d\n",__FILE__,__LINE__,totalrecv,iodesc->llen);
+
       //      iodesc->llen = totalrecv;
+      /*
       iodesc->rindex = (PIO_Offset *) bget(totalrecv*sizeof(PIO_Offset));
       if(iodesc->rindex == NULL){
 	piomemerror(ios,totalrecv * sizeof(PIO_Offset), __FILE__,__LINE__);
       }
+      */
+      iodesc->rindex = (PIO_Offset *) bget(iodesc->llen*sizeof(PIO_Offset));
+      if(iodesc->rindex == NULL){
+	piomemerror(ios,iodesc->llen * sizeof(PIO_Offset), __FILE__,__LINE__);
+      }
+      for(i=0;i<iodesc->llen;i++)
+	iodesc->rindex[i]=0;
     }
-    for(i=0;i<totalrecv;i++)
-      iodesc->rindex[i]=0;
   }
   //   printf("%d rbuf_size %d\n",ios.comp_rank,rbuf_size);
 
@@ -550,7 +559,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
 
   //  rindex is an array of the indices of the data to be sent from
   //  this io task to each compute task. 
-  /* 
+  /*   
   if(ios.ioproc){
     printf("%d rindex: ",ios.io_rank);
     for(int j=0;j<iodesc->llen;j++)

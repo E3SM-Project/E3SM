@@ -96,6 +96,7 @@ program pioperformance
      endif
    enddo
   enddo
+!  print *,__FILE__,__LINE__,'task: ',mype,' exited main',i,decompfile(i)
   call t_finalizef()
 
   call MPI_Finalize(ierr)
