@@ -84,6 +84,7 @@
 <entry>RUN ERS_Ld5.f09_g16.ETEST.mira_ibm.cice-default</entry>
 <entry>RUN ERS_Ld7.f09_g16.B1850RMCN.mira_ibm.allactive-default</entry>
 <entry>RUN ERS_Ld9.ne120_g16.B1850C5L45BGC.mira_ibm.allactive-default</entry>
+<entry>RUN ERS.f09_g16.B1850C5CN.mira_ibm.allactive-default</entry>
 
 <entry> FAIL ERP_Ld9.f19_f19.FSTRATSOA.yellowstone_gnu.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with debug_b18base file) </entry>
 <entry> FAIL ERP_Ln9.ne30_ne30.FAMIPC5L60.yellowstone_intel.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with debug_b18base file) </entry>
