@@ -17,6 +17,7 @@ int MPI_Info_create(MPI_Info *info)
 {
   /* For now, we aren't storing anything, so don't bother with a real handle */
   *info=0;
+  return 0;
 }
 
 
