@@ -113,6 +113,13 @@ typedef struct io_desc_t
   int maxfillregions;
   io_region *firstregion;
   io_region *fillregion;
+
+
+  bool handshake;
+  bool isend;
+  int max_requests;
+
+
   
   MPI_Comm subset_comm;
   struct io_desc_t *next;

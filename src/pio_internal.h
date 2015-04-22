@@ -94,11 +94,12 @@ typedef struct mapsort
   
 
   int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
-			void *rbuf, const int comm_option, const int fc_options);
+			void *rbuf);
   int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			void *rbuf, const int nvars);
   int calcdisplace(const int bsize, const int numblocks,const PIO_Offset map[],int displace[]);
   io_desc_t *malloc_iodesc(const int piotype, const int ndims);
+  void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc);
   
   int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize);
   void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc);

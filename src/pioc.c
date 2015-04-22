@@ -267,6 +267,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   }
 
   *ioidp = pio_add_to_iodesc_list(iodesc);
+
+  performance_tune_rearranger(*ios, iodesc);
   
   return PIO_NOERR;
 }

@@ -537,13 +537,14 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     // recalculate llen with repeats (such as halo region) included
     if(totalrecv>0){
       //      iodesc->llen = totalrecv;
+      totalrecv = iodesc->llen;   // using too much memory here
       iodesc->rindex = (PIO_Offset *) bget(totalrecv*sizeof(PIO_Offset));
       if(iodesc->rindex == NULL){
 	piomemerror(ios,totalrecv * sizeof(PIO_Offset), __FILE__,__LINE__);
       }
+      for(i=0;i<totalrecv;i++)
+	iodesc->rindex[i]=0;
     }
-    for(i=0;i<totalrecv;i++)
-      iodesc->rindex[i]=0;
   }
   //   printf("%d rbuf_size %d\n",ios.comp_rank,rbuf_size);
 
@@ -586,10 +587,6 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
 int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int nvars)
 {
-
-  bool handshake=false;
-  bool isend = false;
-  int maxreq = MAX_GATHER_BLOCK_SIZE;
   int ntasks;
   int niotasks;
   int *scount = iodesc->scount;
@@ -605,12 +602,13 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 
   //  maxreq = 0;
   //  printf("%s %d %d %d\n",__FILE__,__LINE__,nvars,iodesc->ndof);
+#ifdef TIMING
+  GPTLstart("PIO:rearrange_comp2io");
+#endif
   
   if(iodesc->rearranger == PIO_REARR_BOX){
     mycomm = ios.union_comm;
     niotasks = ios.num_iotasks;
-    if(niotasks == ios.num_comptasks)
-      maxreq  = 0;
   }else{
     mycomm = iodesc->subset_comm;
     niotasks = 1;
@@ -724,7 +722,7 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     mycomm, handshake, isend, maxreq);
+	     mycomm, iodesc->handshake, iodesc->isend, iodesc->max_requests);
   //    if(ios.ioproc)
   //     for(i=0;i<nvars*iodesc->llen;i++)
   //	printf("%s %d %d %d\n",__FILE__,__LINE__,i,((int *)rbuf)[i]);
@@ -749,6 +747,9 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   brel(sendtypes);
   brel(recvtypes);
 #endif
+#ifdef TIMING
+  GPTLstop("PIO:rearrange_comp2io");
+#endif
   return PIO_NOERR;
 }
 /** 
@@ -758,14 +759,10 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
  **
  */
 
-int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
-			  void *rbuf, const int comm_option, const int fc_options)
+int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf, void *rbuf)
 {
   
 
-  bool handshake=false;
-  bool isend = false;
-  int maxreq = MAX_GATHER_BLOCK_SIZE;
   //  int maxreq = 0;
   MPI_Comm mycomm;
 
@@ -781,11 +778,12 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   MPI_Datatype *recvtypes;
 
   int i, tsize;
+#ifdef TIMING
+  GPTLstart("PIO:rearrange_io2comp");
+#endif
   if(iodesc->rearranger==PIO_REARR_BOX){
     mycomm = ios.union_comm;
     niotasks = ios.num_iotasks;
-    if(niotasks == ios.num_comptasks)
-      maxreq = 0;
   }else{
     mycomm = iodesc->subset_comm;
     niotasks=1;
@@ -870,7 +868,7 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   #endif
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     mycomm, handshake,isend, maxreq);
+	     mycomm, iodesc->handshake, iodesc->isend, iodesc->max_requests);
   #if DEBUG
   printf("%s %d \n",__FILE__,__LINE__);
   #endif
@@ -880,6 +878,9 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   brel(rdispls);
   brel(sendtypes);
   brel(recvtypes);
+#endif
+#ifdef TIMING
+  GPTLstop("PIO:rearrange_io2comp");
 #endif
  
   return PIO_NOERR;
@@ -1591,4 +1592,101 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
 }
   
     
+
+void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
+{
+  bool handshake;
+  bool isend;
+  int nreqs;
+  int maxreqs;
+  int nprocs;
+  MPI_Comm mycomm;
+#ifdef TIMING  
+  double *wall, usr[2], sys[2];
+  void *cbuf, *ibuf;
+  int tsize;
+
+  MPI_Type_size(iodesc->basetype, &tsize);
+  cbuf = NULL;
+  ibuf = NULL;
+  if(iodesc->ndof>0){
+    cbuf = bget( iodesc->ndof * tsize );
+  }
+  if(iodesc->llen>0){
+    ibuf = bget( iodesc->llen * tsize );
+  }
+
+  if(iodesc->rearranger == PIO_REARR_BOX){
+    mycomm = ios.union_comm;
+  }else{
+    mycomm = iodesc->subset_comm;
+  }  
+
+  MPI_Comm_size(mycomm, &nprocs);
+
+  int log2 = log(nprocs) / log(2) + 1;
+  wall = bget(2*4*log2*sizeof(double));
+  double mintime;
+  int k=0;
+
+  MPI_Barrier(mycomm);
+  GPTLstamp( &wall[0], &usr[0], &sys[0]);
+  rearrange_comp2io(ios, iodesc, cbuf, ibuf, 1);
+  rearrange_io2comp(ios, iodesc, cbuf, ibuf);
+  GPTLstamp( &wall[1], &usr[1], &sys[1]);
+  mintime = wall[1]-wall[0];
+  MPI_Allreduce(MPI_IN_PLACE, &mintime, 1, MPI_DOUBLE, MPI_MAX, mycomm);
+
+  handshake = iodesc->handshake;
+  isend = iodesc->isend;
+  maxreqs = iodesc->max_requests;
+  printf("%s %d %f\n",__FILE__,__LINE__,mintime);
+  for(int i=0; i<2; i++){
+    if(i==0){
+      iodesc->handshake = true;
+    }else{
+      iodesc->handshake = false;
+    }
+    for(int j=0; j<2; j++){
+      if(j==0){
+	iodesc->isend = false;
+      }else{
+	iodesc->isend = true;
+      }
+      iodesc->max_requests = 0;
+
+      for(nreqs=2;nreqs<=nprocs;nreqs*=2){
+	iodesc->max_requests = nreqs;
+	//	printf("%s %d %d %f %f\n",__FILE__,__LINE__,nreqs,mintime,wall[1]);
+	MPI_Barrier(mycomm);
+	GPTLstamp( wall, usr, sys);
+	rearrange_comp2io(ios, iodesc, cbuf, ibuf, 1);
+	rearrange_io2comp(ios, iodesc, cbuf, ibuf);
+	GPTLstamp( wall+1, usr, sys);
+	wall[1]-=wall[0];
+	MPI_Allreduce(MPI_IN_PLACE, wall+1,1,MPI_DOUBLE, MPI_MAX, mycomm);
+
+	if(wall[1] < mintime){
+	  handshake = iodesc->handshake;
+	  isend = iodesc->isend;
+	  maxreqs = nreqs;
+	  mintime = wall[1];
+	  printf("%s %d %d %d %d %f\n",__FILE__,__LINE__,nreqs,handshake,isend,mintime);
+
+	}
+      }
+    }
+  }
   
+
+  iodesc->handshake = handshake;
+  iodesc->isend = isend;
+  iodesc->max_requests = maxreqs;
+
+  brel(wall);
+  brel(cbuf);
+  brel(ibuf);
+
+#endif
+
+}  

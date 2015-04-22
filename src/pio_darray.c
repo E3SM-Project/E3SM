@@ -1208,7 +1208,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
     ierr = pio_read_darray_nc(file, iodesc, vid, iobuf);
   }
   if(iodesc->rearranger > 0){
-    ierr = rearrange_io2comp(*ios, iodesc, iobuf, array, 0, 0);
+    ierr = rearrange_io2comp(*ios, iodesc, iobuf, array);
 
     if(rlen>0)
       brel(iobuf);
