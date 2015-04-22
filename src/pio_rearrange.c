@@ -164,16 +164,13 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
     region = region->next;
   }
   // Share the max io buffer size with all io tasks
-#ifndef _MPISERIAL
   CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
-#endif
   iodesc->maxiobuflen = totiosize;
-#ifndef _MPISERIAL
   if(iodesc->maxiobuflen<=0){
     fprintf(stderr,"%s %d %ld %ld %d %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen,totiosize,MPI_OFFSET,MPI_MAX,io_comm); 
     piodie("ERROR: maxiobuflen<=0",__FILE__,__LINE__);
   }
-#endif
+
 }
 /**
  ** @internal
@@ -189,11 +186,6 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 
   pioassert(dlen>=0,"dlen < 0",__FILE__,__LINE__);
 
-#ifdef _MPISERIAL
-  int tsize;
-  MPI_Type_size(basetype, &tsize);
-  mtype[0] = tsize * blocksize;
-#else
   if(mindex != NULL){
     memcpy(lindex, mindex, (size_t) (dlen*sizeof(PIO_Offset)));
   }
@@ -252,7 +244,6 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 
   }
 
-#endif
   return PIO_NOERR;
 
 }
@@ -281,7 +272,6 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 	  create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->llen, iodesc->rindex, iodesc->rcount, NULL, iodesc->rtype);
 	}
       }
-#ifndef _MPISERIAL
             /*      if(tmpioproc==95)     {
 	MPI_Aint lb;
 	MPI_Aint extent;
@@ -292,7 +282,6 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
 	}
 		}
 	      */
-#endif
     }
   }
 
@@ -321,7 +310,6 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
     iodesc->num_stypes = ntypes;
 
     create_mpi_datatypes(iodesc->basetype, ntypes, ncnt, iodesc->sindex, iodesc->scount, NULL, iodesc->stype);
-#ifndef _MPISERIAL
        /*    if(tmpioproc==95)   {
       MPI_Aint lb;
       MPI_Aint extent;
@@ -331,7 +319,6 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
       }
             }
       */
-#endif
   }
 
   return PIO_NOERR;
@@ -621,17 +608,6 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   pioassert(nvars>0,"nvars must be > 0",__FILE__,__LINE__);
   MPI_Type_size(iodesc->basetype, &tsize);
 
-#ifdef _MPISERIAL
-  /* in mpiserial iodesc->basetype is the byte length of the basic type */
-  for(ivar = 0; ivar < nvars; ivar++){
-    int voffset = ivar * iodesc->llen * tsize;
-    for(i=0;i<iodesc->llen; i++){
-      memcpy((char *) rbuf + voffset + iodesc->rindex[i],(char *) sbuf + voffset + iodesc->sindex[i], (size_t) (iodesc->basetype));
-    }
-  }
-  tsize = iodesc->basetype;
-#else
-
   define_iodesc_datatypes(ios, iodesc);
 
   sendcounts = (int *) bget(ntasks*sizeof(int));
@@ -749,10 +725,11 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
   
   brel(sendtypes);
   brel(recvtypes);
-#endif
+
 #ifdef TIMING
   GPTLstop("PIO:rearrange_comp2io");
 #endif
+
   return PIO_NOERR;
 }
 /** 
@@ -793,15 +770,6 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf, 
   }
   MPI_Comm_size(mycomm, &ntasks);
 
-#ifdef _MPISERIAL
-  if(iodesc->basetype == 4){
-    for(i=0;i<iodesc->llen;i++)
-      ((int *) rbuf)[ iodesc->sindex[i] ] = ((int *)sbuf)[ iodesc->rindex[i]];
-  }else{
-    for(i=0;i<iodesc->llen;i++)
-      ((double *) rbuf)[ iodesc->sindex[i] ] = ((double *)sbuf)[ iodesc->rindex[i]];
-  }
-#else  
   define_iodesc_datatypes(ios, iodesc);
 
   sendcounts = (int *) bget(ntasks*sizeof(int));
@@ -881,7 +849,7 @@ int rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf, 
   brel(rdispls);
   brel(sendtypes);
   brel(recvtypes);
-#endif
+
 #ifdef TIMING
   GPTLstop("PIO:rearrange_io2comp");
 #endif

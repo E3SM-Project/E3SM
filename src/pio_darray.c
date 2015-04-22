@@ -781,12 +781,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
     //     printf("%s %d %X %d %d %d\n",__FILE__,__LINE__,wmb->data,wmb->validvars,arraylen,tsize);
     //    cn_buffer_report(*ios, true);
     bfreespace(&totfree, &maxfree);
-#ifdef _MPISERIAL
-    bool needflush = false;
-#else
     bool needflush = (maxfree <= 1.1*(1+wmb->validvars)*arraylen*tsize );
     MPI_Allreduce(MPI_IN_PLACE, &needflush, 1,  MPI_INT,  MPI_MAX, ios->comp_comm);
-#endif
+
 
     if(needflush ){
       // need to flush first
