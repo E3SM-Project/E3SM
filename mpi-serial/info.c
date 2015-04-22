@@ -17,7 +17,7 @@ int MPI_Info_create(MPI_Info *info)
 {
   /* For now, we aren't storing anything, so don't bother with a real handle */
   *info=0;
-  return 0;
+  return(MPI_SUCCESS);
 }
 
 
@@ -49,5 +49,5 @@ int MPI_Info_free(MPI_Info *info)
 {
   /* For now, we aren't storing anything, so don't bother with a real handle */
   *info=0;
-  return 0;
+  return(MPI_SUCCESS);
 }
