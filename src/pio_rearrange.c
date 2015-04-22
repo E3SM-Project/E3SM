@@ -524,20 +524,13 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
 
 
     if(totalrecv>0){
-      printf("%s %d %d %d\n",__FILE__,__LINE__,totalrecv,iodesc->llen);
-
-      //      iodesc->llen = totalrecv;
-      /*
+      //      printf("%s %d %d %d\n",__FILE__,__LINE__,totalrecv,iodesc->llen);
+      totalrecv = iodesc->llen;  // can reduce memory usage here
       iodesc->rindex = (PIO_Offset *) bget(totalrecv*sizeof(PIO_Offset));
       if(iodesc->rindex == NULL){
 	piomemerror(ios,totalrecv * sizeof(PIO_Offset), __FILE__,__LINE__);
       }
-      */
-      iodesc->rindex = (PIO_Offset *) bget(iodesc->llen*sizeof(PIO_Offset));
-      if(iodesc->rindex == NULL){
-	piomemerror(ios,iodesc->llen * sizeof(PIO_Offset), __FILE__,__LINE__);
-      }
-      for(i=0;i<iodesc->llen;i++)
+      for(i=0;i<totalrecv;i++)
 	iodesc->rindex[i]=0;
     }
   }
