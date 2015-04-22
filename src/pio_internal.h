@@ -23,12 +23,8 @@
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
 
-#ifdef BGQ
-  #define MAX_GATHER_BLOCK_SIZE 0
-#else  
-  #define MAX_GATHER_BLOCK_SIZE -1
-#endif
 
+#define MAX_GATHER_BLOCK_SIZE 0
 
 extern PIO_Offset PIO_BUFFER_SIZE_LIMIT;
 
