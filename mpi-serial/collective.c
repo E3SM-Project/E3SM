@@ -331,6 +331,9 @@ FC_FUNC( mpi_allreduce , MPI_ALLREDUCE )
 int MPI_Allreduce(void* sendbuf, void* recvbuf, int count, 
 		  MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
+  if (sendbuf==MPI_IN_PLACE)
+    return(MPI_SUCCESS);
+
   copy_data2(sendbuf, count, datatype, recvbuf, count, datatype);
 //  memcpy(recvbuf,sendbuf,count * datatype);
 
