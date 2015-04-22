@@ -524,10 +524,8 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
 
 
     if(totalrecv>0){
-      printf("%s %d %d %d\n",__FILE__,__LINE__,totalrecv,iodesc->llen);
-
-      //      iodesc->llen = totalrecv;
-      totalrecv = iodesc->llen;   // using too much memory here
+      //      printf("%s %d %d %d\n",__FILE__,__LINE__,totalrecv,iodesc->llen);
+      totalrecv = iodesc->llen;  // can reduce memory usage here
       iodesc->rindex = (PIO_Offset *) bget(totalrecv*sizeof(PIO_Offset));
       if(iodesc->rindex == NULL){
 	piomemerror(ios,totalrecv * sizeof(PIO_Offset), __FILE__,__LINE__);
