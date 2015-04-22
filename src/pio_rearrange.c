@@ -1611,12 +1611,12 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
   handshake = iodesc->handshake;
   isend = iodesc->isend;
   maxreqs = iodesc->max_requests;
-  printf("%s %d %f\n",__FILE__,__LINE__,mintime);
+
   for(int i=0; i<2; i++){
     if(i==0){
-      iodesc->handshake = true;
-    }else{
       iodesc->handshake = false;
+    }else{
+      iodesc->handshake = true;
     }
     for(int j=0; j<2; j++){
       if(j==0){
@@ -1628,10 +1628,10 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
 
       for(nreqs=nprocs;nreqs>=2;nreqs/=2){
 	iodesc->max_requests = nreqs;
-	//	printf("%s %d %d %f %f\n",__FILE__,__LINE__,nreqs,mintime,wall[1]);
-	if(myrank==0){
-	  printf("%s %d %d %d %d %f\n",__FILE__,__LINE__,nreqs,handshake,isend,mintime);
-	}
+
+	//	if(myrank==0){
+	//	  printf("%s %d %d %d %d %f\n",__FILE__,__LINE__,nreqs,handshake,isend,mintime);
+	//	}
 	MPI_Barrier(mycomm);
 	GPTLstamp( wall, usr, sys);
 	rearrange_comp2io(ios, iodesc, cbuf, ibuf, 1);
@@ -1656,7 +1656,9 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
   iodesc->handshake = handshake;
   iodesc->isend = isend;
   iodesc->max_requests = maxreqs;
-
+  if(myrank==0){
+    printf("spmd optimization: maxreqs: %d handshake:%d isend:%d mintime=%f\n",maxreqs,handshake,isend,mintime);
+  }
   brel(wall);
   brel(cbuf);
   brel(ibuf);
