@@ -80,7 +80,7 @@ contains
 
     index_g2x_Sg_icemask = mct_avect_indexra(g2x,'Sg_icemask',perrwith='quiet')
     index_g2x_Sg_icemask_coupled_fluxes = mct_avect_indexra(g2x,'Sg_icemask_coupled_fluxes',perrwith='quiet')
-    index_g2x_Sg_topg = mct_avect_indexra(g2x,'g2x_Sg_topg',perrwith='quiet')
+    index_g2x_Sg_topg = mct_avect_indexra(g2x,'Sg_topg',perrwith='quiet')
 
     ! drv -> glc
 

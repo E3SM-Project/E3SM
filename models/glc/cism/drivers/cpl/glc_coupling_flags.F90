@@ -66,7 +66,7 @@ contains
 
     ! TODO: Remove this line once the coupler can handle glc -> ocn coupling (having the
     ! necessary mapping files, etc.)
-    has_ocn_coupling = .false.
+    !has_ocn_coupling = .false.
 
   end function has_ocn_coupling
 
