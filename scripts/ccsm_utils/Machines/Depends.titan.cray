@@ -13,3 +13,34 @@ derivative_mod.o: derivative_mod.F90
 modal_aero_gasaerexch.o: modal_aero_gasaerexch.F90
 	$(FC) -c $(INCLDIR) $(INCS) -O0 -h byteswapio -f free -N 255 -em $(FREEFLAGS) $<
 
+
+
+BIOGEO=\
+BalanceCheckMod.o         \
+BareGroundFluxesMod.o         \
+Biogeophysics1Mod.o         \
+Biogeophysics2Mod.o         \
+BiogeophysicsLakeMod.o         \
+BiogeophysRestMod.o         \
+CanopyFluxesMod.o         \
+clm_driverInitMod.o         \
+FracWetMod.o         \
+FrictionVelocityMod.o         \
+Hydrology1Mod.o         \
+Hydrology2Mod.o         \
+HydrologyLakeMod.o         \
+QSatMod.o         \
+SNICARMod.o         \
+SnowHydrologyMod.o         \
+SoilHydrologyMod.o         \
+SoilTemperatureMod.o         \
+SurfaceAlbedoMod.o         \
+SurfaceRadiationMod.o         \
+TridiagonalMod.o         \
+UrbanInitMod.o         \
+UrbanInputMod.o         \
+UrbanMod.o
+
+$(BIOGEO): %.o: %.F90
+	$(FC) -c $(INCLDIR) $(INCS) -O0 -h byteswapio -f free -N 255 -em $(FREEFLAGS) $<
+

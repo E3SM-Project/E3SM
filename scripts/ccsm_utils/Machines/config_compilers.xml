@@ -473,8 +473,8 @@ for mct, etc.
 <compiler COMPILER="cray" MACH="titan">
   <!-- http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-74;idx=books_search;this_sort=title;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
   <ADD_FFLAGS DEBUG="TRUE"> -g -m 2 </ADD_FFLAGS>
-  <FFLAGS> -h byteswapio -f free -N 1023 -em </FFLAGS>
-  <FFLAGS_NOOPT> -O1 </FFLAGS_NOOPT>
+  <FFLAGS> -h byteswapio,add_paren,flex_mp=conservative -f free -N 1023 -em </FFLAGS>
+  <FFLAGS_NOOPT> -O1 -h byteswapio,add_paren,flex_mp=conservative -f free -N 1023 -em </FFLAGS_NOOPT>
 </compiler>
 
 <compiler COMPILER="nag">
