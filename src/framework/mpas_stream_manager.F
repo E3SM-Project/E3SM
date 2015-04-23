@@ -778,8 +778,8 @@ module mpas_stream_manager
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_add_stream_fields'
 
         type (MPAS_streamManager_type), intent(inout) :: manager
-        character (len=*), intent(in) :: streamID
-        character (len=*), intent(in) :: refStreamID
+        character (len=*), intent(in) :: streamID  !< stream to have fields added to
+        character (len=*), intent(in) :: refStreamID  !< stream to supply list of fields to add
         character (len=*), intent(in), optional :: packages
         integer, intent(out), optional :: ierr
 
@@ -5156,8 +5156,8 @@ subroutine stream_mgr_add_immutable_stream_fields_c(manager_c, streamID_c, refSt
     implicit none
 
     type (c_ptr) :: manager_c
-    character(kind=c_char) :: streamID_c(*)
-    character(kind=c_char) :: refStreamID_c(*)
+    character(kind=c_char) :: streamID_c(*)    !< stream to add fields to
+    character(kind=c_char) :: refStreamID_c(*) !< stream to supply list of fields to add
     character(kind=c_char) :: packages_c(*)
     integer(kind=c_int) :: ierr_c
 
@@ -5173,7 +5173,7 @@ subroutine stream_mgr_add_immutable_stream_fields_c(manager_c, streamID_c, refSt
     call mpas_c_to_f_string(packages_c, packages)
 
 
-    call MPAS_stream_mgr_get_property(manager, streamID, MPAS_STREAM_PROPERTY_IMMUTABLE, is_immutable, ierr=ierr)
+    call MPAS_stream_mgr_get_property(manager, refStreamID, MPAS_STREAM_PROPERTY_IMMUTABLE, is_immutable, ierr=ierr)
     if (.not. is_immutable) then
        if (ierr == MPAS_STREAM_MGR_NOERR) then
           ierr_c = 0
