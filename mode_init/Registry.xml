@@ -5,4 +5,5 @@
 #include "Registry_cvmix_convection_unit_test.xml"
 #include "Registry_cvmix_shear_unit_test.xml"
 #include "Registry_global_realistic.xml"
+#include "Registry_cvmix_WSwSBF.xml"
 // #include "Registry_TEMPLATE.xml"
