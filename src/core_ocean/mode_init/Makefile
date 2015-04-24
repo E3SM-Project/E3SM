@@ -3,7 +3,7 @@
 OBJS = mpas_ocn_init_mode.o
 
 UTILS = mpas_ocn_init_spherical_utils.o \
-	    mpas_ocn_init_vertical_grids.o \
+        mpas_ocn_init_vertical_grids.o \
         mpas_ocn_init_cell_markers.o
 
 TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
@@ -12,6 +12,7 @@ TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_overflow.o \
              mpas_ocn_init_cvmix_convection_unit_test.o \
              mpas_ocn_init_cvmix_shear_unit_test.o \
+             mpas_ocn_init_cvmix_WSwSBF.o \
              mpas_ocn_init_global_realistic.o
              #mpas_ocn_init_TEMPLATE.o
 
@@ -40,6 +41,8 @@ mpas_ocn_init_cvmix_convection_unit_test.o: $(UTILS)
 mpas_ocn_init_cvmix_shear_unit_test.o: $(UTILS)
 
 mpas_ocn_init_global_realistic.o: $(UTILS)
+
+mpas_ocn_init_cvmix_WSwSBF.o: $(UTILS)
 
 #mpas_ocn_init_TEMPLATE.o: $(UTILS)
 
