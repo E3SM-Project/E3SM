@@ -538,7 +538,7 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
    
     !it requires nitrogen uptake  
-    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * compet_decomp_no3 / (compet_decomp_no3 + nh4_no3_ratio*compet_decomp_nh4)
+    cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * compet_decomp_no3_scal
     cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
     
     cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
