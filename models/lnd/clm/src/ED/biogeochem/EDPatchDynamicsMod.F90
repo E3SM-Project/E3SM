@@ -9,7 +9,7 @@ module EDPatchDynamicsMod
   use shr_infnan_mod       , only : nan => shr_infnan_nan, assignment(=)
   use pftconMod            , only : pftcon
   use EDCohortDynamicsMod  , only : fuse_cohorts, sort_cohorts, insert_cohort
-  use EDtypesMod           , only : ncwd, n_dbh_bins, ntol, numpft_ed, area, dbhmax
+  use EDtypesMod           , only : ncwd, n_dbh_bins, ntol, numpft_ed, area, dbhmax,numPatchesPerGridCell
   use EDTypesMod           , only : ed_site_type, ed_patch_type, ed_cohort_type, udata
   !
   implicit none
@@ -990,7 +990,8 @@ contains
     integer  :: fuse_flag   !do patches get fused (1) or not (0). 
     !---------------------------------------------------------------------
 
-    maxpatch = 4  
+!!    maxpatch = 4  
+    maxpatch = numPatchesPerGridCell
 
     currentSite => csite 
 

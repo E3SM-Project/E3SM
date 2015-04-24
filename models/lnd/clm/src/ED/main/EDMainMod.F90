@@ -19,6 +19,7 @@ module EDMainMod
   use EDtypesMod           , only : ed_site_type, ed_patch_type, ed_cohort_type
   use EDPhenologyType      , only : ed_phenology_type
   use EDCLMLinkMod         , only : ed_clm_type
+  use EDGrowthFunctionsMod , only : bdead2hdbh_so
 
   implicit none
   private
@@ -232,6 +233,7 @@ contains
     integer  :: p                     ! Counter for PFT
     real(r8) :: small_no              ! to circumvent numerical errors that cause negative values of things that can't be negative
     real(r8) :: cohort_biomass_store  ! remembers the biomass in the cohort for balance checking
+    real(r8) :: dbh2,hite2
     !-----------------------------------------------------------------------
 
     small_no = 0.0000000000_r8  ! Obviously, this is arbitrary.  RF - changed to zero
@@ -260,6 +262,9 @@ contains
           currentCohort%bdead  = max(small_no,currentCohort%bdead  + currentCohort%dbdeaddt  * udata%deltat )
           currentCohort%bstore = currentCohort%bstore + currentCohort%dbstoredt * udata%deltat 
 
+          ! Perform an allometry check (No integration errors or drifts detected above 1% dbh RGK 4/23/2015)
+          !call bdead2hdbh_so( currentCohort,dbh2,hite2)
+          
           if( (currentCohort%balive+currentCohort%bdead+currentCohort%bstore)*currentCohort%n<0._r8)then
             write(iulog,*) 'biomass is negative', currentCohort%n,currentCohort%balive, &
                  currentCohort%bdead,currentCohort%bstore

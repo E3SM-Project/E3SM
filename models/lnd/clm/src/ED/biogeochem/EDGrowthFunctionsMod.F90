@@ -26,6 +26,7 @@ module EDGrowthFunctionsMod
   public ::  tree_sai
   public ::  c_area
   public ::  mortality_rates
+  public ::  bdead2hdbh_so
 
   logical :: DEBUG_growth = .false.
 
@@ -94,8 +95,52 @@ contains
 
   end function Hite
 
-! ============================================================================
+  subroutine bdead2hdbh_so( cohort_in,dbh,hite)
 
+     ! =========================================================================
+     ! This routine is used as a check on dbh and height, as prognosed
+     ! by structural biomass (bdead).  This assumes
+     ! Saldarriaga et al. 1988 for the relationship between bdead with dbh and h
+     ! and Obrien et al. for the relationship between dbh and h
+     ! =========================================================================
+
+     implicit none
+     type(ed_cohort_type), intent(in) :: cohort_in
+     
+     real(r8), intent(out)            :: dbh
+     real(r8), intent(out)            :: hite
+     
+     real(r8) :: dbh_max
+     real(r8) :: h_max
+     real(r8) :: bdead_max
+
+     real(r8), parameter  :: m = 0.64_r8
+     real(r8), parameter  :: c = 0.37_r8
+     real(r8), parameter  :: a1 = 0.06896_r8
+     real(r8), parameter  :: a2 = 0.572_r8
+     real(r8), parameter  :: a3 = 1.94_r8
+     real(r8), parameter  :: a4 = 0.931_r8
+
+     ! First we calculate the structural biomass at maximum allowable height
+     dbh_max   = EDecophyscon%max_dbh(cohort_in%pft)
+     h_max     = 10.0_r8**(log10(dbh_max)*m + c)
+     bdead_max = a1 * h_max**a2 * dbh_max**a3  &
+               * EDecophyscon%wood_density(cohort_in%pft)**a4
+
+     if(cohort_in%bdead.ge.bdead_max) then
+        dbh  = (cohort_in%bdead * a1**(-1) * 10_r8**(-c*a2) * dbh_max**(-m*a2) &
+             * EDecophyscon%wood_density(cohort_in%pft)**(-a4))**(1.0_r8/a3)
+        hite = (10.0_r8**(log10(dbh_max)*m + c))
+     else
+        dbh  = (cohort_in%bdead * a1**(-1) * 10_r8**(-c*a2) &
+             * EDecophyscon%wood_density(cohort_in%pft)**(-a4))**(1.0_r8/(m*a2+a3))
+        hite = (10.0_r8**(log10(dbh)*m + c))
+     end if
+
+  end subroutine bdead2hdbh_so
+
+! ============================================================================
+  
   real(r8) function Bleaf( cohort_in )
 
     ! ============================================================================

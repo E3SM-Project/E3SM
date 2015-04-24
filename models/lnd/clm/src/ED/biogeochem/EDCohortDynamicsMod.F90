@@ -469,33 +469,32 @@ contains
        nextc      => currentCohort%shorter    
        terminate = 0 
 
-       ! Not enough n or dbh
-       if (currentCohort%n/currentPatch%area <= 0.00001_r8 .or. currentCohort%dbh <  &
-            0.00001_r8.and.currentCohort%bstore < 0._r8) then
-          terminate = 1
-          !  write(iulog,*) 'terminating cohorts 1',currentCohort%n/currentPatch%area,currentCohort%dbh
-       endif
-
-       ! In the third canopy layer
-       if (currentCohort%canopy_layer > NCLMAX) then 
-          terminate = 1
-          ! write(iulog,*) 'terminating cohorts 2', currentCohort%canopy_layer
-       endif
-
-       ! live biomass pools are terminally depleted
-       if (currentCohort%balive < 1e-10_r8 .or. currentCohort%bstore < 1e-10_r8) then 
-          terminate = 1  
-          ! write(iulog,*) 'terminating cohorts 3', currentCohort%balive,currentCohort%bstore
-       endif
-
-       ! Total cohort biomass is negative
-       if (currentCohort%balive+currentCohort%bdead+currentCohort%bstore < 0._r8) then
-          terminate = 1
-          ! write(iulog,*) 'terminating cohorts 4', currentCohort%balive, currentCohort%bstore, currentCohort%bdead, &
-          ! currentCohort%balive+currentCohort%bdead+&
-          ! currentCohort%bstore, currentCohort%n
-       endif
-
+          ! Not enough n or dbh
+          if (currentCohort%n/currentPatch%area <= 0.00001_r8 .or. currentCohort%dbh <  &
+                0.00001_r8.and.currentCohort%bstore < 0._r8) then
+             terminate = 1
+             write(iulog,*) 'terminating cohorts 1',currentCohort%n/currentPatch%area,currentCohort%dbh
+          endif
+          
+          ! In the third canopy layer
+          if (currentCohort%canopy_layer > NCLMAX) then 
+             terminate = 1
+             write(iulog,*) 'terminating cohorts 2', currentCohort%canopy_layer
+          endif
+          
+          ! live biomass pools are terminally depleted
+          if (currentCohort%balive < 1e-10_r8 .or. currentCohort%bstore < 1e-10_r8) then 
+             terminate = 1  
+             write(iulog,*) 'terminating cohorts 3', currentCohort%balive,currentCohort%bstore
+          endif
+          
+          ! Total cohort biomass is negative
+          if (currentCohort%balive+currentCohort%bdead+currentCohort%bstore < 0._r8) then
+             terminate = 1
+             write(iulog,*) 'terminating cohorts 4', currentCohort%balive, currentCohort%bstore, currentCohort%bdead, &
+                   currentCohort%balive+currentCohort%bdead+&
+                   currentCohort%bstore, currentCohort%n
+          endif
 
        if (terminate == 1) then 
           if (.not. associated(currentCohort%taller)) then
@@ -534,7 +533,8 @@ contains
 
   end subroutine terminate_cohorts
 
-  !-------------------------------------------------------------------------------------!
+
+
   subroutine fuse_cohorts(patchptr)  
     !
     ! !DESCRIPTION:
@@ -557,8 +557,12 @@ contains
     real(r8) :: newn
     real(r8) :: diff
     real(r8) :: dynamic_fusion_tolerance
+
+    !---------------------------------------------------------------------
+    logical,parameter :: height_test     = .true.
     !----------------------------------------------------------------------
-    
+
+ 
     !set initial fusion tolerance
     dynamic_fusion_tolerance = fusetol
    
@@ -570,11 +574,12 @@ contains
     iterate = 1
     fusion_took_place = 0   
     currentPatch => patchptr
-    maxcohorts =  currentPatch%NCL_p * numCohortsPerPatch  
-    !---------------------------------------------------------------------!
-    !  Keep doing this until nocohorts <= maxcohorts                         !
-    !---------------------------------------------------------------------!
+!    maxcohorts =  currentPatch%NCL_p * numCohortsPerPatch  
+    maxcohorts = numCohortsPerPatch
+
     if (associated(currentPatch%shortest)) then  
+
+       ! This is the loop that continues until number of cohorts <=maxcohorts
        do while(iterate == 1)
 
          currentCohort => currentPatch%tallest
