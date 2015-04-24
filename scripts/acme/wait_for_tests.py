@@ -366,7 +366,7 @@ def wait_for_tests(test_paths, no_wait, check_throughput, ignore_namelists, cdas
     for test_name, test_data in sorted(test_results.iteritems()):
         test_path, test_status = test_data
         print "Test '%s' finished with status '%s'" % (test_name, test_status)
-        print "    Path: %s" % test_path
+        verbose_print("    Path: %s" % test_path)
         all_pass &= test_status == TEST_PASSED_STATUS
 
     if (cdash_build_name):

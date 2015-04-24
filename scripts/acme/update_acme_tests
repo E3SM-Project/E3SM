@@ -9,7 +9,7 @@ into the XML file."""
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
 
-import sys, argparse, os, shutil, tempfile
+import sys, argparse, os, shutil, tempfile, doctest
 
 from acme_util import expect, warning
 
@@ -66,6 +66,46 @@ TEST_SUITES = {
          "SMS_D.f19_g16.B20TRC5",
          "SMS_D_Ld3.f19_f19.FC5"]
 }
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+usage="""\n%s <Test category> testlist.xml [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Update acme_developer tests for all platforms \033[0m
+    > %s acme_developer testlist.xml
+    \033[1;32m# Add acme_developer tests for a new platform \033[0m
+    > %s acme_developer testlist.xml -p machine,compiler
+""" % ((os.path.basename(args[0]), ) * 5),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("category", choices=TEST_SUITES.keys(),
+                        help="The test category to update")
+
+    parser.add_argument("test_list_path", help="The path to test lists XML file")
+
+    parser.add_argument("-p", "--platform", action="store", default=None, dest="platform",
+                        help="Only add tests for a specific platform, format=machine,compiler")
+
+    args = parser.parse_args(args[1:])
+
+    expect(os.path.isfile(args.test_list_path),
+           "'%s' is not a valid file" % args.test_list_path)
+
+    expect(args.platform is None or len(args.platform.split(",")) == 2,
+           "-p value must be in format: 'machine,compiler'")
+
+    return args.category, args.test_list_path, args.platform
 
 ###############################################################################
 def find_all_platforms(xml_file):
@@ -143,31 +183,15 @@ def update_acme_test(xml_file, category, platform):
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    parser = argparse.ArgumentParser(
-        usage="\n%s <Test category> testlist.xml" % os.path.basename(sys.argv[0]),
-        description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-    parser.add_argument("category", choices=TEST_SUITES.keys(),
-                        help="The test category to update")
-
-    parser.add_argument("test_list_path", help="The path to test lists XML file")
-
-    parser.add_argument("-p", "--platform", action="store", default=None, dest="platform",
-                        help="Only add tests for a specific platform, format=machine,compiler")
-
-    args = parser.parse_args()
-
-    expect(os.path.isfile(args.test_list_path),
-           "'%s' is not a valid file" % args.test_list_path)
-
-    expect(args.platform is None or len(args.platform.split(",")) == 2,
-           "-p value must be in format: 'machine,compiler'")
+    category, test_list_path, platform = parse_command_line(sys.argv, description)
 
     acme_util.stop_buffering_output()
 
-    update_acme_test(args.test_list_path, args.category, args.platform)
+    update_acme_test(test_list_path, category, platform)
 
 if __name__ == "__main__":
     _main_func(__doc__)
