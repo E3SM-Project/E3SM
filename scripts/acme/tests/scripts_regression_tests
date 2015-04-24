@@ -1,0 +1,178 @@
+#!/usr/bin/env python
+
+import unittest, sys, os, tempfile, shutil, re, threading, time, signal
+
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(SCRIPT_DIR)
+from acme_util import run_cmd
+import acme_util
+
+###############################################################################
+class RunUnitTests(unittest.TestCase):
+###############################################################################
+
+    def do_unit_tests(self, script):
+        stat, output, _ = run_cmd("%s --test 2>&1" % script, ok_to_fail=True, from_dir=SCRIPT_DIR)
+        self.assertEqual(stat, 0, msg=output)
+
+    def test_acme_bisect_unit_test(self):
+        self.do_unit_tests("acme_bisect")
+
+    def test_cime_merge_helper_unit_test(self):
+        self.do_unit_tests("cime_merge_helper")
+
+    def test_compare_namelists_unit_test(self):
+        self.do_unit_tests("compare_namelists")
+
+    def test_jenkins_generic_job_unit_test(self):
+        self.do_unit_tests("jenkins_generic_job")
+
+    def test_simple_compare_unit_test(self):
+        self.do_unit_tests("simple_compare")
+
+    def test_update_acme_tests_unit_test(self):
+        self.do_unit_tests("update_acme_tests")
+
+    def test_wait_for_tests_unit_test(self):
+        self.do_unit_tests("wait_for_tests")
+
+###############################################################################
+def make_fake_teststatus(path, testname, status):
+###############################################################################
+    fd = open(path, "w")
+    fd.write("%s %s\n" % (status, testname))
+    fd.close()
+
+###############################################################################
+def parse_test_status(line):
+###############################################################################
+    regex = re.compile(r"Test '(\w+)' finished with status '(\w+)'")
+    m = regex.match(line)
+    return m.groups()
+
+###############################################################################
+class TestWaitForTests(unittest.TestCase):
+###############################################################################
+
+    def setUp(self):
+        self._testdir_all_pass     = tempfile.mkdtemp()
+        self._testdir_with_fail    = tempfile.mkdtemp()
+        self._testdir_unfinished   = tempfile.mkdtemp()
+
+        for r in range(10):
+            make_fake_teststatus(os.path.join(self._testdir_all_pass, "TestStatus_%d" % r), "Test_%d" % r, "PASS")
+
+        for r in range(10):
+            make_fake_teststatus(os.path.join(self._testdir_with_fail, "TestStatus_%d" % r), "Test_%d" % r, "PASS" if r % 2 == 0 else "FAIL")
+
+        for r in range(10):
+            make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_%d" % r), "Test_%d" % r, "RUN" if r == 5 else "PASS")
+
+    def tearDown(self):
+        shutil.rmtree(self._testdir_all_pass)
+        shutil.rmtree(self._testdir_with_fail)
+        shutil.rmtree(self._testdir_unfinished)
+
+        # Kill all subprocesses
+        run_cmd("pkill -P %d" % os.getpid(), ok_to_fail=True)
+
+    def simple_test(self, testdir, expect_cmd_pass, expected_results, extra_args="", check_output=True):
+        stat, output, _ = run_cmd("%s/wait_for_tests TestStatus* %s 2>&1" % (SCRIPT_DIR, extra_args), ok_to_fail=True, from_dir=testdir)
+        if (expect_cmd_pass):
+            self.assertEqual(stat, 0, msg=output)
+        else:
+            self.assertNotEqual(stat, 0, msg=output)
+
+        if (check_output):
+            lines = [line for line in output.splitlines() if line.startswith("Test '")]
+            self.assertEqual(len(lines), 10)
+            for idx, line in enumerate(lines):
+                testname, status = parse_test_status(line)
+                self.assertEqual(status, expected_results[idx])
+                self.assertEqual(testname, "Test_%d" % idx)
+
+    def test_wait_for_test_all_pass(self):
+        self.simple_test(self._testdir_all_pass, True, ["PASS"] * 10)
+
+    def test_wait_for_test_with_fail(self):
+        expected_results = ["PASS" if item % 2 == 0 else "FAIL" for item in range(10)]
+        self.simple_test(self._testdir_with_fail, False, expected_results)
+
+    def test_wait_for_test_no_wait(self):
+        expected_results = ["RUN" if item == 5 else "PASS" for item in range(10)]
+        self.simple_test(self._testdir_unfinished, False, expected_results, "-n")
+
+    def test_wait_for_test_wait(self):
+        run_thread = threading.Thread(target=self.simple_test, args=(self._testdir_unfinished, True, ["PASS"] * 10))
+        run_thread.daemon = True
+        run_thread.start()
+
+        time.sleep(5) # Kinda hacky
+
+        self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
+
+        make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_5"), "Test_5", "PASS")
+
+        run_thread.join(timeout=5)
+
+        # Restore for use by other tests
+        make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_5"), "Test_5", "RUN")
+
+        self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
+
+    def test_wait_for_test_wait(self):
+        expected_results = ["RUN" if item == 5 else "PASS" for item in range(10)]
+        run_thread = threading.Thread(target=self.simple_test, args=(self._testdir_unfinished, False, expected_results))
+        run_thread.daemon = True
+        run_thread.start()
+
+        time.sleep(5)
+
+        self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
+
+        proc_id = acme_util.find_proc_id_by_name("Python", children_only=True)
+        self.assertIsNot(proc_id, None)
+
+        os.kill(proc_id, signal.SIGTERM)
+
+        run_thread.join(timeout=5)
+
+        self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
+
+    def test_wait_for_test_cdash(self):
+        expected_results = ["RUN" if item == 5 else "PASS" for item in range(10)]
+        run_thread = threading.Thread(target=self.simple_test, args=(self._testdir_unfinished, False, expected_results, "-d regression_test"))
+        run_thread.daemon = True
+        run_thread.start()
+
+        time.sleep(5)
+
+        self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
+
+        proc_id = acme_util.find_proc_id_by_name("Python", children_only=True)
+        self.assertIsNot(proc_id, None)
+
+        os.kill(proc_id, signal.SIGTERM)
+
+        run_thread.join(timeout=5)
+
+        self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
+
+        cdash_result_dir = os.path.join(self._testdir_unfinished, "Testing")
+        tag_file         = os.path.join(cdash_result_dir, "TAG")
+        self.assertTrue(os.path.isdir(cdash_result_dir))
+        self.assertTrue(os.path.isfile(tag_file))
+
+        tag = open(tag_file, "r").readlines()[0].strip()
+        xml_file = os.path.join(cdash_result_dir, tag, "Test.xml")
+        self.assertTrue(os.path.isfile(xml_file))
+
+        xml_contents = open(xml_file, "r").read()
+        self.assertTrue(r'<TestList><Test>Test_0</Test><Test>Test_1</Test><Test>Test_2</Test><Test>Test_3</Test><Test>Test_4</Test><Test>Test_5</Test><Test>Test_6</Test><Test>Test_7</Test><Test>Test_8</Test><Test>Test_9</Test></TestList>'
+                        in xml_contents)
+        self.assertTrue(r'<Test Status="failed"><Name>Test_5</Name>' in xml_contents)
+
+        # TODO: Any further checking of xml output worth doing?
+
+if (__name__ == "__main__"):
+    unittest.main()

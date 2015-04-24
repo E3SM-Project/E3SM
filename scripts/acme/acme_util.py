@@ -187,3 +187,19 @@ def safe_copy(src_dir, tgt_dir, files):
         if (os.path.isfile(full_tgt)):
             os.remove(full_tgt)
         shutil.copy2(full_src, full_tgt)
+
+###############################################################################
+def find_proc_id_by_name(proc_name, children_only=False):
+###############################################################################
+    stat, output, errput = run_cmd("pgrep %s %s" % (proc_name, "-P %d" % os.getpid() if children_only else ""),
+                                                    ok_to_fail=True)
+    if (stat != 0):
+        warning("Could not find any process with name '%s'" % proc_name)
+        return None
+
+    procs = output.splitlines()
+    if (len(procs) > 1):
+        warning("Found multiple occurances of '%s', ambiguous" % proc_name)
+        return None
+
+    return int(procs[0].strip())

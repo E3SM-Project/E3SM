@@ -143,8 +143,8 @@ def merge_acme_changes(acme_path, subdir):
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        doctest.testmod(verbose=True)
-        return
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
     acme_util.stop_buffering_output()
 

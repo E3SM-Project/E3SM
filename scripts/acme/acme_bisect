@@ -9,7 +9,7 @@ import acme_util
 acme_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
-import argparse, sys, glob, os
+import argparse, sys, glob, os, doctest
 
 from acme_util import expect, warning, verbose_print, run_cmd
 
@@ -110,8 +110,8 @@ def acme_bisect(testname, testroot, project, compare, check_namelists, check_thr
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        wait_for_tests.run_unit_tests()
-        return
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
     acme_util.stop_buffering_output()
 
