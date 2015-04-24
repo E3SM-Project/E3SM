@@ -21,7 +21,8 @@
 
 module li_sia
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_configure
    use mpas_dmpar
    use li_mask
@@ -279,7 +280,7 @@ contains
 
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'slopeEdge', slopeEdge)

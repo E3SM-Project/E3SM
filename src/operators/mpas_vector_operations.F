@@ -18,7 +18,8 @@
 !-----------------------------------------------------------------------
 module mpas_vector_operations
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_constants
 
    implicit none

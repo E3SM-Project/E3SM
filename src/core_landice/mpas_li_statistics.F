@@ -23,7 +23,7 @@
 
 module li_statistics
 
-   use mpas_grid_types
+   use mpas_derived_types
    use mpas_configure
    use mpas_constants
    use mpas_dmpar
@@ -233,7 +233,7 @@ module li_statistics
         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-        call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+        call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
 
         ! scratch fields

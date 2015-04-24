@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="landice" version="3.3">
+<registry model="mpas" core="landice" core_abbrev="li" version="3.3">
 
 
 <!-- ======================================================================= -->
@@ -643,7 +643,8 @@ is the value of that variable from the *previous* time level!
 			packages="higherOrderVelocity"
 		/>
 		<var name="dirichletVelocityMask"            type="integer"     dimensions="nVertInterfaces nCells Time"
-		     units="none"  description="mask of where Dirichlet boundary conditions should be applied to the velocity solution.  1 means apply a Dirichlet boundary condition, 0 means do not. (higher-order dycores only)"
+			units="none"  time_levs="2"
+			description="mask of where Dirichlet boundary conditions should be applied to the velocity solution.  1 means apply a Dirichlet boundary condition, 0 means do not. (higher-order dycores only)"
 			packages="higherOrderVelocity"
 		/>
 		<var name="dirichletMaskChanged"              type="integer"  dimensions="Time"

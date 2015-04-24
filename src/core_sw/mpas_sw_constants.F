@@ -7,7 +7,7 @@
 !
 module sw_constants
 
-   use mpas_grid_types
+   use mpas_derived_types
    use mpas_constants
 
    public

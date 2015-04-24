@@ -19,7 +19,7 @@
 
 module li_constants
 
-   use mpas_grid_types
+   use mpas_derived_types
    use mpas_kind_types
 
 #ifdef MPAS_CESM

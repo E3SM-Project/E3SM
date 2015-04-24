@@ -22,7 +22,8 @@
 module ocn_tracer_advection
 
    use mpas_kind_types
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_sort
    use mpas_hash
 

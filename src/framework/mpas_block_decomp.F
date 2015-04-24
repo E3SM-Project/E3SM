@@ -20,10 +20,9 @@
 module mpas_block_decomp
 
    use mpas_dmpar
-   use mpas_dmpar_types
    use mpas_hash
    use mpas_sort
-   use mpas_grid_types
+   use mpas_derived_types
    use mpas_configure
    use mpas_io_units
 

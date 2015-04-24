@@ -13,7 +13,7 @@
  module mpas_atmphys_rrtmg_swinit
  use mpas_dmpar
  use mpas_kind_types
- use mpas_grid_types
+ use mpas_derived_types
  use mpas_atmphys_constants
  use mpas_atmphys_utilities
 

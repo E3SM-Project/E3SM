@@ -23,11 +23,13 @@
 module mpas_block_creator
 
    use mpas_dmpar
-   use mpas_dmpar_types
    use mpas_block_decomp
    use mpas_hash
    use mpas_sort
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_domain_routines
+   use mpas_field_routines
+   use mpas_pool_routines
    use mpas_configure
 
    contains
@@ -85,7 +87,6 @@ module mpas_block_creator
        ! Link to block, and setup array size
        fieldCursor % block => blockCursor
        fieldCursor % dimSizes(1) = blockCount(i)
-       nullify(fieldCursor % ioinfo)
  
        ! Initialize exchange lists
        call mpas_dmpar_init_multihalo_exchange_list(fieldCursor % sendList, nHalos)
@@ -188,12 +189,6 @@ module mpas_block_creator
        cellsOnCellCursor % block => indexCursor % block
        verticesOnCellCursor % block => indexCursor % block
        edgesOnCellCursor % block => indexCursor % block
-
-       ! Nullify ioinfo, since this data is not read in
-       nullify(nEdgesCursor % ioinfo)
-       nullify(cellsOnCellCursor % ioinfo)
-       nullify(verticesOnCellCursor % ioinfo)
-       nullify(edgesOnCellCursor % ioinfo)
 
        ! Setup array sizes
        nEdgesCursor % dimSizes(1) = nCellsInBlock
@@ -321,14 +316,12 @@ module mpas_block_creator
 
        ! Setup indexToEdge block
        indexToEdgeCursor % block => indexToCellCursor % block
-       nullify(indexToEdgeCursor % ioinfo)
        indexToEdgeCursor % dimSizes(1) = nEdgesLocal
        allocate(indexToEdgeCursor % array(indexToEdgeCursor % dimSizes(1)))
        indexToEdgeCursor % array(:) = localEdgeList(:)
 
        ! Setup cellsOnEdge block
        cellsOnEdgeCursor % block => indexToCellCursor % block
-       nullify(cellsOnEdgeCursor % ioinfo)
        cellsOnEdgeCursor % dimSizes(1) = edgeDegree
        cellsOnEdgeCursor % dimSizes(2) = nEdgesLocal
        allocate(cellsOnEdgeCursor % array(cellsOnEdgeCursor % dimSizes(1), cellsOnEdgeCursor % dimSizes(2)))
@@ -401,12 +394,6 @@ module mpas_block_creator
        offSetCursor % block => indexToEdgeCursor % block
        edgeLimitCursor % block => indexToEdgeCursor % block
        nEdgesSolveCursor % block => indexToEdgeCursor % block
-
-       ! Nullify io info
-       nullify(haloCursor % ioinfo)
-       nullify(offSetCursor % ioinfo)
-       nullify(edgeLimitCursor % ioinfo)
-       nullify(nEdgesSolveCursor % ioinfo)
 
        ! Setup haloIndices
        haloCursor % dimSizes(1) = indexToEdgeCursor % dimSizes(1) - (haloStart-1)
@@ -530,19 +517,16 @@ module mpas_block_creator
        ! Setup offset
        offSetCursor % scalar = indexCursor % dimSizes(1)
        offSetCursor % block => indexCursor % block
-       nullify(offSetCursor % ioinfo)
 
        ! Setup nCellsSolve
        nCellsSolveCursor % dimSizes(1) = nHalos+1
        allocate(nCellsSolveCursor % array(nCellsSolveCursor % dimSizes(1)))
        nCellsSolveCursor % array(1) = indexCursor % dimSizes(1)
        nCellsSolveCursor % block => indexCursor % block
-       nullify(nCellsSolveCursor % ioinfo)
 
        ! Setup owned cellLimit
        cellLimitCursor % scalar = indexCursor % dimSizes(1)
        cellLimitCursor % block => indexCursor % block
-       nullify(cellLimitCursor % ioinfo)
 
        ! Advance cursors and create new blocks if needed
        indexCursor => indexCursor % next
@@ -619,7 +603,6 @@ module mpas_block_creator
          haloCursor % recvList => indexCursor % recvList
          haloCursor % copyList => indexCursor % copyList
          haloCursor % block => indexCursor % block
-         nullify(haloCursor % ioinfo)
 
          ! Deallocate block graphs
          deallocate(blockGraphWithHalo % vertexID)
@@ -810,11 +793,6 @@ module mpas_block_creator
        offSetCursor % block => indexToEdgeCursor % block
        haloCursor % block => indexToEdgeCursor % block
 
-       ! Nullify ioinfo
-       nullify(edgeLimitCursor % ioinfo)
-       nullify(offSetCursor % ioinfo)
-       nullify(haloCursor % ioinfo)
-
        ! Link exchange lists
        haloCursor % sendList => indexToEdgeCursor % sendList
        haloCursor % recvList => indexToEdgeCursor % recvList
@@ -1004,7 +982,7 @@ module mpas_block_creator
      type (field1dInteger), pointer :: indexToCellCursor, indexToEdgeCursor, indexToVertexCursor
 
      integer :: nCellsSolve_0Halo, nVerticesSolve_0Halo, nEdgesSolve_0Halo
-     integer :: blockID, localBlockID, err_level
+     integer :: blockID, localBlockID, err_level, iErr
 
      domain => blocklist % domain
 
@@ -1049,7 +1027,10 @@ module mpas_block_creator
        call mpas_pool_add_dimension(block_ptr % dimensions, 'nEdgesArray', nEdgesCursor % array(:))
        call mpas_pool_add_dimension(block_ptr % dimensions, 'nVerticesArray', nVerticesCursor % array(:))
 
-       call mpas_generate_structs(block_ptr, block_ptr % structs, block_ptr % dimensions, block_ptr % packages)
+       iErr = block_ptr % domain % core % setup_block(block_ptr)
+       if ( iErr /= 0 ) then
+          call mpas_dmpar_global_abort('ERROR: Block setup failed for core ' // trim(block_ptr % domain % core % coreName))
+       end if
 
        ! Set block's local id
        block_ptr % localBlockID = localBlockID
@@ -1069,7 +1050,6 @@ module mpas_block_creator
        indexToCellIDPoolField % isPersistent = .true.
        nullify(indexToCellIDPoolField % next)
        nullify(indexToCellIDPoolField % prev)
-       nullify(indexToCellIDPoolField % ioinfo)
        nullify(indexToCellIDPoolField % sendList)
        nullify(indexToCellIDPoolField % recvList)
        nullify(indexToCellIDPoolField % copyList)
@@ -1088,7 +1068,6 @@ module mpas_block_creator
        indexToEdgeIDPoolField % isPersistent = .true.
        nullify(indexToEdgeIDPoolField % next)
        nullify(indexToEdgeIDPoolField % prev)
-       nullify(indexToEdgeIDPoolField % ioinfo)
        nullify(indexToEdgeIDPoolField % sendList)
        nullify(indexToEdgeIDPoolField % recvList)
        nullify(indexToEdgeIDPoolField % copyList)
@@ -1108,7 +1087,6 @@ module mpas_block_creator
        indexToVertexIDPoolField % isPersistent = .true.
        nullify(indexToVertexIDPoolField % next)
        nullify(indexToVertexIDPoolField % prev)
-       nullify(indexToVertexIDPoolField % ioinfo)
        nullify(indexToVertexIDPoolField % sendList)
        nullify(indexToVertexIDPoolField % recvList)
        nullify(indexToVertexIDPoolField % copyList)
@@ -1191,7 +1169,6 @@ module mpas_block_creator
 
    end subroutine mpas_block_creator_finalize_block_phase1!}}}
 
-
 !***********************************************************************
 !
 !  routine mpas_block_creator_finalize_block_phase2
@@ -1223,7 +1200,7 @@ module mpas_block_creator
 
      type (field1dInteger), pointer :: indexField, indexFieldBlk, ownedIndices
 
-     integer :: err_level
+     integer :: err_level, iErr
      integer, pointer :: dim0d
      integer, dimension(:), pointer :: dim1d
 
@@ -1255,8 +1232,10 @@ module mpas_block_creator
        end do
        call mpas_pool_set_error_level(err_level)
 
-       call mpas_setup_decomposed_dimensions(block_ptr, stream_manager, readableDimensions, block_ptr % dimensions, total_blocks)
-       call mpas_setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
+       iErr = block_ptr % domain % core % setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
+       if ( iErr /= 0 ) then
+          call mpas_dmpar_global_abort('ERROR: Derived dimension setup failed for core ' // trim(block_ptr % domain % core % coreName))
+       end if
 
        call mpas_block_creator_allocate_pool_fields(block_ptr % structs, block_ptr % dimensions)
 
@@ -1739,7 +1718,5 @@ module mpas_block_creator
       call mpas_dmpar_global_abort('********************************************************************************')
 
    end subroutine missing_dim_abort 
-
-#include "block_dimension_routines.inc"
 
 end module mpas_block_creator

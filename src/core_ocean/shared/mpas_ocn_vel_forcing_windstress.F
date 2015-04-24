@@ -20,7 +20,8 @@
 
 module ocn_vel_forcing_windstress
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
 
    use ocn_constants
    use ocn_forcing

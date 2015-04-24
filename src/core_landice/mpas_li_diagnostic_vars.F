@@ -24,7 +24,8 @@
 
 module li_diagnostic_vars
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timer
    use mpas_configure
    use li_velocity
@@ -353,7 +354,7 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_field(geometryPool, 'cellMask', cellMaskField)
       call mpas_pool_get_field(geometryPool, 'edgeMask', edgeMaskField)
-      call mpas_pool_get_field(geometryPool, 'vertexMask', vertexMaskField)
+      call mpas_pool_get_field(geometryPool, 'vertexMask', vertexMaskField, timeLevel=1)
       call mpas_dmpar_exch_halo_field(cellMaskField)
       call mpas_dmpar_exch_halo_field(edgeMaskField)
       call mpas_dmpar_exch_halo_field(vertexMaskField)
@@ -390,10 +391,10 @@ contains
 
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+          call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
           call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
           call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
-          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
           call mpas_pool_get_array(thermalPool, 'tracers', tracers)
           call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
           call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -500,7 +501,7 @@ contains
              ! The interface expects an array where 1's are floating edges and 0's are non-floating edges.
              call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
              floatingEdges = li_mask_is_floating_ice_int(edgeMask)
-             call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask)
+             call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
              call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
           end if
 
@@ -636,7 +637,7 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
 
-      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
 
