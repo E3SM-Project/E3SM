@@ -21,7 +21,8 @@
 
 module li_mask
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_configure
    use mpas_dmpar
    use li_setup
@@ -156,10 +157,9 @@ contains
 
       ! Assign pointers and variables
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
 
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
-
 
       if (config_do_restart .eqv. .false.) then  ! We only want to set this bit of the mask when a new simulation starts, but not during a restart.
          ! Initialize cell mask to 0 everywhere before we assign anything to it.
@@ -168,7 +168,6 @@ contains
             cellMask = ior(cellMask, li_mask_ValueInitialIceExtent)
          end where
       endif
-
 
    !--------------------------------------------------------------------
 
@@ -253,8 +252,8 @@ contains
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 1)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
 
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
@@ -282,7 +281,7 @@ contains
             cellMask = ior(cellMask, li_mask_ValueDynamicIce)
          end where
       else  ! HO external FEM dycore
-         call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask)
+         call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
          ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
          where ( (thickness > config_dynamic_thickness) .and.    &  ! same as for SIA case
               (dirichletVelocityMask(1,:) == 0) )   ! but exclude dirichletVelocityMask locations set as lateral b.c.  To ignore dirichlet b.c. on the basal boundary, just check the surface level

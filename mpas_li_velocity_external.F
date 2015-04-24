@@ -16,8 +16,7 @@
 
 module li_velocity_external
 
-
-   use mpas_grid_types
+   use mpas_derived_types
    use mpas_configure
    use mpas_dmpar
    use mpas_timer
@@ -383,10 +382,10 @@ contains
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
 
       ! Geometry variables
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
       call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
       call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
-      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask)
+      call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 1)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
       ! Thermal variables
@@ -401,7 +400,7 @@ contains
       call mpas_pool_get_array(velocityPool, 'beta', beta)
       call mpas_pool_get_array(velocityPool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
-      call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask)
+      call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
       call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
 
 
@@ -538,10 +537,10 @@ contains
       !-----------------------------------------------------------------
 
       err = 0
-
+print *, 'dfghjkhgfhjgf'
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       ! This call is needed for using any of the external velocity solvers
-      call velocity_solver_finalize()
+   !   call velocity_solver_finalize()
 #else
       write(stderrUnit,*) "Error: To run with an external velocity solver you must compile MPAS with one."
       err = 1
