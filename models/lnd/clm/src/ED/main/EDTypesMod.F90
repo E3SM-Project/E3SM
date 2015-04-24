@@ -49,7 +49,7 @@ module EDTypesMod
   real(r8), parameter :: fire_threshold       = 35.0_r8    ! threshold for fires that spread or go out. KWm-2
 
   ! COHORT FUSION          
-  real(r8), parameter :: FUSETOL              = 0.20_r8    ! min fractional difference in dbh between cohorts
+  real(r8), parameter :: FUSETOL              = 0.60_r8    ! min fractional difference in dbh between cohorts
 
   ! PATCH FUSION 
   real(r8), parameter :: NTOL                 = 0.05_r8    ! min plant density for hgt bin to be used in height profile comparisons 
