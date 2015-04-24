@@ -605,7 +605,12 @@ module mpas_timekeeping
    !> \author Matthew Hoffman
    !> \date   04/21/2015
    !> \details This function returns the next ring time of an alarm.
-   !>
+   !>   For the situation where mpas_alarm_get_next_ring_time() is called exactly
+   !>   at a ring time:
+   !>   * If the alarm has not yet been reset, then mpas_alarm_get_next_ring_time()
+   !>     will return the current time.
+   !>   * If the alarm has been reset, then it will return the following ring time
+   !>     (current time + alarmPtr % ringTimeInterval).
    !-----------------------------------------------------------------------
    type (MPAS_Time_type) function mpas_alarm_get_next_ring_time(clock, alarmId)
 
