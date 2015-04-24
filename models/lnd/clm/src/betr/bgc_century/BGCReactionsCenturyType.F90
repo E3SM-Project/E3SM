@@ -766,7 +766,7 @@ contains
   
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
-      Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_no3_ratio, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
+      Extra_inst%n2_n2o_ratio_denit, ystate(centurybgc_vars%lid_nh4), Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
       
   !if(lpr)then
   !  print*,'reac',centurybgc_vars%lid_no3,reaction_rates(centurybgc_vars%lid_no3_den_reac)

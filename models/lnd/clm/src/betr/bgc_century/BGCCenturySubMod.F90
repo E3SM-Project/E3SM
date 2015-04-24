@@ -355,7 +355,7 @@ module BGCCenturySubMod
   end subroutine calc_som_deacyK  
 
 !-------------------------------------------------------------------------------
-  subroutine calc_cascade_matrix(nstvars, nreactions, cn_ratios, cp_ratios, n2_n2o_ratio_denit, nh4_no3_ratio, pct_sand, centurybgc_vars, cascade_matrix)
+  subroutine calc_cascade_matrix(nstvars, nreactions, cn_ratios, cp_ratios, n2_n2o_ratio_denit, nh4, pct_sand, centurybgc_vars, cascade_matrix)
   !
   ! DESCRIPTION
   ! calculate cascade matrix for the decomposition model
@@ -369,7 +369,7 @@ module BGCCenturySubMod
   real(r8)                      , intent(in) :: cn_ratios(centurybgc_vars%nom_pools)
   real(r8)                      , intent(in) :: cp_ratios(centurybgc_vars%nom_pools)
   real(r8)                      , intent(in) :: n2_n2o_ratio_denit                   !ratio of n2 to n2o during denitrification
-  real(r8)                      , intent(in) :: nh4_no3_ratio                        !ratio of nh4 to no3 at current time step
+  real(r8)                      , intent(in) :: nh4                                  !mass of nh4
   real(r8)                      , intent(in) :: pct_sand
   
   real(r8),intent(out) :: cascade_matrix(nstvars, nreactions)
@@ -456,8 +456,8 @@ module BGCCenturySubMod
   cascade_matrix = 0._r8
 
   !higher [nh4] makes lower [no3] competitiveness 
-  compet_decomp_no3_scal = compet_decomp_no3 / (compet_decomp_no3 + nh4_no3_ratio*compet_decomp_nh4)
-  compet_plant_no3_scal  = compet_plant_no3 / (compet_plant_no3 + nh4_no3_ratio*compet_plant_nh4)
+  compet_decomp_no3_scal = 1._r8- nh4 / (nh4 + compet_decomp_nh4)
+  compet_plant_no3_scal  = 1._r8- nh4 / (nh4 + compet_plant_nh4)
   !note all reactions are in the form products - substrates = 0, therefore
   !mass balance is automatically ensured.
   !set up first order reactions
