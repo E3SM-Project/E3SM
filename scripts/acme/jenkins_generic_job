@@ -124,7 +124,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--branch", action="store", dest="branch", default=None,
                         help="Force baseline actions (compare/generate) to use baselines for a specific branch instead of the current branch. Also impacts dashboard job name. Useful for testing a branch other than next or master")
 
-    parser.add_argument("-b" "--bless", action="store_true", dest="bless", default=False,
+    parser.add_argument("-b", "--bless", action="store_true", dest="bless", default=False,
                         help="Update baselines by copying diffing files from most recent nightly run directly into baselines")
 
     parser.add_argument("bless_tests", nargs="*",
@@ -255,13 +255,15 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
            "Did not recognize current machine '%s'" % socket.gethostname())
     expect(acme_machine in MACHINE_INFO,
            "Missing machine info for machine '%s'" % acme_machine)
-    expect(os.path.isdir("ACME_Climate"),
-           "Missing ACME clone, expected pwd/ACME_Climate")
+
+    acme_repo = os.path.abspath(os.path.join("..", "..", os.path.dirname(__file__)))
+    expect(os.path.isdir(os.path.join(acme_repo, ".git")),
+           "Expected '%s' to be a git repository" % acme_repo)
 
     compiler, test_suite, use_batch, project, testroot, baseline_root, proxy = MACHINE_INFO[acme_machine]
     testroot = testroot.replace("<USER>", getpass.getuser()).replace("<PROJECT>", project)
     casearea = os.path.join(testroot, "jenkins")
-    git_branch = acme_util.get_current_branch() if baseline_branch is None else baseline_branch
+    git_branch = acme_util.get_current_branch(repo=acme_repo) if baseline_branch is None else baseline_branch
 
     if (bless):
         bless_test_results(casearea, baseline_root, git_branch, namelists_only, bless_tests)
@@ -299,7 +301,7 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
     # Set up create_test command and run it
     #
 
-    os.chdir("ACME_Climate/scripts")
+    os.chdir(os.path.join(acme_repo, "scripts"))
     git_branch = acme_util.get_current_branch() if baseline_branch is None else baseline_branch
     baseline_action = "-generate" if generate_baselines else "-compare"
     create_test_cmd = "./create_test -xml_mach %s -xml_compiler %s -xml_category %s -testroot %s -project %s %s %s" % \
@@ -347,8 +349,8 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        doctest.testmod(verbose=True)
-        return
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
     acme_util.stop_buffering_output()
 
