@@ -1,0 +1,68 @@
+	<nml_record name="surface_statistics" mode="forward;analysis">
+		<nml_option name="config_use_surface_statistics" type="logical" default_value=".true." units="unitless"
+			description="If true, ocean analysis member surface_statistics is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_surface_statistics_compute_interval" type="character" default_value="same_as_output" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="'DDDD_HH:MM:SS'"
+		/>
+		<nml_option name="config_surface_statistics_compute_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<packages>
+		<package name="amSurfaceStatistics" description="This package includes variables required for the surface statistics analysis member."/>
+	</packages>
+	<streams>
+		<stream name="surfaceStatistics" type="output"
+				mode="forward;analysis"
+				filename_template="analysis_members/surfaceStatistics.$Y-$M-$D_$h.$m.$s.nc"
+				output_interval="0000_01:00:00"
+				filename_interval="01-00-00_00:00:00"
+				clobber_mode="truncate"
+				packages="amSurfaceStatistics"
+				runtime_format="single_file">
+
+			<var name="xtime"/>
+			<var_array name="minSurfaceStatistics"/>
+			<var_array name="maxSurfaceStatistics"/>
+			<var_array name="avgSurfaceStatistics"/>
+			<var_array name="locationMinSurfaceStatistics"/>
+			<var_array name="locationMaxSurfaceStatistics"/>
+		</stream>
+	</streams>
+	<var_struct name="amSurfaceStatistics" time_levs="1" packages="amSurfaceStatistics">
+
+		<var_array name="minSurfaceStatistics" type="real" dimensions="Time">
+			<var name="minSSH" array_group="mins" units="m"
+				 description="Minimum sea-surface height"
+			/>
+		</var_array>
+
+		<var_array name="maxSurfaceStatistics" type="real" dimensions="Time">
+			<var name="maxSSH" array_group="maxes" units="m"
+				 description="Maximum sea-surface height"
+			/>
+		</var_array>
+
+		<var_array name="avgSurfaceStatistics" type="real" dimensions="Time">
+			<var name="avgSSH" array_group="avg" units="m"
+				 description="Average sea-surface height"
+			/>
+		</var_array>
+
+                <var_array name="locationMinSurfaceStatistics" type="real" dimensions="TWO Time">
+                        <var name="locMinSSH" array_group="avg" units="radians"
+                                 description="(longitude,latitue) of minimum sea-surface height minimum"
+                        />
+                </var_array>
+
+                <var_array name="locationMaxSurfaceStatistics" type="real" dimensions="TWO Time">
+                        <var name="locMaxSSH" array_group="avg" units="radians"
+                                 description="(longitude,latitue) of maximim sea-surface height minimum"
+                        />
+                </var_array>
+
+	</var_struct>
