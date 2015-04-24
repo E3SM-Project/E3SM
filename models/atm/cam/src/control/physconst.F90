@@ -101,7 +101,7 @@ contains
 
   subroutine physconst_init()
 
-    use abortutils,   only: endrun
+    use cam_abortutils,   only: endrun
 
     implicit none
     
@@ -140,7 +140,7 @@ contains
       use units,           only: getunit, freeunit
       use mpishorthand
       use spmd_utils,      only: masterproc
-      use abortutils,      only: endrun
+      use cam_abortutils,      only: endrun
       use cam_logfile,     only: iulog
 
       character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input

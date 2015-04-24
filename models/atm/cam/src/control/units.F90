@@ -1,7 +1,7 @@
 
 module units
 
-   use abortutils, only: endrun
+   use cam_abortutils, only: endrun
    use shr_file_mod, only: shr_file_getUnit, shr_file_freeUnit
 
 implicit none

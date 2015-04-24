@@ -34,9 +34,7 @@
   integer, public :: lspecfrm_pcage(maxspec_pcage)
   integer, public :: lspectoo_pcage(maxspec_pcage)
 
-
-! real(r8), parameter, public :: n_so4_monolayers_pcage = 1.0_r8
-  real(r8), parameter, public :: n_so4_monolayers_pcage = 3.0_r8
+  real(r8), parameter, public :: n_so4_monolayers_pcage = 8.0_r8
 ! number of so4(+nh4) monolayers needed to "age" a carbon particle
 
   real(r8), parameter, public :: &
@@ -95,7 +93,7 @@ use constituents,      only:  pcnst, cnst_name, cnst_get_ind
 use mo_tracname,       only:  solsym
 use physconst,         only:  gravit, mwdry, rair
 use ppgrid,            only:  pcols, pver
-use abortutils,        only : endrun
+use cam_abortutils,        only : endrun
 use spmd_utils,        only : iam, masterproc
 
 
@@ -457,6 +455,7 @@ implicit none
 !   due to simple gas uptake
         pdel_fac = pdel(i,k)/gravit
         sum_dqdt_nh4_b = 0.0_r8
+        dqdt_nh4(:) = 0._r8
         do n = 1, ntot_amode
             dqdt_so4(n) = fgain_so4(n)*(sum_dqdt_so4 + sum_dqdt_msa)
  
@@ -1201,7 +1200,7 @@ timeloop: do while (tcur < dtfull-1.0e-3_r8 )
 use modal_aero_data
 use modal_aero_rename
 
-use abortutils, only   :    endrun
+use cam_abortutils, only   :    endrun
 use cam_history, only  :   addfld, add_default, fieldname_len, phys_decomp
 use constituents, only :  pcnst, cnst_get_ind, cnst_name
 use spmd_utils, only   :    masterproc

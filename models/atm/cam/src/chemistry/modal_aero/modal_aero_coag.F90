@@ -24,7 +24,7 @@
 ! !PUBLIC DATA MEMBERS:
   integer, parameter :: pcnstxx = gas_pcnst
 
-#if ( defined MODAL_AERO_7MODE )
+#if ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE )
   integer, parameter, public :: pair_option_acoag = 3
 #elif ( defined MODAL_AERO_3MODE )
   integer, parameter, public :: pair_option_acoag = 1
@@ -86,7 +86,7 @@
    use modal_aero_gasaerexch, only:  n_so4_monolayers_pcage, &
                                      soa_equivso4_factor
 
-   use abortutils,       only: endrun
+   use cam_abortutils,       only: endrun
    use cam_history,      only: outfld, fieldname_len
    use chem_mods,        only: adv_mass
    use constituents,     only: pcnst, cnst_name
@@ -759,7 +759,7 @@ main_ipair2: do ipair = 1, npair_acoag
 	use modal_aero_gasaerexch, only:  &
 		modefrm_pcage, nspecfrm_pcage, lspecfrm_pcage, lspectoo_pcage
 
-	use abortutils,      only: endrun
+	use cam_abortutils,      only: endrun
 	use cam_history,     only: addfld, add_default, fieldname_len, phys_decomp
 	use constituents,    only: pcnst, cnst_name
 	use spmd_utils,      only: masterproc

@@ -29,9 +29,9 @@
 
    implicit none
    private
-   save
 
    include 'mpif.h'
+   save !BSINGH- Moved "save" here from above the "include 'mpif.h'"
 
 ! !PUBLIC MEMBER FUNCTIONS:
 

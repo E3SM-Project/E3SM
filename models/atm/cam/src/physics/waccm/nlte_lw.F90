@@ -11,7 +11,7 @@ module nlte_lw
   use rad_constituents,   only: rad_cnst_get_gas, rad_cnst_get_info
   use nlte_fomichev,      only: nlte_fomichev_init, nlte_fomichev_calc, nocooling
   use waccm_forcing,      only: waccm_forcing_init, waccm_forcing_adv,  get_cnst
-  use abortutils,         only: endrun
+  use cam_abortutils,         only: endrun
   use cam_logfile,        only: iulog
 
   implicit none

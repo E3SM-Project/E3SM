@@ -5,7 +5,7 @@ module mo_photo
 
   use shr_kind_mod, only : r8 => shr_kind_r8
   use ppgrid,       only : pcols, pver, pverp, begchunk, endchunk
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use mo_constants, only : pi,r2d,boltz,d2r
   use ref_pres,     only : num_pr_lev, ptop_ref 
   use pio

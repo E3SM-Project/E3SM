@@ -33,7 +33,7 @@ module vertical_diffusion
   use ppgrid,           only : pcols, pver, pverp
   use constituents,     only : pcnst, qmin, cnst_get_ind
   use diffusion_solver, only : vdiff_selector
-  use abortutils,       only : endrun
+  use cam_abortutils,       only : endrun
   use error_messages,   only : handle_errmsg
   use physconst,        only :          &
                                cpair  , &     ! Specific heat of dry air
@@ -343,7 +343,7 @@ contains
         if( masterproc ) write(iulog,*) &
              'vertical_diffusion_init: eddy_diffusivity scheme: UW Moist Turbulence Scheme by Bretherton and Park'
         ! Check compatibility of eddy and shallow scheme
-        if( shallow_scheme .ne. 'UW' ) then
+        if( shallow_scheme .ne. 'UW' .and. shallow_scheme .ne. 'off' ) then
             write(iulog,*) 'ERROR: shallow convection scheme ', shallow_scheme,' is incompatible with eddy scheme ', eddy_scheme
             call endrun( 'convect_shallow_init: shallow_scheme and eddy_scheme are incompatible' )
         endif

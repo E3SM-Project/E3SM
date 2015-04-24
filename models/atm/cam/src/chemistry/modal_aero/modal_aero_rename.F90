@@ -11,7 +11,7 @@
 
 ! !USES:
   use shr_kind_mod,    only: r8 => shr_kind_r8
-  use abortutils,      only: endrun
+  use cam_abortutils,      only: endrun
   use modal_aero_data, only: maxd_aspectype
   use chem_mods,       only: gas_pcnst
 

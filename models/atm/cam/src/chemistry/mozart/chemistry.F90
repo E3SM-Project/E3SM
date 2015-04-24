@@ -389,7 +389,7 @@ end function chem_is
     endif
     
     ! add fields to pbuf needed by aerosol models
-    call aero_model_register()
+    call aero_model_register(imozart) !BSINGH(09/17/2014): Send imozart for unified convective transport
 
   end subroutine chem_register
 
@@ -399,7 +399,7 @@ end function chem_is
 
     ! Read chem namelist group.
 
-    use abortutils,      only: endrun
+    use cam_abortutils,      only: endrun
     use namelist_utils,  only: find_group_name
     use units,           only: getunit, freeunit
     use mpishorthand
@@ -895,7 +895,7 @@ end function chem_is_active
     use chem_mods,             only : adv_mass
     use infnan,                only : nan, assignment(=)
     use mo_chem_utls,          only : get_spc_ndx
-    use abortutils,            only : endrun
+    use cam_abortutils,            only : endrun
     use aero_model,            only : aero_model_init
     use mo_setsox,             only : sox_inti
     use constituents,          only : sflxnam

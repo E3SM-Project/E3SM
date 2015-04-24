@@ -1679,6 +1679,12 @@ category="performance"
 group="prof_inparm">
 </entry>
 
+<entry 
+id="profile_ovhd_measurement"
+type="logical"
+category="performance" 
+group="prof_inparm">
+</entry>
 
 <!-- =========================== -->
 <!-- group pio_default_inparm    -->
@@ -1751,6 +1757,52 @@ type="integer"
 category="pio" 
 group="pio_default_inparm">
 pio buffer size limit
+</entry>
+
+<entry 
+id="pio_rearr_comm_type"
+type="char*64"
+category="pio" 
+group="pio_default_inparm"
+valid_values="p2p,coll,default">
+pio rearranger communication type.
+valid values: p2p, coll, default 
+</entry>
+
+<entry 
+id="pio_rearr_comm_fcd"
+type="char*64"
+category="pio" 
+group="pio_default_inparm"
+valid_values="2denable,io2comp,comp2io,disable,default">
+pio rearranger communication flow control direction.
+valid values: 2denable,io2comp,comp2io,disable,default 
+</entry>
+
+<entry 
+id="pio_rearr_comm_max_pend_req"
+type="integer"
+category="pio" 
+group="pio_default_inparm">
+pio rearranger communication max pending req
+</entry>
+
+<entry 
+id="pio_rearr_comm_enable_hs"
+type="logical"
+category="pio" 
+group="pio_default_inparm">
+pio rearranger communication option: Enable handshake
+default: .true.
+</entry>
+
+<entry 
+id="pio_rearr_comm_enable_isend"
+type="logical"
+category="pio" 
+group="pio_default_inparm">
+pio rearranger communication option: Enable isends
+default: .false.
 </entry>
 
 <!-- =========================== -->

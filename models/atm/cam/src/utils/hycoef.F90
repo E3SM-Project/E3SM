@@ -4,7 +4,7 @@ use shr_kind_mod, only: r8 => shr_kind_r8
 use spmd_utils,   only: masterproc
 use pmgrid,       only: plev, plevp
 use cam_logfile,  only: iulog
-use abortutils,   only: endrun
+use cam_abortutils,   only: endrun
 use pio,          only: file_desc_t, var_desc_t, &
                         pio_inq_dimid, pio_inq_dimlen, pio_inq_varid, &
                         pio_double, pio_def_dim, pio_def_var, &

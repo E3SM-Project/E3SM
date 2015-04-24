@@ -3009,6 +3009,14 @@ RUNDIR allows you to keep the run directory separate from the build directory."
  sdesc="timer output depth"
 ></entry>
 
+<entry id="PROF_OVHD_MEASUREMENT"
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="FALSE"
+ group="run_flags"
+ sdesc="direct measurement of profiling overhead"
+></entry>
+
 <entry id="TPROF_TOTAL" 
  type="integer"
  valid_values=""  
@@ -3557,6 +3565,46 @@ restarting where the previous finished."
  group="run_pio"
  sdesc="pio buffer size limit"
 ></entry>
+
+<entry id="PIO_REARR_COMM_TYPE"
+ type="char"
+ valid_values="p2p,coll,default"
+ value="p2p" 
+ group="run_pio"
+ sdesc="pio rearranger communication type"
+></entry> 
+
+<entry id="PIO_REARR_COMM_FCD"
+ type="char"
+ valid_values="2denable,io2comp,comp2io,disable,default"
+ value="2denable" 
+ group="run_pio"
+ sdesc="pio rearranger communication flow control direction"
+></entry> 
+
+<entry id="PIO_REARR_COMM_MAX_PEND_REQ"
+ type="integer"
+ valid_values="" 
+ value="64" 
+ group="run_pio"
+ sdesc="pio rearranger communication max pending requests"
+></entry>
+
+<entry id="PIO_REARR_COMM_ENABLE_HS"
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="TRUE" 
+ group="run_pio"
+ sdesc="pio rearranger communiation options: TRUE implies enable handshake" 
+></entry> 
+
+<entry id="PIO_REARR_COMM_ENABLE_ISEND"
+ type="logical"
+ valid_values="TRUE,FALSE"  
+ value="FALSE" 
+ group="run_pio"
+ sdesc="pio rearranger communiation options: TRUE implies enable isend" 
+></entry> 
 
 <entry id="OCN_PIO_STRIDE"
  type="integer"

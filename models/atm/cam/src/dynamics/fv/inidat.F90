@@ -25,7 +25,7 @@ module inidat
    use dyn_internal_state, only: get_dyn_state_grid
    use dynamics_vars,      only: T_FVDYCORE_GRID
    use dyn_comp,           only: dyn_import_t
-   use abortutils,         only: endrun
+   use cam_abortutils,         only: endrun
    use phys_grid,          only: get_ncols_p
    use cam_control_mod,    only: ideal_phys, aqua_planet, moist_physics
    use fv_control_mod,     only: tmass0

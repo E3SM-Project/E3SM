@@ -19,7 +19,7 @@ subroutine nmmatrix(zb      ,zcr1    ,bm1     ,bmi     )
   use pmgrid
   use pspect
   use sgexx,        only: sgeev
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use cam_logfile,  only: iulog
 
   implicit none

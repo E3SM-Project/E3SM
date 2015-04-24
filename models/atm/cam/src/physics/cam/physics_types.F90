@@ -11,7 +11,7 @@ module physics_types
   use dycore,       only: dycore_is
   use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
   use cam_logfile,  only: iulog
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use phys_control, only: waccmx_is
   use shr_const_mod,only: shr_const_rwv
 
@@ -429,7 +429,8 @@ contains
     end if
 
     ! Good idea to do this regularly.
-    call shr_sys_flush(iulog)
+    ! (The following causes a 'recursive I/O' error with some compilers.)
+    ! call shr_sys_flush(iulog)
 
     if (state_debug_checks) call physics_state_check(state, ptend%name)
 
@@ -1665,6 +1666,9 @@ subroutine physics_state_dealloc(state)
   
   deallocate(state%lonmapback, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%lonmapback')
+
+  deallocate(state%cid, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%cid')
 
 end subroutine physics_state_dealloc
 

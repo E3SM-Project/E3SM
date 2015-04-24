@@ -14,7 +14,7 @@ module lin_strat_chem
   use ppgrid,       only : begchunk, endchunk
   use physics_types,only : physics_state
   use cam_logfile,  only : iulog
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use spmd_utils,   only : masterproc
   !
   implicit none

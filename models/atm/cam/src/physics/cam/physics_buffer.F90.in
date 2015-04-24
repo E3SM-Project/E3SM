@@ -17,7 +17,7 @@ module physics_buffer
   use cam_logfile,     only: iulog
   use pio, only : var_desc_t
   use dyn_grid, only : ptimelevels
-  use abortutils, only : endrun
+  use cam_abortutils, only : endrun
   use buffer, only : buffer_field_allocate, buffer_field_deallocate, buffer_get_field_ptr, buffer_set_field, &
        dtype_i4, dtype_r4, dtype_r8, buffer_field_default_type, buffer_field_is_alloc
 

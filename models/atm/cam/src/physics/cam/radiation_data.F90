@@ -11,7 +11,7 @@ module radiation_data
   use radconstants,     only: nradgas, gaslist
   use cam_history_support, only: fieldname_len, fillvalue
   use spmd_utils,       only: masterproc
-  use abortutils,       only: endrun
+  use cam_abortutils,       only: endrun
 
   implicit none
   private

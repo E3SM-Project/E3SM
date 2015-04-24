@@ -325,7 +325,7 @@ contains
 ! =========================================================
      subroutine abortmp(string)
 #ifdef CAM
-       use abortutils, only : endrun ! _EXTERNAL
+       use cam_abortutils, only : endrun ! _EXTERNAL
 #else
 #ifdef _MPI
          integer info,ierr

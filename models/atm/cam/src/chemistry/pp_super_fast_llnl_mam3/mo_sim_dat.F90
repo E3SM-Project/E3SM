@@ -13,7 +13,7 @@
       use chem_mods,   only : phtcnt, rxt_tag_cnt, rxt_tag_lst, rxt_tag_map
       use chem_mods,   only : pht_alias_lst, pht_alias_mult
       use chem_mods,   only : extfrc_lst, inv_lst, slvd_lst
-      use abortutils,  only : endrun
+      use cam_abortutils,  only : endrun
       use mo_tracname, only : solsym
       use chem_mods,   only : frc_from_dataset
       use shr_kind_mod,only : r8 => shr_kind_r8

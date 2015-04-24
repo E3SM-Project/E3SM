@@ -21,7 +21,7 @@ use shr_kind_mod,  only: r8 => shr_kind_r8
 use phys_grid,     only: phys_grid_find_col, get_rlat_p, get_rlon_p
 use spmd_utils,    only: masterproc, iam
 use cam_logfile,   only: iulog
-use abortutils,    only: endrun
+use cam_abortutils,    only: endrun
 
 implicit none
 private

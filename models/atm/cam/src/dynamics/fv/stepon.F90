@@ -11,7 +11,7 @@ module stepon
    use pmgrid,             only: plev, plevp, plat
    use spmd_utils,         only: iam, masterproc
    use dyn_internal_state, only: get_dyn_state, get_dyn_state_grid
-   use abortutils,         only: endrun
+   use cam_abortutils,         only: endrun
    use ppgrid,             only: begchunk, endchunk
    use physconst,          only: zvir, cappa
    use physics_types,      only: physics_state, physics_tend

@@ -1,0 +1,134 @@
+#!/usr/bin/env python
+
+"""
+A script to help track down the commit that caused a test to fail. This
+script is intended to be run by git bisect.
+"""
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+import wait_for_tests
+
+import argparse, sys, glob, os
+
+from acme_util import expect, warning, verbose_print, run_cmd
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s <testname> <testroot> <project> [--compare=<baseline-id>] [--no-submit]  [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Bisect broken test ERS.f45_g37.B1850C5.melvin_gnu \033[0m
+    > git bisect start
+    > git bisect good [LAST KNOWN WORKING COMMIT]
+    > git bisect bad [CURRENT COMMIT]
+    > git bisect run scripts/acme/%s ERS.f45_g37.B1850C5.melvin_gnu /scratch/user/acme_scratch
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("testname", help="Name of failing test.")
+
+    parser.add_argument("testroot", help="Path to testroot to use for testcases for bisect.")
+
+    parser.add_argument("project", help="Project to be given to create_test.")
+
+    parser.add_argument("-c", "--compare", action="store", dest="compare", default=None,
+                        help="Baseline id for comparing baselines. Not specifying means no comparisons will be done.")
+
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                        help="Print extra information")
+
+    parser.add_argument("-n", "--check-namelists", action="store_true", dest="check_namelists", default=False,
+                        help="Consider a commit to be broken if namelist check fails")
+
+    parser.add_argument("-t", "--check-throughput", action="store_true", dest="check_throughput", default=False,
+                        help="Consider a commit to be broken if throughput check fails (fail if tests slow down)")
+
+    parser.add_argument("--no-submit", action="store_true", dest="no_submit", default=False,
+                        help="Do not submit job to queue, run locally.")
+
+    args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
+
+    return args.testname, args.testroot, args.project, args.compare, args.check_namelists, args.check_throughput, args.no_submit
+
+###############################################################################
+def acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, no_submit):
+###############################################################################
+    expect(os.path.exists("scripts/create_test"), "Please run from root of repository")
+
+    current_sha = acme_util.get_current_commit(short=True)
+
+    print "####################################################################"
+    print "BISECTING COMMIT", current_sha
+    print "####################################################################"
+
+    # Formulate and run create_test command
+
+    extra_args = "-autosubmit off -nobatch on" if no_submit else ""
+    compare_args = "-compare %s" % compare if compare is not None else ""
+    create_test_cmd = "./create_test -testname %s -testroot %s -testid %s -project %s %s %s" % \
+                      (testname, testroot, current_sha, project, compare_args, extra_args)
+    run_cmd(create_test_cmd, from_dir="./scripts")
+
+    # Find testcase area
+    glob_matches = glob.glob("%s/%s*%s" % (testroot, testname, current_sha))
+    expect(len(glob_matches) == 1, "Did not find single match, found: '%s'" % glob_matches)
+    testarea = glob_matches[0]
+
+    # Build and run test
+    stat = run_cmd("./*test_build", ok_to_fail=True, from_dir=testarea, arg_stdout=None, arg_stderr=None)[0]
+    if (stat != 0):
+        print "BUILD FAILED!"
+        return False
+
+    stat = run_cmd("./*submit", ok_to_fail=True, from_dir=testarea, arg_stdout=None, arg_stderr=None)[0]
+    if (stat != 0):
+        print "SUBMIT FAILED!"
+        return False
+
+    # Wait for test
+    return wait_for_tests.wait_for_tests([os.path.join(testarea, "TestStatus")],
+                                         no_submit, # wait if using batch
+                                         check_throughput,
+                                         not check_namelists, # inverse due to opposite defaults
+                                         None # don't do cdash stuff
+                                         )
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        wait_for_tests.run_unit_tests()
+        return
+
+    acme_util.stop_buffering_output()
+
+    testname, testroot, project, compare, check_namelists, check_throughput, no_submit = \
+        parse_command_line(sys.argv, description)
+
+    try:
+        rv = acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, no_submit)
+    except:
+        print >> sys.stderr, "Exception in script, aborting bisect entirely:"
+        e = sys.exc_info()[1]
+        print >> sys.stderr, e
+        sys.exit(-1)
+    else:
+        sys.exit(0 if rv else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

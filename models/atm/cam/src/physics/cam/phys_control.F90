@@ -12,7 +12,7 @@ module phys_control
 
 use spmd_utils,    only: masterproc
 use cam_logfile,   only: iulog
-use abortutils,    only: endrun
+use cam_abortutils,    only: endrun
 use shr_kind_mod,  only: r8 => shr_kind_r8
 
 implicit none
@@ -64,6 +64,19 @@ logical           :: history_eddy         = .false.    ! output the eddy variabl
 logical           :: history_budget       = .false.    ! output tendencies and state variables for CAM4
                                                        ! temperature, water vapor, cloud ice and cloud
                                                        ! liquid budgets.
+!BSINGH(09/16/2014):
+logical           :: ssalt_tuning         = .false.    ! sea salt tuning flag for progseasalts_intr.F90
+logical           :: resus_fix            = .false.    ! to address resuspension bug fix in wetdep.F90 
+logical           :: convproc_do_aer      = .false.    ! to apply unified convective transport for aerosols
+logical           :: convproc_do_gas      = .false.    ! to apply unified convective transport for gasses  
+!  convproc_method_activate - 1=apply abdulrazzak-ghan to entrained aerosols for lowest nlayers
+!                             2=do secondary activation with prescribed supersat
+integer           :: convproc_method_activate = 2      ! unified convective transport method               
+logical           :: liqcf_fix            = .false.    ! liq cld fraction fix calc.                     
+logical           :: regen_fix            = .false.    ! aerosol regeneration bug fix for ndrop.F90 
+logical           :: demott_ice_nuc       = .false.    ! use DeMott ice nucleation treatment in microphysics 
+!BSINGH -ENDS
+
 integer           :: history_budget_histfile_num = 1   ! output history file number for budget fields
 logical           :: history_waccm        = .true.     ! output variables of interest for WACCM runs
 logical           :: do_clubb_sgs
@@ -73,6 +86,9 @@ logical           :: state_debug_checks   = .false.    ! Extra checks for validi
 
 logical :: prog_modal_aero ! determines whether prognostic modal aerosols are present in the run.
 
+!BSINGH -  Bugfix flags (Must be removed once the bug fix is accepted for master merge)
+logical :: fix_g1_err_ndrop = .false. !BSINGH - default is false
+
 ! Which gravity wave sources are used?
 ! Orographic
 logical, public, protected :: use_gw_oro = .true.
@@ -80,6 +96,31 @@ logical, public, protected :: use_gw_oro = .true.
 logical, public, protected :: use_gw_front = .false.
 ! Convective
 logical, public, protected :: use_gw_convect = .false.
+
+! Switches that turn on/off individual parameterizations.
+!
+! Comment by Hui Wan (PNNL, 2014-12):
+! This set of switches were implemeted in a very simplistic way
+! for a short-term time-step convergence test performed 
+! with the "standard" CAM5 as of 2014. 
+! The purpose was to identify which moist processes 
+! were responsible for the poor convergence of the full model. 
+! We did not make any attempt to test details of MAM
+! or the non-standard model configurations/components such as 
+! WACCM, CLUBB, CARMA. It is unlikely that the switches will work
+! for those configurations. 
+
+logical :: l_tracer_aero   = .true.
+logical :: l_vdiff         = .true.
+logical :: l_rayleigh      = .true.
+logical :: l_gw_drag       = .true.
+logical :: l_ac_energy_chk = .true.
+logical :: l_bc_energy_fix = .true.
+logical :: l_dry_adj       = .true.
+logical :: l_st_mac        = .true.
+logical :: l_st_mic        = .true.
+logical :: l_rad           = .true.
+
 
 !======================================================================= 
 contains
@@ -102,7 +143,11 @@ subroutine phys_ctl_readnl(nlfile)
       use_subcol_microp, atm_dep_flux, history_amwg, history_vdiag, history_aerosol, history_aero_optics, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, & 
       conv_water_in_rad, do_clubb_sgs, do_tms, state_debug_checks, &
-      use_gw_oro, use_gw_front, use_gw_convect
+      use_gw_oro, use_gw_front, use_gw_convect, fix_g1_err_ndrop, &
+      ssalt_tuning, resus_fix, convproc_do_aer, convproc_do_gas, convproc_method_activate, & !BSINGH(09/16/2014):Added ssalt_tuning,resus_fix,convproc_do_aer,convproc_do_gas
+      liqcf_fix, regen_fix, demott_ice_nuc, &                                                !BSINGH(09/16/2014):liqcf_fix,regen_fix,demott_ice_nuc
+      l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
+      l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -148,6 +193,25 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
+   call mpibcast(fix_g1_err_ndrop,                1 , mpilog,  0, mpicom)!BSINGH - bugfix for ndrop.F90
+   call mpibcast(ssalt_tuning,                    1 , mpilog,  0, mpicom)!BSINGH - for seasalt tuning for progseasalts_intr.F90
+   call mpibcast(resus_fix,                       1 , mpilog,  0, mpicom)!BSINGH - for fixing resuspension bug in wetdep.F90
+   call mpibcast(convproc_do_aer,                 1 , mpiint,  0, mpicom)!BSINGH - to apply unified convective transport for aerosols
+   call mpibcast(convproc_do_gas,                 1 , mpilog,  0, mpicom)!BSINGH - to apply unified convective transport for gasses
+   call mpibcast(convproc_method_activate,        1 , mpilog,  0, mpicom)!BSINGH - unified convective transport method  
+   call mpibcast(liqcf_fix,                       1 , mpilog,  0, mpicom)!BSINGH - liq cld fraction fix calc.
+   call mpibcast(regen_fix,                       1 , mpilog,  0, mpicom)!BSINGH - aerosol regeneration bug fix for ndrop.F90   
+   call mpibcast(demott_ice_nuc,                  1 , mpilog,  0, mpicom)!BSINGH - use DeMott ice nucleation treatment in microphysics  
+   call mpibcast(l_tracer_aero,                   1 , mpilog,  0, mpicom)
+   call mpibcast(l_vdiff,                         1 , mpilog,  0, mpicom)
+   call mpibcast(l_rayleigh,                      1 , mpilog,  0, mpicom)
+   call mpibcast(l_gw_drag,                       1 , mpilog,  0, mpicom)
+   call mpibcast(l_ac_energy_chk,                 1 , mpilog,  0, mpicom)
+   call mpibcast(l_bc_energy_fix,                 1 , mpilog,  0, mpicom)
+   call mpibcast(l_dry_adj,                       1 , mpilog,  0, mpicom)
+   call mpibcast(l_st_mac,                        1 , mpilog,  0, mpicom)
+   call mpibcast(l_st_mic,                        1 , mpilog,  0, mpicom)
+   call mpibcast(l_rad,                           1 , mpilog,  0, mpicom)
 #endif
 
    ! Error checking:
@@ -160,7 +224,8 @@ subroutine phys_ctl_readnl(nlfile)
       write(iulog,*)'waccm: illegal value of waccmx_opt:', waccmx_opt
       call endrun('waccm: illegal value of waccmx_opt')
    endif
-   if (.not. (shallow_scheme .eq. 'Hack' .or. shallow_scheme .eq. 'UW' .or. shallow_scheme .eq. 'CLUBB_SGS')) then
+   if (.not. (shallow_scheme .eq. 'Hack' .or. shallow_scheme .eq. 'UW' .or. shallow_scheme .eq. 'CLUBB_SGS' &
+       .or. shallow_scheme.eq.'off')) then
       write(iulog,*)'phys_setopts: illegal value of shallow_scheme:', shallow_scheme
       call endrun('phys_setopts: illegal value of shallow_scheme')
    endif
@@ -209,6 +274,7 @@ subroutine phys_ctl_readnl(nlfile)
 
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &
+                      .or. cam_chempkg_is('trop_mam4') &
                       .or. cam_chempkg_is('trop_mam7') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
@@ -257,7 +323,13 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         history_amwg_out, history_vdiag_out, history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         conv_water_in_rad_out, cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, &
-                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out )
+                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, fix_g1_err_ndrop_out,     & !BSINGH - bugfix for ndrop.F90
+                        ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  & !BSINGH added ssalt_tuning,resus_fix,convproc_do_aer
+                        convproc_do_gas_out, convproc_method_activate_out,   & !BSINGH added convproc_do_gas,convproc_method_activate_out
+                        liqcf_fix_out, regen_fix_out,demott_ice_nuc_out      & !BSINGH added cliqcf_fix,regen_fix,demott_ice_nuc
+                       ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
+                       ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
+                        )
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
 !          deep_scheme_out   : deep convection scheme
@@ -289,6 +361,27 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: prog_modal_aero_out
    logical,           intent(out), optional :: do_tms_out
    logical,           intent(out), optional :: state_debug_checks_out
+   logical,           intent(out), optional :: fix_g1_err_ndrop_out!BSINGH - bugfix for ndrop.F90
+   logical,           intent(out), optional :: ssalt_tuning_out    !BSINGH - for seasalt tuning for progseasalts_intr.F90
+   logical,           intent(out), optional :: resus_fix_out       !BSINGH - for fixing resuspension bug in wetdep.F90
+   logical,           intent(out), optional :: convproc_do_aer_out !BSINGH - to apply unified convective transport for aerosols
+   logical,           intent(out), optional :: convproc_do_gas_out !BSINGH - to apply unified convective transport for gasses
+   integer,           intent(out), optional :: convproc_method_activate_out !BSINGH - unified convective transport method  
+   logical,           intent(out), optional :: liqcf_fix_out       !BSINGH - liq cld fraction fix calc.
+   logical,           intent(out), optional :: regen_fix_out       !BSINGH - aerosol regeneration bug fix for ndrop.F90 
+   logical,           intent(out), optional :: demott_ice_nuc_out  !BSINGH - use DeMott ice nucleation treatment in microphysics   
+
+
+   logical,           intent(out), optional :: l_tracer_aero_out
+   logical,           intent(out), optional :: l_vdiff_out
+   logical,           intent(out), optional :: l_rayleigh_out
+   logical,           intent(out), optional :: l_gw_drag_out
+   logical,           intent(out), optional :: l_ac_energy_chk_out
+   logical,           intent(out), optional :: l_bc_energy_fix_out
+   logical,           intent(out), optional :: l_dry_adj_out
+   logical,           intent(out), optional :: l_st_mac_out
+   logical,           intent(out), optional :: l_st_mic_out
+   logical,           intent(out), optional :: l_rad_out
 
    if ( present(deep_scheme_out         ) ) deep_scheme_out          = deep_scheme
    if ( present(shallow_scheme_out      ) ) shallow_scheme_out       = shallow_scheme
@@ -313,6 +406,25 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero
    if ( present(do_tms_out              ) ) do_tms_out               = do_tms
    if ( present(state_debug_checks_out  ) ) state_debug_checks_out   = state_debug_checks
+   if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop !BSINGH - bugfix for ndrop.F90
+   if ( present(ssalt_tuning_out        ) ) ssalt_tuning_out         = ssalt_tuning   !BSINGH - for seasalt tuning for progseasalts_intr.F90
+   if ( present(resus_fix_out           ) ) resus_fix_out            = resus_fix      !BSINGH - for fixing resuspension bug in wetdep.F90
+   if ( present(convproc_do_aer_out     ) ) convproc_do_aer_out      = convproc_do_aer!BSINGH - to apply unified convective transport for aerosols
+   if ( present(convproc_do_gas_out     ) ) convproc_do_gas_out      = convproc_do_gas!BSINGH - to apply unified convective transport for gasses
+   if ( present(convproc_method_activate_out))convproc_method_activate_out= convproc_method_activate  !BSINGH - unified convective transport method  
+   if ( present(liqcf_fix_out           ) ) liqcf_fix_out            = liqcf_fix      !BSINGH - liq cld fraction fix calc.
+   if ( present(regen_fix_out           ) ) regen_fix_out            = regen_fix      !BSINGH -  aerosol regeneration bug fix for ndrop.F90 
+   if ( present(demott_ice_nuc_out      ) ) demott_ice_nuc_out       = demott_ice_nuc !BSINGH - use DeMott ice nucleation treatment in microphysics  
+   if ( present(l_tracer_aero_out       ) ) l_tracer_aero_out     = l_tracer_aero
+   if ( present(l_vdiff_out             ) ) l_vdiff_out           = l_vdiff
+   if ( present(l_rayleigh_out          ) ) l_rayleigh_out        = l_rayleigh
+   if ( present(l_gw_drag_out           ) ) l_gw_drag_out         = l_gw_drag
+   if ( present(l_ac_energy_chk_out     ) ) l_ac_energy_chk_out   = l_ac_energy_chk
+   if ( present(l_bc_energy_fix_out     ) ) l_bc_energy_fix_out   = l_bc_energy_fix
+   if ( present(l_dry_adj_out           ) ) l_dry_adj_out         = l_dry_adj
+   if ( present(l_st_mac_out            ) ) l_st_mac_out          = l_st_mac
+   if ( present(l_st_mic_out            ) ) l_st_mic_out          = l_st_mic
+   if ( present(l_rad_out               ) ) l_rad_out             = l_rad
 
 end subroutine phys_getopts
 

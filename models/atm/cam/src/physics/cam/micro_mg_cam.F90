@@ -29,7 +29,7 @@ use cldwat2m_macro, only: rhmini
 use cam_history,    only: addfld, add_default, phys_decomp, outfld
 
 use cam_logfile,    only: iulog
-use abortutils,     only: endrun
+use cam_abortutils,     only: endrun
 use error_messages, only: handle_errmsg
 use ref_pres,       only: top_lev=>trop_cloud_top_lev
 
@@ -54,6 +54,7 @@ logical :: microp_uniform
 
 logical, public :: do_cldliq ! Prognose cldliq flag
 logical, public :: do_cldice ! Prognose cldice flag
+real(r8) :: dcs !autoconversion size threshold for cloud ice to snow (m)
 
 integer, parameter :: ncnst = 4       ! Number of constituents
 character(len=8), parameter :: &      ! Constituent names
@@ -151,13 +152,15 @@ subroutine micro_mg_cam_readnl(nlfile)
   ! Namelist variables
   logical :: micro_mg_do_cldice   = .true. ! do_cldice = .true., MG microphysics is prognosing cldice
   logical :: micro_mg_do_cldliq   = .true. ! do_cldliq = .true., MG microphysics is prognosing cldliq
+  real(r8) :: micro_mg_dcs !autoconversion size threshold for cloud ice to snow (m)
 
   ! Local variables
   integer :: unitn, ierr
   character(len=*), parameter :: subname = 'micro_mg_cam_readnl'
 
   namelist /micro_mg_nl/ micro_mg_version, micro_mg_sub_version, &
-       micro_mg_do_cldice, micro_mg_do_cldliq, microp_uniform
+       micro_mg_do_cldice, micro_mg_do_cldliq, microp_uniform, &
+       micro_mg_dcs
 
   !-----------------------------------------------------------------------------
 
@@ -177,6 +180,7 @@ subroutine micro_mg_cam_readnl(nlfile)
      ! set local variables
      do_cldice  = micro_mg_do_cldice
      do_cldliq  = micro_mg_do_cldliq
+     dcs        = micro_mg_dcs
 
      ! Verify that version numbers are valid.
      select case (micro_mg_version)
@@ -202,6 +206,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(do_cldice,            1, mpilog, 0, mpicom)
   call mpibcast(do_cldliq,            1, mpilog, 0, mpicom)
   call mpibcast(microp_uniform,       1, mpilog, 0, mpicom)
+  call mpibcast(dcs,                  1, mpir8, 0, mpicom)
 #endif
 
 contains
@@ -468,7 +473,7 @@ subroutine micro_mg_cam_init(pbuf2d)
   case (1)
      ! MG 1 does not initialize micro_mg_utils, so have to do it here.
      call micro_mg_utils_init(r8, rh2o, cpair, tmelt, latvap, latice, &
-          errstring)
+          errstring, dcs)
      call handle_errmsg(errstring, subname="micro_mg_utils_init")
 
      select case (micro_mg_sub_version)
@@ -476,12 +481,12 @@ subroutine micro_mg_cam_init(pbuf2d)
         call micro_mg_init1_0( &
              r8, gravit, rair, rh2o, cpair, &
              rhoh2o, tmelt, latvap, latice, &
-             rhmini, errstring)
+             rhmini, errstring, dcs)
      case (5)
         call micro_mg_init1_5( &
              r8, gravit, rair, rh2o, cpair, &
              tmelt, latvap, latice, rhmini, &
-             microp_uniform, do_cldice, errstring)
+             microp_uniform, do_cldice, errstring, dcs)
      end select
   end select
 

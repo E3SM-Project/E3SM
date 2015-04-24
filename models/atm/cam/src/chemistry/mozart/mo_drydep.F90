@@ -12,7 +12,7 @@ module mo_drydep
   use spmd_utils,   only : masterproc, iam
   use ppgrid,       only : pcols, begchunk, endchunk
   use mo_tracname,  only : solsym
-  use abortutils,   only : endrun
+  use cam_abortutils,   only : endrun
   use ioFileMod,    only : getfil
 #ifdef SPMD
   use mpishorthand, only : mpicom, mpir8, mpiint, mpilog
@@ -157,7 +157,7 @@ contains
   !---------------------------------------------------------------------------
   subroutine dvel_inti_fromlnd 
     use mo_chem_utls,         only : get_spc_ndx
-    use abortutils,           only : endrun
+    use cam_abortutils,           only : endrun
     use chem_mods,            only : adv_mass
     use seq_drydep_mod,       only : dfoxd
 

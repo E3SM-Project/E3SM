@@ -4,7 +4,7 @@
 module dust_model 
   use shr_kind_mod, only: r8 => shr_kind_r8, cl => shr_kind_cl
   use spmd_utils,   only: masterproc
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
 
   implicit none
   private
@@ -21,7 +21,7 @@ module dust_model
   integer, parameter :: dust_nbin = 2
   integer, parameter :: dust_nnum = 2
 
-#if  ( defined MODAL_AERO_3MODE )
+#if  ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
   character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a1', 'dst_a3', 'num_a1', 'num_a3' /)
   real(r8),         parameter :: dust_dmt_grd(dust_nbin+1) = (/ 0.1e-6_r8, 1.0e-6_r8, 10.0e-6_r8/)
   real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.032_r8,0.968_r8 /)

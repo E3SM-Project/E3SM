@@ -11,7 +11,7 @@
    use physics_types,   only: physics_state, physics_ptend, physics_tend, physics_tend_alloc, physics_state_alloc
    use ppgrid,          only: pcols, psubcols, pver
    use constituents,    only: pcnst
-   use abortutils,      only: endrun
+   use cam_abortutils,      only: endrun
    use pio,             only: var_desc_t
 
    implicit none

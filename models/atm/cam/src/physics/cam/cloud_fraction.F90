@@ -8,7 +8,7 @@ module cloud_fraction
   use ref_pres,     only: pref_mid 
   use spmd_utils,   only: masterproc
   use cam_logfile,  only: iulog
-  use abortutils,   only: endrun
+  use cam_abortutils,   only: endrun
   use ref_pres,     only: trop_cloud_top_lev
 
   implicit none
@@ -191,7 +191,9 @@ subroutine cldfrc_init
 
    use cam_history,   only:  phys_decomp, addfld
    use dycore,        only:  dycore_is, get_resolution
-   use chemistry,     only:  chem_is
+   !BSINGH - "use chemistry" is commented out to get rid of a circular dependency in unified convective trasport scheme
+   ! The dependency was: chemistry->aerosol_intr->zm_conv_intr->zm_conv->cloud_fraction->chemistry 
+   !use chemistry,     only:  chem_is
    use phys_control,  only:  phys_getopts
    
    ! horizontal grid specifier

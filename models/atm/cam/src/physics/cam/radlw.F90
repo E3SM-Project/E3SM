@@ -7,7 +7,7 @@ module radlw
 !-----------------------------------------------------------------------
 use shr_kind_mod,      only: r8 => shr_kind_r8
 use ppgrid,            only: pcols, pver, pverp
-use abortutils,        only: endrun
+use cam_abortutils,        only: endrun
 use scamMod,           only: single_column, scm_crm_mode
 use radconstants,      only: nlwbands
 implicit none

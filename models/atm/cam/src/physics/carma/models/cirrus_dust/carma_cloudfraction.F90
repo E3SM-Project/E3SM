@@ -27,7 +27,7 @@
     use physics_types,  only: physics_state, physics_ptend, set_wet_to_dry, &
                               set_dry_to_wet
     use constituents,   only: cnst_get_ind
-    use abortutils,     only: endrun
+    use cam_abortutils,     only: endrun
 
     use camsrfexch,       only : cam_in_t
     use ppgrid,           only : pcols, pver, pverp

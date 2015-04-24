@@ -32,7 +32,7 @@
 #define MAX_STACK 128
 
 /* longest timer name allowed (probably safe to just change) */
-#define MAX_CHARS 63
+#define MAX_CHARS 127
 
 /* 
 ** max allowable number of PAPI counters, or derived events. For convenience,

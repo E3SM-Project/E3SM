@@ -16,7 +16,7 @@ use ppgrid,         only: pcols, pver, begchunk, endchunk
 use physics_types,  only: physics_state
 use physconst,      only: mwdry, mwch4, mwn2o, mwf11, mwf12, mwco2
 use chem_surfvals,  only: chem_surfvals_get, chem_surfvals_co2_rad
-use abortutils,     only: endrun
+use cam_abortutils,     only: endrun
 use error_messages, only: handle_err
 
 

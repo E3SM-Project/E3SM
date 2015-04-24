@@ -20,7 +20,7 @@
       use ppgrid,       only : pcols
       use physconst,    only : pi
       use mo_constants, only : r2d, d2r
-      use abortutils,   only : endrun
+      use cam_abortutils,   only : endrun
       use cam_logfile,  only : iulog
 
       implicit none

@@ -592,22 +592,9 @@ sub checkOptions
 # Read options from config_machines.xml
     my $machine = (defined $opts{mach}) ? $opts{mach} : $opts{xml_mach};
 
-    # If we're running namelist comparison tests, we want to set the machine to Yellowstone, 
-    # otherwise use the supplied machine value. 
-    if( defined $opts{'nlcompareonly'})
-	{
-        # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
-        #$cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", "yellowstone", 0);
-        ###############################################################################################
-        $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", "yellowstone");
-	}
-	else
-	{
-        # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
-        #$cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine, 0);
-        ###############################################################################################
-        $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine);
-	}
+    # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
+    # $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine, 0);
+    $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine);
 
     if(!defined $opts{'baselineroot'}) {
         $opts{'baselineroot'} = SetupTools::expand_env_var($cfg_ref->get('CCSM_BASELINE'), $cfg_ref);
@@ -794,22 +781,8 @@ sub ExpandXmlList
 	  while ( my $test_elem = shift @test_elems ) {
 	      my $test_name = $test_elem->get_name();
 	      my %test_attr = $test_elem->get_attributes();
-	      
-	      my $test_val;
-	      if($opts{'nlcompareonly'}){
-                # Replace the test type with SBN, see error below...
-                $test_val = "SBN";
-                ############ WARNING: The following code causes a panic later on in the system #####
-                #                     See bug 2024. Erik Kluzek perl5.10, Aug/14/2014              #
-                # Replace the test type with SBN, but keep the options with the underscores.       #
-                #my $optidx = index( $test_attr{'name'}, "_" );
-                #if ( $optidx >= 0 ) {
-                   #$test_val .= substr( $test_attr{'name'}, $optidx );
-                #}
-                ############ WARNING: ##############################################################
-	      }else{
-		  $test_val = $test_attr{'name'}; 
-	      }
+
+	      my $test_val = $test_attr{'name'};
 
 	      my @mach_elems = $test_elem->get_children();
 	      while ( my $mach_elem = shift @mach_elems ) {
@@ -1667,7 +1640,8 @@ sub namelistCompare
     }
 
     chdir($testpath) or die "couldn't change directory to $testpath\n";
-    my $cprnml = "$testpath/Tools/compare_namelists.pl";
+    my $cprnml = "$testpath/Tools/compare_namelists";
+    my $altcpr = "$testpath/Tools/simple_compare";
 
     my $configtemplate = "$scriptsroot/ccsm_utils/Case.template/config_definition.xml";
     &Debug("config template is $configtemplate\n");
@@ -1712,9 +1686,12 @@ sub namelistCompare
 	    if(! -e "$basecmpdir/$nml"){
 		warn "WARNING: no baseline file exists for $nml\n";
 	    }else{
-		$ENV{CASEBASEID}=$test;
-		my $compare_command = "$cprnml $buildconfpath/$nml $basecmpdir/$nml";
+		my $compare_command = "$cprnml -c $test $basecmpdir/$nml $buildconfpath/$nml 2>&1";
 		my $output = `$compare_command`;
+                if ($output =~ /does not appear to be a namelist file/) {
+                    $compare_command = "$altcpr -c $test $basecmpdir/$nml $buildconfpath/$nml 2>&1";
+                    $output = `$compare_command`;
+                }
 		$nlcompoutput .= $output;
 	    }
 	}
@@ -1729,9 +1706,12 @@ sub namelistCompare
 	    if(! -e "$basecase/$nml"){
 		warn "WARNING: no baseline file exists for $nml\n";
 	    }else{
-		$ENV{CASEBASEID}=$test;
-		my $compare_command = "$cprnml $testpath/$nml $basecase/$nml";
+		my $compare_command = "$cprnml -c $test $basecase/$nml $testpath/$nml 2>&1";
 		my $output = `$compare_command`;
+                if ($output =~ /does not appear to be a namelist file/) {
+                    $compare_command = "$altcpr -c $test $basecmpdir/$nml $testpath/$nml 2>&1";
+                    $output = `$compare_command`;
+                }
 		$nlcompoutput .= $output;
 	    }
 	}
@@ -1786,14 +1766,13 @@ sub namelistCompare
     if($opts{'generate'}){
 	my $genpath = "$baseroot/".$opts{'generate'}."/$basename";
 	if(-d $genpath){
-	    warn "Baseline directory $genpath already exist - will not overwrite.";
+	    warn "Baseline directory $genpath already exists";
 	}else{
 	    umask 0000;
 	    mkpath $genpath, 1, 0775;
-	    system("cp -r $buildconfpath $genpath"); 
-	    system("cp $buildconfpath/../user_nl* $genpath") ;
-	    warn "Couldnt create Baseline directory $genpath" unless -d "$genpath/CaseDocs"; 
-	}
+        }
+        system("cp -rf $buildconfpath $genpath");
+        system("cp -f $buildconfpath/../user_nl* $genpath") ;
     }
 }
 
