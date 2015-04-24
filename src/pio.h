@@ -28,14 +28,6 @@
 #include <pnetcdf.h>
 #endif
 
-#ifdef _MPISERIAL
-typedef int MPI_Info;
-typedef long long MPI_Offset;
-#define MPI_OFFSET (sizeof(size_t))
-#define MPI_LONG_LONG (sizeof(long long))
-#define MPI_UNSIGNED_LONG_LONG (sizeof(unsigned long long))
-#define MPI_CHARACTER (sizeof(char))
-#endif
 // In some MPI implementations MPI_OFFSET is not properly defined.  
 #ifndef MPI_OFFSET
 #define MPI_OFFSET  MPI_LONG_LONG
