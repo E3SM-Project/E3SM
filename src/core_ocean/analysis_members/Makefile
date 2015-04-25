@@ -4,15 +4,18 @@ OBJS = mpas_ocn_analysis_driver.o \
        mpas_ocn_global_stats.o \
        mpas_ocn_okubo_weiss.o \
        mpas_ocn_okubo_weiss_eigenvalues.o \
+       mpas_ocn_surface_statistics.o \
        mpas_ocn_zonal_mean.o
 
 all: $(OBJS)
 
-mpas_ocn_analysis_driver.o: mpas_ocn_global_stats.o mpas_ocn_okubo_weiss.o mpas_ocn_zonal_mean.o mpas_ocn_okubo_weiss_eigenvalues.o
+mpas_ocn_analysis_driver.o: mpas_ocn_global_stats.o mpas_ocn_okubo_weiss.o mpas_ocn_zonal_mean.o mpas_ocn_okubo_weiss_eigenvalues.o mpas_ocn_surface_statistics.o
 
 mpas_ocn_global_stats.o:
 
 mpas_ocn_zonal_mean.o:
+
+mpas_ocn_surface_statistics.o: 
 
 clean:
 	$(RM) *.o *.i *.mod *.f90

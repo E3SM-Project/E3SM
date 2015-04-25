@@ -26,6 +26,7 @@ module ocn_analysis_driver
 
    use ocn_constants
    use ocn_global_stats
+   use ocn_surface_statistics
    use ocn_zonal_mean
    use ocn_okubo_weiss
 !   use ocn_TEMPLATE
@@ -110,8 +111,10 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_use_global_stats, config_use_zonal_mean 
+      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_use_zonal_mean 
       logical, pointer :: config_use_okubo_weiss
+      logical, pointer :: config_use_surface_statistics
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -120,6 +123,12 @@ contains
       call mpas_pool_get_config(configPool, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
           call ocn_setup_packages_global_stats(configPool, packagePool, err_tmp)
+          err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(configPool, 'config_use_surface_statistics', config_use_surface_statistics)
+      if (config_use_surface_statistics) then
+          call ocn_setup_packages_surface_statistics(configPool, packagePool, err_tmp)
           err = ior(err, err_tmp)
       endif
 
@@ -141,6 +150,7 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
+   write(6,*) ' finished setup'
    end subroutine ocn_analysis_setup_packages!}}}
 
 !***********************************************************************
@@ -187,7 +197,9 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_use_surface_statistics
+      logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
@@ -196,6 +208,12 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
           call ocn_init_global_stats(domain, err_tmp)
+          err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_surface_statistics', config_use_surface_statistics)
+      if (config_use_surface_statistics) then
+          call ocn_init_surface_statistics(domain, err_tmp)
           err = ior(err, err_tmp)
       endif
 
@@ -217,6 +235,7 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
+   write(6,*) 'finished init'
    end subroutine ocn_analysis_init!}}}
 
 !***********************************************************************
@@ -266,6 +285,7 @@ contains
       integer :: timeLevel, err_tmp
 
       logical, pointer :: config_use_global_stats, config_global_stats_compute_startup
+      logical, pointer :: config_use_surface_statistics, config_surface_statistics_compute_startup
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
       logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
 !      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
@@ -282,6 +302,16 @@ contains
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif 
+
+      call mpas_pool_get_config(domain % configs, 'config_use_surface_statistics', config_use_surface_statistics)
+      call mpas_pool_get_config(domain % configs, 'config_surface_statistics_compute_startup', config_surface_statistics_compute_startup)
+      if (config_use_surface_statistics.and.config_surface_statistics_compute_startup) then
+         call ocn_compute_surface_statistics(domain, timeLevel, err_tmp)
+         call mpas_timer_start('io_write', .false.)
+         call mpas_stream_mgr_write(stream_manager, streamID='surfaceStatisticsOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_timer_stop('io_write')
+         err = ior(err, err_tmp)
+      endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       call mpas_pool_get_config(domain % configs, 'config_zonal_mean_compute_startup', config_zonal_mean_compute_startup)
@@ -310,6 +340,7 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
+   write(6,*) 'finished startup'
    end subroutine ocn_analysis_compute_startup!}}}
 
 !***********************************************************************
@@ -357,7 +388,9 @@ contains
 
       integer :: timeLevel, err_tmp
 
-      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_use_surface_statistics
+      logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
@@ -367,6 +400,11 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
          call ocn_compute_global_stats(domain, timeLevel, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_surface_statistics', config_use_surface_statistics)
+      if (config_use_surface_statistics) then
+         call ocn_compute_surface_statistics(domain, timeLevel, err_tmp)
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
@@ -384,6 +422,7 @@ contains
 !         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !      endif
 
+   write(6,*) 'finished compute'
    end subroutine ocn_analysis_compute!}}}
 
 !***********************************************************************
@@ -431,7 +470,9 @@ contains
       !-----------------------------------------------------------------
 
       integer :: timeLevel, err_tmp
-      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_use_surface_statistics
+      logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
@@ -443,6 +484,13 @@ contains
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_global_stats(domain, timeLevel, err_tmp)
          endif 
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_surface_statistics', config_use_surface_statistics)
+      if (config_use_surface_statistics) then
+         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='surfaceStatisticsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+            call ocn_compute_surface_statistics(domain, timeLevel, err_tmp)
+         endif
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
@@ -466,6 +514,7 @@ contains
 !         endif
 !      endif
 
+   write(6,*) 'finished alarms'
    end subroutine ocn_analysis_compute_w_alarms!}}}
 
 !***********************************************************************
@@ -512,7 +561,9 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_use_surface_statistics
+      logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
@@ -521,6 +572,12 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
           call ocn_restart_global_stats(domain, err_tmp)
+          err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_surface_statistics', config_use_surface_statistics)
+      if (config_use_surface_statistics) then
+          call ocn_restart_surface_statistics(domain, err_tmp)
           err = ior(err, err_tmp)
       endif
 
@@ -542,6 +599,7 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
+   write(6,*) 'finished restart'
    end subroutine ocn_analysis_restart!}}}
 
 !***********************************************************************
@@ -591,7 +649,9 @@ contains
 
       integer :: err_tmp
 
-      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_use_surface_statistics 
+      logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
@@ -604,6 +664,17 @@ contains
           call mpas_timer_stop('io_write')
           call mpas_timer_start('io_reset_alarms', .false.)
           call mpas_stream_mgr_reset_alarms(stream_manager, streamID='globalStatsOutput', ierr=err_tmp)
+          call mpas_timer_stop('io_reset_alarms')
+          err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_surface_statistics', config_use_surface_statistics)
+      if (config_use_surface_statistics) then
+          call mpas_timer_start('io_write', .false.)
+          call mpas_stream_mgr_write(stream_manager, streamID='surfaceStatisticsOutput', ierr=err_tmp)
+          call mpas_timer_stop('io_write')
+          call mpas_timer_start('io_reset_alarms', .false.)
+          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='surfaceStatisticsOutput', ierr=err_tmp)
           call mpas_timer_stop('io_reset_alarms')
           err = ior(err, err_tmp)
       endif
@@ -641,6 +712,7 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
+   write(6,*) 'finished write'
    end subroutine ocn_analysis_write!}}}
 
 !***********************************************************************
@@ -687,15 +759,23 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_use_surface_statistics
+      logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
+     call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
      if (config_use_global_stats) then
         call ocn_finalize_global_stats(domain, err_tmp)
+        err = ior(err, err_tmp)
+     endif
+
+     call mpas_pool_get_config(domain % configs, 'config_use_surface_statistics', config_use_surface_statistics)
+     if (config_use_surface_statistics) then
+        call ocn_finalize_surface_statistics(domain, err_tmp)
         err = ior(err, err_tmp)
      endif
 
@@ -717,6 +797,7 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
+   write(6,*) 'finished finalize'
    end subroutine ocn_analysis_finalize!}}}
 
 end module ocn_analysis_driver

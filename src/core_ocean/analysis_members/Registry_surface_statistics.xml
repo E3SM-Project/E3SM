@@ -36,31 +36,31 @@
 	<var_struct name="amSurfaceStatistics" time_levs="1" packages="amSurfaceStatistics">
 
 		<var_array name="minSurfaceStatistics" type="real" dimensions="Time">
-			<var name="minSSH" array_group="mins" units="m"
+			<var name="minSurfaceSSH" array_group="mins" units="m"
 				 description="Minimum sea-surface height"
 			/>
 		</var_array>
 
 		<var_array name="maxSurfaceStatistics" type="real" dimensions="Time">
-			<var name="maxSSH" array_group="maxes" units="m"
+			<var name="maxSurfaceSSH" array_group="maxes" units="m"
 				 description="Maximum sea-surface height"
 			/>
 		</var_array>
 
 		<var_array name="avgSurfaceStatistics" type="real" dimensions="Time">
-			<var name="avgSSH" array_group="avg" units="m"
+			<var name="avgSurfaceSSH" array_group="avg" units="m"
 				 description="Average sea-surface height"
 			/>
 		</var_array>
 
                 <var_array name="locationMinSurfaceStatistics" type="real" dimensions="TWO Time">
-                        <var name="locMinSSH" array_group="avg" units="radians"
+                        <var name="locMinSurfaceSSH" array_group="avg" units="radians"
                                  description="(longitude,latitue) of minimum sea-surface height minimum"
                         />
                 </var_array>
 
                 <var_array name="locationMaxSurfaceStatistics" type="real" dimensions="TWO Time">
-                        <var name="locMaxSSH" array_group="avg" units="radians"
+                        <var name="locMaxSurfaceSSH" array_group="avg" units="radians"
                                  description="(longitude,latitue) of maximim sea-surface height minimum"
                         />
                 </var_array>
