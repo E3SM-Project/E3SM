@@ -63,6 +63,8 @@
       integer :: contentsType
       type (mpas_pool_data_type), pointer :: data => null()
       type (mpas_pool_member_type), pointer :: next => null()
+      type (mpas_pool_member_type), pointer :: iteration_next => null()
+      type (mpas_pool_member_type), pointer :: iteration_prev => null()
    end type mpas_pool_member_type
 
    type mpas_pool_head_type
@@ -74,6 +76,8 @@
       integer :: iteratorIndex
       type (mpas_pool_head_type), dimension(:), pointer :: table => null()
       type (mpas_pool_member_type), pointer :: iterator => null()
+      type (mpas_pool_member_type), pointer :: iteration_head => null()
+      type (mpas_pool_member_type), pointer :: iteration_tail => null()
    end type mpas_pool_type
 
    type mpas_pool_iterator_type
