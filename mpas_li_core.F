@@ -717,7 +717,8 @@ module li_core
       call mpas_set_timeInterval(timeStep, timeString=config_dt, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)
 
-
+      ! Setup start/stop/duration times
+      ! config_run_duration takes precedence over config_stop_time
       if (trim(config_run_duration) /= "none") then
          call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
@@ -734,11 +735,15 @@ module li_core
       else if (trim(config_stop_time) /= "none") then
          call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
+         if (stopTime .lt. startTime) then
+            write(stderrUnit,*) 'Error: config_stop_time is earlier than config_start_time!'
+            ierr = 1
+         endif
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)
       else
-          write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
-          ierr = 1
+         write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
+         ierr = 1
       end if
 
       ! Set up the adaptiveTimestepForceInterval alarm.
