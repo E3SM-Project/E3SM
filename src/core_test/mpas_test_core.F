@@ -38,18 +38,20 @@ module test_core
       character(len=*), intent(out) :: startTimeStamp
    
       type (MPAS_Time_Type) :: startTime
-      integer :: ierr
+      integer :: iErr
+
+
+      iErr = 0
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
       !
       clock => domain % clock
 
-
       !
       ! Set startTimeStamp based on the start time of the simulation clock
       !
-      startTime = mpas_get_clock_time(clock, MPAS_START_TIME, ierr)
+      startTime = mpas_get_clock_time(clock, MPAS_START_TIME, iErr)
       call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
 
    end function test_core_init!}}}
@@ -79,6 +81,11 @@ module test_core
       type (domain_type), intent(inout) :: domain
       integer :: iErr
 
+      type (mpas_pool_type), pointer :: pool
+      type (mpas_pool_iterator_type) :: itr
+
+
+      iErr = 0
 
    end function test_core_run!}}}
 
@@ -102,9 +109,12 @@ module test_core
       implicit none
 
       type (domain_type), intent(inout) :: domain 
-      integer :: ierr
+      integer :: iErr
  
-     call mpas_destroy_clock(clock, ierr)
+
+      iErr = 0
+
+      call mpas_destroy_clock(clock, iErr)
 
    end function test_core_finalize!}}}
 

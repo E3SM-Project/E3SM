@@ -181,10 +181,10 @@ module test_core_interface
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
 
       call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=local_err)
-      call mpas_set_timeInterval(timeStep, timeString=config_run_duration, ierr=local_err)
 
       if (trim(config_run_duration) /= "none") then
          call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=local_err)
+         call mpas_set_timeInterval(timeStep, timeString=config_run_duration, ierr=local_err)
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, runDuration=runDuration, ierr=local_err)
 
          if (trim(config_stop_time) /= "none") then
@@ -195,6 +195,7 @@ module test_core_interface
          end if
       else if (trim(config_stop_time) /= "none") then
          call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
+         timeStep = stopTime - startTime
          call mpas_create_clock(core_clock, startTime=startTime, timeStep=timeStep, stopTime=stopTime, ierr=local_err)
       else
           write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
@@ -229,17 +230,7 @@ module test_core_interface
       type (mpas_pool_type), intent(inout) :: configs
       character(len=StrKIND) :: stream
 
-      logical, pointer :: config_do_restart
-
-      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
-
-      if (.not. associated(config_do_restart)) then
-         write(stream,'(a)') ''
-      else if (config_do_restart) then
-         write(stream,'(a)') 'restart'
-      else
-         write(stream,'(a)') 'input'
-      end if
+      write(stream,'(a)') 'input'
 
    end function test_get_mesh_stream!}}}
 
