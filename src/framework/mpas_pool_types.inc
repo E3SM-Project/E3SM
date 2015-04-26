@@ -73,7 +73,6 @@
 
    type mpas_pool_type
       integer :: size
-      integer :: iteratorIndex
       type (mpas_pool_head_type), dimension(:), pointer :: table => null()
       type (mpas_pool_member_type), pointer :: iterator => null()
       type (mpas_pool_member_type), pointer :: iteration_head => null()

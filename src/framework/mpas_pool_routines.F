@@ -442,7 +442,6 @@ module mpas_pool_routines
 
       end do
 
-      inPool % iteratorIndex = 1
       nullify(inPool % iterator)
 
    end subroutine mpas_pool_empty_pool!}}}
@@ -5210,15 +5209,7 @@ module mpas_pool_routines
       integer :: i
 
 
-      do i=1,inPool % size
-         if (associated(inPool % table(i) % head)) exit
-      end do
-      inPool % iteratorIndex = i
-      if (i <= inPool % size) then
-         inPool % iterator => inPool % table(i) % head
-      else
-         nullify(inPool % iterator)
-      end if
+      inPool % iterator => inPool % iteration_head
 
    end subroutine mpas_pool_begin_iteration!}}}
 
@@ -5265,20 +5256,7 @@ module mpas_pool_routines
          mpas_pool_get_next_member = .true.
 
          ! Advance iterator to next item
-         inPool % iterator => inPool % iterator % next
-
-         ! We may have reached the end of list for current head pointer
-         if (.not. associated(inPool % iterator)) then
-            do i=inPool % iteratorIndex+1, inPool % size
-               if (associated(inPool % table(i) % head)) exit
-            end do
-            inPool % iteratorIndex = i
-            if (i <= inPool % size) then
-               inPool % iterator => inPool % table(i) % head
-            else
-               nullify(inPool % iterator)
-            end if
-         end if
+         inPool % iterator => inPool % iterator % iteration_next
 
       else
          mpas_pool_get_next_member = .false.
