@@ -5401,6 +5401,18 @@ module mpas_pool_routines
          ptr % next => newmem
       end if
 
+      !
+      ! Link the new member into the iteration list
+      !
+      if (.not. associated(inPool % iteration_head)) then
+         inPool % iteration_head => newmem
+         inPool % iteration_tail => newmem
+      else
+         newmem % iteration_prev => inPool % iteration_tail
+         inPool % iteration_tail => newmem
+         newmem % iteration_prev % iteration_next => newmem
+      end if
+
    end function pool_add_member!}}}
 
 
@@ -5466,6 +5478,22 @@ module mpas_pool_routines
             if (endl == ptr_prev % keyLen) then
                if (key(1:endl) == ptr_prev % key(1:endl)) then
                   inPool % table(hash) % head => ptr_prev % next
+
+                  !
+                  ! Un-link the member from the iteration list
+                  !
+                  if (associated(ptr_prev % iteration_prev)) then
+                     ptr_prev % iteration_prev % iteration_next => ptr_prev % iteration_next
+                  else
+                     inPool % iteration_head => ptr_prev % iteration_next
+                  end if
+
+                  if (associated(ptr_prev % iteration_next)) then
+                     ptr_prev % iteration_next % iteration_prev => ptr_prev % iteration_prev
+                  else
+                     inPool % iteration_tail => ptr_prev % iteration_prev
+                  end if
+
 !TODO: are there cases where we need to delete more data here?
                   deallocate(ptr_prev)
                   pool_remove_member = .true.
@@ -5481,6 +5509,22 @@ module mpas_pool_routines
                if (endl == ptr % keyLen) then
                   if (key(1:endl) == ptr % key(1:endl)) then
                      ptr_prev % next => ptr % next
+
+                     !
+                     ! Un-link the member from the iteration list
+                     !
+                     if (associated(ptr % iteration_prev)) then
+                        ptr % iteration_prev % iteration_next => ptr % iteration_next
+                     else
+                        inPool % iteration_head => ptr % iteration_next
+                     end if
+   
+                     if (associated(ptr % iteration_next)) then
+                        ptr % iteration_next % iteration_prev => ptr % iteration_prev
+                     else
+                        inPool % iteration_tail => ptr % iteration_prev
+                     end if
+
 !TODO: are there cases where we need to delete more data here?
                      deallocate(ptr)
                      pool_remove_member = .true.
