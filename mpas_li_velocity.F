@@ -249,11 +249,14 @@ contains
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       integer, pointer :: nEdgesSolve
       integer, pointer :: nVertInterfaces
-      integer, dimension(:), pointer :: edgeMask
+      integer, dimension(:), pointer :: edgeMask, cellMask
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      real (kind=RKIND), dimension(:), pointer :: upperSurface
       type (field2DReal), pointer :: normalVelocityField
       ! truly local variables
+      integer :: cell1, cell2
       integer :: iEdge
       integer :: err_tmp
 
@@ -294,8 +297,35 @@ contains
          end select
          err = ior(err, err_tmp)
 
-         ! Check if the velocity solver has returned a velocity on any non-dynamic edges
+         ! Some "quality control" of normalVelocity
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          do iEdge = 1, nEdgesSolve
+
+            ! Don't allow normalVelocity on edges where an unglaciated cell with
+            ! higher elevation neighbors a glaciated cell.  Some velocity solvers
+            ! could generate a nonzero velocity on these edges.  In the case of a
+            ! velocity directed into the ice sheet, this probably does no harm
+            ! for advection because there is no ice to advect in, but it could result
+            ! in overly restrictive advective CFL conditions.  In the case of velocity
+            ! directed out of the ice sheet, this would result in uphill flow which is
+            ! highly unlikely to be physically correct.  (It could be possible in a HO
+            ! stress balance where stress transfer 'overrides' the driving stress, but
+            ! this seems unlikely to be significant.)  Therefore, always zero velocity
+            ! in these situations.
+            if ( li_mask_is_dynamic_margin(edgeMask(iEdge)) ) then
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(1, iEdge)
+               if ( ( li_mask_is_dynamic_ice(cellMask(cell1)) .and.     &
+                      upperSurface(cell2) > upperSurface(cell1) ) .or.  &
+                    ( li_mask_is_dynamic_ice(cellMask(cell2)) .and.     &
+                      upperSurface(cell1) > upperSurface(cell2) ) ) then
+                  normalVelocity(:, iEdge) = 0.0_RKIND
+               endif
+            endif
+
+            ! Check if the velocity solver has returned a velocity on any non-dynamic edges
             if ( li_mask_is_ice(edgeMask(iEdge)) .and.                    &
                 (.not.(li_mask_is_dynamic_ice(edgeMask(iEdge)))) .and.   &
                 (maxval(abs(normalVelocity(:,iEdge))) /= 0.0_RKIND)      &
@@ -303,6 +333,7 @@ contains
                err_tmp= 1
                !!!normalVelocity(:,iEdge) = 0.0_RKIND  ! this is a hack because the rest of the code requires this, but this condition should really cause a fatal error.
             endif
+
          enddo
          if (err_tmp == 1) then
             write(stderrUnit,*) 'Error: Velocity has been calculated on non-dynamic edges.  There is a problem with the velocity solver.' !!!  Velocity on those edges have been set to 0, but this should be a fatal error.'
