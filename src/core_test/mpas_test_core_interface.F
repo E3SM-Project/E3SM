@@ -229,17 +229,7 @@ module test_core_interface
       type (mpas_pool_type), intent(inout) :: configs
       character(len=StrKIND) :: stream
 
-      logical, pointer :: config_do_restart
-
-      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
-
-      if (.not. associated(config_do_restart)) then
-         write(stream,'(a)') ''
-      else if (config_do_restart) then
-         write(stream,'(a)') 'restart'
-      else
-         write(stream,'(a)') 'input'
-      end if
+      write(stream,'(a)') 'input'
 
    end function test_get_mesh_stream!}}}
 
