@@ -376,6 +376,7 @@ contains
       character (len=StrKIND), pointer :: config_velocity_solver
       real (kind=RKIND), pointer :: config_dynamic_thickness
       logical, pointer :: config_always_compute_fem_grid
+      logical, pointer :: config_output_external_velocity_solver_data
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
       real(kind=RKIND), parameter :: secondsInYear = 365.0 * 24.0 * 3600.0  !< The value of seconds in a year assumed by external dycores
@@ -386,6 +387,7 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(liConfigs, 'config_always_compute_fem_grid', config_always_compute_fem_grid)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_output_external_velocity_solver_data', config_output_external_velocity_solver_data)
 
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
@@ -456,11 +458,14 @@ contains
                 normalVelocity, uReconstructX, uReconstructY)  ! return values
 !         call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)
           call mpas_timer_stop("velocity_solver_solve_L1L2")
-          ! Optional calls to have LifeV output data files
-          call mpas_timer_start("velocity_solver export")
-          call velocity_solver_export_2d_data(lowerSurface, thickness, beta)
-          call velocity_solver_export_L1L2_velocity();
-          call mpas_timer_stop("velocity_solver export")
+
+          if (config_output_external_velocity_solver_data) then
+             ! Optional calls to have LifeV output data files
+             call mpas_timer_start("velocity_solver export")
+             call velocity_solver_export_2d_data(lowerSurface, thickness, beta)
+             call velocity_solver_export_L1L2_velocity();
+             call mpas_timer_stop("velocity_solver export")
+          endif
 #else
               write(stderrUnit,*) "Error: External LifeV library needed to run L1L2 dycore."
               err = 1
@@ -474,10 +479,13 @@ contains
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
-          call mpas_timer_stop("velocity_solver_solve_FO")
-          call mpas_timer_start("velocity_solver export")
-          call velocity_solver_export_FO_velocity()
-          call mpas_timer_stop("velocity_solver export")
+
+          if (config_output_external_velocity_solver_data) then
+             call mpas_timer_stop("velocity_solver_solve_FO")
+             call mpas_timer_start("velocity_solver export")
+             call velocity_solver_export_FO_velocity()
+             call mpas_timer_stop("velocity_solver export")
+          endif
 #else
               write(stderrUnit,*) "Error: External library needed to run FO dycore."
               err = 1

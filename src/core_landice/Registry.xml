@@ -211,6 +211,10 @@
 		            description="Integer specifying the number of digits used to represent the year in time strings."
 		            possible_values="Any positive integer value greater than 0."
 		/>
+		<nml_option name="config_output_external_velocity_solver_data" type="logical" default_value=".false." units="unitless"
+		            description="If .true., external velocity solvers (if enabled) will write their own output data in addition to any MPAS output that is configured."
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 
