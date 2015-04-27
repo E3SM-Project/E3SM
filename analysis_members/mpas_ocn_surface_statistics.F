@@ -231,6 +231,7 @@ contains
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: amSurfaceStatisticsPool
+      type (mpas_pool_type), pointer :: amSurfaceStatisticsLocationPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
@@ -253,12 +254,21 @@ contains
       integer, pointer :: nCellsSolve
       real (kind=RKIND), dimension(:), pointer ::  areaCell
 
+      ! scratch space
+      type(field2DReal), pointer :: workArrayField
+      real (kind=RKIND), dimension(:,:), pointer :: workArray
+      type(field1DReal), pointer :: workMinField, workMaxField, workAvgField
+      real (kind=RKIND), dimension(:), pointer :: workMin, workMax, workAvg
+
       ! local variables
       integer, parameter :: maxVariables = 128
       integer :: iCell, iVariable, iTracer, err_tmp
 
       ! package flag
       logical, pointer :: amSurfaceStatisticsPkgActive
+
+        write(94,*) ' entered compute surface statistics'
+        write(6,*) ' entered compute surface statistics'
 
       ! assume no error
       err = 0
@@ -278,11 +288,12 @@ contains
       ! TDR: should this be inside the "do while block" loop?
       !
       call mpas_pool_get_subpool(domain % blocklist % structs, 'amSurfaceStatistics', amSurfaceStatisticsPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'amSurfaceStatisticsLocation', amSurfaceStatisticsLocationPool)
       call mpas_pool_get_array(amSurfaceStatisticsPool, 'minSurfaceStatistics', minSurfaceStatistics)
       call mpas_pool_get_array(amSurfaceStatisticsPool, 'maxSurfaceStatistics', maxSurfaceStatistics)
       call mpas_pool_get_array(amSurfaceStatisticsPool, 'avgSurfaceStatistics', avgSurfaceStatistics)
-      call mpas_pool_get_array(amSurfaceStatisticsPool, 'locationMinSurfaceStatistics', locationMinSurfaceStatistics)
-      call mpas_pool_get_array(amSurfaceStatisticsPool, 'locationMaxSurfaceStatistics', locationMaxSurfaceStatistics)
+      call mpas_pool_get_array(amSurfaceStatisticsLocationPool, 'locationMinSurfaceStatistics', locationMinSurfaceStatistics)
+      call mpas_pool_get_array(amSurfaceStatisticsLocationPool, 'locationMaxSurfaceStatistics', locationMaxSurfaceStatistics)
 
   ! HERE
   !   sums = 0.0
@@ -297,16 +308,16 @@ contains
 
       block => domain % blocklist
       do while (associated(block))
+         ! get pointers to pools
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'surfaceStatisticsScratch', scratchPool)
+         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+
          ! get pointers to mesh
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-         ! get pointers to pools
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'amSurfaceStatisticsPool', amSurfaceStatisticsPool)
     ! HERE -- how to get num_tracers
     !    call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
@@ -318,47 +329,52 @@ contains
        ! call mpas_pool_get_array(diagnosticsPool, 'layerThickness', layerThickness)
        ! call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
 
-       ! allocate(workArray(nVertLevels,nCellsSolve))
+         ! get pointers to scratch variables
+         call mpas_pool_get_field(scratchPool, 'workArray', workArrayField)
+         call mpas_pool_get_field(scratchPool, 'workMin', workMinField)
+         call mpas_pool_get_field(scratchPool, 'workMax', workMaxField)
+         call mpas_pool_get_field(scratchPool, 'workAvg', workAvgField)
+         call mpas_allocate_scratch_field(workArrayField, .true.)
+         call mpas_allocate_scratch_field(workMinField, .true.)
+         call mpas_allocate_scratch_field(workMaxField, .true.)
+         call mpas_allocate_scratch_field(workAvgField, .true.)
+         workArray => workArrayField % array
+         workMin => workMinField % array
+         workMax => workMaxField % array
+         workAvg => workAvgField % array
 
-     !   variableIndex = 0
-         ! ssh
-       ! variableIndex = variableIndex + 1
-   
-         ! compute min/max/avg/minLoc/maxLoc
+         workArray(1,:) = areaCell(:)
+         workArray(2,:) = ssh(:)
 
+    !    call compute_surface_statistics(workArray, work2)
+         workMin(1) = minval(workArray(1,:))
+         workMin(2) = minval(workArray(2,:))
+
+         workMin = 12.5
+
+   !     call mpas_deallocate_scratch_field(workArrayField, .true.)
+   !     call mpas_deallocate_scratch_field(workMinField, .true.)
+   !     call mpas_deallocate_scratch_field(workMaxField, .true.)
+   !     call mpas_deallocate_scratch_field(workAvgField, .true.)
 
          block => block % next
       end do
 
-      ! global reduction of the 5 arrays (packed into 3 to minimize global communication)
+      ! communication
    !  call mpas_dmpar_sum_real_array(dminfo, nSums, sums(1:nSums), reductions(1:nSums))
-   !  sums(1:nVariables) = reductions(1:nVariables)
-   !  areaCellGlobal = reductions(nVariables+1)
-   !  areaEdgeGlobal = reductions(nVariables+2)
-   !  areaTriangleGlobal = reductions(nVariables+3)
-   !  nCellsGlobal = int(reductions(nVariables+4))
-   !  nEdgesGlobal = int(reductions(nVariables+5))
-   !  nVerticesGlobal = int(reductions(nVariables+6))
    !  call mpas_dmpar_sum_real_array(dminfo, nVariables, sumSquares(1:nVariables), reductions(1:nVariables))
-   !  sumSquares(1:nVariables) = reductions(1:nVariables)
-
    !  call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
-   !  mins(1:nVariables) = reductions(1:nVariables)
-   !  verticalSumMins(1:nVariables) = reductions(nMins-nVariables+1:nMins)
-
    !  call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
-   !  maxes(1:nVariables) = reductions(1:nVariables)
-   !  CFLNumberGlobal = reductions(nVariables+1)
-   !  verticalSumMaxes(1:nVariables) = reductions(nMaxes-nVariables+1:nMaxes)
-
-      ! HERE ... compute final data
-      ! layerThickness
-   !  variableIndex = variableIndex + 1
-   !  averages(variableIndex) = sums(variableIndex)/(areaCellGlobal*nVertLevels)
-   !  rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaCellGlobal*nVertLevels))
-
 
       ! HERE save data that will be written to file
+      minSurfaceStatistics(1) = workMin(1)
+      minSurfaceStatistics(2) = workMin(2)
+
+      call mpas_deallocate_scratch_field(workArrayField, .true.)
+      call mpas_deallocate_scratch_field(workMinField, .true.)
+      call mpas_deallocate_scratch_field(workMaxField, .true.)
+      call mpas_deallocate_scratch_field(workAvgField, .true.)
+
    !  minGlobalStats(1:nVariables) =  mins(1:nVariables)
    !  maxGlobalStats(1:nVariables) =  maxes(1:nVariables)
    !  sumGlobalStats(1:nVariables) =  sums(1:nVariables)
