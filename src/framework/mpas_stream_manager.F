@@ -271,11 +271,18 @@ module mpas_stream_manager
     !>  MPAS_STREAM_CLOBBER_APPEND, MPAS_STREAM_CLOBBER_TRUNCATE, 
     !>  and MPAS_STREAM_CLOBBER_OVERWRITE. The default behavior is to never modify
     !>  existing files (MPAS_STREAM_CLOBBER_NEVER).
+    !>  The optional argument ioType specifies the I/O type to use for the
+    !>  stream; possible values are defined by constants in the mpas_io module and
+    !>  include: MPAS_IO_NETCDF, MPAS_IO_NETCDF4, MPAS_IO_PNETCDF, and
+    !>  MPAS_IO_PNETCDF5. If not specified, the io_type will default to
+    !>  MPAS_IO_PNETCDF.
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, &
                                              filenameInterval, referenceTime, recordInterval, &
-                                             realPrecision, clobberMode, ierr) !{{{
+                                             realPrecision, clobberMode, ioType, ierr) !{{{
+
+        use mpas_io, only : MPAS_IO_PNETCDF
 
         implicit none
 
@@ -290,6 +297,7 @@ module mpas_stream_manager
         type (MPAS_TimeInterval_type), intent(in), optional :: recordInterval
         integer, intent(in), optional :: realPrecision
         integer, intent(in), optional :: clobberMode
+        integer, intent(in), optional :: ioType
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: new_stream
@@ -331,6 +339,11 @@ module mpas_stream_manager
             new_stream % clobber_mode = clobberMode
         else
             new_stream % clobber_mode = MPAS_STREAM_CLOBBER_NEVER
+        end if
+        if (present(ioType)) then
+            new_stream % io_type = ioType
+        else
+            new_stream % io_type = MPAS_IO_PNETCDF
         end if
         allocate(new_stream % referenceTime)
         if (present(referenceTime)) then
