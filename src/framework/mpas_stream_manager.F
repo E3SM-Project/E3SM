@@ -4979,7 +4979,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
                                         MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
                                         MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
                                         MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
-                                        MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE
+                                        MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE, MPAS_STREAM_PROPERTY_IOTYPE
     use mpas_stream_manager, only : MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
     use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION, &
@@ -5070,9 +5070,10 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
         end if
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_PRECISION, prec, ierr=ierr)
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_CLOBBER, clobber_mode, ierr=ierr)
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_IOTYPE, iotype, ierr=ierr)
     else
         call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, realPrecision=prec, &
-                                           clobberMode=clobber_mode, ierr=ierr)
+                                           clobberMode=clobber_mode, ioType=iotype, ierr=ierr)
     end if
 
     if (reference_time /= 'initial_time') then
