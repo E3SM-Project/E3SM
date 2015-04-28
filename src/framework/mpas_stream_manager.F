@@ -2478,7 +2478,7 @@ module mpas_stream_manager
             ! Build stream from pools of fields and attributes
             !
             allocate(stream % stream)
-            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE,  &
+            call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_WRITE,  &
                                    precision=stream % precision, clobberRecords=clobberRecords, &
                                    clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
@@ -2564,7 +2564,7 @@ module mpas_stream_manager
                 !
                 ! Build new stream from pools of fields and attributes
                 !
-                call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_WRITE, &
+                call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_WRITE, &
                                        precision=stream % precision, clobberRecords=clobberRecords, &
                                        clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
                 if (local_ierr /= MPAS_STREAM_NOERR) then
@@ -2953,7 +2953,7 @@ module mpas_stream_manager
             ! Build stream from pools of fields and attributes
             !
             allocate(stream % stream)
-            call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, &
+            call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_READ, &
                                    precision=stream % precision, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
@@ -2991,7 +2991,7 @@ module mpas_stream_manager
            !
            ! Build new stream from pools of fields and attributes
            !
-           call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+           call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
                if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
                    write(err_string,'(a)') 'Stream '''//trim(stream % name)//''' attempted to read non-existent file '''//trim(stream % filename)//''''
@@ -3112,7 +3112,7 @@ module mpas_stream_manager
 
            ! If file exists, the testing stream needs to be built.
            if ( retestFile ) then
-               call mpas_createStream(testStream, test_filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+               call mpas_createStream(testStream, test_filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
            else
                STREAM_DEBUG_WRITE(' Filename: ' COMMA trim(test_filename) COMMA ' does not exist.')
            end if
@@ -3186,7 +3186,7 @@ module mpas_stream_manager
            !
            ! Build new stream from pools of fields and attributes
            !
-           call MPAS_createStream(stream % stream, stream % filename, MPAS_IO_PNETCDF, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+           call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
                ierr = MPAS_STREAM_MGR_ERROR
                return
