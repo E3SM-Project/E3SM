@@ -1473,6 +1473,9 @@ module mpas_stream_manager
             case (MPAS_STREAM_PROPERTY_CLOBBER)
                 stream_cursor % clobber_mode = propertyValue
 
+            case (MPAS_STREAM_PROPERTY_IOTYPE)
+                stream_cursor % io_type = propertyValue
+
             case default
                 STREAM_ERROR_WRITE('MPAS_stream_mgr_set_property(): No such property ' COMMA propertyName)
                 STREAM_ERROR_WRITE('    or specified property is not of type integer.')
@@ -1662,6 +1665,9 @@ module mpas_stream_manager
 
             case (MPAS_STREAM_PROPERTY_CLOBBER)
                 propertyValue = stream_cursor % clobber_mode
+
+            case (MPAS_STREAM_PROPERTY_IOTYPE)
+                propertyValue = stream_cursor % io_type
 
             case default
                 STREAM_ERROR_WRITE('MPAS_stream_mgr_get_property(): No such property ' COMMA propertyName)
