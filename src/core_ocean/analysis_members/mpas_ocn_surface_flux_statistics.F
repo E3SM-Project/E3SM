@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_surface_statistics
+!  ocn_surface_flux_statistics
 !
 !> \brief MPAS ocean analysis member: surface statistics
 !> \author Todd Ringler
@@ -17,7 +17,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_surface_statistics
+module ocn_surface_flux_statistics
 
    use mpas_grid_types
    use mpas_timer
@@ -44,11 +44,11 @@ module ocn_surface_statistics
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_surface_statistics, &
-             ocn_init_surface_statistics, &
-             ocn_compute_surface_statistics, &
-             ocn_restart_surface_statistics, &
-             ocn_finalize_surface_statistics
+   public :: ocn_setup_packages_surface_flux_statistics, &
+             ocn_init_surface_flux_statistics, &
+             ocn_compute_surface_flux_statistics, &
+             ocn_restart_surface_flux_statistics, &
+             ocn_finalize_surface_flux_statistics
 
    !--------------------------------------------------------------------
    !
@@ -64,7 +64,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_setup_packages_surface_statistics
+!  routine ocn_setup_packages_surface_flux_statistics
 !
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_setup_packages_surface_statistics(configPool, packagePool, err)!{{{
+   subroutine ocn_setup_packages_surface_flux_statistics(configPool, packagePool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -117,12 +117,12 @@ contains
 
       write(6,*) ' active surface statistics'
 
-   end subroutine ocn_setup_packages_surface_statistics!}}}
+   end subroutine ocn_setup_packages_surface_flux_statistics!}}}
 
 
 !***********************************************************************
 !
-!  routine ocn_init_surface_statistics
+!  routine ocn_init_surface_flux_statistics
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -133,7 +133,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_surface_statistics(domain, err)!{{{
+   subroutine ocn_init_surface_flux_statistics(domain, err)!{{{
 
       use mpas_packages
 
@@ -169,11 +169,11 @@ contains
 
       write(6,*) ' surf stat inited'
 
-   end subroutine ocn_init_surface_statistics!}}}
+   end subroutine ocn_init_surface_flux_statistics!}}}
 
 !***********************************************************************
 !
-!  routine ocn_compute_surface_statistics
+!  routine ocn_compute_surface_flux_statistics
 !
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -184,7 +184,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_surface_statistics(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_surface_flux_statistics(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -267,7 +267,7 @@ contains
       dminfo = domain % dminfo
 
       ! start timer
-      call mpas_timer_start("compute_surface_statistics", .false., amSurfaceStatisticsTimer)
+      call mpas_timer_start("compute_surface_flux_statistics", .false., amSurfaceStatisticsTimer)
 
       ! get pointers to analysis member arrays
       call mpas_pool_get_subpool(domain % blocklist % structs, 'amSurfaceStatistics', amSurfaceStatisticsPool)
@@ -334,7 +334,7 @@ contains
          workArray(3,:) = kineticEnergyCell(kTarget,:)
 
          call compute_mask(nCells, nCellsSolve, workMask)
-         call compute_surface_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
+         call compute_surface_flux_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
 
          block => block % next
       end do
@@ -355,7 +355,7 @@ contains
       call mpas_deallocate_scratch_field(workSumField, .true.)
 
       ! stop timer
-      call mpas_timer_stop("surface_statistics", amSurfaceStatisticsTimer)
+      call mpas_timer_stop("surface_flux_statistics", amSurfaceStatisticsTimer)
 
    contains
 
@@ -374,7 +374,7 @@ contains
    end subroutine compute_mask
 
 
-   subroutine compute_surface_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
+   subroutine compute_surface_flux_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
    ! this subroutines does the actual summing, min, max, masking ect
    ! this hides the messy code from the high-level subroutine
 
@@ -394,13 +394,13 @@ contains
       workMax(iData) = maxval(workArray(iData,:)*workMask(:))
    enddo
 
-   end subroutine compute_surface_statistics
+   end subroutine compute_surface_flux_statistics
 
-   end subroutine ocn_compute_surface_statistics!}}}
+   end subroutine ocn_compute_surface_flux_statistics!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_surface_statistics
+!  routine ocn_restart_surface_flux_statistics
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -411,7 +411,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_surface_statistics(domain, err)!{{{
+   subroutine ocn_restart_surface_flux_statistics(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -443,11 +443,11 @@ contains
 
       err = 0
 
-   end subroutine ocn_restart_surface_statistics!}}}
+   end subroutine ocn_restart_surface_flux_statistics!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_surface_statistics
+!  routine ocn_finalize_surface_flux_statistics
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -458,7 +458,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_surface_statistics(domain, err)!{{{
+   subroutine ocn_finalize_surface_flux_statistics(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -490,8 +490,8 @@ contains
 
       err = 0
 
-   end subroutine ocn_finalize_surface_statistics!}}}
+   end subroutine ocn_finalize_surface_flux_statistics!}}}
 
-end module ocn_surface_statistics
+end module ocn_surface_flux_statistic
 
 ! vim: foldmethod=marker
