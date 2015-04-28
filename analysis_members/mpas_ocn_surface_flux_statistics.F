@@ -106,14 +106,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      logical, pointer :: amSurfaceStatisticsPkgActive
+      logical, pointer :: amSurfaceFluxStatisticsPkgActive
 
       err = 0
 
-      call mpas_pool_get_package(packagePool, 'amSurfaceStatisticsPkgActive', amSurfaceStatisticsPkgActive)
+      call mpas_pool_get_package(packagePool, 'amSurfaceFluxStatisticsPkgActive', amSurfaceFluxStatisticsPkgActive)
 
       ! turn on package for this analysis member
-      amSurfaceStatisticsPkgActive = .true.
+      amSurfaceFluxStatisticsPkgActive = .true.
 
       write(6,*) ' active surface statistics'
 
@@ -239,7 +239,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
       ! pointers to data in mesh pool
-      integer, pointer :: nCells, nCellsSolve, nSurfaceStatisticsFields
+      integer, pointer :: nCells, nCellsSolve, nSurfaceFluxStatisticsFields
       real (kind=RKIND), dimension(:), pointer ::  areaCell
 
       ! scratch space
@@ -254,14 +254,14 @@ contains
       integer :: iCell, iVariable, iTracer, err_tmp
 
       ! package flag
-      logical, pointer :: amSurfaceStatisticsPkgActive
+      logical, pointer :: amSurfaceFluxStatisticsPkgActive
 
       ! assume no error
       err = 0
 
       ! check to see if package is on
-      call mpas_pool_get_package(ocnPackages, 'amSurfaceStatisticsPkgActive', amSurfaceStatisticsPkgActive)
-      if ( .not. amSurfaceStatisticsPkgActive ) return
+      call mpas_pool_get_package(ocnPackages, 'amSurfaceFluxStatisticsPkgActive', amSurfaceFluxStatisticsPkgActive)
+      if ( .not. amSurfaceFluxStatisticsPkgActive ) return
 
       ! set highest level pointer
       dminfo = domain % dminfo
@@ -308,12 +308,12 @@ contains
          ! get pointers to mesh
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
-         call mpas_pool_get_dimension(block % dimensions, 'nSurfaceStatisticsFields', nSurfaceStatisticsFields)
+         call mpas_pool_get_dimension(block % dimensions, 'nSurfaceFluxStatisticsFields', nSurfaceFluxStatisticsFields)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
          ! test to make sure the arrays are big enough
          nDefinedDataFields = size(avgSurfaceStatistics)
-         if (nDefinedDataFields > nSurfaceStatisticsFields) then
+         if (nDefinedDataFields > nSurfaceFluxStatisticsFields) then
               ! call error/finalize here
          endif
 
@@ -334,7 +334,7 @@ contains
          workArray(3,:) = kineticEnergyCell(kTarget,:)
 
          call compute_mask(nCells, nCellsSolve, workMask)
-         call compute_surface_flux_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
+         call compute_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
 
          block => block % next
       end do
@@ -374,13 +374,14 @@ contains
    end subroutine compute_mask
 
 
-   subroutine compute_surface_flux_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
+   subroutine compute_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
    ! this subroutines does the actual summing, min, max, masking ect
    ! this hides the messy code from the high-level subroutine
 
    integer, intent(in) :: nDefinedDataFields, nCells
    real(kind=RKIND), dimension(:,:), intent(in) :: workArray
-   real(kind=RKIND), dimension(:), intent(out) :: workMask, workMin, workMax, workSum
+   real(kind=RKIND), dimension(:), intent(in) :: workMask
+   real(kind=RKIND), dimension(:), intent(out) :: workMin, workMax, workSum
    integer :: iCell, iData
 
    workSum = 0.0
@@ -394,7 +395,7 @@ contains
       workMax(iData) = maxval(workArray(iData,:)*workMask(:))
    enddo
 
-   end subroutine compute_surface_flux_statistics
+   end subroutine compute_statistics
 
    end subroutine ocn_compute_surface_flux_statistics!}}}
 
@@ -492,6 +493,6 @@ contains
 
    end subroutine ocn_finalize_surface_flux_statistics!}}}
 
-end module ocn_surface_flux_statistic
+end module ocn_surface_flux_statistics
 
 ! vim: foldmethod=marker
