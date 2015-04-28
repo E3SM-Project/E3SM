@@ -216,18 +216,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-   !  integer :: nCellsGlobal, nEdgesGlobal, nVerticesGlobal
-   !  integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
-   !  integer :: timeYYYY, timeMM, timeDD, timeH, timeM, timeS
-   !  character*1 timeChar
-   !  character (len=StrKIND), pointer :: xtime
-   !  real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal, time_days
-   !  real (kind=RKIND), dimension(kMaxVariables) :: sumSquares, reductions, sums, mins, maxes
-   !  real (kind=RKIND), dimension(kMaxVariables) :: sums_tmp, sumSquares_tmp, mins_tmp, maxes_tmp, averages_tmp, verticalSumMins_tmp, verticalSumMaxes_tmp
-   !  real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
-
-!---------------------------------------
-
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: amSurfaceStatisticsPool
@@ -308,17 +296,8 @@ contains
       workMax => workMaxField % array
       workSum => workSumField % array
 
-  ! HERE
-  !   sums = 0.0
-  !   sumSquares = 0.0
-  !   mins = 1.0e34
-  !   maxes = -1.0e34
-  !   averages = 0.0
-  !   verticalSumMins = 1.0e34
-  !   verticalSumMaxes = -1.0e34
-  !   reductions = 0.0
-  ! HERE
-
+      ! loop over blocks
+      ! NOTE: code is not valid for multiple blocks !
       block => domain % blocklist
       do while (associated(block))
          ! get pointers to pools
@@ -357,16 +336,6 @@ contains
          call compute_mask(nCells, nCellsSolve, workMask)
          call compute_surface_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
 
-         ! temporary
-    !    workMin(1) = minval(workArray(1,:))
-    !    workMin(2) = minval(workArray(2,:))
-    !    workMin(3) = minval(workArray(3,:))
-    !    workMax(1) = maxval(workArray(1,:))
-    !    workMax(2) = maxval(workArray(2,:))
-    !    workMax(3) = maxval(workArray(3,:))
-
-         write(6,*) 'workMax ', workMax(:)
-
          block => block % next
       end do
 
@@ -377,10 +346,6 @@ contains
 
       ! normalize averages
       avgSurfaceStatistics(:) = avgSurfaceStatistics(:) / avgSurfaceStatistics(1)
-
-      write(6,*) 'avgSurfaceStatistics ', avgSurfaceStatistics(:)
-      write(6,*) 'minSurfaceStatistics ', minSurfaceStatistics(:)
-      write(6,*) 'maxSurfaceStatistics ', maxSurfaceStatistics(:)
 
       ! deallocate scratch fields
       call mpas_deallocate_scratch_field(workArrayField, .true.)
@@ -526,80 +491,6 @@ contains
       err = 0
 
    end subroutine ocn_finalize_surface_statistics!}}}
-
-   subroutine ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nElements, maxLevel, areas, field, &!{{{
-      localSum, localRMS, localMin, localMax, localVertSumMin, localVertSumMax)
-
-      implicit none
-
-      type (dm_info), intent(in) :: dminfo
-      integer, intent(in) :: nVertLevels, nElements
-      integer, dimension(nElements), intent(in) :: maxLevel
-      real (kind=RKIND), dimension(nElements), intent(in) :: areas
-      real (kind=RKIND), dimension(nVertLevels, nElements), intent(in) :: field
-      real (kind=RKIND), intent(out) :: localSum, localRMS, localMin, localMax, localVertSumMin, &
-      localVertSumMax
-
-      integer :: elementIndex
-      real (kind=RKIND) :: colSum, colRMS, colSumAbs
-
-      localSum = 0.0
-      localRMS = 0.0
-      localMin =  1.0e34
-      localMax = -1.0e34
-      localVertSumMin =  1.0e34
-      localVertSumMax = -1.0e34
-
-      do elementIndex = 1, nElements
-        colSum = sum(field(1:maxLevel(elementIndex),elementIndex))
-        localSum = localSum + areas(elementIndex) * colSum
-        colRMS = sum(field(1:maxLevel(elementIndex),elementIndex)**2)
-        localRMS = localRMS + areas(elementIndex) * colRMS
-        localMin = min(localMin,minval(field(1:maxLevel(elementIndex),elementIndex)))
-        localMax = max(localMax,maxval(field(1:maxLevel(elementIndex),elementIndex)))
-        localVertSumMin = min(localVertSumMin,colSum)
-        localVertSumMax = max(localVertSumMax,colSum)
-      end do
-
-   end subroutine ocn_compute_field_area_weighted_local_stats_max_level!}}}
-
-   subroutine ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nElements, maxLevel, areas, layerThickness, field, &!{{{
-      localSum, localRMS, localMin, localMax, localVertSumMin, localVertSumMax)
-
-      implicit none
-
-      type (dm_info), intent(in) :: dminfo
-      integer, intent(in) :: nVertLevels, nElements
-      integer, dimension(nElements), intent(in) :: maxLevel
-      real (kind=RKIND), dimension(nElements), intent(in) :: areas
-      real (kind=RKIND), dimension(nVertLevels, nElements), intent(in) :: layerThickness
-      real (kind=RKIND), dimension(nVertLevels, nElements), intent(in) :: field
-      real (kind=RKIND), intent(out) :: localSum, localRMS, localMin, localMax, localVertSumMin, &
-         localVertSumMax
-
-      integer :: elementIndex
-      real (kind=RKIND) :: thicknessWeightedColSum, thicknessWeightedColRMS, thicknessWeightedColSumAbs
-      real (kind=RKIND), dimension(nVertLevels, nElements) :: hTimesField
-
-      localSum = 0.0
-      localRMS = 0.0
-      localMin =  1.0e34
-      localMax = -1.0e34
-      localVertSumMin =  1.0e34
-      localVertSumMax = -1.0e34
-
-      do elementIndex = 1, nElements
-        thicknessWeightedColSum = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*field(1:maxLevel(elementIndex),elementIndex))
-        localSum = localSum + areas(elementIndex) * thicknessWeightedColSum
-        thicknessWeightedColRMS = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*field(1:maxLevel(elementIndex),elementIndex)**2)
-        localRMS = localRMS + areas(elementIndex) * thicknessWeightedColRMS
-        localMin = min(localMin,minval(field(1:maxLevel(elementIndex),elementIndex)))
-        localMax = max(localMax,maxval(field(1:maxLevel(elementIndex),elementIndex)))
-        localVertSumMin = min(localVertSumMin,thicknessWeightedColSum)
-        localVertSumMax = max(localVertSumMax,thicknessWeightedColSum)
-      end do
-
-   end subroutine ocn_compute_field_volume_weighted_local_stats_max_level!}}}
 
 end module ocn_surface_statistics
 
