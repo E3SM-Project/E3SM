@@ -778,6 +778,12 @@ else {
 }
 add_default($nl, 'ncdata', %atts);
 
+#BSINGH - (when .true.)calculate solar zenith angle averaged over a time step.
+#In current default method solar zenith angle is held constant over time.
+#This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
+add_default($nl,'sol_insolation_bug_fix','val'=>'.false.');
+
+
 #
 # Simulated years: sim_year and sim_year_start
 #
@@ -2570,7 +2576,7 @@ if ($chem eq 'waccm_mozart_sulfur') {
 $nl->set_variable_value('phys_ctl_nl', 'cam_chempkg', $cam_chempkg);
 
 #BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag 
-#This flag is kept to test b4b with the default code(this must be REMOVED when this branch merge into master)
+#This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
 add_default($nl,'fix_g1_err_ndrop','val'=>'.false.');
 
 # Deep convection scheme

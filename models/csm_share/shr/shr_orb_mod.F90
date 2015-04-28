@@ -10,12 +10,15 @@ MODULE shr_orb_mod
    use shr_const_mod
    use shr_log_mod, only: s_loglev  => shr_log_Level
    use shr_log_mod, only: s_logunit => shr_log_Unit
+   use avg_slr_insol_mod, only: avg_slr_insol_init, avg_slr_insol        !Add an algorithm for calculation of solar zenith 
+                                                                         !angle (zlj, 2015.02.19) implemented by BSINGH (04/21/2015)
 
    IMPLICIT none
 
    !----------------------------------------------------------------------------
    ! PUBLIC: Interfaces and global data
    !----------------------------------------------------------------------------
+   public :: shr_orb_mod_init
    public :: shr_orb_cosz
    public :: shr_orb_params
    public :: shr_orb_decl
@@ -37,9 +40,49 @@ MODULE shr_orb_mod
    real   (SHR_KIND_R8),parameter :: SHR_ORB_MVELP_MIN  =   0.0_SHR_KIND_R8 ! min value for mvelp
    real   (SHR_KIND_R8),parameter :: SHR_ORB_MVELP_MAX  = 360.0_SHR_KIND_R8 ! max value for mvelp
 
+   !BSINGH: Added a logical flag
+   logical :: sol_insolation_bug_fix = .false. ! Logical to decide whether to invoke subroutine avg_slr_insol
+
 !===============================================================================
 CONTAINS
 !===============================================================================
+
+
+subroutine shr_orb_mod_init(sol_insolation_bug_fix_in, dtime, iradsw)
+   !----------------------------------------------------------------------------
+   !
+   ! Subroutine to initialize some global variables needed in this module
+   !--------------- Code History -----------------------------------------------
+   !
+   ! Original Author: Balwinder Singh
+   ! Date:            Apr/2015
+   !
+   ! This subroutine is called from:
+   !    subroutine read_namelist [/models/atm/cam/src/control/runtime_opts.F90]
+   !----------------------------------------------------------------------------
+  
+   !Args
+   logical, intent(in) :: sol_insolation_bug_fix_in ! Logical to decide whether to invoke subroutine avg_slr_insol
+   integer, intent(in) :: dtime                     ! timestep size (s)
+   integer, intent(in) :: iradsw                    ! freq. of shortwave radiation calc in time steps (positive)
+                                                    ! or hours (negative).
+
+   !Initialize the logical to decide whether to invoke subroutine avg_slr_insol to
+   !calculate solar zenith angle(zlj, 2015.02.19) averaged over a time step.
+   !In current default method solar zenith angle is held constant over time.
+
+   !NOTE: This logical flag is *temporary*. It should be REMOVED after we decide
+   !to call subroutine avg_slr_insol by default
+
+   sol_insolation_bug_fix = sol_insolation_bug_fix_in
+
+   if(sol_insolation_bug_fix) then
+      !Initialize radiation time step in avg_slr_insol.F90
+      call avg_slr_insol_init(dtime, iradsw)
+   endif
+
+
+end subroutine shr_orb_mod_init
 
 real(SHR_KIND_R8) FUNCTION shr_orb_cosz(jday,lat,lon,declin)
 
@@ -65,6 +108,12 @@ real(SHR_KIND_R8) FUNCTION shr_orb_cosz(jday,lat,lon,declin)
 
    shr_orb_cosz = sin(lat)*sin(declin) - &
    &              cos(lat)*cos(declin)*cos(jday*2.0_SHR_KIND_R8*pi + lon)
+
+   if (sol_insolation_bug_fix) then !implemented by BSINGH (04/21/2015)
+      ! Add new algorithm for calculation of solar zenith angle(zlj, 2015.02.19) 
+      ! which computes average over the time step
+      call avg_slr_insol(lat, lon, declin, jday, shr_orb_cosz)
+   endif
 
 END FUNCTION shr_orb_cosz
 

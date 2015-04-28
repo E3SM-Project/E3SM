@@ -276,6 +276,9 @@ integer :: irad_always   ! Specifies length of time in timesteps (positive)
                          ! from the start of an initial run.  Default: 0
 logical :: spectralflux  ! calculate fluxes (up and down) per band. Default: FALSE
 
+!BSINGH - Flag to add solar insolation bug fix in /models/csm_share/shr/shr_orb_mod.F90
+logical :: sol_insolation_bug_fix  ! **temporary** flag for fixing solar insolation bug 
+
 ! SCM Options
 logical  :: single_column
 real(r8) :: scmlat,scmlon
@@ -377,6 +380,7 @@ contains
 #if ( defined OFFLINE_DYN )
    use metdata,             only: metdata_readnl
 #endif
+   use shr_orb_mod,         only: shr_orb_mod_init
 
 !---------------------------Arguments-----------------------------------
 
@@ -468,7 +472,7 @@ contains
   namelist /cam_inparm/ print_energy_errors
 
   ! radiative heating calculation options
-  namelist /cam_inparm/ iradsw, iradlw, iradae, irad_always, spectralflux
+  namelist /cam_inparm/ iradsw, iradlw, iradae, irad_always, spectralflux, sol_insolation_bug_fix
 
   ! scam
   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_relaxation, &
@@ -691,6 +695,14 @@ contains
    ! conservation
    call check_energy_setopts( &
       print_energy_errors_in = print_energy_errors )
+
+   !BSINGH(04/24/2015): call shr_orb_mod_init to set sol_insolation_bug_fix.
+   !This is a temporary variable which should be removed after we decide
+   !to make this fix defualt in the code
+   !This call also initializes radiation time step using 'dtime' and iradsw'
+   !Inserted here to avoid reading these namelist variables again in 
+   !/models/csm_share/shr/avg_slr_insol.F90
+   call shr_orb_mod_init(sol_insolation_bug_fix, dtime, iradsw)
 
    call radiation_setopts( dtime, nhtfrq(1), &
       iradsw_in      = iradsw,     &
@@ -955,6 +967,9 @@ subroutine distnl
    call mpibcast (iradae,     1, mpiint, 0, mpicom)
    call mpibcast (irad_always,1, mpiint, 0, mpicom)
    call mpibcast (spectralflux,1, mpilog, 0, mpicom)
+   
+   !BSINGH
+   call mpibcast (sol_insolation_bug_fix,1, mpilog, 0, mpicom)
 
 end subroutine distnl
 #endif
