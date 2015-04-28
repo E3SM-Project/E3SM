@@ -4951,7 +4951,7 @@ end module mpas_stream_manager
 
 
 subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, filename_intv_c, ref_time_c, rec_intv_c, &
-                                      immutable_c, precision_c, clobber_c, ierr_c) bind(c) !{{{
+                                      immutable_c, precision_c, clobber_c, iotype_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -4963,7 +4963,8 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
                                         MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE
     use mpas_stream_manager, only : MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
-    use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION
+    use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION, &
+                        MPAS_IO_NETCDF, MPAS_IO_PNETCDF, MPAS_IO_NETCDF4, MPAS_IO_PNETCDF5
     use mpas_io_units, only : stderrUnit
 
     implicit none
@@ -4978,12 +4979,13 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     integer(kind=c_int) :: immutable_c
     integer(kind=c_int) :: precision_c
     integer(kind=c_int) :: clobber_c
+    integer(kind=c_int) :: iotype_c
     integer(kind=c_int) :: ierr_c
 
     type (MPAS_streamManager_type), pointer :: manager
     character(len=StrKIND) :: streamID, filename, filename_interval, reference_time, record_interval
     integer :: direction, immutable, prec, ierr
-    integer :: clobber_mode
+    integer :: clobber_mode, iotype
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
@@ -5001,7 +5003,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     else
         prec = MPAS_IO_NATIVE_PRECISION
     end if
-    
+
     if (clobber_c == 0) then
        clobber_mode = MPAS_STREAM_CLOBBER_NEVER
     else if (clobber_c == 1) then
@@ -5012,6 +5014,18 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
        clobber_mode = MPAS_STREAM_CLOBBER_OVERWRITE
     else
        clobber_mode = MPAS_STREAM_CLOBBER_NEVER
+    end if
+
+    if (iotype_c == 0) then
+       iotype = MPAS_IO_PNETCDF
+    else if (iotype_c == 1) then
+       iotype = MPAS_IO_PNETCDF5
+    else if (iotype_c == 2) then
+       iotype = MPAS_IO_NETCDF
+    else if (iotype_c == 3) then
+       iotype = MPAS_IO_NETCDF4
+    else
+       iotype = MPAS_IO_PNETCDF
     end if
 
     STREAM_DEBUG_WRITE('Creating stream from c...')
