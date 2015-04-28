@@ -256,7 +256,7 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
     expect(acme_machine in MACHINE_INFO,
            "Missing machine info for machine '%s'" % acme_machine)
 
-    acme_repo = os.path.abspath(os.path.join("..", "..", os.path.dirname(__file__)))
+    acme_repo = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     expect(os.path.isdir(os.path.join(acme_repo, ".git")),
            "Expected '%s' to be a git repository" % acme_repo)
 
