@@ -43,6 +43,9 @@
                 <var name="minSurfaceSSH" array_group="mins" units="m"
                          description="Minimum sea-surface height"
                 />
+                <var name="minSurfaceKineticEnergyCell" array_group="mins" units="m"
+                         description="Minimum sea-surface height"
+                />
         </var_array>
         <var_array name="maxSurfaceStatistics" type="real" dimensions="Time">
                 <var name="maxSurfaceArea" array_group="maxs" units="m^2"
@@ -51,12 +54,18 @@
                 <var name="maxSurfaceSSH" array_group="maxs" units="m"
                          description="Maximum sea-surface height"
                 />       
+                <var name="maxSurfaceKineticEnergyCell" array_group="maxs" units="m"
+                         description="Maximum sea-surface height"
+                />
         </var_array>
         <var_array name="avgSurfaceStatistics" type="real" dimensions="Time">
                 <var name="avgSurfaceArea" array_group="avg" units="m^2"
                          description="Average area of a surface cell"
                 />
                 <var name="avgSurfaceSSH" array_group="avg" units="m"
+                         description="Average sea-surface height"
+                />
+                <var name="avgSurfaceKineticEnergyCell" array_group="avg" units="m"
                          description="Average sea-surface height"
                 />
         </var_array>
@@ -80,6 +89,13 @@
         </var_array>
 </var_struct>
 <var_struct name="surfaceStatisticsScratch" time_levs="1">
+        <var name="workMask"
+                 persistence="scratch"
+                 type="real"
+                 dimensions="nCells Time"
+                 units="none"
+                 description="temporary array of 0 or 1 to mask data via multiplication"
+        />
         <var name="workArray"
                  persistence="scratch"
                  type="real"
@@ -101,11 +117,11 @@
                  units="various"
                  description="temporary array to hold maximum values"
         />
-        <var name="workAvg"
+        <var name="workSum"
                  persistence="scratch"
                  type="real"
                  dimensions="nSurfaceStatisticsFields Time"
                  units="various"
-                 description="temporary array to hold average values"
+                 description="temporary array to hold sum of values"
         />
 </var_struct>
