@@ -224,23 +224,46 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: forcingPool
 
-      real (kind=RKIND), dimension(:), pointer ::   minSurfaceStatistics, &
-                                                    maxSurfaceStatistics, &
-                                                    avgSurfaceStatistics
-
-      real (kind=RKIND), dimension(:,:), pointer :: locationMinSurfaceStatistics, &
-                                                    locationMaxSurfaceStatistics
-
+      real (kind=RKIND), dimension(:,:), pointer ::   minSurfaceStatistics, &
+                                                      maxSurfaceStatistics, &
+                                                      avgSurfaceStatistics
 
       ! pointers to data in pools to be analyzed
       real (kind=RKIND), dimension(:), pointer :: ssh
+      real (kind=RKIND), dimension(:), pointer :: surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+
+!latentHeatFlux packages="bulkForcing"
+!sensibleHeatFlux packages="bulkForcing"
+!longWaveHeatFluxUp packages="bulkForcing"
+!longWaveHeatFluxDown packages="bulkForcing"
+!seaIceHeatFlux packages="bulkForcing"
+!shortWaveHeatFlux packages="bulkForcing"
+
+!evaporationFlux packages="bulkForcing"
+!seaIceFreshWaterFlux packages="bulkForcing"
+!riverRunoffFlux packages="bulkForcing"
+!iceRunoffFlux packages="bulkForcing"
+!rainFlux packages="bulkForcing"
+!snowFlux packages="bulkForcing"
+!seaIceEnergy  (packages="frazilIce)
+
+!surfaceThicknessFlux
+!surfaceTracerFlux  (temp, salinity)
+!penetrativeTemperatureFlux
+
+!seaIceSalinityFlux
+!surfaceWindStressMagnitude
+!windStressZonal packages="bulkForcing"
+!windStressMeridional packages="bulkForcing"
+!ssh
+!seaSurfacePressure
 
       ! pointers to data in mesh pool
-      integer, pointer :: nCells, nCellsSolve, nSurfaceFluxStatisticsFields
-      real (kind=RKIND), dimension(:), pointer ::  areaCell
+      integer, pointer :: nCells, nCellsSolve, nSurfaceFluxStatisticsFields, nOceanRegions
+      real (kind=RKIND), dimension(:), pointer ::  areaCell, lonCell, latCell
 
       ! scratch space
       type(field2DReal), pointer :: workArrayField
@@ -249,9 +272,8 @@ contains
       real (kind=RKIND), dimension(:), pointer :: workMask, workMin, workMax, workSum
 
       ! local variables
-      integer, parameter :: kTarget = 1
       integer :: nDefinedDataFields
-      integer :: iCell, iVariable, iTracer, err_tmp
+      integer :: iCell, iRegion, iTracer, err_tmp
 
       ! package flag
       logical, pointer :: amSurfaceFluxStatisticsPkgActive
@@ -263,11 +285,15 @@ contains
       call mpas_pool_get_package(ocnPackages, 'amSurfaceFluxStatisticsPkgActive', amSurfaceFluxStatisticsPkgActive)
       if ( .not. amSurfaceFluxStatisticsPkgActive ) return
 
+      ! start timer
+      call mpas_timer_start("compute_surface_flux_statistics", .false., amSurfaceStatisticsTimer)
+
       ! set highest level pointer
       dminfo = domain % dminfo
 
-      ! start timer
-      call mpas_timer_start("compute_surface_flux_statistics", .false., amSurfaceStatisticsTimer)
+      ! loop over all ocean regions
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nOceanRegions', nOceanRegions)
+      do iRegion=1,nOceanRegions
 
       ! get pointers to analysis member arrays
       call mpas_pool_get_subpool(domain % blocklist % structs, 'amSurfaceStatistics', amSurfaceStatisticsPool)
@@ -275,8 +301,6 @@ contains
       call mpas_pool_get_array(amSurfaceStatisticsPool, 'minSurfaceStatistics', minSurfaceStatistics)
       call mpas_pool_get_array(amSurfaceStatisticsPool, 'maxSurfaceStatistics', maxSurfaceStatistics)
       call mpas_pool_get_array(amSurfaceStatisticsPool, 'avgSurfaceStatistics', avgSurfaceStatistics)
-      call mpas_pool_get_array(amSurfaceStatisticsLocationPool, 'locationMinSurfaceStatistics', locationMinSurfaceStatistics)
-      call mpas_pool_get_array(amSurfaceStatisticsLocationPool, 'locationMaxSurfaceStatistics', locationMaxSurfaceStatistics)
 
       ! get pointers to scratch variables
       call mpas_pool_get_subpool(domain % blocklist % structs, 'surfaceStatisticsScratch', scratchPool)
@@ -304,15 +328,19 @@ contains
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
          ! get pointers to mesh
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
          call mpas_pool_get_dimension(block % dimensions, 'nSurfaceFluxStatisticsFields', nSurfaceFluxStatisticsFields)
+         call mpas_pool_get_dimension(block % dimensions, 'nOceanRegions', nOceanRegions)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+         call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
          ! test to make sure the arrays are big enough
-         nDefinedDataFields = size(avgSurfaceStatistics)
+         nDefinedDataFields = size(avgSurfaceStatistics(:,1))
          if (nDefinedDataFields > nSurfaceFluxStatisticsFields) then
               ! call error/finalize here
          endif
@@ -323,29 +351,28 @@ contains
          ! get pointers to data that will be analyzed
          call mpas_pool_get_array(statePool, 'ssh', ssh)  
          call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
-       ! call mpas_pool_get_array(statePool, 'tracers', tracers)         
-       ! call mpas_pool_get_array(diagnosticsPool, 'density', density)
-       ! call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
-       ! call mpas_pool_get_array(diagnosticsPool, 'layerThickness', layerThickness)
+         call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
 
          ! copy data into work array
          workArray(1,:) = areaCell(:)
          workArray(2,:) = ssh(:)
-         workArray(3,:) = kineticEnergyCell(kTarget,:)
+         workArray(3,:) = kineticEnergyCell(1,:)
 
-         call compute_mask(nCells, nCellsSolve, workMask)
+         call compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
          call compute_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
 
          block => block % next
       end do
 
       ! communication
-      call mpas_dmpar_sum_real_array(dminfo, nDefinedDataFields, workSum(1:nDefinedDataFields), avgSurfaceStatistics(1:nDefinedDataFields))
-      call mpas_dmpar_min_real_array(dminfo, nDefinedDataFields, workMin(1:nDefinedDataFields), minSurfaceStatistics(1:nDefinedDataFields))
-      call mpas_dmpar_min_real_array(dminfo, nDefinedDataFields, workMax(1:nDefinedDataFields), maxSurfaceStatistics(1:nDefinedDataFields))
+      call mpas_dmpar_sum_real_array(dminfo, nDefinedDataFields, workSum(1:nDefinedDataFields), avgSurfaceStatistics(1:nDefinedDataFields,iRegion))
+      call mpas_dmpar_min_real_array(dminfo, nDefinedDataFields, workMin(1:nDefinedDataFields), minSurfaceStatistics(1:nDefinedDataFields,iRegion))
+      call mpas_dmpar_min_real_array(dminfo, nDefinedDataFields, workMax(1:nDefinedDataFields), maxSurfaceStatistics(1:nDefinedDataFields,iRegion))
 
       ! normalize averages
-      avgSurfaceStatistics(:) = avgSurfaceStatistics(:) / avgSurfaceStatistics(1)
+      avgSurfaceStatistics(:,iRegion) = avgSurfaceStatistics(:,iRegion) / avgSurfaceStatistics(1,iRegion)
+
+      end do ! iRegion
 
       ! deallocate scratch fields
       call mpas_deallocate_scratch_field(workArrayField, .true.)
@@ -359,17 +386,64 @@ contains
 
    contains
 
-   subroutine compute_mask(nCells, nCellsSolve, workMask)
+   subroutine compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
    ! this subroutines produces a 0/1 mask that is multiplied with workArray to 
    ! allow for min/max/avg to represent specific regions of the ocean domain
-   integer, intent(in) :: nCells, nCellsSolve
+   integer, intent(in) :: nCells, nCellsSolve, iRegion
+   real(kind=RKIND), dimension(:), intent(out) :: lonCell, latCell
    real(kind=RKIND), dimension(:), intent(out) :: workMask
    integer :: iCell
+   real :: rtd
 
-   workMask(:) = 1.0_RKIND
-   do iCell=nCellsSolve+1,nCells
-      workMask(iCell) = 0.0_RKIND
+   rtd = 180.0_RKIND / (4.0*atan(1.0))
+   workMask(:) = 0.0_RKIND
+   do iCell=1,nCellsSolve
+      workMask(iCell) = 1.0_RKIND
    enddo
+
+   if (iRegion.eq.1) then
+      ! Arctic
+      do iCell=1,nCellsSolve
+        if(latCell(iCell).lt. 60.0*rtd) workMask(iCell) = 0.0_RKIND
+      enddo
+   elseif (iRegion.eq.2) then
+      ! Equatorial
+      do iCell=1,nCellsSolve
+        if(latCell(iCell).gt. 15.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt.-15.0*rtd) workMask(iCell) = 0.0_RKIND
+      enddo
+   elseif (iRegion.eq.3) then
+      ! Southern Ocean
+      do iCell=1,nCellsSolve
+        if(latCell(iCell).gt.-50.0*rtd) workMask(iCell) = 0.0_RKIND
+      enddo
+   elseif (iRegion.eq.4) then
+      ! Nino 3
+      do iCell=1,nCellsSolve
+        if(latCell(iCell).gt.  5.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.210.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.270.0*rtd) workMask(iCell) = 0.0_RKIND
+      enddo
+   elseif (iRegion.eq.5) then
+      ! Nino 4
+      do iCell=1,nCellsSolve
+        if(latCell(iCell).gt.  5.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.160.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.210.0*rtd) workMask(iCell) = 0.0_RKIND
+      enddo
+   elseif (iRegion.eq.6) then
+      ! Nino 3.4
+      do iCell=1,nCellsSolve
+        if(latCell(iCell).gt.  5.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.190.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.240.0*rtd) workMask(iCell) = 0.0_RKIND
+      enddo
+   else
+      ! global (do nothing!)
+   endif
 
    end subroutine compute_mask
 
