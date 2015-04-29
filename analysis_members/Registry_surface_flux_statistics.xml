@@ -43,33 +43,240 @@
                 <var name="minSurfaceArea" array_group="mins" units="m^2"
                          description="Minimum area of a surface cell"
                 />
-                <var name="minSurfaceSSH" array_group="mins" units="m"
-                         description="Minimum sea-surface height"
+                <var name="minLatentHeatFlux" array_group="mins" units="W m^{-2}"
+                         description="Minimum latent heat flux in each region"
                 />
-                <var name="minSurfaceKineticEnergyCell" array_group="mins" units="m"
-                         description="Minimum sea-surface height"
+                <var name="minSensibleHeatFlux" array_group="mins" units="W m^{-2}"
+                         description="Minimum sensible heat flux in each region"
+                />
+                <var name="minLongWaveHeatFluxUp" array_group="mins" units="W m^{-2}"
+                         description="Minimum upwelling long wave heat flux in each region"
+                />
+                <var name="minLongWaveHeatFluxDown" array_group="mins" units="W m^{-2}"
+                         description="Minimum downwelling long wave heat flux in each region"
+                />
+                <var name="minSeaIceHeatFlux" array_group="mins" units="W m^{-2}"
+                         description="Minimum sea ice heat flux in each region"
+                />
+                <var name="minShortWaveHeatFlux" array_group="mins" units="W m^{-2}"
+                         description="Minimum short wave heat flux in each region"
+                />
+                <var name="minEvaporationFlux" array_group="mins" units="kg m^{-2} s^{-1}"
+                         description="Minimum evaporation in each region"
+                />
+                <var name="minSeaIceFreshWaterFlux" array_group="mins" units="kg m^{-2} s^{-1}"
+                         description="Minimum sea ice melt rate in each region"
+                />
+                <var name="minRiverRunoffFlux" array_group="mins" units="kg m^{-2} s^{-1}"
+                         description="Minimum river run off in each region"
+                />
+                <var name="minIceRunoffFlux" array_group="mins" units="kg m^{-2} s^{-1}"
+                         description="Minimum ice run off in each region"
+                />
+                <var name="minRainFlux" array_group="mins" units="kg m^{-2} s^{-1}"
+                         description="Minimum rain flux in each region"
+                />
+                <var name="minSnowFlux" array_group="mins" units="kg m^{-2} s^{-1}"
+                         description="Minimum snow flux in each region"
+                />
+                <var name="minSeaIceEnergy" array_group="mins" units="J m^{-2}"
+                         description="Minimum sea ice energy in each region"
+                />
+                <var name="minSurfaceThicknessFlux" array_group="mins" units="m s^{-1}"
+                         description="Minimum surface thickness flux in each region"
+                />
+                <var name="minSurfaceTemperatureFlux" array_group="mins" units="C m s^{-1}"
+                         description="Minimum surface temperature flux in each region"
+                />
+                <var name="minSurfaceSalinityFlux" array_group="mins" units="PSU m s^{-1}"
+                         description="Minimum surface salinity flux in each region"
+                />
+                <var name="minSeaIceSalinityFlux" array_group="mins" units="kg m s^{-1}"
+                         description="Minimum sea ice salinity flux in each region"
+                />
+                <var name="minSurfaceWindStressMagnitude" array_group="mins" units="N m^{-2}"
+                         description="Minimum wind stress magnitude in each region"
+                />
+                <var name="minWindStressZonal" array_group="mins" units="N m^{-2}"
+                         description="Minimum zonal wind stress in each region"
+                />
+                <var name="minWindStressMeridional" array_group="mins" units="N m^{-2}"
+                         description="Minimum meridional wind stress in each region"
+                />
+                <var name="minSeaSurfacePressure" array_group="mins" units="Pa"
+                         description="Minimum sea surface pressure in each region"
+                />
+                <var name="minSurfaceSSH" array_group="mins" units="m"
+                         description="Minimum sea-surface height in each region"
+                />
+                <var name="minSurfaceNetHeatFlux" array_group="mins" units="W m^{-2}"
+                         description="Minimum net surface heat flux in each region"
+                />
+                <var name="minSurfaceNetSalinitFlux" array_group="mins" units="kg m s^{-1}"
+                         description="Minimum net surface salinity flux in each region"
+                />
+                <var name="minSurfaceNetFreshWaterFlux" array_group="mins" units="kg m^{-2} s^{-1}"
+                         description="Minimum net surface fresh water flux in each region"
                 />
         </var_array>
         <var_array name="maxSurfaceStatistics" type="real" dimensions="nOceanRegions Time">
                 <var name="maxSurfaceArea" array_group="maxs" units="m^2"
                          description="Maximum area of a surface cell"
                 />
+                <var name="maxLatentHeatFlux" array_group="maxs" units="W m^{-2}"
+                         description="Maximum latent heat flux in each region"
+                />
+                <var name="maxSensibleHeatFlux" array_group="maxs" units="W m^{-2}"
+                         description="Maximum sensible heat flux in each region"
+                />
+                <var name="maxLongWaveHeatFluxUp" array_group="maxs" units="W m^{-2}"
+                         description="Maximum upwelling long wave heat flux in each region"
+                />
+                <var name="maxLongWaveHeatFluxDown" array_group="maxs" units="W m^{-2}"
+                         description="Maximum downwelling long wave heat flux in each region"
+                />
+                <var name="maxSeaIceHeatFlux" array_group="maxs" units="W m^{-2}"
+                         description="Maximum sea ice heat flux in each region"
+                />
+                <var name="maxShortWaveHeatFlux" array_group="maxs" units="W m^{-2}"
+                         description="Maximum short wave heat flux in each region"
+                />
+                <var name="maxEvaporationFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
+                         description="Maximum evaporation in each region"
+                />
+                <var name="maxSeaIceFreshWaterFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
+                         description="Maximum sea ice melt rate in each region"
+                />
+                <var name="maxRiverRunoffFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
+                         description="Maximum river run off in each region"
+                />
+                <var name="maxIceRunoffFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
+                         description="Maximum ice run off in each region"
+                />
+                <var name="maxRainFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
+                         description="Maximum rain flux in each region"
+                />
+                <var name="maxSnowFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
+                         description="Maximum snow flux in each region"
+                />
+                <var name="maxSeaIceEnergy" array_group="maxs" units="J m^{-2}"
+                         description="Maximum sea ice energy in each region"
+                />
+                <var name="maxSurfaceThicknessFlux" array_group="maxs" units="m s^{-1}"
+                         description="Maximum surface thickness flux in each region"
+                />
+                <var name="maxSurfaceTemperatureFlux" array_group="maxs" units="C m s^{-1}"
+                         description="Maximum surface temperature flux in each region"
+                />
+                <var name="maxSurfaceSalinityFlux" array_group="maxs" units="PSU m s^{-1}"
+                         description="Maximum surface salinity flux in each region"
+                />
+                <var name="maxSeaIceSalinityFlux" array_group="maxs" units="kg m s^{-1}"
+                         description="Maximum sea ice salinity flux in each region"
+                />
+                <var name="maxSurfaceWindStressMagnitude" array_group="maxs" units="N m^{-2}"
+                         description="Maximum wind stress magnitude in each region"
+                />
+                <var name="maxWindStressZonal" array_group="maxs" units="N m^{-2}"
+                         description="Maximum zonal wind stress in each region"
+                />
+                <var name="maxWindStressMeridional" array_group="maxs" units="N m^{-2}"
+                         description="Maximum meridional wind stress in each region"
+                />
+                <var name="maxSeaSurfacePressure" array_group="maxs" units="Pa"
+                         description="Maximum sea surface pressure in each region"
+                />
                 <var name="maxSurfaceSSH" array_group="maxs" units="m"
                          description="Maximum sea-surface height"
-                />       
-                <var name="maxSurfaceKineticEnergyCell" array_group="maxs" units="m"
-                         description="Maximum sea-surface height"
+                />
+                <var name="maxSurfaceNetHeatFlux" array_group="maxs" units="W m^{-2}"
+                         description="Maximum net surface heat flux in each region"
+                />
+                <var name="maxSurfaceNetSalinitFlux" array_group="maxs" units="kg m s^{-1}"
+                         description="Maximum net surface salinity flux in each region"
+                />
+                <var name="maxSurfaceNetFreshWaterFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
+                         description="Maximum net surface fresh water flux in each region"
                 />
         </var_array>
         <var_array name="avgSurfaceStatistics" type="real" dimensions="nOceanRegions Time">
                 <var name="avgSurfaceArea" array_group="avg" units="m^2"
                          description="Average area of a surface cell"
                 />
+                <var name="avgLatentHeatFlux" array_group="avg" units="W m^{-2}"
+                         description="Average latent heat flux in each region"
+                />
+                <var name="avgSensibleHeatFlux" array_group="avg" units="W m^{-2}"
+                         description="Average sensible heat flux in each region"
+                />
+                <var name="avgLongWaveHeatFluxUp" array_group="avg" units="W m^{-2}"
+                         description="Average upwelling long wave heat flux in each region"
+                />
+                <var name="avgLongWaveHeatFluxDown" array_group="avg" units="W m^{-2}"
+                         description="Average downwelling long wave heat flux in each region"
+                />
+                <var name="avgSeaIceHeatFlux" array_group="avg" units="W m^{-2}"
+                         description="Average sea ice heat flux in each region"
+                />
+                <var name="avgShortWaveHeatFlux" array_group="avg" units="W m^{-2}" 
+                         description="Average short wave heat flux in each region"
+                />       
+                <var name="avgEvaporationFlux" array_group="avg" units="kg m^{-2} s^{-1}"
+                         description="Average evaporation in each region"
+                />       
+                <var name="avgSeaIceFreshWaterFlux" array_group="avg" units="kg m^{-2} s^{-1}"
+                         description="Average sea ice melt rate in each region"
+                />       
+                <var name="avgRiverRunoffFlux" array_group="avg" units="kg m^{-2} s^{-1}"
+                         description="Average river run off in each region"
+                />
+                <var name="avgIceRunoffFlux" array_group="avg" units="kg m^{-2} s^{-1}"
+                         description="Average ice run off in each region"
+                />
+                <var name="avgRainFlux" array_group="avg" units="kg m^{-2} s^{-1}"
+                         description="Average rain flux in each region"
+                />
+                <var name="avgSnowFlux" array_group="avg" units="kg m^{-2} s^{-1}"
+                         description="Average snow flux in each region"
+                />
+                <var name="avgSeaIceEnergy" array_group="avg" units="J m^{-2}"
+                         description="Average sea ice energy in each region"
+                />
+                <var name="avgSurfaceThicknessFlux" array_group="avg" units="m s^{-1}"
+                         description="Average surface thickness flux in each region"
+                />
+                <var name="avgSurfaceTemperatureFlux" array_group="avg" units="C m s^{-1}"
+                         description="Average surface temperature flux in each region"
+                />
+                <var name="avgSurfaceSalinityFlux" array_group="avg" units="PSU m s^{-1}"
+                         description="Average surface salinity flux in each region"
+                />
+                <var name="avgSeaIceSalinityFlux" array_group="avg" units="kg m s^{-1}"
+                         description="Average sea ice salinity flux in each region"
+                />
+                <var name="avgSurfaceWindStressMagnitude" array_group="avg" units="N m^{-2}"
+                         description="Average wind stress magnitude in each region"
+                />
+                <var name="avgWindStressZonal" array_group="avg" units="N m^{-2}"
+                         description="Average zonal wind stress in each region"
+                />
+                <var name="avgWindStressMeridional" array_group="avg" units="N m^{-2}"
+                         description="Average meridional wind stress in each region"
+                />
+                <var name="avgSeaSurfacePressure" array_group="avg" units="Pa"
+                         description="Average sea surface pressure in each region"
+                />
                 <var name="avgSurfaceSSH" array_group="avg" units="m"
                          description="Average sea-surface height"
                 />
-                <var name="avgSurfaceKineticEnergyCell" array_group="avg" units="m"
-                         description="Average sea-surface height"
+                <var name="avgSurfaceNetHeatFlux" array_group="avg" units="W m^{-2}"
+                         description="Average net surface heat flux in each region"
+                />
+                <var name="avgSurfaceNetSalinitFlux" array_group="avg" units="kg m s^{-1}"
+                         description="Average net surface salinity flux in each region"
+                />
+                <var name="avgSurfaceNetFreshWaterFlux" array_group="avg" units="kg m^{-2} s^{-1}"
+                         description="Average net surface fresh water flux in each region"
                 />
         </var_array>
 </var_struct>
