@@ -227,7 +227,11 @@ module mpas_subdriver
       ! Using information from the namelist, a graph.info file, and a file containing
       !    mesh fields, build halos and allocate blocks in the domain
       !
-      mesh_stream = domain_ptr % core % get_mesh_stream(domain_ptr % configs)
+      ierr = domain_ptr % core % get_mesh_stream(domain_ptr % configs, mesh_stream)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Failed to find mesh stream for core ' // trim(domain_ptr % core % coreName))
+      end if
+
       call mpas_f_to_c_string(domain_ptr % streams_filename, c_filename)
       call mpas_f_to_c_string(mesh_stream, c_mesh_stream)
       c_comm = domain_ptr % dminfo % comm
