@@ -72,12 +72,13 @@ module mpas_bootstrapping
    !>            mpas_initialize_vectors()
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_bootstrap_framework_phase1(domain, mesh_filename) !{{{
+   subroutine mpas_bootstrap_framework_phase1(domain, mesh_filename, mesh_iotype) !{{{
 
       implicit none
 
       type (domain_type), pointer :: domain
       character(len=*), intent(in) :: mesh_filename
+      integer, intent(in) :: mesh_iotype
 
       type (block_type), pointer :: readingBlock
 
@@ -142,7 +143,7 @@ module mpas_bootstrapping
       nHalos = config_num_halos
 
 
-      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr=ierr)
+      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, mesh_iotype, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
          write(stderrUnit,*) ' '
          write(stderrUnit,*) '************************************************************************************'
@@ -364,6 +365,7 @@ module mpas_bootstrapping
       integer :: streamDirection
       logical :: streamActive
       logical :: fieldActive
+      integer :: ioType
 
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -415,8 +417,12 @@ module mpas_bootstrapping
             ! Determine stream filename
             call mpas_get_stream_filename(domain % streamManager, streamID = streamName, filename = streamFilename, ierr = err_local)
 
+            ! Determine stream io_type
+            call MPAS_stream_mgr_get_property(domain % streamManager, streamName, &
+                                              MPAS_STREAM_PROPERTY_IOTYPE, ioType, ierr = err_local)
+
             ! Try to open file
-            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr = err_local)
+            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, ioType, ierr = err_local)
 
             ! If to determine if file was opened or not.
             if ( err_local == MPAS_IO_NOERR ) then

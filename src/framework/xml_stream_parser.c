@@ -1581,19 +1581,19 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
  *
  *  Parses an XML file and searches for the stream whose name matches the 'streamname'
  *  argument; then, returns the associated attributes for that stream in
- *  the 'filename', 'ref_time', and 'filename_interval' arguments.
+ *  the 'filename', 'ref_time', 'filename_interval', and 'io_type' arguments.
  *
  *  The fname argument provides the name of the XML file that contains the stream
  *  definitions, and mpi_comm is the Fortran MPI communicator used by MPAS.
  *
  *********************************************************************************/
-void xml_stream_get_attributes(char *fname, char *streamname, int *mpi_comm, char *filename, char *ref_time, char *filename_interval, int *status)
+void xml_stream_get_attributes(char *fname, char *streamname, int *mpi_comm, char *filename, char *ref_time, char *filename_interval, char *io_type, int *status)
 {
 	char *xml_buf;
 	size_t bufsize;
 	ezxml_t streams;
 	ezxml_t stream_xml;
-	const char *streamID, *filename_template, *reference_time, *c_filename_interval;
+	const char *streamID, *filename_template, *reference_time, *c_filename_interval, *xml_iotype;
 	int found;
 
 	*status = 0;
@@ -1629,10 +1629,11 @@ void xml_stream_get_attributes(char *fname, char *streamname, int *mpi_comm, cha
 		filename_template = ezxml_attr(stream_xml, "filename_template");
 		reference_time = ezxml_attr(stream_xml, "reference_time");
 		c_filename_interval = ezxml_attr(stream_xml, "filename_interval");
+		xml_iotype = ezxml_attr(stream_xml, "io_type");
 
 		if (strcmp(streamID, streamname) == 0) {
 			found = 1;
-			fprintf(stderr, "Found grid stream with template %s\n", filename_template);
+			fprintf(stderr, "Found mesh stream with filename template %s\n", filename_template);
 			sprintf(filename, "%s", filename_template);
 			if ( reference_time == NULL ) {
 				sprintf(ref_time, "initial_time");
@@ -1653,6 +1654,32 @@ void xml_stream_get_attributes(char *fname, char *streamname, int *mpi_comm, cha
 				}
 			} else {
 				sprintf(filename_interval, "%s", c_filename_interval);
+			}
+
+			if ( xml_iotype == NULL ) {
+				fprintf(stderr, "Using default io_type for mesh stream\n");
+				sprintf(io_type, "pnetcdf");
+			} else {
+				if (strstr(xml_iotype, "pnetcdf,cdf5") != NULL) {
+					sprintf(io_type, "%s", xml_iotype);
+					fprintf(stderr, "Using io_type Parallel-NetCDF (CDF-5, large variable support) for mesh stream\n");
+				}
+				else if (strstr(xml_iotype, "pnetcdf") != NULL) {
+					sprintf(io_type, "%s", xml_iotype);
+					fprintf(stderr, "Using io_type Parallel-NetCDF for mesh stream\n");
+				}
+				else if (strstr(xml_iotype, "netcdf4") != NULL) {
+					sprintf(io_type, "%s", xml_iotype);
+					fprintf(stderr, "Using io_type NetCDF-4/HDF5 for mesh stream\n");
+				}
+				else if (strstr(xml_iotype, "netcdf") != NULL) {
+					sprintf(io_type, "%s", xml_iotype);
+					fprintf(stderr, "Using io_type Serial NetCDF for mesh stream\n");
+				}
+				else {
+					sprintf(io_type, "pnetcdf");
+					fprintf(stderr, "*** unrecognized io_type specification for mesh stream; defaulting to Parallel-NetCDF\n");
+				}
 			}
 			break;
 		}
