@@ -26,6 +26,7 @@ module li_time_integration
    use mpas_configure
    use mpas_constants
    use mpas_dmpar
+   use mpas_timekeeping
    use li_time_integration_fe
    use li_setup
 
@@ -70,15 +71,13 @@ module li_time_integration
 !> Output: domain - upon exit, time level 2 contains
 !>                  model state advanced forward in time by dt seconds
 !-----------------------------------------------------------------------
-   subroutine li_timestep(domain, dt, timeStamp, err)
+   subroutine li_timestep(domain, err)
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(in) :: dt    !< Input:  time step
-      character(len=*), intent(in) :: timeStamp  !< Input: current time stamp
 
       !-----------------------------------------------------------------
       !
@@ -103,17 +102,51 @@ module li_time_integration
       type (mpas_pool_type), pointer :: meshPool
       character (len=StrKIND), pointer :: xtime
       character (len=StrKIND), pointer :: config_time_integration
+      logical, pointer :: config_adaptive_timestep
+      real (kind=RKIND), pointer :: deltat_output !< variable used for output, in seconds
+
+      type (MPAS_TimeInterval_type) :: timeStepInterval !< the current time step as an interval
+      real (kind=RKIND) :: dtSeconds !< the current time step in seconds
+      type (MPAS_Time_Type) :: currTime  !< current time as time type
+      character(len=StrKIND) :: timeStamp !< current time as a string
       integer :: err_tmp
 
       err = 0
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
 
+      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
+      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
+
+      ! ===
+      ! === Non-adpative timestep: Get dt in seconds
+      ! ===
+      if (.not. config_adaptive_timestep) then
+         ! Get the interval at this point in time - will be fixed for nonadaptive timestep, but need to get it out of the clock
+         timeStepInterval = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
+         err = ior(err,err_tmp)
+         ! Convert the clock's time interval into a dt in seconds to be used by the time stepper,
+         ! using the currTime as the start time for this interval.
+         ! (We want to do this conversion before doint the timestep and advancing the clock because the dt
+         !  in seconds may change as the base time changes, and we want the old time as the base time.
+         !  For example, the number of seconds in a year will be longer in a leap year.
+         !  That is why nonadaptive timesteps have to be handled before the timestep, while
+         !  adaptive timesteps are handled after the timestep.
+         !  It may be possible to have them handled in the same place within li_tendency.F if we want to embed it that deeply.)
+         call mpas_get_timeInterval(timeStepInterval, StartTimeIn=currTime, dt=dtSeconds, ierr=err_tmp)
+         err = ior(err,err_tmp)
+      endif
+
+
+      ! ===
+      ! === Perform timestep
+      ! ===
       !write(stdoutUnit,*) 'Using ', trim(config_time_integration), ' time integration.'
       select case (config_time_integration)
       case ('forward_euler')
-         call li_time_integrator_forwardeuler(domain, dt, err_tmp)
+         call li_time_integrator_forwardeuler(domain, dtSeconds, err_tmp)
       case ('rk4')
          write(stderrUnit,*) trim(config_time_integration), ' is not currently supported.'
          call mpas_dmpar_abort(domain % dminfo)
@@ -124,6 +157,33 @@ module li_time_integration
       end select
       err = ior(err,err_tmp)
 
+
+      ! ===
+      ! === Adaptive timestep: update clock information
+      ! ===
+      ! Set time step in clock object since the time step could have changed
+      if (config_adaptive_timestep) then
+         ! convert dtSeconds to timeInterval type
+         call mpas_set_timeInterval(timeStepInterval, dt=dtSeconds, ierr=err_tmp)
+         err = ior(err,err_tmp)
+         ! update the clock with the timeInterval
+         call mpas_set_clock_timestep(domain % clock, timeStepInterval, err_tmp)
+         err = ior(err,err_tmp)
+      endif
+
+      ! ===
+      ! === Update clock information
+      ! ===
+      ! Advance clock - needed to wait until after time step is completed in case the dt has changed!
+      call mpas_advance_clock(domain % clock)
+      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
+      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      write(stderrUnit,*) '  Completed timestep.  New time is: ', trim(timeStamp)
+      write(stdoutUnit,*) '  Completed timestep.  New time is: ', trim(timeStamp)
+      !write(stdoutUnit,*) '  dt (s) = ', dtSeconds
+
+
       block => domain % blocklist
       do while (associated(block))
          ! Assign the time stamp for this time step
@@ -131,11 +191,9 @@ module li_time_integration
          call mpas_pool_get_array(meshPool, 'xtime', xtime)
          xtime = timeStamp
 
-!         ! Abort the simulation if NaNs occur in the velocity field
-!         if (isNaN(sum(block % state % time_levs(2) % state % u % array))) then
-!            write(stderrUnit,*) 'Abort: NaN detected'
-!            call mpas_dmpar_abort(dminfo)
-!         endif
+         call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
+         deltat_output = dtSeconds
+
 
          block => block % next
       end do

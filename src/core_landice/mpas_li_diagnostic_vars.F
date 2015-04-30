@@ -45,7 +45,7 @@ module li_diagnostic_vars
    ! Public member functions
    !
    !--------------------------------------------------------------------
-   public :: li_calculate_diagnostic_vars
+   public :: li_calculate_diagnostic_vars, li_calculate_apparent_diffusivity
 
    !--------------------------------------------------------------------
    !
@@ -77,8 +77,6 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine li_calculate_diagnostic_vars(domain, solveVelo, err)
-
-      use mpas_vector_reconstruction
 
       !-----------------------------------------------------------------
       !
@@ -115,19 +113,11 @@ contains
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: velocityPool
-      character (len=StrKIND), pointer :: config_velocity_solver
-      logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
-      type (field2DReal), pointer :: normalVelocityField, layerThicknessEdgeField
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
-      real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
-      integer, pointer :: nVertInterfaces
+      type (field2DReal), pointer :: layerThicknessEdgeField
       integer :: err_tmp
 
 
       err = 0
-
-      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-      call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
 
       ! ===
       ! === Diagnostic solve of variables prior to velocity 
@@ -143,32 +133,8 @@ contains
       ! === Diagnostic solve of velocity 
       ! ===
       if (solveVelo) then
-          call mpas_timer_start("velocity solve")
-
-          ! TODO Once multiple blocks are supported, this section will need to change.
-          ! LifeV does not support multiple blocks but the MPAS SIA could.
-          block => domain % blocklist
-          do while (associated(block))
-             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-             call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
-             call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-
-             call li_velocity_solve(meshPool, geometryPool, thermalPool, velocityPool, err)    ! ****** Calculate Velocity ******
-
-             err = ior(err, err_tmp)
-
-             block => block % next
-          end do
-
-          ! update halos on velocity
-          call mpas_timer_start("halo updates")
-          call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
-          call mpas_pool_get_field(velocityPool, 'normalVelocity', normalVelocityField)
-          call mpas_dmpar_exch_halo_field(normalVelocityField)
-          call mpas_timer_stop("halo updates")
-
-          call mpas_timer_stop("velocity solve")
+          call li_velocity_solve(domain, err)    ! ****** Calculate Velocity ******
+          err = ior(err, err_tmp)
       endif
 
 
@@ -177,42 +143,6 @@ contains
       ! ===
 
       call mpas_timer_start("calc. diagnostic vars except vel")
-
-      ! Calculate reconstructed velocities 
-      ! do this after velocity halo update in case velocities on the 1-halo edge are wrong (depends on velocity solver)
-      ! Still do this even if we didn't calculate velocity because on a restart these will be defined at the initial time.
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
-         call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
-         call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
-         call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
-         call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
-
-         ! Native SIA dycore needs to have reconstructed velocities calculated.
-         ! External dycores return their native velocities at cell center locations,
-         ! but these can optionally be overwritten by reconstructed velocities for testing.
-         if ( (trim(config_velocity_solver) == 'sia') .or.    &
-               config_do_velocity_reconstruction_for_external_dycore ) then
-            call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
-            call mpas_pool_get_array(velocityPool, 'uReconstructZ', uReconstructZ)
-            call mpas_pool_get_array(velocityPool, 'uReconstructZonal', uReconstructZonal)
-            call mpas_pool_get_array(velocityPool, 'uReconstructMeridional', uReconstructMeridional)
-
-            call mpas_reconstruct(meshPool, normalVelocity,               &
-                            uReconstructX, uReconstructY, uReconstructZ, &
-                            uReconstructZonal, uReconstructMeridional )
-         endif
-
-         ! Calculate diagnostic speed arrays
-         surfaceSpeed = sqrt(uReconstructX(1,:)**2 + uReconstructY(1,:)**2)
-         basalSpeed   = sqrt(uReconstructX(nVertInterfaces,:)**2 + uReconstructY(nVertInterfaces,:)**2)
-
-         block => block % next
-      end do
-
 
       block => domain % blocklist
       do while (associated(block))
@@ -242,6 +172,149 @@ contains
    !--------------------------------------------------------------------
    end subroutine li_calculate_diagnostic_vars
 
+
+
+!***********************************************************************
+!
+!  subroutine li_calculate_apparent_diffusivity
+!
+!> \brief   Computes apparent diffusivity
+!> \author  Matt Hoffman
+!> \date    19 April 2012
+!> \details 
+!> This routine computes the apparent diffusivity.
+!> Estimate diffusivity using the relation that the 2-d flux Q=-D grad h and Q=UH,
+!> where h is surface elevation, D is diffusivity, U is 2-d velocity vector, and H is thickness
+!> Solving for D = UH/-grad h
+!> DCFL: dt = 0.5 * dx**2 / D = 0.5 * dx**2 * slopemag / flux_downslope
+!
+!-----------------------------------------------------------------------
+   subroutine li_calculate_apparent_diffusivity(meshPool, velocityPool, scratchPool, geometryPool, allowableDiffDt)
+      use mpas_vector_reconstruction
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      type (mpas_pool_type), intent(in) :: &
+         velocityPool          !< Input: velocity information
+
+      type (mpas_pool_type), intent(in) :: &
+         scratchPool          !< Input: scratch information
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         geometryPool          !< Input: geometry information
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), intent(out) :: allowableDiffDt !< Output: allowable timestep based on diffusive CFL
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:), pointer :: normalSlopeEdge
+      type (field1dReal), pointer :: slopeReconstructXField, slopeReconstructYField, slopeReconstructZField  !< Only needed for calling mpas_reconstruct, but not actually used here
+      type (field1dReal), pointer :: slopeCellAxis1Field
+      type (field1dReal), pointer :: slopeCellAxis2Field
+      real (kind=RKIND), dimension(:), pointer :: slopeCellAxis1, slopeCellAxis2
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructAxis1, uReconstructAxis2
+      real (kind=RKIND), dimension(:), pointer :: apparentDiffusivity
+      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
+      integer, pointer :: nCells, nVertLevels
+      real (kind=RKIND) :: allowableDtHere
+      real (kind=RKIND) :: fluxVeloAxis1, fluxVeloAxis2
+      real (kind=RKIND) :: fluxDownslope
+      real (kind=RKIND) :: slopeCellMagnitude
+      real (kind=RKIND) :: dCell
+      integer :: iCell, iEdge, iLevel
+      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
+      real (kind=RKIND), parameter :: smallNumber = 1.0e-36
+
+      ! Note: This routine could be broken into 2: one to calculate diffusivity
+      ! and another to get the diffusive CFL timestep.  In that case, the first (and possibly the second)
+      ! could be moved to diagnostic_variable_solve_after_velocity.  However, since
+      ! diffusivity is only used for this check, I don't think it makes sense to separate these
+      ! calculations for now.
+
+      ! get needed variables
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel=1)
+      call mpas_pool_get_array(geometryPool, 'apparentDiffusivity', apparentDiffusivity)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(velocityPool, 'uReconstructZonal', uReconstructAxis1)
+      call mpas_pool_get_array(velocityPool, 'uReconstructMeridional', uReconstructAxis2)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_field(scratchPool, 'workCell', slopeReconstructXField)
+      call mpas_allocate_scratch_field(slopeReconstructXField, .true.)
+      call mpas_pool_get_field(scratchPool, 'workCell2', slopeReconstructYField)
+      call mpas_allocate_scratch_field(slopeReconstructYField, .true.)
+      call mpas_pool_get_field(scratchPool, 'workCell3', slopeReconstructZField)
+      call mpas_allocate_scratch_field(slopeReconstructZField, .true.)
+      call mpas_pool_get_field(scratchPool, 'slopeCellX', slopeCellAxis1Field)
+      call mpas_allocate_scratch_field(slopeCellAxis1Field, .true.)
+      slopeCellAxis1 => slopeCellAxis1Field % array
+      call mpas_pool_get_field(scratchPool, 'slopeCellY', slopeCellAxis2Field)
+      call mpas_allocate_scratch_field(slopeCellAxis2Field, .true.)
+      slopeCellAxis2 => slopeCellAxis2Field % array
+
+
+      ! Initialize output
+      allowableDiffDt = bigNumber
+
+      ! Approximate slope at cell centers
+      ! reconstruct routines set uReconstructZonal = uReconstructX; uReconstructMeridional = uReconstructY
+      ! for planar meshes, so those variables can be used as orthogonal components of the vector
+      ! in either the plane or sphere.  This avoids needing to add logic for if we are on a sphere or not.
+      call mpas_reconstruct(meshPool, normalSlopeEdge,        &
+                            slopeReconstructXField % array, slopeReconstructYField % array, slopeReconstructZField % array, &
+                            slopeCellAxis1, slopeCellAxis2)
+
+      ! Approximate flux at cell centers
+      do iCell = 1, nCells
+         slopeCellMagnitude = sqrt(slopeCellAxis1(iCell)**2 + slopeCellAxis2(iCell)**2) + smallNumber
+
+         fluxDownslope = 0.0_RKIND
+         do iLevel = 1, nVertLevels
+            fluxVeloAxis1 = (uReconstructAxis1(iLevel, iCell) + uReconstructAxis1(iLevel+1, iCell)) * 0.5_RKIND
+            fluxVeloAxis2 = (uReconstructAxis2(iLevel, iCell) + uReconstructAxis2(iLevel+1, iCell)) * 0.5_RKIND
+            fluxDownslope = fluxDownslope + (-1.0_RKIND * slopeCellAxis1(iCell) * fluxVeloAxis1 - slopeCellAxis2(iCell) * fluxVeloAxis2) * layerThickness(iLevel, iCell) / slopeCellMagnitude
+         enddo
+         apparentDiffusivity(iCell) = abs(fluxDownslope) / slopeCellMagnitude
+
+         ! Calculate allowable timestep based on DCFL
+         if ( li_mask_is_grounded_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
+            ! Find shortest distance to a neighboring cell center, dCell
+            dCell = minval(dcEdge(1:nEdgesOnCell(iCell)))
+            allowableDtHere = 0.5_RKIND * dCell**2 / (apparentDiffusivity(iCell) + smallNumber)
+         else
+            allowableDtHere = bigNumber
+         endif
+         allowableDiffDt = min(allowableDiffDt, allowableDtHere)
+      enddo
+
+      call mpas_deallocate_scratch_field(slopeReconstructXField, .true.)
+      call mpas_deallocate_scratch_field(slopeReconstructYField, .true.)
+      call mpas_deallocate_scratch_field(slopeReconstructZField, .true.)
+      call mpas_deallocate_scratch_field(slopeCellAxis1Field, .true.)
+      call mpas_deallocate_scratch_field(slopeCellAxis2Field, .true.)
+   !--------------------------------------------------------------------
+   end subroutine li_calculate_apparent_diffusivity
 
 
 
@@ -391,7 +464,7 @@ contains
 
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-          call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
+          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
           call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
           call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)

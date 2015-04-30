@@ -25,6 +25,7 @@ module li_velocity
 
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_timer
    use mpas_configure
    use li_velocity_external
    use li_sia
@@ -214,96 +215,195 @@ contains
 !>  This routine calls velocity solvers.
 !
 !-----------------------------------------------------------------------
-   subroutine li_velocity_solve(meshPool, geometryPool, thermalPool, velocityPool, err)
+   subroutine li_velocity_solve(domain, err)
 
+      use mpas_vector_reconstruction
       use li_mask
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
-
-      type (mpas_pool_type), intent(in) :: &
-         geometryPool          !< Input: geometry information
-
-      type (mpas_pool_type), intent(in) :: &
-         thermalPool          !< Input: thermal information
-
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(inout) :: &
-         velocityPool          !< Input: velocity information
+      type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
+      ! Note: domain is passed in because halo updates are needed in this routine
+      ! and halo updates have to happen outside block loops, which requires domain.
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
-
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: thermalPool
+      type (mpas_pool_type), pointer :: velocityPool
       ! pointers to get from pools
       character (len=StrKIND), pointer :: config_velocity_solver
-      integer, pointer :: nEdges
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
-      integer, dimension(:), pointer :: edgeMask
+      logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
+      integer, pointer :: nEdgesSolve
+      integer, pointer :: nVertInterfaces
+      integer, dimension(:), pointer :: edgeMask, cellMask
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
+      real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      real (kind=RKIND), dimension(:), pointer :: upperSurface
+      type (field2DReal), pointer :: normalVelocityField
       ! truly local variables
+      integer :: cell1, cell2
       integer :: iEdge
+      integer :: err_tmp
 
+      call mpas_timer_start("velocity solve")
+
+      err_tmp = 0
       err = 0
 
-      ! Get variables from pools
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
-      call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
 
+      ! External solvers do not support multiple blocks but the MPAS SIA solver does.
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
 
-      select case (config_velocity_solver)
-      case ('none')
-         ! Do nothing
-      case ('sia')
-          call li_sia_solve(meshPool, geometryPool, velocityPool, err)
-      case ('L1L2', 'FO', 'Stokes')
-          call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err)
-      case default
-          write(stderrUnit,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
-          err = 1
-          return
-      end select
+         ! Get variables from pools
+         call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
-      ! Check if the velocity solver has returned a velocity on any non-dynamic edges
-      do iEdge = 1, nEdges
-         if ( li_mask_is_ice(edgeMask(iEdge)) .and.                    &
-              (.not.(li_mask_is_dynamic_ice(edgeMask(iEdge)))) .and.   &
-              (maxval(abs(normalVelocity(:,iEdge))) /= 0.0_RKIND)      &
-            ) then
+         select case (config_velocity_solver)
+         case ('none')
+            ! Do nothing
+         case ('sia')
+             call li_sia_solve(meshPool, geometryPool, velocityPool, err_tmp)
+         case ('L1L2', 'FO', 'Stokes')
+             call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err_tmp)
+         case default
+             write(stderrUnit,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+             err = 1
+             call mpas_timer_stop("velocity solve")
+             return
+         end select
+         err = ior(err, err_tmp)
+
+         ! Some "quality control" of normalVelocity
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+         do iEdge = 1, nEdgesSolve
+
+            ! Don't allow normalVelocity on edges where an unglaciated cell with
+            ! higher elevation neighbors a glaciated cell.  Some velocity solvers
+            ! could generate a nonzero velocity on these edges.  In the case of a
+            ! velocity directed into the ice sheet, this probably does no harm
+            ! for advection because there is no ice to advect in, but it could result
+            ! in overly restrictive advective CFL conditions.  In the case of velocity
+            ! directed out of the ice sheet, this would result in uphill flow which is
+            ! highly unlikely to be physically correct.  (It could be possible in a HO
+            ! stress balance where stress transfer 'overrides' the driving stress, but
+            ! this seems unlikely to be significant.)  Therefore, always zero velocity
+            ! in these situations.
+            if ( li_mask_is_dynamic_margin(edgeMask(iEdge)) ) then
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(1, iEdge)
+               if ( ( li_mask_is_dynamic_ice(cellMask(cell1)) .and.     &
+                      upperSurface(cell2) > upperSurface(cell1) ) .or.  &
+                    ( li_mask_is_dynamic_ice(cellMask(cell2)) .and.     &
+                      upperSurface(cell1) > upperSurface(cell2) ) ) then
+                  normalVelocity(:, iEdge) = 0.0_RKIND
+               endif
+            endif
+
+            ! Check if the velocity solver has returned a velocity on any non-dynamic edges
+            if ( li_mask_is_ice(edgeMask(iEdge)) .and.                    &
+                (.not.(li_mask_is_dynamic_ice(edgeMask(iEdge)))) .and.   &
+                (maxval(abs(normalVelocity(:,iEdge))) /= 0.0_RKIND)      &
+               ) then
+               err_tmp= 1
+               !!!normalVelocity(:,iEdge) = 0.0_RKIND  ! this is a hack because the rest of the code requires this, but this condition should really cause a fatal error.
+            endif
+
+         enddo
+         if (err_tmp == 1) then
+            write(stderrUnit,*) 'Error: Velocity has been calculated on non-dynamic edges.  There is a problem with the velocity solver.' !!!  Velocity on those edges have been set to 0, but this should be a fatal error.'
             err = 1
-            !!!normalVelocity(:,iEdge) = 0.0_RKIND  ! this is a hack because the rest of the code requires this, but this condition should really cause a fatal error.
-         endif
-      enddo
-      if (err == 1) then
-         write(stderrUnit,*) 'Error: Velocity has been calculated on non-dynamic edges.  There is a problem with the velocity solver.' !!!  Velocity on those edges have been set to 0, but this should be a fatal error.'
-         err = 1  ! a hack to let the code continue until this can be fixed in the velocity solver
-      end if
+         end if
+
+         block => block % next
+      end do
+
+
+      ! ---
+      ! --- update halos on velocity
+      ! ---
+      call mpas_timer_start("halo updates")
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+      call mpas_pool_get_field(velocityPool, 'normalVelocity', normalVelocityField)
+      call mpas_dmpar_exch_halo_field(normalVelocityField)
+      call mpas_timer_stop("halo updates")
+
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+
+         ! ---
+         ! --- Calculate reconstructed velocities
+         ! ---
+         ! do this after velocity halo update in case velocities on the 1-halo edge are wrong (depends on velocity solver)
+         ! Still do this even if we didn't calculate velocity because on a restart these will be defined at the initial time.
+         call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
+         call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+         call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
+         call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
+         call mpas_pool_get_array(velocityPool, 'uReconstructZ', uReconstructZ)
+         call mpas_pool_get_array(velocityPool, 'uReconstructZonal', uReconstructZonal)
+         call mpas_pool_get_array(velocityPool, 'uReconstructMeridional', uReconstructMeridional)
+         call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
+         call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
+
+         ! Native SIA dycore needs to have reconstructed velocities calculated.
+         ! External dycores return their native velocities at cell center locations,
+         ! but these can optionally be overwritten by reconstructed velocities for testing.
+         if ( (trim(config_velocity_solver) == 'sia') .or.    &
+               config_do_velocity_reconstruction_for_external_dycore ) then
+            call mpas_reconstruct(meshPool, normalVelocity,               &
+                             uReconstructX, uReconstructY, uReconstructZ, &
+                             uReconstructZonal, uReconstructMeridional )
+         else
+            ! For 2-d meshes, these are set by mpas_reconstruct, so set them for HO dycores
+            uReconstructZonal = uReconstructX
+            uReconstructMeridional = uReconstructY
+         end if
+
+
+         ! ---
+         ! --- Calculate diagnostic speed arrays
+         ! ---
+         surfaceSpeed = sqrt(uReconstructX(1,:)**2 + uReconstructY(1,:)**2)
+         basalSpeed   = sqrt(uReconstructX(nVertInterfaces,:)**2 + uReconstructY(nVertInterfaces,:)**2)
+
+         block => block % next
+      end do
 
       ! === error check
       if (err > 0) then
           write (stderrUnit,*) "An error has occurred in li_velocity_solve."
       endif
+
+      call mpas_timer_stop("velocity solve")
 
    !--------------------------------------------------------------------
    end subroutine li_velocity_solve

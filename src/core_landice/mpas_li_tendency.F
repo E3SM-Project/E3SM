@@ -630,9 +630,7 @@ module li_tendency
       logical, pointer :: config_print_thickness_advection_info
       real (kind=RKIND) :: invAreaCell, flux, maxAllowableDt, layerNormalVelocity
       integer :: iEdge, iCell, i, k
-      type (MPAS_TimeInterval_type) :: allowableDtMinInterval
-      character (len=StrKIND) :: allowableDtMinString
-      real (kind=RKIND) :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
+      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
       integer :: err_tmp
 
       ! Only needed for optional check for mass conservation
@@ -648,7 +646,6 @@ module li_tendency
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
       MinOfMaxAllowableDt = bigNumber
 
@@ -679,21 +676,6 @@ module li_tendency
         end do
       end do
 
-      ! Build a time string of the maximum allowable dt calculated 
-      ! (We only need this if a CFL violation occurred or config_print_thickness_advection_info is true)
-      call mpas_set_timeInterval(allowableDtMinInterval, dt=MinOfMaxAllowableDt, ierr=err_tmp)
-      err = ior(err,err_tmp)
-      call mpas_get_timeInterval(allowableDtMinInterval, timeString=allowableDtMinString, ierr=err_tmp)
-      err = ior(err,err_tmp)
-
-      if (err > 0) then
-         write(stderrUnit,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDtMinString)
-         err = 1
-      endif
-
-      if (config_print_thickness_advection_info) then
-         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor is (Days_hhh:mmm:sss):   ' // trim(allowableDtMinString)
-      endif
 
       ! Optional check for mass conservation
       !tendVolSum = 0.0_RKIND
