@@ -342,6 +342,10 @@ sub write_file
        @groups = qw(case_test);
     } elsif ($filename =~ "env_archive") {
        @groups = qw(case_archive);
+    } elsif ($filename =~ "env_postprocess") {
+       @groups = qw(postprocess);
+    } elsif ($filename =~ "env_diags_ocn") {
+       @groups = qw(diags_ocn);
     }
 
     my $fh;
@@ -482,6 +486,28 @@ EOD
 <!--       ./st_archive -help                                                   -->
 <!--       To validate the env_archive.xml file using xmllint, run              -->
 <!--       xmllint -schema ./Tools/config_archive.xsd env_archive.xml           -->
+<!--                                                                            -->
+<!-- ========================================================================== -->
+
+EOD
+
+}
+    if($filename =~ "env_postprocess.xml" && $xmode =~ "normal") {
+    print $fh <<"EOD";
+<!-- ========================================================================== -->
+<!--                                                                            -->
+<!-- Boolean (True / False) controls for enabling post processing tasks         -->
+<!--                                                                            -->
+<!-- ========================================================================== -->
+
+EOD
+}
+
+    if($filename =~ "env_diags_ocn.xml" && $xmode =~ "normal") {
+    print $fh <<"EOD";
+<!-- ========================================================================== -->
+<!--                                                                            -->
+<!-- Controls for generating ocean  diagnostics                                 -->
 <!--                                                                            -->
 <!-- ========================================================================== -->
 
