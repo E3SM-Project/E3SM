@@ -406,21 +406,23 @@ contains
          ! net heat into ocean = latentHeatFlux+sensibleHeatFlux+longWaveHeatFluxUp+longWaveHeatFluxDown+shortWaveHeatFlux+seaIceHeatFlux+(?seaIceEnergy?)
          ! net salinity into ocean = seaIceSalinityFlux
          ! net freshwater into ocean = evaporationFlux+seaIceFreshWaterFlux+riverRunoffFlux+iceRunoffFlux+rainFlux+snowFlux+(?seaIceEnergy?)
-         workArray(24,:) =   latentHeatFlux(:) &
-                           + sensibleHeatFlux(:) &
-                           + longWaveHeatFluxUp(:) &
-                           + longWaveHeatFluxDown(:) &
-                           + shortWaveHeatFlux(:)  &
-                           + seaIceHeatFlux(:) 
-                  !        + seaIceEnergy
-         workArray(25,:) =   seaIceSalinityFlux(:)
-         workArray(26,:) =   evaporationFlux(:) &
-                           + seaIceFreshWaterFlux(:) &
-                           + riverRunoffFlux(:) &
-                           + iceRunoffFlux(:) &
-                           + rainFlux(:) &
-                           + snowFlux(:) 
-                  !        + seaIceEnergy(:)
+         if (bulkForcingPkgActive) then
+            workArray(24,:) =   latentHeatFlux(:) &
+                              + sensibleHeatFlux(:) &
+                              + longWaveHeatFluxUp(:) &
+                              + longWaveHeatFluxDown(:) &
+                              + shortWaveHeatFlux(:)  &
+                              + seaIceHeatFlux(:) 
+                     !        + seaIceEnergy
+            workArray(25,:) =   seaIceSalinityFlux(:)
+            workArray(26,:) =   evaporationFlux(:) &
+                              + seaIceFreshWaterFlux(:) &
+                              + riverRunoffFlux(:) &
+                              + iceRunoffFlux(:) &
+                              + rainFlux(:) &
+                              + snowFlux(:) 
+                     !        + seaIceEnergy(:)
+         end if
 
          call compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
          call compute_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
