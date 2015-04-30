@@ -211,7 +211,13 @@ class TestWaitForTests(unittest.TestCase):
 
         # TODO: Any further checking of xml output worth doing?
 
-# TODO: test jenkins_generic_job with a super-fast acme test category
+###############################################################################
+class TestJenkinsGenericJob(unittest.TestCase):
+###############################################################################
+
+    def test_jenkins_generic_job(self):
+        stat, output, errput = run_cmd("%s/jenkins_generic_job -p ACME_test -t acme_tiny -d --branch master" % SCRIPT_DIR, ok_to_fail=True)
+        self.assertEqual(stat, 0, msg="jenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
 
 if (__name__ == "__main__"):
     unittest.main()

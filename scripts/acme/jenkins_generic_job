@@ -13,6 +13,8 @@ import argparse, sys, os, distutils.spawn, getpass, socket, shutil, glob, doctes
 
 from acme_util import expect, warning, verbose_print
 
+SENTINEL_FILE = "ONGOING_TEST"
+
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
@@ -63,6 +65,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-b", "--bless", action="store_true", dest="bless", default=False,
                         help="Update baselines by copying diffing files from most recent nightly run directly into baselines")
 
+    parser.add_argument("-t", "--test-suite", action="store", dest="test_suite", default=None,
+                        help="Override default acme test suite that will be run")
+
+    parser.add_argument("-p", "--cdash-project", action="store", dest="cdash_project", default=wait_for_tests.ACME_MAIN_CDASH,
+                        help="The name of the CDash project where results should be uploaded")
+
     parser.add_argument("bless_tests", nargs="*",
                         help="When blessing, limit the bless to tests matching these regex")
 
@@ -79,7 +87,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     expect(not (len(args.bless_tests) > 0 and not args.bless),
            "Providing specific test names only makes sense with -r")
 
-    return args.generate_baselines, args.submit_to_dashboard, args.branch, args.namelists_only, args.bless, args.bless_tests
+    return args.generate_baselines, args.submit_to_dashboard, args.branch, args.namelists_only, args.bless, args.test_suite, args.cdash_project, args.bless_tests
 
 ###############################################################################
 def cleanup_queue(set_of_jobs_we_created, batch_system):
@@ -157,18 +165,19 @@ def bless_test_results(casearea, baseline_root, git_branch, namelists_only, bles
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_dashboard,
                         baseline_branch=None, namelists_only=False, bless=False,
-                        bless_tests=None):
+                        arg_test_suite=None, cdash_project=None, bless_tests=None):
 ###############################################################################
     acme_machine = acme_util.probe_machine_name()
     expect(acme_machine is not None,
            "Did not recognize current machine '%s'" % socket.gethostname())
 
-    acme_repo = os.path.abspath(os.path.join("..", "..", os.path.dirname(__file__)))
+    acme_repo = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     expect(os.path.isdir(os.path.join(acme_repo, ".git")),
            "Expected '%s' to be a git repository" % acme_repo)
 
-    compiler, test_suite, use_batch, project, testroot, baseline_root, proxy = \
+    compiler, default_test_suite, use_batch, project, testroot, baseline_root, proxy = \
         acme_util.get_machine_info(acme_machine)
+    test_suite = default_test_suite if arg_test_suite is None else arg_test_suite
     testroot = testroot.replace("<USER>", getpass.getuser()).replace("<PROJECT>", project)
     casearea = os.path.join(testroot, "jenkins")
     git_branch = acme_util.get_current_branch(repo=acme_repo) if baseline_branch is None else baseline_branch
@@ -189,73 +198,90 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
         os.environ["http_proxy"] = proxy
 
     #
-    # Cleanup previous test leftovers
+    # Cleanup previous test leftovers. Code beyond here assumes that
+    # we have the testroot and casearea to ourselves. No other ACME testing
+    # should be happening for the current user. A sentinel file helps
+    # enforce this.
     #
 
-    if (os.path.isdir("Testing")):
-        shutil.rmtree("Testing")
+    sentinel_path = os.path.join(testroot, SENTINEL_FILE)
+    expect(not os.path.isfile(sentinel_path),
+           "Tests were already in progress, cannot start more!")
 
-    for old_dir in glob.glob("%s/*%s*" % (testroot, acme_machine)):
-        shutil.rmtree(old_dir)
+    # Very tiny race window here, not going to sweat it
+    open(sentinel_path, 'w').close()
 
-    if (os.path.isdir(casearea)):
-        shutil.rmtree(casearea)
+    try:
 
-    #
-    # Make note of things already in the queue so we know not to delete
-    # them if we timeout
-    #
+        if (os.path.isdir("Testing")):
+            shutil.rmtree("Testing")
 
-    if (use_batch):
-        preexisting_queued_jobs = acme_util.get_my_queued_jobs(batch_system)
+        for old_dir in glob.glob("%s/*%s*" % (testroot, acme_machine)):
+            shutil.rmtree(old_dir)
 
-    #
-    # Set up create_test command and run it
-    #
+        if (os.path.isdir(casearea)):
+            shutil.rmtree(casearea)
 
-    os.chdir(os.path.join(acme_repo, "scripts"))
-    git_branch = acme_util.get_current_branch() if baseline_branch is None else baseline_branch
-    baseline_action = "-generate" if generate_baselines else "-compare"
-    create_test_cmd = "./create_test -xml_mach %s -xml_compiler %s -xml_category %s -testroot %s -project %s %s %s" % \
-                      (acme_machine, compiler, test_suite, casearea, project, baseline_action, git_branch)
+        #
+        # Make note of things already in the queue so we know not to delete
+        # them if we timeout
+        #
 
-    if (namelists_only):
-        create_test_cmd += " -nlcompareonly"
+        if (use_batch):
+            preexisting_queued_jobs = acme_util.get_my_queued_jobs(batch_system)
 
-    if (not use_batch):
-        create_test_cmd += " -autosubmit off -nobatch on"
+        #
+        # Set up create_test command and run it
+        #
 
-    acme_util.run_cmd(create_test_cmd, verbose=True, arg_stdout=None, arg_stderr=None)
+        os.chdir(os.path.join(acme_repo, "scripts"))
+        git_branch = acme_util.get_current_branch() if baseline_branch is None else baseline_branch
+        baseline_action = "-generate" if generate_baselines else "-compare"
+        create_test_cmd = "./create_test -xml_mach %s -xml_compiler %s -xml_category %s -testroot %s -project %s %s %s" % \
+                          (acme_machine, compiler, test_suite, casearea, project, baseline_action, git_branch)
 
-    os.chdir("../..")
+        if (namelists_only):
+            create_test_cmd += " -nlcompareonly"
 
-    # TODO: the testing scripts should produce all PASS when only generating namelists
-    if (namelists_only and generate_baselines):
-        return True
+        if (not use_batch):
+            create_test_cmd += " -autosubmit off -nobatch on"
 
-    if (use_batch):
-        # This is not fullproof. Any jobs that happened to be
-        # submitted by this user while create_test was running will be
-        # potentially deleted. This is still a big improvement over the
-        # previous implement which just assumed all queued jobs for this
-        # user came from create_test.
-        our_jobs = acme_util.get_my_queued_jobs(batch_system) - preexisting_queued_jobs
+        acme_util.run_cmd(create_test_cmd, verbose=True, arg_stdout=None, arg_stderr=None)
 
-    #
-    # Wait for tests
-    #
+        os.chdir("../..")
 
-    cdash_build_name = "_".join([test_suite, git_branch, compiler]) if submit_to_dashboard else None
-    tests_passed = wait_for_tests.wait_for_tests(glob.glob("%s/*/TestStatus" % casearea),
-                                                 not use_batch, # wait if using queue
-                                                 False, # don't check throughput
-                                                 False, # don't ignore namelist diffs
-                                                 cdash_build_name)
-    if (not tests_passed and use_batch):
-        # Cleanup
-        cleanup_queue(our_jobs, batch_system)
+        # TODO: the testing scripts should produce all PASS when only generating namelists
+        if (namelists_only and generate_baselines):
+            return True
 
-    return tests_passed
+        if (use_batch):
+            # This is not fullproof. Any jobs that happened to be
+            # submitted by this user while create_test was running will be
+            # potentially deleted. This is still a big improvement over the
+            # previous implementation which just assumed all queued jobs for this
+            # user came from create_test.
+            # TODO: change this to probe casearea for jobs ids
+            our_jobs = acme_util.get_my_queued_jobs(batch_system) - preexisting_queued_jobs
+
+        #
+        # Wait for tests
+        #
+
+        cdash_build_name = "_".join([test_suite, git_branch, compiler]) if submit_to_dashboard else None
+        tests_passed = wait_for_tests.wait_for_tests(glob.glob("%s/*/TestStatus" % casearea),
+                                                     not use_batch, # wait if using queue
+                                                     False, # don't check throughput
+                                                     False, # don't ignore namelist diffs
+                                                     cdash_build_name,
+                                                     cdash_project)
+        if (not tests_passed and use_batch):
+            # Cleanup
+            cleanup_queue(our_jobs, batch_system)
+
+        return tests_passed
+    finally:
+        expect(os.path.isfile(sentinel_path), "Missing sentinel file")
+        os.remove(sentinel_path)
 
 ###############################################################################
 def _main_func(description):
@@ -266,10 +292,10 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    generate_baselines, submit_to_dashboard, baseline_branch, namelists_only, bless, bless_tests = \
+    generate_baselines, submit_to_dashboard, baseline_branch, namelists_only, bless, test_suite, cdash_project, bless_tests = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch, namelists_only, bless, bless_tests) else 1)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_dashboard, baseline_branch, namelists_only, bless, test_suite, cdash_project, bless_tests) else 1)
 
 ###############################################################################
 
