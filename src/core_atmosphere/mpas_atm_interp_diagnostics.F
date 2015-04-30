@@ -84,6 +84,8 @@
  real (kind=RKIND), dimension(:), pointer :: vorticity_700hPa
  real (kind=RKIND), dimension(:), pointer :: vorticity_850hPa
 
+ real (kind=RKIND), dimension(:), pointer :: mslp
+
  real (kind=RKIND), dimension(:,:), allocatable :: pressure, pressureCp1, pressure2, pressure_v, temperature
 
 !local interpolated fields:
@@ -161,6 +163,8 @@
  call mpas_pool_get_array(diag, 'vorticity_500hPa', vorticity_500hPa)
  call mpas_pool_get_array(diag, 'vorticity_700hPa', vorticity_700hPa)
  call mpas_pool_get_array(diag, 'vorticity_850hPa', vorticity_850hPa)
+
+ call mpas_pool_get_array(diag, 'mslp', mslp)
 
  if(.not.allocated(pressure)    ) allocate(pressure(nVertLevels,nCells)      )
  if(.not.allocated(pressureCp1) ) allocate(pressureCp1(nVertLevels,nCells+1) )
@@ -387,6 +391,15 @@
  vorticity_850hPa(1:nVertices) = field_interp(1:nVertices,4)
 ! write(0,*) '--- end interpolate relative vorticity:'
 
+!... compute SLP (requires temp, height, pressure, qvapor)
+ call compute_slp(nCells, nVertLevels, temperature, height, pressure, qvapor, mslp)
+ mslp(:) = mslp(:) * 100.0   ! Convert from hPa to Pa
+!... alternative way
+!do iCell = 1, nCells
+!   mslp(iCell) = diag % surface_pressure % array(iCell) + 11.38*height(1,iCell)
+!   mslp(iCell) = mslp(iCell)/100.
+!enddo
+
  if(allocated(field_interp)) deallocate(field_interp)
  if(allocated(press_interp)) deallocate(press_interp)
  if(allocated(pressure)    ) deallocate(pressure    )
@@ -491,6 +504,139 @@
  enddo
 
  end subroutine interp_tofixed_pressure
+
+ subroutine compute_slp(ncol,nlev_in,t,height,p,qv,slp)
+
+    implicit none
+
+   !input arguments:
+    integer, intent(in) :: ncol, nlev_in
+   
+   !p: in mb
+   !t: in K
+   !qv: in kg/kg
+   !height: in m
+    real(kind=RKIND), intent(in), dimension(nlev_in,ncol) :: p,t,qv
+    real(kind=RKIND), intent(in), dimension(nlev_in+1,ncol) :: height
+   
+   !output arguments:
+    real(kind=RKIND), intent(out), dimension(ncol) :: slp
+   
+   !local variables:
+    integer :: icol, k, kcount
+    integer :: klo, khi
+   
+    real(kind=RKIND) :: gamma, rr, grav
+    parameter (rr=287.0, grav=9.80616, gamma=0.0065)
+   
+    real(kind=RKIND) :: tc, pconst
+    parameter (tc=273.16+17.5, pconst=100.)
+   
+    logical mm5_test
+    parameter (mm5_test=.true.)
+   
+    integer, dimension(:), allocatable :: level
+    real(kind=RKIND), dimension(:), allocatable :: t_surf, t_msl
+    real(kind=RKIND) :: plo , phi , tlo, thi , zlo , zhi
+    real(kind=RKIND) :: p_at_pconst , t_at_pconst , z_at_pconst, z_half_lowest
+   
+    logical :: l1, l2, l3, found
+   
+   ! Find least zeta level that is PCONST Pa above the surface.  We later use this
+   ! level to extrapolate a surface pressure and temperature, which is supposed
+   ! to reduce the effect of the diurnal heating cycle in the pressure field.
+   
+    if (.not.allocated(level))  allocate(level(ncol))
+    if (.not.allocated(t_surf)) allocate(t_surf(ncol))
+    if (.not.allocated(t_msl))  allocate(t_msl(ncol))
+   
+    do icol = 1 , ncol
+       level(icol) = -1
+   
+       k = 1
+       found = .false.
+       do while ( (.not. found) .and. (k.le.nlev_in))
+             if ( p(k,icol) .lt. p(1,icol)-pconst ) then
+                level(icol) = k
+                found = .true.
+             end if
+             k = k+1
+       end do
+   
+       if ( level(icol) .eq. -1 ) then
+          write(0,*) 'Troubles finding level ', pconst,' above ground.'
+          write(0,*) 'Problems first occur at (',icol,')'
+          write(0,*) 'Surface pressure = ',p(1,icol),' hPa.'
+          call mpas_dmpar_global_abort('ERROR: Error_in_finding_100_hPa_up')
+       end if
+   
+    end do
+   
+   ! Get temperature PCONST hPa above surface.  Use this to extrapolate
+   ! the temperature at the surface and down to sea level.
+   
+    do icol = 1 , ncol
+   
+       klo = max ( level(icol) - 1 , 1      )
+       khi = min ( klo + 1        , nlev_in - 1 )
+   
+       if ( klo .eq. khi ) then
+          write(0,*) 'Trapping levels are weird.'
+          write(0,*) 'klo = ',klo,', khi = ',khi, ': and they should not be equal.'
+          call mpas_dmpar_global_abort('ERROR: Error_trapping_levels')
+       end if
+   
+       plo = p(klo,icol)
+       phi = p(khi,icol)
+       tlo = t(klo,icol) * (1. + 0.608 * qv(klo,icol))
+       thi = t(khi,icol) * (1. + 0.608 * qv(khi,icol))
+       zlo = 0.5*(height(klo,icol)+height(klo+1,icol))
+       zhi = 0.5*(height(khi,icol)+height(khi+1,icol))
+   
+       p_at_pconst = p(1,icol) - pconst
+       t_at_pconst = thi-(thi-tlo)*log(p_at_pconst/phi)*log(plo/phi)
+       z_at_pconst = zhi-(zhi-zlo)*log(p_at_pconst/phi)*log(plo/phi)
+   
+       t_surf(icol) = t_at_pconst*(p(1,icol)/p_at_pconst)**(gamma*rr/grav)
+       t_msl(icol) = t_at_pconst+gamma*z_at_pconst
+   !   if (icol.eq.500) then
+   !      write(0,*) plo,phi,tlo,thi,zlo,zhi,p_at_pconst,t_at_pconst,z_at_pconst
+   !      write(0,*) t_surf(icol),t_msl(icol),level(icol),klo,khi
+   !      write(0,*) height(klo,icol),height(khi,icol),height(khi+1,icol)
+   !   endif
+   
+    end do
+   
+   ! If we follow a traditional computation, there is a correction to the sea level
+   ! temperature if both the surface and sea level temnperatures are *too* hot.
+   
+    if ( mm5_test ) then
+       kcount = 0
+       do icol = 1 , ncol
+             l1 = t_msl(icol) .lt. tc
+             l2 = t_surf(icol) .le. tc
+             l3 = .not. l1
+             if ( l2 .and. l3 ) then
+                t_msl(icol) = tc
+             else
+                t_msl(icol) = tc - 0.005*(t_surf(icol)-tc)**2
+                kcount = kcount+1
+             end if
+       end do
+   !   write(0,*) 'These number of points had t_msl adjusted ', kcount
+    end if
+   
+    do icol = 1 , ncol
+       z_half_lowest=0.5*(height(1,icol)+height(2,icol))
+       slp(icol) = p(1,icol) * exp((2.*grav*z_half_lowest)/ &
+                                 (rr*(t_msl(icol)+t_surf(icol))))
+    end do
+   
+    if (allocated(level))  deallocate(level)
+    if (allocated(t_surf)) deallocate(t_surf)
+    if (allocated(t_msl))  deallocate(t_msl)
+
+ end subroutine compute_slp
 
 !==================================================================================================
  end module mpas_atm_interp_diagnostics
