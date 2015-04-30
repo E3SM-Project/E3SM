@@ -2,8 +2,6 @@
 
 import os, sys, csv, time, math
 from optparse import OptionParser
-from Numeric import *
-
 
 #DMR 4/16/13
 #call_runCLM.py does the following:
