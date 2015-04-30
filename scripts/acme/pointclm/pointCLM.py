@@ -2,8 +2,6 @@
 
 import os, sys, csv, time, math
 from optparse import OptionParser
-import Scientific.IO.NetCDF
-from Scientific.IO import NetCDF
 from Numeric import *
 
 
@@ -182,6 +180,16 @@ parser.add_option("--spinup_vars", dest="spinup_vars", default=False, \
 (options, args) = parser.parse_args()
 
 #-------------------------------------------------------------------------------
+
+if (options.machine == 'titan'):
+  if (options.nopointdata == False):
+     print ('Making point data not supported on titan')
+     print ('Setting nopointdata = True')
+     options.nopointdata = True
+
+if (options.nopointdata == False):
+  import Scientific.IO.NetCDF
+  from Scientific.IO import NetCDF   
 
 PTCLMdir = os.getcwd()
 
@@ -674,7 +682,11 @@ if (options.refcase == 'none'):
             output.write(" finidat = '"+finidat+"'\n")
         #surface data file
 
-        output.write(" fsurdat = './surfdata_"+str(numxpts)+'x'+ \
+        if (options.nopointdata):
+            output.write(" fsurdat = '"+options.ccsm_input+"/lnd/clm2/surfdata_map/surfdata_"+str(numxpts)+'x'+ \
+                str(numypts)+"pt_"+options.site+"_simyr"+str(mysimyr)+".nc'\n")
+        else:
+            output.write(" fsurdat = './surfdata_"+str(numxpts)+'x'+ \
                 str(numypts)+"pt_"+casename+"_simyr"+str(mysimyr)+".nc'\n")
         #pft dynamics file for transient run
         if ('20TR' in compset):
