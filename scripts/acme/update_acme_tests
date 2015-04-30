@@ -16,6 +16,9 @@ from acme_util import expect, warning
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>
 TEST_SUITES = {
+    "acme_tiny" :
+        ["ERS.f19_g16_rx1.A",
+         "NCK.f19_g16_rx1.A"],
     "acme_developer" :
         ['ERS.f19_g16_rx1.A',
          'ERS.f45_g37.B1850C5',

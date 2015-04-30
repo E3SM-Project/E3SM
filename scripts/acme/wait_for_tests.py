@@ -16,6 +16,7 @@ SLEEP_INTERVAL_SEC       = 1
 THROUGHPUT_TEST_STR      = ".tputcomp."
 NAMELIST_TEST_STR        = ".nlcomp"
 SIGNAL_RECEIVED          = False
+ACME_MAIN_CDASH          = "ACME_Climate"
 
 ###############################################################################
 def signal_handler(*_):
@@ -60,16 +61,18 @@ def get_test_output(test_path):
         return ""
 
 ###############################################################################
-def create_cdash_xml(start_time, results, cdash_build_name):
+def create_cdash_xml(start_time, results, cdash_build_name, cdash_project):
 ###############################################################################
 
     # Create dart config file
     utc_time_tuple = time.gmtime(start_time)
     cdash_timestamp = time.strftime("%H:%M:%S", utc_time_tuple)
+
     hostname = acme_util.probe_machine_name()
     if (hostname is None):
         hostname = socket.gethostname().split(".")[0]
         warning("Could not convert hostname '%s' into an ACME machine name" % (hostname))
+
     dart_config = \
 """
 SourceDirectory: %s
@@ -86,7 +89,7 @@ IsCDash: TRUE
 CDashVersion:
 QueryCDashVersion:
 DropSite: my.cdash.org
-DropLocation: /submit.php?project=ACME_Climate
+DropLocation: /submit.php?project=%s
 DropSiteUser:
 DropSitePassword:
 DropSiteMode:
@@ -97,7 +100,7 @@ ScpCommand: %s
 # Dashboard start time
 NightlyStartTime: %s UTC
 """ % (os.getcwd(), os.getcwd(), hostname,
-       cdash_build_name, distutils.spawn.find_executable("scp"), cdash_timestamp)
+       cdash_build_name, cdash_project, distutils.spawn.find_executable("scp"), cdash_timestamp)
 
     dart_fd = open("DartConfiguration.tcl", "w")
     dart_fd.write(dart_config)
@@ -316,7 +319,7 @@ def wait_for_test(test_path, results, wait, check_throughput, ignore_namelists):
                 break
 
 ###############################################################################
-def get_test_results(test_paths, no_wait, check_throughput, ignore_namelists):
+def get_test_results(test_paths, no_wait=False, check_throughput=False, ignore_namelists=False):
 ###############################################################################
     results = Queue.Queue()
 
@@ -350,7 +353,12 @@ def get_test_results(test_paths, no_wait, check_throughput, ignore_namelists):
     return test_results
 
 ###############################################################################
-def wait_for_tests(test_paths, no_wait, check_throughput, ignore_namelists, cdash_build_name):
+def wait_for_tests(test_paths,
+                   no_wait=False,
+                   check_throughput=False,
+                   ignore_namelists=False,
+                   cdash_build_name=None,
+                   cdash_project=ACME_MAIN_CDASH):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
@@ -370,6 +378,6 @@ def wait_for_tests(test_paths, no_wait, check_throughput, ignore_namelists, cdas
         all_pass &= test_status == TEST_PASSED_STATUS
 
     if (cdash_build_name):
-        create_cdash_xml(start_time, test_results, cdash_build_name)
+        create_cdash_xml(start_time, test_results, cdash_build_name, cdash_project)
 
     return all_pass
