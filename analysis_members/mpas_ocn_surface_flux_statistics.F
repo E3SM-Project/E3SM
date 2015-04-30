@@ -450,18 +450,18 @@ contains
          end if
 
          call compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
-         call compute_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
+         call compute_statistics(nDefinedDataFields, nCellsSolve, workArray, workMask, workMin, workMax, workSum)
+
+         ! store data in buffer in order to allow only three dmpar calls
+         do iDataField=1,nDefinedDataFields
+            kBuffer = kBuffer+1
+            workBufferSum(kBuffer) = workSum(iDataField)
+            workBufferMin(kBuffer) = workMin(iDataField)
+            workBufferMax(kBuffer) = workMax(iDataField)
+         enddo
 
          block => block % next
       end do
-
-      ! store data in buffer in order to allow only three dmpar calls
-      do iDataField=1,nDefinedDataFields
-         kBuffer = kBuffer+1
-         workBufferSum(kBuffer) = workSum(iDataField)
-         workBufferMin(kBuffer) = workMin(iDataField)
-         workBufferMax(kBuffer) = workMax(iDataField)
-      enddo
 
       end do ! iRegion
 
@@ -512,10 +512,10 @@ contains
    ! NOTE: computes_mask is temporary. workMask should be intent(in) to this entire module !
    !
    integer, intent(in) :: nCells, nCellsSolve, iRegion
-   real(kind=RKIND), dimension(:), intent(out) :: lonCell, latCell
+   real(kind=RKIND), dimension(:), intent(in) :: lonCell, latCell
    real(kind=RKIND), dimension(:), intent(out) :: workMask
    integer :: iCell
-   real :: rtd
+   real(kind=RKIND) :: rtd
 
    rtd = 180.0_RKIND / (4.0*atan(1.0))
    workMask(:) = 0.0_RKIND
@@ -570,25 +570,27 @@ contains
    end subroutine compute_mask
 
 
-   subroutine compute_statistics(nDefinedDataFields, nCells, workArray, workMask, workMin, workMax, workSum)
+   subroutine compute_statistics(nDefinedDataFields, nCellsSolve, workArray, workMask, workMin, workMax, workSum)
    ! this subroutines does the actual summing, min, max, masking ect
    ! this hides the messy code from the high-level subroutine
 
-   integer, intent(in) :: nDefinedDataFields, nCells
+   integer, intent(in) :: nDefinedDataFields, nCellsSolve
    real(kind=RKIND), dimension(:,:), intent(in) :: workArray
    real(kind=RKIND), dimension(:), intent(in) :: workMask
    real(kind=RKIND), dimension(:), intent(out) :: workMin, workMax, workSum
    integer :: iCell, iData
 
    workSum = 0.0
-   do iCell=1,nCells
-    workSum(1) = workSum(1) + workArray(1,iCell)
-    workSum(2:nDefinedDataFields) = workSum(2:nDefinedDataFields) + workArray(1,iCell)*workArray(2:nDefinedDataFields,iCell)*workMask(iCell)
+   do iCell=1,nCellsSolve
+    workSum(1) = workSum(1) + workArray(1,iCell)*workMask(iCell)
+    do iData=2,nDefinedDataFields
+      workSum(iData) = workSum(iData) + workArray(1,iCell)*workArray(iData,iCell)*workMask(iCell)
+    enddo
    enddo
 
    do iData=1,nDefinedDataFields
-      workMin(iData) = minval(workArray(iData,:)*workMask(:))
-      workMax(iData) = maxval(workArray(iData,:)*workMask(:))
+      workMin(iData) = minval(workArray(iData,1:nCellsSolve),workMask(1:nCellsSolve)>0.5)
+      workMax(iData) = maxval(workArray(iData,1:nCellsSolve),workMask(1:nCellsSolve)>0.5)
    enddo
 
    end subroutine compute_statistics
