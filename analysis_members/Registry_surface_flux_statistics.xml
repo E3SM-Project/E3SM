@@ -24,7 +24,7 @@
         <package name="amSurfaceFluxStatisticsPkg" description="This package includes variables required for the surface statistics analysis member."/>
 </packages>
 <streams>
-        <stream name="surfaceFluxStatisticsOutput"
+        <stream name="surfaceStatisticsOutput"
                         type="none"
                         filename_template="analysis_members/surface_flux_statistics.$Y-$M-$D_$h.$m.$s.nc"
                         output_interval="00-00-05_00:00:00"
