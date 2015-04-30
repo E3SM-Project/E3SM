@@ -178,7 +178,7 @@ module mpas_io
       logical, intent(in), optional :: truncate_file
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr, pio_iotype
+      integer :: pio_ierr, pio_iotype, pio_mode
       logical :: local_clobber, local_truncate
       logical :: exists
 
@@ -204,7 +204,9 @@ module mpas_io
          return 
       end if
       if (ioformat /= MPAS_IO_NETCDF .and. &
-          ioformat /= MPAS_IO_PNETCDF) then
+          ioformat /= MPAS_IO_NETCDF4 .and. &
+          ioformat /= MPAS_IO_PNETCDF .and. &
+          ioformat /= MPAS_IO_PNETCDF5) then
          if (present(ierr)) ierr = MPAS_IO_ERR_INVALID_FORMAT
          return 
       end if
@@ -219,11 +221,20 @@ module mpas_io
 
       if (master_pio_iotype /= -999) then
          pio_iotype = master_pio_iotype
+         pio_mode = PIO_64BIT_OFFSET
       else
          if (ioformat == MPAS_IO_PNETCDF) then
             pio_iotype = PIO_iotype_pnetcdf
-         else
+            pio_mode = PIO_64BIT_OFFSET
+         else if (ioformat == MPAS_IO_PNETCDF5) then
+            pio_iotype = PIO_iotype_pnetcdf
+            pio_mode = PIO_64BIT_DATA
+         else if (ioformat == MPAS_IO_NETCDF) then
             pio_iotype = PIO_iotype_netcdf
+            pio_mode = PIO_64BIT_OFFSET
+         else if (ioformat == MPAS_IO_NETCDF4) then
+            pio_iotype = PIO_iotype_netcdf4p
+            pio_mode = PIO_64BIT_OFFSET
          end if
       end if
 
@@ -245,7 +256,7 @@ module mpas_io
             pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_write)
             MPAS_io_open % preexisting_file = .true.
          else
-            pio_ierr = PIO_createfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_64BIT_OFFSET)
+            pio_ierr = PIO_createfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), pio_mode)
             if (exists) then
                write(stderrUnit,'(a)') 'MPAS I/O: Truncating existing data in output file '//trim(filename)
             end if
@@ -2088,11 +2099,11 @@ module mpas_io
       else if (present(charVal)) then
          if (field_cursor % fieldhandle % has_unlimited_dim) then
             count2(1) = field_cursor % fieldhandle % dims(1) % dimsize
-            pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, (/charVal/))
+            pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, charVal(1:count2(1)))
          else
             start1(1) = 1
             count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
-            pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start1, count1, (/charVal/))
+            pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, charVal(1:count1(1)))
          end if
       else if (present(realArray1d)) then
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
