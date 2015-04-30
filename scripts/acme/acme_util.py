@@ -2,7 +2,7 @@
 Common functions used by acme python scripts
 """
 
-import sys, socket, re, os
+import sys, socket, re, os, shutil
 
 _VERBOSE = False
 
