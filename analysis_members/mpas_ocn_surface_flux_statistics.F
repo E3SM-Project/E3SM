@@ -271,7 +271,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: workMask, workMin, workMax, workSum
 
       ! local variables
-      integer :: nDefinedDataFields
+      integer :: iDataField, nDefinedDataFields
       integer :: iCell, iRegion, iTracer, err_tmp
 
       ! package flag
@@ -279,6 +279,12 @@ contains
       logical, pointer :: bulkForcingPkgActive
       logical, pointer :: frazilIcePkgActive
 
+      ! buffers data for message passaging
+      integer :: kBuffer, kBufferLength
+      real (kind=RKIND), dimension(:), allocatable :: workBufferSum, workBufferSumReduced
+      real (kind=RKIND), dimension(:), allocatable :: workBufferMin, workBufferMinReduced
+      real (kind=RKIND), dimension(:), allocatable :: workBufferMax, workBufferMaxReduced
+     
       ! assume no error
       err = 0
 
@@ -296,8 +302,30 @@ contains
       ! set highest level pointer
       dminfo = domain % dminfo
 
-      ! loop over all ocean regions
+      ! find the number of regions
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nOceanRegions', nOceanRegions)
+
+      ! find the number of data fields
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nSurfaceFluxStatisticsFields', nSurfaceFluxStatisticsFields)
+
+      ! allocate buffer for message passing
+      kBuffer=0
+      kBufferLength=nOceanRegions*nSurfaceFluxStatisticsFields
+      write(6,*) kBufferLength,nOceanRegions,nSurfaceFluxStatisticsFields
+      allocate(workBufferSum(kBufferLength))
+      allocate(workBufferMin(kBufferLength))
+      allocate(workBufferMax(kBufferLength))
+      allocate(workBufferSumReduced(kBufferLength))
+      allocate(workBufferMinReduced(kBufferLength))
+      allocate(workBufferMaxReduced(kBufferLength))
+      workBufferSum=0.0
+      workBufferMin=0.0
+      workBufferMax=0.0
+      workBufferSumReduced=0.0
+      workBufferMinReduced=0.0
+      workBufferMaxReduced=0.0
+
+      ! loop over all ocean regions
       do iRegion=1,nOceanRegions
 
       ! get pointers to analysis member arrays
@@ -430,15 +458,38 @@ contains
          block => block % next
       end do
 
-      ! communication
-      call mpas_dmpar_sum_real_array(dminfo, nDefinedDataFields, workSum(1:nDefinedDataFields), avgSurfaceStatistics(1:nDefinedDataFields,iRegion))
-      call mpas_dmpar_min_real_array(dminfo, nDefinedDataFields, workMin(1:nDefinedDataFields), minSurfaceStatistics(1:nDefinedDataFields,iRegion))
-      call mpas_dmpar_min_real_array(dminfo, nDefinedDataFields, workMax(1:nDefinedDataFields), maxSurfaceStatistics(1:nDefinedDataFields,iRegion))
-
-      ! normalize averages
-      avgSurfaceStatistics(:,iRegion) = avgSurfaceStatistics(:,iRegion) / avgSurfaceStatistics(1,iRegion)
+      ! store data in buffer in order to allow only three dmpar calls
+      do iDataField=1,nDefinedDataFields
+         kBuffer = kBuffer+1
+         workBufferSum(kBuffer) = workSum(iDataField)
+         workBufferMin(kBuffer) = workMin(iDataField)
+         workBufferMax(kBuffer) = workMax(iDataField)
+      enddo
 
       end do ! iRegion
+
+      ! communication
+      call mpas_dmpar_sum_real_array(dminfo, kBufferLength, workBufferSum, workBufferSumReduced )
+      call mpas_dmpar_min_real_array(dminfo, kBufferLength, workBufferMin, workBufferMinReduced )
+      call mpas_dmpar_max_real_array(dminfo, kBufferLength, workBufferMax, workBufferMaxReduced )
+
+      ! unpack the buffer into intent(out) of this analysis member
+      kBuffer=0
+      do iRegion=1,nOceanRegions
+        do iDataField=1,nDefinedDataFields
+           kBuffer = kBuffer+1
+           avgSurfaceStatistics(iDataField,iRegion)=workBufferSumReduced(kBuffer)
+           minSurfaceStatistics(iDataField,iRegion)=workBufferMinReduced(kBuffer)
+           maxSurfaceStatistics(iDataField,iRegion)=workBufferMaxReduced(kBuffer)
+        enddo
+      enddo
+
+      ! normalize averages
+      do iDataField=1,nDefinedDataFields
+         do iRegion=1,nOceanRegions
+            avgSurfaceStatistics(iDataField,iRegion) = avgSurfaceStatistics(iDataField,iRegion) / max(avgSurfaceStatistics(1,iRegion),1.0e-8_RKIND)
+         enddo
+      enddo
 
       ! deallocate scratch fields
       call mpas_deallocate_scratch_field(workArrayField, .true.)
@@ -446,6 +497,11 @@ contains
       call mpas_deallocate_scratch_field(workMinField, .true.)
       call mpas_deallocate_scratch_field(workMaxField, .true.)
       call mpas_deallocate_scratch_field(workSumField, .true.)
+
+      ! deallocate buffers
+      deallocate(workBufferSumReduced)
+      deallocate(workBufferMinReduced)
+      deallocate(workBufferMaxReduced)
 
       ! stop timer
       call mpas_timer_stop("surface_flux_statistics", amSurfaceStatisticsTimer)
@@ -455,6 +511,9 @@ contains
    subroutine compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
    ! this subroutines produces a 0/1 mask that is multiplied with workArray to 
    ! allow for min/max/avg to represent specific regions of the ocean domain
+   ! 
+   ! NOTE: computes_mask is temporary. workMask should be intent(in) to this entire module !
+   !
    integer, intent(in) :: nCells, nCellsSolve, iRegion
    real(kind=RKIND), dimension(:), intent(out) :: lonCell, latCell
    real(kind=RKIND), dimension(:), intent(out) :: workMask
