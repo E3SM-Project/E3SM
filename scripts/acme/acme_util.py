@@ -14,6 +14,70 @@ MACHINE_NODENAMES = [
     ("blues", re.compile(r"blogin")),
 ]
 
+# batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
+BATCH_INFO = \
+{
+    "slurm" : (
+        "squeue -o '%i' -h -u",
+        "scancel"
+    ),
+    "pbs" : (
+        "qselect -u",
+        "qdel"
+    ),
+}
+
+# TODO: Get these values from ACME XML files instead of duplicating here.
+
+# machine -> defaults (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
+MACHINE_INFO = {
+    "redsky"    : (
+        "intel",
+        "acme_integration",
+        True,
+        "fy150001",
+        "/gscratch1/<USER>/acme_scratch",
+        "/projects/ccsm/ccsm_baselines",
+        "wwwproxy.sandia.gov:80"
+    ),
+    "skybridge" : (
+        "intel",
+        "acme_integration",
+        True,
+        "fy150001",
+        "/gscratch1/<USER>/acme_scratch/skybridge",
+        "/projects/ccsm/ccsm_baselines",
+        "wwwproxy.sandia.gov:80"
+    ),
+    "melvin"    : (
+        "gnu",
+        "acme_developer",
+        False,
+        "ignore",
+        "/home/<USER>/acme/scratch",
+        "/home/jgfouca/acme/baselines",
+        "sonproxy.sandia.gov:80"
+    ),
+    "edison"    : (
+        "intel",
+        "acme_integration",
+        True,
+        "acme",
+        "/scratch1/scratchdirs/<USER>/acme_scratch",
+        "/project/projectdirs/acme/baselines",
+        None
+    ),
+    "blues"    : (
+        "pgi",
+        "acme_developer",
+        True,
+        "ACME",
+        "/lcrc/project/<PROJECT>/<USER>/acme_scratch",
+        "/lcrc/group/earthscience/acme_baselines",
+        None
+    ),
+}
+
 ###############################################################################
 def expect(condition, error_msg):
 ###############################################################################
@@ -189,17 +253,88 @@ def safe_copy(src_dir, tgt_dir, files):
         shutil.copy2(full_src, full_tgt)
 
 ###############################################################################
-def find_proc_id_by_name(proc_name, children_only=False):
+def find_proc_id(proc_name=None,
+                 children_only=False,
+                 of_parent=None):
 ###############################################################################
-    stat, output, errput = run_cmd("pgrep %s %s" % (proc_name, "-P %d" % os.getpid() if children_only else ""),
-                                                    ok_to_fail=True)
-    if (stat != 0):
-        warning("Could not find any process with name '%s'" % proc_name)
-        return None
+    """
+    Children implies recursive.
+    """
+    expect(proc_name is not None or children_only,
+           "Must provide proc_name if not searching for children")
+    expect(not (of_parent is not None and not children_only),
+           "of_parent only used with children_only")
 
-    procs = output.splitlines()
-    if (len(procs) > 1):
-        warning("Found multiple occurances of '%s', ambiguous" % proc_name)
-        return None
+    parent = of_parent if of_parent is not None else os.getpid()
 
-    return int(procs[0].strip())
+    pgrep_cmd = "pgrep %s %s" % (proc_name if proc_name is not None else "",
+                                 "-P %d" % parent if children_only else "")
+    stat, output, errput = run_cmd(pgrep_cmd, ok_to_fail=True)
+    expect(stat in [0, 1], "pgrep failed with error: '%s'" % errput)
+
+    rv = set([int(item.strip()) for item in output.splitlines()])
+    if (children_only):
+        pgrep_cmd = "pgrep -P %s" % parent
+        stat, output, errput = run_cmd(pgrep_cmd, ok_to_fail=True)
+        expect(stat in [0, 1], "pgrep failed with error: '%s'" % errput)
+
+        for child in output.splitlines():
+            rv = rv.union(set(find_proc_id(proc_name, children_only, int(child.strip()))))
+
+    return list(rv)
+
+###############################################################################
+def probe_batch_system():
+###############################################################################
+    for batch_system, cmds in BATCH_INFO.iteritems():
+        exe = cmds[0].split()[0]
+        exe_path = distutils.spawn.find_executable(exe)
+        if (exe_path is not None):
+            return batch_system
+
+    return None
+
+###############################################################################
+def get_my_queued_jobs(batch_system=None):
+###############################################################################
+    """
+    Return a list of job ids for the current user
+    """
+    if (batch_system is None):
+        batch_system = probe_batch_system()
+    expect(batch_system is not None, "Failed to probe batch system")
+
+    list_cmd = "%s %s" % (BATCH_INFO[batch_system][0], getpass.getuser())
+    return acme_util.run_cmd(list_cmd).split()
+
+###############################################################################
+def get_batch_system_info(batch_system=None):
+###############################################################################
+    """
+    Return information on batch system. If no arg provided, probe for batch
+    system.
+
+    Info returned as tuple (SUBMIT CMD, DELETE CMD)
+    """
+    if (batch_system is None):
+        batch_system = probe_batch_system()
+    expect(batch_system is not None, "Failed to probe batch system")
+    expect(batch_system in BATCH_INFO, "No info for batch system '%s'" % batch_system)
+
+    return BATCH_INFO[batch_system]
+
+###############################################################################
+def get_machine_info(machine=None):
+###############################################################################
+    """
+    Return information on machine. If no arg provided, probe for machine.
+
+    Info returned as tuple:
+    (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
+    """
+    if (machine is None):
+        machine = probe_machine_name()
+    expect(machine is not None, "Failed to probe machine")
+    expect(machine in MACHINE_INFO, "No info for machine '%s'" % machine)
+
+    return MACHINE_INFO[machine]
