@@ -220,7 +220,7 @@ module test_core_interface
    !>  are available.
    !
    !-----------------------------------------------------------------------
-   function test_get_mesh_stream(configs) result(stream)!{{{
+   function test_get_mesh_stream(configs, stream) result(ierr)!{{{
 
       use mpas_derived_types
       use mpas_pool_routines
@@ -228,7 +228,10 @@ module test_core_interface
       implicit none
 
       type (mpas_pool_type), intent(inout) :: configs
-      character(len=StrKIND) :: stream
+      character(len=StrKIND), intent(out) :: stream
+      integer :: ierr
+
+      ierr = 0
 
       write(stream,'(a)') 'input'
 

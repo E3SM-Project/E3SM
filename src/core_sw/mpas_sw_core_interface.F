@@ -186,7 +186,7 @@ module sw_core_interface
    !>  are available.
    !
    !-----------------------------------------------------------------------
-   function sw_get_mesh_stream(configs) result(stream)!{{{
+   function sw_get_mesh_stream(configs, stream) result(ierr)!{{{
 
       use mpas_derived_types
       use mpas_pool_routines
@@ -194,9 +194,12 @@ module sw_core_interface
       implicit none
 
       type (mpas_pool_type), intent(inout) :: configs
-      character(len=StrKIND) :: stream
+      character(len=StrKIND), intent(out) :: stream
+      integer :: ierr
 
       logical, pointer :: config_do_restart
+
+      ierr = 0
 
       call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
 

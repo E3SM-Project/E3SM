@@ -235,7 +235,7 @@ module init_atm_core_interface
    !>  are available.
    !
    !-----------------------------------------------------------------------
-   function init_atm_get_mesh_stream(configs) result(stream)
+   function init_atm_get_mesh_stream(configs, stream) result(ierr)
 
       use mpas_kind_types, only : StrKIND
       use mpas_derived_types, only : mpas_pool_type
@@ -244,7 +244,10 @@ module init_atm_core_interface
       implicit none
 
       type (mpas_pool_type), intent(inout) :: configs
-      character(len=StrKIND) :: stream
+      character(len=StrKIND), intent(out) :: stream
+      integer :: ierr
+
+      ierr = 0
 
       write(stream,'(a)') 'input'
 
