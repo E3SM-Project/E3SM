@@ -115,8 +115,6 @@ contains
       ! turn on package for this analysis member
       amSurfaceFluxStatisticsPkgActive = .true.
 
-      write(6,*) ' active surface statistics'
-
    end subroutine ocn_setup_packages_surface_flux_statistics!}}}
 
 
@@ -166,8 +164,6 @@ contains
       !-----------------------------------------------------------------
 
       err = 0
-
-      write(6,*) ' surf stat inited'
 
    end subroutine ocn_init_surface_flux_statistics!}}}
 
@@ -311,7 +307,6 @@ contains
       ! allocate buffer for message passing
       kBuffer=0
       kBufferLength=nOceanRegions*nSurfaceFluxStatisticsFields
-      write(6,*) kBufferLength,nOceanRegions,nSurfaceFluxStatisticsFields
       allocate(workBufferSum(kBufferLength))
       allocate(workBufferMin(kBufferLength))
       allocate(workBufferMax(kBufferLength))
@@ -375,9 +370,11 @@ contains
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
          ! test to make sure the arrays are big enough
-         nDefinedDataFields = size(avgSurfaceStatistics(:,1))
+         nDefinedDataFields = size(avgSurfaceStatistics,dim=1)
          if (nDefinedDataFields > nSurfaceFluxStatisticsFields) then
-              ! call error/finalize here
+             write (stderrUnit,*) 'Abort: nDefinedDataFields > nSurfaceFluxStatisticsFields'
+             write (stderrUnit,*) '     :  increase size of ocn_surface_flux_statistics scratch space'
+             call mpas_dmpar_abort(dminfo)
          endif
 
          ! get pointers to data that will be analyzed

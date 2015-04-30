@@ -150,7 +150,6 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
-   write(6,*) ' finished setup'
    end subroutine ocn_analysis_setup_packages!}}}
 
 !***********************************************************************
@@ -235,7 +234,6 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
-   write(6,*) 'finished init'
    end subroutine ocn_analysis_init!}}}
 
 !***********************************************************************
@@ -340,7 +338,6 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
-   write(6,*) 'finished startup'
    end subroutine ocn_analysis_compute_startup!}}}
 
 !***********************************************************************
@@ -422,7 +419,6 @@ contains
 !         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !      endif
 
-   write(6,*) 'finished compute'
    end subroutine ocn_analysis_compute!}}}
 
 !***********************************************************************
@@ -514,7 +510,6 @@ contains
 !         endif
 !      endif
 
-   write(6,*) 'finished alarms'
    end subroutine ocn_analysis_compute_w_alarms!}}}
 
 !***********************************************************************
@@ -599,7 +594,6 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
-   write(6,*) 'finished restart'
    end subroutine ocn_analysis_restart!}}}
 
 !***********************************************************************
@@ -712,7 +706,6 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
-   write(6,*) 'finished write'
    end subroutine ocn_analysis_write!}}}
 
 !***********************************************************************
@@ -797,7 +790,6 @@ contains
 !         err = ior(err, err_tmp)
 !      endif
 
-   write(6,*) 'finished finalize'
    end subroutine ocn_analysis_finalize!}}}
 
 end module ocn_analysis_driver
