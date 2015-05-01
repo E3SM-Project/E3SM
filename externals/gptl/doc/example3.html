@@ -1,0 +1,67 @@
+<html>
+<head>
+<title>GPTL usage example 3</title>
+<meta name="example" content="summarize MPI stats">
+<meta name="Keywords" content="gptl","papi","call tree","profile","timing","performance analysis">
+<meta name="Author" content="Jim Rosinski">
+</head>
+<body bgcolor="peachpuff">
+
+<hr />
+<a href="example2.html"><img border="0" src="btn_previous.gif"
+			     width="100" height="20" alt="Example 2"
+				  /></a> 
+<a href="example4.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 4" /></a>
+
+<br />
+
+<h2>Example 3: GPTLsummary</h2>
+This hybrid OpenMP/MPI code demonstrates the use of summary routine <b>GPTLpr_summary()</b>.
+It simulates variable work load by sleeping some number of seconds depending on rank 
+and thread number. Here we show only the output--the code is available in <b>ctests/global.c</b>.
+<p>
+Compile and link (this example used the Intel compiler), then run with 2 threads and 8 MPI tasks:
+<pre>
+% mpif90 -o global -openmp global.c -L.. -lgptl
+% env OMP_NUM_THREADS=2 mpiexec -n 8 ./global
+</pre>
+
+Output file <em>timing.summary</em> was created by a call to <b>GPTLpr_summary(MPI_COMM_WORLD)</b>.
+
+<p>
+<b><em>timing.summary:</em></b>
+<pre>
+<div style="background-color:white;">
+Total ranks in communicator=8
+nthreads on rank 0=2
+'N' used for mean, std. dev. calcs.: 'ncalls'/'nthreads'
+'ncalls': number of times the region was invoked across tasks and threads.
+'nranks': number of ranks which invoked the region.
+mean, std. dev: computed using per-rank max time across all threads on each rank
+wallmax and wallmin: max, min time across tasks and threads.
+
+name                  ncalls nranks mean_time   std_dev   wallmax (rank  thread)   wallmin (rank  thread)
+total                      8      8     7.376     3.021     9.001 (     1     0)     2.001 (     7     0)
+nranks-iam+mythread       16      8     5.500     2.449     9.000 (     0     1)     1.000 (     7     0)
+1-5_iam                    5      5     3.000     1.581     5.000 (     5     0)     1.000 (     1     0)
+
+</div>
+</pre>
+In this example <em>iam</em> is the MPI rank and <em>mythread</em> is the thread number. 
+The output shows that sleeping <em>nranks-iam+mythread</em> has a max time of 9 seconds on rank 0,
+thread 1, an a min time of 1 second on rank 7 thread 0. Mean and standard deviation stats are also
+printed. The other region, <em>1-5_iam</em>, is not threaded and only MPI ranks 1 through 5
+participate. Max time is on the highest rank participating (5 seconds on rank 5), and min time is
+on the lowest rank participating (1 second on rank 1).
+
+<hr />
+<a href="example2.html"><img border="0" src="btn_previous.gif"
+			     width="100" height="20" alt="Example 2"
+				  /></a> 
+<a href="example4.html"><img border="0" src="btn_next.gif"
+			     width="100" height="20" alt="Example 4" /></a>
+
+<br />
+
+</html>

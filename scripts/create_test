@@ -874,25 +874,8 @@ sub ExpandXmlList
 	  }
       }
   }
-    
-
-  # check for duplicates in the test list...
-  my %seen = ();
-  $seen{$_}++ for @actualtests;
-  my @nodupes = keys %seen;
-  my $testlistsize = @nodupes;
-  Debug("test list size: $testlistsize");
-  if($testlistsize == 0)
-  {
-#    print "No tests could be found with the test options given:\n";
-#    print "xml_mach: $opts{'xml_mach'}, xml_compiler: $opts{'xml_compiler'}, xml_category: $opts{'xml_category'}\n";
-#    print "aborting\n";
-#    exit(1);
-  }
-
-  #exit; #DEBUG
-  # Return the sorted list of tests
-  return sort @nodupes;
+  return @actualtests;
+  
 }  
 
 #-----------------------------------------------------------------------------------------------
@@ -1199,8 +1182,7 @@ sub runCreateNewcase
 	    $testmods = "$xml_testmod_dir/".$testmods;
 	    $cn_args .= " -user_mods_dir $testmods";
          } else {
-            print "Can NOT find testmod directory for $comp\n";
-	    die;
+            die "ERROR: Can NOT find testmod directory for $comp\n";
          }
      }
   }
@@ -1218,9 +1200,23 @@ sub runCreateNewcase
   my $exitcode = $?;
   if($exitcode != 0)
   {
-      die "invocation of create_newcase failed\n";
-  }
+      warn "invocation of create_newcase failed:\n";
+	  # create the testroot if needed. 
+	  mkdir $caseroot if(! -d $caseroot);
+	  my $failteststatus = "$caseroot/TestStatus";
+      my $failcasestatus = "$caseroot/CaseStatus";
+      
+	  open my $TS, ">", $failteststatus or print "cannot open $failteststatus, $?";
+	  print $TS "SFAIL $test{'case'}\n";
+      close $TS;
+	
+	  open my $CS, ">", $failcasestatus or print "cannot open $failcasestatus, $?";
+      print $CS "create_newcase failure \n";
+      close $CS;
 
+	  # Skip to the next test..
+      next;
+  }
   my $readmetmp = new IO::File;
   $readmetmp->open("> $caseroot/README.case.tmp") or print "can't open $caseroot/README.case.tmp";
   my $casestatustmp = new IO::File;
@@ -1532,6 +1528,7 @@ TESTXML
     $testxml .= "    <confopts>$$test{'confopts'}</confopts>\n" if defined $$test{'confopts'};
     $testxml .= "    <compiler>$$test{'compiler'}</compiler>\n";
     $testxml .= "    <compset>$$test{'compset'}</compset>\n";
+    $testxml .= "    <casebaseid>$$test{'casebaseid'}</casebaseid>\n";
     $testxml .= "    <baselineroot>$opts{'baselineroot'}</baselineroot>\n" if defined $$test{'baselineroot'};
     $testxml .= "    <basegen_case>$$test{'basegen_case'}</basegen_case>\n" if defined $$test{'basegen_case'};
     $testxml .= "    <basecmp_case>$$test{'basecmp_case'}</basecmp_case>\n" if defined $$test{'basecmp_case'};
@@ -1551,8 +1548,8 @@ TESTXML
 sub testBuildSubmit
 {
   
-  my $cssubmit = "cs.submit.$opts{'testid'}.$opts{'mach'}";
-  my $csstatus = "cs.status.$opts{'testid'}.$opts{'mach'}";
+  my $cssubmit = "cs.submit";
+  my $csstatus = "cs.status";
   copy("$scriptsroot/Tools/testreporter.pl", "$opts{'testroot'}/testreporter.pl");
   chmod 0755, "$opts{'testroot'}/testreporter.pl";
   copy("$scriptsroot/Tools/cs.submit", "$opts{'testroot'}/$cssubmit");
@@ -1823,12 +1820,28 @@ sub main
 	my @testspec;
 
 	if($xmlmode){
+            my @actualtests;
 	    foreach my $key (keys %xml_testlist_files) {
 		my $file = $xml_testlist_files{$key};
 		my @complist; 
 		@complist = ExpandXmlList( $file, $opts{'xml_mach'}, $opts{'xml_category'}, $opts{'xml_compiler'});
-		push (@testlist, @complist) 
+		push (@actualtests, @complist) 
 	    }
+            # check for duplicates in the test list...
+            my %seen = ();
+            $seen{$_}++ for @actualtests;
+            my @nodupes = keys %seen;
+            my $testlistsize = @nodupes;
+            Debug("test list size: $testlistsize");
+            if($testlistsize == 0)
+            {
+               print "No tests could be found with the test options given:\n";
+               print "xml_mach: $opts{'xml_mach'}, xml_compiler: $opts{'xml_compiler'}, xml_category: $opts{'xml_category'}\n";
+               print "aborting\n";
+               exit(1);
+            }
+            @testlist = @nodupes;
+  
 	}else{
 	    checkTestSuiteOptions();
 	    @testlist = ExpandTestList($opts{'input_list'});

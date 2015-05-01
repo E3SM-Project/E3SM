@@ -208,7 +208,7 @@ my $testcase_begin = <<'END_BEGIN';
     set TESTSTATUS_LOG          = $CASEROOT/TestStatus.log
     set TESTSTATUS_OUT_NLCOMP   = $CASEROOT/TestStatus.nlcomp
 
-    echo "RUN ${CASEBASEID} " >&! $TESTSTATUS_OUT
+    echo "RUN ${CASE} " >&! $TESTSTATUS_OUT
     touch $TESTSTATUS_LOG
 
     set sdate = `date +"%Y-%m-%d %H:%M:%S"`
@@ -440,7 +440,7 @@ my $testcase_end = <<'END_TEST';
 
          echo "CplLogFile is $CplLogFile" >>& $TESTSTATUS_LOG
 	 if( "$CplLogFile" =~ *gz ) then
-	    zcat $CplLogFile | tail -10	>>& $TESTSTATUS_LOG
+	    gunzip -c $CplLogFile | tail -10	>>& $TESTSTATUS_LOG
 	 else
   	    tail -10 $CplLogFile >>& $TESTSTATUS_LOG
 	 endif

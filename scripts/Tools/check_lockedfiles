@@ -35,7 +35,7 @@ GetOptions(
 # Give usage message.
 usage() if $opts{'help'};
 
-`./xmlchange -file env_build.xml -id BUILD_STATUS -val 0`;
+`./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 0`;
 
 my @lockedfiles = glob ("./LockedFiles/*");
 foreach my $lockedfile (@lockedfiles) {
@@ -50,8 +50,8 @@ foreach my $lockedfile (@lockedfiles) {
 	print "$file has been modified and is different than the LockedFiles version \n";
 	if ($file =~ /env_build/ ) {
 	    print "setting BUILD_COMPLETE to FALSE \n";
-	    `./xmlchange -file env_build.xml -id BUILD_COMPLETE -val FALSE`;
-	    `./xmlchange -file env_build.xml -id BUILD_STATUS -val 1`;
+	    `./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE`;
+	    `./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 1`;
 	} elsif ($file =~ /.*env_mach_pes.*/) {
 	    die "Invoke cesm_setup -clean followed by cesm_setup \n";
 	} else {

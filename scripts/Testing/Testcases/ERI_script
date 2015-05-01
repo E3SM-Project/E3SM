@@ -61,7 +61,7 @@ set start2 = "${sy2}-${sc}"
 
 if (${stopn4} < 1 || ${stopn1} < 1) then
   echo "ERROR in ${0}:  run length too short" >>& $TESTSTATUS_LOG
-  echo "TFAIL ${CASEBASEID} " >&! $TESTSTATUS_OUT
+  echo "TFAIL ${CASE} " >&! $TESTSTATUS_OUT
   exit -1
 endif
 

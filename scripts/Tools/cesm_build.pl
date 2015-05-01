@@ -1,6 +1,9 @@
 #!/usr/bin/env perl 
+
+# specify minimum version of perl
+use 5.010;
+
 use strict;
-use Switch;
 use warnings;
 use File::Path qw(mkpath);
 use File::Copy;
@@ -9,6 +12,9 @@ use File::Basename;
 use Data::Dumper;
 use Cwd;
 use POSIX qw(strftime);
+
+use English;
+no if ($PERL_VERSION ge v5.18.0), 'warnings' => 'experimental::smartmatch';
 
 #-----------------------------------------------------------------------------------------------
 # Global data. 
@@ -138,7 +144,7 @@ sub main {
 
     my $use_trilinos = 'FALSE';
     if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
-    my $sysmod = "./xmlchange -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
+    my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
     $ENV{USE_TRILINOS} = ${use_trilinos};
     $ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
 
@@ -302,14 +308,14 @@ sub buildChecks()
 
     my $smpstr = "a$atmstr"."l$lndstr"."r$rofstr"."i$icestr"."o$ocnstr". "g$glcstr"."w$wavstr"."c$cplstr";
 
-    $sysmod = "./xmlchange -file env_build.xml -id SMP_VALUE -val $smpstr";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id SMP_VALUE -val $smpstr";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
 
     $ENV{'SMP_VALUE'} = $smpstr;
 	
     my $inststr = "a$NINST_ATM"."l$NINST_LND"."r$NINST_ROF"."i$NINST_ICE"."o$NINST_OCN"."g$NINST_GLC"."w$NINST_WAV";
 
-    $sysmod = "./xmlchange -file env_build.xml -id NINST_VALUE -val $inststr";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id NINST_VALUE -val $inststr";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
 
     $ENV{'NINST_VALUE'} = $inststr;
@@ -321,7 +327,7 @@ sub buildChecks()
     $ENV{'use_trilinos'} = 'FALSE';
     if ( (defined $CISM_USE_TRILINOS) && ($CISM_USE_TRILINOS eq 'TRUE')) {$ENV{'use_trilinos'} = "TRUE";}
 
-    $sysmod = "./xmlchange -file env_build.xml -id USE_TRILINOS -val $ENV{'use_trilinos'}";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val $ENV{'use_trilinos'}";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
 	
     if( ($NINST_BUILD ne $NINST_VALUE) && ($NINST_BUILD != 0)) {
@@ -385,7 +391,7 @@ sub buildChecks()
 	die;
     }
 
-    $sysmod = "./xmlchange -file env_build.xml -id BUILD_COMPLETE -val FALSE";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
 
     my @lockedfiles = glob("LockedFiles/env_build*");
@@ -410,7 +416,10 @@ sub buildLibraries()
     if ($DEBUG eq 'TRUE') {$debugdir = "debug";}
     
     my $threaddir = 'nothreads';
-    if ($ENV{'SMP'} eq 'TRUE'){ $threaddir = 'threads';}
+    if ($ENV{'SMP'} eq 'TRUE' or $ENV{BUILD_THREADED} eq 'TRUE')
+	{
+		$threaddir = 'threads';
+	}
     
     $ENV{'SHAREDPATH'}  = "$SHAREDLIBROOT/$COMPILER/$MPILIB/$debugdir/$threaddir";
     $SHAREDPATH = $ENV{'SHAREDPATH'};
@@ -471,10 +480,10 @@ sub buildModel()
 	    if ($USE_ESMF_LIB eq "TRUE") {
 		$ESMFDIR = "esmf";
 	    } else {
-		$ESMFDIR = "noesmf"
-	    }
-	    switch ("$CLM_CONFIG_OPTS") {
-		case (/.*clm4_0.*/) {
+		$ESMFDIR = "noesmf";
+            }
+	    for ("$CLM_CONFIG_OPTS") {
+		when (/.*clm4_0.*/) {
 		    print "         - Building clm4_0 Library \n";
 		    $objdir = "$EXEROOT/$model/obj" ; if (! -d "$objdir") {mkpath "$objdir"};
 		    $libdir = "$EXEROOT/$model"     ; if (! -d "$libdir") {mkpath "$libdir"};
@@ -482,7 +491,7 @@ sub buildModel()
 		    print "       bldroot is $EXEROOT \n";
 		    print "       objdir  is $objdir \n";
 		    print "       libdir  is $libdir \n";
-		} else {
+		} default {
 		    print "         - Building clm4_5/clm5_0 shared library \n";
 		    $bldroot = "$SHAREDPATH/$COMP_INTERFACE/$ESMFDIR/" ;
 		    $objdir  = "$bldroot/$comp/obj" ; if (! -d "$objdir") {mkpath "$objdir"};
@@ -561,16 +570,16 @@ sub buildModel()
 	
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
     
-    $sysmod = "./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val TRUE";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
     
-    $sysmod = "./xmlchange -file env_build.xml -id BUILD_STATUS -val 0";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 0";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
     
-    $sysmod = "./xmlchange -file env_build.xml -id SMP_BUILD -val $SMP_VALUE";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id SMP_BUILD -val $SMP_VALUE";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
     
-    $sysmod = "./xmlchange -file env_build.xml -id NINST_BUILD -val $NINST_BUILD";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id NINST_BUILD -val $NINST_BUILD";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
     
     my @files2unlink = glob("./LockedFiles/env_build*");
@@ -585,7 +594,7 @@ sub buildModel()
     }
     
     my $sdate = strftime("%y%m%d-%H%M%S", localtime);
-    open my $CS, ">", "./CaseStatus";
+    open my $CS, ">>", "./CaseStatus";
     print $CS "build complete $sdate\n";
     close $CS;
 }

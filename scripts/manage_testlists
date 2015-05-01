@@ -308,26 +308,18 @@ sub writeXML
 	my $dtformat = strftime "%d%b%Y-%H%M%S",  localtime;
 
 	my $newfilename; 
-	if ($component eq 'cam') {
-	    $newfilename = "$cimeroot/../components/cam/cimetest/testlist_cam-$dtformat.xml";
-	} 
-	if ($component eq 'clm') {
-	    $newfilename = "$cimeroot/../components/clm/cimetest/testlist_clm-$dtformat.xml";
-	}
-	if ($component eq 'cice') {
-	    $newfilename = "$cimeroot/../components/cice/cimetest/testlist_cice-$dtformat.xml";
-	}
-	if ($component eq 'cism') {
-	    $newfilename = "$cimeroot/../components/cism/cimetest/testlist_cism-$dtformat.xml";
-	}
-	if ($component eq 'pop') {
-	    $newfilename = "$cimeroot/../components/pop/cimetest/testlist_pop-$dtformat.xml";
-	}
 	if ($component eq 'allactive') {
 	    $newfilename = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive-$dtformat.xml";
 	}
-	if ($component eq 'drv') {
+	elsif ($component eq 'drv') {
 	    $newfilename = "$cimeroot/driver_cpl/cimetest/testlist_drv-$dtformat.xml";
+	}
+	else {
+            my $dir = "$cimeroot/../components/$component/cimetest";
+            if ( ! -d $dir ) {
+              die "ERROR: Can not find directory: $dir\n";
+            }
+	    $newfilename = "$dir/testlist_$component-$dtformat.xml";
 	}
 	print "\n now writing the new test list to $newfilename\n";
 	print "Please carefully review and/or diff the new file against the\n";
@@ -1178,22 +1170,12 @@ sub setTestlist{
     my $comp = shift;
     my $list;
 
-    if ($comp =~ /^cam/ ) {
-	$list = "$cimeroot/../components/cam/cimetest/testlist_cam.xml"; 
-    } elsif ($comp =~ /^allactive/) {
+    if ($comp =~ /^allactive/) {
 	$list = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive.xml"; 
-    } elsif ($comp =~ /^clm/) {
-	$list = "$cimeroot/../components/clm/cimetest/testlist_clm.xml"; 
-    } elsif ($comp =~ /^cice/) {
-	$list = "$cimeroot/../components/cice/cimetest/testlist_cice.xml"; 
     } elsif ($comp =~ /^drv/) {
 	$list = "$cimeroot/driver_cpl/cimetest/testlist_drv.xml"; 
-    } elsif ($comp =~ /^cism/) {
-	$list = "$cimeroot/../components/cism/cimetest/testlist_cism.xml"; 
-    } elsif ($comp =~ /^pop/) {
-	$list = "$cimeroot/../components/pop/cimetest/testlist_pop.xml"; 
     } else {
-	die "component $comp does not match supported components \n";
+	$list = "$cimeroot/../components/$component/cimetest/testlist_$component.xml"; 
     }
     if (-f $list) {
 	print "# testlist is $list \n";

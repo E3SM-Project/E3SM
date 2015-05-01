@@ -40,13 +40,12 @@ ifeq ($(strip $(SMP)),TRUE)
    compile_threaded = true
    THREADDIR = threads
 else
-   THREADDIR = nothreads
-endif
-ifeq ($(strip $(BUILD_THREADED)),TRUE)
-   compile_threaded = true
-   THREADDIR = threads
-else
-   THREADDIR = nothreads
+   ifeq ($(strip $(BUILD_THREADED)),TRUE)
+      compile_threaded = true
+      THREADDIR = threads
+   else
+      THREADDIR = nothreads
+   endif
 endif
 
 # set the debug directory based on the debug status
@@ -453,12 +452,27 @@ $(MCT_LIBDIR)/mct/libmct.a: $(MCT_LIBDIR)/mpeu/libmpeu.a
 $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a: $(MCT_LIBDIR)/Makefile.conf
 	$(MAKE) -C $(MCT_LIBDIR)/mpi-serial; \
 
+ifneq ("$(wildcard $(CIMEROOT)/externals/pio/src)", "")
+# This is a pio2 library
+  PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
+  PIOLIBNAME = -lpiof -lpioc
+  PIO_SRC_DIR = $(CIMEROOT)/externals/pio
+else
+# This is a pio1 library
+  PIOLIB = $(PIO_LIBDIR)/libpio.a
+  PIOLIBNAME = -lpio
+  ifneq ("$(wildcard $(CIMEROOT)/externals/pio/pio)", "")
+    PIO_SRC_DIR = $(CIMEROOT)/externals/pio
+  else
+    PIO_SRC_DIR = $(CIMEROOT)/externals/pio/pio
+  endif
+endif
 
 MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a 
-PIOLIB = $(PIO_LIBDIR)/libpio.a
+
 GPTLLIB = $(GPTL_LIBDIR)/libgptl.a
 
-ULIBS += -L$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -lcsm_share -L$(SHAREDPATH)/lib -lpio -lgptl -lmct -lmpeu
+ULIBS += -L$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -lcsm_share -L$(SHAREDPATH)/lib $(PIOLIBNAME) -lgptl -lmct -lmpeu
 
 #------------------------------------------------------------------------------
 # Drive cmake script for cism and pio
@@ -510,9 +524,9 @@ $(GLC_DIR)/Makefile:
 	cd $(GLC_DIR); \
 	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/../components/cism/glimmer-cism
 
-$(PIO_LIBDIR)/Makefile:
+$(PIO_LIBDIR)/Makefile: 
 	cd $(PIO_LIBDIR); \
-	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/externals/pio
+	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(PIO_SRC_DIR)
 
 #-------------------------------------------------------------------------------
 # Build & include dependency files

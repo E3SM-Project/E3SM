@@ -21,7 +21,7 @@ if ((${nodes} * ${max_tasks_per_node}) < (${ntasks} * ${mthrds})) then
 endif
 
 @ batchpes = ${nodes} * ${max_tasks_per_node}
-./xmlchange -file env_mach_pes.xml -id COST_PES -val ${batchpes}
+./xmlchange -noecho -file env_mach_pes.xml -id COST_PES -val ${batchpes}
 
 if ($?TESTMODE) then
  set file = $CASEROOT/${CASE}.test 
@@ -33,6 +33,8 @@ endif
 set wall_clock = 90
 if ($CCSM_ESTCOST > -3) set wall_clock = 180
 if ($CCSM_ESTCOST > 0) set wall_clock = 360
+set host = `hostname`
+if ($host == 'cetuslac1') set wall_clock = 60
 
 cat >! $file << EOF1
 #! /bin/csh -f

@@ -1,0 +1,56 @@
+.\" $Id$
+.TH GPTLsetutr 3 "December, 2012" "GPTL"
+
+.SH NAME
+GPTLsetutr \- Choose a different underlying timing routine than the default.
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+#include <gptl.h>
+int GPTLsetutr (const int routine);
+.fi
+
+.B Fortran Interface:
+.nf
+#include <gptl.inc>
+integer gptlsetutr (integer routine)
+.fi
+
+.SH DESCRIPTION
+Sets the underlying timing routine to one of the supported
+values.
+.B gettimeofday() 
+is the default. See
+.B gptl.h
+(or
+.B gptl.inc
+for Fortran) for the list of supported underlying timing
+routines. gettimeofday() is generally the slowest option. But it is
+available almost everywhere.
+
+.SH ARGUMENTS
+.I routine
+-- routine identifier (see gptl.h or gptl.inc for available routines)
+
+.SH RESTRICTIONS
+Any calls to this routine must be done prior to GPTLinitialize. It should be
+called from an unthreaded region.
+
+.SH RETURN VALUES
+On success, this function returns 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+
+if (GPTLsetutr (GPTLmpiwtime) != 0)
+  handle_error (1);
+
+.if t .ft P
+.fi
+
+.SH SEE ALSO
+.BR GPTLinitialize "(3)" 

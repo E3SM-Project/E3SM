@@ -1,0 +1,38 @@
+.\" $Id$
+.TH GPTLreset 3 "January, 2009" "GPTL"
+
+.SH NAME
+GPTLreset \- Reset all timer contents to zero. 
+
+.SH SYNOPSIS
+.B C Interface:
+.nf
+int GPTLreset (void);
+.fi
+
+.B Fortran Interface:
+.nf
+integer gptlreset ()
+.fi
+
+.SH DESCRIPTION
+Reset all timer contents to zero.  This includes any embedded PAPI counters.
+
+.SH RESTRICTIONS
+.B GPTLinitialize()
+must have been called. This function must be called by the master thread only.
+
+.SH RETURN VALUES
+On success, this function returns 0.
+On error, a negative error code is returned and a descriptive message
+printed. 
+
+.SH EXAMPLES
+.nf         
+.if t .ft CW
+
+if (GPTLreset () != 0)
+  handle_error (1);
+
+.if t .ft P
+.fi

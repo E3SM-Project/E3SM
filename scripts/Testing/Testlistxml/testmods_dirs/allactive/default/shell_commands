@@ -13,7 +13,7 @@ cp user_nl_clm  user_nl_clm_0001
 cp user_nl_clm  user_nl_clm_0002
 cp user_nl_cice user_nl_cice_0001
 cp user_nl_cice user_nl_cice_0002
-cp user_nl_pop2 user_nl_pop2_0001
-cp user_nl_pop2 user_nl_pop2_0002
+cp user_nl_pop  user_nl_pop_0001
+cp user_nl_pop  user_nl_pop_0002
 cp user_nl_rtm  user_nl_rtm_0001
 cp user_nl_rtm  user_nl_rtm_0002

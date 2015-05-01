@@ -35,18 +35,11 @@ my $ProgDir = $1;                      # name of directory containing this scrip
                                        # relative or absolute path, or null if the script is in
                                        # the user's PATH
 
-my $cimeroot = absolute_path($ENV{cimeroot});
-
-(-d "$cimeroot")  or  die <<"EOF";
-** Cannot find cimeroot directory \"$cimeroot\"  Set using environment variable CIMEROOT **
-EOF
 
 #-----------------------------------------------------------------------------------------------
 if ($#ARGV == -1) {
     usage();
 }
-my $scriptdir = "$cimeroot/scripts";
-my $machdir   = "$cimeroot/machines";
 
 #-----------------------------------------------------------------------------------------------
 
@@ -60,18 +53,23 @@ OPTIONS
      or double leading dashes.  A consequence of this is that single letter options may
      NOT be bundled.
 
+     -cimeroot            Specify the toplevel cime directory.
+                          default: use CIMEROOT environment variable
      -mach <name>         Specify a CCSM machine (required).
      -compiler <name>     Specify a compiler for the target machine (optional)
                           default: default compiler for the target machine
      -mpilib <name>       Specify a mpi librar for the target machine (optional)
                           default: default mpi library for the target machine
      -mach_dir <path>     Specify the locations of the Machines directory (optional).
-                          default: $machdir
+
      -output_dir <path>   default: current working directory
+     -output_format <value> Output format can be make or cmake.
+                          default: make
      -help [or -h]        Print usage to STDOUT (optional).
      -list                Only list valid values for machines and compilers (optional).
      -silent [or -s]      Turns on silent mode - only fatal messages issued (optional).
      -verbose [or -v]     Turn on verbose echoing of settings made by create_newcase (optional).
+     
 
      The following arguments are required for a generic machine. Otherwise, they will be ignored. 
 
@@ -94,10 +92,10 @@ my $commandline = "configure @ARGV";
 #-----------------------------------------------------------------------------------------------
 # Parse command-line options.
 my %opts = (
-              mach_dir => $machdir,
               max_tasks_per_node => 1,
 	    );
 GetOptions(
+    "cimeroot=s"                => \$opts{'cimeroot'},
     "compiler=s"                => \$opts{'compiler'},  
     "mpilib=s"                  => \$opts{'mpilib'},  
     "h|help"                    => \$opts{'help'},
@@ -105,6 +103,7 @@ GetOptions(
     "mach=s"                    => \$opts{'mach'},
     "mach_dir=s"                => \$opts{'mach_dir'},
     "output_dir=s"              => \$opts{'output_dir'},
+    "output_format=s"           => \$opts{'output_format'},
     "s|silent"                  => \$opts{'silent'},
     "v|verbose"                 => \$opts{'verbose'},
     "scratchroot=s"             => \$opts{'scratchroot'},
@@ -127,6 +126,9 @@ if (@ARGV) {
 my $mach;
 my $compiler;
 my $mpilib;
+my $output_format='make';
+my $cimeroot;
+my $machdir;
 
 if (!$opts{'list'}) {
     # Check for manditory machine input
@@ -158,17 +160,33 @@ if (!$opts{'list'}) {
     if ($opts{'mpilib'}) {
 	$mpilib = $opts{'mpilib'};
     }
+    if($opts{'output_format'}){
+	$output_format = $opts{'output_format'};
+    }
+    if($opts{'cimeroot'}){
+	$cimeroot = $opts{'cimeroot'};
+    }
+    if($opts{'mach_dir'}){
+	$machdir = $opts{'mach_dir'};
+    }
 }
+
+$cimeroot = absolute_path($ENV{CIMEROOT}) unless defined($cimeroot);
+(-d "$cimeroot")  or  die <<"EOF";
+** Cannot find cimeroot directory \"$cimeroot\"  
+EOF
+my $scriptdir = "$cimeroot/scripts";
+$machdir   = "$cimeroot/machines" unless defined($machdir);
+(-d "$machdir")  or  die <<"EOF";
+** Cannot find machines directory \"$machdir\"  
+EOF
+
 # Check for the configuration definition file.
 my $config_def_file = "config_definition.xml";
 (-f "$scriptdir/Tools/$config_def_file")  or  die <<"EOF";
 ** Cannot find configuration definition file \"$config_def_file\" in directory 
-    \"$scriptsroot/Tools/$config_def_file\" **
+    \"$scriptdir/Tools/$config_def_file\" **
 EOF
-
-
-# Set machdir to default or value sent in on command line
-$machdir=$opts{'mach_dir'};
 
 my $output_dir = ".";
 $output_dir = $opts{output_dir} if defined( $opts{output_dir} );
@@ -219,7 +237,7 @@ EOF
 if ($print>=2) { print "Setting configuration directory to $scriptdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-my @dirs = ( "$scriptdir/Tools" )
+my @dirs = ( "$scriptdir/Tools", "$cimeroot/utils/perl5lib" );
 
 unshift @INC, @dirs;
 require ConfigCase;
@@ -314,14 +332,15 @@ if ($print>=2) { print "Machine specifier: $mach.$eol"; }
 
 my $repotag;
 if (-f "$cimeroot/ChangeLog") { 
-    $repotag =`cat $imemroot/ChangeLog | grep 'Tag name:' | head -1`;
+    $repotag =`cat $cimeroot/ChangeLog | grep 'Version:' | head -1`;
 }
 my @repotag = split(/ /,$repotag); 
 $repotag = $repotag[2]; 
 chomp($repotag);
 $cfg_ref->set('CIME_REPOTAG', $repotag);
 
-SetupTools::set_compiler($cfg_ref->get('OS'),"$machdir/$compiler_file",$compiler, $mach, $mpilib, $print, "$output_dir/Macros");
+SetupTools::set_compiler($cfg_ref->get('OS'),"$machdir/$compiler_file",$compiler, $mach, $mpilib, $print, "$output_dir/Macros", $output_format);
+
 my $sysmod;
 # Create machine specific environment file (env_mach_specific)
 if(-e "$machdir/env_mach_specific.$mach" ) {
@@ -343,7 +362,7 @@ if( -e "$machdir/Depends.$compiler" ) {
 
 # Finally include a csh wrapper to load the modules and run the make
 
-open(F,">build.csh") or die "Could not open file build.csh";
+open(F,">$output_dir/build.csh") or die "Could not open file $output_dir/build.csh";
 print F "#!/usr/bin/env csh\n";
 
 print F "#\n# Use this script to assure that modules are properly loaded before compiling\n#\n";
@@ -353,7 +372,7 @@ print F "setenv COMPILER $compiler\n";
 print F "source env_mach_specific\n";
 print F "gmake \$*\n";
 close(F);
-chmod(0755,"build.csh");
+chmod(0755,"$output_dir/build.csh");
 
 print "Successfully created auxilary build files for $mach \n\n";
 

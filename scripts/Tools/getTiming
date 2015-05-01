@@ -87,6 +87,9 @@ sub gettiming2 {
     }
 
     my $m999 = -999;
+    open( F, $fin ) or {warn "Can't open $fin"};
+    my @fin = <F>;
+    close F;
 
     my $tlen = 1.0;
     if ($xml{NCPL_BASE_PERIOD} eq "decade") {$tlen = 3650.0;}
@@ -95,9 +98,9 @@ sub gettiming2 {
     if ($xml{NCPL_BASE_PERIOD} eq "hour")   {$tlen = 1.0/24.0;}
 
     my($nprocs,$ncount);
-    &gettime2('CPL:CLOCK_ADVANCE ',$nprocs, $ncount);
+    &gettime2('CPL:CLOCK_ADVANCE ',$nprocs, $ncount, \@fin);
 
-    if ($nprocs == 0) {die "getTiming2: cannot divide by 0 nprocs, exiting \n"};
+    if ($nprocs <= 1) {die "WARNING getTiming2: 1 nprocs - running in mpiserial mode so no additional timing to be reported , exiting \n"};
     
     my $nsteps = $ncount / $nprocs;
     my $adays = $nsteps * $tlen / $xml{ATM_NCPL};
@@ -632,7 +635,7 @@ sub gettime{
 
 #----------------------------------------------------------------------------------
 sub gettime2{
-    my($str,$procs,$count)=@_;
+    my($str,$procs,$count,$fin_ref)=@_;
     my(@tmp,@tmp2);
     
 #  initialize procs and count
@@ -642,12 +645,16 @@ sub gettime2{
     my $strw = $str;
     $strw =~ s/^\s+//;
     $strw =~ s/\s+$//;
-    @tmp=`grep -w "$strw" $fin | grep -E '\\(' | grep -v hashtable`;
-    
+    my @tmp = grep( /$strw/, @$fin_ref );
+
     if ($#tmp == 0) {
-	if ($tmp[0] =~ m/\s*${strw}\s*([\.e\+\d]+)\s*(\d+)\s*/) {
+	if ($tmp[0] =~ /\s*${strw}\s+([\.\de\+]+)\s+(\d+)\s/) {
 	    $procs=$2;
 	    $count=$1;
+	}
+	elsif ($tmp[0] =~ /\s*${strw}\s+(\d+)\s/) {
+	    $procs = 1;
+	    $count = $1;
 	}
     }
     @_[1]=$procs;

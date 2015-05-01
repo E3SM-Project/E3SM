@@ -26,10 +26,10 @@ endif
 
 rm -f LockedFiles/env_build*  >& /dev/null
 
-./xmlchange -file env_build.xml -id SMP_BUILD	   -val 0
-./xmlchange -file env_build.xml -id NINST_BUILD	   -val 0
-./xmlchange -file env_build.xml -id BUILD_COMPLETE -val FALSE
-./xmlchange -file env_build.xml -id BUILD_STATUS   -val 0
+./xmlchange -noecho -file env_build.xml -id SMP_BUILD	   -val 0
+./xmlchange -noecho -file env_build.xml -id NINST_BUILD	   -val 0
+./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE
+./xmlchange -noecho -file env_build.xml -id BUILD_STATUS   -val 0
 
 echo "CESM $CASE clean_build FINISHED SUCCESSFULLY"
 

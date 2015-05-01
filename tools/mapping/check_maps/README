@@ -47,7 +47,7 @@ already have the intel module loaded. Then load the version of ESMF you want
 to use (as of April 2013, the most recent version available is 6.1.1):
 
 $ module load esmf
-$ module load esmf-6.1.1-ncdfio-uni-O
+$ module load esmf-6.3.0r-ncdfio-uni-O
 
 This will set ESMFMKFILE. With this variable set, enter the mapping/check_maps/src/
 directory and run gmake

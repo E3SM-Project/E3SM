@@ -2964,6 +2964,14 @@ By default this is set to EXEROOT/../run.
 RUNDIR allows you to keep the run directory separate from the build directory."
 ></entry>
 
+<entry id="CIME_REPOTAG" 
+ type="char"
+ valid_values=""  
+ value="UNSET" 
+ group="run_desc"
+ sdesc="Version name of CIME repository tag"
+></entry> 
+
 <entry id="PTS_MODE" 
  type="logical"
  valid_values="TRUE,FALSE" 

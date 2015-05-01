@@ -5,6 +5,11 @@
 #
 # This utility allows the user to change a env_*xml file via a commandline interface.
 #
+# The command is echoed to the CaseStatus file, unless -noecho is given. The
+# purpose of this echoing is to provide a "paper trail" of changes made by the
+# user, so calls to xmlchange by cesm scripts that are part of the normal case
+# setup/build process should generally use -noecho.
+#
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -51,6 +56,7 @@ REQUIRED OPTIONS
 OPTIONAL
      -append [or -a]      append value to the end of existing value
      -help [or -h]        Print usage to STDOUT.
+     -noecho              Do NOT echo command to CaseStatus file
      -silent [or -s]      Turns on silent mode - only fatal messages issued.
      -verbose [or -v]     Turn on verbose echoing of settings.
      -warn [or -w]        Warn and abort if you are overwriting data that is not blank
@@ -92,6 +98,9 @@ if ($ProgDir) {
 
 #-----------------------------------------------------------------------------------------------
 # Parse command-line options.
+
+my @saved_argv = @ARGV;
+
 my %opts = (
     file=>undef,
     id=>undef,
@@ -104,6 +113,7 @@ GetOptions(
     "id=s"       => \$opts{'id'},
     "val=s"      => \$opts{'val'},
     "h|help"     => \$opts{'help'},
+    "noecho"     => \$opts{'noecho'},
     "s|silent"   => \$opts{'silent'},
     "v|verbose"  => \$opts{'verbose'},
     "w|warn"     => \$opts{'warn'},
@@ -314,6 +324,24 @@ foreach my $filename ( keys(%myfiles) ) {
 foreach my $backupfile(@backupfiles) {
 	unlink($backupfile) or warn "unable to link $backupfile, $!";
 }
+
+if (! $opts{'noecho'}) {
+   echo_command_to_CaseStatus();
+}
+
 if ($print>=2) { print "xmlchange done.\n"; }
 exit;
 
+
+sub echo_command_to_CaseStatus {
+   # Echoes this xmlchange command to the CaseStatus file
+
+   if (-f "./CaseStatus") {
+      open my $CS, ">>", "$cwd/CaseStatus";
+      print $CS "<command>xmlchange @saved_argv</command>\n";
+      close $CS;
+   }
+   else {
+      warn "WARNING: No CaseStatus file found; this xmlchange command has been executed, but not recorded in the CaseStatus file\n";
+   }
+}   

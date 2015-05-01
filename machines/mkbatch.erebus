@@ -44,7 +44,7 @@ if ( ${ntasks_tot} % ${ptile} > 0) then
   @ nodes = $nodes + 1
 endif
 @ batchpes = ${nodes} * ${PES_PER_NODE}
-./xmlchange -file env_mach_pes.xml -id COST_PES -val ${batchpes}
+./xmlchange -noecho -file env_mach_pes.xml -id COST_PES -val ${batchpes}
 
 set queue_x = "-x"
 if ($?QUEUE) then

@@ -6,6 +6,7 @@ use strict;
 use warnings;
 use Cwd qw(getcwd abs_path);
 use File::Basename;
+use File::stat;
 use Data::Dumper;
 use Getopt::Long;
 use XML::LibXML;
@@ -15,26 +16,78 @@ my $cwd;
 my $testroot;
 my $cimeroot;
 my %opts;
-my $testspec;
+my @testspecxmls;
 my $banner = '-' x 120;
+
 
 # Open the testspec.xml,  get the cimeroot, 
 sub init
 {
   $cwd = getcwd;
   $testroot =  getcwd;
-  if ( $0 !~ /cs.status\.(.*)$/ ) {
-      die "Bad name for cs.status script, no job-id: $0\n";
+  my @testspecs;
+  
+  # use the single test spec passed in on the command line, otherwise 
+  # find all the test specs in the current directory. 
+  if(defined $opts{'testspec'})
+  {
+  	push(@testspecs, $opts{'testspec'});
+  }   
+  else 
+  {
+    # find all the testspec xml files in the current directory
+    opendir(my $curdir, ".") or die "can't open current working directory!\n";
+    @testspecs = grep { /^testspec.*xml$/ } readdir($curdir);
+    closedir($curdir);
   }
-  $testspec = "$testroot/testspec.$1.xml";
 
+  # die if we don't find any spec files
+  if(!@testspecs)
+  {
+     die "no testspec xml files found! Aborting\n";
+  }
+
+  # get the cimeroot
   my $parser = XML::LibXML->new( no_blanks => 1);
-  my $xml = $parser->parse_file($testspec);
+  my $xml = $parser->parse_file($testspecs[0]);
   my @node = $xml->findnodes("//cimeroot");
   $cimeroot = $node[0]->textContent(); 
+  if (! defined $opts{'expectedfails'} and -e "$cimeroot/ExpectedTestFails.xml") 
+  {
+    $opts{'expectedfails'} = $cimeroot . "/scripts/Testing/TestListxml/ExpectedTestFails.xml";
+  }
+
+
+  if(defined $opts{'all'})
+  {
+      foreach my $testspec(@testspecs)
+      {
+         push(@testspecxmls, $testspec);
+      }
+  }
+  else
+  { 
+     my $modtime = 0;
+     my $latestspecname;
+     foreach my $testspec(@testspecs)
+     {
+         open my $SPEC, "<", "./$testspec" or die "couldn't open testspec file";
+		 my $fstat = stat($SPEC);
+         my $specmodtime = $fstat->mtime;
+         close $SPEC;
+         if($specmodtime > $modtime)
+		 {
+             $modtime = $specmodtime; 
+             $latestspecname = $testspec;
+         }
+     }
+     push(@testspecxmls, $latestspecname);
+
+  }
+      
 
   chdir $cwd;
-  return $testspec;
+  return @testspecxmls;
 }
 
 sub getCompareTestSpec
@@ -61,7 +114,6 @@ sub getCaseDirsFromSpec
 	my $case = $test->getAttribute('case');
 	push(@casedirs, $case);
     }
-    #print Dumper(\@casedirs);
     return @casedirs;
 }
 
@@ -87,13 +139,13 @@ sub getTestStatus
 
     my @tests;
     my @casedirs = getCaseDirsFromSpec($testspec);
+
     foreach my $testcase(@casedirs)
     {
 	# each of these blocks is a target TestStatus file
 	
 	my $teststatusfile = "$testdir/$testcase/TestStatus";
 	next if (! -e $teststatusfile);
-	
 	chdir "$testdir/$testcase";
 	my $testbase = `./xmlquery CASEBASEID -value`;
 	chdir $cwd;
@@ -109,8 +161,7 @@ sub getTestStatus
 	
 	my @teststatus_line = (split(/\s+/, $testhash{'status'}));
 	my $teststatus = "$teststatus_line[0]";
-	
-	if ($teststatus ne 'GEN' && $teststatus ne 'PEND') {
+	#print "$teststatus\n";
 		
 	    if (defined $opts{'expectedfails'}) {
 		# is there an expected fail that matches this testbasename?
@@ -169,7 +220,6 @@ sub getTestStatus
 	    shift @lines;
 	    @{$testhash{'rawstatus'}} = @lines;
 	    push(@tests, \%testhash);
-	}
     }
     chdir $cwd;
     return @tests;
@@ -177,21 +227,16 @@ sub getTestStatus
 
 sub printStatus
 {
-	my ($tests) = @_;
-	foreach my $test(@$tests)
-	{
-	    print "$$test{'status'} ";
-	    
-	    foreach(@{$$test{'rawstatus'}}){
-		print "    $_";
-	    }	    
-	    print "\n";
-	    # print "  $$test{'memleak'} memleak" if(defined $$test{'memleak'});
-	    # print "  $$test{'throughput'} throughput" if(defined $$test{'throughput'});
-	    # print "  $$test{'generate'} generate" if(defined $$test{'generate'});
-	    # print "  $$test{'compare'} compare" if(defined $$test{'compare'});
-	    # print "\n";
-	}
+    my ($tests) = @_;
+    foreach my $test(@$tests)
+    {
+        print "$$test{'status'} ";
+
+        foreach(@{$$test{'rawstatus'}}){
+        print "    $_";
+        }
+        print "\n";
+    }
 }
 
 # Compare the performance of two arbitrary test suites..
@@ -319,18 +364,17 @@ sub getOpts
 {
 	GetOptions(
 	    "cost|c"		=> \$opts{'cost'},
+        "testspec=s"    => \$opts{'testspec'},
 	    "compareperf|p"	=> \$opts{'compareperformance'},
 	    "testroot=s"	=> \$opts{'testroot'},
 	    "testid=s"		=> \$opts{'testid'},
 	    "comparedir=s"	=> \$opts{'comparedir'},
 	    "compareid=s"	=> \$opts{'compareid'},
 	    "expectedfails=s"   => \$opts{'expectedfails'},
+        "all"           => \$opts{'all'},
 	    "help|h"		=> \$opts{'help'},
 	);
 
-	if (! defined $opts{'expectedfails'}) {
-	    warn "*** WARNING: no expected fails specified - expected fails will not be checked *** \n\n";
-	} 
 }
 
 sub usage()
@@ -338,11 +382,18 @@ sub usage()
 my $usage = <<EOF;
 SYNOPSIS
 
-    ./cs.status.testid.machine
-	Running the script with no arguments currently gives you the classic TestStatus CaseDirectory output. 
+    ./cs.status
+	Running cs.status without arguments will give you the status for the latest test set 
+    found in the current directory. 
 
+    ./cs.status --all 
+    Prints the test status for ALL test sets found in the current directory. 
+    
+    ./cs.status --testspec testspec.xml 
+    Prints the test status for ONLY the suite specified by the given testspec.xml file. 
+    
 
-    ./cs.status.testid.machine [-p|-compareperf]  -testroot `pwd` \
+    ./cs.status [-p|-compareperf]  -testroot `pwd` \
 	-comparedir /scratch/cluster/jshollen/tests/cesm1_3_alpha10aintel/ -compareid cesm13a10aintel
 
         Meant to compare throughput from one test run to another.  Only passing tests will be compared 
@@ -353,7 +404,10 @@ SYNOPSIS
 	-comparedir     The comparison directory, i.e. the directory one wishes to compare against.
 	-compareid      The testid of the -comparedir directory
 
-    
+        Optional arguments:
+        -expectedfails  Path to the expected fails file. Default is constructed from ccsmroot in testspec.
+
+
    	./cs.status.testid.machine -cost
 
     Will calculate the PE-hours/year divided by the actual runtime of the test, and sum the 
@@ -371,10 +425,13 @@ sub main
 
 	if(! defined $opts{'cost'} && ! defined $opts{'compareperformance'})
 	{
-	    my $testspec = init();
+	    my @testspecs = init();
 	    my $testroot = getcwd();
-	    my @tests = getTestStatus($testspec, $testroot);
-	    printStatus(\@tests);
+        foreach my $testspec(@testspecs)
+        {
+	      my @tests = getTestStatus($testspec, $testroot);
+	      printStatus(\@tests);
+	    }
 	}
 	elsif(defined $opts{'cost'})
 	{
@@ -387,7 +444,8 @@ sub main
 		}
 		else
 		{
-			my $testspec = init();
+			my @testspecs = init();
+			my $testspec = $testspecs[0];
 			my $testroot = getcwd();
 			my @tests = getTestStatus($testspec, $testroot);
 			my @passingTests = grep { $$_{'status'} eq 'PASS' } @tests;
