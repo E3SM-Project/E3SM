@@ -401,46 +401,50 @@ contains
          call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
          call mpas_pool_get_array(statePool, 'ssh', ssh)  
 
+         ! compute mask
+         call compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
+
          ! copy data into work array
          workArray( :,:) = 0.0
-         workArray( 1,:) = areaCell(:)
-         if (bulkForcingPkgActive) workArray( 2,:) = latentHeatFlux(:)
-         if (bulkForcingPkgActive) workArray( 3,:) = sensibleHeatFlux(:)
-         if (bulkForcingPkgActive) workArray( 4,:) = longWaveHeatFluxUp(:)
-         if (bulkForcingPkgActive) workArray( 5,:) = longWaveHeatFluxDown(:)
-         if (bulkForcingPkgActive) workArray( 6,:) = seaIceHeatFlux(:)
-         if (bulkForcingPkgActive) workArray( 7,:) = shortWaveHeatFlux(:)
-         if (bulkForcingPkgActive) workArray( 8,:) = evaporationFlux(:)
-         if (bulkForcingPkgActive) workArray( 9,:) = seaIceFreshWaterFlux(:)
-         if (bulkForcingPkgActive) workArray(10,:) = riverRunoffFlux(:)
-         if (bulkForcingPkgActive) workArray(11,:) = iceRunoffFlux(:)
-         if (bulkForcingPkgActive) workArray(12,:) = rainFlux(:)
-         if (bulkForcingPkgActive) workArray(13,:) = snowFlux(:)
-         if (frazilIcePkgActive) workArray(14,:) = seaIceEnergy(:)
-         workArray(15,:) = surfaceThicknessFlux(:)
-         workArray(16,:) = surfaceTracerFlux(indexTemperature,:)
-         workArray(17,:) = surfaceTracerFlux(indexSalinity,:)
-         if (bulkForcingPkgActive) workArray(18,:) = seaIceSalinityFlux(:)
-         workArray(19,:) = surfaceWindStressMagnitude(:)
-         if (bulkForcingPkgActive) workArray(20,:) = windStressZonal(:)
-         if (bulkForcingPkgActive) workArray(21,:) = windStressMeridional(:)
-         workArray(22,:) = seaSurfacePressure(:)
-         workArray(23,:) = ssh(:)
+         workArray( 1,:) = workMask(:)
+         workArray( 2,:) = areaCell(:)
+         if (bulkForcingPkgActive) workArray( 3,:) = latentHeatFlux(:)
+         if (bulkForcingPkgActive) workArray( 4,:) = sensibleHeatFlux(:)
+         if (bulkForcingPkgActive) workArray( 5,:) = longWaveHeatFluxUp(:)
+         if (bulkForcingPkgActive) workArray( 6,:) = longWaveHeatFluxDown(:)
+         if (bulkForcingPkgActive) workArray( 7,:) = seaIceHeatFlux(:)
+         if (bulkForcingPkgActive) workArray( 8,:) = shortWaveHeatFlux(:)
+         if (bulkForcingPkgActive) workArray( 9,:) = evaporationFlux(:)
+         if (bulkForcingPkgActive) workArray(10,:) = seaIceFreshWaterFlux(:)
+         if (bulkForcingPkgActive) workArray(11,:) = riverRunoffFlux(:)
+         if (bulkForcingPkgActive) workArray(12,:) = iceRunoffFlux(:)
+         if (bulkForcingPkgActive) workArray(13,:) = rainFlux(:)
+         if (bulkForcingPkgActive) workArray(14,:) = snowFlux(:)
+         if (frazilIcePkgActive) workArray(15,:) = seaIceEnergy(:)
+         workArray(16,:) = surfaceThicknessFlux(:)
+         workArray(17,:) = surfaceTracerFlux(indexTemperature,:)
+         workArray(18,:) = surfaceTracerFlux(indexSalinity,:)
+         if (bulkForcingPkgActive) workArray(19,:) = seaIceSalinityFlux(:)
+         workArray(20,:) = surfaceWindStressMagnitude(:)
+         if (bulkForcingPkgActive) workArray(21,:) = windStressZonal(:)
+         if (bulkForcingPkgActive) workArray(22,:) = windStressMeridional(:)
+         workArray(23,:) = seaSurfacePressure(:)
+         workArray(24,:) = ssh(:)
 
          ! build net heat, salinity and fresh water budget
          ! net heat into ocean = latentHeatFlux+sensibleHeatFlux+longWaveHeatFluxUp+longWaveHeatFluxDown+shortWaveHeatFlux+seaIceHeatFlux+(?seaIceEnergy?)
          ! net salinity into ocean = seaIceSalinityFlux
          ! net freshwater into ocean = evaporationFlux+seaIceFreshWaterFlux+riverRunoffFlux+iceRunoffFlux+rainFlux+snowFlux+(?seaIceEnergy?)
          if (bulkForcingPkgActive) then
-            workArray(24,:) =   latentHeatFlux(:) &
+            workArray(25,:) =   latentHeatFlux(:) &
                               + sensibleHeatFlux(:) &
                               + longWaveHeatFluxUp(:) &
                               + longWaveHeatFluxDown(:) &
                               + shortWaveHeatFlux(:)  &
                               + seaIceHeatFlux(:) 
                      !        + seaIceEnergy
-            workArray(25,:) =   seaIceSalinityFlux(:)
-            workArray(26,:) =   evaporationFlux(:) &
+            workArray(26,:) =   seaIceSalinityFlux(:)
+            workArray(27,:) =   evaporationFlux(:) &
                               + seaIceFreshWaterFlux(:) &
                               + riverRunoffFlux(:) &
                               + iceRunoffFlux(:) &
@@ -449,7 +453,6 @@ contains
                      !        + seaIceEnergy(:)
          end if
 
-         call compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
          call compute_statistics(nDefinedDataFields, nCellsSolve, workArray, workMask, workMin, workMax, workSum)
 
          ! store data in buffer in order to allow only three dmpar calls
@@ -482,10 +485,13 @@ contains
       enddo
 
       ! normalize averages
-      do iDataField=1,nDefinedDataFields
-         do iRegion=1,nOceanRegions
-            avgSurfaceStatistics(iDataField,iRegion) = avgSurfaceStatistics(iDataField,iRegion) / max(avgSurfaceStatistics(1,iRegion),1.0e-8_RKIND)
+      do iRegion=1,nOceanRegions
+         ! normalize all field by total area
+         do iDataField=3,nDefinedDataFields
+            avgSurfaceStatistics(iDataField,iRegion) = avgSurfaceStatistics(iDataField,iRegion) / max(avgSurfaceStatistics(2,iRegion),1.0e-8_RKIND)
          enddo
+         ! normalize total area by number of cells in region
+         avgSurfaceStatistics(2,iRegion) = avgSurfaceStatistics(2,iRegion) / max(avgSurfaceStatistics(1,iRegion),1.0e-8)
       enddo
 
       ! deallocate scratch fields
@@ -528,17 +534,20 @@ contains
       do iCell=1,nCellsSolve
         if(latCell(iCell).lt. 60.0*rtd) workMask(iCell) = 0.0_RKIND
       enddo
+      write(6,*) ' Arctic ', sum(workMask)
    elseif (iRegion.eq.2) then
       ! Equatorial
       do iCell=1,nCellsSolve
         if(latCell(iCell).gt. 15.0*rtd) workMask(iCell) = 0.0_RKIND
         if(latCell(iCell).lt.-15.0*rtd) workMask(iCell) = 0.0_RKIND
       enddo
+      write(6,*) ' Equatorial ', sum(workMask)
    elseif (iRegion.eq.3) then
       ! Southern Ocean
       do iCell=1,nCellsSolve
         if(latCell(iCell).gt.-50.0*rtd) workMask(iCell) = 0.0_RKIND
       enddo
+      write(6,*) ' Southern Ocean ', sum(workMask)
    elseif (iRegion.eq.4) then
       ! Nino 3
       do iCell=1,nCellsSolve
@@ -547,6 +556,7 @@ contains
         if(lonCell(iCell).lt.210.0*rtd) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.270.0*rtd) workMask(iCell) = 0.0_RKIND
       enddo
+      write(6,*) ' Nino 3 ', sum(workMask)
    elseif (iRegion.eq.5) then
       ! Nino 4
       do iCell=1,nCellsSolve
@@ -555,6 +565,7 @@ contains
         if(lonCell(iCell).lt.160.0*rtd) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.210.0*rtd) workMask(iCell) = 0.0_RKIND
       enddo
+      write(6,*) ' Nino 4 ', sum(workMask)
    elseif (iRegion.eq.6) then
       ! Nino 3.4
       do iCell=1,nCellsSolve
@@ -563,8 +574,10 @@ contains
         if(lonCell(iCell).lt.190.0*rtd) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.240.0*rtd) workMask(iCell) = 0.0_RKIND
       enddo
+      write(6,*) ' Nino 3.4 ', sum(workMask)
    else
       ! global (do nothing!)
+      write(6,*) ' Global ', sum(workMask)
    endif
 
    end subroutine compute_mask
@@ -582,9 +595,10 @@ contains
 
    workSum = 0.0
    do iCell=1,nCellsSolve
-    workSum(1) = workSum(1) + workArray(1,iCell)*workMask(iCell)
-    do iData=2,nDefinedDataFields
-      workSum(iData) = workSum(iData) + workArray(1,iCell)*workArray(iData,iCell)*workMask(iCell)
+    workSum(1) = workSum(1) + workMask(iCell)
+    workSum(2) = workSum(2) + workArray(2,iCell)*workMask(iCell)
+    do iData=3,nDefinedDataFields
+      workSum(iData) = workSum(iData) + workArray(2,iCell)*workArray(iData,iCell)*workMask(iCell)
     enddo
    enddo
 

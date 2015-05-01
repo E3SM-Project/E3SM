@@ -1,5 +1,5 @@
 <dims>
-        <dim name="nSurfaceFluxStatisticsFields" definition="27" units="unitless"
+        <dim name="nSurfaceFluxStatisticsFields" definition="30" units="unitless"
                 description="A number equal to or greater than the number of var arrays in the amSurfaceStatistics var structure below."
         />
         <dim name="nOceanRegions" definition="7" units="unitless"
@@ -40,6 +40,9 @@
 </streams>
 <var_struct name="amSurfaceStatistics" time_levs="1" packages="amSurfaceFluxStatisticsPkg">
         <var_array name="minSurfaceStatistics" type="real" dimensions="nOceanRegions Time">
+                <var name="minSurfaceMaskValue" array_group="mins" units="none"
+                         description="Minimum value of region mask (should always be 1 for valid regions)"
+                />
                 <var name="minSurfaceArea" array_group="mins" units="m^2"
                          description="Minimum area of a surface cell"
                 />
@@ -120,6 +123,9 @@
                 />
         </var_array>
         <var_array name="maxSurfaceStatistics" type="real" dimensions="nOceanRegions Time">
+                <var name="maxSurfaceMaskValue" array_group="maxs" units="none"
+                         description="Maximum value of region mask (should always be 1 for valid regions)"
+                />
                 <var name="maxSurfaceArea" array_group="maxs" units="m^2"
                          description="Maximum area of a surface cell"
                 />
@@ -200,6 +206,9 @@
                 />
         </var_array>
         <var_array name="avgSurfaceStatistics" type="real" dimensions="nOceanRegions Time">
+                <var name="sumSurfaceMaskValue" array_group="avg" units="none"
+                         description="Sum of region mask, represents total number of cells in region"
+                />
                 <var name="avgSurfaceArea" array_group="avg" units="m^2"
                          description="Average area of a surface cell"
                 />
