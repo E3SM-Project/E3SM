@@ -9,7 +9,7 @@ import acme_util
 acme_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
-import argparse, sys, os, distutils.spawn, getpass, socket, shutil, glob, doctest
+import argparse, sys, os, getpass, socket, shutil, glob, doctest
 
 from acme_util import expect, warning, verbose_print
 
@@ -126,7 +126,7 @@ def bless_test_results(casearea, baseline_root, git_branch, namelists_only, bles
                     warning("Asked to bless test %s, but it passed" % test_name)
             else:
 
-                print "Blessing results for test:", test_name
+                print "Blessing results for test:", test_name, "most recent result:", test_result
 
                 # Get baseline dir for this test
                 baseline_dir_for_test = os.path.join(baseline_area, test_name)
@@ -151,6 +151,7 @@ def bless_test_results(casearea, baseline_root, git_branch, namelists_only, bles
                         rel_file = os.path.join(rel_root, file_)
 
                         if (rel_root == "CaseDocs" or file_.startswith("user_nl")):
+                            # TODO: Do a namelist diff and only copy if different?
                             namelist_files.append(rel_file)
                         else:
                             other_files.append(rel_file)

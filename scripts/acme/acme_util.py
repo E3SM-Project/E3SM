@@ -2,7 +2,7 @@
 Common functions used by acme python scripts
 """
 
-import sys, socket, re, os, shutil
+import sys, socket, re, os
 
 _VERBOSE = False
 
@@ -244,6 +244,7 @@ def safe_copy(src_dir, tgt_dir, files):
     read-only file. Files can be relative paths and the relative path will be
     matched on the tgt side.
     """
+    import shutil
     for file_ in files:
         full_tgt = os.path.join(tgt_dir, file_)
         full_src = os.path.join(src_dir, file_)
@@ -286,6 +287,7 @@ def find_proc_id(proc_name=None,
 ###############################################################################
 def probe_batch_system():
 ###############################################################################
+    import distutils
     for batch_system, cmds in BATCH_INFO.iteritems():
         exe = cmds[0].split()[0]
         exe_path = distutils.spawn.find_executable(exe)
@@ -300,12 +302,13 @@ def get_my_queued_jobs(batch_system=None):
     """
     Return a list of job ids for the current user
     """
+    import getpass
     if (batch_system is None):
         batch_system = probe_batch_system()
     expect(batch_system is not None, "Failed to probe batch system")
 
     list_cmd = "%s %s" % (BATCH_INFO[batch_system][0], getpass.getuser())
-    return acme_util.run_cmd(list_cmd).split()
+    return run_cmd(list_cmd).split()
 
 ###############################################################################
 def get_batch_system_info(batch_system=None):
