@@ -1,9 +1,12 @@
 module FindRootMod
 !module contains functions to solve simple equations
 !created by Jinyun Tang, 2013
-  use shr_kind_mod, only: r8 => shr_kind_r8 
+
+  use shr_kind_mod        , only : r8 => shr_kind_r8 
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use abortutils          , only : endrun
+  use clm_varctl          , only : iulog
+  use MathfuncMod         , only : is_bounded
 implicit none
   interface hybrid_findroot
      module procedure hybrid_findroot_np, hybrid_findroot_p
@@ -14,22 +17,161 @@ implicit none
   end interface brent
   
 contains
-
-
-  function quadroot(a,b,c,p)result(x)
- 
+  
+  function quadrootbnd(a,b,c, xl, xr)result(x)
+  !
+  !return a root of the qudratic equation
+  !within bound xl and xr
+  
   implicit none
   real(r8), intent(in) :: a, b, c
-  integer, intent(in) :: p
+  real(r8), intent(in) :: xl, xr
   real(r8) :: x
   
-  if(p==1)then
-     x = (-b + sqrt(b*b-4._r8*a*c))/2._r8
-  elseif(p==-1)then
-     x = (-b - sqrt(b*b-4._r8*a*c))/2._r8
+  real(r8) :: delta
+  
+  delta = b * b -4._r8 * a * c
+  
+  if(delta>=0._r8)then
+    
+    x = (-b + sqrt(delta))/2._r8
+    if(is_bounded(x,xl,xr))then
+      return
+    else
+      x = (-b - sqrt(delta))/2._r8
+      if(is_bounded(x,xl,xr))then
+        return
+      else
+        write(iulog,*)'no bounded solution for the given quadratic equation'
+        call endrun(msg=errmsg(__FILE__, __LINE__))          
+      endif
+    endif
+  else
+    write(iulog,*)'no real solution for the given quadratic equation'
+    call endrun(msg=errmsg(__FILE__, __LINE__))    
   endif
   return
-  end function quadroot
+  end function quadrootbnd
+  
+  
+  function quadproot(a,b,c)result(x)
+  !
+  !return positive root of the qudratic equation
+  
+  implicit none
+  real(r8), intent(in) :: a, b, c
+  real(r8) :: x
+  
+  real(r8) :: delta
+  
+  delta = b * b -4._r8 * a * c
+  
+  if(delta>=0._r8)then
+    x = (-b + sqrt(delta))/2._r8
+  else
+    write(iulog,*)'no positive solution for the given quadratic equation'
+    call endrun(msg=errmsg(__FILE__, __LINE__))    
+  endif
+  return
+  end function quadproot
+!===============================================================================
+
+  function cubicrootbnd(a,b,c,d, xl, xr)result(x)
+  !
+  ! return positive root of the cubic equation
+  !
+  use clm_varcon , only : rpi
+  implicit none
+  real(r8), intent(in) :: a, b, c, d
+  real(r8), intent(in) :: xl, xr
+
+  real(r8) :: x
+  real(r8) :: p, q
+  real(r8) :: b1, c1, d1
+  real(r8) :: n, u, f, y
+  real(r8) :: delta
+  
+  b1 = b/a
+  c1 = c/a
+  d1 = d/a
+  
+  p = c1 - b1 * b1 /3._r8
+  q = d1 - b1 / 3._r8 * (c1 - 2._r8 * b1**2._r8/9._r8)
+  
+  delta =-4._r8 * p**3._r8 - 27._r8 * q ** 2._r8
+  if(delta<0._r8)then
+    write(iulog,*)'no real solution for the given cubic equation'
+    call endrun(msg=errmsg(__FILE__, __LINE__))
+  else
+    n = sqrt(-4._r8*p/3._r8)
+    f = -q/2._r8 * (-p/3._r8)**(-1.5_r8)
+    u = acos(f)/3._r8
+    
+    y = n * cos(u)
+    x = y - b1 / 3._r8
+    if(is_bounded(x,xl,xr))then
+      return
+    else
+      y = n * max(cos(u), cos(u-rpi*2._r8/3._r8))
+      x = y - b1 /3._r8
+      if(is_bounded(x,xl,xr))then
+        return
+      else      
+        y = n * cos(u-rpi*2._r8/3._r8)
+        x = y - b1 / 3._r8
+        if(is_bounded(x,xl,xr))then
+          return
+        else
+        write(iulog,*)'no bounded solution for the given cubic equation'
+        call endrun(msg=errmsg(__FILE__, __LINE__))                   
+        endif
+      endif  
+    endif
+    
+  endif
+  function cubicrootbnd
+  
+!===============================================================================  
+  function cubicproot(a,b,c,d)result(x)
+  !
+  ! return positive root of the cubic equation
+  !
+  use clm_varcon , only : rpi
+  implicit none
+  real(r8), intent(in) :: a, b, c, d
+  real(r8) :: x
+  real(r8) :: p, q
+  real(r8) :: b1, c1, d1
+  real(r8) :: n, u, f, y
+  real(r8) :: delta
+  b1 = b/a
+  c1 = c/a
+  d1 = d/a
+  
+  p = c1 - b1 * b1 /3._r8
+  q = d1 - b1 / 3._r8 * (c1 - 2._r8 * b1**2._r8/9._r8)
+  
+  delta =-4._r8 * p**3._r8 - 27._r8 * q ** 2._r8
+  if(delta<0._r8)then
+    write(iulog,*)'no real solution for the given cubic equation'
+    call endrun(msg=errmsg(__FILE__, __LINE__))
+  else
+    n = sqrt(-4._r8*p/3._r8)
+    f = -q/2._r8 * (-p/3._r8)**(-1.5_r8)
+    u = acos(f)/3._r8
+    
+    if(u<=rpi/3._r8)then
+      y = n * cos(u)
+    elseif(u>rpi/3._r8 .and. u < rpi/2._r8)then
+      !return the maximum of the two non-negative solutions
+      y = n * max(cos(u), cos(u-rpi*2._r8/3._r8))
+    else
+      y = n * cos(u-rpi*2._r8/3._r8)
+    endif
+    x = y - b1 / 3._r8
+  endif
+  function cubicproot  
+ 
 !===============================================================================
   
    subroutine LUsolvAxr(a,r, n)
@@ -193,6 +335,7 @@ contains
    integer,  intent(in) :: pp                !index argument used by subroutine func
    real(r8), intent(in) :: tol               !the error tolerance
    real(r8), intent(out):: x                !indepedent variable of the single value function func(x)   
+
    interface
       subroutine func(x,f, pp)
       use shr_kind_mod       , only : r8 => shr_kind_r8
@@ -207,7 +350,6 @@ contains
 ! whenever it is needed
 
    integer, parameter :: ITMAX = 40            !maximum number of iterations
-   integer, parameter :: iulog = 6
    integer :: iter
    real(r8)  :: a,b,c,d,e,fa,fb,fc,p,q,r,s,xm,tol1
 

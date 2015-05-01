@@ -21,6 +21,7 @@ implicit none
    public :: dot_sum
    public :: addone
    public :: asc_sort_vec
+   public :: is_bounded
    interface swap
       module procedure swap_i, swap_r, swap_rv
    end interface swap
@@ -232,4 +233,18 @@ contains
   enddo
   
   end subroutine asc_sort_vec
+  
+!--------------------------------------------------------------------------------  
+  function is_bounded(x, xl, xr)result(ans)
+  !
+  ! test if x is bounded within xl and xr
+  implicit none
+  
+  logical :: ans
+  if(x>=xl .and. x<=xr)then
+    ans = .true.
+  else
+    ans = .false.
+  endif
+  end function is_bounded  
 end module MathfuncMod
