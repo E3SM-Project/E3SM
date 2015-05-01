@@ -287,7 +287,7 @@ def find_proc_id(proc_name=None,
 ###############################################################################
 def probe_batch_system():
 ###############################################################################
-    import distutils
+    import distutils.spawn
     for batch_system, cmds in BATCH_INFO.iteritems():
         exe = cmds[0].split()[0]
         exe_path = distutils.spawn.find_executable(exe)
