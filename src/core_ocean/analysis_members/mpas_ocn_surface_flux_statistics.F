@@ -254,6 +254,8 @@ contains
       real (kind=RKIND), dimension(:), pointer :: windStressMeridional
       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure
       real (kind=RKIND), dimension(:), pointer :: ssh
+      real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepth
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
       ! pointers to data in mesh pool
       integer, pointer :: nCells, nCellsSolve, nSurfaceFluxStatisticsFields, nOceanRegions
@@ -400,6 +402,8 @@ contains
          if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
          call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
          call mpas_pool_get_array(statePool, 'ssh', ssh)  
+         call mpas_pool_get_array(statePool, 'tracers', tracers)
+         call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth',boundaryLayerDepth)
 
          ! compute mask
          call compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
@@ -430,21 +434,24 @@ contains
          if (bulkForcingPkgActive) workArray(22,:) = windStressMeridional(:)
          workArray(23,:) = seaSurfacePressure(:)
          workArray(24,:) = ssh(:)
+         workArray(25,:) = tracers(indexTemperature,1,:)
+         workArray(26,:) = tracers(indexSalinity,1,:)
+         workArray(27,:) = boundaryLayerDepth(:)
 
          ! build net heat, salinity and fresh water budget
          ! net heat into ocean = latentHeatFlux+sensibleHeatFlux+longWaveHeatFluxUp+longWaveHeatFluxDown+shortWaveHeatFlux+seaIceHeatFlux+(?seaIceEnergy?)
          ! net salinity into ocean = seaIceSalinityFlux
          ! net freshwater into ocean = evaporationFlux+seaIceFreshWaterFlux+riverRunoffFlux+iceRunoffFlux+rainFlux+snowFlux+(?seaIceEnergy?)
          if (bulkForcingPkgActive) then
-            workArray(25,:) =   latentHeatFlux(:) &
+            workArray(28,:) =   latentHeatFlux(:) &
                               + sensibleHeatFlux(:) &
                               + longWaveHeatFluxUp(:) &
                               + longWaveHeatFluxDown(:) &
                               + shortWaveHeatFlux(:)  &
                               + seaIceHeatFlux(:) 
                      !        + seaIceEnergy
-            workArray(26,:) =   seaIceSalinityFlux(:)
-            workArray(27,:) =   evaporationFlux(:) &
+            workArray(29,:) =   seaIceSalinityFlux(:)
+            workArray(30,:) =   evaporationFlux(:) &
                               + seaIceFreshWaterFlux(:) &
                               + riverRunoffFlux(:) &
                               + iceRunoffFlux(:) &
