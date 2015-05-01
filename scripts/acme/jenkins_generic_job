@@ -262,7 +262,7 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
             # previous implementation which just assumed all queued jobs for this
             # user came from create_test.
             # TODO: change this to probe casearea for jobs ids
-            our_jobs = acme_util.get_my_queued_jobs(batch_system) - preexisting_queued_jobs
+            our_jobs = set(acme_util.get_my_queued_jobs(batch_system)) - set(preexisting_queued_jobs)
 
         #
         # Wait for tests
