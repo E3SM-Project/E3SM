@@ -3953,7 +3953,7 @@
 	 ></entry>
 
   <!-- ======================================================================= -->
-  <!-- env_postprocess.xml - post processing variables                         -->
+  <!-- env_postprocess.xml - post processing toggle variables                  -->
   <!-- ======================================================================= -->
 
   <entry id="POSTPROCESS_VIRTUALENV" 
