@@ -521,9 +521,9 @@ contains
    real(kind=RKIND), dimension(:), intent(in) :: lonCell, latCell
    real(kind=RKIND), dimension(:), intent(out) :: workMask
    integer :: iCell
-   real(kind=RKIND) :: rtd
+   real(kind=RKIND) :: dtr
 
-   rtd = 180.0_RKIND / (4.0*atan(1.0))
+   dtr = 4.0*atan(1.0) / 180.0_RKIND 
    workMask(:) = 0.0_RKIND
    do iCell=1,nCellsSolve
       workMask(iCell) = 1.0_RKIND
@@ -532,47 +532,47 @@ contains
    if (iRegion.eq.1) then
       ! Arctic
       do iCell=1,nCellsSolve
-        if(latCell(iCell).lt. 60.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. 60.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Arctic ', sum(workMask)
    elseif (iRegion.eq.2) then
       ! Equatorial
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt. 15.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt.-15.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt. 15.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt.-15.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Equatorial ', sum(workMask)
    elseif (iRegion.eq.3) then
       ! Southern Ocean
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.-50.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.-50.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Southern Ocean ', sum(workMask)
    elseif (iRegion.eq.4) then
       ! Nino 3
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.210.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.270.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.  5.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.210.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.270.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Nino 3 ', sum(workMask)
    elseif (iRegion.eq.5) then
       ! Nino 4
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.160.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.210.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.  5.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.160.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.210.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Nino 4 ', sum(workMask)
    elseif (iRegion.eq.6) then
       ! Nino 3.4
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.190.0*rtd) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.240.0*rtd) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.  5.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.190.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.240.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Nino 3.4 ', sum(workMask)
    else
