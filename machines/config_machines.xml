@@ -54,6 +54,7 @@
         <CCSM_CPRNC>USERDEFINED_optional_test</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
         <BATCHQUERY>USERDEFINED_optional_run</BATCHQUERY> 
         <BATCHSUBMIT>USERDEFINED_optional_run</BATCHSUBMIT>
+        <BATCHREDIRECT></BATCHREDIRECT>
         <SUPPORTED_BY>USERDEFINED_optional</SUPPORTED_BY>                 
         <GMAKE_J>1</GMAKE_J>
         <MAX_TASKS_PER_NODE>USERDEFINED_required_build</MAX_TASKS_PER_NODE>
@@ -75,6 +76,7 @@
          <CCSM_CPRNC>/chos/global/u1/v/vadlaman/cesm1_3_xeon_phi_branch/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>srinathv-at-ucar-dot-edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
@@ -99,6 +101,7 @@
          <CCSM_CPRNC>/chos/global/u1/v/vadlaman/cesm1_3_xeon_phi_branch/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>srinathv-at-ucar-dot-edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>192</MAX_TASKS_PER_NODE>
@@ -121,9 +124,28 @@
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>jedwards -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J> 8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+         <batch_system name="pbsbluewaters" version="x.y">
+             <queues>
+                <queue default="true">normal</queue>
+             </queues>
+             <walltimes>
+                <walltime default="true">05:00:00</walltime>
+             </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+             <executable name="aprun">
+             <arguments>
+                <arg name="num_tasks"> -n __num_tasks__</arg>
+                <arg name="tasks_per_numa"> -S __tasks_per_numa__</arg>
+                <arg name="tasks_per_node"> -N __tasks_per_node__</arg>
+                <arg name="thread_count"> -d __thread_count__</arg>
+             </arguments>
+             </executable>
+         </mpirun>
 </machine>
 
 <machine MACH="brutus">
@@ -142,6 +164,7 @@
          <CCSM_CPRNC>/cluster/work/uwis/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>bjobs -w</BATCHQUERY>
          <BATCHSUBMIT>bsub &lt;</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>1</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
@@ -163,6 +186,7 @@
          <CCSM_CPRNC>/lustre/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>squeue</BATCHQUERY>
          <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
@@ -184,10 +208,30 @@
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>24</PES_PER_NODE>
+      <!-- pbscray is for crays.. -->
+    <batch_system name="pbscray" version="x.y">
+      <queues>
+        <queue walltimemax="00:30:00" jobmin="1" jobmax="512" default="true">debug</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">00:30:00</walltime>
+      </walltimes>
+    </batch_system>
+    <mpirun mpilib="default">
+      <executable>aprun</executable>
+      <arguments>
+        <arg name="hyperthreading" default="2"> -j __hyperthreading__</arg>
+        <arg name="num_tasks" > -n __num_tasks__</arg>
+        <arg name="tasks_per_numa" > -S __tasks_per_numa__</arg>
+        <arg name="tasks_per_node" > -N __tasks_per_node__</arg>
+        <arg name="thread_count" > -d __thread_count__</arg>
+      </arguments>
+    </mpirun>
 </machine>
 
 
@@ -207,6 +251,7 @@
          <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>bjobs -w</BATCHQUERY>
          <BATCHSUBMIT>bsub &lt;</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>jedwards -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>16</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
@@ -229,6 +274,7 @@
          <CCSM_CPRNC>/data/eg_nfs/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>showq</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
@@ -275,8 +321,25 @@
          <OS>LINUX</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>qsub </BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <batch_system name="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="01:00:00" jobmin="1" jobmax="16">short</queue>
+             <queue walltimemax="24:00:00" jobmin="1" jobmax="16" default="true">long</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">02:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>mpiexec</executable>
+           <arguments>
+             <arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
+             <arg name="num_tasks"> -n __num_tasks__ </arg>
+           </arguments>
+         </mpirun>
 </machine>
 <machine MACH="logan">
          <DESC>"NCAR CGD General compute server"</DESC>
@@ -296,6 +359,7 @@
          <OS>LINUX</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>qsub </BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 </machine>
@@ -316,6 +380,7 @@
          <OS>CNL</OS>
          <BATCHQUERY>showq</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>julio -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J> 8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
@@ -340,6 +405,7 @@
          <OS>LINUX</OS>
          <BATCHQUERY>mshow</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>mirin1 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
@@ -361,9 +427,26 @@
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+         <batch_system name="pbscray" version="x.y">
+            <queues>
+               <queue walltimemax="00:30:00" jomin="1" jobmax="512" default="true">debug</queue>
+            </queues>
+            <walltimes>
+               <walltime default="true">00:30:00</walltime>
+            </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+            <executable>aprun</executable>
+            <arguments>
+             <arg name="num_tasks" > -n __num_tasks__</arg>
+             <arg name="tasks_per_node" > -N __tasks_per_node__</arg>
+             <arg name="thread_count" > -d __thread_count__</arg>
+            </arguments>
+         </mpirun>
 </machine>
 
 <machine MACH="janus">
@@ -380,12 +463,30 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/janus_scratch/cesm/baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/lustre/janus_scratch/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
-         <BATCHQUERY>qstat</BATCHQUERY>
-         <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHQUERY>sqeueu</BATCHQUERY>
+         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>12</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
 	 <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
+     <batch_system name="slurm" version="x.y">
+       <queues>
+         <queue jobmin="1" jobmax="480" default="true">normal</queue>
+       </queues>
+       <walltimes>
+         <walltime default="true">0:50:00</walltime>
+         <walltime ccsm_estcost="0">1:50:00</walltime>
+         <walltime ccsm_estcost="1">4:00:00</walltime>
+       </walltimes>
+     </batch_system>
+     <mpirun mpilib="default">
+       <executable>mpirun</executable>
+       <arguments>
+         <arg name="num_tasks"> -np %d</arg>
+         <arg name="tasks_per_node"> -npernode %d</arg>
+       </arguments>
+     </mpirun>
 </machine>
 
 
@@ -405,6 +506,7 @@
          <OS>BGQ</OS>
          <BATCHQUERY>llq</BATCHQUERY>
          <BATCHSUBMIT>llsubmit</BATCHSUBMIT>
+		 <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>dennis -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
@@ -426,35 +528,109 @@
 	     <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <OS>BGQ</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
-         <BATCHSUBMIT>csh</BATCHSUBMIT>
+         <BATCHSUBMIT>qsub</BATCHSUBMIT>
+		 <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+         <batch_system name="cobalt">
+           <queues>
+             <queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">prod-short</queue>
+             <queue waltimemin="361" walltimemax="720" jobmin="512" jobmax="4096">prod-long</queue>
+             <queue waltimemin="0" walltimemax="1440" jobmin="4097" jobmax="49152">prod-capability</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">60</walltime>
+             <walltime ccsm_estcost="-3">60</walltime>
+             <walltime ccsm_estcost="0">60</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>runjob</executable>
+             <arguments>
+               <arg name="queue"> --label  __queue__</arg>
+               <!-- Ranks per node!! -->
+               <arg name="num_nodes"> -p __num_nodes__</arg>
+               <!-- Total MPI Tasks -->
+               <arg name="num_tasks"> -n __num_tasks__</arg>
+               <arg name="locargs">  $LOCARGS</arg>
+               <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
+               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg> 
+               <arg name="thread_count"> --envs OMP_NUM_THREADS=__thread_count__</arg>
+               <arg name="colon">:</arg>
+             </arguments>
+         </mpirun>
 </machine>
 
-
+<machine MACH="tukey">
+  <DESC>ANL IBM data analysis/visualization cluster, os is BGP, 16 pes/node, batch system is cobalt</DESC>
+  <COMPILERS>ibm</COMPILERS>
+  <MPILIBS>ibm</MPILIBS>
+  <CESMSCRATCHROOT>/projects/$PROJECT/usr/$ENV{USER}</CESMSCRATCHROOT>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DOUT_S_ROOT>/projects/$PROJECT/usr/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
+  <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
+  <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
+  <OS>BGQ</OS>
+  <BATCHQUERY>qstat</BATCHQUERY>
+  <BATCHSUBMIT>csh</BATCHSUBMIT>
+  <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
+  <GMAKE_J>4</GMAKE_J>
+  <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <batch_system name="cobalt">
+  <queues>
+      <queue waltimemin="0" walltimemax="360" jobmin="0" jobmax="1536" default="true">default</queue>
+      <queue waltimemin="0" walltimemax="60" jobmin="0" jobmax="1536">debug</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">90</walltime>
+      <walltime ccsm_estcost="-3">180</walltime>
+      <walltime ccsm_estcost="0">360</walltime>
+    </walltimes>
+  </batch_system>
+  <mpirun mpilib="mpi-serial">
+    <!-- don't need anything here, the default_run_suffix will be enough for mpi-serial -->
+    <executable></executable>
+  </mpirun>
+  <mpirun mpilib="default">
+    <executable>runjob :</executable>
+    <arguments>
+      <arg name="label">--label short</arg>
+      <arg name="num_tasks"> -n __num_tasks__</arg>
+      <arg name="locargs"> \$LOCARGS</arg>
+      <arg name="envs"> --envs BG_THREADLAYOUT=1 --envs OMP_STACKSIZE=32m --envs OMP_NUM_THREADS=__num_threads__</arg>
+      <arg name="colon"> : </arg>
+    </arguments>
+  </mpirun>
+</machine>
 
 <machine MACH="olympus">
-         <DESC>PNL cluster, os is Linux (pgi), batch system is SLURM</DESC>
-         <OS>LINUX</OS>
-	 <COMPILERS>pgi</COMPILERS>
-	 <MPILIBS>mpich</MPILIBS>
-         <RUNDIR>/pic/scratch/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/pic/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/pic/scratch/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/pic/scratch/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
-         <BATCHQUERY>squeue</BATCHQUERY>
-         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
-         <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+  <DESC>PNL cluster, os is Linux (pgi), batch system is SLURM</DESC>
+  <OS>LINUX</OS>
+  <COMPILERS>pgi</COMPILERS>
+  <MPILIBS>mpich</MPILIBS>
+  <RUNDIR>/pic/scratch/$CCSMUSER/$CASE/run</RUNDIR>
+  <EXEROOT>/pic/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
+  <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+  <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+  <CCSM_BASELINE>/pic/scratch/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
+  <CCSM_CPRNC>/pic/scratch/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
+  <BATCHQUERY>squeue</BATCHQUERY>
+  <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+  <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
+  <GMAKE_J>8</GMAKE_J>
+  <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
 </machine>
+
 
 <machine MACH="pleiades-has">
          <DESC>NASA/AMES Linux Cluster, Linux (ia64), 2.5 GHz Haswell Intel Xeon E5-2680v3 processors, 24 pes/node (two 12-core processors) and 128 GB of memory/node, batch system is PBS</DESC>
@@ -470,6 +646,7 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+		 <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
@@ -492,6 +669,7 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+		 <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
@@ -514,6 +692,7 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+		 <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
@@ -536,6 +715,7 @@
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+		 <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>fvitt -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
@@ -561,6 +741,7 @@
          <OS>LINUX</OS>
          <BATCHQUERY>mshow</BATCHQUERY>
          <BATCHSUBMIT>msub</BATCHSUBMIT>
+		 <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>mirin1 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
@@ -582,6 +763,7 @@
         <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
         <BATCHQUERY>squeue</BATCHQUERY>
         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+		<BATCHREDIRECT></BATCHREDIRECT>
         <SUPPORTED_BY>srinathv -at- ucar.edu</SUPPORTED_BY>
         <GMAKE_J>8</GMAKE_J>
         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
@@ -604,10 +786,31 @@
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+	 <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+         <batch_system name="pbscray">
+            <queues>
+              <queue walltimemax="24:00" default="true">batch</queue>
+              <queue walltimemax="24:00">debug</queue>
+            </queues>
+            <walltimes> 
+              <walltime default="true">00:45:00</walltime>
+              <walltime ccsm_estcost="1">02:00:00</walltime>
+            </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>aprun</executable>
+             <arguments>
+                <arg name="num_tasks"> -n __num_tasks__</arg>
+                <arg name="tasks_per_numa"> -S __tasks_per_numa__</arg>
+                <arg name="tasks_per_node"> -N __tasks_per_node__</arg>
+                <arg name="thread_count"> -d __thread_count__</arg>
+             </arguments>
+         </mpirun>
+         
 </machine>
 
 <machine MACH="yellowstone">
@@ -624,13 +827,41 @@
         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
         <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>                   
         <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
+        <PERL5LIB>/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5</PERL5LIB>
         <BATCHQUERY>bjobs -w</BATCHQUERY>                                                                     
-        <BATCHSUBMIT>bsub &lt;</BATCHSUBMIT>
+        <BATCHSUBMIT>bsub</BATCHSUBMIT>
+        <BATCHREDIRECT>&lt; </BATCHREDIRECT>
         <SUPPORTED_BY>cseg</SUPPORTED_BY>
         <GMAKE_J>8</GMAKE_J>
         <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
         <PES_PER_NODE>16</PES_PER_NODE>
         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+        <batch_system name="lsf" version="9.1">
+        <queues>
+          <queue walltimemax="24:00" jobmin="1" jobmax="8">caldera</queue>
+          <queue walltimemax="2:00" jobmin="9" jobmax="4096">small</queue>
+          <queue walltimemax="12:00" jobmin="0" jobmax="16384" default="true">regular</queue>
+          <queue walltimemax="12:00" jobmin="16385" jobmax="65536">small</queue>
+        </queues>
+        <walltimes>
+          <walltime default="true">2:00</walltime>
+          <walltime ccsm_estcost="-1">2:00</walltime>
+          <walltime ccsm_estcost="0">4:00</walltime>
+          <walltime ccsm_estcost="1">8:00</walltime>
+        </walltimes>
+      </batch_system>
+      <mpirun mpilib="mpi-serial">
+        <executable>mpirun.lsf</executable>
+      </mpirun>
+      <mpirun mpilib="default" threaded="false">
+        <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/launch </executable>
+      </mpirun>
+      <mpirun mpilib="default" threaded="true">
+        <executable>MP_PE_AFFINITY= MP_TASK_AFFINITY= MP_CPU_BIND_LIST= mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/hybrid_launch </executable>
+      </mpirun>
+      <mpirun compiler="gnu">
+        <executable></executable>
+      </mpirun>
 </machine>
 
 <machine MACH="pronghorn">
@@ -649,6 +880,7 @@
         <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
         <BATCHQUERY>bjobs -w</BATCHQUERY>                                                                     
         <BATCHSUBMIT>bsub &lt;</BATCHSUBMIT>
+		<BATCHREDIRECT></BATCHREDIRECT>
         <SUPPORTED_BY>srinathv -at- ucar.edu</SUPPORTED_BY>
         <GMAKE_J>8</GMAKE_J>
         <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
@@ -672,9 +904,10 @@
         <OS>CNL</OS>
         <BATCHQUERY>squeue</BATCHQUERY>
         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+		<BATCHREDIRECT></BATCHREDIRECT>
         <SUPPORTED_BY>edouard.davin -at- env.ethz.ch</SUPPORTED_BY>
         <GMAKE_J>12</GMAKE_J>
         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
 </machine>
-
+<default_run_suffix>$config{'EXEROOT'}/cesm.exe >> cesm.log.$LID 2>&amp;1</default_run_suffix>
 </config_machines>

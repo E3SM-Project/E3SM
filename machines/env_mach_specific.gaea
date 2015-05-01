@@ -51,3 +51,6 @@ limit stacksize unlimited
 # CICE to run threaded on this machine.  
 setenv OMP_STACKSIZE 64M
 setenv MPICH_ENV_DISPLAY 1
+if ( $?PERL ) then
+  printenv
+endif

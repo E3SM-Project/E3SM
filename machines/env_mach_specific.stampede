@@ -60,3 +60,6 @@ endif
 limit stacksize unlimited
 limit datasize  unlimited
 
+if ( $?PERL ) then
+  printenv
+endif

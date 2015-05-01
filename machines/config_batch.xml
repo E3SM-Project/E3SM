@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<config_batch version="1.0.0">
+  <!--
+     File:    config_batch.xml
+     Purpose: abstract out the parts of run scripts that are different, and use this configuration to 
+     create cesm run scripts from a single template.  As it stands, the only parts that are 
+     actually different are the job submission comments for each batch system, and 
+     the commands that actually run the cesm run for each system.  
+    -->
+  <batch_system type="template" version="x.y">
+    <batch_query args=""></batch_query>
+    <batch_submit></batch_submit>
+    <batch_redirect></batch_redirect>
+    <batch_directive></batch_directive>
+    <directives>
+      <directive name=""></directive>
+    </directives>
+  </batch_system>
+
+  <batch_system type="lsf" version="9.1">
+    <batch_query args=" -w" >bjobs</batch_query>
+    <batch_submit>bsub</batch_submit>
+    <batch_redirect>&lt;</batch_redirect>
+    <batch_directive>#BSUB</batch_directive>
+    <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
+    <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
+    <depend_string> -w "done(jobid)"</depend_string>
+    <directives>
+      <directive                       > -n __task_count__ </directive>
+      <directive                       > -R "span[ptile=__ptile__]"</directive>
+      <directive                       > -q __queue__ </directive>
+      <directive                       > -N  </directive>
+      <directive default="poe"         > -a __poe__ </directive>
+      <!-- <directive default="n"           > -x __queue_exclusive__ </directive> -->
+      <directive            > -x __queue_exclusive__ </directive>
+      <directive default="cesm.stdout" > -o __cesm_stdout__.%J  </directive>
+      <directive default="cesm.stderr" > -e __cesm_stderr__.%J  </directive>
+      <directive                       > -J __job_id__ </directive>
+      <directive                       > -W __wall_time__ </directive>
+      <directive                       > -P __account__  </directive>
+    </directives>
+  </batch_system>
+
+  <batch_system type="pbs" version="x.y">
+    <batch_query args="-f" >qstat</batch_query>
+    <batch_submit>qsub </batch_submit>
+    <batch_directive>#PBS</batch_directive>
+    <jobid_pattern>^(\d+)\.</jobid_pattern>
+    <depend_string> -W depend=afterok:jobid</depend_string>
+    <directives>
+      <directive> -N __job_id__</directive>
+      <directive> -q __queue__</directive>
+      <directive> -l nodes=__num_nodes__:ppn=__tasks_per_node__ </directive>
+      <directive> -l walltime=__wall_time__</directive>
+      <directive default="n"> -r __rerunnable__ </directive>
+      <directive> -j oe __output_error_path__ </directive>
+      <directive default="ae"  > -m __mail_options__ </directive>
+      <directive default="/bin/bash" > -S __shell__ -V </directive>
+      <directive> -P __account__ </directive>
+    </directives>
+  </batch_system>
+
+  <batch_system type="pbscray" version="x.y">
+    <batch_query args="-f" >qstat</batch_query>
+    <batch_submit>qsub </batch_submit>
+    <batch_directive>#PBS</batch_directive>
+    <jobid_pattern>^(\d+)\.</jobid_pattern>
+    <depend_string> -W depend=afterok:jobid</depend_string>
+    <directives>
+      <directive>-N __job_id__</directive>
+      <directive>-q __queue__</directive>
+      <directive>-l mppwidth=__mppwidth__</directive>
+      <directive>-l walltime=__wall_time__</directive>
+      <directive>-j  oe __output_error_path__ </directive>
+       <directive default="ae"  >-m __mail_options__ </directive>
+      <directive default="/bin/bash" >-S __shell__ -V </directive>
+    </directives>
+   </batch_system>
+
+  <batch_system type="pbsbluewaters" version="x.y">
+    <batch_query args="-f" >qstat</batch_query>
+    <batch_submit>qsub </batch_submit>
+    <batch_directive>#PBS</batch_directive>
+    <jobid_pattern>^(\d+)\.</jobid_pattern>
+    <depend_string> -W depend=afterok:jobid</depend_string>
+    <directives>
+      <directive>-A __project__</directive>
+      <directive>-N __job_id__</directive>
+      <directive>-q __queue__</directive>
+      <directive>-l nodes=__num_nodes__:ppn=__tasks_per_node__:xe</directive>
+      <directive>-l walltime=__wall_time__</directive>
+      <directive>-j  oe __output_error_path__ </directive>
+       <directive default="ae"  >-m __mail_options__ </directive>
+      <directive default="/bin/bash" >-S __shell__ -V </directive>
+    </directives>
+   </batch_system>
+  
+   <batch_system type="slurm" version="x.y">
+     <batch_query>squeue</batch_query>
+     <batch_submit>sbatch</batch_submit>
+     <batch_directive>#SBATCH</batch_directive>
+     <jobid_pattern>(\d+)$</jobid_pattern>
+     <depend_string> --dependency=afterok:jobid</depend_string>
+     <directives>
+       <directive> -J __job_id__</directive>
+       <directive> --time=__wall_time__ </directive>
+       <directive> --nodes=__num_nodes__</directive>
+       <directive> --ntasks-per-node=__tasks_per_node__</directive>
+       <directive> --qos=__queue__</directive>
+     </directives>
+   </batch_system>
+   <batch_system type="cobalt" version="x.y">
+     <batch_query>qstat</batch_query>
+     <batch_submit>bash</batch_submit>
+     <batch_directive></batch_directive>
+     <jobid_pattern>(\d+)</jobid_pattern>
+     <depend_string> --dependencies</depend_string>
+     <submit_args>
+       <arg flag="-A" name="project"/>
+       <arg flag="-t" name="wall_time"/>
+       <arg flag="-n" name="num_nodes"/>
+       <arg flag="--mode script"/>
+     </submit_args>
+   </batch_system>
+
+</config_batch>
+

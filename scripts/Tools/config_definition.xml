@@ -2947,6 +2947,59 @@ executable. This is currently only supported for certain machines."
  sdesc="Shared library root directory, neeed for cleaning shared builds (set automatically to $EXEROOT - DO NOT EDIT)"
 ></entry>
 
+<entry id="PERL5LIB"
+ type="char"
+ valid_values=""
+ value=""
+ group="build_derived"
+ sdesc="Perl 5 library directory"
+></entry>
+
+<!-- ======================================================================= -->
+<!-- config_machines.xml - extra cruft for batch configuration in            -->
+<!-- config_machines                                                         -->
+<!--========================================================================  -->
+
+<entry id="batch_system"
+ type="char"
+ valid_values=""
+ value="UNSET"
+ group="config_batch"
+ sdesc="The batch system type for this particular machine"
+></entry>
+
+<entry id="mpirun"
+ type="char"
+ valid_values=""
+ value="UNSET"
+ group="config_batch"
+ sdesc="The mpi run command associated with the machine configured batch system"
+></entry>
+
+<entry id="module_system"
+ type="char"
+ valid_values=""
+ value="UNSET"
+ group="config_batch"
+ sdesc="The module system type defined for this machine"
+></entry>
+
+<entry id="module_init_path"
+ type="char"
+ valid_values=""
+ value="UNSET"
+ group="config_batch"
+ sdesc="The module initialization path for module system defined for this machine"
+></entry>
+
+<entry id="module_cmd_path"
+ type="char"
+ valid_values=""
+ value="UNSET"
+ group="config_batch"
+ sdesc="The module command path for module system defined for this machine"
+></entry>
+
 
 <!-- ======================================================================= -->
 <!-- env_run.xml - drv namelist                                              -->
@@ -3167,6 +3220,14 @@ Extra copies of the component log files will be saved here."
  value="UNSET" 
  group="run_mach"
  sdesc="command used to submit to batch system"
+></entry>
+
+<entry id="BATCHREDIRECT"
+ type="char"
+ valid_values=""
+ value="UNSET"
+ group="run_mach"
+ sdesc="Batch redirect character"
 ></entry>
 
 <entry id="DIN_LOC_ROOT" 
