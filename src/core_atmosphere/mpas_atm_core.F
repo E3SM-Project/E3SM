@@ -223,12 +223,14 @@ module atm_core
       type (mpas_pool_type), pointer :: sfc_input
       type (mpas_pool_type), pointer :: diag_physics
       type (mpas_pool_type), pointer :: atm_input
+
+      integer :: iCell
       
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
-      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
+      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4, areaCell, invAreaCell
       character(len=StrKIND), pointer :: mminlu
 
-      integer, pointer :: nEdgesSolve
+      integer, pointer :: nEdgesSolve, nCells
    
       logical, pointer :: config_do_restart, config_do_DAcycling
 
@@ -260,6 +262,14 @@ module atm_core
                             uReconstructZonal,         &
                             uReconstructMeridional     &
                            )
+
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+  
+      do iCell=1,nCells 
+         invAreaCell(iCell) = 1.0_RKIND / areaCell(iCell)
+      end do
    
 #ifdef DO_PHYSICS
       !check that all the physics options are correctly defined and that at least one physics
@@ -363,7 +373,7 @@ module atm_core
             call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
             call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-            call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
+            call atm_compute_output_diagnostics(state, 1, diag, mesh)
 
             block_ptr => block_ptr % next
          end do
@@ -428,7 +438,7 @@ module atm_core
                call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
                call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
                call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-               call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
+               call atm_compute_output_diagnostics(state, 1, diag, mesh)
 
                block_ptr => block_ptr % next
             end do
@@ -472,7 +482,7 @@ module atm_core
    end function atm_core_run
    
    
-   subroutine atm_compute_output_diagnostics(state, time_lev, diag, diag_physics, mesh)
+   subroutine atm_compute_output_diagnostics(state, time_lev, diag, mesh)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute diagnostic fields for a domain to be written to history files
    !
@@ -490,7 +500,6 @@ module atm_core
       type (mpas_pool_type), intent(inout) :: state
       integer, intent(in) :: time_lev            ! which time level to use from state
       type (mpas_pool_type), intent(inout) :: diag
-      type (mpas_pool_type), intent(inout) :: diag_physics
       type (mpas_pool_type), intent(in) :: mesh
    
       integer :: iCell, k
@@ -523,7 +532,7 @@ module atm_core
          end do
       end do
 
-      call interp_diagnostics(mesh, state, time_lev, diag, diag_physics)
+      call interp_diagnostics(mesh, state, time_lev, diag)
    
    end subroutine atm_compute_output_diagnostics
    
@@ -672,8 +681,8 @@ module atm_core
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            meshScalingDel2(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.5
-            meshScalingDel4(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)
+            meshScalingDel2(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.25
+            meshScalingDel4(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.75
          end do
       end if
 

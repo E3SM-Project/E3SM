@@ -60,6 +60,8 @@
                 <nml_option name="config_ztop"                  type="real"          default_value="30000.0"/>
                 <nml_option name="config_nsmterrain"            type="integer"       default_value="1"/>
                 <nml_option name="config_smooth_surfaces"       type="logical"       default_value="true"/>
+                <nml_option name="config_dzmin"                 type="real"          default_value="0.3"/>
+                <nml_option name="config_nsm"                   type="integer"       default_value="30"/>
         </nml_record>
 
         <nml_record name="preproc_stages" in_defaults="true">
@@ -325,7 +327,7 @@
                         <var name="rho" packages="met_stage_out"/>
                         <var name="theta" packages="met_stage_out"/>
                         <var name="v" packages="met_stage_out"/>
-                        <var name="rh" packages="met_stage_out"/>
+                        <var name="relhum" packages="met_stage_out"/>
                         <var name="uReconstructX" packages="met_stage_out"/>
                         <var name="uReconstructY" packages="met_stage_out"/>
                         <var name="uReconstructZ" packages="met_stage_out"/>
@@ -525,7 +527,7 @@
                 <var name="rho"                               type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="theta"                             type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="v"                                 type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="rh"                                type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="relhum"                            type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"/>

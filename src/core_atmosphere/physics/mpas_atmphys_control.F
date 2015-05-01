@@ -63,7 +63,8 @@
  type(mpas_pool_type),intent(in):: configs
 
 !local pointers:
- character(len=StrKIND),pointer:: config_microp_scheme,     &
+ character(len=StrKIND),pointer:: config_physics_suite,     &
+                                  config_microp_scheme,     &
                                   config_convection_scheme, &
                                   config_lsm_scheme,        &
                                   config_pbl_scheme,        &
@@ -75,6 +76,7 @@
 
 !--------------------------------------------------------------------------------------------------
 
+ call mpas_pool_get_config(configs,'config_physics_suite'    ,config_physics_suite    )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
  call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(configs,'config_lsm_scheme'       ,config_lsm_scheme       )
@@ -85,17 +87,41 @@
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
  call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
-! write(0,*)
-! write(0,*) '--- enter subroutine physics_namelist_check:'
- write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
- write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
- write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
- write(0,*) '    config_pbl_scheme          = ', trim(config_pbl_scheme)
- write(0,*) '    config_gwdo_scheme         = ', trim(config_gwdo_scheme)
- write(0,*) '    config_radt_cld_scheme     = ', trim(config_radt_cld_scheme)
- write(0,*) '    config_radt_lw_scheme      = ', trim(config_radt_lw_scheme)
- write(0,*) '    config_radt_sw_scheme      = ', trim(config_radt_sw_scheme)
- write(0,*) '    config_sfclayer_scheme     = ', trim(config_sfclayer_scheme)
+ !
+ ! Setup schemes according to the selected physics suite
+ !
+ if (trim(config_physics_suite) == 'wrf') then
+
+    if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'wsm6'
+    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'tiedtke'
+    if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'ysu'
+    if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
+    if (trim(config_radt_lw_scheme) == 'suite')    config_radt_lw_scheme    = 'rrtmg_lw'
+    if (trim(config_radt_sw_scheme) == 'suite')    config_radt_sw_scheme    = 'rrtmg_sw'
+    if (trim(config_radt_cld_scheme) == 'suite')   config_radt_cld_scheme   = 'cld_fraction'
+    if (trim(config_sfclayer_scheme) == 'suite')   config_sfclayer_scheme   = 'monin_obukhov'
+    if (trim(config_lsm_scheme) == 'suite')        config_lsm_scheme        = 'noah'
+
+ else if (trim(config_physics_suite) == 'none') then
+
+    if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'off'
+    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'off'
+    if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'off'
+    if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
+    if (trim(config_radt_lw_scheme) == 'suite')    config_radt_lw_scheme    = 'off'
+    if (trim(config_radt_sw_scheme) == 'suite')    config_radt_sw_scheme    = 'off'
+    if (trim(config_radt_cld_scheme) == 'suite')   config_radt_cld_scheme   = 'off'
+    if (trim(config_sfclayer_scheme) == 'suite')   config_sfclayer_scheme   = 'off'
+    if (trim(config_lsm_scheme) == 'suite')        config_lsm_scheme        = 'off'
+
+ else
+
+    write(mpas_err_message,'(A)') 'Unrecognized choice of physics suite: config_physics_suite = '''// &
+                                  trim(config_physics_suite)//''''
+    call physics_error_fatal(mpas_err_message)
+
+ end if
+ 
 
 !cloud microphysics scheme:
  if(.not. (config_microp_scheme .eq. 'off'      .or. &
@@ -227,6 +253,17 @@
     config_radt_lw_scheme    .eq. 'off' .and. &
     config_radt_sw_scheme    .eq. 'off' .and. &
     config_sfclayer_scheme   .eq. 'off') moist_physics = .false.
+
+ write(0,*) ' '
+ write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
+ write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
+ write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)
+ write(0,*) '    config_pbl_scheme          = ', trim(config_pbl_scheme)
+ write(0,*) '    config_gwdo_scheme         = ', trim(config_gwdo_scheme)
+ write(0,*) '    config_radt_cld_scheme     = ', trim(config_radt_cld_scheme)
+ write(0,*) '    config_radt_lw_scheme      = ', trim(config_radt_lw_scheme)
+ write(0,*) '    config_radt_sw_scheme      = ', trim(config_radt_sw_scheme)
+ write(0,*) '    config_sfclayer_scheme     = ', trim(config_sfclayer_scheme)
 
 ! write(0,*) '--- end subroutine physics_namelist_check:'
 

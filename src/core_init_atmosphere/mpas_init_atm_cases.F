@@ -349,6 +349,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nVertLevels) :: flux_zonal
       real (kind=RKIND), dimension(nVertLevels + 1, nlat) :: zgrid_2d
       real (kind=RKIND), dimension(nVertLevels, nlat) :: u_2d, pp_2d, rho_2d, qv_2d, etavs_2d, zz_2d
+      real (kind=RKIND), dimension(nVertLevels, nlat) :: p_2d, pb_2d, ppb_2d, rr_2d, rb_2d, tb_2d, rtb_2d
       real (kind=RKIND), dimension(nVertLevels, nlat-1) :: zx_2d 
       real (kind=RKIND), dimension(nlat) :: lat_2d
       real (kind=RKIND) :: dlat, hx_1d
@@ -638,35 +639,35 @@ module init_atm_cases
                          + ah(k) * sh(k)* zt	
         end do
         do k=1,nz1
-          zz_2d (k,i) = (zw(k+1)-zw(k))/(zgrid_2d(k+1,i)-zgrid_2d(k,i))
+          zz_2d(k,i) = (zw(k+1)-zw(k))/(zgrid_2d(k+1,i)-zgrid_2d(k,i))
         end do
 
         do k=1,nz1
           ztemp    = .5*(zgrid_2d(k+1,i)+zgrid_2d(k,i))
-          ppb(k,i) = p0*exp(-gravity*ztemp/(rgas*t0b)) 
-          pb (k,i) = (ppb(k,i)/p0)**(rgas/cp)
-          rb (k,i) = ppb(k,i)/(rgas*t0b*zz_2d(k,i))
-          tb (k,i) = t0b/pb(k,i)
-          rtb(k,i) = rb(k,i)*tb(k,i)
-          p  (k,i) = pb(k,i)
-          pp (k,i) = 0.
-          rr (k,i) = 0.
+          ppb_2d(k,i) = p0*exp(-gravity*ztemp/(rgas*t0b)) 
+          pb_2d(k,i) = (ppb_2d(k,i)/p0)**(rgas/cp)
+          rb_2d(k,i) = ppb_2d(k,i)/(rgas*t0b*zz_2d(k,i))
+          tb_2d(k,i) = t0b/pb_2d(k,i)
+          rtb_2d(k,i) = rb_2d(k,i)*tb_2d(k,i)
+          p_2d(k,i) = pb_2d(k,i)
+          pp_2d(k,i) = 0.0
+          rr_2d(k,i) = 0.0
         end do
 
 
         do itr = 1,10
 
           do k=1,nz1
-            eta (k) = (ppb(k,i)+pp(k,i))/p0
+            eta (k) = (ppb_2d(k,i)+pp_2d(k,i))/p0
             etav(k) = (eta(k)-.252)*pii/2.
-            if(eta(k).ge.znut)  then
+            if(eta(k) >= znut)  then
               teta(k) = t0*eta(k)**(rgas*dtdz/gravity)
             else
               teta(k) = t0*eta(k)**(rgas*dtdz/gravity) + delta_t*(znut-eta(k))**5
             end if
           end do
 
-          phi = lat_2d (i)
+          phi = lat_2d(i)
           do k=1,nz1
             temperature_1d(k) = teta(k)+.75*eta(k)*pii*u0/rgas*sin(etav(k))      &
                             *sqrt(cos(etav(k)))*                   &
@@ -678,7 +679,7 @@ module init_atm_cases
 
 
             ztemp   = .5*(zgrid_2d(k,i)+zgrid_2d(k+1,i))
-            ptemp   = ppb(k,i) + pp(k,i)
+            ptemp   = ppb_2d(k,i) + pp_2d(k,i)
 
             !get moisture 
             if (moisture) then
@@ -690,27 +691,23 @@ module init_atm_cases
 
           do itrp = 1,25
             do k=1,nz1				
-              rr(k,i)  = (pp(k,i)/(rgas*zz_2d(k,i)) - rb(k,i)*(tt(k)-t0b))/tt(k)
+              rr_2d(k,i)  = (pp_2d(k,i)/(rgas*zz_2d(k,i)) - rb_2d(k,i)*(tt(k)-t0b))/tt(k)
             end do
 
             ppi(1) = p0-.5*dzw(1)*gravity                            &
-                          *(1.25*(rr(1,i)+rb(1,i))*(1.+qv_2d(1,i))   &
-                            -.25*(rr(2,i)+rb(2,i))*(1.+qv_2d(2,i)))
+                          *(1.25*(rr_2d(1,i)+rb_2d(1,i))*(1.+qv_2d(1,i))   &
+                            -.25*(rr_2d(2,i)+rb_2d(2,i))*(1.+qv_2d(2,i)))
 
-            ppi(1) = ppi(1)-ppb(1,i)
+            ppi(1) = ppi(1)-ppb_2d(1,i)
             do k=1,nz1-1
 
-!              ppi(k+1) = ppi(k)-.5*dzu(k+1)*gravity*                        &
-!                            (rr(k  ,i)+(rr(k  ,i)+rb(k  ,i))*qv_2d(k  ,i)   &
-!                            +rr(k+1,i)+(rr(k+1,i)+rb(k+1,i))*qv_2d(k+1,i))
-
               ppi(k+1) = ppi(k)-dzu(k+1)*gravity*                                       &
-                            ( (rr(k  ,i)+(rr(k  ,i)+rb(k  ,i))*qv_2d(k  ,i))*fzp(k+1)   &
-                            + (rr(k+1,i)+(rr(k+1,i)+rb(k+1,i))*qv_2d(k+1,i))*fzm(k+1) )
+                            ( (rr_2d(k  ,i)+(rr_2d(k  ,i)+rb_2d(k  ,i))*qv_2d(k  ,i))*fzp(k+1)   &
+                            + (rr_2d(k+1,i)+(rr_2d(k+1,i)+rb_2d(k+1,i))*qv_2d(k+1,i))*fzm(k+1) )
             end do
 
             do k=1,nz1
-              pp(k,i) = .2*ppi(k)+.8*pp(k,i)
+              pp_2d(k,i) = .2*ppi(k)+.8*pp_2d(k,i)
             end do
 
           end do  ! end inner iteration loop itrp
@@ -718,9 +715,8 @@ module init_atm_cases
         end do  ! end outer iteration loop itr
 
         do k=1,nz1
-          rho_2d(k,i) = rr(k,i)+rb(k,i)
-          pp_2d(k,i) = pp(k,i)
-          etavs_2d(k,i) = ((ppb(k,i)+pp(k,i))/p0 - 0.252)*pii/2.
+          rho_2d(k,i) = rr_2d(k,i)+rb_2d(k,i)
+          etavs_2d(k,i) = ((ppb_2d(k,i)+pp_2d(k,i))/p0 - 0.252)*pii/2.
           u_2d(k,i) = u0*(sin(2.*lat_2d(i))**2) *(cos(etavs_2d(k,i))**1.5)
         end do
 
@@ -1257,7 +1253,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nVertLevels + 1 ) :: zc, zw, ah
       real (kind=RKIND), dimension(nVertLevels ) :: zu, dzw, rdzwp, rdzwm
 
-      real (kind=RKIND), dimension(nVertLevels, nCells) :: rh, thi, tbi, cqwb
+      real (kind=RKIND), dimension(nVertLevels, nCells) :: relhum, thi, tbi, cqwb
 
       real (kind=RKIND) ::  r, xnutr
       real (kind=RKIND) ::  ztemp, zd, zt, dz, str
@@ -1521,10 +1517,10 @@ module init_atm_cases
                ztemp = .5*(zgrid(k,i)+zgrid(k+1,i))
                if(ztemp .gt. ztr) then
                   t (k,i) = thetar*exp(9.8*(ztemp-ztr)/(1003.*ttr))
-                  rh(k,i) = 0.25
+                  relhum(k,i) = 0.25
                else
                   t (k,i) = 300.+43.*(ztemp/ztr)**1.25
-                  rh(k,i) = (1.-0.75*(ztemp/ztr)**1.25)
+                  relhum(k,i) = (1.-0.75*(ztemp/ztr)**1.25)
                   if(t(k,i).lt.thetas) t(k,i) = thetas
                end if
                tb(k,i) = t(k,i)
@@ -1535,7 +1531,7 @@ module init_atm_cases
             end do
          end do
 
-!         rh(:,:) = 0.
+!         relhum(:,:) = 0.
 
 !  set the velocity field - we are on a plane here.
 
@@ -1608,7 +1604,7 @@ module init_atm_cases
             temp     = p(k,i)*thi(k,i)
             pres     = p0*p(k,i)**(1./rcp)
             qvs      = 380.*exp(17.27*(temp-273.)/(temp-36.))/pres
-            scalars(index_qv,k,i) = min(0.014_RKIND,rh(k,i)*qvs)
+            scalars(index_qv,k,i) = min(0.014_RKIND,relhum(k,i)*qvs)
          end do
       end do
 
@@ -1842,7 +1838,7 @@ module init_atm_cases
 
       real (kind=RKIND) :: ztemp, zd, zt, dz, str
 
-      real (kind=RKIND), dimension(nVertLevels, nCells) :: rh
+      real (kind=RKIND), dimension(nVertLevels, nCells) :: relhum
       real (kind=RKIND) :: es, qvs, xnutr, ptemp
       integer :: iter
 
@@ -2166,7 +2162,7 @@ module init_atm_cases
                else
                   t (k,i) = t0*(1.+xn2l/gravity*zinv+xn2/gravity*(ztemp-zinv)) 
                end if
-                  rh(k,i) = 0. 
+                  relhum(k,i) = 0.
             end do
          end do
 
@@ -2260,7 +2256,7 @@ module init_atm_cases
               temp   = p(k,i)*t(k,i)
               pres   = p0*p(k,i)**(1./rcp)
               qvs    = 380.*exp(17.27*(temp-273.)/(temp-36.))/pres
-              scalars(index_qv,k,i) = min(0.014_RKIND,rh(k,i)*qvs)
+              scalars(index_qv,k,i) = min(0.014_RKIND,relhum(k,i)*qvs)
            end do
                          
            do k=1,nz1
@@ -2515,8 +2511,9 @@ module init_atm_cases
       type (field1DReal), pointer :: ter_field
       type (field1DReal), target :: tempFieldTarget
 
-      real(kind=RKIND), dimension(:), pointer :: hs, hs1
-      real(kind=RKIND) :: hm, hm_global, zh, dzmin, dzmina, dzmina_global, dzminf, sm
+      real(kind=RKIND), dimension(:), pointer :: hs, hs1, sm0
+      real(kind=RKIND) :: hm, hm_global, zh, dzmin, dzmina, dzmina_global, dzminf, dzminf_global, sm
+      real(kind=RKIND) :: dcsum
       integer :: nsmterrain, kz, sfc_k
       logical :: hybrid, smooth
 
@@ -2569,6 +2566,8 @@ module init_atm_cases
       logical, pointer :: config_met_interp
       logical, pointer :: config_vertical_grid
       integer, pointer :: config_nsmterrain
+      integer, pointer :: config_nsm
+      real (kind=RKIND), pointer :: config_dzmin
       real (kind=RKIND), pointer :: config_ztop
       integer, pointer :: config_nfglevels
       integer, pointer :: config_nfgsoillevels
@@ -2592,7 +2591,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: w
       real (kind=RKIND), dimension(:,:), pointer :: theta
       real (kind=RKIND), dimension(:,:), pointer :: rho
-      real (kind=RKIND), dimension(:,:), pointer :: rh
+      real (kind=RKIND), dimension(:,:), pointer :: relhum
       real (kind=RKIND), dimension(:,:), pointer :: ru
       real (kind=RKIND), dimension(:,:), pointer :: rw
       real (kind=RKIND), dimension(:), pointer :: precipw
@@ -2621,6 +2620,8 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_met_interp', config_met_interp)
       call mpas_pool_get_config(configs, 'config_vertical_grid', config_vertical_grid)
       call mpas_pool_get_config(configs, 'config_nsmterrain', config_nsmterrain)
+      call mpas_pool_get_config(configs, 'config_nsm', config_nsm)
+      call mpas_pool_get_config(configs, 'config_dzmin', config_dzmin)
       call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
       call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
       call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
@@ -2668,7 +2669,7 @@ module init_atm_cases
       call mpas_pool_get_array(diag, 'pressure_p', pp)
       call mpas_pool_get_array(diag, 'pressure', pressure)
       call mpas_pool_get_array(diag, 'surface_pressure', surface_pressure)
-      call mpas_pool_get_array(diag, 'rh', rh)
+      call mpas_pool_get_array(diag, 'relhum', relhum)
       call mpas_pool_get_array(diag, 'ru', ru)
       call mpas_pool_get_array(diag, 'rw', rw)
 
@@ -2881,7 +2882,7 @@ module init_atm_cases
       kz = nz
       if (hybrid) then
       
-         zh = zt
+         zh = 30000.0
 !         zh = 0.5*zt
 
          do k=1,nz
@@ -2942,22 +2943,31 @@ module init_atm_cases
 !     Smoothing algorithm for coordinate surfaces 
 
       smooth = config_smooth_surfaces
-!      smooth = .false.
 
       if (smooth) then
 
-         dzmin = 0.5
+         dzmin = config_dzmin
+
+         allocate(sm0(nCells+1))
+
+         do iCell=1,nCells
+            dcsum = 0.0
+            do j=1,nEdgesOnCell(iCell)
+               dcsum = dcsum + dcEdge(edgesOnCell(j,iCell))
+            end do
+            dcsum = dcsum / real(nEdgesOnCell(iCell))
+            sm0(iCell) = max(0.01_RKIND, 0.125 * min(1.0_RKIND, 3000.0_RKIND/dcsum))
+         end do
 
          do k=2,kz-1
             hx(k,:) = hx(k-1,:)
             dzminf = zw(k)-zw(k-1)
 
-!            dzmin = max(0.5_RKIND,1.-.5*zw(k)/hm)
-
-            sm = .02*min(0.5_RKIND*zw(k)/hm,1.0_RKIND)
-          
-            do i=1,30
+            do i=1,config_nsm + k
                do iCell=1,nCells
+
+                  sm = sm0(iCell) * min((3.0*zw(k)/zt)**2.0, 1.0_RKIND)
+
                   hs1(iCell) = 0.
                   do j = 1,nEdgesOnCell(iCell)
 
@@ -2989,23 +2999,25 @@ module init_atm_cases
 
                call mpas_dmpar_exch_halo_field(tempField)
 
-             !  dzmina = minval(hs(:)-hx(k-1,:))
-               dzmina = minval(zw(k)+ah(k)*hs(1:nCellsSolve)-zw(k-1)-ah(k-1)*hx(k-1,1:nCellsSolve))
-               call mpas_dmpar_min_real(dminfo, dzmina, dzmina_global)
-             !  write(0,*) ' k,i, dzmina, dzmin, zw(k)-zw(k-1) ', k,i, dzmina, dzmin, zw(k)-zw(k-1)
-               if (dzmina_global >= dzmin*(zw(k)-zw(k-1))) then
-                  hx(k,:)=hs(:)
-                  dzminf = dzmina_global
-               else
-                  exit
-               end if
+               do iCell=1,nCells
+                  dzmina = (zw(k) + ah(k)*hs(iCell)) - (zw(k-1) + ah(k-1)*hx(k-1,iCell))
+                  if (dzmina > dzmin*(zw(k)-zw(k-1))) then
+                     hx(k,iCell) = hs(iCell)
+                     if (dzmina < dzminf) dzminf = dzmina
+                  end if 
+               end do
+
             end do
-            write(0,*) k,i,sm,dzminf/(zw(k)-zw(k-1)),dzmina/(zw(k)-zw(k-1))
+            call mpas_dmpar_min_real(dminfo, dzminf, dzminf_global)
+            write(0,*) k,i,sm,dzminf_global/(zw(k)-zw(k-1))
          end do
+
+         deallocate(sm0)
 
          do k=kz,nz
                hx(k,:) = 0.
          end do
+
       else
 
          do k=2,nz1
@@ -3046,14 +3058,6 @@ module init_atm_cases
            end if
          end do
       end do
-
-!      do k=1,nz1
-!         write(0,*) ' k, zgrid(k,1),hx(k,1) ',k,zgrid(k,1),hx(k,1)
-!      end do
-
-!      do k=1,nz1
-!         write(0,*) ' k, zx(k,1) ',k,zx(k,1)
-!      end do
 
 
       ! For z-metric term in omega equation
@@ -4011,7 +4015,7 @@ write(0,*) 'PROCESSING SEAICE'
             scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
                                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
             if (target_z < z_fg(1,iCell)) scalars(index_qv,k,iCell) = scalars(index_qv,k+1,iCell) 
-            rh(k,iCell) = scalars(index_qv,k,iCell)
+            relhum(k,iCell) = scalars(index_qv,k,iCell)
          end do
 
 
