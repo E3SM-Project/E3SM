@@ -112,6 +112,15 @@
                 <var name="minSurfaceSSH" array_group="mins" units="m"
                          description="Minimum sea-surface height in each region"
                 />
+                <var name="minSurfaceTemperature" array_group="mins" units="C"
+                         description="Minimum surface temperature in each region"
+                />
+                <var name="minSurfaceSalinity" array_group="mins" units="PSU"
+                         description="Minimum surface salinity in each region"
+                />
+                <var name="minBoundaryLayerDepth" array_group="mins" units="m"
+                         description="Minimum surface boundary layer depth in each region"
+                />
                 <var name="minSurfaceNetHeatFlux" array_group="mins" units="W m^{-2}"
                          description="Minimum net surface heat flux in each region"
                 />
@@ -195,6 +204,15 @@
                 <var name="maxSurfaceSSH" array_group="maxs" units="m"
                          description="Maximum sea-surface height"
                 />
+                <var name="maxSurfaceTemperature" array_group="maxs" units="C"
+                         description="Maximum surface temperature in each region"
+                />
+                <var name="maxSurfaceSalinity" array_group="maxs" units="PSU"
+                         description="Maximum surface salinity in each region"
+                />
+                <var name="maxBoundaryLayerDepth" array_group="maxs" units="m"
+                         description="Maximum surface boundary layer depth in each region"
+                />
                 <var name="maxSurfaceNetHeatFlux" array_group="maxs" units="W m^{-2}"
                          description="Maximum net surface heat flux in each region"
                 />
@@ -277,6 +295,15 @@
                 />
                 <var name="avgSurfaceSSH" array_group="avg" units="m"
                          description="Average sea-surface height"
+                />
+                <var name="avgSurfaceTemperature" array_group="avg" units="C"
+                         description="Average surface temperature in each region"
+                />
+                <var name="avgSurfaceSalinity" array_group="avg" units="PSU"
+                         description="Average surface salinity in each region"
+                />
+                <var name="avgBoundaryLayerDepth" array_group="avg" units="m"
+                         description="Average surface boundary layer depth in each region"
                 />
                 <var name="avgSurfaceNetHeatFlux" array_group="avg" units="W m^{-2}"
                          description="Average net surface heat flux in each region"
