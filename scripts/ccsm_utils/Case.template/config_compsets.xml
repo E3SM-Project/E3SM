@@ -1503,6 +1503,9 @@ DOCN%COPY => docn copy mode
 <!-- here                                    -->
 <!-- ======================================= -->
 
+<STOP_OPTION compset="_MPASLI">nyears</STOP_OPTION>
+<STOP_N      compset="_MPASLI">5     </STOP_N>
+
 <!-- ================================================================================== -->
 <!-- SECTION: drv coupling intervals -->     
 <!-- ================================================================================== -->
@@ -1582,6 +1585,9 @@ DOCN%COPY => docn copy mode
 <!--    CPL_SEQ_OPTION, NCPL_BASE_PERIOD -->
 <!-- here                                    -->
 <!-- ======================================= -->
+
+<NCPL_BASE_PERIOD compset="_MPASLI"       >year  </NCPL_BASE_PERIOD>
+<GLC_NCPL compset="_MPASLI">1</GLC_NCPL>
 
 <!-- ======================================================== -->
 <!-- DRV: CCSM_CO2_PPMV                                       -->
