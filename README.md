@@ -1,4 +1,4 @@
-MPAS-v3.3
+MPAS-v4.0
 ====
 
 The Model for Prediction Across Scales (MPAS) is a collaborative project for
