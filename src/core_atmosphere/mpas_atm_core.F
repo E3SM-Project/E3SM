@@ -133,7 +133,7 @@ module atm_core
       !
       ! Set up sounding locations
       !
-      call mpas_atm_soundings_init(clock, mesh, '1:00:00')
+      call mpas_atm_soundings_init(clock, mesh, '3:00:00')
 
    end function atm_core_init
 
@@ -509,7 +509,9 @@ module atm_core
          call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
          call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
          call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+         call mpas_timer_start('write_soundings')
          call mpas_atm_soundings_write(mesh, state, diag, diag_physics)
+         call mpas_timer_stop('write_soundings')
 
       end do
    
