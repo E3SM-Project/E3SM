@@ -153,9 +153,6 @@ for mct, etc.
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16  </ADD_CPPDEFS>
   <CFLAGS> -gopt  -time </CFLAGS>
 
-  <ADD_CFLAGS compile_threaded="false"> -nomp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="false"> -nomp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="false"> -nomp </ADD_LDFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -mp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -mp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -mp </ADD_LDFLAGS>
@@ -166,7 +163,6 @@ for mct, etc.
 
   <FFLAGS>  -i4 -gopt  -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
 
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
@@ -228,9 +224,6 @@ for mct, etc.
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </ADD_CPPDEFS>
   <CFLAGS> -gopt -time </CFLAGS>
 
-  <ADD_CFLAGS compile_threaded="false"> -nomp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="false"> -nomp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="false"> -nomp </ADD_LDFLAGS>
 
   <FIXEDFLAGS> -Mfixed </FIXEDFLAGS>
   <FREEFLAGS> -Mfree </FREEFLAGS>
@@ -239,7 +232,6 @@ for mct, etc.
   <FFLAGS>  -i4 -gopt  -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
   <ADD_FFLAGS MODEL="cam"> -ta=nvidia -Mcuda=5.5,cc35  </ADD_FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
   
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
