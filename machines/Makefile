@@ -98,7 +98,7 @@ else
 endif
 
 ifeq ($(strip $(MPILIB)),mpi-serial)
-  CPPDEFS += -DNO_MPI2 -DNO_MPIMOD
+  CPPDEFS += -DNO_MPI2
 else
   CPPDEFS += -DHAVE_MPI
 endif
@@ -445,7 +445,7 @@ $(MCT_LIBDIR)/Makefile.conf:
 
 $(MCT_LIBDIR)/mpi-serial/Makefile.conf: 
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct/mpi-serial
+	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
 
 $(MCT_LIBDIR)/mpeu/libmpeu.a: $(MCT_LIBDIR)/Makefile.conf
 	$(MAKE) -C $(MCT_LIBDIR)/mpeu
