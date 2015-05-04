@@ -30,6 +30,7 @@ echo "MCT_LIBDIR   $MCT_LIBDIR"
   cp $MCT_DIR/mpeu/Makefile mpeu
   mkdir mpi-serial
   cp $MCT_DIR/mpi-serial/Makefile mpi-serial
+  cp $MCT_DIR/mpi-serial/*.h mpi-serial
 
   set runconf = 0
   set runclean = 0
