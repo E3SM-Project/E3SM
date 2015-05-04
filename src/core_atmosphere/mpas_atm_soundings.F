@@ -186,11 +186,11 @@ module mpas_atm_soundings
                     do k=1,nVertLevels
                         tmpc = theta_m(k,stationCells(iStn)) / (1.0_RKIND + rvord * scalars(index_qv,k,stationCells(iStn))) * exner(k,stationCells(iStn))
                         pres = pressure_base(k,stationCells(iStn)) + pressure_p(k,stationCells(iStn))
-                        if (tmpc >= 273.15_RKIND) then
+!                        if (tmpc >= 273.15_RKIND) then
                             qvs = rslf(pres, tmpc)
-                        else
-                            qvs = rsif(pres, tmpc)
-                        end if
+!                        else
+!                            qvs = rsif(pres, tmpc)
+!                        end if
                         rh = max(1.0e-8,min(1.0,scalars(index_qv,k,stationCells(iStn))/qvs))
                         log_rh = log(rh)
                         tmpc = tmpc - 273.15_RKIND
