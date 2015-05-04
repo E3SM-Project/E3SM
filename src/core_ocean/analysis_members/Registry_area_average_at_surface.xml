@@ -1,45 +1,45 @@
 <dims>
-        <dim name="nSurfaceFluxStatisticsFields" definition="30" units="unitless"
-                description="A number equal to or greater than the number of var arrays in the amSurfaceStatistics var structure below."
+        <dim name="nAreaAverageAtSurfaceFields" definition="30" units="unitless"
+                description="A number equal to or greater than the number of var arrays in the amAreaAverageAtSurface var structure below."
         />
         <dim name="nOceanRegions" definition="7" units="unitless"
                 description="The number of regions defined within the global ocean (will eventually be moved up and used uniformly across MPAS-O."
         />
 </dims>
-<nml_record name="surface_flux_statistics" mode="forward;analysis">
-	<nml_option name="config_use_surface_flux_statistics" type="logical" default_value=".true." units="unitless"
+<nml_record name="area_average_at_surface" mode="forward;analysis">
+	<nml_option name="config_use_area_average_at_surface" type="logical" default_value=".true." units="unitless"
                   description="If true, ocean analysis member surface_statistics is called."
                   possible_values=".true. or .false."
 	/>
-	<nml_option name="config_surface_flux_statistics_compute_interval" type="character" default_value="same_as_output" units="unitless"
+	<nml_option name="config_area_average_at_surface_compute_interval" type="character" default_value="same_as_output" units="unitless"
                   description="Timestamp determining how often analysis member computation should be performed."
                   possible_values="'DDDD_HH:MM:SS'"
 	/>
-	<nml_option name="config_surface_flux_statistics_compute_startup" type="logical" default_value=".true." units="unitless"
+	<nml_option name="config_area_average_at_surface_compute_startup" type="logical" default_value=".true." units="unitless"
                   description="Logical flag determining if an analysis member computation occurs on start-up."
                   possible_values=".true. or .false."
 	/>
 </nml_record>
 <packages>
-        <package name="amSurfaceFluxStatisticsPkg" description="This package includes variables required for the surface statistics analysis member."/>
+        <package name="amAreaAverageAtSurfacePkg" description="This package includes variables required for the areal-averaging of 2D variables that are defined, primarily, at the surface."/>
 </packages>
 <streams>
-        <stream name="surfaceStatisticsOutput"
+        <stream name="areaAvgAtSfcOutput"
                         type="none"
-                        filename_template="analysis_members/surface_flux_statistics.$Y-$M-$D_$h.$m.$s.nc"
+                        filename_template="analysis_members/area_average_at_surface.$Y-$M-$D_$h.$m.$s.nc"
                         output_interval="00-00-05_00:00:00"
                         filename_interval="01-00-00_00:00:00"
-                        packages="amSurfaceFluxStatisticsPkg"
+                        packages="amAreaAverageAtSurfacePkg"
                         clobber_mode="truncate"
                         runtime_format="single_file">
                 <var name="xtime"/>
-                <var_array name="minSurfaceStatistics"/>
-                <var_array name="maxSurfaceStatistics"/>
-                <var_array name="avgSurfaceStatistics"/>
+                <var_array name="minValueWithinArealRegion"/>
+                <var_array name="maxValueWithinArealRegion"/>
+                <var_array name="avgValueWithinArealRegion"/>
         </stream>
 </streams>
-<var_struct name="amSurfaceStatistics" time_levs="1" packages="amSurfaceFluxStatisticsPkg">
-        <var_array name="minSurfaceStatistics" type="real" dimensions="nOceanRegions Time">
+<var_struct name="amAreaAverageAtSurface" time_levs="1" packages="amAreaAverageAtSurfacePkg">
+        <var_array name="minValueWithinArealRegion" type="real" dimensions="nOceanRegions Time">
                 <var name="minSurfaceMaskValue" array_group="mins" units="none"
                          description="Minimum value of region mask (should always be 1 for valid regions)"
                 />
@@ -131,7 +131,7 @@
                          description="Minimum net surface fresh water flux in each region"
                 />
         </var_array>
-        <var_array name="maxSurfaceStatistics" type="real" dimensions="nOceanRegions Time">
+        <var_array name="maxValueWithinArealRegion" type="real" dimensions="nOceanRegions Time">
                 <var name="maxSurfaceMaskValue" array_group="maxs" units="none"
                          description="Maximum value of region mask (should always be 1 for valid regions)"
                 />
@@ -223,7 +223,7 @@
                          description="Maximum net surface fresh water flux in each region"
                 />
         </var_array>
-        <var_array name="avgSurfaceStatistics" type="real" dimensions="nOceanRegions Time">
+        <var_array name="avgValueWithinArealRegion" type="real" dimensions="nOceanRegions Time">
                 <var name="sumSurfaceMaskValue" array_group="avg" units="none"
                          description="Sum of region mask, represents total number of cells in region"
                 />
@@ -316,7 +316,7 @@
                 />
         </var_array>
 </var_struct>
-<var_struct name="surfaceStatisticsScratch" time_levs="1">
+<var_struct name="areaAverageAtSurfaceScratch" time_levs="1">
         <var name="workMask"
                  persistence="scratch"
                  type="real"
@@ -327,28 +327,28 @@
         <var name="workArray"
                  persistence="scratch"
                  type="real"
-                 dimensions="nSurfaceFluxStatisticsFields nCells Time"
+                 dimensions="nAreaAverageAtSurfaceFields nCells Time"
                  units="various"
                  description="temporary array to hold data to be analyzed"
         />
         <var name="workMin"
                  persistence="scratch"
                  type="real"
-                 dimensions="nSurfaceFluxStatisticsFields Time"
+                 dimensions="nAreaAverageAtSurfaceFields Time"
                  units="various"
                  description="temporary array to hold minimum values"
         />
         <var name="workMax"
                  persistence="scratch"
                  type="real"
-                 dimensions="nSurfaceFluxStatisticsFields Time"
+                 dimensions="nAreaAverageAtSurfaceFields Time"
                  units="various"
                  description="temporary array to hold maximum values"
         />
         <var name="workSum"
                  persistence="scratch"
                  type="real"
-                 dimensions="nSurfaceFluxStatisticsFields Time"
+                 dimensions="nAreaAverageAtSurfaceFields Time"
                  units="various"
                  description="temporary array to hold sum of values"
         />
