@@ -135,7 +135,7 @@ my %cfg = ();           # build configuration
 # Make sure we can find required perl modules and configuration files.
 # Look for them in the directory that contains the configure script.
 
-# Check for the configuration definition file.
+# Check for the main configuration definition file.
 my $config_def_file = "config_definition.xml";
 my $dir  = "$cfgdir/Tools";
 my $cdir = abs_path( "$cfgdir" );
@@ -155,6 +155,7 @@ my $parser = XML::LibXML->new( no_blanks => 1);
 # search config_definition file to determine if id is a valid name
 # and exit early if id is NOT a valid name
 my $xml = $parser->parse_file($config_def_file);
+
 my @nodes = $xml->findnodes("//entry");
 if ( ! $opts{'listall'} ) {
    foreach my $id ( @ids ) {
