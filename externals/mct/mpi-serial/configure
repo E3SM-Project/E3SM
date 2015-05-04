@@ -4535,7 +4535,9 @@ elif echo $ac_fc_version_output | grep -i pgf >/dev/null 2>&1; then
 elif echo $ac_fc_version_output | grep -i nag >/dev/null 2>&1; then
    echo "Fortran Compiler is NAG"
    CPRDEF="NAG"
-   FCFLAGS="-mismatch"
+   if test -z "$FCFLAGS"; then
+     FCFLAGS="-mismatch"
+   fi
 fi
 # INCLUDE FLAG IF NOT ALREADY SET IS MOST LIKELY -I
 if test -z "$INCLUDEFLAG"; then
