@@ -645,6 +645,9 @@ module ocn_time_integration_rk4
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
+         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+
         ! Call ocean diagnostic solve in preparation for vertical mixing.  Note 
         ! it is called again after vertical mixing, because u and tracers change.
         ! For Richardson vertical mixing, only density, layerThicknessEdge, and kineticEnergyCell need to 
