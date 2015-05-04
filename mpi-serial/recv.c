@@ -76,7 +76,8 @@ int MPI_Irecv(void *buf, int count, MPI_Datatype datatype,
       sreq=(Req *)AP_listitem_data(match);
       AP_list_delete_item(mycomm->sendlist,match);
 
-      memcpy(buf,sreq->buf,count * datatype);
+//      memcpy(buf,sreq->buf,count * datatype);
+      copy_data2(sreq->buf, count, datatype, buf, count, datatype);
       rreq->complete=1;
       rreq->source=0;
       rreq->tag=sreq->tag;                   /* in case tag was MPI_ANY_TAG */
@@ -112,7 +113,7 @@ FC_FUNC( mpi_recv , MPI_RECV )(void *buf, int *count, int *datatype,
 				 int *status, int *ierror)
 {
   *ierror=MPI_Recv(buf,*count,*datatype,*source,*tag,*comm,
-		   (MPI_Status *)status);
+		   mpi_c_status(status));
 }
 
 
@@ -131,6 +132,8 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source,
   MPI_Irecv(buf,count,datatype,source,tag,comm,&request);
   MPI_Wait(&request,status);
 
+  if (status!=MPI_STATUS_IGNORE)
+    status->get_count = count;   // rml: shouldn't this depend on send?
 
   return(MPI_SUCCESS);
 }

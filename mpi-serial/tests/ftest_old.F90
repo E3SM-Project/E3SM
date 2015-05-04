@@ -16,10 +16,9 @@
 	integer pnamesize
 
         integer temp,position
+        integer errcount
 
-	external my_op_func
-	integer myop
-
+        errcount = 0
 
         print *, 'Time=',mpi_wtime()
 
@@ -78,6 +77,21 @@
 	                  comm2,sreq2(i),ier)
 	end do
 
+        do i=1,5
+          if (sbuf(i) .ne. rbuf(i)) then
+            errcount = errcount+1
+            print *, 'error on Send2'
+            print *, 'found ',sbuf2(i),' should be ',rbuf2(i)
+          end if
+        end do
+
+        do i=1,5
+          if (sbuf2(i) .ne. rbuf2(i)) then
+            errcount = errcount+1
+            print *, 'error on Send2'
+            print *, 'found ',sbuf2(i),' should be ',rbuf2(i)
+          end if
+        end do
 
         print *, 'Time=',mpi_wtime()
 	call mpi_waitall(5,sreq,status,ier)
@@ -120,13 +134,18 @@
         position=0
 	do i=1,5
 	  call mpi_unpack( rbuf,20,position,temp,1,MPI_INTEGER, &
-                           MPI_COMM_WORLD,ier)
+                           MPI_COMM_WORLD)
           print *,temp
         end do
-
+        
+        do i=1,5
+          if (rbuf(i) .ne. sbuf(i)) then
+            errcount = errcount + 1
+            print *,"Error for pack/send/unpack"
+            print *,"found ",rbuf(i)," should be ",sbuf(i)
+          end if 
+        end do
 !
-	print *,"Creating op"
-	call mpi_op_create(my_op_func,.TRUE.,myop,ier)
 
 
 	call mpi_finalize(ier)
@@ -136,17 +155,11 @@
           call sleep(1)
 	end do
 
+        if (errcount .gt. 0) then
+          print *,errcount," errors"
+        else
+          print *,"No errors"
+        end if
+          
  	end
-
-
-
-
-	function my_op_func(invec,inoutvec,len,type)
-	integer invec(len),inoutvec(len)
-	integer len,type
-
-	return
-	end function my_op_func
-
-
 
