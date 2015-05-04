@@ -68,7 +68,8 @@ int MPI_Isend(void *buf, int count, MPI_Datatype datatype,
       rreq=(Req *)AP_listitem_data(match);
       AP_list_delete_item(mycomm->recvlist,match);
 
-      memcpy(rreq->buf,buf,count * datatype);
+//      memcpy(rreq->buf,buf,count * datatype);
+      copy_data2(buf, count, datatype, rreq->buf, count, datatype);
       rreq->complete=1;
       rreq->source=0;
       rreq->tag=tag;                    /* in case rreq->tag was MPI_ANY_TAG */
@@ -132,7 +133,7 @@ int MPI_Send(void* buf, int count, MPI_Datatype datatype,
 
 
 FC_FUNC(mpi_ssend, MPI_SSEND) ( void *buf, int *count, int *datatype,
- 		                  int *dest, int *tag, int *comm, int *ierror)
+                                  int *dest, int *tag, int *comm, int *ierror)
 {
   *ierror=MPI_Send(buf, *count, *datatype, *dest, *tag, *comm);
 }
@@ -140,7 +141,7 @@ FC_FUNC(mpi_ssend, MPI_SSEND) ( void *buf, int *count, int *datatype,
 
 
 int MPI_Ssend(void* buf, int count, MPI_Datatype datatype,
-	      int dest, int tag, MPI_Comm comm)
+              int dest, int tag, MPI_Comm comm)
 {
   return(MPI_Send(buf,count,datatype,dest,tag,comm));
 }
@@ -151,7 +152,7 @@ int MPI_Ssend(void* buf, int count, MPI_Datatype datatype,
 
 
 FC_FUNC(mpi_rsend, MPI_RSEND) ( void *buf, int *count, int *datatype,
- 		                  int *dest, int *tag, int *comm, int *ierror)
+                                  int *dest, int *tag, int *comm, int *ierror)
 {
   *ierror=MPI_Send(buf, *count, *datatype, *dest, *tag, *comm);
 }
@@ -159,7 +160,7 @@ FC_FUNC(mpi_rsend, MPI_RSEND) ( void *buf, int *count, int *datatype,
 
 
 int MPI_Rsend(void* buf, int count, MPI_Datatype datatype,
-	      int dest, int tag, MPI_Comm comm)
+              int dest, int tag, MPI_Comm comm)
 {
   return(MPI_Send(buf,count,datatype,dest,tag,comm));
 }
@@ -176,14 +177,14 @@ FC_FUNC( mpi_irsend , MPI_IRSEND )(void *buf, int *count, int *datatype,
 {
 
   *ierror=MPI_Irsend(buf,*count,*datatype,*dest,*tag,
-		    *comm, (void *)req);
+                    *comm, (void *)req);
 
 }
 
 
 
 int MPI_Irsend(void *buf, int count, MPI_Datatype datatype,
-	       int dest, int tag, MPI_Comm comm, MPI_Request *request)
+               int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
   MPI_Status status;
   Req *req;
@@ -221,17 +222,17 @@ FC_FUNC(mpi_sendrecv, MPI_SENDRECV) (
      int *ierror)
 {
   *ierror=MPI_Sendrecv(sendbuf, *sendcount, *sendtype, *dest, *sendtag,
-		       recvbuf, *recvcount, *recvtype, *source, *recvtag,
-		       *comm, (MPI_Status *)status);
+                       recvbuf, *recvcount, *recvtype, *source, *recvtag,
+                       *comm, mpi_c_status(status));
 }
 
 
 
 int MPI_Sendrecv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
-		 int dest, int sendtag,
-		 void *recvbuf, int recvcount, MPI_Datatype recvtype,
-		 int source, int recvtag,
-		 MPI_Comm comm, MPI_Status *status)
+                 int dest, int sendtag,
+                 void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                 int source, int recvtag,
+                 MPI_Comm comm, MPI_Status *status)
 {
   MPI_Request request;
 

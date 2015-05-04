@@ -1,4 +1,5 @@
-MCT*
 *.mod
 climate
 TS1out.dat
+*.script
+*.o*
