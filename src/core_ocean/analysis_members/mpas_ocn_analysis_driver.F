@@ -26,7 +26,7 @@ module ocn_analysis_driver
 
    use ocn_constants
    use ocn_global_stats
-   use ocn_surface_flux_statistics
+   use ocn_area_average_at_surface
    use ocn_zonal_mean
    use ocn_okubo_weiss
 !   use ocn_TEMPLATE
@@ -114,7 +114,7 @@ contains
       logical, pointer :: config_use_global_stats
       logical, pointer :: config_use_zonal_mean 
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_surface_flux_statistics
+      logical, pointer :: config_use_area_average_at_surface
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -126,9 +126,9 @@ contains
           err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(configPool, 'config_use_surface_flux_statistics', config_use_surface_flux_statistics)
-      if (config_use_surface_flux_statistics) then
-          call ocn_setup_packages_surface_flux_statistics(configPool, packagePool, err_tmp)
+      call mpas_pool_get_config(configPool, 'config_use_area_average_at_surface', config_use_area_average_at_surface)
+      if (config_use_area_average_at_surface) then
+          call ocn_setup_packages_area_average_at_surface(configPool, packagePool, err_tmp)
           err = ior(err, err_tmp)
       endif
 
@@ -197,7 +197,7 @@ contains
 
       integer :: err_tmp
       logical, pointer :: config_use_global_stats
-      logical, pointer :: config_use_surface_flux_statistics
+      logical, pointer :: config_use_area_average_at_surface
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -210,9 +210,9 @@ contains
           err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_surface_flux_statistics', config_use_surface_flux_statistics)
-      if (config_use_surface_flux_statistics) then
-          call ocn_init_surface_flux_statistics(domain, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_use_area_average_at_surface', config_use_area_average_at_surface)
+      if (config_use_area_average_at_surface) then
+          call ocn_init_area_average_at_surface(domain, err_tmp)
           err = ior(err, err_tmp)
       endif
 
@@ -283,7 +283,7 @@ contains
       integer :: timeLevel, err_tmp
 
       logical, pointer :: config_use_global_stats, config_global_stats_compute_startup
-      logical, pointer :: config_use_surface_flux_statistics, config_surface_flux_statistics_compute_startup
+      logical, pointer :: config_use_area_average_at_surface, config_area_average_at_surface_compute_startup
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
       logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
 !      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
@@ -301,12 +301,12 @@ contains
          err = ior(err, err_tmp)
       endif 
 
-      call mpas_pool_get_config(domain % configs, 'config_use_surface_flux_statistics', config_use_surface_flux_statistics)
-      call mpas_pool_get_config(domain % configs, 'config_surface_flux_statistics_compute_startup', config_surface_flux_statistics_compute_startup)
-      if (config_use_surface_flux_statistics.and.config_surface_flux_statistics_compute_startup) then
-         call ocn_compute_surface_flux_statistics(domain, timeLevel, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_use_area_average_at_surface', config_use_area_average_at_surface)
+      call mpas_pool_get_config(domain % configs, 'config_area_average_at_surface_compute_startup', config_area_average_at_surface_compute_startup)
+      if (config_use_area_average_at_surface.and.config_area_average_at_surface_compute_startup) then
+         call ocn_compute_area_average_at_surface(domain, timeLevel, err_tmp)
          call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='surfaceStatisticsOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(stream_manager, streamID='areaAvgAtSfcOutput', forceWriteNow=.true., ierr=err_tmp)
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
@@ -386,7 +386,7 @@ contains
       integer :: timeLevel, err_tmp
 
       logical, pointer :: config_use_global_stats
-      logical, pointer :: config_use_surface_flux_statistics
+      logical, pointer :: config_use_area_average_at_surface
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -399,9 +399,9 @@ contains
          call ocn_compute_global_stats(domain, timeLevel, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_surface_flux_statistics', config_use_surface_flux_statistics)
-      if (config_use_surface_flux_statistics) then
-         call ocn_compute_surface_flux_statistics(domain, timeLevel, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_use_area_average_at_surface', config_use_area_average_at_surface)
+      if (config_use_area_average_at_surface) then
+         call ocn_compute_area_average_at_surface(domain, timeLevel, err_tmp)
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
@@ -467,7 +467,7 @@ contains
 
       integer :: timeLevel, err_tmp
       logical, pointer :: config_use_global_stats
-      logical, pointer :: config_use_surface_flux_statistics
+      logical, pointer :: config_use_area_average_at_surface
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -482,10 +482,10 @@ contains
          endif 
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_surface_flux_statistics', config_use_surface_flux_statistics)
-      if (config_use_surface_flux_statistics) then
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='surfaceStatisticsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-            call ocn_compute_surface_flux_statistics(domain, timeLevel, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_use_area_average_at_surface', config_use_area_average_at_surface)
+      if (config_use_area_average_at_surface) then
+         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='areaAvgAtSfcOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+            call ocn_compute_area_average_at_surface(domain, timeLevel, err_tmp)
          endif
       endif
 
@@ -557,7 +557,7 @@ contains
 
       integer :: err_tmp
       logical, pointer :: config_use_global_stats
-      logical, pointer :: config_use_surface_flux_statistics
+      logical, pointer :: config_use_area_average_at_surface
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -570,9 +570,9 @@ contains
           err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_surface_flux_statistics', config_use_surface_flux_statistics)
-      if (config_use_surface_flux_statistics) then
-          call ocn_restart_surface_flux_statistics(domain, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_use_area_average_at_surface', config_use_area_average_at_surface)
+      if (config_use_area_average_at_surface) then
+          call ocn_restart_area_average_at_surface(domain, err_tmp)
           err = ior(err, err_tmp)
       endif
 
@@ -644,7 +644,7 @@ contains
       integer :: err_tmp
 
       logical, pointer :: config_use_global_stats
-      logical, pointer :: config_use_surface_flux_statistics 
+      logical, pointer :: config_use_area_average_at_surface 
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -662,13 +662,13 @@ contains
           err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_surface_flux_statistics', config_use_surface_flux_statistics)
-      if (config_use_surface_flux_statistics) then
+      call mpas_pool_get_config(ocnConfigs, 'config_use_area_average_at_surface', config_use_area_average_at_surface)
+      if (config_use_area_average_at_surface) then
           call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(stream_manager, streamID='surfaceStatisticsOutput', ierr=err_tmp)
+          call mpas_stream_mgr_write(stream_manager, streamID='areaAvgAtSfcOutput', ierr=err_tmp)
           call mpas_timer_stop('io_write')
           call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='surfaceStatisticsOutput', ierr=err_tmp)
+          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='areaAvgAtSfcOutput', ierr=err_tmp)
           call mpas_timer_stop('io_reset_alarms')
           err = ior(err, err_tmp)
       endif
@@ -753,7 +753,7 @@ contains
 
       integer :: err_tmp
       logical, pointer :: config_use_global_stats
-      logical, pointer :: config_use_surface_flux_statistics
+      logical, pointer :: config_use_area_average_at_surface
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -766,9 +766,9 @@ contains
         err = ior(err, err_tmp)
      endif
 
-     call mpas_pool_get_config(domain % configs, 'config_use_surface_flux_statistics', config_use_surface_flux_statistics)
-     if (config_use_surface_flux_statistics) then
-        call ocn_finalize_surface_flux_statistics(domain, err_tmp)
+     call mpas_pool_get_config(domain % configs, 'config_use_area_average_at_surface', config_use_area_average_at_surface)
+     if (config_use_area_average_at_surface) then
+        call ocn_finalize_area_average_at_surface(domain, err_tmp)
         err = ior(err, err_tmp)
      endif
 
