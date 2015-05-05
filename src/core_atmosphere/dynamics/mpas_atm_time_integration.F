@@ -50,6 +50,7 @@ module atm_time_integration
    real (kind=RKIND), dimension(:,:), pointer :: flux_arr
    real (kind=RKIND), dimension(:,:), pointer :: wdtn
    real (kind=RKIND), dimension(:,:), pointer :: rho_zz_int
+   real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend_save
 
 
    contains
@@ -683,7 +684,6 @@ module atm_time_integration
                   allocate(scale_arr(2,nVertLevels,nCells))
                   allocate(flux_arr(nVertLevels,nEdges))
                   allocate(wdtn(nVertLevels+1,nCells))
-                  allocate(rho_zz_int(nVertLevels,nCells))
 
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
                   nthreads = OMP_get_num_threads()
@@ -746,7 +746,6 @@ module atm_time_integration
                   deallocate(scale_arr)
                   deallocate(flux_arr)
                   deallocate(wdtn)
-                  deallocate(rho_zz_int)
 
                   block => block % next
                end do
@@ -879,6 +878,7 @@ module atm_time_integration
                allocate(flux_arr(nVertLevels,nEdges))
                allocate(wdtn(nVertLevels+1,nCells))
                allocate(rho_zz_int(nVertLevels,nCells))
+               allocate(scalar_tend_save(num_scalars,nVertLevels,nCells))
 
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
                nthreads = OMP_get_num_threads()
@@ -942,6 +942,7 @@ module atm_time_integration
                deallocate(flux_arr)
                deallocate(wdtn)
                deallocate(rho_zz_int)
+               deallocate(scalar_tend_save)
 
                block => block % next
             end do
@@ -2253,8 +2254,6 @@ module atm_time_integration
       real (kind=RKIND), dimension( num_scalars, nVertLevels ) :: flux_arr
 
       real (kind=RKIND), dimension( num_scalars, nVertLevels + 1 ) :: wdtn
-      real (kind=RKIND), dimension(:,:), pointer :: rho_zz_int
-      real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend_save
       integer, pointer :: nCellsSolve, nEdges
 
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
@@ -2335,16 +2334,15 @@ module atm_time_integration
       !
       !  horizontal flux divergence, accumulate in scalar_tend
 
-!MGD BEGIN WORK
       if (local_advance_density) then
-         allocate(rho_zz_int(nVertLevels,nCells))
-         allocate(scalar_tend_save(num_scalars,nVertLevels,nCells))
-         rho_zz_int(:,:) = 0.0
-         scalar_tend_save(:,:,1:nCells) = scalar_tend(:,:,1:nCells)
+         do iCell=cellStart,cellEnd
+            rho_zz_int(:,iCell) = 0.0
+            scalar_tend_save(:,:,iCell) = scalar_tend(:,:,iCell)
+         end do
+!$OMP BARRIER
       else
          rho_zz_int => rho_zz_new
       end if
-!MGD END WORK
 
 #if MPI_ONLY
 !$OMP MASTER
@@ -2419,6 +2417,9 @@ module atm_time_integration
                   scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
                          - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*flux_arr(iScalar,k)/areaCell(iCell)
             end do
+            if (local_advance_density) then
+               rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(iCell)
+            end if
             end do
             
          end do
@@ -2441,7 +2442,7 @@ module atm_time_integration
 
       if (local_advance_density) then
          ! update density first
-         do iCell=1,nCellsSolve
+         do iCell=cellSolveStart,cellSolveEnd
             do k=1,nVertLevels
                rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
             end do
@@ -2528,13 +2529,12 @@ module atm_time_integration
 
       end if
 
-!MGD BEGIN WORK
       if (local_advance_density) then
-         scalar_tend(:,:,1:nCells) = scalar_tend_save(:,:,1:nCells)
-         deallocate(rho_zz_int)
-         deallocate(scalar_tend_save)
+!$OMP BARRIER
+         do iCell=cellStart,cellEnd
+            scalar_tend(:,:,iCell) = scalar_tend_save(:,:,iCell)
+         end do
       end if
-!MGD END WORK
 
    end subroutine atm_advance_scalars
 
@@ -2715,11 +2715,13 @@ module atm_time_integration
       ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
       !
 
-!MGD BEGIN WORK
       if (local_advance_density) then
          !  begin with update of density
-         allocate(rho_zz_int(nVertLevels,nCells))
-         rho_zz_int(:,:) = 0.0
+         do iCell=cellStart,cellEnd
+            rho_zz_int(:,iCell) = 0.0
+         end do
+!$OMP BARRIER
+#if MPI_ONLY
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -2735,10 +2737,27 @@ module atm_time_integration
                rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
             end do
          end do
+#else
+      do iCell=cellSolveStart,cellSolveEnd
+         do i=1,nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i,iCell)
+
+            do k=1,nVertLevels
+               rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(iCell)
+            end do
+            
+         end do
+      end do
+      do iCell=cellSolveStart,cellSolveEnd
+         do k=1,nVertLevels
+            rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
+         end do
+      end do
+!$OMP BARRIER
+#endif
       else
          rho_zz_int => rho_zz_new
       end if
-!MGD END WORK
 
       ! next, do one scalar at a time
 
@@ -3096,12 +3115,6 @@ module atm_time_integration
          end do
 
       end do !  loop over scalars
-
-!MGD BEGIN WORK
-      if (local_advance_density) then
-         deallocate(rho_zz_int)
-      end if
-!MGD END WORK
 
    end subroutine atm_advance_scalars_mono
 
