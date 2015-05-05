@@ -238,47 +238,8 @@ if (! $clean ) {
     $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
     print "Creating batch script $case.st_archive\n";
     $batchmaker->overrideNodeCount(1);
-    $batchmaker->makeBatchScript("$xmlvars{'CCSM_MACHDIR'}/template.cesmrun", "$xmlvars{'CASEROOT'}/$case.st_archive");
-    #print "Creating batch script $case.pyreshaper\n";
-    #$batchmaker->overrideNodeCount(16);
-    #$batchmaker->makeBatchScript("$case.pyreshaper", 'pyreshaper');
-    #print "Creating batch script $case.lt_archive\n";
-    #$batchmaker->overrideNodeCount(1);
-    #$batchmaker->makeBatchScript("$case.lt_archive", 'ltarchive');
-	#my $fh = new IO::File;
-	#my $file = "${caseroot}/${case}.run";
-	#
-	#$sysmod = "env PHASE=set_batch CASEROOT=$caseroot ./Tools/mkbatch.${mach}";
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	#
-	#$sysmod = "${caseroot}/Tools/taskmaker.pl -document >> $file";
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	#
-	#$sysmod = "echo cd $caseroot >> $file";  
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	#
-	#$sysmod = "cat ${caseroot}/Tools/cesm_prerun_setup >> $file";
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	#
-	#$sysmod = "cat ${caseroot}/Tools/cesm_buildnml >> $file";
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    $batchmaker->makeBatchScript("$xmlvars{'CCSM_MACHDIR'}/template.starchive", "$xmlvars{'CASEROOT'}/$case.st_archive");
 
-	#$sysmod = "cat ${caseroot}/Tools/cesm_prestage >> $file";
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	#
-	#$sysmod = "cat ${caseroot}/Tools/cesm_buildnml >> $file";
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	#
-	#$sysmod = "env PHASE=set_exe CASE=$case CASEROOT=$caseroot ./Tools/mkbatch.${mach}";
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	#
-	#$sysmod = "cat ${caseroot}/Tools/cesm_postrun_setup >> $file";
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	#$fh->close();
-	#
-	#$sysmod = "chmod 755 $file";
-	#system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	
 	# Make a copy of env_mach_pes.xml in order to be able 
 	# to check that it does not change once cesm_setup is invoked
 	if (! -e "LockedFiles/env_mach_pes.xml.locked") {
