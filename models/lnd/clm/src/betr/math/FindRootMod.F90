@@ -129,7 +129,7 @@ contains
     endif
     
   endif
-  function cubicrootbnd
+  end function cubicrootbnd
   
 !===============================================================================  
   function cubicproot(a,b,c,d)result(x)
@@ -170,7 +170,7 @@ contains
     endif
     x = y - b1 / 3._r8
   endif
-  function cubicproot  
+  end function cubicproot  
  
 !===============================================================================
   

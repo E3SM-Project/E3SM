@@ -239,7 +239,7 @@ contains
   !
   ! test if x is bounded within xl and xr
   implicit none
-  
+  real(r8), intent(in) :: x, xl, xr 
   logical :: ans
   if(x>=xl .and. x<=xr)then
     ans = .true.
