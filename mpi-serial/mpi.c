@@ -15,6 +15,8 @@ static int *f_MPI_STATUS_IGNORE;
 static int *f_MPI_STATUSES_IGNORE;
 static int *f_MPI_IN_PLACE;
 
+static char *mpi_version_string="mpi-serial 2.0";
+
 
 /****************************************************************************/
 
@@ -290,6 +292,37 @@ int MPI_Initialized(int *flag)
 
   return(MPI_SUCCESS);
 }
+
+
+/**********/
+
+
+void FC_FUNC( mpi_get_library_version, MPI_GET_LIBRARY_VERSION) (char *version, int *resultlen, int *ierror)
+{
+  MPI_Get_library_version(version,resultlen);
+
+  // Sanity check before the memset()
+  if ( (*resultlen) > (MPI_MAX_LIBRARY_VERSION_STRING-1) )
+    abort();
+
+  memset(version+(*resultlen),' ',MPI_MAX_LIBRARY_VERSION_STRING-(*resultlen));
+
+  *ierror=MPI_SUCCESS;
+}
+
+
+
+int MPI_Get_library_version(char *version, int *resultlen)
+{
+
+  strncpy(version,mpi_version_string,MPI_MAX_LIBRARY_VERSION_STRING);
+  // Make sure it is null terminated
+  version[MPI_MAX_LIBRARY_VERSION_STRING-1]='\0';
+  *resultlen=strlen(version);
+
+  return(MPI_SUCCESS);
+}
+
 
 
 /**********/
