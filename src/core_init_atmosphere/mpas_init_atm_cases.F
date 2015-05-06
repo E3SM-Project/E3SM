@@ -526,11 +526,11 @@ module init_atm_cases
       write(0,*) ' hx computation complete '
 
       do k=1,nz
-		
+
 !           sh(k) is the stretching specified for height surfaces
 
             sh(k) = (real(k-1)*dz/zt)**str 
-				
+
 !           to specify specific heights zc(k) for coordinate surfaces,
 !           input zc(k) and define sh(k) = zc(k)/zt
 !           zw(k) is the hieght of zeta surfaces
@@ -549,7 +549,7 @@ module init_atm_cases
  
             ah(k) = 1.-cos(.5*pii*(k-1)*dz/zt)**6
 !            ah(k) = 0.
-	    write(0,*) ' k, sh, zw, ah ',k,sh(k),zw(k),ah(k)
+            write(0,*) ' k, sh, zw, ah ',k,sh(k),zw(k),ah(k)
       end do
       do k=1,nz1
          dzw (k) = zw(k+1)-zw(k)
@@ -583,9 +583,9 @@ module init_atm_cases
       write(0,*) ' cf1, cf2, cf3 = ',cf1,cf2,cf3
 
       do iCell=1,nCells
-        do k=1,nz	
+        do k=1,nz
           zgrid(k,iCell) = (1.-ah(k))*(sh(k)*(zt-hx(k,iCell))+hx(k,iCell))  &
-                         + ah(k) * sh(k)* zt	
+                         + ah(k) * sh(k)* zt
         end do
         do k=1,nz1
           zz (k,iCell) = (zw(k+1)-zw(k))/(zgrid(k+1,iCell)-zgrid(k,iCell))
@@ -634,9 +634,9 @@ module init_atm_cases
                     +(1.6*cos(phi)**3                                   &
                          *(sin(phi)**2+2./3.)-pii/4.)*r_earth*omega_e)
 
-        do k=1,nz	
+        do k=1,nz
           zgrid_2d(k,i) = (1.-ah(k))*(sh(k)*(zt-hx_1d)+hx_1d)  &
-                         + ah(k) * sh(k)* zt	
+                         + ah(k) * sh(k)* zt
         end do
         do k=1,nz1
           zz_2d(k,i) = (zw(k+1)-zw(k))/(zgrid_2d(k+1,i)-zgrid_2d(k,i))
@@ -690,7 +690,7 @@ module init_atm_cases
           end do
 
           do itrp = 1,25
-            do k=1,nz1				
+            do k=1,nz1
               rr_2d(k,i)  = (pp_2d(k,i)/(rgas*zz_2d(k,i)) - rb_2d(k,i)*(tt(k)-t0b))/tt(k)
             end do
 
@@ -821,9 +821,9 @@ module init_atm_cases
             tt(k) = temperature_1d(k)*(1.+1.61*scalars(index_qv,k,i))
 
           end do
-		
+
           do itrp = 1,25
-            do k=1,nz1				
+            do k=1,nz1
               rr(k,i)  = (pp(k,i)/(rgas*zz(k,i)) - rb(k,i)*(tt(k)-t0b))/tt(k)
             end do
 
@@ -852,7 +852,7 @@ module init_atm_cases
 
         end do  ! end outer iteration loop itr
 
-        do k=1,nz1	
+        do k=1,nz1
           p (k,i) = ((ppb(k,i)+pp(k,i))/p0)**(rgas/cp)
           t (k,i) = tt(k)/p(k,i)
           rt (k,i) = t(k,i)*rr(k,i)+rb(k,i)*(t(k,i)-tb(k,i))
@@ -1410,11 +1410,11 @@ module init_atm_cases
       write(0,*) ' hx computation complete '
 
       do k=1,nz
-		
+
 !           sh(k) is the stretching specified for height surfaces
 
             zc(k) = zt*(real(k-1)*dz/zt)**str 
-				
+
 !           to specify specific heights zc(k) for coordinate surfaces,
 !           input zc(k) 
 !           zw(k) is the hieght of zeta surfaces
@@ -1433,7 +1433,7 @@ module init_atm_cases
  
 !            ah(k) = 1.-cos(.5*pii*(k-1)*dz/zt)**6
             ah(k) = 1.
-!	    write(0,*) ' k, zc, zw, ah ',k,zc(k),zw(k),ah(k)			
+!            write(0,*) ' k, zc, zw, ah ',k,zc(k),zw(k),ah(k)
       end do
       do k=1,nz1
          dzw (k) = zw(k+1)-zw(k)
@@ -1465,9 +1465,9 @@ module init_atm_cases
 !      cf3 = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 
       do iCell=1,nCells
-        do k=1,nz	
+        do k=1,nz
             zgrid(k,iCell) = ah(k)*(zc(k)*(1.-hx(k,iCell)/zt)+hx(k,iCell)) &
-                           + (1.-ah(k)) * zc(k)	
+                           + (1.-ah(k)) * zc(k)
         end do
         do k=1,nz1
           zz (k,iCell) = (zw(k+1)-zw(k))/(zgrid(k+1,iCell)-zgrid(k,iCell))
@@ -1998,11 +1998,11 @@ module init_atm_cases
 !      write(0,*) ' dz = ',dz
 
       do k=1,nz
-		
+
 !           sh(k) is the stretching specified for height surfaces
 
             zc(k) = zt*(real(k-1)*dz/zt)**str 
-				
+
 !           to specify specific heights zc(k) for coordinate surfaces,
 !           input zc(k) 
 !           zw(k) is the hieght of zeta surfaces
@@ -2021,7 +2021,7 @@ module init_atm_cases
  
 !            ah(k) = 1.-cos(.5*pii*(k-1)*dz/zt)**6
             ah(k) = 1.
-!	    write(0,*) ' k, zc, zw, ah ',k,zc(k),zw(k),ah(k)			
+!            write(0,*) ' k, zc, zw, ah ',k,zc(k),zw(k),ah(k)
       end do
       do k=1,nz1
          dzw (k) = zw(k+1)-zw(k)
@@ -2898,7 +2898,7 @@ module init_atm_cases
          end do
 
       else
-	
+
          do k=1,nz
             ah(k) = 1.-zw(k)/zt
          end do
@@ -3033,7 +3033,7 @@ module init_atm_cases
 !     Height of coordinate levels (calculation of zgrid)
 
       do iCell=1,nCells
-         do k=1,nz	
+         do k=1,nz
             zgrid(k,iCell) = zw(k) + ah(k)*hx(k,iCell)
          end do
          do k=1,nz1
