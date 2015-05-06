@@ -814,7 +814,7 @@ contains
     integer :: maplen
 
 #ifdef TIMING
-    call t_startf("PIO_initdecomp_dof")
+    call t_startf("PIO:initdecomp_dof")
 #endif
 
     maplen = size(compdof)
@@ -823,7 +823,7 @@ contains
 
 
 #ifdef TIMING
-    call t_stopf("PIO_initdecomp_dof")
+    call t_stopf("PIO:initdecomp_dof")
 #endif
 
   end subroutine PIO_initdecomp_dof_i8
@@ -870,14 +870,14 @@ contains
     end interface
 
 #ifdef TIMING
-    call t_startf("PIO_init")
+    call t_startf("PIO:init")
 #endif
     lbase=0
     if(present(base)) lbase=base
     ierr = PIOc_Init_Intracomm_from_F90(comp_comm,num_iotasks,stride,lbase,rearr,iosystem%iosysid)
 
 #ifdef TIMING
-    call t_stopf("PIO_init")
+    call t_stopf("PIO:init")
 #endif
   end subroutine init_intracom
 
@@ -915,7 +915,7 @@ contains
     integer :: itmp
     
 #ifdef TIMING
-    call t_startf("PIO_init")
+    call t_startf("PIO:init")
 #endif
 #if defined(NO_MPI2) || defined(_MPISERIAL)
     call piodie( __PIO_FILE__,__LINE__, &
@@ -1105,7 +1105,7 @@ contains
     
     if(DebugAsync) print*,__PIO_FILE__,__LINE__, iosystem(1)%ioranks
 #ifdef TIMING
-    call t_stopf("PIO_init")
+    call t_stopf("PIO:init")
 #endif
 #endif
 #endif
@@ -1227,7 +1227,7 @@ contains
     character, allocatable :: cfname(:)
     integer :: i, nl
 #ifdef TIMING
-    call t_startf("PIO_createfile")
+    call t_startf("PIO:createfile")
 #endif
     mode = 0
     if(present(amode_in)) mode = amode_in
@@ -1241,7 +1241,7 @@ contains
     deallocate(cfname)
     file%iosystem => iosystem
 #ifdef TIMING
-    call t_stopf("PIO_createfile")
+    call t_stopf("PIO:createfile")
 #endif
   end function createfile
 !> 
@@ -1286,7 +1286,7 @@ contains
     integer :: imode=0, i, nl
     character, allocatable :: cfname(:)
 #ifdef TIMING
-    call t_startf("PIO_openfile")
+    call t_startf("PIO:openfile")
 #endif
     if(present(mode)) imode = mode
     nl = len_trim(fname)
@@ -1300,7 +1300,7 @@ contains
     file%iosystem => iosystem
 
 #ifdef TIMING
-    call t_stopf("PIO_openfile")
+    call t_stopf("PIO:openfile")
 #endif
   end function PIO_openfile
 
@@ -1388,12 +1388,12 @@ contains
        end function PIOc_closefile
     end interface
 #ifdef TIMING
-    call t_startf("PIO_closefile")
+    call t_startf("PIO:closefile")
 #endif
     ierr = PIOc_closefile(file%fh)
     nullify(file%iosystem)
 #ifdef TIMING
-    call t_stopf("PIO_closefile")
+    call t_stopf("PIO:closefile")
 #endif
 
   end subroutine closefile

@@ -154,7 +154,7 @@ CONTAINS
     end interface
 
 #ifdef TIMING
-    call t_startf("pio_get_var1_{TYPE}")
+    call t_startf("PIO:get_var1_{TYPE}")
 #endif
     clen = size(index)
     allocate(cindex(clen))
@@ -165,7 +165,7 @@ CONTAINS
     ierr = PIOc_get_var1_{NCTYPE} (ncid, varid-1, cindex, ival)
     deallocate(cindex)
 #ifdef TIMING
-    call t_stopf("pio_get_var1_{TYPE}")
+    call t_stopf("PIO:get_var1_{TYPE}")
 #endif
   end function get_var1_id_{TYPE}
 
@@ -192,7 +192,7 @@ CONTAINS
 !!$    end interface
 
 #ifdef TIMING
-    call t_startf("pio_get_var1_text")
+    call t_startf("PIO:get_var1_text")
 #endif
     clen = size(index)
     allocate(cindex(clen))
@@ -207,7 +207,7 @@ CONTAINS
     deallocate(cindex)
     deallocate(count)
 #ifdef TIMING
-    call t_stopf("pio_get_var1_text")
+    call t_stopf("PIO:get_var1_text")
 #endif
   end function get_var1_id_text_internal
 

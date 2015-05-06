@@ -125,7 +125,7 @@ contains
     end interface
 
 #ifdef TIMING
-    call t_startf("pio_put_var1_text")
+    call t_startf("PIO:put_var1_text")
 #endif 
     clen = len(ival)
     allocate(cval(clen+1))
@@ -143,7 +143,7 @@ contains
     deallocate(cindex)
     deallocate(cval)
 #ifdef TIMING
-    call t_stopf("pio_put_var1_text")
+    call t_stopf("PIO:put_var1_text")
 #endif 
 #else
     integer, allocatable :: count(:)
@@ -187,7 +187,7 @@ contains
     end interface
 
 #ifdef TIMING
-    call t_startf("pio_put_var1_{TYPE}")
+    call t_startf("PIO:put_var1_{TYPE}")
 #endif 
     clen = size(index)
     allocate(cindex(clen))
@@ -198,7 +198,7 @@ contains
     ierr = PIOc_put_var1_{NCTYPE} (file%fh, varid-1, cindex, ival)
     deallocate(cindex)
 #ifdef TIMING
-    call t_stopf("pio_put_var1_{TYPE}")
+    call t_stopf("PIO:put_var1_{TYPE}")
 #endif 
   end function put_var1_{TYPE}
 
@@ -368,13 +368,13 @@ contains
     {VTYPE}, intent(in) :: ival
     ierr=PIO_NOERR
 #ifdef TIMING
-    call t_startf("pio_put_var_0d_{TYPE}")
+    call t_startf("PIO:put_var_0d_{TYPE}")
 #endif 
 
     ierr = put_var_internal_{TYPE} (File%fh, varid, (/ival/))
 
 #ifdef TIMING
-    call t_stopf("pio_put_var_0d_{TYPE}")
+    call t_stopf("PIO:put_var_0d_{TYPE}")
 #endif 
   end function put_var_0d_{TYPE}
 
@@ -583,13 +583,13 @@ contains
 
     {VTYPE}, intent(in) :: ival{DIMSTR}
 #ifdef TIMING
-    call t_startf("pio_put_vara_{DIMS}d_{TYPE}")
+    call t_startf("PIO:put_vara_{DIMS}d_{TYPE}")
 #endif 
 
     ierr = put_vara_internal_{TYPE} (File%fh, varid, start, count, ival)
 
 #ifdef TIMING
-    call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
+    call t_stopf("PIO:put_vara_{DIMS}d_{TYPE}")
 #endif 
   end function put_vara_{DIMS}d_{TYPE}
 

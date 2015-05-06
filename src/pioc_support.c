@@ -169,9 +169,9 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   iodesc->firstregion = alloc_region(ndims);
   iodesc->fillregion = NULL;
 
-  iodesc->handshake=false;
+  iodesc->handshake=true;
   iodesc->isend=false;
-  iodesc->max_requests=0;
+  iodesc->max_requests=64;
 
   return iodesc;
 }

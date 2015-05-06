@@ -1570,7 +1570,8 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
   int maxreqs;
   int nprocs;
   MPI_Comm mycomm;
-#ifdef TIMING  
+#ifdef TIMING
+#ifdef PERFTUNE  
   double *wall, usr[2], sys[2];
   void *cbuf, *ibuf;
   int tsize;
@@ -1662,7 +1663,7 @@ void performance_tune_rearranger(iosystem_desc_t ios, io_desc_t *iodesc)
   brel(wall);
   brel(cbuf);
   brel(ibuf);
-
+#endif
 #endif
 
 }  
