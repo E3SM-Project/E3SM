@@ -189,7 +189,7 @@
  real(kind=RKIND),public:: dt_cu
 
  logical,dimension(:,:),allocatable:: &
- 	cu_act_flag
+    cu_act_flag
  real(kind=RKIND),dimension(:,:),allocatable::   &
     rainc_p,          &!
     raincv_p,         &!
