@@ -45,6 +45,7 @@ OPTIONS
      -casebuild            CASEBUILD directory variable          
      -scriptsroot          SCRIPTSROOT directory variable
      -glc_grid             GLC_GRID variable
+     -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPAS-LI configuration scripts.
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
@@ -89,6 +90,7 @@ my %opts = ( help        => 0,
              scriptsroot => undef,
              inst_string => undef,
              glc_grid    => undef,
+             date_stamp  => undef,
              cfg_dir     => $cfgdir,
            );
 
@@ -102,6 +104,7 @@ GetOptions(
     "scriptsroot=s" => \$opts{'scriptsroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
     "glc_grid=s"    => \$opts{'glc_grid'},
+    "date_stamp=s"  => \$opts{'date_stamp'},
     "cfg_dir=s"     => \$opts{'cfg_dir'},
     "preview"       => \$opts{'preview'},
 )  or usage();
@@ -132,6 +135,7 @@ my $CASEBUILD   = $opts{'casebuild'};
 my $SCRIPTSROOT = $opts{'scriptsroot'};
 my $inst_string = $opts{'inst_string'};
 my $GLC_GRID    = $opts{'glc_grid'};
+my $date_stamp  = $opts{'date_stamp'};
 $cfgdir         = $opts{'cfg_dir'};
 
 # Validate some of the commandline option values.
@@ -145,6 +149,7 @@ print $fh  <<"EOF";
 <?xml version="1.0"?>
 <config_definition>
 <entry id="glc_grid" value="$GLC_GRID">
+<entry id="date_stamp" value="$date_stamp">
 </config_definition>
 EOF
 $fh->close;
@@ -430,7 +435,7 @@ add_default($nl, 'config_time_integration');
 #################################
 
 add_default($nl, 'config_num_halos');
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpas-li/${GLC_GRID}/mpas-li.graph.info.part.'");
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpas-li/${GLC_GRID}/mpas-li.graph.info.${date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');

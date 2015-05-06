@@ -39,8 +39,9 @@ endif
 
 # Define input_mesh file and graph prefix for each defined GLC/MPAS-LI mesh
 if ( $GLC_GRID == 'mpas.gis20km' ) then
-	set input_mesh = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/landice_grid.nc
-	set graph_prefix = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/mpas-li.graph.info
+        set date_stamp = 150505
+	set input_mesh = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/gis20km.${date_stamp}.nc
+	set graph_prefix = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/mpas-li.graph.info.${date_stamp}
 endif
 
 # Write mpas-li.input_data_list file
@@ -142,6 +143,7 @@ $BLD_NML_DIR/build-namelist $CFG_FLAG $PREVIEW_FLAG                        \
 		-casebuild $CASEBUILD                                              \
 		-scriptsroot $SCRIPTSROOT                                          \
 		-inst_string "$inst_string"                                        \
+                -date_stamp "$date_stamp"                                          \
 		-glc_grid "$GLC_GRID" || exit -1
 
 if ( -d ${RUNDIR} ) then
