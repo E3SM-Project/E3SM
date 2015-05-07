@@ -3886,7 +3886,10 @@ do iCell=1,nCells
       end do
 
       do k = 1, config_nfgsoillevels
-         if (sm_fg(k,iCell) <= 0.0) write(0,*) 'Bad sm_fg ', k, iCell
+         if (sm_fg(k,iCell) <= 0.0) then
+            write(0,*) 'Bad sm_fg ', sm_fg(k,iCell), k, iCell
+            sm_fg(k,iCell) = 0.001
+         end if
       end do
       !LDF end.
 
