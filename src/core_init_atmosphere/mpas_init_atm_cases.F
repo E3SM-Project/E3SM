@@ -3156,6 +3156,14 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
 
       call read_met_close()
 
+      if (.not. allocated(maskslab)) then
+         write(0,*) '********************************************************************************'
+         write(0,*) 'LANDSEA field not found in  meteorological data file '//   &
+                     trim(config_met_prefix)//':'//config_start_time(1:13)
+         write(0,*) '********************************************************************************'
+         call mpas_dmpar_abort(dminfo)
+      end if
+
       edge_mask(:) = 1
 
 
@@ -3785,9 +3793,17 @@ write(0,*) 'Interpolating SKINTEMP'
                      call latlon_to_ij(proj, lat, lon, x, y)
                   end if
                   if (ndims == 1) then
-                     destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     if (maskval /= -1.0) then
+                        destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     else
+                        destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                     end if
                   else if (ndims == 2) then
-                     destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     if (maskval /= -1.0) then
+                        destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     else
+                        destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                     end if
                   end if
                else
                   if (ndims == 1) then
