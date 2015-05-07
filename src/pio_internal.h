@@ -31,11 +31,14 @@
 
 #define MAX_GATHER_BLOCK_SIZE 0
 
-extern PIO_Offset PIO_BUFFER_SIZE_LIMIT;
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+extern PIO_Offset PIO_BUFFER_SIZE_LIMIT;
+extern bool PIO_Save_Decomps;
+
 
 /**
  ** @brief Used to sort map points in the subset rearranger
@@ -47,6 +50,15 @@ typedef struct mapsort
   PIO_Offset iomap;
 } mapsort;
 
+typedef struct pio_swapm_defaults
+{
+  int nreqs;
+  bool handshake;
+  bool isend;
+} pio_swapm_defaults;
+
+
+  void pio_get_env(void);
   int  pio_add_to_iodesc_list(io_desc_t *iodesc);
   io_desc_t *pio_get_iodesc_from_id(int ioid);
   int pio_delete_iodesc_from_list(int ioid);

@@ -3,7 +3,7 @@
 
 #define PIO_WRITE_BUFFERING 1
 PIO_Offset PIO_BUFFER_SIZE_LIMIT=10485760; // 10MB default limit
-bufsize PIO_CNBUFFER_LIMIT=33554432; // default limit
+bufsize PIO_CNBUFFER_LIMIT=88473624 ; // default limit
 static void *CN_bpool=NULL; 
 static PIO_Offset maxusage=0;
 
