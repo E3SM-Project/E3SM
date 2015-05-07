@@ -13,7 +13,7 @@ bool PIO_Save_Decomps=false;
 void pio_get_env(void)
 {
   char *envptr;
-
+  extern bufsize PIO_CNBUFFER_LIMIT;
   envptr = getenv("PIO_Save_Decomps");
   
   if(envptr != NULL && (strcmp(envptr,"true")==0)){
@@ -41,7 +41,17 @@ void pio_get_env(void)
     }
     //printf("nreqs %d handshake %d isend %d\n",swapm_defaults.nreqs, swapm_defaults.handshake, swapm_defaults.isend);
   }
-
+  envptr = getenv("PIO_CNBUFFER_LIMIT");
+  if(envptr != NULL){
+    int mult=1;
+    if(strchr(envptr,"M") != NULL){
+      mult = 1000000;
+    }else if(strchr(envptr,"K") != NULL){
+      mult = 1000;
+    }
+    PIO_CNBUFFER_LIMIT=(bufsize) atoll(envptr)*mult;
+    
+  }
 
  
 
