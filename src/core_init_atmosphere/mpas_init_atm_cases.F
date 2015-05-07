@@ -2614,6 +2614,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: p_fg
       real (kind=RKIND), dimension(:,:), pointer :: st_fg
       real (kind=RKIND), dimension(:,:), pointer :: sm_fg
+      real (kind=RKIND), dimension(:), pointer :: soilz
 
       call mpas_pool_get_config(configs, 'config_met_prefix', config_met_prefix)
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
@@ -3824,14 +3825,41 @@ write(0,*) 'Interpolating SKINTEMP'
 
       call read_met_close()
 
-      ! Fix for isobaric data
-      if (minval(p_fg(:,:)) == 0.0) then
+
+      !
+      ! Check how many distinct levels we actually found in the meteorological data
+      !
+      do k=1,config_nfglevels
+         if (vert_level(k) == -1.0) exit 
+      end do
+      nfglevels_actual = k-1
+      write(0,*) '*************************************************'
+      write(0,*) 'Found ', nfglevels_actual, ' levels in the first-guess data'
+      write(0,*) '*************************************************'
+
+
+      ! 
+      ! For isobaric data, fill in the 3-d pressure field; otherwise, ensure
+      ! that the surface pressure and height fields are filled in
+      ! 
+      if (minval(p_fg(1:nfglevels_actual,1:nCellsSolve)) == 0.0 .and. &
+          maxval(p_fg(1:nfglevels_actual,1:nCellsSolve)) == 0.0) then
          write(0,*) 'Setting pressure field for isobaric data'
          do k=1,config_nfglevels
             if (vert_level(k) /= 200100.0) then
                p_fg(k,:) = vert_level(k)
             else
                p_fg(k,:) = psfc(:)
+            end if
+         end do
+      else
+         call mpas_pool_get_array(fg, 'z', z_fg)
+         call mpas_pool_get_array(fg, 'soilz', soilz)
+         write(0,*) 'Assuming model-level input data'
+         do k=1,config_nfglevels
+            if (vert_level(k) == 200100.0) then
+               p_fg(k,:) = psfc(:)
+               z_fg(k,:) = soilz(:)
             end if
          end do
       end if
@@ -3974,23 +4002,11 @@ write(0,*) 'PROCESSING SEAICE'
       ! Compute normal wind component and store in fg % u
       !  
       do iEdge=1,nEdges
-         do k=1,config_nfglevels
+         do k=1,nfglevels_actual
             u_fg(k,iEdge) = cos(angleEdge(iEdge)) * u_fg(k,iEdge) &
                           + sin(angleEdge(iEdge)) * v_fg(k,iEdge)
          end do
       end do
-
-
-      !
-      ! Check how many distinct levels we actually found in the meteorological data
-      !
-      do k=1,config_nfglevels
-         if (vert_level(k) == -1.0) exit 
-      end do
-      nfglevels_actual = k-1
-      write(0,*) '*************************************************'
-      write(0,*) 'Found ', nfglevels_actual, ' levels in the first-guess data'
-      write(0,*) '*************************************************'
 
       !  
       ! Vertically interpolate meteorological data
