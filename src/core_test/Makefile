@@ -1,6 +1,6 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_test_mpas_core.o
+OBJS = mpas_test_core.o mpas_test_core_interface.o
 
 all: core_test
 
@@ -15,12 +15,19 @@ core_input_gen:
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.test )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.test stream_list.test. listed )
 
+gen_includes:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+	(if [ ! -d inc ]; then mkdir -p inc; fi) # To generate *.inc files
+	(cd inc; $(REG_PARSE) < ../Registry_processed.xml )
+
 post_build:
 	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
 	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
 	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
 
-mpas_test_mpas_core.o: 
+mpas_test_core_interface: mpas_test_core.o
+
+mpas_test_core.o: 
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a

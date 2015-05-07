@@ -83,7 +83,7 @@ module mpas_decomp
       do while (associated(decompList % next))
          decompCursor => decompList % next
 
-         if ( associated(decompList % next) ) then
+         if ( associated(decompCursor % next) ) then
             decompList % next => decompCursor % next
          else
             nullify(decompList % next)

@@ -1,6 +1,7 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_init_atm_mpas_core.o \
+OBJS = mpas_init_atm_core.o \
+       mpas_init_atm_core_interface.o \
        mpas_init_atm_cases.o \
        mpas_atm_advection.o \
        mpas_init_atm_read_met.o \
@@ -28,6 +29,11 @@ core_input_gen:
 	( cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.init_atmosphere in_defaults=true )
 	( cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.init_atmosphere stream_list.init_atmosphere. listed )
 
+gen_includes:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+	(if [ ! -d inc ]; then mkdir -p inc; fi) # To generate *.inc files
+	(cd inc; $(REG_PARSE) < ../Registry_processed.xml )
+
 post_build:
 	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
 	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
@@ -53,7 +59,9 @@ read_geogrid.o:
 
 mpas_init_atm_llxy.o:
 
-mpas_init_atm_mpas_core.o: mpas_advection.o mpas_init_atm_cases.o
+mpas_init_atm_core_interface.o: mpas_init_atm_core.o
+
+mpas_init_atm_core.o: mpas_advection.o mpas_init_atm_cases.o
 
 mpas_init_atm_static.o: \
 	mpas_atm_advection.o \

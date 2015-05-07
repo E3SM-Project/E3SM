@@ -68,6 +68,11 @@
 !>    * removed the global variable qz0 and initialized the local variable qz0_p to 0. qz0 is only
 !>      used in the MYJ PBL parameterization which is not available in MPAS.
 !>      Laura D. Fowler (laura@ucar.edu) / 2015-03-05.
+!>    * in subroutine lsm_from_MPAS, modified the initialization of local variable dzs_p.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-04-11.
+!>    * in subroutine lsm_to_MPAS, removed updating isltyp, ivgtyp, shdmin, and shdmax as they
+!>      are constant in the Noah lsm.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-04-11.
 
 !>
 !> DOCUMENTATION:
@@ -292,8 +297,10 @@
  call mpas_pool_get_array(sfc_input,'smois'        ,smois     )
  call mpas_pool_get_array(sfc_input,'tslb'         ,tslb      )
 
+!In Registry.xml, dzs is a function of nCells. In the Noah lsm scheme, dzs is independent
+!of cell locations:
  do n = 1,num_soils
-    dzs_p(n) = maxval(dzs(n,:))
+    dzs_p(n) = dzs(n,its)
  enddo
 
  do j = jts,jte
@@ -496,10 +503,6 @@
     z0(i)         = z0_p(i,j)
     znt(i)        = znt_p(i,j)
 
-    isltyp(i)     = isltyp_p(i,j)
-    ivgtyp(i)     = ivgtyp_p(i,j)
-    shdmin(i)     = shdmin_p(i,j)
-    shdmax(i)     = shdmax_p(i,j)
     snoalb(i)     = snoalb_p(i,j)
     sfc_albbck(i) = sfc_albbck_p(i,j)
     snow(i)       = snow_p(i,j)

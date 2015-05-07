@@ -1253,7 +1253,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nVertLevels + 1 ) :: zc, zw, ah
       real (kind=RKIND), dimension(nVertLevels ) :: zu, dzw, rdzwp, rdzwm
 
-      real (kind=RKIND), dimension(nVertLevels, nCells) :: rh, thi, tbi, cqwb
+      real (kind=RKIND), dimension(nVertLevels, nCells) :: relhum, thi, tbi, cqwb
 
       real (kind=RKIND) ::  r, xnutr
       real (kind=RKIND) ::  ztemp, zd, zt, dz, str
@@ -1517,10 +1517,10 @@ module init_atm_cases
                ztemp = .5*(zgrid(k,i)+zgrid(k+1,i))
                if(ztemp .gt. ztr) then
                   t (k,i) = thetar*exp(9.8*(ztemp-ztr)/(1003.*ttr))
-                  rh(k,i) = 0.25
+                  relhum(k,i) = 0.25
                else
                   t (k,i) = 300.+43.*(ztemp/ztr)**1.25
-                  rh(k,i) = (1.-0.75*(ztemp/ztr)**1.25)
+                  relhum(k,i) = (1.-0.75*(ztemp/ztr)**1.25)
                   if(t(k,i).lt.thetas) t(k,i) = thetas
                end if
                tb(k,i) = t(k,i)
@@ -1531,7 +1531,7 @@ module init_atm_cases
             end do
          end do
 
-!         rh(:,:) = 0.
+!         relhum(:,:) = 0.
 
 !  set the velocity field - we are on a plane here.
 
@@ -1604,7 +1604,7 @@ module init_atm_cases
             temp     = p(k,i)*thi(k,i)
             pres     = p0*p(k,i)**(1./rcp)
             qvs      = 380.*exp(17.27*(temp-273.)/(temp-36.))/pres
-            scalars(index_qv,k,i) = min(0.014_RKIND,rh(k,i)*qvs)
+            scalars(index_qv,k,i) = min(0.014_RKIND,relhum(k,i)*qvs)
          end do
       end do
 
@@ -1838,7 +1838,7 @@ module init_atm_cases
 
       real (kind=RKIND) :: ztemp, zd, zt, dz, str
 
-      real (kind=RKIND), dimension(nVertLevels, nCells) :: rh
+      real (kind=RKIND), dimension(nVertLevels, nCells) :: relhum
       real (kind=RKIND) :: es, qvs, xnutr, ptemp
       integer :: iter
 
@@ -2162,7 +2162,7 @@ module init_atm_cases
                else
                   t (k,i) = t0*(1.+xn2l/gravity*zinv+xn2/gravity*(ztemp-zinv)) 
                end if
-                  rh(k,i) = 0. 
+                  relhum(k,i) = 0.
             end do
          end do
 
@@ -2256,7 +2256,7 @@ module init_atm_cases
               temp   = p(k,i)*t(k,i)
               pres   = p0*p(k,i)**(1./rcp)
               qvs    = 380.*exp(17.27*(temp-273.)/(temp-36.))/pres
-              scalars(index_qv,k,i) = min(0.014_RKIND,rh(k,i)*qvs)
+              scalars(index_qv,k,i) = min(0.014_RKIND,relhum(k,i)*qvs)
            end do
                          
            do k=1,nz1
@@ -2591,7 +2591,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: w
       real (kind=RKIND), dimension(:,:), pointer :: theta
       real (kind=RKIND), dimension(:,:), pointer :: rho
-      real (kind=RKIND), dimension(:,:), pointer :: rh
+      real (kind=RKIND), dimension(:,:), pointer :: relhum
       real (kind=RKIND), dimension(:,:), pointer :: ru
       real (kind=RKIND), dimension(:,:), pointer :: rw
       real (kind=RKIND), dimension(:), pointer :: precipw
@@ -2669,7 +2669,7 @@ module init_atm_cases
       call mpas_pool_get_array(diag, 'pressure_p', pp)
       call mpas_pool_get_array(diag, 'pressure', pressure)
       call mpas_pool_get_array(diag, 'surface_pressure', surface_pressure)
-      call mpas_pool_get_array(diag, 'rh', rh)
+      call mpas_pool_get_array(diag, 'relhum', relhum)
       call mpas_pool_get_array(diag, 'ru', ru)
       call mpas_pool_get_array(diag, 'rw', rw)
 
@@ -4015,7 +4015,7 @@ write(0,*) 'PROCESSING SEAICE'
             scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
                                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
             if (target_z < z_fg(1,iCell)) scalars(index_qv,k,iCell) = scalars(index_qv,k+1,iCell) 
-            rh(k,iCell) = scalars(index_qv,k,iCell)
+            relhum(k,iCell) = scalars(index_qv,k,iCell)
          end do
 
 

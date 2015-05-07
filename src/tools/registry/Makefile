@@ -5,11 +5,10 @@ EZXML_PATH= ../../external/ezxml
 OBJS = parse.o dictionary.o gen_inc.o fortprintf.o utility.o
 
 all: ezxml parse
-	($(MAKE) clean)
 	($(MAKE) parse CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)")
 
 ezxml:
-	(cd $(EZXML_PATH); $(MAKE) )
+	(cd $(EZXML_PATH); $(MAKE) CFLAGS="$(CFLAGS) $(TOOL_TARGET_ARCH)")
 
 parse: ezxml $(OBJS)
 	$(CC) $(CPPFLAGS) $(EZXML_PATH)/ezxml.o  -I$(EZXML_PATH) -o $@ $(OBJS)
@@ -21,4 +20,4 @@ clean:
 	$(RM) *.i
 
 .c.o: ezxml
-	$(CC) $(CPPFLAGS) -I$(EZXML_PATH) -c $<
+	$(CC) $(TOOL_TARGET_ARCH) $(CFLAGS) $(CPPFLAGS) -I$(EZXML_PATH) -c $<

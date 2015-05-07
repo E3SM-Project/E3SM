@@ -40,8 +40,6 @@ module mpas_derived_types
 
 #include "mpas_field_types.inc"
 
-#include "mpas_domain_types.inc"
-
 #include "mpas_pool_types.inc"
 
 #include "mpas_io_types.inc"
@@ -56,10 +54,15 @@ module mpas_derived_types
 
 #include "mpas_timer_types.inc"
 
-#include "mpas_forcing_types.inc"
+#include "mpas_block_types.inc"
 
 #include "mpas_decomp_types.inc"
 
+#include "mpas_domain_types.inc"
+
+#include "mpas_core_types.inc"
+
+#include "mpas_forcing_types.inc"
 
    contains
 
