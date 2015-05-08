@@ -1,50 +1,50 @@
 <dims>
-        <dim name="nAreaAverageAtSurfaceFields" definition="30" units="unitless"
-                description="A number equal to or greater than the number of var arrays in the amAreaAverageAtSurface var structure below."
+        <dim name="nSfcAreaWeightedAvgFields" definition="30" units="unitless"
+                description="A number equal to or greater than the number of var arrays in the amSfcAreaWeightedAvg var structure below."
         />
         <dim name="nOceanRegions" definition="7" units="unitless"
                 description="The number of regions defined within the global ocean (will eventually be moved up and used uniformly across MPAS-O."
         />
 </dims>
-<nml_record name="area_average_at_surface" mode="forward;analysis">
-	<nml_option name="config_use_area_average_at_surface" type="logical" default_value=".true." units="unitless"
-                  description="If true, ocean analysis member surface_statistics is called."
+<nml_record name="sfc_area_weighted_avg" mode="forward;analysis">
+	<nml_option name="config_use_AM_sfc_area_weighted_avg" type="logical" default_value=".true." units="unitless"
+                  description="If true, ocean analysis member surface_area_weighted_average is called."
                   possible_values=".true. or .false."
 	/>
-	<nml_option name="config_area_average_at_surface_compute_interval" type="character" default_value="same_as_output" units="unitless"
+	<nml_option name="config_AM_sfc_area_weighted_avg_compute_interval" type="character" default_value="same_as_output" units="unitless"
                   description="Timestamp determining how often analysis member computation should be performed."
                   possible_values="'DDDD_HH:MM:SS'"
 	/>
-	<nml_option name="config_area_average_at_surface_compute_startup" type="logical" default_value=".true." units="unitless"
+	<nml_option name="config_AM_sfc_area_weighted_avg_compute_startup" type="logical" default_value=".true." units="unitless"
                   description="Logical flag determining if an analysis member computation occurs on start-up."
                   possible_values=".true. or .false."
 	/>
 </nml_record>
 <packages>
-        <package name="amAreaAverageAtSurfacePkg" description="This package includes variables required for the areal-averaging of 2D variables that are defined, primarily, at the surface."/>
+        <package name="amSfcAreaWeightedAvgPkg" description="This package includes variables required for the areal-averaging of 2D variables that are defined, primarily, at the surface."/>
 </packages>
 <streams>
-        <stream name="areaAvgAtSfcOutput"
+        <stream name="sfcAreaOutput"
                         type="none"
-                        filename_template="analysis_members/area_average_at_surface.$Y-$M-$D_$h.$m.$s.nc"
+                        filename_template="analysis_members/surface_area_weighted_averages.$Y-$M-$D_$h.$m.$s.nc"
                         output_interval="00-00-05_00:00:00"
                         filename_interval="01-00-00_00:00:00"
-                        packages="amAreaAverageAtSurfacePkg"
+                        packages="amSfcAreaWeightedAvgPkg"
                         clobber_mode="truncate"
                         runtime_format="single_file">
                 <var name="xtime"/>
-                <var_array name="minValueWithinArealRegion"/>
-                <var_array name="maxValueWithinArealRegion"/>
-                <var_array name="avgValueWithinArealRegion"/>
+                <var_array name="minValueWithinOceanRegion"/>
+                <var_array name="maxValueWithinOceanRegion"/>
+                <var_array name="avgValueWithinOceanRegion"/>
         </stream>
 </streams>
-<var_struct name="amAreaAverageAtSurface" time_levs="1" packages="amAreaAverageAtSurfacePkg">
-        <var_array name="minValueWithinArealRegion" type="real" dimensions="nOceanRegions Time">
+<var_struct name="amSfcAreaWeightedAvg" time_levs="1" packages="amSfcAreaWeightedAvgPkg">
+        <var_array name="minValueWithinOceanRegion" type="real" dimensions="nOceanRegions Time">
                 <var name="minSurfaceMaskValue" array_group="mins" units="none"
                          description="Minimum value of region mask (should always be 1 for valid regions)"
                 />
                 <var name="minSurfaceArea" array_group="mins" units="m^2"
-                         description="Minimum area of a surface cell"
+                         description="Minimum area of a surface cell in each region"
                 />
                 <var name="minLatentHeatFlux" array_group="mins" units="W m^{-2}"
                          description="Minimum latent heat flux in each region"
@@ -131,12 +131,12 @@
                          description="Minimum net surface fresh water flux in each region"
                 />
         </var_array>
-        <var_array name="maxValueWithinArealRegion" type="real" dimensions="nOceanRegions Time">
+        <var_array name="maxValueWithinOceanRegion" type="real" dimensions="nOceanRegions Time">
                 <var name="maxSurfaceMaskValue" array_group="maxs" units="none"
                          description="Maximum value of region mask (should always be 1 for valid regions)"
                 />
                 <var name="maxSurfaceArea" array_group="maxs" units="m^2"
-                         description="Maximum area of a surface cell"
+                         description="Maximum area of a surface cell in each region"
                 />
                 <var name="maxLatentHeatFlux" array_group="maxs" units="W m^{-2}"
                          description="Maximum latent heat flux in each region"
@@ -223,7 +223,7 @@
                          description="Maximum net surface fresh water flux in each region"
                 />
         </var_array>
-        <var_array name="avgValueWithinArealRegion" type="real" dimensions="nOceanRegions Time">
+        <var_array name="avgValueWithinOceanRegion" type="real" dimensions="nOceanRegions Time">
                 <var name="sumSurfaceMaskValue" array_group="avg" units="none"
                          description="Sum of region mask, represents total number of cells in region"
                 />
@@ -231,92 +231,92 @@
                          description="Average area of a surface cell"
                 />
                 <var name="avgLatentHeatFlux" array_group="avg" units="W m^{-2}"
-                         description="Average latent heat flux in each region"
+                         description="Surface area-weighted average of latent heat flux in each region"
                 />
                 <var name="avgSensibleHeatFlux" array_group="avg" units="W m^{-2}"
-                         description="Average sensible heat flux in each region"
+                         description="Surface area-weighted average of sensible heat flux in each region"
                 />
                 <var name="avgLongWaveHeatFluxUp" array_group="avg" units="W m^{-2}"
-                         description="Average upwelling long wave heat flux in each region"
+                         description="Surface area-weighted average of upwelling long wave heat flux in each region"
                 />
                 <var name="avgLongWaveHeatFluxDown" array_group="avg" units="W m^{-2}"
-                         description="Average downwelling long wave heat flux in each region"
+                         description="Surface area-weighted average of downwelling long wave heat flux in each region"
                 />
                 <var name="avgSeaIceHeatFlux" array_group="avg" units="W m^{-2}"
-                         description="Average sea ice heat flux in each region"
+                         description="Surface area-weighted average of sea ice heat flux in each region"
                 />
                 <var name="avgShortWaveHeatFlux" array_group="avg" units="W m^{-2}" 
-                         description="Average short wave heat flux in each region"
+                         description="Surface area-weighted average of short wave heat flux in each region"
                 />       
                 <var name="avgEvaporationFlux" array_group="avg" units="kg m^{-2} s^{-1}"
-                         description="Average evaporation in each region"
+                         description="Surface area-weighted average of evaporation in each region"
                 />       
                 <var name="avgSeaIceFreshWaterFlux" array_group="avg" units="kg m^{-2} s^{-1}"
-                         description="Average sea ice melt rate in each region"
+                         description="Surface area-weighted average of sea ice melt rate in each region"
                 />       
                 <var name="avgRiverRunoffFlux" array_group="avg" units="kg m^{-2} s^{-1}"
-                         description="Average river run off in each region"
+                         description="Surface area-weighted average of river run off in each region"
                 />
                 <var name="avgIceRunoffFlux" array_group="avg" units="kg m^{-2} s^{-1}"
-                         description="Average ice run off in each region"
+                         description="Surface area-weighted average of ice run off in each region"
                 />
                 <var name="avgRainFlux" array_group="avg" units="kg m^{-2} s^{-1}"
-                         description="Average rain flux in each region"
+                         description="Surface area-weighted average of rain flux in each region"
                 />
                 <var name="avgSnowFlux" array_group="avg" units="kg m^{-2} s^{-1}"
-                         description="Average snow flux in each region"
+                         description="Surface area-weighted average of snow flux in each region"
                 />
                 <var name="avgSeaIceEnergy" array_group="avg" units="J m^{-2}"
-                         description="Average sea ice energy in each region"
+                         description="Surface area-weighted average of sea ice energy in each region"
                 />
                 <var name="avgSurfaceThicknessFlux" array_group="avg" units="m s^{-1}"
-                         description="Average surface thickness flux in each region"
+                         description="Surface area-weighted average of surface thickness flux in each region"
                 />
                 <var name="avgSurfaceTemperatureFlux" array_group="avg" units="C m s^{-1}"
-                         description="Average surface temperature flux in each region"
+                         description="Surface area-weighted average of surface temperature flux in each region"
                 />
                 <var name="avgSurfaceSalinityFlux" array_group="avg" units="PSU m s^{-1}"
-                         description="Average surface salinity flux in each region"
+                         description="Surface area-weighted average of surface salinity flux in each region"
                 />
                 <var name="avgSeaIceSalinityFlux" array_group="avg" units="kg m s^{-1}"
-                         description="Average sea ice salinity flux in each region"
+                         description="Surface area-weighted average of sea ice salinity flux in each region"
                 />
                 <var name="avgSurfaceWindStressMagnitude" array_group="avg" units="N m^{-2}"
-                         description="Average wind stress magnitude in each region"
+                         description="Surface area-weighted average of wind stress magnitude in each region"
                 />
                 <var name="avgWindStressZonal" array_group="avg" units="N m^{-2}"
-                         description="Average zonal wind stress in each region"
+                         description="Surface area-weighted average of zonal wind stress in each region"
                 />
                 <var name="avgWindStressMeridional" array_group="avg" units="N m^{-2}"
-                         description="Average meridional wind stress in each region"
+                         description="Surface area-weighted average of meridional wind stress in each region"
                 />
                 <var name="avgSeaSurfacePressure" array_group="avg" units="Pa"
-                         description="Average sea surface pressure in each region"
+                         description="Surface area-weighted average of sea surface pressure in each region"
                 />
                 <var name="avgSurfaceSSH" array_group="avg" units="m"
-                         description="Average sea-surface height"
+                         description="Surface area-weighted average of sea-surface height"
                 />
                 <var name="avgSurfaceTemperature" array_group="avg" units="C"
-                         description="Average surface temperature in each region"
+                         description="Surface area-weighted average of surface temperature in each region"
                 />
                 <var name="avgSurfaceSalinity" array_group="avg" units="PSU"
-                         description="Average surface salinity in each region"
+                         description="Surface area-weighted average of surface salinity in each region"
                 />
                 <var name="avgBoundaryLayerDepth" array_group="avg" units="m"
-                         description="Average surface boundary layer depth in each region"
+                         description="Surface area-weighted average of surface boundary layer depth in each region"
                 />
                 <var name="avgSurfaceNetHeatFlux" array_group="avg" units="W m^{-2}"
-                         description="Average net surface heat flux in each region"
+                         description="Surface area-weighted average of net surface heat flux in each region"
                 />
                 <var name="avgSurfaceNetSalinitFlux" array_group="avg" units="kg m s^{-1}"
-                         description="Average net surface salinity flux in each region"
+                         description="Surface area-weighted average of net surface salinity flux in each region"
                 />
                 <var name="avgSurfaceNetFreshWaterFlux" array_group="avg" units="kg m^{-2} s^{-1}"
-                         description="Average net surface fresh water flux in each region"
+                         description="Surface area-weighted average of net surface fresh water flux in each region"
                 />
         </var_array>
 </var_struct>
-<var_struct name="areaAverageAtSurfaceScratch" time_levs="1">
+<var_struct name="sfcAreaWeightedAvgScratch" time_levs="1">
         <var name="workMask"
                  persistence="scratch"
                  type="real"
@@ -327,28 +327,28 @@
         <var name="workArray"
                  persistence="scratch"
                  type="real"
-                 dimensions="nAreaAverageAtSurfaceFields nCells Time"
+                 dimensions="nSfcAreaWeightedAvgFields nCells Time"
                  units="various"
                  description="temporary array to hold data to be analyzed"
         />
         <var name="workMin"
                  persistence="scratch"
                  type="real"
-                 dimensions="nAreaAverageAtSurfaceFields Time"
+                 dimensions="nSfcAreaWeightedAvgFields Time"
                  units="various"
                  description="temporary array to hold minimum values"
         />
         <var name="workMax"
                  persistence="scratch"
                  type="real"
-                 dimensions="nAreaAverageAtSurfaceFields Time"
+                 dimensions="nSfcAreaWeightedAvgFields Time"
                  units="various"
                  description="temporary array to hold maximum values"
         />
         <var name="workSum"
                  persistence="scratch"
                  type="real"
-                 dimensions="nAreaAverageAtSurfaceFields Time"
+                 dimensions="nSfcAreaWeightedAvgFields Time"
                  units="various"
                  description="temporary array to hold sum of values"
         />
