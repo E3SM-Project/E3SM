@@ -1312,7 +1312,7 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_set_fill(file->fh, fillmode, old_modep);;
+      //      ierr = ncmpi_set_fill(file->fh, fillmode, old_modep);;
       break;
 #endif
     default:

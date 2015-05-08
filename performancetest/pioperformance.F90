@@ -127,7 +127,7 @@ contains
     type(iosystem_desc_t) :: iosystem
     integer :: stride, n
     integer, allocatable :: ifld(:,:), ifld_in(:,:)
-    real, allocatable :: rfld(:)
+    real, allocatable :: rfld(:,:), rfld_in(:,:)
     double precision, allocatable :: dfld(:,:), dfld_in(:,:)
     type(file_desc_t) :: File
     type(io_desc_t) :: iodesc_i4, iodesc_r4, iodesc_r8
@@ -142,8 +142,6 @@ contains
     integer,  parameter :: c0 = -1
     double precision, parameter :: cd0 = 1.0e30
     nullify(compmap)
-
-
 
     call pio_readdof(filename, ndims, gdims, compmap, MPI_COMM_WORLD)
     maplen = size(compmap)
@@ -175,7 +173,10 @@ contains
     
        allocate(ifld(maplen,nvars))
        allocate(ifld_in(maplen,nvars))
-       allocate(rfld(maplen))
+
+       allocate(rfld(maplen,nvars))
+       allocate(rfld_in(maplen,nvars))
+
        allocate(dfld(maplen,nvars))
        allocate(dfld_in(maplen,nvars))
 
@@ -184,14 +185,9 @@ contains
        dfld = mype
        do nv=1,nvars
           do j=1,maplen
-!             ifld(j,nv) = nv*100000000 +mype*1000000 + compmap(j)
              ifld(j,nv) = compmap(j)
              dfld(j,nv) = ifld(j,nv)/1000000.0
-!             if(nv==2) then
-!                ifld(j+(nv-1)*maplen) = -(mype*1000000 + compmap(j))
-!             else
-!                ifld(j+(nv-1)*maplen) = mype*1000000 + compmap(j)
-!             endif
+	     rfld(j,nv) = 1.0E5*ifld(j,nv)
           enddo
        enddo
 
@@ -205,11 +201,11 @@ contains
           if(mype==0) then
              print *,'iotype=',piotypes(k)
           endif
-          if(iotype==PIO_IOTYPE_PNETCDF) then
-             mode = PIO_64BIT_DATA
-          else
+!          if(iotype==PIO_IOTYPE_PNETCDF) then
+!             mode = PIO_64BIT_DATA
+!          else
              mode = 0
-          endif
+!          endif
           do rearrtype=1,2
              rearr = rearrangers(rearrtype)
              if(rearr /= PIO_REARR_SUBSET .and. rearr /= PIO_REARR_BOX) exit
@@ -230,15 +226,20 @@ contains
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
                 call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
-!                call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
-!                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
+                call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
+                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
 !                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
 
                 do frame=1,nframes
-!                   if(mype==0) print *,__FILE__,__LINE__,frame
+                   if(mype==0) print *,__FILE__,__LINE__,'Frame: ',frame
                    do nv=1,nvars   
+                      if(mype==0) print *,__FILE__,__LINE__,'var: ',nv
                       call PIO_setframe(File, vari(nv), frame)
-                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= -nv)
+                      call PIO_setframe(File, varr(nv), frame)
+                      call PIO_setframe(File, vard(nv), frame)
+                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= -1)
+                      call pio_write_darray(File, varr(nv), iodesc_r4, rfld(:,nv)    , ierr, fillval= -1.E12)
+                      call pio_write_darray(File, vard(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval= -1.D36)
                    enddo
 ! multiversion  
 !                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
@@ -275,6 +276,10 @@ contains
                 do nv=1,nvars
                    write(varname,'(a,i4.4)') 'vari',nv
                    ierr =  pio_inq_varid(File, varname, vari(nv))
+                   write(varname,'(a,i4.4)') 'varr',nv
+                   ierr =  pio_inq_varid(File, varname, varr(nv))
+                   write(varname,'(a,i4.4)') 'vard',nv
+                   ierr =  pio_inq_varid(File, varname, vard(nv))
                 enddo
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
@@ -283,6 +288,10 @@ contains
                    do nv=1,nvars
                       call PIO_setframe(File, vari(nv), frame)
                       call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv), ierr)
+                      call PIO_setframe(File, varr(nv), frame)
+                      call pio_read_darray(File, varr(nv), iodesc_r4, rfld_in(:,nv), ierr)
+                      call PIO_setframe(File, vard(nv), frame)
+                      call pio_read_darray(File, vard(nv), iodesc_r8, dfld_in(:,nv), ierr)
                    enddo
                 enddo
                 
@@ -294,11 +303,24 @@ contains
                 errorcnt = 0
                 do nv=1,nvars
                    do j=1,maplen
-                      if(ifld(j,nv) /= ifld_in(j,nv) .and. compmap(j) /= 0) then
-                         if(errorcnt < 10) then
-                            print *,__LINE__,mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
+                      if(compmap(j) /= 0) then	
+                         if(ifld(j,nv) /= ifld_in(j,nv)) then
+                            if(errorcnt < 10) then
+                               print *,__LINE__,'Int: ',mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
+                            endif
+                            errorcnt = errorcnt+1
+                         else if(rfld(j,nv) /= rfld_in(j,nv) ) then
+                            if(errorcnt < 10) then
+                               print *,__LINE__,'Real:', mype,j,nv,rfld(j,nv),rfld_in(j,nv),compmap(j)
+                            endif
+                            errorcnt = errorcnt+1
+                            
+                         else if(dfld(j,nv) /= dfld_in(j,nv) ) then
+                            if(errorcnt < 10) then
+                               print *,__LINE__,'Dbl:',mype,j,nv,dfld(j,nv),dfld_in(j,nv),compmap(j)
+                            endif
+                            errorcnt = errorcnt+1
                          endif
-                         errorcnt = errorcnt+1
                       endif
                    enddo
                 enddo
