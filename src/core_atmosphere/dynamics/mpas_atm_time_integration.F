@@ -825,7 +825,38 @@ module atm_time_integration
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'state', state)
             call mpas_pool_get_subpool(block % structs, 'diag', diag)
-            call atm_rk_dynamics_substep_finish(state, diag, dynamics_substep, dynamics_split)
+
+            call mpas_pool_get_dimension(state, 'nCells', nCells)
+            call mpas_pool_get_dimension(state, 'nEdges', nEdges)
+            call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+
+            call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+            call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
+            call mpas_pool_get_dimension(mesh, 'nVerticesSolve', nVerticesSolve)
+
+!$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
+            nthreads = OMP_get_num_threads()
+            threadid = OMP_get_thread_num()
+   
+            cellStart = (threadid * nCells / nthreads) + 1
+            cellEnd = ((threadid+1) * nCells / nthreads)
+            edgeStart = (threadid * nEdges / nthreads) + 1
+            edgeEnd = ((threadid+1) * nEdges / nthreads)
+            vertexStart = (threadid * nVertices / nthreads) + 1
+            vertexEnd = ((threadid+1) * nVertices / nthreads)
+      
+            cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
+            cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
+            edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
+            edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
+            vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
+            vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
+
+            call atm_rk_dynamics_substep_finish(state, diag, dynamics_substep, dynamics_split, &
+                                       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+!$OMP END PARALLEL
+
             block => block % next
          end do
 
@@ -4610,7 +4641,9 @@ module atm_time_integration
 
 !---------------------------------------------------------------------------------------
 
-   subroutine atm_rk_dynamics_substep_finish( state, diag, dynamics_substep, dynamics_split )
+   subroutine atm_rk_dynamics_substep_finish( state, diag, dynamics_substep, dynamics_split, &
+                                       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
       implicit none
 
@@ -4623,6 +4656,8 @@ module atm_time_integration
       type (mpas_pool_type), intent(inout) :: state
       type (mpas_pool_type), intent(inout) :: diag
       integer, intent(in) :: dynamics_substep, dynamics_split
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
 
       real (kind=RKIND), dimension(:,:), pointer :: ru
       real (kind=RKIND), dimension(:,:), pointer :: ru_save
@@ -4664,30 +4699,30 @@ module atm_time_integration
 
       if (dynamics_substep < dynamics_split) then
 
-         ru_save(:,:) = ru(:,:)
-         rw_save(:,:) = rw(:,:)
-         rtheta_p_save(:,:) = rtheta_p(:,:)
-         rho_p_save(:,:) = rho_p(:,:)
+         ru_save(:,edgeStart:edgeEnd) = ru(:,edgeStart:edgeEnd)
+         rw_save(:,cellStart:cellEnd) = rw(:,cellStart:cellEnd)
+         rtheta_p_save(:,cellStart:cellEnd) = rtheta_p(:,cellStart:cellEnd)
+         rho_p_save(:,cellStart:cellEnd) = rho_p(:,cellStart:cellEnd)
 
-         u_1(:,:) = u_2(:,:)
-         w_1(:,:) = w_2(:,:)
-         theta_m_1(:,:) = theta_m_2(:,:)
-         rho_zz_1(:,:) = rho_zz_2(:,:)
+         u_1(:,edgeStart:edgeEnd) = u_2(:,edgeStart:edgeEnd)
+         w_1(:,cellStart:cellEnd) = w_2(:,cellStart:cellEnd)
+         theta_m_1(:,cellStart:cellEnd) = theta_m_2(:,cellStart:cellEnd)
+         rho_zz_1(:,cellStart:cellEnd) = rho_zz_2(:,cellStart:cellEnd)
 
       end if
 
       if (dynamics_substep == 1) then
-         ruAvg_split(:,:) = ruAvg(:,:)
-         wwAvg_split(:,:) = wwAvg(:,:)
+         ruAvg_split(:,edgeStart:edgeEnd) = ruAvg(:,edgeStart:edgeEnd)
+         wwAvg_split(:,cellStart:cellEnd) = wwAvg(:,cellStart:cellEnd)
       else
-         ruAvg_split(:,:) = ruAvg(:,:)+ruAvg_split(:,:)
-         wwAvg_split(:,:) = wwAvg(:,:)+wwAvg_split(:,:)
+         ruAvg_split(:,edgeStart:edgeEnd) = ruAvg(:,edgeStart:edgeEnd)+ruAvg_split(:,edgeStart:edgeEnd)
+         wwAvg_split(:,cellStart:cellEnd) = wwAvg(:,cellStart:cellEnd)+wwAvg_split(:,cellStart:cellEnd)
       end if
 
       if (dynamics_substep == dynamics_split) then
-         ruAvg(:,:) = ruAvg_split(:,:)/real(dynamics_split)
-         wwAvg(:,:) = wwAvg_split(:,:)/real(dynamics_split)
-         rho_zz_1(:,:) = rho_zz_old_split(:,:)
+         ruAvg(:,edgeStart:edgeEnd) = ruAvg_split(:,edgeStart:edgeEnd)/real(dynamics_split)
+         wwAvg(:,cellStart:cellEnd) = wwAvg_split(:,cellStart:cellEnd)/real(dynamics_split)
+         rho_zz_1(:,cellStart:cellEnd) = rho_zz_old_split(:,cellStart:cellEnd)
       end if
 
    end subroutine atm_rk_dynamics_substep_finish
