@@ -3,6 +3,61 @@
 
 #include <execinfo.h>
 #define versno 2001
+
+static pio_swapm_defaults swapm_defaults;
+bool PIO_Save_Decomps=false;
+/**
+ ** @brief Get PIO environment variables
+ **
+ **/
+void pio_get_env(void)
+{
+  char *envptr;
+  extern bufsize PIO_CNBUFFER_LIMIT;
+  envptr = getenv("PIO_Save_Decomps");
+  
+  if(envptr != NULL && (strcmp(envptr,"true")==0)){
+    PIO_Save_Decomps=true;
+  }
+  swapm_defaults.nreqs = 0;
+  swapm_defaults.handshake=false;
+  swapm_defaults.isend=false;
+
+  envptr = getenv("PIO_SWAPM");
+  if(envptr != NULL){
+    char *token = strtok(envptr, ":");
+    
+    swapm_defaults.nreqs = atoi(token);
+
+    token = strtok(NULL, ":");
+
+    if((token!=NULL) && strcmp(token,"t")==0){
+      swapm_defaults.handshake = true;
+    }
+    token = strtok(NULL, ":");
+    
+    if((token!=NULL) && strcmp(token,"t")==0){
+      swapm_defaults.isend = true;
+    }
+    //printf("nreqs %d handshake %d isend %d\n",swapm_defaults.nreqs, swapm_defaults.handshake, swapm_defaults.isend);
+  }
+  envptr = getenv("PIO_CNBUFFER_LIMIT");
+  if(envptr != NULL){
+    int mult=1;
+    if(strchr(envptr,"M") != NULL){
+      mult = 1000000;
+    }else if(strchr(envptr,"K") != NULL){
+      mult = 1000;
+    }
+    PIO_CNBUFFER_LIMIT=(bufsize) atoll(envptr)*mult;
+    
+  }
+
+ 
+
+}
+
+
      
 /* Obtain a backtrace and print it to stderr. */
 void print_trace (FILE *fp)
@@ -169,9 +224,9 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   iodesc->firstregion = alloc_region(ndims);
   iodesc->fillregion = NULL;
 
-  iodesc->handshake=false;
-  iodesc->isend=false;
-  iodesc->max_requests=0;
+  iodesc->handshake=swapm_defaults.handshake;
+  iodesc->isend=swapm_defaults.isend;
+  iodesc->max_requests=swapm_defaults.nreqs;
 
   return iodesc;
 }

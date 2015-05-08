@@ -16,7 +16,7 @@
 
 
 static int counter=0;
-static bool PIO_Save_Decomps=false;
+
 /**
  ** @brief Check to see if PIO has been initialized.
  */
@@ -338,6 +338,7 @@ int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, co
   return PIO_NOERR;
 }
 
+
 /** 
  ** @ingroup PIO_init
  ** @brief library initialization used when IO tasks are a subset of compute tasks
@@ -416,11 +417,9 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosys->union_rank = iosys->comp_rank;
   
   *iosysidp = pio_add_to_iosystem_list(iosys);
-  char *envptr = getenv("PIO_Save_Decomps");
-  //  printf("%s %d %s\n",__FILE__,__LINE__,envptr);
-  if(envptr != NULL && (strcmp(envptr,"true")==0)){
-    PIO_Save_Decomps=true;
-  }
+
+  pio_get_env();
+
   /* allocate buffer space for compute nodes */
   compute_buffer_init(*iosys);
 
