@@ -141,6 +141,10 @@ contains
     integer :: nv, mode
     integer,  parameter :: c0 = -1
     double precision, parameter :: cd0 = 1.0e30
+    integer, parameter :: ifill=-1
+    real, parameter :: rfill=-1.0e16
+    double precision, parameter :: dfill=-9.99d-38
+
     nullify(compmap)
 
     call pio_readdof(filename, ndims, gdims, compmap, MPI_COMM_WORLD)
@@ -180,16 +184,18 @@ contains
        allocate(dfld(maplen,nvars))
        allocate(dfld_in(maplen,nvars))
 
-!       ifld = mype
-       rfld = mype
-       dfld = mype
+       ifld = ifill
+       rfld = rfill
+       dfld = dfill
        do nv=1,nvars
           do j=1,maplen
-             ifld(j,nv) = compmap(j)
-             dfld(j,nv) = ifld(j,nv)/1000000.0
-	     rfld(j,nv) = 1.0E5*ifld(j,nv)
+	     if(compmap(j) > 0) then
+               ifld(j,nv) = compmap(j)
+               dfld(j,nv) = ifld(j,nv)/1000000.0
+               rfld(j,nv) = 1.0E5*ifld(j,nv)
+             endif
           enddo
-       enddo
+        enddo
 
 #ifdef BGQTRY
   call print_memusage()
@@ -237,9 +243,9 @@ contains
                       call PIO_setframe(File, vari(nv), frame)
                       call PIO_setframe(File, varr(nv), frame)
                       call PIO_setframe(File, vard(nv), frame)
-                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= -1)
-                      call pio_write_darray(File, varr(nv), iodesc_r4, rfld(:,nv)    , ierr, fillval= -1.E12)
-                      call pio_write_darray(File, vard(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval= -1.D36)
+                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= ifill)
+                      call pio_write_darray(File, varr(nv), iodesc_r4, rfld(:,nv)    , ierr, fillval= rfill)
+                      call pio_write_darray(File, vard(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval= dfill)
                    enddo
 ! multiversion  
 !                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
@@ -303,7 +309,7 @@ contains
                 errorcnt = 0
                 do nv=1,nvars
                    do j=1,maplen
-                      if(compmap(j) /= 0) then	
+!                      if(compmap(j) /= 0) then	
                          if(ifld(j,nv) /= ifld_in(j,nv)) then
                             if(errorcnt < 10) then
                                print *,__LINE__,'Int: ',mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
@@ -321,7 +327,7 @@ contains
                             endif
                             errorcnt = errorcnt+1
                          endif
-                      endif
+!                      endif
                    enddo
                 enddo
                 j = errorcnt
