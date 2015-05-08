@@ -7,17 +7,17 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_area_average_at_surface
+!  ocn_surface_area_weighted_averages
 !
 !> \brief MPAS ocean analysis member: areal-{min,max,avg} of 2D fields
 !> \author Todd Ringler
 !> \date   April 24, 2015
 !> \details
-!>  MPAS ocean analysis member: surface statistics
+!>  MPAS ocean analysis member: surface-area-weighted averages
 !
 !-----------------------------------------------------------------------
 
-module ocn_area_average_at_surface
+module ocn_surface_area_weighted_averages
 
    use mpas_grid_types
    use mpas_timer
@@ -44,11 +44,11 @@ module ocn_area_average_at_surface
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_area_average_at_surface, &
-             ocn_init_area_average_at_surface, &
-             ocn_compute_area_average_at_surface, &
-             ocn_restart_area_average_at_surface, &
-             ocn_finalize_area_average_at_surface
+   public :: ocn_setup_packages_surface_area_weighted_averages, &
+             ocn_init_surface_area_weighted_averages, &
+             ocn_compute_surface_area_weighted_averages, &
+             ocn_restart_surface_area_weighted_averages, &
+             ocn_finalize_surface_area_weighted_averages
 
    !--------------------------------------------------------------------
    !
@@ -56,7 +56,7 @@ module ocn_area_average_at_surface
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: amAreaAverageAtSurfaceTimer
+   type (timer_node), pointer :: amSfcAreaWeighedAvgTimer
 
 !***********************************************************************
 
@@ -64,7 +64,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_setup_packages_area_average_at_surface
+!  routine ocn_setup_packages_surface_area_weighted_averages
 !
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_setup_packages_area_average_at_surface(configPool, packagePool, err)!{{{
+   subroutine ocn_setup_packages_surface_area_weighted_averages(configPool, packagePool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -106,21 +106,21 @@ contains
       !
       !-----------------------------------------------------------------
 
-      logical, pointer :: amAreaAverageAtSurfacePkgActive
+      logical, pointer :: amSfcAreaWeightedAvgPkgActive
 
       err = 0
 
-      call mpas_pool_get_package(packagePool, 'amAreaAverageAtSurfacePkgActive', amAreaAverageAtSurfacePkgActive)
+      call mpas_pool_get_package(packagePool, 'amSfcAreaWeightedAvgPkgActive', amSfcAreaWeightedAvgPkgActive)
 
       ! turn on package for this analysis member
-      amAreaAverageAtSurfacePkgActive = .true.
+      amSfcAreaWeightedAvgPkgActive = .true.
 
-   end subroutine ocn_setup_packages_area_average_at_surface!}}}
+   end subroutine ocn_setup_packages_surface_area_weighted_averages!}}}
 
 
 !***********************************************************************
 !
-!  routine ocn_init_area_average_at_surface
+!  routine ocn_init_surface_area_weighted_averages
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -131,7 +131,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_area_average_at_surface(domain, err)!{{{
+   subroutine ocn_init_surface_area_weighted_averages(domain, err)!{{{
 
       use mpas_packages
 
@@ -165,11 +165,11 @@ contains
 
       err = 0
 
-   end subroutine ocn_init_area_average_at_surface!}}}
+   end subroutine ocn_init_surface_area_weighted_averages!}}}
 
 !***********************************************************************
 !
-!  routine ocn_compute_area_average_at_surface
+!  routine ocn_compute_surface_area_weighted_averages
 !
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -180,7 +180,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_area_average_at_surface(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_surface_area_weighted_averages(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -214,16 +214,16 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: amAreaAverageAtSurfacePool
+      type (mpas_pool_type), pointer :: amSfcAreaWeightedAvgPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
 
-      real (kind=RKIND), dimension(:,:), pointer :: minValueWithinArealRegion
-      real (kind=RKIND), dimension(:,:), pointer :: maxValueWithinArealRegion
-      real (kind=RKIND), dimension(:,:), pointer :: avgValueWithinArealRegion
+      real (kind=RKIND), dimension(:,:), pointer :: minValueWithinOceanRegion
+      real (kind=RKIND), dimension(:,:), pointer :: maxValueWithinOceanRegion
+      real (kind=RKIND), dimension(:,:), pointer :: avgValueWithinOceanRegion
 
       ! pointers to data in pools to be analyzed
       ! bulkForcing Pkg
@@ -257,7 +257,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
       ! pointers to data in mesh pool
-      integer, pointer :: nCells, nCellsSolve, nAreaAverageAtSurfaceFields, nOceanRegions
+      integer, pointer :: nCells, nCellsSolve, nSfcAreaWeightedAvgFields, nOceanRegions
       integer, pointer :: indexTemperature, indexSalinity
       real (kind=RKIND), dimension(:), pointer ::  areaCell, lonCell, latCell
 
@@ -272,7 +272,7 @@ contains
       integer :: iCell, iRegion, iTracer, err_tmp
 
       ! package flag
-      logical, pointer :: amAreaAverageAtSurfacePkgActive
+      logical, pointer :: amSfcAreaWeightedAvgPkgActive
       logical, pointer :: bulkForcingPkgActive
       logical, pointer :: frazilIcePkgActive
 
@@ -286,15 +286,15 @@ contains
       err = 0
 
       ! check to see if package is on
-      call mpas_pool_get_package(ocnPackages, 'amAreaAverageAtSurfacePkgActive', amAreaAverageAtSurfacePkgActive)
-      if ( .not. amAreaAverageAtSurfacePkgActive ) return
+      call mpas_pool_get_package(ocnPackages, 'amSfcAreaWeightedAvgPkgActive', amSfcAreaWeightedAvgPkgActive)
+      if ( .not. amSfcAreaWeightedAvgPkgActive ) return
 
       ! get status of other packages
       call mpas_pool_get_package(ocnPackages, 'bulkForcingActive', bulkForcingPkgActive)
       call mpas_pool_get_package(ocnPackages, 'frazilIceActive', frazilIcePkgActive)
 
       ! start timer
-      call mpas_timer_start("compute_area_average_at_surface", .false., amAreaAverageAtSurfaceTimer)
+      call mpas_timer_start("compute_surface_area_weighted_averages", .false., amSfcAreaWeighedAvgTimer)
 
       ! set highest level pointer
       dminfo = domain % dminfo
@@ -303,11 +303,11 @@ contains
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nOceanRegions', nOceanRegions)
 
       ! find the number of data fields
-      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nAreaAverageAtSurfaceFields', nAreaAverageAtSurfaceFields)
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nSfcAreaWeightedAvgFields', nSfcAreaWeightedAvgFields)
 
       ! allocate buffer for message passing
       kBuffer=0
-      kBufferLength=nOceanRegions*nAreaAverageAtSurfaceFields
+      kBufferLength=nOceanRegions*nSfcAreaWeightedAvgFields
       allocate(workBufferSum(kBufferLength))
       allocate(workBufferMin(kBufferLength))
       allocate(workBufferMax(kBufferLength))
@@ -325,13 +325,13 @@ contains
       do iRegion=1,nOceanRegions
 
       ! get pointers to analysis member arrays
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'amAreaAverageAtSurface', amAreaAverageAtSurfacePool)
-      call mpas_pool_get_array(amAreaAverageAtSurfacePool, 'minValueWithinArealRegion', minValueWithinArealRegion)
-      call mpas_pool_get_array(amAreaAverageAtSurfacePool, 'maxValueWithinArealRegion', maxValueWithinArealRegion)
-      call mpas_pool_get_array(amAreaAverageAtSurfacePool, 'avgValueWithinArealRegion', avgValueWithinArealRegion)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'amSfcAreaWeightedAvg', amSfcAreaWeightedAvgPool)
+      call mpas_pool_get_array(amSfcAreaWeightedAvgPool, 'minValueWithinOceanRegion', minValueWithinOceanRegion)
+      call mpas_pool_get_array(amSfcAreaWeightedAvgPool, 'maxValueWithinOceanRegion', maxValueWithinOceanRegion)
+      call mpas_pool_get_array(amSfcAreaWeightedAvgPool, 'avgValueWithinOceanRegion', avgValueWithinOceanRegion)
 
       ! get pointers to scratch variables
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'areaAverageAtSurfaceScratch', scratchPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'sfcAreaWeightedAvgScratch', scratchPool)
       call mpas_pool_get_field(scratchPool, 'workArray', workArrayField)
       call mpas_pool_get_field(scratchPool, 'workMask', workMaskField)
       call mpas_pool_get_field(scratchPool, 'workMin', workMinField)
@@ -361,7 +361,7 @@ contains
          ! get pointers to mesh
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
-         call mpas_pool_get_dimension(block % dimensions, 'nAreaAverageAtSurfaceFields', nAreaAverageAtSurfaceFields)
+         call mpas_pool_get_dimension(block % dimensions, 'nSfcAreaWeightedAvgFields', nSfcAreaWeightedAvgFields)
          call mpas_pool_get_dimension(block % dimensions, 'nOceanRegions', nOceanRegions)
          call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
          call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
@@ -370,10 +370,10 @@ contains
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
          ! test to make sure the arrays are big enough
-         nDefinedDataFields = size(avgValueWithinArealRegion,dim=1)
-         if (nDefinedDataFields > nAreaAverageAtSurfaceFields) then
-             write (stderrUnit,*) 'Abort: nDefinedDataFields > nAreaAverageAtSurfaceFields'
-             write (stderrUnit,*) '     :  increase size of ocn_area_average_at_surface scratch space'
+         nDefinedDataFields = size(avgValueWithinOceanRegion,dim=1)
+         if (nDefinedDataFields > nSfcAreaWeightedAvgFields) then
+             write (stderrUnit,*) 'Abort: nDefinedDataFields > nSfcAreaWeightedAvgFields'
+             write (stderrUnit,*) '     :  increase size of ocn_surface_area_weighted_averages scratch space'
              call mpas_dmpar_abort(dminfo)
          endif
 
@@ -483,9 +483,9 @@ contains
       do iRegion=1,nOceanRegions
         do iDataField=1,nDefinedDataFields
            kBuffer = kBuffer+1
-           avgValueWithinArealRegion(iDataField,iRegion)=workBufferSumReduced(kBuffer)
-           minValueWithinArealRegion(iDataField,iRegion)=workBufferMinReduced(kBuffer)
-           maxValueWithinArealRegion(iDataField,iRegion)=workBufferMaxReduced(kBuffer)
+           avgValueWithinOceanRegion(iDataField,iRegion)=workBufferSumReduced(kBuffer)
+           minValueWithinOceanRegion(iDataField,iRegion)=workBufferMinReduced(kBuffer)
+           maxValueWithinOceanRegion(iDataField,iRegion)=workBufferMaxReduced(kBuffer)
         enddo
       enddo
 
@@ -493,10 +493,10 @@ contains
       do iRegion=1,nOceanRegions
          ! normalize all field by total area
          do iDataField=3,nDefinedDataFields
-            avgValueWithinArealRegion(iDataField,iRegion) = avgValueWithinArealRegion(iDataField,iRegion) / max(avgValueWithinArealRegion(2,iRegion),1.0e-8_RKIND)
+            avgValueWithinOceanRegion(iDataField,iRegion) = avgValueWithinOceanRegion(iDataField,iRegion) / max(avgValueWithinOceanRegion(2,iRegion),1.0e-8_RKIND)
          enddo
          ! normalize total area by number of cells in region
-         avgValueWithinArealRegion(2,iRegion) = avgValueWithinArealRegion(2,iRegion) / max(avgValueWithinArealRegion(1,iRegion),1.0e-8)
+         avgValueWithinOceanRegion(2,iRegion) = avgValueWithinOceanRegion(2,iRegion) / max(avgValueWithinOceanRegion(1,iRegion),1.0e-8)
       enddo
 
       ! deallocate scratch fields
@@ -512,7 +512,7 @@ contains
       deallocate(workBufferMaxReduced)
 
       ! stop timer
-      call mpas_timer_stop("area_average_at_surface", amAreaAverageAtSurfaceTimer)
+      call mpas_timer_stop("surface_area_weighted_averages", amSfcAreaWeighedAvgTimer)
 
    contains
 
@@ -614,11 +614,11 @@ contains
 
    end subroutine compute_statistics
 
-   end subroutine ocn_compute_area_average_at_surface!}}}
+   end subroutine ocn_compute_surface_area_weighted_averages!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_area_average_at_surface
+!  routine ocn_restart_surface_area_weighted_averages
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -629,7 +629,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_area_average_at_surface(domain, err)!{{{
+   subroutine ocn_restart_surface_area_weighted_averages(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -661,11 +661,11 @@ contains
 
       err = 0
 
-   end subroutine ocn_restart_area_average_at_surface!}}}
+   end subroutine ocn_restart_surface_area_weighted_averages!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_area_average_at_surface
+!  routine ocn_finalize_surface_area_weighted_averages
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Todd Ringler
@@ -676,7 +676,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_area_average_at_surface(domain, err)!{{{
+   subroutine ocn_finalize_surface_area_weighted_averages(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -708,8 +708,8 @@ contains
 
       err = 0
 
-   end subroutine ocn_finalize_area_average_at_surface!}}}
+   end subroutine ocn_finalize_surface_area_weighted_averages!}}}
 
-end module ocn_area_average_at_surface
+end module ocn_surface_area_weighted_averages
 
 ! vim: foldmethod=marker
