@@ -93,7 +93,7 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
 
     <config_definition>
     <components>
-      <comp_archive_spec name="[regular expression string] (cpl|dart|cam\\*|datm|clm\\?|dlnd|rtm|cice|dice|pop|docn|cism|ww3|dwav)">
+      <comp_archive_spec name="[regular expression string] (cpl|dart|cam\\*|datm|clm\\?|dlnd|rtm|mosart|cice|dice|pop|docn|cism|ww3|dwav)">
       NOTE: model component name (note: cam\\* and clm\\? are historical for CAM and CLM model components).
 
         <rootdir>[string] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
@@ -358,7 +358,7 @@ sub listXMLin
 
 The env_archive.xml brief XML tag schema:
 
-    <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|cice|dice|pop|docn|cism|ww3|dwav)">
+    <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|mosart|cice|dice|pop|docn|cism|ww3|dwav)">
 	<rootdir>[string:root directory name after DOUT_S_ROOT.locked] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
         <multi_instance>[string: multi-instance support] (y|n)</multi_instance>
         <files>

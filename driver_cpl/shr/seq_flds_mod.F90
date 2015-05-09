@@ -1383,10 +1383,26 @@ module seq_flds_mod
 
      call seq_flds_add(l2x_fluxes,'Flrl_rofl')
      call seq_flds_add(x2r_fluxes,'Flrl_rofl')
-     longname = 'Water flux from land (liquid)'
-     stdname  = 'water_flux_into_runoff'
+     longname = 'Water flux from land (liquid surface)'
+     stdname  = 'water_flux_into_runoff_surface'
      units    = 'kg m-2 s-1'
      attname  = 'Flrl_rofl'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofgwl')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofgwl')
+     longname = 'Water flux from land (liquid glacier, wetland, and lake)'
+     stdname  = 'water_flux_into_runoff_from_gwl'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofgwl'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofsub')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofsub')
+     longname = 'Water flux from land (liquid subsurface)'
+     stdname  = 'water_flux_into_runoff_subsurface'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofsub'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(l2x_fluxes,'Flrl_rofi')
