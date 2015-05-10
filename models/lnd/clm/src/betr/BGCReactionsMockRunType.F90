@@ -84,56 +84,64 @@ implicit none
   ! DESCRIPTION
   ! initialize the betrbgc
   use BeTRTracerType        , only : betrtracer_type
-  
+  use MathfuncMod           , only : addone  
   
   class(bgc_reaction_mock_run_type), intent(in) :: this
   type(bounds_type),                 intent(in) :: bounds
   integer,                           intent(in) :: lbj, ubj        
   type(BeTRtracer_type ),         intent(inout) :: betrtracer_vars
+  
   character(len=*), parameter :: subname ='Init_betrbgc'
 
-  betrtracer_vars%ngwmobile_tracers=5
-  betrtracer_vars%nsolid_passive_tracers=0
-  betrtracer_vars%nvolatile_tracers=5
-  betrtracer_vars%ntracers=betrtracer_vars%ngwmobile_tracers+betrtracer_vars%nsolid_passive_tracers
+  integer :: itemp_gwm
+  integer :: itemp_g
+  integer :: itemp_s
+  integer :: itemp_gwm_grp
+  integer :: dum
+  
+  itemp_gwm = 0; itemp_g = 0 ; itemp_s = 0; itemp_gwm_grp = 0
+  betrtracer_vars%id_trc_n2  = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
+  betrtracer_vars%id_trc_o2  = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
+  betrtracer_vars%id_trc_ar  = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
+  betrtracer_vars%id_trc_co2x= addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
+  betrtracer_vars%id_trc_ch4 = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
+  
+  betrtracer_vars%ngwmobile_tracers      = itemp_gwm;   betrtracer_vars%ngwmobile_tracer_groups= itemp_gwm_grp
+  betrtracer_vars%nsolid_passive_tracers = itemp_s;     betrtracer_vars%nsolid_passive_tracer_groups = itemp_s
+  betrtracer_vars%nvolatile_tracers      = itemp_g;     betrtracer_vars%nvolatile_tracer_groups= itemp_g
+  betrtracer_vars%nmem_max               = 1
+  
+
   
   call betrtracer_vars%Init()
+  itemp_grp = 0    !group id
+  itemp_v = 0      !volatile id
+  itemp_vgrp = 0   !volatile group
   
-  betrtracer_vars%id_trc_n2  = 1
-  betrtracer_vars%id_trc_o2  = 2
-  betrtracer_vars%id_trc_ar  = 3
-  betrtracer_vars%id_trc_co2x= 4
-  betrtracer_vars%id_trc_ch4 = 5
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_n2, trc_name='N2'  , &
+    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
+    trc_group_mem= 1,  is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
+    trc_volatile_group_id = addone(item_vgrp))
 
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2)='N2'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_o2)='O2'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_ar)='AR'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_co2x)='CO2x'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_ch4)='CH4'
-  
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_n2)=.true.
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_o2)=.true.
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_ar)=.true.
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_co2x)=.true.
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_ch4)=.true.
-  
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_n2)   = 1
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_o2)   = 2
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_ar)   = 3
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_co2x) = 4
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_ch4)  = 5
-  
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2)   = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_o2)   = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ar)   = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_co2x) = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ch4)  = .true.
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_o2, trc_name='O2'  , &
+    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
+    trc_volatile_group_id = addone(item_vgrp))
 
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2) = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_o2) = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ar) = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_co2x) = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ch4) = .true.
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ar, trc_name='AR'  , &
+    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
+    trc_volatile_group_id = addone(item_vgrp))
+
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_co2x, trc_name='CO2x', &
+    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp)  , &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
+    trc_volatile_group_id = addone(item_vgrp))
+
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ch4, trc_name='CH4', &
+    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
+    trc_volatile_group_id = addone(item_vgrp))
 
   end subroutine Init_betrbgc
   
@@ -167,25 +175,29 @@ implicit none
   
   SHR_ASSERT_ALL((ubound(dz_top)                == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
 
-
+  associate(
+    
+    groupid  => betrtracer_vars%groupid          &
+  )
   do fc = 1, num_soilc
     c = filter_soilc(fc)
     
     !eventually, the following code will be implemented using polymorphism
-    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_n2)=32.8_r8                         !mol m-3, contant boundary condition
-    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_o2)=8.78_r8                         !mol m-3, contant boundary condition
-    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_ar)=0.3924_r8                       !mol m-3, contant boundary condition
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_n2)  =32.8_r8                         !mol m-3, contant boundary condition
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_o2)  =8.78_r8                         !mol m-3, contant boundary condition
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_ar)  =0.3924_r8                       !mol m-3, contant boundary condition
     tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_co2x)=0.0168_r8                      !mol m-3, contant boundary condition  
-    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_ch4)=6.939e-5_r8                    !mol m-3, contant boundary condition
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_ch4) =6.939e-5_r8                    !mol m-3, contant boundary condition
 
   
     tracerboundarycond_vars%bot_concflux_col(c,1,:) = 0._r8                                  !zero flux boundary condition
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_n2) = 2._r8*1.837e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_o2) = 2._r8*1.713e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ar) = 2._r8*1.532e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_co2x) = 2._r8*1.399e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ch4) = 2._r8*1.808e-5_r8/dz_top(c)     !m/s surface conductance  
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_n2))   = 2._r8*1.837e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_o2))   = 2._r8*1.713e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_ar))   = 2._r8*1.532e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_co2x)) = 2._r8*1.399e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_ch4))  = 2._r8*1.808e-5_r8/dz_top(c)     !m/s surface conductance  
   enddo
+  end associate
   end subroutine set_boundary_conditions
 !-------------------------------------------------------------------------------
   

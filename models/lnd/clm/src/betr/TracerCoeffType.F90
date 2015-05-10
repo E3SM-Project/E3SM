@@ -107,19 +107,19 @@ contains
 
     begc = bounds%begc; endc= bounds%endc
  
-    allocate(this%aqu2neutralcef_col         (begc:endc, lbj:ubj, 1:betrtracer_vars%ngwmobile_tracers));  this%aqu2neutralcef_col        (:,:,:) = nan
-    allocate(this%aqu2bulkcef_mobile_col     (begc:endc, lbj:ubj, 1:betrtracer_vars%ngwmobile_tracers));  this%aqu2bulkcef_mobile_col    (:,:,:) = nan
-    allocate(this%gas2bulkcef_mobile_col     (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracers));  this%gas2bulkcef_mobile_col    (:,:,:) = nan
-    allocate(this%henrycef_col               (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracers));  this%henrycef_col              (:,:,:) = nan  
-    allocate(this%bunsencef_col              (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracers));  this%bunsencef_col             (:,:,:) = nan  
-    allocate(this%tracer_diffusivity_air_col (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%tracer_diffusivity_air_col(:,:) = nan  
-    allocate(this%scal_aere_cond_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%scal_aere_cond_col        (:,:)   = nan
-    allocate(this%aere_cond_col              (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%aere_cond_col             (:,:)   = nan
-    allocate(this%annsum_counter_col         (begc:endc))                                              ;  this%annsum_counter_col        (:)     = nan
-    allocate(this%diffgas_topsno_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%diffgas_topsno_col        (:,:)   = nan
-    allocate(this%diffgas_topsoi_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracers));  this%diffgas_topsoi_col        (:,:)   = nan
-    allocate(this%hmconductance_col          (begc:endc, lbj:ubj, 1:betrtracer_vars%ntracers));           this%hmconductance_col         (:,:,:) = nan
-    allocate(this%aqu2equilscef_col          (begc:endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracers));this%aqu2equilscef_col        (:,:,:) = nan
+    allocate(this%aqu2neutralcef_col         (begc:endc, lbj:ubj, 1:betrtracer_vars%ngwmobile_tracer_groups));  this%aqu2neutralcef_col        (:,:,:) = nan
+    allocate(this%aqu2bulkcef_mobile_col     (begc:endc, lbj:ubj, 1:betrtracer_vars%ngwmobile_tracer_groups));  this%aqu2bulkcef_mobile_col    (:,:,:) = nan
+    allocate(this%gas2bulkcef_mobile_col     (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracer_groups));  this%gas2bulkcef_mobile_col    (:,:,:) = nan
+    allocate(this%henrycef_col               (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracer_groups));  this%henrycef_col              (:,:,:) = nan  
+    allocate(this%bunsencef_col              (begc:endc, lbj:ubj, 1:betrtracer_vars%nvolatile_tracer_groups));  this%bunsencef_col             (:,:,:) = nan  
+    allocate(this%tracer_diffusivity_air_col (begc:endc,          1:betrtracer_vars%nvolatile_tracer_groups));  this%tracer_diffusivity_air_col(:,:) = nan  
+    allocate(this%scal_aere_cond_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracer_groups));  this%scal_aere_cond_col        (:,:)   = nan
+    allocate(this%aere_cond_col              (begc:endc,          1:betrtracer_vars%nvolatile_tracer_groups));  this%aere_cond_col             (:,:)   = nan
+    allocate(this%annsum_counter_col         (begc:endc))                                                    ;  this%annsum_counter_col        (:)     = nan
+    allocate(this%diffgas_topsno_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracer_groups));  this%diffgas_topsno_col        (:,:)   = nan
+    allocate(this%diffgas_topsoi_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracer_groups));  this%diffgas_topsoi_col        (:,:)   = nan
+    allocate(this%hmconductance_col          (begc:endc, lbj:ubj, 1:betrtracer_vars%ntracer_groups))         ;  this%hmconductance_col         (:,:,:) = nan
+    allocate(this%aqu2equilscef_col          (begc:endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracer_groups));this%aqu2equilscef_col        (:,:,:) = nan
   end subroutine InitAllocate
   
   !-----------------------------------------------------------------------
@@ -143,63 +143,66 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: begc, endc
-    integer :: jj, kk
+    integer :: jj, kk, trcid
     real(r8), pointer :: data2dptr(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer :: data1dptr(:)   ! temp. pointers for slicing larger arrays
         
     !use the interface provided from CLM
     
     
-    associate(                                                              &
-      ntracers             => betrtracer_vars%ntracers                    , &
-      ngwmobile_tracers    => betrtracer_vars%ngwmobile_tracers           , &
-      nsolid_equil_tracers => betrtracer_vars%nsolid_equil_tracers        , &
-      is_volatile          => betrtracer_vars%is_volatile                 , &
-      volatileid           => betrtracer_vars%volatileid                  , &
-      tracernames          => betrtracer_vars%tracernames                   &
+    associate(                                                                  &
+      ntracers             => betrtracer_vars%ntracers                        , &
+      tracer_group_memid   => betrtracer_vars%tracer_group_memid              , &
+      ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups   , &      
+      nsolid_equil_tracers => betrtracer_vars%nsolid_equil_tracers            , &
+      is_volatile          => betrtracer_vars%is_volatile                     , &
+      volatilegroupid      => betrtracer_vars%volatilegroupid                 , &
+      tracernames          => betrtracer_vars%tracernames                       &
     )
     begc=bounds%begc; endc=bounds%endc 
-    do jj = 1, ntracers
-      if(jj <= ngwmobile_tracers)then
-        if(is_volatile(jj))then
-          kk = volatileid(jj)
+    do jj = 1, ntracer_groups
+      trcid = tracer_group_memid(jj,1)
+      if(jj <= ngwmobile_tracer_groups)then
+
+        if(is_volatile(trcid))then
+          kk = volatilegroupid(jj)
           this%scal_aere_cond_col(begc:endc, kk) = spval
           data1dptr => this%scal_aere_cond_col(begc:endc, kk)
-          call hist_addfld1d (fname='SCAL_ARENCHYMA_'//tracernames(jj), units='none', &
-           avgflag='A', long_name='scaling factor for tracer transport through arenchyma for '//trim(tracernames(jj)), &
+          call hist_addfld1d (fname='SCAL_ARENCHYMA_'//tracernames(trcid), units='none', &
+           avgflag='A', long_name='scaling factor for tracer transport through arenchyma for '//trim(tracernames(trcid)), &
            ptr_col=data1dptr, default='inactive')
 
           this%aere_cond_col(begc:endc, kk) = spval
           data1dptr => this%aere_cond_col(begc:endc, kk)
-          call hist_addfld1d (fname='ARENCHYMA_'//tracernames(jj), units='m/s', &
-            avgflag='A', long_name='conductance for tracer transport through arenchyma for '//trim(tracernames(jj)), &
+          call hist_addfld1d (fname='ARENCHYMA_'//tracernames(trcid), units='m/s', &
+            avgflag='A', long_name='conductance for tracer transport through arenchyma for '//trim(tracernames(trcid)), &
            ptr_col=data1dptr, default='inactive')
          
           this%diffgas_topsoi_col(begc:endc, kk) = spval
           data1dptr => this%diffgas_topsoi_col(begc:endc, kk)
-          call hist_addfld1d (fname='CDIFF_TOPSOI_'//tracernames(jj), units='none', &
-             avgflag='A', long_name='gas diffusivity in top soil layer for '//trim(tracernames(jj)), &
+          call hist_addfld1d (fname='CDIFF_TOPSOI_'//tracernames(trcid), units='none', &
+             avgflag='A', long_name='gas diffusivity in top soil layer for '//trim(tracernames(trcid)), &
              ptr_col=data1dptr, default='inactive')
 
           this%gas2bulkcef_mobile_col(:,:,kk) = spval
           data2dptr => this%gas2bulkcef_mobile_col(:,:,kk)
-          call hist_addfld2d (fname='CGAS2BULK_'//tracernames(jj), units='none', type2d='levtrc',  &
-            avgflag='A', long_name='converting factor from gas to bulk phase for '//trim(tracernames(jj)), &
+          call hist_addfld2d (fname='CGAS2BULK_'//tracernames(trcid), units='none', type2d='levtrc',  &
+            avgflag='A', long_name='converting factor from gas to bulk phase for '//trim(tracernames(trcid)), &
             ptr_col=data2dptr, default='inactive')        
         endif
       
         this%aqu2bulkcef_mobile_col(:,:,jj) = spval
         data2dptr => this%aqu2bulkcef_mobile_col(:,:,jj)
-        call hist_addfld2d (fname='CAQU2BULK_vr_'//tracernames(jj), units='none', type2d='levtrc',  &
-         avgflag='A', long_name='converting factor from aqeous to bulk phase for '//trim(tracernames(jj)), &
+        call hist_addfld2d (fname='CAQU2BULK_vr_'//tracernames(trcid), units='none', type2d='levtrc',  &
+         avgflag='A', long_name='converting factor from aqeous to bulk phase for '//trim(tracernames(trcid)), &
          ptr_col=data2dptr, default='inactive')
                
       endif
             
       this%hmconductance_col(:,:,jj) = spval
       data2dptr => this%hmconductance_col(:,:,jj)
-      call hist_addfld2d (fname='HMCONDC_vr_'//tracernames(jj), units='none', type2d='levtrc',  &
-       avgflag='A', long_name='bulk conductance for '//trim(tracernames(jj)), &
+      call hist_addfld2d (fname='HMCONDC_vr_'//tracernames(trcid), units='none', type2d='levtrc',  &
+       avgflag='A', long_name='bulk conductance for '//trim(tracernames(trcid)), &
        ptr_col=data2dptr, default='inactive')              
     enddo     
         

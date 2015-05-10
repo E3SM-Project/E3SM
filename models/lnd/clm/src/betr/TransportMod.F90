@@ -168,43 +168,46 @@ module TransportMod
    integer,  intent(in) :: jtop(bounds%begc: )                  ! index of upper boundary, which could be variable
    integer,  intent(in) :: numfl                                ! length of the filter
    integer,  intent(in) :: filter(:)                            ! the actual filter
-   real(r8), intent(in) :: trcin_mobile(bounds%begc: , lbj: )   ! incoming mobile tracer concentration
    real(r8), intent(in) :: Rfactor(bounds%begc: , lbj: )        ! conversion parameter from the given tracer phase to bulk mobile phase
    real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: )  ! weighted bulk tracer conductances
    real(r8), intent(in) :: dz(bounds%begc: , lbj: )             ! node thickness
-   real(r8), intent(in) :: source(bounds%begc: , lbj: )         !chemical sources [mol/m3]     
    real(r8), intent(in) :: dtime(bounds%begc: )                 ! time step   
-   real(r8), intent(in) :: bot_concflx(bounds%begc: , 1: )      ! flux or concentration at the bottom boundary
-   real(r8), intent(in) :: trc_concflx_air(bounds%begc:, 1: )   ! atmospheric tracer concentration (topbc_type=1) or flux (topbc_type=2)
    real(r8), intent(in) :: condc_toplay(bounds%begc: )          ! top layer conductance
    integer,  intent(in) :: topbc_type                           ! type of top boundary condtion: 1, concentration, 2 flux
+   real(r8), intent(in) :: bot_concflx    (bounds%begc: , 1: , 1: )      ! flux or concentration at the bottom boundary
+   real(r8), intent(in) :: trc_concflx_air(bounds%begc: , 1: , 1: )     ! atmospheric tracer concentration (topbc_type=1) or flux (topbc_type=2)
+   real(r8), intent(in) :: trcin_mobile   (bounds%begc: , lbj: , 1: )   ! incoming mobile tracer concentration
+   real(r8), intent(in) :: source         (bounds%begc: , lbj: , 1: )   ! chemical sources [mol/m3]     
+
    logical,  intent(in) :: source_only                          ! if .true. only update the source array rt, used for explicit solver
    logical,  intent(in) :: update_col(bounds%begc: )            ! logical switch indicating if the column is for active update
    
-   real(r8), intent(out):: rt(bounds%begc: ,lbj: )              ! tridiagonal matrix element r   
+   real(r8), intent(out):: rt(bounds%begc: ,lbj: , 1: )              ! tridiagonal matrix element r   
    real(r8), optional,intent(inout):: at(bounds%begc: , lbj: )  ! tridiagonal matrix element a
    real(r8), optional,intent(inout):: bt(bounds%begc: , lbj: )  ! tridiagonal matrix element b
    real(r8), optional,intent(inout):: ct(bounds%begc: , lbj: )  ! tridiagonal matrix element c  
    integer,  optional,intent(in)   :: botbc_type                ! type of bottom boundary condition
    real(r8), optional,intent(in)   :: condc_botlay(bounds%begc: )  !conductance at bottom layer
    !local varaibles
-   integer :: j, fc, c      !indices
-   integer :: botbc_ltype   !temp. variable
+   integer :: j, fc, c, k      !indices
+   integer :: botbc_ltype      !temp. variable
    real(r8) ::Fl, Fr
    character(len=255) :: subname='DiffusTransp_gw'
   
    SHR_ASSERT_ALL((ubound(jtop)            == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(trcin_mobile)    == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(Rfactor)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(hmconductance)   == (/bounds%endc, ubj-1/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)              == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(source)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))      
    SHR_ASSERT_ALL((ubound(dtime)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bot_concflx)     == (/bounds%endc, 2/)),     errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(trc_concflx_air) == (/bounds%endc, 2/)),     errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(condc_toplay)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))   
    SHR_ASSERT_ALL((ubound(update_col)      == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(rt)              == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+   
+   SHR_ASSERT_ALL(((/ubound(rt,1),ubound(rt,2),size(rt,3)/)                                        == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(trcin_mobile,1),ubound(trcin_mobile,2),size(trcin_mobile,3)/)          == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(source,1),ubound(source,2),size(source,3)/)                            == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))      
+   SHR_ASSERT_ALL(((/ubound(bot_concflx,1),ubound(bot_concflx,2),size(bot_concflx,3)/)             == (/bounds%endc, 2, ntrcs/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(trc_concflx_air,1),ubound(trc_concflx_air,2),size(trc_concflx_air,3)/) == (/bounds%endc, 2, ntrcs/))  , errMsg(__FILE__,__LINE__))
+
    
    if(.not. source_only) then
      SHR_ASSERT_ALL((ubound(at)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
@@ -220,6 +223,7 @@ module TransportMod
    else
      botbc_ltype = bndcond_as_flux     
    endif
+   
    do fc = 1, numfl
       !form the diffusion matrix
       c = filter(fc)
@@ -228,36 +232,39 @@ module TransportMod
             !top boundary condition as tracr concentration, dynamic canopy air tracer concentration
             !
          !endif
+
          do j = jtop(c), ubj
-            if(j == jtop(c))then
+           do k = 1, ntrcs
+             if(j == jtop(c))then
                !by default the top node is always assumed as snow surface,
                !though when it snow free, the conductance is defined with respect to the soil         
-               Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1)/rfactor(c,j+1)-trcin_mobile(c,j)/rfactor(c,j))
+               Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1, k)/rfactor(c,j+1)-trcin_mobile(c,j, k)/rfactor(c,j))
                if(topbc_type == bndcond_as_conc)then            
                   !top boundary condition given as concentration
-                  Fl = -condc_toplay(c)*(trcin_mobile(c,j)/rfactor(c,j)-trc_concflx_air(c, 1))
+                  Fl = -condc_toplay(c)*(trcin_mobile(c,j, k)/rfactor(c,j)-trc_concflx_air(c, 1, k))
                elseif(topbc_type == bndcond_as_flux)then
                   !top boundary condition given as flux, this only happens when the flux is given at soil surface
-                  Fl = trc_concflx_air(c,1)
+                  Fl = trc_concflx_air(c,1, k)
                endif
-            elseif(j == ubj)then               
-               Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j)/rfactor(c,j)-trcin_mobile(c,j-1)/rfactor(c,j-1))
+             elseif(j == ubj)then               
+               Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j,k)/rfactor(c,j)-trcin_mobile(c,j-1,k)/rfactor(c,j-1))
                if(botbc_ltype==bndcond_as_conc)then
-                 Fr = - condc_botlay(c)*(bot_concflx(c,1)-trcin_mobile(c,j)/rfactor(c,j))
+                 Fr = - condc_botlay(c)*(bot_concflx(c,1,k)-trcin_mobile(c,j,k)/rfactor(c,j))
                else
-                 Fr = bot_concflx(c,1)
+                 Fr = bot_concflx(c,1,k)
                endif
-            else
-               Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j)/rfactor(c,j)-trcin_mobile(c,j-1)/rfactor(c,j-1))
-               Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1)/rfactor(c,j+1)-trcin_mobile(c,j)/rfactor(c,j))
-            endif      
-            rt(c,j) = Fl-Fr + source(c,j)*dz(c,j)
-            if(j==jtop(c) .and. topbc_type == bndcond_as_conc)then
-              rt(c,j) = rt(c,j)+cntheta*condc_toplay(c)*(trc_concflx_air(c, 2)-trc_concflx_air(c, 1))
-            endif
-            if(j == ubj .and. botbc_ltype==bndcond_as_conc)then
-              rt(c,j) = rt(c,j) + cntheta*condc_botlay(c)*(bot_concflx(c,2) - bot_concflx(c,1))
-            endif
+             else
+               Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j,k)/rfactor(c,j)-trcin_mobile(c,j-1,k)/rfactor(c,j-1))
+               Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1,k)/rfactor(c,j+1)-trcin_mobile(c,j,k)/rfactor(c,j))
+             endif      
+             rt(c,j,k) = Fl-Fr + source(c,j,k)*dz(c,j)
+             if(j==jtop(c) .and. topbc_type == bndcond_as_conc)then
+               rt(c,j,k) = rt(c,j,k)+cntheta*condc_toplay(c)*(trc_concflx_air(c, 2,k)-trc_concflx_air(c, 1,k))
+             endif
+             if(j == ubj .and. botbc_ltype==bndcond_as_conc)then
+               rt(c,j,k) = rt(c,j,k) + cntheta*condc_botlay(c)*(bot_concflx(c,2,k) - bot_concflx(c,1,k))
+             endif
+           enddo
          enddo
       endif   
    enddo
@@ -294,7 +301,7 @@ module TransportMod
 
    end subroutine DiffusTransp_gw_tridiag
 !-------------------------------------------------------------------------------
-   subroutine DiffusTransp_gw(bounds, lbj, ubj, jtop, numfl, filter, trcin_mobile, &
+   subroutine DiffusTransp_gw(bounds, lbj, ubj, jtop, numfl, filter, ntrcs, trcin_mobile, &
        Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,condc_toplay, topbc_type,&
        bot_flux, update_col, dtracer, botbc_type, condc_botlay)
    !
@@ -303,52 +310,54 @@ module TransportMod
    ! the solver returns the tracer change due to diffusive transport
    ! USES
    !
-   use shr_kind_mod, only: r8 => shr_kind_r8
-   use decompMod,  only : bounds_type   
+   use shr_kind_mod  , only : r8 => shr_kind_r8
+   use decompMod     , only : bounds_type   
    use TridiagonalMod, only : Tridiagonal
       
    implicit none
    
-   type(bounds_type),  intent(in) :: bounds                     !bounds
-   integer,  intent(in) :: lbj, ubj                             ! lbinning and ubing level indices
-   integer,  intent(in) :: jtop(bounds%begc: )                  ! index of upper boundary, which could be variable
-   integer,  intent(in) :: numfl                                ! length of the filter
-   integer,  intent(in) :: filter(:)                            ! the actual filter
-   real(r8), intent(in) :: trcin_mobile(bounds%begc: , lbj: )   ! incoming mobile tracer concentration
-   real(r8), intent(in) :: Rfactor(bounds%begc: , lbj: )        !conversion parameter from the given tracer phase to bulk mobile phase   
-   real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: )  !weighted bulk tracer conductances
-   real(r8), intent(in) :: source(bounds%begc: , lbj: )         !chemical sources [mol/m3]   
-   real(r8), intent(in) :: dz(bounds%begc: , lbj: )             !node thickness
-   real(r8), intent(in) :: dtime(bounds%begc: )                 !time step   
-   real(r8), intent(in) :: bot_flux(bounds%begc: , 1: )         !flux at the bottom boundary
-   real(r8), intent(in) :: trc_concflx_air(bounds%begc: , 1: )  !atmospheric tracer concentration (topbc_type=1) or flux (topbc_type=2)
-   real(r8), intent(in) :: condc_toplay(bounds%begc: )          !top layer conductance
-   integer,  intent(in) :: topbc_type                           !type of top boundary condtion: 1, concentration, 2 flux
-   logical,  intent(in) :: update_col(bounds%begc: )            !logical switch indicating if the column is for active update
-   real(r8), intent(inout):: dtracer(bounds%begc: , lbj: )      !change of tracer concentration during the time step
-   integer,  optional,intent(in)   :: botbc_type
-   real(r8), optional,intent(in)   :: condc_botlay(bounds%begc: )
+   type(bounds_type) , intent(in) :: bounds                     !bounds
+   integer           , intent(in) :: lbj, ubj                             ! lbinning and ubing level indices
+   integer           , intent(in) :: jtop(bounds%begc: )                  ! index of upper boundary, which could be variable
+   integer           , intent(in) :: numfl                                ! length of the filter
+   integer           , intent(in) :: filter(:)                            ! the actual filter
+   integer           , intent(in) :: ntrcs
+   real(r8)          , intent(in) :: Rfactor(bounds%begc: , lbj:  )        !conversion parameter from the given tracer phase to bulk mobile phase   
+   real(r8)          , intent(in) :: hmconductance(bounds%begc: , lbj: )  !weighted bulk tracer conductances
+   real(r8)          , intent(in) :: dz(bounds%begc: , lbj: )             !node thickness
+   real(r8)          , intent(in) :: dtime(bounds%begc: )                 !time step   
+   real(r8)          , intent(in) :: condc_toplay(bounds%begc: )          !top layer conductance
+   integer           , intent(in) :: topbc_type                           !type of top boundary condtion: 1, concentration, 2 flux
+   integer , optional, intent(in)   :: botbc_type 
+   real(r8), optional, intent(in)   :: condc_botlay(bounds%begc: )
+   logical           , intent(in) :: update_col(bounds%begc: )            !logical switch indicating if the column is for active update
+   real(r8)          , intent(in) :: trcin_mobile(bounds%begc: , lbj: ,1: )   ! incoming mobile tracer concentration
+   real(r8)          , intent(in) :: source(bounds%begc: , lbj: , 1: )         !chemical sources [mol/m3]   
+   real(r8)          , intent(in) :: bot_flux(bounds%begc: , 1: , 1: )         !flux at the bottom boundary
+   real(r8)          , intent(in) :: trc_concflx_air(bounds%begc: , 1: , 1: )  !atmospheric tracer concentration (topbc_type=1) or flux (topbc_type=2)
+   real(r8)          , intent(inout):: dtracer(bounds%begc: , lbj: , 1: )      !change of tracer concentration during the time step
    
    !local variables
-   real(r8) :: rt(bounds%begc:bounds%endc, lbj:ubj)              !tridiagonal matrix element r   
+   real(r8) :: rt(bounds%begc:bounds%endc, lbj:ubj, 1:ntrcs)              !tridiagonal matrix element r   
    real(r8) :: at(bounds%begc:bounds%endc, lbj:ubj)  !tridiagonal matrix element a
    real(r8) :: bt(bounds%begc:bounds%endc, lbj:ubj)  !tridiagonal matrix element b
    real(r8) :: ct(bounds%begc:bounds%endc, lbj:ubj)  !tridiagonal matrix element c  
    character(len=255) :: subname = 'DiffusTransp_gw'
    integer :: kk, fc, c
 
-   SHR_ASSERT_ALL((ubound(jtop)              == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(trcin_mobile)      == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(Rfactor)           == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(jtop)              == (/bounds%endc/))       , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dtime)             == (/bounds%endc/))       , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(update_col)        == (/bounds%endc/))       , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(condc_toplay)      == (/bounds%endc/))       , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dz)                == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(Rfactor   )        == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(hmconductance)     == (/bounds%endc, ubj-1/)), errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(dz)                == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(source)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))   
-   SHR_ASSERT_ALL((ubound(dtime)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bot_flux)          == (/bounds%endc, 2/)),     errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(trc_concflx_air)   == (/bounds%endc, 2/)),     errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(condc_toplay)      == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(update_col)        == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(dtracer)           == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+
+   SHR_ASSERT_ALL(((/ubound(trcin_mobile , 1) , ubound(trcin_mobile , 2), size(trcin_mobile , 3)/)   == (/bounds%endc, ubj, ntrcs/)) , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(source       , 1) , ubound(source       , 2), size(source       , 3)/)   == (/bounds%endc, ubj,  ntrcs/)), errMsg(__FILE__,__LINE__))   
+   SHR_ASSERT_ALL(((/ubound(bot_flux     , 1) , ubound(bot_flux     , 2), size(bot_flux     , 3)/)   == (/bounds%endc, 2, ntrcs/))   , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(trc_concflx_air, 1), ubound(trc_concflx_air,2),size(trc_concflx_air,3)/) == (/bounds%endc, 2, ntrcs/))   , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(dtracer, 1)        , ubound(dtracer,2)         , size(dtracer,3)/)       == (/bounds%endc, ubj, ntrcs/)) , errMsg(__FILE__,__LINE__))
    
    !assemble the tridiagonal maxtrix
    if(present(botbc_type))then
@@ -376,7 +385,7 @@ module TransportMod
    end subroutine DiffusTransp_gw
 
 !-------------------------------------------------------------------------------
-   subroutine Diffustransp_solid_tridiag(bounds, lbj, ubj, lbn, numfl, filter, trcin,&
+   subroutine Diffustransp_solid_tridiag(bounds, lbj, ubj, lbn, numfl, filter, ntrcs, trcin,&
       hmconductance,  dtime_col, dz, source, update_col, at,bt,ct, rt)
    !
    ! !DESCRIPTIONS
@@ -388,40 +397,41 @@ module TransportMod
          
    implicit none
    type(bounds_type),  intent(in) :: bounds    !bounds
-   integer,  intent(in)  :: lbj, ubj           ! lbinning and ubing level indices
-   integer,  intent(in) :: lbn(bounds%begc: )              !indices of top boundary
-   integer,  intent(in) :: numfl               !filter dimension
-   integer,  intent(in) :: filter(:)           !filter
-   real(r8), intent(in) :: trcin(bounds%begc: , lbj: )          !tracer concentration [mol/m3]
-   real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: )  !weighted conductance
-   real(r8), intent(in) :: dtime_col(bounds%begc: )               !model time step
-   real(r8), intent(in) :: dz(bounds%begc: , lbj: )             !layer thickness
-   real(r8), intent(in) :: source(bounds%begc: , lbj: )         !chemical sources [mol/m3]
-   logical,  intent(in) :: update_col(bounds%begc: )            !logical switch indicating if the column is for active update   
-   real(r8), intent(out):: at(bounds%begc: , lbj: )             !returning tridiagonal a matrix
-   real(r8), intent(out):: bt(bounds%begc: , lbj: )             !returning tridiagonal b matrix
-   real(r8), intent(out):: ct(bounds%begc: , lbj: )             !returning tridiagonal c matrix
-   real(r8), intent(out):: rt(bounds%begc: , lbj: )             !returning tridiagonal r matrix
+   integer  , intent(in)  :: lbj, ubj           ! lbinning and ubing level indices
+   integer  , intent(in) :: lbn(bounds%begc: )              !indices of top boundary
+   integer  , intent(in) :: numfl               !filter dimension
+   integer  , intent(in) :: filter(:)           !filter
+   integer  , intent(in) :: ntrcs
+   real(r8) , intent(in) :: trcin(bounds%begc: , lbj: ,1: )          !tracer concentration [mol/m3]
+   real(r8) , intent(in) :: hmconductance(bounds%begc: , lbj: )  !weighted conductance
+   real(r8) , intent(in) :: dtime_col(bounds%begc: )               !model time step
+   real(r8) , intent(in) :: dz(bounds%begc: , lbj: )             !layer thickness
+   real(r8) , intent(in) :: source(bounds%begc: , lbj: ,1: )         !chemical sources [mol/m3]
+   logical  , intent(in) :: update_col(bounds%begc: )            !logical switch indicating if the column is for active update   
+   real(r8) , intent(out):: at(bounds%begc: , lbj: )             !returning tridiagonal a matrix
+   real(r8) , intent(out):: bt(bounds%begc: , lbj: )             !returning tridiagonal b matrix
+   real(r8) , intent(out):: ct(bounds%begc: , lbj: )             !returning tridiagonal c matrix
+   real(r8) , intent(out):: rt(bounds%begc: , lbj: ,1: )             !returning tridiagonal r matrix
    
    
    !local variables
    real(r8) :: bot
-   integer :: j, fc, c
+   integer :: j, k, fc, c
    real(r8) :: Fl, Fr
    real(r8) :: dtime
    character(len=255) :: subname='DiffusTransp_solid_tridiag'
    
-   SHR_ASSERT_ALL((ubound(lbn)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(trcin)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(lbn)           == (/bounds%endc/))       , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(hmconductance) == (/bounds%endc, ubj-1/)), errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(dz)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(source)        == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(dtime_col)     == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(update_col)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(at)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bt)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(ct)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(rt)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dz)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dtime_col)     == (/bounds%endc/))       , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(update_col)    == (/bounds%endc/))       , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(at)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bt)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(ct)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(rt)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)/)           == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(source,1),ubound(source,2),size(source,3)/)        == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
 
   
   
@@ -433,20 +443,22 @@ module TransportMod
       if(update_col(c))then
          dtime=dtime_col(c)
          do j = lbn(c), ubj
-            if(j==lbn(c))then
-               Fr=-hmconductance(c,j)*(trcin(c,j+1)-trcin(c,j))
+           do k = 1, ntrcs
+             if(j==lbn(c))then               
+               Fr=-hmconductance(c,j)*(trcin(c,j+1,k)-trcin(c,j,k))
                Fl=0._r8    !zero flux at top boundary for solid phase
-            elseif(j==ubj)then
+             elseif(j==ubj)then
                !assume zero flux for diffusion
-               Fl=-hmconductance(c,j-1)*(trcin(c,j)-trcin(c,j-1))
+               Fl=-hmconductance(c,j-1)*(trcin(c,j,k)-trcin(c,j-1,k))
                Fr=bot
-            else
-               Fl=-hmconductance(c,j-1)*(trcin(c,j)-trcin(c,j-1))
-               Fr=-hmconductance(c,j)*(trcin(c,j+1)-trcin(c,j))
-            endif      
-            rt(c,j) = Fl-Fr + source(c,j)*dz(c,j)
+             else
+               Fl=-hmconductance(c,j-1)*(trcin(c,j,k)-trcin(c,j-1,k))
+               Fr=-hmconductance(c,j)*(trcin(c,j+1,k)-trcin(c,j,k))
+             endif      
+             rt(c,j,k) = Fl-Fr + source(c,j,k)*dz(c,j)
+           enddo
          enddo
-  
+         
          do j = lbn(c), ubj
             if(j==lbn(c))then
                !top boundary condition given as flux
@@ -468,7 +480,7 @@ module TransportMod
    end subroutine DiffusTransp_solid_tridiag
 !-------------------------------------------------------------------------------  
 
-   subroutine DiffusTransp_solid(bounds, lbj, ubj, lbn, numfl, filter, trcin,&
+   subroutine DiffusTransp_solid(bounds, lbj, ubj, lbn, numfl, filter, ntrcs, trcin,&
       hmconductance,  dtime_col, dz, source, update_col, dtracer)
    !
    ! DESCRIPTIONS
@@ -480,41 +492,42 @@ module TransportMod
          
    implicit none
    type(bounds_type),  intent(in) :: bounds                    ! bounds
-   integer,  intent(in)  :: lbj, ubj                           ! lbinning and ubing level indices
-   integer,  intent(in) :: lbn(bounds%begc: )                  ! indices of top boundary
-   integer,  intent(in) :: numfl                               ! filter dimension
-   integer,  intent(in) :: filter(:)                           ! filter
-   real(r8), intent(in) :: trcin(bounds%begc: , lbj: )         ! tracer concentration [mol/m3]
-   real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: ) ! weighted conductance
-   real(r8), intent(in) :: dtime_col(bounds%begc: )                               ! model time step
-   real(r8), intent(in) :: dz(bounds%begc: , lbj: )            ! layer thickness
-   real(r8), intent(in) :: source(bounds%begc: , lbj: )        ! chemical sources [mol/m3/s]
-   logical,  intent(in) :: update_col(bounds%begc: )           ! logical switch indicating if the column is for active update   
-   real(r8), intent(inout):: dtracer(bounds%begc: , lbj: )     ! update to the tracer
+   integer  , intent(in)  :: lbj, ubj                           ! lbinning and ubing level indices
+   integer  , intent(in) :: lbn(bounds%begc: )                  ! indices of top boundary
+   integer  , intent(in) :: numfl                               ! filter dimension
+   integer  , intent(in) :: filter(:)                           ! filter
+   integer  , intent(in) :: ntrcs
+   real(r8) , intent(in) :: hmconductance(bounds%begc: , lbj: ) ! weighted conductance
+   real(r8) , intent(in) :: dtime_col(bounds%begc: )                               ! model time step
+   real(r8) , intent(in) :: dz(bounds%begc: , lbj: )            ! layer thickness
+   real(r8) , intent(in) :: trcin (bounds%begc: , lbj: , 1: )         ! tracer concentration [mol/m3]
+   real(r8) , intent(in) :: source(bounds%begc: , lbj: , 1: )        ! chemical sources [mol/m3/s]
+   logical  , intent(in) :: update_col(bounds%begc: )           ! logical switch indicating if the column is for active update   
+   real(r8), intent(inout):: dtracer(bounds%begc: , lbj: ,1: )     ! update to the tracer
    
    !local variables
    real(r8) :: at(bounds%begc:bounds%endc, lbj:ubj)             !returning tridiagonal a matrix
    real(r8) :: bt(bounds%begc:bounds%endc, lbj:ubj)             !returning tridiagonal b matrix
    real(r8) :: ct(bounds%begc:bounds%endc, lbj:ubj)             !returning tridiagonal c matrix
-   real(r8) :: rt(bounds%begc:bounds%endc, lbj:ubj)             !returning tridiagonal r matrix
+   real(r8) :: rt(bounds%begc:bounds%endc, lbj:ubj, 1:ntrcs)             !returning tridiagonal r matrix
    character(len=255) :: subname = 'DiffusTransp_solid'
   
    SHR_ASSERT_ALL((ubound(lbn)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(trcin)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(hmconductance) == (/bounds%endc, ubj-1/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(source)        == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(update_col)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(dtime_col)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(dtracer)       == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dtime_col)     == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(dtracer,1),ubound(dtracer,2),size(dtracer,3)/)   == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(source,1) ,ubound(source,2) ,size(source,3)/)    == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
 
 
    !assemble the tridiagonal matrix   
-   call Diffustransp_solid_tridiag(bounds, lbj, ubj, lbn, numfl, filter, trcin,&
+   call Diffustransp_solid_tridiag(bounds, lbj, ubj, lbn, numfl, filter, ntrcs, trcin,&
       hmconductance,  dtime_col, dz, source, update_col, at,bt,ct, rt)
 
    !calculate the change to tracer      
-   call Tridiagonal (bounds, lbj, ubj, lbn, numfl, filter, at, bt, ct, rt, dtracer, update_col)
+   call Tridiagonal (bounds, lbj, ubj, lbn, numfl, filter, ntrcs, at, bt, ct, rt, dtracer, update_col)
       
    end subroutine DiffusTransp_solid
 !-------------------------------------------------------------------------------  
@@ -554,41 +567,46 @@ module TransportMod
    end function calc_col_CFL
    
 !-------------------------------------------------------------------------------     
-   subroutine semi_lagrange_adv_backward(bounds, lbj, ubj, lbn, numfl, filter, dtime, dz, &
+   subroutine semi_lagrange_adv_backward(bounds, lbj, ubj, lbn, numfl, filter, ntrcs, dtime, dz, &
      zi, us, inflx_top, inflx_bot, update_col, halfdt_col, trcin, leaching_mass)
    !
    ! DESCRIPTION
    ! do semi-lagrangian advection for equation
    ! pu/pt+c*pu/px=0
-
+   ! for a certain tracer group
+   !
    use shr_kind_mod,     only : r8 => shr_kind_r8
    use decompMod,        only : bounds_type   
    use MathfuncMod,      only : cumsum, cumdif, safe_div, dot_sum, asc_sort_vec
    use InterpolationMod, only : pchip_polycc, pchip_interp
+   
    implicit none
    type(bounds_type),  intent(in) :: bounds !bounds
    integer,    intent(in)  :: lbj, ubj                           ! lbinning and ubing level indices
    integer,    intent(in)  :: lbn(bounds%begc: )                 !label of the top/left boundary
    integer,    intent(in)  :: numfl
+   integer,    intent(in)  :: ntrcs
    integer,    intent(in)  :: filter(:)
    real(r8),   intent(in)  :: dtime(bounds%begc: )
    real(r8),   intent(in)  :: zi(bounds%begc: , lbj-1: )
    real(r8),   intent(in)  :: dz(bounds%begc: , lbj: )
-   real(r8),   intent(in)  :: inflx_top(bounds%begc: )                ! incoming tracer flow at top boundary [mol/m2/s]
-   real(r8),   intent(in)  :: inflx_bot(bounds%begc: )                !incoming tracer flow at bottom boundary   
+   real(r8),   intent(in)  :: inflx_top(bounds%begc: , 1: )                ! incoming tracer flow at top boundary [mol/m2/s]
+   real(r8),   intent(in)  :: inflx_bot(bounds%begc: , 1: )                !incoming tracer flow at bottom boundary   
    logical,    intent(in)  :: update_col(bounds%begc: )               !indicator of active clumns
    real(r8),   intent(in)  :: us(bounds%begc: , lbj-1: )              !convective flux defined at the boundary, positive downwards, [m/s]
    logical,    intent(out) :: halfdt_col(bounds%begc:bounds%endc) 
-   real(r8),        intent(inout)  :: trcin(bounds%begc: , lbj: )     !input tracer concentration
-   real(r8), optional, intent(out) :: leaching_mass(bounds%begc:bounds%endc)    !leaching tracer mass
+   real(r8),        intent(inout)  :: trcin(bounds%begc: , lbj: , 1: )     !input tracer concentration
+   real(r8), optional, intent(out) :: leaching_mass(bounds%begc:bounds%endc, 1: )    !leaching tracer mass
+   
    !local variables
-   integer, parameter :: pn = 2 !first order lagrangian interpolation to avoid overshooting
+   integer, parameter :: pn = 2            !first order lagrangian interpolation to avoid overshooting
    integer  :: j, fc, c, k
+   integer  :: ntr                         !indices for tracer
    integer  :: length, lengthp2
-   real(r8) :: mass_curve(0:ubj-lbj+5)     !total number of nodes + two ghost cells at each boundary
-   real(r8) :: cmass_curve(0:ubj-lbj+5)
-   real(r8) :: mass_new(1:ubj-lbj+1)
-   real(r8) :: cmass_new(0:ubj-lbj+1)
+   real(r8) :: mass_curve(0:ubj-lbj+5 , ntrcs)     !total number of nodes + two ghost cells at each boundary
+   real(r8) :: cmass_curve(0:ubj-lbj+5, ntrcs)
+   real(r8) :: mass_new(1:ubj-lbj+1   , ntrcs)
+   real(r8) :: cmass_new(0:ubj-lbj+1  , ntrcs)
    real(r8) :: zold(0:ubj-lbj+1)
    real(r8) :: di(0:ubj-lbj+5)
    real(r8) :: zghostl(1:2)   !ghost grid left interface at the left boundary
@@ -599,15 +617,17 @@ module TransportMod
    real(r8) :: zf
    real(r8) :: utmp
    real(r8) :: dinfl_mass
-   SHR_ASSERT_ALL((ubound(lbn)        == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(dtime)      == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(trcin)      == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(dz)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))   
-   SHR_ASSERT_ALL((ubound(update_col) == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(us)         == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(zi)         == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(inflx_top)  == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(inflx_bot)  == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+   
+   SHR_ASSERT_ALL((ubound(lbn)        == (/bounds%endc/)),         errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dtime)      == (/bounds%endc/)),         errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(trcin)      == (/bounds%endc, ubj/)),    errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dz)         == (/bounds%endc, ubj/)),    errMsg(__FILE__,__LINE__))   
+   SHR_ASSERT_ALL((ubound(update_col) == (/bounds%endc/)),         errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(us)         == (/bounds%endc, ubj/)),    errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(zi)         == (/bounds%endc, ubj/)),    errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(inflx_top)  == (/bounds%endc, ntrcs/)),  errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(inflx_bot)  == (/bounds%endc, ntrcs/)),  errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/size(trcin,3),size(leaching_mass,2)/)  == (/ntrcs,ntrcs/)), errMsg(__FILE__,__LINE__))
    
    call Extra_inst%InitAllocate(1,ubj-lbj+6)
    halfdt_col(:) = .false.
@@ -642,73 +662,75 @@ module TransportMod
   
      !create the cumulative mass curve
      !left bounary ghost grids
-     j = 0
-     mass_curve(j) = 0._r8
-     j = 1
-     mass_curve(j) = inflx_top(c)*dtime(c)
-     j = 2
-     mass_curve(j) = inflx_top(c)*dtime(c)
+     do ntr = 1, ntrcs
+       j = 0
+       mass_curve(j, ntr) = 0._r8
+       j = 1     
+       mass_curve(j, ntr) = inflx_top(c, ntr)*dtime(c)
+       j = 2
+       mass_curve(j, ntr) = inflx_top(c, ntr)*dtime(c)
      
-     !regular grid
-     do k = lbn(c), ubj
-       j = k - lbn(c) + 3
-       mass_curve(j) = trcin(c,k)*dz(c,k)      
-     enddo
+       !regular grid
+       do k = lbn(c), ubj
+         j = k - lbn(c) + 3
+         mass_curve(j, ntr) = trcin(c,k, ntr)*dz(c,k)      
+       enddo
      
-     !right boundary     
-     if(inflx_bot(c)==0._r8)then
-       j = ubj - lbn(c) + 4
-       mass_curve(j) = trcin(c,ubj)*(zghostr(1)-zi(c,ubj))
+       !right boundary     
+       if(inflx_bot(c)==0._r8)then
+         j = ubj - lbn(c) + 4
+         mass_curve(j, ntr) = trcin(c,ubj, ntr)*(zghostr(1)-zi(c,ubj))
        
-       j = ubj - lbn(c) + 5
-       mass_curve(j) = trcin(c,ubj)*(zghostr(2)-zghostr(1))
-     else
-       j = ubj - lbn(c) + 4
-       mass_curve(j) = inflx_bot(c) * dtime(c)
+         j = ubj - lbn(c) + 5
+         mass_curve(j, ntr) = trcin(c,ubj, ntr)*(zghostr(2)-zghostr(1))
+       else
+         j = ubj - lbn(c) + 4
+         mass_curve(j, ntr) = inflx_bot(c, ntr) * dtime(c)
 
-       j = ubj - lbn(c) + 5
-       mass_curve(j) = inflx_bot(c) * dtime(c)
+         j = ubj - lbn(c) + 5
+         mass_curve(j, ntr) = inflx_bot(c, ntr) * dtime(c)
 
-     endif
-     
+       endif
+     enddo
      !now compute cumulative mass curve     
-     call cumsum(mass_curve(0:lengthp2), cmass_curve(0:lengthp2))
+     call cumsum(mass_curve(0:lengthp2,1:ntr), cmass_curve(0:lengthp2, 1:ntr))
 
      !do mass interpolation
-     call pchip_polycc((/zghostl,zi(c,lbn(c)-1:ubj),zghostr/), cmass_curve(0:lengthp2), di(0:lengthp2))
+     do ntr = 1, ntrcs
+       call pchip_polycc((/zghostl,zi(c,lbn(c)-1:ubj),zghostr/), cmass_curve(0:lengthp2, ntr), di(0:lengthp2))
 
-     call pchip_interp((/zghostl,zi(c,lbn(c)-1:ubj),zghostr/), cmass_curve(0:lengthp2), di(0:lengthp2), zold(0:length), cmass_new(0:length))
+       call pchip_interp((/zghostl,zi(c,lbn(c)-1:ubj),zghostr/), cmass_curve(0:lengthp2, ntr), di(0:lengthp2), zold(0:length), cmass_new(0:length, ntr))
 
  
-    !ensure mass is increasing monotonically
-     call asc_sort_vec(cmass_new(0:length))
+       !ensure mass is increasing monotonically
+       call asc_sort_vec(cmass_new(0:length,ntrc))
     
-     !ensure no negative leaching
-     call cmass_mono_smoother(cmass_new(0:length),cmass_curve(ubj-lbn(c)+3))
+       !ensure no negative leaching
+       call cmass_mono_smoother(cmass_new(0:length, ntrc),cmass_curve(ubj-lbn(c)+3, ntr))
 
-     !diagnose the leaching flux
-     if(present(leaching_mass))then
-       leaching_mass(c) = cmass_curve(ubj-lbn(c)+3)-cmass_new(length) !add the numerical error to leaching
-     endif
+       !diagnose the leaching flux
+       if(present(leaching_mass))then
+         leaching_mass(c, ntr) = cmass_curve(ubj-lbn(c)+3, ntr)-cmass_new(length, ntr) !add the numerical error to leaching
+       endif
      
 
-     !obtain the grid concentration
-     call cumdif(cmass_new(0:length), mass_new(0:length))
+       !obtain the grid concentration
+       call cumdif(cmass_new(0:length, ntr), mass_new(0:length, ntr))
           
-     do k = lbn(c), ubj
-       j = k - lbn(c) + 1      
-       !correct for small negative values
-       if(mass_new(j)<0._r8)then
-         write(iulog,*)j,mass_new(j),cmass_new(j),cmass_new(j-1)
-         call endrun('negative tracer '//errMsg(__FILE__, __LINE__))
-         if(present(leaching_mass))then
-           leaching_mass(c) = leaching_mass(c)+mass_new(j) !add the numerical error to leaching
+       do k = lbn(c), ubj
+         j = k - lbn(c) + 1      
+         !correct for small negative values
+         if(mass_new(j, ntr)<0._r8)then
+           write(iulog,*)j,mass_new(j, ntr),cmass_new(j, ntr),cmass_new(j-1, ntr)
+           call endrun('negative tracer '//errMsg(__FILE__, __LINE__))
+           if(present(leaching_mass))then
+             leaching_mass(c, ntr) = leaching_mass(c, ntr)+mass_new(j, ntr) !add the numerical error to leaching
+           endif
+           mass_new(j, ntr)=mass_curve_correct(mass_new(j, ntr))
          endif
-         mass_new(j)=mass_curve_correct(mass_new(j))
-       endif
-       trcin(c,k)=mass_new(j)/dz(c,k)
+         trcin(c,k, ntr)=mass_new(j, ntr)/dz(c,k)
+       enddo
      enddo
-
 
    enddo
    call Extra_inst%DDeallocate()

@@ -355,7 +355,7 @@ module BGCCenturySubMod
   end subroutine calc_som_deacyK  
 
 !-------------------------------------------------------------------------------
-  subroutine calc_cascade_matrix(nstvars, nreactions, cn_ratios, cp_ratios, n2_n2o_ratio_denit, nh4, pct_sand, centurybgc_vars, cascade_matrix)
+  subroutine calc_cascade_matrix(nstvars, nreactions, cn_ratios, cp_ratios, n2_n2o_ratio_denit, nh4_comp, pct_sand, centurybgc_vars, cascade_matrix)
   !
   ! DESCRIPTION
   ! calculate cascade matrix for the decomposition model
@@ -369,7 +369,7 @@ module BGCCenturySubMod
   real(r8)                      , intent(in) :: cn_ratios(centurybgc_vars%nom_pools)
   real(r8)                      , intent(in) :: cp_ratios(centurybgc_vars%nom_pools)
   real(r8)                      , intent(in) :: n2_n2o_ratio_denit                   !ratio of n2 to n2o during denitrification
-  real(r8)                      , intent(in) :: nh4                                  !mass of nh4
+  real(r8)                      , intent(in) :: nh4_comp                             !mass of nh4
   real(r8)                      , intent(in) :: pct_sand
   
   real(r8),intent(out) :: cascade_matrix(nstvars, nreactions)
@@ -456,8 +456,8 @@ module BGCCenturySubMod
   cascade_matrix = 0._r8
 
   !higher [nh4] makes lower [no3] competitiveness 
-  compet_decomp_no3_scal = 1._r8- nh4 / (nh4 + compet_decomp_nh4)
-  compet_plant_no3_scal  = 1._r8- nh4 / (nh4 + compet_plant_nh4)
+  compet_decomp_no3_scal = 1._r8- nh4_comp
+  compet_plant_no3_scal  = 1._r8- nh4_comp
   !note all reactions are in the form products - substrates = 0, therefore
   !mass balance is automatically ensured.
   !set up first order reactions
@@ -1322,7 +1322,7 @@ module BGCCenturySubMod
 
 !----------------------------------------------------------------------------------------------------
 
-  subroutine calc_potential_aerobic_hr(bounds, lbj, ubj, numf, filter, jtops, nom_pools, pot_decay_rates, pct_sand, pot_co2_hr)
+  subroutine calc_potential_aerobic_hr(bounds, lbj, ubj, numf, filter, jtops, cn_ratios, cp_ratios, centurybgc_vars, pot_decay_rates, pct_sand, pot_co2_hr, pot_nh3_immob)
   !
   ! DESCRIPTION
   ! calculate potential aerobic heteorotrophic respiration, and potential oxygen consumption based on cascade_matrix
@@ -1330,56 +1330,96 @@ module BGCCenturySubMod
   use CNSharedParamsMod   , only : CNParamsShareInst
   use CNSharedParamsMod   , only : CNParamsShareInst
   use BGCCenturyParMod    , only : CNDecompBgcParamsInst 
-  type(bounds_type),      intent(in) :: bounds
-  integer,                intent(in) :: lbj, ubj
-  integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
-  integer,                intent(in) :: numf
-  integer,                intent(in) :: filter(:)
-  integer,                intent(in) :: nom_pools
-  real(r8),               intent(in) :: pot_decay_rates(nom_pools, bounds%begc:bounds%endc, lbj:ubj)  
-  real(r8),               intent(in) :: pct_sand(bounds%begc:bounds%endc, lbj:ubj)
-  real(r8),               intent(out):: pot_co2_hr(bounds%begc:bounds%endc, lbj:ubj)
+  type(bounds_type)       , intent(in) :: bounds
+  integer                 , intent(in) :: lbj, ubj
+  integer                 , intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
+  integer                 , intent(in) :: numf
+  integer                 , intent(in) :: filter(:)
+  type(centurybgc_type)   , intent(in) :: centurybgc_vars
+  real(r8)                , intent(in) :: cn_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8)                , intent(in) :: cp_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)  
+  real(r8)                , intent(in) :: pot_decay_rates(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)  
+  real(r8)                , intent(in) :: pct_sand(bounds%begc:bounds%endc, lbj:ubj)
+  real(r8)                , intent(out):: pot_co2_hr(bounds%begc:bounds%endc, lbj:ubj)
   
-  real(r8) :: ftxt
+  real(r8) :: ftxt, f1, f2
   real(r8) :: cascade_matrix_hr(nom_pools)
-  integer  :: fc, c, j
+  real(r8) :: cascade_matrix_nh3(nom_pools)
   
-  cascade_matrix_hr = 0._r8
-  !reaction1, lit1 -> som1
-  !lit1 + 0.55*o2 -> 0.45 som1 + 0.55co2 + (1/cn_ratios(lit1) - 0.45/cn_ratios(som1))+ (1/cp_ratios(lit1)-0.45/cp_ratios(som1))
+  integer  :: fc, c, j, reac
 
-  cascade_matrix_hr(1)=  CNDecompBgcParamsInst%rf_l1s1_bgc 
+  associate(                                               & !
+    nom_pools => centurybgc_vars%nom_pools               , & !
+    lit1      => centurybgc_vars%lit1                    , & !
+    lit2      => centurybgc_vars%lit2                    , & !
+    lit3      => centurybgc_vars%lit3                    , & !
+    som1      => centurybgc_vars%som1                    , & !
+    som2      => centurybgc_vars%som2                    , & !
+    som3      => centurybgc_vars%som3                    , & !
+    cwd       => centurybgc_vars%cwd                     , & !  
+    lit1_dek_reac=> centurybgc_vars%lit1_dek_reac       , & !
+    lit2_dek_reac=> centurybgc_vars%lit2_dek_reac       , & !
+    lit3_dek_reac=> centurybgc_vars%lit3_dek_reac       , & !
+    som1_dek_reac=> centurybgc_vars%som1_dek_reac       , & !
+    som2_dek_reac=> centurybgc_vars%som2_dek_reac       , & !
+    som3_dek_reac=> centurybgc_vars%som3_dek_reac       , & !
+    cwd_dek_reac=> centurybgc_vars%cwd_dek_reac           & !
+  )
+  
+  do j = lbj, ubj  
+    do fc = 1, numf
+      c = filter(fc)
+      if(j<jtops(c))cycle
+      cascade_matrix_hr = 0._r8
+      !reaction1, lit1 -> som1
+  !lit1 + 0.55*o2 -> 0.45 som1 + 0.55co2 + (1/cn_ratios(lit1) - 0.45/cn_ratios(som1))+ (1/cp_ratios(lit1)-0.45/cp_ratios(som1))
+      reac=lit1_dek_reac
+      cascade_matrix_hr(reac)  =  CNDecompBgcParamsInst%rf_l1s1_bgc 
+      cascade_matrix_nh3(reac) =  safe_div(1._r8,cn_ratios(lit1,c,j)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc,cn_ratios(som1,c,j))
   
   !reaction 2, lit2 -> som1
   !lit2 + 0.5 o2  -> 0.5 som1 + 0.5 co2 + (1/cn_ratios(lit2)-0.5/cn_ratios(som1)) +(1/cp_ratios(lit2)-0.5/cp_ratios(som1))
-  cascade_matrix_hr(2) =  CNDecompBgcParamsInst%rf_l2s1_bgc
+      reac = lit2_dek_reac
+      cascade_matrix_hr(reac)  =  CNDecompBgcParamsInst%rf_l2s1_bgc
+      cascade_matrix_nh3(reac) = safe_div(1._r8,cn_ratios(lit2,c,j)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc,cn_ratios(som1,c,j))
   
   !reaction 3, lit3 -> som2
   !lit3 + 0.5 o2 -> 0.5 som2 + 0.5 co2
-  cascade_matrix_hr(3)=  CNDecompBgcParamsInst%rf_l3s2_bgc
-  
-  
-  !reaction 5, som2 -> som1
-  !som2 + 0.55 o2 -> 0.42 som1 + 0.03som3 + 0.55co2 + (1/cn_ratios(som2)-0.42/cn_ratios(som1)-0.03/cn_ratios(som3)) + (1/cp_raitos(som2)-0.42/cp_ratios(som1)-0.03/cp_ratios(som3))
-  cascade_matrix_hr(5)   =  CNDecompBgcParamsInst%rf_s2s1_bgc
-  
-  !reaction 6, s3 -> s1
-  !som3 + 0.55 o2 -> 0.45*som1 + 0.55co2 + (1/cn_ratios(som3)-0.45/cn_ratios(som1)) + (1/cp_ratios(som3)-0.45/cp_ratios(som1))
-  cascade_matrix_hr(6) = CNDecompBgcParamsInst%rf_s3s1_bgc
-  
-  !obtain the potential respiration
-
-  do fc = 1, numf
-    c = filter(fc)
-    do j = jtops(c), ubj
-      !reaction 4, the partition into som2 and som3 is soil texture dependent, som1->som2, som3
-      !som1 + f(txt) o2 -> f1*som2 + f2*som3 + f(txt) co2 + (1/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)) +(1/cp_ratios(som1)-f1/cp_ratios(som2)-f2/cp_ratios(som3))
+      reac = lit3_dek_reac
+      cascade_matrix_hr(reac)  =  CNDecompBgcParamsInst%rf_l3s2_bgc
+      cascade_matrix_nh3(reac) = safe_div(1._r8,cn_ratios(lit3,c,j)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc,cn_ratios(som2,c,j))
+    
+  !reaction 4, the partition into som2 and som3 is soil texture dependent, som1->som2, som3
+  !som1 + f(txt) o2 -> f1*som2 + f2*som3 + f(txt) co2 + (1/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)) +(1/cp_ratios(som1)-f1/cp_ratios(som2)-f2/cp_ratios(som3))
+      reac = som1_dek_reac
       !f(txt) = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - sand), assuming sand = 30%
       !f1+f2+f(txt)=1._r8
       ftxt = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - pct_sand(c,j))  
-      cascade_matrix_hr(4) = ftxt
+      f1 = 0.996*(1._r8-ftxt)
+      f2 = 0.004*(1._r8-ftxt)
+  
+      cascade_matrix_hr(reac)  = ftxt      
+      cascade_matrix_nh3(reac) = safe_div(1._r8,cn_ratios(som1,c,j))-safe_div(f1,cn_ratios(som2,c,j))-safe_div(f2,cn_ratios(som3,c,j))
       
+  !reaction 5, som2 -> som1, som3
+  !som2 + 0.55 o2 -> 0.42 som1 + 0.03som3 + 0.55co2 + (1/cn_ratios(som2)-0.42/cn_ratios(som1)-0.03/cn_ratios(som3)) + (1/cp_raitos(som2)-0.42/cp_ratios(som1)-0.03/cp_ratios(som3))
+      reac = som2_dek_reac
+      cascade_matrix_hr(reac)   =  CNDecompBgcParamsInst%rf_s2s1_bgc
+      cascade_matrix_nh3(reac)  = safe_div(1._r8,cn_ratios(som2,c,j))-0.93_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som1,c,j)) &
+                                                -0.07_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som3,c,j))
+  !reaction 6, s3 -> s1
+  !som3 + 0.55 o2 -> 0.45*som1 + 0.55co2 + (1/cn_ratios(som3)-0.45/cn_ratios(som1)) + (1/cp_ratios(som3)-0.45/cp_ratios(som1))
+      reac = som3_dek_reac
+      cascade_matrix_hr(reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
+      cascade_matrix_nh3(reac)= safe_div(1._r8,cn_ratios(som3,c,j)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc,cn_ratios(som1,c,j))
+
+  !cwd -> lit1, lit2
+      reac = cwd_dek_reac
+      cascade_matrix_nh3(reac) = safe_div(1._r8,cn_ratios(cwd,c,j)) - safe_div(CNDecompBgcParamsInst%cwd_fcel_bgc,cn_ratios(lit2,c,j)) - &
+                             safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3,c,j))
+  !obtain the potential respiration  
       pot_co2_hr(c,j) = dot_sum(cascade_matrix_hr, pot_decay_rates(:, c, j))  !mol CO2/m3/s
+      pot_nh3_immob(c,j) = dot_sum(cascade_matrix_nh3,pot_decay, rates(:,c,j))!mol NH3/m3/s
     enddo  
   enddo
   end subroutine calc_potential_aerobic_hr
@@ -1733,32 +1773,43 @@ module BGCCenturySubMod
   
   
  !-----------------------------------------------------------------------  
-  subroutine calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, centurybgc_vars, k_decay)
+  subroutine calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, dtime, centurybgc_vars, &
+     k_nit, decomp_nh4_immob, plant_ndemand, smin_nh4_vr, nh4_compet)
+
+  call calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, dtime                             , &
+     k_decay(centurybgc_vars%lid_nh4_nit_reac, bounds%begc:bounds%endc, lbj:ubj), pot_nh3_immob            , &
+     k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj)                       , &
+     tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x), &
+     )
      
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: ubj
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
-  type(centurybgc_type)              , intent(in)  :: centurybgc_vars  
-  real(r8)                           , intent(inout):: k_decay(1:, bounds%begc: ,1: )
+  real(r8)                           , intent(in) :: dtime  
+  real(r8)                           , intent(in) :: k_nit(bounds%begc: , 1: )
+  real(r8)                           , intent(in) :: decomp_nh4_immob(bounds%begc: , 1: )
+  real(r8)                           , intent(in) :: plant_ndemand(bounds%begc: , 1: )
+  real(r8)                           , intent(in) :: smin_nh4_vr(bounds%begc: , 1: )
+  real(r8)                           , intent(inout):: nh4_compet(bounds%begc:bounds%endc,1:ubj)
   
   integer :: j, fc, c
+  real(r8):: tot_demand
   
-  SHR_ASSERT_ALL((ubound(k_decay)     == (/centurybgc_vars%nreactions, bounds%endc, ubj/)), errMsg(__FILE__, __LINE__))  
+  SHR_ASSERT_ALL((ubound(k_nit)     == (/bounds%endc, ubj/)), errMsg(__FILE__, __LINE__))  
+  SHR_ASSERT_ALL((ubound(decomp_nh4_immob)     == (/bounds%endc, ubj/)), errMsg(__FILE__, __LINE__))  
+  SHR_ASSERT_ALL((ubound(plant_ndemand)     == (/bounds%endc, ubj/)), errMsg(__FILE__, __LINE__))  
+  SHR_ASSERT_ALL((ubound(smin_nh4_vr)     == (/bounds%endc, ubj/)), errMsg(__FILE__, __LINE__))  
+  SHR_ASSERT_ALL((ubound(nh4_compet)     == (/bounds%endc, ubj/)), errMsg(__FILE__, __LINE__))  
   
-  return
+
   do j = 1, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       
-      !add nitrogen demand from decomposition fluxes
+      tot_demand= (k_nit(c,j) * smin_nh4_vr(c,j) + decomp_nh4_immob(c,j) + plant_ndemand(c,j))*dtime
       
-      !add nitrogen demand from plant
-      
-      !add nitrogen demand from denitrification
-      
-      !add nitrogen demand from nitrification
-      
+      nh4_compet(c,j) = safe_div(smin_nh4_vr(c,j),tot_demand)
       
     enddo
   enddo

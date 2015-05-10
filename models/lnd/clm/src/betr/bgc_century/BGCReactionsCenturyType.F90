@@ -62,7 +62,7 @@ implicit none
      real(r8), pointer :: conv_f(:)              !converting factor for first order sink
      real(r8), pointer :: conc_f(:)              !external forcing strength
      real(r8)          :: n2_n2o_ratio_denit     !ratio of n2 to n2o during denitrification
-     real(r8)          :: nh4_no3_ratio          !ratio of available nh4 to no3
+     real(r8)          :: nh4_compet             !ratio of available nh4 to no3
      real(r8)          :: cellsand               !sand content
      logical,  pointer :: is_zero_order(:)
      integer           :: nr                     !number of reactions involved
@@ -118,7 +118,7 @@ contains
    end subroutine DDeallocate
 !-------------------------------------------------------------------------------   
 
-   subroutine AAssign(this, cn_r,cp_r, k_d,  n2_n2o_r_denit, nh4_no3_r, cell_sand, betrtracer_vars, gas2bulkcef, aere_cond, tracer_conc_atm)
+   subroutine AAssign(this, cn_r,cp_r, k_d,  n2_n2o_r_denit, nh4_compet_r, cell_sand, betrtracer_vars, gas2bulkcef, aere_cond, tracer_conc_atm)
    use BeTRTracerType              , only : betrtracer_type
   
    class(Extra_type) :: this
@@ -126,7 +126,7 @@ contains
    real(r8), dimension(:), intent(in) :: cp_r
    real(r8), dimension(:), intent(in) :: k_d
    real(r8)              , intent(in) :: n2_n2o_r_denit
-   real(r8)              , intent(in) :: nh4_no3_r
+   real(r8)              , intent(in) :: nh4_compet_r
    real(r8)              , intent(in) :: cell_sand
    type(BeTRtracer_type ), intent(in) :: betrtracer_vars   
    real(r8)              , intent(in) :: gas2bulkcef(1:betrtracer_vars%nvolatile_tracers)
@@ -144,7 +144,7 @@ contains
    this%cp_ratios(1:n2) = cp_r
    
    this%n2_n2o_ratio_denit = n2_n2o_r_denit
-   this%nh4_no3_ratio      = nh4_no3_r
+   this%nh4_compet      = nh4_compet_r
    this%cellsand           = cell_sand
    this%k_decay            = k_d
    
@@ -212,11 +212,16 @@ contains
 
   integer :: c
 
-
-  tracerboundarycond_vars%topbc_type(1:betrtracer_vars%ngwmobile_tracers) = bndcond_as_conc
-  tracerboundarycond_vars%topbc_type(betrtracer_vars%id_trc_no3x) = bndcond_as_flux
   
-  tracerboundarycond_vars%topbc_type(betrtracer_vars%ngwmobile_tracers+1:betrtracer_vars%ntracers) = bndcond_as_flux
+  associate(    
+    groupid  => betrtracer_vars%groupid          &
+  )
+  tracerboundarycond_vars%topbc_type(1:betrtracer_vars%ngwmobile_tracer_groups) = bndcond_as_conc
+  tracerboundarycond_vars%topbc_type(groupid(betrtracer_vars%id_trc_no3x)) = bndcond_as_flux
+  
+  tracerboundarycond_vars%topbc_type(betrtracer_vars%ngwmobile_tracer_groups+1:betrtracer_vars%ntracer_groups) = bndcond_as_flux
+  
+  end associate
   end subroutine init_boundary_condition_type
 
 !-------------------------------------------------------------------------------
@@ -262,77 +267,153 @@ contains
   betrtracer_vars%id_trc_no3x = addone(itemp)
   betrtracer_vars%id_trc_n2o  = addone(itemp)
   
-  betrtracer_vars%ngwmobile_tracers=itemp                                  ! n2, o2, ar, co2, ch4, n2o, nh3x and no3x
+  betrtracer_vars%ngwmobile_tracer_groups=itemp                            ! n2, o2, ar, co2, ch4, n2o, nh3x and no3x
   betrtracer_vars%nvolatile_tracers=itemp-2                                ! n2, o2, ar, co2, ch4 and n2o
+  betrtracer_vars%nvolatile_tracer_groups = itemp-2                        !
   betrtracer_vars%nsolid_passive_tracers=centurybgc_vars%nom_pools*nelm    !
-  betrtracer_vars%ntracers=betrtracer_vars%ngwmobile_tracers+betrtracer_vars%nsolid_passive_tracers
+  
+  betrtracer_vars%nmem_max               = betrtracer_vars%nsolid_passive_tracers
+  
   call betrtracer_vars%Init()
 
   betrtracer_vars%is_mobile(:) = .true.
 
   jj = itemp
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2)   = 'N2'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_o2)   = 'O2'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_ar)   = 'AR'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_co2x) = 'CO2x'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_ch4)  = 'CH4'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_nh3x) = 'NH3X'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_no3x) = 'NO3X'
-  betrtracer_vars%tracernames(betrtracer_vars%id_trc_n2o)  = 'N2O'
+  itemp_vgrp = 0  !counter for volatile groups
+  itemp_v    = 0  !counter for volatile tracers
+  itemp_grp  = 0  !counter for tracer groups
+  
+  trcid = betrtracer_vars%id_trc_n2
   
   
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit1-1)*nelm+c_loc)  = 'LIT1C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit2-1)*nelm+c_loc)  = 'LIT2C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit3-1)*nelm+c_loc)  = 'LIT3C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som1-1)*nelm+c_loc)  = 'SOM1C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som2-1)*nelm+c_loc)  = 'SOM2C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som3-1)*nelm+c_loc)  = 'SOM3C'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+c_loc)  = 'CWDC'; betrtracer_vars%is_mobile(jj+(centurybgc_vars%cwd-1 )*nelm+c_loc) = .false.
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit1-1)*nelm+n_loc)  = 'LIT1N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit2-1)*nelm+n_loc)  = 'LIT2N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%lit3-1)*nelm+n_loc)  = 'LIT3N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som1-1)*nelm+n_loc)  = 'SOM1N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som2-1)*nelm+n_loc)  = 'SOM2N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%som3-1)*nelm+n_loc)  = 'SOM3N'
-  betrtracer_vars%tracernames(jj+(centurybgc_vars%cwd-1 )*nelm+n_loc)  = 'CWDN'; betrtracer_vars%is_mobile(jj+(centurybgc_vars%cwd-1 )*nelm+n_loc) = .false.
   
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_n2, trc_name='N2'   , &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)      , &
+    trc_volatile_group_id = addone(item_vgrp))
     
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_n2)  =.true.
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_o2)  =.true.
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_ar)  =.true.
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_co2x)=.true.
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_ch4) =.true.
-  betrtracer_vars%is_volatile(betrtracer_vars%id_trc_n2o) =.true.
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_o2, trc_name='O2'   , &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)      , &
+    trc_volatile_group_id = addone(item_vgrp))
   
-  itemp = 0
+
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ar, trc_name='AR'    , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
+    trc_volatile_group_id = addone(item_vgrp))
   
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_n2)   = addone(itemp)
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_o2)   = addone(itemp)
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_ar)   = addone(itemp)
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_co2x) = addone(itemp)
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_ch4)  = addone(itemp)
-  betrtracer_vars%volatileid(betrtracer_vars%id_trc_n2o)  = addone(itemp)
- 
-   
-  ! I have purposely turned off the movement of some tracers below
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2)    = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_o2)    = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ar)    = .false.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_co2x)  = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_ch4)   = .false.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_no3x)  = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_n2o)   = .true.
-  betrtracer_vars%is_mobile(betrtracer_vars%id_trc_nh3x)   = .false.
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_co2x, trc_name='CO2x', &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = addone(itemp_grp) , &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
+    trc_volatile_group_id = addone(item_vgrp))
   
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2)    = .false.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_o2)    = .false.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ar)    = .false.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_co2x)  = .false.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_ch4)   = .false.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_no3x)  = .true.
-  betrtracer_vars%is_advective(betrtracer_vars%id_trc_n2o)   = .false.
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ch4, trc_name='CH4'  , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
+    trc_volatile_group_id = addone(item_vgrp))
+  
+
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_nh3x, trc_name='NH3x', &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = addone(itemp_grp),
+    trc_group_mem = 1, is_trc_volatile=.false.)
+
+
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_no3x, trc_name='NO3x', &
+    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp),
+    trc_group_mem = 1, is_trc_volatile=.false.)
+    
+
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_n2o, trc_name='N2O' , &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
+    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)      , &
+    trc_volatile_group_id = addone(item_vgrp))
+
+  
+  itemp_mem=0  
+  itemp_grp=addone(itemp_grp)          !only one group passive solid tracer
+  
+  trcid = jj+(centurybgc_vars%lit1-1)*nelm+c_loc  
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT1C'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+
+
+  trcid = jj+(centurybgc_vars%lit2-1)*nelm+c_loc    
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT2C'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+    
+
+  trcid = jj+(centurybgc_vars%lit3-1)*nelm+c_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT3C'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+
+    
+  trcid = jj+(centurybgc_vars%som1-1)*nelm+c_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM1C'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+
+  
+  trcid = jj+(centurybgc_vars%som2-1)*nelm+c_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM2C'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+
+    
+  trcid = jj+(centurybgc_vars%som3-1)*nelm+c_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM3C'            , &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
   
   
+  trcid = jj+(centurybgc_vars%cwd-1 )*nelm+c_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='CWDC'              , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+
+  
+  trcid = jj+(centurybgc_vars%lit1-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT1N', &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp,
+    trc_group_mem= addone(itemp_mem))
+
+  
+  trcid = jj+(centurybgc_vars%lit2-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT2N'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+
+  
+  trcid = jj+(centurybgc_vars%lit3-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT3N'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+  
+  trcid = jj+(centurybgc_vars%som1-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM1N'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+  
+  
+  trcid = jj+(centurybgc_vars%som2-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM2N'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+  
+  trcid = jj+(centurybgc_vars%som3-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM3N'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+  
+  trcid = jj+(centurybgc_vars%cwd-1 )*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='CWDN'              , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+         
+     
   !comment following lines out when it is hooked to CLM at the moment
   !call CNParamsReadShared(ncid)
   
@@ -370,7 +451,10 @@ contains
 
   SHR_ASSERT_ALL((ubound(dz_top)                == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
 
-
+  associate(
+    
+    groupid  => betrtracer_vars%groupid          &
+  )
   do fc = 1, num_soilc
     c = filter_soilc(fc)
     !values below will be updated with datastream
@@ -386,13 +470,14 @@ contains
     tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_no3x) = 0._r8   
     tracerboundarycond_vars%bot_concflux_col(c,1,:) = 0._r8                                  !zero flux boundary condition
     !those will be updated with snow resistance and hydraulic wicking resistance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_n2)   = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_o2)   = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ar)   = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_co2x) = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_ch4)  = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance  
-    tracerboundarycond_vars%condc_toplay_col(c,betrtracer_vars%id_trc_n2o)  = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance  
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_n2))   = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_o2))   = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_ar))   = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_co2x)) = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_ch4))  = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance  
+    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_n2o))  = 2._r8*1.267e-5_r8/dz_top(c)     !m/s surface conductance  
   enddo
+  end associate
   end subroutine set_boundary_conditions
 !-------------------------------------------------------------------------------
 
@@ -449,19 +534,20 @@ contains
   character(len=*), parameter :: subname ='calc_bgc_reaction'
 
   integer :: fc, c, j, k
-
+  real(r8) :: time
   real(r8) :: y0(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: yf(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)  
   real(r8) :: cn_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: cp_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
-  real(r8) :: time
   real(r8) :: k_decay(centurybgc_vars%nreactions, bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: pot_decay_rates(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)   ![mol C/m3/s] potential decay rates for different om pools without nutrient limitation
   real(r8) :: pot_co2_hr(bounds%begc:bounds%endc, lbj:ubj)                   ![mol C/m3/s], potential co2 respiration rate
+  real(r8) :: pot_nh3_immob(bounds%begc:bounds%endc,lbj:ubj)
   real(r8) :: anaerobic_frac(bounds%begc:bounds%endc,lbj:ubj)
   real(r8) :: n2_n2o_ratio_denit(bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: nh4_no3_ratio(bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: nuptake_prof(bounds%begc:bounds%endc,1:ubj)
+  real(r8) :: nh4_compet(bounds%begc:bounds%endc, 1:ubj)
   real(r8) :: pscal 
   
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
@@ -518,9 +604,10 @@ contains
      pot_decay_rates)
       
   !calculate potential respiration rates by summarizing all om decomposition pathways
-  call calc_potential_aerobic_hr(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, pot_decay_rates, &
-    soilstate_vars%cellsand_col(bounds%begc:bounds%endc,lbj:ubj), pot_co2_hr)      
-      
+  call calc_potential_aerobic_hr(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, cn_ratios, cp_ratios, centurybgc_vars, pot_decay_rates, &
+    soilstate_vars%cellsand_col(bounds%begc:bounds%endc,lbj:ubj), pot_co2_hr, pot_nh3_immob)      
+
+  
   !calculate fraction of anerobic environment
   call calc_anaerobic_frac(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, temperature_vars%t_soisno_col(bounds%begc:bounds%endc,lbj:ubj),&
      soilstate_vars, waterstate_vars%h2osoi_vol_col(bounds%begc:bounds%endc,lbj:ubj), pot_co2_hr, &
@@ -545,15 +632,17 @@ contains
      nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
      k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj))
 
-  call calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, centurybgc_vars, &
-     k_decay(1:centurybgc_vars%nreactions, bounds%begc:bounds%endc ,1:ubj))
+  call calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, dtime                             , &
+     k_decay(centurybgc_vars%lid_nh4_nit_reac, bounds%begc:bounds%endc, lbj:ubj), pot_nh3_immob            , &
+     k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj)                       , &
+     tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x), &
+     nh4_compet(bounds%begc:bounds%endc,1:ubj))
   
   !apply root distribution here
   call apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
     carbonflux_vars%rr_col(bounds%begc:bounds%endc), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj),            &
     k_decay(centurybgc_vars%lid_at_rt_reac, bounds%begc:bounds%endc, 1:ubj))
-  
-  
+      
   !do ode integration and update state variables for each layer
   !print*,get_nstep()
   lpr = .true.
@@ -563,7 +652,7 @@ contains
       if(j<jtops(c))cycle   
       !assign parameters for stoichiometric matrix calculation
       call Extra_inst%AAssign(cn_r=cn_ratios(:,c,j),cp_r=cp_ratios(:,c,j), k_d=k_decay(:,c,j), &
-        n2_n2o_r_denit=n2_n2o_ratio_denit(c,j), nh4_no3_r=nh4_no3_ratio(c,j)                 , &
+        n2_n2o_r_denit=n2_n2o_ratio_denit(c,j), nh4_compet_r=nh4_compet(c,j)                 , &
         cell_sand=soilstate_vars%cellsand_col(c,j), betrtracer_vars=betrtracer_vars          , &
         gas2bulkcef=tracercoeff_vars%gas2bulkcef_mobile_col(c,j,:)                           , &
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))

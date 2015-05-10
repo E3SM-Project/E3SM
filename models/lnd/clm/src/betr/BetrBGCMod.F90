@@ -256,54 +256,69 @@ contains
   use abortutils            , only : endrun
   
 
-  type(bounds_type),           intent(in) :: bounds
-  integer,                     intent(in) :: lbj, ubj
-  integer,                     intent(in) :: num_soilc                               ! number of columns in column filter_soilc
-  integer,                     intent(in) :: filter_soilc(:)                          ! column filter_soilc  
-  type(betrtracer_type),      intent(in) :: betrtracer_vars
-  real(r8),                    intent(in) :: dtime                              ! model time step  
-  real(r8),                    intent(in) :: hmconductance_col(bounds%begc: , lbj: ,1: ) !weighted bulk conductance
-  real(r8),                    intent(in) :: dz(bounds%begc: , lbj: )
+  type(bounds_type)            , intent(in) :: bounds
+  integer                      , intent(in) :: lbj, ubj
+  integer                      , intent(in) :: num_soilc                               ! number of columns in column filter_soilc
+  integer                      , intent(in) :: filter_soilc(:)                          ! column filter_soilc  
+  type(betrtracer_type)        , intent(in) :: betrtracer_vars
+  real(r8)                     , intent(in) :: dtime                              ! model time step  
+  real(r8)                     , intent(in) :: hmconductance_col(bounds%begc: , lbj: ,1: ) !weighted bulk conductance
+  real(r8)                     , intent(in) :: dz(bounds%begc: , lbj: )
   type(tracerboundarycond_type), intent(in) :: tracerboundarycond_vars  
   type(tracerflux_type)        , intent(in) :: tracerflux_vars   
-  type(tracerstate_type), intent(inout) :: tracerstate_vars
+  type(tracerstate_type)       , intent(inout) :: tracerstate_vars
 
   !local variables
-  integer ::  kk, j, fc, c, l
+  integer ::  kk, j, fc, c, l, ntrcs, trcid, k
   real(r8) :: dtime_loc(bounds%begc:bounds%endc)
   real(r8) :: time_remain(bounds%begc:bounds%endc)
-  real(r8) :: dtracer(bounds%begc:bounds%endc, lbj:ubj)
-  real(r8) :: err_tracer(bounds%begc:bounds%endc)
-  real(r8) :: local_source(bounds%begc:bounds%endc,lbj:ubj)
   integer  :: jtops(bounds%begc:bounds%endc)
 
   logical  :: update_col(bounds%begc:bounds%endc)
   logical  :: lnegative_tracer
   logical  :: lexit_loop
   
+  integer, allocatable :: difs_trc_group(:)
+  real(r8), pointer :: dtracer(:, :, :)
+  real(r8), pointer :: err_tracer(:, :)
+  real(r8), pointer :: local_source(:, :, :)
+  
   real(r8), parameter :: err_min_solid=1.e-12_r8
 
   character(len=255) :: subname = 'tracer_solid_transport'
   
   associate(&
-    tracernames                 =>   betrtracer_vars%tracernames                       , &
+    tracernames                 =>  betrtracer_vars%tracernames                        , &
+    tracer_group_memid          =>  betrtracer_vars%tracer_group_memid                 , & 
     is_mobile                   =>  betrtracer_vars%is_mobile                          , &    
     tracer_flx_netpro_vr        => tracerflux_vars%tracer_flx_netpro_vr_col            , & !   
     tracer_conc_solid_passive_col   =>   tracerstate_vars%tracer_conc_solid_passive_col  &
   )
   
-  SHR_ASSERT_ALL((ubound(hmconductance_col) == (/bounds%endc, ubj-1, betrtracer_vars%ntracers/)), errMsg(__FILE__,__LINE__))
+  SHR_ASSERT_ALL((ubound(hmconductance_col) == (/bounds%endc, ubj-1, betrtracer_vars%ntracer_groups/)), errMsg(__FILE__,__LINE__))
   SHR_ASSERT_ALL((ubound(dz) == (/bounds%endc, ubj/)),errMsg(__FILE__,__LINE__))
   
+  allocate(difs_trc_group(nmem_max))
+  allocate(dtracer(bounds%begc:bounds%endc, lbj:ubj, nmem_max))
+  allocate(err_tracer(bounds%begc:bounds%endc, nmem_max))
+  allocate(local_source(bounds%begc:bounds%endc,lbj:ubj,nmem_max))
   
   !tracer_source(:,:)=0._r8
   jtops(:)=1
-  local_source(:,:) = 0._r8
+  local_source(:,:,:) = 0._r8
   
-  do j = betrtracer_vars%ngwmobile_tracers+1, betrtracer_vars%ntracers
-    if(.not. is_mobile(j))cycle
+  do j = betrtracer_vars%ngwmobile_tracer_groups+1, betrtracer_vars%ntracer_groups
+    
+    do k = 1, nmem_max
+       trcid = tracer_group_memid(j, 1)
+       if(is_mobile(trcid))then
+         ntrcs = ntrcs + 1
+         difs_trc_group(ntrcs) = trcid
+       endif
+    enddo
+    if(ntrcs==0)cycle
     !the adaptive time stepping for solid phase transport
-    kk = j - betrtracer_vars%ngwmobile_tracers
+    kk = j - betrtracer_vars%ngwmobile_tracer_groups
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       dtime_loc(c)   = dtime
@@ -321,8 +336,8 @@ contains
     
     do
       !do diffusive transport
-      call DiffusTransp(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, tracer_conc_solid_passive_col(:,:,kk),&
-        hmconductance_col(:,:,j),  dtime_loc, dz, source=local_source, update_col=update_col, dtracer=dtracer)
+      call DiffusTransp(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, ntrcs, tracer_conc_solid_passive_col(:,:,difs_trc_group(1:ntrcs)),&
+        hmconductance_col(:,:,j),  dtime_loc, dz, source=local_source(:,:,1:ntrcs), update_col=update_col, dtracer=dtracer(:,:,1:ntrcs))
       
       !do tracer update
       do fc = 1, num_soilc
@@ -333,64 +348,55 @@ contains
           lnegative_tracer = .false.
           
           !loop over the layers
-          do l = jtops(c), ubj                                  
-            if(tracer_conc_solid_passive_col(c,l,kk)<-dtracer(c,l))then
+          do k = 1, ntrcs
+            trcid = difs_trc_group(k)
+            do l = jtops(c), ubj                                  
+              if(tracer_conc_solid_passive_col(c,l,trcid)<-dtracer(c,l,k))then
               !if the tracer update is very tinty, then set it to zero
-              if(abs(dtracer(c,l))<tiny_val)dtracer(c,l) = 0._r8
+                if(abs(dtracer(c,l,k))<tiny_val)dtracer(c,l,k) = 0._r8
               
-              if(tracer_conc_solid_passive_col(c,l,kk)<0._r8)then
+                if(tracer_conc_solid_passive_col(c,l,trcid)<0._r8)then
                 !write error message and stop
-                call endrun('stopped for negative tracer '//&
-                  trim(betrtracer_vars%tracernames(j))//' '//trim(subname))
+                  call endrun('stopped for negative tracer '//&
+                    trim(betrtracer_vars%tracernames(j))//' '//trim(subname))
+                endif
+              
+                !if tracer concentration change is zero, then goto next layer
+                if(dtracer(c,l,k)==0._r8)cycle
+              
+                !now negative tracer occurs, decrease the timestep and exit the layer loop
+                lnegative_tracer = .true.
+                dtime_loc(c) = dtime_loc(c)*0.5_r8
+                exit
               endif
-              
-              !if tracer concentration change is zero, then goto next layer
-              if(dtracer(c,l)==0._r8)cycle
-              
-              !now negative tracer occurs, decrease the timestep and exit the layer loop
-              lnegative_tracer = .true.
-              dtime_loc(c) = dtime_loc(c)*0.5_r8
-              exit
-            endif
-          enddo
+            enddo
+            !negative tracer, ramp out the loop
+            if(lnegative_tracer)exit
           
-          !if negative tracer concentration is found, go to the next column
-          if(lnegative_tracer)cycle
+          
+            !do error budget for the calculation
 
+            !it's possible that using daxpy won't improve the performance, but I'd like to take a bet here, Jinyun Tang, Mar 27, 2015
+            !dy=da*dx+dy
+            !daxpy(N,DA,DX,INCX,DY,INCY)
+            call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj,k), 1, tracer_conc_solid_passive_col(c,jtops(c):ubj,trcid),1)
           
-          !do error budget for the calculation
-          !err_tracer(c) = 0._r8
+            err_tracer(c, k) = dot_sum(dtracer(c,jtops(c):ubj, k), dz(c,jtops(c):ubj))
+
+            if(abs(err_tracer(c,k))>=err_min_solid)then
+              !something is wrong, write error information
+              call endrun('mass balance error for tracer '//tracernames(trcid)//' in '//trim(subname))
+            endif
+          enddo                    
+          !if negative tracer concentration is found, go to the next column
+          if(lnegative_tracer)cycle          
           
-          !do l = jtops(c), ubj
-          !  tracer_conc_solid_passive_col(c,l,kk) = tracer_conc_solid_passive_col(c,l,kk)+dtracer(c,l)
-          !  
-          !enddo
-          !if(c==25082)then
-          !  write(iulog,*)'solid '//tracernames(j),get_nstep()
-          !  write(iulog,*)'bgms=',dot_sum(tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),dz(c,jtops(c):ubj))
-          !endif
-          !it's possible that using daxpy won't improve the performance, but I'd like to take a bet here, Jinyun Tang, Mar 27, 2015
-          !dy=da*dx+dy
-          !daxpy(N,DA,DX,INCX,DY,INCY)
-          call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),1)
-          
-          err_tracer(c) = dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj))
-          !err_tracer(c) = err_tracer(c)-dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c)
-          !if(c==25082)then
-          !  write(iulog,*)'err=',err_tracer(c),' dt=',dtime_loc(c),' dm=',dot_sum(dtracer(c,jtops(c):ubj), dz(c,jtops(c):ubj)), &
-          !     ' npro=',dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c), &
-          !     ' em=',dot_sum(tracer_conc_solid_passive_col(c,jtops(c):ubj,kk),dz(c,jtops(c):ubj))
-          !endif
-          if(abs(err_tracer(c))>=err_min_solid)then
-            !something is wrong, write error information
-            call endrun('mass balance error for tracer '//tracernames(j)//' in '//trim(subname))
-          endif
-                    
+          !when everything is OK, update the remaining time to be evolved.
+          time_remain(c) = time_remain(c)-dtime_loc(c)
+          dtime_loc(c)=max(dtime_loc(c),dtime_min)
+          dtime_loc(c)=min(dtime_loc(c), time_remain(c))
         endif
-        !when everything is OK, update the remaining time to be evolved.
-        time_remain(c) = time_remain(c)-dtime_loc(c)
-        dtime_loc(c)=max(dtime_loc(c),dtime_min)
-        dtime_loc(c)=min(dtime_loc(c), time_remain(c))
+
       enddo
       
       !test for loop exit
@@ -400,6 +406,11 @@ contains
 
     enddo
   enddo
+  
+  deallocate(difs_trc_group)
+  deallocate(dtracer)
+  deallocate(err_tracer)
+  deallocate(local_source)  
   end associate
   end subroutine tracer_solid_transport
 !-------------------------------------------------------------------------------
@@ -448,7 +459,7 @@ contains
   SHR_ASSERT_ALL((ubound(dz) == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
   SHR_ASSERT_ALL((ubound(zi) == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
   SHR_ASSERT_ALL((ubound(h2osoi_liqvol) == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
-  SHR_ASSERT_ALL((ubound(Rfactor) == (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracers/)), errMsg(__FILE__,__LINE__))
+  SHR_ASSERT_ALL((ubound(Rfactor) == (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracer_groups/)), errMsg(__FILE__,__LINE__))
   
   !
   !Exclude solid phase tracers, by doing tracer equilibration
@@ -538,6 +549,8 @@ contains
   ! the aquesou advection is formulated as
   ! \frac{\partial{p(vsm*C_aq)}}{\partial t} = - \frac{\partial u*C_aq}{\partial z} + S_{root vs soil}
   !
+  ! now the code transport tracers as different groups
+  !
   use tracerstateType       , only : tracerstate_type
   use tracerfluxtype        , only : tracerflux_type
   use TracerCoeffType       , only : tracercoeff_type
@@ -565,20 +578,23 @@ contains
   real(r8) :: time_remain(bounds%begc:bounds%endc)
   real(r8) :: dtime_loc(bounds%begc:bounds%endc)
   real(r8) :: denum, num
-  real(r8) :: err_tracer(bounds%begc:bounds%endc)
-  real(r8) :: transp_mass(bounds%begc:bounds%endc)
-  real(r8) :: leaching_mass(bounds%begc:bounds%endc)
-  real(r8) :: inflx_top(bounds%begc:bounds%endc)
-  real(r8) :: inflx_bot(bounds%begc:bounds%endc)
-  real(r8) :: dmass(bounds%begc:bounds%endc)
   real(r8) :: qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj)
   real(r8) :: qflx_rootsoi_local(bounds%begc:bounds%endc,lbj:ubj)
+
+  integer, allocatable :: adv_trc_group( : )
+  real(r8), pointer :: err_tracer( : , : )
+  real(r8), pointer :: transp_mass( : , : )
+  real(r8), pointer :: leaching_mass( : , : )
+  real(r8), pointer :: inflx_top( : , : )
+  real(r8), pointer :: inflx_bot( : , : )
+  real(r8), pointer :: dmass( : , : )
+
   logical  :: halfdt_col(bounds%begc:bounds%endc)
   real(r8) :: err_relative
   real(r8) :: c_courant
   integer  :: num_loops                                !number of loops as determined by the courant number condition  
   logical  :: lexit_loop
-  integer  :: c, fc, j, l
+  integer  :: c, fc, j, l, k, kk, ntrcs, trcid
   integer  :: ngwmobile_tracers
   logical  :: lshock
 
@@ -600,7 +616,9 @@ contains
     is_mobile                => betrtracer_vars%is_mobile                      , & !
     is_h2o                   => betrtracer_vars%is_h2o                         , & !logical(:) [intent(in)], indicator whether the tracer is h2o
     vtrans_scal              => betrtracer_vars%vtrans_scal                    , & !real(r8) (:) [intent(in)], transport scalar for tracer exchaning between root and soil
-    ngwmobile_tracers        => betrtracer_vars%ngwmobile_tracers              , & !integer [intent(in)], number of mobile tracers undergoing dual phase transport
+    ngwmobile_tracer_groups  => betrtracer_vars%ngwmobile_tracer_groups        , & !integer [intent(in)], number of mobile tracers undergoing dual phase transport
+    nmem_max                 => betrtracer_vars%nmem_max                       , & !
+    tracer_group_memid       => betrtracer_vars%tracer_group_memid             , & !
     tracernames              => betrtracer_vars%tracernames                    , & !   
     tracer_conc_mobile_col   => tracerstate_vars%tracer_conc_mobile_col        , & !
     aqu2bulkcef_mobile_col   => tracercoeff_vars%aqu2bulkcef_mobile_col        , & !
@@ -608,6 +626,15 @@ contains
     tracer_flx_vtrans        => tracerflux_vars%tracer_flx_vtrans_col          , & !
     tracer_flx_infl          => tracerflux_vars%tracer_flx_infl_col              & !
   )
+  !allocate memories
+  allocate(adv_trc_group(nmem_max))
+  allocate(err_tracer(bounds%begc:bounds%endc ,nmem_max))
+  allocate(transp_mass(bounds%begc:bounds%endc, nmem_max))
+  allocate(leaching_mass(bounds%begc:bounds%endc, nmem_max))
+  allocate(inflx_top(bounds%begc:bounds%endc, nmem_max))
+  allocate(inflx_bot(bounds%begc:bounds%endc, nmem_max))
+  allocate(dmass(bounds%begc:bounds%endc,nmem_max))
+
   !initialize local variables
   update_col(:) = .true.             
   time_remain(:) = 0._r8
@@ -615,18 +642,31 @@ contains
    
 
   !loop over the tracers     
-  do j = 1, ngwmobile_tracers
-    if(.not. is_mobile(j))cycle
-    if(.not. is_advective(j))cycle
-
+  do j = 1, ngwmobile_tracer_groups
+    ntrcs = 0
+    
+    do k = 1, nmem_max
+      trcid = tracer_group_memid(j,k)
+      if(trcid>0)then
+        if(is_mobile(trcid) .and. is_advective(trcid)) then
+          ntrcs = ntrcs + 1
+          adv_trc_group(ntrcs) = trcid
+        endif
+      endif
+    enddo
+    if(ntrcs==0)cycle
+    
     !convert bulk mobile phase into aqueous phase
     do fc = 1, num_soilc
       c = filter_soilc(fc)
-      inflx_top(c) = tracer_flx_infl(c,j)
-      
+      do k = 1, ntrcs
+        inflx_top(c, k) = tracer_flx_infl(c,adv_trc_group(k))
+      enddo
       !set to 0 to ensure outgoing boundary condition is imposed, this may not be correct for water isotopes
-      inflx_bot(c) = 0._r8
-      !modify the advective velocity
+      inflx_bot(c,1:ntrcs) = 0._r8
+      
+      
+      !obtain advective velocity for the group
       qflx_adv_local(c,jtops(c)-1) = qflx_adv(c,jtops(c)-1)/aqu2bulkcef_mobile_col(c,jtops(c),j)
       do l = jtops(c), ubj
         qflx_adv_local(c,l) = qflx_adv(c,l)/aqu2bulkcef_mobile_col(c,l,j)
@@ -658,7 +698,10 @@ contains
       do fc = 1, num_soilc
         c = filter_soilc(fc)
         if(update_col(c))then
-          dmass(c) = dot_sum(tracer_conc_mobile_col(c, jtops(c):ubj, j), dz(c, jtops(c):ubj))
+          do kk = 1, ntrcs
+            trcid = adv_trc_group(kk)
+            dmass(c, kk) = dot_sum(tracer_conc_mobile_col(c, jtops(c):ubj, trcid), dz(c, jtops(c):ubj))
+          enddo
         endif
         !if(c==2300 .and. trim(tracernames(j))=='O18_H2O')then
         !    write(iulog,*)'adbf',tracer_conc_mobile_col(c,1,j),h2osoi_liqvol(c,1), inflx_top(c)
@@ -667,17 +710,20 @@ contains
 
       ! do semi-lagrangian tracer transport
       
-      call semi_lagrange_adv_backward(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dtime_loc, dz, zi, &
-        qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj), inflx_top, inflx_bot, update_col, halfdt_col, &
-        tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,j), leaching_mass)
+      call semi_lagrange_adv_backward(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dtime_loc, ntrcs, dz, zi, &
+        qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj), inflx_top(1:ntrcs), inflx_bot(1:ntrcs), update_col, halfdt_col, &
+        tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,adv_trc_group(1:ntrcs)), leaching_mass(1:ntrcs))
 
       !do soil-root tracer exchange
-      if(vtrans_scal(j)>0._r8)then
-        call calc_root_uptake_as_perfect_sink(bounds, lbj, ubj, num_soilc, filter_soilc, dtime_loc, dz, qflx_rootsoi_local, update_col, &
-          halfdt_col, tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,j), transp_mass)
-      else
-        transp_mass(:) = 0._r8
-      endif
+      do kk = 1, ntrcs
+        trcid = adv_trc_group(kk)
+        if(vtrans_scal(trcid)>0._r8)then
+          call calc_root_uptake_as_perfect_sink(bounds, lbj, ubj, num_soilc, filter_soilc, dtime_loc, dz, qflx_rootsoi_local, update_col, &
+          halfdt_col, tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,trcid), transp_mass(kk))
+        else
+          transp_mass(kk) = 0._r8
+        endif
+      enddo
       
       !do error budget and tracer flux update
       do fc = 1, num_soilc
@@ -686,30 +732,34 @@ contains
         !if(c==2300 .and. trim(tracernames(j))=='O18_H2O')then
         !    write(iulog,'(A,5(X,E20.10))')'adaf',tracer_conc_mobile_col(c,1,j),h2osoi_liqvol(c,1), inflx_top(c), qflx_adv_local(c,1), qflx_rootsoi_local(c,1)
         !endif        
-        if(update_col(c) .and. (.not. halfdt_col(c)))then                    
-          mass0   = dmass(c) 
-          dmass(c) =  dot_sum(tracer_conc_mobile_col(c,jtops(c):ubj,j), dz(c,jtops(c):ubj))- dmass(c)
+        if(update_col(c) .and. (.not. halfdt_col(c)))then
+          do kk = 1, ntrcs
+            trcid = adv_trc_group(kk)
+            mass0   = dmass(c, kk) 
+            dmass(c, kk) =  dot_sum(tracer_conc_mobile_col(c,jtops(c):ubj,trcid), dz(c,jtops(c):ubj))- dmass(c, kk)
                     
-          err_tracer(c) = dmass(c) - inflx_top(c) * dtime_loc(c) + leaching_mass(c) + transp_mass(c)
+            err_tracer(c, kk) = dmass(c, kk) - inflx_top(c,kk) * dtime_loc(c) + leaching_mass(c,kk) + transp_mass(c, kk)
 !          if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
 !            write(iulog,*)get_nstep(),dtime_loc(c)
 !            write(iulog,'(I8,X,A,4(X,A,X,E18.10))')c,tracernames(j),' err_adv=',err_tracer(c),' lech=',leaching_mass(c),' infl=',inflx_top(c),' dmass=',dmass(c)
 !          endif
-          if(abs(err_tracer(c))<err_adv_min .or. abs(err_tracer(c))/(mass0+1.e-10_r8) < 1.e-10_r8)then
+            if(abs(err_tracer(c,kk))<err_adv_min .or. abs(err_tracer(c,kk))/(mass0+1.e-10_r8) < 1.e-10_r8)then
             !when the absolute value is too small, set relative error to 
-            err_relative = err_relative_threshold*0.999_r8   
-          else
-            err_relative = err_tracer(c)/maxval((/abs(inflx_top(c)*dtime_loc(c)),abs(leaching_mass(c)),tiny_val/))
-          endif
-          if(abs(err_relative)<err_relative_threshold)then
-            leaching_mass(c) = leaching_mass(c) - err_tracer(c)
-          else
+              err_relative = err_relative_threshold*0.999_r8   
+            else
+              err_relative = err_tracer(c,kk)/maxval((/abs(inflx_top(c,kk)*dtime_loc(c)),abs(leaching_mass(c,kk)),tiny_val/))
+            endif
+            if(abs(err_relative)<err_relative_threshold)then
+              leaching_mass(c,kk) = leaching_mass(c,kk) - err_tracer(c,kk)
+            else
             !something is wrong, write error information
-            write(iulog,'(I8,X,A,5(X,A,X,E18.10))')c,tracernames(j),' err=',err_tracer(c),' lech=',leaching_mass(c),' infl=',inflx_top(c),' dmass=',dmass(c), ' mass0=',mass0,'err_rel=',err_relative
-            call endrun('mass balance error for tracer '//tracernames(j)//errMsg(__FILE__, __LINE__))            
-          endif
-          tracer_flx_vtrans(c, j)  = tracer_flx_vtrans(c,j) + transp_mass(c)
-          tracer_flx_leaching(c,j) = tracer_flx_leaching(c, j) + leaching_mass(c)
+              write(iulog,'(I8,X,A,5(X,A,X,E18.10))')c,tracernames(trcid),' err=',err_tracer(c,kk),' lech=',&
+                 leaching_mass(c,kk),' infl=',inflx_top(c,kk),' dmass=',dmass(c,kk), ' mass0=',mass0,'err_rel=',err_relative
+              call endrun('mass balance error for tracer '//tracernames(j)//errMsg(__FILE__, __LINE__))            
+            endif
+            tracer_flx_vtrans(c, trcid)  = tracer_flx_vtrans(c,trcid) + transp_mass(c,trcid)
+            tracer_flx_leaching(c,trcid) = tracer_flx_leaching(c, trcid) + leaching_mass(c,trcid)
+          enddo  
         endif
       enddo
       
@@ -738,6 +788,13 @@ contains
 
 
   enddo  
+  deallocate(adv_trc_group)
+  deallocate(err_tracer   )
+  deallocate(transp_mass  )
+  deallocate(leaching_mass)
+  deallocate(inflx_top    )
+  deallocate(inflx_bot    )
+  deallocate(dmass        )
     
   end associate
   end subroutine do_tracer_advection
@@ -759,75 +816,99 @@ contains
   use tracer_varcon         , only : bndcond_as_conc
   use WaterStateType        , only : Waterstate_Type    
  
-  type(bounds_type),      intent(in) :: bounds
-  integer,                intent(in) :: lbj, ubj
-  integer,                intent(in) :: jtops(bounds%begc: )        ! top label of each column  
-  integer,                intent(in) :: num_soilc                                  ! number of columns in column filter_soilc
-  integer,                intent(in) :: filter_soilc(:)                             ! column filter_soilc  
-  type(betrtracer_type),  intent(in) :: betrtracer_vars
-  real(r8),               intent(in) :: hmconductance_col(bounds%begc: , lbj: ,1: ) !weighted bulk conductance
-  real(r8),               intent(in) :: Rfactor(bounds%begc: ,lbj:  ,1: )  !rfactor for dual diffusive transport
-  real(r8),               intent(in) :: dz(bounds%begc: ,lbj: )
-  real(r8),               intent(in) :: dtime                             !model time step
+  type(bounds_type)      , intent(in) :: bounds
+  integer                , intent(in) :: lbj, ubj
+  integer                , intent(in) :: jtops(bounds%begc: )        ! top label of each column  
+  integer                , intent(in) :: num_soilc                                  ! number of columns in column filter_soilc
+  integer                , intent(in) :: filter_soilc(:)                             ! column filter_soilc  
+  type(betrtracer_type)  , intent(in) :: betrtracer_vars
+  real(r8)               , intent(in) :: hmconductance_col(bounds%begc: , lbj: ,1: ) !weighted bulk conductance
+  real(r8)               , intent(in) :: Rfactor(bounds%begc: ,lbj:  ,1: )  !rfactor for dual diffusive transport
+  real(r8)               , intent(in) :: dz(bounds%begc: ,lbj: )
+  real(r8)               , intent(in) :: dtime                             !model time step
   type(tracerboundarycond_type), intent(in) :: ttracerboundarycond_vars    
-  type(tracerstate_type), intent(inout) :: tracerstate_vars
-  type(tracerflux_type), intent(inout) :: tracerflux_vars
-  type(Waterstate_Type),       intent(in) :: waterstate_vars            ! water state variables
+  type(tracerstate_type) , intent(inout) :: tracerstate_vars
+  type(tracerflux_type)  , intent(inout) :: tracerflux_vars
+  type(Waterstate_Type)  , intent(in) :: waterstate_vars            ! water state variables
   
    
   !local variables 
   character(len=255) :: subname = 'do_tracer_gw_diffusion'
-  integer  :: j, fc, c, l
+  integer  :: j, fc, c, l, ntrcs, k, trcid
   logical  :: update_col(bounds%begc:bounds%endc)   !logical switch for whether or not update a column
   real(r8) :: time_remain(bounds%begc:bounds%endc)  !remaining time to evolve
   real(r8) :: dtime_loc(bounds%begc:bounds%endc)    !local time step
-  real(r8) :: err_tracer(bounds%begc:bounds%endc)
-  real(r8) :: diff_surf(bounds%begc:bounds%endc)
-  real(r8) :: dtracer(bounds%begc:bounds%endc,lbj:ubj) 
   logical  :: lnegative_tracer                      !when true, negative tracer occurs
-  logical  :: lexit_loop
+  logical  :: lexit_loop  
   real(r8) :: err_relative
-  real(r8) :: dmass(bounds%begc:bounds%endc)
-  real(r8) :: local_source(bounds%begc:bounds%endc,lbj:ubj)
+  
+  integer , allocatable :: dif_trc_group(:)
+  real(r8), allocatable :: err_tracer(:, :)
+  real(r8), allocatable :: diff_surf(:, :)
+  real(r8), allocatable :: dtracer(:, :, :) 
+  real(r8), allocatable :: dmass(:, : )
+  real(r8), allocatable :: local_source(:, :, :)
+
   real(r8) :: mass0
   real(r8), parameter :: err_relative_threshold=1.e-2_r8 !relative error threshold
   real(r8), parameter :: err_dif_min = 1.e-12_r8  !minimum absolute error
   
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
-  SHR_ASSERT_ALL((ubound(dz) == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
-  SHR_ASSERT_ALL((ubound(hmconductance_col) == (/bounds%endc, ubj-1, betrtracer_vars%ntracers/)), errMsg(__FILE__,__LINE__))
-  SHR_ASSERT_ALL((ubound(Rfactor) == (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracers/)), errMsg(__FILE__,__LINE__))
+  SHR_ASSERT_ALL((ubound(dz)    == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
+  SHR_ASSERT_ALL((ubound(hmconductance_col) == (/bounds%endc, ubj-1, betrtracer_vars%ntracer_groups/)), errMsg(__FILE__,__LINE__))
+  SHR_ASSERT_ALL((ubound(Rfactor) == (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracer_groups/)), errMsg(__FILE__,__LINE__))
   
   associate(&
-    is_volatile        =>  betrtracer_vars%is_volatile,                            &
-    is_mobile          =>  betrtracer_vars%is_mobile,                              &
-    volatileid         =>  betrtracer_vars%volatileid,                             & 
-    tracernames        =>  betrtracer_vars%tracernames,                            &
-    tracer_flx_dif     =>  tracerflux_vars%tracer_flx_dif_col,                     &
-    tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col            , & !
-    tracer_gwdif_concflux_top=>  ttracerboundarycond_vars%tracer_gwdif_concflux_top_col,       &
-    condc_toplay       =>  ttracerboundarycond_vars%condc_toplay_col,              &
-    topbc_type         =>  ttracerboundarycond_vars%topbc_type,                    &
-    bot_concflux       =>  ttracerboundarycond_vars%bot_concflux_col,                  &
-    tracer_conc_mobile_col => tracerstate_vars%tracer_conc_mobile_col              &
+    is_volatile              =>  betrtracer_vars%is_volatile                            , & !
+    is_mobile                =>  betrtracer_vars%is_mobile                              , & !
+    volatileid               =>  betrtracer_vars%volatileid                             , & !
+    tracernames              =>  betrtracer_vars%tracernames                            , & !
+    nmem_max                 =>  betrtracer_vars%nmem_max                               , & !
+    ngwmobile_tracers        =>  betrtracer_vars%ngwmobile_tracers                      , & !
+    ngwmobile_tracer_groups  => betrtracer_vars%ngwmobile_tracer_groups                 , & !
+    tracer_group_memid       =>  betrtracer_vars%tracer_group_memid                     , & !
+    tracer_flx_dif           =>  tracerflux_vars%tracer_flx_dif_col                     , & !   
+    tracer_flx_netpro_vr     => tracerflux_vars%tracer_flx_netpro_vr_col                , & !
+    tracer_gwdif_concflux_top=>  ttracerboundarycond_vars%tracer_gwdif_concflux_top_col , & !
+    condc_toplay             =>  ttracerboundarycond_vars%condc_toplay_col              , & !
+    topbc_type               =>  ttracerboundarycond_vars%topbc_type                    , & !
+    bot_concflux             =>  ttracerboundarycond_vars%bot_concflux_col              , & ! 
+    tracer_conc_mobile_col   => tracerstate_vars%tracer_conc_mobile_col                   &
   )  
   
+  allocate(err_tracer(bounds%begc:bounds%endc, nmem_max))
+  allocate(diff_surf(bounds%begc:bounds%endc, nmem_max))
+  allocate(dtracer(bounds%begc:bounds%endc,lbj:ubj, nmem_max)) 
+  allocate(dmass(bounds%begc:bounds%endc, nmem_max))
+  allocate(local_source(bounds%begc:bounds%endc,lbj:ubj, nmem_max))
   
   update_col(:) = .true.
   time_remain(:) = 0._r8
   dtime_loc(:) = 0._r8
   local_source(:,:) = 0._r8
   
-  do j = 1, betrtracer_vars%ngwmobile_tracers
-    if(.not. is_mobile(j))cycle
+  do j = 1, ngwmobile_tracer_groups
+  
+    !assemable the tracer group for diffusion
+    ntrcs = 0    
+    do k = 1, nmem_max
+      trcid = tracer_group_memid(j,k)      
+      if(trcid>0)then
+        if(is_mobile(trcid)) then
+          ntrcs = ntrcs + 1
+          dif_trc_group(ntrcs) = trcid
+        endif
+      endif
+    enddo
+    if(ntrcs==0)cycle
+    
+    
     !initialize the time keeper    
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       time_remain(c) = dtime
       dtime_loc(c) = dtime
-      update_col(c) = .true.
-      
-
+      update_col(c) = .true.      
     enddo
     
     !do l = lbj, ubj
@@ -840,100 +921,107 @@ contains
       
     !Do adpative time stepping to avoid negative tracer
     do      
-      call DiffusTransp(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, tracer_conc_mobile_col( : , : ,j), &
-        Rfactor( : , : ,j), hmconductance_col( : , : ,j), dtime_loc, dz,  local_source(:,:)                , &
-        tracer_gwdif_concflux_top( : , : ,j), condc_toplay( : ,j), topbc_type(j), bot_concflux( : , : ,j), update_col, dtracer)
+      call DiffusTransp(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, ntrcs          , &
+        tracer_conc_mobile_col( : , : ,dif_trc_group(1:ntrcs)), Rfactor( : , : ,j)       , &
+        hmconductance_col( : , : ,j), dtime_loc, dz,  local_source(:,:, 1:ntrcs)         , &
+        tracer_gwdif_concflux_top( : , : ,dif_trc_group(1:ntrcs)), condc_toplay( : ,j)   , &
+        topbc_type(j), bot_concflux( : , : ,dif_trc_group(1:ntrcs)), update_col, dtracer(:,:,1:ntrcs))
       
       !do tracer update
       do fc = 1, num_soilc
         c = filter_soilc(fc)
-        if(update_col(c))then
-          
+        
+        !update the column
+        if(update_col(c))then          
+        
           !do negative tracer screening
           lnegative_tracer = .false.
-
+          
+          do k = 1, ntrcs
+            trcid = dif_trc_group(k)
+            do l = jtops(c), ubj                                  !loop over the layers
+              if(tracer_conc_mobile_col(c,l,trcid)<-dtracer(c,l,k))then
+              !if the tracer update is very tinty, then set it to zero
+                if(abs(dtracer(c,l,k))<tiny_val)dtracer(c,l,k) = 0._r8
+                
+                if(tracer_conc_mobile_col(c,l,trcid)<0._r8)then
+                !write error message and stop
+                  write(iulog,*),tracernames(trcid),c,l
+                  write(iulog,*),tracer_conc_mobile_col(c,l,trcid),dtracer(c,l,k),dtime_loc(c)
+                  call endrun('stopped '//trim(subname)//errMsg(__FILE__, __LINE__))
+                endif
+              
+                !if tracer concentration change is zero, then goto next layer
+                if(dtracer(c,l,k)==0._r8)cycle
+              
+                !now negative tracer occurs, decrease the timestep and exit the layer loop
+                lnegative_tracer = .true.
+                dtime_loc(c) = dtime_loc(c)*0.5_r8
+                exit
+              endif              
+            enddo
+            !negative tracer, ramp out the loop
+            if(lnegative_tracer)exit
+          enddo
+          
+          !time stepping screening
           if(dtime_loc(c)<1.e-3_r8)then
             write(iulog,*)'time step < 1.e-3_r8', dtime_loc(c), 'col ',c
-            write(iulog,*)'tracer '//tracernames(j),get_cntheta()
-            write(iulog,*)(l,tracer_conc_mobile_col(c,l,j),l=jtops(c),ubj)
-            write(iulog,*)'dtracer'
-            write(iulog,*)(l,dtracer(c,l),l=jtops(c),ubj)
+            do k = 1, ntrcs
+              write(iulog,*)'tracer '//tracernames(trcid),get_cntheta()
+              write(iulog,*)(l,tracer_conc_mobile_col(c,l,trcid),l=jtops(c),ubj)
+              write(iulog,*)'dtracer'
+              write(iulog,*)(l,dtracer(c,l,k),l=jtops(c),ubj)
+            enddo
             call endrun('stopped in '//trim(subname))
           endif
-            
-          do l = jtops(c), ubj                                  !loop over the layers
-            if(tracer_conc_mobile_col(c,l,j)<-dtracer(c,l))then
-              !if the tracer update is very tinty, then set it to zero
-              if(abs(dtracer(c,l))<tiny_val)dtracer(c,l) = 0._r8
-              if(tracer_conc_mobile_col(c,l,j)<0._r8)then
-                !write error message and stop
-                print*,tracernames(j),c,l
-                print*,tracer_conc_mobile_col(c,l,j),dtracer(c,l),dtime_loc(c)
-                call endrun('stopped '//trim(subname))
-              endif
-              
-              !if tracer concentration change is zero, then goto next layer
-              if(dtracer(c,l)==0._r8)cycle
-              
-              !now negative tracer occurs, decrease the timestep and exit the layer loop
-              lnegative_tracer = .true.
-              dtime_loc(c) = dtime_loc(c)*0.5_r8
-              exit
-            endif
-          enddo
           
           !if negative tracer concentration is found, go to the next column
           if(lnegative_tracer)cycle
+          
           !update surface efflux for volatile tracers, positive for into the atmosphere
-          if(topbc_type(j)==bndcond_as_conc)then
-            diff_surf(c) = -condc_toplay(c,j) * (tracer_conc_mobile_col(c,jtops(c),j)/Rfactor(c,jtops(c),j)-tracer_gwdif_concflux_top(c,1,j) + &
-                  get_cntheta()*(dtracer(c,jtops(c))/Rfactor(c,jtops(c),j)+tracer_gwdif_concflux_top(c,1,j)-tracer_gwdif_concflux_top(c,2,j)))          
-          else
-            diff_surf(c) = 0.5_r8*(tracer_gwdif_concflux_top(c,1,j)+tracer_gwdif_concflux_top(c,2,j))
-          endif
-          
-          !do error budget for the calculation
-          !err_tracer(c) = 0._r8
-          !do l = jtops(c), ubj
-          !  tracer_conc_mobile_col(c,l,j) = tracer_conc_mobile_col(c,l,j)+dtracer(c,l)
-            
-          !  err_tracer(c) = err_tracer(c) + dtracer(c,l) * dz(c,l)
-          !enddo
-          call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj), 1, tracer_conc_mobile_col(c,jtops(c):ubj,j),1)
-          
-          dmass(c) = dot_sum(x=dtracer(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))
-          
-          err_tracer(c) = dmass(c)-diff_surf(c) *dtime_loc(c) 
-          !err_tracer(c) = err_tracer(c) - dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj)) * dtime_loc(c)
-          !if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
-          !   write(iulog,*)get_nstep()
-          !   write(iulog,*)'err_dif',err_tracer(c),'dif_endm=',dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,j),y=dz(c,jtops(c):ubj))
-          !endif
-          mass0=dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,j),y=dz(c,jtops(c):ubj))
-
-          !calculate relative error, defined as the ratio between absolute error with respect to surface flux
-          if(abs(err_tracer(c))<err_dif_min .or.  abs(err_tracer(c))/(mass0+1.e-10_r8) < 1.e-10_r8)then
-            !when the absolute value is too small, set relative error to 
-            err_relative = err_relative_threshold*0.999_r8   
-          else
-            err_relative = err_tracer(c)/max(abs(diff_surf(c)),tiny_val)
-          endif
-
-          if(abs(err_relative)<err_relative_threshold)then
-            !the calculation is good, use the error to correct the diffusive flux for volatile tracer
-            if(is_volatile(j))then
-              diff_surf(c) = diff_surf(c)+err_tracer(c)/dtime_loc(c)
-              !accumulate the diffusive flux at the given time step, + into the atmosphere
-              tracer_flx_dif(c,volatileid(j)) = tracer_flx_dif(c,volatileid(j)) - diff_surf(c) * dtime_loc(c)
+          do k = 1, ntrcs
+            trcid = dif_trc_group(k)
+            if(topbc_type(j)==bndcond_as_conc)then
+              diff_surf(c, k) = -condc_toplay(c,j) * (tracer_conc_mobile_col(c,jtops(c),trcid)/Rfactor(c,jtops(c),j) - tracer_gwdif_concflux_top(c,1,trcid) + &
+                  get_cntheta()*(dtracer(c,jtops(c),k)/Rfactor(c,jtops(c),j)+tracer_gwdif_concflux_top(c,1,trcid)-tracer_gwdif_concflux_top(c,2,trcid)))                  
+            else
+              diff_surf(c, k) = 0.5_r8*(tracer_gwdif_concflux_top(c,1,trcid)+tracer_gwdif_concflux_top(c,2,trcid))
             endif
-          else
-            !something is wrong, write error information
-            write(iulog,*),'mass bal error dif '//tracernames(j)
-            write(iulog,*)'err=',err_tracer(c),dmass(c), ' dif=',diff_surf(c)*dtime_loc(c), ' prod=',dot_sum(x=local_source(c,jtops(c):ubj),y=dz(c,jtops(c):ubj))*dtime_loc(c)
-            call endrun('mass balance error for tracer '//tracernames(j)//' in '//trim(subname))
-          endif
-           
+
+            !do error budget for the calculation
+
+            call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj, k), 1, tracer_conc_mobile_col(c,jtops(c):ubj,trcid),1)
           
+            dmass(c, k) = dot_sum(x=dtracer(c,jtops(c):ubj, k),y=dz(c,jtops(c):ubj))
+          
+            err_tracer(c, k) = dmass(c, k)-diff_surf(c, k) *dtime_loc(c) 
+
+            mass0=dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,trcid),y=dz(c,jtops(c):ubj))
+
+            !calculate relative error, defined as the ratio between absolute error with respect to surface flux
+            if(abs(err_tracer(c, k))<err_dif_min .or.  abs(err_tracer(c, k))/(mass0+1.e-10_r8) < 1.e-10_r8)then
+              !when the absolute value is too small, set relative error to 
+              err_relative = err_relative_threshold*0.999_r8   
+            else
+              err_relative = err_tracer(c, k)/max(abs(diff_surf(c, k)),tiny_val)
+            endif
+
+            if(abs(err_relative)<err_relative_threshold)then
+              !the calculation is good, use the error to correct the diffusive flux for volatile tracer
+              if(is_volatile(trcid))then
+                diff_surf(c,k) = diff_surf(c,k)+err_tracer(c,k)/dtime_loc(c)
+                !accumulate the diffusive flux at the given time step, + into the atmosphere
+                tracer_flx_dif(c,volatileid(trcid)) = tracer_flx_dif(c,volatileid(trcid)) - diff_surf(c,k) * dtime_loc(c)
+              endif
+            else
+              !something is wrong, write error information
+              write(iulog,*),'mass bal error dif '//tracernames(trcid)
+              write(iulog,*)'err=',err_tracer(c,k),dmass(c), ' dif=',diff_surf(c,k)*dtime_loc(c), ' prod=',dot_sum(x=local_source(c,jtops(c):ubj,k),y=dz(c,jtops(c):ubj))*dtime_loc(c)
+              call endrun('mass balance error for tracer '//tracernames(trcid)//' in '//trim(subname)//errMsg(__FILE__, __LINE__))
+            endif
+           
+          enddo
         endif
         !when everything is OK, update the remaining time to be evolved.
         time_remain(c) = time_remain(c)-dtime_loc(c)
@@ -947,7 +1035,13 @@ contains
       if(lexit_loop)exit
     enddo
   enddo
-  !    
+  !
+  deallocate(err_tracer(bounds%begc:bounds%endc, nmem_max))
+  deallocate(diff_surf(bounds%begc:bounds%endc, nmem_max))
+  deallocate(dtracer(bounds%begc:bounds%endc,lbj:ubj, nmem_max)) 
+  deallocate(dmass(bounds%begc:bounds%endc, nmem_max))
+  deallocate(local_source(bounds%begc:bounds%endc,lbj:ubj, nmem_max))
+  
   end associate 
   end subroutine do_tracer_gw_diffusion
 !-------------------------------------------------------------------------------  
@@ -1000,27 +1094,29 @@ contains
   real(r8), intent(inout) :: Rfactor(bounds%begc: ,lbj:  ,1: )  !rfactor for dual diffusive transport
   
   !local variables
-  integer :: j, fc, c, k, kk
+  integer :: j, fc, c, k, kk, trcid
   character(len=255) :: subname = 'set_gwdif_Rfactor'    
 
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
-  SHR_ASSERT_ALL((ubound(Rfactor) == (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracers/)), errMsg(__FILE__,__LINE__))
+  SHR_ASSERT_ALL((ubound(Rfactor) == (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracer_groups/)), errMsg(__FILE__,__LINE__))
   
-  associate(                                                          &  !
-    ngwmobile_tracers =>    betrtracer_vars%ngwmobile_tracers       , &  !
-    is_volatile       =>    betrtracer_vars%is_volatile             , &  !
-    is_h2o            =>    betrtracer_vars%is_h2o                  , &  !
-    volatileid        =>    betrtracer_vars%volatileid              , &  !
-    gas2bulkcef_mobile=>    tracercoeff_vars%gas2bulkcef_mobile_col , &  !
-    aqu2bulkcef_mobile=>    tracercoeff_vars%aqu2bulkcef_mobile_col   &  !
+  associate(                                                                    &  !
+    ngwmobile_tracer_groups =>    betrtracer_vars%ngwmobile_tracer_groups     , &  !
+    tracer_group_memid      =>    betrtracer_vars%tracer_group_memid          , &  !
+    is_volatile             =>    betrtracer_vars%is_volatile                 , &  !
+    is_h2o                  =>    betrtracer_vars%is_h2o                      , &  !
+    volatileid              =>    betrtracer_vars%volatileid                  , &  !
+    gas2bulkcef_mobile      =>    tracercoeff_vars%gas2bulkcef_mobile_col     , &  !
+    aqu2bulkcef_mobile      =>    tracercoeff_vars%aqu2bulkcef_mobile_col       &  !
   )
   do j = lbj, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       if(j>=jtops(c))then
-        do k = 1, ngwmobile_tracers
-          if(is_volatile(k))then
-            kk = volatileid(k)
+        do k = 1, ngwmobile_tracer_groups
+          trcid = tracer_group_memid(k,1)          
+          if(is_volatile(trcid))then
+            kk = volatilegroupid(trcid)
             Rfactor(c,j, k) = gas2bulkcef_mobile(c,j,kk)
           else
             Rfactor(c,j, k) = aqu2bulkcef_mobile(c,j,k)
@@ -1088,6 +1184,8 @@ contains
    aqu2bulkcef_mobile_col   => tracercoeff_vars%aqu2bulkcef_mobile_col, &
    henrycef_col             => tracercoeff_vars%henrycef_col          , &
    volatileid               => betrtracer_vars%volatileid             , &
+   groupid                  => betrtracer_vars%groupid                , &
+   volatilegroupid          => betrtracer_vars%volatilegroupid        , & 
    ngwmobile_tracers        => betrtracer_vars%ngwmobile_tracers      , &
    nvolatile_tracers        => betrtracer_vars%nvolatile_tracers      , &
    is_mobile                => betrtracer_vars%is_mobile              , & 
@@ -1115,16 +1213,22 @@ contains
       press_hydro=press_hydro/oneatm     
       !calculate the total gas pressure
       n2_pressure=calc_gas_pressure(tracer_conc_mobile_col(c,j,id_trc_n2), &
-        aqu2bulkcef_mobile_col(c,j,id_trc_n2), henrycef_col(c, j, volatileid(id_trc_n2)))
+        aqu2bulkcef_mobile_col(c,j,groupid(id_trc_n2)), henrycef_col(c, j, volatilegroupid(id_trc_n2)))
+        
       o2_pressure=calc_gas_pressure(tracer_conc_mobile_col(c,j,id_trc_o2), &
-        aqu2bulkcef_mobile_col(c,j,id_trc_o2), henrycef_col(c, j, volatileid(id_trc_o2)))
+        aqu2bulkcef_mobile_col(c,j,groupid(id_trc_o2)), henrycef_col(c, j, volatilegroupid(id_trc_o2)))
+      
       ar_pressure=calc_gas_pressure(tracer_conc_mobile_col(c,j,id_trc_ar), &
-        aqu2bulkcef_mobile_col(c,j,id_trc_ar), henrycef_col(c, j, volatileid(id_trc_ar)))
+        aqu2bulkcef_mobile_col(c,j,groupid(id_trc_ar)), henrycef_col(c, j, volatilegroupid(id_trc_ar)))
+      
       co2_pressure=calc_gas_pressure(tracer_conc_mobile_col(c,j,id_trc_co2x), &
-        aqu2bulkcef_mobile_col(c,j,id_trc_co2x), henrycef_col(c, j, volatileid(id_trc_co2x)))
+        aqu2bulkcef_mobile_col(c,j,groupid(id_trc_co2x)), henrycef_col(c, j, volatilegroupid(id_trc_co2x)))
+      
       ch4_pressure=calc_gas_pressure(tracer_conc_mobile_col(c,j,id_trc_ch4), &
-        aqu2bulkcef_mobile_col(c,j,id_trc_ch4), henrycef_col(c, j, volatileid(id_trc_ch4)))
+        aqu2bulkcef_mobile_col(c,j,groupid(id_trc_ch4)), henrycef_col(c, j, volatilegroupid(id_trc_ch4)))
+      
       total_pressure=n2_pressure+o2_pressure+ar_pressure+co2_pressure+ch4_pressure
+      
       if(total_pressure>press_hydro)then
         !ebullition occurs
         !calculate the fraction of gas to be released as bubble
@@ -1258,6 +1362,7 @@ contains
 
   associate(                                                                & !   
     ngwmobile_tracers        => betrtracer_vars%ngwmobile_tracers         , & !
+    groupid                  => betrtracer_vars%groupid                   , & !
     is_h2o                   => betrtracer_vars%is_h2o                    , & !
     is_advective             => betrtracer_vars%is_advective              , & !
     aqu2bulkcef_mobile       => tracercoeff_vars%aqu2bulkcef_mobile_col   , & !
@@ -1274,7 +1379,7 @@ contains
         do k = 1, ngwmobile_tracers
           !obtain aqueous concentration
           if(.not. is_advective(k))cycle
-          aqucon = safe_div(tracer_conc_mobile(c,j,k),aqu2bulkcef_mobile(c,j,k))
+          aqucon = safe_div(tracer_conc_mobile(c,j,k),aqu2bulkcef_mobile(c,j,groupid(k)))
           if(.not. is_h2o(k))then
             tracer_flx_drain(c,k)     = tracer_flx_drain(c,k)  + aqucon * max(qflx_drain_vr(c,j),0._r8)
             tracer_conc_mobile(c,j,k) =  tracer_conc_mobile(c,j,k) - aqucon * max(qflx_drain_vr(c,j),0._r8)/dz(c,j)
@@ -1337,9 +1442,10 @@ contains
   real(r8) :: dtmp 
   associate(                                                               &
     ngwmobile_tracers     => betrtracer_vars%ngwmobile_tracers           , & !
-    is_advective          => betrtracer_vars%is_advective                , &
+    groupid               => betrtracer_vars%groupid                     , & !
+    is_advective          => betrtracer_vars%is_advective                , & ! 
     is_h2o                => betrtracer_vars%is_h2o                      , & !Input [logical (:)] indicator whether it is a H2O tracer
-    h2osoi_liqvol         => waterstate_vars%h2osoi_liqvol_col           , &
+    h2osoi_liqvol         => waterstate_vars%h2osoi_liqvol_col           , & !
     qflx_surf             => waterflux_vars%qflx_surf_col                , & !Input [real(r8) (:)]   surface runoff [mm H2O/s]
     tracer_conc_surfwater => tracerstate_vars%tracer_conc_surfwater_col  , & !Inout [real(r8) (:,:)] tracer concentration in surface water
     tracer_conc_mobile    => tracerstate_vars%tracer_conc_mobile_col     , & !
@@ -1375,7 +1481,7 @@ contains
         else  
           scal=1._r8-fracice_top(c)      !reduce the water flush due to ice forst in layer 1
         endif
-        fracc(k) = safe_div(tracer_conc_mobile(c,k,j), aqu2bulkcef_mobile(c,k,j)) * h2osoi_liqvol(c,k) * dz_top2(c,k) * scal
+        fracc(k) = safe_div(tracer_conc_mobile(c,k,j), aqu2bulkcef_mobile(c,k,groupid(j))) * h2osoi_liqvol(c,k) * dz_top2(c,k) * scal
         total = total + fracc(k)        !total mass
       enddo
       !assume perfect mix and obtain the net loss through surface runoff
@@ -1574,7 +1680,8 @@ contains
    tracer_P_gas_frac_col    => tracerstate_vars%tracer_P_gas_frac_col , &
    aqu2bulkcef_mobile_col   => tracercoeff_vars%aqu2bulkcef_mobile_col, &
    henrycef_col             => tracercoeff_vars%henrycef_col          , &
-   volatileid               => betrtracer_vars%volatileid             , &
+   volatilegroupid          => betrtracer_vars%volatilegroupid        , &
+   groupid                  => betrtracer_vars%groupid                , &
    ngwmobile_tracers        => betrtracer_vars%ngwmobile_tracers      , &
    is_volatile              => betrtracer_vars%is_volatile            , &
    is_isotope               => betrtracer_vars%is_isotope             , &   
@@ -1591,7 +1698,7 @@ contains
 
          if(is_volatile(jj) .and. (.not. is_h2o(jj)) .and. (.not. is_isotope(jj)))then
            tracer_P_gas_frac_col(c,j, volatileid(jj))  = calc_gas_pressure(tracer_conc_mobile_col(c,j,jj), &
-             aqu2bulkcef_mobile_col(c,j,jj), henrycef_col(c, j, volatileid(jj)))
+             aqu2bulkcef_mobile_col(c,j,groupid(jj)), henrycef_col(c, j, volatilegroupid(jj)))
            total_pres=total_pres + tracer_P_gas_frac_col(c,j, volatileid(jj))
          endif  
        enddo

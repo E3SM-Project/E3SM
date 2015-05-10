@@ -207,7 +207,7 @@ module TracerParamsMod
    real(r8) :: max_altdepth_cryoturbation = 1._r8  ! (m) maximum active layer thickness for cryoturbation to occur
    real(r8) :: cryoturb_diffusion_k       = 1e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr = 1m^2/1000 yr
    real(r8) :: som_diffus                 = 5e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr
-   integer :: j, k, n, fc, c     !indices
+   integer :: j, k, n, fc, c , trcid    !indices
    integer :: nsld
    real(r8) :: diffaqu, diffgas
    character(len=255) :: subname = 'calc_bulk_diffusivity'
@@ -216,18 +216,19 @@ module TracerParamsMod
    SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(t_soisno)        == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))   
    SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bunsencef_col)   == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))   
-   SHR_ASSERT_ALL((ubound(bulkdiffus)      == (/bounds%endc, ubj, betrtracer_vars%ntracers/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bunsencef_col)   == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))   
+   SHR_ASSERT_ALL((ubound(bulkdiffus)      == (/bounds%endc, ubj, betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
    
    associate( &
-     ngwmobile_tracers    => betrtracer_vars%ngwmobile_tracers            , & ! Integer[intent(in)], number of dual phase (gw) tracers
-     ntracers             => betrtracer_vars%ntracers                     , & ! Integer[intent(in)], total number of tracers
+     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups            , & ! Integer[intent(in)], number of dual phase (gw) tracers
+     tracer_group_memid   => betrtracer_vars%tracer_group_memid           , & !
+     ntracer_groups       => betrtracer_vars%ntracer_groups               , & ! Integer[intent(in)], total number of tracers
      nco2_tags            => betrtracer_vars%nco2_tags                    , & ! Integer[intent(in)], number of co2 species
      is_volatile          => betrtracer_vars%is_volatile                  , & ! logical[intent(in)], is a volatile tracer?
      is_h2o               => betrtracer_vars%is_h2o                       , & ! logical[intent(in)], is a h2o tracer?
      tracer_solid_passive_diffus_scal => betrtracer_vars%tracer_solid_passive_diffus_scal, & !scaling factor for solid phase diffusivity
      tracer_solid_passive_diffus_thc => betrtracer_vars%tracer_solid_passive_diffus_thc  , & !threshold for solid phase diffusivity     
-     volatileid           => betrtracer_vars%volatileid                   , & ! integer[intent(in)], location in the volatile vector
+     volatilegroupid      => betrtracer_vars%volatilegroupid              , & ! integer[intent(in)], location in the volatile vector
      air_vol              => waterstate_vars%air_vol_col                  , & ! volume possessed by air
      h2osoi_liqvol        => waterstate_vars%h2osoi_liqvol_col            , & ! soil volume possessed by liquid water
      altmax               => canopystate_vars%altmax_col          , & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw                             
@@ -237,26 +238,25 @@ module TracerParamsMod
    )
    
    bulkdiffus(:,:,:) = 1.e-40_r8                            !initialize to a very small number
-   do j = 1, ngwmobile_tracers
+   do j = 1, ngwmobile_tracer_groups
+     trcid = tracer_group_memid(j,1)
      if(is_volatile(j))then
        !it is a volatile tracers
-       k=volatileid(j)
-       if(nco2_tags>0 .and. (j==betrtracer_vars%id_trc_air_co2x .or. j==betrtracer_vars%id_trc_arrt_co2x &
-            .or. j==betrtracer_vars%id_trc_hrsoi_co2x))cycle
+       k=volatilegroupid(trcid)
             
        do n=lbj, ubj
          do fc = 1, numf
            c = filter(fc)
            if(n>=jtops(c))then
              !aqueous diffusivity
-             diffaqu=get_aqueous_diffusivity(j, t_soisno(c,n), betrtracer_vars)
+             diffaqu=get_aqueous_diffusivity(trcid, t_soisno(c,n), betrtracer_vars)
              !gaseous diffusivity
-             diffgas=get_gas_diffusivity(j, t_soisno(c,n), betrtracer_vars)
+             diffgas=get_gas_diffusivity(trcid, t_soisno(c,n), betrtracer_vars)
            
              !bulk diffusivity
              !the bulk diffusivity is calculated by assuming the diffusion equation is gas-primary
              !accordingly the retardation factor is gas primary
-             if(is_h2o(j))then
+             if(is_h2o(trcid))then
                !for water tracer, the aqueous phase is used as dominant species
                bulkdiffus(c,n,j)=air_vol(c,n)*tau_gas(c,n)*diffgas/bunsencef_col(c,n,k)+ &
                            h2osoi_liqvol(c,n)*tau_liq(c,n)*diffaqu
@@ -269,19 +269,7 @@ module TracerParamsMod
            endif
          enddo   
        enddo
-       !for taggged co2 simulations, the diffusivity is assumed same for all co2 species
-       if(nco2_tags>0 .and. j==betrtracer_vars%id_trc_co2x)then
-         do n = lbj, ubj
-           do fc = 1, numf
-             c = filter(fc)
-             if(n >= jtops(c))then
-               bulkdiffus(c,n,betrtracer_vars%id_trc_air_co2x)=bulkdiffus(c,n,betrtracer_vars%id_trc_co2x)
-               bulkdiffus(c,n,betrtracer_vars%id_trc_arrt_co2x)=bulkdiffus(c,n,betrtracer_vars%id_trc_co2x)
-               bulkdiffus(c,n,betrtracer_vars%id_trc_hrsoi_co2x)=bulkdiffus(c,n,betrtracer_vars%id_trc_co2x)                  
-             endif
-           enddo
-         enddo
-       endif
+
      else
        !it is not a volatile tracer
        do n = lbj, ubj
@@ -289,7 +277,7 @@ module TracerParamsMod
            c = filter(fc)
            if(n>=jtops(c))then
              !the retardation factor is 1.
-             diffaqu=get_aqueous_diffusivity(j, t_soisno(c,n), betrtracer_vars)
+             diffaqu=get_aqueous_diffusivity(trcid, t_soisno(c,n), betrtracer_vars)
              bulkdiffus(c,n,j)=diffaqu*h2osoi_liqvol(c,n)*tau_liq(c,n)
              !to prevent division by zero
              bulkdiffus(c,n,j)=max(bulkdiffus(c,n,j),minval_diffus) !avoid division by zero in following calculations
@@ -300,8 +288,9 @@ module TracerParamsMod
    enddo
    
    !do solid phase passive tracers
-   do j = ngwmobile_tracers + 1, ntracers
-     nsld = j - ngwmobile_tracers
+   do j = ngwmobile_tracer_groups + 1, ntracer_groups
+     nsld = j - ngwmobile_tracer_groups
+     trcid = tracer_group_memid(j,1)
      do n = 1, ubj
        do fc = 1,numf
          c = filter(fc)
@@ -311,19 +300,19 @@ module TracerParamsMod
                ! use mixing profile modified slightly from Koven et al. (2009): constant through active layer, linear decrease from base of active layer to zero at a fixed depth
         
            if ( zisoi(n) < max(altmax(c), altmax_lastyear(c)) ) then
-             bulkdiffus(c,n,j) = cryoturb_diffusion_k * tracer_solid_passive_diffus_scal(nsld)
-             bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc(nsld))
+             bulkdiffus(c,n,j) = cryoturb_diffusion_k * tracer_solid_passive_diffus_scal_group(nsld)
+             bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc_group(nsld))
            else
              bulkdiffus(c,n,j) = max(cryoturb_diffusion_k * & 
                           ( 1._r8 - ( zisoi(n) - max(altmax(c), altmax_lastyear(c)) ) / &
                           ( max_depth_cryoturb - max(altmax(c), altmax_lastyear(c)) ) ), 0._r8)  ! go linearly to zero between ALT and max_depth_cryoturb
-             bulkdiffus(c,n,j) = bulkdiffus(c,n,j) * tracer_solid_passive_diffus_scal(nsld)             
-             bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc(nsld))             
+             bulkdiffus(c,n,j) = bulkdiffus(c,n,j) * tracer_solid_passive_diffus_scal_group(nsld)             
+             bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc_group(nsld))             
            endif                    
          elseif (  max(altmax(c), altmax_lastyear(c)) > 0._r8 ) then
          ! constant advection, constant diffusion
-           bulkdiffus(c,n,j) = som_diffus * tracer_solid_passive_diffus_scal(nsld)
-           bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc(nsld))
+           bulkdiffus(c,n,j) = som_diffus * tracer_solid_passive_diffus_scal_group(nsld)
+           bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc_group(nsld))
          else
          ! completely frozen soils--no mixing
            bulkdiffus(c,n,j) = 1e-4_r8 / (86400._r8 * 365._r8) * 1.e-36_r8  !set to very small number for numerical purpose
@@ -377,36 +366,20 @@ module TracerParamsMod
    SHR_ASSERT_ALL((ubound(hmconductance_col) == (/bounds%endc, ubj-1, betrtracer_vars%ntracers/)),   errMsg(__FILE__,__LINE__))
    
    associate( &  
-    ngwmobile_tracers    => betrtracer_vars%ngwmobile_tracers            , & !Integer[intent(in)], number of gw tracers
-    ntracers    => betrtracer_vars%ntracers            , & !Integer[intent(in)], total number of tracers
+    ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups    , & !Integer[intent(in)], number of gw tracers
+    ntracer_groups    => betrtracer_vars%ntracer_groups            , & !Integer[intent(in)], total number of tracers
     nco2_tags   => betrtracer_vars%nco2_tags           , & !Integer[intent(in)], number of co2 species
     is_volatile => betrtracer_vars%is_volatile         , & !logical[intent(in)], is a volatile tracer?
     volatileid  => betrtracer_vars%volatileid            & !integer[intent(in)], location in the volatile vector
    )
    
 !  compute the depth weighted diffusivities
-   do j = 1, ntracers
-
-     if(nco2_tags > 0 .and. (j == betrtracer_vars%id_trc_air_co2x .or. j == betrtracer_vars%id_trc_arrt_co2x &
-            .or. j == betrtracer_vars%id_trc_hrsoi_co2x))cycle
+   do j = 1, ntracer_groups
             
      call calc_interface_conductance(bounds, lbj, ubj, jtops, numf, filter , &
              bulkdiffus(bounds%begc:bounds%endc, lbj:ubj, j)               , &
              dz(bounds%begc:bounds%endc, lbj:ubj)                          , &
              hmconductance_col(bounds%begc:bounds%endc, lbj:ubj-1, j))
-
-     if(j==betrtracer_vars%id_trc_co2x .and. nco2_tags>0)then        
-       do n=lbj, ubj-1     
-         do fc = 1, numf
-           c = filter(fc)
-           if(n>=jtops(c))then
-             hmconductance_col(c,n,betrtracer_vars%id_trc_air_co2x)   = hmconductance_col(c,n,j)
-             hmconductance_col(c,n,betrtracer_vars%id_trc_arrt_co2x)  = hmconductance_col(c,n,j)
-             hmconductance_col(c,n,betrtracer_vars%id_trc_hrsoi_co2x) = hmconductance_col(c,n,j)
-           endif
-         enddo
-       enddo   
-     endif
    enddo
  
    end associate
@@ -434,47 +407,42 @@ module TracerParamsMod
    real(r8),   intent(inout):: henrycef_col(bounds%begc: , lbj: ,  1: )       !henry's constant, mol/L/atm = M/atm
    
    !local variables
-   integer :: j, k, n, fc, c   ! indices
+   integer :: j, k, n, fc, c, trcid   ! indices
    real(r8) :: scal
    character(len=255) :: subname='calc_henrys_coeff'
 
    SHR_ASSERT_ALL((ubound(jtops)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(t_soisno)          == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(soi_pH)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col)== (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracers/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(henrycef_col)      == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col)== (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col)      == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
    
    
    associate( &
-    ngwmobile_tracers    => betrtracer_vars%ngwmobile_tracers            , & !Integer[intent(in)], number of tracers
+    ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups            , & !Integer[intent(in)], number of tracers
     nco2_tags   => betrtracer_vars%nco2_tags           , & !Integer[intent(in)], number of co2 species
     is_volatile => betrtracer_vars%is_volatile         , & !logical[intent(in)], is a volatile tracer?
     is_h2o      => betrtracer_vars%is_h2o              , & !logical[intent(in)], is a h2o tracer?
-    volatileid  => betrtracer_vars%volatileid            & !integer[intent(in)], location in the volatile vector
+    tracer_group_memid => betrtracer_vars%tracer_group_memid, & !
+    volatilegroupid  => betrtracer_vars%volatilegroupid            & !integer[intent(in)], location in the volatile vector
    )
 
-   do j = 1, ngwmobile_tracers
+   do j = 1, ngwmobile_tracer_groups
      !for tagged co2 simulations, the henry's constant are assumed same for all co2 tracers
-     if(nco2_tags>0 .and. (j==betrtracer_vars%id_trc_air_co2x .or. j==betrtracer_vars%id_trc_arrt_co2x &
-        .or. j==betrtracer_vars%id_trc_hrsoi_co2x))cycle
-         
-     if(is_volatile(j) .and. (.not. is_h2o(j)))then          
-       k = volatileid(j)
+     trcid= tracer_group_memid(j, 1)    
+     if(is_volatile(trcid) .and. (.not. is_h2o(trcid)))then          
+       k = volatilegroupid(trcid)
        do n = lbj, ubj
          do fc = 1, numf
            c = filter(fc)
            if(n>=jtops(c))then
              !Henry's law constants
              
-             henrycef_col(c,n,k)=get_henrycef(t_soisno(c,n), j, betrtracer_vars)
-             scal = get_equilibrium_scal(t_soisno(c,n), soi_pH(c,n), j,betrtracer_vars)
+             henrycef_col(c,n,k)=get_henrycef(t_soisno(c,n), trcid, betrtracer_vars)
+             scal = get_equilibrium_scal(t_soisno(c,n), soi_pH(c,n), trcid,betrtracer_vars)
              henrycef_col(c,n,k)=henrycef_col(c,n,k) * scal
              aqu2neutralcef_col(c,n,j)=1._r8/scal   !this will convert the bulk aqueous phase into neutral phase
-             if(j==betrtracer_vars%id_trc_co2x .and. nco2_tags>0)then             
-               henrycef_col(c,n,volatileid(betrtracer_vars%id_trc_air_co2x)) = henrycef_col(c, n, k)
-               henrycef_col(c,n,volatileid(betrtracer_vars%id_trc_arrt_co2x))= henrycef_col(c, n, k)
-               henrycef_col(c,n,volatileid(betrtracer_vars%id_trc_hrsoi_co2x)) = henrycef_col(c,n,k)
-             endif
+
            endif
          enddo         
        enddo
@@ -504,7 +472,7 @@ module TracerParamsMod
    real(r8),            intent(inout) :: bunsencef_col(bounds%begc: , lbj: , 1: )  !returning variable
    
    !local variables
-   integer :: j, k, n, fc, c        !indices
+   integer :: j, k, n, fc, c , trcid       !indices
    real(r8) :: rho_vap(bounds%begc:bounds%endc, lbj:ubj)                       ! saturated vapor pressure for different layers
    
    character(len=255) :: subname = 'calc_bunsen_coeff'
@@ -516,23 +484,24 @@ module TracerParamsMod
    SHR_ASSERT_ALL((ubound(bunsencef_col)     == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
    
    associate( &
-    ngwmobile_tracers    => betrtracer_vars%ngwmobile_tracers            , & !Integer[intent(in)], number of tracers
+    ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups, & !Integer[intent(in)], number of tracers
+    tracer_group_memid   => betrtracer_vars%tracer_group_memid           , &
     nco2_tags            => betrtracer_vars%nco2_tags                    , & !Integer[intent(in)], number of co2 species
     is_volatile          => betrtracer_vars%is_volatile                  , & !logical[intent(in)], is a volatile tracer?
     is_h2o               => betrtracer_vars%is_h2o                       , & !logical[intent(in)], is a h2o tracer
-    volatileid           => betrtracer_vars%volatileid                     & !integer[intent(in)], location in the volatile vector
+    volatilegroupid      => betrtracer_vars%volatilegroupid                & !integer[intent(in)], location in the volatile vector
    )
 
 
    if(any(is_h2o))then
      call calc_rhovap(bounds, lbj, ubj, jtops, numf, filter, t_soisno, smp_l, rho_vap)
    endif
-   do j = 1, ngwmobile_tracers
+   
+   do j = 1, ngwmobile_tracer_groups
      !for tagged co2 simulations, the henry's constant are assumed same for all co2 tracers
-     if(nco2_tags>0 .and. (j==betrtracer_vars%id_trc_air_co2x .or. j==betrtracer_vars%id_trc_arrt_co2x .or. j==betrtracer_vars%id_trc_hrsoi_co2x))cycle
-
-     if(is_volatile(j))then          
-       k = volatileid(j)
+     trcid = tracer_group_memid(j, 1)
+     if(is_volatile(trcid))then          
+       k = volatilegroupid(trcid)
 
        do n = lbj, ubj
          do fc = 1, numf
@@ -540,13 +509,9 @@ module TracerParamsMod
            if(n>=jtops(c))then
              bunsencef_col(c,n, k)= henrycef_col(c,n,k)*t_soisno(c,n)/12.2_r8
              !add the pH effect for tracers that can exist in multiple aqueous phases
-             if(j==betrtracer_vars%id_trc_co2x .and. nco2_tags>0)then
-               bunsencef_col(c,n,volatileid(betrtracer_vars%id_trc_air_co2x))   = bunsencef_col(c, n, k)
-               bunsencef_col(c,n,volatileid(betrtracer_vars%id_trc_arrt_co2x))  = bunsencef_col(c, n, k)
-               bunsencef_col(c,n,volatileid(betrtracer_vars%id_trc_hrsoi_co2x)) = bunsencef_col(c,n,k)
-             elseif(is_h2o(j))then
+             if(is_h2o(trcid))then
                !for water isotopes
-               bunsencef_col(c,n,j) = get_equi_lv_h2oiso_fractionation(j, t_soisno(c,j), betrtracer_vars) * denh2o/rho_vap(c,n)
+               bunsencef_col(c,n,j) = get_equi_lv_h2oiso_fractionation(trcid, t_soisno(c,j), betrtracer_vars) * denh2o/rho_vap(c,n)
              endif
            endif  
          enddo
@@ -587,18 +552,18 @@ module TracerParamsMod
    type(tracercoeff_type), intent(inout) :: tracercoeff_vars ! structure containing tracer transport parameters
    !local variables
 
-   integer :: j, n, k, fc, c   ! indices
+   integer :: j, n, k, fc, c , trcid  ! indices
    character(len=255) :: subname = 'calc_dual_phase_convert_coeff' 
    
    SHR_ASSERT_ALL((ubound(jtops)                   == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    
    associate( &
-    ngwmobile_tracers    => betrtracer_vars%ngwmobile_tracers            , & !Input: [integer(:)], number of tracers
+    ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups     , & !Input: [integer(:)], number of tracers
     nco2_tags            => betrtracer_vars%nco2_tags                    , & !Input: [integer(:)], number of co2 species
     is_h2o               => betrtracer_vars%is_h2o                       , & !Input: [logical(:)],    
     is_volatile          => betrtracer_vars%is_volatile                  , & !Input: [logical(:)], is a volatile tracer?
-    volatileid           => betrtracer_vars%volatileid                   , & !Input: [logical(:)], location in the volatile vector
-    adsorbid             => betrtracer_vars%adsorbid                     , & !Input: [Integer(:)]
+    volatilegroupid      => betrtracer_vars%volatilegroupid              , & !Input: [logical(:)], location in the volatile vector
+    adsorbgroupid        => betrtracer_vars%adsorbgroupid                , & !Input: [Integer(:)]
     h2osoi_liqvol        => waterstate_vars%h2osoi_liqvol_col            , & !Input: [real(r8)(:,:)]
     h2osoi_icevol        => waterstate_vars%h2osoi_icevol_col            , & !Input: [real(r8)(:,:)]
     air_vol              => waterstate_vars%air_vol_col                  , & !Input: [real(r8)(:,:)]
@@ -611,11 +576,10 @@ module TracerParamsMod
   !compute the phase conversion parameters in soil
   !this includes aqueous to bulk mobile phase and gaseous to bulk mobile phase
   !
-  do j = 1, ngwmobile_tracers
-    if(nco2_tags>0 .and. (j==betrtracer_vars%id_trc_air_co2x .or. j==betrtracer_vars%id_trc_arrt_co2x .or. j==betrtracer_vars%id_trc_hrsoi_co2x))cycle
-
-    if(is_volatile(j))then
-      k = volatileid(j)
+  do j = 1, ngwmobile_tracer_gropus
+    trcid = tracer_group_memid(j,1)
+    if(is_volatile(trcid))then
+      k = volatilegroupid(trcid)
       do n = lbj, ubj
         do fc = 1, numf
           c = filter(fc)
@@ -626,11 +590,11 @@ module TracerParamsMod
             !gaseous to bulk mobile phase
             gas2bulkcef_mobile(c,n,k) = air_vol(c,n)+h2osoi_liqvol(c,n)*bunsencef_col(c,n,k)
 
-            if(is_h2o(j))then
+            if(is_h2o(trcid))then
               !for water tracer, I assume the three phases are in equilibrium, such that
-              aqu2bulkcef_mobile(c,n,j)= aqu2bulkcef_mobile(c,n,j) + aqu2equilscef(c,n,adsorbid(j))
+              aqu2bulkcef_mobile(c,n,j)= aqu2bulkcef_mobile(c,n,j) + aqu2equilscef(c,n,adsorbgroupid(trcid))
               
-              gas2bulkcef_mobile(c,n,k) = gas2bulkcef_mobile(c,n,k)+ aqu2equilscef(c,n,adsorbid(j)) * bunsencef_col(c,n,k) 
+              gas2bulkcef_mobile(c,n,k) = gas2bulkcef_mobile(c,n,k)+ aqu2equilscef(c,n,adsorbgroupid(trcid)) * bunsencef_col(c,n,k) 
             endif
             
             !correct for impermeable layer, to avoid division by zero in doing diffusive transport
@@ -638,23 +602,6 @@ module TracerParamsMod
           endif  
         enddo
       enddo
-      if(nco2_tags>0 .and. j==betrtracer_vars%id_trc_co2x)then
-        do n = lbj, ubj  
-          do fc = 1, numf
-            c = filter(fc)
-            if(n >= jtops(c))then             
-              aqu2bulkcef_mobile(c,n,betrtracer_vars%id_trc_air_co2x)=aqu2bulkcef_mobile(c,n,j)
-              aqu2bulkcef_mobile(c,n,betrtracer_vars%id_trc_arrt_co2x)=aqu2bulkcef_mobile(c,n,j)
-            
-              aqu2bulkcef_mobile(c,n,betrtracer_vars%id_trc_hrsoi_co2x)=aqu2bulkcef_mobile(c,n,j)
-              gas2bulkcef_mobile(c,n, volatileid(betrtracer_vars%id_trc_air_co2x)) =gas2bulkcef_mobile(c,n, k) 
-             
-              gas2bulkcef_mobile(c,n, volatileid(betrtracer_vars%id_trc_arrt_co2x)) =gas2bulkcef_mobile(c,n, k)
-              gas2bulkcef_mobile(c,n, volatileid(betrtracer_vars%id_trc_hrsoi_co2x)) =gas2bulkcef_mobile(c,n, k)                   
-            endif
-          enddo
-        enddo
-      endif
     else
       !when linear adsorption is used for some adsorptive aqueous tracers, the aqu2bulkcef will be the retardation factor
       !for the moment, it is set to one for all non-volatile tracers
@@ -1122,12 +1069,12 @@ module TracerParamsMod
     ngwmobile_tracers    => betrtracer_vars%ngwmobile_tracers            , & !Integer[intent(in)], number of tracers
     nco2_tags   => betrtracer_vars%nco2_tags           , & !Integer[intent(in)], number of co2 species
     is_volatile => betrtracer_vars%is_volatile         , & !logical[intent(in)], is a volatile tracer?
-    volatileid  => betrtracer_vars%volatileid            & !integer[intent(in)], location in the volatile vector
+    volatilegroupid  => betrtracer_vars%volatilegroupid            & !integer[intent(in)], location in the volatile vector
    )
    
    do jj = 1, ngwmobile_tracers
      if(is_volatile(jj))then     
-       kk = volatileid(jj)   
+       kk = volatilegroupid(jj)   
        if(do_forward)then
          do j = lbj, ubj
            do fc = 1, numf
@@ -1824,7 +1771,7 @@ module TracerParamsMod
     annavg_bgnpp   =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Output: [real(r8) (:) ]  annual average below-ground NPP (gC/m2/s)         
     frootc         =>    carbonstate_vars%frootc_patch       , & ! Input:  [real(r8) (:)    ]  (gC/m2) fine root C
     is_volatile    =>    betrtracer_vars%is_volatile         , &
-    volatileid     =>    betrtracer_vars%volatileid          , &
+    volatilegroupid=>    betrtracer_vars%volatilegroupid     , &
     ngwmobile_tracers=>  betrtracer_vars%ngwmobile_tracers   , &
     t_veg          =>    temperature_vars%t_veg_patch        , &
     t_soisno       =>    temperature_vars%t_soisno_col       , &
@@ -1887,13 +1834,14 @@ module TracerParamsMod
 
         area_tiller =  n_tiller * poros_tiller * rpi * 2.9e-3_r8**2._r8 ! (m2/m2)
         
-        do k = 1, ngwmobile_tracers
-          if(is_volatile(k))then
-            kk = volatileid(k)
-            tracer_diffusivity_air(c,kk) = get_gas_diffusivity(k,t_veg(p), betrtracer_vars)
+        do k = 1, ngwmobile_tracer_groups
+           trcid = tracer_group_memid(k, 1)
+          if(is_volatile(trcid))then
+            kk = volatilegroupid(k)
+            tracer_diffusivity_air(c,kk) = get_gas_diffusivity(trcid,t_veg(p), betrtracer_vars)
             aerecond = scal_aere_cond(c, kk)*area_tiller * rootfr(p,j) * tracer_diffusivity_air(c,kk) / (z(c,j)*rob)
             ! Add in boundary layer resistance
-            lbl_rsc = safe_div(lbl_rsc_h2o(p),  (get_diffusivity_ratio_gas2h2o(k, t_veg(p), betrtracer_vars))**(2._r8/3._r8))
+            lbl_rsc = safe_div(lbl_rsc_h2o(p),  (get_diffusivity_ratio_gas2h2o(trcid, t_veg(p), betrtracer_vars))**(2._r8/3._r8))
             !laminar boundary resistance + resistance in the aerenchyma
             aerecond = safe_div(1._r8, (safe_div(1._r8,aerecond) + safe_div(1._r8,lbl_rsc)))
             aere_cond(c,kk) = aere_cond(c,kk) + wtcol(p) * aerecond

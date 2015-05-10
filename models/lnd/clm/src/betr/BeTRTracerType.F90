@@ -10,17 +10,25 @@ module BeTRTracerType
   implicit none
   private
 
+
   !----------------------------------------------------
   !betr tracer setup structure
   !----------------------------------------------------
   type, public :: BeTRtracer_type
    character(len=255) :: betr_simname                                   ! name of the simulation
+   integer :: nmem_max                                                  ! maximum number of members in a transport group
    integer :: ntracers                                                  ! total number of tracers, gas/aqueous tracers + solid tracers that undergo active mineral protection
    integer :: ngwmobile_tracers                                         ! total number of tracers potentially undergoing gas/aqueous movement
    integer :: nvolatile_tracers                                         ! number of volatile_tracers
    integer :: nsolid_equil_tracers                                      ! number of tracers that undergo equilibrium adsorption in soil could include adsorbed doc, nh4(+)
    integer :: nsolid_passive_tracers                                    ! number of tracers that undergo active mineral protection   
-   integer :: nco2_tags                                                 ! number of tagged co2 tracers
+   
+   integer :: ntracer_groups                                            !
+   integer :: ngwmobile_tracer_groups                                   ! total number of groups for mobile tracers
+   integer :: nvolatile_tracer_groups                                   ! sub group within gwmobile group
+   integer :: nsolid_equil_tracer_groups                                ! sub group in solid group
+   integer :: nsolid_passive_tracer_groups                              ! sub group in solid group
+   
    integer :: nh2o_tracers                                              ! number of h2o tracers, this will be used to compute vapor gradient and thermal gradient driven isotopic flow
    logical :: is_oddstep = .true.                                       !this is not used now, originally was included to set up alternative numerical methods
    integer :: id_trc_n2         ! tag for n2
@@ -65,9 +73,15 @@ module BeTRTracerType
    integer, pointer :: adsorbid(:)                                      !which tracer is adsorbed
    integer, pointer :: volatileid(:)
    integer, pointer :: h2oid(:)
-   real(r8),pointer :: tracer_solid_passive_diffus_scal(:)               !reference diffusivity for solid phase tracer, for modeling turbation
-   real(r8),pointer :: tracer_solid_passive_diffus_thc(:)               !threshold diffusivity for solid phase tracer, for modeling turbation
+   integer, pointer :: adsorbgroupid(:)
+   integer, pointer :: volatilegroupid(:)                               !
+   integer, pointer :: groupid
    
+   real(r8),pointer :: tracer_solid_passive_diffus_group_scal(:)        !reference diffusivity for solid phase tracer, for modeling turbation
+   real(r8),pointer :: tracer_solid_passive_diffus_group_thc(:)         !threshold diffusivity for solid phase tracer, for modeling turbation
+
+   integer, pointer :: solid_passive_tracer_groupid(:,:)   
+   integer, pointer :: tracer_group_memid(:,:)                          !grp, gmem
    character(len=36),pointer :: tracernames(:)                          !array with tracer names
    real(r8),pointer :: gram_mole_wt(:)                                  !molecular weight of the master species, [g/mol]
    real(r8),pointer :: vtrans_scal(:)                                   !scaling factor for plant tracer uptake through transpiration, for non-water neutral aqueous tracers
@@ -75,6 +89,7 @@ module BeTRTracerType
   contains
      procedure, public  :: Init
      procedure, public  :: init_scalars
+     procedure, public  :: set_tracer
      procedure, private :: InitAllocate
   end type BeTRtracer_type
   
@@ -87,6 +102,9 @@ module BeTRTracerType
 
     implicit none
     class(BeTRtracer_type) :: this
+
+    this%ntracers=this%ngwmobile_tracers+this%nsolid_passive_tracers
+    this%ntracer_groups = this%nsolid_passive_tracer_groups + this%ngwmobile_tracer_groups
     
     call this%InitAllocate()
   end subroutine Init  
@@ -98,11 +116,18 @@ module BeTRTracerType
   implicit none
   class(BeTRtracer_type) :: this
   
-  this%ntracers               = 0                                    ! total number of tracers, gas/aqueous tracers + solid tracers that undergo active mineral protection
-  this%ngwmobile_tracers      = 0                                    ! total number of tracers undergoing gas/aqueous movement
-  this%nvolatile_tracers      = 0                                    ! number of volatile_tracers
-  this%nsolid_equil_tracers   = 0                                    ! number of tracers that undergo equilibrium adsorption in soil could include adsorbed doc, nh4(+)
-  this%nsolid_passive_tracers = 0                                    ! number of tracers that undergo active mineral protection   
+  this%ntracers                 = 0                                    ! total number of tracers, gas/aqueous tracers + solid tracers that undergo active mineral protection
+  this%ngwmobile_tracers        = 0                                    ! total number of tracers undergoing gas/aqueous movement
+  this%nvolatile_tracers        = 0                                    ! number of volatile_tracers
+  this%nsolid_equil_tracers     = 0                                    ! number of tracers that undergo equilibrium adsorption in soil could include adsorbed doc, nh4(+)
+  this%nsolid_passive_tracers   = 0                                    ! number of tracers that undergo active mineral protection   
+  
+  this%ntracer_groups              = 0
+  this%ngwmobile_tracer_groups     = 0
+  this%nvolatile_tracer_groups     = 0
+  this%nsolid_equil_tracer_groups  = 0
+  this%nsolid_passive_tracer_groups=0
+  
   this%nco2_tags              = 0                                    ! number of tagged co2 tracers
   this%nh2o_tracers           = 0                                    ! number of h2o tracers, this will be used to compute vapor gradient and thermal gradient driven isotopic flow
   this%is_oddstep             = .true.                               !this is not used now, originally was included to set up alternative numerical methods  
@@ -160,17 +185,60 @@ module BeTRTracerType
   allocate(this%is_dom             (this%ngwmobile_tracers));    this%is_dom(:)           = .false.
   allocate(this%is_isotope         (this%ngwmobile_tracers));    this%is_isotope(:)       = .false.
   
+  allocate(this%adsorbgroupid      (this%ngwmobile_tracers));    this%adsorbgroupid(:)      = nanid
   allocate(this%adsorbid           (this%ngwmobile_tracers));    this%adsorbid(:)           = nanid
+  
   allocate(this%volatileid         (this%ngwmobile_tracers));    this%volatileid(:)         = nanid
+  allocate(this%volatilegroupid    (this%ngwmobile_tracers));    this%volatilegroupid(:)    = nanid
   allocate(this%h2oid              (this%nh2o_tracers));         this%h2oid(:)              = nanid
   allocate(this%tracernames        (this%ntracers));             this%tracernames(:)        = ''
   allocate(this%vtrans_scal        (this%ngwmobile_tracers));    this%vtrans_scal(:)        = 0._r8   !no transport through xylem transpiration
-  allocate(this%tracer_solid_passive_diffus_scal(this%nsolid_passive_tracers)); this%tracer_solid_passive_diffus_scal(:) = 0._r8
-  allocate(this%tracer_solid_passive_diffus_thc(this%nsolid_passive_tracers)); this%tracer_solid_passive_diffus_thc(:) = 0._r8
+
+  allocate(this%tracer_solid_passive_diffus_scal_group(this%nsolid_passive_tracer_groups)); this%tracer_solid_passive_diffus_scal_group(:) = 0._r8
+  allocate(this%tracer_solid_passive_diffus_thc_group (this%nsolid_passive_tracer_groups)); this%tracer_solid_passive_diffus_thc_group(:) = 0._r8
+  
+  allocate(this%tracer_group_memid(this%ntracer_groups, this%mem_max)); this%tracer_group_memid(:,:) = nanid
+  
+  allocate(this%solid_passive_tracer_groupid(this%nsolid_passive_tracer_groups, 1:this%nmem_max)); this%solid_passive_tracer_groupid(:,:) = nanid
+  
+  allocate(this%groupid(this%ntracer_groups)); this%groupid(:) = nanid
   
   end subroutine InitAllocate
 
+!--------------------------------------------------------------------------------       
 
+  subroutine set_tracer(trcid, trc_name, is_trc_mobile, is_trc_advective, trc_group_id, &
+     trc_group_mem, is_trc_volatile, trc_volatile_id, trc_volatile_group_id)
+    
+    integer            , intent(in) :: trcid
+    character(len=*)   , intent(in) :: trc_name
+    logical            , intent(in) :: is_trc_mobile
+    logical            , intent(in) :: is_trc_advective
+    integer            , intent(in) :: trc_group_id
+    integer            , intent(in) :: trc_group_mem
+    
+    logical, optional  , intent(in) :: is_trc_volatile
+    integer, optional  , intent(in) :: trc_volatile_id
+    integer, optional  , intent(in) :: trc_volatile_group_id
+
+    
+    this%tracernames      (trcid)    = trim(trc_name)
+    this%is_mobile        (trcid)    = is_trc_mobile
+    this%is_advective     (trcid)    = is_trc_advective
+    this%groupid          (trcid)    = trc_group_id
+    this%tracer_group_memid(trc_group_id,trc_group_mem) = trcid
+    
+    if(present(is_trc_volatile))then
+      this%is_volatile      (trcid)    = is_trc_volatile    
+      if(this%is_volatile   (trcid)) then
+        this%volatileid     (trcid)    = trc_volatile_id
+        this%volatilegroupid(trcid)    = trc_volatile_group_id
+      endif
+    endif
+    
+
+
+  end subroutine set_tracer
 
   
 end module BeTRTracerType

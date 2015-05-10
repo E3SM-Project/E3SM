@@ -22,8 +22,11 @@ implicit none
    public :: addone
    public :: asc_sort_vec
    public :: is_bounded
+   interface cumsum
+     module procedure cumsum_v, cumsum_m
+   end interface cumsum
    interface swap
-      module procedure swap_i, swap_r, swap_rv
+     module procedure swap_i, swap_r, swap_rv
    end interface swap
 contains
 !-------------------------------------------------------------------------------   
@@ -106,7 +109,7 @@ contains
    
    end function minmax
 !-------------------------------------------------------------------------------   
-   subroutine cumsum(x, y)
+   subroutine cumsum_v(x, y)
    implicit none
    real(r8), dimension(:), intent(in)  :: x
    real(r8), dimension(:), intent(out) :: y
@@ -122,7 +125,40 @@ contains
      y(j) = y(j-1)+x(j)
    enddo
    
-   end subroutine cumsum
+   end subroutine cumsum_v
+!-------------------------------------------------------------------------------   
+   subroutine cumsum_m(x, y, idim)
+   implicit none
+   real(r8), dimension(:,:), intent(in)  :: x
+   real(r8), dimension(:,:), intent(out) :: y
+   integer , optional,     intent(in)  :: idim
+   
+   integer :: n
+   integer :: j
+   integer :: idim
+   
+   if(present(idim))idim_loc=idim
+   
+   SHR_ASSERT_ALL((size(x,1)   == size(y,1)),        errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((size(x,2)   == size(y,2)),        errMsg(__FILE__,__LINE__))
+   
+   
+   if(idim_loc == 1)then
+     !summation along dimension 1
+     n = size(x,2)
+     do j = 1, n
+       call cumsum_v(x(:,j),y(:,j))
+     enddo
+   else
+     !summation along dimension 2
+     n = size(x,1)
+     do j = 1, n
+       call cumsum_v(x(j,:),y(j,:))
+     enddo
+     
+   endif
+   
+   end subroutine cumsum_m
    
 !-------------------------------------------------------------------------------   
    subroutine cumdif(x, y)
