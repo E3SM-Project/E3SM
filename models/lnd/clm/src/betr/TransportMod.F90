@@ -203,9 +203,9 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(condc_toplay)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))   
    SHR_ASSERT_ALL((ubound(update_col)      == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    
-   SHR_ASSERT_ALL(((/ubound(rt,1),ubound(rt,2),size(rt,3)/)                                        == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(source)           == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))         
+   SHR_ASSERT_ALL((ubound(rt)              == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL(((/ubound(trcin_mobile,1),ubound(trcin_mobile,2),size(trcin_mobile,3)/)          == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL(((/ubound(source,1),ubound(source,2),size(source,3)/)                            == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))      
    SHR_ASSERT_ALL(((/ubound(bot_concflx,1),ubound(bot_concflx,2),size(bot_concflx,3)/)             == (/bounds%endc, 2, ntrcs/))  , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL(((/ubound(trc_concflx_air,1),ubound(trc_concflx_air,2),size(trc_concflx_air,3)/) == (/bounds%endc, 2, ntrcs/))  , errMsg(__FILE__,__LINE__))
 
@@ -353,12 +353,12 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(dz)                == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(Rfactor   )        == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(hmconductance)     == (/bounds%endc, ubj-1/)), errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(source)    == (/bounds%endc, ubj,  ntrcs/)), errMsg(__FILE__,__LINE__))   
+   SHR_ASSERT_ALL((ubound(dtracer)       == (/bounds%endc, ubj, ntrcs/)) , errMsg(__FILE__,__LINE__))
 
    SHR_ASSERT_ALL(((/ubound(trcin_mobile , 1) , ubound(trcin_mobile , 2), size(trcin_mobile , 3)/)   == (/bounds%endc, ubj, ntrcs/)) , errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL(((/ubound(source       , 1) , ubound(source       , 2), size(source       , 3)/)   == (/bounds%endc, ubj,  ntrcs/)), errMsg(__FILE__,__LINE__))   
    SHR_ASSERT_ALL(((/ubound(bot_flux     , 1) , ubound(bot_flux     , 2), size(bot_flux     , 3)/)   == (/bounds%endc, 2, ntrcs/))   , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL(((/ubound(trc_concflx_air, 1), ubound(trc_concflx_air,2),size(trc_concflx_air,3)/) == (/bounds%endc, 2, ntrcs/))   , errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL(((/ubound(dtracer, 1)        , ubound(dtracer,2)         , size(dtracer,3)/)       == (/bounds%endc, ubj, ntrcs/)) , errMsg(__FILE__,__LINE__))
    
    !assemble the tridiagonal maxtrix
    if(present(botbc_type))then
@@ -431,8 +431,9 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(bt)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(ct)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(rt)            == (/bounds%endc, ubj, ntrcs/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(source)        == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
+
    SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)/)           == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL(((/ubound(source,1),ubound(source,2),size(source,3)/)        == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
 
   
   
@@ -518,9 +519,10 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(dz)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(update_col)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dtime_col)     == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(dtracer)       == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(source)        == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
+
    SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)   == (/bounds%endc, ubj,ntrcs/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL(((/ubound(dtracer,1),ubound(dtracer,2),size(dtracer,3)/)   == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL(((/ubound(source,1) ,ubound(source,2) ,size(source,3)/)    == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
 
 
    !assemble the tridiagonal matrix   
@@ -755,7 +757,9 @@ module TransportMod
        exit
      endif
    enddo
-   end subroutine cmass_mono_smoother 
+   end subroutine cmass_mono_smoother
+!-------------------------------------------------------------------------------
+   
    function is_ascending_vec(zcor)result(ans)
    !
    ! check if it is an ascending array
@@ -819,9 +823,7 @@ module TransportMod
    call Extra_inst%AAssign(zi,us)
    time =0._r8
    call ode_rk2(trajectory, zi(3:neq+2), neq, time, dtime, zold)
-   
-
-   
+      
    end subroutine backward_advection
 
 !-------------------------------------------------------------------------------     
