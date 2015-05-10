@@ -270,9 +270,10 @@ contains
   betrtracer_vars%ngwmobile_tracer_groups=itemp                            ! n2, o2, ar, co2, ch4, n2o, nh3x and no3x
   betrtracer_vars%nvolatile_tracers=itemp-2                                ! n2, o2, ar, co2, ch4 and n2o
   betrtracer_vars%nvolatile_tracer_groups = itemp-2                        !
+  betrtracer_vars%nsolid_passive_tracer_groups =  4                        ! som1, som2, som3 and others (lit1, lit2, lit3, cwd)
   betrtracer_vars%nsolid_passive_tracers=centurybgc_vars%nom_pools*nelm    !
   
-  betrtracer_vars%nmem_max               = betrtracer_vars%nsolid_passive_tracers
+  betrtracer_vars%nmem_max              = nelm*4                           ! total number of elemnts, and 4 sub members (lit1, lit2, lit3, cwd)
   
   call betrtracer_vars%Init()
 
@@ -330,89 +331,95 @@ contains
     trc_volatile_group_id = addone(itemp_vgrp))
 
   
+
+
+  !------------------------------------------------------------------------------------
   itemp_mem=0  
-  itemp_grp=addone(itemp_grp)          !only one group passive solid tracer
-  
+  itemp_grp=addone(itemp_grp)          !only one group passive solid litter tracers
   trcid = jj+(centurybgc_vars%lit1-1)*nelm+c_loc  
   call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT1C'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
     trc_group_mem= addone(itemp_mem))
 
+  trcid = jj+(centurybgc_vars%lit1-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT1N'             , &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
 
+  !------------------------------------------------------------------------------------
+    
   trcid = jj+(centurybgc_vars%lit2-1)*nelm+c_loc    
   call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT2C'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
     trc_group_mem= addone(itemp_mem))
     
+  trcid = jj+(centurybgc_vars%lit2-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT2N'             , &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+
+  !------------------------------------------------------------------------------------
 
   trcid = jj+(centurybgc_vars%lit3-1)*nelm+c_loc
   call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT3C'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
     trc_group_mem= addone(itemp_mem))
 
+  trcid = jj+(centurybgc_vars%lit3-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT3N'             , &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+  !------------------------------------------------------------------------------------
+
+  trcid = jj+(centurybgc_vars%cwd-1 )*nelm+c_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='CWDC'              , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
     
+  trcid = jj+(centurybgc_vars%cwd-1 )*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='CWDN'              , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+  !==========================================================================================
+  !new group
+  itemp_mem = 0
+  itemp_grp = addone(itemp_grp)
   trcid = jj+(centurybgc_vars%som1-1)*nelm+c_loc
   call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM1C'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp , &
     trc_group_mem= addone(itemp_mem))
 
-  
+  trcid = jj+(centurybgc_vars%som1-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM1N'             , &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+  !------------------------------------------------------------------------------------
+  !new group
+  itemp_mem=0
+  itemp_grp = addone(itemp_grp)  
   trcid = jj+(centurybgc_vars%som2-1)*nelm+c_loc
   call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM2C'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp , &
     trc_group_mem= addone(itemp_mem))
 
-    
+  trcid = jj+(centurybgc_vars%som2-1)*nelm+n_loc
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM2N'             , &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    trc_group_mem= addone(itemp_mem))
+  !------------------------------------------------------------------------------------    
+  !new group
+  itemp_mem=0
+  itemp_grp = addone(itemp_grp)
   trcid = jj+(centurybgc_vars%som3-1)*nelm+c_loc
   call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM3C'            , &
     is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
     trc_group_mem= addone(itemp_mem))
   
-  
-  trcid = jj+(centurybgc_vars%cwd-1 )*nelm+c_loc
-  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='CWDC'              , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
-    trc_group_mem= addone(itemp_mem))
-
-  
-  trcid = jj+(centurybgc_vars%lit1-1)*nelm+n_loc
-  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT1N'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
-    trc_group_mem= addone(itemp_mem))
-
-  
-  trcid = jj+(centurybgc_vars%lit2-1)*nelm+n_loc
-  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT2N'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
-    trc_group_mem= addone(itemp_mem))
-
-  
-  trcid = jj+(centurybgc_vars%lit3-1)*nelm+n_loc
-  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT3N'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
-    trc_group_mem= addone(itemp_mem))
-  
-  trcid = jj+(centurybgc_vars%som1-1)*nelm+n_loc
-  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM1N'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
-    trc_group_mem= addone(itemp_mem))
-  
-  
-  trcid = jj+(centurybgc_vars%som2-1)*nelm+n_loc
-  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM2N'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
-    trc_group_mem= addone(itemp_mem))
-  
   trcid = jj+(centurybgc_vars%som3-1)*nelm+n_loc
   call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='SOM3N'             , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
+    is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = itemp_grp, &
     trc_group_mem= addone(itemp_mem))
-  
-  trcid = jj+(centurybgc_vars%cwd-1 )*nelm+n_loc
-  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='CWDN'              , &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
-    trc_group_mem= addone(itemp_mem))
-         
+    
      
   !comment following lines out when it is hooked to CLM at the moment
   !call CNParamsReadShared(ncid)
