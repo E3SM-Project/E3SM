@@ -75,10 +75,10 @@ module BeTRTracerType
    integer, pointer :: h2oid(:)
    integer, pointer :: adsorbgroupid(:)
    integer, pointer :: volatilegroupid(:)                               !
-   integer, pointer :: groupid
+   integer, pointer :: groupid(:)
    
-   real(r8),pointer :: tracer_solid_passive_diffus_group_scal(:)        !reference diffusivity for solid phase tracer, for modeling turbation
-   real(r8),pointer :: tracer_solid_passive_diffus_group_thc(:)         !threshold diffusivity for solid phase tracer, for modeling turbation
+   real(r8),pointer :: tracer_solid_passive_diffus_scal_group(:)        !reference diffusivity for solid phase tracer, for modeling turbation
+   real(r8),pointer :: tracer_solid_passive_diffus_thc_group(:)         !threshold diffusivity for solid phase tracer, for modeling turbation
 
    integer, pointer :: solid_passive_tracer_groupid(:,:)   
    integer, pointer :: tracer_group_memid(:,:)                          !grp, gmem
@@ -128,7 +128,6 @@ module BeTRTracerType
   this%nsolid_equil_tracer_groups  = 0
   this%nsolid_passive_tracer_groups=0
   
-  this%nco2_tags              = 0                                    ! number of tagged co2 tracers
   this%nh2o_tracers           = 0                                    ! number of h2o tracers, this will be used to compute vapor gradient and thermal gradient driven isotopic flow
   this%is_oddstep             = .true.                               !this is not used now, originally was included to set up alternative numerical methods  
 
@@ -197,7 +196,7 @@ module BeTRTracerType
   allocate(this%tracer_solid_passive_diffus_scal_group(this%nsolid_passive_tracer_groups)); this%tracer_solid_passive_diffus_scal_group(:) = 0._r8
   allocate(this%tracer_solid_passive_diffus_thc_group (this%nsolid_passive_tracer_groups)); this%tracer_solid_passive_diffus_thc_group(:) = 0._r8
   
-  allocate(this%tracer_group_memid(this%ntracer_groups, this%mem_max)); this%tracer_group_memid(:,:) = nanid
+  allocate(this%tracer_group_memid(this%ntracer_groups, this%nmem_max)); this%tracer_group_memid(:,:) = nanid
   
   allocate(this%solid_passive_tracer_groupid(this%nsolid_passive_tracer_groups, 1:this%nmem_max)); this%solid_passive_tracer_groupid(:,:) = nanid
   
@@ -207,10 +206,11 @@ module BeTRTracerType
 
 !--------------------------------------------------------------------------------       
 
-  subroutine set_tracer(trcid, trc_name, is_trc_mobile, is_trc_advective, trc_group_id, &
+  subroutine set_tracer(this, trc_id, trc_name, is_trc_mobile, is_trc_advective, trc_group_id, &
      trc_group_mem, is_trc_volatile, trc_volatile_id, trc_volatile_group_id)
-    
-    integer            , intent(in) :: trcid
+
+    class(BeTRtracer_type) :: this    
+    integer            , intent(in) :: trc_id
     character(len=*)   , intent(in) :: trc_name
     logical            , intent(in) :: is_trc_mobile
     logical            , intent(in) :: is_trc_advective
@@ -222,17 +222,17 @@ module BeTRTracerType
     integer, optional  , intent(in) :: trc_volatile_group_id
 
     
-    this%tracernames      (trcid)    = trim(trc_name)
-    this%is_mobile        (trcid)    = is_trc_mobile
-    this%is_advective     (trcid)    = is_trc_advective
-    this%groupid          (trcid)    = trc_group_id
-    this%tracer_group_memid(trc_group_id,trc_group_mem) = trcid
+    this%tracernames      (trc_id)    = trim(trc_name)
+    this%is_mobile        (trc_id)    = is_trc_mobile
+    this%is_advective     (trc_id)    = is_trc_advective
+    this%groupid          (trc_id)    = trc_group_id
+    this%tracer_group_memid(trc_group_id,trc_group_mem) = trc_id
     
     if(present(is_trc_volatile))then
-      this%is_volatile      (trcid)    = is_trc_volatile    
-      if(this%is_volatile   (trcid)) then
-        this%volatileid     (trcid)    = trc_volatile_id
-        this%volatilegroupid(trcid)    = trc_volatile_group_id
+      this%is_volatile      (trc_id)    = is_trc_volatile    
+      if(this%is_volatile   (trc_id)) then
+        this%volatileid     (trc_id)    = trc_volatile_id
+        this%volatilegroupid(trc_id)    = trc_volatile_group_id
       endif
     endif
     

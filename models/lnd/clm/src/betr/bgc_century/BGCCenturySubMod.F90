@@ -1330,6 +1330,7 @@ module BGCCenturySubMod
   use CNSharedParamsMod   , only : CNParamsShareInst
   use CNSharedParamsMod   , only : CNParamsShareInst
   use BGCCenturyParMod    , only : CNDecompBgcParamsInst 
+  use MathfuncMod         , only : safe_div
   type(bounds_type)       , intent(in) :: bounds
   integer                 , intent(in) :: lbj, ubj
   integer                 , intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -1341,10 +1342,11 @@ module BGCCenturySubMod
   real(r8)                , intent(in) :: pot_decay_rates(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)  
   real(r8)                , intent(in) :: pct_sand(bounds%begc:bounds%endc, lbj:ubj)
   real(r8)                , intent(out):: pot_co2_hr(bounds%begc:bounds%endc, lbj:ubj)
-  
+  real(r8)                , intent(out):: pot_nh3_immob(bounds%begc:bounds%endc, lbj:ubj)
+ 
   real(r8) :: ftxt, f1, f2
-  real(r8) :: cascade_matrix_hr(nom_pools)
-  real(r8) :: cascade_matrix_nh3(nom_pools)
+  real(r8) :: cascade_matrix_hr(centurybgc_vars%nom_pools)
+  real(r8) :: cascade_matrix_nh3(centurybgc_vars%nom_pools)
   
   integer  :: fc, c, j, reac
 
@@ -1419,9 +1421,10 @@ module BGCCenturySubMod
                              safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3,c,j))
   !obtain the potential respiration  
       pot_co2_hr(c,j) = dot_sum(cascade_matrix_hr, pot_decay_rates(:, c, j))  !mol CO2/m3/s
-      pot_nh3_immob(c,j) = dot_sum(cascade_matrix_nh3,pot_decay, rates(:,c,j))!mol NH3/m3/s
+      pot_nh3_immob(c,j) = dot_sum(cascade_matrix_nh3,pot_decay_rates(:,c,j))!mol NH3/m3/s
     enddo  
   enddo
+  end associate
   end subroutine calc_potential_aerobic_hr
 !----------------------------------------------------------------------------------------------------  
 
@@ -1776,16 +1779,13 @@ module BGCCenturySubMod
   subroutine calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, dtime, centurybgc_vars, &
      k_nit, decomp_nh4_immob, plant_ndemand, smin_nh4_vr, nh4_compet)
 
-  call calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, dtime                             , &
-     k_decay(centurybgc_vars%lid_nh4_nit_reac, bounds%begc:bounds%endc, lbj:ubj), pot_nh3_immob            , &
-     k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj)                       , &
-     tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x), &
-     )
-     
+  use MathfuncMod               , only : safe_div   
+
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: ubj
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
+  type(centurybgc_type)              , intent(in) :: centurybgc_vars
   real(r8)                           , intent(in) :: dtime  
   real(r8)                           , intent(in) :: k_nit(bounds%begc: , 1: )
   real(r8)                           , intent(in) :: decomp_nh4_immob(bounds%begc: , 1: )

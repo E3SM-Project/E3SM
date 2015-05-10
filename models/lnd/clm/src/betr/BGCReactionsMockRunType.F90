@@ -98,7 +98,8 @@ implicit none
   integer :: itemp_s
   integer :: itemp_gwm_grp
   integer :: dum
-  
+  integer :: itemp_grp, itemp_v, itemp_vgrp 
+ 
   itemp_gwm = 0; itemp_g = 0 ; itemp_s = 0; itemp_gwm_grp = 0
   betrtracer_vars%id_trc_n2  = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
   betrtracer_vars%id_trc_o2  = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
@@ -121,27 +122,27 @@ implicit none
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_n2, trc_name='N2'  , &
     is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
     trc_group_mem= 1,  is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_o2, trc_name='O2'  , &
     is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ar, trc_name='AR'  , &
     is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_co2x, trc_name='CO2x', &
     is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp)  , &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ch4, trc_name='CH4', &
     is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
 
   end subroutine Init_betrbgc
   
@@ -175,8 +176,7 @@ implicit none
   
   SHR_ASSERT_ALL((ubound(dz_top)                == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
 
-  associate(
-    
+  associate(                                     &
     groupid  => betrtracer_vars%groupid          &
   )
   do fc = 1, num_soilc

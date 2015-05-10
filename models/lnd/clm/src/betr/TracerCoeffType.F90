@@ -151,7 +151,7 @@ contains
     
     
     associate(                                                                  &
-      ntracers             => betrtracer_vars%ntracers                        , &
+      ntracer_groups       => betrtracer_vars%ntracer_groups                  , &
       tracer_group_memid   => betrtracer_vars%tracer_group_memid              , &
       ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups   , &      
       nsolid_equil_tracers => betrtracer_vars%nsolid_equil_tracers            , &

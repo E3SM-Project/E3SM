@@ -12,9 +12,8 @@ module TridiagonalMod
   public :: Tridiagonal
   public :: trisim
   interface Tridiagonal
-    module, procedure :: Tridiagonal_sr, Tridiagonal_mr
+    module procedure :: Tridiagonal_sr, Tridiagonal_mr
   end interface Tridiagonal
-  module procedure
   
   !-----------------------------------------------------------------------
 
@@ -123,7 +122,7 @@ contains
     real(r8), intent(in)    :: r( bounds%begc:bounds%endc, lbj:ubj, 1:ntrcs) ! "r" forcing term of tridiagonal matrix [col, j]
     real(r8), intent(inout) :: u( bounds%begc:bounds%endc, lbj:ubj, 1:ntrcs) ! solution [col, j]
     !
-    integer  :: j,ci,fc                   !indices
+    integer  :: j,ci,fc,k                   !indices
     logical, optional, intent(in) :: is_col_active(bounds%begc:bounds%endc)
     logical  :: l_is_col_active(bounds%begc:bounds%endc)
     real(r8) :: gam(bounds%begc:bounds%endc,lbj:ubj)      !temporary

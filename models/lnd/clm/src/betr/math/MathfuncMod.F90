@@ -135,7 +135,7 @@ contains
    
    integer :: n
    integer :: j
-   integer :: idim
+   integer :: idim_loc
    
    if(present(idim))idim_loc=idim
    

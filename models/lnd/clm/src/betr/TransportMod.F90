@@ -149,7 +149,7 @@ module TransportMod
    
    end subroutine calc_interface_conductance
 !-------------------------------------------------------------------------------
-   subroutine DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, trcin_mobile, &
+   subroutine DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, ntrcs, trcin_mobile, &
        Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,condc_toplay, topbc_type,&
        bot_concflx, update_col, source_only, rt, at,bt,ct, botbc_type, condc_botlay)
    !
@@ -168,6 +168,7 @@ module TransportMod
    integer,  intent(in) :: jtop(bounds%begc: )                  ! index of upper boundary, which could be variable
    integer,  intent(in) :: numfl                                ! length of the filter
    integer,  intent(in) :: filter(:)                            ! the actual filter
+   integer,  intent(in) :: ntrcs
    real(r8), intent(in) :: Rfactor(bounds%begc: , lbj: )        ! conversion parameter from the given tracer phase to bulk mobile phase
    real(r8), intent(in) :: hmconductance(bounds%begc: , lbj: )  ! weighted bulk tracer conductances
    real(r8), intent(in) :: dz(bounds%begc: , lbj: )             ! node thickness
@@ -363,12 +364,12 @@ module TransportMod
    if(present(botbc_type))then
      SHR_ASSERT_ALL((ubound(condc_botlay)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
      
-     call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, trcin_mobile, &
+     call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, ntrcs, trcin_mobile, &
         Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,&
         condc_toplay, topbc_type, bot_flux, update_col, source_only=.false.,&
         rt=rt, at=at,bt=bt,ct=ct, botbc_type=botbc_type, condc_botlay=condc_botlay)
    else
-     call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, trcin_mobile, &
+     call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, ntrcs, trcin_mobile, &
         Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,&
         condc_toplay, topbc_type, bot_flux, update_col, source_only=.false.,&
         rt=rt, at=at,bt=bt,ct=ct)
@@ -380,7 +381,7 @@ module TransportMod
    !  enddo
    !enddo      
    !calculate the change to tracer      
-   call Tridiagonal (bounds, lbj, ubj, jtop, numfl, filter, at, bt, ct, rt, dtracer, update_col)
+   call Tridiagonal (bounds, lbj, ubj, jtop, numfl, filter, ntrcs, at, bt, ct, rt, dtracer, update_col)
    
    end subroutine DiffusTransp_gw
 
@@ -429,7 +430,7 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(at)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(bt)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(ct)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(rt)            == (/bounds%endc, ubj/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(rt)            == (/bounds%endc, ubj, ntrcs/))  , errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)/)           == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL(((/ubound(source,1),ubound(source,2),size(source,3)/)        == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
 
@@ -513,11 +514,11 @@ module TransportMod
    character(len=255) :: subname = 'DiffusTransp_solid'
   
    SHR_ASSERT_ALL((ubound(lbn)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(trcin)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(hmconductance) == (/bounds%endc, ubj-1/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(update_col)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dtime_col)     == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)   == (/bounds%endc, ubj,ntrcs/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL(((/ubound(dtracer,1),ubound(dtracer,2),size(dtracer,3)/)   == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL(((/ubound(source,1) ,ubound(source,2) ,size(source,3)/)    == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
 
@@ -596,7 +597,7 @@ module TransportMod
    real(r8),   intent(in)  :: us(bounds%begc: , lbj-1: )              !convective flux defined at the boundary, positive downwards, [m/s]
    logical,    intent(out) :: halfdt_col(bounds%begc:bounds%endc) 
    real(r8),        intent(inout)  :: trcin(bounds%begc: , lbj: , 1: )     !input tracer concentration
-   real(r8), optional, intent(out) :: leaching_mass(bounds%begc:bounds%endc, 1: )    !leaching tracer mass
+   real(r8), optional, intent(out) :: leaching_mass(bounds%begc: , 1: )    !leaching tracer mass
    
    !local variables
    integer, parameter :: pn = 2            !first order lagrangian interpolation to avoid overshooting
@@ -620,14 +621,14 @@ module TransportMod
    
    SHR_ASSERT_ALL((ubound(lbn)        == (/bounds%endc/)),         errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dtime)      == (/bounds%endc/)),         errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(trcin)      == (/bounds%endc, ubj/)),    errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)         == (/bounds%endc, ubj/)),    errMsg(__FILE__,__LINE__))   
    SHR_ASSERT_ALL((ubound(update_col) == (/bounds%endc/)),         errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(us)         == (/bounds%endc, ubj/)),    errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(zi)         == (/bounds%endc, ubj/)),    errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(inflx_top)  == (/bounds%endc, ntrcs/)),  errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(inflx_bot)  == (/bounds%endc, ntrcs/)),  errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL(((/size(trcin,3),size(leaching_mass,2)/)  == (/ntrcs,ntrcs/)), errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(leaching_mass)  == (/bounds%endc,ntrcs/)), errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)/)      == (/bounds%endc, ubj,ntrcs/)),    errMsg(__FILE__,__LINE__))
    
    call Extra_inst%InitAllocate(1,ubj-lbj+6)
    halfdt_col(:) = .false.
@@ -677,7 +678,7 @@ module TransportMod
        enddo
      
        !right boundary     
-       if(inflx_bot(c)==0._r8)then
+       if(inflx_bot(c,ntr)==0._r8)then
          j = ubj - lbn(c) + 4
          mass_curve(j, ntr) = trcin(c,ubj, ntr)*(zghostr(1)-zi(c,ubj))
        
@@ -703,7 +704,7 @@ module TransportMod
 
  
        !ensure mass is increasing monotonically
-       call asc_sort_vec(cmass_new(0:length,ntrc))
+       call asc_sort_vec(cmass_new(0:length,ntr))
     
        !ensure no negative leaching
        call cmass_mono_smoother(cmass_new(0:length, ntrc),cmass_curve(ubj-lbn(c)+3, ntr))
