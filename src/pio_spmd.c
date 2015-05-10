@@ -1,6 +1,6 @@
 ////
 /// @file pio_spmd.c
-/// @author Original algorithms by Pat Worley; C translation by Jim Edwards.
+/// @author Algorithms modeled after spmd_utils in the Community Atmosphere Model; C translation Jim Edwards
 /// @date 2014
 /// @brief MPI_Gather, MPI_Gatherv, and MPI_Alltoallw with flow control options
 ///
