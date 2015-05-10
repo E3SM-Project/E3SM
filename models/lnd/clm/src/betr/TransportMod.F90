@@ -225,80 +225,80 @@ module TransportMod
      botbc_ltype = bndcond_as_flux     
    endif
    
-   do fc = 1, numfl
+!   do fc = 1, numfl
       !form the diffusion matrix
-      c = filter(fc)
-      if(update_col(c))then
+!      c = filter(fc)
+!      if(update_col(c))then
          !if(topbc_type == 1)then
             !top boundary condition as tracr concentration, dynamic canopy air tracer concentration
             !
          !endif
 
-         do j = jtop(c), ubj
-           do k = 1, ntrcs
-             if(j == jtop(c))then
+!         do j = jtop(c), ubj
+!           do k = 1, ntrcs
+!             if(j == jtop(c))then
                !by default the top node is always assumed as snow surface,
                !though when it snow free, the conductance is defined with respect to the soil         
-               Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1, k)/rfactor(c,j+1)-trcin_mobile(c,j, k)/rfactor(c,j))
-               if(topbc_type == bndcond_as_conc)then            
+!               Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1, k)/rfactor(c,j+1)-trcin_mobile(c,j, k)/rfactor(c,j))
+!               if(topbc_type == bndcond_as_conc)then            
                   !top boundary condition given as concentration
-                  Fl = -condc_toplay(c)*(trcin_mobile(c,j, k)/rfactor(c,j)-trc_concflx_air(c, 1, k))
-               elseif(topbc_type == bndcond_as_flux)then
+!                  Fl = -condc_toplay(c)*(trcin_mobile(c,j, k)/rfactor(c,j)-trc_concflx_air(c, 1, k))
+!               elseif(topbc_type == bndcond_as_flux)then
                   !top boundary condition given as flux, this only happens when the flux is given at soil surface
-                  Fl = trc_concflx_air(c,1, k)
-               endif
-             elseif(j == ubj)then               
-               Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j,k)/rfactor(c,j)-trcin_mobile(c,j-1,k)/rfactor(c,j-1))
-               if(botbc_ltype==bndcond_as_conc)then
-                 Fr = - condc_botlay(c)*(bot_concflx(c,1,k)-trcin_mobile(c,j,k)/rfactor(c,j))
-               else
-                 Fr = bot_concflx(c,1,k)
-               endif
-             else
-               Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j,k)/rfactor(c,j)-trcin_mobile(c,j-1,k)/rfactor(c,j-1))
-               Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1,k)/rfactor(c,j+1)-trcin_mobile(c,j,k)/rfactor(c,j))
-             endif      
-             rt(c,j,k) = Fl-Fr + source(c,j,k)*dz(c,j)
-             if(j==jtop(c) .and. topbc_type == bndcond_as_conc)then
-               rt(c,j,k) = rt(c,j,k)+cntheta*condc_toplay(c)*(trc_concflx_air(c, 2,k)-trc_concflx_air(c, 1,k))
-             endif
-             if(j == ubj .and. botbc_ltype==bndcond_as_conc)then
-               rt(c,j,k) = rt(c,j,k) + cntheta*condc_botlay(c)*(bot_concflx(c,2,k) - bot_concflx(c,1,k))
-             endif
-           enddo
-         enddo
-      endif   
-   enddo
+!                  Fl = trc_concflx_air(c,1, k)
+!               endif
+!             elseif(j == ubj)then               
+!               Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j,k)/rfactor(c,j)-trcin_mobile(c,j-1,k)/rfactor(c,j-1))
+!               if(botbc_ltype==bndcond_as_conc)then
+!                 Fr = - condc_botlay(c)*(bot_concflx(c,1,k)-trcin_mobile(c,j,k)/rfactor(c,j))
+!               else
+!                 Fr = bot_concflx(c,1,k)
+!               endif
+!             else
+!               Fl = -hmconductance(c,j-1)*(trcin_mobile(c,j,k)/rfactor(c,j)-trcin_mobile(c,j-1,k)/rfactor(c,j-1))
+!               Fr = -hmconductance(c,j)*(trcin_mobile(c,j+1,k)/rfactor(c,j+1)-trcin_mobile(c,j,k)/rfactor(c,j))
+!             endif      
+!             rt(c,j,k) = Fl-Fr + source(c,j,k)*dz(c,j)
+!             if(j==jtop(c) .and. topbc_type == bndcond_as_conc)then
+!               rt(c,j,k) = rt(c,j,k)+cntheta*condc_toplay(c)*(trc_concflx_air(c, 2,k)-trc_concflx_air(c, 1,k))
+!             endif
+!             if(j == ubj .and. botbc_ltype==bndcond_as_conc)then
+!               rt(c,j,k) = rt(c,j,k) + cntheta*condc_botlay(c)*(bot_concflx(c,2,k) - bot_concflx(c,1,k))
+!             endif
+!           enddo
+!         enddo
+!      endif   
+!   enddo
    
-   if(source_only)return
-   do fc = 1, numfl
+!   if(source_only)return
+!   do fc = 1, numfl
       !form the diffusion matrix
-      c = filter(fc)
-      if(update_col(c))then     
-         do j = jtop(c), ubj
-            if(j == jtop(c))then
-               if(topbc_type == bndcond_as_conc)then !top boundary condition given as concentration               
-                 bt(c,j)=dz(c,j)/dtime(c)+cntheta*(hmconductance(c,j) &
-                     +condc_toplay(c))/Rfactor(c,j)                     
-               elseif(topbc_type == bndcond_as_flux)then   !top boundary condition given as flux
-                 bt(c,j)=dz(c,j)/dtime(c)+cntheta*hmconductance(c,j)/Rfactor(c,j)
-               endif
-               ct(c,j)=-cntheta*hmconductance(c,j)/Rfactor(c,j+1)
-            elseif(j==ubj)then
-               at(c,j)=-cntheta*hmconductance(c,j-1)/rfactor(c,j-1)
-               if(botbc_ltype == bndcond_as_conc)then
-                 bt(c,j)=dz(c,j)/dtime(c)+cntheta*(hmconductance(c,j-1)+condc_botlay(c))/Rfactor(c,j)
-               else
-                 bt(c,j)=dz(c,j)/dtime(c)+cntheta*hmconductance(c,j-1)/Rfactor(c,j)
-               endif
-            else
-               at(c,j)=-cntheta*hmconductance(c,j-1)/rfactor(c,j-1)
-               ct(c,j)=-cntheta*hmconductance(c,j)/rfactor(c,j+1)
-               bt(c,j)=dz(c,j)/dtime(c)+cntheta*(hmconductance(c,j-1)+hmconductance(c,j))/Rfactor(c,j)
-            endif 
-         enddo
-      endif
-   enddo   
+!      c = filter(fc)
+!      if(update_col(c))then     
+!         do j = jtop(c), ubj
+!            if(j == jtop(c))then
+!               if(topbc_type == bndcond_as_conc)then !top boundary condition given as concentration               
+!                 bt(c,j)=dz(c,j)/dtime(c)+cntheta*(hmconductance(c,j) &
+!                     +condc_toplay(c))/Rfactor(c,j)                     
+!               elseif(topbc_type == bndcond_as_flux)then   !top boundary condition given as flux
+!                 bt(c,j)=dz(c,j)/dtime(c)+cntheta*hmconductance(c,j)/Rfactor(c,j)
+!               endif
+!               ct(c,j)=-cntheta*hmconductance(c,j)/Rfactor(c,j+1)
+!            elseif(j==ubj)then
+!               at(c,j)=-cntheta*hmconductance(c,j-1)/rfactor(c,j-1)
+!               if(botbc_ltype == bndcond_as_conc)then
+!                 bt(c,j)=dz(c,j)/dtime(c)+cntheta*(hmconductance(c,j-1)+condc_botlay(c))/Rfactor(c,j)
+!               else
+!                 bt(c,j)=dz(c,j)/dtime(c)+cntheta*hmconductance(c,j-1)/Rfactor(c,j)
+!               endif
+!            else
+!               at(c,j)=-cntheta*hmconductance(c,j-1)/rfactor(c,j-1)
+!               ct(c,j)=-cntheta*hmconductance(c,j)/rfactor(c,j+1)
+!               bt(c,j)=dz(c,j)/dtime(c)+cntheta*(hmconductance(c,j-1)+hmconductance(c,j))/Rfactor(c,j)
+!            endif 
+!         enddo
+!      endif
+!   enddo   
 
    end subroutine DiffusTransp_gw_tridiag
 !-------------------------------------------------------------------------------
@@ -361,19 +361,19 @@ module TransportMod
    SHR_ASSERT_ALL(((/ubound(trc_concflx_air, 1), ubound(trc_concflx_air,2),size(trc_concflx_air,3)/) == (/bounds%endc, 2, ntrcs/))   , errMsg(__FILE__,__LINE__))
    
    !assemble the tridiagonal maxtrix
-   if(present(botbc_type))then
-     SHR_ASSERT_ALL((ubound(condc_botlay)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+!   if(present(botbc_type))then
+!     SHR_ASSERT_ALL((ubound(condc_botlay)    == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
      
-     call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, ntrcs, trcin_mobile, &
-        Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,&
-        condc_toplay, topbc_type, bot_flux, update_col, source_only=.false.,&
-        rt=rt, at=at,bt=bt,ct=ct, botbc_type=botbc_type, condc_botlay=condc_botlay)
-   else
-     call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, ntrcs, trcin_mobile, &
-        Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,&
-        condc_toplay, topbc_type, bot_flux, update_col, source_only=.false.,&
-        rt=rt, at=at,bt=bt,ct=ct)
-   endif     
+!     call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, ntrcs, trcin_mobile, &
+!        Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,&
+!        condc_toplay, topbc_type, bot_flux, update_col, source_only=.false.,&
+!        rt=rt, at=at,bt=bt,ct=ct, botbc_type=botbc_type, condc_botlay=condc_botlay)
+!   else
+!     call DiffusTransp_gw_tridiag(bounds, lbj, ubj, jtop, numfl, filter, ntrcs, trcin_mobile, &
+!        Rfactor, hmconductance, dtime, dz, source, trc_concflx_air,&
+!        condc_toplay, topbc_type, bot_flux, update_col, source_only=.false.,&
+!        rt=rt, at=at,bt=bt,ct=ct)
+!   endif     
    !do fc = 1, numfl
    !  c = filter(fc)
    !  do kk = lbj, ubj
@@ -381,7 +381,7 @@ module TransportMod
    !  enddo
    !enddo      
    !calculate the change to tracer      
-   call Tridiagonal (bounds, lbj, ubj, jtop, numfl, filter, ntrcs, at, bt, ct, rt, dtracer, update_col)
+!   call Tridiagonal (bounds, lbj, ubj, jtop, numfl, filter, ntrcs, at, bt, ct, rt, dtracer, update_col)
    
    end subroutine DiffusTransp_gw
 
@@ -439,45 +439,45 @@ module TransportMod
   
    !zero flux is imposed both at the top and bottom boundaries
    !set zero outgoing flux
-   bot = 0._r8
-   do fc = 1, numfl
-      c = filter(fc)
-      if(update_col(c))then
-         dtime=dtime_col(c)
-         do j = lbn(c), ubj
-           do k = 1, ntrcs
-             if(j==lbn(c))then               
-               Fr=-hmconductance(c,j)*(trcin(c,j+1,k)-trcin(c,j,k))
-               Fl=0._r8    !zero flux at top boundary for solid phase
-             elseif(j==ubj)then
-               !assume zero flux for diffusion
-               Fl=-hmconductance(c,j-1)*(trcin(c,j,k)-trcin(c,j-1,k))
-               Fr=bot
-             else
-               Fl=-hmconductance(c,j-1)*(trcin(c,j,k)-trcin(c,j-1,k))
-               Fr=-hmconductance(c,j)*(trcin(c,j+1,k)-trcin(c,j,k))
-             endif      
-             rt(c,j,k) = Fl-Fr + source(c,j,k)*dz(c,j)
-           enddo
-         enddo
+!   bot = 0._r8
+!   do fc = 1, numfl
+!      c = filter(fc)
+!      if(update_col(c))then
+!         dtime=dtime_col(c)
+!         do j = lbn(c), ubj
+!           do k = 1, ntrcs
+!             if(j==lbn(c))then               
+!               Fr=-hmconductance(c,j)*(trcin(c,j+1,k)-trcin(c,j,k))
+!               Fl=0._r8    !zero flux at top boundary for solid phase
+!             elseif(j==ubj)then
+!               !assume zero flux for diffusion
+!               Fl=-hmconductance(c,j-1)*(trcin(c,j,k)-trcin(c,j-1,k))
+!               Fr=bot
+!             else
+!               Fl=-hmconductance(c,j-1)*(trcin(c,j,k)-trcin(c,j-1,k))
+!               Fr=-hmconductance(c,j)*(trcin(c,j+1,k)-trcin(c,j,k))
+!             endif      
+!             rt(c,j,k) = Fl-Fr + source(c,j,k)*dz(c,j)
+!           enddo
+!         enddo
          
-         do j = lbn(c), ubj
-            if(j==lbn(c))then
+!         do j = lbn(c), ubj
+!            if(j==lbn(c))then
                !top boundary condition given as flux
-               at(c,j)=0._r8
-               bt(c,j)=dz(c,j)/dtime+cntheta*hmconductance(c,j)
-               ct(c,j)=-cntheta*hmconductance(c,j)      
-            elseif(j==ubj)then
-               at(c,j)=-cntheta*hmconductance(c,j-1)
-               bt(c,j)=dz(c,j)/dtime+cntheta*hmconductance(c,j-1)          
-            else
-               at(c,j)=-cntheta*hmconductance(c,j-1)
-               ct(c,j)=-cntheta*hmconductance(c,j)
-               bt(c,j)=dz(c,j)/dtime-at(c,j)-ct(c,j)         
-            endif
-         enddo
-      endif
-   enddo
+!               at(c,j)=0._r8
+!               bt(c,j)=dz(c,j)/dtime+cntheta*hmconductance(c,j)
+!               ct(c,j)=-cntheta*hmconductance(c,j)      
+!            elseif(j==ubj)then
+!               at(c,j)=-cntheta*hmconductance(c,j-1)
+!               bt(c,j)=dz(c,j)/dtime+cntheta*hmconductance(c,j-1)          
+!            else
+!               at(c,j)=-cntheta*hmconductance(c,j-1)
+!               ct(c,j)=-cntheta*hmconductance(c,j)
+!               bt(c,j)=dz(c,j)/dtime-at(c,j)-ct(c,j)         
+!            endif
+!         enddo
+!      endif
+!   enddo
 
    end subroutine DiffusTransp_solid_tridiag
 !-------------------------------------------------------------------------------  
@@ -522,15 +522,15 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(dtracer)       == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(source)        == (/bounds%endc, ubj, ntrcs/)),   errMsg(__FILE__,__LINE__))
 
-   SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)   == (/bounds%endc, ubj,ntrcs/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)/)   == (/bounds%endc, ubj,ntrcs/)),   errMsg(__FILE__,__LINE__))
 
 
    !assemble the tridiagonal matrix   
-   call Diffustransp_solid_tridiag(bounds, lbj, ubj, lbn, numfl, filter, ntrcs, trcin,&
-      hmconductance,  dtime_col, dz, source, update_col, at,bt,ct, rt)
+!   call Diffustransp_solid_tridiag(bounds, lbj, ubj, lbn, numfl, filter, ntrcs, trcin,&
+!      hmconductance,  dtime_col, dz, source, update_col, at,bt,ct, rt)
 
    !calculate the change to tracer      
-   call Tridiagonal (bounds, lbj, ubj, lbn, numfl, filter, ntrcs, at, bt, ct, rt, dtracer, update_col)
+!   call Tridiagonal (bounds, lbj, ubj, lbn, numfl, filter, ntrcs, at, bt, ct, rt, dtracer, update_col)
       
    end subroutine DiffusTransp_solid
 !-------------------------------------------------------------------------------  
@@ -571,7 +571,7 @@ module TransportMod
    
 !-------------------------------------------------------------------------------     
    subroutine semi_lagrange_adv_backward(bounds, lbj, ubj, lbn, numfl, filter, ntrcs, dtime, dz, &
-     zi, us, inflx_top, inflx_bot, update_col, halfdt_col, trcin, leaching_mass)
+     zi, us, inflx_top, inflx_bot, update_col, halfdt_col, trcin, trcou, leaching_mass)
    !
    ! DESCRIPTION
    ! do semi-lagrangian advection for equation
@@ -598,7 +598,8 @@ module TransportMod
    logical,    intent(in)  :: update_col(bounds%begc: )               !indicator of active clumns
    real(r8),   intent(in)  :: us(bounds%begc: , lbj-1: )              !convective flux defined at the boundary, positive downwards, [m/s]
    logical,    intent(out) :: halfdt_col(bounds%begc:bounds%endc) 
-   real(r8),        intent(inout)  :: trcin(bounds%begc: , lbj: , 1: )     !input tracer concentration
+   real(r8),        intent(in)  :: trcin(bounds%begc: , lbj: , 1: )     !input tracer concentration
+   real(r8),        intent(out) :: trcou(bounds%begc: , lbj: , 1: )
    real(r8), optional, intent(out) :: leaching_mass(bounds%begc: , 1: )    !leaching tracer mass
    
    !local variables
@@ -630,6 +631,7 @@ module TransportMod
    SHR_ASSERT_ALL((ubound(inflx_top)  == (/bounds%endc, ntrcs/)),  errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(inflx_bot)  == (/bounds%endc, ntrcs/)),  errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(leaching_mass)  == (/bounds%endc,ntrcs/)), errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(trcou)      == (/bounds%endc, ubj,ntrcs/)),    errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL(((/ubound(trcin,1),ubound(trcin,2),size(trcin,3)/)      == (/bounds%endc, ubj,ntrcs/)),    errMsg(__FILE__,__LINE__))
    
    call Extra_inst%InitAllocate(1,ubj-lbj+6)
@@ -709,7 +711,7 @@ module TransportMod
        call asc_sort_vec(cmass_new(0:length,ntr))
     
        !ensure no negative leaching
-       call cmass_mono_smoother(cmass_new(0:length, ntrc),cmass_curve(ubj-lbn(c)+3, ntr))
+       call cmass_mono_smoother(cmass_new(0:length, ntr),cmass_curve(ubj-lbn(c)+3, ntr))
 
        !diagnose the leaching flux
        if(present(leaching_mass))then
@@ -731,7 +733,7 @@ module TransportMod
            endif
            mass_new(j, ntr)=mass_curve_correct(mass_new(j, ntr))
          endif
-         trcin(c,k, ntr)=mass_new(j, ntr)/dz(c,k)
+         trcou(c,k, ntr)=mass_new(j, ntr)/dz(c,k)
        enddo
      enddo
 

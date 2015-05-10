@@ -223,11 +223,10 @@ module TracerParamsMod
      ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups            , & ! Integer[intent(in)], number of dual phase (gw) tracers
      tracer_group_memid   => betrtracer_vars%tracer_group_memid           , & !
      ntracer_groups       => betrtracer_vars%ntracer_groups               , & ! Integer[intent(in)], total number of tracers
-     nco2_tags            => betrtracer_vars%nco2_tags                    , & ! Integer[intent(in)], number of co2 species
      is_volatile          => betrtracer_vars%is_volatile                  , & ! logical[intent(in)], is a volatile tracer?
      is_h2o               => betrtracer_vars%is_h2o                       , & ! logical[intent(in)], is a h2o tracer?
-     tracer_solid_passive_diffus_scal => betrtracer_vars%tracer_solid_passive_diffus_scal, & !scaling factor for solid phase diffusivity
-     tracer_solid_passive_diffus_thc => betrtracer_vars%tracer_solid_passive_diffus_thc  , & !threshold for solid phase diffusivity     
+     tracer_solid_passive_diffus_scal_group => betrtracer_vars%tracer_solid_passive_diffus_scal_group, & !scaling factor for solid phase diffusivity
+     tracer_solid_passive_diffus_thc_group => betrtracer_vars%tracer_solid_passive_diffus_thc_group  , & !threshold for solid phase diffusivity     
      volatilegroupid      => betrtracer_vars%volatilegroupid              , & ! integer[intent(in)], location in the volatile vector
      air_vol              => waterstate_vars%air_vol_col                  , & ! volume possessed by air
      h2osoi_liqvol        => waterstate_vars%h2osoi_liqvol_col            , & ! soil volume possessed by liquid water
@@ -368,7 +367,6 @@ module TracerParamsMod
    associate( &  
     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups    , & !Integer[intent(in)], number of gw tracers
     ntracer_groups    => betrtracer_vars%ntracer_groups            , & !Integer[intent(in)], total number of tracers
-    nco2_tags   => betrtracer_vars%nco2_tags           , & !Integer[intent(in)], number of co2 species
     is_volatile => betrtracer_vars%is_volatile         , & !logical[intent(in)], is a volatile tracer?
     volatileid  => betrtracer_vars%volatileid            & !integer[intent(in)], location in the volatile vector
    )
@@ -420,7 +418,6 @@ module TracerParamsMod
    
    associate( &
     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups            , & !Integer[intent(in)], number of tracers
-    nco2_tags   => betrtracer_vars%nco2_tags           , & !Integer[intent(in)], number of co2 species
     is_volatile => betrtracer_vars%is_volatile         , & !logical[intent(in)], is a volatile tracer?
     is_h2o      => betrtracer_vars%is_h2o              , & !logical[intent(in)], is a h2o tracer?
     tracer_group_memid => betrtracer_vars%tracer_group_memid, & !
@@ -486,7 +483,6 @@ module TracerParamsMod
    associate( &
     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups, & !Integer[intent(in)], number of tracers
     tracer_group_memid   => betrtracer_vars%tracer_group_memid           , &
-    nco2_tags            => betrtracer_vars%nco2_tags                    , & !Integer[intent(in)], number of co2 species
     is_volatile          => betrtracer_vars%is_volatile                  , & !logical[intent(in)], is a volatile tracer?
     is_h2o               => betrtracer_vars%is_h2o                       , & !logical[intent(in)], is a h2o tracer
     volatilegroupid      => betrtracer_vars%volatilegroupid                & !integer[intent(in)], location in the volatile vector
@@ -559,7 +555,7 @@ module TracerParamsMod
    
    associate( &
     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups     , & !Input: [integer(:)], number of tracers
-    nco2_tags            => betrtracer_vars%nco2_tags                    , & !Input: [integer(:)], number of co2 species
+    tracer_group_memid   => betrtracer_vars%tracer_group_memid           , & 
     is_h2o               => betrtracer_vars%is_h2o                       , & !Input: [logical(:)],    
     is_volatile          => betrtracer_vars%is_volatile                  , & !Input: [logical(:)], is a volatile tracer?
     volatilegroupid      => betrtracer_vars%volatilegroupid              , & !Input: [logical(:)], location in the volatile vector
@@ -576,7 +572,7 @@ module TracerParamsMod
   !compute the phase conversion parameters in soil
   !this includes aqueous to bulk mobile phase and gaseous to bulk mobile phase
   !
-  do j = 1, ngwmobile_tracer_gropus
+  do j = 1, ngwmobile_tracer_groups
     trcid = tracer_group_memid(j,1)
     if(is_volatile(trcid))then
       k = volatilegroupid(trcid)
@@ -1067,7 +1063,6 @@ module TracerParamsMod
    
    associate( &  
     ngwmobile_tracers    => betrtracer_vars%ngwmobile_tracers            , & !Integer[intent(in)], number of tracers
-    nco2_tags   => betrtracer_vars%nco2_tags           , & !Integer[intent(in)], number of co2 species
     is_volatile => betrtracer_vars%is_volatile         , & !logical[intent(in)], is a volatile tracer?
     volatilegroupid  => betrtracer_vars%volatilegroupid            & !integer[intent(in)], location in the volatile vector
    )
@@ -1755,7 +1750,7 @@ module TracerParamsMod
   real(r8) :: nongrassporosratio = 0.33_r8                           ! non grass ratio
   real(r8) :: unsat_aere_ratio= 0.05_r8 / 0.3_r8
   logical  :: usefrootc = .false.                                    ! wait to be read in later
-  integer  :: j, fp, p, c, g, kk, k
+  integer  :: j, fp, p, c, g, kk, k, trcid
   
   SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
   SHR_ASSERT_ALL((ubound(rootfr) == (/bounds%endp, nlevsoi/)), errMsg(__FILE__, __LINE__))
@@ -1772,7 +1767,8 @@ module TracerParamsMod
     frootc         =>    carbonstate_vars%frootc_patch       , & ! Input:  [real(r8) (:)    ]  (gC/m2) fine root C
     is_volatile    =>    betrtracer_vars%is_volatile         , &
     volatilegroupid=>    betrtracer_vars%volatilegroupid     , &
-    ngwmobile_tracers=>  betrtracer_vars%ngwmobile_tracers   , &
+    ngwmobile_tracer_groups=>  betrtracer_vars%ngwmobile_tracer_groups   , &
+    tracer_group_memid => betrtracer_vars%tracer_group_memid , & 
     t_veg          =>    temperature_vars%t_veg_patch        , &
     t_soisno       =>    temperature_vars%t_soisno_col       , &
     scal_aere_cond =>    tracercoeff_vars%scal_aere_cond_col , &

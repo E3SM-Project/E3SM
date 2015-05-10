@@ -213,7 +213,7 @@ contains
   integer :: c
 
   
-  associate(    
+  associate(                                     & 
     groupid  => betrtracer_vars%groupid          &
   )
   tracerboundarycond_vars%topbc_type(1:betrtracer_vars%ngwmobile_tracer_groups) = bndcond_as_conc
@@ -244,9 +244,9 @@ contains
   character(len=*)                 , parameter :: subname ='Init_betrbgc'
 
   integer :: jj
-  integer :: nelm
-  integer :: itemp
-  integer :: c_loc, n_loc
+  integer :: nelm, itemp_mem
+  integer :: itemp, itemp_vgrp, itemp_v, itemp_grp
+  integer :: c_loc, n_loc, trcid
   !type(file_desc_t) :: ncid
   
   !ncid%fh=10
@@ -290,44 +290,44 @@ contains
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_n2, trc_name='N2'   , &
     is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)      , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
     
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_o2, trc_name='O2'   , &
     is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)      , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
   
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ar, trc_name='AR'    , &
     is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
   
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_co2x, trc_name='CO2x', &
     is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = addone(itemp_grp) , &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
   
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ch4, trc_name='CH4'  , &
     is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
   
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_nh3x, trc_name='NH3x', &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = addone(itemp_grp),
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
     trc_group_mem = 1, is_trc_volatile=.false.)
 
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_no3x, trc_name='NO3x', &
-    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp),
+    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp),   &
     trc_group_mem = 1, is_trc_volatile=.false.)
     
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_n2o, trc_name='N2O' , &
     is_trc_mobile=.true., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)      , &
-    trc_volatile_group_id = addone(item_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp))
 
   
   itemp_mem=0  
@@ -376,8 +376,8 @@ contains
 
   
   trcid = jj+(centurybgc_vars%lit1-1)*nelm+n_loc
-  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT1N', &
-    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp,
+  call betrtracer_vars%set_tracer(trc_id = trcid, trc_name='LIT1N'             , &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = itemp_grp, &
     trc_group_mem= addone(itemp_mem))
 
   
@@ -451,8 +451,7 @@ contains
 
   SHR_ASSERT_ALL((ubound(dz_top)                == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
 
-  associate(
-    
+  associate(                                     &
     groupid  => betrtracer_vars%groupid          &
   )
   do fc = 1, num_soilc
@@ -632,7 +631,7 @@ contains
      nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
      k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj))
 
-  call calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, dtime                             , &
+  call calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, dtime,centurybgc_vars             , &
      k_decay(centurybgc_vars%lid_nh4_nit_reac, bounds%begc:bounds%endc, lbj:ubj), pot_nh3_immob            , &
      k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj)                       , &
      tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x), &

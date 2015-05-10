@@ -289,6 +289,7 @@ contains
   
   associate(&
     tracernames                 =>  betrtracer_vars%tracernames                        , &
+    nmem_max                    =>  betrtracer_vars%nmem_max                           , &
     tracer_group_memid          =>  betrtracer_vars%tracer_group_memid                 , & 
     is_mobile                   =>  betrtracer_vars%is_mobile                          , &    
     tracer_flx_netpro_vr        => tracerflux_vars%tracer_flx_netpro_vr_col            , & !   
@@ -588,7 +589,7 @@ contains
   real(r8), pointer :: inflx_top( : , : )
   real(r8), pointer :: inflx_bot( : , : )
   real(r8), pointer :: dmass( : , : )
-
+  real(r8), pointer :: trc_conc_out(:,:,:)
   logical  :: halfdt_col(bounds%begc:bounds%endc)
   real(r8) :: err_relative
   real(r8) :: c_courant
@@ -634,7 +635,7 @@ contains
   allocate(inflx_top(bounds%begc:bounds%endc, nmem_max))
   allocate(inflx_bot(bounds%begc:bounds%endc, nmem_max))
   allocate(dmass(bounds%begc:bounds%endc,nmem_max))
-
+  allocate(trc_conc_out(bounds%begc:bounds%endc,lbj:ubj, 1:nmem_max))
   !initialize local variables
   update_col(:) = .true.             
   time_remain(:) = 0._r8
@@ -710,18 +711,24 @@ contains
 
       ! do semi-lagrangian tracer transport
       
-      call semi_lagrange_adv_backward(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dtime_loc, ntrcs, dz, zi, &
-        qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj), inflx_top(1:ntrcs), inflx_bot(1:ntrcs), update_col, halfdt_col, &
-        tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,adv_trc_group(1:ntrcs)), leaching_mass(1:ntrcs))
+      call semi_lagrange_adv_backward(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, ntrcs, dtime_loc,  dz, zi, &
+        qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj), inflx_top(bounds%begc:bounds%endc, 1:ntrcs)           , &
+        inflx_bot(bounds%begc:bounds%endc, 1:ntrcs), update_col, halfdt_col, &
+        tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,adv_trc_group(1:ntrcs)), trc_conc_out(:,:,1:ntrcs), leaching_mass(bounds%begc:bounds%endc,1:ntrcs))
 
       !do soil-root tracer exchange
       do kk = 1, ntrcs
         trcid = adv_trc_group(kk)
+        do l = lbj, ubj
+          do fc = 1, num_soilc
+            if(l>=jtops(c))tracer_conc_mobile_col(c,l,trcid)=trc_conc_out(c,l,kk)
+          enddo
+        enddo
         if(vtrans_scal(trcid)>0._r8)then
           call calc_root_uptake_as_perfect_sink(bounds, lbj, ubj, num_soilc, filter_soilc, dtime_loc, dz, qflx_rootsoi_local, update_col, &
-          halfdt_col, tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,trcid), transp_mass(kk))
+          halfdt_col, tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,trcid), transp_mass(bounds%begc:bounds%endc, kk))
         else
-          transp_mass(kk) = 0._r8
+          transp_mass(c,kk) = 0._r8
         endif
       enddo
       
@@ -795,7 +802,7 @@ contains
   deallocate(inflx_top    )
   deallocate(inflx_bot    )
   deallocate(dmass        )
-    
+  deallocate(trc_conc_out )  
   end associate
   end subroutine do_tracer_advection
 !-------------------------------------------------------------------------------  
@@ -885,7 +892,7 @@ contains
   update_col(:) = .true.
   time_remain(:) = 0._r8
   dtime_loc(:) = 0._r8
-  local_source(:,:) = 0._r8
+  local_source(:,:,:) = 0._r8
   
   do j = 1, ngwmobile_tracer_groups
   
@@ -1017,7 +1024,7 @@ contains
             else
               !something is wrong, write error information
               write(iulog,*),'mass bal error dif '//tracernames(trcid)
-              write(iulog,*)'err=',err_tracer(c,k),dmass(c), ' dif=',diff_surf(c,k)*dtime_loc(c), ' prod=',dot_sum(x=local_source(c,jtops(c):ubj,k),y=dz(c,jtops(c):ubj))*dtime_loc(c)
+              write(iulog,*)'err=',err_tracer(c,k),dmass(c,k), ' dif=',diff_surf(c,k)*dtime_loc(c), ' prod=',dot_sum(x=local_source(c,jtops(c):ubj,k),y=dz(c,jtops(c):ubj))*dtime_loc(c)
               call endrun('mass balance error for tracer '//tracernames(trcid)//' in '//trim(subname)//errMsg(__FILE__, __LINE__))
             endif
            
@@ -1036,11 +1043,11 @@ contains
     enddo
   enddo
   !
-  deallocate(err_tracer(bounds%begc:bounds%endc, nmem_max))
-  deallocate(diff_surf(bounds%begc:bounds%endc, nmem_max))
-  deallocate(dtracer(bounds%begc:bounds%endc,lbj:ubj, nmem_max)) 
-  deallocate(dmass(bounds%begc:bounds%endc, nmem_max))
-  deallocate(local_source(bounds%begc:bounds%endc,lbj:ubj, nmem_max))
+  deallocate(err_tracer)
+  deallocate(diff_surf)
+  deallocate(dtracer) 
+  deallocate(dmass)
+  deallocate(local_source)
   
   end associate 
   end subroutine do_tracer_gw_diffusion
@@ -1105,7 +1112,7 @@ contains
     tracer_group_memid      =>    betrtracer_vars%tracer_group_memid          , &  !
     is_volatile             =>    betrtracer_vars%is_volatile                 , &  !
     is_h2o                  =>    betrtracer_vars%is_h2o                      , &  !
-    volatileid              =>    betrtracer_vars%volatileid                  , &  !
+    volatilegroupid         =>    betrtracer_vars%volatilegroupid             , &  !
     gas2bulkcef_mobile      =>    tracercoeff_vars%gas2bulkcef_mobile_col     , &  !
     aqu2bulkcef_mobile      =>    tracercoeff_vars%aqu2bulkcef_mobile_col       &  !
   )
@@ -1681,6 +1688,7 @@ contains
    aqu2bulkcef_mobile_col   => tracercoeff_vars%aqu2bulkcef_mobile_col, &
    henrycef_col             => tracercoeff_vars%henrycef_col          , &
    volatilegroupid          => betrtracer_vars%volatilegroupid        , &
+   volatileid               => betrtracer_vars%volatileid             , &
    groupid                  => betrtracer_vars%groupid                , &
    ngwmobile_tracers        => betrtracer_vars%ngwmobile_tracers      , &
    is_volatile              => betrtracer_vars%is_volatile            , &
