@@ -69,9 +69,46 @@ def parse_namelists(namelist_lines, filename):
     ...           'three -> four',
     ...           'five -> six'
     ...   nval = 1850
+    ... /
+    ...
+    ... # Hello
+    ...
+    ...   &nml2
+    ...   val2 = .false.
+    ... /
+    ... '''
+    >>> parse_namelists(teststr.splitlines(), 'foo')
+    {'nml': {'dval': {'three': 'four', 'one': 'two'}, 'val': "'foo'", 'maval': ["'one'", "'two'", "'three'", "'four'"], 'aval': ["'one'", "'two'", "'three'"], 'nval': '1850', 'mdval': {'five': 'six', 'three': 'four', 'one': 'two'}}, 'nml2': {'val2': '.false.'}}
+    >>> parse_namelists('blah', 'foo')
+    Traceback (most recent call last):
+        ...
+    SystemExit: FAIL: File 'foo' does not appear to be a namelist file, skipping
+
+    >>> teststr = '''&nml
+    ... val = 'one', 'two',
+    ... val2 = 'three'
     ... /'''
     >>> parse_namelists(teststr.splitlines(), 'foo')
-    {'nml': {'dval': {'three': 'four', 'one': 'two'}, 'val': "'foo'", 'maval': ["'one'", "'two'", "'three'", "'four'"], 'aval': ["'one'", "'two'", "'three'"], 'nval': '1850', 'mdval': {'five': 'six', 'three': 'four', 'one': 'two'}}}
+    Traceback (most recent call last):
+        ...
+    SystemExit: FAIL: In file 'foo', Incomplete multiline variable: 'val'
+
+    >>> teststr = '''&nml
+    ... val = 'one', 'two',
+    ... /'''
+    >>> parse_namelists(teststr.splitlines(), 'foo')
+    Traceback (most recent call last):
+        ...
+    SystemExit: FAIL: In file 'foo', Incomplete multiline variable: 'val'
+
+    >>> teststr = '''&nml
+    ... val = 'one', 'two',
+    ...       'three -> four'
+    ... /'''
+    >>> parse_namelists(teststr.splitlines(), 'foo')
+    Traceback (most recent call last):
+        ...
+    SystemExit: FAIL: In file 'foo', multiline list variable 'val' had dict entries
     """
 
     comment_re = re.compile(r'^[#!]')
@@ -82,7 +119,7 @@ def parse_namelists(namelist_lines, filename):
 
     rv = {}
     current_namelist = None
-    current_name = None
+    multiline_variable = None # (name, value)
     for line in namelist_lines:
 
         line = line.strip()
@@ -92,8 +129,8 @@ def parse_namelists(namelist_lines, filename):
 
         if (current_namelist is None):
             # Must start a namelist
-            expect(current_name is None,
-                   "In file %s, Incomplete multiline variable: '%s'" % (filename, current_name[0] if current_name is not None else ""))
+            expect(multiline_variable is None,
+                   "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
 
             # Unfornately, other tools were using the old compare_namelists.pl script
             # to compare files that are not namelist files. We need a special error
@@ -102,69 +139,71 @@ def parse_namelists(namelist_lines, filename):
                 expect(rv != {},
                        "File '%s' does not appear to be a namelist file, skipping" % filename)
                 expect(False,
-                       "In file %s, Line '%s' did not begin a namelist as expected" % (filename, line))
+                       "In file '%s', Line '%s' did not begin a namelist as expected" % (filename, line))
 
             current_namelist = namelist_re.match(line).groups()[0]
             expect(current_namelist not in rv,
-                   "In file %s, Duplicate namelist '%s'" % (filename, current_namelist))
+                   "In file '%s', Duplicate namelist '%s'" % (filename, current_namelist))
 
             rv[current_namelist] = {}
 
         elif (line == "/"):
             # Ends a namelist
-            expect(current_name is None,
-                   "In file %s, Incomplete multiline variable: '%s'" % (filename, current_name[0] if current_name is not None else ""))
+            expect(multiline_variable is None,
+                   "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
             current_namelist = None
 
         elif (name_re.match(line)):
+            expect(multiline_variable is None,
+                   "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
+
             # Defining a variable (AKA name)
             name, value = name_re.match(line).groups()
-            expect(name not in rv[current_namelist], "In file %s, Duplicate name: '%s'" % (filename, name))
+            expect(name not in rv[current_namelist], "In file '%s', Duplicate name: '%s'" % (filename, name))
 
+            tokens = [item.strip() for item in comma_re.split(value) if item.strip() != ""]
             if ("->" in value):
                 # dict
-                tokens = comma_re.split(value)
                 rv[current_namelist][name] = {}
                 for token in tokens:
-                    if (token.strip() != ""):
-                        m = dict_re.match(token)
-                        expect(m is not None, "In file %s, Dict entry '%s' does not match expected format" % (filename, token))
-                        k, v = m.groups()
-                        rv[current_namelist][name][k] = v
+                    m = dict_re.match(token)
+                    expect(m is not None, "In file '%s', Dict entry '%s' does not match expected format" % (filename, token))
+                    k, v = m.groups()
+                    rv[current_namelist][name][k] = v
 
             elif ("," in value):
                 # list
-                rv[current_namelist][name] = [item for item in comma_re.split(value) if item.strip() != ""]
+                rv[current_namelist][name] = tokens
 
             else:
                 rv[current_namelist][name] = value
 
             if (line.endswith(",")):
                 # Value will continue on in subsequent lines
-                current_name = (name, rv[current_namelist][name])
+                multiline_variable = (name, rv[current_namelist][name])
 
-        elif (current_name is not None):
+        elif (multiline_variable is not None):
             # Continuation of list or dict variable
-            current_value = current_name[1]
-            tokens = comma_re.split(line)
+            current_value = multiline_variable[1]
+            tokens = [item.strip() for item in comma_re.split(line) if item.strip() != ""]
             if (type(current_value) is list):
+                expect("->" not in line, "In file '%s', multiline list variable '%s' had dict entries" % (filename, multiline_variable[0]))
                 current_value.extend([item for item in tokens if item.strip() != ""])
             elif (type(current_value) is dict):
                 for token in tokens:
-                    if (token.strip() != ""):
-                        m = dict_re.match(token)
-                        expect(m is not None, "In file %s, Dict entry '%s' does not match expected format" % (filename, token))
-                        k, v = m.groups()
-                        current_value[k] = v
+                    m = dict_re.match(token)
+                    expect(m is not None, "In file '%s', Dict entry '%s' does not match expected format" % (filename, token))
+                    k, v = m.groups()
+                    current_value[k] = v
             else:
-                expect(False, "In file %s, Continuation should have been for list or dict, instead it was: '%s'" % (filename, type(current_value)))
+                expect(False, "In file '%s', Continuation should have been for list or dict, instead it was: '%s'" % (filename, type(current_value)))
 
             if (not line.endswith(",")):
                 # Completed
-                current_name = None
+                multiline_variable = None
 
         else:
-            expect(False, "In file %s, Unrecognized line: '%s'" % (filename, line))
+            expect(False, "In file '%s', Unrecognized line: '%s'" % (filename, line))
 
     return rv
 
@@ -202,7 +241,7 @@ def normalize_string_value(name, value, case):
 def compare_values(namelist, name, gold_value, comp_value, case):
 ###############################################################################
     """
-    TODO - Unit test
+    Compare values for a specific variable in a namelist.
     """
     if (type(gold_value) != type(comp_value)):
         print "In namelist '%s', variable '%s' did not have expected type '%s', instead is type '%s'" % \
@@ -258,6 +297,54 @@ def compare_namelists(gold_namelists, comp_namelists, case):
 
     Expect args in form: {namelist -> {key -> value} }.
       value can be an int, string, list, or dict
+
+    >>> teststr = '''&nml
+    ...   val = 'foo'
+    ...   aval = 'one','two', 'three'
+    ...   maval = 'one', 'two', 'three', 'four'
+    ...   dval = 'one -> two', 'three -> four'
+    ...   mdval = 'one -> two', 'three -> four', 'five -> six'
+    ...   nval = 1850
+    ... /
+    ... &nml2
+    ...   val2 = .false.
+    ... /
+    ... '''
+    >>> compare_namelists(parse_namelists(teststr.splitlines(), 'foo'), parse_namelists(teststr.splitlines(), 'bar'), None)
+    True
+
+    >>> teststr1 = '''&nml1
+    ...   val11 = 'foo'
+    ... /
+    ... &nml2
+    ...   val21 = 'foo'
+    ...   val22 = 'foo', 'bar', 'baz'
+    ...   val23 = 'baz'
+    ...   val24 = '1 -> 2', '2 -> 3', '3 -> 4'
+    ... /'''
+    >>> teststr2 = '''&nml01
+    ...   val11 = 'foo'
+    ... /
+    ... &nml2
+    ...   val21 = 'foo0'
+    ...   val22 = 'foo', 'bar0', 'baz'
+    ...   val230 = 'baz'
+    ...   val24 = '1 -> 20', '2 -> 3', '30 -> 4'
+    ... /'''
+    >>> compare_namelists(parse_namelists(teststr1.splitlines(), 'foo'), parse_namelists(teststr2.splitlines(), 'bar'), None)
+    In namelist 'nml2', 'val22 list item 1' has inequivalent values 'bar' != 'bar0'
+      NORMALIZED: 'bar' != 'bar0'
+    In namelist 'nml2', missing variable: 'val23'
+    In namelist 'nml2', 'val21' has inequivalent values 'foo' != 'foo0'
+      NORMALIZED: 'foo' != 'foo0'
+    In namelist 'nml2', 'val24 dict item 1' has inequivalent values 2 != 20
+      NORMALIZED: 2 != 20
+    In namelist 'nml2', dict variable 'val24' missing key 3
+    In namelist 'nml2', dict variable 'val24' has extra key 30
+    In namelist 'nml2', found extra variable: 'val230'
+    Missing namelist: nml1
+    Found extra namelist: nml01
+    False
     """
     rv = True
 
