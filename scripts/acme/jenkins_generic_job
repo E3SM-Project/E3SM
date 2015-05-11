@@ -214,6 +214,11 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
 
     try:
 
+        # Important, need to set up signal handlers before we officially
+        # kick off tests. We don't want this process getting killed outright
+        # since it's critical that the cleanup in the finally block gets run
+        wait_for_tests.set_up_signal_handlers()
+
         if (os.path.isdir("Testing")):
             shutil.rmtree("Testing")
 
@@ -247,7 +252,10 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
         if (not use_batch):
             create_test_cmd += " -autosubmit off -nobatch on"
 
-        acme_util.run_cmd(create_test_cmd, verbose=True, arg_stdout=None, arg_stderr=None)
+        if (not wait_for_tests.SIGNAL_RECEIVED):
+            create_test_stat = acme_util.run_cmd(create_test_cmd, verbose=True, arg_stdout=None, arg_stderr=None, ok_to_fail=True)[0]
+            if (create_test_stat != 0):
+                warning("create_test FAILED!")
 
         os.chdir("../..")
 
@@ -275,11 +283,11 @@ def jenkins_generic_job(generate_baselines, submit_to_dashboard,
                                                      False, # don't ignore namelist diffs
                                                      cdash_build_name,
                                                      cdash_project)
-        if (not tests_passed and use_batch):
+        if (not tests_passed and use_batch and wait_for_tests.SIGNAL_RECEIVED):
             # Cleanup
             cleanup_queue(our_jobs, batch_system)
 
-        return tests_passed
+        return tests_passed and create_test_stat == 0
     finally:
         expect(os.path.isfile(sentinel_path), "Missing sentinel file")
         os.remove(sentinel_path)

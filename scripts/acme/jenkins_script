@@ -12,4 +12,4 @@ set -o pipefail
 SCRIPT_DIR=$( cd "$( dirname "$0" )" && pwd )
 DATE_STAMP=$(date "+%Y-%m-%d_%H%M%S")
 
-$SCRIPT_DIR/jenkins_generic_job "$@" 2>&1 | tee JENKINS_$DATE_STAMP
+$SCRIPT_DIR/jenkins_generic_job "$@" >& JENKINS_$DATE_STAMP

@@ -25,6 +25,12 @@ def signal_handler(*_):
     SIGNAL_RECEIVED = True
 
 ###############################################################################
+def set_up_signal_handlers():
+###############################################################################
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+###############################################################################
 def get_test_time(test_path):
 ###############################################################################
     cmd = "grep 'TOT Run Time' /dev/null $(find %s -name 'ccsm_timing*') || true" % test_path
@@ -362,8 +368,7 @@ def wait_for_tests(test_paths,
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
+    set_up_signal_handlers()
 
     if (cdash_build_name):
         start_time = time.time()
