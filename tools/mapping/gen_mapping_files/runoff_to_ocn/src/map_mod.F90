@@ -656,7 +656,12 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
       rcode = nf_inq_varid     (fid,'grid_imask',vid )
       rcode = nf_get_var_int   (fid,vid     ,map%mask_a)
       rcode = nf_inq_varid     (fid,'grid_area',vid )
-      rcode = nf_get_var_double(fid,vid     ,map%area_a)
+      if (rcode.eq.0) then
+         rcode = nf_get_var_double(fid,vid     ,map%area_a)
+      else
+         write(6,*) "ERROR: could not find variable grid_area in source grid input file!"
+         stop
+      end if
 
       map%frac_a = map%mask_a * 1.0_r8
 
@@ -818,7 +823,12 @@ SUBROUTINE map_gridRead(map, rfilename, ofilename, gridtype, lmake_rSCRIP)
    rcode = nf_inq_varid     (fid,'grid_imask',vid )
    rcode = nf_get_var_int   (fid,vid     ,map%mask_b)
    rcode = nf_inq_varid     (fid,'grid_area',vid )
-   rcode = nf_get_var_double(fid,vid     ,map%area_b)
+   if (rcode.eq.0) then
+      rcode = nf_get_var_double(fid,vid     ,map%area_b)
+   else
+      write(6,*) "ERROR: could not find variable grid_area in destination grid input file!"
+      stop
+   end if
 
    map%frac_b = map%mask_b * 1.0_r8
 
