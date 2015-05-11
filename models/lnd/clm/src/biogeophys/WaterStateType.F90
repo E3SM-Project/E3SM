@@ -114,7 +114,9 @@ contains
     real(r8)          , intent(inout) :: snow_depth_input_col(bounds%begc:)
     real(r8)          , intent(inout) :: watsat_col(bounds%begc:, 1:)          ! volumetric soil water at saturation (porosity)
     real(r8)          , intent(inout) :: t_soisno_col(bounds%begc:, -nlevsno+1:) ! col soil temperature (Kelvin)
+    real(r8), allocatable :: dummy        (:,:) ! Temporary fix for PGI comiler error on Titan
 
+    
     call this%InitAllocate(bounds) 
 
     call this%InitHistory(bounds)
