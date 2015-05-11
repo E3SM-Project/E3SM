@@ -346,7 +346,7 @@ contains
     !For efficient MPI, PCI-e, packing, and unpacking, we need to separate out the cycles by dependence. Once on cycle has packed, then stage the PCI-e D2H, MPI, PCI-e H2D, & internal unpack
     !We begin by testing what elements contribute to packing in what cycle's MPI data.
     do ie = 1,nelemd
-      recv_elem_mask(ie,:) = .false.
+      if (nRecvCycles > 0) recv_elem_mask(ie,:) = .false.
       do icycle = 1 , nRecvCycles
         do n = 1 , max_neigh_edges
           if ( elem(ie)%desc%getmapP(n) >= pSchedule%RecvCycle(icycle)%ptrP .and. &
