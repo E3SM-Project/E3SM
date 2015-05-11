@@ -226,8 +226,6 @@ sub _computeValues
 	my $threadgeom = " $maxt[0]";
 	my $taskcount = 1;
 	my $threadcount = $maxt[0];
-    print "threadcount: $threadcount\n";
-    print "maxthreads array: @maxt\n";
 	my $aprun = "";
 	my $pbsrs = "";
 
