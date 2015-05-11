@@ -2217,7 +2217,7 @@ end if
            if (cld(i,k) .gt. 0._r8) then
               !! note: convective mixing ratio is the sum of shallow and deep convective clouds in CAM5
               mr_ccliq(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
-              mr_ccice(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
+              mr_ccice(i,k) = sh_cldice(i,k) + dp_cldice(i,k)  !PMA bug fix
               mr_lsliq(i,k)=state%q(i,k,ixcldliq)   ! mr_lsliq, mixing_ratio_large_scale_cloud_liquid, state only includes stratiform (kg/kg)  
               mr_lsice(i,k)=state%q(i,k,ixcldice)   ! mr_lsice - mixing_ratio_large_scale_cloud_ice, state only includes stratiform (kg/kg)
            else
