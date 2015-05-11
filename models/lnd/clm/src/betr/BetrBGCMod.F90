@@ -160,7 +160,7 @@ contains
   !print*,'set infiltrating tracer'
   !Eventually, this infiltration calculation will be removed when a consistent description of tracer transport in snow is used
   call calc_tracer_infiltration(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, &
-     tracercoeff_vars%bunsencef_col(bounds%begc:bounds%endc, 1, 1:betrtracer_vars%nvolatile_tracers)        , &
+     tracercoeff_vars%bunsencef_col(bounds%begc:bounds%endc, 1, 1:betrtracer_vars%nvolatile_tracer_groups)        , &
      betrtracer_vars, tracerboundarycond_vars, waterflux_vars, tracerflux_vars%tracer_flx_infl_col)  
   
   !print*,'set up retardation factor, for '
@@ -721,6 +721,7 @@ contains
         trcid = adv_trc_group(kk)
         do l = lbj, ubj
           do fc = 1, num_soilc
+            c = filter_soilc(fc)
             if(l>=jtops(c))tracer_conc_mobile_col(c,l,trcid)=trc_conc_out(c,l,kk)
           enddo
         enddo
@@ -760,7 +761,7 @@ contains
               leaching_mass(c,kk) = leaching_mass(c,kk) - err_tracer(c,kk)
             else
             !something is wrong, write error information
-              write(iulog,'(I8,X,A,5(X,A,X,E18.10))')c,tracernames(trcid),' err=',err_tracer(c,kk),' lech=',&
+              write(iulog,'(I8,X,A,6(X,A,X,E18.10))')c,tracernames(trcid),' err=',err_tracer(c,kk),' transp=',transp_mass(c,kk),' lech=',&
                  leaching_mass(c,kk),' infl=',inflx_top(c,kk),' dmass=',dmass(c,kk), ' mass0=',mass0,'err_rel=',err_relative
               call endrun('mass balance error for tracer '//tracernames(j)//errMsg(__FILE__, __LINE__))            
             endif
@@ -888,7 +889,7 @@ contains
   allocate(dtracer(bounds%begc:bounds%endc,lbj:ubj, nmem_max)) 
   allocate(dmass(bounds%begc:bounds%endc, nmem_max))
   allocate(local_source(bounds%begc:bounds%endc,lbj:ubj, nmem_max))
-  
+  allocate(dif_trc_group(nmem_max)) 
   update_col(:) = .true.
   time_remain(:) = 0._r8
   dtime_loc(:) = 0._r8
@@ -1048,7 +1049,7 @@ contains
   deallocate(dtracer) 
   deallocate(dmass)
   deallocate(local_source)
-  
+  deallocate(dif_trc_group) 
   end associate 
   end subroutine do_tracer_gw_diffusion
 !-------------------------------------------------------------------------------  

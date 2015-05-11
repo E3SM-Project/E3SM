@@ -197,7 +197,6 @@ contains
                avgflag='A', long_name='MEGAN flux', &
                ptr_patch=meg_out(imeg)%flux_out, set_lake=0._r8, set_urb=0._r8 )
           !write(iulog,*)'add meg suc',imeg, begp,endp
-          write(iulog,*)'sz2=',size(meg_out(imeg)%flux_out)
           meg_out(imeg)%flux_out(begp:endp) = 0._r8
 
           meg_cmp => meg_cmp%next_megcomp
@@ -327,7 +326,6 @@ contains
 
     call getfil (fsurdat, locfn, 0)
     call ncd_pio_openfile (ncid, locfn, 0)
-    write(iulog,*)'vocxxx',locfn
     call ncd_io(ncid=ncid, varname='EF1_BTR', flag='read', data=temp_ef, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg='iniTimeConst: errror reading EF1_BTR'//errMsg(__FILE__, __LINE__))

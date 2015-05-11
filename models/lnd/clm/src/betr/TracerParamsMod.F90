@@ -1271,7 +1271,7 @@ module TracerParamsMod
          if(betrtracer_vars%is_volatile(j) .and. betrtracer_vars%is_advective(j))then
            !for volatile non water tracer, infiltration is calculated based dissolution of the gas in the water, this may need
            !improvement when tracers are allowed to transport inside snow, such that the tracer infiltration is derived from mass balance in snow
-           tracer_flx_infl(c,j) = bunsencef_topsoi(c,betrtracer_vars%volatileid(j)) * tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1,j) * qflx_gross_infl_soil(c)*1.e-3_r8
+           tracer_flx_infl(c,j) = bunsencef_topsoi(c,betrtracer_vars%volatilegroupid(j)) * tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1,j) * qflx_gross_infl_soil(c)*1.e-3_r8
          else
            tracer_flx_infl(c,j) = 0._r8
          endif

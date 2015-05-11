@@ -233,6 +233,7 @@ module BeTRTracerType
       if(this%is_volatile   (trc_id)) then
         this%volatileid     (trc_id)    = trc_volatile_id
         this%volatilegroupid(trc_id)    = trc_volatile_group_id
+        this%nvolatile_tracer_groups = this%nvolatile_tracer_groups + 1
       endif
     endif
     

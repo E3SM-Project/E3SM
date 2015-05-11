@@ -694,7 +694,7 @@ module TransportMod
        endif
      enddo
      !now compute cumulative mass curve     
-     call cumsum(mass_curve(0:lengthp2,1:ntr), cmass_curve(0:lengthp2, 1:ntr))
+     call cumsum(mass_curve(0:lengthp2,1:ntr), cmass_curve(0:lengthp2, 1:ntr),idim=1)
 
      !do mass interpolation
      do ntr = 1, ntrcs
@@ -709,6 +709,7 @@ module TransportMod
        !ensure no negative leaching
        call cmass_mono_smoother(cmass_new(0:length, ntr),cmass_curve(ubj-lbn(c)+3, ntr))
 
+       !write(iulog,*)c,ntr,'semlg0',cmass_new(length,ntr),cmass_curve(ubj-lbn(c)+3, ntr)   
        !diagnose the leaching flux
        if(present(leaching_mass))then
          leaching_mass(c, ntr) = cmass_curve(ubj-lbn(c)+3, ntr)-cmass_new(length, ntr) !add the numerical error to leaching
@@ -717,7 +718,7 @@ module TransportMod
 
        !obtain the grid concentration
        call cumdif(cmass_new(0:length, ntr), mass_new(0:length, ntr))
-          
+       !write(iulog,*)c,ntr,'semlg1',cmass_new(length,ntr),cmass_curve(ubj-lbn(c)+3, ntr)   
        do k = lbn(c), ubj
          j = k - lbn(c) + 1      
          !correct for small negative values
