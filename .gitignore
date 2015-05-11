@@ -1,2 +1,8 @@
 # Ignore netCDF files.
 *.nc
+
+# Ignore python bytecode files
+*.pyc
+
+# Ignore emacs backup files
+*~
