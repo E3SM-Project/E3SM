@@ -223,7 +223,7 @@ if (! $clean ) {
  # Use BatchFactory to get the appropriate instance of a BatchMaker,
     # use it to create our batch scripts
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $xmlvars{'CASEROOT'},
-                                                  ccsmroot => $cimeroot,
+                                                  cimeroot => $cimeroot,
                                                   case      => $xmlvars{'CASE'},
                                                   mpilib      => $xmlvars{'MPILIB'},
                                                   scriptsroot => $xmlvars{'SCRIPTSROOT'},

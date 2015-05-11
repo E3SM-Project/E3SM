@@ -119,6 +119,7 @@
        <arg flag="-A" name="project"/>
        <arg flag="-t" name="wall_time"/>
        <arg flag="-n" name="num_nodes"/>
+       <arg flag="-q" name="queue"/>
        <arg flag="--mode script"/>
      </submit_args>
    </batch_system>

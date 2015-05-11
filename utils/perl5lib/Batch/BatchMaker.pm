@@ -29,7 +29,7 @@ use Exporter qw(import);
 use lib '.';
 require Task::TaskMaker;
 #my $cesmRunSuffix = '$config{\'EXEROOT\'}/cesm.exe >> $cesm.log.$LID 2>&1';
-my @requiredargs = qw/caseroot case machroot machine scriptsroot/;
+my @requiredargs = qw/caseroot case machroot machine scriptsroot cimeroot/;
 
 #==============================================================================
 #  Class constructor.  We need to know where in the filesystem we are, 
@@ -45,11 +45,15 @@ sub new
 		config => $params{'config'}           || undef,
 		machine     => $params{'machine'}     || undef,
 		scriptsroot => $params{'scriptsroot'} || undef,
-	    ccsmroot => $params{'ccsmroot'} || undef,
+	    cimeroot  => $params{'cimeroot'} || undef,
         machroot    => $params{'machroot'}    || ".",
         mpilib      => $params{'mpilib'}      || undef,
 	};
+    $self->{'ccsmroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
 	#print Dumper $self;
+    #print "BatchMaker constructor params: \n";
+    #print Dumper \%params;
+    #print "BatchMaker cimeroot: $self->{'cimeroot'}\n";
 	# make sure that the required args are supplied
 	foreach my $reqarg(@requiredargs)
 	{
@@ -90,6 +94,7 @@ sub transformVars()
     my $text = shift;
 	
     my @lines = split(/\n/, $text);
+    #print Dumper \$self;
     foreach my $line(@lines)
     {
         # loop through directive line, replacing each string enclosed with
@@ -99,13 +104,15 @@ sub transformVars()
             my $needstransform = $1;
             my $var = $needstransform;
             $var =~ s/__//g;
-            #print "needs transform: $needstransform\n";
-            #print "var : $var\n";
+            print "needs transform: $needstransform\n";
+            print "var : $var\n";
 
             if(defined $self->{$var} )
             {
                 $line =~ s/$needstransform/$self->{$var}/g;
             }
+            #else { exit(1);}
+            
         }
     }
     $text = join("\n", @lines);
@@ -664,7 +671,8 @@ use Data::Dumper;
 sub getBatchMaker
 {
 	my (%params) = @_;
-    print Dumper \%params;
+    #print "batchfactory params before BatchMaker new:\n";
+    #print Dumper \%params;
 	if(! defined $params{'machine'})
 	{
 		die "BatchFactory: params{'machine'} must be defined!";
@@ -675,6 +683,7 @@ sub getBatchMaker
 	# be blessed with the appropriate class name. 
 	my $batchmaker = Batch::BatchMaker->new(%params);
 	my $classname = "Batch::BatchMaker_" . $machine;
+    
 	bless $batchmaker, $classname;
 	return $batchmaker;
 }
@@ -751,12 +760,16 @@ use base qw (Batch::BatchMaker);
 
 package Batch::BatchMaker_mira;
 use base qw (Batch::BatchMaker );
+use Data::Dumper;
 # Mira does not need batch directives..
 sub transformVars()
 {
     my $self = shift;
     my $text = shift;
-    print "Mira transformVars\n";
+    #print "mira transformVars cimeroot: \n";
+    #print $self->{'cimeroot'} . "\n";
+    #print Dumper $self;
+    #print "Mira transformVars\n";
     $text =~ s/__batchdirectives__//g;
     $text = $self->SUPER::transformVars($text);
 }

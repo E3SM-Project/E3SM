@@ -9,6 +9,8 @@ use Cwd;
 use Exporter qw(import);
 use XML::LibXML;
 require Batch::BatchMaker;
+push(@INC, "/gpfs/mira-fs0/projects/CESM_Atmos/usr/shollenb/devsandboxes/cesm1_3_workflow_batch/cime/utils/perl5lib/");
+use lib '.';
 sub new
 {
 	my ($class, %params) = @_;
@@ -198,7 +200,6 @@ sub submitSingleJob()
 	my $self = shift;
 	my $scriptname = shift;
 	my $dependentJobId = shift;
-	#print "in submitSingleJob, dependendJobId is: $dependentJobId\n";
 	my $islastjob = shift;
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
@@ -237,20 +238,27 @@ sub submitSingleJob()
 sub doResubmit()
 {
 	my $self = shift;
-	my %config = %{$self->{caseconfig}};
-	#print "in checkforResubmit\n";
-	#print "resubmitting jobs!!!\n";		
-	$self->dependencyCheck();
-	$self->submitJobs();		
-	my $newresubmit = $config{'RESUBMIT'} - 1;
-	my $owd = getcwd;
-	chdir $config{'CASEROOT'};
-	`./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
-	if($?)
-	{
-		print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
-	}
-	chdir $owd;
+    my $islastjob = shift;
+    my $resubmit = shift;
+    if($islastjob eq 'TRUE' && $resubmit > 0)
+    {
+	    my %config = %{$self->{caseconfig}};
+	    $self->dependencyCheck();
+	    $self->submitJobs();		
+	    my $newresubmit = $config{'RESUBMIT'} - 1;
+	    my $owd = getcwd;
+	    chdir $config{'CASEROOT'};
+	    `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
+	    if($?)
+	    {
+	    	print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
+	    }
+	    chdir $owd;
+    }
+    else    
+    {
+        return;
+    }
 	
 }
 
@@ -263,8 +271,9 @@ sub dependencyCheck()
 	# we always want to run the CESM test or run again..
 	if(-e "$config{'CASE'}.test")
 	{
-		my $jobname = "$config{'CASE'}.test";
-		$self->addDependentJob($jobname);
+		#my $jobname = "$config{'CASE'}.test";
+		#$self->addDependentJob($jobname);
+        return;
 	}
 	else
 	{
@@ -278,20 +287,7 @@ sub dependencyCheck()
 		my $jobname = "$config{'CASE'}.st_archive";
 		$self->addDependentJob($jobname);
 	}
-	# Do we add the tseries_generator to the dependency queue? 
-	if($config{'DOUT_S_GENERATE_TSERIES'} eq 'TRUE')
-	{
-		my $jobname = "$config{'CASE'}.pyreshaper";
-		$self->addDependentJob($jobname);
-	}
-	# TODO Handle submitting diagnostics here...
 	
-	# Do we add the long-term archiver to the dependency queue?
-	if($config{'DOUT_L_MS'} eq 'TRUE')
-	{
-		my $jobname = "$config{'CASE'}.pyreshaper";
-		$self->addDependentJob($jobname);
-	}
 }
 
 # Adds a job script name or array of job script names to the dependent jobs queue. 
@@ -334,56 +330,94 @@ sub addDependentJob()
 }
 
 
-package BatchUtilsFactory;
+package Batch::BatchUtilsFactory;
 use Exporter qw(import);
 use XML::LibXML;
+use Data::Dumper;
 sub getBatchUtils
 {
-	my $machine = shift;
-	my $machroot = shift;
-	my $caseroot = shift;
+    my (%params) = @_;
+    
+    my $machine = $params{'machine'};
 	if(!defined $machine)
 	{
 		die "BatchUtilsFactory: machine must be defined!";
 	}
-	#$self->{'batchtype'} = getBatchSystemType($machine, $machroot, $caseroot);
-	
+	#$self->{'batchtype'} = getBatchSystemType($params{'machine'}, $params{'machroot'}, $params{'caseroot'});
+	my $batchtype = getBatchSystemType($params{'machine'}, $params{'machroot'}, $params{'caseroot'});
+
+    my $batchutils = Batch::BatchUtils->new(%params);
+    
+    my $machclassname = "Batch::BatchUtils_" . $machine; 
+    my $batchclassname = "Batch::BatchUtils_" . $batchtype;
+    print "machclassname: $machclassname\n";
+    print "batchclassname: $batchclassname\n";
+    print "batch type $batchtype\n";
+
+    my $rv = eval 
+    { 
+        #print "in eval\n";
+        #print "eval INC:\n";
+        #map { print "$_\n"} sort @INC;
+        #require $machclassname;
+        bless $batchutils, $machclassname;
+        $batchutils->can('submitJobs');
+        1;
+    };
+    if(! $@)
+    {
+        return $batchutils;
+    }
+    #else
+    #{
+    #    print "error code was $@\n";
+    #}
+    $rv = eval 
+    { 
+        #require $batchclassname;
+        bless $batchutils, $batchclassname; 
+        $batchutils->can('submitJobs');
+        1;
+    };
+    if(! $@)
+    {
+        return $batchutils;
+    }
+    else    
+    {
+        #print "no class match found\n";
+        #print Dumper $batchutils;
+        return $batchutils;
+    }
 
 }
+
 sub getBatchSystemType()
 {
-	my $machine = shift;
-	my $machroot = shift;
-	my $caseroot = shift;
-	my $configbatch = "$machroot/config_batch.xml";
-	my $configmachines = "$machroot/config_machines.xml";
-	my $casetoolsdir = "$caseroot/Tools";
-	push(@INC, $casetoolsdir);
-	my $xml = XML::LibXML->new(no_blanks => 1);
-	my $batchconfig = $xml->parse_file($configbatch);
-	my $machineconfig = $xml->parse_file($configmachines);
-	my $root = $machineconfig->getDocumentElement();
-	my @batchsystems = $root->findnodes("/config_machines/machine[\@MACH=\'$machine\']/batch_system");
-	if(! @batchsystems)
-	{
-		die "Could not determine batch system type for machine $machine";
-	}
-	my $batchtype = $batchsystems[0]->textContent();
-	return $batchtype;
+    my $machine = shift;
+    my $machroot = shift;
+    my $caseroot = shift;
+    my $configbatch = "$machroot/config_batch.xml";
+    my $configmachines = "$machroot/config_machines.xml";
+    my $casetoolsdir = "$caseroot/Tools";
+    push(@INC, $casetoolsdir);
+    my $xml = XML::LibXML->new(no_blanks => 1);
+    my $batchconfig = $xml->parse_file($configbatch);
+    my $machineconfig = $xml->parse_file($configmachines);
+    my $root = $machineconfig->getDocumentElement();
+    my @batchsystems = $root->findnodes("/config_machines/machine[\@MACH=\'$machine\']/batch_system");
+    if(! @batchsystems)
+    {
+        die "Could not determine batch system type for machine $machine";
+    }
+    #my $batchtype = $batchsystems[0]->textContent();
+    my $batchtype = $batchsystems[0]->getAttribute('name');
+    #print "Found batch type $batchtype\n";
+    return $batchtype;
 }
 
-package BatchUtils_lsf;
-use Exporter qw(import);
-sub getJobID()
-{
-}
 
-sub setJobDependency()
-{
-}
-package BatchUtils_pbs;
-use Exporter qw(import);
+package Batch::BatchUtils_mira;
+use base qw( Batch::BatchUtils );
 
-package BatchUtils_slurm;
-use Exporter qw(import);
 1;

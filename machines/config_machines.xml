@@ -536,9 +536,14 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <batch_system name="cobalt">
            <queues>
+             <queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
+             <!--
              <queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">prod-short</queue>
+             -->
+             <!--
              <queue waltimemin="361" walltimemax="720" jobmin="512" jobmax="4096">prod-long</queue>
              <queue waltimemin="0" walltimemax="1440" jobmin="4097" jobmax="49152">prod-capability</queue>
+             -->
            </queues>
            <walltimes>
              <walltime default="true">60</walltime>
@@ -549,9 +554,9 @@
          <mpirun mpilib="default">
            <executable>runjob</executable>
              <arguments>
-               <arg name="queue"> --label  __queue__</arg>
+               <arg name="label"> --label short</arg>
                <!-- Ranks per node!! -->
-               <arg name="num_nodes"> -p __num_nodes__</arg>
+               <arg name="tasks_per_node"> -p __tasks_per_node__</arg>
                <!-- Total MPI Tasks -->
                <arg name="num_tasks"> -n __num_tasks__</arg>
                <arg name="locargs">  $LOCARGS</arg>

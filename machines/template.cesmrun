@@ -12,10 +12,12 @@ use XML::LibXML;
 use Data::Dumper;
 use Cwd;
 use Getopt::Long;
-chdir "__caseroot__";
-my $toolsdir = "__caseroot__/Tools";
+my $caseroot = "__caseroot__";
+my $cimeroot = "__cimeroot__";
+chdir $caseroot;
+my $toolsdir = "$caseroot/Tools";
 push(@INC, $toolsdir);
-my $perl5lib = "__ccsmroot__/utils/perl5lib";
+my $perl5lib = "$cimeroot/utils/perl5lib";
 push(@INC, $perl5lib);
 require ConfigCase;
 require Run::RunChecks;
@@ -31,7 +33,16 @@ __pedocumentation__
 # -------------------------------------------------------------------------
 # global data needed by the script, stuff like the max number of threads, 
 # -------------------------------------------------------------------------
+my $banner = "*" x 65;
 my %config;
+my $case;
+my $caseroot;
+my $cimeroot; 
+my $compiler;
+my $machine; 
+my $machroot;
+my $mpilib;
+my $scriptsroot;
 my $maxthreads = 2;
 my $LID;
 # -------------------------------------------------------------------------
@@ -60,19 +71,23 @@ sub getOptions()
 			  );
 }
 
-#TODO figure out how to set maxthrds
 # -------------------------------------------------------------------------
 # Pre run initialization code..
 # -------------------------------------------------------------------------
 sub doPreRunChecks()
 {
-	#my $maxthrds = 1;
-	$ENV{'maxthrds'} = 1;
 	
 	# First, get the configuration from every xml file. 
 	my $buildenv = ConfigCase->new("./Tools/config_definition.xml", "./env_build.xml");
 	%config = ConfigCase->getAllResolved();
-	
+    $case = $config{'CASE'};
+    $caseroot            = $config{'CASEROOT'};
+    $cimeroot            = $config{'CIMEROOT'};
+    $compiler            = $config{'COMPILER'};
+    $machine             = $config{'MACH'};
+    $machroot            = $config{'CCSM_MACHDIR'};
+    $mpilib              = $config{'MPILIB'};
+    $scriptsroot         = $config{'SCRIPTSROOT'};
 	
 	# Change to the case root
 	chdir($config{'CASEROOT'});
@@ -174,20 +189,18 @@ sub checkInputData()
 	
 	if(@unknown)
 	{
-		my $unknownmsg = <<MSG;
-Any files with "status unknown" below were not found in the
-expected location, and are not from the input data repository.
-This is informational only.
+		#my $unknownmsg = <<MSG;
+        print "Any files with \"status unknown\" below were not found in the\n";
+        print "expected location, and are not from the input data repository.\n";
+        print "This is informational only.\n";
 	
-MSG
-		print $unknownmsg;
 		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'});
 	}
 	
 	if(@missing)
 	{
 		print "Attempting to download missing data:\n";
-		qx(./check_input_data -iputdata $config{'DIN_LOC_ROOT'} -export);
+		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export);
 	}
 	
 	@missing = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
@@ -210,22 +223,18 @@ MSG
 		my $refdir = "$config{'RUN_REFCASE'}/$config{'RUN_REFDATE'}";
 		if(! -d $config{'DIN_LOC_ROOT'}/$refdir)
 		{
-			my $msg = <<MSG;
-*****************************************************************
-ccsm_prestage ERROR: $refdir is not on local disk
-obtain this data from the svn input data repository
-   > mkdir -p $refdir
-   > cd $refdir
-   > cd ..
-   > svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/$refdir
-or set GET_REFCASE to FALSE in env_run.xml
-and prestage the restart data to $config{'RUNDIR'} manually"
-*****************************************************************
-MSG
-		print $msg;
-		exit(-1);
-
-			}
+            print "$banner\n";
+            print "ccsm_prestage ERROR: $refdir is not on local disk!\n";
+            print "Obtain this data from the svn input data repository\n";
+            print "> mkdir -p $refdir\n";
+            print "> cd $refdir\n";
+            print "> cd ..\n";
+            print "> svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/$refdir\n";
+            print "or set GET_REFCASE to FALSE in env_run.xml\n";
+            print "and prestage the restart data to $config{'RUNDIR'} manually\n";
+            print "$banner\n";
+		    exit(-1);
+		}
 		
 		print " - Prestaging REFCASE ($refdir) to $config{'RUNDIR'}\n";
 		
@@ -380,12 +389,24 @@ sub appendCaseStatus
 # check to see if we need to do resubmission from this particular job,
 sub resubmitCheck()
 {
-    if($config{'RESUBMIT'} > 0 && defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
+    #if($config{'RESUBMIT'} > 0 && defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
+    #{
+    #    my $batchutils = new Batch::BatchUtils(machine => $config{'MACH'}, machroot => $config{'CCSM_MACHDIR'},
+    #                                    caseroot => $config{'CASEROOT'}, caseconfig => \%config);
+    #    $batchutils->doResubmit();
+    #}
+
+    my $islastjob = 'FALSE';
+    my $resubmit = $config{'RESUBMIT'};
+    if(defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
     {
-        my $batchutils = new Batch::BatchUtils(machine => $config{'MACH'}, machroot => $config{'CCSM_MACHDIR'},
-                                        caseroot => $config{'CASEROOT'}, caseconfig => \%config);
-        $batchutils->doResubmit();
+        $islastjob = 'TRUE';
     }
+
+    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $case, $caseconfig => \%config, caseroot => $caseroot, 
+                                                              ccsmroot => $cimeroot, compiler => $compiler, machine => $machine,
+                                                              machroot => $machroot, mpilib => $mpilib, scriptsroot => $scriptsroot );
+    $batchutils->doResubmit($islastjob, $resubmit);
 }
 sub Debug
 {

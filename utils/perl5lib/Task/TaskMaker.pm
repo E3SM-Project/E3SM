@@ -31,13 +31,13 @@ sub new
 	# Create a set of strings needed to pull layout information out of the config 
 	# object. 
     my @layoutstrings = qw/ COMP_CPL NTASKS_CPL NTHRDS_CPL ROOTPE_CPL PSTRID_CPL
-                     COMP_ATM NTASKS_ATM NTHRDS_ATM ROOTPE_ATM PSTRID_ATM
-                     COMP_LND NTASKS_LND NTHRDS_LND ROOTPE_LND PSTRID_LND
-                     COMP_ROF NTASKS_ROF NTHRDS_ROF ROOTPE_ROF PSTRID_ROF
-                     COMP_ICE NTASKS_ICE NTHRDS_ICE ROOTPE_ICE PSTRID_ICE
-                     COMP_OCN NTASKS_OCN NTHRDS_OCN ROOTPE_OCN PSTRID_OCN
-                     COMP_GLC NTASKS_GLC NTHRDS_GLC ROOTPE_GLC PSTRID_GLC
-                     COMP_WAV NTASKS_WAV NTHRDS_WAV ROOTPE_WAV PSTRID_WAV
+                     COMP_ATM NTASKS_ATM NTHRDS_ATM ROOTPE_ATM PSTRID_ATM NINST_ATM
+                     COMP_LND NTASKS_LND NTHRDS_LND ROOTPE_LND PSTRID_LND NINST_LND
+                     COMP_ROF NTASKS_ROF NTHRDS_ROF ROOTPE_ROF PSTRID_ROF NINST_ROF
+                     COMP_ICE NTASKS_ICE NTHRDS_ICE ROOTPE_ICE PSTRID_ICE NINST_ICE
+                     COMP_OCN NTASKS_OCN NTHRDS_OCN ROOTPE_OCN PSTRID_OCN NINST_OCN
+                     COMP_GLC NTASKS_GLC NTHRDS_GLC ROOTPE_GLC PSTRID_GLC NINST_GLC
+                     COMP_WAV NTASKS_WAV NTHRDS_WAV ROOTPE_WAV PSTRID_WAV NINST_WAV
 					 MAX_TASKS_PER_NODE PES_PER_NODE PIO_NUMTASKS PIO_ASYNC_INTERFACE /;
 	$self->{'layoutstrings'} = \@layoutstrings;
 	# Either the config was passed in, otherwise pull it from within the caseroot
@@ -71,26 +71,28 @@ sub new
 	$self->{'MAX_TASKS_PER_NODE'} = 1 if $self->{'MAX_TASKS_PER_NODE'} < 1;
 	
 	# Set up arrays with the comps, tasks, threads, root PE, # instances, and pstrids 
-	my @mcomps= ( $config{'COMP_CPL'}, $config{'COMP_ATM'}, $config{'COMP_ROF'}, $config{'COMP_ICE'}, $config{'COMP_OCN'}, 
+	my @mcomps= ( $config{'COMP_CPL'}, $config{'COMP_ATM'}, $config{'COMP_LND'}, $config{'COMP_ROF'}, $config{'COMP_ICE'}, $config{'COMP_OCN'}, 
 				       $config{'COMP_GLC'}, $config{'COMP_WAV'} );
 	$self->{'mcomps'} = \@mcomps;
 	
-	my @ntasks = ( $config{'NTASKS_CPL'}, $config{'NTASKS_ATM'}, $config{'NTASKS_ROF'}, $config{'NTASKS_ICE'}, $config{'NTASKS_OCN'}, 
+	my @ntasks = ( $config{'NTASKS_CPL'}, $config{'NTASKS_ATM'}, $config{'NTASKS_LND'}, $config{'NTASKS_ROF'}, $config{'NTASKS_ICE'}, $config{'NTASKS_OCN'}, 
 				       $self->{'NTASKS_GLC'}, $self->{'NTASKS_WAV'} );
 	$self->{'ntasks'} = \@ntasks;
 
-	my @nthrds = ( $config{'NTHRDS_CPL'}, $config{'NTHRDS_ATM'}, $config{'NTHRDS_ROF'}, $config{'NTHRDS_ICE'}, $config{'NTHRDS_OCN'}, 
+	my @nthrds = ( $config{'NTHRDS_CPL'}, $config{'NTHRDS_ATM'}, $config{'NTHRDS_LND'}, $config{'NTHRDS_ROF'}, $config{'NTHRDS_ICE'}, $config{'NTHRDS_OCN'}, 
 				       $config{'NTHRDS_GLC'}, $config{'NTHRDS_WAV'} );
 	$self->{'nthrds'} = \@nthrds;
+    #print "nthrds: @nthrds\n";
+    #print "self nthrds: $self->{'nthrds'}\n";
 
-	my @rootpe = ( $config{'ROOTPE_CPL'}, $config{'ROOTPE_ATM'}, $config{'ROOTPE_ROF'}, $config{'ROOTPE_ICE'}, $config{'ROOTPE_OCN'}, 
+	my @rootpe = ( $config{'ROOTPE_CPL'}, $config{'ROOTPE_ATM'}, $config{'ROOTPE_LND'}, $config{'ROOTPE_ROF'}, $config{'ROOTPE_ICE'}, $config{'ROOTPE_OCN'}, 
 				       $config{'ROOTPE_GLC'}, $config{'ROOTPE_WAV'} );
 	$self->{'rootpe'} = \@rootpe;
 
-	my @ninst = ( 1, $config{'NINST_ATM'}, $config{'NINST_ROF'}, $config{'NINST_ICE'}, $config{'NINST_OCN'}, 
+	my @ninst = ( 1, $config{'NINST_ATM'}, $config{'NINST_LND'}, $config{'NINST_ROF'}, $config{'NINST_ICE'}, $config{'NINST_OCN'}, 
 				       $config{'NINST_GLC'}, $config{'NINST_WAV'} );
 	$self->{'ninst'} = \@ninst;
-	my @pstrid = ( $config{'PSTRID_CPL'}, $config{'PSTRID_ATM'}, $config{'PSTRID_ROF'}, $config{'PSTRID_ICE'}, $config{'PSTRID_OCN'}, 
+	my @pstrid = ( $config{'PSTRID_CPL'}, $config{'PSTRID_ATM'}, $config{'PSTRID_LND'}, $config{'PSTRID_ROF'}, $config{'PSTRID_ICE'}, $config{'PSTRID_OCN'}, 
 				       $config{'PSTRID_GLC'}, $config{'PSTRID_WAV'} );
 	$self->{'pstrid'} = \@pstrid;
 
@@ -156,7 +158,7 @@ sub _computeValues
 	
 	# Compute max threads for each mpi task
 	my @maxt;
-	# fist initialize maxt, max threads for each task
+	# first initialize maxt, max threads for each task
 	for(my $i = 0; $i < $totaltasks; $i++)
 	{
 		$maxt[$i] = 0;
@@ -171,7 +173,9 @@ sub _computeValues
 		my $p = $pstrid[$i];
 		
 		my $c2 = 0;
-		while($c2 > $n)
+        # Should be $c2 < $n
+		#while($c2 > $n)
+		while($c2 < $n)
 		{
 			my $s = $r + $c2 * $p;
 			if($t > $maxt[$s]) { $maxt[$s] = $t; }
@@ -204,7 +208,7 @@ sub _computeValues
 	#print Dumper \@maxt;
 	my @sumthreads;
 	$sumthreads[0] = 0;
-	for(my $c1 = 0; $c1 < $totaltasks; $c1++)
+	for(my $c1 = 1; $c1 < $totaltasks; $c1++)
 	{
 		#print "c1: $c1\n";
 		#print "maxt[c1]: $maxt[$c1]\n";
@@ -221,14 +225,16 @@ sub _computeValues
 	my $taskgeom = "(0";
 	my $threadgeom = " $maxt[0]";
 	my $taskcount = 1;
-	my $threadcount = $maxt[0];;
+	my $threadcount = $maxt[0];
+    print "threadcount: $threadcount\n";
+    print "maxthreads array: @maxt\n";
 	my $aprun = "";
 	my $pbsrs = "";
 
 	my ($taskpernode, $nodecnt);
 	for (my $c1=1; $c1 < $totaltasks; $c1++)
 	{
-		$sum += $maxt[$c1];
+		$sum = $sum + $maxt[$c1];
 	
 		if($maxt[$c1] > $self->{'MAX_TASKS_PER_NODE'})
 		{
@@ -246,8 +252,8 @@ sub _computeValues
 		if($maxt[$c1]  != $threadcount)
 		{
 			#print "taskpernode: $taskpernode\n";
-			#print "self Max_TASKS_PER_NODE: $self->{'MAX_TASKS_PER_NODE'}\n";
-			#print "threadcount $threadcount\n";
+			print "self Max_TASKS_PER_NODE: $self->{'MAX_TASKS_PER_NODE'}\n";
+			print "threadcount $threadcount\n";
 			$taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
 			$taskpernode = ($taskpernode > $taskcount) ? $taskcount : $taskpernode;
 			$aprun = $aprun . " -n $taskcount  -N $taskpernode -d $threadcount \${$self->{'EXEROOT'}/cesm.exe";
@@ -255,7 +261,7 @@ sub _computeValues
 			$pbsrs = $pbsrs . "${nodecount}:ncpus=$self->{'MAX_TASKS_PER_NODE'}:mpiprocs=${taskpernode}:ompthreads=${threadcount}:model=";
 			$threadcount = $maxt[$c1];
 			$taskcount = 1;
-		}
+		    }
 		else
 		{
 			$taskcount += 1;
