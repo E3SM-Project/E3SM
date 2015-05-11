@@ -1321,8 +1321,9 @@ contains
   endif
 #if USE_CUDA_FORTRAN
   call euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
-  return
-#endif
+  !It's admittedly not ideal to use this form instead of a simple "return". However PGI 14.7.0 and up
+  !all segfault if I leave the return here instead of doing it this way.
+#else
 ! call t_barrierf('sync_euler_step', hybrid%par%comm)
 !   call t_startf('euler_step')
 
@@ -1586,6 +1587,9 @@ contains
 #endif
 #endif
 !   call t_stopf('euler_step')
+
+!This terminates the #ifdef USE_CUDA_FORTRAN
+#endif
   end subroutine euler_step
 
 !-----------------------------------------------------------------------------
