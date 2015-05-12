@@ -23,12 +23,13 @@ implicit none
   
   
 !--------------------------------------------------------------------------------  
-  subroutine begin_betr_tracer_massbalance(bounds, lbj, ubj, numf, filter, betrtracer_vars, tracerstate_vars)
+  subroutine begin_betr_tracer_massbalance(bounds, lbj, ubj, numf, filter, betrtracer_vars, tracerstate_vars, tracerflux_vars)
   !
   ! Preparing for tracer mass balance check
   !
   use tracerstatetype       , only : tracerstate_type
   use clm_varpar            , only : nlevtrc_soil
+  use tracerfluxType        , only : tracerflux_type
   implicit none
   type(bounds_type),      intent(in)    :: bounds
   integer,                intent(in)    :: lbj, ubj
@@ -36,13 +37,16 @@ implicit none
   integer,                intent(in)    :: filter(:)                   ! column filter
   type(betrtracer_type),  intent(in)    :: betrtracer_vars             ! betr configuration information
   type(tracerstate_type), intent(inout) :: tracerstate_vars            ! tracer state variables data structure
-  
+  type(tracerflux_type) , intent(inout) :: tracerflux_vars
+ 
   character(len=256) :: subname='begin_betr_tracer_massbalance'
 
   
+  call tracerflux_vars%Reset(bounds, numf, filter)
 
   call betr_tracer_mass_summary(bounds, lbj, ubj, numf, filter, betrtracer_vars, tracerstate_vars, &
      tracerstate_vars%beg_tracer_molarmass_col)
+
 
   end subroutine begin_betr_tracer_massbalance
   

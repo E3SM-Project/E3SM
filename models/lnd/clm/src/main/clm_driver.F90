@@ -272,8 +272,7 @@ contains
 
           call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
                filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
-               tracerstate_vars)
-          call tracerflux_vars%Reset(bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc)
+               tracerstate_vars, tracerflux_vars)
 
           !call t_stopf('end betr bal')
        endif
