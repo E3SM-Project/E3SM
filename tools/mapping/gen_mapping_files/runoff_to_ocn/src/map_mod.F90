@@ -2054,6 +2054,7 @@ SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
    integer,pointer :: itemp(:)
    real(r8)   ,pointer :: temp(:)
    integer    :: esize
+   integer, dimension(:), allocatable :: sumrowsofA
 
 #ifdef  _OPENMP
    integer  :: omp_get_max_threads !  $OMP function call
@@ -2118,10 +2119,23 @@ SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
    write(6,F04) 'do i=k to number cols in matrix A:',A%n_a
    call shr_timer_start(t0)
 
-   !--- array size estimate ---
-   esize = (S%n_s/min(S%n_b,A%n_s)) * A%n_s * 2
-   esize = int(float(esize) * 1.2)  ! this was necessary for some paleo mapping file - kauff
+   !--- Compute memory needed for non-zero entries in B
+   ! Algorithm:
+   ! 1. Compute vector a such that a(i) = number of non-zero columns in row i of A
+   ! 2. Compute matrix S' such that S'(i,j) = 1 if B != 0, otherwise S'(i,j) = 0
+   ! 3. esize = sum(S' * a)
+   ! (Note that we do not explicitly form S')
+   allocate(sumrowsofA(A%n_b))
+   sumrowsofA = 0
+   esize = 0
+   do i=1, A%n_s
+     sumrowsofA(A%row(i)) = sumrowsofA(A%row(i))+1
+   end do
+   do i=1, S%n_s
+     esize = esize + sumrowsofA(S%col(i))
+   end do
    esize = int(float(esize) * estsize_mult)
+   write(6,F04) 'Estimated number of non-zeros in B: ', esize
    
    deallocate( B%s  )
    deallocate( B%row)
