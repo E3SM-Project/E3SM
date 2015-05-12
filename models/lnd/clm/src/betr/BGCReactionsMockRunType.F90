@@ -137,7 +137,7 @@ implicit none
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_co2x, trc_name='CO2x', &
     is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp)  , &
     trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
-    trc_volatile_group_id = addone(itemp_vgrp))
+    trc_volatile_group_id = addone(itemp_vgrp), )
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ch4, trc_name='CH4', &
     is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &

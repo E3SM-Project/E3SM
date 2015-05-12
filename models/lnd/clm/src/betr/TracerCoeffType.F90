@@ -119,7 +119,7 @@ contains
     allocate(this%diffgas_topsno_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracer_groups));  this%diffgas_topsno_col        (:,:)   = nan
     allocate(this%diffgas_topsoi_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracer_groups));  this%diffgas_topsoi_col        (:,:)   = nan
     allocate(this%hmconductance_col          (begc:endc, lbj:ubj, 1:betrtracer_vars%ntracer_groups))         ;  this%hmconductance_col         (:,:,:) = nan
-    allocate(this%aqu2equilscef_col          (begc:endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracer_groups));this%aqu2equilscef_col        (:,:,:) = nan
+    allocate(this%aqu2equilsolidcef_col        (begc:endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracer_groups));this%aqu2equilsolidcef_col        (:,:,:) = nan
   end subroutine InitAllocate
   
   !-----------------------------------------------------------------------

@@ -225,13 +225,13 @@ module TracerParamsMod
      ntracer_groups       => betrtracer_vars%ntracer_groups               , & ! Integer[intent(in)], total number of tracers
      is_volatile          => betrtracer_vars%is_volatile                  , & ! logical[intent(in)], is a volatile tracer?
      is_h2o               => betrtracer_vars%is_h2o                       , & ! logical[intent(in)], is a h2o tracer?
-     tracer_solid_passive_diffus_scal_group => betrtracer_vars%tracer_solid_passive_diffus_scal_group, & !scaling factor for solid phase diffusivity
-     tracer_solid_passive_diffus_thc_group => betrtracer_vars%tracer_solid_passive_diffus_thc_group  , & !threshold for solid phase diffusivity     
      volatilegroupid      => betrtracer_vars%volatilegroupid              , & ! integer[intent(in)], location in the volatile vector
      air_vol              => waterstate_vars%air_vol_col                  , & ! volume possessed by air
      h2osoi_liqvol        => waterstate_vars%h2osoi_liqvol_col            , & ! soil volume possessed by liquid water
-     altmax               => canopystate_vars%altmax_col          , & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw                             
-     altmax_lastyear      => canopystate_vars%altmax_lastyear_col , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth o     
+     altmax               => canopystate_vars%altmax_col                  , & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw                             
+     altmax_lastyear      => canopystate_vars%altmax_lastyear_col         , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth o     
+     tracer_solid_passive_diffus_scal_group => betrtracer_vars%tracer_solid_passive_diffus_scal_group, & !scaling factor for solid phase diffusivity
+     tracer_solid_passive_diffus_thc_group => betrtracer_vars%tracer_solid_passive_diffus_thc_group  , & !threshold for solid phase diffusivity     
      tau_gas              => tau_soi%tau_gas                              , & ! real(r8)[intent(in)], gaseous tortuosity
      tau_liq              => tau_soi%tau_liq                                & ! real(r8)[intent(in)], aqueous tortuosity     
    )
@@ -565,7 +565,7 @@ module TracerParamsMod
     air_vol              => waterstate_vars%air_vol_col                  , & !Input: [real(r8)(:,:)]
     bunsencef_col        => tracercoeff_vars%bunsencef_col               , & !Input: [real(r8)(:,:)]
     aqu2bulkcef_mobile   => tracercoeff_vars%aqu2bulkcef_mobile_col      , & !Output:[real(r8)(:,:)]
-    aqu2equilscef        => tracercoeff_vars%aqu2equilscef_col           , & !Input: [real(r8)(:,:)]
+    aqu2equilsolidcef    => tracercoeff_vars%aqu2equilsolidcef_col       , & !Input: [real(r8)(:,:)]
     gas2bulkcef_mobile   => tracercoeff_vars%gas2bulkcef_mobile_col        & !Output:[real(r8)(:,:)]
    )
    
@@ -588,9 +588,9 @@ module TracerParamsMod
 
             if(is_h2o(trcid))then
               !for water tracer, I assume the three phases are in equilibrium, such that
-              aqu2bulkcef_mobile(c,n,j)= aqu2bulkcef_mobile(c,n,j) + aqu2equilscef(c,n,adsorbgroupid(trcid))
+              aqu2bulkcef_mobile(c,n,j)= aqu2bulkcef_mobile(c,n,j) + aqu2equilsolidcef(c,n,adsorbgroupid(trcid))
               
-              gas2bulkcef_mobile(c,n,k) = gas2bulkcef_mobile(c,n,k)+ aqu2equilscef(c,n,adsorbgroupid(trcid)) * bunsencef_col(c,n,k) 
+              gas2bulkcef_mobile(c,n,k) = gas2bulkcef_mobile(c,n,k)+ aqu2equilsolidcef(c,n,adsorbgroupid(trcid)) * bunsencef_col(c,n,k) 
             endif
             
             !correct for impermeable layer, to avoid division by zero in doing diffusive transport
@@ -1566,7 +1566,7 @@ module TracerParamsMod
             c = filter(fc)
             if(j>=jtops(c))then
               alpha_sl = get_equi_sl_h2oiso_fractionation(betrtracer_vars%id_trc_o18_h2o, t_soisno(c,j), betrtracer_vars)
-              aqu2equilscef_col(c,j, betrtracer_vars%id_trc_o18_h2o_ice) = alpha_sl * h2osoi_ice(c,j) / (denh2o * dz(c,j))
+              aqu2equilsolidcef_col(c,j, betrtracer_vars%id_trc_o18_h2o_ice) = alpha_sl * h2osoi_ice(c,j) / (denh2o * dz(c,j))
             endif
           enddo
         enddo
