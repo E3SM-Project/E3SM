@@ -2134,6 +2134,7 @@ SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
    do i=1, S%n_s
      esize = esize + sumrowsofA(S%col(i))
    end do
+   deallocate(sumrowsofA)
    esize = int(float(esize) * estsize_mult)
    write(6,F04) 'Estimated number of non-zeros in B: ', esize
    
