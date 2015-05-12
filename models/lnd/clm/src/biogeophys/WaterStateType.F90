@@ -112,8 +112,8 @@ contains
     type(bounds_type) , intent(in)    :: bounds  
     real(r8)          , intent(inout) :: h2osno_input_col(bounds%begc:)
     real(r8)          , intent(inout) :: snow_depth_input_col(bounds%begc:)
-    real(r8)          , intent(inout) :: watsat_col(bounds%begc:, 1:)          ! volumetric soil water at saturation (porosity)
-    real(r8)          , intent(inout) :: t_soisno_col(bounds%begc:, -nlevsno+1:) ! col soil temperature (Kelvin)
+    real(r8)          , intent(inout)    :: watsat_col(bounds%begc:bounds%endc, 1:nlevgrnd)          ! volumetric soil water at saturation (porosity)
+    real(r8)          , intent(inout)    :: t_soisno_col(bounds%begc:bounds%endc, -nlevsno+1:nlevgrnd) ! col soil temperature (Kelvin)
 
     call this%InitAllocate(bounds) 
 
