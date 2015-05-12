@@ -1546,7 +1546,7 @@ module TracerParamsMod
    type(betrtracer_type)     , intent(in) :: betrtracer_vars   
    real(r8)                  , intent(in) :: h2osoi_ice(bounds%begc: , lbj: )
    real(r8)                  , intent(in) :: dz(bounds%begc: , lbj: )
-   real(r8)                  , intent(inout) :: aqu2equilscef_col(bounds%begc:bounds%endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracers)
+   real(r8)                  , intent(inout) :: aqu2equilscef_col(bounds%begc:bounds%endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracer_groups)
 
    real(r8) :: alpha_sl
    integer  :: fc, c, j

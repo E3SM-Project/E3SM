@@ -857,7 +857,7 @@ contains
   real(r8), allocatable :: dmass(:, : )
   real(r8), allocatable :: local_source(:, :, :)
 
-  real(r8) :: mass0
+  real(r8) :: mass0,mass1
   real(r8), parameter :: err_relative_threshold=1.e-2_r8 !relative error threshold
   real(r8), parameter :: err_dif_min = 1.e-12_r8  !minimum absolute error
   
@@ -998,6 +998,7 @@ contains
             endif
 
             !do error budget for the calculation
+            mass0=dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,trcid),y=dz(c,jtops(c):ubj))
 
             call daxpy(ubj-jtops(c)+1, 1._r8, dtracer(c,jtops(c):ubj, k), 1, tracer_conc_mobile_col(c,jtops(c):ubj,trcid),1)
           
@@ -1005,10 +1006,10 @@ contains
           
             err_tracer(c, k) = dmass(c, k)-diff_surf(c, k) *dtime_loc(c) 
 
-            mass0=dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,trcid),y=dz(c,jtops(c):ubj))
+            mass1=dot_sum(x=tracer_conc_mobile_col(c,jtops(c):ubj,trcid),y=dz(c,jtops(c):ubj))
 
             !calculate relative error, defined as the ratio between absolute error with respect to surface flux
-            if(abs(err_tracer(c, k))<err_dif_min .or.  abs(err_tracer(c, k))/(mass0+1.e-10_r8) < 1.e-10_r8)then
+            if(abs(err_tracer(c, k))<err_dif_min .or.  abs(err_tracer(c, k))/(mass1+1.e-10_r8) < 1.e-10_r8)then
               !when the absolute value is too small, set relative error to 
               err_relative = err_relative_threshold*0.999_r8   
             else
@@ -1024,7 +1025,7 @@ contains
               endif
             else
               !something is wrong, write error information
-              write(iulog,*),'mass bal error dif '//tracernames(trcid)
+              write(iulog,*),'mass bal error dif '//tracernames(trcid), mass0,mass1
               write(iulog,*)'err=',err_tracer(c,k),dmass(c,k), ' dif=',diff_surf(c,k)*dtime_loc(c), ' prod=',dot_sum(x=local_source(c,jtops(c):ubj,k),y=dz(c,jtops(c):ubj))*dtime_loc(c)
               call endrun('mass balance error for tracer '//tracernames(trcid)//' in '//trim(subname)//errMsg(__FILE__, __LINE__))
             endif

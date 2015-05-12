@@ -66,9 +66,10 @@ contains
   begc = bounds%begc; endc= bounds%endc
     
   allocate(this%tracer_gwdif_concflux_top_col  (begc:endc, 1:2, 1:betrtracer_vars%ntracers))    ! 1: values at previous time step, 2: values at current time step
-  allocate(this%condc_toplay_col         (begc:endc, 1:betrtracer_vars%ntracers))
-  allocate(this%topbc_type               (1:betrtracer_vars%ntracers))
-  allocate(this%bot_concflux_col         (begc:endc, 1:2, 1:betrtracer_vars%ntracers))    ! 1: values at previous time step, 2: values at current time step
+  allocate(this%bot_concflux_col               (begc:endc, 1:2, 1:betrtracer_vars%ntracers))    ! 1: values at previous time step, 2: values at current time step
+
+  allocate(this%condc_toplay_col         (begc:endc, 1:betrtracer_vars%ntracer_groups))
+  allocate(this%topbc_type               (1:betrtracer_vars%ntracer_groups))
   allocate(this%jtops_col                (begc:endc))
   end subroutine InitAllocate
   
