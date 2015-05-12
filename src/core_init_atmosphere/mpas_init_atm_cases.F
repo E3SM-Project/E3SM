@@ -2614,6 +2614,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: p_fg
       real (kind=RKIND), dimension(:,:), pointer :: st_fg
       real (kind=RKIND), dimension(:,:), pointer :: sm_fg
+      real (kind=RKIND), dimension(:), pointer :: soilz
 
       call mpas_pool_get_config(configs, 'config_met_prefix', config_met_prefix)
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
@@ -3156,6 +3157,14 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
 
       call read_met_close()
 
+      if (.not. allocated(maskslab)) then
+         write(0,*) '********************************************************************************'
+         write(0,*) 'LANDSEA field not found in  meteorological data file '//   &
+                     trim(config_met_prefix)//':'//config_start_time(1:13)
+         write(0,*) '********************************************************************************'
+         call mpas_dmpar_abort(dminfo)
+      end if
+
       edge_mask(:) = 1
 
 
@@ -3277,7 +3286,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
             else if (field % iproj == PROJ_GAUSS) then
                call map_set(PROJ_GAUSS, proj, &
                             nlat = nint(field % deltalat), &
-                            loninc = real(field % deltalon,RKIND), &
+                            loninc = 360.0_RKIND / real(field % nx,RKIND), &
                             lat1 = real(field % startlat,RKIND), &
                             lon1 = real(field % startlon,RKIND))
 !                            nxmax = nint(360.0 / field % deltalon), &
@@ -3785,9 +3794,17 @@ write(0,*) 'Interpolating SKINTEMP'
                      call latlon_to_ij(proj, lat, lon, x, y)
                   end if
                   if (ndims == 1) then
-                     destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     if (maskval /= -1.0) then
+                        destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     else
+                        destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                     end if
                   else if (ndims == 2) then
-                     destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     if (maskval /= -1.0) then
+                        destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     else
+                        destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                     end if
                   end if
                else
                   if (ndims == 1) then
@@ -3808,14 +3825,41 @@ write(0,*) 'Interpolating SKINTEMP'
 
       call read_met_close()
 
-      ! Fix for isobaric data
-      if (minval(p_fg(:,:)) == 0.0) then
+
+      !
+      ! Check how many distinct levels we actually found in the meteorological data
+      !
+      do k=1,config_nfglevels
+         if (vert_level(k) == -1.0) exit 
+      end do
+      nfglevels_actual = k-1
+      write(0,*) '*************************************************'
+      write(0,*) 'Found ', nfglevels_actual, ' levels in the first-guess data'
+      write(0,*) '*************************************************'
+
+
+      ! 
+      ! For isobaric data, fill in the 3-d pressure field; otherwise, ensure
+      ! that the surface pressure and height fields are filled in
+      ! 
+      if (minval(p_fg(1:nfglevels_actual,1:nCellsSolve)) == 0.0 .and. &
+          maxval(p_fg(1:nfglevels_actual,1:nCellsSolve)) == 0.0) then
          write(0,*) 'Setting pressure field for isobaric data'
          do k=1,config_nfglevels
             if (vert_level(k) /= 200100.0) then
                p_fg(k,:) = vert_level(k)
             else
                p_fg(k,:) = psfc(:)
+            end if
+         end do
+      else
+         call mpas_pool_get_array(fg, 'z', z_fg)
+         call mpas_pool_get_array(fg, 'soilz', soilz)
+         write(0,*) 'Assuming model-level input data'
+         do k=1,config_nfglevels
+            if (vert_level(k) == 200100.0) then
+               p_fg(k,:) = psfc(:)
+               z_fg(k,:) = soilz(:)
             end if
          end do
       end if
@@ -3842,7 +3886,10 @@ do iCell=1,nCells
       end do
 
       do k = 1, config_nfgsoillevels
-         if (sm_fg(k,iCell) <= 0.0) write(0,*) 'Bad sm_fg ', k, iCell
+         if (sm_fg(k,iCell) <= 0.0) then
+            write(0,*) 'Bad sm_fg ', sm_fg(k,iCell), k, iCell
+            sm_fg(k,iCell) = 0.001
+         end if
       end do
       !LDF end.
 
@@ -3958,23 +4005,11 @@ write(0,*) 'PROCESSING SEAICE'
       ! Compute normal wind component and store in fg % u
       !  
       do iEdge=1,nEdges
-         do k=1,config_nfglevels
+         do k=1,nfglevels_actual
             u_fg(k,iEdge) = cos(angleEdge(iEdge)) * u_fg(k,iEdge) &
                           + sin(angleEdge(iEdge)) * v_fg(k,iEdge)
          end do
       end do
-
-
-      !
-      ! Check how many distinct levels we actually found in the meteorological data
-      !
-      do k=1,config_nfglevels
-         if (vert_level(k) == -1.0) exit 
-      end do
-      nfglevels_actual = k-1
-      write(0,*) '*************************************************'
-      write(0,*) 'Found ', nfglevels_actual, ' levels in the first-guess data'
-      write(0,*) '*************************************************'
 
       !  
       ! Vertically interpolate meteorological data
