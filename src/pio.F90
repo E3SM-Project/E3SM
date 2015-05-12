@@ -27,7 +27,7 @@ module pio
        pio_global, pio_char, pio_write, pio_nowrite, pio_clobber, pio_noclobber, &
        pio_max_name, pio_max_var_dims, pio_rearr_subset, pio_rearr_box, &
 #if defined(_NETCDF) || defined(_PNETCDF)
-       pio_nofill, pio_unlimited, &
+       pio_nofill, pio_unlimited, pio_fill_int, pio_fill_double, pio_fill_float, &
 #endif
        pio_64bit_offset, pio_64bit_data, &
        pio_internal_error, pio_bcast_error, pio_return_error

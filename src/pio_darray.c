@@ -1211,6 +1211,63 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
 	 piomemerror(*ios,rlen*((size_t) tsize), __FILE__,__LINE__);
        }
      }
+    // need to prefill fillvalue
+    nc_type nctype;
+    int errmethod, ierr;
+    errmethod = PIOc_Set_File_Error_Handling(ncid, PIO_BCAST_ERROR);
+    ierr = PIOc_inq_att(ncid, vid, "_FillValue", &nctype, NULL);
+    PIOc_Set_File_Error_Handling(ncid, errmethod);
+    if(ierr == PIO_NOERR){
+      void *fillval;
+      switch(nctype){
+      case NC_INT:
+	fillval = bget(4);
+	PIOc_get_att_int(ncid, vid, "_FillValue", (int *) fillval);
+	for(int i=0;i<arraylen;i++){
+	  ((int *) array)[i]= *((int *) fillval);
+	}
+	break;
+      case NC_FLOAT:
+	fillval = bget(4);
+	PIOc_get_att_float(ncid, vid, "_FillValue", (float *) fillval);
+	for(int i=0;i<arraylen;i++){
+	  ((float *) array)[i]= *((float *) fillval);
+	}
+	break;
+      case NC_DOUBLE:
+	fillval = bget(8);
+	PIOc_get_att_double(ncid, vid, "_FillValue", (double *) fillval);
+	for(int i=0;i<arraylen;i++){
+	  ((double *) array)[i]= *((double *) fillval);
+	}
+	break;
+      default:
+	piodie("Unrecognized _Fillvalue type in read_darray",__FILE__,__LINE__);
+      }
+      brel(fillval);
+    }else{  // use  the default netcdf fill value
+      vtype = (MPI_Datatype) iodesc->basetype;
+      if(vtype == MPI_INTEGER){
+	for(int i=0;i<arraylen;i++){
+	  ((int *) array)[i]= PIO_FILL_INT;
+	}
+      }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
+	for(int i=0;i<arraylen;i++){
+	  ((float *) array)[i]= PIO_FILL_FLOAT;
+	}
+      }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
+	for(int i=0;i<arraylen;i++){
+	  ((double *) array)[i]= PIO_FILL_DOUBLE;
+	}
+      }else{
+	piodie("Unrecognized _Fillvalue type in read_darray",__FILE__,__LINE__);
+      }
+    }
+
+
+
+
+
   }else{
     iobuf = array;
   }

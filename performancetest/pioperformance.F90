@@ -141,9 +141,7 @@ contains
     integer :: nv, mode
     integer,  parameter :: c0 = -1
     double precision, parameter :: cd0 = 1.0e30
-    integer, parameter :: ifill=-1
-    real, parameter :: rfill=-1.0e16
-    double precision, parameter :: dfill=-9.99d-38
+
 
     nullify(compmap)
 
@@ -184,9 +182,9 @@ contains
        allocate(dfld(maplen,nvars))
        allocate(dfld_in(maplen,nvars))
 
-       ifld = ifill
-       rfld = rfill
-       dfld = dfill
+       ifld = PIO_FILL_INT
+       rfld = PIO_FILL_FLOAT
+       dfld = PIO_FILL_DOUBLE
        do nv=1,nvars
           do j=1,maplen
 	     if(compmap(j) > 0) then
@@ -243,9 +241,9 @@ contains
                       call PIO_setframe(File, vari(nv), frame)
                       call PIO_setframe(File, varr(nv), frame)
                       call PIO_setframe(File, vard(nv), frame)
-                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= ifill)
-                      call pio_write_darray(File, varr(nv), iodesc_r4, rfld(:,nv)    , ierr, fillval= rfill)
-                      call pio_write_darray(File, vard(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval= dfill)
+                      call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= PIO_FILL_INT)
+                      call pio_write_darray(File, varr(nv), iodesc_r4, rfld(:,nv)    , ierr, fillval= PIO_FILL_FLOAT)
+                      call pio_write_darray(File, vard(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval= PIO_FILL_DOUBLE)
                    enddo
 ! multiversion  
 !                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
@@ -315,12 +313,12 @@ contains
                                print *,__LINE__,'Int: ',mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
                             endif
                             errorcnt = errorcnt+1
+
                          else if(rfld(j,nv) /= rfld_in(j,nv) ) then
                             if(errorcnt < 10) then
                                print *,__LINE__,'Real:', mype,j,nv,rfld(j,nv),rfld_in(j,nv),compmap(j)
                             endif
                             errorcnt = errorcnt+1
-                            
                          else if(dfld(j,nv) /= dfld_in(j,nv) ) then
                             if(errorcnt < 10) then
                                print *,__LINE__,'Dbl:',mype,j,nv,dfld(j,nv),dfld_in(j,nv),compmap(j)
@@ -388,11 +386,16 @@ contains
     do nv=1,nvars
        write(varname,'(a,i4.4)') 'vari',nv
        iostat = PIO_def_var(File, varname, PIO_INT, dimid, vari(nv))
+       iostat = PIO_put_att(File, vari(nv), "_FillValue", PIO_FILL_INT);
        write(varname,'(a,i4.4)') 'varr',nv
        iostat = PIO_def_var(File, varname, PIO_REAL, dimid, varr(nv))
+       iostat = PIO_put_att(File, varr(nv), "_FillValue", PIO_FILL_FLOAT);
        write(varname,'(a,i4.4)') 'vard',nv
        iostat = PIO_def_var(File, varname, PIO_DOUBLE, dimid, vard(nv))
+       iostat = PIO_put_att(File, vard(nv), "_FillValue", PIO_FILL_DOUBLE);
     enddo
+
+
 
     iostat = PIO_enddef(File)
 
