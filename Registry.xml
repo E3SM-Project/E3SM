@@ -628,7 +628,7 @@ is the value of that variable from the *previous* time level!
 		     description="elevation at top of ice on vertices" packages="SIAvelocity"
 		/>
 		<var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
-		     units="m m^{-1}"  description="normal surface slope on edges" packages="SIAvelocity"
+		     units="m m^{-1}"  description="normal surface slope on edges" packages="SIAvelocity;calcDiffusivity"
 		/>
 		<var name="tangentSlopeEdge"            type="real"     dimensions="nEdges Time"
 		     units="m m^{-1}"  description="tangent surface slope on edges" packages="SIAvelocity"
