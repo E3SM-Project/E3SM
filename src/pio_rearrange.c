@@ -1336,7 +1336,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   // Now pass the compmap, skipping the holes
 
   PIO_Offset *shrtmap;
-  if(maplen>iodesc->scount[0]){
+  if(maplen>iodesc->scount[0] && iodesc->scount[0]>0){
     shrtmap = (PIO_Offset *) bget(iodesc->scount[0]*pio_offset_size);
     if(shrtmap == NULL){
       piomemerror(ios,iodesc->scount[0] * pio_offset_size, __FILE__,__LINE__);
