@@ -2122,7 +2122,7 @@ SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
    !--- Compute memory needed for non-zero entries in B
    ! Algorithm:
    ! 1. Compute vector a such that a(i) = number of non-zero columns in row i of A
-   ! 2. Compute matrix S' such that S'(i,j) = 1 if B != 0, otherwise S'(i,j) = 0
+   ! 2. Compute matrix S' such that S'(i,j) = 1 if S != 0, otherwise S'(i,j) = 0
    ! 3. esize = sum(S' * a)
    ! (Note that we do not explicitly form S')
    allocate(sumrowsofA(A%n_b))
