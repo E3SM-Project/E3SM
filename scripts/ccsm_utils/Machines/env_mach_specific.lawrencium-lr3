@@ -6,7 +6,7 @@ module load cmake
 module load perl xml-libxml switch
 
 if ( $COMPILER == "intel" ) then
-    module load intel
+    module load intel/2015.0.090
     module load openmpi
     module load netcdf/4.3.2-intel-p
     module load mkl
