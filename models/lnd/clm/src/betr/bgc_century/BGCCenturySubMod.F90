@@ -1809,7 +1809,7 @@ module BGCCenturySubMod
       
       tot_demand= (k_nit(c,j) * smin_nh4_vr(c,j) + decomp_nh4_immob(c,j) + plant_ndemand(c,j))*dtime
       
-      nh4_compet(c,j) = safe_div(smin_nh4_vr(c,j),tot_demand)
+      nh4_compet(c,j) = min(safe_div(smin_nh4_vr(c,j),tot_demand),1._r8)
       
     enddo
   enddo
