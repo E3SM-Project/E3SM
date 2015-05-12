@@ -725,11 +725,10 @@ contains
             if(l>=jtops(c))tracer_conc_mobile_col(c,l,trcid)=trc_conc_out(c,l,kk)
           enddo
         enddo
+        transp_mass(:,kk) = 0._r8
         if(vtrans_scal(trcid)>0._r8)then
           call calc_root_uptake_as_perfect_sink(bounds, lbj, ubj, num_soilc, filter_soilc, dtime_loc, dz, qflx_rootsoi_local, update_col, &
           halfdt_col, tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,trcid), transp_mass(bounds%begc:bounds%endc, kk))
-        else
-          transp_mass(c,kk) = 0._r8
         endif
       enddo
       
@@ -993,6 +992,9 @@ contains
             if(topbc_type(j)==bndcond_as_conc)then
               diff_surf(c, k) = -condc_toplay(c,j) * (tracer_conc_mobile_col(c,jtops(c),trcid)/Rfactor(c,jtops(c),j) - tracer_gwdif_concflux_top(c,1,trcid) + &
                   get_cntheta()*(dtracer(c,jtops(c),k)/Rfactor(c,jtops(c),j)+tracer_gwdif_concflux_top(c,1,trcid)-tracer_gwdif_concflux_top(c,2,trcid)))                  
+              if(c==764)then
+                write(iulog,*)'cond',condc_toplay(c,j), tracer_conc_mobile_col(c,jtops(c),trcid), tracer_gwdif_concflux_top(c,2,trcid), Rfactor(c,jtops(c),j),dtracer(c,jtops(c),k)
+              endif
             else
               diff_surf(c, k) = 0.5_r8*(tracer_gwdif_concflux_top(c,1,trcid)+tracer_gwdif_concflux_top(c,2,trcid))
             endif
@@ -1025,7 +1027,7 @@ contains
               endif
             else
               !something is wrong, write error information
-              write(iulog,*),'mass bal error dif '//tracernames(trcid), mass0,mass1
+              write(iulog,*),'mass bal error dif '//tracernames(trcid), mass0,mass1,'col=',c,get_cntheta()
               write(iulog,*)'err=',err_tracer(c,k),dmass(c,k), ' dif=',diff_surf(c,k)*dtime_loc(c), ' prod=',dot_sum(x=local_source(c,jtops(c):ubj,k),y=dz(c,jtops(c):ubj))*dtime_loc(c)
               call endrun('mass balance error for tracer '//tracernames(trcid)//' in '//trim(subname)//errMsg(__FILE__, __LINE__))
             endif

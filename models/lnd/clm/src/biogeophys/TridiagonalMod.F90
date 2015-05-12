@@ -151,44 +151,35 @@ contains
            ci = filter(fc)
            if(l_is_col_active(ci))then             
              if (j >= jtop(ci)) then
-               if (j /= jtop(ci)) then               
+               if(j == jtop(ci))then
+                 do k = 1, ntrcs
+                   u(ci,j,k) = r(ci,j,k)/bet(ci)
+                 enddo
+               else                
                  gam(ci,j) = c(ci,j-1) / bet(ci)
                  bet(ci) = b(ci,j) - a(ci,j) * gam(ci,j)
+                 do k = 1, ntrcs
+                   u(ci,j,k) = (r(ci,j, k) - a(ci,j)*u(ci,j-1, k)) / bet(ci)
+                 enddo
                end if
              end if
            endif   
         end do
     end do
 
-    do k = 1, ntrcs
-      do j = lbj, ubj
-        do fc = 1,numf
-           ci = filter(fc)
-           if(l_is_col_active(ci))then             
-             if (j >= jtop(ci)) then
-               if (j == jtop(ci)) then
-                 u(ci,j, k) = r(ci,j, k) / bet(ci)                                
-               else
-                 u(ci,j, k) = (r(ci,j, k) - a(ci,j)*u(ci,j-1, k)) / bet(ci)                 
-               endif
-             endif
-           endif
-        enddo
-      enddo  
-    enddo    
     
-    do k = 1, ntrcs
-      do j = ubj-1,lbj,-1
-        do fc = 1,numf
-           ci = filter(fc)
-           if(l_is_col_active(ci))then             
-             if (j >= jtop(ci)) then
+    do j = ubj-1,lbj,-1
+      do fc = 1,numf
+         ci = filter(fc)
+         if(l_is_col_active(ci))then             
+           if (j >= jtop(ci)) then
+             do k = 1, ntrcs
                u(ci,j, k) = u(ci,j, k) - gam(ci,j+1) * u(ci,j+1, k)
-             end if
-           endif   
-        end do
-      end do  
-    end do
+             enddo
+           end if
+         endif   
+      end do
+    end do  
 
     
   end subroutine Tridiagonal_mr

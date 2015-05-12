@@ -21,7 +21,7 @@
     real(r8), pointer :: aqu2neutralcef_col        (:,:,:)      !aqueous tracer into neutral aqueous tracer
     real(r8), pointer :: aqu2bulkcef_mobile_col    (:,:,:)      !coefficient to convert bulk concentration into aqueous phase, (nlevsno+nlevtrc_soil)
     real(r8), pointer :: gas2bulkcef_mobile_col    (:,:,:)      !coefficient to convert bulk concentration into gaseous phase, (nlevsno+nlevlak+nlevtrc_soil)
-    real(r8), pointer :: aqu2equilscef_col         (:,:,:)      !coefficient to convert solid phase (including ice) into aqueous phase
+    real(r8), pointer :: aqu2equilsolidcef_col     (:,:,:)      !coefficient to convert solid phase (including ice) into aqueous phase
     real(r8), pointer :: henrycef_col              (:,:,:)      !henry's law constant
     real(r8), pointer :: bunsencef_col             (:,:,:)      !bunsen solubility
     real(r8), pointer :: tracer_diffusivity_air_col(:,:)        !diffusivity in the air
@@ -119,7 +119,7 @@ contains
     allocate(this%diffgas_topsno_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracer_groups));  this%diffgas_topsno_col        (:,:)   = nan
     allocate(this%diffgas_topsoi_col         (begc:endc,          1:betrtracer_vars%nvolatile_tracer_groups));  this%diffgas_topsoi_col        (:,:)   = nan
     allocate(this%hmconductance_col          (begc:endc, lbj:ubj, 1:betrtracer_vars%ntracer_groups))         ;  this%hmconductance_col         (:,:,:) = nan
-    allocate(this%aqu2equilsolidcef_col        (begc:endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracer_groups));this%aqu2equilsolidcef_col        (:,:,:) = nan
+    allocate(this%aqu2equilsolidcef_col      (begc:endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracer_groups));this%aqu2equilsolidcef_col        (:,:,:) = nan
   end subroutine InitAllocate
   
   !-----------------------------------------------------------------------

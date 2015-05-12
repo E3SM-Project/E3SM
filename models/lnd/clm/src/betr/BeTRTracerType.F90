@@ -189,7 +189,6 @@ module BeTRTracerType
   
   allocate(this%volatileid         (this%ngwmobile_tracers));    this%volatileid(:)         = nanid
   allocate(this%volatilegroupid    (this%ngwmobile_tracers));    this%volatilegroupid(:)    = nanid
-  allocate(this%)
   allocate(this%h2oid              (this%nh2o_tracers));         this%h2oid(:)              = nanid
   allocate(this%tracernames        (this%ntracers));             this%tracernames(:)        = ''
   allocate(this%vtrans_scal        (this%ngwmobile_tracers));    this%vtrans_scal(:)        = 0._r8   !no transport through xylem transpiration

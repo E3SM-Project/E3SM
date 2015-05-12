@@ -1203,7 +1203,7 @@ module TracerParamsMod
         temperature_vars%t_soisno_col(bounds%begc:bounds%endc, lbj:ubj)            , &        
         waterstate_vars%h2osoi_ice_col(bounds%begc:bounds%endc,lbj:ubj)            , &
         dz(bounds%begc:bounds%endc, lbj:ubj)                                   , &
-        betrtracer_vars, tracercoeff_vars%aqu2equilscef_col(bounds%begc:bounds%endc, lbj:ubj,:))
+        betrtracer_vars, tracercoeff_vars%aqu2equilsolidcef_col(bounds%begc:bounds%endc, lbj:ubj,:))
    endif
    
    !compute phase conversion coefficients   
@@ -1525,7 +1525,7 @@ module TracerParamsMod
 
    !------------------------------------------------------------------------ 
    subroutine calc_equil_to_liquid_convert_coeff(bounds, lbj, ubj, jtops, numf, filter, t_soisno, h2osoi_ice, dz, &
-       betrtracer_vars, aqu2equilscef_col)
+       betrtracer_vars, aqu2equilsolidcef_col)
    !
    ! DESCRIPTION
    ! calculate partition parameter between solid and aqueous phase tracers
@@ -1546,7 +1546,7 @@ module TracerParamsMod
    type(betrtracer_type)     , intent(in) :: betrtracer_vars   
    real(r8)                  , intent(in) :: h2osoi_ice(bounds%begc: , lbj: )
    real(r8)                  , intent(in) :: dz(bounds%begc: , lbj: )
-   real(r8)                  , intent(inout) :: aqu2equilscef_col(bounds%begc:bounds%endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracer_groups)
+   real(r8)                  , intent(inout) :: aqu2equilsolidcef_col(bounds%begc:bounds%endc, lbj:ubj, 1:betrtracer_vars%nsolid_equil_tracer_groups)
 
    real(r8) :: alpha_sl
    integer  :: fc, c, j

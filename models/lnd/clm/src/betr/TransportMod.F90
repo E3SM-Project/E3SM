@@ -339,6 +339,7 @@ module TransportMod
    real(r8) :: at(bounds%begc:bounds%endc, lbj:ubj)  !tridiagonal matrix element a
    real(r8) :: bt(bounds%begc:bounds%endc, lbj:ubj)  !tridiagonal matrix element b
    real(r8) :: ct(bounds%begc:bounds%endc, lbj:ubj)  !tridiagonal matrix element c  
+   real(r8) :: dtracer1(bounds%begc:bounds%endc, lbj:ubj)
    character(len=255) :: subname = 'DiffusTransp_gw'
    integer :: kk, fc, c
 
@@ -378,7 +379,16 @@ module TransportMod
    !enddo      
    !calculate the change to tracer      
    call Tridiagonal (bounds, lbj, ubj, jtop, numfl, filter, ntrcs, at, bt, ct, rt, dtracer, update_col)
-   
+  
+   call Tridiagonal (bounds, lbj, ubj, jtop, numfl, filter, at,bt, ct,rt(:,:,1),dtracer1, update_col)
+   do fc = 1, numfl
+     c = filter(fc)
+     if(c==764)then
+       do kk = jtop(c), ubj
+         write(iulog,*),kk,dtracer(c,kk,1),dtracer1(c,kk)
+       enddo
+     endif
+   enddo
    end subroutine DiffusTransp_gw
 
 !-------------------------------------------------------------------------------
