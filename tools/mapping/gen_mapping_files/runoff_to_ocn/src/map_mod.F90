@@ -2022,7 +2022,7 @@ END FUNCTION nSij
 
 !===============================================================================
 
-SUBROUTINE map_matMatMult(A,B,S)
+SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
 
    implicit none
 
@@ -2031,6 +2031,10 @@ SUBROUTINE map_matMatMult(A,B,S)
    type(sMatrix),intent(in )   :: S  ! sparse matrix data type: B=SA
    type(sMatrix),intent(inout) :: B  ! sparse matrix data type: B=SA
 
+   ! multiplier on the estimated size of B. This can be given a value greater than 1 to
+   ! avoid "esize too small" errors.
+   real(r8),intent(in) :: estsize_mult
+   
    !--- local ---
    integer    :: ib,jb             ! index wrt B(j,i)
    integer    :: ia,ja             ! index wrt A(j,i)
@@ -2117,7 +2121,8 @@ SUBROUTINE map_matMatMult(A,B,S)
    !--- array size estimate ---
    esize = (S%n_s/min(S%n_b,A%n_s)) * A%n_s * 2
    esize = int(float(esize) * 1.2)  ! this was necessary for some paleo mapping file - kauff
-
+   esize = int(float(esize) * estsize_mult)
+   
    deallocate( B%s  )
    deallocate( B%row)
    deallocate( B%col)

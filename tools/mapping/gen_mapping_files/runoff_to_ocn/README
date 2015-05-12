@@ -16,7 +16,7 @@ HOW TO USE THIS TOOL
 ====================
 
 1) Build (in the src/ directory)
-2) Setup a namelist file (runoff.nml)
+2) Setup a namelist file (runoff_map.nml)
 3) Run ./runoff_map
 
 ============
@@ -83,12 +83,14 @@ The namelist looks like this
 where
 
 Input grid files:
-  file_roff =   an ascii rdirc file OR an obs rtm file OR a script grid file
+  file_roff =   an ascii rdirc file OR an obs rtm file OR a scrip grid file
   gridtype  =  type of file_roff file, "rtm" or "obs" or "scrip"
      rtm is a 720 x 360 grid ascii file
      obs is a netcdf file with xc, yc, xv, yv, mask and area variable names
-     scrip is a scrip type grid file
-  file_ocn  =  a scrip ocean grid file.
+     scrip is a scrip type grid file (must contain grid_area along with typical
+       scrip grid variables)
+  file_ocn  =  a scrip ocean grid file (must contain grid_area along with
+    typical scrip grid variables)
 
 Input parameters:
   eFold  = smoothing eFold distance in meters
@@ -111,5 +113,25 @@ HOW TO RUN
 ==========
 
 Execute the binary ./runoff_map (again, this will read the runoff_map.nml
-namelist file - see bove section for tips on creating the file)
+namelist file - see above section for tips on creating the file)
 
+============================================
+COMMON RUNTIME ISSUES, AND HOW TO SOLVE THEM
+============================================
+
+- "ERROR esize too small"
+
+  Cause: During step3, an estimate is made of the maximum size needed for the
+  resulting mapping matrix. This error will occur if the heuristic determines
+  too small of a size.
+
+  Solution: Set the variable step3_estsize_mult in your namelist file, to some
+  value greater than 1 (if this value is not specified, it is 1 by default). For
+  example, if you want to allow a 10x larger mapping matrix, set:
+
+    step3_estsize_mult = 10.
+
+  It is fine to set this larger than is needed, but doing so will result in a
+  larger memory requirement for this tool.
+
+  Then rerun step3.
