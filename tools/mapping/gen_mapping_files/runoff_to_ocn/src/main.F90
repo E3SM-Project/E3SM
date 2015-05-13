@@ -44,7 +44,7 @@ PROGRAM main
    logical        :: step2         ! gen smooth
    logical        :: step3         ! mat mult
    logical        :: lmake_rSCRIP  ! .true. => convert runoff grid to SCRIP
-   
+
    namelist / input_nml / &
       gridtype      &
    ,  file_roff     &
@@ -101,7 +101,7 @@ PROGRAM main
    step1         = .true.
    step2         = .true.
    step3         = .true.
-   
+
    ! These two variables typically don't appear in namelist
    lmake_rSCRIP  = .false.    
    file_roff_out = "runoff.nc"

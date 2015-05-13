@@ -2030,7 +2030,7 @@ SUBROUTINE map_matMatMult(A,B,S)
    type(sMatrix),intent(in )   :: A  ! sparse matrix data type: B=SA
    type(sMatrix),intent(in )   :: S  ! sparse matrix data type: B=SA
    type(sMatrix),intent(inout) :: B  ! sparse matrix data type: B=SA
-   
+
    !--- local ---
    integer    :: ib,jb             ! index wrt B(j,i)
    integer    :: ia,ja             ! index wrt A(j,i)
@@ -2132,7 +2132,7 @@ SUBROUTINE map_matMatMult(A,B,S)
    end do
    deallocate(sumrowsofA)
    write(6,F04) 'Estimated number of non-zeros in B: ', esize
-   
+
    deallocate( B%s  )
    deallocate( B%row)
    deallocate( B%col)
