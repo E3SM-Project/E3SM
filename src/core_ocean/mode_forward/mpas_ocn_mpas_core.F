@@ -225,6 +225,7 @@ module mpas_core
       call ocn_sea_ice_init(nVertLevels, err_tmp)
       err = ior(err, err_tmp)
 
+      write(6,*) 'calling ocn_analysis_init'
       call ocn_analysis_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
@@ -607,6 +608,7 @@ module mpas_core
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
+      write(6,*) 'calling ocn_analysis_compute_startup'
       call ocn_analysis_compute_startup(domain, stream_manager, err) 
 
       if (config_write_output_on_startup) then
@@ -662,7 +664,10 @@ module mpas_core
             block_ptr => block_ptr % next
          end do
       
+         write(6,*) 'calling ocn_analysis_compute_w_alarms'
          call ocn_analysis_compute_w_alarms(stream_manager, domain, err) 
+ 
+         write(6,*) 'calling ocn_analysis_write'
          call ocn_analysis_write(stream_manager, err)
 
          call mpas_timer_start('io_write', .false.)
@@ -965,6 +970,7 @@ module mpas_core
          inSituEOSActive = .true.
       end if
 
+      write(6,*) ' calling ocn_analysis_setup_packages'
       call ocn_analysis_setup_packages(configPool, packagePool, err_tmp)
       ierr = ior(ierr, err_tmp)
 
