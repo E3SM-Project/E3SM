@@ -72,6 +72,12 @@ module CNNitrogenFluxType
      real(r8), pointer :: harvest_n_to_litr_cel_n_col               (:,:)   ! col N fluxes associated with harvest to litter cellulose pool (gN/m3/s)
      real(r8), pointer :: harvest_n_to_litr_lig_n_col               (:,:)   ! col N fluxes associated with harvest to litter lignin pool (gN/m3/s)
      real(r8), pointer :: harvest_n_to_cwdn_col                     (:,:)   ! col N fluxes associated with harvest to CWD pool (gN/m3/s)
+     ! crop harvest
+     real(r8), pointer :: hrv_leafn_to_prod1n_patch                 (:)     ! crop leaf N harvested (gN/m2/s)
+     real(r8), pointer :: hrv_livestemn_to_prod1n_patch             (:)     ! crop stem N harvested (gN/m2/s)
+     real(r8), pointer :: hrv_grainn_to_prod1n_patch                (:)     ! crop grain N harvested (gN/m2/s)
+     real(r8), pointer :: hrv_cropn_to_prod1n_patch                 (:)     ! total amount of crop N harvested (gN/m2/s)
+     real(r8), pointer :: hrv_cropn_to_prod1n_col                   (:)     ! crop N harvest mortality to 1-yr product pool (gN/m2/s)
 
      ! fire N fluxes 
      real(r8), pointer :: m_decomp_npools_to_fire_vr_col            (:,:,:) ! col vertically-resolved decomposing N fire loss (gN/m3/s)
@@ -298,6 +304,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: dwt_nloss_col                             (:)     ! col (gN/m2/s) total nitrogen loss from product pools and conversion
 
      ! wood product pool loss fluxes
+     real(r8), pointer :: prod1n_loss_col                           (:)     ! col (gN/m2/s) decomposition loss from 1-yr crop product pool
      real(r8), pointer :: prod10n_loss_col                          (:)     ! col (gN/m2/s) decomposition loss from 10-yr wood product pool
      real(r8), pointer :: prod100n_loss_col                         (:)     ! col (gN/m2/s) decomposition loss from 100-yr wood product pool
      real(r8), pointer :: product_nloss_col                         (:)     ! col (gN/m2/s) total wood product nitrogen loss
@@ -402,6 +409,10 @@ contains
     allocate(this%hrv_livestemn_to_litter_patch             (begp:endp)) ; this%hrv_livestemn_to_litter_patch             (:) = nan
     allocate(this%hrv_deadstemn_to_prod10n_patch            (begp:endp)) ; this%hrv_deadstemn_to_prod10n_patch            (:) = nan
     allocate(this%hrv_deadstemn_to_prod100n_patch           (begp:endp)) ; this%hrv_deadstemn_to_prod100n_patch           (:) = nan
+    allocate(this%hrv_leafn_to_prod1n_patch                 (begp:endp)) ; this%hrv_leafn_to_prod1n_patch                 (:) = nan
+    allocate(this%hrv_livestemn_to_prod1n_patch             (begp:endp)) ; this%hrv_livestemn_to_prod1n_patch             (:) = nan
+    allocate(this%hrv_grainn_to_prod1n_patch                (begp:endp)) ; this%hrv_grainn_to_prod1n_patch                (:) = nan
+    allocate(this%hrv_cropn_to_prod1n_patch                 (begp:endp)) ; this%hrv_cropn_to_prod1n_patch                 (:) = nan
     allocate(this%hrv_livecrootn_to_litter_patch            (begp:endp)) ; this%hrv_livecrootn_to_litter_patch            (:) = nan
     allocate(this%hrv_deadcrootn_to_litter_patch            (begp:endp)) ; this%hrv_deadcrootn_to_litter_patch            (:) = nan
     allocate(this%hrv_retransn_to_litter_patch              (begp:endp)) ; this%hrv_retransn_to_litter_patch              (:) = nan
@@ -504,6 +515,7 @@ contains
     allocate(this%soyfixn_to_sminn_col          (begc:endc))    ; this%soyfixn_to_sminn_col          (:) = nan
     allocate(this%hrv_deadstemn_to_prod10n_col  (begc:endc))    ; this%hrv_deadstemn_to_prod10n_col  (:) = nan
     allocate(this%hrv_deadstemn_to_prod100n_col (begc:endc))    ; this%hrv_deadstemn_to_prod100n_col (:) = nan
+    allocate(this%hrv_cropn_to_prod1n_col       (begc:endc))    ; this%hrv_cropn_to_prod1n_col       (:) = nan
     allocate(this%sminn_to_plant_col            (begc:endc))    ; this%sminn_to_plant_col	     (:) = nan
     allocate(this%potential_immob_col           (begc:endc))    ; this%potential_immob_col           (:) = nan
     allocate(this%actual_immob_col              (begc:endc))    ; this%actual_immob_col              (:) = nan
@@ -511,6 +523,7 @@ contains
     allocate(this%net_nmin_col                  (begc:endc))    ; this%net_nmin_col                  (:) = nan
     allocate(this%denit_col                     (begc:endc))    ; this%denit_col		     (:) = nan
     allocate(this%supplement_to_sminn_col       (begc:endc))    ; this%supplement_to_sminn_col       (:) = nan
+    allocate(this%prod1n_loss_col               (begc:endc))    ; this%prod1n_loss_col               (:) = nan
     allocate(this%prod10n_loss_col              (begc:endc))    ; this%prod10n_loss_col              (:) = nan
     allocate(this%prod100n_loss_col             (begc:endc))    ; this%prod100n_loss_col	     (:) = nan
     allocate(this%product_nloss_col             (begc:endc))    ; this%product_nloss_col	     (:) = nan
@@ -1656,6 +1669,11 @@ contains
          avgflag='A', long_name='loss from 100-yr wood product pool', &
          ptr_col=this%prod100n_loss_col)
 
+    this%prod1n_loss_col(begc:endc) = spval
+    call hist_addfld1d (fname='PROD1N_LOSS', units='gN/m^2/s', &
+         avgflag='A', long_name='loss from 1-yr crop product pool', &
+         ptr_col=this%prod1n_loss_col)
+
     this%product_nloss_col(begc:endc) = spval
     call hist_addfld1d (fname='PRODUCT_NLOSS', units='gN/m^2/s', &
          avgflag='A', long_name='total N loss from wood product pools', &
@@ -2001,6 +2019,10 @@ contains
        this%hrv_livestemn_to_litter_patch(i)             = value_patch         
        this%hrv_deadstemn_to_prod10n_patch(i)            = value_patch        
        this%hrv_deadstemn_to_prod100n_patch(i)           = value_patch       
+       this%hrv_leafn_to_prod1n_patch(i)                 = value_patch
+       this%hrv_livestemn_to_prod1n_patch(i)             = value_patch
+       this%hrv_grainn_to_prod1n_patch(i)                = value_patch
+       this%hrv_cropn_to_prod1n_patch(i)                 = value_patch
        this%hrv_livecrootn_to_litter_patch(i)            = value_patch        
        this%hrv_deadcrootn_to_litter_patch(i)            = value_patch        
        this%hrv_retransn_to_litter_patch(i)              = value_patch    
@@ -2185,8 +2207,10 @@ contains
        this%soyfixn_to_sminn_col(i)          = value_column
        this%hrv_deadstemn_to_prod10n_col(i)  = value_column        
        this%hrv_deadstemn_to_prod100n_col(i) = value_column      
+       this%hrv_cropn_to_prod1n_col(i)       = value_column
        this%prod10n_loss_col(i)              = value_column
        this%prod100n_loss_col(i)             = value_column
+       this%prod1n_loss_col(i)               = value_column
        this%product_nloss_col(i)             = value_column
        this%potential_immob_col(i)           = value_column
        this%actual_immob_col(i)              = value_column
@@ -2311,7 +2335,8 @@ contains
     ! !USES:
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
-    use subgridAveMod , only: p2c 
+    use subgridAveMod , only: p2c
+    use pftvarcon     , only : npcropmin 
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -2339,6 +2364,11 @@ contains
        this%wood_harvestn_patch(p) = &
             this%hrv_deadstemn_to_prod10n_patch(p) + &
             this%hrv_deadstemn_to_prod100n_patch(p)
+       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+            this%wood_harvestn_patch(p) = &
+            this%wood_harvestn_patch(p) + &
+            this%hrv_cropn_to_prod1n_patch(p)
+       end if
 
        ! total pft-level fire N losses
        this%fire_nloss_patch(p) = &
@@ -2537,7 +2567,8 @@ contains
        ! total wood product N loss
        this%product_nloss_col(c) = &
             this%prod10n_loss_col(c) + &
-            this%prod100n_loss_col(c) 
+            this%prod100n_loss_col(c)+ &
+            this%prod1n_loss_col(c) 
     end do
 
     ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these

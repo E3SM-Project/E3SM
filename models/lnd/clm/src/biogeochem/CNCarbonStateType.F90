@@ -69,6 +69,8 @@ module CNCarbonStateType
      real(r8), pointer :: prod10c_col              (:)     ! col (gC/m2) wood product C pool, 10-year lifespan
      real(r8), pointer :: prod100c_col             (:)     ! col (gC/m2) wood product C pool, 100-year lifespan
      real(r8), pointer :: totprodc_col             (:)     ! col (gC/m2) total wood product C
+     ! pools for crop harvest
+     real(r8), pointer :: prod1c_col               (:)     ! col (gC/m2) crop product C pool, 1-year lifespan
 
      ! summary (diagnostic) state variables, not involved in mass balance
      real(r8), pointer :: dispvegc_patch           (:)     ! (gC/m2) displayed veg carbon, excluding storage and cpool
@@ -185,6 +187,7 @@ contains
     allocate(this%seedc_col                (begc :endc))                   ;     this%seedc_col                (:)   = nan
     allocate(this%prod10c_col              (begc :endc))                   ;     this%prod10c_col              (:)   = nan
     allocate(this%prod100c_col             (begc :endc))                   ;     this%prod100c_col             (:)   = nan
+    allocate(this%prod1c_col               (begc :endc))                   ;     this%prod1c_col               (:)   = nan
     allocate(this%totprodc_col             (begc :endc))                   ;     this%totprodc_col             (:)   = nan
     allocate(this%totlitc_col              (begc :endc))                   ;     this%totlitc_col              (:)   = nan
     allocate(this%totsomc_col              (begc :endc))                   ;     this%totsomc_col              (:)   = nan
@@ -780,6 +783,11 @@ contains
             avgflag='A', long_name='100-yr wood product C', &
             ptr_col=this%prod100c_col)
 
+       this%prod1c_col(begc:endc) = spval
+       call hist_addfld1d (fname='PROD1C', units='gC/m^2', &
+            avgflag='A', long_name='1-yr crop product C', &
+            ptr_col=this%prod1c_col)
+
        this%totprodc_col(begc:endc) = spval
        call hist_addfld1d (fname='TOTPRODC', units='gC/m^2', &
             avgflag='A', long_name='total wood product C', &
@@ -869,6 +877,11 @@ contains
             avgflag='A', long_name='C13 100-yr wood product C', &
             ptr_col=this%prod100c_col)
 
+       this%prod1c_col(begc:endc) = spval
+       call hist_addfld1d (fname='C13_PROD1C', units='gC13/m^2', &
+            avgflag='A', long_name='C13 1-yr crop product C', &
+            ptr_col=this%prod1c_col)
+
        this%totprodc_col(begc:endc) = spval
        call hist_addfld1d (fname='C13_TOTPRODC', units='gC13/m^2', &
             avgflag='A', long_name='C13 total wood product C', &
@@ -957,6 +970,11 @@ contains
        call hist_addfld1d (fname='C14_PROD100C', units='gC14/m^2', &
             avgflag='A', long_name='C14 100-yr wood product C', &
             ptr_col=this%prod100c_col)
+
+       this%prod1c_col(begc:endc) = spval
+       call hist_addfld1d (fname='C14_PROD1C', units='gC14/m^2', &
+            avgflag='A', long_name='C14 1-yr crop product C', &
+            ptr_col=this%prod1c_col)
 
        this%totprodc_col(begc:endc) = spval
        call hist_addfld1d (fname='C14_TOTPRODC', units='gC14/m^2', &
@@ -1184,6 +1202,7 @@ contains
           this%seedc_col(c)      = 0._r8
           this%prod10c_col(c)    = 0._r8
           this%prod100c_col(c)   = 0._r8
+          this%prod1c_col(c)     = 0._r8
           this%totprodc_col(c)   = 0._r8
 
        end if
@@ -1199,6 +1218,7 @@ contains
        this%seedc_col(c)      = 0._r8
        this%prod10c_col(c)    = 0._r8
        this%prod100c_col(c)   = 0._r8
+       this%prod1c_col(c)     = 0._r8
        this%totprodc_col(c)   = 0._r8
     end do
 
@@ -2284,6 +2304,12 @@ contains
     end if
 
     if (carbon_type == 'c12') then
+       call restartvar(ncid=ncid, flag=flag, varname='prod1c', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%prod1c_col)
+    end if
+
+    if (carbon_type == 'c12') then
        call restartvar(ncid=ncid, flag=flag, varname='totsomc', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%totsomc_col) 
@@ -2396,6 +2422,18 @@ contains
           endif
        end if
     endif
+
+    if (carbon_type == 'c13') then
+       call restartvar(ncid=ncid, flag=flag, varname='prod1c_13', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%prod1c_col)
+       if (flag=='read' .and. .not. readvar) then
+          if (c12_carbonstate_vars%prod1c_col(i) /= spval .and. &
+               .not. isnan( c12_carbonstate_vars%prod1c_col(i) ) ) then
+             this%prod1c_col(i) = c12_carbonstate_vars%prod1c_col(i) * c3_r2
+          endif
+       end if
+    end if
 
     !--------------------------------
     ! C14 column carbon state variables
@@ -2513,6 +2551,19 @@ contains
           endif
        end if
     endif
+
+    if ( carbon_type == 'c14' ) then
+       call restartvar(ncid=ncid, flag=flag, varname='prod1c_14', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%prod1c_col)
+       if (flag=='read' .and. .not. readvar) then
+          write(iulog,*) 'initializing this%prod1c_col with atmospheric c14 value'
+          if (c12_carbonstate_vars%prod1c_col(i) /= spval .and. &
+               .not. isnan(c12_carbonstate_vars%prod1c_col(i)) ) then
+             this%prod1c_col(i) = c12_carbonstate_vars%prod1c_col(i) * c14ratio
+          endif
+       end if
+    end if
 
     !--------------------------------
     ! Spinup state
@@ -2962,10 +3013,11 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 
-       ! total wood product carbon
+       ! total product carbon
        this%totprodc_col(c) = &
             this%prod10c_col(c)  + &
-            this%prod100c_col(c)	 
+            this%prod100c_col(c) + &
+            this%prod1c_col(c) 
 
        ! total ecosystem carbon, including veg but excluding cpool (TOTECOSYSC)
        this%totecosysc_col(c) = &
