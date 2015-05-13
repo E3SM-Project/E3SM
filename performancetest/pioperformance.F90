@@ -1,4 +1,6 @@
 #define VARINT 1 
+#define VARREAL 1
+#define VARDOUBLE 1
 program pioperformance
 #ifndef NO_MPIMOD
   use mpi
@@ -127,9 +129,9 @@ contains
     type(var_desc_t) :: vari(nvars), varr(nvars), vard(nvars)
     type(iosystem_desc_t) :: iosystem
     integer :: stride, n
-    integer, allocatable :: ifld(:,:), ifld_in(:,:)
-    real, allocatable :: rfld(:,:), rfld_in(:,:)
-    double precision, allocatable :: dfld(:,:), dfld_in(:,:)
+    integer, allocatable :: ifld(:,:), ifld_in(:,:,:)
+    real, allocatable :: rfld(:,:), rfld_in(:,:,:)
+    double precision, allocatable :: dfld(:,:), dfld_in(:,:,:)
     type(file_desc_t) :: File
     type(io_desc_t) :: iodesc_i4, iodesc_r4, iodesc_r8
     integer :: ierr
@@ -175,13 +177,13 @@ contains
 !       endif
     
        allocate(ifld(maplen,nvars))
-       allocate(ifld_in(maplen,nvars))
+       allocate(ifld_in(maplen,nvars,nframes))
 
        allocate(rfld(maplen,nvars))
-       allocate(rfld_in(maplen,nvars))
+       allocate(rfld_in(maplen,nvars,nframes))
 
        allocate(dfld(maplen,nvars))
-       allocate(dfld_in(maplen,nvars))
+       allocate(dfld_in(maplen,nvars,nframes))
 
        ifld = PIO_FILL_INT
        rfld = PIO_FILL_FLOAT
@@ -311,15 +313,15 @@ contains
                    do nv=1,nvars
 #ifdef VARINT
                       call PIO_setframe(File, vari(nv), frame)
-                      call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv), ierr)
+                      call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv,frame), ierr)
 #endif
 #ifdef VARREAL
                       call PIO_setframe(File, varr(nv), frame)
-                      call pio_read_darray(File, varr(nv), iodesc_r4, rfld_in(:,nv), ierr)
+                      call pio_read_darray(File, varr(nv), iodesc_r4, rfld_in(:,nv,frame), ierr)
 #endif
 #ifdef VARDOUBLE
                       call PIO_setframe(File, vard(nv), frame)
-                      call pio_read_darray(File, vard(nv), iodesc_r8, dfld_in(:,nv), ierr)
+                      call pio_read_darray(File, vard(nv), iodesc_r8, dfld_in(:,nv,frame), ierr)
 #endif
                    enddo
                 enddo
@@ -330,34 +332,36 @@ contains
                 wall(1) = wall(2)-wall(1)
                 call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, comm, ierr)
                 errorcnt = 0
-                do nv=1,nvars
-                   do j=1,maplen
-                      if(compmap(j)>0) then
+                do frame=1,nframes
+                   do nv=1,nvars
+                      do j=1,maplen
+                         if(compmap(j)>0) then
 #ifdef VARINT
-                         if(ifld(j,nv) /= ifld_in(j,nv)) then
-                            if(errorcnt < 10) then
-                               print *,__LINE__,'Int: ',mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
+                            if(ifld(j,nv) /= ifld_in(j,nv,frame)) then
+                               if(errorcnt < 10) then
+                                  print *,__LINE__,'Int: ',mype,j,nv,ifld(j,nv),ifld_in(j,nv,frame),compmap(j)
+                               endif
+                               errorcnt = errorcnt+1
                             endif
-                            errorcnt = errorcnt+1
-                         endif
 #endif
 #ifdef VARREAL
-                         if(rfld(j,nv) /= rfld_in(j,nv) ) then
-                            if(errorcnt < 10) then
-                               print *,__LINE__,'Real:', mype,j,nv,rfld(j,nv),rfld_in(j,nv),compmap(j)
+                            if(rfld(j,nv) /= rfld_in(j,nv,frame) ) then
+                               if(errorcnt < 10) then
+                                  print *,__LINE__,'Real:', mype,j,nv,rfld(j,nv),rfld_in(j,nv,frame),compmap(j)
+                               endif
+                               errorcnt = errorcnt+1                           
                             endif
-                            errorcnt = errorcnt+1                           
-                         endif
 #endif
 #ifdef VARDOUBLE
-                         if(dfld(j,nv) /= dfld_in(j,nv) ) then
-                            if(errorcnt < 10) then
-                               print *,__LINE__,'Dbl:',mype,j,nv,dfld(j,nv),dfld_in(j,nv),compmap(j)
+                            if(dfld(j,nv) /= dfld_in(j,nv,frame) ) then
+                               if(errorcnt < 10) then
+                                  print *,__LINE__,'Dbl:',mype,j,nv,dfld(j,nv),dfld_in(j,nv,frame),compmap(j)
+                               endif
+                               errorcnt = errorcnt+1
                             endif
-                            errorcnt = errorcnt+1
-                         endif
 #endif
                          endif
+                      enddo
                    enddo
                 enddo
                 j = errorcnt
@@ -391,6 +395,7 @@ contains
        deallocate(rfld)
        deallocate(dfld)
        deallocate(dfld_in)
+       deallocate(rfld_in)
     endif
 
   end subroutine pioperformancetest

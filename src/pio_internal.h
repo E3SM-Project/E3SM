@@ -139,7 +139,7 @@ typedef struct pio_swapm_defaults
   void cn_buffer_report(iosystem_desc_t ios, bool collective);
   void compute_buffer_init(iosystem_desc_t ios);
   void free_cn_buffer_pool(iosystem_desc_t ios);
-  void flush_buffer(int ncid, wmulti_buffer *wmb);
+void flush_buffer(int ncid, wmulti_buffer *wmb, bool flushtodisk);
   void piomemerror(iosystem_desc_t ios, size_t req, char *fname, const int line);
   void compute_maxaggregate_bytes(const iosystem_desc_t ios, io_desc_t *iodesc);
 

@@ -390,7 +390,7 @@ int PIOc_sync (int ncid)
     while(wmb != NULL){
       //    printf("%s %d %d %d\n",__FILE__,__LINE__,wmb->ioid, wmb->validvars);
       if(wmb->validvars>0){
-	flush_buffer(ncid, wmb);
+	flush_buffer(ncid, wmb, true);
       }
       twmb = wmb;
       wmb = wmb->next;
