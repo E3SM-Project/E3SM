@@ -2135,7 +2135,10 @@ SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
      esize = esize + sumrowsofA(S%col(i))
    end do
    deallocate(sumrowsofA)
-   esize = int(float(esize) * estsize_mult)
+   if (estsize_mult.ne.1._r8) then
+     write(6,F04) 'Estimated number of non-zeros in B before multiplier: ', esize
+     esize = int(float(esize) * estsize_mult)
+   end if
    write(6,F04) 'Estimated number of non-zeros in B: ', esize
    
    deallocate( B%s  )
@@ -2186,7 +2189,11 @@ SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
          do k = A%sn2(j)+1,A%sn2(j)+A%sn1(j)
             n = n + 1
             if (n > esize) then
-               write(6,*) subname,' ERROR esize too small',esize,n
+               write(6,*) 'ERROR: did not allocate enough space for sparse matrix B'
+               write(6,"(X,A,i0,A,i0,A)") 'Made it through ',i, ' of ', S%n_b,     &
+                                        ' elements of S'
+               write(6,*) 'Try setting step3_estsize_mult = ',                     &
+                          estsize_mult*float(S%n_b)/float(i), ' in namelist'
                call shr_sys_abort()
             endif
             B%row(n) = S%row(ni)
