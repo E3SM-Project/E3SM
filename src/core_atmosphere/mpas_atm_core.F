@@ -329,7 +329,7 @@ module atm_core
       use mpas_timekeeping
       use mpas_kind_types
       use mpas_stream_manager
-      use mpas_io_streams, only : MPAS_STREAM_LATEST_BEFORE
+      use mpas_derived_types, only : MPAS_STREAM_LATEST_BEFORE, MPAS_STREAM_INPUT, MPAS_STREAM_INPUT_OUTPUT
       use mpas_timer
    
       implicit none
@@ -345,6 +345,9 @@ module atm_core
       character(len=StrKIND) :: timeStamp
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       integer :: itimestep
+
+      integer :: stream_dir
+      character(len=StrKIND) :: input_stream, read_time
 
       type (mpas_pool_type), pointer :: state, diag, diag_physics, mesh
 
@@ -405,14 +408,28 @@ module atm_core
          !
          ! Read external field updates
          !
-         call MPAS_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=ierr)
-         if (ierr /= MPAS_STREAM_MGR_NOERR) then
-            write(0,*) ' '
-            write(0,*) '********************************************************************************'
-            write(0,*) 'Error reading one or more input streams'
-            call mpas_dmpar_global_abort('********************************************************************************')
-         end if
-         call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+         call MPAS_stream_mgr_begin_iteration(domain % streamManager, ierr=ierr)
+         do while (MPAS_stream_mgr_get_next_stream(domain % streamManager, streamID=input_stream, directionProperty=stream_dir))
+            if (stream_dir == MPAS_STREAM_INPUT .or. stream_dir == MPAS_STREAM_INPUT_OUTPUT) then
+               if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID=input_stream, &
+                                                  direction=MPAS_STREAM_INPUT, ierr=ierr)) then
+                  call MPAS_stream_mgr_read(domain % streamManager, streamID=input_stream, whence=MPAS_STREAM_LATEST_BEFORE, &
+                                            actualWhen=read_time, ierr=ierr)
+                  if (ierr /= MPAS_STREAM_MGR_NOERR) then
+                     write(0,*) ' '
+                     write(0,*) '********************************************************************************'
+                     write(0,*) 'Error reading input stream '//trim(input_stream)
+                     call mpas_dmpar_global_abort('********************************************************************************')
+                  end if
+
+                  write(0,*) '----------------------------------------------------------------------'
+                  write(0,*) '  Read '''//trim(input_stream)//''' input stream valid at '//trim(read_time)
+                  write(0,*) '----------------------------------------------------------------------'
+
+                  call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID=input_stream, direction=MPAS_STREAM_INPUT, ierr=ierr)
+               end if
+            end if
+         end do
 
          call mpas_timer_start("time integration")
          call atm_do_timestep(domain, dt, itimestep)
