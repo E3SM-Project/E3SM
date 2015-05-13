@@ -332,6 +332,7 @@ contains
                 errorcnt = 0
                 do nv=1,nvars
                    do j=1,maplen
+                      if(compmap(j)>0) then
 #ifdef VARINT
                          if(ifld(j,nv) /= ifld_in(j,nv)) then
                             if(errorcnt < 10) then
@@ -356,6 +357,7 @@ contains
                             errorcnt = errorcnt+1
                          endif
 #endif
+                         endif
                    enddo
                 enddo
                 j = errorcnt

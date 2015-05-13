@@ -629,9 +629,15 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      
      ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, nvars);
 
+     printf("%s %d ",__FILE__,__LINE__);
+     for(int n=0;n<4;n++)
+       printf(" %d ",((int *) iobuf)[n]);
+     printf("\n");
+
    }else{
      iobuf = array;
    }
+
    switch(file->iotype){
    case PIO_IOTYPE_PNETCDF:
    case PIO_IOTYPE_NETCDF:
@@ -656,6 +662,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	   }
 	 }
        }
+
        ierr = pio_write_darray_multi_nc(file, nvars, vid,  
 					iodesc->ndims, iodesc->basetype, iodesc->gsize,
 					iodesc->maxfillregions, iodesc->fillregion, iodesc->holegridsize,
@@ -673,13 +680,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 				      iodesc->ndims, iodesc->basetype, iodesc->gsize,
 				      iodesc->maxregions, iodesc->firstregion, iodesc->llen,
 				      iodesc->maxiobuflen, iodesc->num_aiotasks,
-				      iobuf, frame);
-
-     for(int nv=0;nv<nvars;nv++){
-       var_desc_t  *vdesc = file->varlist+vid[nv];
-       printf("%s %d %d %d %d\n",__FILE__,__LINE__,vid[nv],vdesc->request,vdesc->fillrequest);
-     }
-     
+				      iobuf, frame);     
    }
    
    /* We cannot free the iobuf and the fillbuf until the flush completes */
@@ -939,6 +940,10 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 
      ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 1);
 
+     printf("%s %d ",__FILE__,__LINE__);
+     for(int n=0;n<4;n++)
+       printf(" %d ",((int *) iobuf)[n]);
+     printf("\n");
 
    }else{
      iobuf = array;
@@ -1220,63 +1225,6 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
 	 piomemerror(*ios,rlen*((size_t) tsize), __FILE__,__LINE__);
        }
      }
-    // need to prefill fillvalue
-    nc_type nctype;
-    int errmethod, ierr;
-    errmethod = PIOc_Set_File_Error_Handling(ncid, PIO_BCAST_ERROR);
-    ierr = PIOc_inq_att(ncid, vid, "_FillValue", &nctype, NULL);
-    PIOc_Set_File_Error_Handling(ncid, errmethod);
-    if(ierr == PIO_NOERR){
-      void *fillval;
-      switch(nctype){
-      case NC_INT:
-	fillval = bget(4);
-	PIOc_get_att_int(ncid, vid, "_FillValue", (int *) fillval);
-	for(int i=0;i<arraylen;i++){
-	  ((int *) array)[i]= *((int *) fillval);
-	}
-	break;
-      case NC_FLOAT:
-	fillval = bget(4);
-	PIOc_get_att_float(ncid, vid, "_FillValue", (float *) fillval);
-	for(int i=0;i<arraylen;i++){
-	  ((float *) array)[i]= *((float *) fillval);
-	}
-	break;
-      case NC_DOUBLE:
-	fillval = bget(8);
-	PIOc_get_att_double(ncid, vid, "_FillValue", (double *) fillval);
-	for(int i=0;i<arraylen;i++){
-	  ((double *) array)[i]= *((double *) fillval);
-	}
-	break;
-      default:
-	piodie("Unrecognized _Fillvalue type in read_darray",__FILE__,__LINE__);
-      }
-      brel(fillval);
-    }else{  // use  the default netcdf fill value
-      vtype = (MPI_Datatype) iodesc->basetype;
-      if(vtype == MPI_INTEGER){
-	for(int i=0;i<arraylen;i++){
-	  ((int *) array)[i]= PIO_FILL_INT;
-	}
-      }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
-	for(int i=0;i<arraylen;i++){
-	  ((float *) array)[i]= PIO_FILL_FLOAT;
-	}
-      }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
-	for(int i=0;i<arraylen;i++){
-	  ((double *) array)[i]= PIO_FILL_DOUBLE;
-	}
-      }else{
-	piodie("Unrecognized _Fillvalue type in read_darray",__FILE__,__LINE__);
-      }
-    }
-
-
-
-
-
   }else{
     iobuf = array;
   }
@@ -1328,17 +1276,20 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
       vdesc = file->varlist+i;
       if(vdesc->request != NC_REQ_NULL || vdesc->fillrequest != NC_REQ_NULL){
 	request[rcnt++]=vdesc->fillrequest;
-	request[rcnt++] = vdesc->request;
+	request[rcnt++] = max(vdesc->request,NC_REQ_NULL);
 	vdesc->request = NC_REQ_NULL;
 	vdesc->fillrequest = NC_REQ_NULL;
       }
+#ifdef MPIO_ONESIDED
+      /*onesided optimization requires that all of the requests in a wait_all call represent 
+	a contiguous block of data in the file */
+      else if(rcnt>0){
+	ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
+	rcnt=0;
+      }
+#endif
     }
     if(rcnt>0){
-      printf("%s %d ",__FILE__,__LINE__);
-      for(int i=0; i<rcnt; i++){
-	printf(" %d ",request[i]);
-      }
-      printf("\n");
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
     }
     file->nreq=0;
