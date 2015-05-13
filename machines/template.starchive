@@ -9,6 +9,7 @@ use File::Copy;
 use File::Spec;
 use File::Basename;
 use XML::LibXML;
+my $scriptname = $0;
 my $caseroot = "__caseroot__";
 my $cimeroot = "__cimeroot__";
 chdir $caseroot;

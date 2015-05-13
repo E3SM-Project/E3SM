@@ -87,58 +87,6 @@ sub getDependString()
 	return $deparg;
 }
 
-# If we need arguments when we submit a job, this is where we will add them. 
-sub getSubmitArguments()
-{
-    my $self = shift;
-    my $dependentjobid = shift;
-    print "in getSubmitArguments()\n";
-    my $xml = XML::LibXML->new(no_blanks => 1);
-    my $batchconfig = $xml->parse_file($self->{'configbatch'});
-    my $root = $batchconfig->getDocumentElement();
-    print "self batchtype: $self->{'batchtype'}\n";
-    my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/submit_args/arg");
-    print "depend args: \n";
-    print Dumper \@dependargs;
-    my $submitargs = '';
-    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case}, 
-                                                  mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
-                                                  machroot => $self->{machroot}, machine => $self->{machine},
-                                                  compiler => $self->{compiler} );
-    foreach my $dependarg(@dependargs)
-    {
-        
-        my $argFlag = $dependarg->getAttribute('flag');
-        my $argName = $dependarg->getAttribute('name');
-        print "flag: $argFlag\n";
-        if(defined $argName && length($argName) > 0)
-        {
-            print "name: $argName\n";
-            my $field = $batchmaker->getField($argName);
-            if(! defined $field)
-            {
-                die "$argName not defined! Aborting...";
-            }
-            else
-            {
-                $submitargs .= " $argFlag $field";
-            }
-        }
-        elsif(defined $argFlag && ! defined $argName)
-        {
-            $submitargs .= " $argFlag";
-        }
-    }
-
-    if(defined $dependentjobid)
-    {
-        my $dependArg = $self->getDependString($dependentjobid);
-        $submitargs .= " $dependArg";
-    }
-    print "submit args are now: $submitargs\n";
-    return $submitargs;
-
-}
 # Get the job id from the output of the job submission. 
 sub getJobID()
 {
@@ -329,6 +277,12 @@ sub addDependentJob()
 	#print Dumper $self->{dependencyqueue};
 }
 
+sub getSubmitArguments()
+{
+    my $self = shift;
+    my $jobname = shift;
+}
+
 
 package Batch::BatchUtilsFactory;
 use Exporter qw(import);
@@ -337,6 +291,8 @@ use Data::Dumper;
 sub getBatchUtils
 {
     my (%params) = @_;
+    print "params:\n";
+    print Dumper \%params;
     
     my $machine = $params{'machine'};
 	if(!defined $machine)
@@ -419,5 +375,108 @@ sub getBatchSystemType()
 
 package Batch::BatchUtils_mira;
 use base qw( Batch::BatchUtils );
+use Data::Dumper;
+
+sub submitJobs()
+{
+    my $self = shift;
+    my $depjobid = shift;
+    my %depqueue = %{$self->{dependencyqueue}};
+    #print Dumper $self;
+    print Dumper \%depqueue;
+
+    my $firstjobseqnum = (sort {$a <=> $b } keys %depqueue)[0];
+    my $firstjobarray = $depqueue{$firstjobseqnum};
+    print Dumper $firstjobarray;
+    my $firstjobname = $$firstjobarray[0];
+    print Dumper $firstjobname;
+    print "first job name: $firstjobname\n";
+
+    $depjobid = $self->submitSingleJob($firstjobname, $depjobid, 0);
+}
+sub doResubmit()
+{
+    my $self = shift;
+    my $islastjob = shift;
+    my $resubmit = shift;
+    my $scriptname = shift;
+
+    my %config = %{$self->{'caseconfig'}};
+    if($scriptname =~ /run/)
+    {
+        my $starchivescript = $scriptname;
+        $starchivescript =~ s/run/st_archive/g;
+        print "st archive script: $starchivescript\n";
+        
+        my $submitargs = $self->getSubmitArguments($starchivescript);
+        my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
+        #my $cmd = "ssh tukeylogin1 qsub  -A CESM_Atmos -t 60 -n 1 -q default --mode script ./$starchivescript";
+        my $runcmd = "ssh tukeylogin1 $submitstuff";
+        print "runcmd is: $runcmd\n";
+        qx($runcmd) or die "could not exec cmd $runcmd";
+    }
+    
+    #print Dumper $self;
+}
+
+# If we need arguments when we submit a job, this is where we will add them.
+sub getSubmitArguments()
+{
+    my $self = shift;
+    my $scriptname = shift;
+    
+    my $dependentjobid = shift;
+    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case},
+                                                  mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
+                                                  machroot => $self->{machroot}, machine => $self->{machine},
+                                                  compiler => $self->{compiler} );
+    if(defined $scriptname && $scriptname =~ /archive/)
+    {
+        $batchmaker->overrideNodeCount(1);
+    }
+    #print "in getSubmitArguments()\n";
+    my $xml = XML::LibXML->new(no_blanks => 1);
+    my $batchconfig = $xml->parse_file($self->{'configbatch'});
+    my $root = $batchconfig->getDocumentElement();
+    #print "self batchtype: $self->{'batchtype'}\n";
+    my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/submit_args/arg");
+    #print "depend args: \n";
+    #print Dumper \@dependargs;
+    my $submitargs = '';
+
+    foreach my $dependarg(@dependargs)
+    {
+
+        my $argFlag = $dependarg->getAttribute('flag');
+        my $argName = $dependarg->getAttribute('name');
+        #print "flag: $argFlag\n";
+        if(defined $argName && length($argName) > 0)
+        {
+            #print "name: $argName\n";
+            my $field = $batchmaker->getField($argName);
+            if(! defined $field)
+            {
+                die "$argName not defined! Aborting...";
+            }
+            else
+            {
+                $submitargs .= " $argFlag $field";
+            }
+        }
+        elsif(defined $argFlag && ! defined $argName)
+        {
+            $submitargs .= " $argFlag";
+        }
+    }
+
+    if(defined $dependentjobid)
+    {
+        my $dependArg = $self->getDependString($dependentjobid);
+        $submitargs .= " $dependArg";
+    }
+    #print "submit args are now: $submitargs\n";
+    return $submitargs;
+
+}
 
 1;

@@ -36,6 +36,37 @@
  submission script. If either of these are the case, then PROJECT_REQUIRED
  should be set to TRUE for the given machine.
 
+ ===============================================================
+ batch_system 
+ ===============================================================
+ The batch_system and associated tags are meant for configuring batch systems and 
+ queues across machines.  The batch_system tag denotes the name for a particular 
+ batch system, these can either be shared between one or more machines, or can be 
+ defined for a specific machine if need be.  
+ queues: 
+ one or more queues can be defined per batch_system. if the attribute default="true" 
+ is used, then that queue will be used by default. Alternatively, multiple queues can
+ be used.  The following variables can be used to choose a queue :
+ walltimemin: Giving the minimum amount of walltime for the queue. 
+ walltimemax: The maximum amount of walltime for a queue. 
+ jobmin:      The minimum node count required to use this queue. 
+ jobmax:      The maximum node count required to use this queue. 
+
+ walltimes:  
+ Denotes the walltimes that can be used for a particular machine. 
+ walltime: as before, if default="true" is defined, this walltime will be used
+ by default. 
+ Alternatively, ccsm_estcost must be used to choose the queue based on the estimated cost of the run. 
+
+ mpirun: the mpirun command that will be used to actually launch the model.  
+ The attributes used to choose the mpirun command are: 
+
+ mpilib: can either be 'default' the name of an mpi library, or a compiler name so one can choose the mpirun 
+         based on the mpi library in use. 
+
+   the 'executable' tag must have arguments required for the chosen mpirun, as well as the executable name. 
+
+ 
 -->
 <machine MACH="userdefined">
         <DESC>User Defined Machine</DESC>                                 <!-- can be anything -->
@@ -537,16 +568,9 @@
          <batch_system name="cobalt">
            <queues>
              <queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
-             <!--
-             <queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">prod-short</queue>
-             -->
-             <!--
-             <queue waltimemin="361" walltimemax="720" jobmin="512" jobmax="4096">prod-long</queue>
-             <queue waltimemin="0" walltimemax="1440" jobmin="4097" jobmax="49152">prod-capability</queue>
-             -->
            </queues>
            <walltimes>
-             <walltime default="true">60</walltime>
+             <walltime default="true">15</walltime>
              <walltime ccsm_estcost="-3">60</walltime>
              <walltime ccsm_estcost="0">60</walltime>
            </walltimes>

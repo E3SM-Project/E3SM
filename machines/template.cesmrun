@@ -12,6 +12,7 @@ use XML::LibXML;
 use Data::Dumper;
 use Cwd;
 use Getopt::Long;
+my $scriptname = $0;
 my $caseroot = "__caseroot__";
 my $cimeroot = "__cimeroot__";
 chdir $caseroot;
@@ -348,6 +349,7 @@ sub postRun()
         else
         {
             appendCaseStatus("Model did not complete - no cpl.log file corresponding to most recent CESM log: $config{'RUNDIR'}/$cesmlogfile");
+            exit(-1);
         }
     }
 
@@ -406,7 +408,7 @@ sub resubmitCheck()
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $case, $caseconfig => \%config, caseroot => $caseroot, 
                                                               ccsmroot => $cimeroot, compiler => $compiler, machine => $machine,
                                                               machroot => $machroot, mpilib => $mpilib, scriptsroot => $scriptsroot );
-    $batchutils->doResubmit($islastjob, $resubmit);
+    $batchutils->doResubmit($islastjob, $resubmit, $scriptname);
 }
 sub Debug
 {

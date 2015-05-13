@@ -39,7 +39,7 @@ sub main
     $moduleloader->loadModules();
 
 	#my $batchutils = new Batch::BatchUtils(machine => $machine, machroot => $machroot, caseconfig => \%config);
-	my $batchutils = new Batch::BatchUtils( case => $case, caseconfig => \%config, caseroot => $caseroot, 
+	my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $case, caseconfig => \%config, caseroot => $caseroot, 
                                             ccsmroot => $cimeroot, compiler => $compiler, machine => $machine, 
                                             machroot => $machroot, mpilib => $mpilib, scriptsroot => $scriptsroot );
 	
