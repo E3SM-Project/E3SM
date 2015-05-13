@@ -516,7 +516,7 @@ contains
 
    contains
 
-   subroutine compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
+   subroutine compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)!{{{
    ! this subroutines produces a 0/1 mask that is multiplied with workArray to 
    ! allow for min/max/avg to represent specific regions of the ocean domain
    ! 
@@ -585,10 +585,10 @@ contains
       write(6,*) ' Global ', sum(workMask)
    endif
 
-   end subroutine compute_mask
+   end subroutine compute_mask!}}}
 
 
-   subroutine compute_statistics(nDefinedDataFields, nCellsSolve, workArray, workMask, workMin, workMax, workSum)
+   subroutine compute_statistics(nDefinedDataFields, nCellsSolve, workArray, workMask, workMin, workMax, workSum)!{{{
    ! this subroutines does the actual summing, min, max, masking ect
    ! this hides the messy code from the high-level subroutine
 
@@ -612,7 +612,7 @@ contains
       workMax(iData) = maxval(workArray(iData,1:nCellsSolve),workMask(1:nCellsSolve)>0.5)
    enddo
 
-   end subroutine compute_statistics
+   end subroutine compute_statistics!}}}
 
    end subroutine ocn_compute_surface_area_weighted_averages!}}}
 
