@@ -12,8 +12,9 @@ int PIO_function()
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  int request;
+  var_desc_t *vdesc;
   PIO_Offset usage;
+  int *request;
 
   ierr = PIO_NOERR;
 
@@ -48,11 +49,12 @@ int PIO_function()
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+      vdesc = file->varlist + varid;
       if(ios->io_rank==0){
+	request = &(vdesc->request);
 	ierr = ncmpi_function();
-	if(ierr == PIO_NOERR){
-	  pio_push_request(file, request);
-	}
+      }else{
+	vdesc->request = PIO_REQ_NULL;
       }
       flush_output_buffer(file, false, 0);
       break;

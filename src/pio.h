@@ -331,7 +331,7 @@ enum PIO_ERROR_HANDLERS{
 extern "C" {
 #endif
 #define PIO_EBADIOTYPE  -255
-
+#define PIO_REQ_NULL (NC_REQ_NULL-1)
 int PIOc_freedecomp(int iosysid, int ioid);
 int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp); 
 int PIOc_inq_format (int ncid, int *formatp); 
