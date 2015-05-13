@@ -42,6 +42,10 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   for(int i=0; i<PIO_MAX_VARS;i++){
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
+#ifdef _PNETCDF
+    file->varlist[i].request = NC_REQ_NULL;
+    file->varlist[i].fillrequest = NC_REQ_NULL;
+#endif
   }
 
   file->buffer.validvars=0;
@@ -96,8 +100,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-  for(int i=0;i<PIO_MAX_VARS;i++)
-    file->request[i]=MPI_REQUEST_NULL;
+
   file->nreq=0;
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
@@ -156,6 +159,10 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   for(int i=0; i<PIO_MAX_VARS;i++){
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
+#ifdef _PNETCDF
+    file->varlist[i].request = NC_REQ_NULL;
+    file->varlist[i].fillrequest = NC_REQ_NULL;
+#endif
   }
 
   msg = PIO_MSG_CREATE_FILE;
@@ -209,8 +216,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-  for(int i=0;i<PIO_MAX_VARS;i++)
-    file->request[i]=MPI_REQUEST_NULL;
+
   file->nreq=0;
   
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
@@ -384,7 +390,7 @@ int PIOc_sync (int ncid)
     while(wmb != NULL){
       //    printf("%s %d %d %d\n",__FILE__,__LINE__,wmb->ioid, wmb->validvars);
       if(wmb->validvars>0){
-	flush_buffer(ncid, wmb);
+	flush_buffer(ncid, wmb, true);
       }
       twmb = wmb;
       wmb = wmb->next;

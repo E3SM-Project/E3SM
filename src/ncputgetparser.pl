@@ -105,7 +105,7 @@ foreach my $func (keys %{$functions}){
 		  if(defined $bfunc){
 		      if($line =~ s/ncmpi_function/ncmpi_$bfunc/){
 			  $args = $pnetfunc ;
-			  $args =~ s/request/&request/;
+#			  $args =~ s/request/&request/;
 		      }
 		  }else{
 		      if($line =~ s/ncmpi_function/ncmpi_$func/){

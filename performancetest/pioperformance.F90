@@ -1,3 +1,6 @@
+#define VARINT 1 
+#define VARREAL 1
+#define VARDOUBLE 1
 program pioperformance
 #ifndef NO_MPIMOD
   use mpi
@@ -126,9 +129,9 @@ contains
     type(var_desc_t) :: vari(nvars), varr(nvars), vard(nvars)
     type(iosystem_desc_t) :: iosystem
     integer :: stride, n
-    integer, allocatable :: ifld(:,:), ifld_in(:,:)
-    real, allocatable :: rfld(:,:), rfld_in(:,:)
-    double precision, allocatable :: dfld(:,:), dfld_in(:,:)
+    integer, allocatable :: ifld(:,:), ifld_in(:,:,:)
+    real, allocatable :: rfld(:,:), rfld_in(:,:,:)
+    double precision, allocatable :: dfld(:,:), dfld_in(:,:,:)
     type(file_desc_t) :: File
     type(io_desc_t) :: iodesc_i4, iodesc_r4, iodesc_r8
     integer :: ierr
@@ -174,13 +177,13 @@ contains
 !       endif
     
        allocate(ifld(maplen,nvars))
-       allocate(ifld_in(maplen,nvars))
+       allocate(ifld_in(maplen,nvars,nframes))
 
        allocate(rfld(maplen,nvars))
-       allocate(rfld_in(maplen,nvars))
+       allocate(rfld_in(maplen,nvars,nframes))
 
        allocate(dfld(maplen,nvars))
-       allocate(dfld_in(maplen,nvars))
+       allocate(dfld_in(maplen,nvars,nframes))
 
        ifld = PIO_FILL_INT
        rfld = PIO_FILL_FLOAT
@@ -229,21 +232,33 @@ contains
                 call WriteMetadata(File, gdims, vari, varr, vard)
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
+#ifdef VARINT
                 call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
+#endif
+#ifdef VARREAL
                 call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
+#endif
+#ifdef VARDOUBLE
                 call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
+#endif
 !                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
 
                 do frame=1,nframes
                    if(mype==0) print *,__FILE__,__LINE__,'Frame: ',frame
                    do nv=1,nvars   
                       if(mype==0) print *,__FILE__,__LINE__,'var: ',nv
+#ifdef VARINT
                       call PIO_setframe(File, vari(nv), frame)
-                      call PIO_setframe(File, varr(nv), frame)
-                      call PIO_setframe(File, vard(nv), frame)
                       call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= PIO_FILL_INT)
+#endif
+#ifdef VARREAL
+                      call PIO_setframe(File, varr(nv), frame)
                       call pio_write_darray(File, varr(nv), iodesc_r4, rfld(:,nv)    , ierr, fillval= PIO_FILL_FLOAT)
+#endif
+#ifdef VARDOUBLE
+                      call PIO_setframe(File, vard(nv), frame)
                       call pio_write_darray(File, vard(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval= PIO_FILL_DOUBLE)
+#endif
                    enddo
 ! multiversion  
 !                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
@@ -278,24 +293,36 @@ contains
 ! Now the Read
                 ierr = PIO_OpenFile(iosystem, File, iotype, trim(fname), mode=PIO_NOWRITE);
                 do nv=1,nvars
+#ifdef VARINT
                    write(varname,'(a,i4.4)') 'vari',nv
                    ierr =  pio_inq_varid(File, varname, vari(nv))
+#endif
+#ifdef VARREAL
                    write(varname,'(a,i4.4)') 'varr',nv
                    ierr =  pio_inq_varid(File, varname, varr(nv))
+#endif
+#ifdef VARDOUBLE
                    write(varname,'(a,i4.4)') 'vard',nv
                    ierr =  pio_inq_varid(File, varname, vard(nv))
+#endif
                 enddo
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
                 
                 do frame=1,nframes                   
                    do nv=1,nvars
+#ifdef VARINT
                       call PIO_setframe(File, vari(nv), frame)
-                      call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv), ierr)
+                      call pio_read_darray(File, vari(nv), iodesc_i4, ifld_in(:,nv,frame), ierr)
+#endif
+#ifdef VARREAL
                       call PIO_setframe(File, varr(nv), frame)
-                      call pio_read_darray(File, varr(nv), iodesc_r4, rfld_in(:,nv), ierr)
+                      call pio_read_darray(File, varr(nv), iodesc_r4, rfld_in(:,nv,frame), ierr)
+#endif
+#ifdef VARDOUBLE
                       call PIO_setframe(File, vard(nv), frame)
-                      call pio_read_darray(File, vard(nv), iodesc_r8, dfld_in(:,nv), ierr)
+                      call pio_read_darray(File, vard(nv), iodesc_r8, dfld_in(:,nv,frame), ierr)
+#endif
                    enddo
                 enddo
                 
@@ -305,27 +332,36 @@ contains
                 wall(1) = wall(2)-wall(1)
                 call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, comm, ierr)
                 errorcnt = 0
-                do nv=1,nvars
-                   do j=1,maplen
-!                      if(compmap(j) /= 0) then	
-                         if(ifld(j,nv) /= ifld_in(j,nv)) then
-                            if(errorcnt < 10) then
-                               print *,__LINE__,'Int: ',mype,j,nv,ifld(j,nv),ifld_in(j,nv),compmap(j)
+                do frame=1,nframes
+                   do nv=1,nvars
+                      do j=1,maplen
+                         if(compmap(j)>0) then
+#ifdef VARINT
+                            if(ifld(j,nv) /= ifld_in(j,nv,frame)) then
+                               if(errorcnt < 10) then
+                                  print *,__LINE__,'Int: ',mype,j,nv,ifld(j,nv),ifld_in(j,nv,frame),compmap(j)
+                               endif
+                               errorcnt = errorcnt+1
                             endif
-                            errorcnt = errorcnt+1
-
-                         else if(rfld(j,nv) /= rfld_in(j,nv) ) then
-                            if(errorcnt < 10) then
-                               print *,__LINE__,'Real:', mype,j,nv,rfld(j,nv),rfld_in(j,nv),compmap(j)
+#endif
+#ifdef VARREAL
+                            if(rfld(j,nv) /= rfld_in(j,nv,frame) ) then
+                               if(errorcnt < 10) then
+                                  print *,__LINE__,'Real:', mype,j,nv,rfld(j,nv),rfld_in(j,nv,frame),compmap(j)
+                               endif
+                               errorcnt = errorcnt+1                           
                             endif
-                            errorcnt = errorcnt+1
-                         else if(dfld(j,nv) /= dfld_in(j,nv) ) then
-                            if(errorcnt < 10) then
-                               print *,__LINE__,'Dbl:',mype,j,nv,dfld(j,nv),dfld_in(j,nv),compmap(j)
+#endif
+#ifdef VARDOUBLE
+                            if(dfld(j,nv) /= dfld_in(j,nv,frame) ) then
+                               if(errorcnt < 10) then
+                                  print *,__LINE__,'Dbl:',mype,j,nv,dfld(j,nv),dfld_in(j,nv,frame),compmap(j)
+                               endif
+                               errorcnt = errorcnt+1
                             endif
-                            errorcnt = errorcnt+1
+#endif
                          endif
-!                      endif
+                      enddo
                    enddo
                 enddo
                 j = errorcnt
@@ -340,11 +376,15 @@ contains
   call print_memusage()
 #endif
                 end if
-                
+#ifdef VARREAL                
                 call PIO_freedecomp(iosystem, iodesc_r4)
+#endif
+#ifdef VARDOUBLE
                 call PIO_freedecomp(iosystem, iodesc_r8)
+#endif
+#ifdef VARINT
                 call PIO_freedecomp(iosystem, iodesc_i4)
-                
+#endif                
                 call pio_finalize(iosystem, ierr)
              enddo
           enddo
@@ -355,6 +395,7 @@ contains
        deallocate(rfld)
        deallocate(dfld)
        deallocate(dfld_in)
+       deallocate(rfld_in)
     endif
 
   end subroutine pioperformancetest
@@ -384,15 +425,21 @@ contains
     iostat = PIO_def_dim(File, 'time', PIO_UNLIMITED, dimid(ndims+1))
 
     do nv=1,nvars
+#ifdef VARINT
        write(varname,'(a,i4.4)') 'vari',nv
        iostat = PIO_def_var(File, varname, PIO_INT, dimid, vari(nv))
        iostat = PIO_put_att(File, vari(nv), "_FillValue", PIO_FILL_INT);
+#endif
+#ifdef VARREAL
        write(varname,'(a,i4.4)') 'varr',nv
        iostat = PIO_def_var(File, varname, PIO_REAL, dimid, varr(nv))
        iostat = PIO_put_att(File, varr(nv), "_FillValue", PIO_FILL_FLOAT);
+#endif
+#ifdef VARDOUBLE
        write(varname,'(a,i4.4)') 'vard',nv
        iostat = PIO_def_var(File, varname, PIO_DOUBLE, dimid, vard(nv))
        iostat = PIO_put_att(File, vard(nv), "_FillValue", PIO_FILL_DOUBLE);
+#endif
     enddo
 
 
