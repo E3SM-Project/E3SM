@@ -310,7 +310,8 @@ contains
   local_source(:,:,:) = 0._r8
   
   do j = betrtracer_vars%ngwmobile_tracer_groups+1, betrtracer_vars%ntracer_groups
-    ntrcs = 0 
+    ntrcs = 0
+    difs_trc_group(:) = 0
     do k = 1, nmem_max
        trcid = tracer_group_memid(j, 1)-ngwmobile_tracers
        if(is_mobile(trcid))then
@@ -388,6 +389,17 @@ contains
             if(abs(err_tracer(c,k))>=err_min_solid)then
               !something is wrong, write error information
               call endrun('mass balance error for tracer '//tracernames(trcid)//' in '//trim(subname))
+            else
+              !add back to the last few nodes
+              do l = ubj, jtops(c), -1
+                tracer_conc_solid_passive_col(c,l,trcid)=tracer_conc_solid_passive_col(c,l,trcid) - err_tracer(c,k)/dz(c,l)
+                if(tracer_conc_solid_passive_col(c,l,trcid)<0._r8)then
+                  err_tracer(c,k) = -tracer_conc_solid_passive_col(c,l,trcid)*dz(c,l)
+                  tracer_conc_solid_passive_col(c,l,trcid) = 0._r8
+                else
+                  exit
+                enddo  
+              enddo
             endif
           enddo                    
           !if negative tracer concentration is found, go to the next column
@@ -659,16 +671,19 @@ contains
     if(ntrcs==0)cycle
     
     !convert bulk mobile phase into aqueous phase
-    do fc = 1, num_soilc
-      c = filter_soilc(fc)
-      do k = 1, ntrcs
+    do k = 1, ntrcs
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
         inflx_top(c, k) = tracer_flx_infl(c,adv_trc_group(k))
+        !set to 0 to ensure outgoing boundary condition is imposed, this may not be correct for water isotopes
+        inflx_bot(c,k) = 0._r8
       enddo
-      !set to 0 to ensure outgoing boundary condition is imposed, this may not be correct for water isotopes
-      inflx_bot(c,1:ntrcs) = 0._r8
+    enddo  
       
       
       !obtain advective velocity for the group
+    do fc = 1, num_soilc
+      c = filter_soilc(fc)
       qflx_adv_local(c,jtops(c)-1) = qflx_adv(c,jtops(c)-1)/aqu2bulkcef_mobile_col(c,jtops(c),j)
       do l = jtops(c), ubj
         qflx_adv_local(c,l) = qflx_adv(c,l)/aqu2bulkcef_mobile_col(c,l,j)
@@ -682,18 +697,12 @@ contains
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       dtime_loc(c)=dtime       !local advective time step
-    enddo  
-    
-    !do the iterating loop
-    !at top boundary, flux condition is imposed.
-                
-    !initialize the time keeper        
-    do fc = 1, num_soilc
-      c = filter_soilc(fc)
+      
+      !initialize the time keeper 
       update_col(c)=.true.           !make sure all columns are updated initially
       time_remain(c) = dtime
-    enddo
-
+    enddo  
+    
     do
       leaching_mass=0._r8           !initialize leaching flux to zero, leaching is outgoing only.
 
@@ -712,8 +721,8 @@ contains
 
       ! do semi-lagrangian tracer transport
       
-      call semi_lagrange_adv_backward(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, ntrcs, dtime_loc,  dz, zi, &
-        qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj), inflx_top(bounds%begc:bounds%endc, 1:ntrcs)           , &
+      call semi_lagrange_adv_backward(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, ntrcs, dtime_loc,  &
+        dz, zi, qflx_adv_local(bounds%begc:bounds%endc,lbj-1:ubj), inflx_top(bounds%begc:bounds%endc, 1:ntrcs), &
         inflx_bot(bounds%begc:bounds%endc, 1:ntrcs), update_col, halfdt_col, &
         tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,adv_trc_group(1:ntrcs)), trc_conc_out(:,:,1:ntrcs), leaching_mass(bounds%begc:bounds%endc,1:ntrcs))
 
