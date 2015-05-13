@@ -2022,7 +2022,7 @@ END FUNCTION nSij
 
 !===============================================================================
 
-SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
+SUBROUTINE map_matMatMult(A,B,S)
 
    implicit none
 
@@ -2030,10 +2030,6 @@ SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
    type(sMatrix),intent(in )   :: A  ! sparse matrix data type: B=SA
    type(sMatrix),intent(in )   :: S  ! sparse matrix data type: B=SA
    type(sMatrix),intent(inout) :: B  ! sparse matrix data type: B=SA
-
-   ! multiplier on the estimated size of B. This can be given a value greater than 1 to
-   ! avoid "esize too small" errors.
-   real(r8),intent(in) :: estsize_mult
    
    !--- local ---
    integer    :: ib,jb             ! index wrt B(j,i)
@@ -2135,10 +2131,6 @@ SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
      esize = esize + sumrowsofA(S%col(i))
    end do
    deallocate(sumrowsofA)
-   if (estsize_mult.ne.1._r8) then
-     write(6,F04) 'Estimated number of non-zeros in B before multiplier: ', esize
-     esize = int(float(esize) * estsize_mult)
-   end if
    write(6,F04) 'Estimated number of non-zeros in B: ', esize
    
    deallocate( B%s  )
@@ -2192,8 +2184,6 @@ SUBROUTINE map_matMatMult(A,B,S,estsize_mult)
                write(6,*) 'ERROR: did not allocate enough space for sparse matrix B'
                write(6,"(X,A,i0,A,i0,A)") 'Made it through ',i, ' of ', S%n_b,     &
                                         ' elements of S'
-               write(6,*) 'Try setting step3_estsize_mult = ',                     &
-                          estsize_mult*float(S%n_b)/float(i), ' in namelist'
                call shr_sys_abort()
             endif
             B%row(n) = S%row(ni)

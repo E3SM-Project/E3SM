@@ -44,7 +44,6 @@ PROGRAM main
    logical        :: step2         ! gen smooth
    logical        :: step3         ! mat mult
    logical        :: lmake_rSCRIP  ! .true. => convert runoff grid to SCRIP
-   real(R8)       :: step3_estsize_mult  ! multiplier for estimated matrix size in step 3
    
    namelist / input_nml / &
       gridtype      &
@@ -58,8 +57,7 @@ PROGRAM main
    ,  eFold         &
    ,  rMax          &
    ,  lmake_rSCRIP  &
-   ,  step1, step2, step3 &
-   ,  step3_estsize_mult
+   ,  step1, step2, step3
 
    !--- formats ---
    character(*),parameter :: F00 = "('(main) ',6a)"
@@ -104,10 +102,9 @@ PROGRAM main
    step2         = .true.
    step3         = .true.
    
-   ! These three variables typically don't appear in namelist
+   ! These two variables typically don't appear in namelist
    lmake_rSCRIP  = .false.    
    file_roff_out = "runoff.nc"
-   step3_estsize_mult = 1._r8
 
    open (10,file="runoff_map.nml",status="old",action="read")
    read (10,nml=input_nml,iostat=rCode)
@@ -125,7 +122,6 @@ PROGRAM main
    write(6,F03) "   step1          = ",step1
    write(6,F03) "   step2          = ",step2
    write(6,F03) "   step3          = ",step3
-   write(6,F02) "   step3_estsize_mult = ", step3_estsize_mult
 !  if (rCode > 0) then
 !     write(6,F01) 'ERROR: reading input namelist, iostat=',rCode
 !     stop
@@ -208,7 +204,7 @@ if (step3) then
    !--- create new map datatype to hold result of matrix-matrix multiply ---
    call map_dup(map_orig,map_new)
    map_new%title  = trim(title)
-   call map_matMatMult(map_orig,map_new,map_smooth,step3_estsize_mult) ! mult(A,B,S): B=S*A
+   call map_matMatMult(map_orig,map_new,map_smooth) ! mult(A,B,S): B=S*A
    call mapsort_sort(map_new)
    call map_check(map_new)
    call map_write(map_new, trim(file_new)) 
