@@ -76,6 +76,9 @@ module EcophysConType
      real(r8), allocatable :: fleafcn       (:)   ! C:N during grain fill; leaf (crop)
      real(r8), allocatable :: ffrootcn      (:)   ! C:N during grain fill; froot (crop)
      real(r8), allocatable :: fstemcn       (:)   ! C:N during grain fill; stem (crop)
+     real(r8), allocatable :: presharv      (:)   ! porportion of residue harvested (crop)
+     real(r8), allocatable :: convfact      (:)   ! converstion factor to bu/acre (crop)
+     real(r8), allocatable :: fyield        (:)   ! fraction of grain that is actually harvested (crop)
   end type Ecophyscon_type
 
   type(ecophyscon_type), public :: ecophyscon ! patch ecophysiological constants structure
@@ -94,6 +97,7 @@ contains
     use pftvarcon , only : flivewd, fcur, lf_flab, lf_fcel, lf_flig, fr_flab, fr_fcel, fr_flig
     use pftvarcon , only : leaf_long, evergreen, stress_decid, season_decid
     use pftvarcon , only : fertnitro, graincn, fleafcn, ffrootcn, fstemcn, dwood
+    use pftvarcon , only : presharv, convfact, fyield
     !
     ! !LOCAL VARIABLES:
     integer :: m, ib
@@ -147,6 +151,9 @@ contains
     allocate(ecophyscon%fleafcn       (0:numpft))        ; ecophyscon%fleafcn      (:)   =nan
     allocate(ecophyscon%ffrootcn      (0:numpft))        ; ecophyscon%ffrootcn     (:)   =nan
     allocate(ecophyscon%fstemcn       (0:numpft))        ; ecophyscon%fstemcn      (:)   =nan
+    allocate(ecophyscon%presharv      (0:numpft))        ; ecophyscon%presharv     (:)   =nan
+    allocate(ecophyscon%convfact      (0:numpft))        ; ecophyscon%convfact     (:)   =nan
+    allocate(ecophyscon%fyield        (0:numpft))        ; ecophyscon%fyield       (:)   =nan
 
     do m = 0,numpft
 
@@ -201,6 +208,9 @@ contains
        ecophyscon%fleafcn(m)      = fleafcn(m)
        ecophyscon%ffrootcn(m)     = ffrootcn(m)
        ecophyscon%fstemcn(m)      = fstemcn(m)
+       ecophyscon%presharv(m)     = presharv(m)
+       ecophyscon%convfact(m)     = convfact(m)
+       ecophyscon%fyield(m)       = fyield(m)
     end do
   end subroutine ecophysconInit
 

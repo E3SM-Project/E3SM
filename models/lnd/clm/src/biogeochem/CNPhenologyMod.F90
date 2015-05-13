@@ -191,7 +191,7 @@ contains
     logical                  , intent(in)    :: doalb           ! true if time for sfc albedo calc
     type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(temperature_type)   , intent(inout) :: temperature_vars
-    type(crop_type)          , intent(in)    :: crop_vars
+    type(crop_type)          , intent(inout)    :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(dgvs_type)          , intent(inout) :: dgvs_vars
@@ -231,6 +231,12 @@ contains
     call CNOnsetGrowth(num_soilp, filter_soilp, &
          cnstate_vars, &
          carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars)
+
+   if (num_pcropp > 0 ) then
+      call CNCropHarvest(num_pcropp, filter_pcropp, &
+           num_soilc, filter_soilc, crop_vars, &
+           cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+   end if
 
     call CNOffsetLitterfall(num_soilp, filter_soilp, &
          cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars)
@@ -1195,7 +1201,7 @@ contains
     integer                  , intent(in)    :: filter_pcropp                                    (:) ! filter for prognostic crop patches
     type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(temperature_type)   , intent(in)    :: temperature_vars
-    type(crop_type)          , intent(in)    :: crop_vars
+    type(crop_type)          , intent(inout) :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(carbonstate_type)   , intent(inout) :: carbonstate_vars
@@ -1263,7 +1269,9 @@ contains
          fert_counter      =>    nitrogenflux_vars%fert_counter_patch    , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)                   
          leafn_xfer        =>    nitrogenstate_vars%leafn_xfer_patch     , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer                           
          dwt_seedn_to_leaf =>    nitrogenflux_vars%dwt_seedn_to_leaf_col , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level                
-         fert              =>    nitrogenflux_vars%fert_patch              & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
+         fert              =>    nitrogenflux_vars%fert_patch            , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
+         crpyld            =>    crop_vars%crpyld_patch                  , & ! Output:  [real(r8) ):)]  harvested crop (bu/acre)
+         dmyield           =>    crop_vars%dmyield_patch                   & ! Output:  [real(r8) ):)]  dry matter harvested crop (t/ha)
          )
 
       ! get time info
@@ -1284,6 +1292,10 @@ contains
          bglfr(p) = 0._r8 ! this value changes later in a crop's life cycle
          bgtr(p)  = 0._r8
          lgsf(p)  = 0._r8
+
+         ! B.Drewniak - zero our yield calculator
+         crpyld(p)  = 0._r8
+         dmyield(p) = 0._r8
 
          ! ---------------------------------
          ! from AgroIBIS subroutine planting
@@ -1957,6 +1969,106 @@ contains
 
   end subroutine CNOnsetGrowth
 
+ !----------------------------------------------------------------------
+ subroutine CNCropHarvest (num_pcropp, filter_pcropp, num_soilc, filter_soilc, crop_vars, &
+            cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+   !
+   ! !DESCRIPTION:
+   ! This routine handles harvest for agriculture vegetation types, such as
+   ! corn, soybean, and wheat. This routine allows harvest to be calculated
+   ! instead of in the OffsetLitterfall subroutine. The harvest index is
+   ! determined based on the LPJ model.
+   !
+   ! !ARGUMENTS:
+   integer, intent(in) :: num_pcropp       ! number of prog crop pfts in filter
+   integer, intent(in) :: filter_pcropp(:) ! filter for prognostic crop pfts
+   integer, intent(in) :: num_soilc        ! number of soil columns in filter
+   integer, intent(in) :: filter_soilc(:)  ! soil column filter
+
+    type(crop_type)         , intent(inout) :: crop_vars
+    type(cnstate_type)      , intent(inout) :: cnstate_vars
+    type(carbonstate_type)  , intent(in)    :: carbonstate_vars
+    type(carbonflux_type)   , intent(inout) :: carbonflux_vars
+    type(nitrogenstate_type), intent(in)    :: nitrogenstate_vars
+    type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
+   !
+   ! !LOCAL VARIABLES:
+   ! local pointers to implicit in scalars
+   integer :: p                             ! indices
+   integer :: fp                            ! lake filter pft index
+   real(r8):: t1                            ! temporary variable
+   real(r8):: cgrain                        ! amount of carbon in the grain
+   !-------------------------------------------------------------------------
+   associate(&
+   ivt                   =>    pft%itype                                   , & ! Input:  [integer (:)]  pft vegetation type
+   offset_flag           =>    cnstate_vars%offset_flag_patch              , & ! Input:  [real(r8) (:) ]  offset flag      
+   offset_counter        =>    cnstate_vars%offset_counter_patch           , & ! Input:  [real(r8) (:) ]  offset days counter
+
+   presharv              =>    ecophyscon%presharv                         , & ! Input:  [real(r8) (:) ]  porportion of residue harvested 
+   fyield                =>    ecophyscon%fyield                           , & ! Input:  [real(r8) (:) ]  fraction of grain actually harvested
+   convfact              =>    ecophyscon%convfact                         , & ! Input:  [real(r8) (:) ]  converstion factor for bu/acre
+
+   leafc                 =>    carbonstate_vars%leafc_patch                , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C   
+   grainc                =>    carbonstate_vars%grainc_patch               , & ! Input:  [real(r8) (:) ]  (gC/m2) grain C  
+   livestemc             =>    carbonstate_vars%livestemc_patch            , & ! Input:  [real(r8) (:) ]  (gC/m2) livestem C
+   leafn                 =>    nitrogenstate_vars%leafn_patch              , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N
+   grainn                =>    nitrogenstate_vars%grainn_patch             , & ! Input:  [real(r8) (:) ]  (gN/m2) grain N
+   livestemn             =>    nitrogenstate_vars%livestemn_patch          , & ! Input:  [real(r8) (:) ]  (gN/m2) livestem N
+
+   cpool_to_grainc       =>    carbonflux_vars%cpool_to_grainc_patch       , & ! Input:  [real(r8) (:) ]  allocation to grain C (gC/m2/s)
+   cpool_to_livestemc    =>    carbonflux_vars%cpool_to_livestemc_patch    , & ! Input:  [real(r8) (:) ]  allocation to live stem C (gC/m2/s)
+   cpool_to_leafc        =>    carbonflux_vars%cpool_to_leafc_patch        , & ! Input:  [real(r8) (:) ]  allocation to leaf C (gC/m2/s)
+   npool_to_leafn        =>    nitrogenflux_vars%npool_to_leafn_patch      , & ! Input:  [real(r8) (:)]  allocation to grain N (gC/m2/s)
+   npool_to_livestemn    =>    nitrogenflux_vars%npool_to_livestemn_patch  , & ! Input:  [real(r8) (:)]  allocation to grain N (gC/m2/s)
+   npool_to_grainn       =>    nitrogenflux_vars%npool_to_grainn_patch     , & ! Input:  [real(r8) (:)]  allocation to grain N (gC/m2/s)
+   hrv_leafc_to_prod1c   =>    carbonflux_vars%hrv_leafc_to_prod1c_patch   , & ! Input:  [real(r8) (:)] crop leafc harvested
+   hrv_livestemc_to_prod1c  => carbonflux_vars%hrv_livestemc_to_prod1c_patch, & ! Input:  [real(r8) (:)] crop stemc harvested
+   hrv_grainc_to_prod1c  =>    carbonflux_vars%hrv_grainc_to_prod1c_patch  , & ! Input:  [real(r8) (:)] crop grainc harvested
+   hrv_leafn_to_prod1n   =>    nitrogenflux_vars%hrv_leafn_to_prod1n_patch , & ! Input:  [real(r8) (:)] crop leafn harvested
+   hrv_livestemn_to_prod1n  => nitrogenflux_vars%hrv_livestemn_to_prod1n_patch, & ! Input:  [real(r8) (:)] crop stemn harvested
+   hrv_grainn_to_prod1n  =>    nitrogenflux_vars%hrv_grainn_to_prod1n_patch, & ! Input:  [real(r8) (:)] crop grainn harvested
+   crpyld                =>    crop_vars%crpyld_patch                      , & ! InOut:  [real(r8) ):)]  harvested crop (bu/acre)
+   dmyield               =>    crop_vars%dmyield_patch                       & ! InOut:  [real(r8) ):)]  dry matter harvested crop (t/ha)
+   )
+
+   cgrain = 0.50_r8
+   do fp = 1,num_pcropp
+      p = filter_pcropp(fp)
+      ! only calculate during the offset period
+      if (offset_flag(p) == 1._r8) then
+
+         if (offset_counter(p) == dt) then
+         t1 = 1._r8 / dt
+              !calculate yield (crpyld = bu/acre and dmyield = t/ha)
+              crpyld(p)    = (grainc(p)+cpool_to_grainc(p)*dt) * fyield(ivt(p)) * convfact(ivt(p)) / (cgrain * 1000)
+              dmyield(p)   = (grainc(p)+cpool_to_grainc(p)*dt) * fyield(ivt(p)) * 0.01 / cgrain
+
+              !calculate harvested carbon and nitrogen; remaining goes into litterpool
+              !except for grain which goes into next years availc for growth after
+              !planting
+              hrv_leafc_to_prod1c(p)  = presharv(ivt(p)) * ((t1 * leafc(p)) + cpool_to_leafc(p))
+              hrv_livestemc_to_prod1c(p)  =  presharv(ivt(p)) * ((t1 * livestemc(p)) + cpool_to_livestemc(p))
+              hrv_grainc_to_prod1c(p) = t1 * grainc(p) + cpool_to_grainc(p)
+
+              ! Do the same for Nitrogen
+              hrv_leafn_to_prod1n(p) = t1 * presharv(ivt(p)) * leafn(p) + npool_to_leafn(p)
+              hrv_livestemn_to_prod1n(p) = t1 * presharv(ivt(p)) * livestemn(p) + npool_to_livestemn(p)
+              hrv_grainn_to_prod1n(p) = t1 * grainn(p) + npool_to_grainn(p)
+
+
+         end if ! offseddt_counter
+
+      end if ! offset_flag
+   end do
+
+   ! gather all pft-level fluxes from harvest to the column
+   ! for C and N inputs
+
+   call CNCropHarvestPftToColumn(num_soilc, filter_soilc,cnstate_vars, &
+                   carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars)
+    end associate
+ end subroutine CNCropHarvest
+
   !-----------------------------------------------------------------------
   subroutine CNOffsetLitterfall (num_soilp, filter_soilp, &
        cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars)
@@ -1990,6 +2102,7 @@ contains
          frootcn               =>    ecophyscon%frootcn                          , & ! Input:  [real(r8) (:) ]  fine root C:N (gC/gN)                             
          livewdcn              =>    ecophyscon%livewdcn                         , & ! Input:  [real(r8) (:) ]  live wood C:N (gC/gN)                             
          graincn               =>    ecophyscon%graincn                          , & ! Input:  [real(r8) (:) ]  grain C:N (gC/gN)                                 
+         presharv              =>    ecophyscon%presharv                         , & ! Input:  [real(r8) (:) ]  porportion of residue harvested
 
          offset_flag           =>    cnstate_vars%offset_flag_patch              , & ! Input:  [real(r8) (:) ]  offset flag                                       
          offset_counter        =>    cnstate_vars%offset_counter_patch           , & ! Input:  [real(r8) (:) ]  offset days counter                               
@@ -2028,13 +2141,15 @@ contains
 
             if (offset_counter(p) == dt) then
                t1 = 1.0_r8 / dt
-               leafc_to_litter(p)  = t1 * leafc(p)  + cpool_to_leafc(p)
-               frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
+               if (ivt(p) >= npcropmin) then
                ! this assumes that offset_counter == dt for crops
                ! if this were ever changed, we'd need to add code to the "else"
-               if (ivt(p) >= npcropmin) then
-                  grainc_to_food(p) = t1 * grainc(p)  + cpool_to_grainc(p) 
-                  livestemc_to_litter(p) = t1 * livestemc(p)  + cpool_to_livestemc(p)
+                  leafc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p))
+                  frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
+                  livestemc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemc(p)) + cpool_to_livestemc(p))
+               else
+               leafc_to_litter(p)  = t1 * leafc(p)  + cpool_to_leafc(p)
+               frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
                end if
             else
                t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
@@ -2051,7 +2166,6 @@ contains
 
             if (ivt(p) >= npcropmin) then
                livestemn_to_litter(p) = livestemc_to_litter(p) / livewdcn(ivt(p))
-               grainn_to_food(p) = grainc_to_food(p) / graincn(ivt(p))
             end if
 
             ! save the current litterfall fluxes
@@ -2306,7 +2420,7 @@ contains
                      ! agroibis puts crop stem litter together with leaf litter
                      ! so I've used the leaf lf_f* parameters instead of making
                      ! new ones for now (slevis)
-                     ! also for simplicity I've put "food" into the litter pools
+                     ! The food is now directed to the product pools (BDrewniak)
 
                      if (ivt(p) >= npcropmin) then ! add livestemc to litter
                         ! stem litter carbon fluxes
@@ -2325,22 +2439,6 @@ contains
                         phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
                              + livestemn_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
 
-                        ! grain litter carbon fluxes
-                        phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
-                             + grainc_to_food(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
-                             + grainc_to_food(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
-                             + grainc_to_food(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-
-                        ! grain litter nitrogen fluxes
-                        phenology_n_to_litr_met_n(c,j) = phenology_n_to_litr_met_n(c,j) &
-                             + grainn_to_food(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_n_to_litr_cel_n(c,j) = phenology_n_to_litr_cel_n(c,j) &
-                             + grainn_to_food(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                        phenology_n_to_litr_lig_n(c,j) = phenology_n_to_litr_lig_n(c,j) &
-                             + grainn_to_food(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-
                      end if
                   end if
                end if
@@ -2353,5 +2451,72 @@ contains
     end associate 
 
   end subroutine CNLitterToColumn
+
+ !-----------------------------------------------------------------------
+ subroutine CNCropHarvestPftToColumn (num_soilc, filter_soilc, &
+            cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars)
+   !
+   ! !DESCRIPTION:
+   ! called at the end of CNCropHarvest to gather all pft-level harvest fluxes
+   ! to the column level and assign them to a product pools
+   !
+   ! !USES:
+   use clm_varpar, only : maxpatch_pft
+   type(cnstate_type)       , intent(in)    :: cnstate_vars
+   type(carbonstate_type)   , intent(in)    :: carbonstate_vars
+   type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+   type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+   type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+   !
+   ! !ARGUMENTS:
+   integer, intent(in) :: num_soilc       ! number of soil columns in filter
+   integer, intent(in) :: filter_soilc(:) ! soil column filter
+   ! !LOCAL VARIABLES:
+   integer :: fc,c,pi,p                   ! indices
+   !-----------------------------------------------------------------------
+
+   associate(&
+   ivt                                 =>   pft%itype                                    , & ! Input:  [integer (:)]  pft vegetation type
+   wtcol                               =>   pft%wtcol                                    , & ! Input:  [real(r8) (:)]  pft weight relative to column (0-1)
+
+   phrv_leafc_to_prod1c                =>   carbonflux_vars%hrv_leafc_to_prod1c_patch    , & ! Input:  [real(r8) (:)] crop leafc harvested
+   phrv_livestemc_to_prod1c            =>   carbonflux_vars%hrv_livestemc_to_prod1c_patch, & ! Input:  [real(r8) (:)] crop stemc harvested
+   phrv_grainc_to_prod1c               =>   carbonflux_vars%hrv_grainc_to_prod1c_patch   , & ! Input:  [real(r8) (:)] crop grainc harvested
+   phrv_cropc_to_prod1c                =>   carbonflux_vars%hrv_cropc_to_prod1c_patch    , & ! InOut:  [real(r8) (:)] crop carbon harvested
+   phrv_leafn_to_prod1n                =>   nitrogenflux_vars%hrv_leafn_to_prod1n_patch    , & ! Input:  [real(r8) (:)] crop leafn harvested
+   phrv_livestemn_to_prod1n            =>   nitrogenflux_vars%hrv_livestemn_to_prod1n_patch, & ! Input:  [real(r8) (:)] crop stemn harvested
+   phrv_grainn_to_prod1n               =>   nitrogenflux_vars%hrv_grainn_to_prod1n_patch   , & ! Input:  [real(r8) (:)] crop grainn harvested
+   phrv_cropn_to_prod1n                =>   nitrogenflux_vars%hrv_cropn_to_prod1n_patch    , & ! InOut:  [real(r8) (:)] crop grainn harvested
+   chrv_cropc_to_prod1c                =>   carbonflux_vars%hrv_cropc_to_prod1c_col        , & ! InOut:  [real(r8) (:)] column level crop carbon harvested
+   chrv_cropn_to_prod1n                =>   nitrogenflux_vars%hrv_cropn_to_prod1n_col        & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
+   )
+
+   do pi = 1,maxpatch_pft
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+
+         if (pi <=  col%npfts(c)) then
+            p = col%pfti(c) + pi - 1
+
+            if (pft%active(p)) then
+
+                phrv_cropc_to_prod1c(p) = phrv_leafc_to_prod1c(p) + phrv_livestemc_to_prod1c(p) + &
+                                         phrv_grainc_to_prod1c(p)
+
+                chrv_cropc_to_prod1c(c) = chrv_cropc_to_prod1c(c) + phrv_cropc_to_prod1c(p) * wtcol(p)
+
+                phrv_cropn_to_prod1n(p) = phrv_leafn_to_prod1n(p) + phrv_livestemn_to_prod1n(p) + &
+                                         phrv_grainn_to_prod1n(p)
+
+                chrv_cropn_to_prod1n(c) = chrv_cropn_to_prod1n(c) + phrv_cropn_to_prod1n(p) * wtcol(p)
+
+            end if
+         end if
+
+      end do
+
+   end do
+ end associate
+end subroutine CNCropHarvestPftToColumn
 
 end module CNPhenologyMod
