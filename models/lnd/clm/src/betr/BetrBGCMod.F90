@@ -290,6 +290,7 @@ contains
   associate(&
     tracernames                 =>  betrtracer_vars%tracernames                        , &
     nmem_max                    =>  betrtracer_vars%nmem_max                           , &
+    ngwmobile_tracers           =>  betrtracer_vars%ngwmobile_tracers                  , &
     tracer_group_memid          =>  betrtracer_vars%tracer_group_memid                 , & 
     is_mobile                   =>  betrtracer_vars%is_mobile                          , &    
     tracer_flx_netpro_vr        => tracerflux_vars%tracer_flx_netpro_vr_col            , & !   
@@ -309,9 +310,9 @@ contains
   local_source(:,:,:) = 0._r8
   
   do j = betrtracer_vars%ngwmobile_tracer_groups+1, betrtracer_vars%ntracer_groups
-    
+    ntrcs = 0 
     do k = 1, nmem_max
-       trcid = tracer_group_memid(j, 1)
+       trcid = tracer_group_memid(j, 1)-ngwmobile_tracers
        if(is_mobile(trcid))then
          ntrcs = ntrcs + 1
          difs_trc_group(ntrcs) = trcid

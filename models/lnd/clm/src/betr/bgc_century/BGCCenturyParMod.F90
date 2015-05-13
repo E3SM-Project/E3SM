@@ -452,8 +452,9 @@ implicit none
     CNDecompBgcParamsInst%k_decay_cwd =1._r8/(secspday * days_per_year * tau_cwd)
     
     !codes below needs some change
-    betrtracer_vars%tracer_solid_passive_diffus_scal_group(1) = 1._r8
-    betrtracer_vars%tracer_solid_passive_diffus_thc_group(1) = 1.e-30_r8
+    kk = 1
+    betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) = 1._r8
+    betrtracer_vars%tracer_solid_passive_diffus_thc_group(kk) = 1.e-30_r8
 
 
     
@@ -463,20 +464,20 @@ implicit none
       CNDecompBgcParamsInst%k_decay_som3 = CNDecompBgcParamsInst%k_decay_som3 * CNDecompBgcParamsInst%spinup_vector(3)
 
       ii=i_soil1
+      kk = 2
       do jj = 1, nelms
-        kk = (ii-1)*nelms+jj
         betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) * spinup_factor(ii)
       enddo     
 
       ii=i_soil2
+      kk = 3 
       do jj = 1, nelms
-        kk = (ii-1)*nelms+jj
         betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) * spinup_factor(ii)
       enddo     
 
       ii=i_soil3
+      kk = 4 
       do jj = 1, nelms
-        kk = (ii-1)*nelms+jj
         betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) * spinup_factor(ii)
       enddo     
     

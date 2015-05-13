@@ -361,19 +361,21 @@ module TracerParamsMod
    
    SHR_ASSERT_ALL((ubound(jtops)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)                == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bulkdiffus)        == (/bounds%endc, ubj, betrtracer_vars%ntracers/)),     errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(hmconductance_col) == (/bounds%endc, ubj-1, betrtracer_vars%ntracers/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bulkdiffus)        == (/bounds%endc, ubj, betrtracer_vars%ntracer_groups/)),     errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(hmconductance_col) == (/bounds%endc, ubj-1, betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
    
    associate( &  
-    ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups    , & !Integer[intent(in)], number of gw tracers
-    ntracer_groups    => betrtracer_vars%ntracer_groups            , & !Integer[intent(in)], total number of tracers
-    is_volatile => betrtracer_vars%is_volatile         , & !logical[intent(in)], is a volatile tracer?
-    volatileid  => betrtracer_vars%volatileid            & !integer[intent(in)], location in the volatile vector
+    ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups   , & !Integer[intent(in)], number of gw tracers
+    ntracer_groups             => betrtracer_vars%ntracer_groups            , & !Integer[intent(in)], total number of tracers
+    is_volatile                => betrtracer_vars%is_volatile               , & !logical[intent(in)], is a volatile tracer?
+    is_mobile                  => betrtracer_vars%is_mobile                 , &
+    tracer_group_memid         => betrtracer_vars%tracer_group_memid        , &
+    volatileid                 => betrtracer_vars%volatileid                  & !integer[intent(in)], location in the volatile vector
    )
    
 !  compute the depth weighted diffusivities
    do j = 1, ntracer_groups
-            
+     if(.not. is_mobile(tracer_group_memid(j,1)))cycle
      call calc_interface_conductance(bounds, lbj, ubj, jtops, numf, filter , &
              bulkdiffus(bounds%begc:bounds%endc, lbj:ubj, j)               , &
              dz(bounds%begc:bounds%endc, lbj:ubj)                          , &
@@ -477,8 +479,8 @@ module TracerParamsMod
    SHR_ASSERT_ALL((ubound(jtops)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(t_soisno)          == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(smp_l)             == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(henrycef_col)      == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bunsencef_col)     == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col)      == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bunsencef_col)     == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
    
    associate( &
     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups, & !Integer[intent(in)], number of tracers
@@ -1123,7 +1125,7 @@ module TracerParamsMod
    type(tracercoeff_type)  , intent(inout) :: tracercoeff_vars ! structure containing tracer transport parameters
       
    !
-   real(r8) :: bulkdiffus(bounds%begc:bounds%endc,lbj:ubj,1:betrtracer_vars%ntracers )  !weighted bulk diffusivity for dual-phase diffusion
+   real(r8) :: bulkdiffus(bounds%begc:bounds%endc,lbj:ubj,1:betrtracer_vars%ntracer_groups )  !weighted bulk diffusivity for dual-phase diffusion
    
    !maybe I should use tau_soil as a local variable, I will check this later   
    character(len=255) :: subname='set_multi_phase_diffusion'

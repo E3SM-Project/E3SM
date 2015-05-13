@@ -268,6 +268,7 @@ contains
   betrtracer_vars%id_trc_n2o  = addone(itemp)
   
   betrtracer_vars%ngwmobile_tracer_groups=itemp                            ! n2, o2, ar, co2, ch4, n2o, nh3x and no3x
+  betrtracer_vars%ngwmobile_tracers = itemp
   betrtracer_vars%nvolatile_tracers=itemp-2                                ! n2, o2, ar, co2, ch4 and n2o
   betrtracer_vars%nvolatile_tracer_groups = itemp-2                        !
   betrtracer_vars%nsolid_passive_tracer_groups =  4                        ! som1, som2, som3 and others (lit1, lit2, lit3, cwd)
@@ -322,7 +323,7 @@ contains
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_no3x, trc_name='NO3x', &
     is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp),   &
-    trc_group_mem = 1, is_trc_volatile=.false.)
+    trc_group_mem = 1, is_trc_volatile=.false.,trc_vtrans_scal=1._r8)
     
 
   call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_n2o, trc_name='N2O' , &

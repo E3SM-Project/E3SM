@@ -177,7 +177,7 @@ module BeTRTracerType
   
   allocate(this%is_volatile        (this%ngwmobile_tracers));    this%is_volatile(:)      = .false.
   allocate(this%is_adsorb          (this%ngwmobile_tracers));    this%is_adsorb(:)        = .false.
-  allocate(this%is_advective       (this%ngwmobile_tracers));    this%is_advective(:)     = .false.  
+  allocate(this%is_advective       (this%ntracers));             this%is_advective(:)     = .false.  
   allocate(this%is_mobile          (this%ntracers));             this%is_mobile(:)        = .false.
   allocate(this%is_h2o             (this%ngwmobile_tracers));    this%is_h2o(:)           = .false.
   allocate(this%is_co2tag          (this%ngwmobile_tracers));    this%is_co2tag(:)        = .false.
@@ -193,21 +193,21 @@ module BeTRTracerType
   allocate(this%tracernames        (this%ntracers));             this%tracernames(:)        = ''
   allocate(this%vtrans_scal        (this%ngwmobile_tracers));    this%vtrans_scal(:)        = 0._r8   !no transport through xylem transpiration
 
-  allocate(this%tracer_solid_passive_diffus_scal_group(this%nsolid_passive_tracer_groups)); this%tracer_solid_passive_diffus_scal_group(:) = 0._r8
-  allocate(this%tracer_solid_passive_diffus_thc_group (this%nsolid_passive_tracer_groups)); this%tracer_solid_passive_diffus_thc_group(:) = 0._r8
+  allocate(this%tracer_solid_passive_diffus_scal_group(this%nsolid_passive_tracer_groups)); this%tracer_solid_passive_diffus_scal_group(:) = 1._r8
+  allocate(this%tracer_solid_passive_diffus_thc_group (this%nsolid_passive_tracer_groups)); this%tracer_solid_passive_diffus_thc_group(:) = 1e-4_r8 / (86400._r8 * 365._r8) * 1.e-36_r8 
   
   allocate(this%tracer_group_memid(this%ntracer_groups, this%nmem_max)); this%tracer_group_memid(:,:) = nanid
   
   allocate(this%solid_passive_tracer_groupid(this%nsolid_passive_tracer_groups, 1:this%nmem_max)); this%solid_passive_tracer_groupid(:,:) = nanid
   
-  allocate(this%groupid(this%ntracer_groups)); this%groupid(:) = nanid
+  allocate(this%groupid(this%ntracers)); this%groupid(:) = nanid
   
   end subroutine InitAllocate
 
 !--------------------------------------------------------------------------------       
 
   subroutine set_tracer(this, trc_id, trc_name, is_trc_mobile, is_trc_advective, trc_group_id, &
-     trc_group_mem, is_trc_volatile, trc_volatile_id, trc_volatile_group_id)
+     trc_group_mem, is_trc_volatile, trc_volatile_id, trc_volatile_group_id,trc_vtrans_scal)
 
     class(BeTRtracer_type) :: this    
     integer            , intent(in) :: trc_id
@@ -220,23 +220,25 @@ module BeTRTracerType
     logical, optional  , intent(in) :: is_trc_volatile
     integer, optional  , intent(in) :: trc_volatile_id
     integer, optional  , intent(in) :: trc_volatile_group_id
-
+    real(r8),optional  , intent(in) :: trc_vtrans_scal
     
     this%tracernames      (trc_id)    = trim(trc_name)
     this%is_mobile        (trc_id)    = is_trc_mobile
-    this%is_advective     (trc_id)    = is_trc_advective
     this%groupid          (trc_id)    = trc_group_id
     this%tracer_group_memid(trc_group_id,trc_group_mem) = trc_id
-    
+
+    this%is_advective     (trc_id)    = is_trc_advective
+
     if(present(is_trc_volatile))then
       this%is_volatile      (trc_id)    = is_trc_volatile    
       if(this%is_volatile   (trc_id)) then
         this%volatileid     (trc_id)    = trc_volatile_id
         this%volatilegroupid(trc_id)    = trc_volatile_group_id
-        this%nvolatile_tracer_groups = this%nvolatile_tracer_groups + 1
       endif
     endif
-    
+    if(present(trc_vtrans_scal))then
+      this%vtrans_scal(trc_id) = trc_vtrans_scal
+    endif
 
 
   end subroutine set_tracer
