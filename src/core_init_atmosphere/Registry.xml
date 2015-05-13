@@ -52,7 +52,7 @@
                 <nml_option name="config_geog_data_path"        type="character"     default_value="/glade/p/work/wrfhelp/WPS_GEOG/"/>
                 <nml_option name="config_met_prefix"            type="character"     default_value="CFSR"/>
                 <nml_option name="config_sfc_prefix"            type="character"     default_value="SST"/>
-                <nml_option name="config_fg_interval"           type="integer"       default_value="21600"/>
+                <nml_option name="config_fg_interval"           type="integer"       default_value="86400"/>
                 <nml_option name="config_landuse_data"          type="character"     default_value="USGS"/>
         </nml_record>
 
@@ -344,7 +344,7 @@
 		<stream name="surface" 
                         type="output" 
                         filename_template="x1.40962.sfc_update.nc"
-                        output_interval="none" 
+                        output_interval="86400" 
                         filename_interval="none"
                         packages="sfc_update"
                         immutable="true">
