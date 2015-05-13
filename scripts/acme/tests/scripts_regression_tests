@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import unittest, sys, os, tempfile, shutil, re, threading, time, signal
+import unittest, sys, os, tempfile, shutil, re, threading, time, signal, glob, stat
 
 SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(SCRIPT_DIR)
@@ -51,6 +51,44 @@ def parse_test_status(line):
     return m.groups()
 
 ###############################################################################
+def kill_subprocesses(name=None, sig=signal.SIGKILL, expected_num_killed=None, tester=None):
+###############################################################################
+    # Kill all subprocesses
+    proc_ids = acme_util.find_proc_id(proc_name=name, children_only=True)
+    if (expected_num_killed is not None):
+        tester.assertEqual(len(proc_ids), expected_num_killed,
+                           msg="Expected to find %d processes to kill, found %d" % (expected_num_killed, len(proc_ids)))
+    for proc_id in proc_ids:
+        try:
+            os.kill(proc_id, sig)
+        except OSError:
+            pass
+
+###############################################################################
+def kill_python_subprocesses(sig=signal.SIGKILL, expected_num_killed=None, tester=None):
+###############################################################################
+    kill_subprocesses("[Pp]ython", sig, expected_num_killed, tester)
+
+###############################################################################
+def setup_proxy():
+###############################################################################
+    if ("http_proxy" not in os.environ):
+        machine = acme_util.probe_machine_name()
+        if (machine is not None):
+            proxy = acme_util.get_machine_info(machine)[6]
+            if (proxy is not None):
+                os.environ["http_proxy"] = proxy
+                return True
+
+    return False
+
+###############################################################################
+def generate_utc_timestamp():
+###############################################################################
+    utc_time_tuple = time.gmtime()
+    return time.strftime("%Y%m%d_%H%M%S", utc_time_tuple)
+
+###############################################################################
 class TestWaitForTests(unittest.TestCase):
 ###############################################################################
 
@@ -71,16 +109,9 @@ class TestWaitForTests(unittest.TestCase):
             make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_%d" % r), "Test_%d" % r, "RUN" if r == 5 else "PASS")
 
         # Set up proxy if possible
-        self._unset_proxy = False
-        if ("http_proxy" not in os.environ):
-            machine = acme_util.probe_machine_name()
-            if (machine is not None):
-                proxy = acme_util.get_machine_info(machine)[6]
-                if (proxy is not None):
-                    os.environ["http_proxy"] = proxy
-                    self._unset_proxy = True
+        self._unset_proxy = setup_proxy()
 
-        self._threadError = None
+        self._thread_error = None
 
     ###########################################################################
     def tearDown(self):
@@ -89,13 +120,7 @@ class TestWaitForTests(unittest.TestCase):
         shutil.rmtree(self._testdir_with_fail)
         shutil.rmtree(self._testdir_unfinished)
 
-        # Kill all subprocesses
-        proc_ids = acme_util.find_proc_id("[Pp]ython", children_only=True)
-        for proc_id in proc_ids:
-            try:
-                os.kill(proc_id, signal.SIGKILL)
-            except OSError:
-                pass
+        kill_subprocesses()
 
         if (self._unset_proxy):
             del os.environ["http_proxy"]
@@ -118,7 +143,7 @@ class TestWaitForTests(unittest.TestCase):
                 self.assertEqual(testname, "Test_%d" % idx)
 
         except AssertionError as e:
-            self._threadError = str(e)
+            self._thread_error = str(e)
 
     ###########################################################################
     def test_wait_for_test_all_pass(self):
@@ -154,7 +179,7 @@ class TestWaitForTests(unittest.TestCase):
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
 
-        self.assertTrue(self._threadError is None, msg="Thread had failure: %s" % self._threadError)
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
     ###########################################################################
     def test_wait_for_test_wait_kill(self):
@@ -168,17 +193,13 @@ class TestWaitForTests(unittest.TestCase):
 
         self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
 
-        proc_ids = acme_util.find_proc_id("[Pp]ython", children_only=True)
-        self.assertEqual(1, len(proc_ids), "Expected to find 1 process, found '%s'" % proc_ids)
-        proc_id = proc_ids[0]
-
-        os.kill(proc_id, signal.SIGTERM)
+        kill_python_subprocesses(signal.SIGTERM, expected_num_killed=1, tester=self)
 
         run_thread.join(timeout=30)
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
 
-        self.assertTrue(self._threadError is None, msg="Thread had failure: %s" % self._threadError)
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
     ###########################################################################
     def test_wait_for_test_cdash_pass(self):
@@ -192,7 +213,7 @@ class TestWaitForTests(unittest.TestCase):
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
 
-        self.assertTrue(self._threadError is None, msg="Thread had failure: %s" % self._threadError)
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
     ###########################################################################
     def test_wait_for_test_cdash_kill(self):
@@ -206,17 +227,13 @@ class TestWaitForTests(unittest.TestCase):
 
         self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
 
-        proc_ids = acme_util.find_proc_id("[Pp]ython", children_only=True)
-        self.assertEqual(1, len(proc_ids), "Expected to find 1 process, found '%s'" % proc_ids)
-        proc_id = proc_ids[0]
-
-        os.kill(proc_id, signal.SIGTERM)
+        kill_python_subprocesses(signal.SIGTERM, expected_num_killed=1, tester=self)
 
         run_thread.join(timeout=30)
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
 
-        self.assertTrue(self._threadError is None, msg="Thread had failure: %s" % self._threadError)
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
         cdash_result_dir = os.path.join(self._testdir_unfinished, "Testing")
         tag_file         = os.path.join(cdash_result_dir, "TAG")
@@ -241,52 +258,124 @@ class TestJenkinsGenericJob(unittest.TestCase):
     ###########################################################################
     def setUp(self):
     ###########################################################################
-        self._threadError = None
+        self._thread_error      = None
+        self._wget_file         = tempfile.mktemp()
+        self._unset_proxy       = setup_proxy()
+        self._baseline_name     = "fake_testing_only_%s" % generate_utc_timestamp()
 
     ###########################################################################
-    def simple_test(self, expect_works):
+    def tearDown(self):
+    ###########################################################################
+        kill_subprocesses()
+
+        if (os.path.isfile(self._wget_file)):
+            os.remove(self._wget_file)
+
+        if (self._unset_proxy):
+            del os.environ["http_proxy"]
+
+        baseline_area = acme_util.get_machine_info()[5]
+        baselines = os.path.join(baseline_area, self._baseline_name)
+        if (os.path.isdir(baselines)):
+            shutil.rmtree(baselines)
+
+    ###########################################################################
+    def simple_test(self, expect_works, extra_args):
     ###########################################################################
         try:
-            stat, output, errput = run_cmd("%s/jenkins_generic_job -p ACME_test -t acme_tiny -d --branch master" % SCRIPT_DIR, ok_to_fail=True)
+            stat, output, errput = run_cmd("%s/jenkins_generic_job -t acme_tiny %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
             if (expect_works):
                 self.assertEqual(stat, 0, msg="jenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
             else:
                 self.assertNotEqual(stat, 0, msg="jenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
 
         except AssertionError as e:
-            self._threadError = str(e)
+            self._thread_error = str(e)
+
+    ###########################################################################
+    def assert_dashboard_has_build(self, build_name):
+    ###########################################################################
+        time.sleep(10) # Give chance for cdash to update
+
+        run_cmd("wget http://my.cdash.org/index.php?project=ACME_test -O %s" % self._wget_file)
+
+        stat = run_cmd("grep %s %s" % (build_name, self._wget_file), ok_to_fail=True)[0]
+        self.assertEqual(stat, 0, msg="Dashboard did not have build '%s'" % build_name)
+
+    ###########################################################################
+    def assert_no_sentinel(self):
+    ###########################################################################
+        testroot = acme_util.get_machine_info()[4]
+        self.assertFalse(os.path.isfile(os.path.join(testroot, "ONGOING_TEST")),
+                         "job did not cleanup successfully")
 
     ###########################################################################
     def test_jenkins_generic_job(self):
     ###########################################################################
-        self.simple_test(True)
+        # Unfortunately, this test is very long-running
 
-        testroot = acme_util.get_machine_info()[4]
-        self.assertFalse(os.path.isfile(os.path.join(testroot, "ONGOING_TEST")),
-                         "job did not cleanup successfully")
+        build_name = "jenkins_generic_job_pass_%s" % generate_utc_timestamp()
+        self.simple_test(True, "-p ACME_test --branch master -d -c %s" % build_name)
+
+        self.assert_no_sentinel()
+        self.assert_dashboard_has_build(build_name)
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
     ###########################################################################
     def test_jenkins_generic_job_kill(self):
     ###########################################################################
-        run_thread = threading.Thread(target=self.simple_test, args=(False,))
+        build_name = "jenkins_generic_job_kill_%s" % generate_utc_timestamp()
+        run_thread = threading.Thread(target=self.simple_test, args=(False, "-p ACME_test --branch master -d -c %s" % build_name))
         run_thread.daemon = True
         run_thread.start()
 
-        time.sleep(30)
+        time.sleep(60)
 
-        proc_ids = acme_util.find_proc_id(children_only=True)
-        for proc_id in proc_ids:
-            os.kill(proc_id, signal.SIGTERM)
+        kill_subprocesses(sig=signal.SIGTERM)
 
         run_thread.join(timeout=30)
 
-        self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
+        self.assertFalse(run_thread.isAlive(), msg="jenkins_generic_job should have finished")
+        self.assert_no_sentinel()
+        self.assert_dashboard_has_build(build_name)
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
-        testroot = acme_util.get_machine_info()[4]
-        self.assertFalse(os.path.isfile(os.path.join(testroot, "ONGOING_TEST")),
-                         "job did not cleanup successfully")
+    ###############################################################################
+    def test_jenkins_generic_job_rebless_namelist(self):
+    ###############################################################################
+        # Generate some namelist baselines
+        self.simple_test(True, "-g -n --branch %s" % self._baseline_name)
 
-        self.assertTrue(self._threadError is None, msg="Thread had failure: %s" % self._threadError)
+        # Basic namelist compare
+        self.simple_test(True, "-n --branch %s" % self._baseline_name)
+
+        # Modify namelist
+        fake_nl = """
+ &fake_nml
+   fake_item = 'fake'
+   fake = .true.
+/"""
+        baseline_area = acme_util.get_machine_info()[5]
+        baseline_glob = glob.glob(os.path.join(baseline_area, self._baseline_name, "ERS*"))
+        self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
+
+        baseline_dir = baseline_glob[0]
+        nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
+        self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
+
+        os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+        nl_file = open(nl_path, "a")
+        nl_file.write(fake_nl)
+        nl_file.close()
+
+        # Basic namelist compare should now fail
+        self.simple_test(False, "-n --branch %s" % self._baseline_name)
+
+        # Bless
+        self.simple_test(True, "-b -n --branch %s" % self._baseline_name)
+
+        # Basic namelist compare should now pass again
+        self.simple_test(True, "-n --branch %s" % self._baseline_name)
 
 ###########################################################################
 
