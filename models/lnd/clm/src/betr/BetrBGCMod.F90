@@ -476,12 +476,12 @@ contains
 
   do kk = 1 , 2
      if(transp_pathway(kk) == do_diffusion)then
-        !call tracer_mass_print(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dz, betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_dif')
+!        call tracer_mass_print(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dz, betrtracer_vars, tracerflux_vars, tracerstate_vars,'bf_dif')
         !print*,'do dual phase diffusion, gas + aqueous'
         call do_tracer_gw_diffusion(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, betrtracer_vars, tracerboundarycond_vars, Rfactor, &
          tracercoeff_vars%hmconductance_col(bounds%begc:bounds%endc, lbj:ubj-1, : ),&
          dz, dtime, tracerstate_vars, tracerflux_vars, waterstate_vars)
-        !call tracer_mass_print(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dz, betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_dif')
+!        call tracer_mass_print(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, dz, betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_dif')
      elseif(transp_pathway(kk) == do_advection)then
         !print*,'do aqueous advection'
         jtops0(:) = 1
@@ -522,7 +522,7 @@ contains
 
   do fc = 1, num_soilc
     c = filter_soilc(fc)
-    if(c==17904 .and. get_nstep()>=48286) then
+    if(c== 8077 .and. get_nstep()>=8584) then
       j= betrtracer_vars%id_trc_no3x
       write(iulog,*)get_nstep(),loc_str
       write(iulog,*)(k,tracerstate_vars%tracer_conc_mobile_col(c,k,j),k=jtops(c),ubj)
@@ -596,7 +596,7 @@ contains
   real(r8) :: c_courant
   integer  :: num_loops                                !number of loops as determined by the courant number condition  
   logical  :: lexit_loop
-  integer  :: c, fc, j, l, k, kk, ntrcs, trcid
+  integer  :: c, fc, j, l, k, ntrcs, trcid
   integer  :: ngwmobile_tracers
   logical  :: lshock
 
@@ -646,7 +646,7 @@ contains
   !loop over the tracers     
   do j = 1, ngwmobile_tracer_groups
     ntrcs = 0
-    
+    adv_trc_group(:) = 0 
     do k = 1, nmem_max
       trcid = tracer_group_memid(j,k)
       if(trcid>0)then
@@ -700,14 +700,14 @@ contains
       do fc = 1, num_soilc
         c = filter_soilc(fc)
         if(update_col(c))then
-          do kk = 1, ntrcs
-            trcid = adv_trc_group(kk)
-            dmass(c, kk) = dot_sum(tracer_conc_mobile_col(c, jtops(c):ubj, trcid), dz(c, jtops(c):ubj))
+          do k = 1, ntrcs
+            trcid = adv_trc_group(k)
+            dmass(c, k) = dot_sum(tracer_conc_mobile_col(c, jtops(c):ubj, trcid), dz(c, jtops(c):ubj))
+            if(c==8077 .and. trim(tracernames(trcid))=='NO3x' .and. get_nstep()>=8582)then
+              write(iulog,*)'adbf',get_nstep(),dmass(c,k),k,trcid,ntrcs
+            endif        
           enddo
         endif
-        !if(c==2300 .and. trim(tracernames(j))=='O18_H2O')then
-        !    write(iulog,*)'adbf',tracer_conc_mobile_col(c,1,j),h2osoi_liqvol(c,1), inflx_top(c)
-        !endif        
       enddo
 
       ! do semi-lagrangian tracer transport
@@ -718,60 +718,60 @@ contains
         tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,adv_trc_group(1:ntrcs)), trc_conc_out(:,:,1:ntrcs), leaching_mass(bounds%begc:bounds%endc,1:ntrcs))
 
       !do soil-root tracer exchange
-      do kk = 1, ntrcs
-        trcid = adv_trc_group(kk)
+      do k = 1, ntrcs
+        trcid = adv_trc_group(k)
         do l = lbj, ubj
           do fc = 1, num_soilc
             c = filter_soilc(fc)
-            if(l>=jtops(c))tracer_conc_mobile_col(c,l,trcid)=trc_conc_out(c,l,kk)
+            if(l>=jtops(c))tracer_conc_mobile_col(c,l,trcid)=trc_conc_out(c,l,k)
           enddo
         enddo
-        transp_mass(:,kk) = 0._r8
+        transp_mass(:,k) = 0._r8
         if(vtrans_scal(trcid)>0._r8)then
           call calc_root_uptake_as_perfect_sink(bounds, lbj, ubj, num_soilc, filter_soilc, dtime_loc, dz, qflx_rootsoi_local, update_col, &
-          halfdt_col, tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,trcid), transp_mass(bounds%begc:bounds%endc, kk))
+          halfdt_col, tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj,trcid), transp_mass(bounds%begc:bounds%endc, k))
         endif
       enddo
       
       !do error budget and tracer flux update
-      do fc = 1, num_soilc
-        c = filter_soilc(fc)
+      do k = 1, ntrcs
+        trcid = adv_trc_group(k)
+        do fc = 1, num_soilc
+          c = filter_soilc(fc)
         
         !if(c==2300 .and. trim(tracernames(j))=='O18_H2O')then
         !    write(iulog,'(A,5(X,E20.10))')'adaf',tracer_conc_mobile_col(c,1,j),h2osoi_liqvol(c,1), inflx_top(c), qflx_adv_local(c,1), qflx_rootsoi_local(c,1)
         !endif        
-        if(update_col(c) .and. (.not. halfdt_col(c)))then
-          do kk = 1, ntrcs
-            trcid = adv_trc_group(kk)
-            mass0   = dmass(c, kk) 
-            dmass(c, kk) =  dot_sum(tracer_conc_mobile_col(c,jtops(c):ubj,trcid), dz(c,jtops(c):ubj))- dmass(c, kk)
+          if(update_col(c) .and. (.not. halfdt_col(c)))then
+            mass0   = dmass(c, k) 
+            dmass(c, k) =  dot_sum(tracer_conc_mobile_col(c,jtops(c):ubj,trcid), dz(c,jtops(c):ubj))- dmass(c, k)
                     
-            err_tracer(c, kk) = dmass(c, kk) - inflx_top(c,kk) * dtime_loc(c) + leaching_mass(c,kk) + transp_mass(c, kk)
-!          if(c==22116 .and. j==betrtracer_vars%id_trc_co2x)then
-!            write(iulog,*)get_nstep(),dtime_loc(c)
-!            write(iulog,'(I8,X,A,4(X,A,X,E18.10))')c,tracernames(j),' err_adv=',err_tracer(c),' lech=',leaching_mass(c),' infl=',inflx_top(c),' dmass=',dmass(c)
-!          endif
-            if(abs(err_tracer(c,kk))<err_adv_min .or. abs(err_tracer(c,kk))/(mass0+1.e-10_r8) < 1.e-10_r8)then
+            err_tracer(c, k) = dmass(c, k) - inflx_top(c,k) * dtime_loc(c) + leaching_mass(c,k) + transp_mass(c, k)
+          if(c==8077 .and. trcid==betrtracer_vars%id_trc_no3x .and. get_nstep()>=8582)then
+            write(iulog,*)get_nstep(),dtime_loc(c),'mass0=',mass0,k,trcid
+            write(iulog,'(I8,X,A,4(X,A,X,E18.10))')c,tracernames(trcid),' err_adv=',err_tracer(c,k),' lech=',leaching_mass(c,k),' infl=',inflx_top(c,k),' dmass=',dmass(c,k)
+          endif
+            if(abs(err_tracer(c,k))<err_adv_min .or. abs(err_tracer(c,k))/(mass0+1.e-10_r8) < 1.e-10_r8)then
             !when the absolute value is too small, set relative error to 
               err_relative = err_relative_threshold*0.999_r8   
             else
-              err_relative = err_tracer(c,kk)/maxval((/abs(inflx_top(c,kk)*dtime_loc(c)),abs(leaching_mass(c,kk)),tiny_val/))
+              err_relative = err_tracer(c,k)/maxval((/abs(inflx_top(c,k)*dtime_loc(c)),abs(leaching_mass(c,k)),tiny_val/))
             endif
             if(abs(err_relative)<err_relative_threshold)then
-              leaching_mass(c,kk) = leaching_mass(c,kk) - err_tracer(c,kk)
+              leaching_mass(c,k) = leaching_mass(c,k) - err_tracer(c,k)
             else
             !something is wrong, write error information
-              write(iulog,'(I8,X,A,6(X,A,X,E18.10))')c,tracernames(trcid),' err=',err_tracer(c,kk),' transp=',transp_mass(c,kk),' lech=',&
-                 leaching_mass(c,kk),' infl=',inflx_top(c,kk),' dmass=',dmass(c,kk), ' mass0=',mass0,'err_rel=',err_relative
+              write(iulog,'(I8,X,A,6(X,A,X,E18.10))')c,tracernames(trcid),' err=',err_tracer(c,k),' transp=',transp_mass(c,k),' lech=',&
+                 leaching_mass(c,k),' infl=',inflx_top(c,k),' dmass=',dmass(c,k), ' mass0=',mass0,'err_rel=',err_relative
               call endrun('mass balance error for tracer '//tracernames(j)//errMsg(__FILE__, __LINE__))            
             endif
-            tracer_flx_vtrans(c, trcid)  = tracer_flx_vtrans(c,trcid) + transp_mass(c,kk)
-            tracer_flx_leaching(c,trcid) = tracer_flx_leaching(c, trcid) + leaching_mass(c,kk)
+            tracer_flx_vtrans(c, trcid)  = tracer_flx_vtrans(c,trcid) + transp_mass(c,k)
+            tracer_flx_leaching(c,trcid) = tracer_flx_leaching(c, trcid) + leaching_mass(c,k)
             !if(c==764 .and. trim(tracernames(trcid))=='AR')then
             !  write(iulog,*)'adv',tracernames(trcid),  tracer_flx_vtrans(c,trcid), tracer_flx_leaching(c, trcid), inflx_top(c,kk) * dtime_loc(c),leaching_mass(c,kk), dmass(c,kk)
             !endif
-          enddo  
-        endif
+          endif
+        enddo
       enddo
       
       do fc = 1, num_soilc
@@ -901,7 +901,8 @@ contains
   do j = 1, ngwmobile_tracer_groups
   
     !assemable the tracer group for diffusion
-    ntrcs = 0    
+    ntrcs = 0  
+    dif_trc_group(:) = 0  
     do k = 1, nmem_max
       trcid = tracer_group_memid(j,k)      
       if(trcid>0)then

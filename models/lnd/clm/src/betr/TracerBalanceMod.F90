@@ -124,7 +124,7 @@ implicit none
 
       if(abs(err_rel)>err_min_rel)then       
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), ' err=',errtracer(c,kk), ' col=',c
-        write(iulog,*)get_nstep()
+        write(iulog,*)'nstep=',get_nstep()
         write(iulog,'(4(A,X,E20.10))')'netpro=',tracer_flx_netpro(c,kk),' netphyloss=',tracer_flx_netphyloss(c,kk),' begm=',beg_tracer_molarmass(c,kk), &
                   ' endm=',end_tracer_molarmass(c,kk)
         call tracerflux_vars%flux_display(c,kk,betrtracer_vars)
