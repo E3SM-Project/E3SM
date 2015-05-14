@@ -1525,7 +1525,7 @@ module BGCCenturySubMod
       !oxygen scalar, this is different from what CLM4.5bgc does, I use a M-M formulation to indicate O2 stress
       !and the O2 budget is done on the fly
       o2w = o2_bulk(c,j) / o2_aqu2bulkcef(c, j)   
-      o_scalar(c,j)     = o2w/(o2w+0.05_r8)   !the value 0.22 mol O3/m3 is from Arah and Kirk, 2000
+      o_scalar(c,j)     = o2w/(o2w+0.02_r8)   !the value 0.22 mol O3/m3 is from Arah and Kirk, 2000
       
       !depth scalar, according to Koven et al. (2013), BG, the depth scalar is needed to resolve the radiocarbon profile
       depth_scalar(c,j) = exp(-zsoi(c,j)/decomp_depth_efolding)

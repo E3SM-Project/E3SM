@@ -666,7 +666,8 @@ contains
       !update state variables
       time = 0._r8 
       
-      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j)    
+!      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j) 
+      yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose   
 !      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
       call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
 !      print*,'cjp',c,j,pscal

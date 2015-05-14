@@ -292,11 +292,15 @@ contains
          !  print*,'abgn',nitrogenstate_vars%totabgn_col(c)
          !  print*,'blgn',nitrogenstate_vars%totblgn_col(c)
          !endif
+!         if(c==2603 .and. get_nstep()==890)then
+!           err_index=c
+!           err_found = .true.
+!         endif
       end do ! end of columns loop
 
       if (err_found) then
          c = err_index
-         write(iulog,*)'column nbalance error = ', col_errnb(c), c
+         write(iulog,*)'column nbalance error = ', col_errnb(c), c, get_nstep()
          write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
          write(iulog,*)'begnb       = ',col_begnb(c)
          write(iulog,*)'endnb       = ',col_endnb(c)

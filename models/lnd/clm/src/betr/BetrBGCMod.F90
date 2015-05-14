@@ -204,22 +204,23 @@ contains
 !     betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_reaction')
   
   !print*,'do advection diffusion transport ' 
+!  if(get_nstep()/=890)then
   call tracer_gw_transport(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, Rfactor, &
       col%dz(bounds%begc:bounds%endc, lbj:ubj), col%zi(bounds%begc:bounds%endc,lbj-1:ubj), &
       waterstate_vars%h2osoi_liqvol_col(bounds%begc:bounds%endc, lbj:ubj),&
       (/do_advection, do_diffusion/), dtime, betrtracer_vars, tracerboundarycond_vars, &
       tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
-
+      !do_advection
 !  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
 !     betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_gw_transp')
   !print*,'do solid phase transport'
   !the solid phase tracer only start from the first layer. However, this may be subject to change
   !when snow ice is considered in future. Jinyun Tang, June/24/2014
+!  endif
   call tracer_solid_transport(bounds, 1, ubj, num_soilc, filter_soilc, dtime,&
     tracercoeff_vars%hmconductance_col(bounds%begc:bounds%endc, 1:ubj-1, : ),&
     col%dz(bounds%begc:bounds%endc, 1:ubj), betrtracer_vars                 ,&
     tracerboundarycond_vars, tracerflux_vars, tracerstate_vars)
-
   !print*,'do ebullition of gas fluxes'
   
   call calc_ebullition(bounds, 1, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, &
@@ -398,7 +399,7 @@ contains
                   tracer_conc_solid_passive_col(c,l,trcid) = 0._r8
                 else
                   exit
-                enddo  
+                endif  
               enddo
             endif
           enddo                    
@@ -534,7 +535,7 @@ contains
 
   do fc = 1, num_soilc
     c = filter_soilc(fc)
-    if(c== 8077 .and. get_nstep()>=8584) then
+    if(c== 3399 .and. get_nstep()>=7481) then
       j= betrtracer_vars%id_trc_no3x
       write(iulog,*)get_nstep(),loc_str
       write(iulog,*)(k,tracerstate_vars%tracer_conc_mobile_col(c,k,j),k=jtops(c),ubj)
@@ -608,7 +609,7 @@ contains
   real(r8) :: c_courant
   integer  :: num_loops                                !number of loops as determined by the courant number condition  
   logical  :: lexit_loop
-  integer  :: c, fc, j, l, k, ntrcs, trcid
+  integer  :: c, fc, j, l, k, ntrcs, trcid,kk
   integer  :: ngwmobile_tracers
   logical  :: lshock
 
@@ -654,7 +655,11 @@ contains
   time_remain(:) = 0._r8
   dtime_loc(:) = 0._r8
    
-
+!  if(get_nstep()==890)then
+!    vtrans_scal(betrtracer_vars%id_trc_no3x) = 0._r8
+!  else
+!    vtrans_scal(betrtracer_vars%id_trc_no3x) = 1._r8
+!  endif
   !loop over the tracers     
   do j = 1, ngwmobile_tracer_groups
     ntrcs = 0
@@ -712,9 +717,10 @@ contains
           do k = 1, ntrcs
             trcid = adv_trc_group(k)
             dmass(c, k) = dot_sum(tracer_conc_mobile_col(c, jtops(c):ubj, trcid), dz(c, jtops(c):ubj))
-            if(c==8077 .and. trim(tracernames(trcid))=='NO3x' .and. get_nstep()>=8582)then
-              write(iulog,*)'adbf',get_nstep(),dmass(c,k),k,trcid,ntrcs
-            endif        
+!            if(c==3399 .and. trim(tracernames(trcid))=='NO3x' .and. get_nstep()>=7481)then
+!              kk = kk + 1
+!              write(iulog,*)'adbf',get_nstep(),dmass(c,k),k,trcid,ntrcs,kk,c,dtime_loc(c)
+!            endif        
           enddo
         endif
       enddo
@@ -732,7 +738,9 @@ contains
         do l = lbj, ubj
           do fc = 1, num_soilc
             c = filter_soilc(fc)
-            if(l>=jtops(c))tracer_conc_mobile_col(c,l,trcid)=trc_conc_out(c,l,k)
+            if(update_col(c) .and. (.not. halfdt_col(c)) .and. l>=jtops(c))then
+              tracer_conc_mobile_col(c,l,trcid)=trc_conc_out(c,l,k)
+            endif
           enddo
         enddo
         transp_mass(:,k) = 0._r8
@@ -756,10 +764,10 @@ contains
             dmass(c, k) =  dot_sum(tracer_conc_mobile_col(c,jtops(c):ubj,trcid), dz(c,jtops(c):ubj))- dmass(c, k)
                     
             err_tracer(c, k) = dmass(c, k) - inflx_top(c,k) * dtime_loc(c) + leaching_mass(c,k) + transp_mass(c, k)
-          if(c==8077 .and. trcid==betrtracer_vars%id_trc_no3x .and. get_nstep()>=8582)then
-            write(iulog,*)get_nstep(),dtime_loc(c),'mass0=',mass0,k,trcid
-            write(iulog,'(I8,X,A,4(X,A,X,E18.10))')c,tracernames(trcid),' err_adv=',err_tracer(c,k),' lech=',leaching_mass(c,k),' infl=',inflx_top(c,k),' dmass=',dmass(c,k)
-          endif
+!          if(c==2603 .and. trcid==betrtracer_vars%id_trc_no3x .and. get_nstep()>=889)then
+!            write(iulog,*)get_nstep(),dtime_loc(c),'mass0=',mass0,k,trcid
+!            write(iulog,'(I8,X,A,4(X,A,X,E18.10))')c,tracernames(trcid),' err_adv=',err_tracer(c,k),' lech=',leaching_mass(c,k),' infl=',inflx_top(c,k),' dmass=',dmass(c,k)
+!          endif
             if(abs(err_tracer(c,k))<err_adv_min .or. abs(err_tracer(c,k))/(mass0+1.e-10_r8) < 1.e-10_r8)then
             !when the absolute value is too small, set relative error to 
               err_relative = err_relative_threshold*0.999_r8   
@@ -774,6 +782,10 @@ contains
                  leaching_mass(c,k),' infl=',inflx_top(c,k),' dmass=',dmass(c,k), ' mass0=',mass0,'err_rel=',err_relative
               call endrun('mass balance error for tracer '//tracernames(j)//errMsg(__FILE__, __LINE__))            
             endif
+            !if(c==2603 .and. trcid==betrtracer_vars%id_trc_no3x .and. get_nstep()>=890)then
+            !  leaching_mass(c,k) = leaching_mass(c,k) + transp_mass(c,k)
+            !  transp_mass(c,k) = 0._r8
+            !endif
             tracer_flx_vtrans(c, trcid)  = tracer_flx_vtrans(c,trcid) + transp_mass(c,k)
             tracer_flx_leaching(c,trcid) = tracer_flx_leaching(c, trcid) + leaching_mass(c,k)
             !if(c==764 .and. trim(tracernames(trcid))=='AR')then
@@ -1397,7 +1409,6 @@ contains
     tracer_flx_drain         => tracerflux_vars%tracer_flx_drain_col        & !
   )
   
-  
   do j = lbj, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)
@@ -1421,7 +1432,6 @@ contains
       endif
     enddo  
   enddo
-
   !diagnose gas pressure
   call diagnose_gas_pressure(bounds, lbj, ubj, num_soilc, filter_soilc, &
      betrtracer_vars, tracercoeff_vars, tracerstate_vars)

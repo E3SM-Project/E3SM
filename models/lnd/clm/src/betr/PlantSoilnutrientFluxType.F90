@@ -9,6 +9,8 @@ module PlantSoilnutrientFluxType
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod            , only : errMsg => shr_log_errMsg
+  use clm_varctl             , only : iulog
+  use clm_time_manager       , only : get_nstep
   use clm_varcon             , only : spval, ispval
   use decompMod              , only : bounds_type  
   use ColumnType             , only : col                
@@ -254,6 +256,7 @@ module PlantSoilnutrientFluxType
 
   use MathfuncMod              , only : dot_sum
   use clm_time_manager         , only : get_step_size    
+  use clm_varcon               , only : natomw
     ! !ARGUMENTS:
   class(plantsoilnutrientflux_type) :: this
   type(bounds_type), intent(in) :: bounds        
@@ -272,7 +275,7 @@ module PlantSoilnutrientFluxType
   do fc = 1, num_soilc
     c = filter_soilc(fc)
     this%plant_minn_active_yield_flx_col(c)  =dot_sum(this%plant_minn_active_yield_flx_vr_col(c,1:ubj),dz(c,1:ubj))/dtime
-    this%plant_minn_passive_yield_flx_col(c) =(nh4_transp(c) + no3_transp(c))/dtime 
+    this%plant_minn_passive_yield_flx_col(c) =(nh4_transp(c) + no3_transp(c))*natomw/dtime 
   enddo
   
   end subroutine summary
@@ -294,19 +297,19 @@ module PlantSoilnutrientFluxType
   
   real(r8) :: Vmax_minn = 1.e-7_r8  ! gN/gC/s
   integer  :: fp, p, fc, c
-  real(r8) :: nscal = 3._r8
+  real(r8) :: nscal = 1._r8
   
   SHR_ASSERT_ALL((ubound(frootc_patch) == (/bounds%endp/)), errMsg(__FILE__,__LINE__))
   !calculate root nitrogen uptake potential
   
   !default approach
   !
-  !do fc = 1, num_soilc
-  !  c = filter_soilc(fc)
-  !  
-  !  this%plant_minn_uptake_potential_col(c) = this%plant_totn_demand_flx_col(c)*nscal
-  !enddo
-  
+  do fc = 1, num_soilc
+    c = filter_soilc(fc)
+    
+    this%plant_minn_uptake_potential_col(c) = this%plant_totn_demand_flx_col(c)*nscal
+  enddo
+  return 
   !new approach
   do fp = 1, num_soilp
     p = filter_soilp(fp)    
