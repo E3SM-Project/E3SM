@@ -51,7 +51,6 @@ module ocn_analysis_driver
              ocn_analysis_init, &
              ocn_analysis_compute_startup, &
              ocn_analysis_compute, &
-             ocn_analysis_compute_w_alarms, &
              ocn_analysis_write, &
              ocn_analysis_restart, &
              ocn_analysis_finalize
@@ -353,88 +352,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_compute(domain, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      type (domain_type), intent(inout) :: domain
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: timeLevel, err_tmp
-
-      logical, pointer :: config_use_global_stats
-      logical, pointer :: config_use_AM_sfc_area_weighted_avg
-      logical, pointer :: config_use_zonal_mean
-      logical, pointer :: config_use_okubo_weiss
-!      logical, pointer :: config_use_TEMPLATE
-
-      err = 0
-
-      timeLevel=1
-      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
-      if (config_use_global_stats) then
-         call ocn_compute_global_stats(domain, timeLevel, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
-      if (config_use_AM_sfc_area_weighted_avg) then
-         call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
-      if (config_use_zonal_mean) then
-         call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
-      if (config_use_okubo_weiss) then
-         call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
-      endif
-
-!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
-!      if (config_use_TEMPLATE) then
-!         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
-!      endif
-
-   end subroutine ocn_analysis_compute!}}}
-
-!***********************************************************************
-!
-!  routine ocn_analysis_compute_w_alarms
-!
-!> \brief   Driver for MPAS-Ocean analysis computations
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine calls all computation subroutines required for the 
-!>  MPAS-Ocean analysis driver.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_analysis_compute_w_alarms(stream_manager, domain, err)!{{{
+   subroutine ocn_analysis_compute(domain, stream_manager, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -477,6 +395,7 @@ contains
       timeLevel=1
       call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
+         ! This analysis member is computed just before output:
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_global_stats(domain, timeLevel, err_tmp)
          endif 
@@ -484,6 +403,7 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       if (config_use_AM_sfc_area_weighted_avg) then
+         ! This analysis member is computed just before output:
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='sfcAreaOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
          endif
@@ -491,6 +411,7 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
+         ! This analysis member is computed just before output:
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='zonalMeanOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
          endif
@@ -498,6 +419,7 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
       if (config_use_okubo_weiss) then
+         ! This analysis member is computed just before output:
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='okuboWeissOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
          endif
@@ -505,12 +427,13 @@ contains
 
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
-!        if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) then
+!         ! This analysis member is computed just before output:
+!         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) then
 !            call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !         endif
 !      endif
 
-   end subroutine ocn_analysis_compute_w_alarms!}}}
+   end subroutine ocn_analysis_compute!}}}
 
 !***********************************************************************
 !

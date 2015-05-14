@@ -488,8 +488,8 @@ module ocn_forward_mode
             block_ptr => block_ptr % next
          end do
       
-         write(6,*) 'calling ocn_analysis_compute_w_alarms from forward'
-         call ocn_analysis_compute_w_alarms(stream_manager, domain, err) 
+         write(6,*) 'calling ocn_analysis_compute from forward'
+         call ocn_analysis_compute(domain, stream_manager, err) 
 
          write(6,*) 'calling ocn_analysis_write from forward'
          call ocn_analysis_write(stream_manager, err)
