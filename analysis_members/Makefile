@@ -9,13 +9,15 @@ OBJS = mpas_ocn_analysis_driver.o \
 
 all: $(OBJS)
 
-mpas_ocn_analysis_driver.o: mpas_ocn_global_stats.o mpas_ocn_okubo_weiss.o mpas_ocn_zonal_mean.o mpas_ocn_okubo_weiss_eigenvalues.o mpas_ocn_surface_area_weighted_averages.o
+mpas_ocn_analysis_driver.o: mpas_ocn_global_stats.o mpas_ocn_okubo_weiss.o mpas_ocn_zonal_mean.o mpas_ocn_okubo_weiss_eigenvalues.o mpas_ocn_surface_area_weighted_averages.o mpas_ocn_layer_volume_weighted_averages.o
 
 mpas_ocn_global_stats.o:
 
 mpas_ocn_zonal_mean.o:
 
 mpas_ocn_surface_area_weighted_averages.o: 
+
+mpas_ocn_layer_volume_weighted_averages.o:
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
