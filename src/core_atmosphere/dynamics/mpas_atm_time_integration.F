@@ -289,17 +289,9 @@ module atm_time_integration
             vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
             vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
 
-!$OMP MASTER
-         timerid = 2
-         call start_timer(timerid)
-!$OMP END MASTER
          call atm_rk_integration_setup(state, diag, &
                                        cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                        cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
-!$OMP MASTER
-         call stop_timer(timerid, secs, n_secs)
-         write(0,'(a,i3,a1,i9.9)') 'rk_integration_setup timing: ', secs, '.', n_secs
-!$OMP END MASTER
 !$OMP END PARALLEL
 
          block => block % next
@@ -338,17 +330,9 @@ module atm_time_integration
                vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
                vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
 
-!$OMP MASTER
-               timerid = 2
-               call start_timer(timerid)
-!$OMP END MASTER
                call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh, &     !MGD could do away with dimensions arg
                                           cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                           cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
-!$OMP MASTER
-               call stop_timer(timerid, secs, n_secs)
-               write(0,'(a,i3,a1,i9.9)') 'compute_moist_coeffs timing: ', secs, '.', n_secs
-!$OMP END MASTER
 !$OMP END PARALLEL
    
                block => block % next
@@ -397,17 +381,9 @@ module atm_time_integration
                vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
                vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
 
-!$OMP MASTER
-               timerid = 2
-               call start_timer(timerid)
-!$OMP END MASTER
                call atm_compute_dyn_tend( tend, state, diag, mesh, block % configs, nVertLevels, rk_step, dt, & 
                                           cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                           cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
-!$OMP MASTER
-               call stop_timer(timerid, secs, n_secs)
-               write(0,'(a,i3,a1,i9.9)') 'compute_dyn_tend timing: ', secs, '.', n_secs
-!$OMP END MASTER
 !$OMP END PARALLEL
 
                deallocate(delsq_theta)
@@ -482,20 +458,12 @@ module atm_time_integration
                edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
                edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
 
-!$OMP MASTER
-               timerid = 3
-               call start_timer(timerid)
-!$OMP END MASTER
                call atm_set_smlstep_pert_variables( tend, diag, mesh, block % configs, &
                                           cellStart, cellEnd, edgeStart, edgeEnd, &
                                           cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
                call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step), &
                                           cellStart, cellEnd, edgeStart, edgeEnd, &
                                           cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
-!$OMP MASTER
-               call stop_timer(timerid, secs, n_secs)
-               write(0,'(a,i3,a1,i9.9)') 'set_smlstep timing: ', secs, '.', n_secs
-!$OMP END MASTER
 !$OMP END PARALLEL
                block => block % next
             end do
@@ -545,18 +513,10 @@ module atm_time_integration
                   vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
                   vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
 
-!$OMP MASTER
-                  timerid = 3
-                  call start_timer(timerid)
-!$OMP END MASTER
                   call atm_advance_acoustic_step( state, diag, tend,  mesh, block % configs, nCells, nVertLevels, &
                                           rk_sub_timestep(rk_step), &
                                           cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                           cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
-!$OMP MASTER
-                  call stop_timer(timerid, secs, n_secs)
-                  write(0,'(a,i3,a1,i9.9)') 'compute_dyn_tend timing: ', secs, '.', n_secs
-!$OMP END MASTER
 !$OMP END PARALLEL
 
                   deallocate(ts)
@@ -625,17 +585,9 @@ module atm_time_integration
                vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
                vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
 
-!$OMP MASTER
-            timerid = 3
-            call start_timer(timerid)
-!$OMP END MASTER
                call atm_recover_large_step_variables( state, diag, tend, mesh, block % configs, rk_timestep(rk_step), number_sub_steps(rk_step), rk_step, &
                                           cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                           cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
-!$OMP MASTER
-            call stop_timer(timerid, secs, n_secs)
-            write(0,'(a,i3,a1,i9.9)') 'recover_large_step timing: ', secs, '.', n_secs
-!$OMP END MASTER
 !$OMP END PARALLEL
 
                block => block % next
@@ -700,33 +652,17 @@ module atm_time_integration
                   !       so we use the advance_scalars routine for the first two RK substeps.
                   !
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-!$OMP MASTER
-                     timerid = 2
-                     call start_timer(timerid)
-!$OMP END MASTER
                      call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), &
                                              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
                                              advance_density=.false. )
-!$OMP MASTER
-                     call stop_timer(timerid, secs, n_secs)
-                     write(0,'(a,i3,a1,i9.9)') 'advance_scalars timing: ', secs, '.', n_secs
-!$OMP END MASTER
                   else
       
                      block % domain = domain 
-!$OMP MASTER
-                     timerid = 3
-                     call start_timer(timerid)
-!$OMP END MASTER
                      call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), &
                                              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                              cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
                                              advance_density=.false.)
-!$OMP MASTER
-                     call stop_timer(timerid, secs, n_secs)
-                     write(0,'(a,i3,a1,i9.9)') 'advance_scalars_mono timing: ', secs, '.', n_secs
-!$OMP END MASTER
                   end if
 !$OMP END PARALLEL
 
@@ -768,16 +704,8 @@ module atm_time_integration
 !write(0,*) 'edge start/end = ', edgeStart, edgeEnd
 !write(0,*) 'vertex start/end = ', vertexStart, vertexEnd
 
-!$OMP MASTER
-               timerid = 1
-               call start_timer(timerid)
-!$OMP END MASTER
                call atm_compute_solve_diagnostics(dt, state, 2, diag, mesh, block % configs, &
                                                   cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
-!$OMP MASTER
-               call stop_timer(timerid, secs, n_secs)
-               write(0,'(a,i3,a1,i9.9)') 'compute_solve_diagnostics timing: ', secs, '.', n_secs
-!$OMP END MASTER
 !$OMP END PARALLEL
 
                block => block % next
@@ -926,33 +854,17 @@ module atm_time_integration
                !       so we use the advance_scalars routine for the first two RK substeps.
                !
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-!$OMP MASTER
-                  timerid = 2
-                  call start_timer(timerid)
-!$OMP END MASTER
                   call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nCells, nVertLevels, rk_timestep(rk_step), &
                                           cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                           cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
                                           advance_density=.true. )
-!$OMP MASTER
-                  call stop_timer(timerid, secs, n_secs)
-                  write(0,'(a,i3,a1,i9.9)') 'advance_scalars timing: ', secs, '.', n_secs
-!$OMP END MASTER
                else
    
                   block % domain = domain 
-!$OMP MASTER
-                  timerid = 3
-                  call start_timer(timerid)
-!$OMP END MASTER
                   call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step), &
                                           cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                           cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
                                           advance_density=.true.)
-!$OMP MASTER
-                  call stop_timer(timerid, secs, n_secs)
-                  write(0,'(a,i3,a1,i9.9)') 'advance_scalars_mono timing: ', secs, '.', n_secs
-!$OMP END MASTER
                end if
 !$OMP END PARALLEL
 
