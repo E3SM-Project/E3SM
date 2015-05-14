@@ -27,6 +27,7 @@ module ocn_analysis_driver
    use ocn_constants
    use ocn_global_stats
    use ocn_surface_area_weighted_averages
+   use ocn_layer_volume_weighted_averages
    use ocn_zonal_mean
    use ocn_okubo_weiss
 !   use ocn_TEMPLATE
@@ -115,10 +116,10 @@ contains
       logical, pointer :: config_use_zonal_mean 
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
+      logical, pointer :: config_use_AM_layer_volume_weighted_avg
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
-
 
       call mpas_pool_get_config(configPool, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
@@ -129,6 +130,12 @@ contains
       call mpas_pool_get_config(configPool, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       if (config_use_AM_sfc_area_weighted_avg) then
           call ocn_setup_packages_surface_area_weighted_averages(configPool, packagePool, err_tmp)
+          err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(configPool, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
+      if (config_use_AM_layer_volume_weighted_avg) then
+          call ocn_setup_packages_layer_volume_weighted_averages(configPool, packagePool, err_tmp)
           err = ior(err, err_tmp)
       endif
 
@@ -198,6 +205,7 @@ contains
       integer :: err_tmp
       logical, pointer :: config_use_global_stats
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
+      logical, pointer :: config_use_AM_layer_volume_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -213,6 +221,12 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       if (config_use_AM_sfc_area_weighted_avg) then
           call ocn_init_surface_area_weighted_averages(domain, err_tmp)
+          err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
+      if (config_use_AM_layer_volume_weighted_avg) then
+          call ocn_init_layer_volume_weighted_averages(domain, err_tmp)
           err = ior(err, err_tmp)
       endif
 
@@ -284,6 +298,7 @@ contains
 
       logical, pointer :: config_use_global_stats, config_global_stats_compute_startup
       logical, pointer :: config_use_AM_sfc_area_weighted_avg, config_AM_sfc_area_weighted_avg_compute_startup
+      logical, pointer :: config_use_AM_layer_volume_weighted_avg, config_AM_layer_volume_weighted_avg_compute_startup
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
       logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
 !      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
@@ -307,6 +322,16 @@ contains
          call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
          call mpas_timer_start('io_write', .false.)
          call mpas_stream_mgr_write(stream_manager, streamID='sfcAreaOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_timer_stop('io_write')
+         err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
+      call mpas_pool_get_config(domain % configs, 'config_AM_layer_volume_weighted_avg_compute_startup', config_AM_layer_volume_weighted_avg_compute_startup)
+      if (config_use_AM_layer_volume_weighted_avg.and.config_AM_layer_volume_weighted_avg_compute_startup) then
+         call ocn_compute_layer_volume_weighted_averages(domain, timeLevel, err_tmp)
+         call mpas_timer_start('io_write', .false.)
+         call mpas_stream_mgr_write(stream_manager, streamID='layerVolOutput', forceWriteNow=.true., ierr=err_tmp)
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
@@ -387,6 +412,7 @@ contains
 
       logical, pointer :: config_use_global_stats
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
+      logical, pointer :: config_use_AM_layer_volume_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -402,6 +428,11 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       if (config_use_AM_sfc_area_weighted_avg) then
          call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
+      if (config_use_AM_layer_volume_weighted_avg) then
+         call ocn_compute_layer_volume_weighted_averages(domain, timeLevel, err_tmp)
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
@@ -468,6 +499,7 @@ contains
       integer :: timeLevel, err_tmp
       logical, pointer :: config_use_global_stats
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
+      logical, pointer :: config_use_AM_layer_volume_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -486,6 +518,13 @@ contains
       if (config_use_AM_sfc_area_weighted_avg) then
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='sfcAreaOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
+         endif
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
+      if (config_use_AM_layer_volume_weighted_avg) then
+         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='layerVolOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+            call ocn_compute_layer_volume_weighted_averages(domain, timeLevel, err_tmp)
          endif
       endif
 
@@ -558,6 +597,7 @@ contains
       integer :: err_tmp
       logical, pointer :: config_use_global_stats
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
+      logical, pointer :: config_use_AM_layer_volume_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -573,6 +613,12 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       if (config_use_AM_sfc_area_weighted_avg) then
           call ocn_restart_surface_area_weighted_averages(domain, err_tmp)
+          err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
+      if (config_use_AM_layer_volume_weighted_avg) then
+          call ocn_restart_layer_volume_weighted_averages(domain, err_tmp)
           err = ior(err, err_tmp)
       endif
 
@@ -645,6 +691,7 @@ contains
 
       logical, pointer :: config_use_global_stats
       logical, pointer :: config_use_AM_sfc_area_weighted_avg 
+      logical, pointer :: config_use_AM_layer_volume_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -669,6 +716,17 @@ contains
           call mpas_timer_stop('io_write')
           call mpas_timer_start('io_reset_alarms', .false.)
           call mpas_stream_mgr_reset_alarms(stream_manager, streamID='sfcAreaOutput', ierr=err_tmp)
+          call mpas_timer_stop('io_reset_alarms')
+          err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
+      if (config_use_AM_layer_volume_weighted_avg) then
+          call mpas_timer_start('io_write', .false.)
+          call mpas_stream_mgr_write(stream_manager, streamID='layerVolOutput', ierr=err_tmp)
+          call mpas_timer_stop('io_write')
+          call mpas_timer_start('io_reset_alarms', .false.)
+          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='layerVolOutput', ierr=err_tmp)
           call mpas_timer_stop('io_reset_alarms')
           err = ior(err, err_tmp)
       endif
@@ -754,6 +812,7 @@ contains
       integer :: err_tmp
       logical, pointer :: config_use_global_stats
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
+      logical, pointer :: config_use_AM_layer_volume_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
 !      logical, pointer :: config_use_TEMPLATE
@@ -769,6 +828,12 @@ contains
      call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
      if (config_use_AM_sfc_area_weighted_avg) then
         call ocn_finalize_surface_area_weighted_averages(domain, err_tmp)
+        err = ior(err, err_tmp)
+     endif
+
+     call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
+     if (config_use_AM_layer_volume_weighted_avg) then
+        call ocn_finalize_layer_volume_weighted_averages(domain, err_tmp)
         err = ior(err, err_tmp)
      endif
 
