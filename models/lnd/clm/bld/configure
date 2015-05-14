@@ -650,7 +650,7 @@ sub write_filepath_cesmbld
 
 	# source directories under root
 	my @dirs = ( "main", "biogeophys", "biogeochem", "dyn_subgrid", "ED", "ED/main", "ED/biogeophys", "ED/biogeochem",
-		    "ED/fire", "utils", "cpl", "betr", "betr/math","betr/bgc_century" );
+		    "ED/fire", "utils", "cpl", "betr", "betr/math","betr/bgc_century","betr/bgc_sminn" );
 	foreach my $dir ( @dirs ) {
 	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
 		print $fh "$srcdir/$dir\n";
