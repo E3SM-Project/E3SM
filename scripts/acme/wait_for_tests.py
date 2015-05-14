@@ -67,11 +67,20 @@ def get_test_output(test_path):
         return ""
 
 ###############################################################################
-def create_cdash_xml(start_time, results, cdash_build_name, cdash_project):
+def create_cdash_xml(results, cdash_build_name, cdash_project):
 ###############################################################################
 
+    #
     # Create dart config file
-    utc_time_tuple = time.gmtime(start_time)
+    #
+
+    # Pretending current time is our start time gives us the maximum window (24 hours)
+    # in which these test results will be displayed on the Cdash front-page
+    # dashboard. Cdash removes things from the dashboard after 24 hours from
+    # the NightlyStartTime.
+    current_time = time.time()
+
+    utc_time_tuple = time.gmtime(current_time)
     cdash_timestamp = time.strftime("%H:%M:%S", utc_time_tuple)
 
     hostname = acme_util.probe_machine_name()
@@ -155,10 +164,10 @@ NightlyStartTime: %s UTC
     testing_elem = xmlet.SubElement(site_elem, "Testing")
 
     start_date_time_elem = xmlet.SubElement(testing_elem, "StartDateTime")
-    start_date_time_elem.text = time.ctime(start_time)
+    start_date_time_elem.text = time.ctime(current_time)
 
     start_test_time_elem = xmlet.SubElement(testing_elem, "StartTestTime")
-    start_test_time_elem.text = str(int(start_time))
+    start_test_time_elem.text = str(int(current_time))
 
     test_list_elem = xmlet.SubElement(testing_elem, "TestList")
     for test_name in sorted(results):
@@ -370,9 +379,6 @@ def wait_for_tests(test_paths,
     # is terminated
     set_up_signal_handlers()
 
-    if (cdash_build_name):
-        start_time = time.time()
-
     test_results = get_test_results(test_paths, no_wait, check_throughput, ignore_namelists)
 
     all_pass = True
@@ -383,6 +389,6 @@ def wait_for_tests(test_paths,
         all_pass &= test_status == TEST_PASSED_STATUS
 
     if (cdash_build_name):
-        create_cdash_xml(start_time, test_results, cdash_build_name, cdash_project)
+        create_cdash_xml(test_results, cdash_build_name, cdash_project)
 
     return all_pass
