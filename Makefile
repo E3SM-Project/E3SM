@@ -119,14 +119,14 @@ ifort:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
-	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"CXXFLAGS_DEBUG = -g -fpe0 -traceback" \
-	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"FFLAGS_OPT = -openmp -real-size 64 -O3 -convert big_endian -FR" \
+	"CFLAGS_OPT = -openmp -O3" \
+	"CXXFLAGS_OPT = -openmp -O3" \
+	"LDFLAGS_OPT = -openmp -O3" \
+	"FFLAGS_DEBUG = -openmp -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -openmp -g -fpe0 -traceback" \
+	"CXXFLAGS_DEBUG = -openmp -g -fpe0 -traceback" \
+	"LDFLAGS_DEBUG = -openmp -g -fpe0 -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
@@ -161,14 +161,14 @@ gfortran:
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
-	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form" \
-	"CFLAGS_OPT = -O3 -m64" \
-	"CXXFLAGS_OPT = -O3 -m64" \
-	"LDFLAGS_OPT = -O3 -m64" \
-	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
-	"CFLAGS_DEBUG = -g -m64" \
-	"CXXFLAGS_DEBUG = -O3 -m64" \
-	"LDFLAGS_DEBUG = -g -m64" \
+	"FFLAGS_OPT = -fopenmp -O3 -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form" \
+	"CFLAGS_OPT = -fopenmp -O3 -m64" \
+	"CXXFLAGS_OPT = -fopenmp -O3 -m64" \
+	"LDFLAGS_OPT = -fopenmp -O3 -m64" \
+	"FFLAGS_DEBUG = -fopenmp -g -m64 -ffree-line-length-none -fdefault-real-8 -fdefault-double-8 -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
+	"CFLAGS_DEBUG = -fopenmp -g -m64" \
+	"CXXFLAGS_DEBUG = -fopenmp -O3 -m64" \
+	"LDFLAGS_DEBUG = -fopenmp -g -m64" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
