@@ -113,7 +113,7 @@ def parse_namelists(namelist_lines, filename):
 
     comment_re = re.compile(r'^[#!]')
     namelist_re = re.compile(r'^&(\S+)$')
-    name_re = re.compile(r'^([^\s=]+)\s*=\s*(.+)$')
+    name_re = re.compile(r"^([^\s=']+)\s*=\s*(.+)$")
     dict_re = re.compile(r"^'(\S+)\s*->\s*(\S+)'")
     comma_re = re.compile(r'\s*,\s*')
 
@@ -124,7 +124,10 @@ def parse_namelists(namelist_lines, filename):
 
         line = line.strip()
 
+        verbose_print("Parsing line: '%s'" % line)
+
         if (line == "" or comment_re.match(line)):
+            verbose_print("  Line was whitespace or comment, skipping.")
             continue
 
         if (current_namelist is None):
@@ -147,18 +150,25 @@ def parse_namelists(namelist_lines, filename):
 
             rv[current_namelist] = {}
 
+            verbose_print("  Starting namelist '%s'" % current_namelist)
+
         elif (line == "/"):
             # Ends a namelist
+            verbose_print("  Ending namelist '%s'" % current_namelist)
+
             expect(multiline_variable is None,
                    "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
+
             current_namelist = None
 
         elif (name_re.match(line)):
-            expect(multiline_variable is None,
-                   "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
-
             # Defining a variable (AKA name)
             name, value = name_re.match(line).groups()
+
+            verbose_print("  Parsing variable '%s' with data '%s'" % (name, value))
+
+            expect(multiline_variable is None,
+                   "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
             expect(name not in rv[current_namelist], "In file '%s', Duplicate name: '%s'" % (filename, name))
 
             tokens = [item.strip() for item in comma_re.split(value) if item.strip() != ""]
@@ -170,37 +180,49 @@ def parse_namelists(namelist_lines, filename):
                     expect(m is not None, "In file '%s', Dict entry '%s' does not match expected format" % (filename, token))
                     k, v = m.groups()
                     rv[current_namelist][name][k] = v
+                    verbose_print("    Adding dict entry '%s' -> '%s'" % (k, v))
 
             elif ("," in value):
                 # list
                 rv[current_namelist][name] = tokens
 
+                verbose_print("    Adding list entries: %s" % ", ".join(tokens))
+
             else:
                 rv[current_namelist][name] = value
+
+                verbose_print("    Setting to value '%s'" % value)
 
             if (line.endswith(",")):
                 # Value will continue on in subsequent lines
                 multiline_variable = (name, rv[current_namelist][name])
 
+                verbose_print("    Var is multiline...")
+
         elif (multiline_variable is not None):
             # Continuation of list or dict variable
             current_value = multiline_variable[1]
+            verbose_print("  Continuing multiline variable '%s' with data '%s'" % (multiline_variable[0], line))
             tokens = [item.strip() for item in comma_re.split(line) if item.strip() != ""]
             if (type(current_value) is list):
                 expect("->" not in line, "In file '%s', multiline list variable '%s' had dict entries" % (filename, multiline_variable[0]))
-                current_value.extend([item for item in tokens if item.strip() != ""])
+                current_value.extend(tokens)
+                verbose_print("    Adding list entries: %s" % ", ".join(tokens))
             elif (type(current_value) is dict):
                 for token in tokens:
                     m = dict_re.match(token)
                     expect(m is not None, "In file '%s', Dict entry '%s' does not match expected format" % (filename, token))
                     k, v = m.groups()
                     current_value[k] = v
+                    verbose_print("    Adding dict entry '%s' -> '%s'" % (k, v))
             else:
                 expect(False, "In file '%s', Continuation should have been for list or dict, instead it was: '%s'" % (filename, type(current_value)))
 
             if (not line.endswith(",")):
                 # Completed
                 multiline_variable = None
+
+                verbose_print("    Terminating multiline variable")
 
         else:
             expect(False, "In file '%s', Unrecognized line: '%s'" % (filename, line))
@@ -345,6 +367,57 @@ def compare_namelists(gold_namelists, comp_namelists, case):
     Missing namelist: nml1
     Found extra namelist: nml01
     False
+
+    >>> teststr1 = '''&rad_cnst_nl
+    ... icecldoptics           = 'mitchell'
+    ... logfile                = 'cpl.log.150514-001533'
+    ... case_name              = 'ERB.f19_g16.B1850C5.skybridge_intel.C.150513-230221'
+    ... runid                  = 'FOO'
+    ... model_version          = 'cam5_3_36'
+    ... username               = 'jgfouca'
+    ... iceopticsfile          = '/projects/ccsm/inputdata/atm/cam/physprops/iceoptics_c080917.nc'
+    ... liqcldoptics           = 'gammadist'
+    ... liqopticsfile          = '/projects/ccsm/inputdata/atm/cam/physprops/F_nwvl200_mu20_lam50_res64_t298_c080428.nc'
+    ... mode_defs              = 'mam3_mode1:accum:=', 'A:num_a1:N:num_c1:num_mr:+',
+    ...   'A:so4_a1:N:so4_c1:sulfate:/projects/ccsm/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc:+', 'A:pom_a1:N:pom_c1:p-organic:/projects/ccsm/inputdata/atm/cam/physprops/ocpho_rrtmg_c101112.nc:+',
+    ...   'A:soa_a1:N:soa_c1:s-organic:/projects/ccsm/inputdata/atm/cam/physprops/ocphi_rrtmg_c100508.nc:+', 'A:bc_a1:N:bc_c1:black-c:/projects/ccsm/inputdata/atm/cam/physprops/bcpho_rrtmg_c100508.nc:+',
+    ...   'A:dst_a1:N:dst_c1:dust:/projects/ccsm/inputdata/atm/cam/physprops/dust4_rrtmg_c090521.nc:+', 'A:ncl_a1:N:ncl_c1:seasalt:/projects/ccsm/inputdata/atm/cam/physprops/ssam_rrtmg_c100508.nc',
+    ...   'mam3_mode2:aitken:=', 'A:num_a2:N:num_c2:num_mr:+',
+    ...   'A:so4_a2:N:so4_c2:sulfate:/projects/ccsm/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc:+', 'A:soa_a2:N:soa_c2:s-organic:/projects/ccsm/inputdata/atm/cam/physprops/ocphi_rrtmg_c100508.nc:+',
+    ...   'A:ncl_a2:N:ncl_c2:seasalt:/projects/ccsm/inputdata/atm/cam/physprops/ssam_rrtmg_c100508.nc', 'mam3_mode3:coarse:=',
+    ...   'A:num_a3:N:num_c3:num_mr:+', 'A:dst_a3:N:dst_c3:dust:/projects/ccsm/inputdata/atm/cam/physprops/dust4_rrtmg_c090521.nc:+',
+    ...   'A:ncl_a3:N:ncl_c3:seasalt:/projects/ccsm/inputdata/atm/cam/physprops/ssam_rrtmg_c100508.nc:+', 'A:so4_a3:N:so4_c3:sulfate:/projects/ccsm/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc'
+    ... rad_climate            = 'A:Q:H2O', 'N:O2:O2', 'N:CO2:CO2',
+    ...   'N:ozone:O3', 'N:N2O:N2O', 'N:CH4:CH4',
+    ...   'N:CFC11:CFC11', 'N:CFC12:CFC12', 'M:mam3_mode1:/projects/ccsm/inputdata/atm/cam/physprops/mam3_mode1_rrtmg_c110318.nc',
+    ...   'M:mam3_mode2:/projects/ccsm/inputdata/atm/cam/physprops/mam3_mode2_rrtmg_c110318.nc', 'M:mam3_mode3:/projects/ccsm/inputdata/atm/cam/physprops/mam3_mode3_rrtmg_c110318.nc'
+    ... /'''
+    >>> teststr2 = '''&rad_cnst_nl
+    ... icecldoptics           = 'mitchell'
+    ... logfile                = 'cpl.log.150514-2398745'
+    ... case_name              = 'ERB.f19_g16.B1850C5.skybridge_intel.C.150513-1274213'
+    ... runid                  = 'BAR'
+    ... model_version          = 'cam5_3_36'
+    ... username               = 'hudson'
+    ... iceopticsfile          = '/something/else/inputdata/atm/cam/physprops/iceoptics_c080917.nc'
+    ... liqcldoptics           = 'gammadist'
+    ... liqopticsfile          = '/something/else/inputdata/atm/cam/physprops/F_nwvl200_mu20_lam50_res64_t298_c080428.nc'
+    ... mode_defs              = 'mam3_mode1:accum:=', 'A:num_a1:N:num_c1:num_mr:+',
+    ...   'A:so4_a1:N:so4_c1:sulfate:/something/else/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc:+', 'A:pom_a1:N:pom_c1:p-organic:/something/else/inputdata/atm/cam/physprops/ocpho_rrtmg_c101112.nc:+',
+    ...   'A:soa_a1:N:soa_c1:s-organic:/something/else/inputdata/atm/cam/physprops/ocphi_rrtmg_c100508.nc:+', 'A:bc_a1:N:bc_c1:black-c:/something/else/inputdata/atm/cam/physprops/bcpho_rrtmg_c100508.nc:+',
+    ...   'A:dst_a1:N:dst_c1:dust:/something/else/inputdata/atm/cam/physprops/dust4_rrtmg_c090521.nc:+', 'A:ncl_a1:N:ncl_c1:seasalt:/something/else/inputdata/atm/cam/physprops/ssam_rrtmg_c100508.nc',
+    ...   'mam3_mode2:aitken:=', 'A:num_a2:N:num_c2:num_mr:+',
+    ...   'A:so4_a2:N:so4_c2:sulfate:/something/else/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc:+', 'A:soa_a2:N:soa_c2:s-organic:/something/else/inputdata/atm/cam/physprops/ocphi_rrtmg_c100508.nc:+',
+    ...   'A:ncl_a2:N:ncl_c2:seasalt:/something/else/inputdata/atm/cam/physprops/ssam_rrtmg_c100508.nc', 'mam3_mode3:coarse:=',
+    ...   'A:num_a3:N:num_c3:num_mr:+', 'A:dst_a3:N:dst_c3:dust:/something/else/inputdata/atm/cam/physprops/dust4_rrtmg_c090521.nc:+',
+    ...   'A:ncl_a3:N:ncl_c3:seasalt:/something/else/inputdata/atm/cam/physprops/ssam_rrtmg_c100508.nc:+', 'A:so4_a3:N:so4_c3:sulfate:/something/else/inputdata/atm/cam/physprops/sulfate_rrtmg_c080918.nc'
+    ... rad_climate            = 'A:Q:H2O', 'N:O2:O2', 'N:CO2:CO2',
+    ...   'N:ozone:O3', 'N:N2O:N2O', 'N:CH4:CH4',
+    ...   'N:CFC11:CFC11', 'N:CFC12:CFC12', 'M:mam3_mode1:/something/else/inputdata/atm/cam/physprops/mam3_mode1_rrtmg_c110318.nc',
+    ...   'M:mam3_mode2:/something/else/inputdata/atm/cam/physprops/mam3_mode2_rrtmg_c110318.nc', 'M:mam3_mode3:/something/else/inputdata/atm/cam/physprops/mam3_mode3_rrtmg_c110318.nc'
+    ... /'''
+    >>> compare_namelists(parse_namelists(teststr1.splitlines(), 'foo'), parse_namelists(teststr2.splitlines(), 'bar'), 'ERB.f19_g16.B1850C5.skybridge_intel')
+    True
     """
     rv = True
 
