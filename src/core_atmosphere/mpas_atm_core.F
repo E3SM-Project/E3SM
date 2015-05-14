@@ -488,9 +488,11 @@ module atm_core
          ! Only after we've successfully written the restart file should we we
          !    write the restart_timestamp file
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
-            open(22,file=trim(config_restart_timestamp_name),form='formatted',status='replace')
-            write(22,*) trim(timeStamp)
-            close(22)
+            if (domain % dminfo % my_proc_id == 0) then
+               open(22,file=trim(config_restart_timestamp_name),form='formatted',status='replace')
+               write(22,*) trim(timeStamp)
+               close(22)
+            end if
          end if
 
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
