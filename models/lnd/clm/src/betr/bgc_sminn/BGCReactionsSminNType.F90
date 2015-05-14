@@ -1,4 +1,4 @@
-module BGCReactionsMockRunType
+module BGCReactionsSminNType
 
 
 #include "shr_assert.h"
@@ -24,35 +24,35 @@ implicit none
   private
   !
   ! !PUBLIC TYPES:
-  public :: bgc_reaction_mock_run_type
-
+  public :: bgc_reaction_sminn_type
+  
   type, extends(bgc_reaction_type) :: &
-     bgc_reaction_mock_run_type
+     bgc_reaction_sminn_type
      private
    contains
-     procedure :: Init_betrbgc                          ! initialize betr bgc
-     procedure :: set_boundary_conditions               ! set top/bottom boundary conditions for various tracers     
-     procedure :: calc_bgc_reaction                     ! doing bgc calculation
-     procedure :: init_boundary_condition_type          ! initialize type of top boundary conditions
-     procedure :: do_tracer_equilibration               ! do equilibrium tracer chemistry
-     procedure :: InitCold                              ! do cold initialization
-     procedure :: readParams                            ! read in parameters
+     procedure :: Init_betrbgc                  ! initialize betr bgc
+     procedure :: set_boundary_conditions       ! set top/bottom boundary conditions for various tracers     
+     procedure :: calc_bgc_reaction             ! doing bgc calculation
+     procedure :: init_boundary_condition_type  ! initialize type of top boundary conditions
+     procedure :: do_tracer_equilibration       ! do equilibrium tracer chemistry
+     procedure :: InitCold                      ! do cold initialization
+     procedure :: readParams                    ! read in parameters
      procedure :: betr_alm_flux_statevar_feedback       !
-     procedure :: init_betr_alm_bgc_coupler
-   end type bgc_reaction_mock_run_type
+     procedure :: init_betr_alm_bgc_coupler     
+   end type bgc_reaction_sminn_type
    
-   interface bgc_reaction_mock_run_type
+   interface bgc_reaction_sminn_type
      module procedure constructor
      
-   end interface bgc_reaction_mock_run_type
+   end interface bgc_reaction_sminn_type
 
    
   contains
 !-------------------------------------------------------------------------------
-  type(bgc_reaction_mock_run_type) function constructor()
+  type(bgc_reaction_sminn_type) function constructor()
   !
   ! ! DESCRIPTION
-  ! create an object of type bgc_reaction_mock_run_type.
+  ! create an object of type bgc_reaction_sminn_type.
   ! Right now it is purposely left empty
   
   end function constructor
@@ -66,7 +66,7 @@ implicit none
   use BeTRTracerType        , only : betrtracer_type
   
   
-  class(bgc_reaction_mock_run_type), intent(in) :: this      
+  class(bgc_reaction_sminn_type), intent(in) :: this      
   type(BeTRtracer_type ),            intent(in) :: betrtracer_vars
   type(bounds_type),                 intent(in) :: bounds
   type(tracerboundarycond_type),     intent(in) :: tracerboundarycond_vars  
@@ -77,7 +77,7 @@ implicit none
   integer :: c
   
 
-  tracerboundarycond_vars%topbc_type(:) = bndcond_as_conc
+  tracerboundarycond_vars%topbc_type(:) = bndcond_as_flx
   end subroutine init_boundary_condition_type
 !-------------------------------------------------------------------------------
 
@@ -88,7 +88,7 @@ implicit none
   use BeTRTracerType        , only : betrtracer_type
   use MathfuncMod           , only : addone  
   
-  class(bgc_reaction_mock_run_type), intent(in) :: this
+  class(bgc_reaction_sminn_type), intent(in) :: this
   type(bounds_type),                 intent(in) :: bounds
   integer,                           intent(in) :: lbj, ubj        
   type(BeTRtracer_type ),         intent(inout) :: betrtracer_vars
@@ -96,55 +96,36 @@ implicit none
   character(len=*), parameter :: subname ='Init_betrbgc'
 
   integer :: itemp_gwm
-  integer :: itemp_g
-  integer :: itemp_s
+
   integer :: itemp_gwm_grp
+  integer :: item_grp
   integer :: dum
-  integer :: itemp_grp, itemp_v, itemp_vgrp 
+  integer :: itemp_grp
  
-  itemp_gwm = 0; itemp_g = 0 ; itemp_s = 0; itemp_gwm_grp = 0
-  betrtracer_vars%id_trc_n2  = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
-  betrtracer_vars%id_trc_o2  = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
-  betrtracer_vars%id_trc_ar  = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
-  betrtracer_vars%id_trc_co2x= addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
-  betrtracer_vars%id_trc_ch4 = addone(itemp_gwm); dum = addone(itemp_g); dum = addone(itemp_gwm_grp)
+  itemp_gwm = 0; itemp_gwm_grp = 0
+
+  betrtracer_vars%id_trc_nh3x = addone(itemp_gwm);  dum = addone(itemp_gwm_grp)
+  betrtracer_vars%id_trc_no3x = addone(itemp_gwm); dum = addone(itemp_gwm_grp)
   
   betrtracer_vars%ngwmobile_tracers      = itemp_gwm;   betrtracer_vars%ngwmobile_tracer_groups= itemp_gwm_grp
-  betrtracer_vars%nsolid_passive_tracers = itemp_s;     betrtracer_vars%nsolid_passive_tracer_groups = itemp_s
-  betrtracer_vars%nvolatile_tracers      = itemp_g;     betrtracer_vars%nvolatile_tracer_groups= itemp_g
+
+  
   betrtracer_vars%nmem_max               = 1
   
 
   
   call betrtracer_vars%Init()
   itemp_grp = 0    !group id
-  itemp_v = 0      !volatile id
-  itemp_vgrp = 0   !volatile group
-  
-  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_n2, trc_name='N2'  , &
-    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
-    trc_group_mem= 1,  is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
-    trc_volatile_group_id = addone(itemp_vgrp))
 
-  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_o2, trc_name='O2'  , &
-    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
-    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
-    trc_volatile_group_id = addone(itemp_vgrp))
 
-  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ar, trc_name='AR'  , &
-    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
-    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
-    trc_volatile_group_id = addone(itemp_vgrp))
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_nh3x, trc_name='NH3x', &
+    is_trc_mobile=.false., is_trc_advective = .false., trc_group_id = addone(itemp_grp), &
+    trc_group_mem = 1, is_trc_volatile=.false.)
 
-  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_co2x, trc_name='CO2x', &
-    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp)  , &
-    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)       , &
-    trc_volatile_group_id = addone(itemp_vgrp) )
 
-  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_ch4, trc_name='CH4', &
-    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp), &
-    trc_group_mem = 1, is_trc_volatile=.true., trc_volatile_id = addone(itemp_v)     , &
-    trc_volatile_group_id = addone(itemp_vgrp))
+  call betrtracer_vars%set_tracer(trc_id = betrtracer_vars%id_trc_no3x, trc_name='NO3x', &
+    is_trc_mobile=.true., is_trc_advective = .true., trc_group_id = addone(itemp_grp),   &
+    trc_group_mem = 1, is_trc_volatile=.false.,trc_vtrans_scal=0._r8)
 
   end subroutine Init_betrbgc
   
@@ -162,7 +143,7 @@ implicit none
   use BeTRTracerType        , only : betrtracer_type
   use WaterfluxType         , only : waterflux_type    
   
-  class(bgc_reaction_mock_run_type), intent(in) :: this
+  class(bgc_reaction_sminn_type), intent(in) :: this
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: num_soilc                 ! number of columns in column filter_soilc
   integer,                intent(in) :: filter_soilc(:)            ! column filter_soilc   
@@ -185,19 +166,11 @@ implicit none
     c = filter_soilc(fc)
     
     !eventually, the following code will be implemented using polymorphism
-    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_n2)  =32.8_r8                         !mol m-3, contant boundary condition
-    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_o2)  =8.78_r8                         !mol m-3, contant boundary condition
-    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_ar)  =0.3924_r8                       !mol m-3, contant boundary condition
-    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_co2x)=0.0168_r8                      !mol m-3, contant boundary condition  
-    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_ch4) =6.939e-5_r8                    !mol m-3, contant boundary condition
-
-  
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_no3x) = 0._r8
+    tracerboundarycond_vars%tracer_gwdif_concflux_top_col(c,1:2,betrtracer_vars%id_trc_nh3x) = 0._r8
+    
     tracerboundarycond_vars%bot_concflux_col(c,1,:) = 0._r8                                  !zero flux boundary condition
-    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_n2))   = 2._r8*1.837e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_o2))   = 2._r8*1.713e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_ar))   = 2._r8*1.532e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_co2x)) = 2._r8*1.399e-5_r8/dz_top(c)     !m/s surface conductance
-    tracerboundarycond_vars%condc_toplay_col(c,groupid(betrtracer_vars%id_trc_ch4))  = 2._r8*1.808e-5_r8/dz_top(c)     !m/s surface conductance  
+  
   enddo
   end associate
   end subroutine set_boundary_conditions
@@ -224,9 +197,10 @@ implicit none
    use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
    use CNCarbonFluxType         , only : carbonflux_type   
    use CNCarbonStateType        , only : carbonstate_type
-   use CNNitrogenFluxType       , only : nitrogenflux_type     
+   use CNNitrogenFluxType       , only : nitrogenflux_type
+   use clm_varpar               , only : nlevtrc_soil    
    !ARGUMENTS
-   class(bgc_reaction_mock_run_type)   , intent(in) :: this
+   class(bgc_reaction_sminn_type)   , intent(in) :: this
    type(bounds_type)                   , intent(in) :: bounds                             ! bounds   
    integer                             , intent(in) :: num_soilc                               ! number of columns in column filter_soilc
    integer                             , intent(in) :: filter_soilc(:)                          ! column filter_soilc
@@ -251,7 +225,25 @@ implicit none
    character(len=*), parameter :: subname ='calc_bgc_reaction'
     
    
+   associate(                                                     &
+     id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
+     id_trc_nh3x        => betrtracer_vars%id_trc_nh3x            , &  
+     smin_no3_vr_col    => nitrogenstate_vars%smin_no3_vr_col     , &
+     smin_nh4_vr_col    => nitrogenstate_vars%smin_nh4_vr_col     , &
+     tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col  &
+   )
 
+   do j = 1, nlevtrc_soil
+     do fc = 1, num_soilc
+       c = filter_soilc(fc)
+    
+       tracer_conc_mobile(c,j,id_trc_no3x) = smin_no3_vr_col(c,j) / natomw
+       tracer_conc_mobile(c,j,id_trc_nh3x) = smin_nh4_vr_col(c,j) /natomw
+      
+     enddo        
+   enddo
+   
+   end associate
   end subroutine calc_bgc_reaction
   
   
@@ -271,7 +263,7 @@ implicit none
   
   
   use BeTRTracerType        , only : betrtracer_type
-  class(bgc_reaction_mock_run_type),    intent(in) :: this
+  class(bgc_reaction_sminn_type),    intent(in) :: this
 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
@@ -310,7 +302,7 @@ implicit none
     use landunit_varcon          , only : istsoil, istcrop    
     
     ! !ARGUMENTS:
-    class(bgc_reaction_mock_run_type) , intent(in)    :: this    
+    class(bgc_reaction_sminn_type) , intent(in)    :: this    
     type(bounds_type)                 , intent(in)    :: bounds
     type(BeTRTracer_Type)             , intent(in)    :: betrtracer_vars
     type(waterstate_type)             , intent(in)    :: waterstate_vars    
@@ -377,15 +369,13 @@ implicit none
   use ncdio_pio                , only : file_desc_t
   use BeTRTracerType           , only : BeTRTracer_Type
   
-  class(bgc_reaction_mock_run_type) , intent(in)    :: this   
+  class(bgc_reaction_sminn_type) , intent(in)    :: this   
   type(BeTRTracer_Type)             , intent(inout) :: betrtracer_vars  
   type(file_desc_t)  :: ncid  ! pio netCDF file id
    
    
   !do nothing here  
   end subroutine readParams
-
-
 
 !------------------------------------------------------------------------------- 
   subroutine betr_alm_flux_statevar_feedback(this, bounds, num_soilc, filter_soilc, &
@@ -402,24 +392,29 @@ implicit none
    use CNNitrogenFluxType       , only : nitrogenflux_type
    
 
-   class(bgc_reaction_mock_run_type) , intent(in)    :: this   
-   type(bounds_type)          , intent(in) :: bounds                             ! bounds   
-   integer                    , intent(in) :: num_soilc                               ! number of columns in column filter
-   integer                    , intent(in) :: filter_soilc(:)                          ! column filter
-   type(betrtracer_type)      , intent(in) :: betrtracer_vars                    ! betr configuration information
-   type(tracerstate_type)     , intent(in) :: tracerstate_vars
-   type(tracerflux_type)      , intent(in) :: tracerflux_vars
-   type(carbonstate_type)     , intent(inout) :: carbonstate_vars
-   type(nitrogenflux_type)    , intent(inout) :: nitrogenflux_vars
-   type(nitrogenstate_type)   , intent(inout) :: nitrogenstate_vars
+   class(bgc_reaction_sminn_type) , intent(in)    :: this     
+   type(bounds_type)              , intent(in) :: bounds                             ! bounds   
+   integer                        , intent(in) :: num_soilc                               ! number of columns in column filter
+   integer                        , intent(in) :: filter_soilc(:)                          ! column filter
+   type(betrtracer_type)          , intent(in) :: betrtracer_vars                    ! betr configuration information
+   type(tracerstate_type)         , intent(in) :: tracerstate_vars
+   type(tracerflux_type)          , intent(in) :: tracerflux_vars
+   type(carbonstate_type)         , intent(inout) :: carbonstate_vars
+   type(nitrogenflux_type)        , intent(inout) :: nitrogenflux_vars
+   type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
   
 
 
+
+  call assign_sminn_pools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars)
+  
+  call assign_minnitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)
+  
   
   end subroutine betr_alm_flux_statevar_feedback
   
-!------------------------------------------------------------------------------- 
   
+!------------------------------------------------------------------------------- 
   
   subroutine init_betr_alm_bgc_coupler(this, bounds, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
 
@@ -431,8 +426,9 @@ implicit none
   use BetrTracerType           , only : betrtracer_type
   use clm_varpar               , only : nlevtrc_soil
   use landunit_varcon          , only : istsoil, istcrop
+
   
-  class(bgc_reaction_mock_run_type) , intent(in)    :: this     
+  class(bgc_reaction_sminn_type)     , intent(in)    :: this    
   type(bounds_type)                  , intent(in) :: bounds
   type(tracerstate_type)             , intent(inout) :: tracerstate_vars
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
@@ -440,5 +436,92 @@ implicit none
   type(nitrogenstate_type)           , intent(in) :: nitrogenstate_vars
 
 
-  end subroutine init_betr_alm_bgc_coupler  
-end module BGCReactionsMockRunType
+
+
+  end subroutine init_betr_alm_bgc_coupler
+!-------------------------------------------------------------------------------    
+  subroutine assign_minnitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)
+  
+  !
+  ! DESCRIPTION
+  ! feedback the nitrogen hydrological fluxes, this comes after tracer mass balance, so the flux is with the unit of st/m2/s
+  use tracerfluxType           , only : tracerflux_type
+  use BetrTracerType           , only : betrtracer_type
+  use CNNitrogenFluxType       , only : nitrogenflux_type
+  use clm_varcon               , only : natomw 
+  type(bounds_type)                  , intent(in) :: bounds                             ! bounds
+  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
+  integer                            , intent(in) :: filter_soilc(:)                          ! column filter  
+  type(tracerflux_type)              , intent(in) :: tracerflux_vars
+  type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
+  type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars    
+  
+  integer :: fc, c
+  !get nitrogen leaching, and loss through surface runoff
+  
+  associate(                                     &
+  id_trc_no3x => betrtracer_vars%id_trc_no3x     &
+  )
+  
+  do fc = 1, num_soilc
+    c = filter_soilc(fc)
+    nitrogenflux_vars%smin_no3_leached_col(c) = tracerflux_vars%tracer_flx_totleached_col(c,id_trc_no3x)*natomw
+    nitrogenflux_vars%smin_no3_runoff_col(c)  = tracerflux_vars%tracer_flx_surfrun_col(c,id_trc_no3x)*natomw
+  enddo
+  
+  end associate
+  end subroutine assign_minnitrogen_hydroloss
+
+!-------------------------------------------------------------------------------  
+  subroutine assign_sminn_pools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars)
+  
+  use clm_varcon               , only : natomw, catomw  
+  use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use CNCarbonStateType        , only : carbonstate_type
+  use CNNitrogenStateType      , only : nitrogenstate_type  
+  use tracerstatetype          , only : tracerstate_type
+  use BetrTracerType           , only : betrtracer_type
+  use clm_varpar               , only : nlevtrc_soil 
+  type(bounds_type)                  , intent(in) :: bounds                             ! bounds
+  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
+  integer                            , intent(in) :: filter_soilc(:)                          ! column filter  
+  type(tracerstate_type)             , intent(in) :: tracerstate_vars
+  type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
+  type(carbonstate_type)             , intent(inout) :: carbonstate_vars
+  type(nitrogenstate_type)           , intent(inout) :: nitrogenstate_vars
+  
+  
+  integer, parameter :: i_soil1 = 5
+  integer, parameter :: i_soil2 = 6
+  integer, parameter :: i_soil3 = 7
+  
+  integer :: fc, c, j, k
+  associate(                                                     &
+  id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
+  id_trc_nh3x        => betrtracer_vars%id_trc_nh3x            , &  
+  smin_no3_vr_col    => nitrogenstate_vars%smin_no3_vr_col     , &
+  smin_nh4_vr_col    => nitrogenstate_vars%smin_nh4_vr_col     , &
+  sminn_vr_col       => nitrogenstate_vars%sminn_vr_col        , &
+  tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col  &
+  )
+  
+  
+    do j = 1, nlevtrc_soil
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
+    
+        smin_no3_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_no3x)*natomw
+        smin_nh4_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_nh3x)*natomw
+        sminn_vr_col   (c,j) = smin_no3_vr_col(c,j) + smin_nh4_vr_col(c,j)
+      
+      enddo        
+    enddo
+
+  
+  end associate
+  end subroutine assign_sminn_pools
+  
+
+
+    
+end module BGCReactionsSminNType

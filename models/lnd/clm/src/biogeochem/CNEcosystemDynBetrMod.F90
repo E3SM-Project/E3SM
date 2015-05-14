@@ -543,7 +543,6 @@ implicit none
   ! DESCRIPTION
   ! summarize all fluxes and state varaibles, prepare for mass balance analysis
   !
-  use  BGCReactionsCenturyType,  only : assign_OM_CNpools, assign_nitrogen_hydroloss
   implicit none
   type(bounds_type)        , intent(in)    :: bounds  
   integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
@@ -563,15 +562,8 @@ implicit none
   type(tracerflux_type)    , intent(in)    :: tracerflux_vars
   
   
-  !assign state variables, leaching flux, runoff flux, hr, denitrification fluxes, f_nit_n2o for mass balance analysis
-
-  !hr, denitrification fluxes, f_nit_n2o are considered in the bgc integration
   
-  call assign_OM_CNpools(bounds, num_soilc, filter_soilc, carbonstate_vars, nitrogenstate_vars,tracerstate_vars, betrtracer_vars)
-  
-  !get leaching flux and runoff flux, 
-  call assign_nitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)
-  
+    
   call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
   
   call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)

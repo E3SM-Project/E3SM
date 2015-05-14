@@ -841,7 +841,8 @@ contains
            tracerstate_vars,  tracerflux_vars)
          call t_stopf('betr balchk')  
 
-           
+         call bgc_reaction%betr_alm_bgc_flux_statevar_feedback(bounds, num_soilc, filter_soilc, &
+             carbonstate_vars, nitrogenstate_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars,  betrtracer_vars)          
        endif          
        ! ============================================================================
        ! Check the energy and water balance, also carbon and nitrogen balance
@@ -850,7 +851,7 @@ contains
        if (.not. use_ed) then
 
           if (use_cn) then
-          
+            
             if(is_active_betr_bgc)then
                !extract nitrogen pool and flux from betr
                !summarize total column nitrogen and carbon

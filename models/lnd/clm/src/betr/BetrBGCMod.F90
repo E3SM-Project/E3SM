@@ -1436,7 +1436,6 @@ contains
   call diagnose_gas_pressure(bounds, lbj, ubj, num_soilc, filter_soilc, &
      betrtracer_vars, tracercoeff_vars, tracerstate_vars)
 
-
   end associate
   end subroutine run_betr_one_step_with_drainage
   

@@ -29,10 +29,11 @@ implicit none
   use BGCReactionsMod           , only : bgc_reaction_type
   use BGCReactionsMockRunType   , only : bgc_reaction_mock_run_type
   use BGCReactionsCenturyType   , only : bgc_reaction_CENTURY_type
+  use BGCReactionsSminNType     , only : bgc_reaction_sminn_type
 !  use BGCReactionsO18IsotopeType, only : bgc_reaction_O18ISO_type
   use abortutils                , only : endrun
   use clm_varctl                , only : iulog
-  use tracer_varcon             , only : is_active_betr_bgc
+  use tracer_varcon             , only : is_active_betr_bgc, do_betr_leaching
   ! !ARGUMENTS
   
   class(bgc_reaction_type), allocatable :: bgc_reaction
@@ -47,6 +48,10 @@ implicit none
   case ("century_bgc")
     is_active_betr_bgc = .true.
     allocate(bgc_reaction, source=bgc_reaction_CENTURY_type())
+  case ("betr_sminn")
+    !this must be used together with clm45bgc
+    do_betr_leaching = .true.
+    allocate(bgc_reaction, source=bgc_reaction_sminn_type())
   !case ("o18_istope")    ! on hold
   !  allocate(bgc_reaction, source=bgc_reaction_O18ISO_type())
   case default

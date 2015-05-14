@@ -41,6 +41,7 @@ module Tracer_varcon
    logical, public :: licecoat = .false.                  ! true => switch on ice coating for dissolved tracers, the coating is defined as the dice/h2oliq,
                                                           ! where, dice is the change of ice content during to free-thaw cyles
    logical, public :: is_active_betr_bgc = .false.
+   logical, public :: do_betr_leaching = .false.
    logical, public :: liceseal = .true.                   ! true => allow ice to seal the surface soil and keep the gas tracer                                                       
    real(r8),public :: rr_dif_scal = 1._r8                       ! scaling factor for how much root respiration is diffused out into soil
    real(r8),public :: mr_dif_scal = 0._r8                       ! how much fraction of stem respiration is back into xylem

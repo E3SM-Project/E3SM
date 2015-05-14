@@ -679,7 +679,7 @@ contains
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use clm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
-    use tracer_varcon  , only : is_active_betr_bgc
+    use tracer_varcon  , only : is_active_betr_bgc, do_betr_leaching
     !
     ! !ARGUMENTS:
     class(nitrogenflux_type) :: this
@@ -2531,15 +2531,16 @@ contains
                   this%f_n2o_denit_col(c) + &
                   this%f_n2o_denit_vr_col(c,j) * dzsoi_decomp(j)
 
+             if(.not. do_betr_leaching)then     
              ! leaching/runoff flux
-             this%smin_no3_leached_col(c) = &
+               this%smin_no3_leached_col(c) = &
                   this%smin_no3_leached_col(c) + &
                   this%smin_no3_leached_vr_col(c,j) * dzsoi_decomp(j)
 
-             this%smin_no3_runoff_col(c) = &
+               this%smin_no3_runoff_col(c) = &
                   this%smin_no3_runoff_col(c) + &
                   this%smin_no3_runoff_vr_col(c,j) * dzsoi_decomp(j)
-
+             endif
           end do
        end do
 

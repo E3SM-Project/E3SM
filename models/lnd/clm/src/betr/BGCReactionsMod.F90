@@ -33,6 +33,12 @@ implicit none
       
       !read in implementation specific parameters
       procedure(readParams_interface)                   , deferred :: readParams
+      
+      !send back state flux variables to other parts of alm
+      procedure(betr_alm_bgc_flux_statevar_feedback_interface)    , deferred :: betr_alm_bgc_flux_statevar_feedback
+      
+      !initialize betr state variable from other bgc components in alm
+      procedure(init_betr_alm_bgc_coupler_interface_interface)    , deferred :: init_betr_alm_bgc_coupler
   end type bgc_reaction_type  
   
   abstract interface
@@ -213,6 +219,65 @@ implicit none
   type(file_desc_t)  :: ncid  ! pio netCDF file id
   type(BeTRTracer_Type)             , intent(inout) :: betrtracer_vars
   
-  end subroutine readParams_interface  
+  end subroutine readParams_interface
+  
+  
+!------------------------------------------------------------------------------- 
+  subroutine betr_alm_bgc_flux_statevar_feedback_interface(this, bounds, num_soilc, filter_soilc, &
+             carbonstate_vars, nitrogenstate_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars,  betrtracer_vars)
+
+   use decompMod                , only : bounds_type
+   use shr_kind_mod             , only : r8 => shr_kind_r8
+   use tracerfluxType           , only : tracerflux_type
+   use tracerstatetype          , only : tracerstate_type
+   use BeTRTracerType           , only : BeTRTracer_Type       
+   use CNCarbonStateType        , only : carbonstate_type
+   use CNNitrogenStateType      , only : nitrogenstate_type
+   use CNNitrogenFluxType       , only : nitrogenflux_type
+
+   import :: bgc_reaction_type
+   class(bgc_reaction_type)   , intent(in) :: this
+   type(bounds_type)          , intent(in) :: bounds                             ! bounds   
+   integer                    , intent(in) :: num_soilc                               ! number of columns in column filter
+   integer                    , intent(in) :: filter_soilc(:)                          ! column filter
+   type(betrtracer_type)      , intent(in) :: betrtracer_vars                    ! betr configuration information
+   type(tracerstate_type)     , intent(in) :: tracerstate_vars
+   type(tracerflux_type)      , intent(in) :: tracerflux_vars
+   type(carbonstate_type)     , intent(inout) :: carbonstate_vars
+   type(nitrogenflux_type)    , intent(inout) :: nitrogenflux_vars
+   type(nitrogenstate_type)   , intent(inout) :: nitrogenstate_vars
+  
+
+
+  
+  end subroutine betr_alm_bgc_flux_statevar_feedback_interface
+  
+  
+  
+!------------------------------------------------------------------------------- 
+  
+  
+  subroutine init_betr_alm_bgc_coupler_interface(this, bounds, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+
+  use clm_varcon               , only : natomw, catomw  
+  use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use CNCarbonStateType        , only : carbonstate_type
+  use CNNitrogenStateType      , only : nitrogenstate_type  
+  use tracerstatetype          , only : tracerstate_type
+  use BetrTracerType           , only : betrtracer_type
+  use clm_varpar               , only : nlevtrc_soil
+  use landunit_varcon          , only : istsoil, istcrop
+  
+  import :: bgc_reaction_type
+  class(bgc_reaction_type)           , intent(in) :: this    
+  type(bounds_type)                  , intent(in) :: bounds
+  type(tracerstate_type)             , intent(inout) :: tracerstate_vars
+  type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
+  type(carbonstate_type)             , intent(in) :: carbonstate_vars
+  type(nitrogenstate_type)           , intent(in) :: nitrogenstate_vars
+
+
+  end subroutine init_betr_alm_bgc_coupler_interface
+  
   end interface
 end module BGCReactionsMod
