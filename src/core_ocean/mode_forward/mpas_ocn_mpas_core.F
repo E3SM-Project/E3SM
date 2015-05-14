@@ -665,7 +665,7 @@ module mpas_core
          end do
       
          write(6,*) 'calling ocn_analysis_compute_w_alarms'
-         call ocn_analysis_compute_w_alarms(stream_manager, domain, err) 
+         call ocn_analysis_compute(domain, stream_manager, err) 
  
          write(6,*) 'calling ocn_analysis_write'
          call ocn_analysis_write(stream_manager, err)
