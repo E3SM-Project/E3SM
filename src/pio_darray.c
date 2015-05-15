@@ -1,7 +1,7 @@
 #include <pio.h>
 #include <pio_internal.h>
-#define MPIO_ONESIDED 1
 #define PIO_WRITE_BUFFERING 1
+
 PIO_Offset PIO_BUFFER_SIZE_LIMIT=10485760; // 10MB default limit
 bufsize PIO_CNBUFFER_LIMIT=33554432; 
 static void *CN_bpool=NULL; 
@@ -256,7 +256,11 @@ void compute_buffer_init(iosystem_desc_t ios)
 
 	   ierr = ncmpi_bput_varn(ncid, vid, rrcnt, startlist, countlist, 
 				  IOBUF, iodesc->llen, iodesc->basetype, &(vdesc->request));
-	   file->nreq++;
+	   if(vdesc->request == NC_REQ_NULL){
+	     vdesc->request = PIO_REQ_NULL;  //keeps wait calls in sync
+	   }
+	       
+
 	   //	   printf("%s %d %X %d\n",__FILE__,__LINE__,IOBUF,request);
 	   for(i=0;i<rrcnt;i++){
 	     free(startlist[i]);
@@ -1259,25 +1263,32 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     int rcnt=0;
     for(int i=0; i<PIO_MAX_VARS; i++){
       vdesc = file->varlist+i;
-      if(vdesc->request != NC_REQ_NULL || vdesc->fillrequest != NC_REQ_NULL){
-	request[rcnt++]=vdesc->fillrequest;
-	request[rcnt++] = max(vdesc->request,NC_REQ_NULL);
-	vdesc->request = NC_REQ_NULL;
-	vdesc->fillrequest = NC_REQ_NULL;
-      }
 #ifdef MPIO_ONESIDED
       /*onesided optimization requires that all of the requests in a wait_all call represent 
 	a contiguous block of data in the file */
-      else if(rcnt>0){
+      if(rcnt>0 && vdesc->request != NC_REQ_NULL && vdesc->fillrequest != NC_REQ_NULL){
+	if(file->iosystem->io_rank < 2) printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
 	ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
 	rcnt=0;
       }
+#endif
+      if(vdesc->request != NC_REQ_NULL){
+	request[rcnt++] = max(vdesc->request,NC_REQ_NULL);
+	vdesc->request = NC_REQ_NULL;
+      }
+      if(vdesc->fillrequest != NC_REQ_NULL){
+	request[rcnt++]=max(vdesc->fillrequest,NC_REQ_NULL);
+	vdesc->fillrequest = NC_REQ_NULL;
+      }
+      //      if(file->iosystem->io_rank < 2) printf("%s %d varid=%d\n",__FILE__,__LINE__,i);
+#ifdef FLUSH_EVERY_VAR
+      ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
+      rcnt=0;
 #endif
     }
     if(rcnt>0){
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
     }
-    file->nreq=0;
   }
 #ifdef TIMING
   GPTLstop("PIO:flush_output_buffer");
