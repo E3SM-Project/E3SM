@@ -395,6 +395,7 @@ contains
       integer, dimension(:,:), pointer :: dirichletVelocityMaskOld, dirichletVelocityMaskNew
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
       character (len=StrKIND), pointer :: config_velocity_solver, config_sia_tangent_slope_calculation
+      logical, pointer :: config_adaptive_timestep_include_DCFL
       ! truly local variables
       real (kind=RKIND) :: thisThk
       integer :: iCell, iLevel, iEdge, cell1, cell2
@@ -461,6 +462,7 @@ contains
           call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
           call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
           call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+          call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
@@ -492,27 +494,13 @@ contains
 
 
           ! Calculate SIA-related variables, if needed
-          if(trim(config_velocity_solver) == 'sia') then
-             call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-             call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
-             call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-             call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-             call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-             call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-             call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-
-             call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-             call mpas_pool_get_array(geometryPool, 'slopeEdge', slopeEdge)
+          !   This first block for calculating normalSlopeEdge is also needed for the DCFL calculation that could occur with any velocity solver
+          if ( (trim(config_velocity_solver) == 'sia') .or. (config_adaptive_timestep_include_DCFL) ) then
              call mpas_pool_get_array(geometryPool, 'normalSlopeEdge', normalSlopeEdge)
-             call mpas_pool_get_array(geometryPool, 'tangentSlopeEdge', tangentSlopeEdge)
-             call mpas_pool_get_array(geometryPool, 'upperSurfaceVertex', upperSurfaceVertex)
-             call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
-             call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
-             call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-
-             ! Calculate flowA
-             call calculate_flowParamA(meshPool, tracers(index_temperature,:,:), thickness, flowParamA, err_tmp)
-             err = ior(err, err_tmp)
+             call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+             call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+             call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+             call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
              ! Calculate normal slope
              do iEdge = 1, nEdges
@@ -526,6 +514,23 @@ contains
                    normalSlopeEdge(iEdge) = 0.0_RKIND
                 endif
              end do  ! edges
+          endif
+          ! The remaining calculations are only needed by the SIA solver
+          if (trim(config_velocity_solver) == 'sia') then
+             call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+             call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
+             call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+             call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+             call mpas_pool_get_array(geometryPool, 'slopeEdge', slopeEdge)
+             call mpas_pool_get_array(geometryPool, 'tangentSlopeEdge', tangentSlopeEdge)
+             call mpas_pool_get_array(geometryPool, 'upperSurfaceVertex', upperSurfaceVertex)
+             call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
+             call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
+             call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+
+             ! Calculate flowA
+             call calculate_flowParamA(meshPool, tracers(index_temperature,:,:), thickness, flowParamA, err_tmp)
+             err = ior(err, err_tmp)
 
              ! Calculate upperSurfaceVertex if needed
              select case (trim(config_sia_tangent_slope_calculation))
