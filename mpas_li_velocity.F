@@ -247,6 +247,7 @@ contains
       ! pointers to get from pools
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
+      logical, pointer :: config_print_velocity_cleanup_details
       integer, pointer :: nEdgesSolve
       integer, pointer :: nVertInterfaces
       integer, dimension(:), pointer :: edgeMask, cellMask
@@ -264,6 +265,7 @@ contains
       integer :: vertex1, vertex2
       integer :: iEdge
       integer :: iCell
+      integer :: inletEdgesFixed, uphillMarginEdgesFixed
       integer :: err_tmp
 
       call mpas_timer_start("velocity solve")
@@ -273,6 +275,10 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
+      call mpas_pool_get_config(liConfigs, 'config_print_velocity_cleanup_details', config_print_velocity_cleanup_details)
+
+      inletEdgesFixed = 0
+      uphillMarginEdgesFixed = 0
 
       ! External solvers do not support multiple blocks but the MPAS SIA solver does.
       block => domain % blocklist
@@ -358,8 +364,11 @@ contains
                   enddo
                   if ( (li_mask_is_dynamic_ice(cellMask(cell3))) .and.     &
                        (li_mask_is_dynamic_ice(cellMask(cell4))) ) then
-                     write (stderrUnit,*) "Notice: External velocity solver returned a normalVelocity on a non-dynamic edge, but this is ok because the location is in a non-dynamic 'inlet'.  normalVelocity has been set to 0 at this location.  Location is edge index:", indexToEdgeID(iEdge)
+                     if (config_print_velocity_cleanup_details) then
+                        write (stderrUnit,*) "Notice: External velocity solver returned a nonzero normalVelocity on a non-dynamic edge, but this is ok because the location is in a non-dynamic 'inlet'.  normalVelocity has been set to 0 at this location.  Location is edge index:", indexToEdgeID(iEdge)
+                     endif
                      normalVelocity(:,iEdge) = 0.0_RKIND
+                     inletEdgesFixed = inletEdgesFixed + 1
                   else
                      write (stderrUnit,*) 'ERROR: VELO ON NON-DYNAMIC EDGE, edge=', indexToEdgeID(iEdge)
                      err_tmp= 1
@@ -386,8 +395,11 @@ contains
                       upperSurface(cell2) > upperSurface(cell1) ) .or.  &
                     ( li_mask_is_dynamic_ice(cellMask(cell2)) .and.     &
                       upperSurface(cell1) > upperSurface(cell2) ) ) then
-                  write (stderrUnit,*) "Notice: A nonzero velocity has been calculated on an 'uphill' margin edge.  Velocity here has been set to 0.  Location is edge index:", indexToEdgeID(iEdge)
+                  if (config_print_velocity_cleanup_details) then
+                     write (stderrUnit,*) "Notice: Nonzero velocity has been calculated on an 'uphill' margin edge.  normalVelocity here has been set to 0.  Location is edge index:", indexToEdgeID(iEdge)
+                  endif
                   normalVelocity(:, iEdge) = 0.0_RKIND
+                  uphillMarginEdgesFixed = uphillMarginEdgesFixed + 1
                endif
             endif
 
@@ -401,6 +413,12 @@ contains
          block => block % next
       end do
 
+      if (inletEdgesFixed > 0) then
+          write (stderrUnit,*) "Notice: External velocity solver returned a nonzero normalVelocity on non-dynamic edge(s), but this is ok because the location is in a non-dynamic 'inlet'.  normalVelocity has been set to 0 at these location(s).  Number of edges affected on this processor:", inletEdgesFixed
+      endif
+      if (uphillMarginEdgesFixed > 0) then
+          write (stderrUnit,*) "Notice: Nonzero velocity has been calculated on 'uphill' margin edge(s).  normalVelocity has been set to 0 at these location(s).  Number of edges affected on this processor:", uphillMarginEdgesFixed
+      endif
 
       ! ---
       ! --- update halos on velocity

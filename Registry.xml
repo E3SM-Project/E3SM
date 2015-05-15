@@ -251,6 +251,10 @@
 		            description="Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes."
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_print_velocity_cleanup_details" type="logical" default_value=".false." units="unitless"
+		            description="After velocity is calculated there are a few checks for appropriate values in certain geometric configurations.  Setting this option to .true. will cause detailed information about those adjustments to be printed."
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 
