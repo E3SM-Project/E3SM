@@ -2,7 +2,7 @@
 
 # Do this once per login
 module load cmake
-unit_test_dir=/glade/scratch/$USER/unit_tests_drv
+unit_test_dir=/glade/scratch/$USER/unit_tests_shr
 
 # Do this only if you are running from a different checkout than
 # the previous time you built unit tests in this directory. (This
@@ -10,4 +10,4 @@ unit_test_dir=/glade/scratch/$USER/unit_tests_drv
 rm -rf $unit_test_dir
 
 # Here is the main command
-CTEST_OUTPUT_ON_FAILURE=1 ../../tools/unit_testing/run_tests.py --build-dir=$unit_test_dir --test-spec-dir=. --compiler=intel  --build-type=CESM_DEBUG
+CTEST_OUTPUT_ON_FAILURE=1 ../../../../tools/unit_testing/run_tests.py --build-dir=$unit_test_dir --test-spec-dir=. --compiler=intel  --build-type=CESM_DEBUG

@@ -79,6 +79,7 @@ add_subdirectory(${DRV_ROOT}/driver drv_driver)
 
 # Add general unit test directories (stubbed out files, etc.)
 add_subdirectory(utils drv_unit_test_utils)
+add_subdirectory(stubs drv_unit_test_stubs)
 
 # TODO: Figure out where to put declare_generated_dependencies, or whether to
 # just leave that out
@@ -107,6 +108,22 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 link_directories(${CMAKE_CURRENT_BINARY_DIR})
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/lib)
 
+# Set the list of libraries needed for these unit tests. Note that not all unit
+# tests need all of these libraries, but it's easiest just to set the same list
+# for everyone.
+set(DRV_UNIT_TEST_LIBS drv;csm_share;esmf_wrf_timemgr;mct;mpeu;mpi-serial)
+if (CESM_NETCDF_LIBS)
+  # Not all machines define CESM_NETCDF_LIBS - e.g., on yellowstone, the correct
+  # libraries are implicitly included on the link line via the necessary module
+  # load.
+  list(APPEND DRV_UNIT_TEST_LIBS ${CESM_NETCDF_LIBS})
+endif()
+
 # Add the test directories
 add_subdirectory(avect_wrapper_test)
 add_subdirectory(seq_map_test)
+add_subdirectory(glc_elevclass_test)
+add_subdirectory(vertical_gradient_calculator_test)
+add_subdirectory(map_lnd2glc_test)
+add_subdirectory(map_glc2lnd_test)
+
