@@ -384,8 +384,8 @@ contains
       ! Bit: Edges with ice are ones with at least one adjacent cell with ice
       ! Bit: Edges with dynamic ice are ones with at least one adjacent cell with dynamic ice
       ! Bit: Floating Edges have at least one neighboring cell floating
-      ! Bit: Edges on margin are vertices with one neighboring cell with ice and one neighboring cell without ice
-      ! Bit: Edges on dynamic margin are vertices with at least one neighboring cell with dynamic ice and at least one neighboring cell without dynamic ice
+      ! Bit: Edges on margin are edges with one neighboring cell with ice and one neighboring cell without ice
+      ! Bit: Edges on dynamic margin are edges with one neighboring cell with dynamic ice and one neighboring cell without dynamic ice
       edgeMask = 0
       do i = 1,nEdges
           aCellOnEdgeHasIce = .false.
@@ -562,28 +562,28 @@ contains
       integer, dimension(:), intent(in) :: mask
       logical, dimension(size(mask)) :: li_mask_is_dynamic_margin_logout_1d
 
-      li_mask_is_dynamic_margin_logout_1d = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
+      li_mask_is_dynamic_margin_logout_1d = (iand(mask, li_mask_ValueDynamicMargin) == li_mask_ValueDynamicMargin)
    end function li_mask_is_dynamic_margin_logout_1d
 
    function li_mask_is_dynamic_margin_logout_0d(mask)
       integer, intent(in) :: mask
       logical :: li_mask_is_dynamic_margin_logout_0d
 
-      li_mask_is_dynamic_margin_logout_0d = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
+      li_mask_is_dynamic_margin_logout_0d = (iand(mask, li_mask_ValueDynamicMargin) == li_mask_ValueDynamicMargin)
    end function li_mask_is_dynamic_margin_logout_0d
 
    function li_mask_is_dynamic_margin_intout_1d(mask)
       integer, dimension(:), intent(in) :: mask
       integer, dimension(size(mask)) :: li_mask_is_dynamic_margin_intout_1d
 
-      li_mask_is_dynamic_margin_intout_1d = iand(mask, li_mask_ValueDynamicIce) / li_mask_ValueDynamicIce
+      li_mask_is_dynamic_margin_intout_1d = iand(mask, li_mask_ValueDynamicMargin) / li_mask_ValueDynamicMargin
    end function li_mask_is_dynamic_margin_intout_1d
 
    function li_mask_is_dynamic_margin_intout_0d(mask)
       integer, intent(in) :: mask
       integer :: li_mask_is_dynamic_margin_intout_0d
 
-      li_mask_is_dynamic_margin_intout_0d = iand(mask, li_mask_ValueDynamicIce) / li_mask_ValueDynamicIce
+      li_mask_is_dynamic_margin_intout_0d = iand(mask, li_mask_ValueDynamicMargin) / li_mask_ValueDynamicMargin
    end function li_mask_is_dynamic_margin_intout_0d
 
 
