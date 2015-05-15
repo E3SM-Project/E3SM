@@ -122,7 +122,7 @@ module clm_driver
   use BetrBGCMod             , only : run_betr_one_step_with_drainage
   use TracerBalanceMod       , only : betr_tracer_massbalance_check
   use TracerBalanceMod       , only : begin_betr_tracer_massbalance
-  use tracer_varcon          , only : is_active_betr_bgc
+  use tracer_varcon          , only : is_active_betr_bgc, do_betr_leaching
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetrVeg, CNEcosystemDynBetrSummary, CNFluxStateBetrSummary
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
@@ -267,7 +267,7 @@ contains
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
 
-       if(use_betr)then
+       if(use_betr .and. (.not. do_betr_leaching))then
           !call t_startf('beg betr bal')
 
           call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
@@ -790,6 +790,15 @@ contains
               carbonstate_vars, carbonflux_vars,  nitrogenstate_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction,    &
               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
               tracerflux_vars, plantsoilnutrientflux_vars)         
+           !the following is dirty hack, I'll reconsider this in later modifcations, Jinyun Tang May 14, 2015
+           if(do_betr_leaching)then
+          !call t_startf('beg betr bal')
+              call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
+                  tracerstate_vars, tracerflux_vars)
+
+          !call t_stopf('end betr bal')
+           endif
          endif
          
          if (use_lch4) then
