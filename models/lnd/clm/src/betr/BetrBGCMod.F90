@@ -46,7 +46,7 @@ contains
 !-------------------------------------------------------------------------------
   subroutine run_betr_one_step_without_drainage(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, col , &
      atm2lnd_vars, soilhydrology_vars, soilstate_vars, waterstate_vars, temperature_vars, waterflux_vars, chemstate_vars, &
-     cnstate_vars, canopystate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction, &
+     cnstate_vars, canopystate_vars, carbonstate_vars, carbonflux_vars,nitrogenstate_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction, &
      tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! DESCRIPTION
@@ -77,9 +77,10 @@ contains
   use CNStateType              , only : cnstate_type
   use CNCarbonFluxType         , only : carbonflux_type
   use tracer_varcon            , only : is_active_betr_bgc
+  use CNNitrogenStateType      , only : nitrogenstate_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
-  use CanopyStateType       , only : canopystate_type   
-  use CNCarbonStateType  , only : carbonstate_type
+  use CanopyStateType          , only : canopystate_type   
+  use CNCarbonStateType        , only : carbonstate_type
   
   type(bounds_type)            , intent(in) :: bounds                     ! bounds   
   integer                      , intent(in) :: num_soilc                       ! number of columns in column filter_soilc
@@ -101,6 +102,7 @@ contains
   type(canopystate_type)       , intent(in)   :: canopystate_vars  
   type(carbonflux_type)        , intent(inout) :: carbonflux_vars
   type(carbonstate_type)       , intent(in)    :: carbonstate_vars
+  type(nitrogenstate_type)     , intent(inout) :: nitrogenstate_vars
   type(nitrogenflux_type)      , intent(inout) :: nitrogenflux_vars
   type(waterflux_type)         , intent(inout) :: waterflux_vars  
   type(tracerboundarycond_type), intent(inout) :: tracerboundarycond_vars
@@ -198,7 +200,7 @@ contains
   !print*,'do bgc_reaction'
   call bgc_reaction%calc_bgc_reaction(bounds, lbj, ubj, num_soilc, filter_soilc, num_soilp, filter_soilp, tracerboundarycond_vars%jtops_col,&
        dtime, betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, soilstate_vars, chemstate_vars, cnstate_vars, carbonstate_vars,&
-       carbonflux_vars,nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+       carbonflux_vars,nitrogenstate_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
 
 !  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
 !     betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_reaction')

@@ -35,10 +35,10 @@ implicit none
       procedure(readParams_interface)                   , deferred :: readParams
       
       !send back state flux variables to other parts of alm
-      procedure(betr_alm_bgc_flux_statevar_feedback_interface)    , deferred :: betr_alm_bgc_flux_statevar_feedback
+      procedure(betr_alm_flux_statevar_feedback_interface)    , deferred :: betr_alm_flux_statevar_feedback
       
       !initialize betr state variable from other bgc components in alm
-      procedure(init_betr_alm_bgc_coupler_interface_interface)    , deferred :: init_betr_alm_bgc_coupler
+      procedure(init_betr_alm_bgc_coupler_interface)    , deferred :: init_betr_alm_bgc_coupler
   end type bgc_reaction_type  
   
   abstract interface
@@ -60,7 +60,8 @@ implicit none
 !----------------------------------------------------------------------    
     subroutine calc_bgc_reaction_interface(this, bounds, lbj, ubj, num_soilc, filter_soilc,num_soilp,filter_soilp, jtops, dtime, &
        betrtracer_vars, tracercoeff_vars, waterstate_vars, temperature_vars, &
-       soilstate_vars, chemstate_vars, cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
+       soilstate_vars, chemstate_vars, cnstate_vars, carbonstate_vars, carbonflux_vars,nitrogenstate_vars, nitrogenflux_vars, &
+       tracerstate_vars, tracerflux_vars, plantsoilnutrientflux_vars)
   !
   ! do bgc reaction
   ! eventually this will be an abstract subroutine, but now I use the select case approach for a quick and dirty implementation.
@@ -82,6 +83,7 @@ implicit none
    use CNCarbonStateType        , only : carbonstate_type
    use CNCarbonFluxType         , only : carbonflux_type
    use CNNitrogenFluxType       , only : nitrogenflux_type     
+   use CNNitrogenStateType      , only : nitrogenstate_type
    import :: bgc_reaction_type
    class(bgc_reaction_type)   , intent(in) :: this
    type(bounds_type)          , intent(in) :: bounds                             ! bounds   
@@ -100,6 +102,7 @@ implicit none
    type(cnstate_type)         , intent(inout) :: cnstate_vars
    type(carbonstate_type)     , intent(in) :: carbonstate_vars
    type(carbonflux_type)      , intent(inout) :: carbonflux_vars
+   type(nitrogenstate_type)   , intent(inout) :: nitrogenstate_vars
    type(nitrogenflux_type)    , intent(inout) :: nitrogenflux_vars
    type(tracercoeff_type)     , intent(in) :: tracercoeff_vars
    type(tracerstate_type)     , intent(inout) :: tracerstate_vars
@@ -223,7 +226,7 @@ implicit none
   
   
 !------------------------------------------------------------------------------- 
-  subroutine betr_alm_bgc_flux_statevar_feedback_interface(this, bounds, num_soilc, filter_soilc, &
+  subroutine betr_alm_flux_statevar_feedback_interface(this, bounds, num_soilc, filter_soilc, &
              carbonstate_vars, nitrogenstate_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars,  betrtracer_vars)
 
    use decompMod                , only : bounds_type
@@ -250,7 +253,7 @@ implicit none
 
 
   
-  end subroutine betr_alm_bgc_flux_statevar_feedback_interface
+  end subroutine betr_alm_flux_statevar_feedback_interface
   
   
   
@@ -259,6 +262,7 @@ implicit none
   
   subroutine init_betr_alm_bgc_coupler_interface(this, bounds, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
 
+  use decompMod                , only : bounds_type
   use clm_varcon               , only : natomw, catomw  
   use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNCarbonStateType        , only : carbonstate_type
