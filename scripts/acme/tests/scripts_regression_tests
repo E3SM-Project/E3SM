@@ -83,12 +83,6 @@ def setup_proxy():
     return False
 
 ###############################################################################
-def generate_utc_timestamp():
-###############################################################################
-    utc_time_tuple = time.gmtime()
-    return time.strftime("%Y%m%d_%H%M%S", utc_time_tuple)
-
-###############################################################################
 class TestWaitForTests(unittest.TestCase):
 ###############################################################################
 
@@ -261,7 +255,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
         self._thread_error      = None
         self._wget_file         = tempfile.mktemp()
         self._unset_proxy       = setup_proxy()
-        self._baseline_name     = "fake_testing_only_%s" % generate_utc_timestamp()
+        self._baseline_name     = "fake_testing_only_%s" % acme_util.get_utc_timestamp()
 
     ###########################################################################
     def tearDown(self):
@@ -314,7 +308,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
     ###########################################################################
         # Unfortunately, this test is very long-running
 
-        build_name = "jenkins_generic_job_pass_%s" % generate_utc_timestamp()
+        build_name = "jenkins_generic_job_pass_%s" % acme_util.get_utc_timestamp()
         self.simple_test(True, "-p ACME_test --branch master -d -c %s" % build_name)
 
         self.assert_no_sentinel()
@@ -324,7 +318,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
     ###########################################################################
     def test_jenkins_generic_job_kill(self):
     ###########################################################################
-        build_name = "jenkins_generic_job_kill_%s" % generate_utc_timestamp()
+        build_name = "jenkins_generic_job_kill_%s" % acme_util.get_utc_timestamp()
         run_thread = threading.Thread(target=self.simple_test, args=(False, "-p ACME_test --branch master -d -c %s" % build_name))
         run_thread.daemon = True
         run_thread.start()
