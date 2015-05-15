@@ -137,6 +137,10 @@ module li_time_integration
          !  It may be possible to have them handled in the same place within li_tendency.F if we want to embed it that deeply.)
          call mpas_get_timeInterval(timeStepInterval, StartTimeIn=currTime, dt=dtSeconds, ierr=err_tmp)
          err = ior(err,err_tmp)
+      else
+         ! initialize the dt to 0 when using the adaptive timestepper
+         !   it will be set by the time stepper but needs to avoid triggering an error in tend_layerThickness_fo_upwind
+         dtSeconds = 0.0_RKIND
       endif
 
 
