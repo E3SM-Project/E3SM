@@ -212,12 +212,16 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash,
     # should be happening for the current user. A sentinel file helps
     # enforce this.
     #
+    # Very tiny race window here, not going to sweat it
+    #
 
     sentinel_path = os.path.join(testroot, SENTINEL_FILE)
     expect(not os.path.isfile(sentinel_path),
            "Tests were already in progress, cannot start more!")
 
-    # Very tiny race window here, not going to sweat it
+    if (not os.path.isdir(testroot)):
+        os.makedirs(testroot)
+
     open(sentinel_path, 'w').close()
 
     try:
