@@ -227,27 +227,8 @@ implicit none
    type(tracerflux_type)               , intent(inout) :: tracerflux_vars
    type(plantsoilnutrientflux_type)    , intent(inout) :: plantsoilnutrientflux_vars  
    character(len=*), parameter :: subname ='calc_bgc_reaction'
-    
-   integer :: j, fc, c 
-   associate(                                                     &
-     id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
-     id_trc_nh3x        => betrtracer_vars%id_trc_nh3x            , &  
-     smin_no3_vr_col    => nitrogenstate_vars%smin_no3_vr_col     , &
-     smin_nh4_vr_col    => nitrogenstate_vars%smin_nh4_vr_col     , &
-     tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col  &
-   )
 
-   do j = 1, nlevtrc_soil
-     do fc = 1, num_soilc
-       c = filter_soilc(fc)
-    
-       tracer_conc_mobile(c,j,id_trc_no3x) = smin_no3_vr_col(c,j) / natomw
-       tracer_conc_mobile(c,j,id_trc_nh3x) = smin_nh4_vr_col(c,j) /natomw
-      
-     enddo        
-   enddo
-   
-   end associate
+  !do nothing here    
   end subroutine calc_bgc_reaction
   
   
@@ -441,7 +422,27 @@ implicit none
 
 
 
+  integer :: j, fc, c, l
+   associate(                                                     &
+     id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
+     id_trc_nh3x        => betrtracer_vars%id_trc_nh3x            , &  
+     smin_no3_vr_col    => nitrogenstate_vars%smin_no3_vr_col     , &
+     smin_nh4_vr_col    => nitrogenstate_vars%smin_nh4_vr_col     , &
+     tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col  &
+   )
 
+   do j = 1, nlevtrc_soil
+      do c = bounds%begc, bounds%endc
+        l = col%landunit(c)
+        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then    
+    
+          tracer_conc_mobile(c,j,id_trc_no3x) = smin_no3_vr_col(c,j) / natomw
+          tracer_conc_mobile(c,j,id_trc_nh3x) = smin_nh4_vr_col(c,j) /natomw
+        endif   
+     enddo        
+   enddo
+   
+   end associate
   end subroutine init_betr_alm_bgc_coupler
 !-------------------------------------------------------------------------------    
   subroutine assign_minnitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)

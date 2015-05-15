@@ -780,6 +780,17 @@ contains
 
 
          if (use_betr)then
+           if(do_betr_leaching)then
+              call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+
+             !the following is dirty hack, I'll reconsider this in later modifcations, Jinyun Tang May 14, 2015
+             !call t_startf('beg betr bal')
+              call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
+                  tracerstate_vars, tracerflux_vars)
+
+              !call t_stopf('end betr bal')
+           endif
            !this is used for non-online bgc with betr
            call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,    &
               filter(nc)%num_soilc, filter(nc)%soilc,                                &
@@ -790,15 +801,7 @@ contains
               carbonstate_vars, carbonflux_vars,  nitrogenstate_vars, nitrogenflux_vars, betrtracer_vars, bgc_reaction,    &
               tracerboundarycond_vars, tracercoeff_vars, tracerstate_vars,           &
               tracerflux_vars, plantsoilnutrientflux_vars)         
-           !the following is dirty hack, I'll reconsider this in later modifcations, Jinyun Tang May 14, 2015
-           if(do_betr_leaching)then
-          !call t_startf('beg betr bal')
-              call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
-                  tracerstate_vars, tracerflux_vars)
 
-          !call t_stopf('end betr bal')
-           endif
          endif
          
          if (use_lch4) then

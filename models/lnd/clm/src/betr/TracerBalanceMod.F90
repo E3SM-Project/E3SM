@@ -10,6 +10,8 @@ module TracerBalanceMod
   use decompMod          , only : bounds_type
   use BeTRTracerType     , only : betrtracer_type
   use ColumnType         , only : col      
+  use clm_time_manager   , only : get_nstep  
+  use clm_varctl         , only : iulog
 implicit none
   save
   private
@@ -40,13 +42,19 @@ implicit none
   type(tracerflux_type) , intent(inout) :: tracerflux_vars
  
   character(len=256) :: subname='begin_betr_tracer_massbalance'
-
+  integer :: fc, c
   
   call tracerflux_vars%Reset(bounds, numf, filter)
 
   call betr_tracer_mass_summary(bounds, lbj, ubj, numf, filter, betrtracer_vars, tracerstate_vars, &
      tracerstate_vars%beg_tracer_molarmass_col)
-
+!  do fc = 1, numf
+!    c =filter(fc)
+!    if(c==12954)then
+!      write(iulog,*)get_nstep(),'beg nh3',tracerstate_vars%beg_tracer_molarmass_col(c,betrtracer_vars%id_trc_nh3x),&
+!       'no3',tracerstate_vars%beg_tracer_molarmass_col(c,betrtracer_vars%id_trc_no3x)
+!    endif
+!  enddo
 
   end subroutine begin_betr_tracer_massbalance
   
@@ -106,6 +114,10 @@ implicit none
   !do mass balance check and write error messages if any  
   do fc = 1, numf
     c = filter(fc)
+!    if(c==12954)then
+!      write(iulog,*)get_nstep(),'end nh3',tracerstate_vars%beg_tracer_molarmass_col(c,betrtracer_vars%id_trc_nh3x),&
+!       'no3',tracerstate_vars%beg_tracer_molarmass_col(c,betrtracer_vars%id_trc_no3x)
+!    endif
     !summarize the fluxes 
     call tracerflux_vars%flux_summary(c, betrtracer_vars)
     
