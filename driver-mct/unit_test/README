@@ -4,7 +4,7 @@
 module load cmake
 unit_test_dir=/glade/scratch/$USER/unit_tests_drv
 
-# Do this only if you are running from a different CLM checkout than
+# Do this only if you are running from a different checkout than
 # the previous time you built unit tests in this directory. (This
 # probably isn't necessary, but it's best to do this to be safe.)
 rm -rf $unit_test_dir
