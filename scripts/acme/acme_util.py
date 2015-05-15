@@ -2,7 +2,7 @@
 Common functions used by acme python scripts
 """
 
-import sys, socket, re, os
+import sys, socket, re, os, time
 
 _VERBOSE = False
 
@@ -341,3 +341,14 @@ def get_machine_info(machine=None):
     expect(machine in MACHINE_INFO, "No info for machine '%s'" % machine)
 
     return MACHINE_INFO[machine]
+
+###############################################################################
+def get_utc_timestamp(format="%Y%m%d_%H%M%S"):
+###############################################################################
+    """
+    Get a string representing the current UTC time in format: YYMMDD_HHMMSS
+
+    The format can be changed if needed.
+    """
+    utc_time_tuple = time.gmtime()
+    return time.strftime(format, utc_time_tuple)
