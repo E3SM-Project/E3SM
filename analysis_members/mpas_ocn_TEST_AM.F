@@ -7,27 +7,27 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_TEST
+!  ocn_TEST_AM
 !
-!> \brief MPAS ocean analysis core member: TEST
+!> \brief MPAS ocean analysis core member: TEST_AM
 !> \author FILL_IN_AUTHOR
 !> \date   FILL_IN_DATE
 !> \details
-!>  MPAS ocean analysis core member: TEST
+!>  MPAS ocean analysis core member: TEST_AM
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
-!>     cp mpas_ocn_TEST.F mpas_ocn_your_new_name.F
-!>     cp Registry_ocn_TEST.xml Registry_ocn_your_new_name.xml
+!>     cp mpas_ocn_TEST_AM.F mpas_ocn_your_new_name.F
+!>     cp Registry_ocn_TEST_AM.xml Registry_ocn_your_new_name.xml
 !>  
 !>  2. In those two new files, replace the following text:
-!>     TEST, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Typically TEST uses underscores, like your_new_name
+!>     TEST_AM, FILL_IN_AUTHOR, FILL_IN_DATE
+!>     Typically TEST_AM uses underscores, like your_new_name
 !>  
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
 !>  
 !>  4. In mpas_ocn_analysis_driver.F, add calls for your analysis member
-!>     by copying lines with TEST.
+!>     by copying lines with TEST_AM.
 !>  
 !>  5. In src/core_ocean/analysis_members/Makefile, add your
 !>     new analysis member everywhere you see
@@ -36,7 +36,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_TEST
+module ocn_TEST_AM
 
    use mpas_grid_types
    use mpas_timer
@@ -63,11 +63,11 @@ module ocn_TEST
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_TEST, &
-             ocn_init_TEST, &
-             ocn_compute_TEST, &
-             ocn_restart_TEST, &
-             ocn_finalize_TEST
+   public :: ocn_setup_packages_TEST_AM, &
+             ocn_init_TEST_AM, &
+             ocn_compute_TEST_AM, &
+             ocn_restart_TEST_AM, &
+             ocn_finalize_TEST_AM
 
    !--------------------------------------------------------------------
    !
@@ -75,7 +75,7 @@ module ocn_TEST
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: am_TESTTimer
+   type (timer_node), pointer :: am_TEST_AMTimer
 
 !***********************************************************************
 
@@ -83,7 +83,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_setup_packages_TEST
+!  routine ocn_setup_packages_TEST_AM
 !
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -94,7 +94,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_setup_packages_TEST(configPool, packagePool, err)!{{{
+   subroutine ocn_setup_packages_TEST_AM(configPool, packagePool, err)!{{{
 
       use mpas_packages
 
@@ -125,21 +125,21 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      logical, pointer :: am_TESTActive
+      logical, pointer :: am_TEST_AMActive
 
       err = 0
 
-      call mpas_pool_get_package(packagePool, 'am_TESTActive', am_TESTActive)
+      call mpas_pool_get_package(packagePool, 'am_TEST_AMActive', am_TEST_AMActive)
 
       ! turn on package for this analysis member
-      am_TESTActive = .true.
+      am_TEST_AMActive = .true.
 
-   end subroutine ocn_setup_packages_TEST!}}}
+   end subroutine ocn_setup_packages_TEST_AM!}}}
 
 
 !***********************************************************************
 !
-!  routine ocn_init_TEST
+!  routine ocn_init_TEST_AM
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
@@ -150,7 +150,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_TEST(domain, err)!{{{
+   subroutine ocn_init_TEST_AM(domain, err)!{{{
 
       use mpas_packages
 
@@ -184,11 +184,11 @@ contains
 
       err = 0
 
-   end subroutine ocn_init_TEST!}}}
+   end subroutine ocn_init_TEST_AM!}}}
 
 !***********************************************************************
 !
-!  routine ocn_compute_TEST
+!  routine ocn_compute_TEST_AM
 !
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
@@ -199,7 +199,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_TEST(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_TEST_AM(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -231,14 +231,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: am_TESTPool
+      type (mpas_pool_type), pointer :: am_TEST_AMPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: am_TEST
+      type (mpas_pool_type), pointer :: am_TEST_AM
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
@@ -251,9 +251,9 @@ contains
 
       dminfo = domain % dminfo
 
-print *, 'in ocn_compute_TEST'
+print *, 'in ocn_compute_TEST_AM'
 
-      call mpas_timer_start("compute_TEST", .false., am_TESTTimer)
+      call mpas_timer_start("compute_TEST_AM", .false., am_TEST_AMTimer)
 
       block => domain % blocklist
       do while (associated(block))
@@ -261,7 +261,7 @@ print *, 'in ocn_compute_TEST'
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'am_TEST', am_TESTPool)
+         call mpas_pool_get_subpool(block % structs, 'am_TEST_AM', am_TEST_AMPool)
 
          ! Here are some example variables which may be needed for your analysis member
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
@@ -303,20 +303,20 @@ print *, 'in ocn_compute_TEST'
       ! correct values for writing output.
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'am_TEST', am_TESTPool)
+         call mpas_pool_get_subpool(block % structs, 'am_TEST_AM', am_TEST_AMPool)
 
-         ! assignment of final am_TEST variables could occur here.
+         ! assignment of final am_TEST_AM variables could occur here.
 
          block => block % next
       end do
 
-      call mpas_timer_stop("TEST", am_TESTTimer)
+      call mpas_timer_stop("TEST_AM", am_TEST_AMTimer)
 
-   end subroutine ocn_compute_TEST!}}}
+   end subroutine ocn_compute_TEST_AM!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_TEST
+!  routine ocn_restart_TEST_AM
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
@@ -327,7 +327,7 @@ print *, 'in ocn_compute_TEST'
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_TEST(domain, err)!{{{
+   subroutine ocn_restart_TEST_AM(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -359,11 +359,11 @@ print *, 'in ocn_compute_TEST'
 
       err = 0
 
-   end subroutine ocn_restart_TEST!}}}
+   end subroutine ocn_restart_TEST_AM!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_TEST
+!  routine ocn_finalize_TEST_AM
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
@@ -374,7 +374,7 @@ print *, 'in ocn_compute_TEST'
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_TEST(domain, err)!{{{
+   subroutine ocn_finalize_TEST_AM(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -406,8 +406,8 @@ print *, 'in ocn_compute_TEST'
 
       err = 0
 
-   end subroutine ocn_finalize_TEST!}}}
+   end subroutine ocn_finalize_TEST_AM!}}}
 
-end module ocn_TEST
+end module ocn_TEST_AM
 
 ! vim: foldmethod=marker
