@@ -1808,9 +1808,11 @@ module BGCCenturySubMod
       c = filter_soilc(fc)
       
       tot_demand= (k_nit(c,j) * smin_nh4_vr(c,j) + decomp_nh4_immob(c,j) + plant_ndemand(c,j))*dtime
-      
-      nh4_compet(c,j) = min(safe_div(smin_nh4_vr(c,j),tot_demand),1._r8)
-      
+      if(tot_demand<=smin_nh4_vr(c,j))then
+        nh4_compet(c,j)=1._r8
+      else 
+        nh4_compet(c,j) = smin_nh4_vr(c,j)/tot_demand
+      endif
     enddo
   enddo
   end subroutine calc_nutrient_compet_rescal   
