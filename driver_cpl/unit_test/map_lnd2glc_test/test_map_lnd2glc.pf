@@ -679,11 +679,13 @@ contains
     ! takes some work, because we need to take the weighted average of two CISM cells for
     ! each of the two land cells.
     !
-    ! TODO(wjs, 2015-03-11) I may want to replace this manual determination of
-    ! topographic heights with a call to the routine that will remap glc topographic
-    ! heights to CLM, once that routine has been written. At that point, it may make
-    ! sense to move this test routine somewhere else, to indicate that it's testing a
-    ! combination of routines.
+    ! NOTE(wjs, 2015-05-17) In principle, we could replace this manual determination of
+    ! topographic heights with a call to map_glc2lnd_ec. But then it would make sense to
+    ! move this test routine somewhere else, to indicate that it's testing a combination
+    ! of routines. This would take more work than I'm up for right now. But eventually,
+    ! we may want to do that, along with introducing some additional conservation checks.
+    ! Then these conservation checks would become more integration-ish tests than unit
+    ! tests.
     topo_ec2_lnd1 = (areas_lnd1(3) * topo_glc(3) + areas_lnd1(4) * topo_glc(4)) / &
          (areas_lnd1(3) + areas_lnd1(4))
     topo_ec2_lnd2 = (areas_lnd2(3) * topo_glc(3) + areas_lnd2(4) * topo_glc(4)) / &
