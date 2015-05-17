@@ -658,6 +658,26 @@
   <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+  <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+  <batch_system name="slurm">
+    <queues>
+      <queue walltimemin="0" walltimemax="00:59:00" jobmin="0" jobmax="9999" default="true">queue</queue>
+    </queues>
+  <walltimes>
+    <walltime default="true">00:59:00</walltime>
+  </walltimes>
+  <mpirun mpilib="mpi-serial">
+    <executable></executable>
+  </mpirun>
+  <mpirun mpilib="default">
+    <executable>mpiexec_mpt<executable>  
+    <arguments>
+      <arg name="mpi">--mpi=none</arg>
+      <arg name="num_tasks">-n=__num_tasks__</arg>
+      <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+    </arguments>
+  </mpirun>
+  </batch_system>
 </machine>
 
 
@@ -682,6 +702,22 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+         <batch_system name="pbs">
+           <queues>
+             <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">04:00:00</walltime>
+           </walltimes>
+           <mpirun mpilib="mpi-serial">
+             <executable></executable>
+           </mpirun>
+           <mpirun mpilib="default">
+             <arguments>
+               <arg name="num_tasks">__num_tasks__</arg>
+             </arguments>
+           </mpirun>
+         </batch_system>
 </machine>
 
 <machine MACH="pleiades-wes">
@@ -705,6 +741,19 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+         <batch_system name="pbs">
+           <queues>
+             <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">04:00:00</walltime>
+           </walltimes>
+           <mpirun mpilib="default">
+             <arguments>
+               <arg name="num_tasks">__num_tasks__</arg>
+             </arguments>
+           </mpirun>
+         </batch_system>
 </machine>
 
 <machine MACH="pleiades-san">
