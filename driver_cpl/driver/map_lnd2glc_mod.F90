@@ -156,7 +156,7 @@ contains
     ! Start by setting the output data equal to the bare land value everywhere; this will
     ! later get overwritten in places where we have ice
     !
-    ! FIXME(wjs, 2015-01-20) This implies that we pass data to CISM even in places that
+    ! TODO(wjs, 2015-01-20) This implies that we pass data to CISM even in places that
     ! CISM says is ocean (so CISM will ignore the incoming value). This differs from the
     ! current glint implementation, which sets acab and artm to 0 over ocean (although
     ! notes that this could lead to a loss of conservation). Figure out how to handle
